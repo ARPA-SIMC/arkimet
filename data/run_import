@@ -1,0 +1,47 @@
+#!/bin/sh
+echo "`date`: Cleanup..."
+rm -rf ../testenv/*/[0-9]*
+rm -rf ../testenv/*/index*
+rm -rf ../testenv/*/summary
+
+if [ "$1" = "clean" ]
+then
+	exit 0
+fi
+
+TMPGRIB2=`mktemp ./grib2.XXXXXXXX`
+
+cleanup() {
+	rm -f "$TMPGRIB2"
+}
+trap cleanup EXIT
+
+export ARKI_SCAN_GRIB1=../conf/scan-grib1/
+export ARKI_SCAN_GRIB2=../conf/scan-grib2/
+
+echo "`date`: Collect configurations..."
+../src/arki-mergeconf ../testenv/* > conf
+echo "`date`: Creating inbound directory..."
+rm -rf inbound
+mkdir inbound
+cp data/* inbound/
+mkdir inbound/ok
+mkdir inbound/ko
+mkdir inbound/work
+echo "`date`: Scanning and dispatching..."
+#valgrind --tool=callgrind ../src/.libs/lt-arki-scan --verbose --dispatch=conf
+../src/arki-scan --verbose --dispatch=conf \
+	--moveok=inbound/ok \
+	--moveko=inbound/ko \
+	--movework=inbound/work \
+	inbound/*.GRIB \
+	inbound/*.grib2 \
+	inbound/*.bufr \
+	> dispatched
+
+#echo "`date`: Scanning and dispatching GRIB..."
+#../src/arki-scan-grib --verbose --dispatch=conf data/*.GRIB > dispatched
+#echo "`date`: Scanning and dispatching GRIB2..."
+#../src/arki-scan-grib --verbose --dispatch=conf data/*.grib2 >> dispatched
+#echo "`date`: Scanning and dispatching BUFR..."
+#../src/arki-scan-bufr --verbose --dispatch=conf data/*.bufr >> dispatched

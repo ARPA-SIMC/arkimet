@@ -1,0 +1,20 @@
+/* GEOS version number */
+#undef GEOS_VERSION
+
+/* dballe functions are available */
+#undef HAVE_DBALLE
+
+/* GEOS is available */
+#undef HAVE_GEOS
+
+/* grib_api functions are available */
+#undef HAVE_GRIBAPI
+
+/* Define to 1 if you have a functional curl library. */
+#undef HAVE_LIBCURL
+
+/* lua is available */
+#undef HAVE_LUA
+
+/* SQLite 3 is available */
+#undef HAVE_SQLITE3

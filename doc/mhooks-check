@@ -1,0 +1,24 @@
+DESCRIPTION end
+|\fBarki-update-summaries\fP updates the contents of the summaries in one or
+|more arkimet datasets, that can be specified either by name or read from a
+|configuration file.
+
+OPTIONS end
+|.SH EXAMPLES
+|Here are some example invocations of \fBarki-update-summaries\fP:
+|.P
+|.nf
+|  # Merge the configuration of various datasets in a single file
+|  arki-mergeconf /srv/archives/datasets/* > dispatch.conf
+|  # Scan all inbound files and dispatch their contents
+|  arki-scan-grib *.grib | arki-dispatch dispatch.conf > /dev/null
+|  arki-scan-bufr *.bufr | arki-dispatch dispatch.conf > /dev/null
+|  # Update the summaries in the datasets after the import
+|  arki-update-summaries dispatch.conf
+|  # Delete some old data from one or more datasets
+|  arki-query "reftime:<=2 years ago" datasets/* > /tmp/to-delete
+|  arki-check --remove=/tmp/to-delete datasets/*
+|.fi
+|
+|.SH SEE ALSO
+|.BR arki-dispatch (1)

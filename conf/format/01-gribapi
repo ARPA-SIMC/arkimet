@@ -1,0 +1,2 @@
+-- This is the directory where grib_api keeps its definitions
+GRIBAPI_DEF_DIR = "/usr/share/grib_api/definitions"

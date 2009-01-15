@@ -1,0 +1,80 @@
+#!/usr/bin/python
+
+# Dispatch data into datasets.
+#
+# Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+# Author: Enrico Zini <enrico@enricozini.com>
+
+from metadata import Metadata
+from matcher import Matcher
+import sys
+from configobj import ConfigObj
+
+# Read metadata from stdin and dispatch them to the dataset that wants them
+
+if len(sys.argv) == 1:
+    print >>sys.stderr, "Usage:", sys.argv[0], "config"
+    print >>sys.stderr, "Reads xgribarch metadata from standard input and dispatches them"
+    print >>sys.stderr, "to the dataset that wants them."
+    sys.exit(1)
+
+# Parse configuration
+config = ConfigObj(sys.argv[1], list_values = False)
+# TODO: use confg.merge to merge all config files read from a directory
+
+# Instantiate the datasets
+datasets = []
+dserror = None
+for dsname in config.sections:
+    if config[dsname]["type"] == "error":
+        dserror = dsname
+    else:
+        if not "filter" in config[dsname]:
+            print >>sys.stderr, "Configuration of dataset '%s' does not have a 'filter' directive" % dsname
+            sys.exit(1)
+        print "FILTER", config[dsname]["filter"]
+        matcher = Matcher(config[dsname]["filter"])
+        datasets.append( (dsname, matcher) )
+
+# We need a place where messages with problems should be stored
+if dserror == None:
+    print >>sys.stderr, "No [error] dataset found in the configuration file."
+    sys.exit(1)
+
+# Read all messages from stdin and dispatch them to the datasets that want them
+md = Metadata()
+while md.read(sys.stdin):
+    # Find the dataset(s) that want the item
+    found = []
+    for name, matcher in datasets:
+        if matcher.match(md):
+            found.append(name)
+
+    # If we found only one dataset, acquire it in that dataset; else, acquire
+    # it in the error dataset
+    if len(found) == 1:
+        md.set_dataset(found[0])
+    elif len(found) == 0:
+        md.add_note("Message could not be assigned to any dataset")
+        md.set_dataset(dserror)
+    elif len(found) > 1:
+        md.add_note("Message matched multiple datasets: " + ", ".join(found))
+        md.set_dataset(dserror)
+
+    # Write to stdout as well, so we can save a log of what happened with this
+    # bunch of input data
+    md.write(sys.stdout)

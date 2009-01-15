@@ -1,0 +1,433 @@
+FATTI
+=====
+
+ - Merge configurazioni di un set arbitrario di dataset
+ - Estrazione metadati da GRIB1, GRIB2 e BUFR
+ - Motore di matching di metadati
+ - Dispatch dati in dataset date espressioni di metadati
+ - Merge di metadati e summary in summary
+ - Grep su uno stream di metadati
+ - Collect dei dati puntati da uno stream di metadati
+ - Query OR su parametro omogeneo (origin: foo or bar or baz) [sono ancora
+   mappabili in SQL]
+ - Mappatura sottoquery in SQL
+ - Generazione / aggiornamento sommari in tutti i livelli di directory di un
+   dataset, senza toccare il timestamp dei summary che non cambiano
+ - Query al dataset data un'espressione di match, senza usare gli indici
+ - Alias per query livelli, scadenza, prodotti...
+   (XGAR_ALIASES or /etc/xgribarch/match-alias.conf)
+ - Query al dataset usando gli indici.
+ - Metadata compressi
+    - header MDvvllll
+      vv = version
+      llll = length
+    - elementi
+      ttllll[data]
+      tt = type
+      llll = length
+      [data] = type-dependent
+ - Estrazione configurabile di metadati da grib 1 e 2 usando Lua
+ - Match di Area e Ensemble come coppie chiave=valore
+    + Encoding:
+      1 byte lunghezza chiave
+      chiave
+      1 byte tipo valore (int1, int2, int3, int4 [, int6, int8, float, double,
+        string8, string16, string24, string32...])
+      valore
+    + Match
+      chiave=valore[,chiave=valore...]
+      eventualmente anche >=, <=, >, <, !=, in
+    + Scan
+      arki.area.qualsiasicosa = ...
+      arki.ensemble.qualsiasicosa = ...
+      http://pgl.yoyo.org/luai/i/lua_next
+    + Nel database
+      encodato in un blob in una tabella separata, match su tutte le righe della
+      tabella, poi query IN(a, b, c...) sugli ID di collegamento
+      Indicizzazione in sql su tabella a parte (id, blob): si estraggono tutti gli
+      elementi della tabella, si fa il match sul blob, si segnano gli id che fanno
+      match, si fa una ricerca "IN" sull'indice principale
+ - Rendere configurabile cosa è unico:
+     unique = origin,reftime
+   con un default)
+ - arki-server file.conf
+ - arki-dump file.log | grep-dctrl -FDataset error
+ - dataset di tipo 'outbound'
+ - dataset di tipo 'discard'
+ - arki-check
+ - catene di postprocessazione (--postproc="cmdline")
+ - download configurazione da dataset remoti
+ - report scriptabili (arki-query --report)
+ - cancellazione dati dai dataset (arki-check --remove)
+ - simulazione di dispatch (arki-scan --testdispatch)
+
+
+Usi utili:
+ - Crea la configurazione per l'accesso a un certo numero di dataset:
+   collectdsconf ../testenv/* > conf
+ - Importa dei grib:
+   arki-scan-grib *.GRIB | arki-dispatch conf > dispatched
+   arki-update-summaries conf
+ - Filtro per file GRIB:
+   arki-scan-grib *.grib | arki-grep expr | arki-collect > filtered.grib
+ - Sommario del contenuto di vari GRIB
+   arki-scan-grib *.grib | arki-summarise --now=0
+ - Query a uno o piú dataset
+   arki-query conf expr
+
+
+
+DA FARE
+=======
+
+http://www.unidata.ucar.edu/committees/polcom/2005fall/THREDDS20050912.htm
+http://www.ecmwf.int/products/data/software/simdat.html
+http://code.ecmwf.int/trac/vmc
+http://www.openchannelsoftware.com/projects/Earth_Science_Datacasting
+http://code.ecmwf.int/trac/vmc/wiki
+http://code.ecmwf.int/trac/vmc/wiki/MetadataGuidelines
+http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
+ - Vedere se/come interfacciarsi a LDM
+   http://www.unidata.ucar.edu/software/ldm/
+   http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
+
+
+ - Bounding box
+    - Coordinate ruotate
+ - arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
+   si aggiorna un alias sul server, i client non vedono l'aggiornamento)
+
+ - Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
+ - Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
+   meglio e non pone il problema di decidere qual'è il minimo e massimo
+ - I grib latlon ruotati (con latitudeOfSouthernPoleInDegrees e
+   longitudeOfSouthernPoleInDegrees) vanno antiruotati
+ - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
+   tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
+   solo massimo/minimo per lato)
+
+ - Servirebbe script che fa setup di un sistema di partenza
+
+ - libreria lua con funzioni utili (tipo met.utm2ll implementata in C,
+   met.controruotazione di aree latlon ruotate, ...) importata sempre
+
+ - arki-scan --testdispatch=cfg
+    - mostra i dati che andrebbero nello stesso dataset e con lo stesso id
+
+ - Triggering:
+    - Poll:
+      arki-query --summary --report=count "reftime:=today; run:MINUTE,0; timerange:GRIB1,0,120h or GRIB1,0,150h" http://arkimet.metarpa:8090/dataset/eur025
+    - Dataset toccati dall'ultimo import (ev. fare un reportino lua per estrarre la cosa):
+      arki-dump 2008-10-15_10-metadata.log --report=datasets | cut -f 2 -d ' '
+      arki-dump 2008-10-15_10-metadata.log --report=datasets | cut -f 2 -d ' ' | xargs -ipippo touch /tmp/importati/pippo
+
+ - Possibilità di fare include del file degli alias
+
+ - --sort serve per lanciare plugin lato server, quindi servirebbe farlo andare
+   lato server (e farlo combinare con --postprocess e tutto il resto, ma farlo
+   conflittare con --merged)
+ - spostare --merged lato server (e farlo solo tra dataset che stanno sullo
+   stesso server)
+    - Mergia il possibile lato server, poi rimergia lato client se piglia da
+      server diversi
+       - Se si rimergia lato client, rifare il sort
+
+ - Per i filtri che vogliono sapere in anticipo il volume di dati, dargli il
+   summary in un file temporaneo il cui nome è messo in una variabile di ambiente
+
+ - GRIB1
+   timeRangeIndicator
+   (endStepInHours - startStepInHours)
+   endStepInHours
+
+ - arki-query run/conf dà segfault (senza usare -C prova a leggerlo come un
+   dataset su file)
+   (questo è perché per ogni file sconosciuto assume il formato "arkimet")
+
+ - TimeIntervalSorter: permettere di configurarlo in modo che se ci sono 2 dati
+   con lo stesso reftime e altri metadati, permetta di scegliere se darli in
+   output tutti o se dare in output solo quello del primo dataset che ce l'ha
+ - vedere eventualmente di fare tutto questo lato server
+
+ - Quando si usa --sort, vedere se/come dare dei summary parziali uno per ogni
+   intervallo di reference time, facendoli precedere i dati per ogni intervallo
+   (per ogni intervallo di reftime scelto, prefissare un summary del contenuto)
+
+ - arki-server: mettere ulimit a arki-query quando lo si lancia
+
+ - arki-query --watch
+   che ripete la query all'infinito ogni volta che arriva qualcosa nel dataset
+   pigliando notifiche da arki-scan e chiunque importi
+ 
+ - trigger per-dataset da lanciare dopo la query
+    - una query + un programmino in lua che decide se il trigger va lanciato +
+      vedere cosa vuol dire lanciare un trigger (e, nel caso, non rilanciarlo
+      due volte)
+
+ + postprocessing e reporting sono per-dataset
+ - i file letti come dataset potrebbero rendere obsoleti arki-grep, arki-scan-*
+   e arki-dump
+
+ - Definire come creare un matcher sul bbox in arkimet
+ - Guardare con Selvini i LUA che estraggono i BBOX
+
+ - scansione BUFR
+    - solo header (altrimenti bisogna separare BUFR con piú subset perché
+      potrebbero avere orari differenti (o altre informazioni discriminanti)
+    - altre cose possibili sono:
+       - la sequenza di descriptor della data section (senza espansione dei D)
+       - la versione delle tabelle (?)
+       - il numero di subset (?)
+    - fare per i bufr un dataset non indicizzato e senza metadati, solo coi summary
+       - fare un programma che fa pulizia di un file di dati cancellando i bufr
+         duplicati
+       - a ogni scrittura, creare il flagfile .needs-repack, cosí la pulizia
+	 viene fatta girare solo sui file "dirty"
+       - ragionare se fare un indice solo con reftime e md5
+
+ - arki-check -r deve chiedere --salvage invece di vomitare in stdout
+ - arki-check: fare un progress report se si esegue interattivo: per file
+   grossi, sta lí a non far niente per un bel po' e ci starebbe almeno sapere
+   che file sta checkando
+ - Controllare che arki-check, in caso di duplicati, tenga l'ultimo e non il primo
+   (non necessariamente è fattibile)
+ - Invalidate dovrebbe funzionare anche se metadata e summary e indice
+   contengono rusco
+ - Fare un invalidate solo per summary e indice
+
+Quando si dà errore [flagfile]: File exists, aggiungere "run arki-check"
+
+Quando arki-check fa il rebuild perde le note, e quindi l'informazione sul file
+originale da cui è stato fatto l'import.  Lí non si può ovviare perché non
+possiamo fidarci dei metadati; è però il caso di segnare "original file name
+lost during dataset rebuild"
+ - importando nel dataset di errore, nell'output di arki-scangrib non si vede l'assegnazione
+
+ + Query con timerange (0, 0h) non dà risultati
+ - Query con reftime esatto sull'estremo di un summary (e un'origin fissata
+   presa dal summary) non dà risultati 
+   (non riesco a riprodurlo: non è che in quel summary c'è piú di un'origin, e
+   si fissa un'origin che non esiste negli estremi?)
+ - I percorsi assoluti dei dataset, quando si estraggono dati, acquisiscono un
+   punto davanti, diventando relativi
+   (non riesco a riprodurlo)
+ - Semplificare le query: se vedi "reftime:" senza sottoespressioni, togliere
+   quel ramo
+ - In arki-query, aggiungere --allok per dire 'si, va bene la query vuota'; e
+   per default, se la query (semplificata) non seleziona niente, rifiutarsi di
+   eseguire
+
+ - Pagine HTML
+    - Elenco dataset con statistiche
+    - Pagina del singolo dataset con statistiche e query (ev. un campo di query
+      per metadato, con esempi di espressioni di match)
+    - Anteprima dei risultati e download dei risultati
+
+ - Verificare che sqlite3 sia opzionale, e se non c'è disabilitiamo
+   semplicemente i dataset indicizzati (ma reader funziona comunque come se non
+   ci fosse l'indice)
+
+ - Chi ha software di postproc
+    - minguzzi estrazione di un parametro
+    - patruno: cong
+
+ + Calcolo della spezzata bounding di un'area dati i metadati
+   Approssimazione per punto e box, usando:
+     latitudeOfFirstGridPointInDegrees
+     longitudeOfFirstGridPointInDegrees
+     latitudeOfLastGridPointInDegrees
+     longitudeOfLastGridPointInDegrees
+
+ - Audio, con arki-query che genera playlist (file:// o http://)
+
+Leggere i grib scritti da meteosatlib (bisogna configurare grib_api per gestire l'origin 200 con le estensioni strane)
+
+Salvare opzionalmente (--stats=file.csv) le statistiche raccolte da
+arki-benchmark in un file csv
+ - statistiche anche replicate per utime, stime e total
+
+
+Sorting metadati all'uscita del DB per ottimizzare l'IO
+
+
+Whenever I do the image indexing experiment, I can use xmlindexer from strigi
+to extract XML metadata; a LUA script to dispatch it to Arkimet metadata, and a
+strigi plugin to connect the arkimet datasets to strigi desktop search (that
+would give a compact, archivable photo archive indexable together with the rest
+of desktop search)
+
+If, during extraction, I sort SQL results by source file, then I can extract
+from inside tarballs or zipfiles, by just caching only the last expanded
+version somewhere during the retrieval
+
+ZIP could use a common dictionary, but it's unknown if any client can do it
+the new google archive format possibly can as well
+
+gzip can use an external dictionary for encoding: in theory, I can do
+compressed archives using an external common dictionary, and then everything
+else is linear streams
+
+squashfs seems to work nicely, but it needs to be tested with lots of BUFR files
+
+Dataset "un file per dato", per dati grandi (e foto)
+
+Fare dataset senza i file .metadata: per esempio, per i BUFR si fa forse prima
+a riestrarli dal bufr che non a leggerli dal metadata.
+ - L'indice sqlite avrebbe poi posizione e offset del dato invece che del
+   metadato
+ - A sto punto, vedere se permettere di disabilitare le query senza indice
+
+Sentire quelli di grib_api se mi fanno un flag "i dati non mi interessano" che
+fa si che la libreria non li legga (forse è già cosí per default).
+
+Usando il Source URL, vedere se guadagnamo gratis l'accesso a NOMADS
+
+arki-server: generazione risultati query usando Source URL
+
+Indice di 2o livello
+ - input: conf di tutti i dataset da indicizzare
+ - ottiene lui i summary
+ - output: conf dei dataset che fanno match (pronta per essere passata ad arki-query)
+
+Manpage 'arkimet' con:
+ - un'introduzione generale
+ - descrizione e puntatori alle manpage dei vari comandi
+ - puntatore alla manpage con la sintassi del matcher
+ - puntatore alla manpage con la sintassi dei file di configurazione e degli
+   alias
+
+ - test che i flagfile vengano creati per bene in caso di problemi
+    - Dopo errore di append a datafile, deve esserci il .appending e non
+      l'index-out-of-sync (??)
+    - Dopo errore in fase di commit al database, deve esserci il
+      index-out-of-sync e nessun appending
+
+Semplificazione di un matcher dato un summary, rimuovendo dagli OR i valori che
+non ci sono nel summary (e saltando la query se una subquery rimane senza
+nessun OR).
+
+Fare un campionario di '1 grib per ogni diverso tipo di livello' / scadenza / ...
+Test dei match sul campionario eseguito con script
+"versionamento file alias" per poter dire "questa procedura richiede il file di
+ alias almeno con versione xxx'
+ "versione 7.2, con gli incrementi alla minor che aggiungono alias nuovi senza
+ cambiare gli esistenti, e gli incrementi alla major che cambiano gli esistenti
+ poi dichiarare la versione richiesta prima di ogni query
+ poi vedere di distribuire file di alias multipli
+alias in or: product:t* diventa product:ta or tb or tc...
+
+GRIB2
+ - Livelli
+ - Scadenze
+ - Usare il tmpfile SOLO se si sta leggendo un multigrib (se è possibile
+   saperlo)
+    - patch a grib_api per sapere se si sta lavorando con un multigrib
+    - patch a grib_api per sapere offset e dimensione del grib nel file
+
+Query "Timerange != da 1,0,0" o "Prodotto != 21"
+
+XGRIB
+ - Alias di xgrib
+    - livelli e scadenze già scaricati (file *memo* in DAT.tar.gz)
+    - bider mi deve dare le variabili
+ - Risentire Minguzzi e Selvini per le loro richieste di aggiunte al linguaggio di
+   xgrib.
+ - Conversione query xgrib
+    * ricerca per:
+       * nome del dataset (obbligatorio)
+       * data di emissione (obbligatorio)
+          * una
+          * una lista di date
+          * tante (data inizio, data fine, step)
+          * una data può essere definita come data o come:
+             * yesterday (+/- nn giorni)
+             * today (+/- nn giorni)
+       * ora di emissione (obbligatorio)
+          * una
+          * una lista
+          * (ora inizio, ora fine, passo in ore)
+       * scadenza (opzionale)
+          * una o piú
+          * wildcard sui mnemonici
+       * livello (opzionale)
+          * uno o piú
+          * wildcard sui mnemonici
+       * variabile e codici estensione local definition (opzionale)
+          * una o piú
+          * wildcard sui mnemonici
+
+Postprocessazione
+
+Indicizzare aree
+ Fare prove con GDAL di intersezioni proiezioni strane
+ (solo per il metaindice: per l'import basta fare match letterale)
+ Scan e match e summary aree
+ - OGRGeometry (da OGR in GDAL) ha metodi tipo intersect (ma vuole libgeos)
+   OGR supporta coordinate ruotate
+   import gdal,ogr
+   a = ogr.osr.SpatialReference()
+   a.SetMercator(0,0,100,0,0)
+   b = ogr.osr.SpatialReference()
+   b.SetPS(0,0,100,0,0)
+   t = ogr.osr.CoordinateTransformation(a,b)
+   t.TransformPoint(10,10)
+   r = ogr.Geometry(ogr.wkbLinearRing)
+   r.AddPoint_2D(10,10)
+   r.AddPoint_2D(10,100)
+   r.AddPoint_2D(100,100)
+   r.AddPoint_2D(100,10)
+   r.CloseRings()
+   r.AssignSpatialReference(a)
+   r.ExportToWkt()
+   r.GetSpatialReference().ExportToWkt()
+   s = r.Clone()
+   s.TransformTo(b)
+   r.Touches(s)
+   r.Intersect(s)
+
+Pensare a "validity time" come reftime + timerange
+
+Compressione archivio
+ Per ogni timestep, salvare non un solo file, ma un file .grib2.sec1, uno
+ .grib2.sec2, uno .grib2.sec3 e cosí via.  Nel file con la sezione coi dati,
+ aggiungere puntatori alle altre sezioni negli altri file.  Le sezioni vengono
+ matchate bit a bit (volendo, velocizzando la cosa usando una cache di CRC per
+ una prima scrematura).
+  - Fare poi un tool che dato un insieme di file, ricostruisce uno stream di
+    GRIB2
+  - A questo punto, nei metadati basta solo salvarsi posizione e offset del
+    blocco dei dati il quale a sua volta punta alle sezioni precedenti
+
+ Eventualmente vedere una compressione stile huffman che scansiona gli header
+ dei dati nell'archivio, trova i macropattern piú frequenti e costruisce un
+ sistema di codifica compresso (salvare poi nel dataset un file .c con il
+ codice per la decodifica)
+
+BUFR
+ - estremi di lat,lon (opzionale)
+ (estrazione dei BUFR dentro a un DB-All.e)
+
+Area ed Ensemble
+  Per l'indice di secondo livello (es. creare WKT delle aree) si fa di nuovo
+   con Lua
+
+Aggiungere agli errori un link al wiki
+ - come lo gestirei io è, se non trova il file puntato dal metadata, di dire
+   "prova a usare l'opzione -i" (questo può andare sul wiki dopo l'errore)
+
+Provare a vedere quanto rallenta in fase di query se tolgo l'indice sqlite e
+ tengo solo i summary (non riesco poi a beccare i duplicati; però posso fare un
+ indice solo degli id, usato solo per beccare i duplicati)
+ Se si forza che la data e il formato sono sempre considerati nella creazione
+ di un id, allora l'indice degli id si può fare uno per ogni file .metadata
+ (gdbm o bdb con id(binario?)->offset nel file metadata).
+ Questo semplifica le cose *parecchio*, e l'indice sqlite si può aggiungere
+ *dopo* (premature optimisation is the root of all evil) se ce n'è veramente
+ bisogno.
+ (sembra peggiorare notevolmente)
+
+ = Nella generazione indici, se un campo unique è anche in index, salvare l'ID
+   del metadato nell'indice di quel metadato invece di tutto il metadato in
+   binario (se poi si fa rebuild dell'index, possono cambiare gli id dei
+   metadati, e si possono quindi creare dataset ID che vanno in conflitto con
+   dati già importati)

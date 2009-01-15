@@ -1,0 +1,166 @@
+#!/usr/bin/python
+
+from subprocess import Popen, PIPE
+import time
+
+# 3 days (query)
+# 2 runs (query)
+# 4 models (datasets)
+# 8 time ranges
+
+class Monitor:
+	RUNS = {
+		 0: "reftime:=today; run:MINUTE,0",
+		12: "reftime:=yesterday; run:MINUTE,12"
+	}
+
+	def __init__(self, name, dataset, run, levels):
+		"""
+		Create a new forecast model monitor.
+
+		Parameters are:
+
+		 * dataset is the name of the dataset to monitor
+		 * run is the run to monitor
+		 * expected is a sequence of couples mapping arkimet timerange
+		   strings with the minimum amount expected.  The order of the
+		   sequence is maintained when reporting which timerange
+		   arrived
+		"""
+		if not run in self.RUNS:
+			raise ValueError("Invalid run: %s.  Valid runs are: %s" \
+				% (run, ", ".join(map(str, self.RUNS.keys()))) )
+		self.name = name
+		self.dataset = dataset
+		self.run = run
+		self.levels = levels
+		self._result = dict()
+
+	def refresh(self):
+		"""
+		Query the dataset again to update the result
+		"""
+		cmd = ["arki-query", "--summary", "--report=mdstats", self.RUNS[self.run], self.dataset]
+		#print "'"+"' '".join(cmd)+"'"
+		proc = Popen(cmd, stdout=PIPE)
+		pipe = proc.stdout
+		self._result = dict()
+		levels = set(self.levels)
+		for line in pipe:
+			line = line.strip()
+			count, mdtype, mddef = line.split(None,2)
+			if mdtype != "timerange:": continue
+			if not mddef in levels: continue
+			self._result[mddef] = count
+		proc.wait()
+
+	
+	def result(self):
+		"""
+		Return the result of the queries.
+		
+		This function returns a list with one element per item passwd
+		to the `expected` argument of the constructor.	Every list item
+		is either None (to mean not enough values have arrived) or the
+		number of items that have arrived.
+		"""
+		for k in self.levels:
+			yield self._result.get(k, None)
+
+class SubMonitor:
+	def __init__(self, monitor, levels):
+		"""
+		Monitor some levels off another monitor
+		"""
+		self.monitor = monitor
+		self.name = monitor.name
+		self.run = monitor.run
+		self.levels = levels
+
+	def result(self):
+		"""
+		Return the result of the queries.
+		
+		This function returns a list with one element per item passwd
+		to the `expected` argument of the constructor.	Every list item
+		is either None (to mean not enough values have arrived) or the
+		number of items that have arrived.
+		"""
+		data = dict(zip(self.monitor.levels, self.monitor.result()))
+		for lev in self.levels:
+			yield data.get(lev, None)
+
+ROOT = 'http://localhost:54321/dataset/'
+#ROOT = '/home/arkimet/root/dataset/'
+LEVELS = [
+	"GRIB1(000, 006h)",
+	"GRIB1(000, 012h)",
+	"GRIB1(000, 018h)",
+	"GRIB1(000, 024h)",
+	"GRIB1(000, 030h)",
+	"GRIB1(000, 036h)",
+	"GRIB1(000, 042h)",
+	"GRIB1(000, 048h)",
+	"GRIB1(000, 054h)",
+	"GRIB1(000, 060h)",
+	"GRIB1(000, 066h)",
+	"GRIB1(000, 072h)",
+]
+D0 = [
+	"GRIB1(000, 006h)",
+	"GRIB1(000, 012h)",
+	"GRIB1(000, 018h)",
+	"GRIB1(000, 024h)",
+]
+D1 = [
+	"GRIB1(000, 030h)",
+	"GRIB1(000, 036h)",
+	"GRIB1(000, 042h)",
+	"GRIB1(000, 048h)",
+]
+D2 = [
+	"GRIB1(000, 054h)",
+	"GRIB1(000, 060h)",
+	"GRIB1(000, 066h)",
+	"GRIB1(000, 072h)",
+]
+
+## Define dataset monitors
+
+# ecmwf  has 3318
+ecmwf_0 = Monitor("ECMWF", ROOT+"eur025", 0, LEVELS)
+ecmwf_12 = Monitor("ECMWF", ROOT+"eur025", 12, LEVELS)
+# cosmoI7  has 43
+cosmoI7_0 = Monitor("CosmoI7", ROOT+"lmsmr4x38", 0, LEVELS)
+cosmoI7_12 = Monitor("CosmoI7", ROOT+"lmsmr4x38", 12, LEVELS)
+# cosmoI2  has 38 (?)
+cosmoI2_0 = Monitor("CosmoI2", ROOT+"lmsmr5136", 0, LEVELS)
+cosmoI2_12 = Monitor("CosmoI2", ROOT+"lmsmr5136", 12, LEVELS)
+# backup  has 80 (?)
+backup_0 = Monitor("Backup", ROOT+"lmsmr3x32", 0, LEVELS)
+backup_12 = Monitor("Backup", ROOT+"lmsmr3x32", 12, LEVELS)
+
+monitors = [ ecmwf_0, ecmwf_12, cosmoI7_0, cosmoI7_12, cosmoI2_0, cosmoI2_12, backup_0, backup_12 ]
+
+## Define selection monitors
+sel_d0 = map(lambda m: SubMonitor(m, D0), monitors)
+sel_d1 = map(lambda m: SubMonitor(m, D1), monitors)
+sel_d2 = map(lambda m: SubMonitor(m, D2), monitors)
+
+while (True):
+	print time.ctime()
+	for m in monitors: m.refresh()
+	print "D"
+	for m in sel_d0:
+		res = "".join(map(lambda x:x and '+' or '-', m.result()))
+		print "  %s run %d: %s" % (m.name, m.run, res)
+	print "D+1"
+	for m in sel_d1:
+		res = "".join(map(lambda x:x and '+' or '-', m.result()))
+		print "  %s run %d: %s" % (m.name, m.run, res)
+	print "D+2"
+	for m in sel_d2:
+		res = "".join(map(lambda x:x and '+' or '-', m.result()))
+		print "  %s run %d: %s" % (m.name, m.run, res)
+	time.sleep(10)
+

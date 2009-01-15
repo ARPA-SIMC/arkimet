@@ -1,0 +1,76 @@
+## Process this file with automake to produce Makefile.in
+
+bin_PROGRAMS = arki-dispatch arki-grep arki-summarise arki-check arki-query arki-dump arki-sort arki-mergeconf arki-benchmark arki-scan arki-sbenchmark
+
+dist_bin_SCRIPTS = arki-server
+
+dist_noinst_HEADERS = bench/benchmark.h
+
+all_libs = ../wibble/libwibble.la $(LIBGRIB_LIBS) $(LIBDBALLEPP_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS)
+
+INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(LIBGRIB_CFLAGS) $(LIBDBALLEPP_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
+
+if GEOS
+all_libs += $(GEOS_LIBS)
+INCLUDES += $(GEOS_CFLAGS)
+endif
+
+# if LIBGRIB
+if CURL
+all_libs += @LIBCURL@
+INCLUDES += @LIBCURL_CPPFLAGS@
+endif
+
+if GRIBAPI
+bin_PROGRAMS += arki-scan-grib
+arki_scan_grib_SOURCES = arki-scan-grib.cc
+arki_scan_grib_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+endif
+
+if READLINE
+bin_PROGRAMS += arki-config
+arki_config_SOURCES = arki-config.cc
+arki_config_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+endif
+
+arki_scan_SOURCES = arki-scan.cc
+arki_scan_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_benchmark_SOURCES = arki-benchmark.cc bench/benchmark.cc
+arki_benchmark_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_sbenchmark_SOURCES = arki-sbenchmark.cc bench/benchmark.cc
+arki_sbenchmark_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_dispatch_SOURCES = arki-dispatch.cc
+arki_dispatch_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_grep_SOURCES = arki-grep.cc
+arki_grep_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_mergeconf_SOURCES = arki-mergeconf.cc
+arki_mergeconf_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_query_SOURCES = arki-query.cc
+arki_query_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_summarise_SOURCES = arki-summarise.cc
+arki_summarise_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_check_SOURCES = arki-check.cc
+arki_check_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_dump_SOURCES = arki-dump.cc
+arki_dump_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+arki_sort_SOURCES = arki-sort.cc
+arki_sort_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+
+TESTS = test-arki-server run-test-src
+check_PROGRAMS = test-src
+test_src_SOURCES = \
+		arki-server-tut.cc \
+		../arki/tests/tut-main.cpp
+test_src_LDADD = ../arki/libarkimet.la $(all_libs)
+
+EXTRA_DIST=testlib.sh test-arki-server run-test-src

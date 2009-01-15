@@ -1,0 +1,37 @@
+#!/usr/bin/lua
+
+Report = {
+    -- Table where we store all the items we find, and the number of times we
+    -- found them
+    datasets = {},
+
+    -- Process a metadata item
+    readMetadata = function (self, md)
+        dsname = md.assigneddataset()
+        if dsname ~= nil then
+            dsname = dsname.name()
+            if dsname ~= nil then
+                count = self.datasets[dsname] or 0
+                self.datasets[dsname] = count + 1
+            end
+        end
+    end,
+
+    -- Process a summary
+    readSummary = function (self, s)
+        -- Summaries have no dataset information
+    end,
+
+    -- Produce the final report
+    report = function (self)
+        keys = {}
+        for k in pairs(self.datasets) do
+            table.insert(keys, k)
+        end
+        table.sort(keys)
+
+        for i, k in pairs(keys) do
+            print (self.datasets[k], k)
+        end
+    end
+}

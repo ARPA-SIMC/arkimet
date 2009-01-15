@@ -1,0 +1,5 @@
+type = test
+step = daily
+filter = origin: GRIB1,80
+index = origin, reftime
+postprocess = cat

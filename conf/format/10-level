@@ -1,0 +1,10 @@
+-- Format a level: return a string, or nil to fall back to the default
+-- formatter
+function fmt_level(v)
+	if v.style() == "GRIB1" then
+		type, l1, l2 = v.grib1()
+		return nil
+	else
+		return nil
+	end
+end

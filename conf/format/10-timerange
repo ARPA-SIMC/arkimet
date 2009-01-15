@@ -1,0 +1,10 @@
+-- Format an origin: return a string, or nil to fall back to the default
+-- formatter
+function fmt_timerange(v)
+	if v.style() == "GRIB" then
+		type, unit, p1, p2 = v.grib()
+		return nil
+	else
+		return nil
+	end
+end

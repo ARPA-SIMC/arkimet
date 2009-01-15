@@ -1,0 +1,4 @@
+type = test
+step = daily
+filter = origin: GRIB1,200
+index = origin, reftime

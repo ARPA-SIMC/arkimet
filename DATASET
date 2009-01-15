@@ -1,0 +1,50 @@
+Example configurations per type of dataset:
+
+local
+	[name]
+	type = local
+	step = daily
+	filter = origin: GRIB1,200
+	unique = origin, reftime, area
+	index = origin, reftime
+
+error
+	[error]
+	type = error
+	step = daily
+
+duplicates
+	[duplicates]
+	type = duplicates
+	step = daily
+
+remote
+	[remote]
+	type = remote
+	path = http://localhost:8080
+	
+outbound
+	[name]
+	type = local
+	step = daily
+	filter = origin: GRIB1,200
+
+Configuration file options:
+	type = local | remote | error | duplicates
+	  type of the dataset
+	name = string
+	  name of the dataset
+	step = daily | weekly | biweekly | monthly | yearly
+	  setp used to create new data files
+	filter = arkimet match expression
+	  expression matching the data that goes in this dataset
+	unique = origin, reftime, area, ...
+	  what selection of metadata elements makes one datum unique inside the
+	  dataset
+	index = origin, reftime, area, ...
+	  what metadata elements are indexed for fast query access
+	replace = true | false
+	  what to do when inserting a data that is already in the dataset:
+	  true: replace it; false: reject it.
+	postprocess = list of allowed postprocessors
+	  what postprocessors can be used in this dataset

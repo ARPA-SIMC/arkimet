@@ -1,0 +1,21 @@
+#!/usr/bin/lua
+
+Report = {
+    -- Count of items
+    count = 0,
+
+    -- Process a metadata item
+    readMetadata = function (self, md)
+    	self.count = self.count + 1
+    end,
+
+    -- Process a summary
+    readSummary = function (self, s)
+    	self.count = self.count + s.count()
+    end,
+
+    -- Produce the final report
+    report = function (self)
+        print(self.count)
+    end
+}

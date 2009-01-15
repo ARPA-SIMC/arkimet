@@ -1,0 +1,142 @@
+#!/usr/bin/python
+
+ARKI_QUERY="arki-query"
+ARKI_DUMP="arki-dump"
+
+from optparse import OptionParser
+import sys
+
+VERSION="0.1"
+
+# Parser for command line
+class Parser(OptionParser):
+    def __init__(self, *args, **kwargs):
+        OptionParser.__init__(self, *args, **kwargs)
+
+    def error(self, msg):
+        sys.stderr.write("%s: error: %s\n\n" % (self.get_prog_name(), msg))
+        self.print_help(sys.stderr)
+        sys.exit(2)
+
+parser = Parser(usage="usage: %prog configfile [options]",
+                version="%prog "+ VERSION,
+                description="Start the arkimet server, serving the datasets found in the configuration file")
+parser.add_option("-p", "--port", type="int", help="port to listen to.  Default: %default")
+parser.set_defaults(port = 8080)
+
+(options, args) = parser.parse_args()
+
+
+# Read configuration
+import sys
+from configobj import ConfigObj
+if len(args) == 0:
+    print >>sys.stderr, "Usage:", sys.argv[0], "config"
+    parser.print_help(sys.stderr)
+    sys.exit(1)
+configpath = args[0]
+config = ConfigObj(configpath, list_values = False)
+
+
+import cherrypy
+import os
+#import subprocess
+
+class ArkiDownload:
+    def __init__(self, conf):
+        self.conf = conf
+
+    #@cherrypy.expose
+    def summary(self, dataset):
+        """
+        Download the summary of a dataset
+        """
+        cherrypy.response.headerMap["Content-Type"] = "application/octet-stream"
+        cherrypy.response.headerMap["Content-Disposition"] = "attachment; filename=%s.summary" % dataset
+        root = self.conf[dataset]['path']
+        return open(root + "/summary").read()
+    summary.exposed = True
+
+    #@cherrypy.expose
+    def query(self, dataset=None, **kw):
+        """
+        Download the results of a query
+        """
+        # http://www.cherrypy.org/wiki/FileDownload
+        args = [ARKI_QUERY]
+        if bool(kw.get("inline", False)):
+            args.append('--inline')
+        args.append(configpath)
+        args.append(kw.get("query", ""))
+
+        #import sys
+        #print >>sys.stderr, ", ".join(["%s->%s"%(a,b) for a,b in kw.iteritems()])
+        #print >>sys.stderr, kw.get("inline", "NOPE"), kw.get("query", "NOPE")
+
+        cherrypy.response.headerMap["Content-Type"] = "application/octet-stream"
+        cherrypy.response.headerMap["Content-Disposition"] = "attachment; filename=results.arkimet"
+        return os.popen(" ".join(args), "r")
+    query.exposed = True
+
+class ArkiServer:
+    def __init__(self, conf):
+        self.conf = conf
+        self.download = ArkiDownload(conf)
+
+    #@cherrypy.expose
+    def index(self):
+        """
+        Show a list of all available datasets
+        """
+        res = """<html><body>
+        Available datasets:
+        <ul>
+        """
+        for dsname in self.conf.sections:
+            res += "<li><a href='/dataset/%s'>%s</a></li>\n" % (dsname, dsname)
+        res += """</ul>
+        <a href="/query">Perform a query</a>
+        </body></html>
+        """
+        return res
+    index.exposed = True
+
+    #@cherrypy.expose
+    def query(self):
+        """
+        Show a form to query the datasets
+        """
+        return """<html><body>
+        Please type or paste your query and press submit:
+        <form action="/download/query">
+        <textarea name="query" cols="80" rows="15">
+        </textarea>
+        <br/>
+        <input type="submit">
+        </form>
+        </body>
+        </html>
+        """
+    query.exposed = True
+
+    #@cherrypy.expose
+    def dataset(self, name):
+        """
+        Show the summary of a dataset
+        """
+        root = self.conf[name]['path']
+        #proc = subprocess.Popen((ARKI_DUMP, root + "/summary"), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        def result(output, name=name):
+            yield "<html><body>Summary of dataset <b>%s</b>:<pre>" % name
+            for x in output: yield x
+            yield "</pre><a href='/'>All datasets</a> <a href='/download/summary/%s'>Download</a></body></html>" % name
+
+        return result(os.popen(ARKI_DUMP + " " + root + "/summary", "r"))
+        #return result(proc.stdout)
+    dataset.exposed = True
+
+
+cherrypy.config.update({"server.socket_port": options.port})
+#cherrypy.root = ArkiServer(config)
+#cherrypy.server.start()
+cherrypy.quickstart(ArkiServer(config))

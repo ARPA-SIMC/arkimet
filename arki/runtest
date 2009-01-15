@@ -1,0 +1,65 @@
+#!/bin/sh -e
+
+TOP_SRCDIR=`pwd`/`dirname $0`/..
+
+CMD=`pwd`/"$1"
+
+## Set up the test environment
+
+export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
+export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
+export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
+export ARKI_POSTPROC=./postproc
+
+TESTDIR="`mktemp -d`"
+cd "$TESTDIR"
+
+mkdir inbound
+# Put data in test inbound area
+cp -a "$TOP_SRCDIR/test/data/"* inbound/
+cp -a "$TOP_SRCDIR/test/postproc" ./
+cp -a "$TOP_SRCDIR/test/misc" ./
+# Create test dataset directories
+mkdir test200
+mkdir test80
+mkdir error
+#cp "$TOP_SRCDIR/ept/tests/testdata/"* .
+#mv vocabulary test.voc
+#mv package-tags test.tag
+#mkdir empty
+
+## Clean up the test environment at exit unless asked otherwise
+cleanup() {
+	test -z "$PRESERVE" && rm -rf "$TESTDIR"
+}
+trap cleanup EXIT
+
+## Run the tests
+
+#id=`date +%y%m%d%H%M%S`
+#$DEBUGGER $BIN $ARGS 2>&1 | tee `pwd`/testrun-$id
+#echo Output saved in `pwd`/testrun-$id
+
+# Try to debug the libtool executable, if present
+DIR=`dirname $CMD`
+BASE=`basename $CMD`
+if [ ! -z "$DEBUGGER" ] && [ -x $DIR/.libs/lt-$BASE ]
+then
+	echo "Running $DEBUGGER $DIR/.libs/lt-$BASE $ARGS"
+	$DEBUGGER $DIR/.libs/lt-$BASE $ARGS
+	RES=$?
+else
+	echo "Running $DEBUGGER $CMD $ARGS"
+	$DEBUGGER $CMD $ARGS
+	RES=$?
+fi
+
+
+if [ ! -z "$PAUSE" ]
+then
+	echo "Post-test inspection requested."
+	echo "Exit this shell to cleanup the test environment."
+	bash
+fi
+
+exit $RES

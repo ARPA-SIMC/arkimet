@@ -1,0 +1,107 @@
+arkimet (0.14-1) UNRELEASED; urgency=low
+
+  * Attempted to fix sqlite locking problems
+  * Added arki-config, with a dataset configuration wizard
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 06 Jan 2009 20:44:51 +0000
+
+arkimet (0.12-1) UNRELEASED; urgency=low
+
+  * Fixed file descriptor leak in sqlite indices
+  * Fetch the data earlier in the dispatch process, to prevent errors in
+    critical sections of the code
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 26 Nov 2008 16:39:06 +0000
+
+arkimet (0.11-1) UNRELEASED; urgency=low
+
+  * Implemented arki-scan --testdispatch
+  * Implemented arki-check --remove
+  * Assorted code cleanup
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 25 Nov 2008 20:56:48 +0000
+
+arkimet (0.10-1) UNRELEASED; urgency=low
+
+  * Lua error messages now point to the source file
+  * arki-mergeconf validates filter syntax
+  * arki-scan prints source file information for filter errors
+  * Implemented repository locking
+  * Improved build dependencies for etch
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 19 Nov 2008 15:06:33 +0000
+
+arkimet (0.9-1) UNRELEASED; urgency=low
+
+  * Fixed filtering of summaries
+  * Time ranges for GRIB1 have non-negative P1 and P2
+  * Added "count" and "datasets" reports
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 15 Oct 2008 18:06:07 +0200
+
+arkimet (0.8-1) UNRELEASED; urgency=low
+
+  * New upstream release
+     - levels and time ranges for GRIB2
+     - scanning rules for GRIB2
+     - fixed inline metadata queries
+     - fixed parsing and serialisation of time range and reftime queries
+     - better logging in arki-server
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 03 Sep 2008 17:26:03 +0200
+
+arkimet (0.7-1) UNRELEASED; urgency=low
+
+  * New upstream release
+     - changed the format of the summaries to be much faster
+
+ -- Enrico Zini <enrico@debian.org>  Fri, 15 Aug 2008 12:14:46 +0100
+
+arkimet (0.6-1) UNRELEASED; urgency=low
+
+  * New upstream release
+     - arki-query --sort
+     - arki-scan --movework
+  * Added init.d scripts and logrotate configuration to optionally manage
+    arki-server
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 13 Aug 2008 12:03:54 +0100
+
+arkimet (0.5-1) UNRELEASED; urgency=low
+
+  * New upstream release
+     - arki-query --merged
+     - experimental dataset monitoring: arki-monitor
+     - added 'run' metadata type
+     - faster dataset scan by matching file names for reftime info
+     - access datasets by URL
+     - arki-scan --moveok --moveko
+
+ -- Enrico Zini <enrico@debian.org>  Wed,  6 Aug 2008 15:39:55 +0200
+
+arkimet (0.4-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+     - arki-query syntax has changed
+     - allows to use normal file with arki-query as if they were datasets
+     - arki-scan-bufr became the generic scanner arki-scan
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 19 Jun 2008 15:23:27 +0100
+
+arkimet (0.3-1) UNRELEASED; urgency=low
+
+  * New upstream release
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 27 May 2008 16:38:42 +0100
+
+arkimet (0.2-1) UNRELEASED; urgency=low
+
+  * New upstream version.  Dataset on-disk layout has changed.
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 09 Jan 2008 19:12:00 +0800
+
+arkimet (0.1-1) UNRELEASED; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 04 Jul 2007 11:44:22 +0100

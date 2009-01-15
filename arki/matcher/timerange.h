@@ -1,0 +1,77 @@
+#ifndef ARKI_MATCHER_TIMERANGE
+#define ARKI_MATCHER_TIMERANGE
+
+/*
+ * matcher/timerange - Timerange matcher
+ *
+ * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Author: Enrico Zini <enrico@enricozini.com>
+ */
+
+#include <arki/matcher.h>
+#include <arki/types/timerange.h>
+
+namespace arki {
+namespace matcher {
+
+/**
+ * Match Timeranges
+ *
+ * Syntax: GRIB,1,0,0 or GRIB,1 or GRIB,1,, instant
+ *         GRIB,2,0,3h forecast next 3 hours
+ *         GRIB,3 any average
+ */
+struct MatchTimerange : public Implementation
+{
+	//MatchType type() const { return MATCH_TIMERANGE; }
+	std::string name() const;
+
+	static MatchTimerange* parse(const std::string& pattern);
+};
+
+struct MatchTimerangeGRIB1 : public MatchTimerange
+{
+	bool matchType, matchBody;
+	types::timerange::GRIB1::Unit unit;
+	int ptype, p1, p2;
+
+	MatchTimerangeGRIB1(const std::string& pattern);
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+
+private:
+	int parseInterval(const std::string& str, types::timerange::GRIB1::Unit& u);
+};
+
+struct MatchTimerangeGRIB2 : public MatchTimerange
+{
+	int type;
+	int unit;
+	int p1;
+	int p2;
+
+	MatchTimerangeGRIB2(const std::string& pattern);
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+};
+
+}
+}
+
+// vim:set ts=4 sw=4:
+#endif

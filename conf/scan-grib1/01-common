@@ -1,0 +1,77 @@
+-- Reference time
+arki.year = (grib.centuryOfReferenceTimeOfData - 1) * 100 + grib.yearOfCentury
+arki.month = grib.month
+arki.day = grib.day
+arki.hour = grib.hour
+arki.minute = grib.minute
+arki.second = grib.second
+
+-- Run
+arki.run_hour = grib.hour
+arki.run_minute = grib.minute
+
+-- Origin
+arki.centre = grib.identificationOfOriginatingGeneratingCentre
+arki.subcentre = grib.identificationOfOriginatingGeneratingSubCentre
+arki.process = grib.generatingProcessIdentifier
+
+-- Product
+arki.origin = grib.identificationOfOriginatingGeneratingCentre
+arki.table = grib.gribTablesVersionNo
+arki.product = grib.indicatorOfParameter
+
+-- Level
+arki.ltype = grib.indicatorOfTypeOfLevel
+if grib.level
+then
+	arki.l1 = grib.level
+	arki.l2 = nil
+else
+	arki.l1 = grib.topLevel
+	arki.l2 = grib.bottomLevel
+end
+
+-- Time range
+arki.ptype = grib.timeRangeIndicator
+arki.punit = grib.indicatorOfUnitOfTimeRange
+arki.p1 = grib.P1
+arki.p2 = grib.P2
+
+-- Area
+arki.area.type = grib.dataRepresentationType
+arki.area.latfirst = grib.latitudeOfFirstGridPoint
+arki.area.lonfirst = grib.longitudeOfFirstGridPoint
+
+if grib.numberOfPointsAlongAParallel then
+	arki.area.Ni = grib.numberOfPointsAlongAParallel
+	arki.area.Nj = grib.numberOfPointsAlongAMeridian
+	arki.area.latlast = grib.latitudeOfLastGridPoint
+	arki.area.lonlast = grib.longitudeOfLastGridPoint
+end
+if grib.numberOfPointsAlongXAxis then
+	arki.area.Ni = grib.numberOfPointsAlongXAxis
+	arki.area.Nj = grib.numberOfPointsAlongYAxis
+end
+
+-- Bounding box
+if grib.latitudeOfFirstGridPointInDegrees ~= nil then
+	arki.latmin = grib.latitudeOfFirstGridPointInDegrees
+	arki.latmax = grib.latitudeOfLastGridPointInDegrees
+	arki.lonmin = grib.longitudeOfFirstGridPointInDegrees
+	arki.lonmax = grib.longitudeOfLastGridPointInDegrees
+end
+
+-- Ensemble
+if grib.localDefinitionNumber then
+        arki.ensemble.ld = grib.localDefinitionNumber
+        arki.ensemble.mt = grib.marsType
+        if grib.clusterNumber then
+                arki.ensemble.nn = grib.clusterNumber
+        end
+        if grib.forecastProbabilityNumber then
+                arki.ensemble.nn = grib.forecastProbabilityNumber
+        end
+        if grib.perturbationNumber then
+                arki.ensemble.nn = grib.perturbationNumber
+        end
+end

@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/autotools.mk
+
+DEB_MAKE_CHECK_TARGET := check
+#DEB_CONFIGURE_EXTRA_FLAGS += --disable-shared --with-pic
+#DEB_CONFIGURE_EXTRA_FLAGS += --enable-db-tests
+
+install/arkimet::
+	install -m 0644 -o root -g root debian/arki-server-defaults debian/$(cdbs_curpkg)/etc/default/arki-server
+
+# Store build information
+common-binary-post-install-arch common-binary-post-install-indep::
+	dh_buildinfo

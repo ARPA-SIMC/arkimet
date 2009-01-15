@@ -1,0 +1,16 @@
+/var/log/arkimet/*.log {
+	weekly
+	missingok
+	rotate 52
+	compress
+	delaycompress
+	notifempty
+	create
+	sharedscripts
+	prerotate
+		/etc/init.d/arkimet stop > /dev/null
+	endscript
+	postrotate
+		/etc/init.d/arkimet start > /dev/null
+	endscript
+}

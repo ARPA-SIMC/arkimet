@@ -1,0 +1,16 @@
+-- Format a product: return a string, or nil to fall back to the default
+-- formatter
+function fmt_product(v)
+	if v.style() == "GRIB1" then
+		origin, table, product = v.grib1()
+		names = read_grib_table(1, string.format("2.%d.%d", origin, table))
+		if names[product] then
+			return names:desc(product)
+		end
+	elseif v.style() == "GRIB2" then
+		centre, discipline, category, number = v.grib2()
+	elseif v.style() == "BUFR" then
+		type, subtype, localsubtype = v.bufr()
+	end
+	return nil
+end

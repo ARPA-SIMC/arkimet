@@ -1,0 +1,35 @@
+DESCRIPTION end
+|\fBarki-config\fP is an interactive, text-mode program that helps with editing
+|the configuration of an ArkiMet dataset.
+|.br
+|You can invoke it without parameters, and it will edit the configuration of
+|the dataset in the current directory, or you can point it to a dataset
+|directory or to a dataset configuration file.
+
+OPTIONS end
+|.SH EXAMPLES
+|Here are some example invocations of \fBarki-config\fP:
+|.P
+|.nf
+|  # Create a new arkimet setup...
+|
+|  # ...error dataset...
+|  mkdir error
+|  arki-config error
+|
+|  # ...dataset for the duplicate values...
+|  mkdir duplicates
+|  arki-config duplicates
+|
+|  # ...my other datasets...
+|  mkdir mydataset
+|  arki-config mydataset
+|
+|  # ...done!
+|  arki-mergeconf error duplicates mydataset > all.conf
+|  arki-scan --dispatch=all.conf myfile.grib
+|  arki-server all.conf
+|.fi
+|
+|.SH SEE ALSO
+|.BR arki-mergeconf (1), arki-scan (1), arki-server (1)

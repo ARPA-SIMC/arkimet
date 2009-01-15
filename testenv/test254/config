@@ -1,0 +1,5 @@
+type = test
+step = daily
+filter = origin: BUFR,254
+index = origin, reftime
+postprocess = cat

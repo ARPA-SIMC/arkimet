@@ -1,0 +1,19 @@
+Incompatible changes between 0.1 and 0.2
+
+ - the metadata file is called datetime.format.metadata instead of
+   datetime.metadata: the datasets need to be regenerated using 
+   ??? (the tool needs to be written)
+ 
+ - the summary file format has changed, they need to be regenerated as well (it
+   will be covered by the procedure above, however)
+
+ - the introduction of (??? tool to produce are abounding boxes) may show that
+   previously mined metadata for areas is incomplete, and requre changing the
+   scan configuration files and therefore a dataset rebuild (covered by the
+   procedure above, too)
+
+While we upgrade:
+ - implement one summary per file
+ - implement the area interpreter, so we can check that the arki-scan-grib
+   conffiles are giving us enough info; otherwise, we regenerate the datasets
+   for that, too

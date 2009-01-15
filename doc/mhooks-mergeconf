@@ -1,0 +1,17 @@
+DESCRIPTION end
+|\fBarki-mergeconf\fP merges different dataset configurations into a single
+|config file.
+
+OPTIONS end
+|.SH EXAMPLES
+|Here are some example invocations of \fBarki-mergeconf\fP:
+|.P
+|.nf
+|  # Merge the configuration of various datasets in a single file
+|  arki-mergeconf /srv/archives/datasets/* > dispatch.conf
+|  # Or, similarly:
+|  arki-mergeconf -o dispatch.conf /srv/archives/datasets/*
+|.fi
+|
+|.SH SEE ALSO
+|.BR arki-query (1)

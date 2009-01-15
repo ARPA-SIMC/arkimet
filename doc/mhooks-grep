@@ -1,0 +1,23 @@
+DESCRIPTION end
+|\fBarki-grep\fP reads a stream of metadata and outputs only those items that
+|match a given expression.
+|.P
+|The syntax of the match expression is the same as \fBarki-query\fP and is
+|documented in \fI/usr/share/doc/arkimet/MATCHER\fP.
+
+OPTIONS end
+|.SH EXAMPLES
+|Here are some example invocations of \fBarki-dump\fP:
+|.P
+|.nf
+|  # Filter a file containing many grib messages
+|  arki-scan-grib *.grib | arki-grep --data 'origin:200' > filtered.grib
+|.fi
+|
+|.SH SEE ALSO
+|.BR arki-dump (1),
+|.BR arki-query (1),
+|.BR arki-scan-grib (1),
+|.BR arki-scan-bufr (1),
+|.br
+|.BR /usr/share/doc/arkimet/MATCHER

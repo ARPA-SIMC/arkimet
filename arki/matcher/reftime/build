@@ -1,0 +1,3 @@
+bison reftime.yy
+flex reftime.ll
+g++ -Wall -I../../.. -o reftime lex.arki_reftime.c reftime.tab.cc main.cc ../../../wibble/.libs/libwibble.a

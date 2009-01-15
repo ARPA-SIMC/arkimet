@@ -1,0 +1,23 @@
+-- Load code table 0: Identification of centers
+grib1_centres = read_grib_table(1, "0")
+
+-- This is how to make a local change to the table
+grib1_centres[200] = { "arpa", "ARPA SIM Emilia Romagna" }
+
+-- Format an origin: return a string, or nil to fall back to the default
+-- formatter
+function fmt_origin(v)
+	if v.style() == "GRIB1" then
+		centre, subcentre, process = v.grib1()
+		return string.format("GRIB1 from %s, subcentre %d, process %d",
+			grib1_centres:desc(centre), subcentre, process)
+	elseif v.style() == "GRIB2" then
+		centre, subcentre, processtype, bgprocessid, processid = v.grib2()
+		return nil
+	elseif v.style() == "BUFR" then
+		centre, subcentre = v.bufr()
+		return nil
+	else
+		return nil
+	end
+end

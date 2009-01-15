@@ -1,0 +1,47 @@
+#!/bin/sh -e
+
+. testlib.sh
+
+if [ $# == 0 ]
+then
+    setup
+
+    importtest
+
+    cat << EOF > cpconfig
+[global]
+server.log_to_screen = False
+server.log_file = "arki-server.log"
+EOF
+
+    arki-server -p 7117 --cpconfig=cpconfig --runtest="$BINDIR/$0 run" conf
+
+    endtest
+elif [ $1 == 'run' ]
+then
+    BASEURL=http://localhost:7117
+
+    echo -n "Testing arki-server "
+
+    # Get the config
+    runtest "curl -s $BASEURL/config > serverconfig"
+    runtest "grep -q 'test200' serverconfig"
+    runtest "grep -q 'test80' serverconfig"
+    runtest "grep -q 'error' serverconfig"
+    runtest "grep -q 'path *= *http://' serverconfig"
+
+    # Get the summary from all datasets
+    runtest "curl -s $BASEURL/dataset/test200/summary | head -c 2 | grep -q ^SU"
+    runtest "curl -s $BASEURL/dataset/test80/summary | arki-dump --yaml >tmpfile && grep -q SummaryItem tmpfile"
+    runtest "curl -s $BASEURL/dataset/error/summary | arki-dump --yaml >tmpfile && grep -q SummaryItem tmpfile"
+
+    # Try a normal query
+    runtest "curl -s $BASEURL/dataset/error/query | arki-dump --yaml >tmpfile && grep -q ^Origin tmpfile"
+    runtest "curl -d query=origin:GRIB1,200 -s $BASEURL/dataset/test200/query | arki-dump --yaml | testnonempty"
+    runtest "curl -d query=origin:GRIB1,80 -s $BASEURL/dataset/test200/query | arki-dump --yaml | testempty"
+    runtest "curl -d style=postprocess -d command='say ciao' -s $BASEURL/dataset/test200/query | testequals 'ciao'"
+
+    testtotals
+
+    exit $BADCOUNT
+fi

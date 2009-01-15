@@ -1,0 +1,55 @@
+--[[
+Read a grib table.
+
+edition is the GRIB edition: 1 or 2
+
+table is the table name, for example "0.0"
+
+Returns a table where the index maps to a couple { abbreviation, description },
+or nil if the file had no such entry.
+
+For convenience, the table has also two functions, 'abbr' and 'desc', that
+return the abbreviation or the description, falling back on returning the table
+index if they are not available.
+
+For example:
+
+origins = read_grib_table(1, "0")
+print(origins:abbr(98))  -- Prints 'ecmf'
+print(origins:desc(98))  -- Prints 'European Center for Medium-Range Weather Forecasts'
+print(origins:abbr(999)) -- Prints '999'
+print(origins:desc(999)) -- Prints '999'
+--]]
+
+function read_grib_table(edition, table)
+  -- Initial table, with extra accessor methods
+  res = {
+    abbr = function(self, val)
+             if self[val] == nil then
+               return val
+             else
+               return self[val][1]
+             end
+           end,
+    desc = function(self, val)
+             if self[val] == nil then
+               return val
+             else
+               return self[val][2]
+             end
+           end,
+  }
+  	 
+  -- Build the file name
+  file = GRIBAPI_DEF_DIR .. "/grib" .. edition .. "/" .. table .. ".table"
+  valid = pcall(function()
+    for line in io.lines(file) do
+      idx, abbr, desc = string.match(line, "^%s*(%d+)%s+([^%s]+)%s+(.-)%s*$")
+      if idx ~= nil then
+        res[tonumber(idx)] = { abbr, desc }
+      end
+    end
+  end)
+
+  return res
+end

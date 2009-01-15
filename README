@@ -1,0 +1,34 @@
+# Scan an input file
+src/scan-grib data/SAF_MSGEURO_CRR_20051205_0615.grb > test.md
+
+# Dispatch a series of gribs given their metadata
+src/store-grib -o testarc -s data test.md
+
+Dependencies:
+
+ libgrib-api-dev
+   (optional, for importing grib1 and grib2)
+ liblua-dev
+   (optional, for importing grib1 and grib2)
+ libdballepp-dev
+   (optional, for importing bufr)
+ libsqlite3-dev
+   (mandatory, for the dataset indices)
+ libcurl[...]-dev
+   (optional, for querying remote datasets)
+ python, python-configobj, python-cherrypy
+   (optional, for the server.  I test in python 2.4, not sure if it would work
+   in 2.3, most likely not as I use subprocess)
+
+To pull in the embedded wibble, use this command:
+
+ darcs init
+ darcs pull -a http://people.debian.org/~enrico/wibble/embeddable
+
+ Then just 'darcs pull' will get the new updates of wibble
+
+If you don't have darcs, run this instead:
+
+ wget http://people.debian.org/~enrico/wibble/embeddable/wibble.tar.gz
+ tar zxf wibble.tar.gz
+ mv wibble/wibble/* wibble/
