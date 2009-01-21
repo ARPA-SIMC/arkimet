@@ -77,10 +77,10 @@ dist_noinst_HEADERS = \
 		tests/test-utils.h \
 		tests/metadata.h
 
-BUILT_SOURCES = matcher/reftime/reftime-lex.h \
-		matcher/reftime/reftime-lex.cc \
-		matcher/reftime/reftime-parse.h \
-		matcher/reftime/reftime-parse.cc
+BUILT_SOURCES = $(builddir)/matcher/reftime/reftime-lex.h \
+		$(builddir)/matcher/reftime/reftime-lex.cc \
+		$(builddir)/matcher/reftime/reftime-parse.h \
+		$(builddir)/matcher/reftime/reftime-parse.cc
 
 $(builddir)/matcher/reftime/reftime-lex.h $(builddir)/matcher/reftime/reftime-lex.cc: $(srcdir)/matcher/reftime/reftime-lex.ll
 	$(srcdir)/buildflex $<
