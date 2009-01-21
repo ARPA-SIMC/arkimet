@@ -91,7 +91,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
-
  - Bounding box
     - Coordinate ruotate
  - arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
@@ -284,10 +283,11 @@ Usando il Source URL, vedere se guadagnamo gratis l'accesso a NOMADS
 
 arki-server: generazione risultati query usando Source URL
 
-Indice di 2o livello
+Catalogo di 2o livello
  - input: conf di tutti i dataset da indicizzare
  - ottiene lui i summary
  - output: conf dei dataset che fanno match (pronta per essere passata ad arki-query)
+ - estrazione summary da mars
 
 Manpage 'arkimet' con:
  - un'introduzione generale
