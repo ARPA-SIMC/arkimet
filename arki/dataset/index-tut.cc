@@ -31,6 +31,9 @@
 #include <arki/configfile.h>
 #include <arki/matcher.h>
 
+#include <wibble/sys/childprocess.h>
+#include <wibble/sys/mutex.h>
+
 #include <memory>
 #include <sstream>
 #include <fstream>
@@ -38,6 +41,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble;
 using namespace arki;
 using namespace arki::dataset;
 using namespace arki::types;
@@ -220,6 +224,103 @@ void to::test<2>()
 	ensure_equals(test->id(mdc[0]), id1);
 
 	p.commit();
+}
+
+struct ReadHang : public sys::ChildProcess, public MetadataConsumer
+{
+	ConfigFile cfg;
+	int commfd;
+
+	ReadHang(const std::string& cfgstr)
+	{
+		stringstream confstream(cfgstr);
+		cfg.parse(confstream, "(memory)");
+	}
+
+	virtual bool operator()(Metadata& md)
+	{
+		cout << "H" << endl;
+		while (true)
+			sleep(100);
+		return true;
+	}
+
+	virtual int main()
+	{
+		try {
+			DSIndex idx(cfg);
+			idx.open();
+			idx.query(Matcher::parse("origin:GRIB1"), *this);
+		} catch (std::exception& e) {
+			cerr << e.what() << endl;
+			cout << "E" << endl;
+			return 1;
+		}
+		return 0;
+	}
+
+	void start()
+	{
+		forkAndRedirect(0, &commfd);
+	}
+
+	char waitUntilHung()
+	{
+		char buf[2];
+		if (read(commfd, buf, 1) != 1)
+			throw wibble::exception::System("reading 1 byte from child process");
+		return buf[0];
+	}
+};
+
+// Test concurrent read and update
+template<> template<>
+void to::test<3>()
+{
+	string cfg = 
+		"type = test\n"
+		"path = .\n"
+		"indexfile = file1\n"
+		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+		"index = origin, product, level, timerange, area, ensemble, reftime\n";
+
+	// Create the index and index two metadata
+	{
+		auto_ptr<DSIndex> test1 = createIndex(cfg);
+		test1->open();
+
+		Pending p = test1->beginTransaction();
+		test1->index(md, "test-md", 0);
+		test1->index(md1, "test-md1", 0);
+		p.commit();
+	}
+
+	// Query the index and hang
+	ReadHang readHang(cfg);
+	readHang.start();
+	ensure_equals(readHang.waitUntilHung(), 'H');
+
+	// Now try to index another element
+	Metadata md3;
+	md3.create();
+	md3.source = source::Blob::create("grib", "antani3", 10, 2000);
+	md3.set(origin::GRIB1::create(202, 12, 102));
+	md3.set(product::GRIB1::create(3, 4, 5));
+	md3.set(level::GRIB1::create(1, 2));
+	md3.set(timerange::GRIB1::create(4, 5, 6, 7));
+	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
+	md3.set(area::GRIB::create(testArea));
+	md3.set(ensemble::GRIB::create(testEnsemble));
+	md3.notes.push_back(types::Note::create("this is a test"));
+	{
+		auto_ptr<DSIndex> test1 = createIndex(cfg);
+		test1->open();
+		Pending p = test1->beginTransaction();
+		test1->index(md3, "test-md1", 0);
+		p.commit();
+	}
+
+	readHang.kill(9);
 }
 
 }
