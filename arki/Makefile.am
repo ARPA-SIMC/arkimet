@@ -77,15 +77,15 @@ dist_noinst_HEADERS = \
 		tests/test-utils.h \
 		tests/metadata.h
 
-BUILT_SOURCES = $(builddir)/matcher/reftime/reftime-lex.h \
-		$(builddir)/matcher/reftime/reftime-lex.cc \
-		$(builddir)/matcher/reftime/reftime-parse.h \
-		$(builddir)/matcher/reftime/reftime-parse.cc
+BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
+		$(top_builddir)/arki/matcher/reftime/reftime-lex.cc \
+		$(top_builddir)/arki/matcher/reftime/reftime-parse.h \
+		$(top_builddir)/arki/matcher/reftime/reftime-parse.cc
 
-$(builddir)/matcher/reftime/reftime-lex.h $(builddir)/matcher/reftime/reftime-lex.cc: $(srcdir)/matcher/reftime/reftime-lex.ll
+$(top_builddir)/arki/matcher/reftime/reftime-lex.h $(top_builddir)/arki/matcher/reftime/reftime-lex.cc: $(srcdir)/matcher/reftime/reftime-lex.ll
 	$(srcdir)/buildflex $<
 
-$(builddir)/matcher/reftime/reftime-parse.h $(builddir)/matcher/reftime/reftime-parse.cc: $(srcdir)/matcher/reftime/reftime-parse.yy
+$(top_builddir)/arki/matcher/reftime/reftime-parse.h $(top_builddir)/arki/matcher/reftime/reftime-parse.cc: $(srcdir)/matcher/reftime/reftime-parse.yy
 	$(srcdir)/buildbison $<
 
 lib_LTLIBRARIES = libarkimet.la
