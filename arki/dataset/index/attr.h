@@ -57,28 +57,53 @@ public:
 	std::string name;
 
 protected:
-	// This is just a copy of what is in the main index
-	SQLiteDB& m_db;
-	// Precompiled insert statement
-	sqlite3_stmt* m_stm_insert;
-	// Precompiled select all statement
-	sqlite3_stmt* m_stm_select_all;
-	// Precompiled query to get the ID given a blob
-	GetAttrID m_get_blob_id;
-	// Cache of known IDs
-	std::map<std::string, int> m_id_cache;
 	// Serialisation code of the item type that we index
 	types::Code serCode;
 
-public:
-	AttrSubIndex(SQLiteDB& db, types::Code serCode);
-	~AttrSubIndex();
+	AttrSubIndex(types::Code serCode);
 
-	void initDB();
+public:
+	~AttrSubIndex();
+};
+
+class RAttrSubIndex : public AttrSubIndex
+{
+protected:
+	// This is just a copy of what is in the main index
+	SQLiteDB& m_db;
+	// Precompiled select all statement
+	sqlite3_stmt* m_stm_select_all;
+
+public:
+	RAttrSubIndex(SQLiteDB& db, types::Code serCode);
+	~RAttrSubIndex();
 
 	void initQueries();
 
 	std::vector<int> query(const matcher::OR& m) const;
+};
+
+class WAttrSubIndex : public AttrSubIndex
+{
+protected:
+	// This is just a copy of what is in the main index
+	SQLiteDB& m_db;
+
+	// Precompiled query to get the ID given a blob
+	GetAttrID m_get_blob_id;
+
+	// Precompiled insert statement
+	sqlite3_stmt* m_stm_insert;
+
+	// Cache of known IDs
+	std::map<std::string, int> m_id_cache;
+
+public:
+	WAttrSubIndex(SQLiteDB& db, types::Code serCode);
+	~WAttrSubIndex();
+
+	void initDB();
+	void initQueries();
 
 	int insert(const Metadata& md);
 };

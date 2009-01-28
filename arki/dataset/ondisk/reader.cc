@@ -68,7 +68,7 @@ Reader::Reader(const ConfigFile& cfg) : m_idx(0), m_tf(0)
 	 && !hasIndexFlagfile(m_root)
 	 && utils::hasFlagfile(str::joinpath(m_root, "index.sqlite")))
 	{
-		m_idx = new DSIndex(cfg);
+		m_idx = new RIndex(cfg);
 		m_idx->open();
 	}
 }

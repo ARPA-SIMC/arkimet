@@ -31,6 +31,7 @@
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
+#include <wibble/string.h>
 
 #include <sstream>
 #include <ctime>
@@ -42,6 +43,7 @@
 //#include <iostream>
 
 using namespace std;
+using namespace wibble;
 using namespace arki;
 using namespace arki::dataset::index;
 
@@ -60,7 +62,7 @@ bool InsertQuery::step()
 		// Different exception for duplicate inserts, to be able to treat
 		// duplicate inserts differently
 		if (rc == SQLITE_CONSTRAINT)
-			throw DSIndex::DuplicateInsert("executing " + name + " query");
+			throw Index::DuplicateInsert("executing " + name + " query");
 		else
 			m_db.throwException("executing " + name + " query");
 	}
@@ -68,14 +70,15 @@ bool InsertQuery::step()
 }
 }
 
-DSIndex::DSIndex(const ConfigFile& cfg)
-	: m_root(cfg.value("path")), m_insert(m_db),
-	  m_fetch_by_id("fetch by id", m_db), m_delete("delete", m_db),
-	  m_replace("replace", m_db), m_committer(m_db), m_index_reftime(false)
+Index::Index(const ConfigFile& cfg)
+	: m_root(cfg.value("path")),
+	  m_index_reftime(false)
 {
 	m_indexpath = cfg.value("indexfile");
 	if (m_indexpath.empty())
 		m_indexpath = "index.sqlite";
+
+	m_pathname = m_root.empty() ? m_indexpath : str::joinpath(m_root, m_indexpath);
 
 	// What metadata components we use to create a unique id
 	string unique = cfg.value("unique");
@@ -88,25 +91,91 @@ DSIndex::DSIndex(const ConfigFile& cfg)
 	if (index.empty())
 		index = "reftime";
 	m_components_indexed = parseMetadataBitmask(index);
+}
 
+Index::~Index()
+{
+}
+
+RIndex::RIndex(const ConfigFile& cfg)
+       	: Index(cfg),
+	  m_fetch_by_id("fetch by id", m_db)
+{
 	// Instantiate subtables
 	for (set<types::Code>::const_iterator i = m_components_indexed.begin();
 			i != m_components_indexed.end(); ++i)
 		switch (*i)
 		{
 			case types::TYPE_REFTIME: m_index_reftime = true; break;
-			default: m_sub.insert(make_pair(*i, new AttrSubIndex(m_db, *i))); break;
+			default: m_rsub.insert(make_pair(*i, new RAttrSubIndex(m_db, *i))); break;
 		}
 }
 
-DSIndex::~DSIndex()
+RIndex::~RIndex()
 {
-	for (std::map<types::Code, index::AttrSubIndex*>::iterator i = m_sub.begin();
-			i != m_sub.end(); ++i)
+	for (std::map<types::Code, index::RAttrSubIndex*>::iterator i = m_rsub.begin();
+			i != m_rsub.end(); ++i)
 		delete i->second;
 }
 
-void DSIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer) const
+void RIndex::open()
+{
+	if (m_db.isOpen())
+		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
+
+	if (!wibble::sys::fs::access(m_pathname, F_OK))
+		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " does not exist");
+	
+	m_db.open(m_pathname);
+	
+	initQueries();
+}
+
+void RIndex::initQueries()
+{
+	// We don't need synchronous writes, since we have our own flagfile to
+	// detect a partially writte index
+	m_db.exec("PRAGMA synchronous = OFF");
+	// For the same reason, we don't need an on-disk rollback journal: if we
+	// crash, our flagfile will be there
+	m_db.exec("PRAGMA journal_mode = MEMORY");
+	// Also, since the way we do inserts cause no trouble if a reader reads a
+	// partial insert, we do not need read locking
+	m_db.exec("PRAGMA read_uncommitted = 1");
+
+	// Precompile fetch by ID query
+	m_fetch_by_id.compile("SELECT id, file, offset FROM md WHERE mdid=?");
+
+	for (std::map<types::Code, index::RAttrSubIndex*>::iterator i = m_rsub.begin();
+			i != m_rsub.end(); ++i)
+		i->second->initQueries();
+}
+
+std::string RIndex::id(const Metadata& md) const
+{
+	return m_id_maker.id(md);
+}
+
+bool RIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
+{
+	// SELECT file, ofs FROM md WHERE id=id
+	string mdid = id(md);
+	m_fetch_by_id.reset();
+	m_fetch_by_id.bind(1, mdid);
+	if (!m_fetch_by_id.step())
+		return false;
+
+	// int iid = m_fetch_by_id.fetchInt(0);
+	file = m_fetch_by_id.fetchString(1);
+	ofs = m_fetch_by_id.fetchSizeT(2);
+
+	// Reset the query to close the statement
+	m_fetch_by_id.reset();
+
+	return true;
+}
+
+void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer) const
 {
 	ondisk::Fetcher fetcher(m_root);
 	sqlite3_stmt* stm_query = m_db.prepare(query);
@@ -137,158 +206,7 @@ void DSIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer
 	sqlite3_finalize(stm_query);
 }
 
-void DSIndex::bindInsertParams(Query& q, Metadata& md, const std::string& mdid, const std::string& file, size_t ofs, char* timebuf)
-{
-	int idx = 0;
-
-	q.bind(++idx, mdid);
-	q.bind(++idx, file);
-	q.bind(++idx, ofs);
-
-	if (m_index_reftime)
-	{
-		const int* rt = md.get(types::TYPE_REFTIME)->upcast<types::reftime::Position>()->time->vals;
-		int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);
-		q.bind(++idx, timebuf, len);
-	}
-	for (std::map<types::Code, index::AttrSubIndex*>::iterator i = m_sub.begin();
-			i != m_sub.end(); ++i)
-	{
-		int id = i->second->insert(md);
-		if (id != -1)
-			q.bind(++idx, id);
-		else
-			q.bindNull(++idx);
-	}
-}
-
-
-void DSIndex::open()
-{
-	string pathname = m_root.empty() ? m_indexpath : m_root + "/" + m_indexpath;
-
-	if (m_db.isOpen())
-		throw wibble::exception::Consistency("opening dataset index", "index " + pathname + " is already open");
-
-	bool need_init = !wibble::sys::fs::access(pathname, F_OK);
-	//cerr << "Needs init for " << pathname << ": " << need_init << endl;
-	
-	m_db.open(pathname);
-
-	// We don't need synchronous writes, since we have our own flagfile to
-	// detect a partially writte index
-	m_db.exec("PRAGMA synchronous = OFF");
-	// For the same reason, we don't need an on-disk rollback journal: if we
-	// crash, our flagfile will be there
-	m_db.exec("PRAGMA journal_mode = MEMORY");
-	// Also, since the way we do inserts cause no trouble if a reader reads a
-	// partial insert, we do not need read locking
-	m_db.exec("PRAGMA read_uncommitted = 1");
-
-	if (need_init)
-		initDB();
-	
-	initQueries();
-}
-
-void DSIndex::initDB()
-{
-	string query = "CREATE TABLE IF NOT EXISTS md ("
-		"id INTEGER PRIMARY KEY,"
-		" mdid TEXT NOT NULL,"
-		" file TEXT NOT NULL,"
-		" offset INTEGER NOT NULL";
-
-	if (m_index_reftime)
-		query += ", reftime TEXT NOT NULL";
-
-	for (std::map<types::Code, index::AttrSubIndex*>::iterator i = m_sub.begin();
-			i != m_sub.end(); ++i)
-	{
-		query += ", " + i->second->name + " INTEGER";
-		i->second->initDB();
-	}
-	query += ", UNIQUE(mdid))";
-
-	m_db.exec(query);
-
-	// Create the indexes
-	if (m_index_reftime)
-		m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
-	for (std::map<types::Code, index::AttrSubIndex*>::iterator i = m_sub.begin();
-			i != m_sub.end(); ++i)
-	{
-		m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_" + i->second->name
-							+ " ON md (" + i->second->name + ")");
-	}
-}
-
-void DSIndex::initQueries()
-{
-	m_committer.initQueries();
-
-	// Precompile insert query
-	string query;
-	int fieldCount = 0;
-	if (m_index_reftime)
-	{
-		query += ", reftime";
-		++fieldCount;
-	}
-	for (std::map<types::Code, index::AttrSubIndex*>::iterator i = m_sub.begin();
-			i != m_sub.end(); ++i)
-	{
-		query += ", " + i->second->name; ++fieldCount;
-		i->second->initQueries();
-	}
-	query += ") VALUES (?, ?, ?";
-	while (fieldCount--)
-		query += ", ?";
-	query += ")";
-
-	// Precompile insert
-	m_insert.compile("INSERT INTO md (mdid, file, offset" + query);
-
-	// Precompile replace
-	m_replace.compile("INSERT OR REPLACE INTO md (mdid, file, offset" + query);
-
-	// Precompile fetch by ID query
-	m_fetch_by_id.compile("SELECT id, file, offset FROM md WHERE mdid=?");
-
-	// Precompile remove query
-	m_delete.compile("DELETE FROM md WHERE id=?");
-}
-
-std::string DSIndex::id(const Metadata& md) const
-{
-	return m_id_maker.id(md);
-}
-
-Pending DSIndex::beginTransaction()
-{
-	return Pending(new SqliteTransaction(m_committer));
-}
-
-bool DSIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
-{
-	// SELECT file, ofs FROM md WHERE id=id
-	string mdid = id(md);
-	m_fetch_by_id.reset();
-	m_fetch_by_id.bind(1, mdid);
-	if (!m_fetch_by_id.step())
-		return false;
-
-	// int iid = m_fetch_by_id.fetchInt(0);
-	file = m_fetch_by_id.fetchString(1);
-	ofs = m_fetch_by_id.fetchSizeT(2);
-
-	// Reset the query to close the statement
-	m_fetch_by_id.reset();
-
-	return true;
-}
-
-bool DSIndex::query(const Matcher& m, MetadataConsumer& consumer) const
+bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 {
 	string query = "SELECT file, offset FROM md WHERE ";
 	int found = 0;
@@ -322,8 +240,8 @@ bool DSIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 					break;
 				}
 				default: {
-					std::map<types::Code, index::AttrSubIndex*>::const_iterator q = m_sub.find(i->first);
-					assert(q != m_sub.end());
+					std::map<types::Code, index::RAttrSubIndex*>::const_iterator q = m_rsub.find(i->first);
+					assert(q != m_rsub.end());
 
 					if (found) query += " AND";
 					query += " " + q->second->name
@@ -358,7 +276,142 @@ bool DSIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 	return true;
 }
 
-void DSIndex::index(Metadata& md, const std::string& file, size_t ofs)
+
+WIndex::WIndex(const ConfigFile& cfg)
+	: RIndex(cfg), m_insert(m_db),
+          m_delete("delete", m_db), m_replace("replace", m_db),
+	  m_committer(m_db)
+{
+	// Instantiate subtables
+	for (set<types::Code>::const_iterator i = m_components_indexed.begin();
+			i != m_components_indexed.end(); ++i)
+		switch (*i)
+		{
+			case types::TYPE_REFTIME: m_index_reftime = true; break;
+			default: m_wsub.insert(make_pair(*i, new WAttrSubIndex(m_db, *i))); break;
+		}
+}
+
+WIndex::~WIndex()
+{
+	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
+			i != m_wsub.end(); ++i)
+		delete i->second;
+}
+
+void WIndex::open()
+{
+	if (m_db.isOpen())
+		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
+
+	bool need_create = !wibble::sys::fs::access(m_pathname, F_OK);
+
+	m_db.open(m_pathname);
+	
+	if (need_create)
+		initDB();
+
+	initQueries();
+}
+
+void WIndex::initQueries()
+{
+	RIndex::initQueries();
+
+	m_committer.initQueries();
+
+	// Precompile insert query
+	string query;
+	int fieldCount = 0;
+	if (m_index_reftime)
+	{
+		query += ", reftime";
+		++fieldCount;
+	}
+	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
+			i != m_wsub.end(); ++i)
+	{
+		query += ", " + i->second->name; ++fieldCount;
+		i->second->initQueries();
+	}
+	query += ") VALUES (?, ?, ?";
+	while (fieldCount--)
+		query += ", ?";
+	query += ")";
+
+	// Precompile insert
+	m_insert.compile("INSERT INTO md (mdid, file, offset" + query);
+
+	// Precompile replace
+	m_replace.compile("INSERT OR REPLACE INTO md (mdid, file, offset" + query);
+
+	// Precompile remove query
+	m_delete.compile("DELETE FROM md WHERE id=?");
+}
+
+void WIndex::initDB()
+{
+	string query = "CREATE TABLE IF NOT EXISTS md ("
+		"id INTEGER PRIMARY KEY,"
+		" mdid TEXT NOT NULL,"
+		" file TEXT NOT NULL,"
+		" offset INTEGER NOT NULL";
+
+	if (m_index_reftime)
+		query += ", reftime TEXT NOT NULL";
+
+	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
+			i != m_wsub.end(); ++i)
+	{
+		query += ", " + i->second->name + " INTEGER";
+		i->second->initDB();
+	}
+	query += ", UNIQUE(mdid))";
+
+	m_db.exec(query);
+
+	// Create the indexes
+	if (m_index_reftime)
+		m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
+	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
+			i != m_wsub.end(); ++i)
+	{
+		m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_" + i->second->name
+							+ " ON md (" + i->second->name + ")");
+	}
+}
+
+void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& mdid, const std::string& file, size_t ofs, char* timebuf)
+{
+	int idx = 0;
+
+	q.bind(++idx, mdid);
+	q.bind(++idx, file);
+	q.bind(++idx, ofs);
+
+	if (m_index_reftime)
+	{
+		const int* rt = md.get(types::TYPE_REFTIME)->upcast<types::reftime::Position>()->time->vals;
+		int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);
+		q.bind(++idx, timebuf, len);
+	}
+	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
+			i != m_wsub.end(); ++i)
+	{
+		int id = i->second->insert(md);
+		if (id != -1)
+			q.bind(++idx, id);
+		else
+			q.bindNull(++idx);
+	}
+}
+
+Pending WIndex::beginTransaction()
+{
+	return Pending(new SqliteTransaction(m_committer));
+}
+
+void WIndex::index(Metadata& md, const std::string& file, size_t ofs)
 {
 	string mdid = id(md);
 
@@ -370,7 +423,7 @@ void DSIndex::index(Metadata& md, const std::string& file, size_t ofs)
 	m_insert.step();
 }
 
-void DSIndex::remove(const std::string& id, std::string& file, size_t& ofs)
+void WIndex::remove(const std::string& id, std::string& file, size_t& ofs)
 {
 	// SELECT file, ofs FROM md WHERE id=id
 	m_fetch_by_id.reset();
@@ -392,7 +445,7 @@ void DSIndex::remove(const std::string& id, std::string& file, size_t& ofs)
 	m_delete.step();
 }
 
-void DSIndex::replace(Metadata& md, const std::string& file, size_t ofs)
+void WIndex::replace(Metadata& md, const std::string& file, size_t ofs)
 {
 	string mdid = id(md);
 
@@ -404,12 +457,12 @@ void DSIndex::replace(Metadata& md, const std::string& file, size_t ofs)
 	m_replace.step();
 }
 
-void DSIndex::reset()
+void WIndex::reset()
 {
 	m_db.exec("DELETE FROM md");
 }
 
-void DSIndex::reset(const std::string& file)
+void WIndex::reset(const std::string& file)
 {
 	Query query("reset_datafile", m_db);
 	query.compile("DELETE FROM md WHERE file = ?");

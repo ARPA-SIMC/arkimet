@@ -197,11 +197,11 @@ void IndexedRootDirectory::testAcquire(const ConfigFile& cfg, const Metadata& md
 	string dest = wibble::str::joinpath(cfg.value("path"), (*tf)(md) + "." + md.source->format);
 	if (hasRebuildFlagfile(dest))
 		throw wibble::exception::Consistency("acquiring metadata to " + dest, "destination file needs rebuilding");
-	DSIndex idx(cfg);
+	RIndex idx(cfg);
 	idx.open();
 	string file; size_t ofs;
 	if (idx.fetch(md, file, ofs))
-		throw DSIndex::DuplicateInsert("Data is already in the dataset at " + file + ":" + str::fmt(ofs));
+		throw Index::DuplicateInsert("Data is already in the dataset at " + file + ":" + str::fmt(ofs));
 	out << "Appended to file " << dest << " with id " << idx.id(md) << endl;
 }
 void IndexedRootDirectory::testReplace(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -210,7 +210,7 @@ void IndexedRootDirectory::testReplace(const ConfigFile& cfg, const Metadata& md
 	string dest = wibble::str::joinpath(cfg.value("path"), (*tf)(md) + "." + md.source->format);
 	if (hasRebuildFlagfile(dest))
 		throw wibble::exception::Consistency("acquiring metadata to " + dest, "destination file needs rebuilding");
-	DSIndex idx(cfg);
+	RIndex idx(cfg);
 	idx.open();
 	string file; size_t ofs;
 	if (idx.fetch(md, file, ofs))

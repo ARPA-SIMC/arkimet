@@ -38,6 +38,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <unistd.h>
 
 namespace tut {
 using namespace std;
@@ -47,12 +48,13 @@ using namespace arki::dataset;
 using namespace arki::types;
 
 // Create a dataset index gived its configuration
-auto_ptr<DSIndex> createIndex(const std::string& config)
+template<typename INDEX>
+auto_ptr<INDEX> createIndex(const std::string& config)
 {
 	stringstream confstream(config);
 	ConfigFile cfg;
 	cfg.parse(confstream, "(memory)");
-	return auto_ptr<DSIndex>(new DSIndex(cfg));
+	return auto_ptr<INDEX>(new INDEX(cfg));
 }
 
 struct arki_dsindex_shar {
@@ -121,7 +123,7 @@ struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<DSIndex> test = createIndex(
+	auto_ptr<WIndex> test = createIndex<WIndex>(
 		"type = test\n"
 		"path = .\n"
 		"indexfile = :memory:\n"
@@ -161,7 +163,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	auto_ptr<DSIndex> test = createIndex(
+	auto_ptr<WIndex> test = createIndex<WIndex>(
 		"type = test\n"
 		"path = .\n"
 		"indexfile = file1\n"
@@ -182,7 +184,7 @@ void to::test<2>()
 	try {
 		test->index(md, "test-md", 0);
 		ensure(false);
-	} catch (DSIndex::DuplicateInsert& e) {
+	} catch (Index::DuplicateInsert& e) {
 	}
 
 	// Index a second one
@@ -248,7 +250,7 @@ struct ReadHang : public sys::ChildProcess, public MetadataConsumer
 	virtual int main()
 	{
 		try {
-			DSIndex idx(cfg);
+			RIndex idx(cfg);
 			idx.open();
 			idx.query(Matcher::parse("origin:GRIB1"), *this);
 		} catch (std::exception& e) {
@@ -284,9 +286,12 @@ void to::test<3>()
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
 		"index = origin, product, level, timerange, area, ensemble, reftime\n";
 
+	// Remove index if it exists
+	unlink("file1");
+
 	// Create the index and index two metadata
 	{
-		auto_ptr<DSIndex> test1 = createIndex(cfg);
+		auto_ptr<WIndex> test1 = createIndex<WIndex>(cfg);
 		test1->open();
 
 		Pending p = test1->beginTransaction();
@@ -313,7 +318,7 @@ void to::test<3>()
 	md3.set(ensemble::GRIB::create(testEnsemble));
 	md3.notes.push_back(types::Note::create("this is a test"));
 	{
-		auto_ptr<DSIndex> test1 = createIndex(cfg);
+		auto_ptr<WIndex> test1 = createIndex<WIndex>(cfg);
 		test1->open();
 		Pending p = test1->beginTransaction();
 		test1->index(md3, "test-md1", 0);

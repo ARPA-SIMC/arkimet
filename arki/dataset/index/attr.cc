@@ -61,39 +61,32 @@ int GetAttrID::operator()(const std::string& blob) const
 	return id;
 }
 
-AttrSubIndex::AttrSubIndex(SQLiteDB& db, types::Code serCode)
-	: name(types::tag(serCode)), m_db(db), m_stm_insert(0), m_stm_select_all(0), m_get_blob_id(db, "sub_" + name), serCode(serCode)
+AttrSubIndex::AttrSubIndex(types::Code serCode)
+	: name(types::tag(serCode)), serCode(serCode)
 {
 }
 
 AttrSubIndex::~AttrSubIndex()
 {
-	if (m_stm_insert) sqlite3_finalize(m_stm_insert);
+}
+
+RAttrSubIndex::RAttrSubIndex(SQLiteDB& db, types::Code serCode)
+	: AttrSubIndex(serCode), m_db(db), m_stm_select_all(0)
+{
+}
+
+RAttrSubIndex::~RAttrSubIndex()
+{
 	if (m_stm_select_all) sqlite3_finalize(m_stm_select_all);
 }
 
-void AttrSubIndex::initDB()
+void RAttrSubIndex::initQueries()
 {
-	// Create the table
-	std::string query = "CREATE TABLE IF NOT EXISTS sub_" + name + " ("
-		"id INTEGER PRIMARY KEY,"
-		" data BLOB NOT NULL,"
-		" UNIQUE(data))";
-	m_db.exec(query);
-}
-
-void AttrSubIndex::initQueries()
-{
-	m_get_blob_id.initQueries();
-
-	// Compile the insert query
-	m_stm_insert = m_db.prepare("INSERT INTO sub_" + name + " (data) VALUES (?)");
-
 	// Compile the select all query
 	m_stm_select_all = m_db.prepare("SELECT id, data FROM sub_" + name);
 }
 
-std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
+std::vector<int> RAttrSubIndex::query(const matcher::OR& m) const
 {
 	std::vector<int> ids;
 	// Reset the query
@@ -121,7 +114,36 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 	return ids;
 }
 
-int AttrSubIndex::insert(const Metadata& md)
+WAttrSubIndex::WAttrSubIndex(SQLiteDB& db, types::Code serCode)
+	: AttrSubIndex(serCode), m_db(db),
+	  m_get_blob_id(db, "sub_" + name), m_stm_insert(0)
+{
+}
+
+WAttrSubIndex::~WAttrSubIndex()
+{
+	if (m_stm_insert) sqlite3_finalize(m_stm_insert);
+}
+
+void WAttrSubIndex::initDB()
+{
+	// Create the table
+	std::string query = "CREATE TABLE IF NOT EXISTS sub_" + name + " ("
+		"id INTEGER PRIMARY KEY,"
+		" data BLOB NOT NULL,"
+		" UNIQUE(data))";
+	m_db.exec(query);
+}
+
+void WAttrSubIndex::initQueries()
+{
+	m_get_blob_id.initQueries();
+
+	// Compile the insert query
+	m_stm_insert = m_db.prepare("INSERT INTO sub_" + name + " (data) VALUES (?)");
+}
+
+int WAttrSubIndex::insert(const Metadata& md)
 {
 	UItem<> item = md.get(serCode);
 	if (!item.defined())
@@ -165,7 +187,6 @@ int AttrSubIndex::insert(const Metadata& md)
 		return m_id_cache[blob] = m_db.lastInsertID();
 	}
 }
-
 
 }
 }

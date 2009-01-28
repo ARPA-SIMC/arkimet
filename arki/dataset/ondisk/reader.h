@@ -36,14 +36,14 @@ class Matcher;
 class Summary;
 
 namespace dataset {
-class DSIndex;
+class RIndex;
 class TargetFile;
 
 namespace ondisk {
 class Reader : public Local
 {
 protected:
-	DSIndex* m_idx;
+	RIndex* m_idx;
 	std::string m_root;
 	TargetFile* m_tf;
 

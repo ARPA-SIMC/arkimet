@@ -4,7 +4,7 @@
 /*
  * dataset/index - Dataset index infrastructure
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,28 +66,42 @@ struct InsertQuery : public Query
  * It must be possible to completely regenerate the dataset index by
  * rescanning allthe data stored in the dataset.
  */
-class DSIndex
+class Index
 {
 protected:
 	std::string m_root;
 	std::string m_indexpath;
-	index::SQLiteDB m_db;
-	index::InsertQuery m_insert;
-	index::PrecompiledQuery m_fetch_by_id;
-	index::PrecompiledQuery m_delete;
-	index::PrecompiledQuery m_replace;
+	std::string m_pathname;
+
 	index::IDMaker m_id_maker;
 	std::set<types::Code> m_components_indexed;
-	index::Committer m_committer;
 
 	// True if we index reftime
 	bool m_index_reftime;
 
-	// Subtables
-	std::map<types::Code, index::AttrSubIndex*> m_sub;
+	Index(const ConfigFile& cfg);
 
-	/// Create the tables in the database
-	void initDB();
+public:
+	struct DuplicateInsert : public wibble::exception::Consistency
+	{
+		DuplicateInsert(const std::string& context) throw () :
+			wibble::exception::Consistency(context, "duplicate element") {}
+		~DuplicateInsert() throw () {}
+
+		virtual const char* type() const throw () { return "DSIndex::DuplicateInsert"; }
+	};
+
+	~Index();
+};
+
+class RIndex : public Index
+{
+protected:
+	index::SQLiteDB m_db;
+	index::PrecompiledQuery m_fetch_by_id;
+
+	// Subtables
+	std::map<types::Code, index::RAttrSubIndex*> m_rsub;
 
 	/**
 	 * Precompile queries.
@@ -100,30 +114,15 @@ protected:
 	/// Run a query and output to a consumer all the metadata that come out
 	void metadataQuery(const std::string& query, MetadataConsumer& consumer) const;
 
-	void bindInsertParams(index::Query& q, Metadata& md, const std::string& mdid, const std::string& file, size_t ofs, char* timebuf);
-
 public:
-	struct DuplicateInsert : public wibble::exception::Consistency
-	{
-		DuplicateInsert(const std::string& context) throw () :
-			wibble::exception::Consistency(context, "duplicate element") {}
-		~DuplicateInsert() throw () {}
-
-		virtual const char* type() const throw () { return "DSIndex::DuplicateInsert"; }
-	};
-
-	/// Access an index at the given pathname
-	DSIndex(const ConfigFile& cfg);
-	~DSIndex();
+	RIndex(const ConfigFile& cfg);
+	~RIndex();
 
 	/// Initialise access to the index
 	void open();
 
-    /// Compute the unique ID of a metadata for this index
+	/// Compute the unique ID of a metadata for this index
 	std::string id(const Metadata& md) const;
-
-	/// Begin a transaction and return the corresponding Pending object
-	Pending beginTransaction();
 
 	/**
 	 * Fetch the on-disk location of the given metadata.
@@ -140,8 +139,43 @@ public:
 	 * query does not use the index and a full scan should be used instead
 	 */
 	bool query(const Matcher& m, MetadataConsumer& consumer) const;
+};
 
-    /**
+class WIndex : public RIndex
+{
+protected:
+	index::InsertQuery m_insert;
+	index::PrecompiledQuery m_delete;
+	index::PrecompiledQuery m_replace;
+	index::Committer m_committer;
+
+	// Subtables
+	std::map<types::Code, index::WAttrSubIndex*> m_wsub;
+
+	/**
+	 * Precompile queries.
+	 *
+	 * This must be called after the database schema has been created, as a
+	 * change in the database schema invalidates precompiled queries.
+	 */
+	void initQueries();
+
+	/// Create the tables in the database
+	void initDB();
+
+	void bindInsertParams(index::Query& q, Metadata& md, const std::string& mdid, const std::string& file, size_t ofs, char* timebuf);
+
+public:
+	WIndex(const ConfigFile& cfg);
+	~WIndex();
+
+	/// Initialise access to the index
+	void open();
+
+	/// Begin a transaction and return the corresponding Pending object
+	Pending beginTransaction();
+
+	/**
 	 * Index the given metadata item.
 	 */
 	void index(Metadata& md, const std::string& file, size_t ofs);
@@ -154,7 +188,7 @@ public:
 	 */
 	void remove(const std::string& id, std::string& file, size_t& ofs);
 
-    /**
+	/**
 	 * Index the given metadata item, or replace it in the index.
 	 */
 	void replace(Metadata& md, const std::string& file, size_t ofs);

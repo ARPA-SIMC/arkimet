@@ -154,7 +154,7 @@ public:
 class IndexedRootDirectory : public RootDirectory
 {
 protected:
-	DSIndex m_idx;
+	WIndex m_idx;
 	Pending m_trans;
 
 	void beginTransactionIfNeeded();
