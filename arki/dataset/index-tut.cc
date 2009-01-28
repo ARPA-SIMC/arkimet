@@ -242,8 +242,7 @@ struct ReadHang : public sys::ChildProcess, public MetadataConsumer
 	virtual bool operator()(Metadata& md)
 	{
 		cout << "H" << endl;
-		while (true)
-			sleep(100);
+		usleep(100000);
 		return true;
 	}
 

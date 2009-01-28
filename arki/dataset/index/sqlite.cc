@@ -23,6 +23,7 @@
 #include <arki/dataset/index/sqlite.h>
 #include <wibble/string.h>
 #include <sstream>
+#include <unistd.h>
 
 #define LEGACY_SQLITE
 
@@ -74,6 +75,22 @@ void SQLiteDB::exec(const std::string& query)
 	int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
 	if (rc != SQLITE_OK)
 		throw SQLiteError(err, "executing query " + query);
+}
+
+void SQLiteDB::exec_stubborn(const std::string& query)
+{
+	while (true)
+	{
+		char* err;
+		int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
+		switch (rc)
+		{
+			case SQLITE_OK: return;
+			case SQLITE_BUSY: usleep(50000); break;
+			default:
+				throw SQLiteError(err, "executing query " + query);
+		}
+	}
 }
 
 int SQLiteDB::lastInsertID()
@@ -202,6 +219,11 @@ void OneShotQuery::operator()()
 		throw SQLiteError(m_db, "executing query " + m_query);
 	}
 #endif
+}
+
+void StubbornOneShotQuery::operator()()
+{
+	m_db.exec_stubborn(m_query);
 }
 
 }

@@ -82,6 +82,13 @@ public:
 	 */
 	void exec(const std::string& query);
 
+	/**
+	 * Run a query that has no return values.
+	 *
+	 * If it fails with SQLITE_BUSY, wait a bit and retry.
+	 */
+	void exec_stubborn(const std::string& query);
+
 	/// Run a SELECT LAST_INSERT_ROWID() statement and return the result
 	int lastInsertID();
 
@@ -164,6 +171,7 @@ public:
  */
 class OneShotQuery : public Query
 {
+protected:
 	std::string m_query;
 
 public:
@@ -174,17 +182,28 @@ public:
 	void operator()();
 };
 
+// OneShotQuery that, if it fails with SQLITE_BUSY, will wait a bit and then
+// retry
+class StubbornOneShotQuery : public OneShotQuery
+{
+public:
+	StubbornOneShotQuery(SQLiteDB& db, const std::string& name, const std::string& query)
+	       	: OneShotQuery(db, name, query) {}
+
+	void operator()();
+};
+
 /**
  * Holds precompiled (just not yet) begin, commit and rollback statements
  */
 struct Committer
 {
-	OneShotQuery begin;
+	StubbornOneShotQuery begin;
 	OneShotQuery commit;
 	OneShotQuery rollback;
 
 	Committer(SQLiteDB& db)
-		: begin(db, "begin", "BEGIN"), commit(db, "commit", "COMMIT"), rollback(db, "rollback", "ROLLBACK") {}
+		: begin(db, "begin", "BEGIN EXCLUSIVE"), commit(db, "commit", "COMMIT"), rollback(db, "rollback", "ROLLBACK") {}
 
 	void initQueries()
 	{
