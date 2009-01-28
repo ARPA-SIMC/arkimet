@@ -1,3 +1,22 @@
+arkimet (0.16-1) UNRELEASED; urgency=low
+
+  * Handle configuration values wrapped by double quotes
+  * Fixed an off-by-one buffer overflow in summary.cc
+  * Added missing Build-deps
+  * Match rules with BUILT_SOURCES if builddir is not empty
+  * When writing to a dataset, wait until all reads are done (note:
+    it can wait forever if a reader got stuck)
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 28 Jan 2009 16:57:44 +0000
+
+arkimet (0.15-1) UNRELEASED; urgency=low
+
+  * Documentation improvements
+  * arki-server can now report errors that happen at arki-query startup
+  * Fixed timeranges reported by GRIB2 scan
+
+ -- Enrico Zini <enrico@debian.org>  Wed Jan 14 17:42:11 2009 +0000
+
 arkimet (0.14-1) UNRELEASED; urgency=low
 
   * Attempted to fix sqlite locking problems

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-VERSION="0.1"
+VERSION="0.16"
 
 ARKI_QUERY="arki-query"
 ARKI_DUMP="arki-dump"
