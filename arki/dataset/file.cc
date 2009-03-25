@@ -33,11 +33,11 @@
 #include <config.h>
 
 #ifdef HAVE_DBALLE
-#include <arki/scan/grib.h>
+#include <arki/scan/bufr.h>
 #endif
 
 #ifdef HAVE_GRIBAPI
-#include <arki/scan/bufr.h>
+#include <arki/scan/grib.h>
 #endif
 
 #ifdef HAVE_LUA
