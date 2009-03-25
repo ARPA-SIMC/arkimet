@@ -25,14 +25,20 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/postprocess.h>
-#include <arki/scan/grib.h>
-#include <arki/scan/bufr.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <sys/stat.h>
 
 #include <config.h>
+
+#ifdef HAVE_DBALLE
+#include <arki/scan/grib.h>
+#endif
+
+#ifdef HAVE_GRIBAPI
+#include <arki/scan/bufr.h>
+#endif
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
@@ -114,10 +120,14 @@ File* File::create(const ConfigFile& cfg)
 		return new ArkimetFile(cfg);
 	if (format == "yaml")
 		return new YamlFile(cfg);
+#ifdef HAVE_GRIBAPI
 	if (format == "grib")
 		return new RawFile<scan::Grib>(cfg);
+#endif
+#ifdef HAVE_DBALLE
 	if (format == "bufr")
 		return new RawFile<scan::Bufr>(cfg);
+#endif
 
 	throw wibble::exception::Consistency("creating a file dataset", "unknown file format \""+format+"\"");
 }
