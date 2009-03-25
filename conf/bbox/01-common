@@ -122,10 +122,10 @@ if area.style() == "GRIB" then
   
   -- ...ProjectionInDegrees è grib2
   if a.rot ~= 0 then
-    if a.type == 11 then
-      -- print ("ROTATED")
-      local latsp = a.latp
-      local lonsp = a.lonp
+    if a.type == 10 then
+      --print ("ROTATED")
+      local latsp = a.latsp / 1000.0
+      local lonsp = a.lonsp / 1000.0
     
       -- Common parameters to unrotate coordinates
       local latsouthpole = math.acos(-math.sin(math.rad(latsp)))
@@ -139,7 +139,7 @@ if area.style() == "GRIB" then
         local rlat = math.asin(sy0 * math.cos(y) * math.cos(x) + cy0 * math.sin(y))
         local lat = math.deg(rlat)
         local lon = lonsouthpole + math.deg(math.asin(math.sin(x) * math.cos(y) / math.cos(rlat)))
-        print ("GIVE", lat, lon)
+        --print ("GIVE", lat, lon)
         return { lat, lon }
       end
     
@@ -149,10 +149,10 @@ if area.style() == "GRIB" then
     
       bbox = {}
   
-      latmin = a.latfirst
-      latmax = a.latlast
-      lonmin = a.lonfirst
-      lonmax = a.lonlast
+      latmin = a.latfirst / 1000.0
+      latmax = a.latlast / 1000.0
+      lonmin = a.lonfirst / 1000.0
+      lonmax = a.lonlast / 1000.0
     
       idx = 1
       for i = 1, xsamples do
@@ -173,17 +173,17 @@ if area.style() == "GRIB" then
       end
     
       -- Print a polygon definition to be tested in arkimeow
-      function map(func, array)
-        local new_array = {}
-        for i,v in ipairs(array) do
-          new_array[i] = func(v)
-        end
-        return new_array
-      end
-      function strgfy(a)
-        return a[2].." "..a[1]
-      end
-      print ("POLYGON(("..table.concat(map(strgfy, arki.bbox),",").."))")
+      -- function map(func, array)
+      --   local new_array = {}
+      --   for i,v in ipairs(array) do
+      --     new_array[i] = func(v)
+      --   end
+      --   return new_array
+      -- end
+      -- function strgfy(a)
+      --   return a[2].." "..a[1]
+      -- end
+      -- print ("POLYGON(("..table.concat(map(strgfy, bbox),",").."))")
     
     
       -- arki.bbox = { }

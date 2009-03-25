@@ -126,6 +126,60 @@ void to::test<3>()
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 }
 
+// Test rotated latlon areas
+template<> template<>
+void to::test<4>()
+{
+	BBox bbox;
+	ValueBag vb;
+	vb.set("Ni", Value::createInteger(447));
+	vb.set("Nj", Value::createInteger(532));
+	vb.set("latfirst", Value::createInteger(-21925));
+	vb.set("latlast", Value::createInteger(-8650));
+	vb.set("lonfirst", Value::createInteger(-3500));
+	vb.set("lonlast", Value::createInteger(7650));
+	vb.set("latsp", Value::createInteger(-32500));
+	vb.set("lonsp", Value::createInteger(10000));
+	vb.set("type", Value::createInteger(10));
+
+	Item<types::Area> area(types::area::GRIB::create(vb));
+	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
+	//cerr <<" AREA " << area << endl;
+
+	ensure(g.get() != 0);
+	ensure_equals(g->getNumPoints(), 24u);
+	ensure_equals(g->getGeometryType(), "Polygon");
+	ensure_equals(g->getNumGeometries(), 1u);
+	//ensure(g->isRectangle());
+	ensure_equals(g->getDimension(), 2);
+
+	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+	ensure_similar((*cs)[ 0].x,  6.0124, 0.0001); ensure_similar((*cs)[ 0].y, 35.4723, 0.0001);
+	ensure_similar((*cs)[ 1].x,  8.1280, 0.0001); ensure_similar((*cs)[ 1].y, 35.5524, 0.0001);
+	ensure_similar((*cs)[ 2].x, 10.2471, 0.0001); ensure_similar((*cs)[ 2].y, 35.5746, 0.0001);
+	ensure_similar((*cs)[ 3].x, 12.3657, 0.0001); ensure_similar((*cs)[ 3].y, 35.5389, 0.0001);
+	ensure_similar((*cs)[ 4].x, 14.4800, 0.0001); ensure_similar((*cs)[ 4].y, 35.4453, 0.0001);
+	ensure_similar((*cs)[ 5].x, 16.5860, 0.0001); ensure_similar((*cs)[ 5].y, 35.2942, 0.0001);
+	ensure_similar((*cs)[ 6].x, 18.6800, 0.0001); ensure_similar((*cs)[ 6].y, 35.0860, 0.0001);
+	ensure_similar((*cs)[ 7].x, 19.0614, 0.0001); ensure_similar((*cs)[ 7].y, 37.2769, 0.0001);
+	ensure_similar((*cs)[ 8].x, 19.4657, 0.0001); ensure_similar((*cs)[ 8].y, 39.4666, 0.0001);
+	ensure_similar((*cs)[ 9].x, 19.8963, 0.0001); ensure_similar((*cs)[ 9].y, 41.6548, 0.0001);
+	ensure_similar((*cs)[10].x, 20.3571, 0.0001); ensure_similar((*cs)[10].y, 43.8413, 0.0001);
+	ensure_similar((*cs)[11].x, 20.8530, 0.0001); ensure_similar((*cs)[11].y, 46.0258, 0.0001);
+	ensure_similar((*cs)[12].x, 18.6560, 0.0001); ensure_similar((*cs)[12].y, 48.4808, 0.0001);
+	ensure_similar((*cs)[13].x, 15.8951, 0.0001); ensure_similar((*cs)[13].y, 48.6793, 0.0001);
+	ensure_similar((*cs)[14].x, 13.1154, 0.0001); ensure_similar((*cs)[14].y, 48.8024, 0.0001);
+	ensure_similar((*cs)[15].x, 10.3255, 0.0001); ensure_similar((*cs)[15].y, 48.8495, 0.0001);
+	ensure_similar((*cs)[16].x,  7.5346, 0.0001); ensure_similar((*cs)[16].y, 48.8202, 0.0001);
+	ensure_similar((*cs)[17].x,  4.7517, 0.0001); ensure_similar((*cs)[17].y, 48.7148, 0.0001);
+	ensure_similar((*cs)[18].x,  5.0025, 0.0001); ensure_similar((*cs)[18].y, 46.5087, 0.0001);
+	ensure_similar((*cs)[19].x,  5.2337, 0.0001); ensure_similar((*cs)[19].y, 44.3022, 0.0001);
+	ensure_similar((*cs)[20].x,  5.4482, 0.0001); ensure_similar((*cs)[20].y, 42.0952, 0.0001);
+	ensure_similar((*cs)[21].x,  5.6482, 0.0001); ensure_similar((*cs)[21].y, 39.8879, 0.0001);
+	ensure_similar((*cs)[22].x,  5.8357, 0.0001); ensure_similar((*cs)[22].y, 37.6802, 0.0001);
+	ensure_similar((*cs)[23].x,  6.0124, 0.0001); ensure_similar((*cs)[23].y, 35.4723, 0.0001);
+	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+}
 
 }
 
