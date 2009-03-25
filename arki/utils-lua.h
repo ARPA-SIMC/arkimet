@@ -4,7 +4,7 @@
 /*
  * utils-lua - Lua-specific utility functions
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,42 @@ extern "C" {
 }
 
 namespace arki {
+
+struct Lua
+{
+	lua_State *L;
+
+	Lua();
+	~Lua();
+
+	operator lua_State*()
+	{
+		return L;
+	}
+
+	/**
+	 * Load a function from a file, and assign it to a global with the given
+	 * name
+	 */
+	void functionFromFile(const std::string& name, const std::string& fname);
+
+	/**
+	 * Load a function from a string, and assign it to a global with the given
+	 * name
+	 */
+	void functionFromString(const std::string& name, const std::string& buf, const std::string& fname);
+
+	/**
+	 * Call the functions prefix0...prefixCount, in sequence, passing no arguments.
+	 *
+	 * If no function raises any errors, returns an empty string.  Else,
+	 * returns the error message raised by the first function that failed.  All
+	 * the functions following the one that failed are not executed.
+	 */
+	std::string runFunctionSequence(const std::string& prefix, size_t count);
+};
+
+
 namespace utils {
 namespace lua {
 

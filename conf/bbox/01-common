@@ -1,0 +1,197 @@
+-- Library functions
+
+-- Convert UTM to Lat-Lon
+function utm2ll(x, y)
+  -- Constants
+  local k0=0.9996
+  local a=6378206.4
+  local e1=0.001697916
+  local e11=3.0*e1/2.0 - 27.0*e1*e1*e1/32.0
+  local e12=21.0*e1*e1/16.0 - 55.0*e1*e1*e1*e1/32.0
+  local e13=151.0*e1*e1*e1/96.0
+  local e14=1097.0*e1*e1*e1*e1/512.0
+  local e2=0.00676866
+  local e4=e2*e2
+  local e6=e2*e4
+  local ep2=0.0068148
+  local false_e=500000.0
+  local rtd=180.0/3.141592654
+
+  local xm = 1000.0*x - false_e
+  local ym = 1000 * y
+
+  -- Central meridian
+  local rlon0 = 32*6.0 - 183.0
+  local M = ym/k0
+  local u = M/(a*(1.0-e2/4.0 - 3.0*e4/64.0 - 5.0*e6/256.0))
+  local p1 = u + e11*math.sin(2.0*u) + e12*math.sin(4.0*u) + e13*math.sin(6.0*u)
+             + e14*math.sin(8.0*u)
+  local cosp1 = math.cos(p1)
+  local C1 = ep2*cosp1^2
+  local C2 = C1^2
+  local tanp1 = math.tan(p1)
+  local T1 = tanp1^2
+  local T2 = T1^2
+  local sinp1 = math.sin(p1)
+  local sin2p1 = sinp1^2
+  local N1 = a/math.sqrt(1.0-e2*sin2p1)
+  local R0 = 1.0-e2*sin2p1
+  local R1 = a*(1.0-e2)/math.sqrt(R0^3)
+
+  local D = xm/(N1*k0)
+  local D2=D^2
+  local D3=D*D2
+  local D4=D*D3
+  local D5=D*D4
+  local D6=D*D5
+
+  local p = p1 - (N1*tanp1/R1) * (D2/2.0 
+            - (5.0+3.0*T1+10.0*C1-4.0*C2-9.0*ep2)*D4/24.0
+            + (61.0+90.0*T1+298.0*C1+45.0*T2-252*ep2-3.0*C2)*D6/720.0)
+  local rlat = rtd*p
+  local l = (D - (1.0+2.0*T1+C1)*D3/6.0
+            + (5.0-2.0*C1+28*T1-3.0*C2+8.0*ep2+24.0*T2)*D5/120.0)/cosp1
+  local rlon = rtd*l + rlon0
+
+  return { rlat, rlon }
+end
+
+function norm_lon(lon)
+  if lon > 180 then
+    return lon - 360
+  else
+    return lon
+  end
+end
+
+
+-- Bounding box
+
+  ---- Area
+  --arki.area.type = grib.dataRepresentationType
+  --arki.area.latfirst = grib.latitudeOfFirstGridPoint
+  --arki.area.lonfirst = grib.longitudeOfFirstGridPoint
+  --
+  --if grib.numberOfPointsAlongAParallel then
+  --  arki.area.Ni = grib.numberOfPointsAlongAParallel
+  --  arki.area.Nj = grib.numberOfPointsAlongAMeridian
+  --  arki.area.latlast = grib.latitudeOfLastGridPoint
+  --  arki.area.lonlast = grib.longitudeOfLastGridPoint
+  --end
+  --if grib.numberOfPointsAlongXAxis then
+  --  arki.area.Ni = grib.numberOfPointsAlongXAxis
+  --  arki.area.Nj = grib.numberOfPointsAlongYAxis
+  --end
+  ---- Area
+  --if grib.angleOfRotationInDegrees then
+  --  arki.area.rot = grib.angleOfRotationInDegrees
+  --  arki.area.latp = latitudeOfSouthernPoleInDegrees
+  --  arki.area.lonp = longitudeOfSouthernPoleInDegrees
+  --end
+
+if area.style() == "GRIB" then
+  a = area.grib()
+  if a.latfirst ~= nil then
+    latfirst = a.latfirst / 1000.0
+    latlast = a.latlast / 1000.0
+    lonfirst = norm_lon(a.lonfirst / 1000.0)
+    lonlast = norm_lon(a.lonlast / 1000.0)
+
+    if latfirst < 1000 then
+      -- print ("NORMLATLON")
+      bbox = {}
+      bbox[1] = { latfirst, lonfirst }
+      bbox[2] = { latlast,  lonfirst }
+      bbox[3] = { latlast,  lonlast }
+      bbox[4] = { latfirst, lonlast }
+      bbox[5] = bbox[1]
+    else
+      -- Compute the bounding box for the Calmet gribs, that memorize the UTM
+      -- coordinates instead of lat and lon
+      -- print ("CALMET")
+      bbox = {}
+      bbox[1] = utm2ll(lonfirst, latfirst)
+      bbox[2] = utm2ll(lonlast,  latfirst)
+      bbox[3] = utm2ll(lonlast,  latlast)
+      bbox[4] = utm2ll(lonfirst, latlast)
+      bbox[5] = bbox[1]
+    end
+  end
+  
+  
+  
+  -- ...ProjectionInDegrees è grib2
+  if a.rot ~= 0 then
+    if a.type == 11 then
+      -- print ("ROTATED")
+      local latsp = a.latp
+      local lonsp = a.lonp
+    
+      -- Common parameters to unrotate coordinates
+      local latsouthpole = math.acos(-math.sin(math.rad(latsp)))
+      local cy0 = math.cos(latsouthpole)
+      local sy0 = math.sin(latsouthpole)
+      local lonsouthpole = lonsp
+    
+      function r2ll(x, y)
+        local x = math.rad(x)
+        local y = math.rad(y)
+        local rlat = math.asin(sy0 * math.cos(y) * math.cos(x) + cy0 * math.sin(y))
+        local lat = math.deg(rlat)
+        local lon = lonsouthpole + math.deg(math.asin(math.sin(x) * math.cos(y) / math.cos(rlat)))
+        print ("GIVE", lat, lon)
+        return { lat, lon }
+      end
+    
+      -- Number of points to sample
+      local xsamples = math.floor(math.log(a.Ni))
+      local ysamples = math.floor(math.log(a.Nj))
+    
+      bbox = {}
+  
+      latmin = a.latfirst
+      latmax = a.latlast
+      lonmin = a.lonfirst
+      lonmax = a.lonlast
+    
+      idx = 1
+      for i = 1, xsamples do
+        bbox[idx] = r2ll(lonmin + (lonmax-lonmin)*(i-1)/xsamples, latmin)
+        idx = idx + 1
+      end
+      for i = 1, ysamples do
+        bbox[idx] = r2ll(lonmax, latmin + (latmax-latmin)*(i-1)/ysamples)
+        idx = idx + 1
+      end
+      for i = xsamples,1,-1 do
+        bbox[idx] = r2ll(lonmin + (lonmax-lonmin)*(i-1)/xsamples, latmax)
+        idx = idx + 1
+      end
+      for i = ysamples,1,-1 do
+        bbox[idx] = r2ll(lonmin, latmin + (latmax-latmin)*(i-1)/ysamples)
+        idx = idx + 1
+      end
+    
+      -- Print a polygon definition to be tested in arkimeow
+      function map(func, array)
+        local new_array = {}
+        for i,v in ipairs(array) do
+          new_array[i] = func(v)
+        end
+        return new_array
+      end
+      function strgfy(a)
+        return a[2].." "..a[1]
+      end
+      print ("POLYGON(("..table.concat(map(strgfy, arki.bbox),",").."))")
+    
+    
+      -- arki.bbox = { }
+      --  r2ll(arki.lonmin, arki.latmin),
+      --  r2ll(arki.lonmax, arki.latmin),
+      --  r2ll(arki.lonmax, arki.latmax),
+      --  r2ll(arki.lonmin, arki.latmax)
+      -- }
+    end
+  end
+end

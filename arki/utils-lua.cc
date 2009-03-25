@@ -1,7 +1,7 @@
 /*
  * utils-lua - Lua-specific utility functions
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,85 @@
  */
 
 #include <arki/utils-lua.h>
+#include <wibble/exception.h>
+#include <wibble/string.h>
 #include <ostream>
 
 using namespace std;
+using namespace wibble;
 
 namespace arki {
+
+Lua::Lua() : L(0)
+{
+	// Initialise the lua logic
+	L = lua_open();
+
+	// NOTE: This one is optional: only use it for debugging
+	#if LUA_VERSION_NUM >= 501
+	luaL_openlibs(L);
+	#else
+	luaopen_base(L);              /* opens the basic library */
+	luaopen_table(L);             /* opens the table library */
+	luaopen_io(L);                /* opens the I/O library */
+	luaopen_string(L);            /* opens the string lib. */
+	luaopen_math(L);              /* opens the math lib. */
+	luaopen_loadlib(L);           /* loadlib function */
+	luaopen_debug(L);             /* debug library  */
+	lua_settop(L, 0);
+	#endif
+}
+
+Lua::~Lua()
+{
+	if (L) lua_close(L);
+}
+
+void Lua::functionFromFile(const std::string& name, const std::string& fname)
+{
+	if (luaL_loadfile(L, fname.c_str()))
+	{
+		// Copy the error, so that it will exist after the pop
+		string error = lua_tostring(L, -1);
+		// Pop the error from the stack
+		lua_pop(L, 1);
+		throw wibble::exception::Consistency("parsing Lua code for function " + name, error);
+	}
+
+	// Set the function as a global variable
+	lua_setglobal(L, name.c_str());
+}
+
+void Lua::functionFromString(const std::string& name, const std::string& buf, const std::string& fname)
+{
+	if (luaL_loadbuffer(L, buf.data(), buf.size(), fname.c_str()))
+	{
+		// Copy the error, so that it will exist after the pop
+		string error = lua_tostring(L, -1);
+		// Pop the error from the stack
+		lua_pop(L, 1);
+		throw wibble::exception::Consistency("parsing Lua code for function " + name, error);
+	}
+	// Set the function as the global variable "GRIB1"
+	lua_setglobal(L, name.c_str());
+}
+
+std::string Lua::runFunctionSequence(const std::string& prefix, size_t count)
+{
+	for (size_t i = 0; i < count; ++i)
+	{
+		string name = prefix + str::fmt(i);
+		lua_getglobal(L, name.c_str()); // function to be called
+		if (lua_pcall(L, 0, 0, 0))
+		{
+			string error = lua_tostring(L, -1);
+			lua_pop(L, 1);
+			return error;
+		}
+	}
+	return string();
+}
+
 namespace utils {
 namespace lua {
 

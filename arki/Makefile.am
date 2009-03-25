@@ -69,6 +69,7 @@ arkiinclude_HEADERS = \
 		types/run.h \
 		sort.h \
 		formatter.h \
+		bbox.h \
 		postprocess.h \
 		values.h \
 		utils.h
@@ -109,6 +110,7 @@ libarkimet_la_SOURCES = \
 		types/run.cc \
 		sort.cc \
 		formatter.cc \
+		bbox.cc \
 		metadata.cc \
 		summary.cc \
 		summary-old.cc \
@@ -178,6 +180,7 @@ tests_arki_test_SOURCES = \
 		types/run-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
+		bbox-tut.cc \
 		metadata-tut.cc \
 		summary-tut.cc \
 		summary-old-tut.cc \

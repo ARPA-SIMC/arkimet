@@ -9,6 +9,7 @@ CMD=`pwd`/"$1"
 export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
 export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
 export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
+export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
 export ARKI_POSTPROC=./postproc
 
 TESTDIR="`mktemp -d`"

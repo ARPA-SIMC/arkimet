@@ -1,7 +1,7 @@
 /*
  * scan/grib - Scan a GRIB file for metadata.
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,12 +36,7 @@
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
-
-extern "C" {
-#include <lauxlib.h>
-#include <lualib.h>
-}
-
+#include <arki/utils-lua.h>
 
 using namespace std;
 using namespace wibble;
@@ -49,30 +44,19 @@ using namespace wibble;
 namespace arki {
 namespace scan {
 
-GribLua::GribLua() : L(0)
+struct GribLua : public Lua
 {
-	// Initialise the lua logic
-	L = lua_open();
+	/**
+	 * Create the 'grib' object in the interpreter, to access the grib data of
+	 * the current grib read by the scanner
+	 */
+	void makeGribObject(Grib* scanner);
 
-	// NOTE: This one is optional: only use it for debugging
-	#if LUA_VERSION_NUM >= 501
-	luaL_openlibs(L);
-	#else
-	luaopen_base(L);              /* opens the basic library */
-	luaopen_table(L);             /* opens the table library */
-	luaopen_io(L);                /* opens the I/O library */
-	luaopen_string(L);            /* opens the string lib. */
-	luaopen_math(L);              /* opens the math lib. */
-	luaopen_loadlib(L);           /* loadlib function */
-	luaopen_debug(L);             /* debug library  */
-	lua_settop(L, 0);
-	#endif
-}
-
-GribLua::~GribLua()
-{
-	if (L) lua_close(L);
-}
+	/**
+	 * Set the 'arki' global variable to nil
+	 */
+	void resetArkiObject();
+};
 
 void GribLua::makeGribObject(Grib* scanner)
 {
@@ -119,51 +103,6 @@ void GribLua::resetArkiObject()
 	lua_rawset(L, -3);
 
 	lua_setglobal(L, "arki");
-}
-
-void GribLua::functionFromFile(const std::string& name, const std::string& fname)
-{
-	if (luaL_loadfile(L, fname.c_str()))
-	{
-		// Copy the error, so that it will exist after the pop
-		string error = lua_tostring(L, -1);
-		// Pop the error from the stack
-		lua_pop(L, 1);
-		throw wibble::exception::Consistency("parsing Lua code for function " + name, error);
-	}
-
-	// Set the function as a global variable
-	lua_setglobal(L, name.c_str());
-}
-
-void GribLua::functionFromString(const std::string& name, const std::string& buf, const std::string& fname)
-{
-	if (luaL_loadbuffer(L, buf.data(), buf.size(), fname.c_str()))
-	{
-		// Copy the error, so that it will exist after the pop
-		string error = lua_tostring(L, -1);
-		// Pop the error from the stack
-		lua_pop(L, 1);
-		throw wibble::exception::Consistency("parsing Lua code for function " + name, error);
-	}
-	// Set the function as the global variable "GRIB1"
-	lua_setglobal(L, name.c_str());
-}
-
-std::string GribLua::runFunctionSequence(const std::string& prefix, size_t count)
-{
-	for (size_t i = 0; i < count; ++i)
-	{
-		string name = prefix + str::fmt(i);
-		lua_getglobal(L, name.c_str()); // function to be called
-		if (lua_pcall(L, 0, 0, 0))
-		{
-			string error = lua_tostring(L, -1);
-			lua_pop(L, 1);
-			return error;
-		}
-	}
-	return string();
 }
 
 static void check_grib_error(int error, const char* context)
@@ -431,7 +370,7 @@ int Grib::arkilua_lookup_grib(lua_State* L)
 }
 
 Grib::Grib(bool inlineData, const std::string& grib1code, const std::string& grib2code)
-	: in(0), context(0), gh(0), m_inline_data(inlineData), grib1FuncCount(0), grib2FuncCount(0)
+	: in(0), context(0), gh(0), L(new GribLua), m_inline_data(inlineData), grib1FuncCount(0), grib2FuncCount(0)
 {
 	// Get a grib_api context
 	context = grib_context_get_default();
@@ -448,25 +387,25 @@ Grib::Grib(bool inlineData, const std::string& grib1code, const std::string& gri
 	}
 
 	/// Create the 'grib' Lua object
-	L.makeGribObject(this);
+	L->makeGribObject(this);
 
 	/// Load the grib1 scanning functions
 	if (grib1code.empty())
 	{
 		vector<string> files = runtime::rcFiles("scan-grib1", "ARKI_SCAN_GRIB1");
 		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-			L.functionFromFile("GRIB1_" + str::fmt(grib1FuncCount++), *i);
+			L->functionFromFile("GRIB1_" + str::fmt(grib1FuncCount++), *i);
 	} else
-		L.functionFromString("GRIB1_" + str::fmt(grib1FuncCount++), grib1code, "grib1 scan instructions");
+		L->functionFromString("GRIB1_" + str::fmt(grib1FuncCount++), grib1code, "grib1 scan instructions");
 
 	/// Load the grib2 scanning functions
 	if (grib2code.empty())
 	{
 		vector<string> files = runtime::rcFiles("scan-grib2", "ARKI_SCAN_GRIB2");
 		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-			L.functionFromFile("GRIB2_" + str::fmt(grib2FuncCount++), *i);
+			L->functionFromFile("GRIB2_" + str::fmt(grib2FuncCount++), *i);
 	} else
-		L.functionFromString("GRIB2_" + str::fmt(grib1FuncCount++), grib2code, "grib2 scan instructions");
+		L->functionFromString("GRIB2_" + str::fmt(grib1FuncCount++), grib2code, "grib2 scan instructions");
 
 	//arkilua_dumpstack(L, "Afterinit", stderr);
 }
@@ -475,6 +414,7 @@ Grib::~Grib()
 {
 	if (gh) check_grib_error(grib_handle_delete(gh), "closing GRIB message");
 	if (in) fclose(in);
+	if (L) delete L;
 }
 
 MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
@@ -595,8 +535,8 @@ void MultiGrib::setSource(Metadata& md)
 
 void Grib::scanGrib1(Metadata& md)
 {
-	L.resetArkiObject();
-	std::string error = L.runFunctionSequence("GRIB1_", grib1FuncCount);
+	L->resetArkiObject();
+	std::string error = L->runFunctionSequence("GRIB1_", grib1FuncCount);
 	if (!error.empty())
 	{
 		md.notes.push_back(types::Note::create("Scanning GRIB1 failed: " + error));
@@ -604,8 +544,8 @@ void Grib::scanGrib1(Metadata& md)
 		//arkilua_dumpstack(L, "Afterscan", stderr);
 
 		// Access the arki objext
-		lua_getglobal(L, "arki");
-		TableAccess t(L, 1, filename);
+		lua_getglobal(*L, "arki");
+		TableAccess t(*L, 1, filename);
 		md.set(types::reftime::Position::create(new types::Time(t.num("year"), t.num("month"), t.num("day"),
 							t.num("hour"), t.num("minute"), t.num("second"))));
 		md.set(types::origin::GRIB1::create(t.num("centre"), t.num("subcentre"), t.num("process")));
@@ -636,21 +576,21 @@ void Grib::scanGrib1(Metadata& md)
 			md.set(types::run::Minute::create(hour, min));
 		}
 
-		lua_pop(L, 1);
+		lua_pop(*L, 1);
 	}
 }
 
 void Grib::scanGrib2(Metadata& md)
 {
-	L.resetArkiObject();
-	std::string error = L.runFunctionSequence("GRIB2_", grib2FuncCount);
+	L->resetArkiObject();
+	std::string error = L->runFunctionSequence("GRIB2_", grib2FuncCount);
 	if (!error.empty())
 	{
 		md.notes.push_back(types::Note::create("Scanning GRIB2 failed: " + error));
 	} else {
 		// Access the arki object
-		lua_getglobal(L, "arki");
-		TableAccess t(L, 1, filename);
+		lua_getglobal(*L, "arki");
+		TableAccess t(*L, 1, filename);
 		md.set(types::reftime::Position::create(new types::Time(t.num("year"), t.num("month"), t.num("day"),
 							t.num("hour"), t.num("minute"), t.num("second"))));
 
@@ -685,7 +625,7 @@ void Grib::scanGrib2(Metadata& md)
 			md.set(types::run::Minute::create(hour, min));
 		}
 
-		lua_pop(L, 1);
+		lua_pop(*L, 1);
 	}
 }
 

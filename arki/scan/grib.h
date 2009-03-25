@@ -4,7 +4,7 @@
 /*
  * arki-scan-grib2 - Scan a GRIB 2 file for metadata.
  *
- * Copyright (C) 2007, 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,58 +29,13 @@ struct grib_context;
 struct grib_handle;
 struct lua_State;
 
-
 namespace arki {
 class Metadata;
 
 namespace scan {
 
 class Grib;
-
-struct GribLua
-{
-	lua_State *L;
-
-	GribLua();
-	~GribLua();
-
-	operator lua_State*()
-	{
-		return L;
-	}
-
-	/**
-	 * Create the 'grib' object in the interpreter, to access the grib data of
-	 * the current grib read by the scanner
-	 */
-	void makeGribObject(Grib* scanner);
-
-	/**
-	 * Set the 'arki' global variable to nil
-	 */
-	void resetArkiObject();
-
-	/**
-	 * Load a function from a file, and assign it to a global with the given
-	 * name
-	 */
-	void functionFromFile(const std::string& name, const std::string& fname);
-
-	/**
-	 * Load a function from a string, and assign it to a global with the given
-	 * name
-	 */
-	void functionFromString(const std::string& name, const std::string& buf, const std::string& fname);
-
-	/**
-	 * Call the functions prefix0...prefixCount, in sequence, passing no arguments.
-	 *
-	 * If no function raises any errors, returns an empty string.  Else,
-	 * returns the error message raised by the first function that failed.  All
-	 * the functions following the one that failed are not executed.
-	 */
-	std::string runFunctionSequence(const std::string& prefix, size_t count);
-};
+struct GribLua;
 
 class Grib
 {
@@ -90,7 +45,7 @@ protected:
 	FILE* in;
 	grib_context* context;
 	grib_handle* gh;
-	GribLua L;
+	GribLua* L;
 	bool m_inline_data;
 	size_t grib1FuncCount;
 	size_t grib2FuncCount;

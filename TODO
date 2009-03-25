@@ -80,6 +80,27 @@ Usi utili:
 DA FARE
 =======
 
+Da annunciare:
+
+---
+
+ - Togliere il bounding box dai metadati
+ - In arki-mergeconf, usare lua per calcolare bounding box (in maniera
+   accurata) a partire dalle definizioni delle aree
+ - Bounding box
+    - Coordinate ruotate
+ - Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
+ - Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
+   meglio e non pone il problema di decidere qual'è il minimo e massimo
+ - I grib latlon ruotati (con latitudeOfSouthernPoleInDegrees e
+   longitudeOfSouthernPoleInDegrees) vanno antiruotati
+ - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
+   tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
+   solo massimo/minimo per lato)
+ - Definire come creare un matcher sul bbox in arkimet
+ - Guardare con Selvini i LUA che estraggono i BBOX
+
+
 http://www.unidata.ucar.edu/committees/polcom/2005fall/THREDDS20050912.htm
 http://www.ecmwf.int/products/data/software/simdat.html
 http://code.ecmwf.int/trac/vmc
@@ -91,24 +112,23 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
- - Bounding box
-    - Coordinate ruotate
+ - la lettura blocca la scrittura / la scrittura blocca la lettura
+ - alcuni arki-query rimangono appesi (e non si sa perché)
+
+ - grib_api non funziona in pipe
+   per i plugin, servirebbe poter lanciare il plugin su file con spezzoni di
+     output della query
+   l'ideale sarebbe usare i chunk del sorter
+   a quel punto, assieme al chunk scrivere su disco anche il summary del chunk,
+     ad uso del plugin
+
  - arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
    si aggiorna un alias sul server, i client non vedono l'aggiornamento)
-
- - Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
- - Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
-   meglio e non pone il problema di decidere qual'è il minimo e massimo
- - I grib latlon ruotati (con latitudeOfSouthernPoleInDegrees e
-   longitudeOfSouthernPoleInDegrees) vanno antiruotati
- - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
-   tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
-   solo massimo/minimo per lato)
 
  - Servirebbe script che fa setup di un sistema di partenza
 
  - libreria lua con funzioni utili (tipo met.utm2ll implementata in C,
-   met.controruotazione di aree latlon ruotate, ...) importata sempre
+   met.controrotazione di aree latlon ruotate, ...) importata sempre
 
  - arki-scan --testdispatch=cfg
     - mostra i dati che andrebbero nello stesso dataset e con lo stesso id
@@ -166,9 +186,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  + postprocessing e reporting sono per-dataset
  - i file letti come dataset potrebbero rendere obsoleti arki-grep, arki-scan-*
    e arki-dump
-
- - Definire come creare un matcher sul bbox in arkimet
- - Guardare con Selvini i LUA che estraggono i BBOX
 
  - scansione BUFR
     - solo header (altrimenti bisogna separare BUFR con piú subset perché
