@@ -72,7 +72,9 @@ arkiinclude_HEADERS = \
 		bbox.h \
 		postprocess.h \
 		values.h \
-		utils.h
+		utils.h \
+		utils-geosfwd.h \
+		utils-geosdef.h
 
 dist_noinst_HEADERS = \
 		tests/test-utils.h \
