@@ -1,3 +1,12 @@
+arkimet (0.17-1) UNRELEASED; urgency=low
+
+  * Stop scanning for bounding boxes: they are instead computed from the Area
+    metadata
+  * Fixed dependency on DB-All.e
+  * Build without bufr or grib libraries
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 07 Apr 2009 18:23:54 +0100
+
 arkimet (0.16-1) UNRELEASED; urgency=low
 
   * Handle configuration values wrapped by double quotes

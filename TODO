@@ -89,11 +89,11 @@ Da annunciare:
 
 ---
 
- - Togliere il bounding box dai metadati
  - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
    tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
    solo massimo/minimo per lato)
  - Guardare con Selvini i LUA che estraggono i BBOX
+ = Togliere il bounding box dai metadati
  = Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
    meglio e non pone il problema di decidere qual'è il minimo e massimo
  = Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
