@@ -67,21 +67,21 @@ void to::test<2>()
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
 	ensure_equals(g->getGeometryType(), "Polygon");
-	ensure_equals(g->getNumGeometries(), 1u);
+	//ensure_equals(g->getNumGeometries(), 1u);
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
 	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-	ensure_equals((*cs)[0].x, 12.00);
-	ensure_equals((*cs)[0].y, 40.00);
-	ensure_equals((*cs)[1].x, 12.00);
-	ensure_equals((*cs)[1].y, 46.00);
-	ensure_equals((*cs)[2].x, 20.00);
-	ensure_equals((*cs)[2].y, 46.00);
-	ensure_equals((*cs)[3].x, 20.00);
-	ensure_equals((*cs)[3].y, 40.00);
-	ensure_equals((*cs)[4].x, 12.00);
-	ensure_equals((*cs)[4].y, 40.00);
+	ensure_equals(cs->getAt(0).x, 12.00);
+	ensure_equals(cs->getAt(0).y, 40.00);
+	ensure_equals(cs->getAt(1).x, 12.00);
+	ensure_equals(cs->getAt(1).y, 46.00);
+	ensure_equals(cs->getAt(2).x, 20.00);
+	ensure_equals(cs->getAt(2).y, 46.00);
+	ensure_equals(cs->getAt(3).x, 20.00);
+	ensure_equals(cs->getAt(3).y, 40.00);
+	ensure_equals(cs->getAt(4).x, 12.00);
+	ensure_equals(cs->getAt(4).y, 40.00);
 
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 }
@@ -107,21 +107,21 @@ void to::test<3>()
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
 	ensure_equals(g->getGeometryType(), "Polygon");
-	ensure_equals(g->getNumGeometries(), 1u);
+	//ensure_equals(g->getNumGeometries(), 1u);
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
 	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-	ensure_similar((*cs)[0].x,  3.3241, 0.0001); // 7.7876   These are the values computed
-	ensure_similar((*cs)[0].y, 43.6864, 0.0001); // 43.8211  with the old BB algorithm
-	ensure_similar((*cs)[1].x,  8.8445, 0.0001); // 7.7876   that however only produced
-	ensure_similar((*cs)[1].y, 43.8274, 0.0001); // 46.0347  rectangles.
-	ensure_similar((*cs)[2].x,  8.8382, 0.0001); // 13.4906
-	ensure_similar((*cs)[2].y, 46.1229, 0.0001); // 46.0347
-	ensure_similar((*cs)[3].x,  3.0946, 0.0001); // 13.4906
-	ensure_similar((*cs)[3].y, 45.9702, 0.0001); // 43.8211
-	ensure_similar((*cs)[4].x,  3.3241, 0.0001); // 7.7876
-	ensure_similar((*cs)[4].y, 43.6864, 0.0001); // 43.8211
+	ensure_similar(cs->getAt(0).x,  3.3241, 0.0001); // 7.7876   These are the values computed
+	ensure_similar(cs->getAt(0).y, 43.6864, 0.0001); // 43.8211  with the old BB algorithm
+	ensure_similar(cs->getAt(1).x,  8.8445, 0.0001); // 7.7876   that however only produced
+	ensure_similar(cs->getAt(1).y, 43.8274, 0.0001); // 46.0347  rectangles.
+	ensure_similar(cs->getAt(2).x,  8.8382, 0.0001); // 13.4906
+	ensure_similar(cs->getAt(2).y, 46.1229, 0.0001); // 46.0347
+	ensure_similar(cs->getAt(3).x,  3.0946, 0.0001); // 13.4906
+	ensure_similar(cs->getAt(3).y, 45.9702, 0.0001); // 43.8211
+	ensure_similar(cs->getAt(4).x,  3.3241, 0.0001); // 7.7876
+	ensure_similar(cs->getAt(4).y, 43.6864, 0.0001); // 43.8211
 
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 }
@@ -149,35 +149,35 @@ void to::test<4>()
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 24u);
 	ensure_equals(g->getGeometryType(), "Polygon");
-	ensure_equals(g->getNumGeometries(), 1u);
+	//ensure_equals(g->getNumGeometries(), 1u);
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
 	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-	ensure_similar((*cs)[ 0].x,  6.0124, 0.0001); ensure_similar((*cs)[ 0].y, 35.4723, 0.0001);
-	ensure_similar((*cs)[ 1].x,  8.1280, 0.0001); ensure_similar((*cs)[ 1].y, 35.5524, 0.0001);
-	ensure_similar((*cs)[ 2].x, 10.2471, 0.0001); ensure_similar((*cs)[ 2].y, 35.5746, 0.0001);
-	ensure_similar((*cs)[ 3].x, 12.3657, 0.0001); ensure_similar((*cs)[ 3].y, 35.5389, 0.0001);
-	ensure_similar((*cs)[ 4].x, 14.4800, 0.0001); ensure_similar((*cs)[ 4].y, 35.4453, 0.0001);
-	ensure_similar((*cs)[ 5].x, 16.5860, 0.0001); ensure_similar((*cs)[ 5].y, 35.2942, 0.0001);
-	ensure_similar((*cs)[ 6].x, 18.6800, 0.0001); ensure_similar((*cs)[ 6].y, 35.0860, 0.0001);
-	ensure_similar((*cs)[ 7].x, 19.0614, 0.0001); ensure_similar((*cs)[ 7].y, 37.2769, 0.0001);
-	ensure_similar((*cs)[ 8].x, 19.4657, 0.0001); ensure_similar((*cs)[ 8].y, 39.4666, 0.0001);
-	ensure_similar((*cs)[ 9].x, 19.8963, 0.0001); ensure_similar((*cs)[ 9].y, 41.6548, 0.0001);
-	ensure_similar((*cs)[10].x, 20.3571, 0.0001); ensure_similar((*cs)[10].y, 43.8413, 0.0001);
-	ensure_similar((*cs)[11].x, 20.8530, 0.0001); ensure_similar((*cs)[11].y, 46.0258, 0.0001);
-	ensure_similar((*cs)[12].x, 18.6560, 0.0001); ensure_similar((*cs)[12].y, 48.4808, 0.0001);
-	ensure_similar((*cs)[13].x, 15.8951, 0.0001); ensure_similar((*cs)[13].y, 48.6793, 0.0001);
-	ensure_similar((*cs)[14].x, 13.1154, 0.0001); ensure_similar((*cs)[14].y, 48.8024, 0.0001);
-	ensure_similar((*cs)[15].x, 10.3255, 0.0001); ensure_similar((*cs)[15].y, 48.8495, 0.0001);
-	ensure_similar((*cs)[16].x,  7.5346, 0.0001); ensure_similar((*cs)[16].y, 48.8202, 0.0001);
-	ensure_similar((*cs)[17].x,  4.7517, 0.0001); ensure_similar((*cs)[17].y, 48.7148, 0.0001);
-	ensure_similar((*cs)[18].x,  5.0025, 0.0001); ensure_similar((*cs)[18].y, 46.5087, 0.0001);
-	ensure_similar((*cs)[19].x,  5.2337, 0.0001); ensure_similar((*cs)[19].y, 44.3022, 0.0001);
-	ensure_similar((*cs)[20].x,  5.4482, 0.0001); ensure_similar((*cs)[20].y, 42.0952, 0.0001);
-	ensure_similar((*cs)[21].x,  5.6482, 0.0001); ensure_similar((*cs)[21].y, 39.8879, 0.0001);
-	ensure_similar((*cs)[22].x,  5.8357, 0.0001); ensure_similar((*cs)[22].y, 37.6802, 0.0001);
-	ensure_similar((*cs)[23].x,  6.0124, 0.0001); ensure_similar((*cs)[23].y, 35.4723, 0.0001);
+	ensure_similar(cs->getAt( 0).x,  6.0124, 0.0001); ensure_similar(cs->getAt( 0).y, 35.4723, 0.0001);
+	ensure_similar(cs->getAt( 1).x,  8.1280, 0.0001); ensure_similar(cs->getAt( 1).y, 35.5524, 0.0001);
+	ensure_similar(cs->getAt( 2).x, 10.2471, 0.0001); ensure_similar(cs->getAt( 2).y, 35.5746, 0.0001);
+	ensure_similar(cs->getAt( 3).x, 12.3657, 0.0001); ensure_similar(cs->getAt( 3).y, 35.5389, 0.0001);
+	ensure_similar(cs->getAt( 4).x, 14.4800, 0.0001); ensure_similar(cs->getAt( 4).y, 35.4453, 0.0001);
+	ensure_similar(cs->getAt( 5).x, 16.5860, 0.0001); ensure_similar(cs->getAt( 5).y, 35.2942, 0.0001);
+	ensure_similar(cs->getAt( 6).x, 18.6800, 0.0001); ensure_similar(cs->getAt( 6).y, 35.0860, 0.0001);
+	ensure_similar(cs->getAt( 7).x, 19.0614, 0.0001); ensure_similar(cs->getAt( 7).y, 37.2769, 0.0001);
+	ensure_similar(cs->getAt( 8).x, 19.4657, 0.0001); ensure_similar(cs->getAt( 8).y, 39.4666, 0.0001);
+	ensure_similar(cs->getAt( 9).x, 19.8963, 0.0001); ensure_similar(cs->getAt( 9).y, 41.6548, 0.0001);
+	ensure_similar(cs->getAt(10).x, 20.3571, 0.0001); ensure_similar(cs->getAt(10).y, 43.8413, 0.0001);
+	ensure_similar(cs->getAt(11).x, 20.8530, 0.0001); ensure_similar(cs->getAt(11).y, 46.0258, 0.0001);
+	ensure_similar(cs->getAt(12).x, 18.6560, 0.0001); ensure_similar(cs->getAt(12).y, 48.4808, 0.0001);
+	ensure_similar(cs->getAt(13).x, 15.8951, 0.0001); ensure_similar(cs->getAt(13).y, 48.6793, 0.0001);
+	ensure_similar(cs->getAt(14).x, 13.1154, 0.0001); ensure_similar(cs->getAt(14).y, 48.8024, 0.0001);
+	ensure_similar(cs->getAt(15).x, 10.3255, 0.0001); ensure_similar(cs->getAt(15).y, 48.8495, 0.0001);
+	ensure_similar(cs->getAt(16).x,  7.5346, 0.0001); ensure_similar(cs->getAt(16).y, 48.8202, 0.0001);
+	ensure_similar(cs->getAt(17).x,  4.7517, 0.0001); ensure_similar(cs->getAt(17).y, 48.7148, 0.0001);
+	ensure_similar(cs->getAt(18).x,  5.0025, 0.0001); ensure_similar(cs->getAt(18).y, 46.5087, 0.0001);
+	ensure_similar(cs->getAt(19).x,  5.2337, 0.0001); ensure_similar(cs->getAt(19).y, 44.3022, 0.0001);
+	ensure_similar(cs->getAt(20).x,  5.4482, 0.0001); ensure_similar(cs->getAt(20).y, 42.0952, 0.0001);
+	ensure_similar(cs->getAt(21).x,  5.6482, 0.0001); ensure_similar(cs->getAt(21).y, 39.8879, 0.0001);
+	ensure_similar(cs->getAt(22).x,  5.8357, 0.0001); ensure_similar(cs->getAt(22).y, 37.6802, 0.0001);
+	ensure_similar(cs->getAt(23).x,  6.0124, 0.0001); ensure_similar(cs->getAt(23).y, 35.4723, 0.0001);
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 }
 
