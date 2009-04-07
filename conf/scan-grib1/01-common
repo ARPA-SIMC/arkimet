@@ -53,14 +53,6 @@ if grib.numberOfPointsAlongXAxis then
 	arki.area.Nj = grib.numberOfPointsAlongYAxis
 end
 
--- Bounding box
-if grib.latitudeOfFirstGridPointInDegrees ~= nil then
-	arki.latmin = grib.latitudeOfFirstGridPointInDegrees
-	arki.latmax = grib.latitudeOfLastGridPointInDegrees
-	arki.lonmin = grib.longitudeOfFirstGridPointInDegrees
-	arki.lonmax = grib.longitudeOfLastGridPointInDegrees
-end
-
 -- Ensemble
 if grib.localDefinitionNumber then
         arki.ensemble.ld = grib.localDefinitionNumber

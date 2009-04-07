@@ -51,14 +51,6 @@ function norm_lon(lon)
 	end
 end
 
--- Bounding box
-if grib.latitudeOfFirstGridPointInDegrees ~= nil then
-	arki.latmin = grib.latitudeOfFirstGridPointInDegrees
-	arki.latmax = grib.latitudeOfLastGridPointInDegrees
-	arki.lonmin = norm_lon(grib.longitudeOfFirstGridPointInDegrees)
-	arki.lonmax = norm_lon(grib.longitudeOfLastGridPointInDegrees)
-end
-
 -- Area
 arki.area.type = grib.gridDefinitionTemplateNumber
 

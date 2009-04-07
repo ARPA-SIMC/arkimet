@@ -81,14 +81,14 @@ DA FARE
 =======
 
 Da annunciare:
-
----
-
  + Bounding box coordinate ruotate
  + I grib latlon ruotati (con latitudeOfSouthernPoleInDegrees e
    longitudeOfSouthernPoleInDegrees) vanno antiruotati
  + In arki-mergeconf, usare lua per calcolare bounding box (in maniera
    accurata) a partire dalle definizioni delle aree
+
+---
+
  - Togliere il bounding box dai metadati
  - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
    tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un

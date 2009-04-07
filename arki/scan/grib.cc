@@ -30,7 +30,6 @@
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
-#include <arki/types/bbox.h>
 #include <arki/types/run.h>
 #include <arki/runtime.h>
 #include <wibble/exception.h>
@@ -260,52 +259,6 @@ struct TableAccess
 					}
 				}
 				lua_pop(L, 1);
-				return res;
-			}
-			default:
-				lua_pop(L, 1);
-				throw wibble::exception::Consistency("reading values from " + fname, "key " + name + " has type " + lua_typename(L, type) + " instead of table");
-		}
-	}
-
-	vector< pair<float, float> > bbox(const std::string& name)
-	{
-		lua_pushlstring(L, name.data(), name.size());
-		lua_rawget(L, index);
-		int type = lua_type(L, -1);
-		switch (type)
-		{
-			case LUA_TNIL:
-				lua_pop(L, 1);
-				throw wibble::exception::Consistency("reading values from " + fname, "key " + name + " has not been set");
-			case LUA_TTABLE: {
-				vector< pair<float, float> > res;
-				size_t asize = lua_objlen(L, -1);
-				for (size_t i = 1; i <= asize; ++i)
-				{
-					lua_rawgeti(L, -1, i);
-					if (lua_type(L, -1) != LUA_TTABLE)
-					{
-						lua_pop(L, 2);
-						throw wibble::exception::Consistency("reading values from " + fname,
-							"value " + name + "[" + str::fmt(i) + "] contains a non-table value");
-					}
-					float vals[2];
-					for (int j = 0; j < 2; ++j)
-					{
-						lua_rawgeti(L, -1, j+1);
-						if (lua_type(L, -1) != LUA_TNUMBER)
-						{
-							lua_pop(L, 3);
-							throw wibble::exception::Consistency("reading values from " + fname,
-								"value " + name + "[" + str::fmt(i) + "][" + str::fmt(j) + "] is not a number");
-						}
-						vals[j] = lua_tonumber(L, -1);
-						lua_pop(L, 1);
-					}
-					res.push_back(make_pair(vals[0], vals[1]));
-					lua_pop(L, 1);
-				}
 				return res;
 			}
 			default:
@@ -562,13 +515,6 @@ void Grib::scanGrib1(Metadata& md)
 		if (!table.empty())
 			md.set(types::ensemble::GRIB::create(table));
 
-		if (t.has("latmin") && t.has("latmax") && t.has("lonmin") && t.has("lonmax"))
-			md.set(types::bbox::BOX::create(t.num("latmin"), t.num("latmax"), t.num("lonmin"), t.num("lonmax")));
-		else if (t.has("lat") && t.has("lon"))
-			md.set(types::bbox::POINT::create(t.num("lat"), t.num("lon")));
-		else if (t.has("bbox"))
-			md.set(types::bbox::HULL::create(t.bbox("bbox")));
-
 		if (t.has("run_hour"))
 		{
 			unsigned hour = t.num("run_hour");
@@ -610,13 +556,6 @@ void Grib::scanGrib2(Metadata& md)
 		table = t.table("ensemble");
 		if (!table.empty())
 			md.set(types::ensemble::GRIB::create(table));
-
-		if (t.has("latmin") && t.has("latmax") && t.has("lonmin") && t.has("lonmax"))
-			md.set(types::bbox::BOX::create(t.num("latmin"), t.num("latmax"), t.num("lonmin"), t.num("lonmax")));
-		else if (t.has("lat") && t.has("lon"))
-			md.set(types::bbox::POINT::create(t.num("lat"), t.num("lon")));
-		else if (t.has("bbox"))
-			md.set(types::bbox::HULL::create(t.bbox("bbox")));
 
 		if (t.has("run_hour"))
 		{
