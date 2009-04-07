@@ -310,6 +310,7 @@ int Grib::arkilua_lookup_grib(lua_State* L)
 			char buf[maxsize];
 			size_t len = maxsize;
 			arkilua_check_gribapi(L, grib_get_string(gh, name, buf, &len), "reading string value");
+			if (len > 0) --len;
 			lua_pushlstring(L, buf, len);
 			break;
 		} 
