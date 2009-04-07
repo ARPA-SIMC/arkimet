@@ -33,7 +33,9 @@
 #undef INLINE
 #endif
 
+namespace geos {
 typedef DefaultCoordinateSequence CoordinateArraySequence;
+}
 
 #else
 
