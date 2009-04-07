@@ -1,7 +1,7 @@
 /*
  * arki-mergeconf - Merge arkimet dataset configurations
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,24 +25,9 @@
 #include <arki/matcher.h>
 #include <arki/runtime.h>
 #include <wibble/commandline/parser.h>
+#include <arki/utils-geosdef.h>
 #include "config.h"
-
-#ifdef HAVE_GEOS
 #include <memory>
-#if GEOS_VERSION < 3
-#include <geos/geom.h>
-
-using namespace geos;
-
-typedef DefaultCoordinateSequence CoordinateArraySequence;
-#else
-#include <geos/geom/Geometry.h>
-#include <geos/geom/GeometryFactory.h>
-
-using namespace geos::geom;
-#endif
-#endif
-
 
 using namespace std;
 using namespace arki;
@@ -133,11 +118,9 @@ int main(int argc, const char* argv[])
 
 #ifdef HAVE_GEOS
 				// Compute bounding box, and store the WKT in bounding
-				GeometryFactory gf;
-				Item<types::BBox> bbox = sum.getConvexHull();
-				auto_ptr<Geometry> geom(bbox->geometry(gf));
-				if (geom.get())
-					i->second->setValue("bounding", geom->toString());
+				auto_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull();
+				if (bbox.get())
+					i->second->setValue("bounding", bbox->toString());
 #endif
 			}
 		}

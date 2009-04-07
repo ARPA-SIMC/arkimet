@@ -4,7 +4,7 @@
 /*
  * summary - Handle a summary of a group of summary
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,10 @@
 
 #include <arki/types.h>
 #include <arki/types/reftime.h>
-#include <arki/types/bbox.h>
+#include <arki/utils-geosfwd.h>
 #include <map>
 #include <string>
+#include <memory>
 #include <iosfwd>
 
 struct lua_State;
@@ -162,7 +163,7 @@ struct Node : public refcounted::Base
 	 * Get the convex hull of the union of all bounding boxes covered by the
 	 * metadata bundle.
 	 */
-	Item<types::BBox> getConvexHull() const;
+	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull() const;
 
 	virtual std::string encode(const UItem<>& lead = UItem<>(), size_t scanpos = 0) const;
 
@@ -172,152 +173,6 @@ struct Node : public refcounted::Base
 };
 
 }
-
-#if 0
-/**
- * Summary information of a bundle of summary
- */
-class Summary
-{
-protected:
-	std::string m_filename;
-
-	typedef std::map< Item<summary::Item>, Item<summary::Stats> > map_t;
-	// TODO: for performance, this could be a trie-like tree,
-	//       most frequent item on top
-	//       In the meantime, this could just be a set
-	map_t m_items;
-
-	// Empty this Summary object
-	void reset();
-
-public:
-	Summary() {}
-	~Summary();
-
-	typedef map_t::const_iterator const_iterator;
-
-	const_iterator begin() const { return m_items.begin(); }
-	const_iterator end() const { return m_items.end(); }
-
-	/**
-	 * Check that two Summary contain the same information
-	 */
-	bool operator==(const Summary& m) const;
-
-	/**
-	 * Check that two Summary contain different information
-	 */
-	bool operator!=(const Summary& m) const { return !operator==(m); }
-
-	/**
-	 * Create a new, empty in-memory summary document
-	 */
-	void clear();
-
-	/**
-	 * Return the number of metadata described by this summary.
-	 */
-	size_t count() const;
-
-	/**
-	 * Return the total size of all the metadata described by this summary.
-	 */
-	unsigned long long size() const;
-
-	/**
-	 * Read a summary document from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(std::istream& in, const std::string& filename);
-	
-	/**
-	 * Decode the summary, without the outer bundle headers, from the given buffer.
-	 */
-	void read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
-
-	/**
-	 * Read a summary document encoded in Yaml from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * Summary items are read from the file until the end of file is found.
-	 */
-	bool readYaml(std::istream& in, const std::string& filename);
-
-	/**
-	 * Write the summary to the given output stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 */
-	void write(std::ostream& out, const std::string& filename) const;
-
-	/**
-	 * Write the summary as YAML text to the given output stream.
-	 */
-	void writeYaml(std::ostream& out, const Formatter* f = 0) const;
-
-	/**
-	 * Encode to a string
-	 */
-	std::string encode() const;
-
-	/**
-	 * Create a new summary with only those items that are matched by the
-	 * matcher
-	 */
-	Summary filter(const Matcher& matcher);
-
-	/**
-	 * Add to summary those items that are matched by the matcher
-	 */
-	void filter(const Matcher& matcher, Summary& result);
-
-	/**
-	 * Add information about this metadata to the summary
-	 */
-	void add(const Metadata& md);
-
-	/**
-	 * Add this summary item to the summary
-	 */
-	void add(const Item<summary::Item>& i, const Item<summary::Stats>& s);
-
-	/**
-	 * Merge a summary into this summary
-	 */
-	void add(const Summary& s);
-
-	/**
-	 * Get the reference time interval covered by the metadata bundle.
-	 *
-	 * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
-	 */
-	Item<types::Reftime> getReferenceTime() const;
-
-	/**
-	 * Get the convex hull of the union of all bounding boxes covered by the
-	 * metadata bundle.
-	 */
-	Item<types::BBox> getConvexHull() const;
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
-	void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Origin LUA object
-	static int lua_lookup(lua_State* L);
-
-	friend class matcher::AND;
-};
-
-std::ostream& operator<<(std::ostream& o, const Summary& s);
-#endif
 
 /**
  * Summary information of a bundle of summary
@@ -438,7 +293,7 @@ public:
 	 * Get the convex hull of the union of all bounding boxes covered by the
 	 * metadata bundle.
 	 */
-	Item<types::BBox> getConvexHull() const;
+	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull() const;
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin

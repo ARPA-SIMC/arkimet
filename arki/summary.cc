@@ -30,6 +30,7 @@
 #include <arki/types/level.h>
 #include <arki/types/timerange.h>
 #include <arki/types/area.h>
+#include <arki/bbox.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -42,25 +43,6 @@ extern "C" {
 #include <lauxlib.h>
 #include <lualib.h>
 }
-#endif
-
-#ifdef HAVE_GEOS
-#include <memory>
-#if GEOS_VERSION < 3
-#include <geos/geom.h>
-
-using namespace geos;
-
-typedef DefaultCoordinateSequence CoordinateArraySequence;
-#else
-#include <geos/geom/Coordinate.h>
-#include <geos/geom/CoordinateArraySequence.h>
-#include <geos/geom/Geometry.h>
-#include <geos/geom/GeometryCollection.h>
-#include <geos/geom/GeometryFactory.h>
-
-using namespace geos::geom;
-#endif
 #endif
 
 //#define DEBUG_THIS
@@ -1028,44 +1010,36 @@ struct StatsReftime : public StatsVisitor
 #ifdef HAVE_GEOS
 struct StatsHull : public ItemVisitor
 {
-	GeometryFactory gf;
-	auto_ptr< vector<Geometry*> > geoms;
+	BBox bbox;
+	ARKI_GEOS_GEOMETRYFACTORY gf;
+	auto_ptr< vector<ARKI_GEOS_GEOMETRY*> > geoms;
 
-	StatsHull() : geoms(new vector<Geometry*>) {}
+	StatsHull() : geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
 	virtual ~StatsHull()
 	{
 		if (geoms.get())
-			for (vector<Geometry*>::iterator i = geoms->begin(); i != geoms->end(); ++i)
+			for (vector<ARKI_GEOS_GEOMETRY*>::iterator i = geoms->begin(); i != geoms->end(); ++i)
 				delete *i;
 	}
 
-	virtual bool operator()(const arki::UItem<>& bbox)
+	virtual bool operator()(const arki::UItem<>& area)
 	{
-		if (!bbox.defined()) return true;
-		Geometry* g = bbox.upcast<types::BBox>()->geometry(gf);
+		if (!area.defined()) return true;
+		auto_ptr<ARKI_GEOS_GEOMETRY> g = bbox(area.upcast<types::Area>());
 		//cerr << "Got: " << g << g->getGeometryType() << endl;
-		if (!g) return true;
+		if (!g.get()) return true;
 		//cerr << "Adding: " << g->toString() << endl;
-		geoms->push_back(g);
+		geoms->push_back(g.release());
 		return true;
 	}
 
-	Item<types::BBox> makeBBox()
+	auto_ptr<ARKI_GEOS_GEOMETRY> makeBBox()
 	{
 		if (geoms->empty())
-			return types::bbox::INVALID::create();
+			return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
 
-		auto_ptr<GeometryCollection> gc(gf.createGeometryCollection(geoms.release()));
-		auto_ptr<Geometry> hull(gc->convexHull());
-		//cerr << "Hull: " << hull->toString() << endl;
-		auto_ptr<CoordinateSequence> hcs(hull->getCoordinates());
-		vector< pair<float, float> > points;
-		for (size_t i = 0; i < hcs->getSize(); ++i)
-		{
-			const Coordinate& c = hcs->getAt(i);
-			points.push_back(make_pair(c.y, c.x));
-		}
-		return types::bbox::HULL::create(points);
+		auto_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms.release()));
+		return auto_ptr<ARKI_GEOS_GEOMETRY>(gc->convexHull());
 	}
 };
 #endif
@@ -1095,18 +1069,18 @@ Item<types::Reftime> Summary::getReferenceTime() const
 	return counter.merger.makeReftime();
 }
 
-Item<types::BBox> Summary::getConvexHull() const
+std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull() const
 {
 #ifdef HAVE_GEOS
 	summary::StatsHull merger;
 	if (root.ptr())
 	{
 		summary::buildItemMsoMap();
-		root->visitItem(summary::itemMsoMap[types::TYPE_BBOX], merger);
+		root->visitItem(summary::itemMsoMap[types::TYPE_AREA], merger);
 	}
 	return merger.makeBBox();
 #else
-	return types::bbox::INVALID::create();
+	return std::auto_ptr<ARKI_GEOS_GEOMETRY>(0);
 #endif
 }
 

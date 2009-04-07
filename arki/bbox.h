@@ -26,47 +26,9 @@
 #include <string>
 #include <arki/bbox.h>
 #include <arki/types/area.h>
+#include <arki/utils-geosdef.h>
 #include <arki/utils-lua.h>
 #include <arki/config.h>
-
-#ifdef HAVE_GEOS
-#if GEOS_VERSION < 3
-#include <geos/geom.h>
-#ifdef INLINE
-#undef INLINE
-#endif
-
-namespace geos {
-struct Geometry;
-struct GeometryFactory;
-}
-
-typedef DefaultCoordinateSequence CoordinateArraySequence;
-#define ARKI_GEOS_NS geos
-#else
-#include <geos/geom/Coordinate.h>
-#include <geos/geom/CoordinateArraySequence.h>
-#include <geos/geom/GeometryFactory.h>
-#include <geos/geom/Point.h>
-#include <geos/geom/LinearRing.h>
-#include <geos/geom/Polygon.h>
-#ifdef INLINE
-#undef INLINE
-#endif
-
-namespace geos {
-namespace geom {
-struct Geometry;
-struct GeometryFactory;
-}
-}
-#define ARKI_GEOS_NS geos::geom
-#endif
-#define ARKI_GEOS_GEOMETRY ARKI_GEOS_NS::Geometry
-#define ARKI_GEOS_GEOMETRYFACTORY ARKI_GEOS_NS::GeometryFactory
-#endif
-
-
 
 namespace arki {
 
@@ -90,7 +52,7 @@ public:
 	 * @return the Geometry object with the bounding box, or 0 if the
 	 * computation is unsupported for this area.
 	 */
-	virtual ARKI_GEOS_GEOMETRY* operator()(const Item<types::Area>& v) const;
+	virtual std::auto_ptr<ARKI_GEOS_GEOMETRY> operator()(const Item<types::Area>& v) const;
 };
 
 }

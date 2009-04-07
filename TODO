@@ -84,21 +84,20 @@ Da annunciare:
 
 ---
 
- - Togliere il bounding box dai metadati
- - In arki-mergeconf, usare lua per calcolare bounding box (in maniera
-   accurata) a partire dalle definizioni delle aree
- - Bounding box
-    - Coordinate ruotate
- - Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
- - Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
-   meglio e non pone il problema di decidere qual'è il minimo e massimo
- - I grib latlon ruotati (con latitudeOfSouthernPoleInDegrees e
+ + Bounding box coordinate ruotate
+ + I grib latlon ruotati (con latitudeOfSouthernPoleInDegrees e
    longitudeOfSouthernPoleInDegrees) vanno antiruotati
+ + In arki-mergeconf, usare lua per calcolare bounding box (in maniera
+   accurata) a partire dalle definizioni delle aree
+ - Togliere il bounding box dai metadati
  - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
    tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
    solo massimo/minimo per lato)
- - Definire come creare un matcher sul bbox in arkimet
  - Guardare con Selvini i LUA che estraggono i BBOX
+ = Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
+   meglio e non pone il problema di decidere qual'è il minimo e massimo
+ = Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
+ = Definire come creare un matcher sul bbox in arkimet
 
 
 http://www.unidata.ucar.edu/committees/polcom/2005fall/THREDDS20050912.htm

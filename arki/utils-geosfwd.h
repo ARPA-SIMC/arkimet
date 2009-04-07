@@ -1,8 +1,8 @@
-#ifndef ARKI_UTILS_GEOSDEF_H
-#define ARKI_UTILS_GEOSDEF_H
+#ifndef ARKI_UTILS_GEOSFWD_H
+#define ARKI_UTILS_GEOSFWD_H
 
 /*
- * utils-geosdef - libgeos forward definitions
+ * utils-geosfwd - libgeos forward definitions
  *
  * Copyright (C) 2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *

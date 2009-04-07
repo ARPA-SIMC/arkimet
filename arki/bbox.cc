@@ -153,7 +153,7 @@ static vector< pair<float, float> > bbox(lua_State* L)
 	}
 }
 
-ARKI_GEOS_GEOMETRY* BBox::operator()(const Item<types::Area>& v) const
+auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const Item<types::Area>& v) const
 {
 	// Set the area information as the 'area' global
 	v->lua_push(*L);
@@ -171,15 +171,17 @@ ARKI_GEOS_GEOMETRY* BBox::operator()(const Item<types::Area>& v) const
 		switch (points.size())
 		{
 			case 0:
-				return 0;
+				return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
 			case 1:
-				return gf->createPoint(Coordinate(points[0].second, points[0].first));
+				return auto_ptr<ARKI_GEOS_GEOMETRY>(
+						gf->createPoint(Coordinate(points[0].second, points[0].first)));
 			default:
 				CoordinateArraySequence cas;
 				for (size_t i = 0; i < points.size(); ++i)
 					cas.add(Coordinate(points[i].second, points[i].first));
 				auto_ptr<LinearRing> lr(gf->createLinearRing(cas));
-				return gf->createPolygon(*lr, vector<Geometry*>());
+				return auto_ptr<ARKI_GEOS_GEOMETRY>(
+						gf->createPolygon(*lr, vector<Geometry*>()));
 		}
 	}
 }
