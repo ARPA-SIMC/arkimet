@@ -29,7 +29,6 @@
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
 #include <arki/types/run.h>
-#include <arki/types/bbox.h>
 #include <arki/metadata.h>
 #include <wibble/sys/fs.h>
 
@@ -439,17 +438,6 @@ void to::test<3>()
 
 	// Check the source info
 	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 0, 7218)));
-
-	// Check bounding box
-	ensure(md.get(types::TYPE_BBOX).defined());
-	
-	vector< pair< float, float > > border;
-	border.push_back(make_pair(45.0f, 11.0f));
-	border.push_back(make_pair(46.00, 11.00));
-	border.push_back(make_pair(46.00, 12.00));
-	border.push_back(make_pair(47.00, 13.00));
-	border.push_back(make_pair(45.00, 12.00));
-	ensure_equals(md.get(types::TYPE_BBOX), Item<>(bbox::HULL::create(border)));
 }
 
 }
