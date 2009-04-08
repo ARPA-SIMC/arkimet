@@ -138,8 +138,8 @@ void to::test<4>()
 	vb.set("latlast", Value::createInteger(-8650));
 	vb.set("lonfirst", Value::createInteger(-3500));
 	vb.set("lonlast", Value::createInteger(7650));
-	vb.set("latsp", Value::createInteger(-32500));
-	vb.set("lonsp", Value::createInteger(10000));
+	vb.set("latp", Value::createInteger(-32500));
+	vb.set("lonp", Value::createInteger(10000));
 	vb.set("type", Value::createInteger(10));
 
 	Item<types::Area> area(types::area::GRIB::create(vb));
