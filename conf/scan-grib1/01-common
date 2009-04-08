@@ -39,6 +39,7 @@ arki.p2 = grib.P2
 
 -- Area
 arki.area.type = grib.dataRepresentationType
+
 arki.area.latfirst = grib.latitudeOfFirstGridPoint
 arki.area.lonfirst = grib.longitudeOfFirstGridPoint
 
@@ -51,6 +52,11 @@ end
 if grib.numberOfPointsAlongXAxis then
 	arki.area.Ni = grib.numberOfPointsAlongXAxis
 	arki.area.Nj = grib.numberOfPointsAlongYAxis
+end
+if grib.angleOfRotationInDegrees then
+	arki.area.rot = grib.angleOfRotationInDegrees
+	arki.area.latp = latitudeOfSouthernPoleInDegrees
+	arki.area.lonp = longitudeOfSouthernPoleInDegrees
 end
 
 -- Ensemble

@@ -122,10 +122,10 @@ if area.style() == "GRIB" then
   
   -- ...ProjectionInDegrees è grib2
   if a.rot ~= 0 then
-    if a.type == 10 then
+    if a.type == 10 and a.latp ~= nil and a.lonp ~= nil then
       --print ("ROTATED")
-      local latsp = a.latsp / 1000.0
-      local lonsp = a.lonsp / 1000.0
+      local latsp = a.latp / 1000.0
+      local lonsp = a.lonp / 1000.0
     
       -- Common parameters to unrotate coordinates
       local latsouthpole = math.acos(-math.sin(math.rad(latsp)))
