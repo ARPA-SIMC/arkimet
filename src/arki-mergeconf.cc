@@ -25,7 +25,7 @@
 #include <arki/matcher.h>
 #include <arki/runtime.h>
 #include <wibble/commandline/parser.h>
-#include <arki/utils-geosdef.h>
+#include <arki/utils/geosdef.h>
 #include "config.h"
 #include <memory>
 

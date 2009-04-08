@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_INDEX_SQLITE_H
-#define ARKI_DATASET_INDEX_SQLITE_H
+#ifndef ARKI_UTILS_SQLITE_H
+#define ARKI_UTILS_SQLITE_H
 
 /*
  * sqlite - SQLite helpers
  *
- * Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,14 +24,14 @@
  */
 
 #include <wibble/exception.h>
-#include <arki/dataset/transaction.h>
+#include <arki/transaction.h>
 #include <sqlite3.h>
 #include <string>
 #include <vector>
 
 namespace arki {
-namespace dataset {
-namespace index {
+namespace utils {
+namespace sqlite {
 
 class SQLiteError : public wibble::exception::Generic
 {

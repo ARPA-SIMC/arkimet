@@ -26,8 +26,8 @@
 #include <string>
 #include <arki/bbox.h>
 #include <arki/types/area.h>
-#include <arki/utils-geosdef.h>
-#include <arki/utils-lua.h>
+#include <arki/utils/geosdef.h>
+#include <arki/utils/lua.h>
 #include <arki/config.h>
 
 namespace arki {

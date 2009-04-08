@@ -26,7 +26,7 @@
 
 #include <arki/types.h>
 #include <arki/types/reftime.h>
-#include <arki/utils-geosfwd.h>
+#include <arki/utils/geosfwd.h>
 #include <map>
 #include <string>
 #include <memory>

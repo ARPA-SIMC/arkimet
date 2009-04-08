@@ -45,6 +45,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki;
+using namespace arki::utils::sqlite;
 using namespace arki::dataset::index;
 
 namespace arki {
@@ -134,7 +135,7 @@ void RIndex::open()
 void RIndex::initQueries()
 {
 	// We don't need synchronous writes, since we have our own flagfile to
-	// detect a partially writte index
+	// detect a partially written index
 	m_db.exec("PRAGMA synchronous = OFF");
 	// For the same reason, we don't need an on-disk rollback journal: if we
 	// crash, our flagfile will be there

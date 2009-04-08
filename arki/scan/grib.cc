@@ -35,7 +35,7 @@
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
-#include <arki/utils-lua.h>
+#include <arki/utils/lua.h>
 
 using namespace std;
 using namespace wibble;

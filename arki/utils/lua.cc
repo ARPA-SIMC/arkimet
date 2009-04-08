@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/utils-lua.h>
+#include <arki/utils/lua.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <ostream>

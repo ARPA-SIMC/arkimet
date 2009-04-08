@@ -120,6 +120,13 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    plain file dà un sqlite piccolo e dei dati plain e append-only, ma richiede
    procedure specifiche di repack)
 
+   Tutto in sqlite no: http://www.sqlite.org/whentouse.html "Situations Where
+   Another RDBMS May Work Better" / "Very large datasets" / "the engine has to
+   allocate a bitmap of dirty pages in the disk file to help it manage its
+   rollback journal. SQLite needs 256 bytes of RAM for every 1MiB of database"
+   / "when database begins to grow into the multi-gigabyte range, the size of
+   the bitmap can get quite large"
+
  - grib_api non funziona in pipe
    per i plugin, servirebbe poter lanciare il plugin su file con spezzoni di
      output della query

@@ -7,8 +7,8 @@ arkiincludedir = $(includedir)/arki
 arkiinclude_HEADERS = \
 		config.h \
 		configfile.h \
+		transaction.h \
 		dataset.h \
-		dataset/transaction.h \
 		dataset/targetfile.h \
 		dataset/local.h \
 		dataset/file.h \
@@ -28,7 +28,6 @@ arkiinclude_HEADERS = \
 		dataset/empty.h \
 		dataset/merged.h \
 		dataset/index.h \
-		dataset/index/sqlite.h \
 		dataset/index/base.h \
 		dataset/index/attr.h \
 		dataset/test-utils.h \
@@ -67,14 +66,15 @@ arkiinclude_HEADERS = \
 		types/assigneddataset.h \
 		types/bbox.h \
 		types/run.h \
+		utils/geosfwd.h \
+		utils/geosdef.h \
+		utils/sqlite.h \
 		sort.h \
 		formatter.h \
 		bbox.h \
 		postprocess.h \
 		values.h \
-		utils.h \
-		utils-geosfwd.h \
-		utils-geosdef.h
+		utils.h
 
 dist_noinst_HEADERS = \
 		tests/test-utils.h \
@@ -94,7 +94,9 @@ $(top_builddir)/arki/matcher/reftime/reftime-parse.h $(top_builddir)/arki/matche
 lib_LTLIBRARIES = libarkimet.la
 libarkimet_la_SOURCES = \
 		utils.cc \
+		utils/sqlite.cc \
 		configfile.cc \
+		transaction.cc \
 		values.cc \
 		types.cc \
 		types/source.cc \
@@ -129,11 +131,9 @@ libarkimet_la_SOURCES = \
 		matcher/ensemble.cc \
 		matcher/run.cc \
 		dataset.cc \
-		dataset/index/sqlite.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
 		dataset/index.cc \
-		dataset/transaction.cc \
 		dataset/targetfile.cc \
 		dataset/local.cc \
 		dataset/file.cc \
@@ -163,8 +163,10 @@ TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
 check_PROGRAMS = tests/arki-test
 tests_arki_test_SOURCES = \
 		utils-tut.cc \
+		utils/sqlite-tut.cc \
 		refcounted-tut.cc \
 		configfile-tut.cc \
+		transaction-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
 		types/source-tut.cc \
@@ -198,11 +200,9 @@ tests_arki_test_SOURCES = \
 		matcher/area-tut.cc \
 		matcher/ensemble-tut.cc \
 		matcher/run-tut.cc \
-		dataset/index/sqlite-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
 		dataset/index-tut.cc \
-		dataset/transaction-tut.cc \
 		dataset/targetfile-tut.cc \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
@@ -241,9 +241,9 @@ tests_arki_test_LDADD += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
 
 if LUA
-arkiinclude_HEADERS += formatter/lua.h utils-lua.h report.h tests/lua.h
-libarkimet_la_SOURCES += formatter/lua.cc utils-lua.cc report.cc
-tests_arki_test_SOURCES += formatter/lua-tut.cc utils-lua-tut.cc report-tut.cc tests/lua.cc
+arkiinclude_HEADERS += formatter/lua.h utils/lua.h report.h tests/lua.h
+libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
+tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
 INCLUDES += $(LUA_CFLAGS)
 libarkimet_la_LDFLAGS += $(LUA_LIBS)
 tests_arki_test_LDADD += $(LUA_LIBS)

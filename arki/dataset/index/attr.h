@@ -24,7 +24,7 @@
  */
 
 #include <wibble/exception.h>
-#include <arki/dataset/index/sqlite.h>
+#include <arki/utils/sqlite.h>
 #include <arki/dataset/index/base.h>
 #include <arki/matcher.h>
 #include <string>
@@ -36,12 +36,12 @@ namespace dataset {
 namespace index {
 
 // Precompiled query to get the ID from an encoded type
-class GetAttrID : public Query
+class GetAttrID : public utils::sqlite::Query
 {
 	std::string m_table;
 
 public:
-	GetAttrID(SQLiteDB& db, const std::string& table) : Query("get-blob-id", db), m_table(table) {}
+	GetAttrID(utils::sqlite::SQLiteDB& db, const std::string& table) : utils::sqlite::Query("get-blob-id", db), m_table(table) {}
 
 	void initQueries();
 
@@ -70,12 +70,12 @@ class RAttrSubIndex : public AttrSubIndex
 {
 protected:
 	// This is just a copy of what is in the main index
-	SQLiteDB& m_db;
+	utils::sqlite::SQLiteDB& m_db;
 	// Precompiled select all statement
 	sqlite3_stmt* m_stm_select_all;
 
 public:
-	RAttrSubIndex(SQLiteDB& db, types::Code serCode);
+	RAttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);
 	~RAttrSubIndex();
 
 	void initQueries();
@@ -87,7 +87,7 @@ class WAttrSubIndex : public AttrSubIndex
 {
 protected:
 	// This is just a copy of what is in the main index
-	SQLiteDB& m_db;
+	utils::sqlite::SQLiteDB& m_db;
 
 	// Precompiled query to get the ID given a blob
 	GetAttrID m_get_blob_id;
@@ -99,7 +99,7 @@ protected:
 	std::map<std::string, int> m_id_cache;
 
 public:
-	WAttrSubIndex(SQLiteDB& db, types::Code serCode);
+	WAttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);
 	~WAttrSubIndex();
 
 	void initDB();

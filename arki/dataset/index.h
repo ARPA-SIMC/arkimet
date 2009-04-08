@@ -24,8 +24,8 @@
  */
 
 #include <wibble/exception.h>
-#include <arki/dataset/transaction.h>
-#include <arki/dataset/index/sqlite.h>
+#include <arki/transaction.h>
+#include <arki/utils/sqlite.h>
 #include <arki/dataset/index/attr.h>
 #include <string>
 #include <set>
@@ -42,9 +42,9 @@ class ConfigFile;
 namespace dataset {
 
 namespace index {
-struct InsertQuery : public Query
+struct InsertQuery : public utils::sqlite::Query
 {
-	InsertQuery(SQLiteDB& db) : Query("insert", db) {}
+	InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
 
 	// Step, but throw DuplicateInsert in case of duplicates
 	bool step();
@@ -97,8 +97,8 @@ public:
 class RIndex : public Index
 {
 protected:
-	index::SQLiteDB m_db;
-	index::PrecompiledQuery m_fetch_by_id;
+	utils::sqlite::SQLiteDB m_db;
+	utils::sqlite::PrecompiledQuery m_fetch_by_id;
 
 	// Subtables
 	std::map<types::Code, index::RAttrSubIndex*> m_rsub;
@@ -145,9 +145,9 @@ class WIndex : public RIndex
 {
 protected:
 	index::InsertQuery m_insert;
-	index::PrecompiledQuery m_delete;
-	index::PrecompiledQuery m_replace;
-	index::Committer m_committer;
+	utils::sqlite::PrecompiledQuery m_delete;
+	utils::sqlite::PrecompiledQuery m_replace;
+	utils::sqlite::Committer m_committer;
 
 	// Subtables
 	std::map<types::Code, index::WAttrSubIndex*> m_wsub;
@@ -163,7 +163,7 @@ protected:
 	/// Create the tables in the database
 	void initDB();
 
-	void bindInsertParams(index::Query& q, Metadata& md, const std::string& mdid, const std::string& file, size_t ofs, char* timebuf);
+	void bindInsertParams(utils::sqlite::Query& q, Metadata& md, const std::string& mdid, const std::string& file, size_t ofs, char* timebuf);
 
 public:
 	WIndex(const ConfigFile& cfg);

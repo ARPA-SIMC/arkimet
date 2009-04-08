@@ -26,6 +26,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::utils::sqlite;
 
 namespace arki {
 namespace dataset {

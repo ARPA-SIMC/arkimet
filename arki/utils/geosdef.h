@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/utils-geosfwd.h>
+#include <arki/utils/geosfwd.h>
 
 #ifdef HAVE_GEOS
 #if GEOS_VERSION < 3

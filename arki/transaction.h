@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_TRANSACTION_H
-#define ARKI_DATASET_TRANSACTION_H
+#ifndef ARKI_TRANSACTION_H
+#define ARKI_TRANSACTION_H
 
 /*
- * dataset/index - Dataset index infrastructure
+ * transaction - RAII transaction management
  *
- * Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
  */
 
 namespace arki {
-namespace dataset {
 
 /**
  * RAII-style transaction.
@@ -84,7 +83,6 @@ struct Pending
 	void rollback();
 };
 
-}
 }
 
 // vim:set ts=4 sw=4:

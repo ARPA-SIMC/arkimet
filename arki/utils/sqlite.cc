@@ -1,7 +1,7 @@
 /*
  * dsindex - Dataset index infrastructure
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/index/sqlite.h>
+#include <arki/utils/sqlite.h>
 #include <wibble/string.h>
 #include <sstream>
 #include <unistd.h>
@@ -34,8 +34,8 @@ using namespace std;
 using namespace wibble;
 
 namespace arki {
-namespace dataset {
-namespace index {
+namespace utils {
+namespace sqlite {
 
 SQLiteDB::~SQLiteDB() {
 	if (m_last_insert_id) sqlite3_finalize(m_last_insert_id);

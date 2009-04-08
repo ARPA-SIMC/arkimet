@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * dataset/index - Dataset index infrastructure
+ *
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,26 +20,61 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/tests/test-utils.h>
-#include <arki/utils-lua.h>
+#include <arki/transaction.h>
 
-#include <sstream>
-#include <iostream>
-
-namespace tut {
 using namespace std;
 using namespace arki;
 
-struct arki_utils_lua_shar {
-};
-TESTGRP(arki_utils_lua);
+namespace arki {
 
-// TODO
-template<> template<>
-void to::test<1>()
+Pending::Pending(Transaction* trans) : trans(trans)
 {
+	trans->ref();
+}
+Pending::Pending(const Pending& p) : trans(p.trans)
+{
+	trans->ref();
+}
+Pending::~Pending()
+{
+	if (trans && trans->unref())
+	{
+		trans->rollback();
+		delete trans;
+	}
+}
+Pending& Pending::operator=(const Pending& p)
+{
+	if (p.trans)
+		p.trans->ref();
+	if (trans && trans->unref())
+	{
+		trans->rollback();
+		delete trans;
+	}
+	trans = p.trans;
+	return *this;
+}
+void Pending::commit()
+{
+	if (trans)
+	{
+		trans->commit();
+		if (trans->unref())
+			delete trans;
+		trans = 0;
+	}
+}
+void Pending::rollback()
+{
+	if (trans)
+	{
+		trans->rollback();
+		if (trans->unref())
+			delete trans;
+		trans = 0;
+	}
 }
 
 }
-
 // vim:set ts=4 sw=4:
