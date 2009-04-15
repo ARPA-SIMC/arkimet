@@ -97,7 +97,7 @@ Da annunciare:
  = Togliere il bounding box dai metadati
  = Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
    meglio e non pone il problema di decidere qual'è il minimo e massimo
- z= Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
+ = Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
  = Definire come creare un matcher sul bbox in arkimet
 
 

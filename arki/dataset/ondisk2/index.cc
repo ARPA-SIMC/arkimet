@@ -111,11 +111,12 @@ void RIndex::open()
 		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " does not exist");
 	
 	m_db.open(m_pathname);
+	setupPragmas();
 	
 	initQueries();
 }
 
-void RIndex::initQueries()
+void RIndex::setupPragmas()
 {
 	// Faster but riskier, since we do not have a flagfile to trap
 	// interrupted transactions
@@ -130,7 +131,10 @@ void RIndex::initQueries()
 	// Also, since the way we do inserts cause no trouble if a reader reads a
 	// partial insert, we do not need read locking
 	m_db.exec("PRAGMA read_uncommitted = 1");
+}
 
+void RIndex::initQueries()
+{
 	for (std::map<types::Code, index::RAttrSubIndex*>::iterator i = m_rsub.begin();
 			i != m_rsub.end(); ++i)
 		i->second->initQueries();
@@ -455,6 +459,7 @@ void WIndex::open()
 	bool need_create = !wibble::sys::fs::access(m_pathname, F_OK);
 
 	m_db.open(m_pathname);
+	setupPragmas();
 	
 	if (need_create)
 		initDB();

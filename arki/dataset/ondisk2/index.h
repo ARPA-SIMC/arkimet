@@ -71,7 +71,6 @@ protected:
 	std::set<types::Code> m_components_indexed;
 
 	Index(const ConfigFile& cfg);
-
 public:
 	~Index();
 };
@@ -85,6 +84,9 @@ protected:
 
 	// Subtables
 	std::map<types::Code, index::RAttrSubIndex*> m_rsub;
+
+	/// Run PRAGMA calls to setup database behaviour
+	void setupPragmas();
 
 	/**
 	 * Precompile queries.

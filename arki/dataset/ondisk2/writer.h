@@ -69,10 +69,10 @@ public:
 
 	std::string path() const;
 
-    // Compute the unique ID of a metadata in this dataset
+	// Compute the unique ID of a metadata in this dataset
 	virtual std::string id(const Metadata& md) const;
 
-    /**
+	/**
 	 * Acquire the given metadata item (and related data) in this dataset.
 	 *
 	 * After acquiring the data successfully, the data can be retrieved from
@@ -89,8 +89,6 @@ public:
 
 	virtual void remove(const std::string& id);
 
-	virtual void flush();
-
 	/**
 	 * Perform dataset maintenance, using a MaintenanceAgent to direct the operations
 	 */
@@ -105,11 +103,6 @@ public:
 	 * Iterate through the contents of the dataset, in depth-first order.
 	 */
 	void depthFirstVisit(Visitor& v);
-
-	/**
-	 * Invalidate all the dataset metadata and index
-	 */
-	void invalidateAll();
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };

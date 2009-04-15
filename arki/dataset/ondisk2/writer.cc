@@ -170,16 +170,19 @@ void Writer::remove(const std::string& str_id)
 	p_del.commit();
 }
 
-void Writer::flush()
-{
-}
-
 void Writer::maintenance(MaintenanceAgent& a)
 {
 	// TODO: rebuild of index
-	// TODO: repack (vacuum of database and rebuild of data files with repack flagfiles)
+	// TODO:  (empty the index, scan all files)
+	// TODO: also file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 
-	// TODO
+	// TODO: repack (vacuum of database and rebuild of data files with repack flagfiles)
+	// TODO:  (select all files, offsets, sizes in order, and look for gaps)
+	// TODO:  (also look for gaps at end of files and truncate)
+	// TODO:  (also look for files not in the database)
+	// TODO:  (maybe do all this only for files for which there is a
+	//         flagfile, and just warn about other files)
+
 #if 0
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
 
@@ -217,16 +220,6 @@ void Writer::depthFirstVisit(Visitor& v)
 	v.enterDataset(*this);
 	maint_root->depthFirstVisit(v);
 	v.leaveDataset(*this);
-#endif
-}
-
-void Writer::invalidateAll()
-{
-	// TODO
-#if 0
-	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
-
-	maint_root->invalidateAll();
 #endif
 }
 
