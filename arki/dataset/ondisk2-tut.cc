@@ -175,17 +175,13 @@ void to::test<1>()
 
 	dataset::ondisk2::Writer d200(*config.section("test200"));
 	ensure(scanner.next(md));
-//2	ensure(!hasIndexFlagfile("test200"));
 
 	// Import once in the empty dataset
 	WritableDataset::AcquireResult res = d200.acquire(md);
 	ensure_equals(res, WritableDataset::ACQ_OK);
-	// TODO: reenable it when we try to keep the datafiles open across updates
-	//ensure(hasRebuildFlagfile("test200/2007/07-08.grib1"));
 	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
-//2	ensure(hasIndexFlagfile("test200"));
 	#if 0
 	for (vector<Note>::const_iterator i = md.notes.begin();
 			i != md.notes.end(); ++i)
@@ -203,12 +199,9 @@ void to::test<1>()
 	ensure(!ds.defined());
 
 	// Flush the changes and check that everything is allright
-	// TODO: reenable it when we try to keep the datafiles open across updates
-	//ensure(hasRebuildFlagfile("test200/2007/07-08.grib1"));
 	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
-//2	ensure(wibble::sys::fs::access("test200/index-out-of-sync", F_OK));
 	d200.flush();
 	ensure(wibble::sys::fs::access("test200/2007/07-08.grib1", F_OK));
 //2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
