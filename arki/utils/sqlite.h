@@ -159,6 +159,14 @@ public:
 	{
 		return sqlite3_column_int(m_stm, column);
 	}
+	const void* fetchBlob(int column)
+	{
+		return sqlite3_column_blob(m_stm, column);
+	}
+	int fetchBytes(int column)
+	{
+		return sqlite3_column_bytes(m_stm, column);
+	}
 };
 
 /**
