@@ -1,8 +1,10 @@
 #!/bin/sh
+ENVNAME=${ENVNAME:-"testenv"}
+
 echo "`date`: Cleanup..."
-rm -rf ../testenv/*/[0-9]*
-rm -rf ../testenv/*/index*
-rm -rf ../testenv/*/summary
+rm -rf ../$ENVNAME/*/[0-9]*
+rm -rf ../$ENVNAME/*/index*
+rm -rf ../$ENVNAME/*/summary
 
 if [ "$1" = "clean" ]
 then
@@ -20,7 +22,7 @@ export ARKI_SCAN_GRIB1=../conf/scan-grib1/
 export ARKI_SCAN_GRIB2=../conf/scan-grib2/
 
 echo "`date`: Collect configurations..."
-../src/arki-mergeconf ../testenv/* > conf
+../src/arki-mergeconf ../$ENVNAME/* > conf
 echo "`date`: Creating inbound directory..."
 rm -rf inbound
 mkdir inbound

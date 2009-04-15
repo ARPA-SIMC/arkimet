@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk/maint/directory - Local on disk dataset directory
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,13 @@
 
 #include <arki/dataset/ondisk/maint/directory.h>
 #include <arki/dataset/ondisk/maint/datafile.h>
-#include <arki/dataset/ondisk/common.h>
 #include <arki/dataset/ondisk/maintenance.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/metadata.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/matcher.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <arki/summary.h>
 #include <arki/configfile.h>
 
@@ -52,6 +52,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils::files;
 
 namespace arki {
 namespace dataset {

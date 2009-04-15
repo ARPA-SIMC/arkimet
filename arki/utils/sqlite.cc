@@ -95,6 +95,7 @@ void SQLiteDB::exec_stubborn(const std::string& query)
 
 int SQLiteDB::lastInsertID()
 {
+#if 0
 	if (!m_last_insert_id)
 		m_last_insert_id = prepare("SELECT LAST_INSERT_ROWID()");
 
@@ -114,6 +115,8 @@ int SQLiteDB::lastInsertID()
 		throwException("executing query SELECT LAST_INSERT_ROWID()");
 	}
 	return id;
+#endif
+	return sqlite3_last_insert_rowid(m_db);
 }
 
 void SQLiteDB::throwException(const std::string& msg) const

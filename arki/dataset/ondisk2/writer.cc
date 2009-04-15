@@ -1,5 +1,5 @@
 /*
- * dataset/ondisk/writer - Local on disk dataset writer
+ * dataset/ondisk2/writer - Local on disk dataset writer
  *
  * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -20,16 +20,18 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk/writer.h>
-#include <arki/dataset/ondisk/maintenance.h>
-#include <arki/dataset/ondisk/writer/datafile.h>
-#include <arki/dataset/ondisk/writer/directory.h>
-#include <arki/dataset/ondisk/maint/datafile.h>
-#include <arki/dataset/ondisk/maint/directory.h>
+#include <arki/dataset/ondisk2/writer.h>
+#include <arki/dataset/ondisk2/writer/datafile.h>
+//#include <arki/dataset/ondisk2/maintenance.h>
+//#include <arki/dataset/ondisk2/maint/datafile.h>
+//#include <arki/dataset/ondisk2/maint/directory.h>
+#include <arki/dataset/targetfile.h>
+#include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <arki/summary.h>
 
 #include <wibble/exception.h>
@@ -48,37 +50,52 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils::files;
 
 namespace arki {
 namespace dataset {
-namespace ondisk {
+namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
-	: m_cfg(cfg), m_name(cfg.value("name")), m_root(0), m_replace(false)
+	: m_cfg(cfg), m_path(cfg.value("path")), m_name(cfg.value("name")),
+	  m_idx(cfg), m_tf(0), m_replace(false)
 {
-	// If there is no 'index' in the config file, don't index anything
-	if (cfg.value("index") != string())
-		m_root = new ondisk::writer::IndexedRootDirectory(cfg);
-	else
-		m_root = new ondisk::writer::RootDirectory(cfg);
-	
+	// Create the directory if it does not exist
+	wibble::sys::fs::mkpath(m_path);
+
+	m_tf = TargetFile::create(cfg);
 	m_replace = ConfigFile::boolValue(cfg.value("replace"), false);
+	m_idx.open();
 }
 
 Writer::~Writer()
 {
-	if (m_root) delete m_root;
+	if (m_tf) delete m_tf;
 }
 
 std::string Writer::path() const
 {
-	return m_root->fullpath();
+	return m_path;
 }
 
 std::string Writer::id(const Metadata& md) const
 {
-	return m_root->id(md);
+	int id = m_idx.id(md);
+	if (id == -1) return "";
+	return str::fmt(id);
 }
+
+auto_ptr<writer::Datafile> Writer::file(const std::string& pathname)
+{
+	// Ensure that the directory for 'pathname' exists
+	string pn = str::joinpath(m_path, pathname);
+	size_t pos = pn.rfind('/');
+	if (pos != string::npos)
+		wibble::sys::fs::mkpath(pn.substr(0, pos));
+
+	return auto_ptr<writer::Datafile>(new writer::Datafile(pn));
+}
+
 
 WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 {
@@ -86,28 +103,25 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 	if (m_replace)
 		return replace(md) ? ACQ_OK : ACQ_ERROR;
 
-	UItem<> origDataset = md.get(types::TYPE_ASSIGNEDDATASET);
-	UItem<types::Source> origSource = md.source;
+	string reldest = (*m_tf)(md) + "." + md.source->format;
+	auto_ptr<writer::Datafile> df = file(reldest);
+	off_t ofs;
+
+	Pending p_idx = m_idx.beginTransaction();
+	Pending p_df = df->append(md, &ofs);
 
 	try {
-		m_root->acquire(md);
+		int id;
+		m_idx.index(md, reldest, ofs, &id);
+		p_df.commit();
+		p_idx.commit();
+		md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
 		return ACQ_OK;
 	} catch (index::DuplicateInsert& di) {
-		if (origDataset.defined())
-			md.set(origDataset);
-		else
-			md.unset(types::TYPE_ASSIGNEDDATASET);
-		md.source = origSource;
 		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
 		return ACQ_ERROR_DUPLICATE;
 	} catch (std::exception& e) {
-		// TODO: do something so that a following flush won't remove the
-		// flagfile of the Datafile that failed here
-		if (origDataset.defined())
-			md.set(origDataset);
-		else
-			md.unset(types::TYPE_ASSIGNEDDATASET);
-		md.source = origSource;
+		// TODO: we are in trouble: how do we mark it?
 		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
 		return ACQ_ERROR;
 	}
@@ -115,35 +129,55 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 
 bool Writer::replace(Metadata& md)
 {
-	UItem<> origDataset = md.get(types::TYPE_ASSIGNEDDATASET);
-	UItem<types::Source> origSource = md.source;
+	string reldest = (*m_tf)(md) + "." + md.source->format;
+	auto_ptr<writer::Datafile> df = file(reldest);
+	off_t ofs;
+
+	Pending p_idx = m_idx.beginTransaction();
+	Pending p_df = df->append(md, &ofs);
 
 	try {
-		m_root->replace(md);
+		int id;
+		m_idx.replace(md, reldest, ofs, &id);
+		// In a replace, we necessarily replace inside the same file,
+		// as it depends on the metadata reftime
+		createPackFlagfile(df->pathname);
+		p_df.commit();
+		p_idx.commit();
+		md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
 		return true;
 	} catch (std::exception& e) {
-		if (origDataset.defined())
-			md.set(origDataset);
-		else
-			md.unset(types::TYPE_ASSIGNEDDATASET);
-		md.source = origSource;
+		// TODO: we are in trouble: how do we mark it?
 		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
 		return false;
 	}
 }
 
-void Writer::remove(const std::string& id)
+void Writer::remove(const std::string& str_id)
 {
-	m_root->remove(id);
+	if (str_id.empty()) return;
+	int id = strtoul(str_id.c_str(), 0, 10);
+
+	// Delete from DB, and get file name
+	Pending p_del = m_idx.beginTransaction();
+	string file;
+	m_idx.remove(id, file);
+
+	// Create flagfile
+	createPackFlagfile(str::joinpath(m_path, file));
+
+	// Commit delete from DB
+	p_del.commit();
 }
 
 void Writer::flush()
 {
-	m_root->flush();
 }
 
 void Writer::maintenance(MaintenanceAgent& a)
 {
+	// TODO
+#if 0
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
 
 	a.start(*this);
@@ -159,32 +193,44 @@ void Writer::maintenance(MaintenanceAgent& a)
 	maint_root->commit();
 
 	a.end();
+#endif
 }
 
 void Writer::repack(RepackAgent& a)
 {
+	// TODO
+#if 0
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
 
 	maint_root->checkForRepack(a);
+#endif
 }
 
 void Writer::depthFirstVisit(Visitor& v)
 {
+	// TODO
+#if 0
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
 	v.enterDataset(*this);
 	maint_root->depthFirstVisit(v);
 	v.leaveDataset(*this);
+#endif
 }
 
 void Writer::invalidateAll()
 {
+	// TODO
+#if 0
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
 
 	maint_root->invalidateAll();
+#endif
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
+	// TODO
+#if 0
 	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
 
 	string name = cfg.value("name");
@@ -203,7 +249,7 @@ WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const 
 				else
 					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
 				return ACQ_OK;
-			} catch (index::DuplicateInsert& di) {
+			} catch (Index::DuplicateInsert& di) {
 				out << "Source information restored to original value" << endl;
 				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
 				return ACQ_ERROR_DUPLICATE;
@@ -214,6 +260,7 @@ WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const 
 		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
 		return ACQ_ERROR;
 	}
+#endif
 }
 
 }

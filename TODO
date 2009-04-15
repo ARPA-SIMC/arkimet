@@ -112,9 +112,24 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ * ondisk2 project
+    + datafile and index: proof of concept ready
+    + integrate datafile and index into writer
+    - start testing imports
+       - to make them work
+       - to see the performance
+       - to see the index size
+    + data queries
+    + summary generation
+    - during read, build the file list first then close the read query: that
+      way:
+       - slow readers can release database locks quickly
+       - if data does not need to be sorted, we can create a sorted I/O plan
+
  - la lettura blocca la scrittura / la scrittura blocca la lettura
+    - clarify the locking model and verify its actual behaviour
  - alcuni arki-query rimangono appesi (e non si sa perché)
- - Verificare l'idea di mettere tutto un dataset in un file .sqlite, o
+ = Verificare l'idea di mettere tutto un dataset in un file .sqlite, o
    summary+metadati in sqlite e i dati in plain file
    (tutto in un .sqlite non richiede manutenzione se non un repack; dati in
    plain file dà un sqlite piccolo e dei dati plain e append-only, ma richiede

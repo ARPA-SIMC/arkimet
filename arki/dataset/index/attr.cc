@@ -72,45 +72,87 @@ AttrSubIndex::~AttrSubIndex()
 }
 
 RAttrSubIndex::RAttrSubIndex(SQLiteDB& db, types::Code serCode)
-	: AttrSubIndex(serCode), m_db(db), m_stm_select_all(0)
+	: AttrSubIndex(serCode), m_db(db),
+          m_select_all("sel_all", db),
+	  m_select_one("sel_one", db),
+	  m_select_id("sel_id", db)
 {
 }
 
 RAttrSubIndex::~RAttrSubIndex()
 {
-	if (m_stm_select_all) sqlite3_finalize(m_stm_select_all);
 }
 
 void RAttrSubIndex::initQueries()
 {
 	// Compile the select all query
-	m_stm_select_all = m_db.prepare("SELECT id, data FROM sub_" + name);
+	m_select_all.compile("SELECT id, data FROM sub_" + name);
+	m_select_one.compile("SELECT data FROM sub_" + name + " where id=?");
+	m_select_id.compile("SELECT id FROM sub_" + name + " where data=?");
+}
+
+int RAttrSubIndex::id(const Metadata& md) const
+{
+	UItem<> item = md.get(serCode);
+
+	// First look up in cache
+	for (std::map< int, UItem<> >::const_iterator i = m_cache.begin();
+			i != m_cache.end(); ++i)
+		if (i->second == item)
+			return i->first;
+
+	// Else, fetch it from the database
+	m_select_id.reset();
+	m_select_id.bind(1, item.encode());
+	int id = -1;
+	while (m_select_id.step())
+		id = m_select_id.fetchInt(0);
+
+	// Add it to the cache
+	if (id != -1)
+		m_cache.insert(make_pair(id, item));
+
+	return id;
+}
+
+void RAttrSubIndex::read(int id, Metadata& md) const
+{
+	std::map< int, UItem<> >::const_iterator i = m_cache.find(id);
+	if (i != m_cache.end())
+	{
+		md.set(i->second);
+		return;
+	}
+
+	// Reset the query
+	m_select_one.reset();
+	m_select_one.bind(1, id);
+
+	// Decode every blob and run the matcher on it
+	if (m_select_one.step())
+	{
+		const void* buf = m_select_one.fetchBlob(0);
+		int len = m_select_one.fetchBytes(0);
+		Item<> i = types::decodeInner((types::Code)serCode, (const unsigned char*)buf, len);
+		m_cache.insert(make_pair(id, i));
+		md.set(i);
+	}
 }
 
 std::vector<int> RAttrSubIndex::query(const matcher::OR& m) const
 {
 	std::vector<int> ids;
 	// Reset the query
-	int res;
-	res = sqlite3_reset(m_stm_select_all);
-	if (res != SQLITE_OK)
-		m_db.throwException("resetting select all query for sub_" + name);
+	m_select_all.reset();
 
 	// Decode every blob and run the matcher on it
-	while ((res = sqlite3_step(m_stm_select_all)) == SQLITE_ROW)
+	while (m_select_all.step())
 	{
-		const void* buf = sqlite3_column_blob(m_stm_select_all, 1);
-		int len = sqlite3_column_bytes(m_stm_select_all, 1);
+		const void* buf = m_select_all.fetchBlob(1);
+		int len = m_select_all.fetchBytes(1);
 		Item<> t = types::decodeInner((types::Code)serCode, (const unsigned char*)buf, len);
 		if (m.matchItem(t))
-			ids.push_back(sqlite3_column_int(m_stm_select_all, 0));
-	}
-	if (res != SQLITE_DONE)
-	{
-#ifdef LEGACY_SQLITE
-		sqlite3_reset(m_stm_select_all);
-#endif
-		m_db.throwException("executing select all query for sub_" + name);
+			ids.push_back(m_select_all.fetchInt(0));
 	}
 	return ids;
 }

@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk/fetcher - Optimised data fetcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,18 +21,19 @@
  */
 
 #include <arki/dataset/ondisk/fetcher.h>
-#include <arki/dataset/ondisk/common.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 // TODO: remove these two headers when possible
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <wibble/string.h>
 #include <cstdio>
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils::files;
 
 namespace arki {
 namespace dataset {

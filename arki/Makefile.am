@@ -13,7 +13,6 @@ arkiinclude_HEADERS = \
 		dataset/local.h \
 		dataset/file.h \
 		dataset/ondisk.h \
-		dataset/ondisk/common.h \
 		dataset/ondisk/maintenance.h \
 		dataset/ondisk/fetcher.h \
 		dataset/ondisk/reader.h \
@@ -22,7 +21,11 @@ arkiinclude_HEADERS = \
 		dataset/ondisk/writer/directory.h \
 		dataset/ondisk/maint/datafile.h \
 		dataset/ondisk/maint/directory.h \
-		dataset/ondisk/test-utils.h \
+		dataset/ondisk2.h \
+		dataset/ondisk2/index.h \
+		dataset/ondisk2/reader.h \
+		dataset/ondisk2/writer.h \
+		dataset/ondisk2/writer/datafile.h \
 		dataset/outbound.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -69,6 +72,7 @@ arkiinclude_HEADERS = \
 		utils/geosfwd.h \
 		utils/geosdef.h \
 		utils/sqlite.h \
+		utils/files.h \
 		sort.h \
 		formatter.h \
 		bbox.h \
@@ -95,6 +99,7 @@ lib_LTLIBRARIES = libarkimet.la
 libarkimet_la_SOURCES = \
 		utils.cc \
 		utils/sqlite.cc \
+		utils/files.cc \
 		configfile.cc \
 		transaction.cc \
 		values.cc \
@@ -138,7 +143,6 @@ libarkimet_la_SOURCES = \
 		dataset/local.cc \
 		dataset/file.cc \
 		dataset/ondisk.cc \
-		dataset/ondisk/common.cc \
 		dataset/ondisk/maintenance.cc \
 		dataset/ondisk/fetcher.cc \
 		dataset/ondisk/reader.cc \
@@ -147,6 +151,11 @@ libarkimet_la_SOURCES = \
 		dataset/ondisk/writer/datafile.cc \
 		dataset/ondisk/maint/directory.cc \
 		dataset/ondisk/maint/datafile.cc \
+		dataset/ondisk2.cc \
+		dataset/ondisk2/index.cc \
+		dataset/ondisk2/reader.cc \
+		dataset/ondisk2/writer.cc \
+		dataset/ondisk2/writer/datafile.cc \
 		dataset/outbound.cc \
 		dataset/discard.cc \
 		dataset/empty.cc \
@@ -164,6 +173,7 @@ check_PROGRAMS = tests/arki-test
 tests_arki_test_SOURCES = \
 		utils-tut.cc \
 		utils/sqlite-tut.cc \
+		utils/files-tut.cc \
 		refcounted-tut.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
@@ -207,7 +217,6 @@ tests_arki_test_SOURCES = \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
 		dataset/ondisk-tut.cc \
-		dataset/ondisk/common-tut.cc \
 		dataset/ondisk/fetcher-tut.cc \
 		dataset/ondisk/writer/datafile-tut.cc \
 		dataset/ondisk/writer/directory-tut.cc \
@@ -215,7 +224,10 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk/maint/directory-tut.cc \
 		dataset/ondisk/maintenance-tut.cc \
 		dataset/ondisk/reader-tut.cc \
-		dataset/ondisk/test-utils.cc \
+		dataset/ondisk2-tut.cc \
+		dataset/ondisk2/index-tut.cc \
+		dataset/ondisk2/reader-tut.cc \
+		dataset/ondisk2/writer/datafile-tut.cc \
 		dataset/test-utils.cc \
 		dataset/outbound-tut.cc \
 		dataset/discard-tut.cc \

@@ -1,7 +1,7 @@
 /*
- * dataset/ondisk/common - Common code for ondisk implementation
+ * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk/common.h>
+#include <arki/utils/files.h>
 #include <arki/utils.h>
 #include <wibble/string.h>
 
@@ -31,8 +31,8 @@ using namespace std;
 using namespace wibble;
 
 namespace arki {
-namespace dataset {
-namespace ondisk {
+namespace utils {
+namespace files {
 
 void createRebuildFlagfile(const std::string& pathname)
 {

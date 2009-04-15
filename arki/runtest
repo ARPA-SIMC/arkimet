@@ -47,12 +47,20 @@ BASE=`basename $CMD`
 if [ ! -z "$DEBUGGER" ] && [ -x $DIR/.libs/lt-$BASE ]
 then
 	echo "Running $DEBUGGER $DIR/.libs/lt-$BASE $ARGS"
-	$DEBUGGER $DIR/.libs/lt-$BASE $ARGS
-	RES=$?
+	RES=0
+	if ! $DEBUGGER $DIR/.libs/lt-$BASE $ARGS
+	then
+		RES=$?
+		echo "Failed with result $RES"
+	fi
 else
 	echo "Running $DEBUGGER $CMD $ARGS"
-	$DEBUGGER $CMD $ARGS
-	RES=$?
+	RES=0
+	if !  $DEBUGGER $CMD $ARGS
+	then
+		RES=$?
+		echo "Failed with result $RES"
+	fi
 fi
 
 

@@ -127,6 +127,7 @@ struct Node : public refcounted::Base
 	Node();
 	// New node initialized from the given metadata
 	Node(const Metadata& m, size_t scanpos = 0);
+	Node(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos = 0);
 	Node(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos = 0);
 	virtual ~Node();
 
@@ -147,6 +148,7 @@ struct Node : public refcounted::Base
 
 	// Add a metadata item
 	void add(const Metadata& m, size_t scanpos = 0);
+	void add(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos = 0);
 	void add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos = 0);
 
 	// Return the total size of all the metadata described by this node.
@@ -276,6 +278,13 @@ public:
 	 * Add information about this metadata to the summary
 	 */
 	void add(const Metadata& md);
+
+	/**
+	 * Add information about several metadata to the summary: the
+	 * summarisable metadata items are taken from 'md', and the statistics
+	 * from 'st'
+	 */
+	void add(const Metadata& md, const arki::Item<summary::Stats>& st);
 
 	/**
 	 * Merge a summary into this summary

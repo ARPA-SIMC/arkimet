@@ -1,4 +1,6 @@
 /*
+ * dataset/ondisk2 - Local on disk dataset
+ *
  * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,25 +20,11 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/tests/test-utils.h>
-#include <arki/dataset/ondisk/fetcher.h>
+#include <arki/dataset/ondisk2.h>
 
-#include <sstream>
-#include <iostream>
-
-namespace tut {
 using namespace std;
-using namespace arki;
 
-struct arki_dataset_ondisk_fetcher_shar {
-};
-TESTGRP(arki_dataset_ondisk_fetcher);
-
-template<> template<>
-void to::test<1>()
-{
-}
+namespace arki {
 
 }
-
 // vim:set ts=4 sw=4:

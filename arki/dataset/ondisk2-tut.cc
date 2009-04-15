@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,8 +17,8 @@
  */
 
 #include <arki/tests/test-utils.h>
-#include <arki/dataset/ondisk.h>
-#include <arki/dataset/ondisk/maintenance.h>
+#include <arki/dataset/ondisk2.h>
+//#include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
@@ -37,7 +37,7 @@ using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
-using namespace arki::dataset::ondisk;
+using namespace arki::dataset::ondisk2;
 using namespace arki::utils::files;
 
 static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
@@ -54,11 +54,11 @@ struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
 	}
 };
 
-struct arki_dataset_ondisk_shar {
+struct arki_dataset_ondisk2_shar {
 	ConfigFile config;
 	ConfigFile configAll;
 
-	arki_dataset_ondisk_shar()
+	arki_dataset_ondisk2_shar()
 	{
 		// Cleanup the test datasets
 		system("rm -rf testall/*");
@@ -69,23 +69,21 @@ struct arki_dataset_ondisk_shar {
 		// In-memory dataset configuration
 		string conf =
 			"[test200]\n"
-			"type = test\n"
+			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,200\n"
-			"index = origin, reftime\n"
 			"name = test200\n"
 			"path = test200\n"
 			"\n"
 			"[test80]\n"
-			"type = test\n"
+			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,80\n"
-			"index = origin, reftime\n"
 			"name = test80\n"
 			"path = test80\n"
 			"\n"
 			"[test98]\n"
-			"type = test\n"
+			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,98\n"
 			"name = test98\n"
@@ -97,10 +95,9 @@ struct arki_dataset_ondisk_shar {
 		// In-memory dataset configuration
 		string conf1 =
 			"[testall]\n"
-			"type = test\n"
+			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1\n"
-			"index = origin, reftime\n"
 			"name = testall\n"
 			"path = testall\n";
 		stringstream incfg1(conf1);
@@ -117,9 +114,9 @@ struct arki_dataset_ondisk_shar {
 		// Import data into the datasets
 		Metadata md;
 		scan::Grib scanner;
-		dataset::ondisk::Writer d200(*config.section("test200"));
-		dataset::ondisk::Writer d80(*config.section("test80"));
-		dataset::ondisk::Writer d98(*config.section("test98"));
+		dataset::ondisk2::Writer d200(*config.section("test200"));
+		dataset::ondisk2::Writer d80(*config.section("test80"));
+		dataset::ondisk2::Writer d98(*config.section("test98"));
 		scanner.open("inbound/test.grib1");
 		ensure(scanner.next(md));
 		ensure_equals(d200.acquire(md), WritableDataset::ACQ_OK);
@@ -143,7 +140,7 @@ struct arki_dataset_ondisk_shar {
 		// Import data into the datasets
 		Metadata md;
 		scan::Grib scanner;
-		dataset::ondisk::Writer all(*configAll.section("testall"));
+		dataset::ondisk2::Writer all(*configAll.section("testall"));
 		scanner.open("inbound/test.grib1");
 		ensure(scanner.next(md));
 		ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
@@ -157,7 +154,7 @@ struct arki_dataset_ondisk_shar {
 		all.flush();
 	}
 };
-TESTGRP(arki_dataset_ondisk);
+TESTGRP(arki_dataset_ondisk2);
 
 // Work-around for a bug in old gcc versions
 #if __GNUC__ && __GNUC__ < 4
@@ -176,9 +173,9 @@ void to::test<1>()
 	scan::Grib scanner;
 	scanner.open("inbound/test.grib1");
 
-	dataset::ondisk::Writer d200(*config.section("test200"));
+	dataset::ondisk2::Writer d200(*config.section("test200"));
 	ensure(scanner.next(md));
-	ensure(!hasIndexFlagfile("test200"));
+//2	ensure(!hasIndexFlagfile("test200"));
 
 	// Import once in the empty dataset
 	WritableDataset::AcquireResult res = d200.acquire(md);
@@ -188,7 +185,7 @@ void to::test<1>()
 	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
-	ensure(hasIndexFlagfile("test200"));
+//2	ensure(hasIndexFlagfile("test200"));
 	#if 0
 	for (vector<Note>::const_iterator i = md.notes.begin();
 			i != md.notes.end(); ++i)
@@ -196,7 +193,7 @@ void to::test<1>()
 	#endif
 	UItem<types::AssignedDataset> ds = getDataset(md);
 	ensure_equals(ds->name, "test200");
-	ensure(ds->id != "");
+	ensure_equals(ds->id, "1");
 
 	// See if we catch duplicate imports
 	md.unset(types::TYPE_ASSIGNEDDATASET);
@@ -211,21 +208,21 @@ void to::test<1>()
 	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
 	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
-	ensure(wibble::sys::fs::access("test200/index-out-of-sync", F_OK));
+//2	ensure(wibble::sys::fs::access("test200/index-out-of-sync", F_OK));
 	d200.flush();
 	ensure(wibble::sys::fs::access("test200/2007/07-08.grib1", F_OK));
-	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
-	ensure(wibble::sys::fs::access("test200/2007/07-08.grib1.metadata", F_OK));
-	ensure(wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
-	ensure(wibble::sys::fs::access("test200/2007/summary", F_OK));
-	ensure(wibble::sys::fs::access("test200/summary", F_OK));
+//2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
+	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.metadata", F_OK));
+	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
+	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
+	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
 	ensure(wibble::sys::fs::access("test200/index.sqlite", F_OK));
-	ensure(!hasIndexFlagfile("test200"));
+//2	ensure(!hasIndexFlagfile("test200"));
 
-	ensure(timestamp("test200/2007/07-08.grib1.metadata") <= timestamp("test200/2007/07-08.grib1.summary"));
-	ensure(timestamp("test200/2007/07-08.grib1.summary") <= timestamp("test200/2007/summary"));
-	ensure(timestamp("test200/2007/summary") <= timestamp("test200/summary"));
-	ensure(timestamp("test200/2007/07-08.grib1.metadata") <= timestamp("test200/index.sqlite"));
+//2	ensure(timestamp("test200/2007/07-08.grib1.metadata") <= timestamp("test200/2007/07-08.grib1.summary"));
+//2	ensure(timestamp("test200/2007/07-08.grib1.summary") <= timestamp("test200/2007/summary"));
+//2	ensure(timestamp("test200/2007/summary") <= timestamp("test200/summary"));
+//2	ensure(timestamp("test200/2007/07-08.grib1.metadata") <= timestamp("test200/index.sqlite"));
 }
 
 // Test querying the datasets
@@ -412,6 +409,8 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
+	// TODO
+#if 0
 	acquireSamples();
 
 	// Try a query
@@ -425,7 +424,7 @@ void to::test<7>()
 
 	// Rebuild the index
 	{
-		dataset::ondisk::Writer d200(*config.section("test200"));
+		dataset::ondisk2::Writer d200(*config.section("test200"));
 		// Run a full maintenance run
 		d200.invalidateAll();
 		MetadataCollector mdc;
@@ -443,6 +442,7 @@ void to::test<7>()
 		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
+#endif
 }
 
 // Test querying the summary
@@ -482,7 +482,7 @@ void to::test<10>()
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk::Writer d200(*config.section("test200"));
+		dataset::ondisk2::Writer d200(*config.section("test200"));
 		size_t count;
 		for (count = 0; scanner.next(md); ++count)
 			ensure(d200.acquire(md) == WritableDataset::ACQ_OK);
@@ -495,7 +495,7 @@ void to::test<10>()
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk::Writer d200(*config.section("test200"));
+		dataset::ondisk2::Writer d200(*config.section("test200"));
 		size_t count;
 		for (count = 0; scanner.next(md); ++count)
 			ensure(d200.acquire(md) == WritableDataset::ACQ_ERROR_DUPLICATE);
@@ -510,7 +510,7 @@ void to::test<10>()
 
 		ConfigFile cfg = *config.section("test200");
 		cfg.setValue("replace", "true");
-		dataset::ondisk::Writer d200(cfg);
+		dataset::ondisk2::Writer d200(cfg);
 		size_t count;
 		for (count = 0; scanner.next(md); ++count)
 			ensure(d200.acquire(md) == WritableDataset::ACQ_OK);

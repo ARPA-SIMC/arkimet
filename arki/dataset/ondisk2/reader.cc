@@ -1,5 +1,5 @@
 /*
- * dataset/ondisk/reader - Local on disk dataset reader
+ * dataset/ondisk2/reader - Local on disk dataset reader
  *
  * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -20,14 +20,14 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk.h>
+#include <arki/dataset/ondisk2/reader.h>
+#include <arki/dataset/ondisk2/index.h>
 #include <arki/dataset/targetfile.h>
-#include <arki/dataset/index.h>
+#include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/utils.h>
-#include <arki/utils/files.h>
 #include <arki/summary.h>
 #include <arki/postprocess.h>
 
@@ -53,45 +53,24 @@
 
 using namespace std;
 using namespace wibble;
-using namespace arki::utils::files;
 
 namespace arki {
 namespace dataset {
-namespace ondisk {
+namespace ondisk2 {
 
-Reader::Reader(const ConfigFile& cfg) : m_idx(0), m_tf(0)
+Reader::Reader(const ConfigFile& cfg)
+       	: m_name(cfg.value("name")), m_root(cfg.value("path")),
+	  m_idx(0), m_tf(0)
 {
-	m_root = cfg.value("path");
 	m_tf = TargetFile::create(cfg);
-
-	// If there is no 'index' in the config file, don't index anything
-	if (cfg.value("index") != string()
-	 && !hasIndexFlagfile(m_root)
-	 && utils::hasFlagfile(str::joinpath(m_root, "index.sqlite")))
-	{
-		m_idx = new RIndex(cfg);
-		m_idx->open();
-	}
+	m_idx = new RIndex(cfg);
+	m_idx->open();
 }
 
 Reader::~Reader()
 {
 	if (m_idx) delete m_idx;
 	if (m_tf) delete m_tf;
-}
-
-static bool readSummary(Summary& s, const std::string& fname)
-{
-	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(fname);
-	if (st.get() == NULL)
-		return false;
-
-	ifstream in;
-	in.open(fname.c_str(), ios::in);
-	if (!in.is_open() || in.fail())
-		throw wibble::exception::File(fname, "opening file for reading");
-
-	return s.read(in, fname);
 }
 
 /**
@@ -141,102 +120,6 @@ struct DataOnly : public MetadataConsumer
 	}
 };
 
-static void scan(const std::string& fname, const Matcher& matcher, MetadataConsumer& consumer)
-{
-	Metadata md;
-	ifstream in;
-	in.open(fname.c_str(), ios::in);
-	if (!in.is_open() || in.fail())
-		throw wibble::exception::File(fname, "opening file for reading");
-	while (md.read(in, fname))
-	{
-		if (md.deleted) continue;
-		if (matcher(md))
-			consumer(md);
-	}
-}
-
-void Reader::queryWithoutIndex(const std::string& top, const Matcher& matcher, MetadataConsumer& consumer) const
-{
-	using namespace wibble::str;
-
-	const matcher::Implementation* rtmatch = 0;
-
-	//fprintf(stderr, "TF %p IML %p TOP %s\n", m_tf, matcher.m_impl, top.c_str());
-
-	// Check the dir name against a reftime matcher
-	if (m_tf && matcher.m_impl && !top.empty())
-	{
-		rtmatch = matcher.m_impl->get(types::TYPE_REFTIME);
-		//fprintf(stderr, "tf-check-dir %s\n", top.c_str());
-		if (rtmatch && ! m_tf->pathMatches(top, *rtmatch))
-		{
-			//fprintf(stderr, "Skipped %s because of name\n", top.c_str());
-			return;
-		}
-	}
-
-	string root = joinpath(m_root, top);
-
-	// Read the summary of the directory: if it does not match, return right
-	// away
-	Summary summary;
-	if (readSummary(summary, joinpath(root, "summary")) && !matcher(summary))
-		return;
-
-	// If there is no summary or it does match, query the subdirectories and
-	// scan the .metadata files
-	PathPrepender prepender(top, consumer);
-	wibble::sys::fs::Directory dir(root);
-	vector<string> dirs;
-	vector<string> files;
-	for (wibble::sys::fs::Directory::const_iterator i = dir.begin();
-			i != dir.end(); ++i)
-	{
-		// Skip '.', '..' and hidden files
-		if ((*i)[0] == '.') continue;
-		if (utils::isdir(root, i))
-			dirs.push_back(*i);
-		else if (str::endsWith(*i, ".metadata"))
-			files.push_back(*i);
-	}
-	std::sort(dirs.begin(), dirs.end());
-	std::sort(files.begin(), files.end());
-	for (vector<string>::const_iterator i = dirs.begin();
-			i != dirs.end(); ++i)
-	{
-		// Query the subdirectory
-		queryWithoutIndex(joinpath(top, *i), matcher, consumer);
-	}
-	for (vector<string>::const_iterator i = files.begin();
-			i != files.end(); ++i)
-	{
-		string basename = (*i).substr(0, (*i).size() - 9);
-		string relname = joinpath(top, basename);
-		string fullname = joinpath(m_root, relname);
-
-		// If there is the rebuild flagfile, skip this data file
-		// because the metadata may be inconsistent
-		if (hasRebuildFlagfile(fullname))
-			continue;
-
-		// Check the file name against a reftime matcher
-		//if (rtmatch) fprintf(stderr, "tf-check %s\n", relname.c_str());
-		if (rtmatch && ! m_tf->pathMatches(relname, *rtmatch))
-		{
-			//fprintf(stderr, "Skipped %s because of name\n", relname.c_str());
-			continue;
-		}
-
-		// Check in the summary if we should scan this metadata
-		Summary summary;
-		if (readSummary(summary, fullname + ".summary") && !matcher(summary))
-			continue;
-		// Scan the metadata file
-		scan(joinpath(root, *i), matcher, prepender);
-	}
-}
-
 void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
 {
 	// First ask the index.  If it can do something useful, iterate with it
@@ -252,11 +135,11 @@ void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 		DataInliner inliner(consumer);
 		PathPrepender prepender(sys::fs::abspath(m_root), inliner);
 		if (!m_idx || !m_idx->query(matcher, prepender))
-			queryWithoutIndex("", matcher, prepender);
+			throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 	} else {
 		PathPrepender prepender(sys::fs::abspath(m_root), consumer);
 		if (!m_idx || !m_idx->query(matcher, prepender))
-			queryWithoutIndex("", matcher, prepender);
+			throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 	}
 }
 
@@ -268,14 +151,14 @@ void Reader::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qty
 			DataOnly dataonly(out);
 			PathPrepender prepender(sys::fs::abspath(m_root), dataonly);
 			if (!m_idx || !m_idx->query(matcher, prepender))
-				queryWithoutIndex("", matcher, prepender);
+				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 			break;
 		}
 		case BQ_POSTPROCESS: {
 			Postprocess postproc(param, out);
 			PathPrepender prepender(sys::fs::abspath(m_root), postproc);
 			if (!m_idx || !m_idx->query(matcher, prepender))
-				queryWithoutIndex("", matcher, prepender);
+				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 			postproc.flush();
 			break;
 		}
@@ -306,6 +189,7 @@ void Reader::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qty
 	}
 }
 
+#if 0
 void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summary& result)
 {
 	using namespace wibble::str;
@@ -374,23 +258,14 @@ void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summa
 		}
 	}
 }
+#endif
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
 	using namespace wibble::str;
 
-	if (matcher.empty() || matcher->get(types::TYPE_REFTIME) == 0)
-	{
-		// If the matcher does not query by reference time, we can use the
-		// toplevel summary and get an exact result directly from it
-		Summary mine;
-		if (!readSummary(mine, joinpath(m_root, "summary")))
-			return;
-		mine.filter(matcher, summary);
-	} else {
-		// Else, we match on the datafiles' summaries only
-		scanSummaries("", matcher, summary);
-	}
+	if (!m_idx || !m_idx->querySummary(matcher, summary))
+		throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 }
 
 }

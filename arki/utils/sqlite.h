@@ -137,15 +137,6 @@ public:
 	 * Return true when there is another row to fetch, else false
 	 */
 	bool step();
-};
-
-/**
- * Simple use of a precompiled query
- */
-class PrecompiledQuery : public Query
-{
-public:
-	PrecompiledQuery(const std::string& name, SQLiteDB& db) : Query(name, db) {}
 
 	std::string fetchString(int column)
 	{
@@ -167,6 +158,15 @@ public:
 	{
 		return sqlite3_column_bytes(m_stm, column);
 	}
+};
+
+/**
+ * Simple use of a precompiled query
+ */
+class PrecompiledQuery : public Query
+{
+public:
+	PrecompiledQuery(const std::string& name, SQLiteDB& db) : Query(name, db) {}
 };
 
 /**

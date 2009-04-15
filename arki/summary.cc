@@ -112,6 +112,12 @@ Node::Node(const Metadata& m, size_t scanpos)
 		md.push_back(m.get(mso[i]));
 	stats = new Stats(1, m.dataSize(), m.get(types::TYPE_REFTIME).upcast<types::reftime::Position>());
 }
+Node::Node(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos)
+{
+	for (size_t i = scanpos; i < msoSize; ++i)
+		md.push_back(m.get(mso[i]));
+	stats = st;
+}
 Node::Node(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos)
 {
 	if (scanpos == 0)
@@ -267,6 +273,41 @@ void Node::add(const Metadata& m, size_t scanpos)
 	}
 }
 
+void Node::add(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos)
+{
+	// Ensure that we can store it
+	for (size_t i = 0; i < md.size(); ++i)
+	{
+		UItem<> mditem = m.get(mso[scanpos + i]);
+		if (mditem != md[i])
+		{
+			// Split
+			refcounted::Pointer<Node> child(new Node);
+			for (size_t j = i + 1; j < md.size(); ++j)
+				child->md.push_back(md[j]);
+			child->children = children;
+			child->stats = stats;
+			stats.clear();
+			children.clear();
+			children[md[i]] = child;
+			children[mditem] = new Node(m, st, scanpos + i + 1);
+			md.resize(i);
+			return;
+		}
+	}
+
+	if (scanpos + md.size() == msoSize)
+	{
+		stats->merge(st);
+	} else {
+		UItem<> childmd = m.get(mso[scanpos + md.size()]);
+		std::map< UItem<>, refcounted::Pointer<Node> >::iterator i = children.find(childmd);
+		if (i == children.end())
+			children[childmd] = new Node(m, st, scanpos + md.size() + 1);
+		else
+			i->second->add(m, st, scanpos + md.size() + 1);
+	}
+}
 void Node::add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos)
 {
 	// Ensure that we can store it
@@ -292,7 +333,10 @@ void Node::add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, siz
 
 	if (scanpos + md.size() == msoSize)
 	{
-		stats->merge(st);
+		if (!stats.defined())
+			stats = st;
+		else
+			stats->merge(st);
 	} else {
 		UItem<> childmd = m[scanpos + md.size()];
 		std::map< UItem<>, refcounted::Pointer<Node> >::iterator i = children.find(childmd);
@@ -1247,6 +1291,14 @@ void Summary::add(const Metadata& md)
 		root->add(md);
 	else
 		root = new summary::Node(md);
+}
+
+void Summary::add(const Metadata& md, const arki::Item<summary::Stats>& s)
+{
+	if (root.ptr())
+		root->add(md, s);
+	else
+		root = new summary::Node(md, s);
 }
 
 namespace summary {

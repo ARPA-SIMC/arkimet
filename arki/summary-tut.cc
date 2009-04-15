@@ -218,11 +218,11 @@ void to::test<10>()
 #endif
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<11>()
 {
+#ifdef HAVE_LUA
 	s.add(md2);
 
 	tests::Lua test(
@@ -255,8 +255,8 @@ void to::test<11>()
 
 	test.pusharg(s);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
 
 // Summarise the test gribs
 template<> template<>
@@ -291,6 +291,29 @@ void to::test<12>()
 	s3.readYaml(stream2, "(test memory buffer)");
 	ensure_equals(s3, s1);
 #endif
+}
+
+// Test adding a metadata plus stats
+template<> template<>
+void to::test<13>()
+{
+	Metadata md3;
+	md3.create();
+	md3.set(origin::GRIB1::create(5, 6, 7));
+	md3.set(product::GRIB1::create(4, 5, 6));
+	md3.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
+	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
+
+	arki::Item<summary::Stats> st(new summary::Stats);
+	st->count = 5;
+	st->size = 123456;
+	st->reftimeMerger.mergeTime(Time::create(2008, 7, 6, 5, 4, 3), Time::create(2008, 9, 8, 7, 6, 5));
+
+	s.add(md3, st);
+
+	// Check that it contains 2 metadata
+	ensure_equals(s.count(), 7u);
+	ensure_equals(s.size(), 123486u);
 }
 
 }

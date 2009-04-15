@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,16 +16,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include <arki/dataset/ondisk/test-utils.h>
+#include <arki/dataset/test-utils.h>
 #include <arki/dataset/ondisk/maint/directory.h>
 #include <arki/dataset/ondisk/maint/datafile.h>
-#include <arki/dataset/ondisk/common.h>
 #include <arki/dataset/ondisk/reader.h>
 #include <arki/dataset/ondisk/writer.h>
 #include <arki/scan/grib.h>
 #include <arki/metadata.h>
 #include <arki/configfile.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 
 #include <sstream>
@@ -38,6 +38,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk;
 using namespace arki::dataset::ondisk::maint;
+using namespace arki::utils::files;
 
 struct arki_dataset_ondisk_maint_directory_shar {
 	ConfigFile cfg;

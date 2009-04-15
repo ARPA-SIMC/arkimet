@@ -21,7 +21,6 @@
  */
 
 #include <arki/dataset/ondisk/maintenance.h>
-#include <arki/dataset/ondisk/common.h>
 #include <arki/dataset/ondisk/maintenance.h>
 #include <arki/dataset/ondisk/maint/datafile.h>
 #include <arki/dataset/ondisk/maint/directory.h>

@@ -25,6 +25,7 @@
 #include <arki/configfile.h>
 #include <arki/dataset/file.h>
 #include <arki/dataset/ondisk.h>
+#include <arki/dataset/ondisk2.h>
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
@@ -67,6 +68,8 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 	
 	if (type == "local" || type == "test" || type == "error" || type == "duplicates")
 		return new dataset::ondisk::Reader(cfg);
+	if (type == "ondisk2")
+		return new dataset::ondisk2::Reader(cfg);
 #ifdef HAVE_LIBCURL
 	if (type == "remote")
 		return new dataset::HTTP(cfg);
@@ -103,6 +106,8 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 	
 	if (type == "local" || type == "test" || type == "error" || type == "duplicates")
 		return new dataset::ondisk::Writer(cfg);
+	if (type == "ondisk2")
+		return new dataset::ondisk2::Writer(cfg);
 	if (type == "remote")
 		throw wibble::exception::Consistency("creating a dataset", "remote datasets are not writable");
 	if (type == "outbound")
@@ -121,6 +126,8 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
 	
 	if (type == "local" || type == "test" || type == "error" || type == "duplicates")
 		return dataset::ondisk::Writer::testAcquire(cfg, md, out);
+	if (type == "ondisk2")
+		return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
 	if (type == "remote")
 		throw wibble::exception::Consistency("simulating dataset acquisition", "remote datasets are not writable");
 	if (type == "outbound")

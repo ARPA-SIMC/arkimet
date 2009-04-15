@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,29 @@ namespace arki {
 struct Metadata;
 struct MetadataConsumer;
 struct Dispatcher;
+
+struct MetadataCollector : public std::vector<Metadata>, public MetadataConsumer
+{
+	bool operator()(Metadata& md)
+	{
+		push_back(md);
+		return true;
+	}
+};
+
+struct MetadataCounter : public MetadataConsumer
+{
+	size_t count;
+	MetadataCounter() : count(0) {}
+	bool operator()(Metadata& md)
+	{
+		++count;
+		return true;
+	}
+};
+
+size_t countDeletedMetadata(const std::string& fname);
+
 
 namespace tests{
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))

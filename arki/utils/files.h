@@ -30,8 +30,8 @@
 #define FLAGFILE_INDEX "index-out-of-sync"
 
 namespace arki {
-namespace dataset {
-namespace ondisk {
+namespace utils {
+namespace files {
 
 // Flagfile handling
 

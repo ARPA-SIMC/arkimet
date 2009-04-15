@@ -72,13 +72,23 @@ protected:
 	// This is just a copy of what is in the main index
 	utils::sqlite::SQLiteDB& m_db;
 	// Precompiled select all statement
-	sqlite3_stmt* m_stm_select_all;
+	mutable utils::sqlite::PrecompiledQuery m_select_all;
+	// Precompiled select one statement
+	mutable utils::sqlite::PrecompiledQuery m_select_one;
+	// Precompiled get id statement
+	mutable utils::sqlite::PrecompiledQuery m_select_id;
+	// Parsed item cache
+	mutable std::map< int, UItem<> > m_cache;
 
 public:
 	RAttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);
 	~RAttrSubIndex();
 
 	void initQueries();
+
+	int id(const Metadata& md) const;
+
+	void read(int id, Metadata& md) const;
 
 	std::vector<int> query(const matcher::OR& m) const;
 };

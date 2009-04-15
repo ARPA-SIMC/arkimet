@@ -17,12 +17,9 @@
  */
 
 #include <arki/dataset/test-utils.h>
-#include <arki/dataset/ondisk/writer/datafile.h>
-#include <arki/dataset/ondisk/writer/directory.h>
+#include <arki/dataset/ondisk2/writer/datafile.h>
 #include <arki/metadata.h>
 #include <arki/scan/grib.h>
-#include <arki/configfile.h>
-#include <arki/utils/files.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 
@@ -35,9 +32,8 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::dataset::ondisk;
-using namespace arki::dataset::ondisk::writer;
-using namespace arki::utils::files;
+using namespace arki::dataset::ondisk2;
+using namespace arki::dataset::ondisk2::writer;
 using namespace wibble::sys;
 
 static inline size_t filesize(const std::string& fname)
@@ -49,27 +45,16 @@ static inline size_t datasize(const Metadata& md)
 	return md.source.upcast<types::source::Blob>()->size;
 }
 
-struct arki_dataset_ondisk_writer_datafile_shar {
-	RootDirectory* rootDir;
-	Datafile* df;
-	ConfigFile cfg;
+struct arki_dataset_ondisk2_writer_datafile_shar {
+	string fname;
 
-	arki_dataset_ondisk_writer_datafile_shar() : rootDir(0)
+	arki_dataset_ondisk2_writer_datafile_shar()
+		: fname("testfile.grib")
 	{
-		cfg.setValue("path", "testdatafile");
-		cfg.setValue("name", "testdir");
-		cfg.setValue("step", "daily");
-
-		system("rm -rf testdatafile");
-		rootDir = new RootDirectory(cfg);
-		df = rootDir->file("testfile.grib1");
+		system(("rm -f " + fname).c_str());
 	}
 
-	~arki_dataset_ondisk_writer_datafile_shar()
-	{
-		if (rootDir) delete rootDir;
-	}
-
+#if 0
 	void appendData()
 	{
 		scan::Grib scanner;
@@ -90,84 +75,93 @@ struct arki_dataset_ondisk_writer_datafile_shar {
 		rootDir->flush();
 		df = rootDir->file("testfile.grib1");
 	}
+#endif
 };
-TESTGRP(arki_dataset_ondisk_writer_datafile);
+TESTGRP(arki_dataset_ondisk2_writer_datafile);
 
 // Try to append some data
 template<> template<>
 void to::test<1>()
 {
 	scan::Grib scanner;
-	scanner.open("inbound/test.grib1");
-
-	// Ensure there are no relevant files
-	ensure(!fs::access("testdatafile/testfile.grib1", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.new", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.metadata", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.metadata.new", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.summary", F_OK));
-	ensure(!hasRebuildFlagfile("testdatafile/testfile.grib1"));
-	ensure(!hasPackFlagfile("testdatafile/testfile.grib1"));
-
-	size_t totsize = 0;
 
 	Metadata md;
+	size_t totsize = 0;
+	off_t ofs;
+	scanner.open("inbound/test.grib1");
+
+	Datafile df(fname);
+
+	// It should exist but be empty
+	ensure(fs::access(fname, F_OK));
+	ensure_equals(filesize(fname), 0u);
+
+	// Get a metadata
 	ensure(scanner.next(md));
+	Item<types::Source> origSource = md.source;
 	size_t size = datasize(md);
+
+	{
+		// Start the append transaction, nothing happens until commit
+		Pending p = df.append(md, &ofs);
+		ensure_equals(ofs, 0u);
+		ensure_equals(filesize(fname), 0u);
+		ensure_equals(md.source, origSource);
+
+		// After commit, data is appended
+		p.commit();
+		ensure_equals(filesize(fname), size);
+		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, 0, size)));
+	}
+
 	totsize += size;
-	df->append(md);
 
-	ensure(fs::access("testdatafile/testfile.grib1", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.new", F_OK));
-	ensure(fs::access("testdatafile/testfile.grib1.metadata", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.metadata.new", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.summary", F_OK));
-	ensure(hasRebuildFlagfile("testdatafile/testfile.grib1"));
-	ensure(!hasPackFlagfile("testdatafile/testfile.grib1"));
-
-	ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", "testdatafile/testfile.grib1", 0, size)));
-
+	// Get another metadata
 	ensure(scanner.next(md));
-	totsize += datasize(md);
-	df->append(md);
+	origSource = md.source;
+	size = datasize(md);
 
+	{
+		// Start the append transaction, nothing happens until commit
+		Pending p = df.append(md, &ofs);
+		ensure_equals(ofs, totsize);
+		ensure_equals(filesize(fname), totsize);
+		ensure_equals(md.source, origSource);
+
+		// After rollback, nothing has changed
+		p.rollback();
+		ensure_equals(filesize(fname), totsize);
+		ensure_equals(md.source, origSource);
+	}
+
+	// Get another metadata
 	ensure(scanner.next(md));
-	totsize += datasize(md);
-	df->append(md);
+	origSource = md.source;
+	size = datasize(md);
 
-	ensure(!scanner.next(md));
+	{
+		// Start the append transaction, nothing happens until commit
+		Pending p = df.append(md, &ofs);
+		ensure_equals(ofs, totsize);
+		ensure_equals(filesize(fname), totsize);
+		ensure_equals(md.source, origSource);
 
-	ensure(fs::access("testdatafile/testfile.grib1", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.new", F_OK));
-	ensure(fs::access("testdatafile/testfile.grib1.metadata", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.metadata.new", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.summary", F_OK));
-	ensure(hasRebuildFlagfile("testdatafile/testfile.grib1"));
-	ensure(!hasPackFlagfile("testdatafile/testfile.grib1"));
+		// After commit, data is appended
+		p.commit();
+		ensure_equals(filesize(fname), totsize + size);
+		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
+	}
 
-	// Flush
-	flush();
-
-	ensure(fs::access("testdatafile/testfile.grib1", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.new", F_OK));
-	ensure(fs::access("testdatafile/testfile.grib1.metadata", F_OK));
-	ensure(!fs::access("testdatafile/testfile.grib1.metadata.new", F_OK));
-	ensure(fs::access("testdatafile/testfile.grib1.summary", F_OK));
-	ensure(!hasRebuildFlagfile("testdatafile/testfile.grib1"));
-	ensure(!hasPackFlagfile("testdatafile/testfile.grib1"));
-
-	// Ensure the file sizes are as expected
-	ensure_equals(filesize("testdatafile/testfile.grib1"), totsize);
-	
-	// Check what is in the metadata file
-	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");
-	ensure_equals(allmd.size(), 3u);
+	// When pending is out of scope, everything is normal
+	ensure_equals(filesize(fname), totsize + size);
+	ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
 }
 
 // Test replace
 template<> template<>
 void to::test<2>()
 {
+#if 0
 	appendData();
 
 	ensure(fs::access("testdatafile/testfile.grib1", F_OK));
@@ -226,12 +220,14 @@ void to::test<2>()
 
 	// Not really needed, but it's a good place to test countDeletedMetadata itself
 	ensure_equals(countDeletedMetadata("testdatafile/testfile.grib1.metadata"), 1u);
+#endif
 }
 
 // Test remove and pack
 template<> template<>
 void to::test<3>()
 {
+#if 0
 	appendData();
 
 	ensure(fs::access("testdatafile/testfile.grib1", F_OK));
@@ -280,6 +276,7 @@ void to::test<3>()
 	ensure(allmd[0].deleted);
 	ensure(!allmd[1].deleted);
 	ensure(!allmd[2].deleted);
+#endif
 }
 
 }

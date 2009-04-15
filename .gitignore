@@ -67,6 +67,7 @@ Makefile
 /data/dispatched
 /bench
 /testenv
+/testenv2
 /arki/matcher/reftime/reftime-lex.h
 /arki/matcher/reftime/reftime-lex.cc
 /arki/matcher/reftime/reftime-parse.h

@@ -1,4 +1,9 @@
-/**
+#ifndef ARKI_DATASET_ONDISK_WRITER_DATAFILE_H
+#define ARKI_DATASET_ONDISK_WRITER_DATAFILE_H
+
+/*
+ * dataset/ondisk/writer/datafile - Handle a data file plus its associated files
+ *
  * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,38 +22,41 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-#ifndef ARKI_DATASET_ONDISK_TESTUTILS_H
-#define ARKI_DATASET_ONDISK_TESTUTILS_H
 
-#include <arki/tests/test-utils.h>
-#include <arki/metadata.h>
-#include <vector>
+#include <string>
+#include <arki/transaction.h>
 
 namespace arki {
-struct Metadata;
+class Metadata;
 
-struct MetadataCollector : public std::vector<Metadata>, public MetadataConsumer
+namespace dataset {
+namespace ondisk2 {
+namespace writer {
+
+/**
+ * Manage a data file in the Ondisk dataset, including all accessory files,
+ * like metadata file and flagfiles
+ */
+struct Datafile
 {
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
+	// Full path to the data file
+	std::string pathname;
+	int fd;
 
-struct MetadataCounter : public MetadataConsumer
-{
-	size_t count;
-	MetadataCounter() : count(0) {}
-	bool operator()(Metadata& md)
-	{
-		++count;
-		return true;
-	}
-};
+	Datafile(const std::string& pathname);
+	~Datafile();
 
-size_t countDeletedMetadata(const std::string& fname);
+	/**
+	 * Append the data to the datafile and return a pending with the cancelable
+	 * operation.  The pending is only valid as long as this Datafile is valid.
+	 */
+	Pending append(Metadata& md, off_t* ofs);
+};
 
 }
+}
+}
+}
 
+// vim:set ts=4 sw=4:
 #endif
