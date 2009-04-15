@@ -64,8 +64,14 @@ void to::test<1>()
 	// Test serialisation to ISO-8601
 	ensure_equals(o->toISO8601(), "0000-00-00T00:00:00Z");
 
+	// Test serialisation to SQL
+	ensure_equals(o->toSQL(), "0000-00-00 00:00:00");
+
 	// Test deserialisation from ISO-8601
 	ensure_equals(o, Item<Time>(Time::createFromISO8601(o->toISO8601())));
+
+	// Test deserialisation from SQL
+	ensure_equals(o, Item<Time>(Time::createFromSQL(o->toSQL())));
 
 	ensure_serialises(o, types::TYPE_TIME);
 }
@@ -94,8 +100,14 @@ void to::test<2>()
 	// Test serialisation to ISO-8601
 	ensure_equals(o->toISO8601(), "0001-02-03T04:05:06Z");
 
+	// Test serialisation to SQL
+	ensure_equals(o->toSQL(), "0001-02-03 04:05:06");
+
 	// Test deserialisation from ISO-8601
 	ensure_equals(o, Item<Time>(Time::createFromISO8601(o->toISO8601())));
+
+	// Test deserialisation from SQL
+	ensure_equals(o, Item<Time>(Time::createFromSQL(o->toSQL())));
 
 	ensure_serialises(o, types::TYPE_TIME);
 }

@@ -2,9 +2,9 @@
 #define ARKI_TYPES_TIME_H
 
 /*
- * types/time - Vertical time or layer
+ * types/time - Time
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,6 +69,9 @@ struct Time : public types::Type
 	/// Return the time formatted as a string in ISO-8601 format
 	std::string toISO8601() const;
 
+	/// Return the time formatted as a string in SQL format
+	std::string toSQL() const;
+
 	virtual std::string tag() const;
 
 	/// CODEC functions
@@ -100,6 +103,9 @@ struct Time : public types::Type
 
 	/// Create a Time object from a string in ISO-8601 format
 	static Item<Time> createFromISO8601(const std::string& str);
+
+	/// Create a Time object from a string in SQL format
+	static Item<Time> createFromSQL(const std::string& str);
 
 	/// Create a Time object with the current time
 	static Item<Time> createNow();

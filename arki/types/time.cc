@@ -1,7 +1,7 @@
 /*
- * types/time - Vertical time or layer
+ * types/time - Time
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,6 +102,14 @@ std::string Time::toISO8601() const
 {
 	char buf[25];
 	snprintf(buf, 25, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+			vals[0], vals[1], vals[2], vals[3], vals[4], vals[5]);
+	return buf;
+}
+
+std::string Time::toSQL() const
+{
+	char buf[25];
+	snprintf(buf, 25, "%04d-%02d-%02d %02d:%02d:%02d",
 			vals[0], vals[1], vals[2], vals[3], vals[4], vals[5]);
 	return buf;
 }
@@ -278,6 +286,18 @@ Item<Time> Time::createFromISO8601(const std::string& str)
 		throw wibble::exception::Consistency(
 			"Invalid datetime specification: '"+str+"'",
 			"Parsing ISO-8601 string");
+	return res;
+}
+
+Item<Time> Time::createFromSQL(const std::string& str)
+{
+	Item<Time> res = Time::create();
+	int* v = res->vals;
+	int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+	if (count == 0)
+		throw wibble::exception::Consistency(
+			"Invalid datetime specification: '"+str+"'",
+			"Parsing SQL string");
 	return res;
 }
 
