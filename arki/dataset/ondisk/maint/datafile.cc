@@ -334,7 +334,7 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 			if (reindex && !md.deleted)
 				try {
 					parent->addToIndex(md, relname, ofs);
-				} catch (Index::DuplicateInsert) {
+				} catch (index::DuplicateInsert) {
 					salvage(md);
 					md.deleted = true;
 				}
@@ -358,7 +358,7 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 			if (reindex && !md.deleted)
 				try {
 					parent->addToIndex(md, relname, ofs);
-				} catch (Index::DuplicateInsert) {
+				} catch (index::DuplicateInsert) {
 					salvage(md);
 					md.deleted = true;
 				}
@@ -406,7 +406,7 @@ void Datafile::reindex(MetadataConsumer& salvage)
 		if (md.deleted) continue;
 		try {
 			parent->addToIndex(md, relname, offset);
-		} catch (Index::DuplicateInsert) {
+		} catch (index::DuplicateInsert) {
 			// The datum has been found to be duplicated: mark it as deleted
 			salvage(md);
 			auto_ptr<NormalAccess> na(new NormalAccess(pathname));

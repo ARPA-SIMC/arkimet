@@ -41,16 +41,6 @@ class ConfigFile;
 
 namespace dataset {
 
-namespace index {
-struct InsertQuery : public utils::sqlite::Query
-{
-	InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
-
-	// Step, but throw DuplicateInsert in case of duplicates
-	bool step();
-};
-}
-
 /**
  * Generic dataset index interface.
  *
@@ -82,15 +72,6 @@ protected:
 	Index(const ConfigFile& cfg);
 
 public:
-	struct DuplicateInsert : public wibble::exception::Consistency
-	{
-		DuplicateInsert(const std::string& context) throw () :
-			wibble::exception::Consistency(context, "duplicate element") {}
-		~DuplicateInsert() throw () {}
-
-		virtual const char* type() const throw () { return "DSIndex::DuplicateInsert"; }
-	};
-
 	~Index();
 };
 

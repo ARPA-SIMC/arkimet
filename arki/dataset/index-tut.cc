@@ -184,7 +184,7 @@ void to::test<2>()
 	try {
 		test->index(md, "test-md", 0);
 		ensure(false);
-	} catch (Index::DuplicateInsert& e) {
+	} catch (index::DuplicateInsert& e) {
 	}
 
 	// Index a second one

@@ -51,26 +51,6 @@ using namespace arki::dataset::index;
 namespace arki {
 namespace dataset {
 
-namespace index {
-bool InsertQuery::step()
-{
-	int rc = sqlite3_step(m_stm);
-	if (rc != SQLITE_DONE)
-	{
-#ifdef LEGACY_SQLITE
-		rc = sqlite3_reset(m_stm);
-#endif
-		// Different exception for duplicate inserts, to be able to treat
-		// duplicate inserts differently
-		if (rc == SQLITE_CONSTRAINT)
-			throw Index::DuplicateInsert("executing " + name + " query");
-		else
-			m_db.throwException("executing " + name + " query");
-	}
-	return false;
-}
-}
-
 Index::Index(const ConfigFile& cfg)
 	: m_root(cfg.value("path")),
 	  m_index_reftime(false)
