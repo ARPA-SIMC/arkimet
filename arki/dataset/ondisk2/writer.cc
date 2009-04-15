@@ -176,6 +176,9 @@ void Writer::flush()
 
 void Writer::maintenance(MaintenanceAgent& a)
 {
+	// TODO: rebuild of index
+	// TODO: repack (vacuum of database and rebuild of data files with repack flagfiles)
+
 	// TODO
 #if 0
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));

@@ -117,12 +117,16 @@ void RIndex::open()
 
 void RIndex::initQueries()
 {
-	// We don't need synchronous writes, since we have our own flagfile to
-	// detect a partially written index
-	m_db.exec("PRAGMA synchronous = OFF");
-	// For the same reason, we don't need an on-disk rollback journal: if we
-	// crash, our flagfile will be there
-	m_db.exec("PRAGMA journal_mode = MEMORY");
+	// Faster but riskier, since we do not have a flagfile to trap
+	// interrupted transactions
+	//m_db.exec("PRAGMA synchronous = OFF");
+	// Faster but riskier, since we do not have a flagfile to trap
+	// interrupted transactions
+	//m_db.exec("PRAGMA journal_mode = MEMORY");
+	// Truncate the journal instead of delete: faster on many file systems
+	// m_db.exec("PRAGMA journal_mode = TRUNCATE");
+	// Zero the header of the journal instead of delete: faster on many file systems
+	m_db.exec("PRAGMA journal_mode = PERSIST");
 	// Also, since the way we do inserts cause no trouble if a reader reads a
 	// partial insert, we do not need read locking
 	m_db.exec("PRAGMA read_uncommitted = 1");
