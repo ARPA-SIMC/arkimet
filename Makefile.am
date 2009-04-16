@@ -25,6 +25,7 @@ arki-%.1: src/arki-% doc/mhooks-%
 #%.1: tools/%
 #	( cd tools && ./`basename $<` help manpage ) > $@
 
+bboxconfdir = $(confdir)/bbox
 sg1confdir = $(confdir)/scan-grib1
 sg2confdir = $(confdir)/scan-grib2
 fmtconfdir = $(confdir)/format
@@ -33,6 +34,7 @@ reportconfdir = $(confdir)/report
 dist_conf_DATA = conf/match-alias.conf
 dist_sg1conf_DATA = conf/scan-grib1/01-common
 dist_sg2conf_DATA = conf/scan-grib2/01-common
+dist_bboxconf_DATA = conf/bbox/01-common
 dist_fmtconf_DATA = \
 	conf/format/01-gribapi \
 	conf/format/05-gribtables \
