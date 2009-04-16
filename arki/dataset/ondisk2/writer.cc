@@ -71,6 +71,9 @@ Writer::Writer(const ConfigFile& cfg)
 Writer::~Writer()
 {
 	if (m_tf) delete m_tf;
+	for (std::map<std::string, writer::Datafile*>::iterator i = m_df_cache.begin();
+			i != m_df_cache.end(); ++i)
+		if (i->second) delete i->second;
 }
 
 std::string Writer::path() const
@@ -85,15 +88,21 @@ std::string Writer::id(const Metadata& md) const
 	return str::fmt(id);
 }
 
-auto_ptr<writer::Datafile> Writer::file(const std::string& pathname)
+writer::Datafile* Writer::file(const std::string& pathname)
 {
+	std::map<std::string, writer::Datafile*>::iterator i = m_df_cache.find(pathname);
+	if (i != m_df_cache.end())
+		return i->second;
+
 	// Ensure that the directory for 'pathname' exists
 	string pn = str::joinpath(m_path, pathname);
 	size_t pos = pn.rfind('/');
 	if (pos != string::npos)
 		wibble::sys::fs::mkpath(pn.substr(0, pos));
 
-	return auto_ptr<writer::Datafile>(new writer::Datafile(pn));
+	writer::Datafile* res = new writer::Datafile(pn);
+	m_df_cache.insert(make_pair(pathname, res));
+	return res;
 }
 
 
@@ -104,7 +113,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 		return replace(md) ? ACQ_OK : ACQ_ERROR;
 
 	string reldest = (*m_tf)(md) + "." + md.source->format;
-	auto_ptr<writer::Datafile> df = file(reldest);
+	writer::Datafile* df = file(reldest);
 	off_t ofs;
 
 	Pending p_idx = m_idx.beginTransaction();
@@ -130,7 +139,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 bool Writer::replace(Metadata& md)
 {
 	string reldest = (*m_tf)(md) + "." + md.source->format;
-	auto_ptr<writer::Datafile> df = file(reldest);
+	writer::Datafile* df = file(reldest);
 	off_t ofs;
 
 	Pending p_idx = m_idx.beginTransaction();
@@ -168,6 +177,14 @@ void Writer::remove(const std::string& str_id)
 
 	// Commit delete from DB
 	p_del.commit();
+}
+
+void Writer::flush()
+{
+	for (std::map<std::string, writer::Datafile*>::iterator i = m_df_cache.begin();
+			i != m_df_cache.end(); ++i)
+		if (i->second) delete i->second;
+	m_df_cache.clear();
 }
 
 void Writer::maintenance(MaintenanceAgent& a)

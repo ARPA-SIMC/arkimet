@@ -58,8 +58,10 @@ protected:
 	TargetFile* m_tf;
 	bool m_replace;
 
+	std::map<std::string, writer::Datafile*> m_df_cache;
+
 	/// Return a (shared) instance of the Datafile for the given relative pathname
-	std::auto_ptr<writer::Datafile> file(const std::string& pathname);
+	writer::Datafile* file(const std::string& pathname);
 
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'
@@ -88,6 +90,8 @@ public:
 	virtual bool replace(Metadata& md);
 
 	virtual void remove(const std::string& id);
+
+	virtual void flush();
 
 	/**
 	 * Perform dataset maintenance, using a MaintenanceAgent to direct the operations
