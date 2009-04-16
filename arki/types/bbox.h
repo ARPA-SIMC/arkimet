@@ -24,29 +24,9 @@
  */
 
 #include <arki/types.h>
-#include <arki/config.h>
+#include <arki/utils/geosfwd.h>
 
 struct lua_State;
-
-#ifdef HAVE_GEOS
-#if GEOS_VERSION < 3
-namespace geos {
-struct Geometry;
-struct GeometryFactory;
-}
-#define ARKI_GEOS_GEOMETRY geos::Geometry
-#define ARKI_GEOS_GEOMETRYFACTORY geos::GeometryFactory
-#else
-namespace geos {
-namespace geom {
-struct Geometry;
-struct GeometryFactory;
-}
-}
-#define ARKI_GEOS_GEOMETRY geos::geom::Geometry
-#define ARKI_GEOS_GEOMETRYFACTORY geos::geom::GeometryFactory
-#endif
-#endif
 
 namespace arki {
 namespace types {

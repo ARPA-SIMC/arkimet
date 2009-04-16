@@ -1,7 +1,7 @@
 /*
  * formatter - Arkimet prettyprinter
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,11 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "formatter.h"
+#include <arki/formatter.h>
 #include <arki/types.h>
 #include <arki/formatter/lua.h>
 #include <wibble/string.h>
-#include <config.h>
+#include "config.h"
 
 using namespace std;
 

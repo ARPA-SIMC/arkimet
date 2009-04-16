@@ -1,7 +1,7 @@
 /*
  * arki/report - Build a report of an arkimet metadata or summary stream
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 #include <arki/report.h>
 #include <arki/summary.h>
-#include <arki/utils-lua.h>
+#include <arki/utils/lua.h>
 #include <wibble/regexp.h>
 
 #include <cstdlib>

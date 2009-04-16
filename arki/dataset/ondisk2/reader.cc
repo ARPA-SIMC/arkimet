@@ -44,7 +44,7 @@
 #include <unistd.h>
 #include <cerrno>
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/report.h>

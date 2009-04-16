@@ -13,6 +13,7 @@ arkiinclude_HEADERS = \
 		dataset/local.h \
 		dataset/file.h \
 		dataset/ondisk.h \
+		dataset/ondisk/index.h \
 		dataset/ondisk/maintenance.h \
 		dataset/ondisk/fetcher.h \
 		dataset/ondisk/reader.h \
@@ -30,7 +31,6 @@ arkiinclude_HEADERS = \
 		dataset/discard.h \
 		dataset/empty.h \
 		dataset/merged.h \
-		dataset/index.h \
 		dataset/index/base.h \
 		dataset/index/attr.h \
 		dataset/test-utils.h \
@@ -138,11 +138,11 @@ libarkimet_la_SOURCES = \
 		dataset.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
-		dataset/index.cc \
 		dataset/targetfile.cc \
 		dataset/local.cc \
 		dataset/file.cc \
 		dataset/ondisk.cc \
+		dataset/ondisk/index.cc \
 		dataset/ondisk/maintenance.cc \
 		dataset/ondisk/fetcher.cc \
 		dataset/ondisk/reader.cc \
@@ -212,11 +212,11 @@ tests_arki_test_SOURCES = \
 		matcher/run-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
-		dataset/index-tut.cc \
 		dataset/targetfile-tut.cc \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
 		dataset/ondisk-tut.cc \
+		dataset/ondisk/index-tut.cc \
 		dataset/ondisk/fetcher-tut.cc \
 		dataset/ondisk/writer/datafile-tut.cc \
 		dataset/ondisk/writer/directory-tut.cc \

@@ -33,7 +33,7 @@
 #include <sstream>
 #include <iostream>
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/tests/lua.h>

@@ -23,12 +23,11 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <string>
-#include <arki/bbox.h>
 #include <arki/types/area.h>
-#include <arki/utils/geosdef.h>
+#include <arki/utils/geosfwd.h>
 #include <arki/utils/lua.h>
-#include <arki/config.h>
+#include <string>
+#include <memory>
 
 namespace arki {
 

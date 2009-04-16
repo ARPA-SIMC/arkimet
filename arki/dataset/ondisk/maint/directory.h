@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/index.h>
+#include <arki/dataset/ondisk/index.h>
 
 #include <string>
 #include <vector>

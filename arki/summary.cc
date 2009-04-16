@@ -31,12 +31,13 @@
 #include <arki/types/timerange.h>
 #include <arki/types/area.h>
 #include <arki/bbox.h>
+#include <arki/utils/geosdef.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/buffer.h>
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_LUA
 extern "C" {

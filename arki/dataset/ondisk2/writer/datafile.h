@@ -2,7 +2,7 @@
 #define ARKI_DATASET_ONDISK_WRITER_DATAFILE_H
 
 /*
- * dataset/ondisk/writer/datafile - Handle a data file plus its associated files
+ * dataset/ondisk2/writer/datafile - Handle a data file plus its associated files
  *
  * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *

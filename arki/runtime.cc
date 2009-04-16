@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "runtime.h"
+#include <arki/runtime.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -39,7 +39,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <cstdlib>
-#include <config.h>
+#include "config.h"
 
 
 #ifdef HAVE_LUA

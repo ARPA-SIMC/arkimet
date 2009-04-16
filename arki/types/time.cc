@@ -25,14 +25,14 @@
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
 #include <arki/utils.h>
-#include <config.h>
+#include "config.h"
 #include <sstream>
 #include <cmath>
 #include <cstring>
 #include <ctime>
 
 #ifdef HAVE_LUA
-#include <arki/utils-lua.h>
+#include <arki/utils/lua.h>
 #endif
 
 #define CODE types::TYPE_TIME

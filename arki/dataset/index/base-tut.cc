@@ -19,7 +19,7 @@
  */
 
 #include <arki/tests/test-utils.h>
-#include <arki/dataset/index.h>
+#include <arki/dataset/ondisk/index.h>
 #include <arki/metadata.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
@@ -31,7 +31,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::dataset;
+using namespace arki::dataset::ondisk;
 
 struct arki_dsindex_base_shar {
 	arki_dsindex_base_shar()

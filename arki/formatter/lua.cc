@@ -33,10 +33,6 @@ extern "C" {
 #include <lualib.h>
 }
 
-#if 0
-#include <config.h>
-#endif
-
 using namespace std;
 
 namespace arki {

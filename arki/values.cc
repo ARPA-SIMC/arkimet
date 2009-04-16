@@ -25,7 +25,7 @@
 #include <arki/utils.h>
 #include <cstdlib>
 #include <cctype>
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_LUA
 extern "C" {

@@ -20,10 +20,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <config.h>
+#include "config.h"
 #include <arki/dataset/ondisk/writer/datafile.h>
 #include <arki/dataset/ondisk/writer/directory.h>
-#include <arki/dataset/index.h>
+#include <arki/dataset/ondisk/index.h>
 #include <arki/metadata.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>

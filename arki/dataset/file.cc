@@ -1,7 +1,7 @@
 /*
  * dataset/file - Dataset on a single file
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include <wibble/sys/fs.h>
 #include <sys/stat.h>
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_DBALLE
 #include <arki/scan/bufr.h>

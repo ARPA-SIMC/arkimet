@@ -22,7 +22,7 @@
 
 #include <arki/dataset/ondisk.h>
 #include <arki/dataset/targetfile.h>
-#include <arki/dataset/index.h>
+#include <arki/dataset/ondisk/index.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
@@ -44,7 +44,7 @@
 #include <unistd.h>
 #include <cerrno>
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/report.h>

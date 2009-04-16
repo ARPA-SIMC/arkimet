@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/bbox.h>
+#include <arki/utils/geosdef.h>
 #include <arki/types/area.h>
 
 #include <sstream>

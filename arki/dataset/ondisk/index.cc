@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/index.h>
+#include <arki/dataset/ondisk/index.h>
 #include <arki/dataset/ondisk/fetcher.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -50,6 +50,7 @@ using namespace arki::dataset::index;
 
 namespace arki {
 namespace dataset {
+namespace ondisk {
 
 Index::Index(const ConfigFile& cfg)
 	: m_root(cfg.value("path")),
@@ -451,6 +452,7 @@ void WIndex::reset(const std::string& file)
 	query.step();
 }
 
+}
 }
 }
 // vim:set ts=4 sw=4:

@@ -36,10 +36,11 @@ class Matcher;
 class Summary;
 
 namespace dataset {
-class RIndex;
 class TargetFile;
 
 namespace ondisk {
+class RIndex;
+
 class Reader : public Local
 {
 protected:

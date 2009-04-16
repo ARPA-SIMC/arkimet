@@ -1,7 +1,7 @@
 /*
  * types/area - Geographical area
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,12 +25,12 @@
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
 #include <arki/utils.h>
-#include <config.h>
+#include "config.h"
 #include <sstream>
 #include <cmath>
 
 #ifdef HAVE_LUA
-#include <arki/utils-lua.h>
+#include <arki/utils/lua.h>
 #endif
 
 #define CODE types::TYPE_AREA

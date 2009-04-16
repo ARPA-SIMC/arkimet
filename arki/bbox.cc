@@ -21,11 +21,12 @@
  */
 
 #include <arki/bbox.h>
-#include <arki/config.h>
+#include <arki/utils/geosdef.h>
 #include <arki/runtime.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <memory>
+#include "config.h"
 
 using namespace ARKI_GEOS_NS;
 

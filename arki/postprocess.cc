@@ -29,7 +29,7 @@
 #include <wibble/sys/process.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
-#include <config.h>
+#include "config.h"
 #include <signal.h>
 #include <unistd.h>
 #include <iostream>

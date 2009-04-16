@@ -1,7 +1,7 @@
 /*
  * summary - Handle a summary of a group of summary
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 #include <wibble/string.h>
 #include <wibble/sys/buffer.h>
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_LUA
 extern "C" {

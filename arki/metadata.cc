@@ -1,7 +1,7 @@
 /*
- * metadata - Handle xgribarch metadata
+ * metadata - Handle arkimet metadata
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #include <arki/metadata.h>
 #include <arki/utils.h>
 #include <arki/formatter.h>
-#include <config.h>
+#include "config.h"
 
 #include <wibble/exception.h>
 #include <wibble/string.h>

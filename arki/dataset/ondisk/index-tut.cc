@@ -19,7 +19,7 @@
  */
 
 #include <arki/tests/test-utils.h>
-#include <arki/dataset/index.h>
+#include <arki/dataset/ondisk/index.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -44,7 +44,7 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::dataset;
+using namespace arki::dataset::ondisk;
 using namespace arki::types;
 
 // Create a dataset index gived its configuration

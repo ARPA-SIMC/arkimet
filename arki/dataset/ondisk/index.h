@@ -1,8 +1,8 @@
-#ifndef ARKI_DATASET_INDEX_H
-#define ARKI_DATASET_INDEX_H
+#ifndef ARKI_DATASET_ONDISK_INDEX_H
+#define ARKI_DATASET_ONDISK_INDEX_H
 
 /*
- * dataset/index - Dataset index infrastructure
+ * dataset/ondisk/index - Dataset index infrastructure
  *
  * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -40,6 +40,7 @@ class Matcher;
 class ConfigFile;
 
 namespace dataset {
+namespace ondisk {
 
 /**
  * Generic dataset index interface.
@@ -185,6 +186,7 @@ public:
 	void reset(const std::string& datafile);
 };
 
+}
 }
 }
 
