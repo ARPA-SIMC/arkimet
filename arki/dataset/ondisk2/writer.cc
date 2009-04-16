@@ -70,10 +70,8 @@ Writer::Writer(const ConfigFile& cfg)
 
 Writer::~Writer()
 {
+	flush();
 	if (m_tf) delete m_tf;
-	for (std::map<std::string, writer::Datafile*>::iterator i = m_df_cache.begin();
-			i != m_df_cache.end(); ++i)
-		if (i->second) delete i->second;
 }
 
 std::string Writer::path() const
