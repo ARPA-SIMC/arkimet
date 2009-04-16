@@ -113,7 +113,10 @@ struct Append : public Transaction
 		// Append the data
 		ssize_t res = write(df.fd, buf.data(), buf.size());
 		if (res < 0 || (unsigned)res != buf.size())
-			throw wibble::exception::File(df.pathname, "writing " + str::fmt(buf.size()) + " bytes to the file");
+			throw wibble::exception::File(df.pathname, "writing " + str::fmt(buf.size()) + " bytes to " + df.pathname);
+
+		if (fdatasync(df.fd) < 0)
+			throw wibble::exception::File(df.pathname, "flushing write to " + df.pathname);
 
 		unlock();
 		fired = true;

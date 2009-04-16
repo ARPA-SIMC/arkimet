@@ -125,7 +125,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       way:
        - slow readers can release database locks quickly
        - if data does not need to be sorted, we can create a sorted I/O plan
- - lasciare aperti i datafile e chiuderli al flush
+ + lasciare aperti i datafile e chiuderli al flush
+ + fdatasync
 
  - la lettura blocca la scrittura / la scrittura blocca la lettura
     - clarify the locking model and verify its actual behaviour
