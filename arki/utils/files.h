@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_ONDISK_COMMON_H
-#define ARKI_DATASET_ONDISK_COMMON_H
+#ifndef ARKI_UTILS_FILES_H
+#define ARKI_UTILS_FILES_H
 
 /*
- * dataset/ondisk/common - Common code for ondisk implementation
+ * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
