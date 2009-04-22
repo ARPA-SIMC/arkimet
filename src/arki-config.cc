@@ -391,9 +391,9 @@ public:
 	virtual std::string description() const
 	{
 		if (ConfigFile::boolValue(w.cfg.value("replace")))
-			return "replace: Set duplicates to overwrite the old values (currently they are are rejected).";
-		else
 			return "replace: Set duplicates to be rejected (currently they overwrite their old values).";
+		else
+			return "replace: Set duplicates to overwrite the old values (currently they are are rejected).";
 	}
 	virtual void activate()
 	{
