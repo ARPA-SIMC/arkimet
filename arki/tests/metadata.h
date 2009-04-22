@@ -21,20 +21,14 @@
 #define ARKI_TEST_UTILS_METADATA_H
 
 #include <arki/metadata.h>
+#include <arki/utils/metadata.h>
 
 #include <vector>
 
 namespace arki {
 namespace tests {
 
-struct MetadataCollector : public std::vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
+typedef utils::metadata::Collector MetadataCollector;
 
 }
 }

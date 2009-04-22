@@ -22,6 +22,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/metadata.h>
+#include <arki/utils/metadata.h>
 #include <vector>
 
 namespace arki {
@@ -29,14 +30,7 @@ struct Metadata;
 struct MetadataConsumer;
 struct Dispatcher;
 
-struct MetadataCollector : public std::vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
+typedef utils::metadata::Collector MetadataCollector;
 
 struct MetadataCounter : public MetadataConsumer
 {

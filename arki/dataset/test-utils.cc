@@ -20,6 +20,7 @@
 #include <arki/dataset/test-utils.h>
 #include <arki/metadata.h>
 #include <arki/dispatcher.h>
+#include <arki/utils/metadata.h>
 #include <fstream>
 
 using namespace std;
@@ -40,18 +41,9 @@ size_t countDeletedMetadata(const std::string& fname)
 
 namespace tests {
 
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, MetadataConsumer& mdc)
 {
-	MetadataCollector c;
+	utils::metadata::Collector c;
 	Dispatcher::Outcome res = dispatcher.dispatch(md, c);
 	// If dispatch fails, print the notes
 	if (res != Dispatcher::DISP_OK)
