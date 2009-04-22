@@ -28,6 +28,7 @@
 #include <arki/matcher/reftime.h>
 #include <arki/dataset.h>
 #include <arki/types/reftime.h>
+#include <arki/utils/metadata.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -163,15 +164,17 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 	sqlite3_stmt* stm_query = m_db.prepare(query);
 
 	// TODO: see if it's worth sorting file and offset
+	utils::metadata::Collector mdbuf;
 
 	int res;
 	while ((res = sqlite3_step(stm_query)) == SQLITE_ROW)
 	{
-		// fetch the Metadata and pass it to consumer
+		// fetch the Metadata and buffer it in memory, to release the
+		// database lock as soon as possible
 		fetcher.fetch(
 			(const char*)sqlite3_column_text(stm_query, 0),
 			sqlite3_column_int(stm_query, 1),
-			consumer);
+			mdbuf);
 	}
 	if (res != SQLITE_DONE)
 	{
@@ -186,6 +189,11 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 		}
 	}
 	sqlite3_finalize(stm_query);
+
+	// pass it to consumer
+	for (utils::metadata::Collector::iterator i = mdbuf.begin();
+			i != mdbuf.end(); ++i)
+		consumer(*i);
 }
 
 bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const

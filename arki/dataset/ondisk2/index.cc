@@ -206,6 +206,7 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 	sqlite3_stmt* stm_query = m_db.prepare(query);
 
 	// TODO: see if it's worth sorting file and offset
+	vector<Metadata> mdbuf;
 
 	int res;
 	while ((res = sqlite3_step(stm_query)) == SQLITE_ROW)
@@ -229,8 +230,8 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 
 		// TODO: missing: notes
 
-		// pass it to consumer
-		consumer(md);
+		// Buffer the results in memory, to release the database lock as soon as possible
+		mdbuf.push_back(md);
 	}
 	if (res != SQLITE_DONE)
 	{
@@ -245,6 +246,11 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 		}
 	}
 	sqlite3_finalize(stm_query);
+
+	// pass it to consumer
+	for (vector<Metadata>::iterator i = mdbuf.begin();
+			i != mdbuf.end(); ++i)
+		consumer(*i);
 }
 
 bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const

@@ -87,6 +87,8 @@ Annunciati:
  + In arki-mergeconf, usare lua per calcolare bounding box (in maniera
    accurata) a partire dalle definizioni delle aree
 Da annunciare:
+ + Accorciata la query al database tenendosi in memoria tutti i metadati
+ - Ondisk2
 
 ---
 
@@ -125,6 +127,23 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       way:
        - slow readers can release database locks quickly
        - if data does not need to be sorted, we can create a sorted I/O plan
+    - run stubborn queries in the index and pretty much everywhere: "database
+      is locked" should not be a failure model
+    - add notes and other non-summarisable metadata to the index
+    - when doing repack, also open with journal_mode=truncate (if vacuum does
+      not do it already)
+    - repack:
+       - for each file
+          - lock away writes, allow reads
+          - make a copy of the file with the right data in it
+          - delete all records about the file from the db
+	  - commit (so that we do not have an inconsistent state with database
+	    pointers pointing at the wrong file)
+          - rename the file with the final name
+          - insert the new records into the db
+          - commit
+          - unlock writes
+      
  + lasciare aperti i datafile e chiuderli al flush
  + fdatasync
 
