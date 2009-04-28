@@ -79,15 +79,10 @@ public:
 
 	/**
 	 * Run a query that has no return values.
-	 */
-	void exec(const std::string& query);
-
-	/**
-	 * Run a query that has no return values.
 	 *
 	 * If it fails with SQLITE_BUSY, wait a bit and retry.
 	 */
-	void exec_stubborn(const std::string& query);
+	void exec(const std::string& query);
 
 	/// Run a SELECT LAST_INSERT_ROWID() statement and return the result
 	int lastInsertID();
@@ -125,6 +120,9 @@ public:
 	/// Bind a query parameter
 	void bind(int idx, const std::string& str);
 
+	/// Bind a query parameter as a Blob
+	void bindBlob(int idx, const std::string& str);
+
 	/// Bind a query parameter
 	void bind(int idx, int val);
 
@@ -137,6 +135,11 @@ public:
 	 * Return true when there is another row to fetch, else false
 	 */
 	bool step();
+
+	int fetchType(int column)
+	{
+		return sqlite3_column_type(m_stm, column);
+	}
 
 	std::string fetchString(int column)
 	{
@@ -176,6 +179,8 @@ public:
  * This is, in fact, currently recompiled every time.  The reason is because
  * this is mainly used to run statements like BEGIN and COMMIT, that I haven't
  * been able to precompile.
+ *
+ * If the query fails with SQLITE_BUSY, will wait a bit and then retry.
  */
 class OneShotQuery : public Query
 {
@@ -190,23 +195,12 @@ public:
 	void operator()();
 };
 
-// OneShotQuery that, if it fails with SQLITE_BUSY, will wait a bit and then
-// retry
-class StubbornOneShotQuery : public OneShotQuery
-{
-public:
-	StubbornOneShotQuery(SQLiteDB& db, const std::string& name, const std::string& query)
-	       	: OneShotQuery(db, name, query) {}
-
-	void operator()();
-};
-
 /**
  * Holds precompiled (just not yet) begin, commit and rollback statements
  */
 struct Committer
 {
-	StubbornOneShotQuery begin;
+	OneShotQuery begin;
 	OneShotQuery commit;
 	OneShotQuery rollback;
 

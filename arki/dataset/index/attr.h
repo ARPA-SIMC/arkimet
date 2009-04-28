@@ -4,7 +4,7 @@
 /*
  * dataset/index/attr - Generic index for metadata items
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ public:
 	void initQueries();
 
 	// Run the query, returning the id or -1 if not found
-	int operator()(const std::string& blob) const;
+	int operator()(const std::string& blob);
 };
 
 
@@ -103,7 +103,7 @@ protected:
 	GetAttrID m_get_blob_id;
 
 	// Precompiled insert statement
-	sqlite3_stmt* m_stm_insert;
+	utils::sqlite::Query m_stm_insert;
 
 	// Cache of known IDs
 	std::map<std::string, int> m_id_cache;

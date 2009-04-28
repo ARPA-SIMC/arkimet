@@ -161,34 +161,23 @@ bool RIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
 void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer) const
 {
 	ondisk::Fetcher fetcher(m_root);
-	sqlite3_stmt* stm_query = m_db.prepare(query);
-
-	// TODO: see if it's worth sorting file and offset
 	utils::metadata::Collector mdbuf;
+	{
+		Query mdq("mdq", m_db);
+		mdq.compile(query);
 
-	int res;
-	while ((res = sqlite3_step(stm_query)) == SQLITE_ROW)
-	{
-		// fetch the Metadata and buffer it in memory, to release the
-		// database lock as soon as possible
-		fetcher.fetch(
-			(const char*)sqlite3_column_text(stm_query, 0),
-			sqlite3_column_int(stm_query, 1),
-			mdbuf);
-	}
-	if (res != SQLITE_DONE)
-	{
-#ifdef LEGACY_SQLITE
-		/* int rc = */ sqlite3_reset(stm_query);
-#endif
-		try {
-			m_db.throwException("executing query " + query);
-		} catch (...) {
-			sqlite3_finalize(stm_query);
-			throw;
+		// TODO: see if it's worth sorting file and offset
+
+		while (mdq.step())
+		{
+			// fetch the Metadata and buffer it in memory, to release the
+			// database lock as soon as possible
+			fetcher.fetch(
+				mdq.fetchString(0),
+				mdq.fetchInt(1),
+				mdbuf);
 		}
 	}
-	sqlite3_finalize(stm_query);
 
 	// pass it to consumer
 	for (utils::metadata::Collector::iterator i = mdbuf.begin();

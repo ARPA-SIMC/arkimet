@@ -1,7 +1,7 @@
 /*
  * dataset/index/attr - Generic index for metadata items
  *
- * Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,27 +38,17 @@ void GetAttrID::initQueries()
 	m_stm = m_db.prepare("SELECT id FROM " + m_table + " WHERE data=?");
 }
 
-int GetAttrID::operator()(const std::string& blob) const
+int GetAttrID::operator()(const std::string& blob)
 {
-	// Reset the query
-	int res = sqlite3_reset(m_stm);
-	if (res != SQLITE_OK)
-		m_db.throwException("resetting GetAttrID query for " + m_table);
+	reset();
 
 	// Bind the blob
-	sqlite3_bind_blob(m_stm, 1, blob.data(), blob.size(), SQLITE_STATIC);
+	bindBlob(1, blob);
 
 	// Run the query
 	int id = -1;
-	while ((res = sqlite3_step(m_stm)) == SQLITE_ROW)
-		id = sqlite3_column_int(m_stm, 0);
-	if (res != SQLITE_DONE)
-	{
-#ifdef LEGACY_SQLITE
-		sqlite3_reset(m_stm);
-#endif
-		m_db.throwException("executing GetAttrID query for " + m_table);
-	}
+	while (step())
+		id = fetchInt(0);
 	return id;
 }
 
@@ -159,13 +149,12 @@ std::vector<int> RAttrSubIndex::query(const matcher::OR& m) const
 
 WAttrSubIndex::WAttrSubIndex(SQLiteDB& db, types::Code serCode)
 	: AttrSubIndex(serCode), m_db(db),
-	  m_get_blob_id(db, "sub_" + name), m_stm_insert(0)
+	  m_get_blob_id(db, "sub_" + name), m_stm_insert("attr_insert", db)
 {
 }
 
 WAttrSubIndex::~WAttrSubIndex()
 {
-	if (m_stm_insert) sqlite3_finalize(m_stm_insert);
 }
 
 void WAttrSubIndex::initDB()
@@ -183,7 +172,7 @@ void WAttrSubIndex::initQueries()
 	m_get_blob_id.initQueries();
 
 	// Compile the insert query
-	m_stm_insert = m_db.prepare("INSERT INTO sub_" + name + " (data) VALUES (?)");
+	m_stm_insert.compile("INSERT INTO sub_" + name + " (data) VALUES (?)");
 }
 
 int WAttrSubIndex::insert(const Metadata& md)
@@ -208,24 +197,9 @@ int WAttrSubIndex::insert(const Metadata& md)
 	{
 		// Insert it
 
-		// Reset the query
-		int rc;
-		rc = sqlite3_reset(m_stm_insert);
-		if (rc != SQLITE_OK)
-			m_db.throwException("resetting INSERT query for sub_" + name);
-
-		// Rebind parameters
-		sqlite3_bind_blob(m_stm_insert, 1, blob.data(), blob.size(), SQLITE_STATIC);
-
-		// Perform the query
-		rc = sqlite3_step(m_stm_insert);
-		if (rc != SQLITE_DONE)
-		{
-#ifdef LEGACY_SQLITE
-			sqlite3_reset(m_stm_insert);
-#endif
-			m_db.throwException("executing INSERT query for sub_" + name);
-		}
+		m_stm_insert.reset();
+		m_stm_insert.bindBlob(1, blob);
+		m_stm_insert.step();
 
 		return m_id_cache[blob] = m_db.lastInsertID();
 	}

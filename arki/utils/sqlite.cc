@@ -71,14 +71,6 @@ sqlite3_stmt* SQLiteDB::prepare(const std::string& query) const
 
 void SQLiteDB::exec(const std::string& query)
 {
-	char* err;
-	int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
-	if (rc != SQLITE_OK)
-		throw SQLiteError(err, "executing query " + query);
-}
-
-void SQLiteDB::exec_stubborn(const std::string& query)
-{
 	while (true)
 	{
 		char* err;
@@ -154,6 +146,15 @@ void Query::bind(int idx, const std::string& str)
 		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
 }
 
+void Query::bindBlob(int idx, const std::string& str)
+{
+	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
+	// pointing to invalid memory at exit of this function, because
+	// sqlite3_step will not be called again without rebinding parameters.
+	if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
+		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+}
+
 void Query::bind(int idx, int val)
 {
 	if (sqlite3_bind_int(m_stm, idx, val) != SQLITE_OK)
@@ -168,17 +169,25 @@ void Query::bindNull(int idx)
 
 bool Query::step()
 {
-	int rc = sqlite3_step(m_stm);
-	if (rc == SQLITE_DONE)
-		return false;
-	if (rc != SQLITE_ROW)
+	while (true)
 	{
+		int rc = sqlite3_step(m_stm);
+		switch (rc)
+		{
+			case SQLITE_DONE:
+				return false;
+			case SQLITE_ROW:
+				return true;
+			case SQLITE_BUSY:
+				usleep(20000);
+			       	break;
+			default:
 #ifdef LEGACY_SQLITE
-		sqlite3_reset(m_stm);
+				sqlite3_reset(m_stm);
 #endif
-		m_db.throwException("executing " + name + " query");
+				m_db.throwException("executing " + name + " query");
+		}
 	}
-	return true;
 }
 
 void OneShotQuery::initQueries()
@@ -222,11 +231,6 @@ void OneShotQuery::operator()()
 		throw SQLiteError(m_db, "executing query " + m_query);
 	}
 #endif
-}
-
-void StubbornOneShotQuery::operator()()
-{
-	m_db.exec_stubborn(m_query);
 }
 
 }

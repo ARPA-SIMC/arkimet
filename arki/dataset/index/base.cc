@@ -1,7 +1,7 @@
 /*
  * dataset/index - Dataset index infrastructure
  *
- * Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -118,20 +118,26 @@ std::string fmtin(const std::vector<int>& vals)
 
 bool InsertQuery::step()
 {
-	int rc = sqlite3_step(m_stm);
-	if (rc != SQLITE_DONE)
+	while (true)
 	{
+		int rc = sqlite3_step(m_stm);
 #ifdef LEGACY_SQLITE
-		rc = sqlite3_reset(m_stm);
+		if (rc != SQLITE_DONE)
+			rc = sqlite3_reset(m_stm);
 #endif
-		// Different exception for duplicate inserts, to be able to treat
-		// duplicate inserts differently
-		if (rc == SQLITE_CONSTRAINT)
-			throw DuplicateInsert("executing " + name + " query");
-		else
-			m_db.throwException("executing " + name + " query");
+		switch (rc)
+		{
+			case SQLITE_DONE:
+				return false;
+			case SQLITE_BUSY:
+				usleep(20000);
+			       	break;
+			case SQLITE_CONSTRAINT:
+				throw DuplicateInsert("executing " + name + " query");
+			default:
+				m_db.throwException("executing " + name + " query");
+		}
 	}
-	return false;
 }
 
 }

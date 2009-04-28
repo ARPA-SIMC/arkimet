@@ -78,7 +78,7 @@ public:
 class RIndex : public Index
 {
 protected:
-	utils::sqlite::SQLiteDB m_db;
+	mutable utils::sqlite::SQLiteDB m_db;
 	mutable utils::sqlite::PrecompiledQuery m_get_id;
 	mutable utils::sqlite::PrecompiledQuery m_fetch_by_id;
 

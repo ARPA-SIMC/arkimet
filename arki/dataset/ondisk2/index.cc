@@ -203,49 +203,38 @@ bool RIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
 
 void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer) const
 {
-	sqlite3_stmt* stm_query = m_db.prepare(query);
-
-	// TODO: see if it's worth sorting file and offset
 	vector<Metadata> mdbuf;
 
-	int res;
-	while ((res = sqlite3_step(stm_query)) == SQLITE_ROW)
+	// Limited scope for mdq, so we finalize the query before starting to
+	// emit results
 	{
-		// Rebuild the Metadata
-		Metadata md;
-		md.create();
-		md.set(types::AssignedDataset::create(m_name, str::fmt(sqlite3_column_int(stm_query, 0))));
-		md.source = source::Blob::create(
-			(const char*)sqlite3_column_text(stm_query, 1),
-			(const char*)sqlite3_column_text(stm_query, 2),
-			sqlite3_column_int(stm_query, 3),
-			sqlite3_column_int(stm_query, 4));
-		md.set(reftime::Position::create(Time::createFromSQL(
-			(const char*)sqlite3_column_text(stm_query, 5))));
-		int j = 6;
-		for (std::map<types::Code, index::RAttrSubIndex*>::const_iterator i = m_rsub.begin();
-				i != m_rsub.end(); ++i, ++j)
-			if (sqlite3_column_type(stm_query, j) != SQLITE_NULL)
-				i->second->read(sqlite3_column_int(stm_query, j), md);
+		Query mdq("mdq", m_db);
+		mdq.compile(query);
 
-		// TODO: missing: notes
+		// TODO: see if it's worth sorting mdbuf by file and offset
 
-		// Buffer the results in memory, to release the database lock as soon as possible
-		mdbuf.push_back(md);
-	}
-	if (res != SQLITE_DONE)
-	{
-#ifdef LEGACY_SQLITE
-		/* int rc = */ sqlite3_reset(stm_query);
-#endif
-		try {
-			m_db.throwException("executing query " + query);
-		} catch (...) {
-			sqlite3_finalize(stm_query);
-			throw;
+		while (mdq.step())
+		{
+			// Rebuild the Metadata
+			Metadata md;
+			md.create();
+			md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetchInt(0))));
+			md.source = source::Blob::create(
+					mdq.fetchString(1), mdq.fetchString(2),
+					mdq.fetchInt(3), mdq.fetchInt(4));
+			md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(5))));
+			int j = 6;
+			for (std::map<types::Code, index::RAttrSubIndex*>::const_iterator i = m_rsub.begin();
+					i != m_rsub.end(); ++i, ++j)
+				if (mdq.fetchType(j) != SQLITE_NULL)
+					i->second->read(mdq.fetchInt(j), md);
+
+			// TODO: missing: notes
+
+			// Buffer the results in memory, to release the database lock as soon as possible
+			mdbuf.push_back(md);
 		}
 	}
-	sqlite3_finalize(stm_query);
 
 	// pass it to consumer
 	for (vector<Metadata>::iterator i = mdbuf.begin();
@@ -322,17 +311,17 @@ bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 
 void RIndex::summaryQuery(const std::string& query, Summary& summary) const
 {
-	sqlite3_stmt* stm_query = m_db.prepare(query);
+	Query sq("sq", m_db);
+	sq.compile(query);
 
-	int res;
-	while ((res = sqlite3_step(stm_query)) == SQLITE_ROW)
+	while (sq.step())
 	{
 		// Fill in the summary statistics
 		arki::Item<summary::Stats> st(new summary::Stats);
-		st->count = sqlite3_column_int(stm_query, 0);
-		st->size = sqlite3_column_int(stm_query, 1);
-		Item<Time> min_time = Time::createFromSQL((const char*)sqlite3_column_text(stm_query, 2));
-		Item<Time> max_time = Time::createFromSQL((const char*)sqlite3_column_text(stm_query, 3));
+		st->count = sq.fetchInt(0);
+		st->size = sq.fetchInt(1);
+		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
+		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
 		st->reftimeMerger.mergeTime(min_time, max_time);
 
 		// Fill in the metadata fields
@@ -341,25 +330,12 @@ void RIndex::summaryQuery(const std::string& query, Summary& summary) const
 		int j = 4;
 		for (std::map<types::Code, index::RAttrSubIndex*>::const_iterator i = m_rsub.begin();
 				i != m_rsub.end(); ++i, ++j)
-			if (sqlite3_column_type(stm_query, j) != SQLITE_NULL)
-				i->second->read(sqlite3_column_int(stm_query, j), md);
+			if (sq.fetchType(j) != SQLITE_NULL)
+				i->second->read(sq.fetchInt(j), md);
 
 		// Feed the results to the summary
 		summary.add(md, st);
 	}
-	if (res != SQLITE_DONE)
-	{
-#ifdef LEGACY_SQLITE
-		/* int rc = */ sqlite3_reset(stm_query);
-#endif
-		try {
-			m_db.throwException("executing query " + query);
-		} catch (...) {
-			sqlite3_finalize(stm_query);
-			throw;
-		}
-	}
-	sqlite3_finalize(stm_query);
 }
 
 bool RIndex::querySummary(const Matcher& m, Summary& summary) const
