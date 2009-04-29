@@ -1,8 +1,12 @@
 arkimet (0.18-1) UNRELEASED; urgency=low
 
   * Implemented new storage type 'ondisk2'
+  * Release database read lock by caching all the results in RAM before
+    starting to stream the results
+  * All SQL queries now check for SQLITE_BUSY return values and retry after
+    waiting a bit
 
- -- Enrico Zini <enrico@debian.org>  Wed, 15 Apr 2009 14:13:11 +0100
+ -- Enrico Zini <enrico@debian.org>  Wed, 29 Apr 2009 12:22:48 +0200
 
 arkimet (0.17-1) UNRELEASED; urgency=low
 

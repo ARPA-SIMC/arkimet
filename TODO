@@ -88,7 +88,7 @@ Annunciati:
    accurata) a partire dalle definizioni delle aree
 Da annunciare:
  + Accorciata la query al database tenendosi in memoria tutti i metadati
- + run stubborn queries in the index and pretty much everywhere: "database
+ + Run stubborn queries in the index and pretty much everywhere: "database
    is locked" should not be a failure model
  - Ondisk2
 
@@ -130,9 +130,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
        + slow readers can release database locks quickly
     + lasciare aperti i datafile e chiuderli al flush
     + fdatasync
-    - add notes and other non-summarisable metadata to the index
-    - when doing repack, also open with journal_mode=truncate (if vacuum does
-      not do it already)
+    + add notes and other non-summarisable metadata to the index
     - repack:
        - for each file
           - lock away writes, allow reads
@@ -144,11 +142,11 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
           - insert the new records into the db
           - commit
           - unlock writes
+    - when doing repack, also open with journal_mode=truncate (if vacuum does
+      not do it already)
 
  - if data does not need to be sorted, we can create a sorted I/O plan
 
- - la lettura blocca la scrittura / la scrittura blocca la lettura
-    - clarify the locking model and verify its actual behaviour
  - alcuni arki-query rimangono appesi (e non si sa perché)
  = Verificare l'idea di mettere tutto un dataset in un file .sqlite, o
    summary+metadati in sqlite e i dati in plain file
@@ -174,9 +172,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    si aggiorna un alias sul server, i client non vedono l'aggiornamento)
 
  - Servirebbe script che fa setup di un sistema di partenza
-
- - libreria lua con funzioni utili (tipo met.utm2ll implementata in C,
-   met.controrotazione di aree latlon ruotate, ...) importata sempre
 
  - arki-scan --testdispatch=cfg
     - mostra i dati che andrebbero nello stesso dataset e con lo stesso id
