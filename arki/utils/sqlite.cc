@@ -146,6 +146,12 @@ void Query::bind(int idx, const std::string& str)
 		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
 }
 
+void Query::bindTransient(int idx, const std::string& str)
+{
+	if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+}
+
 void Query::bindBlob(int idx, const std::string& str)
 {
 	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
@@ -165,6 +171,47 @@ void Query::bindNull(int idx)
 {
 	if (sqlite3_bind_null(m_stm, idx) != SQLITE_OK)
 		m_db.throwException("binding NULL to " + name + " query parameter #" + str::fmt(idx));
+}
+
+void Query::bindUItem(int idx, const UItem<>& item)
+{
+	if (item.defined())
+		bindTransient(idx, item.encode());
+	else
+		bindNull(idx);
+}
+
+UItem<> Query::fetchUItem(int column)
+{
+	const unsigned char* buf = (const unsigned char*)fetchBlob(column);
+	int len = fetchBytes(column);
+	if (len == 0)
+		return UItem<>();
+
+	const unsigned char* el_start = buf;
+	size_t el_len = len;
+	types::Code el_type = types::decodeEnvelope(el_start, el_len);
+	return types::decodeInner(el_type, el_start, el_len);
+}
+
+std::vector< Item<> > Query::fetchItems(int column)
+{
+	const unsigned char* buf = (const unsigned char*)fetchBlob(column);
+	int len = fetchBytes(column);
+	vector< Item<> > res;
+
+	// Parse the various elements
+	const unsigned char* end = buf + len;
+	for (const unsigned char* cur = buf; cur < end; )
+	{
+		const unsigned char* el_start = cur;
+		size_t el_len = end - cur;
+		types::Code el_type = types::decodeEnvelope(el_start, el_len);
+		res.push_back(types::decodeInner(el_type, el_start, el_len));
+		cur = el_start + el_len;
+	}
+
+	return res;
 }
 
 bool Query::step()

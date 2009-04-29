@@ -28,6 +28,7 @@
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
+#include <arki/utils/metadata.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
 
@@ -44,10 +45,9 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::dataset;
+using namespace arki::dataset::ondisk2;
 using namespace arki::types;
 
-#if 0
 // Create a dataset index gived its configuration
 template<typename INDEX>
 auto_ptr<INDEX> createIndex(const std::string& config)
@@ -57,17 +57,15 @@ auto_ptr<INDEX> createIndex(const std::string& config)
 	cfg.parse(confstream, "(memory)");
 	return auto_ptr<INDEX>(new INDEX(cfg));
 }
-#endif
 
 struct arki_dataset_ondisk2_index_shar {
-#if 0
 	Metadata md;
 	Metadata md1;
 
 	ValueBag testArea;
 	ValueBag testEnsemble;
 
-	arki_dsindex_shar()
+	arki_dataset_ondisk2_index_shar()
 	{
 		testArea.set("foo", Value::createInteger(5));
 		testArea.set("bar", Value::createInteger(5000));
@@ -104,38 +102,25 @@ struct arki_dataset_ondisk2_index_shar {
 		md1.set(reftime::Position::create(types::Time::create(2003, 4, 5, 6, 7, 8)));
 		md1.set(area::GRIB::create(testArea));
 		md1.set(ensemble::GRIB::create(testEnsemble));
-		md1.notes.push_back(types::Note::create("this is another test"));
+		// Index one without notes
+		//md1.notes.push_back(types::Note::create("this is another test"));
 		out.open("test-md1.metadata");
 		if (out.fail()) throw wibble::exception::File("test-md1.metadata", "opening file");
 		md1.write(out, "test-md1.metadata");
 		out.close();
 	}
-#endif
 };
 TESTGRP(arki_dataset_ondisk2_index);
-
-#if 0
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-#endif
 
 // Trying indexing a few metadata
 template<> template<>
 void to::test<1>()
 {
-#if 0
 	auto_ptr<WIndex> test = createIndex<WIndex>(
 		"type = test\n"
-		"path = .\n"
+		"path = \n"
 		"indexfile = :memory:\n"
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
-		"index = origin, product, level, timerange, area, ensemble, reftime\n"
 	);
 	ensure(test.get() != 0);
 	Pending p;
@@ -144,17 +129,17 @@ void to::test<1>()
 	p = test->beginTransaction();
 	
 	// Index a metadata
-	string id = test->id(md);
-	ensure(id != "");
+	int id = test->id(md);
+	ensure_equals(id, -1);
 	test->index(md, "test-md", 0);
 
 	// Index a second one
 	id = test->id(md1);
-	ensure(id != "");
+	ensure_equals(id, -1);
 	test->index(md1, "test-md1", 0);
 
 	// Query various kinds of metadata
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	test->query(Matcher::parse("origin:GRIB1,200"), mdc);
 	ensure_equals(mdc.size(), 1u);
 
@@ -164,7 +149,6 @@ void to::test<1>()
 
 	// TODO: level, timerange, area, ensemble, reftime
 	p.commit();
-#endif
 }
 
 // See if remove works

@@ -25,6 +25,7 @@
 
 #include <wibble/exception.h>
 #include <arki/transaction.h>
+#include <arki/types.h>
 #include <sqlite3.h>
 #include <string>
 #include <vector>
@@ -89,6 +90,9 @@ public:
 
 	/// Throw a SQLiteError exception with the given extra information
 	void throwException(const std::string& msg) const;
+
+	/// Get the message describing the last error message
+	std::string errmsg() const { return sqlite3_errmsg(m_db); }
 };
 
 /**
@@ -120,6 +124,9 @@ public:
 	/// Bind a query parameter
 	void bind(int idx, const std::string& str);
 
+	/// Bind a string that will not exist until the query is performed
+	void bindTransient(int idx, const std::string& str);
+
 	/// Bind a query parameter as a Blob
 	void bindBlob(int idx, const std::string& str);
 
@@ -128,6 +135,25 @@ public:
 
 	/// Bind NULL to a query parameter
 	void bindNull(int idx);
+
+	/// Bind a UItem
+	void bindUItem(int idx, const UItem<>& item);
+
+	/// Bind a vector of UItems
+	template<typename TYPE>
+	void bindItems(int idx, const std::vector< Item<TYPE> >& items)
+	{
+		if (items.empty())
+			bindNull(idx);
+		else
+		{
+			std::string str;
+			for (typename std::vector< Item<TYPE> >::const_iterator i = items.begin();
+					i != items.end(); ++i)
+				str += i->encode();
+			bindTransient(idx, str);
+		}
+	}
 
 	/**
 	 * Fetch a query row.
@@ -143,7 +169,11 @@ public:
 
 	std::string fetchString(int column)
 	{
-		return (const char*)sqlite3_column_text(m_stm, column);
+		const char* res = (const char*)sqlite3_column_text(m_stm, column);
+		if (res == NULL)
+			return std::string();
+		else
+			return res;
 	}
 	size_t fetchSizeT(int column)
 	{
@@ -160,6 +190,29 @@ public:
 	int fetchBytes(int column)
 	{
 		return sqlite3_column_bytes(m_stm, column);
+	}
+	UItem<> fetchUItem(int column);
+	std::vector< Item<> > fetchItems(int column);
+
+	template<typename TYPE>
+	std::vector< Item<TYPE> > fetchItems(int column)
+	{
+		const unsigned char* buf = (const unsigned char*)fetchBlob(column);
+		int len = fetchBytes(column);
+		std::vector< Item<TYPE> > res;
+
+		// Parse the various elements
+		const unsigned char* end = buf + len;
+		for (const unsigned char* cur = buf; cur < end; )
+		{
+			const unsigned char* el_start = cur;
+			size_t el_len = end - cur;
+			types::Code el_type = types::decodeEnvelope(el_start, el_len);
+			res.push_back(types::decodeInner(el_type, el_start, el_len).upcast<TYPE>());
+			cur = el_start + el_len;
+		}
+
+		return res;
 	}
 };
 

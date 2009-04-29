@@ -222,8 +222,9 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 			md.source = source::Blob::create(
 					mdq.fetchString(1), mdq.fetchString(2),
 					mdq.fetchInt(3), mdq.fetchInt(4));
-			md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(5))));
-			int j = 6;
+			md.notes = mdq.fetchItems<types::Note>(5);
+			md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
+			int j = 7;
 			for (std::map<types::Code, index::RAttrSubIndex*>::const_iterator i = m_rsub.begin();
 					i != m_rsub.end(); ++i, ++j)
 				if (mdq.fetchType(j) != SQLITE_NULL)
@@ -244,7 +245,7 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 
 bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 {
-	string query = "SELECT id, format, file, offset, size, reftime";
+	string query = "SELECT id, format, file, offset, size, notes, reftime";
 	int found = 0;
 
 	for (std::map<types::Code, index::RAttrSubIndex*>::const_iterator i = m_rsub.begin();
@@ -465,16 +466,16 @@ void WIndex::initQueries()
 	   	++fieldCount;
 		i->second->initQueries();
 	}
-	query += ") VALUES (?, ?, ?, ?, ?";
+	query += ") VALUES (?, ?, ?, ?, ?, ?";
 	while (fieldCount--)
 		query += ", ?";
 	query += ")";
 
 	// Precompile insert
-	m_insert.compile("INSERT INTO md (format, file, offset, size, reftime" + query);
+	m_insert.compile("INSERT INTO md (format, file, offset, size, notes, reftime" + query);
 
 	// Precompile replace
-	m_replace.compile("INSERT OR REPLACE INTO md (format, file, offset, size, reftime" + query);
+	m_replace.compile("INSERT OR REPLACE INTO md (format, file, offset, size, notes, reftime" + query);
 
 	// Precompile remove query
 	m_delete.compile("DELETE FROM md WHERE id=?");
@@ -488,6 +489,7 @@ void WIndex::initDB()
 		" file TEXT NOT NULL,"
 		" offset INTEGER NOT NULL,"
 		" size INTEGER NOT NULL,"
+		" notes BLOB,"
 		" reftime TEXT NOT NULL";
 
 	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
@@ -508,7 +510,7 @@ void WIndex::initDB()
 
 	m_db.exec(query);
 
-	// Create the indexes
+	// Create the indices
 	m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
 	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
 			i != m_wsub.end(); ++i)
@@ -536,6 +538,7 @@ void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& file, s
 		default:
 			q.bind(++idx, 0);
 	}
+	q.bindItems(++idx, md.notes);
 
 	const int* rt = md.get(types::TYPE_REFTIME)->upcast<types::reftime::Position>()->time->vals;
 	int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);

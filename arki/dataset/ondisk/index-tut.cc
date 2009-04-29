@@ -57,14 +57,14 @@ auto_ptr<INDEX> createIndex(const std::string& config)
 	return auto_ptr<INDEX>(new INDEX(cfg));
 }
 
-struct arki_dsindex_shar {
+struct arki_dataset_ondisk_index_shar {
 	Metadata md;
 	Metadata md1;
 
 	ValueBag testArea;
 	ValueBag testEnsemble;
 
-	arki_dsindex_shar()
+	arki_dataset_ondisk_index_shar()
 	{
 		testArea.set("foo", Value::createInteger(5));
 		testArea.set("bar", Value::createInteger(5000));
@@ -108,7 +108,7 @@ struct arki_dsindex_shar {
 		out.close();
 	}
 };
-TESTGRP(arki_dsindex);
+TESTGRP(arki_dataset_ondisk_index);
 
 struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
 {
@@ -125,7 +125,7 @@ void to::test<1>()
 {
 	auto_ptr<WIndex> test = createIndex<WIndex>(
 		"type = test\n"
-		"path = .\n"
+		"path = \n"
 		"indexfile = :memory:\n"
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
 		"index = origin, product, level, timerange, area, ensemble, reftime\n"
