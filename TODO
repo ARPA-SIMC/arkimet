@@ -86,10 +86,10 @@ Annunciati:
    longitudeOfSouthernPoleInDegrees) vanno antiruotati
  + In arki-mergeconf, usare lua per calcolare bounding box (in maniera
    accurata) a partire dalle definizioni delle aree
-Da annunciare:
  + Accorciata la query al database tenendosi in memoria tutti i metadati
  + Run stubborn queries in the index and pretty much everywhere: "database
    is locked" should not be a failure model
+Da annunciare:
  - Ondisk2
 
 ---
@@ -145,7 +145,50 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     - when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already)
 
+ - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
+   +0100 di Minguzzi
+
+ - arki-query per i summary stile meteomixer ci mette tipo 4 secondi
+   ma via arki-server forse molto di piú: perché?
+
+ - test arkimet da disco locale e da disco di rete
+    - benchmark di selvini
+    - import di un giorno di dati
+    - arki-query --verbose che dica anche il tempo
+    - richiesta di summary (arkimeow, meteomixer)
+    - import misto query
+      (query con import e query senza)
+      (import con query, e import senza)
+   (2 settimane, una a preparare e una a farlo andare)
+
+ - Passi futuri:
+    - benchmark
+    - decisione di come deployare arkimet
+    - installazione arkimeow su nemo
+    - far andare arkimeow su nemo coi plugin in modo utile
+    - procedure di Minguzzi
+    - integrazione procedure di Minguzzi in arkimeow
+
  - if data does not need to be sorted, we can create a sorted I/O plan
+    - data needs to be sorted by reftime
+    - performance should be a good approximation of the optimal case, because
+      the data files are almost sorted (or fully sorted just after a repack)
+
+ - dataset a scadenza
+    - aggiornare l'indice cancellando tutte le entry dei file vecchi
+    - cancellare i file vecchi
+
+ - cancellazione di dati dato un'estrazione di metadati
+
+ - dataset offline
+
+ - dataset nlaps* da rifare
+
+ - plugin chunked
+    - programma che splitta lo stdin di grib un pezzo alla volta
+    - esporta via environment dati sul chunk (tipo il range di date)
+    - gli lascia i dati su standard input o su file temporaneo che viene poi
+      cancellato
 
  - alcuni arki-query rimangono appesi (e non si sa perché)
  = Verificare l'idea di mettere tutto un dataset in un file .sqlite, o
@@ -175,6 +218,9 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - arki-scan --testdispatch=cfg
     - mostra i dati che andrebbero nello stesso dataset e con lo stesso id
+
+ - dataset "offline", che tenga solo i file .summary (toplevel, per directory,
+   per file)
 
  - Triggering:
     - Poll:

@@ -1,7 +1,7 @@
 /*
  * runtime - Common code used in most xgribarch executables
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -731,7 +731,7 @@ void Output::openStdout()
 
 void Output::openFile(const std::string& fname)
 {
-	int fd = open(fname.c_str(), O_WRONLY | O_CREAT, 0666);
+	int fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1)
 		throw wibble::exception::File(fname, "opening file for writing");
 	m_name = fname;
