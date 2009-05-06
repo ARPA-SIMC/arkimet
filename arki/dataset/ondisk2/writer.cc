@@ -22,6 +22,7 @@
 
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
+#include <arki/dataset/ondisk2/writer/utils.h>
 //#include <arki/dataset/ondisk2/maintenance.h>
 //#include <arki/dataset/ondisk2/maint/datafile.h>
 //#include <arki/dataset/ondisk2/maint/directory.h>
@@ -187,6 +188,12 @@ void Writer::flush()
 
 void Writer::maintenance(MaintenanceAgent& a)
 {
+	// Iterate subdirs in sorted order
+	// Also iterate files on index in sorted order
+	// Check each file for need to reindex or repack
+
+
+
 	// TODO: rebuild of index
 	// TODO:  (empty the index, scan all files)
 	// TODO: also file:///usr/share/doc/sqlite3-doc/pragma.html#debug

@@ -24,9 +24,11 @@ arkiinclude_HEADERS = \
 		dataset/ondisk/maint/directory.h \
 		dataset/ondisk2.h \
 		dataset/ondisk2/index.h \
+		dataset/ondisk2/maintenance.h \
 		dataset/ondisk2/reader.h \
 		dataset/ondisk2/writer.h \
 		dataset/ondisk2/writer/datafile.h \
+		dataset/ondisk2/writer/utils.h \
 		dataset/outbound.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -158,6 +160,8 @@ libarkimet_la_SOURCES = \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
 		dataset/ondisk2/writer/datafile.cc \
+		dataset/ondisk2/writer/utils.cc \
+		dataset/ondisk2/maintenance.cc \
 		dataset/outbound.cc \
 		dataset/discard.cc \
 		dataset/empty.cc \
@@ -231,6 +235,8 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk2/index-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer/datafile-tut.cc \
+		dataset/ondisk2/writer/utils-tut.cc \
+		dataset/ondisk2/maintenance-tut.cc \
 		dataset/test-utils.cc \
 		dataset/outbound-tut.cc \
 		dataset/discard-tut.cc \
