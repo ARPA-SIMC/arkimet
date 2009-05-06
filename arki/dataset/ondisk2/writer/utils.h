@@ -60,6 +60,22 @@ public:
 	void next();
 };
 
+/**
+ * Visitor interface for scanning information about the files indexed in the database
+ */
+struct MaintFileVisitor
+{
+	enum State {
+		OK,
+		HOLES,
+		OUT_OF_INDEX,
+		CORRUPTED,
+	};
+
+	virtual ~MaintFileVisitor() {}
+
+	virtual void operator()(const std::string& file, State state) = 0;
+};
 
 }
 }

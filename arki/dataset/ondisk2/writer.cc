@@ -186,12 +186,125 @@ void Writer::flush()
 	m_df_cache.clear();
 }
 
+struct HoleFinder : FileVisitor
+{
+	writer::MaintFileVisitor& next;
+
+	const std::string& m_root;
+
+	string last_file;
+	off_t last_file_size;
+	bool has_hole;
+
+	HoleFinder(writer::MaintFileVisitor& next, const std::string& root)
+	       	: next(next), m_root(root), has_hole(false) {}
+
+	void finaliseFile()
+	{
+		if (!last_file.empty())
+		{
+			// Check if last_file_size matches the file size
+			if (!has_hole)
+			{
+				off_t size = utils::files::size(str::joinpath(m_root, last_file));
+				if (size > last_file_size)
+					has_hole = true;
+				else if (size < last_file_size)
+				{
+					// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
+					next(last_file, writer::MaintFileVisitor::CORRUPTED);
+					return;
+				}
+			}
+
+			// Take note of files with holes
+			if (has_hole)
+			{
+				next(last_file, writer::MaintFileVisitor::HOLES);
+			} else {
+				next(last_file, writer::MaintFileVisitor::OK);
+			}
+		}
+	}
+
+	void operator()(const std::string& file, off_t offset, size_t size)
+	{
+		if (last_file != file)
+		{
+			finaliseFile();
+			last_file = file;
+			last_file_size = 0;
+			has_hole = false;
+		}
+		if (offset != last_file_size)
+			has_hole = true;
+		last_file_size += size;
+	}
+
+	void end()
+	{
+		finaliseFile();
+	}
+};
+
+struct FindMissing : public writer::MaintFileVisitor
+{
+	writer::MaintFileVisitor& next;
+	writer::DirScanner disk;
+
+	FindMissing(MaintFileVisitor& next, const std::string& root) : next(next), disk(root) {}
+
+	void operator()(const std::string& file, State state)
+	{
+		while (not disk.cur().empty() and disk.cur() < file)
+		{
+			next(disk.cur(), OUT_OF_INDEX);
+			disk.next();
+		}
+		if (disk.cur() == file)
+			disk.next();
+		// TODO: if requested, check for internal consistency
+		// TODO: it requires to have an infrastructure for quick
+		// TODO:   consistency checkers (like, "GRIB starts with GRIB
+		// TODO:   and ends with 7777")
+		next(file, state);
+	}
+
+	void end()
+	{
+		while (not disk.cur().empty())
+		{
+			next(disk.cur(), OUT_OF_INDEX);
+			disk.next();
+		}
+	}
+};
+
+struct MaintPrinter : public writer::MaintFileVisitor
+{
+	void operator()(const std::string& file, State state)
+	{
+		switch (state)
+		{
+			case OK: cerr << file << " OK" << endl;
+			case HOLES: cerr << file << " HOLES" << endl;
+			case OUT_OF_INDEX: cerr << file << " OUT_OF_INDEX" << endl;
+			case CORRUPTED: cerr << file << " CORRUPTED" << endl;
+		}
+	}
+};
+
 void Writer::maintenance(MaintenanceAgent& a)
 {
 	// Iterate subdirs in sorted order
 	// Also iterate files on index in sorted order
 	// Check each file for need to reindex or repack
-
+	MaintPrinter printer;
+	FindMissing fm(printer, m_path);
+	HoleFinder hf(fm, m_path);	
+	m_idx.scan_files(hf, "file, reftime");
+	hf.end();
+	fm.end();
 
 
 	// TODO: rebuild of index
