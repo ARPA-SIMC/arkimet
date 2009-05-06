@@ -93,6 +93,12 @@ time_t timestamp(const std::string& file)
 	return st.get() == NULL ? 0 : st->st_mtime;
 }
 
+off_t size(const std::string& file)
+{
+	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
+	return st.get() == NULL ? 0 : st->st_size;
+}
+
 }
 }
 }

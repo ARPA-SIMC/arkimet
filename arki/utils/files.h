@@ -74,8 +74,11 @@ void removeIndexFlagfile(const std::string& dir);
 bool hasIndexFlagfile(const std::string& dir);
 
 
-// Timestamps
+/// File mtime
 time_t timestamp(const std::string& file);
+
+/// File size
+off_t size(const std::string& file);
 
 }
 }

@@ -179,9 +179,6 @@ void to::test<1>()
 	// Import once in the empty dataset
 	WritableDataset::AcquireResult res = d200.acquire(md);
 	ensure_equals(res, WritableDataset::ACQ_OK);
-	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
-	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
-	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
 	#if 0
 	for (vector<Note>::const_iterator i = md.notes.begin();
 			i != md.notes.end(); ++i)
@@ -199,23 +196,12 @@ void to::test<1>()
 	ensure(!ds.defined());
 
 	// Flush the changes and check that everything is allright
-	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
-	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
-	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
 	d200.flush();
 	ensure(wibble::sys::fs::access("test200/2007/07-08.grib1", F_OK));
-//2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
-	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.metadata", F_OK));
-	ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.summary", F_OK));
-	ensure(!wibble::sys::fs::access("test200/2007/summary", F_OK));
-	ensure(!wibble::sys::fs::access("test200/summary", F_OK));
 	ensure(wibble::sys::fs::access("test200/index.sqlite", F_OK));
+	ensure(timestamp("test200/2007/07-08.grib1") <= timestamp("test200/index.sqlite"));
+//2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
 //2	ensure(!hasIndexFlagfile("test200"));
-
-//2	ensure(timestamp("test200/2007/07-08.grib1.metadata") <= timestamp("test200/2007/07-08.grib1.summary"));
-//2	ensure(timestamp("test200/2007/07-08.grib1.summary") <= timestamp("test200/2007/summary"));
-//2	ensure(timestamp("test200/2007/summary") <= timestamp("test200/summary"));
-//2	ensure(timestamp("test200/2007/07-08.grib1.metadata") <= timestamp("test200/index.sqlite"));
 }
 
 // Test querying the datasets
@@ -381,7 +367,7 @@ void to::test<6>()
 		// Remove it
 		testds->remove(mdc[0]);
 		testds->flush();
-		ensure(wibble::sys::fs::access("test200/2007/07-08.grib1.needs-pack", F_OK));
+		ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.needs-pack", F_OK));
 	}
 
 	// Check that it does not have a source and metadata element
@@ -396,6 +382,34 @@ void to::test<6>()
 		testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
 		ensure_equals(mdc.size(), 0u);
 	}
+
+#if 0
+	// Try to fetch all other elements
+	{
+		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		mdc.clear();
+		testds->queryMetadata(Matcher::parse(""), false, mdc);
+		ensure_equals(mdc.size(), 2u);
+	}
+
+	// TODO: Repack
+
+	// Try to fetch the element again
+	{
+		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		mdc.clear();
+		testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		ensure_equals(mdc.size(), 0u);
+	}
+
+	// Try to fetch all other elements
+	{
+		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		mdc.clear();
+		testds->queryMetadata(Matcher::parse(""), false, mdc);
+		ensure_equals(mdc.size(), 2u);
+	}
+#endif
 }
 
 // Test reindexing

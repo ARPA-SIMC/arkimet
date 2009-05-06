@@ -30,6 +30,7 @@
 #include <arki/types/source.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
+#include <arki/utils/files.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -413,6 +414,33 @@ bool RIndex::querySummary(const Matcher& m, Summary& summary) const
 	return true;
 }
 
+void RIndex::scan_files(FileVisitor& v, const std::string& orderBy) const
+{
+	Query sq("scan_files", m_db);
+	sq.compile("SELECT DISTINCT file, offset, size FROM md ORDER BY " + orderBy);
+	while (sq.step())
+	{
+		string file = sq.fetchString(0);
+		off_t offset = sq.fetchSizeT(1);
+		size_t size = sq.fetchSizeT(2);
+
+		v(file, offset, size);
+	}
+}
+
+void RIndex::scan_file(const std::string& relname, FileVisitor& v, const std::string& orderBy) const
+{
+	Query sq("scan_file", m_db);
+	sq.compile("SELECT DISTINCT offset, size FROM md WHERE file=? ORDER BY " + orderBy);
+	sq.bind(1, relname);
+	while (sq.step())
+	{
+		off_t offset = sq.fetchSizeT(0);
+		size_t size = sq.fetchSizeT(1);
+		v(relname, offset, size);
+	}
+}
+
 WIndex::WIndex(const ConfigFile& cfg)
 	: RIndex(cfg), m_insert(m_db),
           m_delete("delete", m_db), m_replace("replace", m_db),
@@ -610,6 +638,16 @@ void WIndex::reset(const std::string& file)
 	Query query("reset_datafile", m_db);
 	query.compile("DELETE FROM md WHERE file = ?");
 	query.bind(1, file);
+	query.step();
+}
+
+void WIndex::relocate_data(const std::string& relname, off_t oldofs, off_t newofs)
+{
+	Query query("update_offset", m_db);
+	query.compile("UPDATE md SET offset = ? WHERE file = ? AND offset = ?");
+	query.bind(1, newofs);
+	query.bind(2, relname);
+	query.bind(3, oldofs);
 	query.step();
 }
 

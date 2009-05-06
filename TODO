@@ -142,6 +142,15 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
           - insert the new records into the db
           - commit
           - unlock writes
+    - rebuild:
+       - for each file
+          - if not in the db, rescan it
+          - if in the db
+             - if there are records pointing outside the file, rescan it
+	     - OPTIONAL if there are records pointing to data in the file that
+	       cannot be parsed, rescan it
+       - for each record in the db without a file
+          - remove record in the db
     - when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already)
 
@@ -152,14 +161,19 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    ma via arki-server forse molto di piú: perché?
 
  - test arkimet da disco locale e da disco di rete
-    - benchmark di selvini
-    - import di un giorno di dati
+    + query di meteomixer
+    + import di un giorno di dati
+      nfs: 2499.89  local: 589.15  ondisk2: 255.51
+    + benchmark di selvini
     - arki-query --verbose che dica anche il tempo
     - richiesta di summary (arkimeow, meteomixer)
     - import misto query
       (query con import e query senza)
       (import con query, e import senza)
    (2 settimane, una a preparare e una a farlo andare)
+
+ - paola: è possibile modificare l mdstat o crearne uno simile che mi includa
+   anche le descrizioni?
 
  - Passi futuri:
     - benchmark

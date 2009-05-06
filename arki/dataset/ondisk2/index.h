@@ -43,6 +43,16 @@ namespace dataset {
 namespace ondisk2 {
 
 /**
+ * Visitor interface for scanning information about the files indexed in the database
+ */
+struct FileVisitor
+{
+	virtual ~FileVisitor() {}
+
+	virtual void operator()(const std::string& file, off_t offset, size_t size) = 0;
+};
+
+/**
  * Dataset index.
  *
  * Every indexed metadata item that can be summarised has a table (attr table)
@@ -132,6 +142,16 @@ public:
 	bool query(const Matcher& m, MetadataConsumer& consumer) const;
 
 	bool querySummary(const Matcher& m, Summary& summary) const;
+
+	/**
+	 * Scan all file info in the database, sorted by file and offset
+	 */
+	void scan_files(FileVisitor& v, const std::string& orderBy = "file, offset") const;
+
+	/**
+	 * Scan the information about the given file, sorted by offset
+	 */
+	void scan_file(const std::string& relname, FileVisitor& v, const std::string& orderBy = "offset") const;
 };
 
 class WIndex : public RIndex
@@ -201,6 +221,12 @@ public:
 	 * Remove all entries from the index that are related to the given data file
 	 */
 	void reset(const std::string& datafile);
+
+	/**
+	 * Update the offset of a piece of data from oldofs to newofs inside
+	 * the same file
+	 */
+	void relocate_data(const std::string& relname, off_t oldofs, off_t newofs);
 };
 
 }

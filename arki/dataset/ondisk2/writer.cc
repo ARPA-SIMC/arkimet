@@ -171,7 +171,7 @@ void Writer::remove(const std::string& str_id)
 	m_idx.remove(id, file);
 
 	// Create flagfile
-	createPackFlagfile(str::joinpath(m_path, file));
+	//createPackFlagfile(str::joinpath(m_path, file));
 
 	// Commit delete from DB
 	p_del.commit();
@@ -217,14 +217,148 @@ void Writer::maintenance(MaintenanceAgent& a)
 #endif
 }
 
+struct HoledFilesCollector : FileVisitor
+{
+	const std::string& m_root;
+	vector<string> files;
+	string last_file;
+	off_t last_file_size;
+	bool has_hole;
+
+	HoledFilesCollector(const std::string& m_root) : m_root(m_root), has_hole(false) {}
+
+	void finaliseFile()
+	{
+		if (!last_file.empty())
+		{
+			// Check if last_file_size matches the file size
+			if (!has_hole)
+			{
+				off_t size = utils::files::size(str::joinpath(m_root, last_file));
+				if (size > last_file_size)
+					has_hole = true;
+				else if (size < last_file_size)
+					throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
+			}
+
+			// Take note of files with holes
+			if (has_hole)
+				files.push_back(last_file);
+		}
+	}
+
+	void operator()(const std::string& file, off_t offset, size_t size)
+	{
+		if (last_file != file)
+		{
+			finaliseFile();
+			last_file = file;
+			last_file_size = 0;
+			has_hole = false;
+		}
+		if (offset != last_file_size)
+			has_hole = true;
+		last_file_size += size;
+	}
+
+	void end()
+	{
+		finaliseFile();
+	}
+};
+
+struct FileCopier : FileVisitor
+{
+	WIndex& m_idx;
+	sys::Buffer buf;
+	std::string src;
+	std::string dst;
+	int fd_src;
+	int fd_dst;
+	off_t w_off;
+
+	FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
+		: m_idx(idx), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
+	{
+		fd_src = open(src.c_str(), O_RDONLY | O_NOATIME);
+		if (fd_src < 0)
+			throw wibble::exception::File(src, "opening file");
+
+		fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		if (fd_dst < 0)
+			throw wibble::exception::File(dst, "opening file");
+	}
+
+	virtual ~FileCopier()
+	{
+		flush();
+	}
+
+	void operator()(const std::string& file, off_t offset, size_t size)
+	{
+		if (buf.size() < size)
+			buf.resize(size);
+		ssize_t res = pread(fd_src, buf.data(), size, offset);
+		if (res < 0 || (unsigned)res != size)
+			throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
+		res = write(fd_dst, buf.data(), size);
+		if (res < 0 || (unsigned)res != size)
+			throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");
+
+		// Reindex file from offset to w_off
+		m_idx.relocate_data(file, offset, w_off);
+
+		w_off += size;
+	}
+
+	void flush()
+	{
+		if (fd_src != -1 and close(fd_src) != 0)
+			throw wibble::exception::File(src, "closing file");
+		fd_src = -1;
+		if (fd_dst != -1 and close(fd_dst) != 0)
+			throw wibble::exception::File(dst, "closing file");
+		fd_dst = -1;
+	}
+};
+
 void Writer::repack(RepackAgent& a)
 {
-	// TODO
-#if 0
-	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
+	// TODO: send info to RepackAgent
 
-	maint_root->checkForRepack(a);
-#endif
+	// TODO: lock away writes, allow reads
+	// TODO: delete all files not indexed
+	// TODO: unlock writes
+
+	// Get the sorted list of files with holes
+	HoledFilesCollector hf(m_path);	
+	m_idx.scan_files(hf, "file, reftime");
+	hf.end();
+
+	for (vector<string>::const_iterator f = hf.files.begin();
+			f != hf.files.end(); ++f)
+	{
+		// TODO: lock away writes, allow reads
+
+		Pending p = m_idx.beginTransaction();
+
+		// Make a copy of the file with the right data in it, sorted by
+		// reftime, and update the offsets in the index
+		string pathname = str::joinpath(m_path, *f);
+		string pntmp = pathname + ".repack";
+		FileCopier copier(m_idx, pathname, pntmp);
+		m_idx.scan_file(*f, copier, "reftime");
+		copier.flush();
+
+		// Rename the file with to final name
+		if (rename(pntmp.c_str(), pathname.c_str()) < 0)
+			throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
+
+		// Commit the changes on the database
+		p.commit();
+
+		// TODO: unlock writes
+	}
 }
 
 void Writer::depthFirstVisit(Visitor& v)
