@@ -4,7 +4,7 @@
 /*
  * dataset/ondisk/maintenance - Ondisk dataset maintenance
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +73,7 @@ struct RepackAgent
 	virtual ~RepackAgent() {}
 
 	virtual void needsRepack(maint::Datafile& df) = 0;
+	virtual void end() {}
 };
 
 /**
@@ -108,16 +109,13 @@ public:
 class FullRepack : public RepackAgent
 {
 protected:
-	// This is where the metadata with inline data of the deleted data is sent
-	MetadataConsumer& mdc;
-
 	// This is where repack progess will be logged
 	std::ostream& log;
 
 	Writer* writer;
 
 public:
-	FullRepack(MetadataConsumer& mdc, std::ostream& log);
+	FullRepack(std::ostream& log);
 	virtual ~FullRepack();
 
 	virtual void start(Writer& w);
@@ -125,6 +123,24 @@ public:
 
 	virtual void needsRepack(maint::Datafile& df);
 };
+
+/**
+ * RepackAgent that only prints information on what repack would do
+ */
+struct RepackReport : public RepackAgent
+{
+	std::ostream& log;
+	size_t repack;
+
+	RepackReport(std::ostream& log) : log(log), repack(0) {}
+	virtual ~RepackReport() {}
+
+	const char* stfile(size_t count) const { return count > 1 ? "files" : "file"; }
+
+	virtual void needsRepack(maint::Datafile& df);
+	virtual void end();
+};
+
 
 }
 }

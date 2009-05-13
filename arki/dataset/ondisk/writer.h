@@ -4,7 +4,7 @@
 /*
  * dataset/ondisk/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,6 @@ class Writer : public WritableDataset
 {
 protected:
 	ConfigFile m_cfg;
-	std::string m_name;
 	ondisk::writer::RootDirectory* m_root;
 	bool m_replace;
 
@@ -90,7 +89,7 @@ public:
 	/**
 	 * Repack the dataset, using a RepackAgent to direct the operations
 	 */
-	void repack(RepackAgent& a);
+	void repack(std::ostream& log, bool writable=false);
 
 	/**
 	 * Iterate through the contents of the dataset, in depth-first order.

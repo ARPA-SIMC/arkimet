@@ -62,8 +62,10 @@ struct Datafile
 	 *
 	 * repack() fails if the rebuild flagfile is present, signaling that the
 	 * .metadata file should not be trusted.
+	 *
+	 * Return the number of data items that have been removed.
 	 */
-	void repack(MetadataConsumer& mdc);
+	size_t repack();
 
 	/**
 	 * Rebuild the metadata by rescanning the data file.

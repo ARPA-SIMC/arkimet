@@ -58,9 +58,11 @@ namespace dataset {
 namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
-	: m_cfg(cfg), m_path(cfg.value("path")), m_name(cfg.value("name")),
+	: m_cfg(cfg), m_path(cfg.value("path")),
 	  m_idx(cfg), m_tf(0), m_replace(false)
 {
+	m_name = cfg.value("name");
+
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_path);
 
@@ -73,11 +75,6 @@ Writer::~Writer()
 {
 	flush();
 	if (m_tf) delete m_tf;
-}
-
-std::string Writer::path() const
-{
-	return m_path;
 }
 
 std::string Writer::id(const Metadata& md) const
@@ -231,11 +228,22 @@ void Writer::maintenance(writer::MaintFileVisitor& v)
 #endif
 }
 
-void Writer::repack(RepackAgent& a)
+void Writer::repack(std::ostream& log, bool writable)
 {
-	// TODO: send info to RepackAgent
-	writer::Repacker repacker(m_idx, m_path);
-	maintenance(repacker);
+	using namespace writer;
+
+	auto_ptr<Repacker> repacker;
+
+	if (writable)
+		if (m_idx.count() == 0)
+			// Safeguard: if the index is empty, do not delete files
+			repacker.reset(new FailsafeRepacker(log, *this));
+		else
+			repacker.reset(new RealRepacker(log, *this));
+	else
+		repacker.reset(new MockRepacker(log, *this));
+	maintenance(*repacker);
+	repacker->end();
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

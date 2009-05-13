@@ -59,7 +59,7 @@ void HoleFinder::finaliseFile()
 			else if (size < last_file_size)
 			{
 				// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-				next(last_file, writer::MaintFileVisitor::CORRUPTED);
+				next(last_file, writer::MaintFileVisitor::TO_RESCAN);
 				return;
 			}
 		}
@@ -67,7 +67,7 @@ void HoleFinder::finaliseFile()
 		// Take note of files with holes
 		if (has_hole)
 		{
-			next(last_file, writer::MaintFileVisitor::HOLES);
+			next(last_file, writer::MaintFileVisitor::TO_PACK);
 		} else {
 			next(last_file, writer::MaintFileVisitor::OK);
 		}
@@ -124,33 +124,73 @@ void MaintPrinter::operator()(const std::string& file, State state)
 	switch (state)
 	{
 		case OK: cerr << file << " OK" << endl;
-		case HOLES: cerr << file << " HOLES" << endl;
-		case OUT_OF_INDEX: cerr << file << " OUT_OF_INDEX" << endl;
-		case CORRUPTED: cerr << file << " CORRUPTED" << endl;
+		case TO_PACK: cerr << file << " HOLES" << endl;
+		case TO_INDEX: cerr << file << " OUT_OF_INDEX" << endl;
+		case TO_RESCAN: cerr << file << " CORRUPTED" << endl;
 	}
 }
 
-Repacker::Repacker(WIndex& m_idx, const std::string& m_path)
-	: m_idx(m_idx), m_path(m_path)
+// Repacker
+
+Repacker::Repacker(std::ostream& log, Writer& w)
+	: m_log(log), w(w)
 {
 }
 
-void Repacker::operator()(const std::string& file, State state)
+std::ostream& Repacker::log()
+{
+	return m_log << w.m_name << ": ";
+}
+
+// FailsafeRepacker
+
+FailsafeRepacker::FailsafeRepacker(std::ostream& log, Writer& w)
+	: Repacker(log, w), m_count_deleted(0)
+{
+}
+
+void FailsafeRepacker::operator()(const std::string& file, State state)
 {
 	switch (state)
 	{
-		case HOLES: {
-			// TODO: lock away writes, allow reads
+		case TO_INDEX: ++m_count_deleted; break;
+		default: break;
+	}
+}
 
-			Pending p = m_idx.beginTransaction();
+void FailsafeRepacker::end()
+{
+	if (m_count_deleted == 0) return;
+	log() << "index is empty, skipping deletion of "
+	      << m_count_deleted << " files."
+	      << endl;
+}
+
+// RealRepacker
+
+RealRepacker::RealRepacker(std::ostream& log, Writer& w)
+	: Repacker(log, w), m_count_packed(0), m_count_deleted(0)
+{
+}
+
+void RealRepacker::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_PACK: {
+			// Lock away writes and reads reads
+			Pending p = w.m_idx.beginExclusiveTransaction();
 
 			// Make a copy of the file with the right data in it, sorted by
 			// reftime, and update the offsets in the index
-			string pathname = str::joinpath(m_path, file);
+			string pathname = str::joinpath(w.m_path, file);
 			string pntmp = pathname + ".repack";
-			FileCopier copier(m_idx, pathname, pntmp);
-			m_idx.scan_file(file, copier, "reftime");
+			FileCopier copier(w.m_idx, pathname, pntmp);
+			w.m_idx.scan_file(file, copier, "reftime");
 			copier.flush();
+
+			size_t size_pre = utils::files::size(pathname);
+			size_t size_post = utils::files::size(pntmp);
 
 			// Rename the file with to final name
 			if (rename(pntmp.c_str(), pathname.c_str()) < 0)
@@ -159,19 +199,90 @@ void Repacker::operator()(const std::string& file, State state)
 			// Commit the changes on the database
 			p.commit();
 
-			// TODO: unlock writes
+			size_t saved = size_pre - size_post;
+			log() << "packed " << file << " (" << saved << " saved)" << endl;
+			++m_count_packed;
+			m_count_freed += saved;
 			break;
 		}
-		case OUT_OF_INDEX: {
+		case TO_INDEX: {
 			// Delete all files not indexed
-			string pathname = str::joinpath(m_path, file);
-			if (unlink(pathname) < 0)
-				throw wibble::exception::System("removing " pathname);
+			string pathname = str::joinpath(w.m_path, file);
+			size_t size = utils::files::size(pathname);
+			if (unlink(pathname.c_str()) < 0)
+				throw wibble::exception::System("removing " + pathname);
+
+			log() << "deleted " << file << " (" << size << " freed)" << endl;
+			++m_count_deleted;
+			m_count_freed += size;
 			break;
 		}
 		default:
 			break;
 	}
+}
+
+void RealRepacker::end()
+{
+	// Finally, tidy up the database
+	size_t size_pre = utils::files::size(w.m_idx.pathname());
+	w.m_idx.vacuum();
+	size_t size_post = utils::files::size(w.m_idx.pathname());
+	size_t saved = size_pre - size_post;
+	m_count_freed += saved;
+
+	if (m_count_packed > 0 || m_count_deleted > 0 || saved > 0)
+		m_log << w.m_name << ": ";
+	if (m_count_packed)
+		m_log << m_count_packed << "files packed, ";
+	if (m_count_deleted)
+		m_log << m_count_deleted << "files deleted, ";
+	if (saved > 0)
+		m_log << saved << "bytes reclaimed on the index, ";
+	if (m_count_freed > 0)
+		m_log << m_count_freed << " total bytes freed." << endl;
+}
+
+MockRepacker::MockRepacker(std::ostream& log, Writer& w)
+	: Repacker(log, w), m_count_packed(0), m_count_deleted(0)
+{
+}
+
+void MockRepacker::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_PACK: {
+			log() << file << " needs packing" << endl;
+			++m_count_packed;
+			break;
+		}
+		case TO_INDEX: {
+			log() << file << " should be deleted" << endl;
+			++m_count_deleted;
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+void MockRepacker::end()
+{
+	if (m_count_packed)
+		if (m_count_deleted)
+			log()
+			    << m_count_packed << " files should be packed, "
+			    << m_count_deleted << " files should be deleted."
+			    << endl;
+		else
+			log()
+			    << m_count_packed << " files should be packed. "
+			    << endl;
+	else if (m_count_deleted)
+		log()
+		    << m_count_deleted << " files should be deleted."
+		    << endl;
 }
 
 }

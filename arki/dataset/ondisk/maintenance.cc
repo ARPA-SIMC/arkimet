@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -99,8 +99,8 @@ void FullMaintenance::needsFullIndexRebuild(RootDirectory& df)
 }
 
 
-FullRepack::FullRepack(MetadataConsumer& mdc, std::ostream& log)
-	: mdc(mdc), log(log), writer(0)
+FullRepack::FullRepack(std::ostream& log)
+	: log(log), writer(0)
 {
 }
 
@@ -121,8 +121,29 @@ void FullRepack::needsRepack(Datafile& df)
 {
 	// Run the rebuild
 	log << df.pathname << ": repacking." << endl;
-	df.repack(mdc);
+	df.repack();
 	// TODO: Reindex
+}
+
+void RepackReport::needsRepack(Datafile& df)
+{
+	++repack;
+	log << "Needs repack:" << df.pathname << endl;
+}
+
+void RepackReport::end()
+{
+	bool done = false;
+	log << "Summary:";
+	if (repack)
+	{
+		done = true;
+		log << endl << " " << repack << " metadata " << stfile(repack) << " to repack";
+	}
+	if (!done)
+		log << " nothing to do." << endl;
+	else
+		log << "; rerun with -f to repack." << endl;
 }
 
 }

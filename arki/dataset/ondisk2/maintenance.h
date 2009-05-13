@@ -40,23 +40,13 @@ namespace writer {
 /**
  * Visitor interface for scanning information about the files indexed in the database
  */
-struct IndexFileVisitor
-{
-	virtual ~IndexFileVisitor() {}
-
-	virtual void operator()(const std::string& file, off_t offset, size_t size) = 0;
-};
-
-/**
- * Visitor interface for scanning information about the files indexed in the database
- */
 struct MaintFileVisitor
 {
 	enum State {
 		OK,
-		HOLES,
-		OUT_OF_INDEX,
-		CORRUPTED,
+		TO_PACK,
+		TO_INDEX,
+		TO_RESCAN,
 	};
 
 	virtual ~MaintFileVisitor() {}
@@ -65,9 +55,19 @@ struct MaintFileVisitor
 };
 
 /**
+ * Visitor interface for scanning information about the files indexed in the database
+ */
+struct IndexFileVisitor
+{
+	virtual ~IndexFileVisitor() {}
+
+	virtual void operator()(const std::string& file, off_t offset, size_t size) = 0;
+};
+
+/**
  * IndexFileVisitor that feeds a MaintFileVisitor with OK or HOLES status.
  *
- * OUT_OF_INDEX and CORRUPTED will have to be detected by MaintFileVisitors
+ * TO_INDEX and TO_RESCAN will have to be detected by MaintFileVisitors
  * further down the chain.
  */
 struct HoleFinder : IndexFileVisitor
@@ -106,7 +106,7 @@ struct HoleFinder : IndexFileVisitor
 };
 
 /**
- * MaintFileVisitor that feeds a MaintFileVisitor with OUT_OF_INDEX status.
+ * MaintFileVisitor that feeds a MaintFileVisitor with TO_INDEX status.
  *
  * The input feed is assumed to come from the index, and is checked against the
  * files found on disk in order to detect files that are on disk but not in the
@@ -123,7 +123,7 @@ struct FindMissing : public writer::MaintFileVisitor
 	{
 		while (not disk.cur().empty() and disk.cur() < file)
 		{
-			next(disk.cur(), OUT_OF_INDEX);
+			next(disk.cur(), TO_INDEX);
 			disk.next();
 		}
 		if (disk.cur() == file)
@@ -139,7 +139,7 @@ struct FindMissing : public writer::MaintFileVisitor
 	{
 		while (not disk.cur().empty())
 		{
-			next(disk.cur(), OUT_OF_INDEX);
+			next(disk.cur(), TO_INDEX);
 			disk.next();
 		}
 	}
@@ -168,14 +168,61 @@ struct MaintPrinter : public writer::MaintFileVisitor
 	void operator()(const std::string& file, State state);
 };
 
+/// Base class for all repackers
 struct Repacker : public writer::MaintFileVisitor
 {
-	WIndex& m_idx;
-	std::string m_path;
+	std::ostream& m_log;
+	Writer& w;
 
-	Repacker(WIndex& m_idx, const std::string& m_path);
+	Repacker(std::ostream& log, Writer& w);
+
+	std::ostream& log();
+
+	virtual void end() {}
+};
+
+/**
+ * Repacker used when some failsafe is triggered.
+ * 
+ * It only reports how many files would be deleted.
+ */
+struct FailsafeRepacker : public Repacker
+{
+	size_t m_count_deleted;
+
+	FailsafeRepacker(std::ostream& log, Writer& w);
 
 	void operator()(const std::string& file, State state);
+	void end();
+};
+
+/**
+ * Perform real repacking
+ */
+struct RealRepacker : public Repacker
+{
+	size_t m_count_packed;
+	size_t m_count_deleted;
+	size_t m_count_freed;
+
+	RealRepacker(std::ostream& log, Writer& w);
+
+	void operator()(const std::string& file, State state);
+	void end();
+};
+
+/**
+ * Simulate a repack and print information on what would have been done
+ */
+struct MockRepacker : public Repacker
+{
+	size_t m_count_packed;
+	size_t m_count_deleted;
+
+	MockRepacker(std::ostream& log, Writer& w);
+
+	void operator()(const std::string& file, State state);
+	void end();
 };
 
 

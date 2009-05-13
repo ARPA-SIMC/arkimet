@@ -213,33 +213,29 @@ bool mdcompare(const Metadata& md1, const Metadata& md2)
 
 struct RepackConsumer : public MetadataConsumer
 {
-	MetadataConsumer& deleted;
 	vector<Metadata> good;
+	size_t removed;
 
-	RepackConsumer(MetadataConsumer& deleted) : deleted(deleted) {}
+	RepackConsumer() : removed(0) {}
 
 	virtual bool operator()(Metadata& md)
 	{
 		// Skip deleted metadata
-		if (md.deleted)
-		{
-			// Put the data inline
-			wibble::sys::Buffer buf = md.getData();
-			md.setInlineData(md.source->format, buf);
-			deleted(md);
-		} else
+		if (!md.deleted)
 			good.push_back(md);
+		else
+			++removed;
 		return true;
 	}
 };
 
-void Datafile::repack(MetadataConsumer& mdc)
+size_t Datafile::repack()
 {
 	// Don't touch the summary, since we don't do anything that invalidates it
 	// in any way
 	
 	// Read and sort all the metadata
-	RepackConsumer sorter(mdc);
+	RepackConsumer sorter;
 
 	// Collect all non-deleted metadata into a vector
 	Metadata::readFile(pathname + ".metadata", sorter);
@@ -301,6 +297,8 @@ void Datafile::repack(MetadataConsumer& mdc)
 
 	removeRebuildFlagfile(pathname);
 	removePackFlagfile(pathname);
+
+	return sorter.removed;
 }
 
 void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)

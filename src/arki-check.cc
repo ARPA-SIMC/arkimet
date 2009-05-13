@@ -1,7 +1,7 @@
 /*
  * arki-check - Update dataset summaries
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,8 +49,6 @@
 
 using namespace std;
 using namespace arki;
-using namespace arki::dataset::ondisk;
-using namespace arki::dataset::ondisk::maint;
 using namespace wibble;
 using namespace wibble::sys;
 
@@ -95,17 +93,17 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct MaintenanceReport : public MaintenanceAgent
+struct MaintenanceReport : public dataset::ondisk::MaintenanceAgent
 {
 	size_t rebuild, fileSummary, fileReindex, dirSummary, index;
 	bool needFullIndex;
-	Writer* writer;
+	dataset::ondisk::Writer* writer;
 
 	MaintenanceReport()
 		: rebuild(0), fileSummary(0), fileReindex(0), dirSummary(0), index(0), needFullIndex(false), writer(0) {}
 	virtual ~MaintenanceReport() {}
 
-	void start(Writer& w)
+	void start(dataset::ondisk::Writer& w)
 	{
 		writer = &w;
 	}
@@ -114,32 +112,32 @@ struct MaintenanceReport : public MaintenanceAgent
 		writer = 0;
 	}
 
-	virtual void needsDatafileRebuild(Datafile& df)
+	virtual void needsDatafileRebuild(dataset::ondisk::maint::Datafile& df)
 	{
 		++rebuild;
 		cout << df.pathname << ": needs metadata rebuild." << endl;
 	}
-	virtual void needsSummaryRebuild(Datafile& df)
+	virtual void needsSummaryRebuild(dataset::ondisk::maint::Datafile& df)
 	{
 		++fileSummary;
 		cout << df.pathname << ": needs summary rebuild." << endl;
 	}
-	virtual void needsReindex(Datafile& df)
+	virtual void needsReindex(dataset::ondisk::maint::Datafile& df)
 	{
 		++fileReindex;
 		cout << df.pathname << ": needs reindexing." << endl;
 	}
-	virtual void needsSummaryRebuild(Directory& df)
+	virtual void needsSummaryRebuild(dataset::ondisk::maint::Directory& df)
 	{
 		++dirSummary;
 		cout << df.fullpath() << ": needs summary rebuild." << endl;
 	}
-	virtual void needsFullIndexRebuild(RootDirectory& df)
+	virtual void needsFullIndexRebuild(dataset::ondisk::maint::RootDirectory& df)
 	{
 		needFullIndex = true;
 		cout << writer->path() << ": needs full index rebuild." << endl;
 	}
-	virtual void needsIndexRebuild(Datafile& df)
+	virtual void needsIndexRebuild(dataset::ondisk::maint::Datafile& df)
 	{
 		if (!needFullIndex)
 		{
@@ -192,38 +190,7 @@ struct MaintenanceReport : public MaintenanceAgent
 	}
 };
 
-struct RepackReport : public RepackAgent
-{
-	size_t repack;
-
-	RepackReport() : repack(0) {}
-	virtual ~RepackReport() {}
-
-	virtual void needsRepack(Datafile& df)
-	{
-		++repack;
-		cout << "Needs repack:" << df.pathname << endl;
-	}
-
-	std::string stfile(size_t count) const { return count > 1 ? "files" : "file"; }
-
-	void report()
-	{
-		bool done = false;
-		cout << "Summary:";
-		if (repack)
-		{
-			done = true;
-			cout << endl << " " << repack << " metadata " << stfile(repack) << " to repack";
-		}
-		if (!done)
-			cout << " nothing to do." << endl;
-		else
-			cout << "; rerun with -f to repack." << endl;
-	}
-};
-
-struct Stats : public Visitor
+struct Stats : public dataset::ondisk::Visitor
 {
 	string name;
 
@@ -251,13 +218,13 @@ struct Stats : public Visitor
 			return s->st_size;
 	}
 
-	virtual void enterDataset(Writer& w)
+	virtual void enterDataset(dataset::ondisk::Writer& w)
 	{
 		name = w.path();
 		curData = curMd = curSum = curIdx = 0;
 		curIdx = fsize(str::joinpath(w.path(), "index.sqlite"));
 	}
-	virtual void leaveDataset(Writer&)
+	virtual void leaveDataset(dataset::ondisk::Writer&)
 	{
 		printf("%s: %.1fMb data, %.1fMb metadata, %.1fMb summaries, %.1fMb index\n",
 				name.c_str(), curData/1000000.0, curMd / 1000000.0, curSum / 1000000.0, curIdx / 1000000.0);
@@ -272,15 +239,15 @@ struct Stats : public Visitor
 		totIdx += curIdx;
 	}
 
-	virtual void enterDirectory(Directory& dir)
+	virtual void enterDirectory(dataset::ondisk::maint::Directory& dir)
 	{
 		curSum += fsize(str::joinpath(dir.fullpath(), "summary"));
 	}
-	virtual void leaveDirectory(Directory& dir)
+	virtual void leaveDirectory(dataset::ondisk::maint::Directory& dir)
 	{
 	}
 
-	virtual void visitFile(Datafile& file)
+	virtual void visitFile(dataset::ondisk::maint::Datafile& file)
 	{
 		curData += fsize(file.pathname);
 		curMd += fsize(file.pathname + ".metadata");
@@ -319,19 +286,19 @@ struct Printer : public MetadataConsumer
 struct Worker
 {
 	~Worker() {}
-	virtual void operator()(Writer& w) = 0;
+	virtual void operator()(WritableDataset& w) = 0;
 	virtual void done() = 0;
 };
 
 struct Maintainer : public Worker
 {
-	MaintenanceAgent* ma;
+	dataset::ondisk::MaintenanceAgent* ma;
 
 	Maintainer(bool fix, MetadataConsumer* salvage = 0) : ma(0)
 	{
 		if (fix)
 			if (salvage)
-				ma = new FullMaintenance(cerr, *salvage);
+				ma = new dataset::ondisk::FullMaintenance(cerr, *salvage);
 			else
 				throw wibble::exception::Consistency("setting up maintenance run", "no metadata consumer given to salvage duplicate items");
 		else
@@ -342,9 +309,13 @@ struct Maintainer : public Worker
 		if (ma) delete ma;
 	}
 
-	virtual void operator()(Writer& w)
+	virtual void operator()(WritableDataset& w)
 	{
-		w.maintenance(*ma);
+		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
+		if (ow == 0)
+			cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
+		else
+			ow->maintenance(*ma);
 	}
 
 	virtual void done()
@@ -357,39 +328,29 @@ struct Maintainer : public Worker
 
 struct Repacker : public Worker
 {
-	Printer printer;
-	RepackAgent* ra;
+	bool fix;
 
-	Repacker(bool fix) : printer(cout, "(stdout)"), ra(0)
-	{
-		if (fix)
-			ra = new FullRepack(printer, cerr);
-		else
-			ra = new RepackReport;
-	}
-	~Repacker()
-	{
-		if (ra) delete ra;
-	}
+	Repacker(bool fix) : fix(fix) {}
 
-	virtual void operator()(Writer& w)
+	virtual void operator()(WritableDataset& w)
 	{
-		w.repack(*ra);
+		w.repack(cout, fix);
 	}
 
 	virtual void done()
 	{
-		RepackReport* rr = dynamic_cast<RepackReport*>(ra);
-		if (rr)
-			rr->report();
 	}
 };
 
 struct Invalidator : public Worker
 {
-	virtual void operator()(Writer& w)
+	virtual void operator()(WritableDataset& w)
 	{
-		w.invalidateAll();
+		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
+		if (ow == 0)
+			cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
+		else
+			ow->invalidateAll();
 	}
 
 	virtual void done()
@@ -401,9 +362,13 @@ struct Statistician : public Worker
 {
 	Stats st;
 
-	virtual void operator()(Writer& w)
+	virtual void operator()(WritableDataset& w)
 	{
-		w.depthFirstVisit(st);
+		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
+		if (ow == 0)
+			cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
+		else
+			ow->depthFirstVisit(st);
 	}
 
 	virtual void done()
@@ -509,14 +474,7 @@ int main(int argc, const char* argv[])
 					continue;
 				}
 
-				Writer* w = dynamic_cast<Writer*>(ds.get());
-				if (w == 0)
-				{
-					cerr << "Skipping dataset " << i->first << ": not an on-disk dataset" << endl;
-					continue;
-				}
-
-				(*worker)(*w);
+				(*worker)(*ds.get());
 			}
 
 			worker->done();

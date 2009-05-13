@@ -40,13 +40,13 @@ namespace dataset {
 class TargetFile;
 
 namespace ondisk2 {
-//class MaintenanceAgent;
-class RepackAgent;
-//class Visitor;
 
 namespace writer {
 class Datafile;
 class MaintFileVisitor;
+class Repacker;
+class RealRepacker;
+class MockRepacker;
 }
 
 class Writer : public WritableDataset
@@ -54,7 +54,6 @@ class Writer : public WritableDataset
 protected:
 	ConfigFile m_cfg;
 	std::string m_path;
-	std::string m_name;
 	WIndex m_idx;
 	TargetFile* m_tf;
 	bool m_replace;
@@ -69,8 +68,6 @@ public:
 	Writer(const ConfigFile& cfg);
 
 	virtual ~Writer();
-
-	std::string path() const;
 
 	// Compute the unique ID of a metadata in this dataset
 	virtual std::string id(const Metadata& md) const;
@@ -102,7 +99,7 @@ public:
 	/**
 	 * Repack the dataset, using a RepackAgent to direct the operations
 	 */
-	void repack(RepackAgent& a);
+	virtual void repack(std::ostream& log, bool writable=false);
 
 	/**
 	 * Iterate through the contents of the dataset, in depth-first order.
@@ -110,6 +107,10 @@ public:
 	//void depthFirstVisit(Visitor& v);
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
+
+	friend class writer::Repacker;
+	friend class writer::RealRepacker;
+	friend class writer::MockRepacker;
 };
 
 }

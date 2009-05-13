@@ -4,7 +4,7 @@
 /*
  * dataset - Handle arkimet datasets
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -126,13 +126,19 @@ public:
 		ACQ_ERROR
 	};
 
+protected:
+	std::string m_name;
+
 public:
 	virtual ~WritableDataset() {}
 
-    // Compute the unique ID of a metadata in this dataset
+	// Return the dataset name
+	const std::string& name() const { return m_name; }
+
+	// Compute the unique ID of a metadata in this dataset
 	virtual std::string id(const Metadata& md) const = 0;
 
-    /**
+	/**
 	 * Acquire the given metadata item (and related data) in this dataset.
 	 *
 	 * After acquiring the data successfully, the data can be retrieved from
@@ -170,11 +176,16 @@ public:
 	virtual void flush();
 
 	/**
+	 * Repack the dataset
+	 */
+	virtual void repack(std::ostream& log, bool writable=false);
+
+	/**
 	 * Instantiate an appropriate Dataset for the given configuration
 	 */
 	static WritableDataset* create(const ConfigFile& cfg);
 
-    /**
+	/**
 	 * Simulate acquiring the given metadata item (and related data) in this
 	 * dataset.
 	 *

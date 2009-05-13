@@ -155,10 +155,7 @@ void to::test<1>()
 	ensure_equals(countDeletedMetadata("testdatafile/testfile.grib1.metadata"), 1u);
 
 	// Repack the file
-	MetadataCollector mdc;
-	df->repack(mdc);
-	ensure_equals(mdc.size(), 1u);
-	ensure(mdc[0].source->style() == types::Source::INLINE);
+	ensure_equals(df->repack(), 1u);
 
 	ensure(fs::access("testdatafile/testfile.grib1", F_OK));
 	ensure(!fs::access("testdatafile/testfile.grib1.new", F_OK));
@@ -191,9 +188,7 @@ void to::test<2>()
 	// Not really needed, but it's a good place to test countDeletedMetadata itself
 	ensure_equals(countDeletedMetadata("testdatafile/testfile.grib1.metadata"), 1u);
 
-	MetadataCollector mdc;
-	df->repack(mdc);
-	ensure_equals(mdc.size(), 1u);
+	ensure_equals(df->repack(), 1u);
 
 	ensure(fs::access("testdatafile/testfile.grib1", F_OK));
 	ensure(!fs::access("testdatafile/testfile.grib1.new", F_OK));

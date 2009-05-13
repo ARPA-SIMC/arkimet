@@ -54,8 +54,10 @@ namespace dataset {
 namespace ondisk {
 
 Writer::Writer(const ConfigFile& cfg)
-	: m_cfg(cfg), m_name(cfg.value("name")), m_root(0), m_replace(false)
+	: m_cfg(cfg), m_root(0), m_replace(false)
 {
+	m_name = cfg.value("name");
+
 	// If there is no 'index' in the config file, don't index anything
 	if (cfg.value("index") != string())
 		m_root = new ondisk::writer::IndexedRootDirectory(cfg);
@@ -161,11 +163,18 @@ void Writer::maintenance(MaintenanceAgent& a)
 	a.end();
 }
 
-void Writer::repack(RepackAgent& a)
+void Writer::repack(std::ostream& log, bool writable)
 {
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
+	auto_ptr<RepackAgent> repacker;
 
-	maint_root->checkForRepack(a);
+	if (writable)
+		repacker.reset(new FullRepack(log));
+	else
+		repacker.reset(new RepackReport(log));
+
+	maint_root->checkForRepack(*repacker);
+	repacker->end();
 }
 
 void Writer::depthFirstVisit(Visitor& v)
