@@ -137,31 +137,41 @@ Repacker::Repacker(WIndex& m_idx, const std::string& m_path)
 
 void Repacker::operator()(const std::string& file, State state)
 {
-	// TODO: lock away writes, allow reads
+	switch (state)
+	{
+		case HOLES: {
+			// TODO: lock away writes, allow reads
 
-	if (state != HOLES)
-		return;
+			Pending p = m_idx.beginTransaction();
 
-	// TODO: delete all files not indexed
+			// Make a copy of the file with the right data in it, sorted by
+			// reftime, and update the offsets in the index
+			string pathname = str::joinpath(m_path, file);
+			string pntmp = pathname + ".repack";
+			FileCopier copier(m_idx, pathname, pntmp);
+			m_idx.scan_file(file, copier, "reftime");
+			copier.flush();
 
-	Pending p = m_idx.beginTransaction();
+			// Rename the file with to final name
+			if (rename(pntmp.c_str(), pathname.c_str()) < 0)
+				throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
 
-	// Make a copy of the file with the right data in it, sorted by
-	// reftime, and update the offsets in the index
-	string pathname = str::joinpath(m_path, file);
-	string pntmp = pathname + ".repack";
-	FileCopier copier(m_idx, pathname, pntmp);
-	m_idx.scan_file(file, copier, "reftime");
-	copier.flush();
+			// Commit the changes on the database
+			p.commit();
 
-	// Rename the file with to final name
-	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
-		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
-
-	// Commit the changes on the database
-	p.commit();
-
-	// TODO: unlock writes
+			// TODO: unlock writes
+			break;
+		}
+		case OUT_OF_INDEX: {
+			// Delete all files not indexed
+			string pathname = str::joinpath(m_path, file);
+			if (unlink(pathname) < 0)
+				throw wibble::exception::System("removing " pathname);
+			break;
+		}
+		default:
+			break;
+	}
 }
 
 }
