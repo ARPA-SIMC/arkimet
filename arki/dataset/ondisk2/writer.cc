@@ -186,13 +186,12 @@ void Writer::flush()
 	m_df_cache.clear();
 }
 
-void Writer::maintenance(MaintenanceAgent& a)
+void Writer::maintenance(writer::MaintFileVisitor& v)
 {
 	// Iterate subdirs in sorted order
 	// Also iterate files on index in sorted order
 	// Check each file for need to reindex or repack
-	writer::MaintPrinter printer;
-	writer::FindMissing fm(printer, m_path);
+	writer::FindMissing fm(v, m_path);
 	writer::HoleFinder hf(fm, m_path);	
 	m_idx.scan_files(hf, "file, reftime");
 	hf.end();
@@ -232,104 +231,11 @@ void Writer::maintenance(MaintenanceAgent& a)
 #endif
 }
 
-struct HoledFilesCollector : writer::IndexFileVisitor
-{
-	const std::string& m_root;
-	std::vector<std::string> files;
-	string last_file;
-	off_t last_file_size;
-	bool has_hole;
-
-	HoledFilesCollector(const std::string& m_root) : m_root(m_root), has_hole(false) {}
-
-	void finaliseFile()
-	{
-		if (!last_file.empty())
-		{
-			// Check if last_file_size matches the file size
-			if (!has_hole)
-			{
-				off_t size = utils::files::size(str::joinpath(m_root, last_file));
-				if (size > last_file_size)
-					has_hole = true;
-				else if (size < last_file_size)
-					throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-			}
-
-			// Take note of files with holes
-			if (has_hole)
-				files.push_back(last_file);
-		}
-	}
-
-	void operator()(const std::string& file, off_t offset, size_t size)
-	{
-		if (last_file != file)
-		{
-			finaliseFile();
-			last_file = file;
-			last_file_size = 0;
-			has_hole = false;
-		}
-		if (offset != last_file_size)
-			has_hole = true;
-		last_file_size += size;
-	}
-
-	void end()
-	{
-		finaliseFile();
-	}
-};
-
 void Writer::repack(RepackAgent& a)
 {
 	// TODO: send info to RepackAgent
-
-	// TODO: lock away writes, allow reads
-	// TODO: delete all files not indexed
-	// TODO: unlock writes
-
-	// Get the sorted list of files with holes
-	HoledFilesCollector hf(m_path);	
-	m_idx.scan_files(hf, "file, reftime");
-	hf.end();
-
-	for (vector<string>::const_iterator f = hf.files.begin();
-			f != hf.files.end(); ++f)
-	{
-		// TODO: lock away writes, allow reads
-
-		Pending p = m_idx.beginTransaction();
-
-		// Make a copy of the file with the right data in it, sorted by
-		// reftime, and update the offsets in the index
-		string pathname = str::joinpath(m_path, *f);
-		string pntmp = pathname + ".repack";
-		writer::FileCopier copier(m_idx, pathname, pntmp);
-		m_idx.scan_file(*f, copier, "reftime");
-		copier.flush();
-
-		// Rename the file with to final name
-		if (rename(pntmp.c_str(), pathname.c_str()) < 0)
-			throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
-
-		// Commit the changes on the database
-		p.commit();
-
-		// TODO: unlock writes
-	}
-}
-
-void Writer::depthFirstVisit(Visitor& v)
-{
-	// TODO
-#if 0
-	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
-	v.enterDataset(*this);
-	maint_root->depthFirstVisit(v);
-	v.leaveDataset(*this);
-#endif
+	writer::Repacker repacker(m_idx, m_path);
+	maintenance(repacker);
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

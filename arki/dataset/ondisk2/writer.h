@@ -40,12 +40,13 @@ namespace dataset {
 class TargetFile;
 
 namespace ondisk2 {
-class MaintenanceAgent;
+//class MaintenanceAgent;
 class RepackAgent;
-class Visitor;
+//class Visitor;
 
 namespace writer {
 class Datafile;
+class MaintFileVisitor;
 }
 
 class Writer : public WritableDataset
@@ -96,7 +97,7 @@ public:
 	/**
 	 * Perform dataset maintenance, using a MaintenanceAgent to direct the operations
 	 */
-	void maintenance(MaintenanceAgent& a);
+	void maintenance(writer::MaintFileVisitor& v);
 
 	/**
 	 * Repack the dataset, using a RepackAgent to direct the operations
@@ -106,7 +107,7 @@ public:
 	/**
 	 * Iterate through the contents of the dataset, in depth-first order.
 	 */
-	void depthFirstVisit(Visitor& v);
+	//void depthFirstVisit(Visitor& v);
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };

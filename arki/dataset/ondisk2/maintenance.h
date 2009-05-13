@@ -168,6 +168,16 @@ struct MaintPrinter : public writer::MaintFileVisitor
 	void operator()(const std::string& file, State state);
 };
 
+struct Repacker : public writer::MaintFileVisitor
+{
+	WIndex& m_idx;
+	std::string m_path;
+
+	Repacker(WIndex& m_idx, const std::string& m_path);
+
+	void operator()(const std::string& file, State state);
+};
+
 
 }
 

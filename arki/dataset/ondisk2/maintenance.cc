@@ -130,6 +130,40 @@ void MaintPrinter::operator()(const std::string& file, State state)
 	}
 }
 
+Repacker::Repacker(WIndex& m_idx, const std::string& m_path)
+	: m_idx(m_idx), m_path(m_path)
+{
+}
+
+void Repacker::operator()(const std::string& file, State state)
+{
+	// TODO: lock away writes, allow reads
+
+	if (state != HOLES)
+		return;
+
+	// TODO: delete all files not indexed
+
+	Pending p = m_idx.beginTransaction();
+
+	// Make a copy of the file with the right data in it, sorted by
+	// reftime, and update the offsets in the index
+	string pathname = str::joinpath(m_path, file);
+	string pntmp = pathname + ".repack";
+	FileCopier copier(m_idx, pathname, pntmp);
+	m_idx.scan_file(file, copier, "reftime");
+	copier.flush();
+
+	// Rename the file with to final name
+	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
+		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
+
+	// Commit the changes on the database
+	p.commit();
+
+	// TODO: unlock writes
+}
+
 }
 
 #if 0
