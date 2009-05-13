@@ -129,7 +129,6 @@ protected:
 	index::InsertQuery m_insert;
 	utils::sqlite::PrecompiledQuery m_delete;
 	utils::sqlite::PrecompiledQuery m_replace;
-	utils::sqlite::Committer m_committer;
 
 	// Subtables
 	std::map<types::Code, index::WAttrSubIndex*> m_wsub;

@@ -177,6 +177,16 @@ int RIndex::id(const Metadata& md) const
 	return id;
 }
 
+size_t RIndex::count() const
+{
+	Query sq("count", m_db);
+	sq.compile("SELECT COUNT(*) FROM md");
+	size_t res = 0;
+	while (sq.step())
+		res = sq.fetchSizeT(0);
+	return res;
+}
+
 #if 0
 bool RIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
 {
@@ -444,8 +454,7 @@ void RIndex::scan_file(const std::string& relname, writer::IndexFileVisitor& v, 
 
 WIndex::WIndex(const ConfigFile& cfg)
 	: RIndex(cfg), m_insert(m_db),
-          m_delete("delete", m_db), m_replace("replace", m_db),
-	  m_committer(m_db)
+          m_delete("delete", m_db), m_replace("replace", m_db)
 {
 	// Instantiate subtables
 	for (set<types::Code>::const_iterator i = m_components_indexed.begin();
@@ -482,8 +491,6 @@ void WIndex::open()
 void WIndex::initQueries()
 {
 	RIndex::initQueries();
-
-	m_committer.initQueries();
 
 	// Precompile insert query
 	string query;
@@ -586,7 +593,12 @@ void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& file, s
 
 Pending WIndex::beginTransaction()
 {
-	return Pending(new SqliteTransaction(m_committer));
+	return Pending(new SqliteTransaction(m_db));
+}
+
+Pending WIndex::beginExclusiveTransaction()
+{
+	return Pending(new SqliteTransaction(m_db, true));
 }
 
 void WIndex::index(Metadata& md, const std::string& file, size_t ofs, int* id)
@@ -650,6 +662,11 @@ void WIndex::relocate_data(const std::string& relname, off_t oldofs, off_t newof
 	query.bind(2, relname);
 	query.bind(3, oldofs);
 	query.step();
+}
+
+void WIndex::vacuum()
+{
+	m_db.exec("VACUUM");
 }
 
 }

@@ -257,8 +257,10 @@ struct Committer
 	OneShotQuery commit;
 	OneShotQuery rollback;
 
-	Committer(SQLiteDB& db)
-		: begin(db, "begin", "BEGIN EXCLUSIVE"), commit(db, "commit", "COMMIT"), rollback(db, "rollback", "ROLLBACK") {}
+	Committer(SQLiteDB& db, bool exclusive = false)
+		: begin(db, "begin", exclusive ? "BEGIN EXCLUSIVE" : "BEGIN"),
+	          commit(db, "commit", "COMMIT"),
+		  rollback(db, "rollback", "ROLLBACK") {}
 
 	void initQueries()
 	{
@@ -275,10 +277,11 @@ struct SqliteTransaction : public Transaction
 {
 	int _ref;
 
-	Committer& committer;
+	Committer committer;
 	bool fired;
 
-	SqliteTransaction(Committer& c) : _ref(0), committer(c), fired(false)
+	SqliteTransaction(SQLiteDB& db, bool exclusive = false)
+	       	: _ref(0), committer(db, exclusive), fired(false)
 	{
 		committer.begin();
 	}

@@ -77,6 +77,8 @@ protected:
 	Index(const ConfigFile& cfg);
 public:
 	~Index();
+
+	const std::string& pathname() const { return m_pathname; }
 };
 
 class RIndex : public Index
@@ -117,6 +119,9 @@ public:
 	/// metadata is not there, return -1.
 	int id(const Metadata& md) const;
 
+	/// Return the number of items currently indexed by this index
+	size_t count() const;
+
 #if 0
 	/**
 	 * Fetch the on-disk location of the given metadata.
@@ -154,7 +159,6 @@ protected:
 	index::InsertQuery m_insert;
 	utils::sqlite::PrecompiledQuery m_delete;
 	utils::sqlite::PrecompiledQuery m_replace;
-	utils::sqlite::Committer m_committer;
 
 	// Subtables
 	std::map<types::Code, index::WAttrSubIndex*> m_wsub;
@@ -181,6 +185,9 @@ public:
 
 	/// Begin a transaction and return the corresponding Pending object
 	Pending beginTransaction();
+
+	/// Begin an EXCLUSIVE transaction and return the corresponding Pending object
+	Pending beginExclusiveTransaction();
 
 	/**
 	 * Index the given metadata item.
@@ -221,6 +228,9 @@ public:
 	 * the same file
 	 */
 	void relocate_data(const std::string& relname, off_t oldofs, off_t newofs);
+
+	/// Tidy up the database and reclaim deleted space
+	void vacuum();
 };
 
 }

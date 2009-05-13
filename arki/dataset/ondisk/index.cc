@@ -258,8 +258,7 @@ bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 
 WIndex::WIndex(const ConfigFile& cfg)
 	: RIndex(cfg), m_insert(m_db),
-          m_delete("delete", m_db), m_replace("replace", m_db),
-	  m_committer(m_db)
+          m_delete("delete", m_db), m_replace("replace", m_db)
 {
 	// Instantiate subtables
 	for (set<types::Code>::const_iterator i = m_components_indexed.begin();
@@ -296,8 +295,6 @@ void WIndex::open()
 void WIndex::initQueries()
 {
 	RIndex::initQueries();
-
-	m_committer.initQueries();
 
 	// Precompile insert query
 	string query;
@@ -387,7 +384,7 @@ void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& mdid, c
 
 Pending WIndex::beginTransaction()
 {
-	return Pending(new SqliteTransaction(m_committer));
+	return Pending(new SqliteTransaction(m_db));
 }
 
 void WIndex::index(Metadata& md, const std::string& file, size_t ofs)
