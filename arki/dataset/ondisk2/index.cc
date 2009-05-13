@@ -21,6 +21,7 @@
  */
 
 #include <arki/dataset/ondisk2/index.h>
+#include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
@@ -414,7 +415,7 @@ bool RIndex::querySummary(const Matcher& m, Summary& summary) const
 	return true;
 }
 
-void RIndex::scan_files(FileVisitor& v, const std::string& orderBy) const
+void RIndex::scan_files(writer::IndexFileVisitor& v, const std::string& orderBy) const
 {
 	Query sq("scan_files", m_db);
 	sq.compile("SELECT DISTINCT file, offset, size FROM md ORDER BY " + orderBy);
@@ -428,7 +429,7 @@ void RIndex::scan_files(FileVisitor& v, const std::string& orderBy) const
 	}
 }
 
-void RIndex::scan_file(const std::string& relname, FileVisitor& v, const std::string& orderBy) const
+void RIndex::scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy) const
 {
 	Query sq("scan_file", m_db);
 	sq.compile("SELECT DISTINCT offset, size FROM md WHERE file=? ORDER BY " + orderBy);

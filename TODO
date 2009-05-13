@@ -162,15 +162,30 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - test arkimet da disco locale e da disco di rete
     + query di meteomixer
+      nfs:   4.30 4.28 4.28
+      local: 4.32 4.31 4.31
     + import di un giorno di dati
-      nfs: 2499.89  local: 589.15  ondisk2: 255.51
+      nfs:          2499.89 2732.49
+      nfs+ondisk2:     x    5615.38
+      local:         589.15  574.48
+      local+ondisk2: 255.51  363.65
     + benchmark di selvini
-    - arki-query --verbose che dica anche il tempo
-    - richiesta di summary (arkimeow, meteomixer)
+      nfs:		152.43
+      nfs+ondisk2:      154.69
+      local:		  3.98
+      local+ondisk2:      3.29
+    - richiesta di summary arkimeow (a livelli diversi)
     - import misto query
       (query con import e query senza)
       (import con query, e import senza)
+    - arki-query --verbose che dica anche il tempo
    (2 settimane, una a preparare e una a farlo andare)
+
+ - replica di dataset con però dati bucati
+   find dataset -type f -not -name "lock" -not -name "config*" -not -name "*summary" -not -name "*.metadata" -not -name "*.sqlite" -not -name "*.grib1" -not -path "*/.svn*"
+   find . -type f -not -name "lock" -not -name "*.grib1" -not -path "*/.svn*" -not -name "*~" -printf "%s\n" | numsum
+   find . -name "*.grib[12]" -printf "%s %p\n"
+   tar --files-from metadata.filelist -zcf metadata.tar.gz
 
  - paola: è possibile modificare l mdstat o crearne uno simile che mi includa
    anche le descrizioni?
@@ -191,6 +206,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  - dataset a scadenza
     - aggiornare l'indice cancellando tutte le entry dei file vecchi
     - cancellare i file vecchi
+
+ - cannibalizzare l'encoder/decoder di varint dalla libreria Protocol Buffers
+   di Google (o usare direttamente i Protocol Buffer per l'encoding, se si
+   riesce a incastrarli)
 
  - cancellazione di dati dato un'estrazione di metadati
 

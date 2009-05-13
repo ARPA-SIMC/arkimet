@@ -42,15 +42,9 @@ class ConfigFile;
 namespace dataset {
 namespace ondisk2 {
 
-/**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct FileVisitor
-{
-	virtual ~FileVisitor() {}
-
-	virtual void operator()(const std::string& file, off_t offset, size_t size) = 0;
-};
+namespace writer {
+class IndexFileVisitor;
+}
 
 /**
  * Dataset index.
@@ -146,12 +140,12 @@ public:
 	/**
 	 * Scan all file info in the database, sorted by file and offset
 	 */
-	void scan_files(FileVisitor& v, const std::string& orderBy = "file, offset") const;
+	void scan_files(writer::IndexFileVisitor& v, const std::string& orderBy = "file, offset") const;
 
 	/**
 	 * Scan the information about the given file, sorted by offset
 	 */
-	void scan_file(const std::string& relname, FileVisitor& v, const std::string& orderBy = "offset") const;
+	void scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
 };
 
 class WIndex : public RIndex

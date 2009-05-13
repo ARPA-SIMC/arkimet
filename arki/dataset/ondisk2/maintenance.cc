@@ -24,16 +24,113 @@
 //#include <arki/dataset/ondisk2/maint/datafile.h>
 //#include <arki/dataset/ondisk2/maint/directory.h>
 #include <arki/dataset/ondisk2/writer.h>
+#include <arki/dataset/ondisk2/index.h>
+#include <arki/utils/files.h>
+
+#include <wibble/sys/fs.h>
 
 #include <ostream>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 using namespace std;
+using namespace wibble;
 using namespace arki::dataset::ondisk2::maint;
 
 namespace arki {
 namespace dataset {
 namespace ondisk2 {
+namespace writer {
+
+void HoleFinder::finaliseFile()
+{
+	if (!last_file.empty())
+	{
+		// Check if last_file_size matches the file size
+		if (!has_hole)
+		{
+			off_t size = utils::files::size(str::joinpath(m_root, last_file));
+			if (size > last_file_size)
+				has_hole = true;
+			else if (size < last_file_size)
+			{
+				// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
+				next(last_file, writer::MaintFileVisitor::CORRUPTED);
+				return;
+			}
+		}
+
+		// Take note of files with holes
+		if (has_hole)
+		{
+			next(last_file, writer::MaintFileVisitor::HOLES);
+		} else {
+			next(last_file, writer::MaintFileVisitor::OK);
+		}
+	}
+}
+
+
+FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
+	: m_idx(idx), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
+{
+	fd_src = open(src.c_str(), O_RDONLY | O_NOATIME);
+	if (fd_src < 0)
+		throw wibble::exception::File(src, "opening file");
+
+	fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	if (fd_dst < 0)
+		throw wibble::exception::File(dst, "opening file");
+}
+
+FileCopier::~FileCopier()
+{
+	flush();
+}
+
+void FileCopier::operator()(const std::string& file, off_t offset, size_t size)
+{
+	if (buf.size() < size)
+		buf.resize(size);
+	ssize_t res = pread(fd_src, buf.data(), size, offset);
+	if (res < 0 || (unsigned)res != size)
+		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
+	res = write(fd_dst, buf.data(), size);
+	if (res < 0 || (unsigned)res != size)
+		throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");
+
+	// Reindex file from offset to w_off
+	m_idx.relocate_data(file, offset, w_off);
+
+	w_off += size;
+}
+
+void FileCopier::flush()
+{
+	if (fd_src != -1 and close(fd_src) != 0)
+		throw wibble::exception::File(src, "closing file");
+	fd_src = -1;
+	if (fd_dst != -1 and close(fd_dst) != 0)
+		throw wibble::exception::File(dst, "closing file");
+	fd_dst = -1;
+}
+
+void MaintPrinter::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case OK: cerr << file << " OK" << endl;
+		case HOLES: cerr << file << " HOLES" << endl;
+		case OUT_OF_INDEX: cerr << file << " OUT_OF_INDEX" << endl;
+		case CORRUPTED: cerr << file << " CORRUPTED" << endl;
+	}
+}
+
+}
 
 #if 0
 FullMaintenance::FullMaintenance(std::ostream& log, MetadataConsumer& salvage)

@@ -23,7 +23,7 @@
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
 #include <arki/dataset/ondisk2/writer/utils.h>
-//#include <arki/dataset/ondisk2/maintenance.h>
+#include <arki/dataset/ondisk2/maintenance.h>
 //#include <arki/dataset/ondisk2/maint/datafile.h>
 //#include <arki/dataset/ondisk2/maint/directory.h>
 #include <arki/dataset/targetfile.h>
@@ -186,126 +186,21 @@ void Writer::flush()
 	m_df_cache.clear();
 }
 
-struct HoleFinder : FileVisitor
-{
-	writer::MaintFileVisitor& next;
-
-	const std::string& m_root;
-
-	string last_file;
-	off_t last_file_size;
-	bool has_hole;
-
-	HoleFinder(writer::MaintFileVisitor& next, const std::string& root)
-	       	: next(next), m_root(root), has_hole(false) {}
-
-	void finaliseFile()
-	{
-		if (!last_file.empty())
-		{
-			// Check if last_file_size matches the file size
-			if (!has_hole)
-			{
-				off_t size = utils::files::size(str::joinpath(m_root, last_file));
-				if (size > last_file_size)
-					has_hole = true;
-				else if (size < last_file_size)
-				{
-					// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-					next(last_file, writer::MaintFileVisitor::CORRUPTED);
-					return;
-				}
-			}
-
-			// Take note of files with holes
-			if (has_hole)
-			{
-				next(last_file, writer::MaintFileVisitor::HOLES);
-			} else {
-				next(last_file, writer::MaintFileVisitor::OK);
-			}
-		}
-	}
-
-	void operator()(const std::string& file, off_t offset, size_t size)
-	{
-		if (last_file != file)
-		{
-			finaliseFile();
-			last_file = file;
-			last_file_size = 0;
-			has_hole = false;
-		}
-		if (offset != last_file_size)
-			has_hole = true;
-		last_file_size += size;
-	}
-
-	void end()
-	{
-		finaliseFile();
-	}
-};
-
-struct FindMissing : public writer::MaintFileVisitor
-{
-	writer::MaintFileVisitor& next;
-	writer::DirScanner disk;
-
-	FindMissing(MaintFileVisitor& next, const std::string& root) : next(next), disk(root) {}
-
-	void operator()(const std::string& file, State state)
-	{
-		while (not disk.cur().empty() and disk.cur() < file)
-		{
-			next(disk.cur(), OUT_OF_INDEX);
-			disk.next();
-		}
-		if (disk.cur() == file)
-			disk.next();
-		// TODO: if requested, check for internal consistency
-		// TODO: it requires to have an infrastructure for quick
-		// TODO:   consistency checkers (like, "GRIB starts with GRIB
-		// TODO:   and ends with 7777")
-		next(file, state);
-	}
-
-	void end()
-	{
-		while (not disk.cur().empty())
-		{
-			next(disk.cur(), OUT_OF_INDEX);
-			disk.next();
-		}
-	}
-};
-
-struct MaintPrinter : public writer::MaintFileVisitor
-{
-	void operator()(const std::string& file, State state)
-	{
-		switch (state)
-		{
-			case OK: cerr << file << " OK" << endl;
-			case HOLES: cerr << file << " HOLES" << endl;
-			case OUT_OF_INDEX: cerr << file << " OUT_OF_INDEX" << endl;
-			case CORRUPTED: cerr << file << " CORRUPTED" << endl;
-		}
-	}
-};
-
 void Writer::maintenance(MaintenanceAgent& a)
 {
 	// Iterate subdirs in sorted order
 	// Also iterate files on index in sorted order
 	// Check each file for need to reindex or repack
-	MaintPrinter printer;
-	FindMissing fm(printer, m_path);
-	HoleFinder hf(fm, m_path);	
+	writer::MaintPrinter printer;
+	writer::FindMissing fm(printer, m_path);
+	writer::HoleFinder hf(fm, m_path);	
 	m_idx.scan_files(hf, "file, reftime");
 	hf.end();
 	fm.end();
 
+	// TODO: if a datafile is not in the index, and next to it there is a
+	// file .metadata without a flagfile, scan from the metadata file
+	// instead of rescanning the data file
 
 	// TODO: rebuild of index
 	// TODO:  (empty the index, scan all files)
@@ -337,10 +232,10 @@ void Writer::maintenance(MaintenanceAgent& a)
 #endif
 }
 
-struct HoledFilesCollector : FileVisitor
+struct HoledFilesCollector : writer::IndexFileVisitor
 {
 	const std::string& m_root;
-	vector<string> files;
+	std::vector<std::string> files;
 	string last_file;
 	off_t last_file_size;
 	bool has_hole;
@@ -387,61 +282,6 @@ struct HoledFilesCollector : FileVisitor
 	}
 };
 
-struct FileCopier : FileVisitor
-{
-	WIndex& m_idx;
-	sys::Buffer buf;
-	std::string src;
-	std::string dst;
-	int fd_src;
-	int fd_dst;
-	off_t w_off;
-
-	FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
-		: m_idx(idx), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
-	{
-		fd_src = open(src.c_str(), O_RDONLY | O_NOATIME);
-		if (fd_src < 0)
-			throw wibble::exception::File(src, "opening file");
-
-		fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-		if (fd_dst < 0)
-			throw wibble::exception::File(dst, "opening file");
-	}
-
-	virtual ~FileCopier()
-	{
-		flush();
-	}
-
-	void operator()(const std::string& file, off_t offset, size_t size)
-	{
-		if (buf.size() < size)
-			buf.resize(size);
-		ssize_t res = pread(fd_src, buf.data(), size, offset);
-		if (res < 0 || (unsigned)res != size)
-			throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
-		res = write(fd_dst, buf.data(), size);
-		if (res < 0 || (unsigned)res != size)
-			throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");
-
-		// Reindex file from offset to w_off
-		m_idx.relocate_data(file, offset, w_off);
-
-		w_off += size;
-	}
-
-	void flush()
-	{
-		if (fd_src != -1 and close(fd_src) != 0)
-			throw wibble::exception::File(src, "closing file");
-		fd_src = -1;
-		if (fd_dst != -1 and close(fd_dst) != 0)
-			throw wibble::exception::File(dst, "closing file");
-		fd_dst = -1;
-	}
-};
-
 void Writer::repack(RepackAgent& a)
 {
 	// TODO: send info to RepackAgent
@@ -466,7 +306,7 @@ void Writer::repack(RepackAgent& a)
 		// reftime, and update the offsets in the index
 		string pathname = str::joinpath(m_path, *f);
 		string pntmp = pathname + ".repack";
-		FileCopier copier(m_idx, pathname, pntmp);
+		writer::FileCopier copier(m_idx, pathname, pntmp);
 		m_idx.scan_file(*f, copier, "reftime");
 		copier.flush();
 

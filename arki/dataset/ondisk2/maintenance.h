@@ -23,6 +23,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/dataset/ondisk2/writer/utils.h>
+#include <wibble/sys/buffer.h>
 #include <iosfwd>
 
 namespace arki {
@@ -31,6 +33,143 @@ class MetadataConsumer;
 namespace dataset {
 namespace ondisk2 {
 class Writer;
+class WIndex;
+
+namespace writer {
+
+/**
+ * Visitor interface for scanning information about the files indexed in the database
+ */
+struct IndexFileVisitor
+{
+	virtual ~IndexFileVisitor() {}
+
+	virtual void operator()(const std::string& file, off_t offset, size_t size) = 0;
+};
+
+/**
+ * Visitor interface for scanning information about the files indexed in the database
+ */
+struct MaintFileVisitor
+{
+	enum State {
+		OK,
+		HOLES,
+		OUT_OF_INDEX,
+		CORRUPTED,
+	};
+
+	virtual ~MaintFileVisitor() {}
+
+	virtual void operator()(const std::string& file, State state) = 0;
+};
+
+/**
+ * IndexFileVisitor that feeds a MaintFileVisitor with OK or HOLES status.
+ *
+ * OUT_OF_INDEX and CORRUPTED will have to be detected by MaintFileVisitors
+ * further down the chain.
+ */
+struct HoleFinder : IndexFileVisitor
+{
+	writer::MaintFileVisitor& next;
+
+	const std::string& m_root;
+
+	std::string last_file;
+	off_t last_file_size;
+	bool has_hole;
+
+	HoleFinder(writer::MaintFileVisitor& next, const std::string& root)
+	       	: next(next), m_root(root), has_hole(false) {}
+
+	void finaliseFile();
+
+	void operator()(const std::string& file, off_t offset, size_t size)
+	{
+		if (last_file != file)
+		{
+			finaliseFile();
+			last_file = file;
+			last_file_size = 0;
+			has_hole = false;
+		}
+		if (offset != last_file_size)
+			has_hole = true;
+		last_file_size += size;
+	}
+
+	void end()
+	{
+		finaliseFile();
+	}
+};
+
+/**
+ * MaintFileVisitor that feeds a MaintFileVisitor with OUT_OF_INDEX status.
+ *
+ * The input feed is assumed to come from the index, and is checked against the
+ * files found on disk in order to detect files that are on disk but not in the
+ * index.
+ */
+struct FindMissing : public writer::MaintFileVisitor
+{
+	writer::MaintFileVisitor& next;
+	writer::DirScanner disk;
+
+	FindMissing(MaintFileVisitor& next, const std::string& root) : next(next), disk(root) {}
+
+	void operator()(const std::string& file, State state)
+	{
+		while (not disk.cur().empty() and disk.cur() < file)
+		{
+			next(disk.cur(), OUT_OF_INDEX);
+			disk.next();
+		}
+		if (disk.cur() == file)
+			disk.next();
+		// TODO: if requested, check for internal consistency
+		// TODO: it requires to have an infrastructure for quick
+		// TODO:   consistency checkers (like, "GRIB starts with GRIB
+		// TODO:   and ends with 7777")
+		next(file, state);
+	}
+
+	void end()
+	{
+		while (not disk.cur().empty())
+		{
+			next(disk.cur(), OUT_OF_INDEX);
+			disk.next();
+		}
+	}
+};
+
+struct FileCopier : writer::IndexFileVisitor
+{
+	WIndex& m_idx;
+	wibble::sys::Buffer buf;
+	std::string src;
+	std::string dst;
+	int fd_src;
+	int fd_dst;
+	off_t w_off;
+
+	FileCopier(WIndex& idx, const std::string& src, const std::string& dst);
+	virtual ~FileCopier();
+
+	void operator()(const std::string& file, off_t offset, size_t size);
+
+	void flush();
+};
+
+struct MaintPrinter : public writer::MaintFileVisitor
+{
+	void operator()(const std::string& file, State state);
+};
+
+
+}
 
 namespace maint {
 class RootDirectory;
@@ -125,6 +264,7 @@ public:
 
 	virtual void needsRepack(maint::Datafile& df);
 };
+
 
 }
 }
