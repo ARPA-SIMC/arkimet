@@ -228,6 +228,7 @@ static size_t repack(const std::string& root, const std::string& file, WIndex& i
 
 static void scan_metadata(const std::string& file, MetadataConsumer& c)
 {
+	cerr << "Reading cached metadata from " << file << endl;
 	Metadata::readFile(file, c);
 }
 
@@ -321,8 +322,9 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 		// If there is a metadata file, use it to save time
 		// (this is very useful when converting ondisk datasets to
 		// ondisk2)
-		scan_metadata(pathname, fixer);
+		scan_metadata(pathname + ".metadata", fixer);
 	} else {
+		// TODO: check from a list of extensions what is that we can scan
 		// Rescan the file
 		scan_file(pathname, fixer);
 	}
@@ -462,6 +464,8 @@ void RealFixer::operator()(const std::string& file, State state)
 		}
 		case TO_INDEX:
 		case TO_RESCAN: {
+			// Skip .metadata files
+			if (str::endsWith(file, ".metadata")) break;
 			m_count_salvaged += rescan(w.m_name, w.m_path, file, w.m_idx, salvage);
 			++m_count_rescanned;
 			break;
@@ -516,6 +520,8 @@ void MockFixer::operator()(const std::string& file, State state)
 			break;
 		case TO_INDEX:
 		case TO_RESCAN:
+			// Skip .metadata files
+			if (str::endsWith(file, ".metadata")) break;
 			log() << file << " should be rescanned" << endl;
 			++m_count_rescanned;
 			break;
