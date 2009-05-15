@@ -35,28 +35,32 @@
 #include <iostream>
 #include <algorithm>
 
-namespace tut {
-using namespace std;
-using namespace wibble;
-using namespace arki;
-using namespace arki::types;
-using namespace arki::dataset::ondisk2;
-using namespace arki::dataset::ondisk2::writer;
+namespace arki {
+namespace dataset {
+namespace ondisk2 {
+namespace writer {
 
-struct MaintenanceCollector2 : public MaintFileVisitor
+struct MaintenanceCollector : public MaintFileVisitor
 {
-	map <string, State> fileStates;
+	std::map <std::string, State> fileStates;
 	size_t count_ok;
 	size_t count_pack;
 	size_t count_index;
 	size_t count_rescan;
+	size_t count_deleted;
 
-	MaintenanceCollector2()
-		: count_ok(0), count_pack(0), count_index(0), count_rescan(0) {}
+	MaintenanceCollector()
+		: count_ok(0), count_pack(0), count_index(0), count_rescan(0), count_deleted(0) {}
+
+	void clear()
+	{
+		count_ok = count_pack = count_index = count_rescan = count_deleted = 0;
+		fileStates.clear();
+	}
 
 	bool isClean() const
 	{
-		return count_pack == 0 and count_index == 0 and count_rescan == 0;
+		return count_pack == 0 and count_index == 0 and count_rescan == 0 and count_deleted == 0;
 	}
 
 	virtual void operator()(const std::string& file, State state)
@@ -68,9 +72,24 @@ struct MaintenanceCollector2 : public MaintFileVisitor
 			case TO_PACK:	++count_pack;	break;
 			case TO_INDEX:	++count_index;	break;
 			case TO_RESCAN:	++count_rescan;	break;
+			case DELETED:	++count_deleted; break;
 		}
 	}
 };
+
+}
+}
+}
+}
+
+namespace tut {
+using namespace std;
+using namespace wibble;
+using namespace arki;
+using namespace arki::types;
+using namespace arki::dataset::ondisk2;
+using namespace arki::dataset::ondisk2::writer;
+
 
 
 #if 0
@@ -180,7 +199,7 @@ void to::test<1>()
 	acquireSamples();
 
 	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector2 c;
+	MaintenanceCollector c;
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
@@ -188,6 +207,15 @@ void to::test<1>()
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
+	ensure(c.isClean());
+
+	// Perform packing and check that things are still ok afterwards
+	stringstream s;
+	writer.repack(s, true);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
 	ensure(c.isClean());
 
 #if 0

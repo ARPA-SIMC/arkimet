@@ -47,6 +47,7 @@ struct MaintFileVisitor
 		TO_PACK,
 		TO_INDEX,
 		TO_RESCAN,
+		DELETED,
 	};
 
 	virtual ~MaintFileVisitor() {}
@@ -119,6 +120,9 @@ struct FindMissing : public writer::MaintFileVisitor
 
 	FindMissing(MaintFileVisitor& next, const std::string& root) : next(next), disk(root) {}
 
+	// disk:  a, b, c, e, f, g
+	// index:       c, d, e, f, g
+
 	void operator()(const std::string& file, State state)
 	{
 		while (not disk.cur().empty() and disk.cur() < file)
@@ -127,12 +131,17 @@ struct FindMissing : public writer::MaintFileVisitor
 			disk.next();
 		}
 		if (disk.cur() == file)
+		{
+			// TODO: if requested, check for internal consistency
+			// TODO: it requires to have an infrastructure for quick
+			// TODO:   consistency checkers (like, "GRIB starts with GRIB
+			// TODO:   and ends with 7777")
+
 			disk.next();
-		// TODO: if requested, check for internal consistency
-		// TODO: it requires to have an infrastructure for quick
-		// TODO:   consistency checkers (like, "GRIB starts with GRIB
-		// TODO:   and ends with 7777")
-		next(file, state);
+			next(file, state);
+		}
+		else // if (disk.cur() > file)
+			next(file, DELETED);
 	}
 
 	void end()
@@ -173,10 +182,18 @@ struct Repacker : public writer::MaintFileVisitor
 {
 	std::ostream& m_log;
 	Writer& w;
+	bool lineStart;
 
 	Repacker(std::ostream& log, Writer& w);
 
 	std::ostream& log();
+
+	// Start a line with multiple items logged
+	void logStart();
+	// Log another item on the current line
+	std::ostream& logAdd();
+	// End the line with multiple things logged
+	void logEnd();
 
 	virtual void end() {}
 };
@@ -203,6 +220,7 @@ struct RealRepacker : public Repacker
 {
 	size_t m_count_packed;
 	size_t m_count_deleted;
+	size_t m_count_deindexed;
 	size_t m_count_freed;
 
 	RealRepacker(std::ostream& log, Writer& w);
@@ -218,6 +236,7 @@ struct MockRepacker : public Repacker
 {
 	size_t m_count_packed;
 	size_t m_count_deleted;
+	size_t m_count_deindexed;
 
 	MockRepacker(std::ostream& log, Writer& w);
 

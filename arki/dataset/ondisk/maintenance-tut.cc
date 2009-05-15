@@ -44,20 +44,16 @@ ostream& operator<<(ostream& o, const vector<string>& vs)
 
 }
 
-namespace tut {
-using namespace std;
-using namespace wibble;
-using namespace arki;
-using namespace arki::types;
-using namespace arki::dataset::ondisk;
-using namespace arki::dataset::ondisk::maint;
-using namespace arki::utils::files;
+namespace arki {
+namespace dataset {
+namespace ondisk {
+namespace maint {
 
 struct MaintenanceCollector : public MaintenanceAgent
 {
-	string writerPath;
+	std::string writerPath;
 	bool hasEnded, fullIndex;
-	vector<string> datafileRebuild, summaryRebuildFile, reindexFile, summaryRebuildDir;
+	std::vector<std::string> datafileRebuild, summaryRebuildFile, reindexFile, summaryRebuildDir;
 
 	MaintenanceCollector() :
 		hasEnded(false), fullIndex(false) {}
@@ -121,6 +117,20 @@ struct MaintenanceCollector : public MaintenanceAgent
 		return true;
 	}
 };
+
+}
+}
+}
+}
+
+namespace tut {
+using namespace std;
+using namespace wibble;
+using namespace arki;
+using namespace arki::types;
+using namespace arki::dataset::ondisk;
+using namespace arki::dataset::ondisk::maint;
+using namespace arki::utils::files;
 
 struct arki_dataset_ondisk_maintenance_shar {
 	ConfigFile cfg;

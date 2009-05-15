@@ -124,22 +124,45 @@ void MaintPrinter::operator()(const std::string& file, State state)
 	switch (state)
 	{
 		case OK: cerr << file << " OK" << endl;
-		case TO_PACK: cerr << file << " HOLES" << endl;
-		case TO_INDEX: cerr << file << " OUT_OF_INDEX" << endl;
-		case TO_RESCAN: cerr << file << " CORRUPTED" << endl;
+		case TO_PACK: cerr << file << " TO PACK" << endl;
+		case TO_INDEX: cerr << file << " TO INDEX" << endl;
+		case TO_RESCAN: cerr << file << " TO RESCAN" << endl;
+		case DELETED: cerr << file << " DELETED" << endl;
 	}
 }
 
 // Repacker
 
 Repacker::Repacker(std::ostream& log, Writer& w)
-	: m_log(log), w(w)
+	: m_log(log), w(w), lineStart(true)
 {
 }
 
 std::ostream& Repacker::log()
 {
 	return m_log << w.m_name << ": ";
+}
+
+void Repacker::logStart()
+{
+	lineStart = true;
+}
+
+std::ostream& Repacker::logAdd()
+{
+	if (lineStart)
+	{
+		lineStart = false;
+		return m_log << w.m_name << ": ";
+	}
+	else
+		return m_log << ", ";
+}
+
+void Repacker::logEnd()
+{
+	if (! lineStart)
+		m_log << "." << endl;
 }
 
 // FailsafeRepacker
@@ -169,7 +192,7 @@ void FailsafeRepacker::end()
 // RealRepacker
 
 RealRepacker::RealRepacker(std::ostream& log, Writer& w)
-	: Repacker(log, w), m_count_packed(0), m_count_deleted(0)
+	: Repacker(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0), m_count_freed(0)
 {
 }
 
@@ -217,6 +240,12 @@ void RealRepacker::operator()(const std::string& file, State state)
 			m_count_freed += size;
 			break;
 		}
+		case DELETED: {
+			// Remove from index those files that have been deleted
+			w.m_idx.reset(file);
+			++m_count_deindexed;
+			break;
+	        }
 		default:
 			break;
 	}
@@ -231,20 +260,22 @@ void RealRepacker::end()
 	size_t saved = size_pre - size_post;
 	m_count_freed += saved;
 
-	if (m_count_packed > 0 || m_count_deleted > 0 || saved > 0)
-		m_log << w.m_name << ": ";
+	logStart();
 	if (m_count_packed)
-		m_log << m_count_packed << "files packed, ";
+		logAdd() << m_count_packed << " files packed";
 	if (m_count_deleted)
-		m_log << m_count_deleted << "files deleted, ";
+		logAdd() << m_count_deleted << " files deleted";
+	if (m_count_deindexed)
+		logAdd() << m_count_deindexed << " files removed from index";
 	if (saved > 0)
-		m_log << saved << "bytes reclaimed on the index, ";
+		logAdd() << saved << " bytes reclaimed on the index";
 	if (m_count_freed > 0)
-		m_log << m_count_freed << " total bytes freed." << endl;
+		logAdd() << m_count_freed << " total bytes freed";
+	logEnd();
 }
 
 MockRepacker::MockRepacker(std::ostream& log, Writer& w)
-	: Repacker(log, w), m_count_packed(0), m_count_deleted(0)
+	: Repacker(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0)
 {
 }
 
@@ -252,16 +283,18 @@ void MockRepacker::operator()(const std::string& file, State state)
 {
 	switch (state)
 	{
-		case TO_PACK: {
+		case TO_PACK:
 			log() << file << " needs packing" << endl;
 			++m_count_packed;
 			break;
-		}
-		case TO_INDEX: {
+		case TO_INDEX:
 			log() << file << " should be deleted" << endl;
 			++m_count_deleted;
 			break;
-		}
+		case DELETED:
+			log() << file << " has been removed from index" << endl;
+			++m_count_deindexed;
+			break;
 		default:
 			break;
 	}
@@ -269,20 +302,14 @@ void MockRepacker::operator()(const std::string& file, State state)
 
 void MockRepacker::end()
 {
+	logStart();
 	if (m_count_packed)
-		if (m_count_deleted)
-			log()
-			    << m_count_packed << " files should be packed, "
-			    << m_count_deleted << " files should be deleted."
-			    << endl;
-		else
-			log()
-			    << m_count_packed << " files should be packed. "
-			    << endl;
-	else if (m_count_deleted)
-		log()
-		    << m_count_deleted << " files should be deleted."
-		    << endl;
+		logAdd() << m_count_packed << " files should be packed";
+	if (m_count_deleted)
+		logAdd() << m_count_deleted << " files should be deleted";
+	if (m_count_deindexed)
+		logAdd() << m_count_deleted << " files should be removed from the index";
+	logEnd();
 }
 
 }
