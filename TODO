@@ -141,19 +141,17 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
           + commit
           + unlock writes
     + controllo file che sono nell'indice ma cancellati da disco
-    - rebuild:
-       - for each file
-          - if not in the db, rescan it
-          - if in the db
-             - if there are records pointing outside the file, rescan it
+    + rebuild:
+       + for each file
+          + if not in the db, rescan it
+          + if in the db
+             + if there are records pointing outside the file, rescan it
 	     - OPTIONAL if there are records pointing to data in the file that
 	       cannot be parsed, rescan it
-       - for each record in the db without a file
-          - remove record in the db
+       + for each record in the db without a file
+          + remove record in the db
     - when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already)
-
- - arki-check su ondisk crea metadati con l'offset sbagliato (vedi lamaz)
 
  http://www.sqlite.org/c3ref/busy_handler.html
  http://www.sqlite.org/c3ref/busy_timeout.html

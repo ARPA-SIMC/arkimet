@@ -48,6 +48,8 @@ namespace arki {
 void WritableDataset::flush() {}
 
 void WritableDataset::repack(std::ostream& log, bool writable) {}
+void WritableDataset::check(std::ostream& log) {}
+void WritableDataset::check(std::ostream& log, MetadataConsumer& salvage) {}
 
 void WritableDataset::remove(Metadata& md)
 {

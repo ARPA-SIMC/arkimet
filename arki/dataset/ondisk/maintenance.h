@@ -76,6 +76,39 @@ struct RepackAgent
 	virtual void end() {}
 };
 
+struct MaintenanceReport : public MaintenanceAgent
+{
+	std::ostream& log;
+	size_t rebuild, fileSummary, fileReindex, dirSummary, index;
+	bool needFullIndex;
+	dataset::ondisk::Writer* writer;
+
+	MaintenanceReport(std::ostream& log);
+	virtual ~MaintenanceReport() {}
+
+	void start(dataset::ondisk::Writer& w)
+	{
+		writer = &w;
+	}
+	void end()
+	{
+		writer = 0;
+	}
+
+	virtual void needsDatafileRebuild(dataset::ondisk::maint::Datafile& df);
+	virtual void needsSummaryRebuild(dataset::ondisk::maint::Datafile& df);
+	virtual void needsReindex(dataset::ondisk::maint::Datafile& df);
+	virtual void needsSummaryRebuild(dataset::ondisk::maint::Directory& df);
+	virtual void needsFullIndexRebuild(dataset::ondisk::maint::RootDirectory& df);
+	virtual void needsIndexRebuild(dataset::ondisk::maint::Datafile& df);
+
+	const char* stfile(size_t count) const { return count > 1 ? "files" : "file"; }
+	const char* stsumm(size_t count) const { return count > 1 ? "summaries" : "summary"; }
+
+	void report();
+};
+
+
 /**
  * Full maintenance implementation, trying to solve all the issues that are found
  */

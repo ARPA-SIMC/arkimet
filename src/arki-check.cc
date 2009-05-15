@@ -93,103 +93,6 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct MaintenanceReport : public dataset::ondisk::MaintenanceAgent
-{
-	size_t rebuild, fileSummary, fileReindex, dirSummary, index;
-	bool needFullIndex;
-	dataset::ondisk::Writer* writer;
-
-	MaintenanceReport()
-		: rebuild(0), fileSummary(0), fileReindex(0), dirSummary(0), index(0), needFullIndex(false), writer(0) {}
-	virtual ~MaintenanceReport() {}
-
-	void start(dataset::ondisk::Writer& w)
-	{
-		writer = &w;
-	}
-	void end()
-	{
-		writer = 0;
-	}
-
-	virtual void needsDatafileRebuild(dataset::ondisk::maint::Datafile& df)
-	{
-		++rebuild;
-		cout << df.pathname << ": needs metadata rebuild." << endl;
-	}
-	virtual void needsSummaryRebuild(dataset::ondisk::maint::Datafile& df)
-	{
-		++fileSummary;
-		cout << df.pathname << ": needs summary rebuild." << endl;
-	}
-	virtual void needsReindex(dataset::ondisk::maint::Datafile& df)
-	{
-		++fileReindex;
-		cout << df.pathname << ": needs reindexing." << endl;
-	}
-	virtual void needsSummaryRebuild(dataset::ondisk::maint::Directory& df)
-	{
-		++dirSummary;
-		cout << df.fullpath() << ": needs summary rebuild." << endl;
-	}
-	virtual void needsFullIndexRebuild(dataset::ondisk::maint::RootDirectory& df)
-	{
-		needFullIndex = true;
-		cout << writer->path() << ": needs full index rebuild." << endl;
-	}
-	virtual void needsIndexRebuild(dataset::ondisk::maint::Datafile& df)
-	{
-		if (!needFullIndex)
-		{
-			++index;
-			cout << df.pathname << ": needs index rebuild." << endl;
-		}
-	}
-
-	std::string stfile(size_t count) const { return count > 1 ? "files" : "file"; }
-	std::string stsumm(size_t count) const { return count > 1 ? "summaries" : "summary"; }
-
-	void report()
-	{
-		bool done = false;
-		cout << "Summary:";
-		if (rebuild)
-		{
-			done = true;
-			cout << endl << " " << rebuild << " metadata " << stfile(rebuild) << " to rebuild";
-		}
-		if (fileSummary)
-		{
-			done = true;
-			cout << endl << " " << fileSummary << " data file " << stsumm(fileSummary) << " to rebuild";
-		}
-		if (fileReindex)
-		{
-			done = true;
-			cout << endl << " " << fileReindex << " metadata " << stfile(fileReindex) << " to reindex";
-		}
-		if (dirSummary)
-		{
-			done = true;
-			cout << endl << " " << dirSummary << " directory " << stsumm(dirSummary) << " to rebuild";
-		}
-		if (needFullIndex)
-		{
-			done = true;
-			cout << endl << " the entire index needs to be rebuilt";
-		}
-		if (index)
-		{
-			done = true;
-			cout << endl << " " << index << " index " << stfile(index) << " to reindex";
-		}
-		if (!done)
-			cout << " nothing to do." << endl;
-		else
-			cout << "; rerun with -f to fix." << endl;
-	}
-};
-
 struct Stats : public dataset::ondisk::Visitor
 {
 	string name;
@@ -292,37 +195,25 @@ struct Worker
 
 struct Maintainer : public Worker
 {
-	dataset::ondisk::MaintenanceAgent* ma;
+	bool fix;
+	MetadataConsumer* salvage;
 
-	Maintainer(bool fix, MetadataConsumer* salvage = 0) : ma(0)
+	Maintainer(bool fix, MetadataConsumer* salvage = 0) : fix(fix), salvage(salvage)
 	{
-		if (fix)
-			if (salvage)
-				ma = new dataset::ondisk::FullMaintenance(cerr, *salvage);
-			else
-				throw wibble::exception::Consistency("setting up maintenance run", "no metadata consumer given to salvage duplicate items");
-		else
-			ma = new MaintenanceReport;
-	}
-	~Maintainer()
-	{
-		if (ma) delete ma;
+		if (fix && !salvage)
+			throw wibble::exception::Consistency("setting up maintenance run", "no metadata consumer given to salvage duplicate items");
 	}
 
 	virtual void operator()(WritableDataset& w)
 	{
-		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
-		if (ow == 0)
-			cerr << "Skipping dataset " << w.name() << ": not an ondisk dataset" << endl;
+		if (fix)
+			w.check(cerr, *salvage);
 		else
-			ow->maintenance(*ma);
+			w.check(cout);
 	}
 
 	virtual void done()
 	{
-		MaintenanceReport* mr = dynamic_cast<MaintenanceReport*>(ma);
-		if (mr)
-			mr->report();
 	}
 };
 

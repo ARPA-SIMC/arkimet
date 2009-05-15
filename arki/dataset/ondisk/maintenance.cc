@@ -36,6 +36,84 @@ namespace arki {
 namespace dataset {
 namespace ondisk {
 
+MaintenanceReport::MaintenanceReport(std::ostream& log)
+	: log(log), rebuild(0), fileSummary(0), fileReindex(0), dirSummary(0), index(0), needFullIndex(false), writer(0) {}
+
+void MaintenanceReport::needsDatafileRebuild(dataset::ondisk::maint::Datafile& df)
+{
+	++rebuild;
+	log << df.pathname << ": needs metadata rebuild." << endl;
+}
+void MaintenanceReport::needsSummaryRebuild(dataset::ondisk::maint::Datafile& df)
+{
+	++fileSummary;
+	log << df.pathname << ": needs summary rebuild." << endl;
+}
+void MaintenanceReport::needsReindex(dataset::ondisk::maint::Datafile& df)
+{
+	++fileReindex;
+	log << df.pathname << ": needs reindexing." << endl;
+}
+void MaintenanceReport::needsSummaryRebuild(dataset::ondisk::maint::Directory& df)
+{
+	++dirSummary;
+	log << df.fullpath() << ": needs summary rebuild." << endl;
+}
+void MaintenanceReport::needsFullIndexRebuild(dataset::ondisk::maint::RootDirectory& df)
+{
+	needFullIndex = true;
+	log << writer->path() << ": needs full index rebuild." << endl;
+}
+void MaintenanceReport::needsIndexRebuild(dataset::ondisk::maint::Datafile& df)
+{
+	if (!needFullIndex)
+	{
+		++index;
+		log << df.pathname << ": needs index rebuild." << endl;
+	}
+}
+
+void MaintenanceReport::report()
+{
+	bool done = false;
+	log << "Summary:";
+	if (rebuild)
+	{
+		done = true;
+		log << endl << " " << rebuild << " metadata " << stfile(rebuild) << " to rebuild";
+	}
+	if (fileSummary)
+	{
+		done = true;
+		log << endl << " " << fileSummary << " data file " << stsumm(fileSummary) << " to rebuild";
+	}
+	if (fileReindex)
+	{
+		done = true;
+		log << endl << " " << fileReindex << " metadata " << stfile(fileReindex) << " to reindex";
+	}
+	if (dirSummary)
+	{
+		done = true;
+		log << endl << " " << dirSummary << " directory " << stsumm(dirSummary) << " to rebuild";
+	}
+	if (needFullIndex)
+	{
+		done = true;
+		log << endl << " the entire index needs to be rebuilt";
+	}
+	if (index)
+	{
+		done = true;
+		log << endl << " " << index << " index " << stfile(index) << " to reindex";
+	}
+	if (!done)
+		log << " nothing to do." << endl;
+	else
+		log << "; rerun with -f to fix." << endl;
+}
+
+
 FullMaintenance::FullMaintenance(std::ostream& log, MetadataConsumer& salvage)
 	: log(log), salvage(salvage), reindexAll(false), writer(0)
 {

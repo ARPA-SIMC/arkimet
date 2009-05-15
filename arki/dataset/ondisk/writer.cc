@@ -177,6 +177,19 @@ void Writer::repack(std::ostream& log, bool writable)
 	repacker->end();
 }
 
+void Writer::check(std::ostream& log)
+{
+	MaintenanceReport ma(log);
+	maintenance(ma);
+	ma.report();
+}
+
+void Writer::check(std::ostream& log, MetadataConsumer& salvage)
+{
+	dataset::ondisk::FullMaintenance ma(log, salvage);
+	maintenance(ma);
+}
+
 void Writer::depthFirstVisit(Visitor& v)
 {
 	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));

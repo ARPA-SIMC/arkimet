@@ -181,6 +181,21 @@ public:
 	virtual void repack(std::ostream& log, bool writable=false);
 
 	/**
+	 * Check the dataset for errors, logging status to the given file.
+	 *
+	 * The process is simulated but no changes are saved.
+	 */
+	virtual void check(std::ostream& log);
+
+	/**
+	 * Check the dataset for errors, logging status to the given file.
+	 *
+	 * Errors are fixed, and if data is found that does not fit in the
+	 * dataset it is sent to 'salvage'.
+	 */
+	virtual void check(std::ostream& log, MetadataConsumer& salvage);
+	
+	/**
 	 * Instantiate an appropriate Dataset for the given configuration
 	 */
 	static WritableDataset* create(const ConfigFile& cfg);
