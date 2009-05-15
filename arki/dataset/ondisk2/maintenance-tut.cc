@@ -90,80 +90,6 @@ using namespace arki::types;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
 
-
-
-#if 0
-struct MaintenanceCollector : public MaintenanceAgent
-{
-	string writerPath;
-	bool hasEnded, fullIndex;
-	vector<string> datafileRebuild, summaryRebuildFile, reindexFile, summaryRebuildDir;
-
-	MaintenanceCollector() :
-		hasEnded(false), fullIndex(false) {}
-
-	virtual void start(Writer& w) { writerPath = w.path(); }
-	virtual void end() { hasEnded = true; }
-
-	virtual void needsDatafileRebuild(Datafile& df)
-	{
-		datafileRebuild.push_back(df.relname);
-	}
-	virtual void needsSummaryRebuild(Datafile& df)
-	{
-		//cerr << "needsSummaryRebuild " << df.pathname << endl;
-		summaryRebuildFile.push_back(df.relname);
-	}
-	virtual void needsReindex(maint::Datafile& df)
-	{
-		reindexFile.push_back(df.relname);
-	}
-	virtual void needsSummaryRebuild(Directory& df)
-	{
-		//cerr << "needsSummaryRebuild " << df.fullpath() << endl;
-		summaryRebuildDir.push_back(df.relpath());
-	}
-	virtual void needsFullIndexRebuild(RootDirectory& df)
-	{
-		fullIndex = true;
-	}
-	void sort()
-	{
-		std::sort(datafileRebuild.begin(), datafileRebuild.end());
-		std::sort(summaryRebuildFile.begin(), summaryRebuildFile.end());
-		std::sort(summaryRebuildDir.begin(), summaryRebuildDir.end());
-	}
-
-	void clear()
-	{
-		writerPath.clear();
-		hasEnded = false;
-		fullIndex = false;
-		datafileRebuild.clear();
-		summaryRebuildFile.clear();
-		summaryRebuildDir.clear();
-	}
-
-	bool isClean()
-	{
-		if (writerPath.empty()) return false;
-		//cerr << "writerPath ok" << endl;
-		if (!hasEnded) return false;
-		//cerr << "hasEnded ok" << endl;
-		if (fullIndex) return false;
-		//cerr << "fullIndex ok" << endl;
-		if (!datafileRebuild.empty()) return false;
-		//cerr << "datafileRebuild ok" << endl;
-		if (!summaryRebuildFile.empty()) return false;
-		//cerr << "summaryRebuildFile ok" << endl;
-		if (!summaryRebuildDir.empty()) return false;
-		//cerr << "summaryRebuildDir ok" << endl;
-		return true;
-	}
-};
-
-#endif
-
 struct arki_dataset_ondisk2_maintenance_shar {
 	ConfigFile cfg;
 
@@ -172,7 +98,8 @@ struct arki_dataset_ondisk2_maintenance_shar {
 		system("rm -rf testdir");
 
 		cfg.setValue("path", "testdir");
-		cfg.setValue("name", "ondisk2");
+		cfg.setValue("name", "testdir");
+		cfg.setValue("type", "ondisk2");
 		cfg.setValue("step", "daily");
 		cfg.setValue("unique", "origin, reftime");
 	}
@@ -207,6 +134,7 @@ void to::test<1>()
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
 	ensure(c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
@@ -216,6 +144,52 @@ void to::test<1>()
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+
+	system("find . ");
+
+#if 0
+	// Perform full maintenance and check that things are still ok afterwards
+	stringstream maintlog;
+	MetadataCounter counter;
+	FullMaintenance m(maintlog, counter);
+	writer.maintenance(m);
+	ensure_equals(counter.count, 0u);
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(counter.count, 0u);
+	ensure(c.isClean());
+#endif
+}
+
+// Test accuracy of maintenance scan, on dataset with one file deleted
+template<> template<>
+void to::test<2>()
+{
+	acquireSamples();
+
+	system("rm testdir/2007/07-07.grib1");
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 1u);
+	ensure(not c.isClean());
+
+	// Perform packing and check that things are still ok afterwards
+	stringstream s;
+	writer.repack(s, true);
+	ensure_equals(s.str(), "testdir: 1 files removed from index.\n");
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
 
 #if 0
