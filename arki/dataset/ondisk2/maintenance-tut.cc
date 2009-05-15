@@ -16,14 +16,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
+#include <arki/dataset/test-utils.h>
 #include <arki/dataset/ondisk2/maintenance.h>
+#include <arki/dataset/ondisk2/writer.h>
 #if 0
-#include <arki/dataset/ondisk2/test-utils.h>
 #include <arki/dataset/ondisk2/maint/directory.h>
 #include <arki/dataset/ondisk2/maint/datafile.h>
 #include <arki/dataset/ondisk2/common.h>
 #include <arki/dataset/ondisk2/reader.h>
-#include <arki/dataset/ondisk2/writer.h>
 #endif
 #include <arki/metadata.h>
 #include <arki/configfile.h>
@@ -35,29 +35,45 @@
 #include <iostream>
 #include <algorithm>
 
-#if 0
-namespace std {
-
-ostream& operator<<(ostream& o, const vector<string>& vs)
-{
-	for (vector<string>::const_iterator i = vs.begin(); i != vs.end(); ++i)
-		o << *i << endl;
-	return o;
-}
-
-}
-#endif
-
 namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk2;
-using namespace arki::dataset::ondisk2::maint;
+using namespace arki::dataset::ondisk2::writer;
+
+struct MaintenanceCollector2 : public MaintFileVisitor
+{
+	map <string, State> fileStates;
+	size_t count_ok;
+	size_t count_pack;
+	size_t count_index;
+	size_t count_rescan;
+
+	MaintenanceCollector2()
+		: count_ok(0), count_pack(0), count_index(0), count_rescan(0) {}
+
+	bool isClean() const
+	{
+		return count_pack == 0 and count_index == 0 and count_rescan == 0;
+	}
+
+	virtual void operator()(const std::string& file, State state)
+	{
+		fileStates[file] = state;
+		switch (state)
+		{
+			case OK:	++count_ok;	break;
+			case TO_PACK:	++count_pack;	break;
+			case TO_INDEX:	++count_index;	break;
+			case TO_RESCAN:	++count_rescan;	break;
+		}
+	}
+};
+
 
 #if 0
-
 struct MaintenanceCollector : public MaintenanceAgent
 {
 	string writerPath;
@@ -127,17 +143,18 @@ struct MaintenanceCollector : public MaintenanceAgent
 	}
 };
 
-struct arki_dataset_ondisk_maintenance_shar {
+#endif
+
+struct arki_dataset_ondisk2_maintenance_shar {
 	ConfigFile cfg;
 
-	arki_dataset_ondisk_maintenance_shar()
+	arki_dataset_ondisk2_maintenance_shar()
 	{
 		system("rm -rf testdir");
 
 		cfg.setValue("path", "testdir");
-		cfg.setValue("name", "test");
+		cfg.setValue("name", "ondisk2");
 		cfg.setValue("step", "daily");
-		cfg.setValue("index", "origin, reftime");
 		cfg.setValue("unique", "origin, reftime");
 	}
 
@@ -145,7 +162,7 @@ struct arki_dataset_ondisk_maintenance_shar {
 	{
 		Metadata md;
 		scan::Grib scanner;
-		dataset::ondisk::Writer writer(cfg);
+		Writer writer(cfg);
 		scanner.open("inbound/test.grib1");
 		size_t count = 0;
 		for ( ; scanner.next(md); ++count)
@@ -154,28 +171,26 @@ struct arki_dataset_ondisk_maintenance_shar {
 		writer.flush();
 	}
 };
-TESTGRP(arki_dataset_ondisk_maintenance);
+TESTGRP(arki_dataset_ondisk2_maintenance);
 
-// Test accuracy of maintenance scan, without index, on perfect dataset
+// Test accuracy of maintenance scan, on perfect dataset
 template<> template<>
 void to::test<1>()
 {
-	cfg.setValue("index", string());
-	cfg.setValue("unique", string());
 	acquireSamples();
 
-	Writer writer(cfg);
-	MaintenanceCollector c;
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector2 c;
 	writer.maintenance(c);
 
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, false);
-	ensure_equals(c.datafileRebuild.size(), 0u);
-	ensure_equals(c.summaryRebuildFile.size(), 0u);
-	ensure_equals(c.summaryRebuildDir.size(), 0u);
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
 	ensure(c.isClean());
 
+#if 0
 	// Perform full maintenance and check that things are still ok afterwards
 	stringstream maintlog;
 	MetadataCounter counter;
@@ -186,8 +201,10 @@ void to::test<1>()
 	writer.maintenance(c);
 	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
+#endif
 }
 
+#if 0
 // Test accuracy of maintenance scan, without index, on dataset with some
 // rebuild flagfiles
 template<> template<>

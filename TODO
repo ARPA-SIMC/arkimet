@@ -131,17 +131,16 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     + lasciare aperti i datafile e chiuderli al flush
     + fdatasync
     + add notes and other non-summarisable metadata to the index
-    - repack:
-       - for each file
-          - lock away writes, allow reads
-          - make a copy of the file with the right data in it
-          - delete all records about the file from the db
-	  - commit (so that we do not have an inconsistent state with database
-	    pointers pointing at the wrong file)
-          - rename the file with the final name
-          - insert the new records into the db
-          - commit
-          - unlock writes
+    + repack:
+       + for each file
+          + lock away reads and writes
+          + make a copy of the file with the right data in it
+          + rename the file with the final name
+          + delete all records about the file from the db
+          + insert the new records into the db
+          + commit
+          + unlock writes
+    - controllo file che sono nell'indice ma cancellati da disco
     - rebuild:
        - for each file
           - if not in the db, rescan it
@@ -153,6 +152,9 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
           - remove record in the db
     - when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already)
+
+ http://www.sqlite.org/c3ref/busy_handler.html
+ http://www.sqlite.org/c3ref/busy_timeout.html
 
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
