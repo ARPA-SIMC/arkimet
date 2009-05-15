@@ -137,8 +137,9 @@ void to::test<1>()
 	ensure_equals(c.count_deleted, 0u);
 	ensure(c.isClean());
 
-	// Perform packing and check that things are still ok afterwards
 	stringstream s;
+
+	// Perform packing and check that things are still ok afterwards
 	writer.repack(s, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
@@ -158,7 +159,8 @@ void to::test<1>()
 	ensure(c.isClean());
 }
 
-// Test accuracy of maintenance scan, on dataset with one file deleted
+// Test accuracy of maintenance scan, on dataset with one file deleted,
+// performing repack
 template<> template<>
 void to::test<2>()
 {
@@ -178,8 +180,9 @@ void to::test<2>()
 	ensure_equals(c.count_deleted, 1u);
 	ensure(not c.isClean());
 
-	// Perform packing and check that things are still ok afterwards
 	stringstream s;
+
+	// Perform packing and check that things are still ok afterwards
 	writer.repack(s, true);
 	ensure_equals(s.str(), "testdir: 1 files removed from index.\n");
 	c.clear();
@@ -200,9 +203,55 @@ void to::test<2>()
 	ensure(c.isClean());
 }
 
-// Test accuracy of maintenance scan, on dataset with one file to reclaim
+// Test accuracy of maintenance scan, on dataset with one file deleted,
+// performing check
 template<> template<>
 void to::test<3>()
+{
+	acquireSamples();
+
+	system("rm testdir/2007/07-07.grib1");
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 1u);
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), "testdir: 1 files removed from index.\n");
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 2u);
+	ensure(c.isClean());
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 2u);
+	ensure(c.isClean());
+}
+
+// Test accuracy of maintenance scan, on dataset with one file to reclaim,
+// performing repack
+template<> template<>
+void to::test<4>()
 {
 	acquireSamples();
 	{
@@ -248,9 +297,59 @@ void to::test<3>()
 	ensure(c.isClean());
 }
 
-// Test accuracy of maintenance scan, on dataset with one file to pack
+// Test accuracy of maintenance scan, on dataset with one file to reclaim,
+// performing check
 template<> template<>
-void to::test<4>()
+void to::test<5>()
+{
+	acquireSamples();
+	{
+		// Remove one element
+		arki::dataset::ondisk2::Writer writer(cfg);
+		writer.remove("2");
+		writer.flush();
+	}
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 1u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), "testdir: 1 files rescanned.\n");
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+
+}
+
+// Test accuracy of maintenance scan, on dataset with one file to pack,
+// performing repack
+template<> template<>
+void to::test<6>()
 {
 	cfg.setValue("step", "monthly");
 	acquireSamples();
@@ -292,6 +391,57 @@ void to::test<4>()
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 2u);
+	ensure(c.isClean());
+}
+
+// Test accuracy of maintenance scan, on dataset with one file to pack,
+// performing check
+template<> template<>
+void to::test<7>()
+{
+	cfg.setValue("step", "monthly");
+	acquireSamples();
+	{
+		// Remove one element
+		arki::dataset::ondisk2::Writer writer(cfg);
+		writer.remove("2");
+		writer.flush();
+	}
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 2u);
+	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count_pack, 1u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(),
+		"testdir: packed 2007/07.grib1 (34960 saved)\n"
+		"testdir: 1 files packed.\n");
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 2u);
+	ensure(c.isClean());
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
