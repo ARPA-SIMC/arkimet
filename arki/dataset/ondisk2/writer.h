@@ -44,9 +44,11 @@ namespace ondisk2 {
 namespace writer {
 class Datafile;
 class MaintFileVisitor;
-class Repacker;
+class Agent;
 class RealRepacker;
 class MockRepacker;
+class RealFixer;
+class MockFixer;
 }
 
 class Writer : public WritableDataset
@@ -97,9 +99,27 @@ public:
 	void maintenance(writer::MaintFileVisitor& v);
 
 	/**
-	 * Repack the dataset, using a RepackAgent to direct the operations
+	 * Repack the dataset, logging status to the given file.
+	 *
+	 * If writable is false, the process is simulated but no changes are
+	 * saved.
 	 */
 	virtual void repack(std::ostream& log, bool writable=false);
+
+	/**
+	 * Check the dataset for errors, logging status to the given file.
+	 *
+	 * The process is simulated but no changes are saved.
+	 */
+	virtual void check(std::ostream& log);
+
+	/**
+	 * Check the dataset for errors, logging status to the given file.
+	 *
+	 * Errors are fixed, and if data is found that does not fit in the
+	 * dataset it is sent to 'salvage'.
+	 */
+	virtual void check(std::ostream& log, MetadataConsumer& salvage);
 
 	/**
 	 * Iterate through the contents of the dataset, in depth-first order.
@@ -108,9 +128,11 @@ public:
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 
-	friend class writer::Repacker;
+	friend class writer::Agent;
 	friend class writer::RealRepacker;
 	friend class writer::MockRepacker;
+	friend class writer::RealFixer;
+	friend class writer::MockFixer;
 };
 
 }

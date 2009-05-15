@@ -140,7 +140,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
           + insert the new records into the db
           + commit
           + unlock writes
-    - controllo file che sono nell'indice ma cancellati da disco
+    + controllo file che sono nell'indice ma cancellati da disco
     - rebuild:
        - for each file
           - if not in the db, rescan it

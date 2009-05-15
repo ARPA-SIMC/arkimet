@@ -146,18 +146,16 @@ void to::test<1>()
 	ensure_equals(c.count_ok, 3u);
 	ensure(c.isClean());
 
-#if 0
 	// Perform full maintenance and check that things are still ok afterwards
-	stringstream maintlog;
 	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
+	s.str(std::string());
+	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), string());
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
+	ensure_equals(c.count_ok, 3u);
 	ensure(c.isClean());
-#endif
 }
 
 // Test accuracy of maintenance scan, on dataset with one file deleted

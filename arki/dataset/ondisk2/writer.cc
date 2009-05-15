@@ -232,7 +232,7 @@ void Writer::repack(std::ostream& log, bool writable)
 {
 	using namespace writer;
 
-	auto_ptr<Repacker> repacker;
+	auto_ptr<Agent> repacker;
 
 	if (writable)
 		if (m_idx.count() == 0)
@@ -244,6 +244,24 @@ void Writer::repack(std::ostream& log, bool writable)
 		repacker.reset(new MockRepacker(log, *this));
 	maintenance(*repacker);
 	repacker->end();
+}
+
+void Writer::check(std::ostream& log)
+{
+	using namespace writer;
+
+	MockFixer fixer(log, *this);
+	maintenance(fixer);
+	fixer.end();
+}
+
+void Writer::check(std::ostream& log, MetadataConsumer& salvage)
+{
+	using namespace writer;
+
+	RealFixer fixer(log, *this, salvage);
+	maintenance(fixer);
+	fixer.end();
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

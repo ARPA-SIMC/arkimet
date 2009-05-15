@@ -19,13 +19,22 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+#include "config.h"
 
 #include <arki/dataset/ondisk2/maintenance.h>
 //#include <arki/dataset/ondisk2/maint/datafile.h>
 //#include <arki/dataset/ondisk2/maint/directory.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/index.h>
+#include <arki/utils.h>
 #include <arki/utils/files.h>
+
+#ifdef HAVE_GRIBAPI
+#include <arki/scan/grib.h>
+#endif
+#ifdef HAVE_DBALLE
+#include <arki/scan/bufr.h>
+#endif
 
 #include <wibble/sys/fs.h>
 
@@ -131,24 +140,24 @@ void MaintPrinter::operator()(const std::string& file, State state)
 	}
 }
 
-// Repacker
+// Agent
 
-Repacker::Repacker(std::ostream& log, Writer& w)
+Agent::Agent(std::ostream& log, Writer& w)
 	: m_log(log), w(w), lineStart(true)
 {
 }
 
-std::ostream& Repacker::log()
+std::ostream& Agent::log()
 {
 	return m_log << w.m_name << ": ";
 }
 
-void Repacker::logStart()
+void Agent::logStart()
 {
 	lineStart = true;
 }
 
-std::ostream& Repacker::logAdd()
+std::ostream& Agent::logAdd()
 {
 	if (lineStart)
 	{
@@ -159,7 +168,7 @@ std::ostream& Repacker::logAdd()
 		return m_log << ", ";
 }
 
-void Repacker::logEnd()
+void Agent::logEnd()
 {
 	if (! lineStart)
 		m_log << "." << endl;
@@ -168,7 +177,7 @@ void Repacker::logEnd()
 // FailsafeRepacker
 
 FailsafeRepacker::FailsafeRepacker(std::ostream& log, Writer& w)
-	: Repacker(log, w), m_count_deleted(0)
+	: Agent(log, w), m_count_deleted(0)
 {
 }
 
@@ -189,10 +198,148 @@ void FailsafeRepacker::end()
 	      << endl;
 }
 
+// Common maintenance functions
+
+static size_t repack(const std::string& root, const std::string& file, WIndex& idx)
+{
+	// Lock away writes and reads
+	Pending p = idx.beginExclusiveTransaction();
+
+	// Make a copy of the file with the right data in it, sorted by
+	// reftime, and update the offsets in the index
+	string pathname = str::joinpath(root, file);
+	string pntmp = pathname + ".repack";
+	FileCopier copier(idx, pathname, pntmp);
+	idx.scan_file(file, copier, "reftime");
+	copier.flush();
+
+	size_t size_pre = utils::files::size(pathname);
+	size_t size_post = utils::files::size(pntmp);
+
+	// Rename the file with to final name
+	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
+		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
+
+	// Commit the changes on the database
+	p.commit();
+
+	return size_pre - size_post;
+}
+
+static void scan_metadata(const std::string& file, MetadataConsumer& c)
+{
+	Metadata::readFile(file, c);
+}
+
+static void scan_file(const std::string& file, MetadataConsumer& c)
+{
+	// Get the file extension
+	size_t pos = file.rfind('.');
+	if (pos == string::npos)
+		throw wibble::exception::Consistency("getting extension of " + file, "file name has no extension");
+	string ext = file.substr(pos+1);
+
+	// Rescan the file and regenerate the metadata file
+	bool processed = false;
+#ifdef HAVE_GRIBAPI
+	if (ext == "grib1" || ext == "grib2")
+	{
+		scan::Grib scanner;
+		scanner.open(file);
+		Metadata md;
+		while (scanner.next(md))
+			c(md);
+		processed = true;
+	}
+#endif
+#ifdef HAVE_DBALLE
+	if (ext == "bufr") {
+		scan::Bufr scanner;
+		scanner.open(file);
+		Metadata md;
+		while (scanner.next(md))
+			c(md);
+		processed = true;
+	}
+#endif
+	if (!processed)
+		throw wibble::exception::Consistency("rebuilding " + file, "rescanning \"" + ext + "\" is not yet implemented");
+}
+
+struct Reindexer : public MetadataConsumer
+{
+	WIndex& idx;
+	std::string dsname;
+	std::string relfile;
+	std::string basename;
+	MetadataConsumer& salvage;
+	size_t count_salvaged;
+
+	Reindexer(WIndex& idx,
+		  const std::string& dsname,
+		  const std::string& relfile,
+		  MetadataConsumer& salvage)
+	       	: idx(idx), dsname(dsname), relfile(relfile), basename(str::basename(relfile)),
+	          salvage(salvage), count_salvaged(0) {}
+
+	virtual bool operator()(Metadata& md)
+	{
+		Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
+		try {
+			int id;
+			if (str::basename(blob->filename) != basename)
+				throw wibble::exception::Consistency(
+					"rescanning " + relfile,
+				       	"metadata points to the wrong file: " + blob->filename);
+			idx.index(md, relfile, blob->offset, &id);
+		} catch (index::DuplicateInsert& di) {
+			md.notes.push_back(types::Note::create("Failed to reindex in dataset '"+dsname+"' because the dataset already has the data: " + di.what()));
+			++count_salvaged;
+			salvage(md);
+		} catch (std::exception& e) {
+			// sqlite will take care of transaction consistency
+			md.notes.push_back(types::Note::create("Failed to reindex in dataset '"+dsname+"': " + e.what()));
+			++count_salvaged;
+			salvage(md);
+		}
+	}
+};
+
+static size_t rescan(const std::string& dsname, const std::string& root, const std::string& file, WIndex& idx, MetadataConsumer& salvage)
+{
+	// Lock away writes and reads
+	Pending p = idx.beginExclusiveTransaction();
+
+	// Remove from the index all data about the file
+	idx.reset(file);
+
+	string pathname = str::joinpath(root, file);
+
+	Reindexer fixer(idx, dsname, file, salvage);
+	if (utils::hasFlagfile(pathname + ".metadata"))
+	{
+		// If there is a metadata file, use it to save time
+		// (this is very useful when converting ondisk datasets to
+		// ondisk2)
+		scan_metadata(pathname, fixer);
+	} else {
+		// Rescan the file
+		scan_file(pathname, fixer);
+	}
+
+	// TODO: if scan fails, remove all info from the index and rename the
+	// file to something like .broken
+
+	// Commit the changes on the database
+	p.commit();
+
+	return fixer.count_salvaged;
+}
+
 // RealRepacker
 
 RealRepacker::RealRepacker(std::ostream& log, Writer& w)
-	: Repacker(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0), m_count_freed(0)
+	: Agent(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0), m_count_freed(0)
 {
 }
 
@@ -201,28 +348,8 @@ void RealRepacker::operator()(const std::string& file, State state)
 	switch (state)
 	{
 		case TO_PACK: {
-			// Lock away writes and reads reads
-			Pending p = w.m_idx.beginExclusiveTransaction();
-
-			// Make a copy of the file with the right data in it, sorted by
-			// reftime, and update the offsets in the index
-			string pathname = str::joinpath(w.m_path, file);
-			string pntmp = pathname + ".repack";
-			FileCopier copier(w.m_idx, pathname, pntmp);
-			w.m_idx.scan_file(file, copier, "reftime");
-			copier.flush();
-
-			size_t size_pre = utils::files::size(pathname);
-			size_t size_post = utils::files::size(pntmp);
-
-			// Rename the file with to final name
-			if (rename(pntmp.c_str(), pathname.c_str()) < 0)
-				throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
-
-			// Commit the changes on the database
-			p.commit();
-
-			size_t saved = size_pre - size_post;
+		        // Repack the file
+			size_t saved = repack(w.m_path, file, w.m_idx);
 			log() << "packed " << file << " (" << saved << " saved)" << endl;
 			++m_count_packed;
 			m_count_freed += saved;
@@ -274,8 +401,10 @@ void RealRepacker::end()
 	logEnd();
 }
 
+// MockRepacker
+
 MockRepacker::MockRepacker(std::ostream& log, Writer& w)
-	: Repacker(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0)
+	: Agent(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0)
 {
 }
 
@@ -284,7 +413,7 @@ void MockRepacker::operator()(const std::string& file, State state)
 	switch (state)
 	{
 		case TO_PACK:
-			log() << file << " needs packing" << endl;
+			log() << file << " should be packed" << endl;
 			++m_count_packed;
 			break;
 		case TO_INDEX:
@@ -292,7 +421,7 @@ void MockRepacker::operator()(const std::string& file, State state)
 			++m_count_deleted;
 			break;
 		case DELETED:
-			log() << file << " has been removed from index" << endl;
+			log() << file << " should be removed from the index" << endl;
 			++m_count_deindexed;
 			break;
 		default:
@@ -309,6 +438,105 @@ void MockRepacker::end()
 		logAdd() << m_count_deleted << " files should be deleted";
 	if (m_count_deindexed)
 		logAdd() << m_count_deleted << " files should be removed from the index";
+	logEnd();
+}
+
+// RealFixer
+
+RealFixer::RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage)
+	: Agent(log, w), salvage(salvage),
+          m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0), m_count_salvaged(0)
+{
+}
+
+void RealFixer::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_PACK: {
+		        // Repack the file
+			size_t saved = repack(w.m_path, file, w.m_idx);
+			log() << "packed " << file << " (" << saved << " saved)" << endl;
+			++m_count_packed;
+			break;
+		}
+		case TO_INDEX:
+		case TO_RESCAN: {
+			m_count_salvaged += rescan(w.m_name, w.m_path, file, w.m_idx, salvage);
+			++m_count_rescanned;
+			break;
+		}
+		case DELETED: {
+			// Remove from index those files that have been deleted
+			w.m_idx.reset(file);
+			++m_count_deindexed;
+			break;
+	        }
+		default:
+			break;
+	}
+}
+
+void RealFixer::end()
+{
+	// Finally, tidy up the database
+	size_t size_pre = utils::files::size(w.m_idx.pathname());
+	w.m_idx.vacuum();
+	size_t size_post = utils::files::size(w.m_idx.pathname());
+	size_t saved = size_pre - size_post;
+
+	logStart();
+	if (m_count_packed)
+		logAdd() << m_count_packed << " files packed";
+	if (m_count_rescanned)
+		logAdd() << m_count_rescanned << " files rescanned";
+	if (m_count_deindexed)
+		logAdd() << m_count_deindexed << " files removed from index";
+	if (saved > 0)
+		logAdd() << saved << " bytes reclaimed cleaning the index";
+	if (m_count_salvaged)
+		logAdd() << m_count_salvaged << " data items could not be reindexed";
+	logEnd();
+}
+
+// MockFixer
+
+MockFixer::MockFixer(std::ostream& log, Writer& w)
+	: Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0)
+{
+}
+
+void MockFixer::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_PACK:
+			log() << file << " should be packed" << endl;
+			++m_count_packed;
+			break;
+		case TO_INDEX:
+		case TO_RESCAN:
+			log() << file << " should be rescanned" << endl;
+			++m_count_rescanned;
+			break;
+		case DELETED:
+			log() << file << " should be removed from the index" << endl;
+			++m_count_deindexed;
+			break;
+		default:
+			break;
+	}
+}
+
+void MockFixer::end()
+{
+	logStart();
+	if (m_count_packed)
+		logAdd() << m_count_packed << " files should be packed";
+	if (m_count_rescanned)
+		logAdd() << m_count_rescanned << " files should be rescanned";
+	if (m_count_deindexed)
+		logAdd() << m_count_deindexed << " files should be removed from the index";
 	logEnd();
 }
 

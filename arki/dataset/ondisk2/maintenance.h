@@ -43,11 +43,11 @@ namespace writer {
 struct MaintFileVisitor
 {
 	enum State {
-		OK,
-		TO_PACK,
-		TO_INDEX,
-		TO_RESCAN,
-		DELETED,
+		OK,		/// File fully and consistently indexed
+		TO_PACK,	/// File contains data that has been deleted
+		TO_INDEX,	/// File is not present in the index
+		TO_RESCAN,	/// File contents are inconsistent with the index
+		DELETED,	/// File does not exist but has entries in the index
 	};
 
 	virtual ~MaintFileVisitor() {}
@@ -177,14 +177,14 @@ struct MaintPrinter : public writer::MaintFileVisitor
 	void operator()(const std::string& file, State state);
 };
 
-/// Base class for all repackers
-struct Repacker : public writer::MaintFileVisitor
+/// Base class for all repackers and rebuilders
+struct Agent : public writer::MaintFileVisitor
 {
 	std::ostream& m_log;
 	Writer& w;
 	bool lineStart;
 
-	Repacker(std::ostream& log, Writer& w);
+	Agent(std::ostream& log, Writer& w);
 
 	std::ostream& log();
 
@@ -203,7 +203,7 @@ struct Repacker : public writer::MaintFileVisitor
  * 
  * It only reports how many files would be deleted.
  */
-struct FailsafeRepacker : public Repacker
+struct FailsafeRepacker : public Agent
 {
 	size_t m_count_deleted;
 
@@ -216,7 +216,7 @@ struct FailsafeRepacker : public Repacker
 /**
  * Perform real repacking
  */
-struct RealRepacker : public Repacker
+struct RealRepacker : public Agent
 {
 	size_t m_count_packed;
 	size_t m_count_deleted;
@@ -232,13 +232,45 @@ struct RealRepacker : public Repacker
 /**
  * Simulate a repack and print information on what would have been done
  */
-struct MockRepacker : public Repacker
+struct MockRepacker : public Agent
 {
 	size_t m_count_packed;
 	size_t m_count_deleted;
 	size_t m_count_deindexed;
 
 	MockRepacker(std::ostream& log, Writer& w);
+
+	void operator()(const std::string& file, State state);
+	void end();
+};
+
+/**
+ * Perform real repacking
+ */
+struct RealFixer : public Agent
+{
+	MetadataConsumer& salvage;
+	size_t m_count_packed;
+	size_t m_count_rescanned;
+	size_t m_count_deindexed;
+	size_t m_count_salvaged;
+
+	RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage);
+
+	void operator()(const std::string& file, State state);
+	void end();
+};
+
+/**
+ * Simulate a repack and print information on what would have been done
+ */
+struct MockFixer : public Agent
+{
+	size_t m_count_packed;
+	size_t m_count_rescanned;
+	size_t m_count_deindexed;
+
+	MockFixer(std::ostream& log, Writer& w);
 
 	void operator()(const std::string& file, State state);
 	void end();
