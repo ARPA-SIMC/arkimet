@@ -151,7 +151,7 @@ void to::test<1>()
 	s.str(std::string());
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
-	ensure_equals(s.str(), string());
+	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 3u);
@@ -188,18 +188,16 @@ void to::test<2>()
 	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
 
-#if 0
 	// Perform full maintenance and check that things are still ok afterwards
-	stringstream maintlog;
 	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
+	s.str(std::string());
+	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
+	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
-#endif
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to reclaim
@@ -238,18 +236,16 @@ void to::test<3>()
 	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
 
-#if 0
 	// Perform full maintenance and check that things are still ok afterwards
-	stringstream maintlog;
 	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
+	s.str(std::string());
+	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
+	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
-#endif
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to pack
@@ -289,18 +285,16 @@ void to::test<4>()
 	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
 
-#if 0
 	// Perform full maintenance and check that things are still ok afterwards
-	stringstream maintlog;
 	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
+	s.str(std::string());
+	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
+	ensure_equals(c.count_ok, 2u);
 	ensure(c.isClean());
-#endif
 }
 
 #if 0
