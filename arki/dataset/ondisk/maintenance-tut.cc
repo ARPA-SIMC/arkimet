@@ -582,6 +582,19 @@ void to::test<12>()
 	ensure_equals(blob->format, "grib1"); 
 	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
 	ensure_equals(blob->offset, 0u);
+	ensure_equals(blob->size, 7218u);
+
+	// Query the second element and check that it starts after the first one
+	// (there used to be a bug where the rebuild would use the offsets of
+	// the metadata instead of the data)
+	mdc.clear();
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+	ensure_equals(blob->offset, 7218u);
+	ensure_equals(blob->size, 34960u);
 }
 
 // Test invalidating and rebuilding a dataset

@@ -329,7 +329,7 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 		{
 			size_t ofs = outmd.tellp();
 			Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
-			md.source = types::source::Blob::create(blob->format, str::basename(blob->filename), ofs, blob->size);
+			blob->filename = str::basename(blob->filename);
 			if (reindex && !md.deleted)
 				try {
 					parent->addToIndex(md, relname, ofs);
