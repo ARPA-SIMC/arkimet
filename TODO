@@ -153,6 +153,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     - when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already)
 
+ - arki-check su ondisk crea metadati con l'offset sbagliato (vedi lamaz)
+
  http://www.sqlite.org/c3ref/busy_handler.html
  http://www.sqlite.org/c3ref/busy_timeout.html
 
