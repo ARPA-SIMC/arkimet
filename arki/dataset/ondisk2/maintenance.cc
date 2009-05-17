@@ -285,6 +285,7 @@ struct Reindexer : public MetadataConsumer
 
 	virtual bool operator()(Metadata& md)
 	{
+		if (md.deleted) return true;
 		Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
 		try {
 			int id;
@@ -303,6 +304,7 @@ struct Reindexer : public MetadataConsumer
 			++count_salvaged;
 			salvage(md);
 		}
+		return true;
 	}
 };
 
