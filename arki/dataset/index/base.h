@@ -33,10 +33,6 @@
 #include <set>
 #include <sstream>
 
-// Enable compatibility with old sqlite.
-// TODO: use #if macros to test sqlite version instead
-#define LEGACY_SQLITE
-
 namespace arki {
 class Metadata;
 class Matcher;
