@@ -194,6 +194,30 @@ void hexdump(const char* name, const std::string& str);
 // Dump the string, in hex, to stderr, prefixed with name
 void hexdump(const char* name, const unsigned char* str, int len);
 
+/**
+ * Ensure that a posix file handle is closed when this object goes out of scope
+ */
+struct HandleWatch
+{
+	const std::string& fname;
+	int fd;
+	HandleWatch(const std::string& fname, int fd) : fname(fname), fd(fd) {}
+	~HandleWatch() { close(); }
+
+	int release()
+	{
+		int res = fd;
+		fd = -1;
+		return res;
+	}
+
+	void close();
+
+private:
+	// Disallow copy
+	HandleWatch(const HandleWatch&);
+	HandleWatch& operator=(const HandleWatch&);
+};
 
 }
 }

@@ -160,6 +160,16 @@ void hexdump(const char* name, const unsigned char* str, int len)
 	fprintf(stderr, "\n");
 }
 
+void HandleWatch::close()
+{
+	if (fd > 0)
+	{
+		if (::close(fd) < 0)
+			throw wibble::exception::File(fname, "closing file");
+		fd = -1;
+	}
+}
+
 }
 }
 // vim:set ts=4 sw=4:
