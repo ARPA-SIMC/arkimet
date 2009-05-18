@@ -31,15 +31,15 @@ mkdir inbound/ok
 mkdir inbound/ko
 mkdir inbound/work
 echo "`date`: Scanning and dispatching..."
-#valgrind --tool=callgrind ../src/.libs/lt-arki-scan --verbose --dispatch=conf
-../src/arki-scan --verbose --dispatch=conf \
+#valgrind --tool=callgrind ../src/.libs/lt-arki-scan --verbose --dispatch=conf -o dispatched
+#gdb --args ../src/.libs/lt-arki-scan --verbose --dispatch=`pwd`/conf -o dispatched
+../src/arki-scan --verbose --dispatch=conf -o dispatched \
 	--moveok=inbound/ok \
 	--moveko=inbound/ko \
 	--movework=inbound/work \
 	inbound/*.GRIB \
 	inbound/*.grib2 \
-	inbound/*.bufr \
-	> dispatched
+	inbound/*.bufr
 
 #echo "`date`: Scanning and dispatching GRIB..."
 #../src/arki-scan-grib --verbose --dispatch=conf data/*.GRIB > dispatched
