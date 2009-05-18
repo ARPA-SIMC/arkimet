@@ -385,9 +385,11 @@ void RealRepacker::operator()(const std::string& file, State state)
 void RealRepacker::end()
 {
 	// Finally, tidy up the database
-	size_t size_pre = utils::files::size(w.m_idx.pathname());
+	size_t size_pre = utils::files::size(w.m_idx.pathname())
+		        + utils::files::size(w.m_idx.pathname() + "-journal");
 	w.m_idx.vacuum();
-	size_t size_post = utils::files::size(w.m_idx.pathname());
+	size_t size_post = utils::files::size(w.m_idx.pathname())
+		        + utils::files::size(w.m_idx.pathname() + "-journal");
 
 	logStart();
 	if (m_count_packed)
@@ -487,9 +489,11 @@ void RealFixer::operator()(const std::string& file, State state)
 void RealFixer::end()
 {
 	// Finally, tidy up the database
-	size_t size_pre = utils::files::size(w.m_idx.pathname());
+	size_t size_pre = utils::files::size(w.m_idx.pathname())
+		        + utils::files::size(w.m_idx.pathname() + "-journal");
 	w.m_idx.vacuum();
-	size_t size_post = utils::files::size(w.m_idx.pathname());
+	size_t size_post = utils::files::size(w.m_idx.pathname())
+		        + utils::files::size(w.m_idx.pathname() + "-journal");
 
 	logStart();
 	if (m_count_packed)

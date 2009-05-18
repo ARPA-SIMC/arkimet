@@ -684,7 +684,10 @@ void WIndex::relocate_data(const std::string& relname, off_t oldofs, off_t newof
 
 void WIndex::vacuum()
 {
+	m_db.exec("PRAGMA journal_mode = TRUNCATE");
 	m_db.exec("VACUUM");
+	m_db.exec("ANALYZE");
+	m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
 }

@@ -175,10 +175,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       picking a stupid index
     + when querying the summary, if no 'reftime' is present, use the global
       one. If 'reftime' is present use the index
-    - when doing repack, also open with journal_mode=truncate (if vacuum does
+    + when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already) and report the savings after the journal trim
-    - perform ANALYZE on repack/check
-    - rebuild the cached summary after repack/check
+    + perform ANALYZE on repack/check
+    + rebuild the cached summary after repack/check
 
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
@@ -210,6 +210,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       nfs2
       local	 5.63  5.50  6.69  5.65  5.49 |  4.42  4.37  4.38  4.37  4.37
       local2	98.53 97.53 98.82 98.96 97.03 | 85.26 11.03 10.92 11.02 10.96
+                35.99 11.05 11.04
       laptop	10.48  8.90  8.62  8.61  8.57
       laptop2   71.55  45.47 5.66 46.61 46.53
     - import di un giorno di dati
@@ -230,6 +231,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       nfs2
       local	 187.16 192.30  189.07  189.03  196.08 | 177.25 175.33 175.23 175.41 175.36
       local2	 222.79 226.72  227.80  228.00  224.37 | 230.93 208.87 225.50 207.67 207.07
+                 194.77 101.95
       laptop	 441.52 429.59  428.68  431.04  426.00
       laptop2   1029.64 959.18 1155.78 1106.93 1223.34
                 1606.14 726.15
