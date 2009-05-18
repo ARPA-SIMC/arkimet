@@ -216,7 +216,17 @@ public:
 	unsigned long long size() const;
 
 	/**
-	 * Read a summary document from the given input stream.
+	 * Read a summary from a POSIX file descriptor.
+	 *
+	 * The filename string is used to generate nicer parse error messages when
+	 * throwing exceptions, and can be anything.
+	 *
+	 * @returns false when end-of-file is reached
+	 */
+	bool read(int fd, const std::string& filename);
+
+	/**
+	 * Read a summary from the given input stream.
 	 *
 	 * The filename string is used to generate nicer parse error messages when
 	 * throwing exceptions, and can be anything.
@@ -247,6 +257,16 @@ public:
 	 * throwing exceptions, and can be anything.
 	 */
 	void write(std::ostream& out, const std::string& filename) const;
+
+	/**
+	 * Write the summary to the given file name.
+	 *
+	 * The file will be created with a temporary name, then renamed to the
+	 * final name.
+	 *
+	 * \warn The temporary file name will NOT be created securely.
+	 */
+	void writeAtomically(const std::string& filename);
 
 	/**
 	 * Write the summary as YAML text to the given output stream.

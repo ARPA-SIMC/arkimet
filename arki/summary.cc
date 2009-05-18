@@ -37,6 +37,10 @@
 #include <wibble/string.h>
 #include <wibble/sys/buffer.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "config.h"
 
 #ifdef HAVE_LUA
@@ -1130,6 +1134,23 @@ std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull() const
 }
 
 
+bool Summary::read(int fd, const std::string& filename)
+{
+	wibble::sys::Buffer buf;
+	string signature;
+	unsigned version;
+	if (!types::readBundle(fd, filename, buf, signature, version))
+		return false;
+
+	// Ensure first 2 bytes are SU
+	if (signature != "SU")
+		throw wibble::exception::Consistency("parsing file " + filename, "summary entry does not start with 'SU'");
+
+	read(buf, version, filename);
+
+	return true;
+}
+
 bool Summary::read(std::istream& in, const std::string& filename)
 {
 	wibble::sys::Buffer buf;
@@ -1189,6 +1210,34 @@ void Summary::write(std::ostream& out, const std::string& filename) const
 	out.write(encoded.data(), encoded.size());
 	if (out.fail())
 		throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
+}
+
+void Summary::writeAtomically(const std::string& fname)
+{
+	// Write summary to disk
+	string enc = encode();
+	string tmpfile = fname + ".tmp" + str::fmt(getpid());
+	int fd = open(tmpfile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	if (fd == -1)
+		throw wibble::exception::File(tmpfile, "creating temporary file for the summary");
+	try {
+		int res = ::write(fd, enc.data(), enc.size());
+		if (res < 0 || (unsigned)res != enc.size())
+			throw wibble::exception::File(tmpfile, "writing " + str::fmt(enc.size()) + " bytes to the file");
+
+		if (close(fd) == -1)
+		{
+			fd = -1;
+			throw wibble::exception::File(tmpfile, "closing file");
+		}
+		fd = -1;
+		if (rename(tmpfile.c_str(), fname.c_str()) == -1)
+			throw wibble::exception::System("Renaming " + tmpfile + " into " + fname);
+	} catch (...) {
+		if (fd != -1)
+			close(fd);
+		throw;
+	}
 }
 
 namespace summary {
