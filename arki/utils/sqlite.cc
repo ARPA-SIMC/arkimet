@@ -49,10 +49,20 @@ SQLiteDB::~SQLiteDB() {
 		if (rc) throw SQLiteError(m_db, "closing database");
 	}
 }
-void SQLiteDB::open(const std::string& pathname)
+void SQLiteDB::open(const std::string& pathname, int timeout_ms)
 {
-	if (sqlite3_open(pathname.c_str(), &m_db))
-		fprintf(stderr, "WARNING DURING SQLITE DESTRUCTION: %s\n", sqlite3_errmsg(m_db));
+	int rc;
+	rc = sqlite3_open(pathname.c_str(), &m_db);
+	if (rc != SQLITE_OK)
+	       	throw SQLiteError(m_db, "opening database");
+
+	// Set the busy timeout to an hour (in milliseconds)
+	if (timeout_ms > 0)
+	{
+		rc = sqlite3_busy_timeout(m_db, timeout_ms);
+		if (rc != SQLITE_OK)
+			throw SQLiteError(m_db, "setting busy timeout");
+	}
 }
 
 sqlite3_stmt* SQLiteDB::prepare(const std::string& query) const
@@ -71,18 +81,10 @@ sqlite3_stmt* SQLiteDB::prepare(const std::string& query) const
 
 void SQLiteDB::exec(const std::string& query)
 {
-	while (true)
-	{
-		char* err;
-		int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
-		switch (rc)
-		{
-			case SQLITE_OK: return;
-			case SQLITE_BUSY: usleep(50000); break;
-			default:
-				throw SQLiteError(err, "executing query " + query);
-		}
-	}
+	char* err;
+	int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
+	if (rc != SQLITE_OK)
+	       	throw SQLiteError(err, "executing query " + query);
 }
 
 int SQLiteDB::lastInsertID()
@@ -216,24 +218,18 @@ std::vector< Item<> > Query::fetchItems(int column)
 
 bool Query::step()
 {
-	while (true)
+	int rc = sqlite3_step(m_stm);
+	switch (rc)
 	{
-		int rc = sqlite3_step(m_stm);
-		switch (rc)
-		{
-			case SQLITE_DONE:
-				return false;
-			case SQLITE_ROW:
-				return true;
-			case SQLITE_BUSY:
-				usleep(20000);
-			       	break;
-			default:
+		case SQLITE_DONE:
+			return false;
+		case SQLITE_ROW:
+			return true;
+		default:
 #ifdef LEGACY_SQLITE
-				sqlite3_reset(m_stm);
+			sqlite3_reset(m_stm);
 #endif
-				m_db.throwException("executing " + name + " query");
-		}
+			m_db.throwException("executing " + name + " query");
 	}
 }
 

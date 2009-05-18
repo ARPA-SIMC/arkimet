@@ -70,7 +70,10 @@ public:
 	~SQLiteDB();
 
 	bool isOpen() const { return m_db != 0; }
-	void open(const std::string& pathname);
+	/**
+	 * Open the database and set the given busy timeout
+	 */
+	void open(const std::string& pathname, int timeout_ms = 3600*1000);
 
 	//operator const sqlite3*() const { return m_db; }
 	//operator sqlite3*() { return m_db; }
