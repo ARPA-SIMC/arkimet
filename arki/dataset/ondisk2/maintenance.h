@@ -62,7 +62,7 @@ struct IndexFileVisitor
 {
 	virtual ~IndexFileVisitor() {}
 
-	virtual void operator()(const std::string& file, off_t offset, size_t size) = 0;
+	virtual void operator()(const std::string& file, int id, off_t offset, size_t size) = 0;
 };
 
 /**
@@ -86,19 +86,7 @@ struct HoleFinder : IndexFileVisitor
 
 	void finaliseFile();
 
-	void operator()(const std::string& file, off_t offset, size_t size)
-	{
-		if (last_file != file)
-		{
-			finaliseFile();
-			last_file = file;
-			last_file_size = 0;
-			has_hole = false;
-		}
-		if (offset != last_file_size)
-			has_hole = true;
-		last_file_size += size;
-	}
+	void operator()(const std::string& file, int id, off_t offset, size_t size);
 
 	void end()
 	{
@@ -167,7 +155,7 @@ struct FileCopier : writer::IndexFileVisitor
 	FileCopier(WIndex& idx, const std::string& src, const std::string& dst);
 	virtual ~FileCopier();
 
-	void operator()(const std::string& file, off_t offset, size_t size);
+	void operator()(const std::string& file, int id, off_t offset, size_t size);
 
 	void flush();
 };

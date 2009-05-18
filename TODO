@@ -179,6 +179,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       not do it already) and report the savings after the journal trim
     + perform ANALYZE on repack/check
     + rebuild the cached summary after repack/check
+    + il detect della roba di cui far pack continua ad avere falsi positivi
 
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
@@ -202,7 +203,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       local+ondisk2:      3.29
 
     - conversione di tutti i dataset da ondisk a ondisk2:
-      nfs	
+      nfs      1922m 3.091s (e oltre)
       local	 60m39.288s (+30m?)
                  52m59.887s
       laptop	546m 6.665s

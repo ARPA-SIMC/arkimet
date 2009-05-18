@@ -446,27 +446,29 @@ bool RIndex::querySummary(const Matcher& m, Summary& summary) const
 void RIndex::scan_files(writer::IndexFileVisitor& v, const std::string& orderBy) const
 {
 	Query sq("scan_files", m_db);
-	sq.compile("SELECT DISTINCT file, offset, size FROM md ORDER BY " + orderBy);
+	sq.compile("SELECT id, file, offset, size FROM md ORDER BY " + orderBy);
 	while (sq.step())
 	{
-		string file = sq.fetchString(0);
-		off_t offset = sq.fetchSizeT(1);
-		size_t size = sq.fetchSizeT(2);
+		int id = sq.fetchInt(0);
+		string file = sq.fetchString(1);
+		off_t offset = sq.fetchSizeT(2);
+		size_t size = sq.fetchSizeT(3);
 
-		v(file, offset, size);
+		v(file, id, offset, size);
 	}
 }
 
 void RIndex::scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy) const
 {
 	Query sq("scan_file", m_db);
-	sq.compile("SELECT DISTINCT offset, size FROM md WHERE file=? ORDER BY " + orderBy);
+	sq.compile("SELECT id, offset, size FROM md WHERE file=? ORDER BY " + orderBy);
 	sq.bind(1, relname);
 	while (sq.step())
 	{
-		off_t offset = sq.fetchSizeT(0);
-		size_t size = sq.fetchSizeT(1);
-		v(relname, offset, size);
+		int id = sq.fetchInt(0);
+		off_t offset = sq.fetchSizeT(1);
+		size_t size = sq.fetchSizeT(2);
+		v(relname, id, offset, size);
 	}
 }
 
@@ -552,6 +554,7 @@ void WIndex::initDB()
 		query += ", " + i->second->name + " INTEGER";
 		i->second->initDB();
 	}
+	//query += ", UNIQUE(file, offset)";
 	query += ", UNIQUE(";
 	for (std::set<types::Code>::const_iterator i = m_components_unique.begin();
 			i != m_components_unique.end(); ++i)
@@ -672,13 +675,12 @@ void WIndex::reset(const std::string& file)
 	query.step();
 }
 
-void WIndex::relocate_data(const std::string& relname, off_t oldofs, off_t newofs)
+void WIndex::relocate_data(int id, off_t newofs)
 {
 	Query query("update_offset", m_db);
-	query.compile("UPDATE md SET offset = ? WHERE file = ? AND offset = ?");
+	query.compile("UPDATE md SET offset = ? WHERE id = ?");
 	query.bind(1, newofs);
-	query.bind(2, relname);
-	query.bind(3, oldofs);
+	query.bind(2, id);
 	query.step();
 }
 

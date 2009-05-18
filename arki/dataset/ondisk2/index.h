@@ -224,10 +224,10 @@ public:
 	void reset(const std::string& datafile);
 
 	/**
-	 * Update the offset of a piece of data from oldofs to newofs inside
+	 * Update the offset of the piece of data 'id' to newofs inside
 	 * the same file
 	 */
-	void relocate_data(const std::string& relname, off_t oldofs, off_t newofs);
+	void relocate_data(int id, off_t newofs);
 
 	/// Tidy up the database and reclaim deleted space
 	void vacuum();

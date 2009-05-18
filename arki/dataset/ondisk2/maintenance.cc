@@ -84,6 +84,19 @@ void HoleFinder::finaliseFile()
 	}
 }
 
+void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_t size)
+{
+	if (last_file != file)
+	{
+		finaliseFile();
+		last_file = file;
+		last_file_size = 0;
+		has_hole = false;
+	}
+	if (offset != last_file_size)
+		has_hole = true;
+	last_file_size += size;
+}
 
 FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
 	: m_idx(idx), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
@@ -102,7 +115,7 @@ FileCopier::~FileCopier()
 	flush();
 }
 
-void FileCopier::operator()(const std::string& file, off_t offset, size_t size)
+void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
 {
 	if (buf.size() < size)
 		buf.resize(size);
@@ -114,7 +127,7 @@ void FileCopier::operator()(const std::string& file, off_t offset, size_t size)
 		throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");
 
 	// Reindex file from offset to w_off
-	m_idx.relocate_data(file, offset, w_off);
+	m_idx.relocate_data(id, w_off);
 
 	w_off += size;
 }
@@ -211,7 +224,7 @@ static size_t repack(const std::string& root, const std::string& file, WIndex& i
 	string pathname = str::joinpath(root, file);
 	string pntmp = pathname + ".repack";
 	FileCopier copier(idx, pathname, pntmp);
-	idx.scan_file(file, copier, "reftime");
+	idx.scan_file(file, copier, "reftime, offset");
 	copier.flush();
 
 	size_t size_pre = utils::files::size(pathname);

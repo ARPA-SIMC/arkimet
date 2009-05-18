@@ -190,7 +190,7 @@ void Writer::maintenance(writer::MaintFileVisitor& v)
 	// Check each file for need to reindex or repack
 	writer::FindMissing fm(v, m_path);
 	writer::HoleFinder hf(fm, m_path);	
-	m_idx.scan_files(hf, "file, reftime");
+	m_idx.scan_files(hf, "file, reftime, offset");
 	hf.end();
 	fm.end();
 
