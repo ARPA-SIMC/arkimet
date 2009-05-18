@@ -388,8 +388,6 @@ void RealRepacker::end()
 	size_t size_pre = utils::files::size(w.m_idx.pathname());
 	w.m_idx.vacuum();
 	size_t size_post = utils::files::size(w.m_idx.pathname());
-	size_t saved = size_pre - size_post;
-	m_count_freed += saved;
 
 	logStart();
 	if (m_count_packed)
@@ -398,8 +396,11 @@ void RealRepacker::end()
 		logAdd() << m_count_deleted << " files deleted";
 	if (m_count_deindexed)
 		logAdd() << m_count_deindexed << " files removed from index";
-	if (saved > 0)
-		logAdd() << saved << " bytes reclaimed on the index";
+	if (size_pre > size_post)
+	{
+		logAdd() << (size_pre - size_post) << " bytes reclaimed on the index";
+		m_count_freed += (size_pre - size_post);
+	}
 	if (m_count_freed > 0)
 		logAdd() << m_count_freed << " total bytes freed";
 	logEnd();
@@ -489,7 +490,6 @@ void RealFixer::end()
 	size_t size_pre = utils::files::size(w.m_idx.pathname());
 	w.m_idx.vacuum();
 	size_t size_post = utils::files::size(w.m_idx.pathname());
-	size_t saved = size_pre - size_post;
 
 	logStart();
 	if (m_count_packed)
@@ -498,8 +498,8 @@ void RealFixer::end()
 		logAdd() << m_count_rescanned << " files rescanned";
 	if (m_count_deindexed)
 		logAdd() << m_count_deindexed << " files removed from index";
-	if (saved > 0)
-		logAdd() << saved << " bytes reclaimed cleaning the index";
+	if (size_pre > size_post)
+		logAdd() << (size_pre - size_post) << " bytes reclaimed cleaning the index";
 	if (m_count_salvaged)
 		logAdd() << m_count_salvaged << " data items could not be reindexed";
 	logEnd();

@@ -150,11 +150,19 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 	       cannot be parsed, rescan it
        + for each record in the db without a file
           + remove record in the db
+    = is it possible to do an index.sqlite per directory, then aggregate them
+      if/as needed with the add database feature? No: the aggregation would nor
+      merge tables, but require them to be accessed as db.something
+    - SQLITE_BUSY is returned also on compiles
+      Instead, set a timeout handler:
+      http://www.sqlite.org/c3ref/busy_handler.html
+      http://www.sqlite.org/c3ref/busy_timeout.html
     - when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already)
+    - save a copy of the total summary at flush time. Use it if no reftime: is
+      present in the summary query instead of performing the aggregated query
+      in the database
 
- http://www.sqlite.org/c3ref/busy_handler.html
- http://www.sqlite.org/c3ref/busy_timeout.html
 
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
@@ -176,18 +184,68 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       nfs+ondisk2:      154.69
       local:		  3.98
       local+ondisk2:      3.29
+
+    - conversione di tutti i dataset da ondisk a ondisk2:
+      nfs	
+      local	 60m39.288s (+30m?)
+      laptop	546m 6.665s
+    - query di meteomixer
+      nfs
+      nfs2
+      local	 5.63  5.50  6.69  5.65  5.49 |  4.42  4.37  4.38  4.37  4.37
+      local2	98.53 97.53 98.82 98.96 97.03 | 85.26 11.03 10.92 11.02 10.96
+      laptop	10.48  8.90  8.62  8.61  8.57
+      laptop2   71.55  45.47 5.66 46.61 46.53
+    - import di un giorno di dati
+      nfs
+      nfs2
+      local	686.38 685.15 686.89 688.95 675.36
+      local2	366.30 362.24 374.35 366.84 367.04
+    - benchmark di selvini
+      nfs
+      nfs2
+      local	113.83 119.15 114.15 116.47 113.03 | 110.00 1.86 1.84 1.84 1.85
+      local2      4.11   3.96   3.99   4.01   4.05 |   5.28 3.43 3.44 3.42 3.43
+      laptop	128.97   2.36   2.25   2.35   2.31
+      laptop2     6.42   5.30   5.66   5.29   5.20
     - richiesta di summary arkimeow (a livelli diversi)
+      nfs
+      nfs2
+      local	 187.16 192.30  189.07  189.03  196.08 | 177.25 175.33 175.23 175.41 175.36
+      local2	 222.79 226.72  227.80  228.00  224.37 | 230.93 208.87 225.50 207.67 207.07
+      laptop	 441.52 429.59  428.68  431.04  426.00
+      laptop2   1029.64 959.18 1155.78 1106.93 1223.34
+
     - import misto query
       (query con import e query senza)
       (import con query, e import senza)
     - arki-query --verbose che dica anche il tempo
    (2 settimane, una a preparare e una a farlo andare)
 
+ - Confronto con gribarch (da verificare):
+   gribarch accede direttamente all'NFS. Questo significa che se due macchine
+     accedono a gribarch, ogni macchina ha un link a 100Mbps con l'NFS server.
+   arkimet accede all'NFS da un punto solo. Questo significa che se due
+     macchine accedono ad arkimet, condividono la stessa CPU e lo stesso unico
+     link a 100Mbps
+
  - replica di dataset con però dati bucati
    find dataset -type f -not -name "lock" -not -name "config*" -not -name "*summary" -not -name "*.metadata" -not -name "*.sqlite" -not -name "*.grib1" -not -path "*/.svn*"
    find . -type f -not -name "lock" -not -name "*.grib1" -not -path "*/.svn*" -not -name "*~" -printf "%s\n" | numsum
    find . -name "*.grib[12]" -printf "%s %p\n"
    tar --files-from metadata.filelist -zcf metadata.tar.gz
+
+ - Conversione ondisk->ondisk2
+   # Cambia type= rompendo gli hard link
+   find . -maxdepth 2 -name config | while read name; do sed -e 's/type = local/type = ondisk2/' $name > $name.ondisk2; done
+   find . -maxdepth 2 -name config | while read name; do if [ -e $name.ondisk2 ]; then mv $name.ondisk2 $name; fi; done
+   # Toglie 'index'
+   sed -i '/^index/d' */config
+   # Cancella i summary
+   find . -name "*summary" -delete
+   # Cancella gli indici
+   rm */index.sqlite*
+   # Lascia i metadati, cosí arki-check li può riusare
 
  - paola: è possibile modificare l mdstat o crearne uno simile che mi includa
    anche le descrizioni?
