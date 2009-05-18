@@ -30,6 +30,10 @@
 #include <string>
 #include <vector>
 
+// Enable compatibility with old sqlite.
+// TODO: use #if macros to test sqlite version instead
+//#define LEGACY_SQLITE
+
 namespace arki {
 namespace utils {
 namespace sqlite {

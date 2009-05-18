@@ -25,8 +25,6 @@
 #include <sstream>
 #include <unistd.h>
 
-#define LEGACY_SQLITE
-
 // FIXME: for debugging
 //#include <iostream>
 
@@ -103,9 +101,7 @@ int SQLiteDB::lastInsertID()
 		id = sqlite3_column_int(m_last_insert_id, 0);
 	if (res != SQLITE_DONE)
 	{
-#ifdef LEGACY_SQLITE
 		sqlite3_reset(m_last_insert_id);
-#endif
 		throwException("executing query SELECT LAST_INSERT_ROWID()");
 	}
 	return id;
@@ -226,9 +222,7 @@ bool Query::step()
 		case SQLITE_ROW:
 			return true;
 		default:
-#ifdef LEGACY_SQLITE
 			sqlite3_reset(m_stm);
-#endif
 			m_db.throwException("executing " + name + " query");
 	}
 }
@@ -265,9 +259,7 @@ void OneShotQuery::operator()()
 	if (res != SQLITE_DONE)
 	{
 		fprintf(stderr, "BOGH %d\n", res);
-#ifdef LEGACY_SQLITE
 		sqlite3_reset(m_stm);
-#endif
 		// TODO: check rc here if we want to handle specially the case of
 		// SQLITE_CONSTRAINT (for example, if we want to take special
 		// action in case of duplicate entries)
