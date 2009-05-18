@@ -55,6 +55,23 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
+struct IndexGlobalData
+{
+	std::set<types::Code> all_components;
+
+	IndexGlobalData() {
+		all_components.insert(types::TYPE_ORIGIN);
+		all_components.insert(types::TYPE_PRODUCT);
+		all_components.insert(types::TYPE_LEVEL);
+		all_components.insert(types::TYPE_TIMERANGE);
+		all_components.insert(types::TYPE_AREA);
+		all_components.insert(types::TYPE_ENSEMBLE);
+		all_components.insert(types::TYPE_RUN);
+		all_components.insert(types::TYPE_REFTIME);
+	}
+};
+static IndexGlobalData igd;
+
 Index::Index(const ConfigFile& cfg)
 	: m_name(cfg.value("name")), m_root(cfg.value("path"))
 {
@@ -87,8 +104,8 @@ RIndex::RIndex(const ConfigFile& cfg)
    	: Index(cfg), m_get_id("getid", m_db), m_fetch_by_id("byid", m_db)
 {
 	// Instantiate subtables
-	for (set<types::Code>::const_iterator i = m_components_indexed.begin();
-			i != m_components_indexed.end(); ++i)
+	for (set<types::Code>::const_iterator i = igd.all_components.begin();
+			i != igd.all_components.end(); ++i)
 	{
 		if (*i == types::TYPE_REFTIME) continue;
 		m_rsub.insert(make_pair(*i, new RAttrSubIndex(m_db, *i)));
@@ -458,8 +475,8 @@ WIndex::WIndex(const ConfigFile& cfg)
           m_delete("delete", m_db), m_replace("replace", m_db)
 {
 	// Instantiate subtables
-	for (set<types::Code>::const_iterator i = m_components_indexed.begin();
-			i != m_components_indexed.end(); ++i)
+	for (set<types::Code>::const_iterator i = igd.all_components.begin();
+			i != igd.all_components.end(); ++i)
 	{
 		if (*i == types::TYPE_REFTIME) continue;
 		m_wsub.insert(make_pair(*i, new WAttrSubIndex(m_db, *i)));
@@ -547,13 +564,13 @@ void WIndex::initDB()
 
 	m_db.exec(query);
 
-	// Create the indices
-	m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
-	for (std::map<types::Code, index::WAttrSubIndex*>::iterator i = m_wsub.begin();
-			i != m_wsub.end(); ++i)
+	// Create the indices (note: reftime is always present in m_components_indexed)
+	for (std::set<types::Code>::const_iterator i = m_components_indexed.begin();
+			i != m_components_indexed.end(); ++i)
 	{
-		m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_" + i->second->name
-							+ " ON md (" + i->second->name + ")");
+		string name = types::formatCode(*i);
+		m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_" + name
+							+ " ON md (" + name + ")");
 	}
 }
 

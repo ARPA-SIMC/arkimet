@@ -170,7 +170,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       time and check its timestamp against the index)
     + delete the summary on write and create it on read (no need to delete on
       write, because on read the timestamp is checked against the index)
-    - honour the index config variable: we do not need an index for everything
+    + honour the index config variable: we do not need an index for everything
       in order to do summaries, and it's good to reduce the chances of sqlite
       picking a stupid index
     - when doing repack, also open with journal_mode=truncate (if vacuum does
