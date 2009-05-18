@@ -204,6 +204,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     - conversione di tutti i dataset da ondisk a ondisk2:
       nfs	
       local	 60m39.288s (+30m?)
+                 52m59.887s
       laptop	546m 6.665s
     - query di meteomixer
       nfs

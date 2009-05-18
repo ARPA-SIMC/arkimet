@@ -141,7 +141,11 @@ void to::test<1>()
 
 	// Perform packing and check that things are still ok afterwards
 	writer.repack(s, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 23224 bytes reclaimed on the index, 23224 total bytes freed.\n");
+
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 3u);
@@ -184,7 +188,10 @@ void to::test<2>()
 
 	// Perform packing and check that things are still ok afterwards
 	writer.repack(s, true);
-	ensure_equals(s.str(), "testdir: 1 files removed from index.\n");
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 files removed from index, 23224 bytes reclaimed on the index, 23224 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -230,7 +237,11 @@ void to::test<3>()
 	MetadataCounter counter;
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
-	ensure_equals(s.str(), "testdir: 1 files removed from index.\n");
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 files removed from index, 23224 bytes reclaimed cleaning the index.\n");
+
 	c.clear();
 
 	writer.maintenance(c);
@@ -278,7 +289,10 @@ void to::test<4>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
-		"testdir: 1 files deleted, 34960 total bytes freed.\n");
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 files deleted, 23224 bytes reclaimed on the index, 58184 total bytes freed.\n");
+
 	c.clear();
 
 	writer.maintenance(c);
@@ -328,7 +342,10 @@ void to::test<5>()
 	MetadataCounter counter;
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
-	ensure_equals(s.str(), "testdir: 1 files rescanned.\n");
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 files rescanned, 23224 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 3u);
@@ -377,7 +394,9 @@ void to::test<6>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 files packed, 34960 total bytes freed.\n");
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 files packed, 23224 bytes reclaimed on the index, 58184 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -430,7 +449,9 @@ void to::test<7>()
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 files packed.\n");
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 files packed, 23224 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 2u);

@@ -26,6 +26,7 @@
 //#include <arki/dataset/ondisk2/maint/directory.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/index.h>
+#include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 
@@ -385,11 +386,27 @@ void RealRepacker::operator()(const std::string& file, State state)
 void RealRepacker::end()
 {
 	// Finally, tidy up the database
-	size_t size_pre = utils::files::size(w.m_idx.pathname())
-		        + utils::files::size(w.m_idx.pathname() + "-journal");
-	w.m_idx.vacuum();
-	size_t size_post = utils::files::size(w.m_idx.pathname())
-		        + utils::files::size(w.m_idx.pathname() + "-journal");
+	size_t size_pre = 0, size_post = 0;
+	if (utils::files::size(w.m_idx.pathname() + "-journal") > 0)
+	{
+		size_pre = utils::files::size(w.m_idx.pathname())
+				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		w.m_idx.vacuum();
+		size_post = utils::files::size(w.m_idx.pathname())
+				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		if (size_pre != size_post)
+			log() << "database cleaned up" << endl;
+	}
+
+	// Rebuild the cached summary
+	if (utils::files::timestamp(str::joinpath(w.m_path, "summary")) <
+	    utils::files::timestamp(w.m_idx.pathname()))
+	{
+		Summary s;
+		if (w.m_idx.querySummary(Matcher(), s))
+			s.writeAtomically(str::joinpath(w.m_path, "summary"));
+		log() << "rebuild summary cache" << endl;
+	}
 
 	logStart();
 	if (m_count_packed)
@@ -489,11 +506,27 @@ void RealFixer::operator()(const std::string& file, State state)
 void RealFixer::end()
 {
 	// Finally, tidy up the database
-	size_t size_pre = utils::files::size(w.m_idx.pathname())
-		        + utils::files::size(w.m_idx.pathname() + "-journal");
-	w.m_idx.vacuum();
-	size_t size_post = utils::files::size(w.m_idx.pathname())
-		        + utils::files::size(w.m_idx.pathname() + "-journal");
+	size_t size_pre = 0, size_post = 0;
+	if (utils::files::size(w.m_idx.pathname() + "-journal") > 0)
+	{
+		size_pre = utils::files::size(w.m_idx.pathname())
+				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		w.m_idx.vacuum();
+		size_post = utils::files::size(w.m_idx.pathname())
+				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		if (size_pre != size_post)
+			log() << "database cleaned up" << endl;
+	}
+
+	// Rebuild the cached summary
+	if (utils::files::timestamp(str::joinpath(w.m_path, "summary")) <
+	    utils::files::timestamp(w.m_idx.pathname()))
+	{
+		Summary s;
+		if (w.m_idx.querySummary(Matcher(), s))
+			s.writeAtomically(str::joinpath(w.m_path, "summary"));
+		log() << "rebuild summary cache" << endl;
+	}
 
 	logStart();
 	if (m_count_packed)
