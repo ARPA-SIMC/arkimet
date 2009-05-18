@@ -260,6 +260,15 @@ Item<> decodeString(types::Code, const std::string& val);
 std::string tag(types::Code);
 
 /**
+ * Read a data bundle from a POSIX file descriptor, returning the signature
+ * string, the version number and the data in a buffer.
+ *
+ * @return
+ *   true if a data bundle was read, false on end of file
+ */
+bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version);
+
+/**
  * Read a data bundle from a file, returning the signature string, the version
  * number and the data in a buffer.
  *

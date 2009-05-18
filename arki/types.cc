@@ -188,6 +188,46 @@ std::string tag(types::Code code)
 	return decoders[code]->tag;
 }
 
+bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
+{
+	using namespace utils;
+
+	// Skip all leading blank bytes
+	char c;
+	while (true)
+	{
+		int res = read(fd, &c, 1);
+		if (res < 0) throw wibble::exception::File(filename, "reading first byte of header");
+		if (res == 0) return false; // EOF
+		if (c) break;
+	}
+
+	// Read the rest of the first 8 bytes
+	unsigned char hdr[8];
+	hdr[0] = c;
+	int res = read(fd, hdr + 1, 7);
+	if (res < 0) throw wibble::exception::File(filename, "reading 7 more bytes");
+	if (res < 7) return false; // EOF
+
+	// Read the signature
+	signature.resize(2);
+	signature[0] = hdr[0];
+	signature[1] = hdr[1];
+
+	// Get the version in next 2 bytes
+	version = decodeUInt(hdr+2, 2);
+	
+	// Get length from next 4 bytes
+	unsigned int len = decodeUInt(hdr+4, 4);
+
+	// Read the metadata body
+	buf.resize(len);
+	res = read(fd, buf.data(), len);
+	if (res != len)
+		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
+
+	return true;
+}
 bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
 {
 	using namespace utils;
