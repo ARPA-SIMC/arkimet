@@ -28,6 +28,7 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <arki/summary.h>
 #include <arki/postprocess.h>
 
@@ -264,8 +265,87 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
 	using namespace wibble::str;
 
-	if (!m_idx || !m_idx->querySummary(matcher, summary))
-		throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+	// Check if the matcher discriminates on reference times
+	const matcher::Implementation* rtmatch = 0;
+	if (matcher.m_impl)
+		rtmatch = matcher.m_impl->get(types::TYPE_REFTIME);
+
+	if (rtmatch)
+	{
+		if (!m_idx || !m_idx->querySummary(matcher, summary))
+			throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+	} else {
+		// The matcher does not contain reftime, we can work with a
+		// global summary
+
+		// Figure out the timestamp of the cached summaru
+		time_t ts_cache;
+		string cache_fname = str::joinpath(m_root, "summary");
+
+		// Open file here and stat the fd instead of the file, to avoid
+		// a race condition where the file is deleted between the stat
+		// and the open
+		int in = ::open(cache_fname.c_str(), O_RDONLY);
+		utils::HandleWatch hw(cache_fname, in);
+		if (in < 0)
+		{
+			if (errno == ENOENT)
+			{
+				ts_cache = 0;
+			} else {
+				throw wibble::exception::File(cache_fname, "opening file for reading");
+			}
+		}
+		else
+		{
+			struct stat st;
+			if (fstat(in, &st) < 0)
+				throw wibble::exception::File(cache_fname, "stat-ing file");
+			ts_cache = st.st_mtime;
+		}
+
+		// Check if we can use the cached summary
+		bool hasCache = false;
+
+		if (ts_cache > 0)
+		{
+			time_t idx_cache = utils::files::timestamp(str::joinpath(m_root, "index.sqlite"));
+			if (ts_cache >= idx_cache)
+				hasCache = true;
+		}
+
+		if (hasCache)
+		{
+			// Use the cache
+			Summary s;
+			if (!s.read(in, cache_fname))
+			{
+				// If the summary is unreadable, use the index
+				if (!m_idx || !m_idx->querySummary(matcher, summary))
+					throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+			} else {
+				// Filter the summary file
+				s.filter(matcher, summary);
+			}
+		} else if (sys::fs::access(m_root, W_OK)) {
+			// Rebuild the cache
+			Summary s;
+
+			// Just use the index
+			if (!m_idx || !m_idx->querySummary(Matcher(), s))
+				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+			// Save the summary
+			s.writeAtomically(cache_fname);
+
+			// Query the newly generated summary that we still have
+			// in memory
+			s.filter(matcher, summary);
+		} else {
+			// Just use the index
+			if (!m_idx || !m_idx->querySummary(matcher, summary))
+				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+		}
+	}
 }
 
 }
