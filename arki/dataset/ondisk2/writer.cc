@@ -146,7 +146,7 @@ bool Writer::replace(Metadata& md)
 		m_idx.replace(md, reldest, ofs, &id);
 		// In a replace, we necessarily replace inside the same file,
 		// as it depends on the metadata reftime
-		createPackFlagfile(df->pathname);
+		//createPackFlagfile(df->pathname);
 		p_df.commit();
 		p_idx.commit();
 		md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
