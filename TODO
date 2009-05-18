@@ -173,11 +173,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     + honour the index config variable: we do not need an index for everything
       in order to do summaries, and it's good to reduce the chances of sqlite
       picking a stupid index
+    + when querying the summary, if no 'reftime' is present, use the global
+      one. If 'reftime' is present use the index
     - when doing repack, also open with journal_mode=truncate (if vacuum does
       not do it already) and report the savings after the journal trim
-    - when querying the summary, if no 'reftime' is present, use the global
-      one. If 'reftime' is present use the index, and if needed force the
-      md_idx_reftime index to be used
     - perform ANALYZE on repack/check
     - rebuild the cached summary after repack/check
 
@@ -218,6 +217,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       nfs2
       local	686.38 685.15 686.89 688.95 675.36
       local2	366.30 362.24 374.35 366.84 367.04
+                371.39 362.33
     - benchmark di selvini
       nfs
       nfs2

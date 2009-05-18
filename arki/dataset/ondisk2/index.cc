@@ -286,7 +286,7 @@ bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 	// Split m in what can be SQL-queried and what cannot
 	Matcher mine;
 	Matcher others;
-	m.split(m_components_indexed, mine, others);
+	m.split(igd.all_components, mine, others);
 
 	if (not others.empty())
 		// We can only see what we index, the rest is lost
@@ -382,7 +382,7 @@ bool RIndex::querySummary(const Matcher& m, Summary& summary) const
 	// Split m in what can be SQL-queried and what cannot
 	Matcher mine;
 	Matcher others;
-	m.split(m_components_indexed, mine, others);
+	m.split(igd.all_components, mine, others);
 
 	if (not others.empty())
 		// We can only see what we index, the rest is lost
