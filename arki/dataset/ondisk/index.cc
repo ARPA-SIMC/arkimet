@@ -38,8 +38,6 @@
 #include <ctime>
 #include <cassert>
 
-#define LEGACY_SQLITE
-
 // FIXME: for debugging
 //#include <iostream>
 
