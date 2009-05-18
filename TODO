@@ -158,13 +158,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     = is it possible to do an index.sqlite per directory, then aggregate them
       if/as needed with the add database feature? No: the aggregation would nor
       merge tables, but require them to be accessed as db.something
-    - honour the index config variable: we do not need an index for everything
-      in order to do summaries, and it's good to reduce the chances of sqlite
-      picking a stupid index
-    - alternatively, delete the summary on write and create it on read
-    - when doing repack, also open with journal_mode=truncate (if vacuum does
-      not do it already)
-    - save a copy of the total summary at flush time. Use it if no reftime: is
+    = save a copy of the total summary at flush time. Use it if no reftime: is
       present in the summary query instead of performing the aggregated query
       in the database
        - after add operations, just add to the existing summary
@@ -172,12 +166,20 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
          at flush time
        - at check time, generate the summary from the index if it is missing,
          or if the index has been changed
+      (too much work to keep it up to date, it's easier to generate it at read
+      time and check its timestamp against the index)
+    + delete the summary on write and create it on read (no need to delete on
+      write, because on read the timestamp is checked against the index)
+    - honour the index config variable: we do not need an index for everything
+      in order to do summaries, and it's good to reduce the chances of sqlite
+      picking a stupid index
+    - when doing repack, also open with journal_mode=truncate (if vacuum does
+      not do it already) and report the savings after the journal trim
     - when querying the summary, if no 'reftime' is present, use the global
       one. If 'reftime' is present use the index, and if needed force the
       md_idx_reftime index to be used
     - perform ANALYZE on repack/check
-
-
+    - rebuild the cached summary after repack/check
 
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
@@ -230,6 +232,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       local2	 222.79 226.72  227.80  228.00  224.37 | 230.93 208.87 225.50 207.67 207.07
       laptop	 441.52 429.59  428.68  431.04  426.00
       laptop2   1029.64 959.18 1155.78 1106.93 1223.34
+                1606.14 726.15
 
     - import misto query
       (query con import e query senza)
