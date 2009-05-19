@@ -95,32 +95,6 @@ Da annunciare:
    Instead, set a timeout handler:
    http://www.sqlite.org/c3ref/busy_handler.html
    http://www.sqlite.org/c3ref/busy_timeout.html
-
----
-
- - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
-   tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
-   solo massimo/minimo per lato)
- - Guardare con Selvini i LUA che estraggono i BBOX
- = Togliere il bounding box dai metadati
- = Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
-   meglio e non pone il problema di decidere qual'è il minimo e massimo
- = Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
- = Definire come creare un matcher sul bbox in arkimet
-
-
-http://www.unidata.ucar.edu/committees/polcom/2005fall/THREDDS20050912.htm
-http://www.ecmwf.int/products/data/software/simdat.html
-http://code.ecmwf.int/trac/vmc
-http://www.openchannelsoftware.com/projects/Earth_Science_Datacasting
-http://code.ecmwf.int/trac/vmc/wiki
-http://code.ecmwf.int/trac/vmc/wiki/MetadataGuidelines
-http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
- - Vedere se/come interfacciarsi a LDM
-   http://www.unidata.ucar.edu/software/ldm/
-   http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
-
-
  * ondisk2 project
     + datafile and index: proof of concept ready
     + integrate datafile and index into writer
@@ -181,75 +155,40 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     + rebuild the cached summary after repack/check
     + il detect della roba di cui far pack continua ad avere falsi positivi
 
+---
+
+ - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
+   tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
+   solo massimo/minimo per lato)
+ - Guardare con Selvini i LUA che estraggono i BBOX
+ = Togliere il bounding box dai metadati
+ = Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
+   meglio e non pone il problema di decidere qual'è il minimo e massimo
+ = Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
+ = Definire come creare un matcher sul bbox in arkimet
+
+
+http://www.unidata.ucar.edu/committees/polcom/2005fall/THREDDS20050912.htm
+http://www.ecmwf.int/products/data/software/simdat.html
+http://code.ecmwf.int/trac/vmc
+http://www.openchannelsoftware.com/projects/Earth_Science_Datacasting
+http://code.ecmwf.int/trac/vmc/wiki
+http://code.ecmwf.int/trac/vmc/wiki/MetadataGuidelines
+http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
+ - Vedere se/come interfacciarsi a LDM
+   http://www.unidata.ucar.edu/software/ldm/
+   http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
+
+ - ondisk2: sort prima della roba che usa l'indice e poi di quella che non lo
+   usa
+
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
 
+ - arki-scan --dispatch=.. --verbose che dica anche il tempo
+
  - arki-query per i summary stile meteomixer ci mette tipo 4 secondi
    ma via arki-server forse molto di piú: perché?
-
- - test arkimet da disco locale e da disco di rete
-    + query di meteomixer
-      nfs:   4.30 4.28 4.28
-      local: 4.32 4.31 4.31
-    + import di un giorno di dati
-      nfs:          2499.89 2732.49
-      nfs+ondisk2:     x    5615.38
-      local:         589.15  574.48
-      local+ondisk2: 255.51  363.65
-    + benchmark di selvini
-      nfs:		152.43
-      nfs+ondisk2:      154.69
-      local:		  3.98
-      local+ondisk2:      3.29
-
-    - conversione di tutti i dataset da ondisk a ondisk2:
-      nfs      1922m 3.091s (e oltre)
-      local	 60m39.288s (+30m?)
-                 52m59.887s
-      laptop	546m 6.665s
-    - query di meteomixer
-      nfs       10.20  10.71   9.76  26.95  12.69 
-      nfs2     301.62 167.59 147.64 131.24 133.87 
-      local	 5.63  5.50    6.69   5.65   5.49 |  4.42  4.37  4.38  4.37  4.37
-      local2	98.53  97.53  98.82  98.96  97.03 | 85.26 11.03 10.92 11.02 10.96
-                79.79  78.39  72.56  84.96  80.98 
-                35.99  11.05  11.04
-      laptop	10.48   8.90   8.62   8.61   8.57
-      laptop2   71.55  45.47   5.66  46.61  46.53
-                78.50  74.89  70.90  69.90  75.51
-    - import di un giorno di dati
-      nfs       2505.25 3813.55 3963.04 3283.24  3371.61
-      nfs2
-      local	 686.38  685.15 686.89 688.95 675.36
-      local2	 366.30  362.24 374.35 366.84 367.04
-                 361.08  371.59 368.55 368.22 364.30
-                 371.39  362.33
-    - benchmark di selvini
-      nfs       200.44 484.52 285.57 382.39 333.78 
-      nfs2      285.97 188.55 182.41 182.24 183.66
-      local	113.83 119.15 114.15 116.47 113.03 | 110.00 1.86 1.84 1.84 1.85
-      local2      4.11   3.96   3.99   4.01   4.05 |   5.28 3.43 3.44 3.42 3.43
-                  3.83   3.83   3.81   3.74   3.83
-      laptop	128.97   2.36   2.25   2.35   2.31
-      laptop2     6.42   5.30   5.66   5.29   5.20
-                  9.71   6.78   7.06   7.87   6.91
-    - richiesta di summary arkimeow (a livelli diversi)
-      nfs        221.15  229.55  262.06  230.53  241.07 
-      nfs2      2621.27 2909.08 2639.62 2672.13 2641.28 
-      local	 187.16  192.30  189.07  189.03  196.08 | 177.25 175.33 175.23 175.41 175.36
-      local2	 222.79  226.72  227.80  228.00  224.37 | 230.93 208.87 225.50 207.67 207.07
-                 212.79  123.24  123.29  124.41  121.73
-                 194.77  101.95
-      laptop	 441.52  429.59  428.68  431.04  426.00
-      laptop2   1029.64  959.18 1155.78 1106.93 1223.34
-		 465.16  408.86  446.63  422.03  463.17
-                1606.14  726.15
-
-    - import misto query
-      (query con import e query senza)
-      (import con query, e import senza)
-    - arki-query --verbose che dica anche il tempo
-   (2 settimane, una a preparare e una a farlo andare)
 
  - Confronto con gribarch (da verificare):
    gribarch accede direttamente all'NFS. Questo significa che se due macchine

@@ -1,3 +1,14 @@
+arkimet (0.19-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Use the sqlite_busy_timeout function to globally set timeouts instead
+       of handling SQLITE_BUSY at each query
+     - ondisk2: implemented dataset maintenance
+     - ondisk2: cache global summaries for summary queries without reftime
+     - use the right file offsets when rescanning datasets
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 19 May 2009 11:51:24 +0100
+
 arkimet (0.18-1) UNRELEASED; urgency=low
 
   * Implemented new storage type 'ondisk2'
