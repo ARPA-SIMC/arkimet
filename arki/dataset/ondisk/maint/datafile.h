@@ -97,7 +97,7 @@ struct Datafile
 	/**
 	 * Rebuild the summary for this file
 	 */
-	void rebuildSummary(bool reindex);
+	void rebuildSummary();
 };
 
 }

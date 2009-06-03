@@ -183,11 +183,10 @@ string Datafile::extension() const
 	return pathname.substr(pos+1);
 }
 
-void Datafile::rebuildSummary(bool reindex)
+void Datafile::rebuildSummary()
 {
 //	if (hasRebuildFlagfile(pathname))
 //		throw wibble::exception::Consistency("rebuilding summary on file " + pathname, "file has rebuild flagfile");
-
 	// Rebuild the summary by reading the metadata
 	Summary summary;
 	mergeFromMetadata(summary, pathname + ".metadata");
@@ -374,7 +373,7 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 	outmd.close();
 
 	// Rebuild our summary
-	rebuildSummary(false);
+	rebuildSummary();
 
 	// All done so far: metadata and summary are in a consistent state
 	removeRebuildFlagfile(pathname);

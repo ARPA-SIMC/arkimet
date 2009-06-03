@@ -179,11 +179,23 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
- - ondisk2: sort prima della roba che usa l'indice e poi di quella che non lo
-   usa
-
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
+
+ - dataset ciclici
+    - se un file non esiste su disco ma esiste nell'indice, ignorare la cosa
+      (permette di cancellare file su disco senza incasinare le query)
+    - parametro di configurazione col tempo da tenere
+    - arki-check cancelli i file vecchi
+
+ - ondisk2: sort prima della roba che usa l'indice e poi di quella che non lo
+   usa
+ - ondisk2: tabella "summary" con una entry che aggrega md sulla durata dello
+   step (magari pure in un db separato e aggregato al volo a quello centrale?)
+    - aggregazioni in stile RRD? (step fino a 1 mese fa, poi step successivo
+      per 6 mesi, poi step successivo per 6 mesi, etc.)
+    - per i dati vecchi, salvare i .metadata su disco e tenere nell'indice solo
+      un'aggregazione sullo step?
 
  - arki-scan --dispatch=.. --verbose che dica anche il tempo
 

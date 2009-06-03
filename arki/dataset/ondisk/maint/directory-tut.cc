@@ -120,9 +120,9 @@ void to::test<1>()
 
 	// This does not work recursively, but we do not have subdirectories
 	SubDirectory sd(&root, "2007");
-	Datafile(&sd, "07-07.grib1").rebuildSummary(false);
-	Datafile(&sd, "07-08.grib1").rebuildSummary(false);
-	Datafile(&sd, "10-09.grib1").rebuildSummary(false);
+	Datafile(&sd, "07-07.grib1").rebuildSummary();
+	Datafile(&sd, "07-08.grib1").rebuildSummary();
+	Datafile(&sd, "10-09.grib1").rebuildSummary();
 	sd.rebuildSummary();
 	root.rebuildSummary();
 	
@@ -204,9 +204,9 @@ void to::test<2>()
 
 	// This does not work recursively, but we do not have subdirectories
 	SubDirectory sd(&root, "2007");
-	Datafile(&sd, "07-07.grib1").rebuildSummary(false);
-	Datafile(&sd, "07-08.grib1").rebuildSummary(false);
-	Datafile(&sd, "10-09.grib1").rebuildSummary(false);
+	Datafile(&sd, "07-07.grib1").rebuildSummary();
+	Datafile(&sd, "07-08.grib1").rebuildSummary();
+	Datafile(&sd, "10-09.grib1").rebuildSummary();
 	sd.rebuildSummary();
 	root.rebuildSummary();
 	

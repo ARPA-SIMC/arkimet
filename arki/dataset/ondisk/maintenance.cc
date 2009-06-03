@@ -147,7 +147,7 @@ void FullMaintenance::needsDatafileRebuild(Datafile& df)
 void FullMaintenance::needsSummaryRebuild(Datafile& df)
 {
 	log << df.pathname << ": rebuilding summary." << endl;
-	df.rebuildSummary(reindexAll);
+	df.rebuildSummary();
 }
 
 void FullMaintenance::needsReindex(maint::Datafile& df)
@@ -170,7 +170,7 @@ void FullMaintenance::needsFullIndexRebuild(RootDirectory& df)
 		// Delete the index and recreate it new
 		df.recreateIndex();
 		// Delete all summary files
-		df.deleteSummaries();
+		//df.deleteSummaries();
 		// Set a flag saying that we need to reindex every file
 		reindexAll = true;
 	}
