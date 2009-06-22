@@ -22,6 +22,7 @@
 
 #include <arki/dataset/ondisk2/reader.h>
 #include <arki/dataset/ondisk2/index.h>
+#include <arki/dataset/ondisk2/archive.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
@@ -72,6 +73,9 @@ Reader::~Reader()
 {
 	if (m_idx) delete m_idx;
 	if (m_tf) delete m_tf;
+	for (vector<Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		delete *i;
 }
 
 /**
@@ -131,6 +135,11 @@ void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 	// For each directory try to match its summary first, and if it matches
 	// then produce all the contents.
 
+	// Query the archives first
+	for (vector<Archive*>::const_iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		(*i)->queryMetadata(matcher, withData, consumer);
+
 	if (withData)
 	{
 		DataInliner inliner(consumer);
@@ -146,6 +155,11 @@ void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 
 void Reader::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
 {
+	// Query the archives first
+	for (vector<Archive*>::const_iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		(*i)->queryBytes(matcher, out, qtype, param);
+
 	switch (qtype)
 	{
 		case BQ_DATA: {
@@ -264,6 +278,11 @@ void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summa
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
 	using namespace wibble::str;
+
+	// Query the archives first
+	for (vector<Archive*>::const_iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		(*i)->querySummary(matcher, summary);
 
 	// Check if the matcher discriminates on reference times
 	const matcher::Implementation* rtmatch = 0;

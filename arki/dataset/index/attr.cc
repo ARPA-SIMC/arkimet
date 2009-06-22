@@ -32,80 +32,106 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-void GetAttrID::initQueries()
+int AttrSubIndex::q_select_id(const std::string& blob) const
 {
-	// Build the query
-	m_stm = m_db.prepare("SELECT id FROM " + m_table + " WHERE data=?");
-}
+	if (not m_select_id)
+	{
+		m_select_id = new utils::sqlite::PrecompiledQuery("sel_id", m_db);
+		m_select_id->compile("SELECT id FROM sub_" + name + " where data=?");
+	}
 
-int GetAttrID::operator()(const std::string& blob)
-{
-	reset();
-
-	// Bind the blob
-	bindBlob(1, blob);
-
-	// Run the query
+	// Else, fetch it from the database
+	m_select_id->reset();
+	m_select_id->bindBlob(1, blob);
 	int id = -1;
-	while (step())
-		id = fetchInt(0);
+	while (m_select_id->step())
+	{
+		id = m_select_id->fetchInt(0);
+	}
+
 	return id;
 }
 
-AttrSubIndex::AttrSubIndex(types::Code serCode)
-	: name(types::tag(serCode)), serCode(serCode)
+UItem<> AttrSubIndex::q_select_one(int id) const
+{
+	if (not m_select_one)
+	{
+		m_select_one = new utils::sqlite::PrecompiledQuery("sel_one", m_db);
+		m_select_one->compile("SELECT data FROM sub_" + name + " where id=?");
+	}
+
+	// Reset the query
+	m_select_one->reset();
+	m_select_one->bind(1, id);
+
+	// Decode every blob and run the matcher on it
+	if (m_select_one->step())
+	{
+		const void* buf = m_select_one->fetchBlob(0);
+		int len = m_select_one->fetchBytes(0);
+		return types::decodeInner(code, (const unsigned char*)buf, len);
+	}
+	return UItem<>();
+}
+
+int AttrSubIndex::q_insert(const std::string& blob)
+{
+	if (not m_insert)
+	{
+		m_insert = new utils::sqlite::PrecompiledQuery("attr_insert", m_db);
+		m_insert->compile("INSERT INTO sub_" + name + " (data) VALUES (?)");
+	}
+
+	m_insert->reset();
+	m_insert->bindBlob(1, blob);
+	m_insert->step();
+
+	return m_db.lastInsertID();
+}
+
+
+AttrSubIndex::AttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code code)
+	: name(types::tag(code)), code(code),
+	  m_db(db), m_select_id(0), m_select_one(0),
+	  m_select_all(0), m_insert(0)
 {
 }
 
 AttrSubIndex::~AttrSubIndex()
 {
+	if (m_select_id) delete m_select_id;
+	if (m_select_one) delete m_select_one;
+	if (m_select_all) delete m_select_all;
+	if (m_insert) delete m_insert;
 }
 
-RAttrSubIndex::RAttrSubIndex(SQLiteDB& db, types::Code serCode)
-	: AttrSubIndex(serCode), m_db(db),
-          m_select_all("sel_all", db),
-	  m_select_one("sel_one", db),
-	  m_select_id("sel_id", db)
+int AttrSubIndex::id(const Metadata& md) const
 {
-}
-
-RAttrSubIndex::~RAttrSubIndex()
-{
-}
-
-void RAttrSubIndex::initQueries()
-{
-	// Compile the select all query
-	m_select_all.compile("SELECT id, data FROM sub_" + name);
-	m_select_one.compile("SELECT data FROM sub_" + name + " where id=?");
-	m_select_id.compile("SELECT id FROM sub_" + name + " where data=?");
-}
-
-int RAttrSubIndex::id(const Metadata& md) const
-{
-	UItem<> item = md.get(serCode);
+	UItem<> item = md.get(code);
+	if (!item.defined())
+		return -1;
 
 	// First look up in cache
-	for (std::map< int, UItem<> >::const_iterator i = m_cache.begin();
-			i != m_cache.end(); ++i)
-		if (i->second == item)
-			return i->first;
+	std::map< Item<>, int >::const_iterator i = m_id_cache.find(item);
+	if (i != m_id_cache.end())
+		return i->second;
 
 	// Else, fetch it from the database
-	m_select_id.reset();
-	m_select_id.bind(1, item.encode());
-	int id = -1;
-	while (m_select_id.step())
-		id = m_select_id.fetchInt(0);
+	int id = q_select_id(item->encodeWithoutEnvelope());
 
 	// Add it to the cache
 	if (id != -1)
+	{
 		m_cache.insert(make_pair(id, item));
+		m_id_cache.insert(make_pair(item, id));
+	}
+	else
+		throw NotFound();
 
 	return id;
 }
 
-void RAttrSubIndex::read(int id, Metadata& md) const
+void AttrSubIndex::read(int id, Metadata& md) const
 {
 	std::map< int, UItem<> >::const_iterator i = m_cache.find(id);
 	if (i != m_cache.end())
@@ -114,50 +140,37 @@ void RAttrSubIndex::read(int id, Metadata& md) const
 		return;
 	}
 
-	// Reset the query
-	m_select_one.reset();
-	m_select_one.bind(1, id);
-
-	// Decode every blob and run the matcher on it
-	if (m_select_one.step())
-	{
-		const void* buf = m_select_one.fetchBlob(0);
-		int len = m_select_one.fetchBytes(0);
-		Item<> i = types::decodeInner((types::Code)serCode, (const unsigned char*)buf, len);
-		m_cache.insert(make_pair(id, i));
-		md.set(i);
-	}
+	UItem<> item = q_select_one(id);
+	m_cache.insert(make_pair(id, item));
+	m_id_cache.insert(make_pair(item, id));
+	md.set(item);
 }
 
-std::vector<int> RAttrSubIndex::query(const matcher::OR& m) const
+std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 {
-	std::vector<int> ids;
-	// Reset the query
-	m_select_all.reset();
-
-	// Decode every blob and run the matcher on it
-	while (m_select_all.step())
+	// Compile the select all query
+	if (not m_select_all)
 	{
-		const void* buf = m_select_all.fetchBlob(1);
-		int len = m_select_all.fetchBytes(1);
-		Item<> t = types::decodeInner((types::Code)serCode, (const unsigned char*)buf, len);
+		m_select_all = new utils::sqlite::PrecompiledQuery("sel_all", m_db);
+		m_select_all->compile("SELECT id, data FROM sub_" + name);
+	}
+
+	std::vector<int> ids;
+
+	// Decode every blob in the database and run the matcher on it
+	m_select_all->reset();
+	while (m_select_all->step())
+	{
+		const void* buf = m_select_all->fetchBlob(1);
+		int len = m_select_all->fetchBytes(1);
+		Item<> t = types::decodeInner(code, (const unsigned char*)buf, len);
 		if (m.matchItem(t))
-			ids.push_back(m_select_all.fetchInt(0));
+			ids.push_back(m_select_all->fetchInt(0));
 	}
 	return ids;
 }
 
-WAttrSubIndex::WAttrSubIndex(SQLiteDB& db, types::Code serCode)
-	: AttrSubIndex(serCode), m_db(db),
-	  m_get_blob_id(db, "sub_" + name), m_stm_insert("attr_insert", db)
-{
-}
-
-WAttrSubIndex::~WAttrSubIndex()
-{
-}
-
-void WAttrSubIndex::initDB()
+void AttrSubIndex::initDB()
 {
 	// Create the table
 	std::string query = "CREATE TABLE IF NOT EXISTS sub_" + name + " ("
@@ -167,42 +180,62 @@ void WAttrSubIndex::initDB()
 	m_db.exec(query);
 }
 
-void WAttrSubIndex::initQueries()
+int AttrSubIndex::insert(const Metadata& md)
 {
-	m_get_blob_id.initQueries();
-
-	// Compile the insert query
-	m_stm_insert.compile("INSERT INTO sub_" + name + " (data) VALUES (?)");
-}
-
-int WAttrSubIndex::insert(const Metadata& md)
-{
-	UItem<> item = md.get(serCode);
+	UItem<> item = md.get(code);
 	if (!item.defined())
 		return -1;
+
+	// Try to serve it from cache if possible
+	std::map<Item<>, int>::const_iterator ci = m_id_cache.find(item);
+	if (ci != m_id_cache.end())
+		return ci->second;
 
 	// Extract the blob to insert
 	std::string blob = item->encodeWithoutEnvelope();
 
-	// Try to serve it from cache of possible
-	std::map<std::string, int>::const_iterator ci = m_id_cache.find(blob);
-	if (ci != m_id_cache.end())
-		return ci->second;
-
 	// Check if we already have the blob in the database
-	int id = m_get_blob_id(blob);
-	if (id != -1)
-		return m_id_cache[blob] = id;
-	else
+	int id = q_select_id(blob);
+	if (id == -1)
+		// If not, insert it
+		id = q_insert(blob);
+
+	m_cache.insert(make_pair(id, item));
+	m_id_cache.insert(make_pair(item, id));
+	return id;
+}
+
+
+Attrs::Attrs(utils::sqlite::SQLiteDB& db, const std::set<types::Code>& attrs)
+{
+	// Instantiate subtables
+	for (set<types::Code>::const_iterator i = attrs.begin();
+			i != attrs.end(); ++i)
 	{
-		// Insert it
-
-		m_stm_insert.reset();
-		m_stm_insert.bindBlob(1, blob);
-		m_stm_insert.step();
-
-		return m_id_cache[blob] = m_db.lastInsertID();
+		if (*i == types::TYPE_REFTIME) continue;
+		m_attrs.push_back(new AttrSubIndex(db, *i));
 	}
+}
+
+Attrs::~Attrs()
+{
+	for (std::vector<AttrSubIndex*>::iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
+		delete *i;
+}
+
+void Attrs::initDB()
+{
+	for (std::vector<AttrSubIndex*>::iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
+		(*i)->initDB();
+}
+
+std::vector<int> Attrs::obtainIDs(const Metadata& md) const
+{
+	vector<int> ids;
+	ids.reserve(m_attrs.size());
+	for (const_iterator i = begin(); i != end(); ++i)
+		ids.push_back((*i)->insert(md));
+	return ids;
 }
 
 }

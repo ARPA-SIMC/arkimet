@@ -241,6 +241,11 @@ public:
 	void read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
 
 	/**
+	 * Read data from the given file
+	 */
+	void readFile(const std::string& fname);
+
+	/**
 	 * Read a summary document encoded in Yaml from the given input stream.
 	 *
 	 * The filename string is used to generate nicer parse error messages when

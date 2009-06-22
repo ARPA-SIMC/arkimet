@@ -23,6 +23,7 @@
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
 #include <arki/dataset/ondisk2/writer/utils.h>
+#include <arki/dataset/ondisk2/archive.h>
 #include <arki/dataset/ondisk2/maintenance.h>
 //#include <arki/dataset/ondisk2/maint/datafile.h>
 //#include <arki/dataset/ondisk2/maint/directory.h>
@@ -75,6 +76,9 @@ Writer::~Writer()
 {
 	flush();
 	if (m_tf) delete m_tf;
+	for (vector<Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		delete *i;
 }
 
 std::string Writer::id(const Metadata& md) const
@@ -104,6 +108,8 @@ writer::Datafile* Writer::file(const std::string& pathname)
 
 WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 {
+	// TODO: refuse if md is before "archive age"
+
 	// If replace is on in the configuration file, do a replace instead
 	if (m_replace)
 		return replace(md) ? ACQ_OK : ACQ_ERROR;
@@ -134,6 +140,8 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 
 bool Writer::replace(Metadata& md)
 {
+	// TODO: refuse if md is before "archive age"
+
 	string reldest = (*m_tf)(md) + "." + md.source->format;
 	writer::Datafile* df = file(reldest);
 	off_t ofs;
@@ -160,6 +168,8 @@ bool Writer::replace(Metadata& md)
 
 void Writer::remove(const std::string& str_id)
 {
+	// TODO: refuse if md is in the archive
+
 	if (str_id.empty()) return;
 	int id = strtoul(str_id.c_str(), 0, 10);
 

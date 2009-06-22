@@ -1,7 +1,7 @@
 /*
  * matcher/reftime - Reftime matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,6 +84,14 @@ std::string MatchReftime::sql(const std::string& column) const
 		res += (*i)->sql(column);
 	}
 	return res + ")";
+}
+
+void MatchReftime::dateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const
+{
+	begin.clear();
+	end.clear();
+	for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
+		(*i)->restrictDateRange(begin, end);
 }
 
 std::string MatchReftime::toString() const

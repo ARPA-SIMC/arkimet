@@ -37,6 +37,8 @@
 #include <wibble/string.h>
 #include <wibble/sys/buffer.h>
 
+#include <fstream>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -1298,6 +1300,19 @@ static vector< UItem<> > decodeItem(const std::string& str)
 		itemmd[summary::itemMsoMap[(size_t)type]] = types::decodeString(type, i->second);
 	}
 	return itemmd;
+}
+
+void Summary::readFile(const std::string& fname)
+{
+	// Read all the metadata
+	std::ifstream in;
+	in.open(fname.c_str(), ios::in);
+	if (!in.is_open() || in.fail())
+		throw wibble::exception::File(fname, "opening file for reading");
+
+	read(in, fname);
+
+	in.close();
 }
 
 bool Summary::readYaml(std::istream& in, const std::string& filename)

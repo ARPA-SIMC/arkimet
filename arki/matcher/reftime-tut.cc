@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-#include "config.h"
-
 #include <arki/dataset/ondisk2/maintenance.h>
 //#include <arki/dataset/ondisk2/maint/datafile.h>
 //#include <arki/dataset/ondisk2/maint/directory.h>
@@ -29,13 +27,7 @@
 #include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-
-#ifdef HAVE_GRIBAPI
-#include <arki/scan/grib.h>
-#endif
-#ifdef HAVE_DBALLE
-#include <arki/scan/bufr.h>
-#endif
+#include <arki/scan/any.h>
 
 #include <wibble/sys/fs.h>
 
@@ -240,47 +232,6 @@ static size_t repack(const std::string& root, const std::string& file, WIndex& i
 	return size_pre - size_post;
 }
 
-static void scan_metadata(const std::string& file, MetadataConsumer& c)
-{
-	cerr << "Reading cached metadata from " << file << endl;
-	Metadata::readFile(file, c);
-}
-
-static void scan_file(const std::string& file, MetadataConsumer& c)
-{
-	// Get the file extension
-	size_t pos = file.rfind('.');
-	if (pos == string::npos)
-		throw wibble::exception::Consistency("getting extension of " + file, "file name has no extension");
-	string ext = file.substr(pos+1);
-
-	// Rescan the file and regenerate the metadata file
-	bool processed = false;
-#ifdef HAVE_GRIBAPI
-	if (ext == "grib1" || ext == "grib2")
-	{
-		scan::Grib scanner;
-		scanner.open(file);
-		Metadata md;
-		while (scanner.next(md))
-			c(md);
-		processed = true;
-	}
-#endif
-#ifdef HAVE_DBALLE
-	if (ext == "bufr") {
-		scan::Bufr scanner;
-		scanner.open(file);
-		Metadata md;
-		while (scanner.next(md))
-			c(md);
-		processed = true;
-	}
-#endif
-	if (!processed)
-		throw wibble::exception::Consistency("rebuilding " + file, "rescanning \"" + ext + "\" is not yet implemented");
-}
-
 struct Reindexer : public MetadataConsumer
 {
 	WIndex& idx;
@@ -333,17 +284,8 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 	string pathname = str::joinpath(root, file);
 
 	Reindexer fixer(idx, dsname, file, salvage);
-	if (utils::hasFlagfile(pathname + ".metadata"))
-	{
-		// If there is a metadata file, use it to save time
-		// (this is very useful when converting ondisk datasets to
-		// ondisk2)
-		scan_metadata(pathname + ".metadata", fixer);
-	} else {
-		// TODO: check from a list of extensions what is that we can scan
-		// Rescan the file
-		scan_file(pathname, fixer);
-	}
+	if (!scan::scan(pathname, fixer))
+		throw wibble::exception::Consistency("Failed to rescan " + pathname);
 
 	// TODO: if scan fails, remove all info from the index and rename the
 	// file to something like .broken

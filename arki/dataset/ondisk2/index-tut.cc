@@ -117,9 +117,10 @@ template<> template<>
 void to::test<1>()
 {
 	auto_ptr<WIndex> test = createIndex<WIndex>(
-		"type = test\n"
+		"type = ondisk2\n"
 		"path = \n"
 		"indexfile = :memory:\n"
+		"index = origin, product, level\n"
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
 	);
 	ensure(test.get() != 0);
@@ -142,6 +143,8 @@ void to::test<1>()
 	utils::metadata::Collector mdc;
 	test->query(Matcher::parse("origin:GRIB1,200"), mdc);
 	ensure_equals(mdc.size(), 1u);
+	ensure_equals(mdc[0].notes.size(), 1u);
+	ensure_equals(mdc[0].notes[0]->content, "this is a test");
 
 	mdc.clear();
 	test->query(Matcher::parse("product:GRIB1,3"), mdc);

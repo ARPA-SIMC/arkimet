@@ -27,6 +27,7 @@
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/index/attr.h>
+#include <arki/dataset/ondisk2/aggregate.h>
 #include <string>
 #include <set>
 #include <map>
@@ -41,6 +42,9 @@ class ConfigFile;
 
 namespace dataset {
 namespace ondisk2 {
+
+struct Uniques;
+struct Others;
 
 namespace writer {
 class IndexFileVisitor;
@@ -71,29 +75,89 @@ protected:
 	std::string m_indexpath;
 	std::string m_pathname;
 
-	std::set<types::Code> m_components_unique;
+	mutable utils::sqlite::SQLiteDB m_db;
+	mutable utils::sqlite::PrecompiledQuery m_fetch_by_id;
+	mutable utils::sqlite::PrecompiledQuery m_get_id;
+
+	// Subtables
+	Aggregate* m_uniques;
+	Aggregate* m_others;
+
 	std::set<types::Code> m_components_indexed;
+
+	/**
+	 * Add to 'query' the SQL joins and constraints based on the given matcher.
+	 *
+	 * An example string that can be added is:
+	 *  "JOIN mduniq AS u ON uniq = u.id WHERE reftime = (...) AND u.origin IN (1, 2, 3)"
+	 *
+	 * @return true if the index could be used for the query, false if the
+	 * query does not use the index and a full scan should be used instead
+	 *
+	 * It can raise dataset::index::NotFound if some parts of m do not
+	 * match any metadata in the database.
+	 */
+	bool addJoinsAndConstraints(const Matcher& m, std::string& query) const;
 
 	Index(const ConfigFile& cfg);
 public:
 	~Index();
 
 	const std::string& pathname() const { return m_pathname; }
+
+	inline bool is_indexed(types::Code c) const
+	{
+		return m_components_indexed.find(c) != m_components_indexed.end();
+	}
+
+	/**
+	 * Precompile queries.
+	 *
+	 * This must be called after the database schema has been created, as a
+	 * change in the database schema invalidates precompiled queries.
+	 */
+	void initQueries();
+
+	/// Run PRAGMA calls to setup database behaviour
+	void setupPragmas();
+
+	/// Return the database ID of a metadata in this index.  If the
+	/// metadata is not there, return -1.
+	int id(const Metadata& md) const;
+
+	/// Return the number of items currently indexed by this index
+	size_t count() const;
+
+	/**
+	 * Scan all file info in the database, sorted by file and offset
+	 */
+	void scan_files(writer::IndexFileVisitor& v, const std::string& orderBy = "file, offset") const;
+
+	/**
+	 * Scan the information about the given file, sorted by offset
+	 */
+	void scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
+
+	/**
+	 * Query this index, returning metadata
+	 *
+	 * @return true if the index could be used for the query, false if the
+	 * query does not use the index and a full scan should be used instead
+	 */
+	bool query(const Matcher& m, MetadataConsumer& consumer) const;
+
+	/**
+	 * Query this index, returning a summary
+	 *
+	 * @return true if the index could be used for the query, false if the
+	 * query does not use the index and a full scan should be used instead
+	 */
+	bool querySummary(const Matcher& m, Summary& summary) const;
 };
 
 class RIndex : public Index
 {
 protected:
-	mutable utils::sqlite::SQLiteDB m_db;
-	mutable utils::sqlite::PrecompiledQuery m_get_id;
-	mutable utils::sqlite::PrecompiledQuery m_fetch_by_id;
-
-	// Subtables
-	std::map<types::Code, index::RAttrSubIndex*> m_rsub;
-
-	/// Run PRAGMA calls to setup database behaviour
-	void setupPragmas();
-
 	/**
 	 * Precompile queries.
 	 *
@@ -105,63 +169,20 @@ protected:
 	/// Run a query and output to a consumer all the metadata that come out
 	void metadataQuery(const std::string& query, MetadataConsumer& consumer) const;
 
-	/// Run a query and output to a summary all the metadata that come out
-	void summaryQuery(const std::string& query, Summary& summary) const;
-
 public:
 	RIndex(const ConfigFile& cfg);
 	~RIndex();
 
 	/// Initialise access to the index
 	void open();
-
-	/// Return the database ID of a metadata in this index.  If the
-	/// metadata is not there, return -1.
-	int id(const Metadata& md) const;
-
-	/// Return the number of items currently indexed by this index
-	size_t count() const;
-
-#if 0
-	/**
-	 * Fetch the on-disk location of the given metadata.
-	 *
-	 * If the metadata is in the index, fetch filename and offset and return
-	 * true.  Else, return false.
-	 */
-	bool fetch(const Metadata& md, std::string& file, size_t& ofs);
-#endif
-
-	/**
-	 * Query this index
-	 *
-	 * @return true if the index could be used for the query, false if the
-	 * query does not use the index and a full scan should be used instead
-	 */
-	bool query(const Matcher& m, MetadataConsumer& consumer) const;
-
-	bool querySummary(const Matcher& m, Summary& summary) const;
-
-	/**
-	 * Scan all file info in the database, sorted by file and offset
-	 */
-	void scan_files(writer::IndexFileVisitor& v, const std::string& orderBy = "file, offset") const;
-
-	/**
-	 * Scan the information about the given file, sorted by offset
-	 */
-	void scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
 };
 
-class WIndex : public RIndex
+class WIndex : public Index
 {
 protected:
 	index::InsertQuery m_insert;
 	utils::sqlite::PrecompiledQuery m_delete;
 	utils::sqlite::PrecompiledQuery m_replace;
-
-	// Subtables
-	std::map<types::Code, index::WAttrSubIndex*> m_wsub;
 
 	/**
 	 * Precompile queries.

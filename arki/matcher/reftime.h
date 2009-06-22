@@ -4,7 +4,7 @@
 /*
  * matcher/reftime - Reftime matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,20 @@ struct MatchReftime : public Implementation
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
 	std::string sql(const std::string& column) const;
+
+	/**
+	 * Get the date extremes matched by this matcher.
+	 *
+	 * The interval includes the two extremes.
+	 *
+	 * There can be further restrictions than this interval (for example,
+	 * restrictions on the time of the day).
+	 *
+	 * @returns The start and end date and time for this matcher.
+	 *   If begin or end are all zeros, it means that the interval is
+	 *   open-ended.
+	 */
+	void dateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const;
 
 	static MatchReftime* parse(const std::string& pattern);
 };

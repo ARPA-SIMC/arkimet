@@ -21,6 +21,7 @@
  */
 
 #include <arki/utils/metadata.h>
+#include <fstream>
 
 using namespace std;
 using namespace wibble;
@@ -28,6 +29,50 @@ using namespace wibble;
 namespace arki {
 namespace utils {
 namespace metadata {
+
+void Collector::writeAtomically(const std::string& fname) const
+{
+	AtomicWriter writer(fname);
+	for (const_iterator i = begin(); i != end(); ++i)
+		writer(*i);
+	writer.close();
+}
+
+AtomicWriter::AtomicWriter(const std::string& fname)
+	: fname(fname), tmpfname(fname + ".tmp"), outmd(0)
+{
+	outmd = new std::ofstream;
+	outmd->open(tmpfname.c_str(), ios::out | ios::trunc);
+	if (!outmd->is_open() || outmd->fail())
+		throw wibble::exception::File(tmpfname, "opening file for writing");
+}
+
+AtomicWriter::~AtomicWriter()
+{
+	close();
+}
+
+bool AtomicWriter::operator()(Metadata& md)
+{
+	md.write(*outmd, tmpfname);
+	return true;
+}
+
+bool AtomicWriter::operator()(const Metadata& md)
+{
+	md.write(*outmd, tmpfname);
+	return true;
+}
+
+void AtomicWriter::close()
+{
+	if (outmd)
+	{
+		outmd->close();
+		delete outmd;
+		outmd = 0;
+	}
+}
 
 }
 }

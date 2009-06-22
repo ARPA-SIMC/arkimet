@@ -23,6 +23,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/types.h>
+#include <arki/types/time.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/grcal/grcal.h>
@@ -49,6 +51,7 @@ struct DTMatch
 	virtual std::string toString() const = 0;
 	virtual int timebase() const = 0;
 	virtual bool isLead() const { return true; }
+	virtual void restrictDateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const {}
 };
 
 static std::string tosqlTime(const int& tt);
@@ -94,6 +97,12 @@ struct DateLE : public DTMatch
 	string sql(const std::string& column) const { return column+"<="+tosql(ref); }
 	string toString() const { return "<="+date::tostring(ref); }
 	int timebase() const { return tbase; }
+	virtual void restrictDateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const
+	{
+		Item<types::Time> mine = types::Time::create(ref);
+		if (!end.defined() || mine < end)
+			end = mine;
+	}
 };
 struct DateLT : public DTMatch
 {
@@ -104,6 +113,12 @@ struct DateLT : public DTMatch
 	string sql(const std::string& column) const { return column+"<"+tosql(ref); }
 	string toString() const { return "<"+date::tostring(ref); }
 	int timebase() const { return dtime::lowerbound_sec(ref+3); }
+	virtual void restrictDateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const
+	{
+		Item<types::Time> mine = types::Time::create(ref);
+		if (!end.defined() || mine < end)
+			end = mine;
+	}
 };
 struct DateGT : public DTMatch
 {
@@ -115,6 +130,12 @@ struct DateGT : public DTMatch
 	string sql(const std::string& column) const { return column+">"+tosql(ref); }
 	string toString() const { return ">"+date::tostring(ref); }
 	int timebase() const { return tbase; }
+	virtual void restrictDateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const
+	{
+		Item<types::Time> mine = types::Time::create(ref);
+		if (!begin.defined() || begin < mine)
+			begin = mine;
+	}
 };
 struct DateGE : public DTMatch
 {
@@ -125,6 +146,12 @@ struct DateGE : public DTMatch
 	string sql(const std::string& column) const { return column+">="+tosql(ref); }
 	string toString() const { return ">="+date::tostring(ref); }
 	int timebase() const { return dtime::lowerbound_sec(ref+3); }
+	virtual void restrictDateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const
+	{
+		Item<types::Time> mine = types::Time::create(ref);
+		if (!begin.defined() || begin < mine)
+			begin = mine;
+	}
 };
 struct DateEQ : public DTMatch
 {
@@ -153,6 +180,15 @@ struct DateEQ : public DTMatch
 		return ">="+date::tostring(geref)+",<="+date::tostring(leref);
 	}
 	int timebase() const { return dtime::lowerbound_sec(geref+3); }
+	virtual void restrictDateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const
+	{
+		Item<types::Time> mine_b = types::Time::create(geref);
+		if (!begin.defined() || begin < mine_b)
+			begin = mine_b;
+		Item<types::Time> mine_e = types::Time::create(leref);
+		if (!end.defined() || mine_e < end)
+			end = mine_e;
+	}
 };
 
 struct TimeLE : public DTMatch

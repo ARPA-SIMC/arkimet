@@ -72,6 +72,8 @@ struct arki_dataset_ondisk2_shar {
 			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,200\n"
+			"index = origin, reftime\n"
+			"unique = reftime, origin, product, level, timerange, area\n"
 			"name = test200\n"
 			"path = test200\n"
 			"\n"
@@ -79,6 +81,8 @@ struct arki_dataset_ondisk2_shar {
 			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,80\n"
+			"index = origin, reftime\n"
+			"unique = reftime, origin, product, level, timerange, area\n"
 			"name = test80\n"
 			"path = test80\n"
 			"\n"
@@ -86,6 +90,7 @@ struct arki_dataset_ondisk2_shar {
 			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,98\n"
+			"unique = reftime, origin, product, level, timerange, area\n"
 			"name = test98\n"
 			"path = test98\n";
 		stringstream incfg(conf);
@@ -98,6 +103,8 @@ struct arki_dataset_ondisk2_shar {
 			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1\n"
+			"index = origin, reftime\n"
+			"unique = reftime, origin, product, level, timerange, area\n"
 			"name = testall\n"
 			"path = testall\n";
 		stringstream incfg1(conf1);

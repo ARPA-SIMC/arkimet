@@ -76,6 +76,8 @@ public:
 	bool isOpen() const { return m_db != 0; }
 	/**
 	 * Open the database and set the given busy timeout
+	 *
+	 * Note: to open an in-memory database, use ":memory:" as the pathname
 	 */
 	void open(const std::string& pathname, int timeout_ms = 3600*1000);
 
@@ -137,6 +139,9 @@ public:
 	/// Bind a query parameter as a Blob
 	void bindBlob(int idx, const std::string& str);
 
+	/// Bind a blob that will not exist until the query is performed
+	void bindBlobTransient(int idx, const std::string& str);
+
 	/// Bind a query parameter
 	void bind(int idx, int val);
 
@@ -158,7 +163,7 @@ public:
 			for (typename std::vector< Item<TYPE> >::const_iterator i = items.begin();
 					i != items.end(); ++i)
 				str += i->encode();
-			bindTransient(idx, str);
+			bindBlobTransient(idx, str);
 		}
 	}
 

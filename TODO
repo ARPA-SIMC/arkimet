@@ -179,8 +179,42 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - cache negli aggregate come negli attributi
+ - cleanup degli aggregate durante il pack prendendo le query dal cleanup degli
+   orfani in dballe
+
+ - fare tabella mdarc dei file archiviati con:
+   (file, start_date, end_date)
+ - nel file di configurazione, mettere un "archive age" (in giorni) dopo il
+   quale un'operazione di repack:
+    - toglie i dati dall'indice
+    - crea i file .metadata e .summary
+    - aggiunge il file a mdarc
+   il tutto fatto dopo il pack vero e proprio, cosí i file archiviati sono
+   ordinati per reference time.
+ - nelle query, se non c'è reftime o se reftime include date piú vecchie di
+   "archive age", allora fare match anche su mdarc e scandire i file risultanti
+ - nel rebuild, se un file contiene dati interamente precedenti all'archive
+   age, creare il suo .summary e aggiungerlo a mdarc invece che all'indice
+   principale
+ - non si fa delete o replace o append di dati in mdarc: dare errore se si
+   prova a farlo. La roba precedente all'archive age diventa di fatto read only
+
+ - durante il rebuild, se si trovano file non gestiti (tipo .repack) non fare
+   abort, ma segnalare semplicemente che sono stati ignorati
+
+ - benchmark locale nuovo ondisk2
+    - reindicizzazione di tutto: 
+    - 
+
+ - controllare l'uso del match sui null in ondisk1 (select =? becomes =NULL
+   that is always false)
+
  + verificare che il passo sia contato sul reftime e non sulla data di oggi
  - verificare che arki-check nel rebuild tenga l'ultimo grib in un file
+ - arki-check per il rebuild dell'indice non deve usare il rusco
+ - controllare/deindicizzare i file cancellati al repack di ondisk1
+   (solo se c'è replace: yes)
 
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
@@ -191,6 +225,17 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     - parametro di configurazione col tempo da tenere
     - arki-check cancelli i file vecchi
 
+ - fare un file reader che legga file con dentro i dati
+    - se c'è di fianco un file .metadata con timestamp >= quello del file coi
+      dati, legge i metadati da lí
+    - altrimenti scansiona
+       - e a richiesta, ricrea il file .metadata
+    - si può prendere codice dal FileDataset
+    - usarlo poi in tutte le letture sequenziali (arki-scan, rebuild di
+      dataset, scansioni sequenziali di dataset senza indice, ...)
+ - nel rifare l'indice ondisk2, ignorare i .metadata se il loro timestamp è piú
+   vecchio dei file coi dati (o usare direttamente il file reader)
+
  - ondisk2: sort prima della roba che usa l'indice e poi di quella che non lo
    usa
  - ondisk2: tabella "summary" con una entry che aggrega md sulla durata dello
@@ -199,6 +244,25 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
       per 6 mesi, poi step successivo per 6 mesi, etc.)
     - per i dati vecchi, salvare i .metadata su disco e tenere nell'indice solo
       un'aggregazione sullo step?
+    - dato un tempo di archiviazione ("piú vecchi di 6 mesi"), spostare i file
+      in archiveN/ e tenerlo nell'indice solo come summary. N viene
+      incrementato ogni volta che la archiveN diventa piú grande di una
+      dimensione data (tipo la dimensione del DVD)
+       - lo spostamento in archiviazione lo si fa solo quando si vuole
+	 archiviare: arki-check --archive=4G e lui tira fuori una fetta di 4G
+	 con solo roba piú vecchia di 6 mesi
+ - in alternativa, normalizzare le combinazioni di metadati summarizzabili in
+   una seconda tabella, e nella md riferirili per indice. La seconda tabella
+   dovrebbe essere piccola, e ridurre di molto md e soprattutto il numero di
+   indici su md
+    - se si vuole poi fare una tabella aggregata (sempre che serva ancora) per
+      i summary, basta farla su (file, id_s)
+ 
+ - se si decide di togliere da 'md' gli elementi piú vecchi di X per tenerli
+   solo summarizzati e coi file .metadata, far diventare read only le parti
+   corrispondenti dell'archivio (?)
+
+ - fare un comando per spostare, rinominare e concatenare i file grib
 
  - arki-scan --dispatch=.. --verbose che dica anche il tempo
 

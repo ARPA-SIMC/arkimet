@@ -40,6 +40,7 @@ namespace dataset {
 class TargetFile;
 
 namespace ondisk2 {
+class Archive;
 
 namespace writer {
 class Datafile;
@@ -58,6 +59,7 @@ protected:
 	std::string m_path;
 	WIndex m_idx;
 	TargetFile* m_tf;
+	std::vector<Archive*> m_archives;
 	bool m_replace;
 
 	std::map<std::string, writer::Datafile*> m_df_cache;

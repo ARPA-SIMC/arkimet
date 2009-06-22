@@ -26,6 +26,7 @@
 #include <arki/dataset/local.h>
 #include <string>
 #include <map>
+#include <vector>
 
 namespace arki {
 
@@ -39,6 +40,7 @@ namespace dataset {
 class TargetFile;
 
 namespace ondisk2 {
+class Archive;
 class RIndex;
 
 class Reader : public Local
@@ -48,6 +50,7 @@ protected:
 	std::string m_root;
 	RIndex* m_idx;
 	TargetFile* m_tf;
+	std::vector<Archive*> m_archives;
 
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'

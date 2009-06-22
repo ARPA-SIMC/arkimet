@@ -45,7 +45,7 @@ struct arki_scan_grib_shar {
 };
 TESTGRP(arki_scan_grib);
 
-// Scan a well-known grib file, with no padding between BUFRs
+// Scan a well-known grib file, with no padding between messages
 template<> template<>
 void to::test<1>()
 {

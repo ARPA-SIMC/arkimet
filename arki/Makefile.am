@@ -23,6 +23,8 @@ arkiinclude_HEADERS = \
 		dataset/ondisk/maint/datafile.h \
 		dataset/ondisk/maint/directory.h \
 		dataset/ondisk2.h \
+		dataset/ondisk2/aggregate.h \
+		dataset/ondisk2/archive.h \
 		dataset/ondisk2/index.h \
 		dataset/ondisk2/maintenance.h \
 		dataset/ondisk2/reader.h \
@@ -51,6 +53,7 @@ arkiinclude_HEADERS = \
 		matcher/ensemble.h \
 		matcher/run.h \
 		metadata.h \
+		scan/any.h \
 		summary.h \
 		summary-old.h \
 		refcounted.h \
@@ -139,6 +142,7 @@ libarkimet_la_SOURCES = \
 		matcher/area.cc \
 		matcher/ensemble.cc \
 		matcher/run.cc \
+		scan/any.cc \
 		dataset.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
@@ -156,6 +160,8 @@ libarkimet_la_SOURCES = \
 		dataset/ondisk/maint/directory.cc \
 		dataset/ondisk/maint/datafile.cc \
 		dataset/ondisk2.cc \
+		dataset/ondisk2/aggregate.cc \
+		dataset/ondisk2/archive.cc \
 		dataset/ondisk2/index.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
@@ -217,6 +223,7 @@ tests_arki_test_SOURCES = \
 		matcher/area-tut.cc \
 		matcher/ensemble-tut.cc \
 		matcher/run-tut.cc \
+		scan/any-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
 		dataset/targetfile-tut.cc \
@@ -232,6 +239,8 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk/maintenance-tut.cc \
 		dataset/ondisk/reader-tut.cc \
 		dataset/ondisk2-tut.cc \
+		dataset/ondisk2/aggregate-tut.cc \
+		dataset/ondisk2/archive-tut.cc \
 		dataset/ondisk2/index-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer/datafile-tut.cc \

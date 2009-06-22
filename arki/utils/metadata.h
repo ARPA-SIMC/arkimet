@@ -25,11 +25,16 @@
 
 #include <arki/metadata.h>
 #include <vector>
+#include <string>
+#include <iosfwd>
 
 namespace arki {
 namespace utils {
 namespace metadata {
 
+/**
+ * Consumer that collects all metadata into a vector
+ */
 struct Collector : public std::vector<Metadata>, public MetadataConsumer
 {
 	bool operator()(Metadata& md)
@@ -37,6 +42,34 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer
 		push_back(md);
 		return true;
 	}
+
+	/**
+	 * Write all the metadata to a file, atomically, using AtomicWriter
+	 */
+	void writeAtomically(const std::string& fname) const;
+};
+
+/**
+ * Write metadata to a file, atomically.
+ *
+ * The file will be created with a temporary name, and then renamed to its
+ * final name.
+ *
+ * Note: the temporary file name will NOT be created securely.
+ */
+struct AtomicWriter : public MetadataConsumer
+{
+	std::string fname;
+	std::string tmpfname;
+	std::ofstream* outmd;
+
+	AtomicWriter(const std::string& fname);
+	~AtomicWriter();
+
+	bool operator()(Metadata& md);
+	bool operator()(const Metadata& md);
+
+	void close();
 };
 
 }

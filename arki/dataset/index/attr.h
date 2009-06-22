@@ -35,87 +35,94 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-// Precompiled query to get the ID from an encoded type
-class GetAttrID : public utils::sqlite::Query
-{
-	std::string m_table;
-
-public:
-	GetAttrID(utils::sqlite::SQLiteDB& db, const std::string& table) : utils::sqlite::Query("get-blob-id", db), m_table(table) {}
-
-	void initQueries();
-
-	// Run the query, returning the id or -1 if not found
-	int operator()(const std::string& blob);
-};
-
-
 class AttrSubIndex
 {
 public:
 	// Name of the metadata we index
 	std::string name;
-
-protected:
 	// Serialisation code of the item type that we index
-	types::Code serCode;
+	types::Code code;
 
-	AttrSubIndex(types::Code serCode);
-
-public:
-	~AttrSubIndex();
-};
-
-class RAttrSubIndex : public AttrSubIndex
-{
 protected:
 	// This is just a copy of what is in the main index
 	utils::sqlite::SQLiteDB& m_db;
-	// Precompiled select all statement
-	mutable utils::sqlite::PrecompiledQuery m_select_all;
-	// Precompiled select one statement
-	mutable utils::sqlite::PrecompiledQuery m_select_one;
+
 	// Precompiled get id statement
-	mutable utils::sqlite::PrecompiledQuery m_select_id;
+	mutable utils::sqlite::PrecompiledQuery* m_select_id;
+	// Return the database ID given a string blob. Returns -1 if not found
+	int q_select_id(const std::string& blob) const;
+
+	// Precompiled select one statement
+	mutable utils::sqlite::PrecompiledQuery* m_select_one;
+	// Runs the Item given an ID. Returns an undefined item if not found
+	UItem<> q_select_one(int id) const;
+
+	// Precompiled select all statement
+	mutable utils::sqlite::PrecompiledQuery* m_select_all;
+
+	// Precompiled insert statement
+	utils::sqlite::PrecompiledQuery* m_insert;
+	// Insert the blob in the database and return its new ID
+	int q_insert(const std::string& blob);
+
+
 	// Parsed item cache
 	mutable std::map< int, UItem<> > m_cache;
 
+	// Cache of known IDs
+	mutable std::map< Item<>, int > m_id_cache;
+
 public:
-	RAttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);
-	~RAttrSubIndex();
+	AttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);
+	~AttrSubIndex();
 
-	void initQueries();
+	void initDB();
+	void initQueries() const {}
 
+	/**
+	 * Get the ID of the metadata item handled by this AttrSubIndex.
+	 *
+	 * @returns -1 if the relevant item is not defined in md
+	 *
+	 * It can raise NotFound if the metadata item is not in the database at
+	 * all.
+	 */
 	int id(const Metadata& md) const;
 
 	void read(int id, Metadata& md) const;
 
 	std::vector<int> query(const matcher::OR& m) const;
-};
-
-class WAttrSubIndex : public AttrSubIndex
-{
-protected:
-	// This is just a copy of what is in the main index
-	utils::sqlite::SQLiteDB& m_db;
-
-	// Precompiled query to get the ID given a blob
-	GetAttrID m_get_blob_id;
-
-	// Precompiled insert statement
-	utils::sqlite::Query m_stm_insert;
-
-	// Cache of known IDs
-	std::map<std::string, int> m_id_cache;
-
-public:
-	WAttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);
-	~WAttrSubIndex();
-
-	void initDB();
-	void initQueries();
 
 	int insert(const Metadata& md);
+};
+
+typedef AttrSubIndex RAttrSubIndex;
+typedef AttrSubIndex WAttrSubIndex;
+
+class Attrs
+{
+protected:
+	std::vector<AttrSubIndex*> m_attrs;
+
+public:
+	typedef std::vector<AttrSubIndex*>::const_iterator const_iterator;
+
+	const_iterator begin() const { return m_attrs.begin(); }
+	const_iterator end() const { return m_attrs.end(); }
+
+	Attrs(utils::sqlite::SQLiteDB& db, const std::set<types::Code>& attrs);
+	~Attrs();
+
+	void initDB();
+
+	const size_t size() const { return m_attrs.size(); }
+
+	/**
+	 * Obtain the IDs of the metadata items in this metadata that
+	 * correspond to the member items of this aggregate, inserting the new
+	 * metadata items in the database if they are missing
+	 */
+	std::vector<int> obtainIDs(const Metadata& md) const;
 };
 
 }
