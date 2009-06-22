@@ -176,7 +176,7 @@ Datafile::~Datafile()
 string Datafile::extension() const
 {
 	// Split the name in name and ext
-    size_t pos = pathname.rfind('.');
+	size_t pos = pathname.rfind('.');
 	if (pos == string::npos)
 		// We need an extension to represent the type of data within
 		throw wibble::exception::Consistency("getting extension of file " + pathname, "file name has no extension");
@@ -243,7 +243,7 @@ size_t Datafile::repack()
 
 	// Write out the data
 	string outfname = pathname + ".new";
-    std::ofstream outfile;
+	std::ofstream outfile;
 	outfile.open(outfname.c_str(), ios::out | ios::trunc);
 	if (!outfile.is_open() || outfile.fail())
 		throw wibble::exception::File(outfname, "opening file for writing");
@@ -251,7 +251,7 @@ size_t Datafile::repack()
  	// Write out the metadata
 	string mdfname = pathname + ".metadata";
 	string outmdfname = mdfname + ".new";
-    std::ofstream outmd;
+	std::ofstream outmd;
 	outmd.open(outmdfname.c_str(), ios::out | ios::trunc);
 	if (!outmd.is_open() || outmd.fail())
 		throw wibble::exception::File(outmdfname, "opening file for writing");
@@ -311,7 +311,7 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 
 	// Recreate the metadata file
 	string outmdfname = pathname + ".metadata";
-    std::ofstream outmd;
+	std::ofstream outmd;
 	outmd.open(outmdfname.c_str(), ios::out | ios::trunc);
 	if (!outmd.is_open() || outmd.fail())
 		throw wibble::exception::File(outmdfname, "opening file for writing");
@@ -388,7 +388,7 @@ void Datafile::reindex(MetadataConsumer& salvage)
 	string fname = pathname + ".metadata";
 
 	// Read all the metadata
-    std::ifstream in;
+	std::ifstream in;
 	in.open(fname.c_str(), ios::in);
 	if (!in.is_open() || in.fail())
 		throw wibble::exception::File(fname, "opening file for reading");

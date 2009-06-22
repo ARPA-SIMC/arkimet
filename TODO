@@ -179,6 +179,9 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ + verificare che il passo sia contato sul reftime e non sulla data di oggi
+ - verificare che arki-check nel rebuild tenga l'ultimo grib in un file
+
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
 
