@@ -393,6 +393,11 @@ void IndexedRootDirectory::addToIndex(Metadata& md, const std::string& file, siz
 	m_idx.index(md, file, ofs);
 }
 
+std::string IndexedRootDirectory::id(const Metadata& md) const
+{
+	return m_idx.id(md);
+}
+
 void IndexedRootDirectory::resetIndex(const std::string& file)
 {
 	beginTransactionIfNeeded();
@@ -519,6 +524,11 @@ void SubDirectory::addToIndex(Metadata& md, const std::string& file, size_t ofs)
 {
 	//cerr << "Add to index: " << file << " ofs " << ofs << endl;
 	parent->addToIndex(md, file, ofs);
+}
+
+std::string SubDirectory::id(const Metadata& md) const
+{
+	return parent->id(md);
 }
 
 void SubDirectory::resetIndex(const std::string& file)

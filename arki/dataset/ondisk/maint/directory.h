@@ -67,6 +67,13 @@ public:
 	virtual void addToIndex(Metadata& md, const std::string& file, size_t ofs) = 0;
 
 	/**
+	 * Compute the ID for a metadata.
+	 *
+	 * Returns string() if we are not using an index
+	 */
+	virtual std::string id(const Metadata& md) const { return std::string(); }
+
+	/**
 	 * Rebuild the summary by merging all the summaries from subdirectories and
 	 * data files.  It does not work recursively, but it is usually called in a
 	 * depth-first search, so it can assume that all summaries in the
@@ -180,6 +187,7 @@ public:
 
 	virtual void resetIndex(const std::string& file);
 	virtual void addToIndex(Metadata& md, const std::string& file, size_t ofs);
+	virtual std::string id(const Metadata& md) const;
 
 	virtual void invalidateAll();
 
@@ -219,6 +227,7 @@ public:
 
 	virtual void addToIndex(Metadata& md, const std::string& file, size_t ofs);
 	virtual void resetIndex(const std::string& file);
+	virtual std::string id(const Metadata& md) const;
 };
 
 }

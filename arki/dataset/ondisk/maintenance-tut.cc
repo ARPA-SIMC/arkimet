@@ -635,10 +635,64 @@ void to::test<13>()
 	ensure(c.isClean());
 }
 
+// Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
+template<> template<>
+void to::test<14>()
+{
+	system("mkdir testdir");
+	system("mkdir testdir/foo");
+	system("mkdir testdir/foo/bar");
+	system("cat inbound/test.grib1 inbound/test.grib1 > testdir/foo/bar/test.grib1");
+	createNewRebuildFlagfile("testdir/foo/bar/test.grib1");
+
+	Writer writer(cfg);
+	stringstream maintlog;
+	MetadataCounter counter;
+	FullMaintenance m(maintlog, counter);
+	//FullMaintenance m(cerr, counter);
+	writer.maintenance(m);
+
+	ensure_equals(counter.count, 0u);
+
+	ensure(!hasIndexFlagfile("testdir"));
+	ensure(!hasRebuildFlagfile("testdir/foo/bar/test.grib1"));
+	ensure(hasPackFlagfile("testdir/foo/bar/test.grib1"));
+	ensure(utils::hasFlagfile("testdir/foo/bar/test.grib1.metadata"));
+	ensure(utils::hasFlagfile("testdir/foo/bar/test.grib1.summary"));
+	ensure(utils::hasFlagfile("testdir/foo/bar/summary"));
+	ensure(utils::hasFlagfile("testdir/foo/summary"));
+	ensure(utils::hasFlagfile("testdir/summary"));
+	ensure(utils::hasFlagfile("testdir/index.sqlite"));
+
+	// Test querying
+	Reader reader(cfg);
+	ensure(reader.hasWorkingIndex());
+	MetadataCollector mdc;
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+	ensure_equals(blob->offset, 44412u);
+	ensure_equals(blob->size, 7218u);
+
+	// Query the second element and check that it starts after the first one
+	// (there used to be a bug where the rebuild would use the offsets of
+	// the metadata instead of the data)
+	mdc.clear();
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+	ensure_equals(blob->offset, 51630u);
+	ensure_equals(blob->size, 34960u);
+}
+
 // Test accuracy of maintenance scan, with index, on dataset with some
 // rebuild flagfiles, and duplicate items inside
 template<> template<>
-void to::test<14>()
+void to::test<15>()
 {
 	acquireSamples();
 	createNewRebuildFlagfile("testdir/2007/07-08.grib1");
@@ -664,7 +718,12 @@ void to::test<14>()
 	MetadataCounter counter;
 	FullMaintenance m(maintlog, counter);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 3u);
+	// By catting test.grib1 into 07-08.grib1, we create 2 metadata that do
+	// not fit in that file (1 does). Therefore they end up in salvage,
+	// because they are duplicates of metadata in other files. The other
+	// that really fits in the file does not end in salvage, but causes the
+	// previous version to be marked as duplicate
+	ensure_equals(counter.count, 2u);
 	c.clear();
 	counter.count = 0;
 	writer.maintenance(c);

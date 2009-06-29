@@ -27,14 +27,9 @@
 #include <arki/metadata.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/metadata.h>
 #include <arki/summary.h>
-
-#ifdef HAVE_GRIBAPI
-#include <arki/scan/grib.h>
-#endif
-#ifdef HAVE_DBALLE
-#include <arki/scan/bufr.h>
-#endif
+#include <arki/scan/any.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -53,6 +48,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 using namespace arki::utils::files;
 
 static void mergeFromMetadata(arki::Summary& merger, const std::string& fname)
@@ -309,66 +305,54 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 	// Reset the index for this file
 	if (reindex) parent->resetIndex(relname);
 
-	// Recreate the metadata file
+	// Delete the metadata file: we cannot trust it, and scan::scan would
+	// use it if it finds it
+	utils::removeFlagfile(pathname + ".metadata");
+
+	// Collect the scan results in a metadata::Collector
+	metadata::Collector mds;
+	if (!scan::scan(pathname, mds))
+		throw wibble::exception::Consistency("rebuilding " + pathname, "rescanning \"" + ext + "\" is not yet implemented");
+
+	// Scan the list of metadata, looking for duplicates and marking all
+	// the duplicates except the last one as deleted
+	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
+	{
+		string id = parent->id(*i);
+		if (id.empty())
+			continue;
+
+		for (metadata::Collector::iterator j = mds.begin(); j != i; ++j)
+			if (parent->id(*j) == id)
+				j->deleted = true;
+	}
+
+	// Open the new .metadata file
 	string outmdfname = pathname + ".metadata";
 	std::ofstream outmd;
 	outmd.open(outmdfname.c_str(), ios::out | ios::trunc);
 	if (!outmd.is_open() || outmd.fail())
 		throw wibble::exception::File(outmdfname, "opening file for writing");
 
-	// Rescan the file and regenerate the metadata file
-	bool processed = false;
-#ifdef HAVE_GRIBAPI
-	if (ext == "grib1" || ext == "grib2")
+	// Save all the metadata in the file
+	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
 	{
-		scan::Grib scanner;
-		scanner.open(pathname);
-		Metadata md;
-		while (scanner.next(md))
-		{
-			size_t ofs = outmd.tellp();
-			Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
-			blob->filename = str::basename(blob->filename);
-			if (reindex && !md.deleted)
-				try {
-					parent->addToIndex(md, relname, ofs);
-				} catch (index::DuplicateInsert) {
-					salvage(md);
-					md.deleted = true;
-				}
-			if (md.deleted)
-				createPackFlagfile(pathname);
-			md.write(outmd, outmdfname);
-		}
-		processed = true;
+		size_t ofs = outmd.tellp();
+		Item<types::source::Blob> blob = i->source.upcast<types::source::Blob>();
+		blob->filename = str::basename(blob->filename);
+		if (reindex && !i->deleted)
+			try {
+				parent->addToIndex(*i, relname, ofs);
+			} catch (index::DuplicateInsert) {
+				// TODO: This really should not happen: what if
+				// it does? Salvage or throw an exception?
+				salvage(*i);
+				i->deleted = true;
+			}
+		if (i->deleted)
+			createPackFlagfile(pathname);
+		i->write(outmd, outmdfname);
 	}
-#endif
-#ifdef HAVE_DBALLE
-	if (ext == "bufr") {
-		scan::Bufr scanner;
-		scanner.open(pathname);
-		Metadata md;
-		while (scanner.next(md))
-		{
-			size_t ofs = outmd.tellp();
-			Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
-			blob->filename = str::basename(blob->filename);
-			if (reindex && !md.deleted)
-				try {
-					parent->addToIndex(md, relname, ofs);
-				} catch (index::DuplicateInsert) {
-					salvage(md);
-					md.deleted = true;
-				}
-			if (md.deleted)
-				createPackFlagfile(pathname);
-			md.write(outmd, outmdfname);
-		}
-		processed = true;
-	}
-#endif
-	if (!processed)
-		throw wibble::exception::Consistency("rebuilding " + pathname, "rescanning \"" + ext + "\" is not yet implemented");
 
 	outmd.close();
 
