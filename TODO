@@ -179,9 +179,23 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - Ricostruzione indici ondisk1 dopo la cancellazione di file
+
+ - ondisk2: nel rebuild, in caso di duplicati, tenere l'ultimo e non il primo
+
  - cache negli aggregate come negli attributi
  - cleanup degli aggregate durante il pack prendendo le query dal cleanup degli
    orfani in dballe
+
+ - calcolare sempre gli estremi e mettere all'inizio della query reftime un
+   >=X, <=X o BETWEEN(x,y), che danno a sqlite la possibilità di usare gli
+   >indici
+ - nel pack di ondisk2, cancellare l'eventuale file .metadata visto che viene
+   invalidato dalla riorganizzazione del file di dati e che in caso di rebuild
+   dell'archivio verrebbe riusato causando sfaceli
+ - nei benchmark, il repack riscrive il file di dati causando occupazione di
+   disco: fare un giro di truncate su tutti i file per rifare le hole e
+   recuperare spazio
 
  - fare tabella mdarc dei file archiviati con:
    (file, start_date, end_date)
@@ -434,8 +448,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  - arki-check: fare un progress report se si esegue interattivo: per file
    grossi, sta lí a non far niente per un bel po' e ci starebbe almeno sapere
    che file sta checkando
- - Controllare che arki-check, in caso di duplicati, tenga l'ultimo e non il primo
-   (non necessariamente è fattibile)
  - Invalidate dovrebbe funzionare anche se metadata e summary e indice
    contengono rusco
  - Fare un invalidate solo per summary e indice

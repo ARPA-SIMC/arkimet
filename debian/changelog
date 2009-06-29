@@ -1,3 +1,12 @@
+arkimet (0.20-1) UNRELEASED; urgency=low
+
+  * Fixed ondisk reindex (previously it was mistakenly just a rebuild if the
+    summaries)
+  * When rebuilding ondisk datafiles, keep the last of the duplicate entries,
+    not the first
+
+ -- Enrico Zini <enrico@debian.org>  Mon, 29 Jun 2009 18:31:14 +0200
+
 arkimet (0.19-1) UNRELEASED; urgency=low
 
   * New upstream version
