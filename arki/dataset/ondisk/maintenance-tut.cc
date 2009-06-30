@@ -790,7 +790,8 @@ void to::test<16>()
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
 	MetadataCollector mdc;
-	reader.queryMetadata(Matcher(), true, mdc);
+	// Use reftime in the query to force use of the index
+	reader.queryMetadata(Matcher::parse("reftime:>=2000"), true, mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	UItem<source::Inline> blob = mdc[0].source.upcast<source::Inline>();

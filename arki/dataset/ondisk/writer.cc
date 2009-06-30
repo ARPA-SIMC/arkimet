@@ -175,6 +175,8 @@ void Writer::repack(std::ostream& log, bool writable)
 
 	maint_root->checkForRepack(*repacker);
 	repacker->end();
+	// Commit database changes
+	maint_root->commit();
 }
 
 void Writer::check(std::ostream& log)

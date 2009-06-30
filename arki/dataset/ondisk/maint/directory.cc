@@ -354,6 +354,7 @@ void IndexedRootDirectory::beginTransactionIfNeeded()
 {
 	if (m_trans)
 		return;
+	//cerr << "Begin transaction" << endl;
 	m_trans = m_idx.beginTransaction();
 	createIndexFlagfile(m_path);
 }
@@ -361,6 +362,11 @@ void IndexedRootDirectory::beginTransactionIfNeeded()
 void RootDirectory::addToIndex(Metadata& md, const std::string& file, size_t ofs)
 {
 	// Nothing to do: we don't have an index
+	//cerr << "RootDirectory::addToIndex doing nothing" << endl;
+}
+void RootDirectory::commit()
+{
+	//cerr << "RootDirectory::commit doing nothing" << endl;
 }
 
 void RootDirectory::resetIndex(const std::string& file)
@@ -373,13 +379,14 @@ void RootDirectory::invalidateAll()
 	Directory::invalidateAll();
 }
 
-void RootDirectory::commit()
-{
-	// Nothing to do: we don't have an index
-}
-
 void IndexedRootDirectory::commit()
 {
+	/*
+	if (m_trans)
+		cerr << "IndexedRootDirectory::commit committing" << endl;
+	else
+		cerr << "IndexedRootDirectory::nothing to commit" << endl;
+		*/
 	RootDirectory::commit();
 	m_trans.commit();
 }
@@ -536,6 +543,11 @@ void SubDirectory::resetIndex(const std::string& file)
 	parent->resetIndex(file);
 }
 
+void SubDirectory::commit()
+{
+	parent->commit();
+}
+
 std::string RootDirectory::fullpath() const
 {
 	return m_path;
@@ -564,9 +576,15 @@ auto_ptr<RootDirectory> RootDirectory::create(const ConfigFile& cfg)
 {
 	// If there is no 'index' in the config file, don't index anything
 	if (cfg.value("index") != string())
+	{
+		//cerr << "MAKE INDEXED MAINT" << endl;
 		return auto_ptr<RootDirectory>(new IndexedRootDirectory(cfg));
+	}
 	else
+	{
+		//cerr << "MAKE NONINDEXED MAINT" << endl;
 		return auto_ptr<RootDirectory>(new RootDirectory(cfg));
+	}
 }
 
 }

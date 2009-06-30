@@ -66,6 +66,9 @@ public:
 	/// Add the given metadata to the index
 	virtual void addToIndex(Metadata& md, const std::string& file, size_t ofs) = 0;
 
+	/// Commit pending modifications
+	virtual void commit() = 0;
+
 	/**
 	 * Compute the ID for a metadata.
 	 *
@@ -135,10 +138,9 @@ public:
 
 	virtual void resetIndex(const std::string& file);
 	virtual void addToIndex(Metadata& md, const std::string& file, size_t ofs);
+	virtual void commit();
 
 	virtual void invalidateAll();
-
-	virtual void commit();
 
 	/**
 	 * Repack all the data files in the directory that need repacking
@@ -227,6 +229,7 @@ public:
 
 	virtual void addToIndex(Metadata& md, const std::string& file, size_t ofs);
 	virtual void resetIndex(const std::string& file);
+	virtual void commit();
 	virtual std::string id(const Metadata& md) const;
 };
 

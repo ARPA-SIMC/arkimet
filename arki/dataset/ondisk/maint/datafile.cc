@@ -279,6 +279,11 @@ size_t Datafile::repack()
 	outfile.close();
 	outmd.close();
 
+	// We commit the index, which is out of sync until we rename. But since
+	// we have the rebuild flagfile on, we know we need to rescan the files
+	// for them to make sense
+	parent->commit();
+
 	// Perform the final atomic rename
 
 	// Datafile first, so if renaming the metadata fails, we still have the
