@@ -32,6 +32,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <cstring>
 
 namespace std {
 
@@ -735,6 +736,83 @@ void to::test<15>()
 	count += countDeletedMetadata("testdir/2007/07-08.grib1.metadata");
 	count += countDeletedMetadata("testdir/2007/10-09.grib1.metadata");
 	ensure_equals(count, 3u);
+}
+
+// Test repack, with index
+template<> template<>
+void to::test<16>()
+{
+	// Allow replacing duplicate values
+	cfg.setValue("replace", "yes");
+	// Acquire twice to create deleted elements
+	acquireSamples();
+	acquireSamples();
+
+	off_t sz1 = utils::files::size("testdir/2007/07-07.grib1");
+	off_t sz2 = utils::files::size("testdir/2007/07-08.grib1");
+	off_t sz3 = utils::files::size("testdir/2007/10-09.grib1");
+
+	ensure(!utils::files::hasIndexFlagfile("testdir"));
+	ensure(!utils::files::hasRebuildFlagfile("testdir/2007/07-07.grib1"));
+	ensure(!utils::files::hasRebuildFlagfile("testdir/2007/07-08.grib1"));
+	ensure(!utils::files::hasRebuildFlagfile("testdir/2007/10-09.grib1"));
+	ensure(utils::files::hasPackFlagfile("testdir/2007/07-07.grib1"));
+	ensure(utils::files::hasPackFlagfile("testdir/2007/07-08.grib1"));
+	ensure(utils::files::hasPackFlagfile("testdir/2007/10-09.grib1"));
+
+	stringstream out;
+	{
+		Writer writer(cfg);
+		writer.repack(out, true);
+		writer.flush();
+	}
+
+	ensure(!utils::files::hasPackFlagfile("testdir/2007/07-07.grib1"));
+	ensure(!utils::files::hasPackFlagfile("testdir/2007/07-08.grib1"));
+	ensure(!utils::files::hasPackFlagfile("testdir/2007/10-09.grib1"));
+	ensure(!utils::files::hasRebuildFlagfile("testdir/2007/07-07.grib1"));
+	ensure(!utils::files::hasRebuildFlagfile("testdir/2007/07-08.grib1"));
+	ensure(!utils::files::hasRebuildFlagfile("testdir/2007/10-09.grib1"));
+	ensure(!utils::files::hasIndexFlagfile("testdir"));
+
+	off_t sz1a = utils::files::size("testdir/2007/07-07.grib1");
+	off_t sz2a = utils::files::size("testdir/2007/07-08.grib1");
+	off_t sz3a = utils::files::size("testdir/2007/10-09.grib1");
+
+	ensure(sz1a > 0);
+	ensure(sz2a > 0);
+	ensure(sz3a > 0);
+	ensure(sz1a < sz1);
+	ensure(sz2a < sz2);
+	ensure(sz3a < sz3);
+
+	// Test querying
+	Reader reader(cfg);
+	ensure(reader.hasWorkingIndex());
+	MetadataCollector mdc;
+	reader.queryMetadata(Matcher(), true, mdc);
+	ensure_equals(mdc.size(), 3u);
+
+	UItem<source::Inline> blob = mdc[0].source.upcast<source::Inline>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->size, 34960u);
+	wibble::sys::Buffer buf = mdc[0].getData();
+	ensure_equals(memcmp(buf.data(), "GRIB", 4), 0);
+	ensure_equals(memcmp((const char*)buf.data() + 34956, "7777", 4), 0);
+
+	blob = mdc[1].source.upcast<source::Inline>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->size, 7218u);
+	buf = mdc[1].getData();
+	ensure_equals(memcmp(buf.data(), "GRIB", 4), 0);
+	ensure_equals(memcmp((const char*)buf.data() + 7214, "7777", 4), 0);
+
+	blob = mdc[2].source.upcast<source::Inline>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->size, 2234u);
+	buf = mdc[2].getData();
+	ensure_equals(memcmp(buf.data(), "GRIB", 4), 0);
+	ensure_equals(memcmp((const char*)buf.data() + 2230, "7777", 4), 0);
 }
 
 }

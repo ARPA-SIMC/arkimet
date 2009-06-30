@@ -226,6 +226,7 @@ struct Repacker : public Worker
 	virtual void operator()(WritableDataset& w)
 	{
 		w.repack(cout, fix);
+		w.flush();
 	}
 
 	virtual void done()

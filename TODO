@@ -183,6 +183,9 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - ondisk2: nel rebuild, in caso di duplicati, tenere l'ultimo e non il primo
 
+ - bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
+ - scan::listScannableFiles(const std::string& dir, ?);
+
  - cache negli aggregate come negli attributi
  - cleanup degli aggregate durante il pack prendendo le query dal cleanup degli
    orfani in dballe

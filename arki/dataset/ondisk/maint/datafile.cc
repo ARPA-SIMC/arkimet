@@ -255,6 +255,12 @@ size_t Datafile::repack()
 	string fname = str::basename(pathname);
 	string ext = extension();
 
+	// Create rebuild flagfile to mark that we are messing with the datafile
+	createNewRebuildFlagfile(pathname);
+
+	// Reset the index for this file
+	parent->resetIndex(relname);
+
 	size_t pos = 0;
 	for (vector<Metadata>::iterator i = allmd.begin();
 			i != allmd.end(); ++i)
@@ -274,12 +280,6 @@ size_t Datafile::repack()
 	outmd.close();
 
 	// Perform the final atomic rename
-
-	// Create rebuild flagfile to mark that we are messing with the datafile
-	createNewRebuildFlagfile(pathname);
-
-	// Reset the index for this file
-	parent->resetIndex(relname);
 
 	// Datafile first, so if renaming the metadata fails, we still have the
 	// rebuild flagfile that will cause its rebuild
@@ -316,15 +316,20 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 
 	// Scan the list of metadata, looking for duplicates and marking all
 	// the duplicates except the last one as deleted
+	map<string, Metadata*> finddupes;
 	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
 	{
 		string id = parent->id(*i);
 		if (id.empty())
 			continue;
-
-		for (metadata::Collector::iterator j = mds.begin(); j != i; ++j)
-			if (parent->id(*j) == id)
-				j->deleted = true;
+		map<string, Metadata*>::iterator dup = finddupes.find(id);
+		if (dup == finddupes.end())
+			finddupes.insert(make_pair(id, &(*i)));
+		else
+		{
+			dup->second->deleted = true;
+			dup->second = &(*i);
+		}
 	}
 
 	// Open the new .metadata file
