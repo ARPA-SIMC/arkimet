@@ -47,6 +47,18 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer
 	 * Write all the metadata to a file, atomically, using AtomicWriter
 	 */
 	void writeAtomically(const std::string& fname) const;
+
+	/**
+	 * Send all metadata to a consumer
+	 */
+	bool sendTo(MetadataConsumer& out)
+	{
+		for (std::vector<Metadata>::iterator i = begin();
+				i != end(); ++i)
+			if (!out(*i))
+				return false;
+		return true;
+	}
 };
 
 /**

@@ -65,7 +65,7 @@ Index::Index(const ConfigFile& cfg)
 	string unique = cfg.value("unique");
 	if (unique.empty())
 		unique = "reftime, origin, product, level, timerange, area";
-	m_id_maker.init(unique);
+	m_id_maker.components = parseMetadataBitmask(unique);
 
 	// What metadata components we index
 	string index = cfg.value("index");

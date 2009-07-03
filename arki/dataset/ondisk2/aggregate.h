@@ -57,6 +57,11 @@ public:
 	void initQueries();
 
 	/**
+	 * Get the set of types::Code handled by this aggregate
+	 */
+	std::set<types::Code> members() const;
+
+	/**
 	 * Get the ID of the row that matches the given metadata.
 	 *
 	 * @returns the ID, or -1 if it was not found.

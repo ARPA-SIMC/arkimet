@@ -69,6 +69,14 @@ void Aggregate::initQueries()
 	q_insert.compile("INSERT INTO " + m_table_name + " (" + names + ") VALUES (" + placeholders + ")");
 }
 
+std::set<types::Code> Aggregate::members() const
+{
+	std::set<types::Code> res;
+	for (index::Attrs::const_iterator i = m_attrs.begin();
+			i != m_attrs.end(); ++i)
+		res.insert((*i)->code);
+	return res;
+}
 
 int Aggregate::get(const Metadata& md) const
 {

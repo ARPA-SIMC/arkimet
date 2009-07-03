@@ -111,6 +111,11 @@ public:
 	}
 
 	/**
+	 * Set of metadata types that make a metadata unique
+	 */
+	std::set<types::Code> unique_codes() const;
+
+	/**
 	 * Precompile queries.
 	 *
 	 * This must be called after the database schema has been created, as a

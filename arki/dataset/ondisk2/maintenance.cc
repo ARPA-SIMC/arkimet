@@ -27,6 +27,7 @@
 #include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/metadata.h>
 #include <arki/scan/any.h>
 
 #include <wibble/sys/fs.h>
@@ -283,9 +284,33 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 
 	string pathname = str::joinpath(root, file);
 
+	// Collect the scan results in a metadata::Collector
+	utils::metadata::Collector mds;
+	if (!scan::scan(pathname, mds))
+		throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
+
+	// Scan the list of metadata, looking for duplicates and marking all
+	// the duplicates except the last one as deleted
+	index::IDMaker id_maker(idx.unique_codes());
+
+	map<string, Metadata*> finddupes;
+	for (utils::metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
+	{
+		string id = id_maker.id(*i);
+		if (id.empty())
+			continue;
+		map<string, Metadata*>::iterator dup = finddupes.find(id);
+		if (dup == finddupes.end())
+			finddupes.insert(make_pair(id, &(*i)));
+		else
+		{
+			dup->second->deleted = true;
+			dup->second = &(*i);
+		}
+	}
+
 	Reindexer fixer(idx, dsname, file, salvage);
-	if (!scan::scan(pathname, fixer))
-		throw wibble::exception::Consistency("Failed to rescan " + pathname);
+	assert(mds.sendTo(fixer));
 
 	// TODO: if scan fails, remove all info from the index and rename the
 	// file to something like .broken

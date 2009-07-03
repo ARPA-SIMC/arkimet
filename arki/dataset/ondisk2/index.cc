@@ -125,6 +125,14 @@ void Index::initQueries()
 	m_get_id.compile(query);
 }
 
+std::set<types::Code> Index::unique_codes() const
+{
+	std::set<types::Code> res;
+	if (m_uniques) res = m_uniques->members();
+	res.insert(types::TYPE_REFTIME);
+	return res;
+}
+
 void Index::setupPragmas()
 {
 	// Faster but riskier, since we do not have a flagfile to trap
@@ -519,7 +527,10 @@ void WIndex::initDB()
 		" reftime TEXT NOT NULL";
 	if (m_uniques) query += ", uniq INTEGER NOT NULL";
 	if (m_others) query += ", other INTEGER NOT NULL";
-	if (m_uniques) query += ", UNIQUE(reftime, uniq)";
+	if (m_uniques)
+		query += ", UNIQUE(reftime, uniq)";
+	else
+		query += ", UNIQUE(reftime)";
 	query += ")";
 	m_db.exec(query);
 

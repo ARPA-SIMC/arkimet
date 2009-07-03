@@ -64,12 +64,10 @@ std::set<types::Code> parseMetadataBitmask(const std::string& components);
  */
 struct IDMaker
 {
-	std::set<types::Code> m_id_components;
+	std::set<types::Code> components;
 	
 	IDMaker() {}
-	IDMaker(const std::string& components) { init(components); }
-
-	void init(const std::string& components);
+	IDMaker(const std::set<types::Code>& components) : components(components) {}
 
 	std::string id(const Metadata& md) const;
 };
