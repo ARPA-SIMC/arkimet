@@ -98,6 +98,26 @@ bool scan(const std::string& file, MetadataConsumer& c)
 	}
 }
 
+bool canScan(const std::string& file)
+{
+	// Get the file extension
+	size_t pos = file.rfind('.');
+	if (pos == string::npos)
+		throw wibble::exception::Consistency("getting extension of " + file, "file name has no extension");
+	string ext = str::tolower(file.substr(pos+1));
+
+	// Check for known extensions
+#ifdef HAVE_GRIBAPI
+	if (ext == "grib" || ext == "grib1" || ext == "grib2")
+		return true;
+#endif
+#ifdef HAVE_DBALLE
+	if (ext == "bufr")
+		return true;
+#endif
+	return false;
+}
+
 }
 }
 // vim:set ts=4 sw=4:

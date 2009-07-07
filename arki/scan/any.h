@@ -41,6 +41,14 @@ namespace scan {
  */
 bool scan(const std::string& file, MetadataConsumer& c);
 
+/**
+ * Return true if the file looks like a file with data that can be scanned.
+ *
+ * The current implementation only looks at the file extension. Future
+ * implementations may also have a quick look at the file contents.
+ */
+bool canScan(const std::string& file);
+
 }
 }
 
