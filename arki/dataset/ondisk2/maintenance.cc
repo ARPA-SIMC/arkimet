@@ -49,6 +49,15 @@ namespace dataset {
 namespace ondisk2 {
 namespace writer {
 
+template<typename T>
+static std::string nfiles(const T& val)
+{
+	if (val == 1)
+		return "1 file";
+	else
+		return str::fmt(val) + " files";
+}
+
 void HoleFinder::finaliseFile()
 {
 	if (!last_file.empty())
@@ -310,7 +319,8 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 	}
 
 	Reindexer fixer(idx, dsname, file, salvage);
-	assert(mds.sendTo(fixer));
+	bool res = mds.sendTo(fixer);
+	assert(res);
 
 	// TODO: if scan fails, remove all info from the index and rename the
 	// file to something like .broken
@@ -390,11 +400,11 @@ void RealRepacker::end()
 
 	logStart();
 	if (m_count_packed)
-		logAdd() << m_count_packed << " files packed";
+		logAdd() << nfiles(m_count_packed) << " packed";
 	if (m_count_deleted)
-		logAdd() << m_count_deleted << " files deleted";
+		logAdd() << nfiles(m_count_deleted) << " deleted";
 	if (m_count_deindexed)
-		logAdd() << m_count_deindexed << " files removed from index";
+		logAdd() << nfiles(m_count_deindexed) << " removed from index";
 	if (size_pre > size_post)
 	{
 		logAdd() << (size_pre - size_post) << " bytes reclaimed on the index";
@@ -437,11 +447,11 @@ void MockRepacker::end()
 {
 	logStart();
 	if (m_count_packed)
-		logAdd() << m_count_packed << " files should be packed";
+		logAdd() << nfiles(m_count_packed) << " should be packed";
 	if (m_count_deleted)
-		logAdd() << m_count_deleted << " files should be deleted";
+		logAdd() << nfiles(m_count_deleted) << " should be deleted";
 	if (m_count_deindexed)
-		logAdd() << m_count_deleted << " files should be removed from the index";
+		logAdd() << nfiles(m_count_deleted) << " should be removed from the index";
 	logEnd();
 }
 
@@ -510,11 +520,11 @@ void RealFixer::end()
 
 	logStart();
 	if (m_count_packed)
-		logAdd() << m_count_packed << " files packed";
+		logAdd() << nfiles(m_count_packed) << " packed";
 	if (m_count_rescanned)
-		logAdd() << m_count_rescanned << " files rescanned";
+		logAdd() << nfiles(m_count_rescanned) << " rescanned";
 	if (m_count_deindexed)
-		logAdd() << m_count_deindexed << " files removed from index";
+		logAdd() << nfiles(m_count_deindexed) << " removed from index";
 	if (size_pre > size_post)
 		logAdd() << (size_pre - size_post) << " bytes reclaimed cleaning the index";
 	if (m_count_salvaged)
@@ -557,11 +567,11 @@ void MockFixer::end()
 {
 	logStart();
 	if (m_count_packed)
-		logAdd() << m_count_packed << " files should be packed";
+		logAdd() << nfiles(m_count_packed) << " should be packed";
 	if (m_count_rescanned)
-		logAdd() << m_count_rescanned << " files should be rescanned";
+		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
 	if (m_count_deindexed)
-		logAdd() << m_count_deindexed << " files should be removed from the index";
+		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
 	logEnd();
 }
 
