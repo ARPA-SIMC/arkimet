@@ -24,6 +24,7 @@
 #include <arki/configfile.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 
 #include <sstream>
@@ -83,7 +84,18 @@ struct MaintenanceCollector : public MaintFileVisitor
 		out << " files:" << endl;
 		for (std::map<std::string, State>::const_iterator i = fileStates.begin();
 				i != fileStates.end(); ++i)
-			out << "   " << i->first << ": " << i->second << endl;
+		{
+			out << "   " << i->first << ": ";
+			switch (i->second)
+			{
+				case OK:	out << "ok";      break;
+				case TO_PACK:	out << "pack";    break;
+				case TO_INDEX:	out << "index";   break;
+				case TO_RESCAN:	out << "rescan";  break;
+				case DELETED:	out << "deleted"; break;
+			}
+			out << endl;
+		}
 	}
 };
 
@@ -606,20 +618,32 @@ void to::test<10>()
 		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 1u);
-	ensure(c.isClean());
+	// A repack is still needed because the data is not sorted by reftime
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_pack, 1u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
 
 	ensure(sys::fs::access("testdir/foo/bar/test.grib1.tmp", F_OK));
+	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412);
 
 	// Perform packing and check that things are still ok afterwards
 	s.str(std::string());
 	writer.repack(s, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
+	ensure_equals(s.str(),
+		"testdir: packed foo/bar/test.grib1 (0 saved)\n"
+		"testdir: database cleaned up\n"
+		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 2576 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 1u);
 	ensure(c.isClean());
+
+	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412);
 
 	// Test querying
 	Reader reader(cfg);
@@ -630,7 +654,7 @@ void to::test<10>()
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 
 	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 0u);
+	ensure_equals(blob->offset, 34960u);
 }
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
@@ -674,6 +698,34 @@ void to::test<11>()
 	ensure_equals(c.count_deleted, 0u);
 	ensure(not c.isClean());
 
+	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412*2);
+
+	{
+		// Test querying
+		Reader reader(cfg);
+		ensure(reader.hasWorkingIndex());
+		MetadataCollector mdc;
+		reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+		ensure_equals(mdc.size(), 1u);
+		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
+		ensure_equals(blob->format, "grib1"); 
+		ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+		ensure_equals(blob->offset, 51630u);
+		ensure_equals(blob->size, 34960u);
+
+		// Query the second element and check that it starts after the first one
+		// (there used to be a bug where the rebuild would use the offsets of
+		// the metadata instead of the data)
+		mdc.clear();
+		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		ensure_equals(mdc.size(), 1u);
+		blob = mdc[0].source.upcast<source::Blob>();
+		ensure_equals(blob->format, "grib1"); 
+		ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+		ensure_equals(blob->offset,  44412u);
+		ensure_equals(blob->size, 7218u);
+	}
+
 	// Perform packing and check that things are still ok afterwards
 	s.str(std::string());
 	writer.repack(s, true);
@@ -687,7 +739,9 @@ void to::test<11>()
 	ensure_equals(c.count_ok, 1u);
 	ensure(c.isClean());
 
-	// Test querying
+	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412);
+
+	// Test querying, and see that things have moved to the beginning
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
 	MetadataCollector mdc;
@@ -696,7 +750,7 @@ void to::test<11>()
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 
 	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 44412u);
+	ensure_equals(blob->offset, 0u);
 	ensure_equals(blob->size, 34960u);
 
 	// Query the second element and check that it starts after the first one
@@ -708,7 +762,7 @@ void to::test<11>()
 	blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 
 	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 79372u);
+	ensure_equals(blob->offset, 34960u);
 	ensure_equals(blob->size, 7218u);
 }
 
@@ -756,6 +810,8 @@ void to::test<12>()
 	ensure_equals(c.count_deleted, 0u);
 	ensure(not c.isClean());
 
+	ensure_equals(utils::files::size("testdir/2007/07-08.grib1"), 7218 + 44412);
+
 	{
 		// Test querying: reindexing should have chosen the last version of
 		// duplicate items
@@ -794,6 +850,8 @@ void to::test<12>()
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 3u);
 	ensure(c.isClean());
+
+	ensure_equals(utils::files::size("testdir/2007/07-08.grib1"), 7218);
 
 	// Test querying, after repack this item should have been moved to the
 	// beginning of the file

@@ -187,8 +187,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
    file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione
    con un buon messaggio invece che a rompere le scatole col salvage
-
- - ondisk2: nel rebuild, in caso di duplicati, tenere l'ultimo e non il primo
+   (questo crea un problema se si fa rebuild da zero con tanti file giusti e un
+    file sbagliato. A seconda dell'ordine di lettura dei file, può tener buono
+    quello nel file giusto o nel file sbagliato, e non c'è modo di sapere quale
+    dei due tenere)
 
  - arki-query: al ^C, non troncare l'ultimo grib
 
