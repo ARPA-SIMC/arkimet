@@ -19,12 +19,7 @@
 #include <arki/dataset/test-utils.h>
 #include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/dataset/ondisk2/writer.h>
-#if 0
-#include <arki/dataset/ondisk2/maint/directory.h>
-#include <arki/dataset/ondisk2/maint/datafile.h>
-#include <arki/dataset/ondisk2/common.h>
 #include <arki/dataset/ondisk2/reader.h>
-#endif
 #include <arki/metadata.h>
 #include <arki/configfile.h>
 #include <arki/scan/grib.h>
@@ -74,6 +69,21 @@ struct MaintenanceCollector : public MaintFileVisitor
 			case TO_RESCAN:	++count_rescan;	break;
 			case DELETED:	++count_deleted; break;
 		}
+	}
+
+	void dump(std::ostream& out) const
+	{
+		using namespace std;
+		out << "Results:" << endl;
+		out << " ok: " << count_ok << endl;
+		out << " pack: " << count_pack << endl;
+		out << " index: " << count_index << endl;
+		out << " rescan: " << count_rescan << endl;
+		out << " deleted: " << count_deleted << endl;
+		out << " files:" << endl;
+		for (std::map<std::string, State>::const_iterator i = fileStates.begin();
+				i != fileStates.end(); ++i)
+			out << "   " << i->first << ": " << i->second << endl;
 	}
 };
 
@@ -191,7 +201,7 @@ void to::test<2>()
 	ensure_equals(s.str(),
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 1 files removed from index, 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
+		"testdir: 1 file removed from index, 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -240,7 +250,7 @@ void to::test<3>()
 	ensure_equals(s.str(),
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 1 files removed from index, 29416 bytes reclaimed cleaning the index.\n");
+		"testdir: 1 file removed from index, 29416 bytes reclaimed cleaning the index.\n");
 
 	c.clear();
 
@@ -291,7 +301,7 @@ void to::test<4>()
 		"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 1 files deleted, 29416 bytes reclaimed on the index, 64376 total bytes freed.\n");
+		"testdir: 1 file deleted, 29416 bytes reclaimed on the index, 64376 total bytes freed.\n");
 
 	c.clear();
 
@@ -345,7 +355,7 @@ void to::test<5>()
 	ensure_equals(s.str(),
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 1 files rescanned, 29416 bytes reclaimed cleaning the index.\n");
+		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 3u);
@@ -396,7 +406,7 @@ void to::test<6>()
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 1 files packed, 29416 bytes reclaimed on the index, 64376 total bytes freed.\n");
+		"testdir: 1 file packed, 29416 bytes reclaimed on the index, 64376 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -451,7 +461,7 @@ void to::test<7>()
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 1 files packed, 29416 bytes reclaimed cleaning the index.\n");
+		"testdir: 1 file packed, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 2u);
@@ -513,73 +523,305 @@ void to::test<8>()
 	ensure(c.isClean());
 }
 
-#if 0
-// Test accuracy of maintenance scan, with index, with index-out-of-date flagfile
+// Test accuracy of maintenance scan, after deleting the index, with some
+// spurious extra files in the dataset
 template<> template<>
-void to::test<7>()
+void to::test<9>()
 {
 	acquireSamples();
-	createNewIndexFlagfile("testdir");
+	system("rm testdir/index.sqlite");
+	system("echo 'GRIB garbage 7777' > testdir/2007/07.grib1.tmp");
 
-	Writer writer(cfg);
+	arki::dataset::ondisk2::Writer writer(cfg);
 	MaintenanceCollector c;
 	writer.maintenance(c);
 
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, true);
-	ensure_equals(c.datafileRebuild.size(), 0u);
-	ensure_equals(c.summaryRebuildFile.size(), 0u);
-	ensure_equals(c.summaryRebuildDir.size(), 0u);
-	ensure(!c.isClean());
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 3u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
 
-	// Perform full maintenance and check that things are ok afterwards
-	stringstream maintlog;
+	stringstream s;
+
+	// Perform full maintenance and check that things are still ok afterwards
 	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
+	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 3 files rescanned, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
+	ensure_equals(c.count_ok, 3u);
 	ensure(c.isClean());
+
+	ensure(sys::fs::access("testdir/2007/07.grib1.tmp", F_OK));
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+}
+
+// Test recreating a dataset from random datafiles
+template<> template<>
+void to::test<10>()
+{
+	system("mkdir testdir");
+	system("mkdir testdir/foo");
+	system("mkdir testdir/foo/bar");
+	system("cp inbound/test.grib1 testdir/foo/bar/");
+	system("echo 'GRIB garbage 7777' > testdir/foo/bar/test.grib1.tmp");
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 1u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 1u);
+	ensure(c.isClean());
+
+	ensure(sys::fs::access("testdir/foo/bar/test.grib1.tmp", F_OK));
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 1u);
+	ensure(c.isClean());
+
+	// Test querying
+	Reader reader(cfg);
+	ensure(reader.hasWorkingIndex());
+	MetadataCollector mdc;
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+	ensure_equals(blob->offset, 0u);
+}
+
+// Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
+template<> template<>
+void to::test<11>()
+{
+	system("mkdir testdir");
+	system("mkdir testdir/foo");
+	system("mkdir testdir/foo/bar");
+	system("cat inbound/test.grib1 inbound/test.grib1 > testdir/foo/bar/test.grib1");
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 1u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
+
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_pack, 1u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(),
+		"testdir: packed foo/bar/test.grib1 (44412 saved)\n"
+		"testdir: database cleaned up\n"
+		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 46988 total bytes freed.\n");
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 1u);
+	ensure(c.isClean());
+
+	// Test querying
+	Reader reader(cfg);
+	ensure(reader.hasWorkingIndex());
+	MetadataCollector mdc;
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+	ensure_equals(blob->offset, 44412u);
+	ensure_equals(blob->size, 34960u);
+
+	// Query the second element and check that it starts after the first one
+	// (there used to be a bug where the rebuild would use the offsets of
+	// the metadata instead of the data)
+	mdc.clear();
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
+	ensure_equals(blob->offset, 79372u);
+	ensure_equals(blob->size, 7218u);
 }
 
 // Test accuracy of maintenance scan, with index, on dataset with some
-// rebuild flagfiles
+// rebuild flagfiles, and duplicate items inside
 template<> template<>
-void to::test<8>()
+void to::test<12>()
 {
 	acquireSamples();
-	createNewRebuildFlagfile("testdir/2007/07-08.grib1");
-	createNewRebuildFlagfile("testdir/2007/10-09.grib1");
+	system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
+	{
+		WIndex index(cfg);
+		index.open();
+		index.reset("2007/07-08.grib1");
+	}
 
-	Writer writer(cfg);
+	arki::dataset::ondisk2::Writer writer(cfg);
 	MaintenanceCollector c;
 	writer.maintenance(c);
-	c.sort();
 
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, false);
-	ensure_equals(c.datafileRebuild.size(), 2u);
-	ensure_equals(c.datafileRebuild[0], "2007/07-08.grib1");
-	ensure_equals(c.datafileRebuild[1], "2007/10-09.grib1");
-	ensure_equals(c.summaryRebuildFile.size(), 0u);
-	ensure_equals(c.summaryRebuildDir.size(), 0u);
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 1u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
 
-	// Perform full maintenance and check that things are ok afterwards
-	stringstream maintlog;
+	stringstream s;
+
+	// Perform full maintenance and check that things are still ok afterwards
 	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, counter);
+	ensure_equals(counter.count, 2u);
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index, 2 data items could not be reindexed.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
+	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_pack, 1u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	{
+		// Test querying: reindexing should have chosen the last version of
+		// duplicate items
+		Reader reader(cfg);
+		ensure(reader.hasWorkingIndex());
+		MetadataCollector mdc;
+		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		ensure_equals(mdc.size(), 1u);
+		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
+		ensure_equals(blob->format, "grib1"); 
+		ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-08.grib1"));
+		ensure_equals(blob->offset, 7218u);
+		ensure_equals(blob->size, 7218u);
+
+		// Query another element and check that it has not been relocated to
+		// the wrong file
+		mdc.clear();
+		reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+		ensure_equals(mdc.size(), 1u);
+		blob = mdc[0].source.upcast<source::Blob>();
+		ensure_equals(blob->format, "grib1"); 
+		ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-07.grib1"));
+		ensure_equals(blob->offset, 0u);
+		ensure_equals(blob->size, 34960u);
+	}
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(),
+		"testdir: packed 2007/07-08.grib1 (44412 saved)\n"
+		"testdir: database cleaned up\n"
+		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 46988 total bytes freed.\n");
+	c.clear();
+
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
 	ensure(c.isClean());
+
+	// Test querying, after repack this item should have been moved to the
+	// beginning of the file
+	Reader reader(cfg);
+	ensure(reader.hasWorkingIndex());
+	MetadataCollector mdc;
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-08.grib1"));
+	ensure_equals(blob->offset, 0u);
+	ensure_equals(blob->size, 7218u);
+
+	// Query another element and check that it has not been relocated to
+	// the wrong file
+	mdc.clear();
+	reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	ensure_equals(mdc.size(), 1u);
+	blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->format, "grib1"); 
+	ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-07.grib1"));
+	ensure_equals(blob->offset, 0u);
+	ensure_equals(blob->size, 34960u);
 }
 
+
+#if 0
 // Test accuracy of maintenance scan, with index, on dataset with some
 // outdated summaries
 template<> template<>
@@ -685,45 +927,6 @@ void to::test<11>()
 	ensure(c.isClean());
 }
 
-// Test recreating a dataset from just a datafile and a rebuild flagfile
-template<> template<>
-void to::test<12>()
-{
-	system("mkdir testdir");
-	system("mkdir testdir/foo");
-	system("mkdir testdir/foo/bar");
-	system("cp inbound/test.grib1 testdir/foo/bar/");
-	createNewRebuildFlagfile("testdir/foo/bar/test.grib1");
-
-	Writer writer(cfg);
-	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	//FullMaintenance m(cerr, counter);
-	writer.maintenance(m);
-
-	ensure(!hasIndexFlagfile("testdir"));
-	ensure(!hasRebuildFlagfile("testdir/foo/bar/test.grib1"));
-	ensure(!hasPackFlagfile("testdir/foo/bar/test.grib1"));
-	ensure(utils::hasFlagfile("testdir/foo/bar/test.grib1.metadata"));
-	ensure(utils::hasFlagfile("testdir/foo/bar/test.grib1.summary"));
-	ensure(utils::hasFlagfile("testdir/foo/bar/summary"));
-	ensure(utils::hasFlagfile("testdir/foo/summary"));
-	ensure(utils::hasFlagfile("testdir/summary"));
-	ensure(utils::hasFlagfile("testdir/index.sqlite"));
-
-	// Test querying
-	Reader reader(cfg);
-	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
-	ensure_equals(mdc.size(), 1u);
-	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->format, "grib1"); 
-	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 0u);
-}
-
 // Test invalidating and rebuilding a dataset
 template<> template<>
 void to::test<13>()
@@ -760,108 +963,6 @@ void to::test<13>()
 	writer.maintenance(c);
 	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
-}
-
-// Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
-template<> template<>
-void to::test<14>()
-{
-	system("mkdir testdir");
-	system("mkdir testdir/foo");
-	system("mkdir testdir/foo/bar");
-	system("cat inbound/test.grib1 inbound/test.grib1 > testdir/foo/bar/test.grib1");
-	createNewRebuildFlagfile("testdir/foo/bar/test.grib1");
-
-	Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-	ensure(c.isClean());
-
-
-	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	//FullMaintenance m(cerr, counter);
-	writer.maintenance(m);
-
-	ensure_equals(counter.count, 0u);
-
-	ensure(!hasIndexFlagfile("testdir"));
-	ensure(!hasRebuildFlagfile("testdir/foo/bar/test.grib1"));
-	ensure(hasPackFlagfile("testdir/foo/bar/test.grib1"));
-	ensure(utils::hasFlagfile("testdir/foo/bar/test.grib1.metadata"));
-	ensure(utils::hasFlagfile("testdir/foo/bar/test.grib1.summary"));
-	ensure(utils::hasFlagfile("testdir/foo/bar/summary"));
-	ensure(utils::hasFlagfile("testdir/foo/summary"));
-	ensure(utils::hasFlagfile("testdir/summary"));
-	ensure(utils::hasFlagfile("testdir/index.sqlite"));
-
-	// Test querying
-	Reader reader(cfg);
-	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
-	ensure_equals(mdc.size(), 1u);
-	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->format, "grib1"); 
-	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 44412u);
-	ensure_equals(blob->size, 7218u);
-
-	// Query the second element and check that it starts after the first one
-	// (there used to be a bug where the rebuild would use the offsets of
-	// the metadata instead of the data)
-	mdc.clear();
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
-	ensure_equals(mdc.size(), 1u);
-	blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->format, "grib1"); 
-	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 51630u);
-	ensure_equals(blob->size, 34960u);
-}
-
-// Test accuracy of maintenance scan, with index, on dataset with some
-// rebuild flagfiles, and duplicate items inside
-template<> template<>
-void to::test<15>()
-{
-	acquireSamples();
-	createNewRebuildFlagfile("testdir/2007/07-08.grib1");
-	createNewRebuildFlagfile("testdir/2007/10-09.grib1");
-	system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
-
-	Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-	c.sort();
-
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, false);
-	ensure_equals(c.datafileRebuild.size(), 2u);
-	ensure_equals(c.datafileRebuild[0], "2007/07-08.grib1");
-	ensure_equals(c.datafileRebuild[1], "2007/10-09.grib1");
-	ensure_equals(c.summaryRebuildFile.size(), 0u);
-	ensure_equals(c.summaryRebuildDir.size(), 0u);
-
-	// Perform full maintenance and check that things are ok afterwards
-	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
-	ensure_equals(counter.count, 3u);
-	c.clear();
-	counter.count = 0;
-	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
-	ensure(c.isClean());
-
-	size_t count = 0;
-	count += countDeletedMetadata("testdir/2007/07-07.grib1.metadata");
-	count += countDeletedMetadata("testdir/2007/07-08.grib1.metadata");
-	count += countDeletedMetadata("testdir/2007/10-09.grib1.metadata");
-	ensure_equals(count, 3u);
 }
 
 #endif
