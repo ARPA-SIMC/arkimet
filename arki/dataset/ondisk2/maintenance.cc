@@ -100,6 +100,37 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 	last_file_size += size;
 }
 
+void FindMissing::operator()(const std::string& file, State state)
+{
+	while (not disk.cur().empty() and disk.cur() < file)
+	{
+		next(disk.cur(), TO_INDEX);
+		disk.next();
+	}
+	if (disk.cur() == file)
+	{
+		// TODO: if requested, check for internal consistency
+		// TODO: it requires to have an infrastructure for quick
+		// TODO:   consistency checkers (like, "GRIB starts with GRIB
+		// TODO:   and ends with 7777")
+
+		disk.next();
+		next(file, state);
+	}
+	else // if (disk.cur() > file)
+		next(file, DELETED);
+}
+
+void FindMissing::end()
+{
+	while (not disk.cur().empty())
+	{
+		next(disk.cur(), TO_INDEX);
+		disk.next();
+	}
+}
+
+
 FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
 	: m_idx(idx), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
 {
@@ -476,8 +507,6 @@ void RealFixer::operator()(const std::string& file, State state)
 		}
 		case TO_INDEX:
 		case TO_RESCAN: {
-			// Skip .metadata files
-			if (str::endsWith(file, ".metadata")) break;
 			m_count_salvaged += rescan(w.m_name, w.m_path, file, w.m_idx, salvage);
 			++m_count_rescanned;
 			break;
@@ -549,8 +578,6 @@ void MockFixer::operator()(const std::string& file, State state)
 			break;
 		case TO_INDEX:
 		case TO_RESCAN:
-			// Skip .metadata files
-			if (str::endsWith(file, ".metadata")) break;
 			log() << file << " should be rescanned" << endl;
 			++m_count_rescanned;
 			break;
