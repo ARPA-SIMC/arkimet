@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include <arki/dataset/ondisk2/writer/utils.h>
+#include <arki/scan/any.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -82,7 +83,8 @@ void DirScanner::scan(const std::string& root, int level)
 		} else if (level > 0 && S_ISREG(st->st_mode)) {
 			// Skip files in the root dir
 			// We point to a good file, keep it
-			names.push_back(pathname.substr(m_root.size() + 1));
+			if (scan::canScan(pathname))
+				names.push_back(pathname.substr(m_root.size() + 1));
 		}
 	}
 }
