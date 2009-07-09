@@ -184,42 +184,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    - guarda uno per uno se esistono
    - se ne manca uno, togliere i suoi dati dall'indice
 
- - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
-   file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione
-   con un buon messaggio invece che a rompere le scatole col salvage
-   (questo crea un problema se si fa rebuild da zero con tanti file giusti e un
-    file sbagliato. A seconda dell'ordine di lettura dei file, può tener buono
-    quello nel file giusto o nel file sbagliato, e non c'è modo di sapere quale
-    dei due tenere)
-
- - arki-query: al ^C, non troncare l'ultimo grib
-
- - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
-   lo usa per validare la query, il server lo usa per fare la query). Ne
-   battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query
-   espanse
-
- - In arki-sort, grib:nomefile non funziona
- - Il sort funziona solo per reference time:
-   arki-scan --sort=year:product file.grib --data > file1.grib
-   Non sorta bene per product
-
- - Tenendo in memoria solo i metadati, --sort si potrebbe pure fare senza il
-   bisogno dei timerange
-
- - bufr: aprirli se esiste la tabella, altrimenti non matcheranno e finiranno in error
-
-Importazione con tag:
- - quando si importa, passare una stringa arbitraria che identifica in maniera
-   extra tutti i dati importati in quel file
- - la stringa, farla diventare un path, cosí anche se non è scannabile dal
-   file, è discernibile dai path
- - permettere di querare per path o path parziale
-   (select from md where file like "STRINGA/%")
-
- - bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
- - scan::listScannableFiles(const std::string& dir, ?);
-
  - cache negli aggregate come negli attributi
  - cleanup degli aggregate durante il pack prendendo le query dal cleanup degli
    orfani in dballe
@@ -251,12 +215,45 @@ Importazione con tag:
  - non si fa delete o replace o append di dati in mdarc: dare errore se si
    prova a farlo. La roba precedente all'archive age diventa di fatto read only
 
- - durante il rebuild, se si trovano file non gestiti (tipo .repack) non fare
-   abort, ma segnalare semplicemente che sono stati ignorati
-
  - benchmark locale nuovo ondisk2
     - reindicizzazione di tutto: 
     - 
+
+ - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
+   file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione
+   con un buon messaggio invece che a rompere le scatole col salvage
+   (questo crea un problema se si fa rebuild da zero con tanti file giusti e un
+    file sbagliato. A seconda dell'ordine di lettura dei file, può tener buono
+    quello nel file giusto o nel file sbagliato, e non c'è modo di sapere quale
+    dei due tenere)
+
+ - arki-query: al ^C, non troncare l'ultimo grib
+
+ - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
+   lo usa per validare la query, il server lo usa per fare la query). Ne
+   battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query
+   espanse
+
+ - In arki-sort, grib:nomefile non funziona
+ - Il sort funziona solo per reference time:
+   arki-scan --sort=year:product file.grib --data > file1.grib
+   Non sorta bene per product
+
+ - Tenendo in memoria solo i metadati, --sort si potrebbe pure fare senza il
+   bisogno degli intervalli di reference time
+
+ - bufr: aprirli se esiste la tabella, altrimenti non matcheranno e finiranno in error
+
+Importazione con tag:
+ - quando si importa, passare una stringa arbitraria che identifica in maniera
+   extra tutti i dati importati in quel file
+ - la stringa, farla diventare un path, cosí anche se non è scannabile dal
+   file, è discernibile dai path
+ - permettere di querare per path o path parziale
+   (select from md where file like "STRINGA/%")
+
+ - bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
+ - scan::listScannableFiles(const std::string& dir, ?);
 
  - controllare l'uso del match sui null in ondisk1 (select =? becomes =NULL
    that is always false)

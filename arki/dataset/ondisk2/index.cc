@@ -651,6 +651,10 @@ void WIndex::relocate_data(int id, off_t newofs)
 void WIndex::vacuum()
 {
 	m_db.exec("PRAGMA journal_mode = TRUNCATE");
+	if (m_uniques)
+		m_db.exec("delete from mduniq where id not in (select uniq from md)");
+	if (m_others)
+		m_db.exec("delete from mdother where id not in (select other from md)");
 	m_db.exec("VACUUM");
 	m_db.exec("ANALYZE");
 	m_db.exec("PRAGMA journal_mode = PERSIST");
