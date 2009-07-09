@@ -253,11 +253,11 @@ Importazione con tag:
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
 
- - dataset ciclici
+ - dataset ciclici (fatti in ondisk2)
     - se un file non esiste su disco ma esiste nell'indice, ignorare la cosa
       (permette di cancellare file su disco senza incasinare le query)
-    - parametro di configurazione col tempo da tenere
-    - arki-check cancelli i file vecchi
+    - parametro di configurazione col tempo da tenere (fatto in ondisk2)
+    - arki-check cancelli i file vecchi (fatto in ondisk2)
 
  - fare un file reader che legga file con dentro i dati
     - se c'è di fianco un file .metadata con timestamp >= quello del file coi
