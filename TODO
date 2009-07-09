@@ -185,18 +185,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    - se ne manca uno, togliere i suoi dati dall'indice
 
  - cache negli aggregate come negli attributi
- - cleanup degli aggregate durante il pack prendendo le query dal cleanup degli
-   orfani in dballe
-
- - calcolare sempre gli estremi e mettere all'inizio della query reftime un
-   >=X, <=X o BETWEEN(x,y), che danno a sqlite la possibilità di usare gli
-   >indici
- - nel pack di ondisk2, cancellare l'eventuale file .metadata visto che viene
-   invalidato dalla riorganizzazione del file di dati e che in caso di rebuild
-   dell'archivio verrebbe riusato causando sfaceli
- - nei benchmark, il repack riscrive il file di dati causando occupazione di
-   disco: fare un giro di truncate su tutti i file per rifare le hole e
-   recuperare spazio
 
  - fare tabella mdarc dei file archiviati con:
    (file, start_date, end_date)
@@ -316,6 +304,13 @@ Importazione con tag:
 
  - arki-query per i summary stile meteomixer ci mette tipo 4 secondi
    ma via arki-server forse molto di piú: perché?
+
+ - calcolare sempre gli estremi e mettere all'inizio della query reftime un
+   >=X, <=X o BETWEEN(x,y), che danno a sqlite la possibilità di usare gli
+   >indici
+ - nei benchmark, il repack riscrive il file di dati causando occupazione di
+   disco: fare un giro di truncate su tutti i file per rifare le hole e
+   recuperare spazio
 
  - Confronto con gribarch (da verificare):
    gribarch accede direttamente all'NFS. Questo significa che se due macchine

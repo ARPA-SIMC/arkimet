@@ -3,8 +3,9 @@ arkimet (0.21-1) UNRELEASED; urgency=low
   * When rebuilding ondisk2 datafiles, keep the last of the duplicate entries,
     not the first
   * Cleanup unused entries of accessory tables before vacuum
+  * Delete existing .metadata files after repacking ondisk2 datafiles
 
- -- Enrico Zini <enrico@debian.org>  Thu, 09 Jul 2009 09:42:30 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 09 Jul 2009 10:12:35 +0100
 
 arkimet (0.20-1) UNRELEASED; urgency=low
 

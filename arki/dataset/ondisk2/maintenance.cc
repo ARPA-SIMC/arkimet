@@ -263,6 +263,13 @@ static size_t repack(const std::string& root, const std::string& file, WIndex& i
 	size_t size_pre = utils::files::size(pathname);
 	size_t size_post = utils::files::size(pntmp);
 
+	// Remove the .metadata file if present, because we are shuffling the
+	// data file and it will not be valid anymore
+	string mdpathname = pathname + ".metadata";
+	if (sys::fs::access(mdpathname, F_OK))
+		if (unlink(mdpathname.c_str()) < 0)
+			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
+
 	// Rename the file with to final name
 	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
 		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
