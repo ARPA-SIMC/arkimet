@@ -215,8 +215,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     quello nel file giusto o nel file sbagliato, e non c'è modo di sapere quale
     dei due tenere)
 
- - arki-query: al ^C, non troncare l'ultimo grib
-
  - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
    lo usa per validare la query, il server lo usa per fare la query). Ne
    battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query

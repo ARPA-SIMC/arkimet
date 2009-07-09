@@ -24,6 +24,7 @@
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
+#include <wibble/sys/signal.h>
 #include <wibble/string.h>
 #include <arki/configfile.h>
 #include <arki/summary.h>
@@ -95,8 +96,14 @@ struct MetadataOutput : public FlushableMetadataConsumer
 struct MetadataInlineOutput : public FlushableMetadataConsumer
 {
 	Output& output;
+	sigset_t blocked;
 
-	MetadataInlineOutput(Output& output) : output(output) {}
+	MetadataInlineOutput(Output& output) : output(output)
+	{
+		sigemptyset(&blocked);
+		sigaddset(&blocked, SIGINT);
+		sigaddset(&blocked, SIGTERM);
+	}
 
 	virtual bool outputSummary(Summary& s)
 	{
@@ -110,7 +117,9 @@ struct MetadataInlineOutput : public FlushableMetadataConsumer
 		wibble::sys::Buffer buf = md.getData();
 		// Change the source as inline
 		md.setInlineData(md.source->format, buf);
+		sys::sig::ProcMask pm(blocked);
 		md.write(output.stream(), output.name());
+		output.stream().flush();
 		++countMetadata;
 		return true;
 	}
@@ -122,8 +131,14 @@ struct MetadataInlineOutput : public FlushableMetadataConsumer
 struct DataOutput : public FlushableMetadataConsumer
 {
 	Output& output;
+	sigset_t blocked;
 
-	DataOutput(Output& output) : output(output) {}
+	DataOutput(Output& output) : output(output)
+	{
+		sigemptyset(&blocked);
+		sigaddset(&blocked, SIGINT);
+		sigaddset(&blocked, SIGTERM);
+	}
 
 	virtual bool outputSummary(Summary& s)
 	{
@@ -136,7 +151,9 @@ struct DataOutput : public FlushableMetadataConsumer
 		// Read the data
 		wibble::sys::Buffer buf = md.getData();
 		// Write the data only
+		sys::sig::ProcMask pm(blocked);
 		output.stream().write((const char*)buf.data(), buf.size());
+		output.stream().flush();
 		++countMetadata;
 		return true;
 	}

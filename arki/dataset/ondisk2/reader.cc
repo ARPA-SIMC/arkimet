@@ -36,6 +36,7 @@
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
+#include <wibble/sys/signal.h>
 
 #include <fstream>
 #include <sstream>
@@ -116,11 +117,20 @@ struct DataInliner : public MetadataConsumer
 struct DataOnly : public MetadataConsumer
 {
 	std::ostream& out;
-	DataOnly(std::ostream& out) : out(out) {}
+	sigset_t blocked;
+
+	DataOnly(std::ostream& out) : out(out)
+	{
+		sigemptyset(&blocked);
+		sigaddset(&blocked, SIGINT);
+		sigaddset(&blocked, SIGTERM);
+	}
 	bool operator()(Metadata& md)
 	{
 		wibble::sys::Buffer buf = md.getData();
+		sys::sig::ProcMask pm(blocked);
 		out.write((const char*)buf.data(), buf.size());
+		out.flush();
 		return true;
 	}
 };

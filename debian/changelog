@@ -4,8 +4,10 @@ arkimet (0.21-1) UNRELEASED; urgency=low
     not the first
   * Cleanup unused entries of accessory tables before vacuum
   * Delete existing .metadata files after repacking ondisk2 datafiles
+  * Block SIGTERM and SIGINT when outputting one item of data, so that
+    interrupting arki-query with ^C does not give a truncated output file
 
- -- Enrico Zini <enrico@debian.org>  Thu, 09 Jul 2009 10:12:35 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 09 Jul 2009 11:12:17 +0100
 
 arkimet (0.20-1) UNRELEASED; urgency=low
 
