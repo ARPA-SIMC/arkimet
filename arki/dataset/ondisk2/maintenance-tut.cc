@@ -921,7 +921,7 @@ void to::test<12>()
 	ensure_equals(blob->size, 34960u);
 }
 
-// Test accuracy of maintenance scan, on perfect dataset
+// Test accuracy of maintenance scan, on perfect dataset, with data to archive
 template<> template<>
 void to::test<13>()
 {
@@ -976,7 +976,7 @@ void to::test<13>()
 	ensure(c.isClean());
 }
 
-// Test accuracy of maintenance scan, on perfect dataset
+// Test accuracy of maintenance scan, on perfect dataset, with data to delete
 template<> template<>
 void to::test<14>()
 {
@@ -1010,13 +1010,16 @@ void to::test<14>()
 	// Perform packing and check that things are still ok afterwards
 	writer.repack(s, true);
 	ensure_equals(s.str(),
+		"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
+		"testdir: deleted 2007/07-08.grib1 (7218 freed)\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
+		"testdir: 2 files deleted, 2 files removed from index, 29416 bytes reclaimed on the index, 71594 total bytes freed.\n");
+
 
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count_ok, 1u);
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
@@ -1027,7 +1030,7 @@ void to::test<14>()
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count_ok, 1u);
 	ensure(c.isClean());
 }
 
