@@ -144,6 +144,13 @@ public:
 	void scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
 
 	/**
+	 * Return the maximum reference time found in the given file.
+	 *
+	 * Return the empty string if the file is not in the index.
+	 */
+	std::string max_file_reftime(const std::string& relname) const;
+
+	/**
 	 * Query this index, returning metadata
 	 *
 	 * @return true if the index could be used for the query, false if the

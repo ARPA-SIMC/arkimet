@@ -60,7 +60,8 @@ namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
 	: m_cfg(cfg), m_path(cfg.value("path")),
-	  m_idx(cfg), m_tf(0), m_replace(false)
+	  m_idx(cfg), m_tf(0), m_replace(false),
+	  m_archive_age(-1), m_delete_age(-1)
 {
 	m_name = cfg.value("name");
 
@@ -70,6 +71,14 @@ Writer::Writer(const ConfigFile& cfg)
 	m_tf = TargetFile::create(cfg);
 	m_replace = ConfigFile::boolValue(cfg.value("replace"), false);
 	m_idx.open();
+
+	string tmp = cfg.value("archive age");
+	if (!tmp.empty())
+		m_archive_age = strtoul(tmp.c_str(), 0, 10);
+	tmp = cfg.value("delete age");
+	if (!tmp.empty())
+		m_delete_age = strtoul(tmp.c_str(), 0, 10);
+	
 }
 
 Writer::~Writer()
@@ -198,7 +207,8 @@ void Writer::maintenance(writer::MaintFileVisitor& v)
 	// Iterate subdirs in sorted order
 	// Also iterate files on index in sorted order
 	// Check each file for need to reindex or repack
-	writer::FindMissing fm(v, m_path);
+	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
+	writer::FindMissing fm(ca, m_path);
 	writer::HoleFinder hf(fm, m_path);	
 	m_idx.scan_files(hf, "file, reftime, offset");
 	hf.end();

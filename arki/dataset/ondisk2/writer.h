@@ -61,6 +61,8 @@ protected:
 	TargetFile* m_tf;
 	std::vector<Archive*> m_archives;
 	bool m_replace;
+	int m_archive_age;
+	int m_delete_age;
 
 	std::map<std::string, writer::Datafile*> m_df_cache;
 

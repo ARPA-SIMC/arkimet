@@ -34,6 +34,7 @@ namespace dataset {
 namespace ondisk2 {
 class Writer;
 class WIndex;
+class Index;
 
 namespace writer {
 
@@ -44,6 +45,8 @@ struct MaintFileVisitor
 {
 	enum State {
 		OK,		/// File fully and consistently indexed
+		TO_ARCHIVE,	/// File is ok, but old enough to be archived
+		TO_DELETE,	/// File is ok, but old enough to be deleted
 		TO_PACK,	/// File contains data that has been deleted
 		TO_INDEX,	/// File is not present in the index
 		TO_RESCAN,	/// File contents are inconsistent with the index
@@ -113,6 +116,18 @@ struct FindMissing : public writer::MaintFileVisitor
 
 	void operator()(const std::string& file, State state);
 	void end();
+};
+
+struct CheckAge : public writer::MaintFileVisitor
+{
+	writer::MaintFileVisitor& next;
+	const Index& idx;
+	std::string archive_threshold;
+	std::string delete_threshold;
+
+	CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age=-1, int delete_age=-1);
+
+	void operator()(const std::string& file, State state);
 };
 
 struct FileCopier : writer::IndexFileVisitor

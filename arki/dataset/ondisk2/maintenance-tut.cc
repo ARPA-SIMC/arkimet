@@ -26,6 +26,7 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
+#include <wibble/grcal/grcal.h>
 
 #include <sstream>
 #include <iostream>
@@ -40,23 +41,29 @@ struct MaintenanceCollector : public MaintFileVisitor
 {
 	std::map <std::string, State> fileStates;
 	size_t count_ok;
+	size_t count_archive;
+	size_t count_delete;
 	size_t count_pack;
 	size_t count_index;
 	size_t count_rescan;
 	size_t count_deleted;
 
 	MaintenanceCollector()
-		: count_ok(0), count_pack(0), count_index(0), count_rescan(0), count_deleted(0) {}
+		: count_ok(0), count_archive(0), count_delete(0),
+		  count_pack(0), count_index(0), count_rescan(0), count_deleted(0) {}
 
 	void clear()
 	{
-		count_ok = count_pack = count_index = count_rescan = count_deleted = 0;
+		count_ok = count_archive = count_delete =
+			count_pack = count_index = count_rescan = count_deleted = 0;
 		fileStates.clear();
 	}
 
 	bool isClean() const
 	{
-		return count_pack == 0 and count_index == 0 and count_rescan == 0 and count_deleted == 0;
+		return count_archive == 0 and count_delete == 0
+		   and count_pack == 0 and count_index == 0
+		   and count_rescan == 0 and count_deleted == 0;
 	}
 
 	virtual void operator()(const std::string& file, State state)
@@ -65,6 +72,8 @@ struct MaintenanceCollector : public MaintFileVisitor
 		switch (state)
 		{
 			case OK:	++count_ok;	break;
+			case TO_ARCHIVE:++count_archive;break;
+			case TO_DELETE:	++count_delete;	break;
 			case TO_PACK:	++count_pack;	break;
 			case TO_INDEX:	++count_index;	break;
 			case TO_RESCAN:	++count_rescan;	break;
@@ -77,6 +86,8 @@ struct MaintenanceCollector : public MaintFileVisitor
 		using namespace std;
 		out << "Results:" << endl;
 		out << " ok: " << count_ok << endl;
+		out << " archive: " << count_archive << endl;
+		out << " delete: " << count_delete << endl;
 		out << " pack: " << count_pack << endl;
 		out << " index: " << count_index << endl;
 		out << " rescan: " << count_rescan << endl;
@@ -89,6 +100,8 @@ struct MaintenanceCollector : public MaintFileVisitor
 			switch (i->second)
 			{
 				case OK:	out << "ok";      break;
+				case TO_ARCHIVE:out << "archive"; break;
+				case TO_DELETE:	out << "delete";  break;
 				case TO_PACK:	out << "pack";    break;
 				case TO_INDEX:	out << "index";   break;
 				case TO_RESCAN:	out << "rescan";  break;
@@ -153,6 +166,8 @@ void to::test<1>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -200,6 +215,8 @@ void to::test<2>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -247,6 +264,8 @@ void to::test<3>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -300,6 +319,8 @@ void to::test<4>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 1u);
 	ensure_equals(c.count_rescan, 0u);
@@ -352,6 +373,8 @@ void to::test<5>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 1u);
 	ensure_equals(c.count_rescan, 0u);
@@ -405,6 +428,8 @@ void to::test<6>()
 
 	ensure_equals(c.fileStates.size(), 2u);
 	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 1u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -457,6 +482,8 @@ void to::test<7>()
 
 	ensure_equals(c.fileStates.size(), 2u);
 	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 1u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -503,6 +530,8 @@ void to::test<8>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 3u);
 	ensure_equals(c.count_rescan, 0u);
@@ -550,6 +579,8 @@ void to::test<9>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 3u);
 	ensure_equals(c.count_rescan, 0u);
@@ -600,6 +631,8 @@ void to::test<10>()
 
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 1u);
 	ensure_equals(c.count_rescan, 0u);
@@ -621,6 +654,8 @@ void to::test<10>()
 	// A repack is still needed because the data is not sorted by reftime
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 1u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -672,6 +707,8 @@ void to::test<11>()
 
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 1u);
 	ensure_equals(c.count_rescan, 0u);
@@ -692,6 +729,8 @@ void to::test<11>()
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 0u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 1u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -785,6 +824,8 @@ void to::test<12>()
 
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 0u);
 	ensure_equals(c.count_index, 1u);
 	ensure_equals(c.count_rescan, 0u);
@@ -804,6 +845,8 @@ void to::test<12>()
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 0u);
 	ensure_equals(c.count_pack, 1u);
 	ensure_equals(c.count_index, 0u);
 	ensure_equals(c.count_rescan, 0u);
@@ -878,6 +921,115 @@ void to::test<12>()
 	ensure_equals(blob->size, 34960u);
 }
 
+// Test accuracy of maintenance scan, on perfect dataset
+template<> template<>
+void to::test<13>()
+{
+	// Data are from 07, 08, 10 2007
+	int treshold[6] = { 2007, 9, 1, 0, 0, 0 };
+	int now[6];
+	grcal::date::now(now);
+	long long int duration = grcal::date::duration(treshold, now);
+
+	//cerr << str::fmt(duration/(3600*24)) + " days";
+	cfg.setValue("archive age", str::fmt(duration/(3600*24)));
+
+	acquireSamples();
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count_archive, 2u);
+	ensure_equals(c.count_delete, 0u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform packing and check that things are still ok afterwards
+	writer.repack(s, true);
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
+
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	s.str(std::string());
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+}
+
+// Test accuracy of maintenance scan, on perfect dataset
+template<> template<>
+void to::test<14>()
+{
+	// Data are from 07, 08, 10 2007
+	int treshold[6] = { 2007, 9, 1, 0, 0, 0 };
+	int now[6];
+	grcal::date::now(now);
+	long long int duration = grcal::date::duration(treshold, now);
+
+	//cerr << str::fmt(duration/(3600*24)) + " days";
+	cfg.setValue("delete age", str::fmt(duration/(3600*24)));
+
+	acquireSamples();
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 3u);
+	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count_archive, 0u);
+	ensure_equals(c.count_delete, 2u);
+	ensure_equals(c.count_pack, 0u);
+	ensure_equals(c.count_index, 0u);
+	ensure_equals(c.count_rescan, 0u);
+	ensure_equals(c.count_deleted, 0u);
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform packing and check that things are still ok afterwards
+	writer.repack(s, true);
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
+
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	s.str(std::string());
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), string()); // Nothing should have happened
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count_ok, 3u);
+	ensure(c.isClean());
+}
 
 #if 0
 // Test accuracy of maintenance scan, with index, on dataset with some

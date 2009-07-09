@@ -226,6 +226,17 @@ void Index::scan_file(const std::string& relname, writer::IndexFileVisitor& v, c
 	}
 }
 
+std::string Index::max_file_reftime(const std::string& relname) const
+{
+	Query sq("max_file_reftime", m_db);
+	sq.compile("SELECT MAX(reftime) FROM md WHERE file=?");
+	sq.bind(1, relname);
+	string res;
+	while (sq.step())
+		res = sq.fetchString(0);
+	return res;
+}
+
 bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 {
 	vector<string> constraints;

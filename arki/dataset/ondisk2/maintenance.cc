@@ -38,6 +38,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <ctime>
 
 
 using namespace std;
@@ -130,6 +131,49 @@ void FindMissing::end()
 	}
 }
 
+CheckAge::CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age, int delete_age)
+	: next(next), idx(idx)
+{
+	time_t now = time(NULL);
+	struct tm t;
+
+	// Go to the beginning of the day
+	now -= (now % (3600*24));
+
+	if (archive_age != -1)
+	{
+		time_t arc_thr = now - archive_age * 3600 * 24;
+		gmtime_r(&arc_thr, &t);
+		archive_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
+				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
+				t.tm_hour, t.tm_min, t.tm_sec);
+	}
+	if (delete_age != -1)
+	{
+		time_t del_thr = now - delete_age * 3600 * 24;
+		gmtime_r(&del_thr, &t);
+		delete_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
+				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
+				t.tm_hour, t.tm_min, t.tm_sec);
+	}
+}
+
+void CheckAge::operator()(const std::string& file, State state)
+{
+	if (state != OK or (archive_threshold.empty() and delete_threshold.empty()))
+		next(file, state);
+	else
+	{
+		string maxdate = idx.max_file_reftime(file);
+		//cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
+		if (delete_threshold > maxdate)
+			next(file, TO_DELETE);
+		else if (archive_threshold > maxdate)
+			next(file, TO_ARCHIVE);
+		else
+			next(file, state);
+	}
+}
 
 FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
 	: m_idx(idx), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
@@ -180,6 +224,8 @@ void MaintPrinter::operator()(const std::string& file, State state)
 	switch (state)
 	{
 		case OK: cerr << file << " OK" << endl;
+		case TO_ARCHIVE: cerr << file << " TO ARCHIVE" << endl;
+		case TO_DELETE: cerr << file << " TO DELETE" << endl;
 		case TO_PACK: cerr << file << " TO PACK" << endl;
 		case TO_INDEX: cerr << file << " TO INDEX" << endl;
 		case TO_RESCAN: cerr << file << " TO RESCAN" << endl;
