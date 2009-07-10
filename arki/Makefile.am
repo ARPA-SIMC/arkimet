@@ -79,6 +79,7 @@ arkiinclude_HEADERS = \
 		utils/sqlite.h \
 		utils/files.h \
 		utils/metadata.h \
+		utils/dataset.h \
 		sort.h \
 		formatter.h \
 		bbox.h \
@@ -107,6 +108,7 @@ libarkimet_la_SOURCES = \
 		utils/sqlite.cc \
 		utils/files.cc \
 		utils/metadata.cc \
+		utils/dataset.cc \
 		configfile.cc \
 		transaction.cc \
 		values.cc \
@@ -187,6 +189,7 @@ tests_arki_test_SOURCES = \
 		utils/sqlite-tut.cc \
 		utils/files-tut.cc \
 		utils/metadata-tut.cc \
+		utils/dataset-tut.cc \
 		refcounted-tut.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
