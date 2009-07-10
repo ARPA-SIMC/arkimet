@@ -163,6 +163,18 @@ struct arki_dataset_ondisk2_maintenance_shar : public MaintFileVisitor {
 		writer.flush();
 	}
 
+	std::string days_since(int year, int month, int day)
+	{
+		// Data are from 07, 08, 10 2007
+		int threshold[6] = { year, month, day, 0, 0, 0 };
+		int now[6];
+		grcal::date::now(now);
+		long long int duration = grcal::date::duration(threshold, now);
+
+		//cerr << str::fmt(duration/(3600*24)) + " days";
+		return str::fmt(duration/(3600*24));
+	}
+
 	virtual void operator()(const std::string& file, State state) {}
 };
 TESTGRP(arki_dataset_ondisk2_maintenance);
@@ -897,14 +909,7 @@ void to::test<12>()
 template<> template<>
 void to::test<13>()
 {
-	// Data are from 07, 08, 10 2007
-	int treshold[6] = { 2007, 9, 1, 0, 0, 0 };
-	int now[6];
-	grcal::date::now(now);
-	long long int duration = grcal::date::duration(treshold, now);
-
-	//cerr << str::fmt(duration/(3600*24)) + " days";
-	cfg.setValue("archive age", str::fmt(duration/(3600*24)));
+	cfg.setValue("archive age", days_since(2007, 9, 1));
 
 	acquireSamples();
 

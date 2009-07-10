@@ -25,6 +25,7 @@
 #include <arki/utils.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
+#include <wibble/grcal/grcal.h>
 
 #include <unistd.h>
 #include <sstream>
@@ -80,6 +81,18 @@ struct arki_dataset_ondisk2_reader_shar {
 		}
 		ensure_equals(count, 3u);
 		testds.flush();
+	}
+
+	std::string days_since(int year, int month, int day)
+	{
+		// Data are from 07, 08, 10 2007
+		int threshold[6] = { year, month, day, 0, 0, 0 };
+		int now[6];
+		grcal::date::now(now);
+		long long int duration = grcal::date::duration(threshold, now);
+
+		//cerr << str::fmt(duration/(3600*24)) + " days";
+		return str::fmt(duration/(3600*24));
 	}
 };
 TESTGRP(arki_dataset_ondisk2_reader);
@@ -198,7 +211,7 @@ void to::test<5>()
 	ondisk2::Reader testds(*config.section("testds"));
 	ensure(!testds.hasWorkingIndex());
 
-	// If the last update looks incomplete, the data will be skipped
+	// If the last update looks inhomplete, the data will be skipped
 	MetadataCollector mdc;
 	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
 	ensure_equals(mdc.size(), 0u);
@@ -264,6 +277,81 @@ void to::test<8>()
 	mdc.clear();
 	testds.queryMetadata(Matcher::parse("origin:GRIB1,98"), true, mdc);
 	ensure_equals(mdc.size(), 1u);
+}
+
+// Test querying with archived data
+template<> template<>
+void to::test<9>()
+{
+	{
+		config.section("testds")->setValue("archive age", days_since(2007, 9, 1));
+		dataset::ondisk2::Writer w(*config.section("testds"));
+		stringstream out;
+		w.repack(out, true);
+		ensure_equals(out.str(),
+			"testds: archived 2007/07-07.grib1\n"
+			"testds: archived 2007/07-08.grib1\n"
+			"testds: database cleaned up\n"
+			"testds: rebuild summary cache\n"
+			"testds: 2 files archived, 26320 bytes reclaimed on the index, 26320 total bytes freed.\n");
+	}
+
+
+	ondisk2::Reader testds(*config.section("testds"));
+	MetadataCollector mdc;
+
+	ensure(testds.hasWorkingIndex());
+
+	testds.queryMetadata(Matcher::parse(""), true, mdc);
+	ensure_equals(mdc.size(), 3u);
+	mdc.clear();
+
+	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), true, mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	// Check that the source record that comes out is ok
+	UItem<Source> source = mdc[0].source;
+	ensure_equals(source->style(), Source::INLINE);
+	ensure_equals(source->format, "grib1");
+	UItem<source::Inline> isource = source.upcast<source::Inline>();
+	ensure_equals(isource->size, 7218u);
+
+	wibble::sys::Buffer buf = mdc[0].getData();
+	ensure_equals(buf.size(), isource->size);
+
+	mdc.clear();
+	testds.queryMetadata(Matcher::parse("reftime:=2007-07-08"), true, mdc);
+	ensure_equals(mdc.size(), 1u);
+	isource = mdc[0].source.upcast<source::Inline>();
+	ensure_equals(isource->size, 7218u);
+
+	mdc.clear();
+	testds.queryMetadata(Matcher::parse("origin:GRIB1,80"), true, mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	mdc.clear();
+	testds.queryMetadata(Matcher::parse("origin:GRIB1,98"), true, mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	// Query bytes
+	stringstream out;
+	testds.queryBytes(Matcher::parse(""), out, ReadonlyDataset::BQ_DATA);
+	ensure_equals(out.str().size(), 44412u);
+
+	out.clear();
+	testds.queryBytes(Matcher::parse("origin:GRIB1,200"), out, ReadonlyDataset::BQ_DATA);
+	ensure_equals(out.str().size(), 7218u);
+
+	out.clear();
+	testds.queryBytes(Matcher::parse("reftime:=2007-07-08"), out, ReadonlyDataset::BQ_DATA);
+	ensure_equals(out.str().size(), 7218u);
+
+	/* TODO
+		case BQ_POSTPROCESS: {
+		case BQ_REP_METADATA: {
+		case BQ_REP_SUMMARY: {
+	virtual void querySummary(const Matcher& matcher, Summary& summary);
+	*/
 }
 
 }

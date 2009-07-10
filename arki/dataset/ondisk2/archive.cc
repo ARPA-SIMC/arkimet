@@ -147,13 +147,13 @@ void Archive::fileList(const Matcher& matcher, std::vector<std::string>& files) 
 		query = "SELECT file FROM files";
 
 		if (begin.defined())
-			query += " WHERE end_time > " + begin->toSQL();
+			query += " WHERE end_time >= '" + begin->toSQL() + "'";
 		if (end.defined())
 		{
 			if (begin.defined())
-				query += " AND start_time < " + end->toSQL();
+				query += " AND start_time <= '" + end->toSQL() + "'";
 			else
-				query += " WHERE start_time < " + end->toSQL();
+				query += " WHERE start_time <= '" + end->toSQL() + "'";
 		}
 
 		query += " ORDER BY file";
@@ -162,6 +162,7 @@ void Archive::fileList(const Matcher& matcher, std::vector<std::string>& files) 
 		query = "SELECT file FROM files ORDER BY file";
 	}
 
+	// cerr << "Query: " << query << endl;
 	
 	Query q("sel_archive", m_db);
 	q.compile(query);
