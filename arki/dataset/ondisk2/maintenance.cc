@@ -43,6 +43,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 using namespace arki::dataset::ondisk2::maint;
 
 namespace arki {
@@ -66,7 +67,7 @@ void HoleFinder::finaliseFile()
 		// Check if last_file_size matches the file size
 		if (!has_hole)
 		{
-			off_t size = utils::files::size(str::joinpath(m_root, last_file));
+			off_t size = files::size(str::joinpath(m_root, last_file));
 			if (size > last_file_size)
 				has_hole = true;
 			else if (size < last_file_size)
@@ -306,8 +307,8 @@ static size_t repack(const std::string& root, const std::string& file, WIndex& i
 	idx.scan_file(file, copier, "reftime, offset");
 	copier.flush();
 
-	size_t size_pre = utils::files::size(pathname);
-	size_t size_post = utils::files::size(pntmp);
+	size_t size_pre = files::size(pathname);
+	size_t size_post = files::size(pntmp);
 
 	// Remove the .metadata file if present, because we are shuffling the
 	// data file and it will not be valid anymore
@@ -378,7 +379,7 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 	string pathname = str::joinpath(root, file);
 
 	// Collect the scan results in a metadata::Collector
-	utils::metadata::Collector mds;
+	metadata::Collector mds;
 	if (!scan::scan(pathname, mds))
 		throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
 
@@ -387,7 +388,7 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 	index::IDMaker id_maker(idx.unique_codes());
 
 	map<string, Metadata*> finddupes;
-	for (utils::metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
+	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
 	{
 		string id = id_maker.id(*i);
 		if (id.empty())
@@ -455,7 +456,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 			// Delete obsolete files
 			w.m_idx.reset(file);
 			string pathname = str::joinpath(w.m_path, file);
-			size_t size = utils::files::size(pathname);
+			size_t size = files::size(pathname);
 			if (unlink(pathname.c_str()) < 0)
 				throw wibble::exception::System("removing " + pathname);
 
@@ -468,7 +469,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 		case TO_INDEX: {
 			// Delete all files not indexed
 			string pathname = str::joinpath(w.m_path, file);
-			size_t size = utils::files::size(pathname);
+			size_t size = files::size(pathname);
 			if (unlink(pathname.c_str()) < 0)
 				throw wibble::exception::System("removing " + pathname);
 
@@ -492,20 +493,20 @@ void RealRepacker::end()
 {
 	// Finally, tidy up the database
 	size_t size_pre = 0, size_post = 0;
-	if (utils::files::size(w.m_idx.pathname() + "-journal") > 0)
+	if (files::size(w.m_idx.pathname() + "-journal") > 0)
 	{
-		size_pre = utils::files::size(w.m_idx.pathname())
-				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		size_pre = files::size(w.m_idx.pathname())
+				+ files::size(w.m_idx.pathname() + "-journal");
 		w.m_idx.vacuum();
-		size_post = utils::files::size(w.m_idx.pathname())
-				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		size_post = files::size(w.m_idx.pathname())
+				+ files::size(w.m_idx.pathname() + "-journal");
 		if (size_pre != size_post)
 			log() << "database cleaned up" << endl;
 	}
 
 	// Rebuild the cached summary
-	if (utils::files::timestamp(str::joinpath(w.m_path, "summary")) <
-	    utils::files::timestamp(w.m_idx.pathname()))
+	if (files::timestamp(str::joinpath(w.m_path, "summary")) <
+	    files::timestamp(w.m_idx.pathname()))
 	{
 		Summary s;
 		if (w.m_idx.querySummary(Matcher(), s))
@@ -624,20 +625,20 @@ void RealFixer::end()
 {
 	// Finally, tidy up the database
 	size_t size_pre = 0, size_post = 0;
-	if (utils::files::size(w.m_idx.pathname() + "-journal") > 0)
+	if (files::size(w.m_idx.pathname() + "-journal") > 0)
 	{
-		size_pre = utils::files::size(w.m_idx.pathname())
-				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		size_pre = files::size(w.m_idx.pathname())
+				+ files::size(w.m_idx.pathname() + "-journal");
 		w.m_idx.vacuum();
-		size_post = utils::files::size(w.m_idx.pathname())
-				+ utils::files::size(w.m_idx.pathname() + "-journal");
+		size_post = files::size(w.m_idx.pathname())
+				+ files::size(w.m_idx.pathname() + "-journal");
 		if (size_pre != size_post)
 			log() << "database cleaned up" << endl;
 	}
 
 	// Rebuild the cached summary
-	if (utils::files::timestamp(str::joinpath(w.m_path, "summary")) <
-	    utils::files::timestamp(w.m_idx.pathname()))
+	if (files::timestamp(str::joinpath(w.m_path, "summary")) <
+	    files::timestamp(w.m_idx.pathname()))
 	{
 		Summary s;
 		if (w.m_idx.querySummary(Matcher(), s))
