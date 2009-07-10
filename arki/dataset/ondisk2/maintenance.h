@@ -195,6 +195,7 @@ struct FailsafeRepacker : public Agent
 struct RealRepacker : public Agent
 {
 	size_t m_count_packed;
+	size_t m_count_archived;
 	size_t m_count_deleted;
 	size_t m_count_deindexed;
 	size_t m_count_freed;
@@ -211,6 +212,7 @@ struct RealRepacker : public Agent
 struct MockRepacker : public Agent
 {
 	size_t m_count_packed;
+	size_t m_count_archived;
 	size_t m_count_deleted;
 	size_t m_count_deindexed;
 

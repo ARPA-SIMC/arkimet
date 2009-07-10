@@ -418,7 +418,8 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 // RealRepacker
 
 RealRepacker::RealRepacker(std::ostream& log, Writer& w)
-	: Agent(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0), m_count_freed(0)
+	: Agent(log, w), m_count_packed(0), m_count_archived(0),
+	  m_count_deleted(0), m_count_deindexed(0), m_count_freed(0)
 {
 }
 
@@ -432,6 +433,22 @@ void RealRepacker::operator()(const std::string& file, State state)
 			log() << "packed " << file << " (" << saved << " saved)" << endl;
 			++m_count_packed;
 			m_count_freed += saved;
+			break;
+		}
+		case TO_ARCHIVE: {
+			// Remove from index
+			w.m_idx.reset(file);
+
+			// Move to archive
+			string pathname = str::joinpath(w.m_path, file);
+			string arcrelname = str::joinpath("archive", file);
+			string arcabsname = str::joinpath(w.m_path, arcrelname);
+			sys::fs::mkFilePath(arcabsname);
+			if (rename(pathname.c_str(), arcabsname.c_str()) < 0)
+				throw wibble::exception::System("moving " + pathname + " to " + arcabsname);
+
+			log() << "archived " << file << endl;
+			++m_count_archived;
 			break;
 		}
 		case TO_DELETE: {
@@ -499,6 +516,8 @@ void RealRepacker::end()
 	logStart();
 	if (m_count_packed)
 		logAdd() << nfiles(m_count_packed) << " packed";
+	if (m_count_archived)
+		logAdd() << nfiles(m_count_archived) << " archived";
 	if (m_count_deleted)
 		logAdd() << nfiles(m_count_deleted) << " deleted";
 	if (m_count_deindexed)
@@ -516,7 +535,8 @@ void RealRepacker::end()
 // MockRepacker
 
 MockRepacker::MockRepacker(std::ostream& log, Writer& w)
-	: Agent(log, w), m_count_packed(0), m_count_deleted(0), m_count_deindexed(0)
+	: Agent(log, w), m_count_packed(0), m_count_archived(0),
+	  m_count_deleted(0), m_count_deindexed(0)
 {
 }
 
@@ -527,6 +547,15 @@ void MockRepacker::operator()(const std::string& file, State state)
 		case TO_PACK:
 			log() << file << " should be packed" << endl;
 			++m_count_packed;
+			break;
+		case TO_ARCHIVE:
+			log() << file << " should be archived" << endl;
+			++m_count_archived;
+			break;
+		case TO_DELETE:
+			log() << file << " should be deleted and removed from the index" << endl;
+			++m_count_deleted;
+			++m_count_deindexed;
 			break;
 		case TO_INDEX:
 			log() << file << " should be deleted" << endl;
@@ -546,6 +575,8 @@ void MockRepacker::end()
 	logStart();
 	if (m_count_packed)
 		logAdd() << nfiles(m_count_packed) << " should be packed";
+	if (m_count_archived)
+		logAdd() << nfiles(m_count_archived) << " should be archived";
 	if (m_count_deleted)
 		logAdd() << nfiles(m_count_deleted) << " should be deleted";
 	if (m_count_deindexed)
