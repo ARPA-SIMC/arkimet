@@ -71,6 +71,8 @@ void AtomicWriter::close()
 		outmd->close();
 		delete outmd;
 		outmd = 0;
+		if (rename(tmpfname.c_str(), fname.c_str()) < 0)
+			throw wibble::exception::System("Renaming " + tmpfname + " to " + fname);
 	}
 }
 
