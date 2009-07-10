@@ -28,6 +28,7 @@
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
+#include <arki/utils/metadata.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
 
@@ -46,15 +47,18 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::dataset::ondisk;
 using namespace arki::types;
+using namespace arki::utils;
 
 // Create a dataset index gived its configuration
+namespace {
 template<typename INDEX>
-auto_ptr<INDEX> createIndex(const std::string& config)
+inline auto_ptr<INDEX> createIndex(const std::string& config)
 {
 	stringstream confstream(config);
 	ConfigFile cfg;
 	cfg.parse(confstream, "(memory)");
 	return auto_ptr<INDEX>(new INDEX(cfg));
+}
 }
 
 struct arki_dataset_ondisk_index_shar {
@@ -110,23 +114,17 @@ struct arki_dataset_ondisk_index_shar {
 };
 TESTGRP(arki_dataset_ondisk_index);
 
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-
 // Trying indexing a few metadata
 template<> template<>
 void to::test<1>()
 {
+	// Remove index if it exists
+	unlink("file1");
+
 	auto_ptr<WIndex> test = createIndex<WIndex>(
 		"type = test\n"
 		"path = \n"
-		"indexfile = :memory:\n"
+		"indexfile = file1\n"
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
 		"index = origin, product, level, timerange, area, ensemble, reftime\n"
 	);
@@ -147,7 +145,7 @@ void to::test<1>()
 	test->index(md1, "test-md1", 0);
 
 	// Query various kinds of metadata
-	MetadataCollector mdc;
+	metadata::Collector mdc;
 	test->query(Matcher::parse("origin:GRIB1,200"), mdc);
 	ensure_equals(mdc.size(), 1u);
 
@@ -163,9 +161,12 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
+	// Remove index if it exists
+	unlink("file1");
+
 	auto_ptr<WIndex> test = createIndex<WIndex>(
 		"type = test\n"
-		"path = .\n"
+		"path = \n"
 		"indexfile = file1\n"
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
 		"index = origin, product, level, timerange, area, ensemble, reftime\n"
@@ -192,7 +193,7 @@ void to::test<2>()
 	test->index(md1, "test-md1", 0);
 
 	// Ensure that we have two items
-	MetadataCollector mdc;
+	metadata::Collector mdc;
 	test->query(Matcher::parse("origin:GRIB1"), mdc);
 	ensure_equals(mdc.size(), 2u);
 	mdc.clear();
@@ -228,6 +229,7 @@ void to::test<2>()
 	p.commit();
 }
 
+namespace {
 struct ReadHang : public sys::ChildProcess, public MetadataConsumer
 {
 	ConfigFile cfg;
@@ -273,6 +275,7 @@ struct ReadHang : public sys::ChildProcess, public MetadataConsumer
 		return buf[0];
 	}
 };
+}
 
 // Test concurrent read and update
 template<> template<>
