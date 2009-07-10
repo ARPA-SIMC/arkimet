@@ -30,13 +30,13 @@
 #include <arki/matcher.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/dataset.h>
 #include <arki/summary.h>
 #include <arki/postprocess.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
-#include <wibble/sys/signal.h>
 
 #include <fstream>
 #include <sstream>
@@ -56,6 +56,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -63,7 +64,7 @@ namespace ondisk2 {
 
 Reader::Reader(const ConfigFile& cfg)
        	: m_name(cfg.value("name")), m_root(cfg.value("path")),
-	  m_idx(0), m_tf(0)
+	  m_idx(0), m_tf(0), m_archive(0)
 {
 	m_tf = TargetFile::create(cfg);
 	m_idx = new RIndex(cfg);
@@ -74,66 +75,34 @@ Reader::~Reader()
 {
 	if (m_idx) delete m_idx;
 	if (m_tf) delete m_tf;
-	for (vector<Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		delete *i;
+	if (m_archive) delete m_archive;
 }
 
-/**
- * Prepend a path to all metadata
- */
-struct PathPrepender : public MetadataConsumer
+bool Reader::hasArchive() const
 {
-	string path;
-	MetadataConsumer& next;
-	PathPrepender(const std::string& path, MetadataConsumer& next) : path(path), next(next) {}
-	bool operator()(Metadata& md)
-	{
-		md.prependPath(path);
-		return next(md);
-	}
-};
+	string arcdir = str::joinpath(m_root, "archive");
+	return sys::fs::access(arcdir, F_OK);
+}
 
-/**
- * Inline the data into all metadata
- */
-struct DataInliner : public MetadataConsumer
+Archive& Reader::archive()
 {
-	MetadataConsumer& next;
-	DataInliner(MetadataConsumer& next) : next(next) {}
-	bool operator()(Metadata& md)
+	if (!m_archive)
 	{
-		// Read the data
-		wibble::sys::Buffer buf = md.getData();
-		// Change the source as inline
-		md.setInlineData(md.source->format, buf);
-		return next(md);
+		m_archive = new Archive(str::joinpath(m_root, "archive"));
+		m_archive->openRO();
 	}
-};
+	return *m_archive;
+}
 
-/**
- * Output the data from a metadata stream into an ostream
- */
-struct DataOnly : public MetadataConsumer
+const Archive& Reader::archive() const
 {
-	std::ostream& out;
-	sigset_t blocked;
-
-	DataOnly(std::ostream& out) : out(out)
+	if (!m_archive)
 	{
-		sigemptyset(&blocked);
-		sigaddset(&blocked, SIGINT);
-		sigaddset(&blocked, SIGTERM);
+		m_archive = new Archive(str::joinpath(m_root, "archive"));
+		m_archive->openRO();
 	}
-	bool operator()(Metadata& md)
-	{
-		wibble::sys::Buffer buf = md.getData();
-		sys::sig::ProcMask pm(blocked);
-		out.write((const char*)buf.data(), buf.size());
-		out.flush();
-		return true;
-	}
-};
+	return *m_archive;
+}
 
 void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
 {
@@ -146,18 +115,17 @@ void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 	// then produce all the contents.
 
 	// Query the archives first
-	for (vector<Archive*>::const_iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		(*i)->queryMetadata(matcher, withData, consumer);
+	if (hasArchive())
+		archive().queryMetadata(matcher, withData, consumer);
 
 	if (withData)
 	{
-		DataInliner inliner(consumer);
-		PathPrepender prepender(sys::fs::abspath(m_root), inliner);
+		ds::DataInliner inliner(consumer);
+		ds::PathPrepender prepender(sys::fs::abspath(m_root), inliner);
 		if (!m_idx || !m_idx->query(matcher, prepender))
 			throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 	} else {
-		PathPrepender prepender(sys::fs::abspath(m_root), consumer);
+		ds::PathPrepender prepender(sys::fs::abspath(m_root), consumer);
 		if (!m_idx || !m_idx->query(matcher, prepender))
 			throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 	}
@@ -166,22 +134,21 @@ void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 void Reader::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
 {
 	// Query the archives first
-	for (vector<Archive*>::const_iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		(*i)->queryBytes(matcher, out, qtype, param);
+	if (hasArchive())
+		archive().queryBytes(matcher, out, qtype, param);
 
 	switch (qtype)
 	{
 		case BQ_DATA: {
-			DataOnly dataonly(out);
-			PathPrepender prepender(sys::fs::abspath(m_root), dataonly);
+			ds::DataOnly dataonly(out);
+			ds::PathPrepender prepender(sys::fs::abspath(m_root), dataonly);
 			if (!m_idx || !m_idx->query(matcher, prepender))
 				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 			break;
 		}
 		case BQ_POSTPROCESS: {
 			Postprocess postproc(param, out);
-			PathPrepender prepender(sys::fs::abspath(m_root), postproc);
+			ds::PathPrepender prepender(sys::fs::abspath(m_root), postproc);
 			if (!m_idx || !m_idx->query(matcher, prepender))
 				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
 			postproc.flush();
@@ -290,9 +257,8 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 	using namespace wibble::str;
 
 	// Query the archives first
-	for (vector<Archive*>::const_iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		(*i)->querySummary(matcher, summary);
+	if (hasArchive())
+		archive().querySummary(matcher, summary);
 
 	// Check if the matcher discriminates on reference times
 	const matcher::Implementation* rtmatch = 0;

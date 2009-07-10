@@ -50,12 +50,16 @@ protected:
 	std::string m_root;
 	RIndex* m_idx;
 	TargetFile* m_tf;
-	std::vector<Archive*> m_archives;
+	mutable Archive* m_archive;
 
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
 	Reader(const ConfigFile& cfg);
 	virtual ~Reader();
+
+	bool hasArchive() const;
+	Archive& archive();
+	const Archive& archive() const;
 
 	/**
 	 * Query the dataset using the given matcher, and sending the results to

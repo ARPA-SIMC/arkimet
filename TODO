@@ -186,6 +186,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - cache negli aggregate come negli attributi
 
+ - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
+   processo passando il nome del tempfile in env o in arg, per ogni grib
+   (xargs per i grib)
+
 Archivio
  - nelle query, se non c'è reftime o se reftime include date piú vecchie di
    "archive age", allora fare match anche su mdarc e scandire i file risultanti
@@ -194,10 +198,21 @@ Archivio
    principale
  - non si fa delete o replace o append di dati in mdarc: dare errore se si
    prova a farlo. La roba precedente all'archive age diventa di fatto read only
+   (nell'acquire / replace / delete, confrontare con archive_age e delete_age)
  - check dell'archivio (aggiornamento di metadati e summary, indicizzazione
    file mancanti)
  - repack dell'archivio (cancellazione file piú vecchi di delete age,
    cancellazione file che non sono nell'indice)
+ - test del reader con l'archive
+ - spostare da archive/  a archive/xxx archive/yyy archive/current
+    - in manutenzione, la roba si mette in archive/current
+    - in manutenzione, si fa però un maintenance run di tutta la roba in
+      archive/
+    - le dir vengono sempre prese in ordine alfabetico (eccetto current, che
+      viene presa per ultima)
+    - nel reader, si querano tutte le directory in ordine
+    - lo spostamento da current alle altre viene fatto al momento a mano (ci
+      pensa poi arki-check a rifare gli indici)
 
  - benchmark locale nuovo ondisk2
     - reindicizzazione di tutto: 

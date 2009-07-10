@@ -29,6 +29,7 @@
 #include <arki/matcher/reftime.h>
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
+#include <arki/utils/dataset.h>
 #include <arki/scan/any.h>
 
 #include <wibble/exception.h>
@@ -173,22 +174,21 @@ void Archive::queryMetadata(const Matcher& matcher, bool withData, MetadataConsu
 	vector<string> files;
 	fileList(matcher, files);
 
-#if 0 // TODO
 	// TODO: does it make sense to check with the summary first?
+
 	if (withData)
 	{
-		DataInliner inliner(consumer);
-		PathPrepender prepender(sys::fs::abspath(m_root), inliner);
-		MatcherFilter filter(matcher, prepender);
+		ds::DataInliner inliner(consumer);
+		ds::PathPrepender prepender(sys::fs::abspath(m_dir), inliner);
+		ds::MatcherFilter filter(matcher, prepender);
 		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-			scan::scan(*i, filter);
+			scan::scan(str::joinpath(m_dir, *i), filter);
 	} else {
-		PathPrepender prepender(sys::fs::abspath(m_root), consumer);
-		MatcherFilter filter(matcher, prepender);
+		ds::PathPrepender prepender(sys::fs::abspath(m_dir), consumer);
+		ds::MatcherFilter filter(matcher, prepender);
 		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-			scan::scan(*i, filter);
+			scan::scan(str::joinpath(m_dir, *i), filter);
 	}
-#endif
 }
 
 void Archive::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
