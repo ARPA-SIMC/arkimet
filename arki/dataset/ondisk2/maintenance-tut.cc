@@ -961,6 +961,14 @@ void to::test<13>()
 		"testdir: rebuild summary cache\n"
 		"testdir: 2 files archived, 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
 
+	// Check that the files have been moved to the archive
+	ensure(sys::fs::access("testdir/archive/2007/07-07.grib1", F_OK));
+	ensure(sys::fs::access("testdir/archive/2007/07-07.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testdir/archive/2007/07-07.grib1.summary", F_OK));
+	ensure(sys::fs::access("testdir/archive/2007/07-08.grib1", F_OK));
+	ensure(sys::fs::access("testdir/archive/2007/07-08.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testdir/archive/2007/07-08.grib1.summary", F_OK));
+
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count_ok, 3u);

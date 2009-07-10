@@ -437,16 +437,32 @@ void RealRepacker::operator()(const std::string& file, State state)
 			break;
 		}
 		case TO_ARCHIVE: {
-			// Remove from index
-			w.m_idx.reset(file);
-
-			// Move to archive
+			// Create the target directory in the archive
 			string pathname = str::joinpath(w.m_path, file);
 			string arcrelname = str::joinpath("archive", file);
 			string arcabsname = str::joinpath(w.m_path, arcrelname);
 			sys::fs::mkFilePath(arcabsname);
+
+			// Rebuild the metadata
+			metadata::Collector mds;
+			w.m_idx.scan_file(file, mds);
+
+			// Create the summary
+			Summary s;
+			for (metadata::Collector::const_iterator i = mds.begin();
+					i != mds.end(); ++i)
+				s.add(*i);
+
+			// Remove from index
+			w.m_idx.reset(file);
+
+			// Move to archive
 			if (rename(pathname.c_str(), arcabsname.c_str()) < 0)
 				throw wibble::exception::System("moving " + pathname + " to " + arcabsname);
+
+			// Add metadata and summary files
+			mds.writeAtomically(arcabsname + ".metadata");
+			s.writeAtomically(arcabsname + ".summary");
 
 			log() << "archived " << file << endl;
 			++m_count_archived;

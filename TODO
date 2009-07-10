@@ -190,7 +190,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    (file, start_date, end_date)
  - nel file di configurazione, mettere un "archive age" (in giorni) dopo il
    quale un'operazione di repack:
-    - toglie i dati dall'indice
+    + toglie i dati dall'indice
     - crea i file .metadata e .summary
     - aggiunge il file a mdarc
    il tutto fatto dopo il pack vero e proprio, cosí i file archiviati sono
