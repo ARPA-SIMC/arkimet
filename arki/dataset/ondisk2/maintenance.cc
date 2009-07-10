@@ -20,10 +20,9 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 #include <arki/dataset/ondisk2/maintenance.h>
-//#include <arki/dataset/ondisk2/maint/datafile.h>
-//#include <arki/dataset/ondisk2/maint/directory.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/index.h>
+#include <arki/dataset/ondisk2/archive.h>
 #include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
@@ -447,12 +446,6 @@ void RealRepacker::operator()(const std::string& file, State state)
 			metadata::Collector mds;
 			w.m_idx.scan_file(file, mds);
 
-			// Create the summary
-			Summary s;
-			for (metadata::Collector::const_iterator i = mds.begin();
-					i != mds.end(); ++i)
-				s.add(*i);
-
 			// Remove from index
 			w.m_idx.reset(file);
 
@@ -460,9 +453,8 @@ void RealRepacker::operator()(const std::string& file, State state)
 			if (rename(pathname.c_str(), arcabsname.c_str()) < 0)
 				throw wibble::exception::System("moving " + pathname + " to " + arcabsname);
 
-			// Add metadata and summary files
-			mds.writeAtomically(arcabsname + ".metadata");
-			s.writeAtomically(arcabsname + ".summary");
+			// Acquire in the achive
+			w.archive().acquire(file, mds);
 
 			log() << "archived " << file << endl;
 			++m_count_archived;

@@ -59,7 +59,7 @@ protected:
 	std::string m_path;
 	WIndex m_idx;
 	TargetFile* m_tf;
-	std::vector<Archive*> m_archives;
+	mutable Archive* m_archive;
 	bool m_replace;
 	int m_archive_age;
 	int m_delete_age;
@@ -74,6 +74,9 @@ public:
 	Writer(const ConfigFile& cfg);
 
 	virtual ~Writer();
+
+	Archive& archive();
+	const Archive& archive() const;
 
 	// Compute the unique ID of a metadata in this dataset
 	virtual std::string id(const Metadata& md) const;

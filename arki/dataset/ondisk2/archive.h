@@ -34,6 +34,12 @@ namespace arki {
 class Matcher;
 class MetadataConsumer;
 
+namespace utils {
+namespace metadata {
+class Collector;
+}
+}
+
 namespace dataset {
 namespace ondisk2 {
 
@@ -45,6 +51,7 @@ class Archive : public Local
 {
 protected:
 	std::string m_dir;
+	int m_delete_age;
 
 	mutable utils::sqlite::SQLiteDB m_db;
 	index::InsertQuery m_insert;
@@ -55,7 +62,7 @@ protected:
 	void fileList(const Matcher& matcher, std::vector<std::string>& files) const;
 
 public:
-	Archive(const std::string& dir);
+	Archive(const std::string& dir, int delete_age = -1);
 	virtual ~Archive();
 
 	void openRO();
@@ -65,8 +72,9 @@ public:
 	virtual void queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype = BQ_DATA, const std::string& param = std::string());
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
-	void acquire(const std::string& file);
-	void remove(const std::string& file);
+	void acquire(const std::string& relname);
+	void acquire(const std::string& relname, const utils::metadata::Collector& mds);
+	void remove(const std::string& relname);
 
 	void maintenance(writer::MaintFileVisitor& v);
 	void repack(std::ostream& log, bool writable=false);

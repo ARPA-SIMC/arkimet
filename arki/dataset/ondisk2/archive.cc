@@ -42,9 +42,11 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Archive::Archive(const std::string& dir)
-	: m_dir(dir), m_insert(m_db)
+Archive::Archive(const std::string& dir, int delete_age)
+	: m_dir(dir), m_delete_age(delete_age), m_insert(m_db)
 {
+	// Create the directory if it does not exist
+	wibble::sys::fs::mkpath(m_dir);
 }
 
 Archive::~Archive()
@@ -260,24 +262,31 @@ void Archive::querySummary(const Matcher& matcher, Summary& summary)
 	}
 }
 
-void Archive::acquire(const std::string& file)
+void Archive::acquire(const std::string& relname)
 {
 	// Scan file, reusing .metadata if still valid
 	utils::metadata::Collector mdc;
-	if (!scan::scan(file, mdc))
-		throw wibble::exception::Consistency("Cannot scan file " + file);
+	string pathname = str::joinpath(m_dir, relname);
+	if (!scan::scan(pathname, mdc))
+		throw wibble::exception::Consistency("Cannot scan file " + pathname);
+	acquire(relname, mdc);
+}
+
+void Archive::acquire(const std::string& relname, const utils::metadata::Collector& mds)
+{
+	string pathname = str::joinpath(m_dir, relname);
 
 	// Compute the summary
 	Summary sum;
-	for (utils::metadata::Collector::const_iterator i = mdc.begin();
-			i != mdc.end(); ++i)
+	for (utils::metadata::Collector::const_iterator i = mds.begin();
+			i != mds.end(); ++i)
 		sum.add(*i);
 
 	// Regenerate .metadata
-	mdc.writeAtomically(file + ".metadata");
+	mds.writeAtomically(pathname + ".metadata");
 
 	// Regenerate .summary
-	sum.writeAtomically(file + ".summary");
+	sum.writeAtomically(pathname + ".summary");
 
 	// Add to index
 	Item<types::Reftime> rt = sum.getReferenceTime();
@@ -285,24 +294,30 @@ void Archive::acquire(const std::string& file)
 	string bt;
 	string et;
 
-	if (Item<types::reftime::Period> p = rt.upcast<types::reftime::Period>())
+	switch (rt->style())
 	{
-		bt = p->begin->toSQL();
-		et = p->end->toSQL();
+		case types::Reftime::POSITION: {
+			UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
+			bt = et = p->time->toSQL();
+			break;
+		}
+		case types::Reftime::PERIOD: {
+			UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
+			bt = p->begin->toSQL();
+			et = p->end->toSQL();
+		}
+		default:
+			throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
 	}
-	else if (Item<types::reftime::Position> p = rt.upcast<types::reftime::Position>())
-		bt = et = p->time->toSQL();
-	else
-		throw wibble::exception::Consistency("usupported reference time " + types::Reftime::formatStyle(rt->style()));
 
 	m_insert.reset();
-	m_insert.bind(1, file);
+	m_insert.bind(1, relname);
 	m_insert.bind(2, bt);
 	m_insert.bind(3, et);
 	m_insert.step();
 }
 
-void Archive::remove(const std::string& file)
+void Archive::remove(const std::string& relname)
 {
 	// Remove from index and from file system, including attached .metadata
 	// and .summary, if they exist

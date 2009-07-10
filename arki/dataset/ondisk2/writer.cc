@@ -60,7 +60,7 @@ namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
 	: m_cfg(cfg), m_path(cfg.value("path")),
-	  m_idx(cfg), m_tf(0), m_replace(false),
+	  m_idx(cfg), m_tf(0), m_archive(0), m_replace(false),
 	  m_archive_age(-1), m_delete_age(-1)
 {
 	m_name = cfg.value("name");
@@ -85,9 +85,27 @@ Writer::~Writer()
 {
 	flush();
 	if (m_tf) delete m_tf;
-	for (vector<Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		delete *i;
+	if (m_archive) delete m_archive;
+}
+
+Archive& Writer::archive()
+{
+	if (!m_archive)
+	{
+		m_archive = new Archive(str::joinpath(m_path, "archive"), m_delete_age);
+		m_archive->openRW();
+	}
+	return *m_archive;
+}
+
+const Archive& Writer::archive() const
+{
+	if (!m_archive)
+	{
+		m_archive = new Archive(str::joinpath(m_path, "archive"), m_delete_age);
+		m_archive->openRW();
+	}
+	return *m_archive;
 }
 
 std::string Writer::id(const Metadata& md) const
