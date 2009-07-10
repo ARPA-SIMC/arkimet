@@ -31,6 +31,14 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <strings.h>
+
+using namespace std;
+using namespace wibble;
+using namespace arki;
+using namespace arki::types;
+using namespace arki::dataset::ondisk2;
+using namespace arki::dataset::ondisk2::writer;
 
 namespace arki {
 namespace dataset {
@@ -40,76 +48,82 @@ namespace writer {
 struct MaintenanceCollector : public MaintFileVisitor
 {
 	std::map <std::string, State> fileStates;
-	size_t count_ok;
-	size_t count_archive;
-	size_t count_delete;
-	size_t count_pack;
-	size_t count_index;
-	size_t count_rescan;
-	size_t count_deleted;
+	size_t counts[STATE_MAX];
+	static const char* names[];
+	std::set<State> checked;
 
 	MaintenanceCollector()
-		: count_ok(0), count_archive(0), count_delete(0),
-		  count_pack(0), count_index(0), count_rescan(0), count_deleted(0) {}
+	{
+		bzero(counts, sizeof(counts));
+	}
 
 	void clear()
 	{
-		count_ok = count_archive = count_delete =
-			count_pack = count_index = count_rescan = count_deleted = 0;
+		bzero(counts, sizeof(counts));
 		fileStates.clear();
+		checked.clear();
 	}
 
 	bool isClean() const
 	{
-		return count_archive == 0 and count_delete == 0
-		   and count_pack == 0 and count_index == 0
-		   and count_rescan == 0 and count_deleted == 0;
+		for (size_t i = 0; i < STATE_MAX; ++i)
+			if (i != OK && i != ARC_OK && counts[i])
+				return false;
+		return true;
 	}
 
 	virtual void operator()(const std::string& file, State state)
 	{
 		fileStates[file] = state;
-		switch (state)
-		{
-			case OK:	++count_ok;	break;
-			case TO_ARCHIVE:++count_archive;break;
-			case TO_DELETE:	++count_delete;	break;
-			case TO_PACK:	++count_pack;	break;
-			case TO_INDEX:	++count_index;	break;
-			case TO_RESCAN:	++count_rescan;	break;
-			case DELETED:	++count_deleted; break;
-		}
+		++counts[state];
 	}
 
 	void dump(std::ostream& out) const
 	{
 		using namespace std;
 		out << "Results:" << endl;
-		out << " ok: " << count_ok << endl;
-		out << " archive: " << count_archive << endl;
-		out << " delete: " << count_delete << endl;
-		out << " pack: " << count_pack << endl;
-		out << " index: " << count_index << endl;
-		out << " rescan: " << count_rescan << endl;
-		out << " deleted: " << count_deleted << endl;
-		out << " files:" << endl;
+		for (size_t i = 0; i < STATE_MAX; ++i)
+			out << " " << names[i] << ": " << counts[i] << endl;
 		for (std::map<std::string, State>::const_iterator i = fileStates.begin();
 				i != fileStates.end(); ++i)
-		{
-			out << "   " << i->first << ": ";
-			switch (i->second)
-			{
-				case OK:	out << "ok";      break;
-				case TO_ARCHIVE:out << "archive"; break;
-				case TO_DELETE:	out << "delete";  break;
-				case TO_PACK:	out << "pack";    break;
-				case TO_INDEX:	out << "index";   break;
-				case TO_RESCAN:	out << "rescan";  break;
-				case DELETED:	out << "deleted"; break;
-			}
-			out << endl;
-		}
+			out << "   " << i->first << ": " << names[i->second] << endl;
 	}
+
+	size_t count(State s)
+	{
+		checked.insert(s);
+		return counts[s];
+	}
+
+	std::string remaining() const
+	{
+		std::vector<std::string> res;
+		for (size_t i = 0; i < MaintFileVisitor::STATE_MAX; ++i)
+		{
+			if (checked.find((State)i) != checked.end())
+				continue;
+			if (counts[i] == 0)
+				continue;
+			res.push_back(str::fmtf("%s: %d", names[i], counts[i]));
+		}
+		return str::join(res.begin(), res.end());
+	}
+};
+
+const char* MaintenanceCollector::names[] = {
+	"ok",
+	"to archive",
+	"to delete",
+	"to pack",
+	"to index",
+	"to rescan",
+	"deleted",
+	"arc ok",
+	"arc to delete",
+	"arc to index",
+	"arc to rescan",
+	"arc deleted",
+	"state max",
 };
 
 }
@@ -118,14 +132,11 @@ struct MaintenanceCollector : public MaintFileVisitor
 }
 
 namespace tut {
-using namespace std;
-using namespace wibble;
-using namespace arki;
-using namespace arki::types;
-using namespace arki::dataset::ondisk2;
-using namespace arki::dataset::ondisk2::writer;
 
-struct arki_dataset_ondisk2_maintenance_shar {
+struct arki_dataset_ondisk2_maintenance_shar : public MaintFileVisitor {
+	// Little dirty hack: implement MaintFileVisitor so we can conveniently
+	// access State
+
 	ConfigFile cfg;
 
 	arki_dataset_ondisk2_maintenance_shar()
@@ -151,6 +162,8 @@ struct arki_dataset_ondisk2_maintenance_shar {
 		ensure_equals(count, 3u);
 		writer.flush();
 	}
+
+	virtual void operator()(const std::string& file, State state) {}
 };
 TESTGRP(arki_dataset_ondisk2_maintenance);
 
@@ -165,14 +178,12 @@ void to::test<1>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 3u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
+
+	// Check that maintenance does not accidentally create an archive
+	ensure(!sys::fs::access("testdir/archive", F_OK));
 
 	stringstream s;
 
@@ -185,7 +196,8 @@ void to::test<1>()
 
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
@@ -196,7 +208,8 @@ void to::test<1>()
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
 }
 
@@ -214,13 +227,9 @@ void to::test<2>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 2u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 1u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(DELETED), 1u);
+	ensure_equals(c.remaining(), string());
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -228,13 +237,15 @@ void to::test<2>()
 	// Perform packing and check that things are still ok afterwards
 	writer.repack(s, true);
 	ensure_equals(s.str(),
+		"testdir: deleted from index 2007/07-07.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 1 file removed from index, 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
@@ -245,7 +256,8 @@ void to::test<2>()
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
 }
 
@@ -263,13 +275,9 @@ void to::test<3>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 2u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 1u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(DELETED), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -286,7 +294,8 @@ void to::test<3>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
@@ -296,7 +305,8 @@ void to::test<3>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 }
 
@@ -318,13 +328,9 @@ void to::test<4>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 2u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 1u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(TO_INDEX), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
@@ -339,7 +345,8 @@ void to::test<4>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
@@ -350,7 +357,8 @@ void to::test<4>()
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 }
 
@@ -372,13 +380,9 @@ void to::test<5>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 2u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 1u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(TO_INDEX), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -393,7 +397,8 @@ void to::test<5>()
 		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
@@ -403,7 +408,8 @@ void to::test<5>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 }
@@ -427,13 +433,9 @@ void to::test<6>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 2u);
-	ensure_equals(c.count_ok, 1u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 1u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
@@ -447,7 +449,8 @@ void to::test<6>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
@@ -458,7 +461,8 @@ void to::test<6>()
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 }
 
@@ -481,13 +485,9 @@ void to::test<7>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 2u);
-	ensure_equals(c.count_ok, 1u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 1u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -503,7 +503,8 @@ void to::test<7>()
 		"testdir: 1 file packed, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
@@ -513,7 +514,8 @@ void to::test<7>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 }
 
@@ -529,13 +531,9 @@ void to::test<8>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 0u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 3u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 0u);
+	ensure_equals(c.count(TO_INDEX), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -550,7 +548,8 @@ void to::test<8>()
 		"testdir: 3 files rescanned, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
@@ -560,7 +559,8 @@ void to::test<8>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 }
 
@@ -578,13 +578,8 @@ void to::test<9>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 0u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 3u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(TO_INDEX), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -599,7 +594,8 @@ void to::test<9>()
 		"testdir: 3 files rescanned, 29416 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	ensure(sys::fs::access("testdir/2007/07.grib1.tmp", F_OK));
@@ -611,7 +607,8 @@ void to::test<9>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 }
 
@@ -630,13 +627,8 @@ void to::test<10>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count_ok, 0u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 1u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(TO_INDEX), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -653,13 +645,8 @@ void to::test<10>()
 	writer.maintenance(c);
 	// A repack is still needed because the data is not sorted by reftime
 	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count_ok, 0u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 1u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	ensure(sys::fs::access("testdir/foo/bar/test.grib1.tmp", F_OK));
@@ -675,7 +662,8 @@ void to::test<10>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412);
@@ -706,13 +694,8 @@ void to::test<11>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count_ok, 0u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 1u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(TO_INDEX), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -728,13 +711,8 @@ void to::test<11>()
 
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 0u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 1u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412*2);
@@ -775,7 +753,8 @@ void to::test<11>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412);
@@ -823,13 +802,9 @@ void to::test<12>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 2u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 1u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(TO_INDEX), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -844,13 +819,9 @@ void to::test<12>()
 		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index, 2 data items could not be reindexed.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 2u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 1u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	ensure_equals(utils::files::size("testdir/2007/07-08.grib1"), 7218 + 44412);
@@ -891,7 +862,8 @@ void to::test<12>()
 	c.clear();
 
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 3u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	ensure_equals(utils::files::size("testdir/2007/07-08.grib1"), 7218);
@@ -941,13 +913,9 @@ void to::test<13>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 1u);
-	ensure_equals(c.count_archive, 2u);
-	ensure_equals(c.count_delete, 0u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(TO_ARCHIVE), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -957,6 +925,7 @@ void to::test<13>()
 	ensure_equals(s.str(),
 		"testdir: archived 2007/07-07.grib1\n"
 		"testdir: archived 2007/07-08.grib1\n"
+		"testdir: archive cleaned up\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 2 files archived, 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");
@@ -968,10 +937,14 @@ void to::test<13>()
 	ensure(sys::fs::access("testdir/archive/2007/07-08.grib1", F_OK));
 	ensure(sys::fs::access("testdir/archive/2007/07-08.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testdir/archive/2007/07-08.grib1.summary", F_OK));
+	ensure(!sys::fs::access("testdir/2007/07-07.grib1", F_OK));
+	ensure(!sys::fs::access("testdir/2007/07-08.grib1", F_OK));
 
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(ARC_OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
@@ -982,8 +955,17 @@ void to::test<13>()
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 3u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(ARC_OK), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Test querying
+	Reader reader(cfg);
+	ensure(reader.hasWorkingIndex());
+	MetadataCollector mdc;
+	reader.queryMetadata(Matcher::parse(""), false, mdc);
+	ensure_equals(mdc.size(), 3u);
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
@@ -1006,13 +988,9 @@ void to::test<14>()
 	writer.maintenance(c);
 
 	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count_ok, 1u);
-	ensure_equals(c.count_archive, 0u);
-	ensure_equals(c.count_delete, 2u);
-	ensure_equals(c.count_pack, 0u);
-	ensure_equals(c.count_index, 0u);
-	ensure_equals(c.count_rescan, 0u);
-	ensure_equals(c.count_deleted, 0u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(TO_DELETE), 2u);
+	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
 	stringstream s;
@@ -1029,7 +1007,8 @@ void to::test<14>()
 
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
@@ -1040,7 +1019,8 @@ void to::test<14>()
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count_ok, 1u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 }
 

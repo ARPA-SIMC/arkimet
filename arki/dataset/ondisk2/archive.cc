@@ -21,21 +21,27 @@
  */
 
 #include <arki/dataset/ondisk2/archive.h>
+#include <arki/dataset/ondisk2/writer/utils.h>
+#include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
 #include <arki/matcher/reftime.h>
 #include <arki/utils/metadata.h>
+#include <arki/utils/files.h>
 #include <arki/scan/any.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 
+#include <time.h>
+
 using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 using namespace arki::utils::sqlite;
 
 namespace arki {
@@ -97,7 +103,7 @@ void Archive::setupPragmas()
 
 void Archive::initQueries()
 {
-	m_insert.compile("INSERT INTO files (file, start_time, end_time) VALUES (?, ?, ?)");
+	m_insert.compile("INSERT INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
 }
 
 void Archive::initDB()
@@ -106,6 +112,7 @@ void Archive::initDB()
 	string query = "CREATE TABLE IF NOT EXISTS files ("
 		"id INTEGER PRIMARY KEY,"
 		" file TEXT NOT NULL,"
+		" mtime INTEGER NOT NULL,"
 		" start_time TEXT NOT NULL,"
 		" end_time TEXT NOT NULL,"
 		" UNIQUE(file) )";
@@ -268,13 +275,16 @@ void Archive::acquire(const std::string& relname)
 	utils::metadata::Collector mdc;
 	string pathname = str::joinpath(m_dir, relname);
 	if (!scan::scan(pathname, mdc))
-		throw wibble::exception::Consistency("Cannot scan file " + pathname);
+		throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
 	acquire(relname, mdc);
 }
 
 void Archive::acquire(const std::string& relname, const utils::metadata::Collector& mds)
 {
 	string pathname = str::joinpath(m_dir, relname);
+	time_t mtime = files::timestamp(pathname);
+	if (mtime == 0)
+		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
 
 	// Compute the summary
 	Summary sum;
@@ -312,8 +322,9 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 
 	m_insert.reset();
 	m_insert.bind(1, relname);
-	m_insert.bind(2, bt);
-	m_insert.bind(3, et);
+	m_insert.bind(2, mtime);
+	m_insert.bind(3, bt);
+	m_insert.bind(4, et);
 	m_insert.step();
 }
 
@@ -323,9 +334,77 @@ void Archive::remove(const std::string& relname)
 	// and .summary, if they exist
 }
 
+void Archive::rescan(const std::string& relname)
+{
+	// TODO: generate metadata if outdated
+	// TODO: generate summary if outdated
+	// TODO: reindex if start and end are different than in the index
+}
 
 void Archive::maintenance(writer::MaintFileVisitor& v)
 {
+	time_t now = time(NULL);
+	struct tm t;
+	string delete_threshold;
+
+	// Go to the beginning of the day
+	now -= (now % (3600*24));
+
+	// Compute the threshold for detecting files to delete
+	if (m_delete_age != -1)
+	{
+		time_t del_thr = now - m_delete_age * 3600 * 24;
+		gmtime_r(&del_thr, &t);
+		delete_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
+				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
+				t.tm_hour, t.tm_min, t.tm_sec);
+	}
+
+	// List of files existing on disk
+	writer::DirScanner disk(m_dir);
+
+	Query q("sel_archive", m_db);
+	q.compile("SELECT file, mtime, end_time FROM files ORDER BY file");
+
+	while (q.step())
+	{
+		string file = q.fetchString(0);
+
+		while (not disk.cur().empty() and disk.cur() < file)
+		{
+			v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
+			disk.next();
+		}
+		if (disk.cur() == file)
+		{
+			disk.next();
+
+			string pathname = str::joinpath(m_dir, file);
+
+			time_t ts_data = files::timestamp(pathname);
+			time_t ts_md = files::timestamp(pathname + ".metadata");
+			time_t ts_sum = files::timestamp(pathname + ".summary");
+			time_t ts_idx = q.fetchInt64(1);
+
+			if (ts_idx != ts_data ||
+			    ts_md < ts_data ||
+			    ts_sum < ts_md)
+				// Check timestamp consistency
+				v(file, writer::MaintFileVisitor::ARC_TO_RESCAN);
+			else if (q.fetchString(2) < delete_threshold)
+				// Check for files older than delete age
+				v(file, writer::MaintFileVisitor::ARC_TO_DELETE);
+			else
+				v(file, writer::MaintFileVisitor::ARC_OK);
+
+			// TODO: if requested, check for internal consistency
+			// TODO: it requires to have an infrastructure for quick
+			// TODO:   consistency checkers (like, "GRIB starts with GRIB
+			// TODO:   and ends with 7777")
+		}
+		else // if (disk.cur() > file)
+			v(file, writer::MaintFileVisitor::ARC_DELETED);
+	}
 }
 
 void Archive::repack(std::ostream& log, bool writable)
@@ -334,6 +413,13 @@ void Archive::repack(std::ostream& log, bool writable)
 
 void Archive::check(std::ostream& log)
 {
+}
+
+bool Archive::vacuum()
+{
+	// TODO: vacuum the database
+	// TODO: regenerate master summary
+	// Return true if it did anything (index shrunk or regenerated summary)
 }
 
 }

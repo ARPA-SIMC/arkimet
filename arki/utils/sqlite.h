@@ -195,6 +195,10 @@ public:
 	{
 		return sqlite3_column_int(m_stm, column);
 	}
+	sqlite3_int64 fetchInt64(int column)
+	{
+		return sqlite3_column_int64(m_stm, column);
+	}
 	const void* fetchBlob(int column)
 	{
 		return sqlite3_column_blob(m_stm, column);

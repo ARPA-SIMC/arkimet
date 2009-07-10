@@ -75,6 +75,7 @@ public:
 
 	virtual ~Writer();
 
+	bool hasArchive() const;
 	Archive& archive();
 	const Archive& archive() const;
 

@@ -51,6 +51,12 @@ struct MaintFileVisitor
 		TO_INDEX,	/// File is not present in the index
 		TO_RESCAN,	/// File contents are inconsistent with the index
 		DELETED,	/// File does not exist but has entries in the index
+		ARC_OK,		/// File fully and consistently archived
+		ARC_TO_DELETE,  /// File is ok, but old enough to be deleted from archive
+		ARC_TO_INDEX,	/// File is not present in the archive index
+		ARC_TO_RESCAN,	/// File contents need reindexing in the archive
+		ARC_DELETED,	/// File does not exist, but has entries in the archive index
+		STATE_MAX
 	};
 
 	virtual ~MaintFileVisitor() {}
@@ -199,6 +205,7 @@ struct RealRepacker : public Agent
 	size_t m_count_deleted;
 	size_t m_count_deindexed;
 	size_t m_count_freed;
+	bool m_touched_archive;
 
 	RealRepacker(std::ostream& log, Writer& w);
 
@@ -232,6 +239,7 @@ struct RealFixer : public Agent
 	size_t m_count_rescanned;
 	size_t m_count_deindexed;
 	size_t m_count_salvaged;
+	bool m_touched_archive;
 
 	RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage);
 

@@ -230,6 +230,12 @@ void MaintPrinter::operator()(const std::string& file, State state)
 		case TO_INDEX: cerr << file << " TO INDEX" << endl;
 		case TO_RESCAN: cerr << file << " TO RESCAN" << endl;
 		case DELETED: cerr << file << " DELETED" << endl;
+		case ARC_OK: cerr << file << " ARCHIVED OK" << endl;
+		case ARC_TO_DELETE: cerr << file << " TO DELETE FROM ARCHIVE" << endl;
+		case ARC_TO_INDEX: cerr << file << " TO INDEX IN ARCHIVE" << endl;
+		case ARC_TO_RESCAN: cerr << file << " TO RESCAN IN ARCHIVE" << endl;
+		case ARC_DELETED: cerr << " DELETED IN ARCHIVE" << endl;
+		default: cerr << " INVALID" << endl;
 	}
 }
 
@@ -419,7 +425,8 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 
 RealRepacker::RealRepacker(std::ostream& log, Writer& w)
 	: Agent(log, w), m_count_packed(0), m_count_archived(0),
-	  m_count_deleted(0), m_count_deindexed(0), m_count_freed(0)
+	  m_count_deleted(0), m_count_deindexed(0), m_count_freed(0),
+	  m_touched_archive(false)
 {
 }
 
@@ -458,6 +465,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 
 			log() << "archived " << file << endl;
 			++m_count_archived;
+			m_touched_archive = true;
 			break;
 		}
 		case TO_DELETE: {
@@ -489,9 +497,27 @@ void RealRepacker::operator()(const std::string& file, State state)
 		case DELETED: {
 			// Remove from index those files that have been deleted
 			w.m_idx.reset(file);
+			log() << "deleted from index " << file << endl;
 			++m_count_deindexed;
 			break;
 	        }
+		case ARC_TO_DELETE: {
+			string pathname = str::joinpath(w.archive().path(), file);
+			size_t size = files::size(pathname);
+			w.archive().remove(file);
+			log() << "deleted from archive " << file << " (" << size << " freed)" << endl;
+			++m_count_deleted;
+			++m_count_deindexed;
+			m_touched_archive = true;
+			break;
+		}
+		case ARC_DELETED: {
+			w.archive().remove(file);
+			log() << "deleted from archive index " << file << endl;
+			++m_count_deindexed;
+			m_touched_archive = true;
+			break;
+		}
 		default:
 			break;
 	}
@@ -499,6 +525,12 @@ void RealRepacker::operator()(const std::string& file, State state)
 
 void RealRepacker::end()
 {
+	if (m_touched_archive)
+	{
+		if (w.archive().vacuum())
+			log() << "archive cleaned up" << endl;
+	}
+
 	// Finally, tidy up the database
 	size_t size_pre = 0, size_post = 0;
 	if (files::size(w.m_idx.pathname() + "-journal") > 0)
@@ -574,6 +606,17 @@ void MockRepacker::operator()(const std::string& file, State state)
 			log() << file << " should be removed from the index" << endl;
 			++m_count_deindexed;
 			break;
+		case ARC_TO_DELETE: {
+			log() << file << " should be deleted and deindexed from the archive" << endl;
+			++m_count_deleted;
+			++m_count_deindexed;
+			break;
+		}
+		case ARC_DELETED: {
+			log() << file << " should be removed from the archive index" << endl;
+			++m_count_deindexed;
+			break;
+		}
 		default:
 			break;
 	}
@@ -597,7 +640,8 @@ void MockRepacker::end()
 
 RealFixer::RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage)
 	: Agent(log, w), salvage(salvage),
-          m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0), m_count_salvaged(0)
+          m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0), m_count_salvaged(0),
+	  m_touched_archive(false)
 {
 }
 
@@ -624,6 +668,22 @@ void RealFixer::operator()(const std::string& file, State state)
 			++m_count_deindexed;
 			break;
 	        }
+		case ARC_TO_INDEX:
+		case ARC_TO_RESCAN: {
+			/// File is not present in the archive index
+			/// File contents need reindexing in the archive
+			w.archive().rescan(file);
+			++m_count_rescanned;
+			m_touched_archive = true;
+			break;
+		}
+		case ARC_DELETED: {
+			/// File does not exist, but has entries in the archive index
+			w.archive().remove(file);
+			++m_count_deindexed;
+			m_touched_archive = true;
+			break;
+		}
 		default:
 			break;
 	}
@@ -631,6 +691,12 @@ void RealFixer::operator()(const std::string& file, State state)
 
 void RealFixer::end()
 {
+	if (m_touched_archive)
+	{
+		if (w.archive().vacuum())
+			log() << "archive cleaned up" << endl;
+	}
+
 	// Finally, tidy up the database
 	size_t size_pre = 0, size_post = 0;
 	if (files::size(w.m_idx.pathname() + "-journal") > 0)
@@ -692,6 +758,17 @@ void MockFixer::operator()(const std::string& file, State state)
 			log() << file << " should be removed from the index" << endl;
 			++m_count_deindexed;
 			break;
+		case ARC_TO_INDEX:
+		case ARC_TO_RESCAN: {
+			log() << file << " should be rescanned by the archive" << endl;
+			++m_count_rescanned;
+			break;
+		}
+		case ARC_DELETED: {
+			log() << file << " should be removed from the archive index" << endl;
+			++m_count_deindexed;
+			break;
+		}
 		default:
 			break;
 	}

@@ -186,15 +186,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - cache negli aggregate come negli attributi
 
- - fare tabella mdarc dei file archiviati con:
-   (file, start_date, end_date)
- - nel file di configurazione, mettere un "archive age" (in giorni) dopo il
-   quale un'operazione di repack:
-    + toglie i dati dall'indice
-    + crea i file .metadata e .summary
-    - aggiunge il file a mdarc
-   il tutto fatto dopo il pack vero e proprio, cosí i file archiviati sono
-   ordinati per reference time.
+Archivio
  - nelle query, se non c'è reftime o se reftime include date piú vecchie di
    "archive age", allora fare match anche su mdarc e scandire i file risultanti
  - nel rebuild, se un file contiene dati interamente precedenti all'archive
@@ -202,6 +194,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    principale
  - non si fa delete o replace o append di dati in mdarc: dare errore se si
    prova a farlo. La roba precedente all'archive age diventa di fatto read only
+ - check dell'archivio (aggiornamento di metadati e summary, indicizzazione
+   file mancanti)
+ - repack dell'archivio (cancellazione file piú vecchi di delete age,
+   cancellazione file che non sono nell'indice)
 
  - benchmark locale nuovo ondisk2
     - reindicizzazione di tutto: 

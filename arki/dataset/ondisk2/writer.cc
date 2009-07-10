@@ -88,6 +88,15 @@ Writer::~Writer()
 	if (m_archive) delete m_archive;
 }
 
+bool Writer::hasArchive() const
+{
+	string arcdir = str::joinpath(m_path, "archive");
+	return sys::fs::access(arcdir, F_OK);
+	//std::auto_ptr<struct stat> st = sys::fs::stat(arcdir);
+	//if (!st.get())
+		//return false;
+}
+
 Archive& Writer::archive()
 {
 	if (!m_archive)
@@ -229,6 +238,8 @@ void Writer::maintenance(writer::MaintFileVisitor& v)
 	writer::FindMissing fm(ca, m_path);
 	writer::HoleFinder hf(fm, m_path);	
 	m_idx.scan_files(hf, "file, reftime, offset");
+	if (hasArchive())
+		archive().maintenance(v);
 	hf.end();
 	fm.end();
 

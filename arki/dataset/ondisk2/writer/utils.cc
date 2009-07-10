@@ -71,6 +71,8 @@ void DirScanner::scan(const std::string& root, int level)
 		// Skip '.', '..' and hidden files
 		if ((*i)[0] == '.')
 			continue;
+		if (level == 0 and *i == "archive")
+			continue;
 
 		// stat(2) the file
 		string pathname = str::joinpath(root, *i);

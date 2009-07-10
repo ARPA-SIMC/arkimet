@@ -65,6 +65,8 @@ public:
 	Archive(const std::string& dir, int delete_age = -1);
 	virtual ~Archive();
 
+	const std::string& path() const { return m_dir; }
+
 	void openRO();
 	void openRW();
 
@@ -75,10 +77,13 @@ public:
 	void acquire(const std::string& relname);
 	void acquire(const std::string& relname, const utils::metadata::Collector& mds);
 	void remove(const std::string& relname);
+	void rescan(const std::string& relname);
 
 	void maintenance(writer::MaintFileVisitor& v);
 	void repack(std::ostream& log, bool writable=false);
 	void check(std::ostream& log);
+
+	bool vacuum();
 };
 
 }

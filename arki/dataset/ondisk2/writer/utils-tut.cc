@@ -72,6 +72,8 @@ void to::test<2>()
 	utils::createFlagfile("dirscanner/2009/a.grib");
 	utils::createFlagfile("dirscanner/2009/b.grib");
 	mkdir("dirscanner/2009/temp", 0777);
+	mkdir("dirscanner/archive", 0777);
+	utils::createFlagfile("dirscanner/archive/z.grib");
 
 	DirScanner ds("dirscanner");
 
