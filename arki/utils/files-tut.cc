@@ -100,9 +100,30 @@ void to::test<3>()
 	ensure(!hasIndexFlagfile(name));
 }
 
-// Test index flagfile creation
+// Test dontpack flagfile creation
 template<> template<>
 void to::test<4>()
+{
+	string name = "commontest";
+	ensure(!hasDontpackFlagfile(name));
+	createDontpackFlagfile(name);
+	ensure(hasDontpackFlagfile(name));
+	try {
+		createNewDontpackFlagfile(name);
+		ensure(false);
+	} catch (...) {
+	}
+	removeDontpackFlagfile(name);
+	ensure(!hasDontpackFlagfile(name));
+	createNewDontpackFlagfile(name);
+	ensure(hasDontpackFlagfile(name));
+	removeDontpackFlagfile(name);
+	ensure(!hasDontpackFlagfile(name));
+}
+
+// Test timestamp
+template<> template<>
+void to::test<5>()
 {
 	ensure_equals(timestamp("commontest/a"), 0);
 	utils::createFlagfile("commontest/a");

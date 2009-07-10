@@ -252,6 +252,9 @@ void Writer::repack(std::ostream& log, bool writable)
 {
 	using namespace writer;
 
+	if (hasDontpackFlagfile(m_path))
+		throw wibble::exception::Consistency("repacking " + m_path, "dataset that needs checking first");
+
 	auto_ptr<Agent> repacker;
 
 	if (writable)
@@ -262,8 +265,13 @@ void Writer::repack(std::ostream& log, bool writable)
 			repacker.reset(new RealRepacker(log, *this));
 	else
 		repacker.reset(new MockRepacker(log, *this));
-	maintenance(*repacker);
-	repacker->end();
+	try {
+		maintenance(*repacker);
+		repacker->end();
+	} catch (...) {
+		createDontpackFlagfile(m_path);
+		throw;
+	}
 }
 
 void Writer::check(std::ostream& log)
@@ -280,8 +288,15 @@ void Writer::check(std::ostream& log, MetadataConsumer& salvage)
 	using namespace writer;
 
 	RealFixer fixer(log, *this, salvage);
-	maintenance(fixer);
-	fixer.end();
+	try {
+		maintenance(fixer);
+		fixer.end();
+	} catch (...) {
+		createDontpackFlagfile(m_path);
+		throw;
+	}
+
+	removeDontpackFlagfile(m_path);
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

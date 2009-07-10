@@ -28,6 +28,7 @@
 #define FLAGFILE_REBUILD ".needs-rebuild"
 #define FLAGFILE_PACK ".needs-pack"
 #define FLAGFILE_INDEX "index-out-of-sync"
+#define FLAGFILE_DONTPACK "needs-check-do-not-pack"
 
 namespace arki {
 namespace utils {
@@ -72,6 +73,19 @@ void removeIndexFlagfile(const std::string& dir);
 
 /// Check if a file exists
 bool hasIndexFlagfile(const std::string& dir);
+
+
+/// Create an empty file, succeeding if it already exists
+void createDontpackFlagfile(const std::string& dir);
+
+/// Create an empty file, failing if it already exists
+void createNewDontpackFlagfile(const std::string& dir);
+
+/// Remove a file, succeeding if it does not exists
+void removeDontpackFlagfile(const std::string& dir);
+
+/// Check if a file exists
+bool hasDontpackFlagfile(const std::string& dir);
 
 
 /// File mtime

@@ -87,6 +87,25 @@ bool hasIndexFlagfile(const std::string& dir)
 	return utils::hasFlagfile(str::joinpath(dir, FLAGFILE_INDEX));
 }
 
+
+void createDontpackFlagfile(const std::string& dir)
+{
+	utils::createFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+}
+void createNewDontpackFlagfile(const std::string& dir)
+{
+	utils::createNewFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+}
+void removeDontpackFlagfile(const std::string& dir)
+{
+	utils::removeFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+}
+bool hasDontpackFlagfile(const std::string& dir)
+{
+	return utils::hasFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+}
+
+
 time_t timestamp(const std::string& file)
 {
 	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
