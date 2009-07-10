@@ -328,6 +328,57 @@ void to::test<3>()
 	readHang.wait();
 }
 
+// Test getting the metadata corresponding to a file
+template<> template<>
+void to::test<4>()
+{
+	// Remove index if it exists
+	unlink("file1");
+
+	auto_ptr<WIndex> test = createIndex<WIndex>(
+		"type = ondisk2\n"
+		"path = .\n"
+		"indexfile = file1\n"
+		"index = origin, product, level\n"
+		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+	);
+	ensure(test.get() != 0);
+	Pending p;
+
+	metadata::Collector src;
+	scan::scan("inbound/test.grib1", src);
+	ensure_equals(src.size(), 3u);
+
+	test->open();
+	p = test->beginTransaction();
+	
+	// Index two metadata in one file
+	test->index(md, "test-md", 0);
+	test->index(md1, "test-md", 10);
+
+	// Index three other metadata in a separate file
+	test->index(src[0], "test-md1", 0);
+	test->index(src[1], "test-md1", 10);
+	test->index(src[2], "test-md1", 20);
+
+	p.commit();
+
+	// Get the metadata corresponding to one file
+	metadata::Collector mdc;
+	test->scan_file("test-md", mdc);
+
+	ensure_equals(mdc.size(), 2u);
+
+	// Check that the metadata came out fine
+	mdc[0].unset(types::TYPE_ASSIGNEDDATASET);
+	mdc[0].source = md.source;
+	ensure(mdc[0] == md);
+
+	mdc[1].unset(types::TYPE_ASSIGNEDDATASET);
+	mdc[1].source = md1.source;
+	ensure(mdc[1] == md1);
+}
+
 }
 
 // vim:set ts=4 sw=4:

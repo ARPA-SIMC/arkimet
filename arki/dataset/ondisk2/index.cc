@@ -230,7 +230,7 @@ void Index::scan_file(const std::string& relname, writer::IndexFileVisitor& v, c
 
 void Index::scan_file(const std::string& relname, MetadataConsumer& consumer) const
 {
-	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.reftime";
+	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
 	if (m_others) query += ", m.other";
 	query += " FROM md AS m";
@@ -253,8 +253,9 @@ void Index::scan_file(const std::string& relname, MetadataConsumer& consumer) co
 		md.source = source::Blob::create(
 				mdq.fetchString(1), mdq.fetchString(2),
 				mdq.fetchInt(3), mdq.fetchInt(4));
-		md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(5))));
-		int j = 6;
+		md.notes = mdq.fetchItems<types::Note>(5);
+		md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
+		int j = 7;
 		if (m_uniques)
 		{
 			if (mdq.fetchType(j) != SQLITE_NULL)
