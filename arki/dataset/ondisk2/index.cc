@@ -32,6 +32,7 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
 #include <arki/utils/files.h>
+#include <arki/utils/metadata.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -48,6 +49,7 @@ using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 using namespace arki::utils::sqlite;
 using namespace arki::dataset::index;
 
@@ -298,7 +300,7 @@ bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
 
 	query += " ORDER BY m.reftime";
 
-	vector<Metadata> mdbuf;
+	metadata::Collector mdbuf;
 	// TODO: if verbose, output the query
 
 	// Limited scope for mdq, so we finalize the query before starting to
@@ -335,14 +337,12 @@ bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
 			}
 
 			// Buffer the results in memory, to release the database lock as soon as possible
-			mdbuf.push_back(md);
+			mdbuf(md);
 		}
 	}
 
 	// pass it to consumer
-	for (vector<Metadata>::iterator i = mdbuf.begin();
-			i != mdbuf.end(); ++i)
-		consumer(*i);
+	mdbuf.sendTo(consumer);
 
 	return true;
 }
