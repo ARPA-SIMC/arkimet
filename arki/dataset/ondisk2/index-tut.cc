@@ -28,6 +28,7 @@
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
+#include <arki/scan/any.h>
 #include <arki/utils/metadata.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
@@ -47,10 +48,11 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::dataset::ondisk2;
 using namespace arki::types;
+using namespace arki::utils;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-auto_ptr<INDEX> createIndex(const std::string& config)
+static inline auto_ptr<INDEX> createIndex(const std::string& config)
 {
 	stringstream confstream(config);
 	ConfigFile cfg;
@@ -133,14 +135,16 @@ void to::test<1>()
 	int id = test->id(md);
 	ensure_equals(id, -1);
 	test->index(md, "test-md", 0);
+	ensure_equals(test->id(md), 1);
 
 	// Index a second one
 	id = test->id(md1);
 	ensure_equals(id, -1);
 	test->index(md1, "test-md1", 0);
+	ensure_equals(test->id(md1), 2);
 
 	// Query various kinds of metadata
-	utils::metadata::Collector mdc;
+	metadata::Collector mdc;
 	test->query(Matcher::parse("origin:GRIB1,200"), mdc);
 	ensure_equals(mdc.size(), 1u);
 	ensure_equals(mdc[0].notes.size(), 1u);
@@ -158,11 +162,10 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-#if 0
 	auto_ptr<WIndex> test = createIndex<WIndex>(
-		"type = test\n"
+		"type = ondisk2\n"
 		"path = .\n"
-		"indexfile = file1\n"
+		"indexfile = :memory:\n"
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
 		"index = origin, product, level, timerange, area, ensemble, reftime\n"
 	);
@@ -173,36 +176,34 @@ void to::test<2>()
 	p = test->beginTransaction();
 	
 	// Index a metadata
-	string id1 = test->id(md);
 	test->index(md, "test-md", 0);
+	int id = test->id(md);
 
 	// Index it again and ensure that it fails
 	try {
 		test->index(md, "test-md", 0);
 		ensure(false);
-	} catch (Index::DuplicateInsert& e) {
+	} catch (dataset::index::DuplicateInsert& e) {
 	}
 
 	// Index a second one
-	string id2 = test->id(md1);
 	test->index(md1, "test-md1", 0);
+	int id1 = test->id(md1);
 
 	// Ensure that we have two items
-	MetadataCollector mdc;
+	metadata::Collector mdc;
 	test->query(Matcher::parse("origin:GRIB1"), mdc);
 	ensure_equals(mdc.size(), 2u);
 	mdc.clear();
 
 	// Remove a nonexisting item and see that it fails
 	string file;
-	size_t ofs;
-	test->remove("not a valid id", file, ofs);
+	test->remove(100, file);
 
 	// Remove the first item
-	test->remove(id1, file, ofs);
+	test->remove(id, file);
 	ensure((bool)p);
 	ensure_equals(file, "test-md");
-	ensure_equals(ofs, 0u);
 	p.commit();
 
 	// There should be only one result now
@@ -210,7 +211,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 1u);
 
 	// It should be the second item we inserted
-	ensure_equals(test->id(mdc[0]), id2);
+	ensure_equals(test->id(mdc[0]), id1);
 	mdc.clear();
 
 	// Replace it with a different one
@@ -219,13 +220,13 @@ void to::test<2>()
 	// See that it changed
 	test->query(Matcher::parse("origin:GRIB1"), mdc);
 	ensure_equals(mdc.size(), 1u);
-	ensure_equals(test->id(mdc[0]), id1);
+	Item<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(blob->filename, "test-md");
 
 	p.commit();
-#endif
 }
 
-#if 0
+namespace {
 struct ReadHang : public sys::ChildProcess, public MetadataConsumer
 {
 	ConfigFile cfg;
@@ -271,13 +272,14 @@ struct ReadHang : public sys::ChildProcess, public MetadataConsumer
 		return buf[0];
 	}
 };
+}
 
 // Test concurrent read and update
 template<> template<>
 void to::test<3>()
 {
 	string cfg = 
-		"type = test\n"
+		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = file1\n"
 		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
@@ -323,8 +325,8 @@ void to::test<3>()
 	}
 
 	readHang.kill(9);
+	readHang.wait();
 }
-#endif
 
 }
 
