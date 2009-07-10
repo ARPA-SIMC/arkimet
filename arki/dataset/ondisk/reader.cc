@@ -28,6 +28,7 @@
 #include <arki/matcher.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/dataset.h>
 #include <arki/summary.h>
 #include <arki/postprocess.h>
 
@@ -53,6 +54,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 using namespace arki::utils::files;
 
 namespace arki {
@@ -93,53 +95,6 @@ static bool readSummary(Summary& s, const std::string& fname)
 
 	return s.read(in, fname);
 }
-
-/**
- * Prepend a path to all metadata
- */
-struct PathPrepender : public MetadataConsumer
-{
-	string path;
-	MetadataConsumer& next;
-	PathPrepender(const std::string& path, MetadataConsumer& next) : path(path), next(next) {}
-	bool operator()(Metadata& md)
-	{
-		md.prependPath(path);
-		return next(md);
-	}
-};
-
-/**
- * Inline the data into all metadata
- */
-struct DataInliner : public MetadataConsumer
-{
-	MetadataConsumer& next;
-	DataInliner(MetadataConsumer& next) : next(next) {}
-	bool operator()(Metadata& md)
-	{
-		// Read the data
-		wibble::sys::Buffer buf = md.getData();
-		// Change the source as inline
-		md.setInlineData(md.source->format, buf);
-		return next(md);
-	}
-};
-
-/**
- * Output the data from a metadata stream into an ostream
- */
-struct DataOnly : public MetadataConsumer
-{
-	std::ostream& out;
-	DataOnly(std::ostream& out) : out(out) {}
-	bool operator()(Metadata& md)
-	{
-		wibble::sys::Buffer buf = md.getData();
-		out.write((const char*)buf.data(), buf.size());
-		return true;
-	}
-};
 
 static void scan(const std::string& fname, const Matcher& matcher, MetadataConsumer& consumer)
 {
@@ -186,7 +141,7 @@ void Reader::queryWithoutIndex(const std::string& top, const Matcher& matcher, M
 
 	// If there is no summary or it does match, query the subdirectories and
 	// scan the .metadata files
-	PathPrepender prepender(top, consumer);
+	ds::PathPrepender prepender(top, consumer);
 	wibble::sys::fs::Directory dir(root);
 	vector<string> dirs;
 	vector<string> files;
@@ -249,12 +204,12 @@ void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 
 	if (withData)
 	{
-		DataInliner inliner(consumer);
-		PathPrepender prepender(sys::fs::abspath(m_root), inliner);
+		ds::DataInliner inliner(consumer);
+		ds::PathPrepender prepender(sys::fs::abspath(m_root), inliner);
 		if (!m_idx || !m_idx->query(matcher, prepender))
 			queryWithoutIndex("", matcher, prepender);
 	} else {
-		PathPrepender prepender(sys::fs::abspath(m_root), consumer);
+		ds::PathPrepender prepender(sys::fs::abspath(m_root), consumer);
 		if (!m_idx || !m_idx->query(matcher, prepender))
 			queryWithoutIndex("", matcher, prepender);
 	}
@@ -265,15 +220,15 @@ void Reader::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qty
 	switch (qtype)
 	{
 		case BQ_DATA: {
-			DataOnly dataonly(out);
-			PathPrepender prepender(sys::fs::abspath(m_root), dataonly);
+			ds::DataOnly dataonly(out);
+			ds::PathPrepender prepender(sys::fs::abspath(m_root), dataonly);
 			if (!m_idx || !m_idx->query(matcher, prepender))
 				queryWithoutIndex("", matcher, prepender);
 			break;
 		}
 		case BQ_POSTPROCESS: {
 			Postprocess postproc(param, out);
-			PathPrepender prepender(sys::fs::abspath(m_root), postproc);
+			ds::PathPrepender prepender(sys::fs::abspath(m_root), postproc);
 			if (!m_idx || !m_idx->query(matcher, prepender))
 				queryWithoutIndex("", matcher, prepender);
 			postproc.flush();
