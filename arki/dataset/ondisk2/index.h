@@ -144,6 +144,11 @@ public:
 	void scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
 
 	/**
+	 * Send the metadata of all data items inside a file to the given consumer
+	 */
+	void scan_file(const std::string& relname, MetadataConsumer& consumer) const;
+
+	/**
 	 * Return the maximum reference time found in the given file.
 	 *
 	 * Return the empty string if the file is not in the index.

@@ -228,6 +228,50 @@ void Index::scan_file(const std::string& relname, writer::IndexFileVisitor& v, c
 	}
 }
 
+void Index::scan_file(const std::string& relname, MetadataConsumer& consumer) const
+{
+	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.reftime";
+	if (m_uniques) query += ", m.uniq";
+	if (m_others) query += ", m.other";
+	query += " FROM md AS m";
+	if (m_uniques)
+		query += " JOIN mduniq AS u ON uniq = u.id";
+	if (m_others)
+		query += " JOIN mdother AS o ON other = o.id";
+	query += " WHERE m.file=? ORDER BY m.offset";
+
+	Query mdq("scan_file_md", m_db);
+	mdq.compile(query);
+	mdq.bind(1, relname);
+
+	while (mdq.step())
+	{
+		// Rebuild the Metadata
+		Metadata md;
+		md.create();
+		md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetchInt(0))));
+		md.source = source::Blob::create(
+				mdq.fetchString(1), mdq.fetchString(2),
+				mdq.fetchInt(3), mdq.fetchInt(4));
+		md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(5))));
+		int j = 6;
+		if (m_uniques)
+		{
+			if (mdq.fetchType(j) != SQLITE_NULL)
+				m_uniques->read(mdq.fetchInt(j), md);
+			++j;
+		}
+		if (m_others)
+		{
+			if (mdq.fetchType(j) != SQLITE_NULL)
+				m_others->read(mdq.fetchInt(j), md);
+			++j;
+		}
+
+		consumer(md);
+	}
+}
+
 std::string Index::max_file_reftime(const std::string& relname) const
 {
 	Query sq("max_file_reftime", m_db);
