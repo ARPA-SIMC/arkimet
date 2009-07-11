@@ -426,7 +426,7 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 RealRepacker::RealRepacker(std::ostream& log, Writer& w)
 	: Agent(log, w), m_count_packed(0), m_count_archived(0),
 	  m_count_deleted(0), m_count_deindexed(0), m_count_freed(0),
-	  m_touched_archive(false)
+	  m_touched_archive(false), m_redo_summary(false)
 {
 }
 
@@ -466,6 +466,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 			log() << "archived " << file << endl;
 			++m_count_archived;
 			m_touched_archive = true;
+			m_redo_summary = true;
 			break;
 		}
 		case TO_DELETE: {
@@ -480,6 +481,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 			++m_count_deleted;
 			++m_count_deindexed;
 			m_count_freed += size;
+			m_redo_summary = true;
 			break;
 		}
 		case TO_INDEX: {
@@ -499,6 +501,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 			w.m_idx.reset(file);
 			log() << "deleted from index " << file << endl;
 			++m_count_deindexed;
+			m_redo_summary = true;
 			break;
 	        }
 		case ARC_TO_DELETE: {
@@ -545,7 +548,8 @@ void RealRepacker::end()
 	}
 
 	// Rebuild the cached summary
-	if (files::timestamp(str::joinpath(w.m_path, "summary")) <
+	if (m_redo_summary ||
+	    files::timestamp(str::joinpath(w.m_path, "summary")) <
 	    files::timestamp(w.m_idx.pathname()))
 	{
 		Summary s;
@@ -641,7 +645,7 @@ void MockRepacker::end()
 RealFixer::RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage)
 	: Agent(log, w), salvage(salvage),
           m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0), m_count_salvaged(0),
-	  m_touched_archive(false)
+	  m_touched_archive(false), m_redo_summary(false)
 {
 }
 
@@ -660,12 +664,14 @@ void RealFixer::operator()(const std::string& file, State state)
 		case TO_RESCAN: {
 			m_count_salvaged += rescan(w.m_name, w.m_path, file, w.m_idx, salvage);
 			++m_count_rescanned;
+			m_redo_summary = true;
 			break;
 		}
 		case DELETED: {
 			// Remove from index those files that have been deleted
 			w.m_idx.reset(file);
 			++m_count_deindexed;
+			m_redo_summary = true;
 			break;
 	        }
 		case ARC_TO_INDEX:
@@ -711,7 +717,8 @@ void RealFixer::end()
 	}
 
 	// Rebuild the cached summary
-	if (files::timestamp(str::joinpath(w.m_path, "summary")) <
+	if (m_redo_summary ||
+	    files::timestamp(str::joinpath(w.m_path, "summary")) <
 	    files::timestamp(w.m_idx.pathname()))
 	{
 		Summary s;

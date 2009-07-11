@@ -21,6 +21,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
+#include <arki/summary.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <wibble/sys/fs.h>
@@ -338,11 +339,11 @@ void to::test<9>()
 	testds.queryBytes(Matcher::parse(""), out, ReadonlyDataset::BQ_DATA);
 	ensure_equals(out.str().size(), 44412u);
 
-	out.clear();
+	out.str(string());
 	testds.queryBytes(Matcher::parse("origin:GRIB1,200"), out, ReadonlyDataset::BQ_DATA);
 	ensure_equals(out.str().size(), 7218u);
 
-	out.clear();
+	out.str(string());
 	testds.queryBytes(Matcher::parse("reftime:=2007-07-08"), out, ReadonlyDataset::BQ_DATA);
 	ensure_equals(out.str().size(), 7218u);
 
@@ -352,6 +353,22 @@ void to::test<9>()
 		case BQ_REP_SUMMARY: {
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 	*/
+
+	// Query summary
+	Summary s;
+	testds.querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 3u);
+	ensure_equals(s.size(), 44412u);
+
+	s.clear();
+	testds.querySummary(Matcher::parse("origin:GRIB1,200"), s);
+	ensure_equals(s.count(), 1u);
+	ensure_equals(s.size(), 7218u);
+
+	s.clear();
+	testds.querySummary(Matcher::parse("reftime:=2007-07-08"), s);
+	ensure_equals(s.count(), 1u);
+	ensure_equals(s.size(), 7218u);
 }
 
 }

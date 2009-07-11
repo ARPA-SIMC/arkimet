@@ -31,12 +31,19 @@
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
 #include <arki/scan/any.h>
+#include <arki/postprocess.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 
 #include <time.h>
+
+#include "config.h"
+
+#ifdef HAVE_LUA
+#include <arki/report.h>
+#endif
 
 using namespace std;
 using namespace wibble;
@@ -125,7 +132,12 @@ void Archive::initDB()
 void Archive::fileList(const Matcher& matcher, std::vector<std::string>& files) const
 {
 	string query;
-	if (const matcher::OR* reftime = matcher.m_impl->get(types::TYPE_REFTIME))
+	const matcher::OR* reftime = 0;
+	
+	if (matcher.m_impl)
+		reftime = matcher.m_impl->get(types::TYPE_REFTIME);
+
+	if (reftime)
 	{
 		UItem<types::Time> begin;
 		UItem<types::Time> end;
@@ -194,29 +206,17 @@ void Archive::queryMetadata(const Matcher& matcher, bool withData, MetadataConsu
 
 void Archive::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
 {
-#if 0 // TODO
 	switch (qtype)
 	{
 		case BQ_DATA: {
-			vector<string> files;
-			fileList(matcher, files);
-
-			DataOnly dataonly(out);
-			PathPrepender prepender(sys::fs::abspath(m_root), dataonly);
-			MatcherFilter filter(matcher, prepender);
-			for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-				scan::scan(*i, filter);
+			ds::DataOnly dataonly(out);
+			queryMetadata(matcher, false, dataonly);
 			break;
 		}
 		case BQ_POSTPROCESS: {
-			vector<string> files;
-			fileList(matcher, files);
-
 			Postprocess postproc(param, out);
-			PathPrepender prepender(sys::fs::abspath(m_root), postproc);
-			MatcherFilter filter(matcher, prepender);
-			for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-				scan::scan(*i, filter);
+			queryMetadata(matcher, false, postproc);
+
 			// TODO: if we flush here, do we close the postprocessor for a further query?
 			// TODO: POSTPROCESS isn't it just a query for the metadata?
 			// TODO: in that case, the reader should implement it
@@ -250,23 +250,60 @@ void Archive::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qt
 		default:
 			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)qtype));
 	}
-#endif
 }
 
-void Archive::querySummary(const Matcher& matcher, Summary& summary)
+void Archive::querySummaries(const Matcher& matcher, Summary& summary) const
 {
 	vector<string> files;
 	fileList(matcher, files);
 
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 	{
+		string pathname = str::joinpath(m_dir, *i);
+
 		// Silently skip files that have been deleted
-		if (!sys::fs::access(*i + ".summary", R_OK))
+		if (!sys::fs::access(pathname + ".summary", R_OK))
 			continue;
 
 		Summary s;
-		s.readFile(*i + ".summary");
+		s.readFile(pathname + ".summary");
 		s.filter(matcher, summary);
+	}
+}
+
+void Archive::querySummary(const Matcher& matcher, Summary& summary)
+{
+	// Check if the matcher discriminates on reference times
+	const matcher::Implementation* rtmatch = 0;
+	if (matcher.m_impl)
+		rtmatch = matcher.m_impl->get(types::TYPE_REFTIME);
+
+	if (!rtmatch)
+	{
+		// The matcher does not contain reftime, we can work with a
+		// global summary
+		string cache_pathname = str::joinpath(m_dir, "summary");
+
+		if (sys::fs::access(cache_pathname, R_OK))
+		{
+			Summary s;
+			s.readFile(cache_pathname);
+			s.filter(matcher, summary);
+		} else if (sys::fs::access(m_dir, W_OK)) {
+			// Rebuild the cache
+			Summary s;
+			querySummaries(Matcher(), s);
+
+			// Save the summary
+			s.writeAtomically(cache_pathname);
+
+			// Query the newly generated summary that we still have
+			// in memory
+			s.filter(matcher, summary);
+		} else
+			querySummaries(matcher, summary);
+	} else {
+		querySummaries(matcher, summary);
 	}
 }
 
@@ -421,6 +458,7 @@ bool Archive::vacuum()
 	// TODO: vacuum the database
 	// TODO: regenerate master summary
 	// Return true if it did anything (index shrunk or regenerated summary)
+	return false;
 }
 
 }

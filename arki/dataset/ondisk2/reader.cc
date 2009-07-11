@@ -273,7 +273,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 		// The matcher does not contain reftime, we can work with a
 		// global summary
 
-		// Figure out the timestamp of the cached summaru
+		// Figure out the timestamp of the cached summary
 		time_t ts_cache;
 		string cache_fname = str::joinpath(m_root, "summary");
 

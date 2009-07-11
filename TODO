@@ -191,7 +191,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    (xargs per i grib)
 
 Archivio
- - queryBytes per archivio
  - nel rebuild, se un file contiene dati interamente precedenti all'archive
    age, creare il suo .summary e aggiungerlo a mdarc invece che all'indice
    principale

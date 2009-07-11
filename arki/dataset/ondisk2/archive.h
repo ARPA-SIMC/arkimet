@@ -60,6 +60,7 @@ protected:
 	void initQueries();
 	void initDB();
 	void fileList(const Matcher& matcher, std::vector<std::string>& files) const;
+	void querySummaries(const Matcher& matcher, Summary& summary) const;
 
 public:
 	Archive(const std::string& dir, int delete_age = -1);

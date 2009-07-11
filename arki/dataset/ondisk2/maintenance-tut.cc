@@ -930,7 +930,6 @@ void to::test<13>()
 	ensure_equals(s.str(),
 		"testdir: archived 2007/07-07.grib1\n"
 		"testdir: archived 2007/07-08.grib1\n"
-		"testdir: archive cleaned up\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 2 files archived, 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");

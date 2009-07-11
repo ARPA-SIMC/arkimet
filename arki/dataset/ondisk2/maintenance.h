@@ -206,6 +206,7 @@ struct RealRepacker : public Agent
 	size_t m_count_deindexed;
 	size_t m_count_freed;
 	bool m_touched_archive;
+	bool m_redo_summary;
 
 	RealRepacker(std::ostream& log, Writer& w);
 
@@ -240,6 +241,7 @@ struct RealFixer : public Agent
 	size_t m_count_deindexed;
 	size_t m_count_salvaged;
 	bool m_touched_archive;
+	bool m_redo_summary;
 
 	RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage);
 
