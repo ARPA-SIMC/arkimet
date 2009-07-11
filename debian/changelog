@@ -1,3 +1,14 @@
+arkimet (0.22-1) UNRELEASED; urgency=low
+
+  * ondisk2 "archive age": archival after a given age
+  * ondisk2 "delete age": deletion after a given age
+  * signal aware --data output also for ondisk1
+  * ondisk2: if a problem is found during check or repack, disallow repack
+    until a check is made, to avoid accidentally deleting files to be
+    reindexed
+
+ -- Enrico Zini <enrico@debian.org>  Sat, 11 Jul 2009 12:59:38 +0100
+
 arkimet (0.21-1) UNRELEASED; urgency=low
 
   * When rebuilding ondisk2 datafiles, keep the last of the duplicate entries,
