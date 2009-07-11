@@ -431,6 +431,11 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 		else // if (disk.cur() > file)
 			v(file, writer::MaintFileVisitor::ARC_DELETED);
 	}
+	while (not disk.cur().empty())
+	{
+		v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
+		disk.next();
+	}
 }
 
 /*

@@ -105,4 +105,83 @@ void to::test<2>()
 	ensure(not c.isClean());
 }
 
+// Test maintenance scan on non-indexed files
+template<> template<>
+void to::test<3>()
+{
+	Archive arc("testarc", 1);
+	arc.openRW();
+	system("cp inbound/test.grib1 testarc/");
+
+	// Query now is ok
+	metadata::Collector mdc;
+	arc.queryMetadata(Matcher(), false, mdc);
+	ensure_equals(mdc.size(), 0u);
+
+	// Maintenance should show it's all ok
+	MaintenanceCollector c;
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_TO_INDEX), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(not c.isClean());
+}
+
+// Test maintenance scan on missing metadata
+template<> template<>
+void to::test<4>()
+{
+	Archive arc("testarc", 1);
+	arc.openRW();
+	system("cp inbound/test.grib1 testarc/");
+	arc.acquire("test.grib1");
+	sys::fs::deleteIfExists("testarc/test.grib1.metadata");
+	sys::fs::deleteIfExists("testarc/test.grib1.summary");
+	ensure(sys::fs::access("testarc/test.grib1", F_OK));
+	ensure(!sys::fs::access("testarc/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testarc/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testarc/index.sqlite", F_OK));
+
+	// Query now is ok
+	metadata::Collector mdc;
+	arc.queryMetadata(Matcher(), false, mdc);
+	ensure_equals(mdc.size(), 3u);
+
+	// Maintenance should show it's all ok
+	MaintenanceCollector c;
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(not c.isClean());
+}
+
+// Test maintenance scan on missing summary
+template<> template<>
+void to::test<5>()
+{
+	Archive arc("testarc", 1);
+	arc.openRW();
+	system("cp inbound/test.grib1 testarc/");
+	arc.acquire("test.grib1");
+	sys::fs::deleteIfExists("testarc/test.grib1.summary");
+	ensure(sys::fs::access("testarc/test.grib1", F_OK));
+	ensure(sys::fs::access("testarc/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testarc/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testarc/index.sqlite", F_OK));
+
+	// Query now is ok
+	metadata::Collector mdc;
+	arc.queryMetadata(Matcher(), false, mdc);
+	ensure_equals(mdc.size(), 3u);
+
+	// Maintenance should show it's all ok
+	MaintenanceCollector c;
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(not c.isClean());
+}
+
 }
