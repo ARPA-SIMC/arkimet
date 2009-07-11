@@ -49,8 +49,8 @@ bool sorter(const std::string& a, const std::string& b)
 	return b < a;
 }
 
-DirScanner::DirScanner(const std::string& root)
-	: m_root(root)
+DirScanner::DirScanner(const std::string& root, bool files_in_root)
+	: m_root(root), files_in_root(files_in_root)
 {
 	// Trim trailing '/'
 	while (m_root.size() > 1 and m_root[m_root.size()-1] == '/')
@@ -82,11 +82,10 @@ void DirScanner::scan(const std::string& root, int level)
 		{
 			// If it is a directory, recurse into it
 			scan(pathname, level + 1);
-		} else if (level > 0 && S_ISREG(st->st_mode)) {
+		} else if ((files_in_root || level > 0) && S_ISREG(st->st_mode) && scan::canScan(pathname)) {
 			// Skip files in the root dir
 			// We point to a good file, keep it
-			if (scan::canScan(pathname))
-				names.push_back(pathname.substr(m_root.size() + 1));
+			names.push_back(pathname.substr(m_root.size() + 1));
 		}
 	}
 }

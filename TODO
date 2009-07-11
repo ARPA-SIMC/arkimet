@@ -191,17 +191,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    (xargs per i grib)
 
 Archivio
- - nel rebuild, se un file contiene dati interamente precedenti all'archive
-   age, creare il suo .summary e aggiungerlo a mdarc invece che all'indice
-   principale
- - non si fa delete o replace o append di dati in mdarc: dare errore se si
-   prova a farlo. La roba precedente all'archive age diventa di fatto read only
-   (nell'acquire / replace / delete, confrontare con archive_age e delete_age)
  - check dell'archivio (aggiornamento di metadati e summary, indicizzazione
    file mancanti)
  - repack dell'archivio (cancellazione file piú vecchi di delete age,
    cancellazione file che non sono nell'indice)
- - test del reader con l'archive
  - spostare da archive/  a archive/xxx archive/yyy archive/current
     - in manutenzione, la roba si mette in archive/current
     - in manutenzione, si fa però un maintenance run di tutta la roba in
@@ -211,6 +204,12 @@ Archivio
     - nel reader, si querano tutte le directory in ordine
     - lo spostamento da current alle altre viene fatto al momento a mano (ci
       pensa poi arki-check a rifare gli indici)
+ - nel rebuild, se un file contiene dati interamente precedenti all'archive
+   age, creare il suo .summary e aggiungerlo a mdarc invece che all'indice
+   principale
+ - nell'acquire / replace / delete, confrontare con archive_age e delete_age
+   non si fa delete o replace o append di dati in mdarc: dare errore se si
+   prova a farlo. La roba precedente all'archive age diventa di fatto read only
 
  - benchmark locale nuovo ondisk2
     - reindicizzazione di tutto: 

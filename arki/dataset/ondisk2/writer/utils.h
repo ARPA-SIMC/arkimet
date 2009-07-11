@@ -40,13 +40,14 @@ class DirScanner
 {
 protected:
 	std::string m_root;
+	bool files_in_root;
 
 	std::vector<std::string> names;
 
 	void scan(const std::string& root, int level = 0);
 
 public:
-	DirScanner(const std::string& root);
+	DirScanner(const std::string& root, bool files_in_root=false);
 
 	/**
 	 * Return the pathname (relative to root) of the current file, or the

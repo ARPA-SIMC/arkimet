@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include <arki/dataset/test-utils.h>
+#include <arki/dataset/ondisk2/test-utils.h>
 #include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/reader.h>
@@ -31,7 +31,6 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-#include <strings.h>
 
 using namespace std;
 using namespace wibble;
@@ -39,97 +38,6 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
-
-namespace arki {
-namespace dataset {
-namespace ondisk2 {
-namespace writer {
-
-struct MaintenanceCollector : public MaintFileVisitor
-{
-	std::map <std::string, State> fileStates;
-	size_t counts[STATE_MAX];
-	static const char* names[];
-	std::set<State> checked;
-
-	MaintenanceCollector()
-	{
-		bzero(counts, sizeof(counts));
-	}
-
-	void clear()
-	{
-		bzero(counts, sizeof(counts));
-		fileStates.clear();
-		checked.clear();
-	}
-
-	bool isClean() const
-	{
-		for (size_t i = 0; i < STATE_MAX; ++i)
-			if (i != OK && i != ARC_OK && counts[i])
-				return false;
-		return true;
-	}
-
-	virtual void operator()(const std::string& file, State state)
-	{
-		fileStates[file] = state;
-		++counts[state];
-	}
-
-	void dump(std::ostream& out) const
-	{
-		using namespace std;
-		out << "Results:" << endl;
-		for (size_t i = 0; i < STATE_MAX; ++i)
-			out << " " << names[i] << ": " << counts[i] << endl;
-		for (std::map<std::string, State>::const_iterator i = fileStates.begin();
-				i != fileStates.end(); ++i)
-			out << "   " << i->first << ": " << names[i->second] << endl;
-	}
-
-	size_t count(State s)
-	{
-		checked.insert(s);
-		return counts[s];
-	}
-
-	std::string remaining() const
-	{
-		std::vector<std::string> res;
-		for (size_t i = 0; i < MaintFileVisitor::STATE_MAX; ++i)
-		{
-			if (checked.find((State)i) != checked.end())
-				continue;
-			if (counts[i] == 0)
-				continue;
-			res.push_back(str::fmtf("%s: %d", names[i], counts[i]));
-		}
-		return str::join(res.begin(), res.end());
-	}
-};
-
-const char* MaintenanceCollector::names[] = {
-	"ok",
-	"to archive",
-	"to delete",
-	"to pack",
-	"to index",
-	"to rescan",
-	"deleted",
-	"arc ok",
-	"arc to delete",
-	"arc to index",
-	"arc to rescan",
-	"arc deleted",
-	"state max",
-};
-
-}
-}
-}
-}
 
 namespace tut {
 
@@ -930,6 +838,7 @@ void to::test<13>()
 	ensure_equals(s.str(),
 		"testdir: archived 2007/07-07.grib1\n"
 		"testdir: archived 2007/07-08.grib1\n"
+		"testdir: archive cleaned up\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 2 files archived, 29416 bytes reclaimed on the index, 29416 total bytes freed.\n");

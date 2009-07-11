@@ -353,6 +353,7 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 			UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
 			bt = p->begin->toSQL();
 			et = p->end->toSQL();
+			break;
 		}
 		default:
 			throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
@@ -364,19 +365,6 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 	m_insert.bind(3, bt);
 	m_insert.bind(4, et);
 	m_insert.step();
-}
-
-void Archive::remove(const std::string& relname)
-{
-	// Remove from index and from file system, including attached .metadata
-	// and .summary, if they exist
-}
-
-void Archive::rescan(const std::string& relname)
-{
-	// TODO: generate metadata if outdated
-	// TODO: generate summary if outdated
-	// TODO: reindex if start and end are different than in the index
 }
 
 void Archive::maintenance(writer::MaintFileVisitor& v)
@@ -399,7 +387,7 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 	}
 
 	// List of files existing on disk
-	writer::DirScanner disk(m_dir);
+	writer::DirScanner disk(m_dir, true);
 
 	Query q("sel_archive", m_db);
 	q.compile("SELECT file, mtime, end_time FROM files ORDER BY file");
@@ -445,6 +433,7 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 	}
 }
 
+/*
 void Archive::repack(std::ostream& log, bool writable)
 {
 }
@@ -452,13 +441,60 @@ void Archive::repack(std::ostream& log, bool writable)
 void Archive::check(std::ostream& log)
 {
 }
+*/
 
-bool Archive::vacuum()
+void Archive::remove(const std::string& relname)
 {
-	// TODO: vacuum the database
-	// TODO: regenerate master summary
-	// Return true if it did anything (index shrunk or regenerated summary)
-	return false;
+	// Remove from index and from file system, including attached .metadata
+	// and .summary, if they exist
+	string pathname = str::joinpath(m_dir, relname);
+
+	sys::fs::deleteIfExists(pathname + ".summary");
+	sys::fs::deleteIfExists(pathname + ".metadata");
+	sys::fs::deleteIfExists(pathname);
+
+	deindex(relname);
+}
+
+void Archive::deindex(const std::string& relname)
+{
+	Query q("del_file", m_db);
+	q.compile("DELETE FROM files WHERE file=?");
+	q.bind(1, relname);
+	while (q.step())
+		;
+}
+
+void Archive::rescan(const std::string& relname)
+{
+	string pathname = str::joinpath(m_dir, relname);
+	time_t ts_data = files::timestamp(pathname);
+	time_t ts_md = files::timestamp(pathname + ".metadata");
+
+	// Invalidate summary
+	sys::fs::deleteIfExists(pathname + ".summary");
+
+	// Invalidate metadata if older than data
+	if (ts_md < ts_data)
+		sys::fs::deleteIfExists(pathname + ".metadata");
+
+	// Deindex the file
+	deindex(relname);
+
+	// Reindex the file
+	acquire(relname);
+}
+
+void Archive::vacuum()
+{
+	// Vacuum the database
+	m_db.exec("VACUUM");
+	m_db.exec("ANALYZE");
+
+	// Regenerate summary cache
+	Summary s;
+	querySummaries(Matcher(), s);
+	s.writeAtomically(str::joinpath(m_dir, "summary"));
 }
 
 }

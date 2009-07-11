@@ -292,6 +292,7 @@ void to::test<9>()
 		ensure_equals(out.str(),
 			"testds: archived 2007/07-07.grib1\n"
 			"testds: archived 2007/07-08.grib1\n"
+			"testds: archive cleaned up\n"
 			"testds: database cleaned up\n"
 			"testds: rebuild summary cache\n"
 			"testds: 2 files archived, 26320 bytes reclaimed on the index, 26320 total bytes freed.\n");

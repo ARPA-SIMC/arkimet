@@ -61,6 +61,7 @@ protected:
 	void initDB();
 	void fileList(const Matcher& matcher, std::vector<std::string>& files) const;
 	void querySummaries(const Matcher& matcher, Summary& summary) const;
+	void deindex(const std::string& relname);
 
 public:
 	Archive(const std::string& dir, int delete_age = -1);
@@ -81,10 +82,12 @@ public:
 	void rescan(const std::string& relname);
 
 	void maintenance(writer::MaintFileVisitor& v);
+	/*
 	void repack(std::ostream& log, bool writable=false);
 	void check(std::ostream& log);
+	*/
 
-	bool vacuum();
+	void vacuum();
 };
 
 }

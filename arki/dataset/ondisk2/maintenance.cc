@@ -530,8 +530,8 @@ void RealRepacker::end()
 {
 	if (m_touched_archive)
 	{
-		if (w.archive().vacuum())
-			log() << "archive cleaned up" << endl;
+		w.archive().vacuum();
+		log() << "archive cleaned up" << endl;
 	}
 
 	// Finally, tidy up the database
@@ -699,8 +699,8 @@ void RealFixer::end()
 {
 	if (m_touched_archive)
 	{
-		if (w.archive().vacuum())
-			log() << "archive cleaned up" << endl;
+		w.archive().vacuum();
+		log() << "archive cleaned up" << endl;
 	}
 
 	// Finally, tidy up the database
