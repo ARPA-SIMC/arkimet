@@ -20,6 +20,8 @@
 
 #include <arki/dataset/ondisk2/test-utils.h>
 #include <arki/dataset/ondisk2/archive.h>
+#include <arki/dataset/ondisk2/writer.h>
+#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/utils/metadata.h>
@@ -38,10 +40,19 @@ struct arki_dataset_ondisk2_archive_shar : public MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
 
+	ConfigFile cfg;
+
 	arki_dataset_ondisk2_archive_shar()
 	{
-		system("rm -rf testarc");
-		system("mkdir testarc");
+		system("rm -rf testds");
+		system("mkdir testds");
+		system("mkdir testds/archive");
+
+		cfg.setValue("path", "testds");
+		cfg.setValue("name", "testds");
+		cfg.setValue("type", "ondisk2");
+		cfg.setValue("step", "daily");
+		cfg.setValue("unique", "origin, reftime");
 	}
 
 	virtual void operator()(const std::string& file, State state) {}
@@ -52,16 +63,16 @@ TESTGRP(arki_dataset_ondisk2_archive);
 template<> template<>
 void to::test<1>()
 {
-	Archive arc("testarc");
+	Archive arc("testds/archive");
 	arc.openRW();
 
 	// Acquire
-	system("cp inbound/test.grib1 testarc/");
+	system("cp inbound/test.grib1 testds/archive/");
 	arc.acquire("test.grib1");
-	ensure(sys::fs::access("testarc/test.grib1", F_OK));
-	ensure(sys::fs::access("testarc/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testarc/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testarc/index.sqlite", F_OK));
+	ensure(sys::fs::access("testds/archive/test.grib1", F_OK));
+	ensure(sys::fs::access("testds/archive/test.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/archive/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/archive/index.sqlite", F_OK));
 
 	// Query
 	metadata::Collector mdc;
@@ -82,14 +93,14 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Archive arc("testarc", 1);
+	Archive arc("testds/archive", 1);
 	arc.openRW();
-	system("cp inbound/test.grib1 testarc/");
+	system("cp inbound/test.grib1 testds/archive/");
 	arc.acquire("test.grib1");
-	ensure(sys::fs::access("testarc/test.grib1", F_OK));
-	ensure(sys::fs::access("testarc/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testarc/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testarc/index.sqlite", F_OK));
+	ensure(sys::fs::access("testds/archive/test.grib1", F_OK));
+	ensure(sys::fs::access("testds/archive/test.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/archive/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/archive/index.sqlite", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
@@ -103,85 +114,229 @@ void to::test<2>()
 	ensure_equals(c.count(ARC_TO_DELETE), 1u);
 	ensure_equals(c.remaining(), string());
 	ensure(not c.isClean());
+
+	{
+		cfg.setValue("delete age", "1");
+		Writer writer(cfg);
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_DELETE), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+
+		MetadataCounter counter;
+		stringstream s;
+
+		// Check should do nothing
+		writer.check(s, counter);
+		ensure_equals(counter.count, 0u);
+		ensure_equals(s.str(),
+			"testds: database cleaned up\n"
+			"testds: rebuild summary cache\n"
+			"testds: 3616 bytes reclaimed cleaning the index.\n");
+
+		// Repack should delete the old data
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(),
+			"testds: deleted from archive test.grib1 (44412 freed)\n"
+			"testds: archive cleaned up\n"
+			"testds: 1 file deleted, 1 file removed from index, 44412 total bytes freed.\n");
+	}
+
+	ensure(!sys::fs::access("testds/archive/test.grib1", F_OK));
+	ensure(!sys::fs::access("testds/archive/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/archive/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/archive/index.sqlite", F_OK));
 }
 
 // Test maintenance scan on non-indexed files
 template<> template<>
 void to::test<3>()
 {
-	Archive arc("testarc", 1);
+	Archive arc("testds/archive");
 	arc.openRW();
-	system("cp inbound/test.grib1 testarc/");
+	system("cp inbound/test.grib1 testds/archive/");
 
 	// Query now is ok
 	metadata::Collector mdc;
 	arc.queryMetadata(Matcher(), false, mdc);
 	ensure_equals(mdc.size(), 0u);
 
-	// Maintenance should show it's all ok
+	// Maintenance should show one file to index
 	MaintenanceCollector c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_TO_INDEX), 1u);
 	ensure_equals(c.remaining(), string());
 	ensure(not c.isClean());
+
+	{
+		Writer writer(cfg);
+		MetadataCounter counter;
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_INDEX), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+
+		stringstream s;
+
+		// Check should reindex the file
+		writer.check(s, counter);
+		ensure_equals(counter.count, 0u);
+		ensure_equals(s.str(), 
+				"testds: archive cleaned up\n"
+				"testds: database cleaned up\n"
+				"testds: rebuild summary cache\n"
+				"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+
+		// Repack should do nothing
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// Everything should be fine now
+	c.clear();
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_OK), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(c.isClean());
 }
 
 // Test maintenance scan on missing metadata
 template<> template<>
 void to::test<4>()
 {
-	Archive arc("testarc", 1);
+	Archive arc("testds/archive");
 	arc.openRW();
-	system("cp inbound/test.grib1 testarc/");
+	system("cp inbound/test.grib1 testds/archive/");
 	arc.acquire("test.grib1");
-	sys::fs::deleteIfExists("testarc/test.grib1.metadata");
-	sys::fs::deleteIfExists("testarc/test.grib1.summary");
-	ensure(sys::fs::access("testarc/test.grib1", F_OK));
-	ensure(!sys::fs::access("testarc/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testarc/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testarc/index.sqlite", F_OK));
+	sys::fs::deleteIfExists("testds/archive/test.grib1.metadata");
+	sys::fs::deleteIfExists("testds/archive/test.grib1.summary");
+	ensure(sys::fs::access("testds/archive/test.grib1", F_OK));
+	ensure(!sys::fs::access("testds/archive/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/archive/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/archive/index.sqlite", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
 	arc.queryMetadata(Matcher(), false, mdc);
 	ensure_equals(mdc.size(), 3u);
 
-	// Maintenance should show it's all ok
+	// Maintenance should show one file to rescan
 	MaintenanceCollector c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 	ensure_equals(c.remaining(), string());
 	ensure(not c.isClean());
+
+	{
+		Writer writer(cfg);
+		MetadataCounter counter;
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+
+		stringstream s;
+
+		// Check should reindex the file
+		writer.check(s, counter);
+		ensure_equals(counter.count, 0u);
+		ensure_equals(s.str(),
+			"testds: archive cleaned up\n"
+			"testds: database cleaned up\n"
+			"testds: rebuild summary cache\n"
+			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+
+		// Repack should do nothing
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// Everything should be fine now
+	c.clear();
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_OK), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(c.isClean());
 }
 
 // Test maintenance scan on missing summary
 template<> template<>
 void to::test<5>()
 {
-	Archive arc("testarc", 1);
+	Archive arc("testds/archive");
 	arc.openRW();
-	system("cp inbound/test.grib1 testarc/");
+	system("cp inbound/test.grib1 testds/archive/");
 	arc.acquire("test.grib1");
-	sys::fs::deleteIfExists("testarc/test.grib1.summary");
-	ensure(sys::fs::access("testarc/test.grib1", F_OK));
-	ensure(sys::fs::access("testarc/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testarc/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testarc/index.sqlite", F_OK));
+	sys::fs::deleteIfExists("testds/archive/test.grib1.summary");
+	ensure(sys::fs::access("testds/archive/test.grib1", F_OK));
+	ensure(sys::fs::access("testds/archive/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/archive/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/archive/index.sqlite", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
 	arc.queryMetadata(Matcher(), false, mdc);
 	ensure_equals(mdc.size(), 3u);
 
-	// Maintenance should show it's all ok
+	// Maintenance should show one file to rescan
 	MaintenanceCollector c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 	ensure_equals(c.remaining(), string());
 	ensure(not c.isClean());
+
+	{
+		Writer writer(cfg);
+		MetadataCounter counter;
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+
+		stringstream s;
+
+		// Check should reindex the file
+		writer.check(s, counter);
+		ensure_equals(counter.count, 0u);
+		ensure_equals(s.str(),
+			"testds: archive cleaned up\n"
+			"testds: database cleaned up\n"
+			"testds: rebuild summary cache\n"
+			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+
+		// Repack should do nothing
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// Everything should be fine now
+	c.clear();
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_OK), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(c.isClean());
 }
 
 }

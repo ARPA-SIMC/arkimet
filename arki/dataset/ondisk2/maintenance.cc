@@ -511,6 +511,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 			log() << "deleted from archive " << file << " (" << size << " freed)" << endl;
 			++m_count_deleted;
 			++m_count_deindexed;
+			m_count_freed += size;
 			m_touched_archive = true;
 			break;
 		}

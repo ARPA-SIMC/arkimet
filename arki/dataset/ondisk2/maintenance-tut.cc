@@ -38,6 +38,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
+using namespace arki::utils::files;
 
 namespace tut {
 
@@ -92,6 +93,7 @@ template<> template<>
 void to::test<1>()
 {
 	acquireSamples();
+	removeDontpackFlagfile("testdir");
 
 	arki::dataset::ondisk2::Writer writer(cfg);
 	MaintenanceCollector c;
@@ -139,6 +141,7 @@ template<> template<>
 void to::test<2>()
 {
 	acquireSamples();
+	removeDontpackFlagfile("testdir");
 
 	system("rm testdir/2007/07-07.grib1");
 
@@ -236,6 +239,7 @@ template<> template<>
 void to::test<4>()
 {
 	acquireSamples();
+	removeDontpackFlagfile("testdir");
 	{
 		// Remove one element
 		arki::dataset::ondisk2::Writer writer(cfg);
@@ -341,6 +345,7 @@ void to::test<6>()
 {
 	cfg.setValue("step", "monthly");
 	acquireSamples();
+	removeDontpackFlagfile("testdir");
 	{
 		// Remove one element
 		arki::dataset::ondisk2::Writer writer(cfg);
@@ -820,6 +825,7 @@ void to::test<13>()
 	cfg.setValue("archive age", days_since(2007, 9, 1));
 
 	acquireSamples();
+	removeDontpackFlagfile("testdir");
 
 	arki::dataset::ondisk2::Writer writer(cfg);
 	MaintenanceCollector c;
@@ -895,6 +901,7 @@ void to::test<14>()
 	cfg.setValue("delete age", str::fmt(duration/(3600*24)));
 
 	acquireSamples();
+	removeDontpackFlagfile("testdir");
 
 	arki::dataset::ondisk2::Writer writer(cfg);
 	MaintenanceCollector c;

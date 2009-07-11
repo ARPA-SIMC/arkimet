@@ -521,7 +521,7 @@ WIndex::~WIndex()
 {
 }
 
-void WIndex::open()
+bool WIndex::open()
 {
 	if (m_db.isOpen())
 		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
@@ -535,6 +535,8 @@ void WIndex::open()
 		initDB();
 
 	initQueries();
+
+	return need_create;
 }
 
 void WIndex::initQueries()

@@ -191,10 +191,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    (xargs per i grib)
 
 Archivio
- - check dell'archivio (aggiornamento di metadati e summary, indicizzazione
-   file mancanti)
- - repack dell'archivio (cancellazione file piú vecchi di delete age,
-   cancellazione file che non sono nell'indice)
  - spostare da archive/  a archive/xxx archive/yyy archive/current
     - in manutenzione, la roba si mette in archive/current
     - in manutenzione, si fa però un maintenance run di tutta la roba in

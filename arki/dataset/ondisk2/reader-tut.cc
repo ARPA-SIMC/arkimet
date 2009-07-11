@@ -24,6 +24,7 @@
 #include <arki/summary.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
 #include <wibble/grcal/grcal.h>
@@ -39,6 +40,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::dataset::ondisk2;
+using namespace arki::utils::files;
 
 struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
 {
@@ -288,6 +290,7 @@ void to::test<9>()
 		config.section("testds")->setValue("archive age", days_since(2007, 9, 1));
 		dataset::ondisk2::Writer w(*config.section("testds"));
 		stringstream out;
+		removeDontpackFlagfile("testds");
 		w.repack(out, true);
 		ensure_equals(out.str(),
 			"testds: archived 2007/07-07.grib1\n"

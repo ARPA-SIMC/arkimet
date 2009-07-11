@@ -218,8 +218,13 @@ public:
 	WIndex(const ConfigFile& cfg);
 	~WIndex();
 
-	/// Initialise access to the index
-	void open();
+	/**
+	 * Initialise access to the index
+	 *
+	 * @return true if the index did not exist and has been created, false
+	 * if it reused the existing index
+	 */
+	bool open();
 
 	/// Begin a transaction and return the corresponding Pending object
 	Pending beginTransaction();

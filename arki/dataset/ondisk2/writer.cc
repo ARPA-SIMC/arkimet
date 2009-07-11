@@ -68,6 +68,11 @@ Writer::Writer(const ConfigFile& cfg)
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_path);
 
+	// If the index is missing, take note not to perform a repack until a
+	// check is made
+	if (!sys::fs::access(str::joinpath(m_path, "index.sqlite"), F_OK))
+		createDontpackFlagfile(m_path);
+
 	m_tf = TargetFile::create(cfg);
 	m_replace = ConfigFile::boolValue(cfg.value("replace"), false);
 	m_idx.open();
@@ -287,11 +292,9 @@ void Writer::repack(std::ostream& log, bool writable)
 	auto_ptr<Agent> repacker;
 
 	if (writable)
-		if (m_idx.count() == 0)
-			// Safeguard: if the index is empty, do not delete files
-			repacker.reset(new FailsafeRepacker(log, *this));
-		else
-			repacker.reset(new RealRepacker(log, *this));
+		// No safeguard against a deleted index: we catch that in the
+		// constructor and create the don't pack flagfile
+		repacker.reset(new RealRepacker(log, *this));
 	else
 		repacker.reset(new MockRepacker(log, *this));
 	try {
