@@ -52,7 +52,8 @@ static bool scan_file(const std::string& file, MetadataConsumer& c)
 	// Get the file extension
 	size_t pos = file.rfind('.');
 	if (pos == string::npos)
-		throw wibble::exception::Consistency("getting extension of " + file, "file name has no extension");
+		// No extension, we do not know what it is
+		return false;
 	string ext = file.substr(pos+1);
 
 	// Scan the file
@@ -103,7 +104,8 @@ bool canScan(const std::string& file)
 	// Get the file extension
 	size_t pos = file.rfind('.');
 	if (pos == string::npos)
-		throw wibble::exception::Consistency("getting extension of " + file, "file name has no extension");
+		// No extension, we do not know what it is
+		return false;
 	string ext = str::tolower(file.substr(pos+1));
 
 	// Check for known extensions
