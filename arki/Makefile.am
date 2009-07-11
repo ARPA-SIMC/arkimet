@@ -31,6 +31,7 @@ arkiinclude_HEADERS = \
 		dataset/ondisk2/writer.h \
 		dataset/ondisk2/writer/datafile.h \
 		dataset/ondisk2/writer/utils.h \
+		dataset/ondisk2/test-utils.h \
 		dataset/outbound.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -249,6 +250,7 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk2/writer/datafile-tut.cc \
 		dataset/ondisk2/writer/utils-tut.cc \
 		dataset/ondisk2/maintenance-tut.cc \
+		dataset/ondisk2/test-utils.cc \
 		dataset/test-utils.cc \
 		dataset/outbound-tut.cc \
 		dataset/discard-tut.cc \
