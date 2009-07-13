@@ -41,6 +41,7 @@ class TargetFile;
 
 namespace ondisk2 {
 class Archive;
+class Archives;
 
 namespace writer {
 class Datafile;
@@ -59,7 +60,7 @@ protected:
 	std::string m_path;
 	WIndex m_idx;
 	TargetFile* m_tf;
-	mutable Archive* m_archive;
+	mutable Archives* m_archive;
 	bool m_replace;
 	int m_archive_age;
 	int m_delete_age;
@@ -76,8 +77,8 @@ public:
 	virtual ~Writer();
 
 	bool hasArchive() const;
-	Archive& archive();
-	const Archive& archive() const;
+	Archives& archive();
+	const Archives& archive() const;
 
 	// Compute the unique ID of a metadata in this dataset
 	virtual std::string id(const Metadata& md) const;

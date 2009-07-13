@@ -191,15 +191,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    (xargs per i grib)
 
 Archivio
- - spostare da archive/  a archive/xxx archive/yyy archive/current
-    - in manutenzione, la roba si mette in archive/current
-    - in manutenzione, si fa però un maintenance run di tutta la roba in
-      archive/
-    - le dir vengono sempre prese in ordine alfabetico (eccetto current, che
-      viene presa per ultima)
-    - nel reader, si querano tutte le directory in ordine
-    - lo spostamento da current alle altre viene fatto al momento a mano (ci
-      pensa poi arki-check a rifare gli indici)
  - nel rebuild, se un file contiene dati interamente precedenti all'archive
    age, creare il suo .summary e aggiungerlo a mdarc invece che all'indice
    principale

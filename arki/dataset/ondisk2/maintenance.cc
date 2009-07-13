@@ -445,8 +445,8 @@ void RealRepacker::operator()(const std::string& file, State state)
 		case TO_ARCHIVE: {
 			// Create the target directory in the archive
 			string pathname = str::joinpath(w.m_path, file);
-			string arcrelname = str::joinpath("archive", file);
-			string arcabsname = str::joinpath(w.m_path, arcrelname);
+			string arcrelname = str::joinpath("last", file);
+			string arcabsname = str::joinpath(w.m_path, str::joinpath("archive", arcrelname));
 			sys::fs::mkFilePath(arcabsname);
 
 			// Rebuild the metadata
@@ -457,11 +457,14 @@ void RealRepacker::operator()(const std::string& file, State state)
 			w.m_idx.reset(file);
 
 			// Move to archive
+			if (sys::fs::access(arcabsname, F_OK))
+				throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
+						arcabsname + " already exists");
 			if (rename(pathname.c_str(), arcabsname.c_str()) < 0)
 				throw wibble::exception::System("moving " + pathname + " to " + arcabsname);
 
 			// Acquire in the achive
-			w.archive().acquire(file, mds);
+			w.archive().acquire(arcrelname, mds);
 
 			log() << "archived " << file << endl;
 			++m_count_archived;

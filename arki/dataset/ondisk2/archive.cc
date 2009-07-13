@@ -502,6 +502,194 @@ void Archive::vacuum()
 	s.writeAtomically(str::joinpath(m_dir, "summary"));
 }
 
+Archives::Archives(const std::string& dir, bool read_only, int delete_age)
+	: m_dir(dir), m_read_only(read_only), m_delete_age(delete_age), m_last(0)
+{
+	// Create the directory if it does not exist
+	wibble::sys::fs::mkpath(m_dir);
+
+	// Look for subdirectories: they are archives
+	sys::fs::Directory d(m_dir);
+	for (sys::fs::Directory::const_iterator i = d.begin();
+			i != d.end(); ++i)
+	{
+		// Skip '.', '..' and hidden files
+		if ((*i)[0] == '.')
+			continue;
+		string pathname = str::joinpath(m_dir, *i);
+		if (!sys::fs::isDirectory(pathname))
+			continue;
+		Archive* a = 0;
+		if (*i == "last")
+			m_last = a = new Archive(pathname, delete_age);
+		else
+			m_archives.insert(make_pair(*i, a = new Archive(pathname, delete_age)));
+
+		if (a)
+		{
+			if (read_only)
+				a->openRO();
+			else
+				a->openRW();
+		}
+	}
+
+	// Instantiate the 'last' archive even if the directory does not exist,
+	// if not read only
+	if (!read_only && !m_last)
+	{
+		m_last = new Archive(str::joinpath(m_dir, "last"), delete_age);
+		m_last->openRW();
+	}
+}
+
+Archives::~Archives()
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		delete i->second;
+	if (m_last)
+		delete m_last;
+}
+
+Archive* Archives::lookup(const std::string& name)
+{
+	if (name == "last")
+		return m_last;
+
+	std::map<std::string, Archive*>::iterator i = m_archives.find(name);
+	if (i == m_archives.end())
+		return 0;
+	return i->second;
+}
+
+void Archives::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		i->second->queryMetadata(matcher, withData, consumer);
+	if (m_last)
+		m_last->queryMetadata(matcher, withData, consumer);
+}
+
+void Archives::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		i->second->queryBytes(matcher, out, qtype, param);
+	if (m_last)
+		m_last->queryBytes(matcher, out, qtype, param);
+}
+
+void Archives::querySummary(const Matcher& matcher, Summary& summary)
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		i->second->querySummary(matcher, summary);
+	if (m_last)
+		m_last->querySummary(matcher, summary);
+}
+
+static std::string poppath(std::string& path)
+{
+	size_t start = 0;
+	while (start < path.size() && path[start] == '/')
+		++start;
+	size_t end = start;
+	while (end < path.size() && path[end] != '/')
+		++end;
+	size_t nstart = end;
+	while (nstart < path.size() && path[nstart] == '/')
+		++nstart;
+	string res = path.substr(start, end-start);
+	path = path.substr(nstart);
+	return res;
+}
+
+void Archives::acquire(const std::string& relname)
+{
+	string path = relname;
+	string name = poppath(path);
+	if (Archive* a = lookup(name))
+		a->acquire(path);
+	else
+		throw wibble::exception::Consistency("acquiring " + relname,
+				"archive " + name + " does not exist in " + m_dir);
+}
+
+void Archives::acquire(const std::string& relname, const utils::metadata::Collector& mds)
+{
+	string path = relname;
+	string name = poppath(path);
+	if (Archive* a = lookup(name))
+		a->acquire(path, mds);
+	else
+		throw wibble::exception::Consistency("acquiring " + relname,
+				"archive " + name + " does not exist in " + m_dir);
+}
+
+void Archives::remove(const std::string& relname)
+{
+	string path = relname;
+	string name = poppath(path);
+	if (Archive* a = lookup(name))
+		a->remove(path);
+	else
+		throw wibble::exception::Consistency("removing " + relname,
+				"archive " + name + " does not exist in " + m_dir);
+}
+
+void Archives::rescan(const std::string& relname)
+{
+	string path = relname;
+	string name = poppath(path);
+	if (Archive* a = lookup(name))
+		a->rescan(path);
+	else
+		throw wibble::exception::Consistency("rescanning " + relname,
+				"archive " + name + " does not exist in " + m_dir);
+}
+
+namespace writer {
+struct MaintPathPrepender : public MaintFileVisitor
+{
+	MaintFileVisitor& next;
+	std::string prefix;
+
+	MaintPathPrepender(MaintFileVisitor& next, const std::string& prefix)
+		: next(next), prefix(prefix) {}
+	
+	virtual void operator()(const std::string& file, State state)
+	{
+		next(str::joinpath(prefix, file), state);
+	}
+};
+}
+
+void Archives::maintenance(writer::MaintFileVisitor& v)
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+	{
+		writer::MaintPathPrepender p(v, i->first);
+		i->second->maintenance(p);
+	}
+	if (m_last)
+	{
+		writer::MaintPathPrepender p(v, "last");
+		m_last->maintenance(p);
+	}
+}
+
+void Archives::vacuum()
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		i->second->vacuum();
+	if (m_last)
+		m_last->vacuum();
+}
+
 }
 }
 }

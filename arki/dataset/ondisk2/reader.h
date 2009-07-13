@@ -41,6 +41,7 @@ class TargetFile;
 
 namespace ondisk2 {
 class Archive;
+class Archives;
 class RIndex;
 
 class Reader : public Local
@@ -50,7 +51,7 @@ protected:
 	std::string m_root;
 	RIndex* m_idx;
 	TargetFile* m_tf;
-	mutable Archive* m_archive;
+	mutable Archives* m_archive;
 
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
@@ -58,8 +59,8 @@ public:
 	virtual ~Reader();
 
 	bool hasArchive() const;
-	Archive& archive();
-	const Archive& archive() const;
+	Archives& archive();
+	const Archives& archive() const;
 
 	/**
 	 * Query the dataset using the given matcher, and sending the results to

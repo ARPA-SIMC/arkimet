@@ -102,23 +102,17 @@ bool Writer::hasArchive() const
 		//return false;
 }
 
-Archive& Writer::archive()
+Archives& Writer::archive()
 {
 	if (!m_archive)
-	{
-		m_archive = new Archive(str::joinpath(m_path, "archive"), m_delete_age);
-		m_archive->openRW();
-	}
+		m_archive = new Archives(str::joinpath(m_path, "archive"), false, m_delete_age);
 	return *m_archive;
 }
 
-const Archive& Writer::archive() const
+const Archives& Writer::archive() const
 {
 	if (!m_archive)
-	{
-		m_archive = new Archive(str::joinpath(m_path, "archive"), m_delete_age);
-		m_archive->openRW();
-	}
+		m_archive = new Archives(str::joinpath(m_path, "archive"), false, m_delete_age);
 	return *m_archive;
 }
 
