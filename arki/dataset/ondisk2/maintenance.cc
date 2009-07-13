@@ -377,16 +377,20 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 {
 	// Lock away writes and reads
 	Pending p = idx.beginExclusiveTransaction();
+	// cerr << "LOCK" << endl;
 
 	// Remove from the index all data about the file
 	idx.reset(file);
+	// cerr << " RESET " << file << endl;
 
 	string pathname = str::joinpath(root, file);
+	// cerr << " FILE IS " << pathname << endl;
 
 	// Collect the scan results in a metadata::Collector
 	metadata::Collector mds;
 	if (!scan::scan(pathname, mds))
 		throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
+	// cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
 
 	// Scan the list of metadata, looking for duplicates and marking all
 	// the duplicates except the last one as deleted
@@ -407,16 +411,19 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 			dup->second = &(*i);
 		}
 	}
+	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
 	Reindexer fixer(idx, dsname, file, salvage);
 	bool res = mds.sendTo(fixer);
 	assert(res);
+	// cerr << " REINDEXED " << pathname << endl;
 
 	// TODO: if scan fails, remove all info from the index and rename the
 	// file to something like .broken
 
 	// Commit the changes on the database
 	p.commit();
+	// cerr << " COMMITTED" << endl;
 
 	return fixer.count_salvaged;
 }
@@ -657,6 +664,8 @@ void RealFixer::operator()(const std::string& file, State state)
 {
 	switch (state)
 	{
+		/* Packing is left to the repacker, during check we do not
+		 * mangle the data files
 		case TO_PACK: {
 		        // Repack the file
 			size_t saved = repack(w.m_path, file, w.m_idx);
@@ -664,6 +673,7 @@ void RealFixer::operator()(const std::string& file, State state)
 			++m_count_packed;
 			break;
 		}
+		*/
 		case TO_INDEX:
 		case TO_RESCAN: {
 			m_count_salvaged += rescan(w.m_name, w.m_path, file, w.m_idx, salvage);

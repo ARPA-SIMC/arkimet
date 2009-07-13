@@ -420,24 +420,29 @@ void to::test<7>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
+	// No packing occurs here: check does not mangle data files
 	MetadataCounter counter;
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
-		"testdir: packed 2007/07.grib1 (34960 saved)\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
-		"testdir: 1 file packed, 29416 bytes reclaimed cleaning the index.\n");
+		"testdir: 29416 bytes reclaimed cleaning the index.\n");
+
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(TO_PACK), 1u);
 	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
+	ensure(not c.isClean());
 
 	// Perform packing and check that things are still ok afterwards
 	s.str(std::string());
 	writer.repack(s, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
+	ensure_equals(s.str(),
+		"testdir: packed 2007/07.grib1 (34960 saved)\n"
+		"testdir: database cleaned up\n"
+		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
