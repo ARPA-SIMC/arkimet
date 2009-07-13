@@ -189,6 +189,19 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
    processo passando il nome del tempfile in env o in arg, per ogni grib
    (xargs per i grib)
+    - codice per split di grib preso da meteosatlib
+
+ - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
+   file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione
+   con un buon messaggio invece che a rompere le scatole col salvage
+   (questo crea un problema se si fa rebuild da zero con tanti file giusti e un
+    file sbagliato. A seconda dell'ordine di lettura dei file, può tener buono
+    quello nel file giusto o nel file sbagliato, e non c'è modo di sapere quale
+    dei due tenere)
+   (ergo, l'eccezione è la cosa migliore da fare)
+
+ - non creare needs-check-do-not-pack se index.sqlite non esiste ma non
+   esistono neanche file scannabili
 
 Archivio
  - nel rebuild, se un file contiene dati interamente precedenti all'archive
@@ -201,14 +214,6 @@ Archivio
  - benchmark locale nuovo ondisk2
     - reindicizzazione di tutto: 
     - 
-
- - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
-   file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione
-   con un buon messaggio invece che a rompere le scatole col salvage
-   (questo crea un problema se si fa rebuild da zero con tanti file giusti e un
-    file sbagliato. A seconda dell'ordine di lettura dei file, può tener buono
-    quello nel file giusto o nel file sbagliato, e non c'è modo di sapere quale
-    dei due tenere)
 
  - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
    lo usa per validare la query, il server lo usa per fare la query). Ne

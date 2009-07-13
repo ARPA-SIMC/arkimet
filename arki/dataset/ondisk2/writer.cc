@@ -281,7 +281,10 @@ void Writer::repack(std::ostream& log, bool writable)
 	using namespace writer;
 
 	if (hasDontpackFlagfile(m_path))
-		throw wibble::exception::Consistency("repacking " + m_path, "dataset that needs checking first");
+	{
+		log << m_path << ": dataset needs checking first" << endl;
+		return;
+	}
 
 	auto_ptr<Agent> repacker;
 

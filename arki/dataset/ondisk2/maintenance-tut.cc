@@ -210,6 +210,7 @@ void to::test<3>()
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
+		"testdir: deindexed 2007/07-07.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 1 file removed from index, 29416 bytes reclaimed cleaning the index.\n");
@@ -316,6 +317,7 @@ void to::test<5>()
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
+		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
@@ -468,6 +470,9 @@ void to::test<8>()
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
+		"testdir: rescanned 2007/07-07.grib1\n"
+		"testdir: rescanned 2007/07-08.grib1\n"
+		"testdir: rescanned 2007/10-09.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 3 files rescanned, 29416 bytes reclaimed cleaning the index.\n");
@@ -514,6 +519,9 @@ void to::test<9>()
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
+		"testdir: rescanned 2007/07-07.grib1\n"
+		"testdir: rescanned 2007/07-08.grib1\n"
+		"testdir: rescanned 2007/10-09.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 3 files rescanned, 29416 bytes reclaimed cleaning the index.\n");
@@ -563,6 +571,7 @@ void to::test<10>()
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
+		"testdir: rescanned foo/bar/test.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
@@ -630,6 +639,7 @@ void to::test<11>()
 	writer.check(s, counter);
 	ensure_equals(counter.count, 0u);
 	ensure_equals(s.str(),
+		"testdir: rescanned foo/bar/test.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index.\n");
@@ -739,6 +749,7 @@ void to::test<12>()
 	writer.check(s, counter);
 	ensure_equals(counter.count, 2u);
 	ensure_equals(s.str(),
+		"testdir: rescanned 2007/07-08.grib1\n"
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 29416 bytes reclaimed cleaning the index, 2 data items could not be reindexed.\n");

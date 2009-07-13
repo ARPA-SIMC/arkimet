@@ -667,6 +667,7 @@ void RealFixer::operator()(const std::string& file, State state)
 		case TO_INDEX:
 		case TO_RESCAN: {
 			m_count_salvaged += rescan(w.m_name, w.m_path, file, w.m_idx, salvage);
+			log() << "rescanned " << file << endl;
 			++m_count_rescanned;
 			m_redo_summary = true;
 			break;
@@ -674,6 +675,7 @@ void RealFixer::operator()(const std::string& file, State state)
 		case DELETED: {
 			// Remove from index those files that have been deleted
 			w.m_idx.reset(file);
+			log() << "deindexed " << file << endl;
 			++m_count_deindexed;
 			m_redo_summary = true;
 			break;
@@ -683,6 +685,7 @@ void RealFixer::operator()(const std::string& file, State state)
 			/// File is not present in the archive index
 			/// File contents need reindexing in the archive
 			w.archive().rescan(file);
+			log() << "rescanned in archive " << file << endl;
 			++m_count_rescanned;
 			m_touched_archive = true;
 			break;
@@ -690,6 +693,7 @@ void RealFixer::operator()(const std::string& file, State state)
 		case ARC_DELETED: {
 			/// File does not exist, but has entries in the archive index
 			w.archive().remove(file);
+			log() << "deindexed in archive " << file << endl;
 			++m_count_deindexed;
 			m_touched_archive = true;
 			break;

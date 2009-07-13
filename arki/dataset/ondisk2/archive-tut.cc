@@ -191,6 +191,7 @@ void to::test<3>()
 		writer.check(s, counter);
 		ensure_equals(counter.count, 0u);
 		ensure_equals(s.str(), 
+				"testds: rescanned in archive last/test.grib1\n"
 				"testds: archive cleaned up\n"
 				"testds: database cleaned up\n"
 				"testds: rebuild summary cache\n"
@@ -256,6 +257,7 @@ void to::test<4>()
 		writer.check(s, counter);
 		ensure_equals(counter.count, 0u);
 		ensure_equals(s.str(),
+			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
 			"testds: database cleaned up\n"
 			"testds: rebuild summary cache\n"
@@ -320,6 +322,7 @@ void to::test<5>()
 		writer.check(s, counter);
 		ensure_equals(counter.count, 0u);
 		ensure_equals(s.str(),
+			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
 			"testds: database cleaned up\n"
 			"testds: rebuild summary cache\n"
