@@ -307,7 +307,6 @@ OutputOptions::OutputOptions(const std::string& name, int mansection, ConfigType
 {
 	OptionGroup* outputOpts = createGroup("Options controlling output style");
 	
-	verbose = outputOpts->add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
 	debug = outputOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
 	yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",
 			"dump the metadata as human-readable Yaml records");
@@ -377,7 +376,7 @@ bool OutputOptions::parse(int argc, const char* argv[])
 			throw wibble::exception::BadOption("you need to specify at least one dataset or configuration file");
 	}
 
-	nag::init(verbose->isSet(), debug->isSet());
+	nag::init(debug->isSet(), debug->isSet());
 
 	// Option conflict checks
 #ifdef HAVE_LUA
