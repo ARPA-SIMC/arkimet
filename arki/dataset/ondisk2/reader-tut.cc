@@ -376,6 +376,37 @@ void to::test<9>()
 	ensure_equals(s.size(), 7218u);
 }
 
+// Test that summary files are not created for all the extent of the query, but
+// only for data present in the dataset
+template<> template<>
+void to::test<10>()
+{
+	ondisk2::Reader testds(*config.section("testds"));
+
+	Summary s;
+	testds.querySummary(Matcher::parse("reftime:=2007"), s);
+	ensure_equals(s.count(), 3u);
+	ensure_equals(s.size(), 44412u);
+
+	// Global summary is not built because we only query specific months
+	ensure(!sys::fs::access("testds/.summaries/all.summary", F_OK));
+
+	ensure(!sys::fs::access("testds/.summaries/2007-01.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2007-02.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2007-03.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2007-04.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2007-05.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2007-06.summary", F_OK));
+	ensure(sys::fs::access("testds/.summaries/2007-07.summary", F_OK));
+	// Summary caches corresponding to DB holes are still created and used
+	ensure(sys::fs::access("testds/.summaries/2007-08.summary", F_OK));
+	ensure(sys::fs::access("testds/.summaries/2007-09.summary", F_OK));
+	ensure(sys::fs::access("testds/.summaries/2007-10.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2007-11.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2007-12.summary", F_OK));
+	ensure(!sys::fs::access("testds/.summaries/2008-01.summary", F_OK));
+}
+
 }
 
 // vim:set ts=4 sw=4:

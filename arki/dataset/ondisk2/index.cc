@@ -352,10 +352,11 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 				if (db_begin.defined() && db_end.defined())
 				{
 					// If the bounds of the query time are
-					// open, fill them in with the database
-					// bounds
-					if (!begin.defined()) begin = db_begin;
-					if (!end.defined()) end = db_end;
+					// open, or go past the bounds of the
+					// database, replace them with the
+					// database bounds
+					if (!begin.defined() || begin < db_begin) begin = db_begin;
+					if (!end.defined() || end > db_end) end = db_end;
 					long long int qrange = grcal::date::duration(begin->vals, end->vals);
 					long long int dbrange = grcal::date::duration(db_begin->vals, db_end->vals);
 					// If the query chooses less than 20%
@@ -714,18 +715,15 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 		return true;
 	}
 
-	// Complete open ends with the bounds from the database
-	if (!begin.defined() || !end.defined())
-	{
-		UItem<types::Time> db_begin, db_end;
-		db_time_extremes(m_db, db_begin, db_end);
-		// If the database is empty then the result is empty:
-		// we are done
-		if (!db_begin.defined())
-			return true;
-		if (!begin.defined()) begin = db_begin;
-		if (!end.defined()) end = db_end;
-	}
+	// Amend open ends with the bounds from the database
+	UItem<types::Time> db_begin, db_end;
+	db_time_extremes(m_db, db_begin, db_end);
+	// If the database is empty then the result is empty:
+	// we are done
+	if (!db_begin.defined())
+		return true;
+	if (!begin.defined() || begin < db_begin) begin = db_begin;
+	if (!end.defined() || end > db_end) end = db_end;
 
 	// If the interval is under 31 days, query the DB directly
 	long long int range = grcal::date::duration(begin->vals, end->vals);

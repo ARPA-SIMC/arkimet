@@ -212,6 +212,7 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
 
    laptop2: 379.67 174.85 229.46 233.16   8.70
    laptopa:   2.95   2.79   2.86   2.77
+   laptopb:   2.82   2.47   2.66   2.43
    
     * Query di meteomixer
    nfs:       10.20  10.71   9.76  26.95  12.69
@@ -221,6 +222,7 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
    laptop:    10.48   8.90   8.62   8.61   8.57
    laptop2:   71.55  45.47   5.66  46.61  46.53
    laptopa:   86.02  85.91  86.36  86.09
+   laptopb:   91.82  83.76  84.21  84.09
    
    laptop2: 1650.95 1468.25 1506.98 1599.21 1389.05 
 
@@ -239,6 +241,11 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
 
    laptop2:   857.88  876.78  939.07  800.14 1045.30  (bias: 1 month ago e 1 day ago non fanno match)
    laptopa:  3530.33  761.09  834.22 1032.69
+   laptopb:   341.44  207.73  205.82  202.68
+
+
+eur025 ALL 2755289 599074 16204 1621 406 64 reftime:=1 year ago 1856294 406016 10994 1100 276 64 reftime:=2009-05 79093_STUCK
+
 
  - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
    file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione
