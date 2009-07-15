@@ -49,9 +49,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-// FIXME: for debugging
-//#include <iostream>
+#include <unistd.h>
 
 using namespace std;
 using namespace wibble;
@@ -478,6 +476,22 @@ void Index::invalidateSummaryCache(const Metadata& md)
 {
 	Item<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
 	invalidateSummaryCache(rt->time->vals[0], rt->time->vals[1]);
+}
+
+void Index::rebuildSummaryCache()
+{
+	// Delete all files *.summary in the cache directory
+	sys::fs::Directory dir(m_scache_root);
+	for (sys::fs::Directory::const_iterator i = dir.begin();
+			i != dir.end(); ++i)
+		if (str::endsWith(*i, ".summary"))
+		{
+			string pathname = str::joinpath(m_scache_root, *i);
+			if (unlink(pathname.c_str()) < 0)
+				throw wibble::exception::System("deleting file " + pathname);
+		}
+	// Rebuild all summaries
+	summaryForAll();
 }
 
 Summary Index::summaryForMonth(int year, int month) const

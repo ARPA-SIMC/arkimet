@@ -186,15 +186,14 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - cache negli aggregate come negli attributi
 
- - Directory .summary nel dataset con dentro un summary per mese (o
+ + Directory .summary nel dataset con dentro un summary per mese (o
    configurabile)
     + Durante il read, se un mese manca lo si può rigenerare al volo con una
       query non troppo lenta.
     + aggiornato durante il read
     + cancellato durante il delete
     + cancellato durante l'acquire
-    - aggiornato durante il pack
-   (or just deleted on acquire)
+    + aggiornato durante il pack
 
  - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
    processo passando il nome del tempfile in env o in arg, per ogni grib

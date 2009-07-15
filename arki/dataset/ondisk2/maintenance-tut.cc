@@ -133,6 +133,11 @@ void to::test<1>()
 	ensure_equals(c.count(OK), 3u);
 	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file deleted,
@@ -182,6 +187,11 @@ void to::test<2>()
 	ensure_equals(c.count(OK), 2u);
 	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file deleted,
@@ -232,6 +242,11 @@ void to::test<3>()
 	ensure_equals(c.count(OK), 2u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to reclaim,
@@ -285,6 +300,11 @@ void to::test<4>()
 	ensure_equals(c.count(OK), 2u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to reclaim,
@@ -338,6 +358,10 @@ void to::test<5>()
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to pack,
@@ -391,6 +415,11 @@ void to::test<6>()
 	ensure_equals(c.count(OK), 2u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to pack,
@@ -449,6 +478,11 @@ void to::test<7>()
 	ensure_equals(c.count(OK), 2u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, after deleting the index
@@ -497,6 +531,11 @@ void to::test<8>()
 	ensure_equals(c.count(OK), 3u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, after deleting the index, with some
@@ -548,6 +587,11 @@ void to::test<9>()
 	ensure_equals(c.count(OK), 3u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test recreating a dataset from random datafiles
@@ -617,6 +661,11 @@ void to::test<10>()
 	ensure_equals(blob->format, "grib1"); 
 	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
 	ensure_equals(blob->offset, 34960u);
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
@@ -722,6 +771,11 @@ void to::test<11>()
 	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
 	ensure_equals(blob->offset, 34960u);
 	ensure_equals(blob->size, 7218u);
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, with index, on dataset with some
@@ -832,6 +886,11 @@ void to::test<12>()
 	ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-07.grib1"));
 	ensure_equals(blob->offset, 0u);
 	ensure_equals(blob->size, 34960u);
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive
@@ -901,6 +960,11 @@ void to::test<13>()
 	MetadataCollector mdc;
 	reader.queryMetadata(Matcher::parse(""), false, mdc);
 	ensure_equals(mdc.size(), 3u);
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(!sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
@@ -958,6 +1022,11 @@ void to::test<14>()
 	ensure_equals(c.count(OK), 1u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(!sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 #if 0

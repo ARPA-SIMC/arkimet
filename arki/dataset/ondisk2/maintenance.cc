@@ -559,12 +559,9 @@ void RealRepacker::end()
 
 	// Rebuild the cached summary
 	if (m_redo_summary ||
-	    files::timestamp(str::joinpath(w.m_path, "summary")) <
-	    files::timestamp(w.m_idx.pathname()))
+	    !sys::fs::access(str::joinpath(w.m_path, ".summaries/all.summary"), F_OK))
 	{
-		Summary s;
-		if (w.m_idx.querySummary(Matcher(), s))
-			s.writeAtomically(str::joinpath(w.m_path, "summary"));
+		w.m_idx.rebuildSummaryCache();
 		log() << "rebuild summary cache" << endl;
 	}
 
@@ -735,12 +732,9 @@ void RealFixer::end()
 
 	// Rebuild the cached summary
 	if (m_redo_summary ||
-	    files::timestamp(str::joinpath(w.m_path, "summary")) <
-	    files::timestamp(w.m_idx.pathname()))
+	    !sys::fs::access(str::joinpath(w.m_path, ".summaries/all.summary"), F_OK))
 	{
-		Summary s;
-		if (w.m_idx.querySummary(Matcher(), s))
-			s.writeAtomically(str::joinpath(w.m_path, "summary"));
+		w.m_idx.rebuildSummaryCache();
 		log() << "rebuild summary cache" << endl;
 	}
 
