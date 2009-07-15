@@ -81,21 +81,21 @@ Reader::~Reader()
 
 bool Reader::hasArchive() const
 {
-	string arcdir = str::joinpath(m_root, "archive");
+	string arcdir = str::joinpath(m_root, ".archive");
 	return sys::fs::access(arcdir, F_OK);
 }
 
 Archives& Reader::archive()
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_root, "archive"));
+		m_archive = new Archives(str::joinpath(m_root, ".archive"));
 	return *m_archive;
 }
 
 const Archives& Reader::archive() const
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_root, "archive"));
+		m_archive = new Archives(str::joinpath(m_root, ".archive"));
 	return *m_archive;
 }
 

@@ -452,7 +452,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 			// Create the target directory in the archive
 			string pathname = str::joinpath(w.m_path, file);
 			string arcrelname = str::joinpath("last", file);
-			string arcabsname = str::joinpath(w.m_path, str::joinpath("archive", arcrelname));
+			string arcabsname = str::joinpath(w.m_path, str::joinpath(".archive", arcrelname));
 			sys::fs::mkFilePath(arcabsname);
 
 			// Rebuild the metadata

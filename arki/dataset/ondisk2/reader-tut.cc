@@ -57,7 +57,8 @@ struct arki_dataset_ondisk2_reader_shar {
 	arki_dataset_ondisk2_reader_shar()
 	{
 		// Cleanup the test datasets
-		system("rm -rf testds/*");
+		system("rm -rf testds");
+		system("mkdir testds");
 
 		// In-memory dataset configuration
 		string conf =

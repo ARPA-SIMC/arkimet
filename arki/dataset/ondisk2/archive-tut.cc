@@ -46,8 +46,8 @@ struct arki_dataset_ondisk2_archive_shar : public MaintFileVisitor {
 	{
 		system("rm -rf testds");
 		system("mkdir testds");
-		system("mkdir testds/archive");
-		system("mkdir testds/archive/last");
+		system("mkdir testds/.archive");
+		system("mkdir testds/.archive/last");
 
 		cfg.setValue("path", "testds");
 		cfg.setValue("name", "testds");
@@ -64,16 +64,16 @@ TESTGRP(arki_dataset_ondisk2_archive);
 template<> template<>
 void to::test<1>()
 {
-	Archive arc("testds/archive/last");
+	Archive arc("testds/.archive/last");
 	arc.openRW();
 
 	// Acquire
-	system("cp inbound/test.grib1 testds/archive/last/");
+	system("cp inbound/test.grib1 testds/.archive/last/");
 	arc.acquire("test.grib1");
-	ensure(sys::fs::access("testds/archive/last/test.grib1", F_OK));
-	ensure(sys::fs::access("testds/archive/last/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/archive/last/index.sqlite", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
 
 	// Query
 	metadata::Collector mdc;
@@ -94,14 +94,14 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Archive arc("testds/archive/last", 1);
+	Archive arc("testds/.archive/last", 1);
 	arc.openRW();
-	system("cp inbound/test.grib1 testds/archive/last/");
+	system("cp inbound/test.grib1 testds/.archive/last/");
 	arc.acquire("test.grib1");
-	ensure(sys::fs::access("testds/archive/last/test.grib1", F_OK));
-	ensure(sys::fs::access("testds/archive/last/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/archive/last/index.sqlite", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
@@ -147,19 +147,19 @@ void to::test<2>()
 			"testds: 1 file deleted, 1 file removed from index, 44412 total bytes freed.\n");
 	}
 
-	ensure(!sys::fs::access("testds/archive/last/test.grib1", F_OK));
-	ensure(!sys::fs::access("testds/archive/last/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/archive/last/index.sqlite", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
 }
 
 // Test maintenance scan on non-indexed files
 template<> template<>
 void to::test<3>()
 {
-	Archive arc("testds/archive/last");
+	Archive arc("testds/.archive/last");
 	arc.openRW();
-	system("cp inbound/test.grib1 testds/archive/last/");
+	system("cp inbound/test.grib1 testds/.archive/last/");
 
 	// Query now is ok
 	metadata::Collector mdc;
@@ -216,16 +216,16 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Archive arc("testds/archive/last");
+	Archive arc("testds/.archive/last");
 	arc.openRW();
-	system("cp inbound/test.grib1 testds/archive/last/");
+	system("cp inbound/test.grib1 testds/.archive/last/");
 	arc.acquire("test.grib1");
-	sys::fs::deleteIfExists("testds/archive/last/test.grib1.metadata");
-	sys::fs::deleteIfExists("testds/archive/last/test.grib1.summary");
-	ensure(sys::fs::access("testds/archive/last/test.grib1", F_OK));
-	ensure(!sys::fs::access("testds/archive/last/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/archive/last/index.sqlite", F_OK));
+	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
+	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
+	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
@@ -282,15 +282,15 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	Archive arc("testds/archive/last");
+	Archive arc("testds/.archive/last");
 	arc.openRW();
-	system("cp inbound/test.grib1 testds/archive/last/");
+	system("cp inbound/test.grib1 testds/.archive/last/");
 	arc.acquire("test.grib1");
-	sys::fs::deleteIfExists("testds/archive/last/test.grib1.summary");
-	ensure(sys::fs::access("testds/archive/last/test.grib1", F_OK));
-	ensure(sys::fs::access("testds/archive/last/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/archive/last/index.sqlite", F_OK));
+	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
+	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;

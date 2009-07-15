@@ -95,7 +95,7 @@ Writer::~Writer()
 
 bool Writer::hasArchive() const
 {
-	string arcdir = str::joinpath(m_path, "archive");
+	string arcdir = str::joinpath(m_path, ".archive");
 	return sys::fs::access(arcdir, F_OK);
 	//std::auto_ptr<struct stat> st = sys::fs::stat(arcdir);
 	//if (!st.get())
@@ -105,14 +105,14 @@ bool Writer::hasArchive() const
 Archives& Writer::archive()
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, "archive"), false, m_delete_age);
+		m_archive = new Archives(str::joinpath(m_path, ".archive"), false, m_delete_age);
 	return *m_archive;
 }
 
 const Archives& Writer::archive() const
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, "archive"), false, m_delete_age);
+		m_archive = new Archives(str::joinpath(m_path, ".archive"), false, m_delete_age);
 	return *m_archive;
 }
 
