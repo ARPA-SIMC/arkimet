@@ -94,6 +94,8 @@ struct OutputOptions : public wibble::commandline::StandardParserWithManpage
 		PARMS
 	};
 
+	wibble::commandline::BoolOption* verbose;
+	wibble::commandline::BoolOption* debug;
 	wibble::commandline::BoolOption* yaml;
 	wibble::commandline::BoolOption* annotate;
 	wibble::commandline::BoolOption* dataInline;

@@ -35,6 +35,7 @@
 #include <arki/formatter.h>
 #include <arki/postprocess.h>
 #include <arki/sort.h>
+#include <arki/nag.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -306,6 +307,8 @@ OutputOptions::OutputOptions(const std::string& name, int mansection, ConfigType
 {
 	OptionGroup* outputOpts = createGroup("Options controlling output style");
 	
+	verbose = outputOpts->add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
+	debug = outputOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
 	yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",
 			"dump the metadata as human-readable Yaml records");
 	yaml->longNames.push_back("dump");
@@ -373,6 +376,8 @@ bool OutputOptions::parse(int argc, const char* argv[])
 		if (!found)
 			throw wibble::exception::BadOption("you need to specify at least one dataset or configuration file");
 	}
+
+	nag::init(verbose->isSet(), debug->isSet());
 
 	// Option conflict checks
 #ifdef HAVE_LUA
