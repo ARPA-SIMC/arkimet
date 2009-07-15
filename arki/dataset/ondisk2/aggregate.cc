@@ -110,19 +110,27 @@ int Aggregate::get(const Metadata& md) const
 
 void Aggregate::read(int id, Metadata& md) const
 {
-	q_select_by_id.reset();
-	q_select_by_id.bind(1, id);
-	while (q_select_by_id.step())
+	std::map< int, std::vector<int> >::iterator i = m_cache.find(id);
+	if (i == m_cache.end())
 	{
-		size_t idx = 0;
-		for (index::Attrs::const_iterator i = m_attrs.begin();
-				i != m_attrs.end(); ++i, ++idx)
-			//if (q_select_by_id.fetchType(idx) != SQLITE_NULL)
-		{
-			int id = q_select_by_id.fetchInt(idx);
-			if (id != -1)
-				(*i)->read(id, md);
-		}
+		vector<int> vals;
+		q_select_by_id.reset();
+		q_select_by_id.bind(1, id);
+		while (q_select_by_id.step())
+			for (size_t idx = 0; idx < m_attrs.size(); ++idx)
+				vals.push_back(q_select_by_id.fetchInt(idx));
+		pair<std::map< int, std::vector<int> >::iterator, bool> ins =
+			m_cache.insert(make_pair(id, vals));
+		i = ins.first;
+	}
+
+	size_t idx = 0;
+	for (index::Attrs::const_iterator j = m_attrs.begin();
+			j != m_attrs.end(); ++j, ++idx)
+	{
+		int id = i->second[idx];
+		if (id != -1)
+			(*j)->read(id, md);
 	}
 }
 
@@ -150,6 +158,27 @@ int Aggregate::add_constraints(
 	return found;
 }
 
+std::string Aggregate::make_subquery(const Matcher& m) const
+{
+	if (m.empty()) return std::string();
+
+	// See if the matcher has anything that we can use
+	vector<string> constraints;
+	for (index::Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
+	{
+		matcher::AND::const_iterator mi = m.m_impl->find((*i)->code);
+		if (mi == m.m_impl->end())
+			continue;
+
+		// We found something: generate a constraint for it
+		constraints.push_back(
+				(*i)->name + " " +
+				index::fmtin((*i)->query(*(mi->second->upcast<matcher::OR>()))));
+	}
+	if (constraints.empty())
+		return std::string();
+	return "SELECT id FROM " + m_table_name + " WHERE " + str::join(constraints.begin(), constraints.end(), " AND ");
+}
 
 int Aggregate::obtain(const Metadata& md)
 {

@@ -207,6 +207,8 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
    laptopb:   2.82   2.47   2.66   2.43
    laptopc:   2.65
    laptopd:   2.81
+   laptope:   2.48   2.57   2.48   3.22   3.44
+   laptopf:   1.26   1.07   1.05   1.07   1.23
    
     * Query di meteomixer
    nfs:       10.20  10.71   9.76  26.95  12.69
@@ -219,6 +221,8 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
    laptopb:   91.82  83.76  84.21  84.09
    laptopc:   85.97
    laptopd:   85.85
+   laptope:   85.13  84.76  84.20  94.62  93.52
+   laptopf:    1.91   0.91   0.92   0.82   1.06
    
    laptop2: 1650.95 1468.25 1506.98 1599.21 1389.05 
 
@@ -240,6 +244,8 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
    laptopb:   341.44  207.73  205.82  202.68
    laptopc:    56.21
    laptopd:    53.53
+   laptope:    52.43   50.81   52.42   54.79   60.16
+   laptopf:    42.94   40.59   43.22   41.03   40.69
 
 
 eur025 ALL 2755289 599074 16204 1621 406 64 reftime:=1 year ago 1856294 406016 10994 1100 276 64 reftime:=2009-05 79093_STUCK

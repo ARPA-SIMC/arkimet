@@ -380,19 +380,27 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 
 		// Join with the aggregate tables and add constraints on aggregate tables
 		if (m_uniques)
-			if (m_uniques->add_constraints(m, constraints, "u"))
-				query += " JOIN mduniq AS u ON uniq = u.id";
+		{
+			string s = m_uniques->make_subquery(m);
+			if (!s.empty())
+				constraints.push_back("uniq IN ("+s+")");
+		}
 
 		if (m_others)
-			if (m_others->add_constraints(m, constraints, "o"))
-				query += " JOIN mdother AS o ON other = o.id";
+		{
+			string s = m_others->make_subquery(m);
+			if (!s.empty())
+				constraints.push_back("other IN ("+s+")");
+		}
 	}
 
+	/*
 	if (not m.empty() and constraints.size() != m.m_impl->size())
 		// We can only see what we index, the rest is lost
 		// TODO: add a filter to the query results, before the
 		//       postprocessor that pulls in data from disk
 		return false;
+	*/
 
 	if (!constraints.empty())
 		query += " WHERE " + str::join(constraints.begin(), constraints.end(), " AND ");

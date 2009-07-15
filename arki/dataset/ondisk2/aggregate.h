@@ -39,6 +39,7 @@ protected:
 	utils::sqlite::SQLiteDB& m_db;
 	std::string m_table_name;
 	index::Attrs m_attrs;
+	mutable std::map< int, std::vector<int> > m_cache;
 
 	mutable utils::sqlite::PrecompiledQuery q_select;
 	mutable utils::sqlite::PrecompiledQuery q_select_by_id;
@@ -88,6 +89,12 @@ public:
 		const Matcher& m,
 		std::vector<std::string>& constraints,
 		const std::string& prefix) const;
+
+	/**
+	 * Create a subquery selecting the IDs corresponding to the given
+	 * matcher
+	 */
+	std::string make_subquery(const Matcher& m) const;
 
 	/**
 	 * Obtain the aggregate ID for this metadata, inserting the new
