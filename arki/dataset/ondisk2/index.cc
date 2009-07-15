@@ -31,6 +31,7 @@
 #include <arki/types/source.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
+#include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
 #include <arki/nag.h>
@@ -43,6 +44,11 @@
 #include <sstream>
 #include <ctime>
 #include <cassert>
+#include <cerrno>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 // FIXME: for debugging
 //#include <iostream>
@@ -78,13 +84,14 @@ static IndexGlobalData igd;
 
 Index::Index(const ConfigFile& cfg)
 	: m_name(cfg.value("name")), m_root(cfg.value("path")),
-	  m_fetch_by_id("byid", m_db),
 	  m_get_id("getid", m_db),
 	  m_uniques(0), m_others(0)
 {
 	m_indexpath = cfg.value("indexfile");
 	if (m_indexpath.empty())
 		m_indexpath = "index.sqlite";
+
+	m_scache_root = str::joinpath(m_root, ".summaries");
 
 	m_pathname = m_root.empty() ? m_indexpath : str::joinpath(m_root, m_indexpath);
 
@@ -120,8 +127,6 @@ void Index::initQueries()
 {
 	if (m_uniques) m_uniques->initQueries();
 	if (m_others) m_others->initQueries();
-
-	m_fetch_by_id.compile("SELECT format, file, offset, size FROM md WHERE id=?");
 
 	string query = "SELECT id FROM md WHERE reftime=?";
 	if (m_uniques) query += " AND uniq=?";
@@ -316,12 +321,18 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, UItem<types::Time>& be
 	Query q1("min_date", db);
 	q1.compile("SELECT MIN(reftime) FROM md");
 	while (q1.step())
-		begin = types::Time::createFromSQL(q1.fetchString(1));
+	{
+		if (q1.fetchType(0) != SQLITE_NULL)
+			begin = types::Time::createFromSQL(q1.fetchString(0));
+	}
 
 	Query q2("min_date", db);
 	q2.compile("SELECT MAX(reftime) FROM md");
 	while (q2.step())
-		end = types::Time::createFromSQL(q2.fetchString(1));
+	{
+		if (q2.fetchType(0) != SQLITE_NULL)
+			end = types::Time::createFromSQL(q2.fetchString(0));
+	}
 }
 
 bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
@@ -352,7 +363,7 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 					// If the query chooses less than 20%
 					// if the time span, force the use of
 					// the reftime index
-					if (qrange * 100 / dbrange < 20)
+					if (dbrange > 0 && qrange * 100 / dbrange < 20)
 						query += " INDEXED BY md_idx_reftime";
 				}
 			}
@@ -457,7 +468,147 @@ bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
 	return true;
 }
 
-bool Index::querySummary(const Matcher& m, Summary& summary) const
+void Index::invalidateSummaryCache(int year, int month)
+{
+	if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month))))
+		sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
+}
+
+void Index::invalidateSummaryCache(const Metadata& md)
+{
+	Item<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
+	invalidateSummaryCache(rt->time->vals[0], rt->time->vals[1]);
+}
+
+Summary Index::summaryForMonth(int year, int month) const
+{
+	Summary s;
+	string sum_file = str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month));
+	bool has_cache;
+	int fd = open(sum_file.c_str(), O_RDONLY);
+	if (fd < 0)
+	{
+		if (errno == ENOENT)
+			has_cache = false;
+		else
+			throw wibble::exception::System("opening file " + sum_file);
+	}
+	utils::HandleWatch hw(sum_file, fd);
+
+	if (has_cache)
+		s.read(fd, sum_file);
+	else
+	{
+		string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
+
+		if (m_uniques) query += ", uniq";
+		if (m_others) query += ", other";
+
+		int nextyear = year + (month/12);
+		int nextmonth = (month % 12) + 1;
+
+		query += " FROM md WHERE reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
+		       + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth);
+
+		if (m_uniques && m_others)
+			query += " GROUP BY uniq, other";
+		else if (m_uniques)
+			query += " GROUP BY uniq";
+		else if (m_others)
+			query += " GROUP BY other";
+
+		nag::verbose("Running query %s", query.c_str());
+
+		Query sq("sq", m_db);
+		sq.compile(query);
+
+		while (sq.step())
+		{
+			// Fill in the summary statistics
+			arki::Item<summary::Stats> st(new summary::Stats);
+			st->count = sq.fetchInt(0);
+			st->size = sq.fetchInt(1);
+			Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
+			Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
+			st->reftimeMerger.mergeTime(min_time, max_time);
+
+			// Fill in the metadata fields
+			Metadata md;
+			md.create();
+			int j = 4;
+			if (m_uniques)
+			{
+				if (sq.fetchType(j) != SQLITE_NULL)
+					m_uniques->read(sq.fetchInt(j), md);
+				++j;
+			}
+			if (m_others)
+			{
+				if (sq.fetchType(j) != SQLITE_NULL)
+					m_others->read(sq.fetchInt(j), md);
+				++j;
+			}
+
+			// Feed the results to the summary
+			s.add(md, st);
+		}
+		// Write back to the cache directory, if allowed
+		if (sys::fs::access(m_scache_root, W_OK))
+			s.writeAtomically(sum_file);
+	}
+
+	return s;
+}
+
+Summary Index::summaryForAll() const
+{
+	Summary s;
+	string sum_file = str::joinpath(m_scache_root, "all.summary");
+	bool has_cache;
+	int fd = open(sum_file.c_str(), O_RDONLY);
+	if (fd < 0)
+	{
+		if (errno == ENOENT)
+			has_cache = false;
+		else
+			throw wibble::exception::System("opening file " + sum_file);
+	}
+	utils::HandleWatch hw(sum_file, fd);
+
+	if (has_cache)
+		s.read(fd, sum_file);
+	else
+	{
+		// Find the datetime extremes in the database
+		UItem<types::Time> begin, end;
+		db_time_extremes(m_db, begin, end);
+
+		// If there is data in the database, get all the involved
+		// monthly summaries
+		if (begin.defined() && end.defined())
+		{
+			int year = begin->vals[0];
+			int month = begin->vals[1];
+			while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
+			{
+				s.add(summaryForMonth(year, month));
+
+				// Increment the month
+				month = (month%12) + 1;
+				if (month == 1)
+					++year;
+			}
+		}
+
+		// Write back to the cache directory, if allowed
+		if (sys::fs::access(m_scache_root, W_OK))
+			s.writeAtomically(sum_file);
+	}
+
+	return s;
+}
+
+bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 {
 	string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
@@ -516,6 +667,69 @@ bool Index::querySummary(const Matcher& m, Summary& summary) const
 
 		// Feed the results to the summary
 		summary.add(md, st);
+	}
+
+	return true;
+}
+
+bool Index::querySummary(const Matcher& matcher, Summary& summary) const
+{
+	// Check if the matcher discriminates on reference times
+	const matcher::OR* reftime = 0;
+	if (matcher.m_impl)
+		reftime = matcher.m_impl->get(types::TYPE_REFTIME);
+
+	if (!reftime)
+	{
+		// The matcher does not contain reftime, we can work with a
+		// global summary
+		Summary s = summaryForAll();
+		s.filter(matcher, summary);
+		return true;
+	}
+
+	// Get the bounds of the query
+	UItem<types::Time> begin, end;
+	datetime_span(reftime, begin, end);
+
+	// If the reftime query queries all the time span, use the global index
+	if (!begin.defined() && !end.defined())
+	{
+		Summary s = summaryForAll();
+		s.filter(matcher, summary);
+		return true;
+	}
+
+	// Complete open ends with the bounds from the database
+	if (!begin.defined() || !end.defined())
+	{
+		UItem<types::Time> db_begin, db_end;
+		db_time_extremes(m_db, db_begin, db_end);
+		// If the database is empty then the result is empty:
+		// we are done
+		if (!db_begin.defined())
+			return true;
+		if (!begin.defined()) begin = db_begin;
+		if (!end.defined()) end = db_end;
+	}
+
+	// If the interval is under 31 days, query the DB directly
+	long long int range = grcal::date::duration(begin->vals, end->vals);
+	if (range <= 31 * 24 * 3600)
+		return querySummaryFromDB(matcher, summary);
+
+	// Iterate the months
+	int year = begin->vals[0];
+	int month = begin->vals[1];
+	while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
+	{
+		Summary s = summaryForMonth(year, month);
+		s.filter(matcher, summary);
+
+		// Increment the month
+		month = (month%12) + 1;
+		if (month == 1)
+			++year;
 	}
 
 	return true;
@@ -600,6 +814,8 @@ bool WIndex::open()
 		initDB();
 
 	initQueries();
+
+	sys::fs::mkdirIfMissing(m_scache_root, 0777);
 
 	return need_create;
 }
@@ -720,6 +936,9 @@ void WIndex::index(Metadata& md, const std::string& file, size_t ofs, int* id)
 
 	if (id)
 		*id = m_db.lastInsertID();
+
+	// Invalidate the summary cache for this month
+	invalidateSummaryCache(md);
 }
 
 void WIndex::replace(Metadata& md, const std::string& file, size_t ofs, int* id)
@@ -733,15 +952,30 @@ void WIndex::replace(Metadata& md, const std::string& file, size_t ofs, int* id)
 
 	if (id)
 		*id = m_db.lastInsertID();
+
+	// Invalidate the summary cache for this month
+	invalidateSummaryCache(md);
 }
 
 void WIndex::remove(int id, std::string& file)
 {
-	// SELECT format, file, offset, size FROM md WHERE id=?
-	m_fetch_by_id.reset();
-	m_fetch_by_id.bind(1, id);
-	while (m_fetch_by_id.step())
-		file = m_fetch_by_id.fetchString(1);
+	Query fetch_by_id("byid", m_db);
+	fetch_by_id.compile("SELECT file, reftime FROM md WHERE id=?");
+	fetch_by_id.bind(1, id);
+	string reftime;
+	while (fetch_by_id.step())
+	{
+		file = fetch_by_id.fetchString(0);
+		reftime = fetch_by_id.fetchString(1);
+	}
+	if (reftime.empty())
+		throw wibble::exception::Consistency(
+				"removing item with id " + str::fmt(id),
+				"id does not exist in the index");
+
+	// Invalidate the summary cache for this month
+	Item<types::Time> rt = types::Time::createFromSQL(reftime);
+	invalidateSummaryCache(rt->vals[0], rt->vals[1]);
 
 	// DELETE FROM md WHERE id=?
 	m_delete.reset();

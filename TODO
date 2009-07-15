@@ -186,6 +186,16 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - cache negli aggregate come negli attributi
 
+ - Directory .summary nel dataset con dentro un summary per mese (o
+   configurabile)
+    + Durante il read, se un mese manca lo si può rigenerare al volo con una
+      query non troppo lenta.
+    + aggiornato durante il read
+    + cancellato durante il delete
+    + cancellato durante l'acquire
+    - aggiornato durante il pack
+   (or just deleted on acquire)
+
  - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
    processo passando il nome del tempfile in env o in arg, per ogni grib
    (xargs per i grib)
@@ -202,6 +212,7 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
    laptop2:   9.71   6.78   7.06   7.87   6.91
 
    laptop2: 379.67 174.85 229.46 233.16   8.70
+   laptopa:   2.95   2.79   2.86   2.77
    
     * Query di meteomixer
    nfs:       10.20  10.71   9.76  26.95  12.69
@@ -210,6 +221,7 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
    local2:     7.54   7.52   7.55   7.53   7.53
    laptop:    10.48   8.90   8.62   8.61   8.57
    laptop2:   71.55  45.47   5.66  46.61  46.53
+   laptopa:   86.02  85.91  86.36  86.09
    
    laptop2: 1650.95 1468.25 1506.98 1599.21 1389.05 
 
@@ -227,6 +239,7 @@ arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; produc
    nel reference time.
 
    laptop2:   857.88  876.78  939.07  800.14 1045.30  (bias: 1 month ago e 1 day ago non fanno match)
+   laptopa:  3530.33  761.09  834.22 1032.69
 
  - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
    file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione

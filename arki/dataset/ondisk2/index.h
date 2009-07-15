@@ -72,11 +72,11 @@ class Index
 protected:
 	std::string m_name;
 	std::string m_root;
+	std::string m_scache_root;
 	std::string m_indexpath;
 	std::string m_pathname;
 
 	mutable utils::sqlite::SQLiteDB m_db;
-	mutable utils::sqlite::PrecompiledQuery m_fetch_by_id;
 	mutable utils::sqlite::PrecompiledQuery m_get_id;
 
 	// Subtables
@@ -98,6 +98,35 @@ protected:
 	 * match any metadata in the database.
 	 */
 	bool addJoinsAndConstraints(const Matcher& m, std::string& query) const;
+
+	/**
+	 * Invalidate the summary for the given month AND the global summary
+	 */
+	void invalidateSummaryCache(int year, int month);
+
+	/**
+	 * Invalidate the summary cache related to the reference time of a
+	 * metadata
+	 */
+	void invalidateSummaryCache(const Metadata& md);
+
+	/**
+	 * Compute the summary for the given month, and output it to \a
+	 * summary.
+	 *
+	 * Cache the result if possible, so that asking again will be much
+	 * quicker.
+	 */
+	Summary summaryForMonth(int year, int month) const;
+
+	/**
+	 * Compute the summary for all the dataset.
+	 *
+	 * Cache the result if possible, so that asking again will be much
+	 * quicker.
+	 */
+	Summary summaryForAll() const;
+
 
 	Index(const ConfigFile& cfg);
 public:
@@ -166,10 +195,22 @@ public:
 	/**
 	 * Query this index, returning a summary
 	 *
+	 * Summary caches are used if available.
+	 *
 	 * @return true if the index could be used for the query, false if the
 	 * query does not use the index and a full scan should be used instead
 	 */
 	bool querySummary(const Matcher& m, Summary& summary) const;
+
+	/**
+	 * Query this index, returning a summary
+	 *
+	 * Summary caches are not used, and the database is always queried.
+	 *
+	 * @return true if the index could be used for the query, false if the
+	 * query does not use the index and a full scan should be used instead
+	 */
+	bool querySummaryFromDB(const Matcher& m, Summary& summary) const;
 };
 
 class RIndex : public Index

@@ -198,7 +198,11 @@ void to::test<2>()
 
 	// Remove a nonexisting item and see that it fails
 	string file;
-	test->remove(100, file);
+	try {
+		test->remove(100, file);
+		ensure(false);
+	} catch (wibble::exception::Consistency& e) {
+	}
 
 	// Remove the first item
 	test->remove(id, file);
