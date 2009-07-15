@@ -771,6 +771,9 @@ void RIndex::open()
 	setupPragmas();
 	
 	initQueries();
+
+	if (sys::fs::access(m_root, W_OK))
+		sys::fs::mkdirIfMissing(m_scache_root, 0777);
 }
 
 void RIndex::initQueries()
