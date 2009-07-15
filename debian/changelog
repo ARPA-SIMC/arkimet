@@ -6,8 +6,10 @@ arkimet (0.22-1) UNRELEASED; urgency=low
   * ondisk2: if a problem is found during check or repack, disallow repack
     until a check is made, to avoid accidentally deleting files to be
     reindexed
+  * ondisk2: new summary cache and more sqlite3-friendly queries, for
+    performance speedups during queries
 
- -- Enrico Zini <enrico@debian.org>  Sat, 11 Jul 2009 12:59:38 +0100
+ -- Enrico Zini <enrico@debian.org>  Wed, 15 Jul 2009 22:48:53 +0100
 
 arkimet (0.21-1) UNRELEASED; urgency=low
 

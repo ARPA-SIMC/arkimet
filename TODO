@@ -192,7 +192,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    (xargs per i grib)
     - codice per split di grib preso da meteosatlib
 
-arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; product:GRIB1,98,128,167 or GRIB1,98,128,168 or GRIB1,98,128,165 or GRIB1,98,128,166 or GRIB1,98,128,228 or GRIB1,98,128,248 or GRIB1,98,128,144;level:GRIB1,1" /arkibench/dataset2/eur025/
+ - timing sul repack: con un indice su file e un order by solo su file è molto
+   piú veloce, ma vale la pena?
 
     * "Benchmark di selvini"
    nfs:     200.44 484.52 285.57 382.39 333.78
