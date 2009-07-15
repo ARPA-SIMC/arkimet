@@ -33,10 +33,12 @@
 #include <arki/summary.h>
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
+#include <arki/nag.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
+#include <wibble/grcal/grcal.h>
 
 #include <sstream>
 #include <ctime>
@@ -284,6 +286,44 @@ std::string Index::max_file_reftime(const std::string& relname) const
 	return res;
 }
 
+// Compute the maximum datetime span of the reftime query
+static void datetime_span(const matcher::OR* reftime, UItem<types::Time>& begin, UItem<types::Time>& end)
+{
+	begin.clear();
+	end.clear();
+
+	// Start with the interval of the first matcher
+	matcher::OR::const_iterator i = reftime->begin();
+	(*i)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
+
+	// Enlarge with the interval of the following matchers, since they are
+	// all ORed together
+	for (++i; i != reftime->end(); ++i)
+	{
+		UItem<types::Time> b, e;
+		(*i)->upcast<matcher::MatchReftime>()->dateRange(b, e);
+		if (!b.defined() || b < begin)
+			begin = b;
+		if (!e.defined() || (end.defined() && e > end))
+			end = e;
+	}
+}
+
+static void db_time_extremes(utils::sqlite::SQLiteDB& db, UItem<types::Time>& begin, UItem<types::Time>& end)
+{
+	// SQLite can compute min and max of an indexed column very fast,
+	// provided that it is the ONLY thing queried.
+	Query q1("min_date", db);
+	q1.compile("SELECT MIN(reftime) FROM md");
+	while (q1.step())
+		begin = types::Time::createFromSQL(q1.fetchString(1));
+
+	Query q2("min_date", db);
+	q2.compile("SELECT MAX(reftime) FROM md");
+	while (q2.step())
+		end = types::Time::createFromSQL(q2.fetchString(1));
+}
+
 bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 {
 	vector<string> constraints;
@@ -293,6 +333,30 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 	{
 		if (const matcher::OR* reftime = m.m_impl->get(types::TYPE_REFTIME))
 		{
+			UItem<types::Time> begin, end;
+			datetime_span(reftime, begin, end);
+			if (begin.defined() || end.defined())
+			{
+				// Compare with the reftime bounds in the database
+				UItem<types::Time> db_begin, db_end;
+				db_time_extremes(m_db, db_begin, db_end);
+				if (db_begin.defined() && db_end.defined())
+				{
+					// If the bounds of the query time are
+					// open, fill them in with the database
+					// bounds
+					if (!begin.defined()) begin = db_begin;
+					if (!end.defined()) end = db_end;
+					long long int qrange = grcal::date::duration(begin->vals, end->vals);
+					long long int dbrange = grcal::date::duration(db_begin->vals, db_end->vals);
+					// If the query chooses less than 20%
+					// if the time span, force the use of
+					// the reftime index
+					if (qrange * 100 / dbrange < 20)
+						query += " INDEXED BY md_idx_reftime";
+				}
+			}
+
 			string constraint = "(";
 			for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
 			{
@@ -345,8 +409,9 @@ bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
 
 	query += " ORDER BY m.reftime";
 
+	nag::verbose("Running query %s", query.c_str());
+
 	metadata::Collector mdbuf;
-	// TODO: if verbose, output the query
 
 	// Limited scope for mdq, so we finalize the query before starting to
 	// emit results
@@ -417,7 +482,7 @@ bool Index::querySummary(const Matcher& m, Summary& summary) const
 	else if (m_others)
 		query += " GROUP BY other";
 
-	// TODO: if verbose, output the query
+	nag::verbose("Running query %s", query.c_str());
 
 	Query sq("sq", m_db);
 	sq.compile(query);

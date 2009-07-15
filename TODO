@@ -191,6 +191,43 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    (xargs per i grib)
     - codice per split di grib preso da meteosatlib
 
+arki-query --summary --report=mdstats "reftime:=2009-05-03; run:MINUTE,0; product:GRIB1,98,128,167 or GRIB1,98,128,168 or GRIB1,98,128,165 or GRIB1,98,128,166 or GRIB1,98,128,228 or GRIB1,98,128,248 or GRIB1,98,128,144;level:GRIB1,1" /arkibench/dataset2/eur025/
+
+    * "Benchmark di selvini"
+   nfs:     200.44 484.52 285.57 382.39 333.78
+   nfs2:    285.97 188.55 182.41 182.24 183.66
+   local:   113.83 119.15 114.15 116.47 113.03
+   local2:    4.11   3.96   3.99   4.01   4.05
+   laptop:  128.97   2.36   2.25   2.35   2.31
+   laptop2:   9.71   6.78   7.06   7.87   6.91
+
+   laptop2: 379.67 174.85 229.46 233.16   8.70
+   
+    * Query di meteomixer
+   nfs:       10.20  10.71   9.76  26.95  12.69
+   nfs2:     301.62 167.59 147.64 131.24 133.87
+   local:      5.63   5.50   6.69   5.65   5.49
+   local2:     7.54   7.52   7.55   7.53   7.53
+   laptop:    10.48   8.90   8.62   8.61   8.57
+   laptop2:   71.55  45.47   5.66  46.61  46.53
+   
+   laptop2: 1650.95 1468.25 1506.98 1599.21 1389.05 
+
+    * Richiesta di summary arkimeow
+   nfs        221.15  229.55  262.06  230.53  241.07
+   nfs2      2621.27 2909.08 2639.62 2672.13 2641.28
+   local      187.16  192.30  189.07  189.03  196.08
+   local2     222.79  226.72  227.80  228.00  224.37
+              212.79  123.24  123.29  124.41  121.73[1]
+   laptop     441.52  429.59  428.68  431.04  426.00
+   laptop2   1029.64  959.18 1155.78 1106.93 1223.34
+              465.16  408.86  446.63  422.03  463.17[1]
+   [1] Questi tempi sono stati presi dopo aver implementato
+   un'ottimizzazione per il caso della query di summary senza un vincolo
+   nel reference time.
+
+   laptop2:   857.88  876.78  939.07  800.14 1045.30  (bias: 1 month ago e 1 day ago non fanno match)
+
  - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
    file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione
    con un buon messaggio invece che a rompere le scatole col salvage
