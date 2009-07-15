@@ -498,7 +498,7 @@ Summary Index::summaryForMonth(int year, int month) const
 {
 	Summary s;
 	string sum_file = str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month));
-	bool has_cache;
+	bool has_cache = true;
 	int fd = open(sum_file.c_str(), O_RDONLY);
 	if (fd < 0)
 	{
@@ -578,7 +578,7 @@ Summary Index::summaryForAll() const
 {
 	Summary s;
 	string sum_file = str::joinpath(m_scache_root, "all.summary");
-	bool has_cache;
+	bool has_cache = true;
 	int fd = open(sum_file.c_str(), O_RDONLY);
 	if (fd < 0)
 	{
