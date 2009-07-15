@@ -86,7 +86,8 @@ arkiinclude_HEADERS = \
 		bbox.h \
 		postprocess.h \
 		values.h \
-		utils.h
+		utils.h \
+		nag.h
 
 dist_noinst_HEADERS = \
 		tests/test-utils.h \
@@ -105,6 +106,7 @@ $(top_builddir)/arki/matcher/reftime/reftime-parse.h $(top_builddir)/arki/matche
 
 lib_LTLIBRARIES = libarkimet.la
 libarkimet_la_SOURCES = \
+		nag.cc \
 		utils.cc \
 		utils/sqlite.cc \
 		utils/files.cc \
