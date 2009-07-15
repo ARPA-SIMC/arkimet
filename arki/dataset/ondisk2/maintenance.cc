@@ -384,7 +384,6 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 	// cerr << " RESET " << file << endl;
 
 	string pathname = str::joinpath(root, file);
-	// cerr << " FILE IS " << pathname << endl;
 
 	// Collect the scan results in a metadata::Collector
 	metadata::Collector mds;
