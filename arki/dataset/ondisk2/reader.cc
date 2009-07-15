@@ -33,6 +33,7 @@
 #include <arki/utils/dataset.h>
 #include <arki/summary.h>
 #include <arki/postprocess.h>
+#include <arki/nag.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -305,6 +306,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 
 		if (hasCache)
 		{
+			nag::verbose("Querying summary through global summary cache");
 			// Use the cache
 			Summary s;
 			if (!s.read(in, cache_fname))
@@ -317,6 +319,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 				s.filter(matcher, summary);
 			}
 		} else if (sys::fs::access(m_root, W_OK)) {
+			nag::verbose("Querying summary through global summary cache, rebuilding the cache first");
 			// Rebuild the cache
 			Summary s;
 
@@ -330,6 +333,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 			// in memory
 			s.filter(matcher, summary);
 		} else {
+			nag::verbose("Cannot write to the dataset to generate a new summary cache: querying summary through the index");
 			// Just use the index
 			if (!m_idx || !m_idx->querySummary(matcher, summary))
 				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
