@@ -495,6 +495,61 @@ void Index::rebuildSummaryCache()
 	summaryForAll();
 }
 
+void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
+{
+	string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
+
+	if (m_uniques) query += ", uniq";
+	if (m_others) query += ", other";
+
+	query += " FROM md";
+	if (!where.empty())
+		query += " WHERE " + where;
+
+	if (m_uniques && m_others)
+		query += " GROUP BY uniq, other";
+	else if (m_uniques)
+		query += " GROUP BY uniq";
+	else if (m_others)
+		query += " GROUP BY other";
+
+	nag::verbose("Running query %s", query.c_str());
+
+	Query sq("sq", m_db);
+	sq.compile(query);
+
+	while (sq.step())
+	{
+		// Fill in the summary statistics
+		arki::Item<summary::Stats> st(new summary::Stats);
+		st->count = sq.fetchInt(0);
+		st->size = sq.fetchInt(1);
+		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
+		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
+		st->reftimeMerger.mergeTime(min_time, max_time);
+
+		// Fill in the metadata fields
+		Metadata md;
+		md.create();
+		int j = 4;
+		if (m_uniques)
+		{
+			if (sq.fetchType(j) != SQLITE_NULL)
+				m_uniques->read(sq.fetchInt(j), md);
+			++j;
+		}
+		if (m_others)
+		{
+			if (sq.fetchType(j) != SQLITE_NULL)
+				m_others->read(sq.fetchInt(j), md);
+			++j;
+		}
+
+		// Feed the results to the summary
+		summary.add(md, st);
+	}
+}
+
 Summary Index::summaryForMonth(int year, int month) const
 {
 	Summary s;
@@ -514,59 +569,13 @@ Summary Index::summaryForMonth(int year, int month) const
 		s.read(fd, sum_file);
 	else
 	{
-		string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
-
-		if (m_uniques) query += ", uniq";
-		if (m_others) query += ", other";
-
 		int nextyear = year + (month/12);
 		int nextmonth = (month % 12) + 1;
 
-		query += " FROM md WHERE reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
-		       + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth);
+		querySummaryFromDB(
+			 "reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
+		       + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth), s);
 
-		if (m_uniques && m_others)
-			query += " GROUP BY uniq, other";
-		else if (m_uniques)
-			query += " GROUP BY uniq";
-		else if (m_others)
-			query += " GROUP BY other";
-
-		nag::verbose("Running query %s", query.c_str());
-
-		Query sq("sq", m_db);
-		sq.compile(query);
-
-		while (sq.step())
-		{
-			// Fill in the summary statistics
-			arki::Item<summary::Stats> st(new summary::Stats);
-			st->count = sq.fetchInt(0);
-			st->size = sq.fetchInt(1);
-			Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
-			Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
-			st->reftimeMerger.mergeTime(min_time, max_time);
-
-			// Fill in the metadata fields
-			Metadata md;
-			md.create();
-			int j = 4;
-			if (m_uniques)
-			{
-				if (sq.fetchType(j) != SQLITE_NULL)
-					m_uniques->read(sq.fetchInt(j), md);
-				++j;
-			}
-			if (m_others)
-			{
-				if (sq.fetchType(j) != SQLITE_NULL)
-					m_others->read(sq.fetchInt(j), md);
-				++j;
-			}
-
-			// Feed the results to the summary
-			s.add(md, st);
-		}
 		// Write back to the cache directory, if allowed
 		if (sys::fs::access(m_scache_root, W_OK))
 			s.writeAtomically(sum_file);
@@ -687,6 +696,39 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 	return true;
 }
 
+static inline void end_this_month(Item<types::Time>& t)
+{
+	// Advance to the end of this month
+	t->vals[2] = grcal::date::daysinmonth(t->vals[0], t->vals[1]);
+	t->vals[3] = 23;
+	t->vals[4] = 59;
+	t->vals[5] = 59;
+}
+static inline bool range_evelopes_full_month(const Item<types::Time>& begin, const Item<types::Time>& end)
+{
+	bool begins_at_beginning = begin->vals[2] == 1 &&
+		begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0;
+	if (begins_at_beginning)
+	{
+		Item<types::Time> t = types::Time::create(begin->vals);
+		end_this_month(t);
+		return end >= t;
+	}
+
+	bool ends_at_end = end->vals[2] == grcal::date::daysinmonth(end->vals[0], end->vals[1]) &&
+		end->vals[3] == 23 && end->vals[4] == 59 && end->vals[5] == 59;
+	if (ends_at_end)
+	{
+		Item<types::Time> t = types::Time::create(end->vals);
+		t->vals[2] = 1;
+		t->vals[3] = t->vals[4] = t->vals[5] = 0;
+		return begin <= t;
+	}
+
+	return end->vals[0] == begin->vals[0] + begin->vals[1]/12 &&
+	       end->vals[1] == (begin->vals[1] % 12) + 1;
+}
+
 bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 {
 	// Check if the matcher discriminates on reference times
@@ -722,14 +764,81 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 	// we are done
 	if (!db_begin.defined())
 		return true;
-	if (!begin.defined() || begin < db_begin) begin = db_begin;
-	if (!end.defined() || end > db_end) end = db_end;
+	bool begin_from_db = false;
+	if (!begin.defined() || begin < db_begin)
+	{
+		begin = db_begin;
+		begin_from_db = true;
+	}
+	bool end_from_db = false;
+	if (!end.defined() || end > db_end)
+	{
+		end = db_end;
+		end_from_db = true;
+	}
 
-	// If the interval is under 31 days, query the DB directly
+	// If the interval is under a week, query the DB directly
 	long long int range = grcal::date::duration(begin->vals, end->vals);
-	if (range <= 31 * 24 * 3600)
+	if (range <= 7 * 24 * 3600)
 		return querySummaryFromDB(matcher, summary);
 
+	if (begin_from_db)
+	{
+		// Round down to month begin, so we reuse the cached summary if
+		// available
+		begin->vals[2] = 1;
+		begin->vals[3] = 0;
+		begin->vals[4] = 0;
+		begin->vals[5] = 0;
+	}
+	if (end_from_db)
+	{
+		// Round up to month end, so we reuse the cached summary if
+		// available
+		end->vals[2] = grcal::date::daysinmonth(end->vals[0], end->vals[1]);
+		end->vals[3] = 23;
+		end->vals[4] = 59;
+		end->vals[5] = 59;
+	}
+
+	// If the selected interval does not envelope any whole month, query
+	// the DB directly
+	if (!range_evelopes_full_month(begin, end))
+		return querySummaryFromDB(matcher, summary);
+
+	// Query partial month at beginning, middle whole months, partial
+	// month at end. Query whole months at extremes if they are indeed whole
+	while (begin <= end)
+	{
+		Item<types::Time> endmonth = types::Time::create(begin->vals);
+		end_this_month(endmonth);
+
+		bool starts_at_beginning = (begin->vals[2] == 1 &&
+				begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0);
+		if (starts_at_beginning && endmonth <= end)
+		{
+			Summary s = summaryForMonth(begin->vals[0], begin->vals[1]);
+			s.filter(matcher, summary);
+		} else if (endmonth <= end) {
+			Summary s;
+			querySummaryFromDB("reftime >= " + begin->toSQL()
+					 + " AND reftime < " + endmonth->toSQL(), s);
+			s.filter(matcher, summary);
+		} else {
+			Summary s;
+			querySummaryFromDB("reftime >= " + begin->toSQL()
+					 + " AND reftime < " + end->toSQL(), s);
+			s.filter(matcher, summary);
+		}
+
+		// Advance to the beginning of the next month
+		begin->vals[0] += (begin->vals[1]/12);
+		begin->vals[1] = (begin->vals[1] % 12) + 1;
+		begin->vals[2] = 1;
+		begin->vals[3] = begin->vals[4] = begin->vals[5] = 0;
+	}
+
+	/*
 	// Iterate the months
 	int year = begin->vals[0];
 	int month = begin->vals[1];
@@ -743,6 +852,7 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 		if (month == 1)
 			++year;
 	}
+	*/
 
 	return true;
 }

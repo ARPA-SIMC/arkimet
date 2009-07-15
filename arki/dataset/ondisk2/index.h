@@ -185,6 +185,11 @@ public:
 	bool querySummaryFromDB(const Matcher& m, Summary& summary) const;
 
 	/**
+	 * Query summary information from DB using the given WHERE body
+	 */
+	void querySummaryFromDB(const std::string& where, Summary& summary) const;
+
+	/**
 	 * Invalidate and rebuild the entire summary cache
 	 */
 	void rebuildSummaryCache();
