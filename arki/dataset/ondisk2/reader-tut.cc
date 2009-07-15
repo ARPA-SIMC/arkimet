@@ -299,7 +299,7 @@ void to::test<9>()
 			"testds: archive cleaned up\n"
 			"testds: database cleaned up\n"
 			"testds: rebuild summary cache\n"
-			"testds: 2 files archived, 26320 bytes reclaimed on the index, 26320 total bytes freed.\n");
+			"testds: 2 files archived, 27352 bytes reclaimed on the index, 27352 total bytes freed.\n");
 	}
 
 

@@ -184,73 +184,15 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    - guarda uno per uno se esistono
    - se ne manca uno, togliere i suoi dati dall'indice
 
- - cache negli aggregate come negli attributi
-   necessaria direi solo per ricostruire i metadati velocemente
+ - timing sul repack: con un indice su file e un order by solo su file è molto
+   piú veloce, ma vale la pena? Direi di si, altrimenti check e pack sono
+   impossibili.
+    - supplire il resto facendo il reordering in un transformer del file visitor
 
  - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
    processo passando il nome del tempfile in env o in arg, per ogni grib
    (xargs per i grib)
     - codice per split di grib preso da meteosatlib
-
- - timing sul repack: con un indice su file e un order by solo su file è molto
-   piú veloce, ma vale la pena?
-
-    * "Benchmark di selvini"
-   nfs:     200.44 484.52 285.57 382.39 333.78
-   nfs2:    285.97 188.55 182.41 182.24 183.66
-   local:   113.83 119.15 114.15 116.47 113.03
-   local2:    4.11   3.96   3.99   4.01   4.05
-   laptop:  128.97   2.36   2.25   2.35   2.31
-   laptop2:   9.71   6.78   7.06   7.87   6.91
-
-   laptop2: 379.67 174.85 229.46 233.16   8.70
-   laptopa:   2.95   2.79   2.86   2.77
-   laptopb:   2.82   2.47   2.66   2.43
-   laptopc:   2.65
-   laptopd:   2.81
-   laptope:   2.48   2.57   2.48   3.22   3.44
-   laptopf:   1.26   1.07   1.05   1.07   1.23
-   
-    * Query di meteomixer
-   nfs:       10.20  10.71   9.76  26.95  12.69
-   nfs2:     301.62 167.59 147.64 131.24 133.87
-   local:      5.63   5.50   6.69   5.65   5.49
-   local2:     7.54   7.52   7.55   7.53   7.53
-   laptop:    10.48   8.90   8.62   8.61   8.57
-   laptop2:   71.55  45.47   5.66  46.61  46.53
-   laptopa:   86.02  85.91  86.36  86.09
-   laptopb:   91.82  83.76  84.21  84.09
-   laptopc:   85.97
-   laptopd:   85.85
-   laptope:   85.13  84.76  84.20  94.62  93.52
-   laptopf:    1.91   0.91   0.92   0.82   1.06
-   
-   laptop2: 1650.95 1468.25 1506.98 1599.21 1389.05 
-
-    * Richiesta di summary arkimeow
-   nfs        221.15  229.55  262.06  230.53  241.07
-   nfs2      2621.27 2909.08 2639.62 2672.13 2641.28
-   local      187.16  192.30  189.07  189.03  196.08
-   local2     222.79  226.72  227.80  228.00  224.37
-              212.79  123.24  123.29  124.41  121.73[1]
-   laptop     441.52  429.59  428.68  431.04  426.00
-   laptop2   1029.64  959.18 1155.78 1106.93 1223.34
-              465.16  408.86  446.63  422.03  463.17[1]
-   [1] Questi tempi sono stati presi dopo aver implementato
-   un'ottimizzazione per il caso della query di summary senza un vincolo
-   nel reference time.
-
-   laptop2:   857.88  876.78  939.07  800.14 1045.30  (bias: 1 month ago e 1 day ago non fanno match)
-   laptopa:  3530.33  761.09  834.22 1032.69
-   laptopb:   341.44  207.73  205.82  202.68
-   laptopc:    56.21
-   laptopd:    53.53
-   laptope:    52.43   50.81   52.42   54.79   60.16
-   laptopf:    42.94   40.59   43.22   41.03   40.69
-
-
-eur025 ALL 2755289 599074 16204 1621 406 64 reftime:=1 year ago 1856294 406016 10994 1100 276 64 reftime:=2009-05 79093_STUCK
-
 
  - in arki-check, salvage è usato solo quando c'è lo stesso duplicato in due
    file diversi. Questo è inammissibile, e si fa prima a sollevare un'eccezione

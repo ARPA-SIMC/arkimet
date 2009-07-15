@@ -236,7 +236,7 @@ void Writer::maintenance(writer::MaintFileVisitor& v)
 	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
 	writer::FindMissing fm(ca, m_path);
 	writer::HoleFinder hf(fm, m_path);	
-	m_idx.scan_files(hf, "file, reftime, offset");
+	m_idx.scan_files(hf);
 	if (hasArchive())
 		archive().maintenance(v);
 	hf.end();

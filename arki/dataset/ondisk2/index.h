@@ -137,7 +137,7 @@ public:
 	/**
 	 * Scan all file info in the database, sorted by file and offset
 	 */
-	void scan_files(writer::IndexFileVisitor& v, const std::string& orderBy = "file, offset") const;
+	void scan_files(writer::IndexFileVisitor& v) const;
 
 	/**
 	 * Scan the information about the given file, sorted by offset

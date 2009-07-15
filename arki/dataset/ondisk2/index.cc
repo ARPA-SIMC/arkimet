@@ -204,19 +204,78 @@ size_t Index::count() const
 	return res;
 }
 
-void Index::scan_files(writer::IndexFileVisitor& v, const std::string& orderBy) const
+// IndexFileVisitor that takes a sequence ordered by file and produces a
+// sequence ordered by file, reftime, offset
+namespace {
+struct FurtherSort
+{
+	struct FileData
+	{
+		int id;
+		std::string reftime;
+		off_t offset;
+		size_t size;
+
+		FileData(int id, const std::string& reftime, off_t offset, size_t size)
+			: id(id), reftime(reftime), offset(offset), size(size) {}
+	};
+
+	static bool sorter(const FileData& a, const FileData& b)
+	{
+		if (a.reftime != b.reftime)
+			return a.reftime < b.reftime;
+		return a.offset < b.offset;
+	}
+
+	writer::IndexFileVisitor& next;
+	string curfile;
+	vector<FileData> data;
+
+	FurtherSort(writer::IndexFileVisitor& next) : next(next) {}
+
+	virtual void operator()(const std::string& file, const std::string& reftime, int id, off_t offset, size_t size)
+	{
+		if (file != curfile)
+		{
+			emit();
+			curfile = file;
+		}
+		data.push_back(FileData(id, reftime, offset, size));
+	}
+
+	void end()
+	{
+		emit();
+	}
+
+	void emit()
+	{
+		if (data.empty())
+			return;
+		std::sort(data.begin(), data.end(), sorter);
+		for (vector<FileData>::const_iterator i = data.begin(); i != data.end(); ++i)
+			next(curfile, i->id, i->offset, i->size);
+		data.clear();
+	}
+};
+}
+
+void Index::scan_files(writer::IndexFileVisitor& v) const
 {
 	Query sq("scan_files", m_db);
-	sq.compile("SELECT id, file, offset, size FROM md ORDER BY " + orderBy);
+	sq.compile("SELECT id, file, reftime, offset, size FROM md ORDER BY file");
+	FurtherSort fs(v);
 	while (sq.step())
 	{
 		int id = sq.fetchInt(0);
 		string file = sq.fetchString(1);
-		off_t offset = sq.fetchSizeT(2);
-		size_t size = sq.fetchSizeT(3);
+		string reftime = sq.fetchString(2);
+		off_t offset = sq.fetchSizeT(3);
+		size_t size = sq.fetchSizeT(4);
 
-		v(file, id, offset, size);
+		fs(file, reftime, id, offset, size);
 	}
+	fs.end();
 }
 
 void Index::scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy) const
@@ -239,10 +298,12 @@ void Index::scan_file(const std::string& relname, MetadataConsumer& consumer) co
 	if (m_uniques) query += ", m.uniq";
 	if (m_others) query += ", m.other";
 	query += " FROM md AS m";
+	/*
 	if (m_uniques)
 		query += " JOIN mduniq AS u ON uniq = u.id";
 	if (m_others)
 		query += " JOIN mdother AS o ON other = o.id";
+	*/
 	query += " WHERE m.file=? ORDER BY m.offset";
 
 	Query mdq("scan_file_md", m_db);
@@ -1008,6 +1069,7 @@ void WIndex::initDB()
 
 	// Create indices on the main table
 	m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_reftime ON md (reftime)");
+	m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_file ON md (file)");
 	if (m_uniques) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_uniq ON md (uniq)");
 	if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
