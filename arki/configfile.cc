@@ -66,7 +66,7 @@ struct ConfigFileParserHelper
 	ConfigFileParserHelper(const std::string& fileName)
 		: sec_start("^\\[[ \t]*([a-zA-Z0-9_.-]+)[ \t]*\\]", 2),
 		  empty_line("^[ \t]*([#;].*)?$"),
-		  assignment("^[ \t]*([a-zA-Z0-9_.-]+)[ \t]*=[ \t]*(.*)$", 3),
+		  assignment("^[ \t]*([a-zA-Z0-9_.-]+([ \t]+[a-zA-Z0-9_.-]+)*)[ \t]*=[ \t]*(.*)$", 4),
 		  fileName(fileName),
 		  line(1)
 	{
@@ -122,7 +122,7 @@ void ConfigFile::parseLine(ConfigFileParserHelper& h, const std::string& line)
 		return;
 	if (h.assignment.match(line))
 	{
-		string value = h.assignment[2];
+		string value = h.assignment[3];
 		// Strip leading and trailing spaces on the value
 		value = str::trim(value);
 		// Strip double quotes, if they appear
