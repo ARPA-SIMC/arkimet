@@ -113,7 +113,7 @@ void to::test<3>()
 		//p.rollback();
 		throw wibble::exception::System("no problem");
 	} catch (wibble::exception::Generic& e) {
-		cerr << e.what() << endl;
+		//cerr << e.what() << endl;
 		ensure(dynamic_cast<wibble::exception::System*>(&e));
 	}
 }
