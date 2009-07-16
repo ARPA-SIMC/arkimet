@@ -30,10 +30,10 @@ using namespace std;
 using namespace arki;
 using namespace arki::utils::sqlite;
 
-struct arki_dsindex_sqlite_shar {
+struct arki_utils_sqlite_shar {
 	SQLiteDB db;
 
-	arki_dsindex_sqlite_shar()
+	arki_utils_sqlite_shar()
 	{
 		db.open(":memory:");
 
@@ -41,7 +41,7 @@ struct arki_dsindex_sqlite_shar {
 		db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, val INTEGER NOT NULL)");
 	}
 };
-TESTGRP(arki_dsindex_sqlite);
+TESTGRP(arki_utils_sqlite);
 
 // Test running one shot insert queries
 template<> template<>
@@ -94,6 +94,25 @@ void to::test<2>()
 	ensure_equals(results[1], 4);
 }
 
+// Test rollback in the middle of a query
+template<> template<>
+void to::test<3>()
+{
+	try {
+		Pending p(new SqliteTransaction(db));
+		db.exec("INSERT INTO test (val) VALUES (1)");
+		db.exec("INSERT INTO test (val) VALUES (2)");
+		db.exec("INSERT INTO test (val) VALUES (3)");
+
+		PrecompiledQuery select("select", db);
+		select.compile("SELECT val FROM test");
+		select.step();
+		throw wibble::exception::System("no problem");
+	} catch (wibble::exception::Generic& e) {
+		//cerr << e.what() << endl;
+		ensure(dynamic_cast<wibble::exception::System*>(&e));
+	}
+}
 
 }
 

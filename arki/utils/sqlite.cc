@@ -274,6 +274,19 @@ void OneShotQuery::operator()()
 #endif
 }
 
+
+void SqliteTransaction::commit()
+{
+	committer.commit();
+	fired = true;
+}
+
+void SqliteTransaction::rollback()
+{
+	committer.rollback();
+	fired = true;
+}
+
 }
 }
 }

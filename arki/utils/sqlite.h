@@ -306,17 +306,8 @@ struct SqliteTransaction : public Transaction
 		if (!fired) committer.rollback();
 	}
 
-	void commit()
-	{
-		committer.commit();
-		fired = true;
-	}
-
-	void rollback()
-	{
-		committer.rollback();
-		fired = true;
-	}
+	void commit();
+	void rollback();
 };
 
 }

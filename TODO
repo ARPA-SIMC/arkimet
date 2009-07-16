@@ -184,10 +184,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    - guarda uno per uno se esistono
    - se ne manca uno, togliere i suoi dati dall'indice
 
- - timing sul repack: con un indice su file e un order by solo su file è molto
-   piú veloce, ma vale la pena? Direi di si, altrimenti check e pack sono
-   impossibili.
-    - supplire il resto facendo il reordering in un transformer del file visitor
+ - Test dataset packati in arkibenchmark/dataset3
 
  - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
    processo passando il nome del tempfile in env o in arg, per ogni grib
@@ -213,10 +210,6 @@ Archivio
  - nell'acquire / replace / delete, confrontare con archive_age e delete_age
    non si fa delete o replace o append di dati in mdarc: dare errore se si
    prova a farlo. La roba precedente all'archive age diventa di fatto read only
-
- - benchmark locale nuovo ondisk2
-    - reindicizzazione di tutto: 
-    - 
 
  - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
    lo usa per validare la query, il server lo usa per fare la query). Ne
@@ -247,6 +240,9 @@ Importazione con tag:
  - controllare l'uso del match sui null in ondisk1 (select =? becomes =NULL
    that is always false)
 
+ - permettere di far acquire (ma non delete o replace) in archive, e usarlo per
+   duplicates, errors e outbound
+
  + verificare che il passo sia contato sul reftime e non sulla data di oggi
  - verificare che arki-check nel rebuild tenga l'ultimo grib in un file
  - arki-check per il rebuild dell'indice non deve usare il rusco
@@ -256,22 +252,8 @@ Importazione con tag:
  - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
    +0100 di Minguzzi
 
- - dataset ciclici (fatti in ondisk2)
-    - se un file non esiste su disco ma esiste nell'indice, ignorare la cosa
-      (permette di cancellare file su disco senza incasinare le query)
-    - parametro di configurazione col tempo da tenere (fatto in ondisk2)
-    - arki-check cancelli i file vecchi (fatto in ondisk2)
-
- - fare un file reader che legga file con dentro i dati
-    - se c'è di fianco un file .metadata con timestamp >= quello del file coi
-      dati, legge i metadati da lí
-    - altrimenti scansiona
-       - e a richiesta, ricrea il file .metadata
-    - si può prendere codice dal FileDataset
-    - usarlo poi in tutte le letture sequenziali (arki-scan, rebuild di
-      dataset, scansioni sequenziali di dataset senza indice, ...)
- - nel rifare l'indice ondisk2, ignorare i .metadata se il loro timestamp è piú
-   vecchio dei file coi dati (o usare direttamente il file reader)
+ - usare scan::scan in tutte le letture sequenziali (arki-scan, rebuild di
+   dataset, scansioni sequenziali di dataset senza indice, ...)
 
  - ondisk2: sort prima della roba che usa l'indice e poi di quella che non lo
    usa
@@ -295,10 +277,6 @@ Importazione con tag:
     - se si vuole poi fare una tabella aggregata (sempre che serva ancora) per
       i summary, basta farla su (file, id_s)
  
- - se si decide di togliere da 'md' gli elementi piú vecchi di X per tenerli
-   solo summarizzati e coi file .metadata, far diventare read only le parti
-   corrispondenti dell'archivio (?)
-
  - fare un comando per spostare, rinominare e concatenare i file grib
 
  - arki-scan --dispatch=.. --verbose che dica anche il tempo
