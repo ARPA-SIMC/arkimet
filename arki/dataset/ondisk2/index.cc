@@ -1127,7 +1127,8 @@ void WIndex::index(Metadata& md, const std::string& file, size_t ofs, int* id)
 	char buf[25];
 	bindInsertParams(m_insert, md, file, ofs, buf);
 
-	m_insert.step();
+	while (m_insert.step())
+		;
 
 	if (id)
 		*id = m_db.lastInsertID();
@@ -1143,7 +1144,8 @@ void WIndex::replace(Metadata& md, const std::string& file, size_t ofs, int* id)
 	char buf[25];
 	bindInsertParams(m_replace, md, file, ofs, buf);
 
-	m_replace.step();
+	while (m_replace.step())
+		;
 
 	if (id)
 		*id = m_db.lastInsertID();
@@ -1175,7 +1177,8 @@ void WIndex::remove(int id, std::string& file)
 	// DELETE FROM md WHERE id=?
 	m_delete.reset();
 	m_delete.bind(1, id);
-	m_delete.step();
+	while (m_delete.step())
+		;
 }
 
 void WIndex::reset()
@@ -1197,7 +1200,8 @@ void WIndex::relocate_data(int id, off_t newofs)
 	query.compile("UPDATE md SET offset = ? WHERE id = ?");
 	query.bind(1, newofs);
 	query.bind(2, id);
-	query.step();
+	while (query.step())
+		;
 }
 
 void WIndex::vacuum()
