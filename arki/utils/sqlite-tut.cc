@@ -105,11 +105,15 @@ void to::test<3>()
 		db.exec("INSERT INTO test (val) VALUES (3)");
 
 		PrecompiledQuery select("select", db);
-		select.compile("SELECT val FROM test");
+		select.compile("SELECT * FROM test");
 		select.step();
+		// Commenting this out works, because the PrecompiledQuery is
+		// finalised by its destructor before Pending::rollback is
+		// called
+		//p.rollback();
 		throw wibble::exception::System("no problem");
 	} catch (wibble::exception::Generic& e) {
-		//cerr << e.what() << endl;
+		cerr << e.what() << endl;
 		ensure(dynamic_cast<wibble::exception::System*>(&e));
 	}
 }
