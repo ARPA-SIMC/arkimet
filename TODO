@@ -179,6 +179,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - pare che INDEXED BY indice funzioni solo con SQLite nuovi
+
  - Ricostruzione indici ondisk1 dopo la cancellazione di file
    - select distinct file from md
    - guarda uno per uno se esistono

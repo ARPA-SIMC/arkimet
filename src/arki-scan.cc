@@ -115,6 +115,9 @@ int main(int argc, const char* argv[])
 				i->second->setValue("path", moveFile(i->second->value("path"), opts.movework->stringValue()));
 			auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*i->second));
 			try {
+				if (opts.mdispatch)
+					opts.mdispatch->setStartTime();
+
 				ds->queryMetadata(Matcher(), scanInline, opts.consumer());
 
 				if (opts.mdispatch)

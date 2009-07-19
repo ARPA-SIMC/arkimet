@@ -973,6 +973,8 @@ MetadataDispatch::MetadataDispatch(const ConfigFile& cfg, MetadataConsumer& next
 	: cfg(cfg), dispatcher(0), next(next),
 	  countSuccessful(0), countDuplicates(0), countInErrorDataset(0), countNotImported(0)
 {
+	timerclear(&startTime);
+
 	if (test)
 		dispatcher = new TestDispatcher(cfg, cerr);
 	else
@@ -1023,15 +1025,24 @@ void MetadataDispatch::flush()
 
 string MetadataDispatch::summarySoFar() const
 {
+	string timeinfo;
+	if (timerisset(&startTime))
+	{
+		struct timeval now;
+		struct timeval diff;
+		gettimeofday(&now, NULL);
+		timersub(&now, &startTime, &diff);
+		timeinfo = str::fmtf(" in %d.%06d seconds", diff.tv_sec, diff.tv_usec);
+	}
 	if (!countSuccessful && !countNotImported && !countDuplicates && !countInErrorDataset)
-		return "no data processed";
+		return "no data processed" + timeinfo;
 
 	if (!countNotImported && !countDuplicates && !countInErrorDataset)
 	{
 		if (countSuccessful == 1)
-			return "everything ok: " + str::fmt(countSuccessful) + " message imported";
+			return "everything ok: " + str::fmt(countSuccessful) + " message imported" + timeinfo;
 		else
-			return "everything ok: " + str::fmt(countSuccessful) + " messages imported";
+			return "everything ok: " + str::fmt(countSuccessful) + " messages imported" + timeinfo;
 	}
 
 	stringstream res;
@@ -1048,7 +1059,14 @@ string MetadataDispatch::summarySoFar() const
 	if (countNotImported)
 		res << ", " << countNotImported << " NOT imported";
 
+	res << timeinfo;
+
 	return res.str();
+}
+
+void MetadataDispatch::setStartTime()
+{
+	gettimeofday(&startTime, NULL);
 }
 
 

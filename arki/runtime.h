@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sys/time.h>
 
 namespace arki {
 
@@ -265,6 +266,10 @@ struct MetadataDispatch : public MetadataConsumer
 	Dispatcher* dispatcher;
 	MetadataConsumer& next;
 
+	// Used for timings. Read with gettimeofday at the beginning of a task,
+	// and summarySoFar will report the elapsed time
+	struct timeval startTime;
+
 	// Incremented when a metadata is imported in the destination dataset.
 	// Feel free to reset it to 0 anytime.
 	int countSuccessful;
@@ -291,6 +296,9 @@ struct MetadataDispatch : public MetadataConsumer
 
 	// Format a summary of the import statistics so far
 	std::string summarySoFar() const;
+
+	// Set startTime to the current time
+	void setStartTime();
 };
 
 
