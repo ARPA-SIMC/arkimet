@@ -32,6 +32,7 @@
 #include <arki/utils/metadata.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
+#include <arki/summary.h>
 
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/mutex.h>
@@ -381,6 +382,65 @@ void to::test<4>()
 	mdc[1].unset(types::TYPE_ASSIGNEDDATASET);
 	mdc[1].source = md1.source;
 	ensure(mdc[1] == md1);
+}
+
+// Try a summary query that used to be badly generated
+template<> template<>
+void to::test<5>()
+{
+	// Remove index if it exists
+	unlink("file1");
+
+	auto_ptr<WIndex> test = createIndex<WIndex>(
+		"type = ondisk2\n"
+		"path = \n"
+		"indexfile = file1\n"
+		"index = origin, product, level\n"
+		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+	);
+	ensure(test.get() != 0);
+	Pending p;
+
+	test->open();
+	p = test->beginTransaction();
+	
+	// Index some metadata
+	test->index(md, "test-md", 0);
+	test->index(md1, "test-md1", 0);
+	Metadata md2;
+	md2.create();
+	md2.source = source::Blob::create("grib", "antani3", 10, 2000);
+	md2.set(origin::GRIB1::create(202, 12, 102));
+	md2.set(product::GRIB1::create(3, 4, 5));
+	md2.set(level::GRIB1::create(1, 2));
+	md2.set(timerange::GRIB1::create(4, 5, 6, 7));
+	md2.set(reftime::Position::create(types::Time::create(2005, 1, 15, 12, 0, 0)));
+	md2.set(area::GRIB::create(testArea));
+	md2.set(ensemble::GRIB::create(testEnsemble));
+	test->index(md2, "test-md1", 0);
+
+	p.commit();
+
+	// Query an interval with a partial month only
+	Summary summary;
+	test->querySummary(Matcher::parse("reftime:>=2005-01-10,<=2005-01-25"), summary);
+	ensure_equals(summary.count(), 1u);
+
+	// Query an interval with a partial month and a full month
+	summary.clear();
+	test->querySummary(Matcher::parse("reftime:>=2004-12-10,<=2005-01-31"), summary);
+	ensure_equals(summary.count(), 1u);
+
+	// Query an interval with a full month and a partial month
+	summary.clear();
+	test->querySummary(Matcher::parse("reftime:>=2005-01-01,<=2005-02-15"), summary);
+	ensure_equals(summary.count(), 1u);
+
+	// Query an interval with a partial month, a full month and a partial month
+	summary.clear();
+	test->querySummary(Matcher::parse("reftime:>=2004-12-10,<=2005-02-15"), summary);
+	ensure_equals(summary.count(), 1u);
+
 }
 
 }

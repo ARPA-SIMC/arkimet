@@ -1,3 +1,10 @@
+arkimet (0.23-1) UNRELEASED; urgency=low
+
+  * Fixed query generations for summary queries spanning more than a partial
+    month
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 05 Aug 2009 15:13:49 +0100
+
 arkimet (0.22-1) UNRELEASED; urgency=low
 
   * ondisk2 "archive age": archival after a given age

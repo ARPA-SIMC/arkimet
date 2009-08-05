@@ -890,13 +890,13 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 			s.filter(matcher, summary);
 		} else if (endmonth <= end) {
 			Summary s;
-			querySummaryFromDB("reftime >= " + begin->toSQL()
-					 + " AND reftime < " + endmonth->toSQL(), s);
+			querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
+					   " AND reftime < '" + endmonth->toSQL() + "'", s);
 			s.filter(matcher, summary);
 		} else {
 			Summary s;
-			querySummaryFromDB("reftime >= " + begin->toSQL()
-					 + " AND reftime < " + end->toSQL(), s);
+			querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
+					   " AND reftime < '" + end->toSQL() + "'", s);
 			s.filter(matcher, summary);
 		}
 
