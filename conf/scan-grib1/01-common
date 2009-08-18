@@ -11,17 +11,17 @@ arki.run_hour = grib.hour
 arki.run_minute = grib.minute
 
 -- Origin
-arki.centre = grib.identificationOfOriginatingGeneratingCentre
-arki.subcentre = grib.identificationOfOriginatingGeneratingSubCentre
-arki.process = grib.generatingProcessIdentifier
+arki.centre = gribl.centre
+arki.subcentre = gribl.subCentre
+arki.process = gribl.generatingProcessIdentifier
 
 -- Product
-arki.origin = grib.identificationOfOriginatingGeneratingCentre
-arki.table = grib.gribTablesVersionNo
-arki.product = grib.indicatorOfParameter
+arki.origin = gribl.centre
+arki.table = gribl.gribTablesVersionNo
+arki.product = gribl.indicatorOfParameter
 
 -- Level
-arki.ltype = grib.indicatorOfTypeOfLevel
+arki.ltype = gribl.indicatorOfTypeOfLevel
 if grib.level
 then
 	arki.l1 = grib.level

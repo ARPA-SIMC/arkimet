@@ -11,16 +11,16 @@ arki.run_hour = grib.hour
 arki.run_minute = grib.minute
 
 -- Origin
-arki.centre = grib.identificationOfOriginatingGeneratingCentre
-arki.subcentre = grib.identificationOfOriginatingGeneratingSubCentre
-arki.processtype = grib.typeOfGeneratingProcess
-arki.bgprocessid = grib.backgroundGeneratingProcessIdentifier
-arki.processid = grib.generatingProcessIdentifier
+arki.centre = gribl.centre
+arki.subcentre = gribl.subCentre
+arki.processtype = gribl.typeOfGeneratingProcess
+arki.bgprocessid = gribl.backgroundGeneratingProcessIdentifier
+arki.processid = gribl.generatingProcessIdentifier
 
 -- Product
-arki.discipline = grib.discipline
-arki.category = grib.parameterCategory
-arki.number = grib.parameterNumber
+arki.discipline = gribl.discipline
+arki.category = gribl.parameterCategory
+arki.number = gribl.parameterNumber
 
 -- Level
 -- TODO

@@ -66,6 +66,9 @@ protected:
 	void scanGrib2(Metadata& md);
 
 	static int arkilua_lookup_grib(lua_State* L);
+	static int arkilua_lookup_gribl(lua_State* L);
+	static int arkilua_lookup_gribs(lua_State* L);
+	static int arkilua_lookup_gribd(lua_State* L);
 
 public:
 	Grib(bool inlineData = false,

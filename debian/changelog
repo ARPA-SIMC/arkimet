@@ -1,3 +1,12 @@
+arkimet (0.24-1) UNRELEASED; urgency=low
+
+  * Allow to access grib values as gribl.val, gribs.val and gribd.val, because
+    grib_api can give different values depending on how it is queried
+  * Force some types when scanning gribs, because grib_api 1.8.0 defaults to
+    presenting some (like centre) as strings instead of numbers
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 18 Aug 2009 14:50:34 +0100
+
 arkimet (0.23-1) UNRELEASED; urgency=low
 
   * Fixed query generations for summary queries spanning more than a partial

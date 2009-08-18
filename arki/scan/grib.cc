@@ -82,6 +82,81 @@ void GribLua::makeGribObject(Grib* scanner)
 
 	// Pop the metatable from the stack
 	lua_pop(L, 1);
+
+
+	/// Create the 'gribl' Lua object
+
+	// Create the metatable for the grib object
+	luaL_newmetatable(L, "gribl");
+
+	// Set the __index metamethod to the arkilua_lookup_grib function
+	lua_pushstring(L, "__index");
+	lua_pushcfunction(L, Grib::arkilua_lookup_gribl);
+	lua_settable(L, -3);
+
+	// The 'grib' object is a userdata that holds a pointer to this Grib structure
+	s = (Grib**)lua_newuserdata(L, sizeof(Grib*));
+	*s = scanner;
+
+	// Set the metatable for the userdata
+	luaL_getmetatable(L, "gribl");
+	lua_setmetatable(L, -2);
+
+	// Set the userdata object as the global 'grib' variable
+	lua_setglobal(L, "gribl");
+
+	// Pop the metatable from the stack
+	lua_pop(L, 1);
+
+
+	/// Create the 'gribs' Lua object
+
+	// Create the metatable for the grib object
+	luaL_newmetatable(L, "gribs");
+
+	// Set the __index metamethod to the arkilua_lookup_grib function
+	lua_pushstring(L, "__index");
+	lua_pushcfunction(L, Grib::arkilua_lookup_gribs);
+	lua_settable(L, -3);
+
+	// The 'grib' object is a userdata that holds a pointer to this Grib structure
+	s = (Grib**)lua_newuserdata(L, sizeof(Grib*));
+	*s = scanner;
+
+	// Set the metatable for the userdata
+	luaL_getmetatable(L, "gribs");
+	lua_setmetatable(L, -2);
+
+	// Set the userdata object as the global 'grib' variable
+	lua_setglobal(L, "gribs");
+
+	// Pop the metatable from the stack
+	lua_pop(L, 1);
+
+
+	/// Create the 'gribd' Lua object
+
+	// Create the metatable for the grib object
+	luaL_newmetatable(L, "gribd");
+
+	// Set the __index metamethod to the arkilua_lookup_grib function
+	lua_pushstring(L, "__index");
+	lua_pushcfunction(L, Grib::arkilua_lookup_gribd);
+	lua_settable(L, -3);
+
+	// The 'grib' object is a userdata that holds a pointer to this Grib structure
+	s = (Grib**)lua_newuserdata(L, sizeof(Grib*));
+	*s = scanner;
+
+	// Set the metatable for the userdata
+	luaL_getmetatable(L, "gribd");
+	lua_setmetatable(L, -2);
+
+	// Set the userdata object as the global 'grib' variable
+	lua_setglobal(L, "gribd");
+
+	// Pop the metatable from the stack
+	lua_pop(L, 1);
 }
 
 void GribLua::resetArkiObject()
@@ -110,6 +185,7 @@ static void check_grib_error(int error, const char* context)
 		throw wibble::exception::Consistency(context, grib_get_error_message(error));
 }
 
+// Never returns in case of error
 static void arkilua_check_gribapi(lua_State* L, int error, const char* context)
 {
 	if (error != GRIB_SUCCESS)
@@ -317,6 +393,96 @@ int Grib::arkilua_lookup_grib(lua_State* L)
 		default:
 		    lua_pushnil(L);
 			break;
+	}
+
+	// Number of values we're returning to lua
+	return 1;
+}
+
+// Lookup a grib value for grib.<fieldname>
+int Grib::arkilua_lookup_gribl(lua_State* L)
+{
+	// Fetch the Scanner reference from the userdata value
+	luaL_checkudata(L, 1, "gribl");
+	void* userdata = lua_touserdata(L, 1);
+	Grib& s = **(Grib**)userdata;
+	grib_handle* gh = s.gh;
+
+	// Get the name to lookup from lua
+	// (we use 2 because 1 is the table, since we are a __index function)
+	luaL_checkstring(L, 2);
+	const char* name = lua_tostring(L, 2);
+
+	// Push the function result for lua
+	long val;
+	int res = grib_get_long(gh, name, &val);
+	if (res == GRIB_NOT_FOUND)
+	{
+		lua_pushnil(L);
+	} else {
+		arkilua_check_gribapi(L, res, "reading long value");
+		lua_pushnumber(L, val);
+	}
+
+	// Number of values we're returning to lua
+	return 1;
+}
+
+// Lookup a grib value for grib.<fieldname>
+int Grib::arkilua_lookup_gribs(lua_State* L)
+{
+	// Fetch the Scanner reference from the userdata value
+	luaL_checkudata(L, 1, "gribs");
+	void* userdata = lua_touserdata(L, 1);
+	Grib& s = **(Grib**)userdata;
+	grib_handle* gh = s.gh;
+
+	// Get the name to lookup from lua
+	// (we use 2 because 1 is the table, since we are a __index function)
+	luaL_checkstring(L, 2);
+	const char* name = lua_tostring(L, 2);
+
+	// Push the function result for lua
+	const int maxsize = 1000;
+	char buf[maxsize];
+	size_t len = maxsize;
+	int res = grib_get_string(gh, name, buf, &len);
+	if (res == GRIB_NOT_FOUND)
+	{
+		lua_pushnil(L);
+	} else {
+		arkilua_check_gribapi(L, res, "reading string value");
+		if (len > 0) --len;
+		lua_pushlstring(L, buf, len);
+	}
+
+	// Number of values we're returning to lua
+	return 1;
+}
+
+// Lookup a grib value for grib.<fieldname>
+int Grib::arkilua_lookup_gribd(lua_State* L)
+{
+	// Fetch the Scanner reference from the userdata value
+	luaL_checkudata(L, 1, "gribd");
+	void* userdata = lua_touserdata(L, 1);
+	Grib& s = **(Grib**)userdata;
+	grib_handle* gh = s.gh;
+
+	// Get the name to lookup from lua
+	// (we use 2 because 1 is the table, since we are a __index function)
+	luaL_checkstring(L, 2);
+	const char* name = lua_tostring(L, 2);
+
+	// Push the function result for lua
+	double val;
+	int res = grib_get_double(gh, name, &val);
+	if (res == GRIB_NOT_FOUND)
+	{
+		lua_pushnil(L);
+	} else {
+		arkilua_check_gribapi(L, res, "reading double value");
+		lua_pushnumber(L, val);
 	}
 
 	// Number of values we're returning to lua
