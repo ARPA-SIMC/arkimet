@@ -61,10 +61,11 @@ struct Yearly : public BaseTargetFile
 
 	UItem<types::Reftime> reftimeForPath(const std::string& path) const
 	{
+		int dummy;
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
-		if (sscanf(path.c_str(), "%04d", &base[0]) != 1)
+		if (sscanf(path.c_str(), "%02d/%04d", &dummy, &base[0]) != 2)
 			return UItem<types::Reftime>();
 
 		gd::lowerbound(base, min);
@@ -75,8 +76,8 @@ struct Yearly : public BaseTargetFile
 	std::string operator()(const Metadata& md)
 	{
 		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
-		char buf[6];
-		snprintf(buf, 6, "%04d", (*tt)[0]);
+		char buf[9];
+		snprintf(buf, 9, "%02d/%04d", (*tt)[0]/100, (*tt)[0]);
 		return buf;
 	}
 };

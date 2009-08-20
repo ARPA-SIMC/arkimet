@@ -75,11 +75,11 @@ void to::test<1>()
 {
 	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("yearly")));
 
-	ensure_equals((*tf)(md), "2007");
-	ensure(tf->pathMatches("2007.test", mimpl(Matcher::parse("reftime:>2006"))));
-	ensure(tf->pathMatches("2007.test", mimpl(Matcher::parse("reftime:<=2008"))));
-	ensure(not tf->pathMatches("2007.test", mimpl(Matcher::parse("reftime:>2007"))));
-	ensure(not tf->pathMatches("2007.test", mimpl(Matcher::parse("reftime:<2007"))));
+	ensure_equals((*tf)(md), "20/2007");
+	ensure(tf->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:>2006"))));
+	ensure(tf->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:<=2008"))));
+	ensure(not tf->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:>2007"))));
+	ensure(not tf->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:<2007"))));
 }
 
 template<> template<>
