@@ -63,19 +63,17 @@ void HoleFinder::finaliseFile()
 {
 	if (!last_file.empty())
 	{
-		// Check if last_file_size matches the file size
-		if (!has_hole)
+		off_t size = files::size(str::joinpath(m_root, last_file));
+		if (size < last_file_size)
 		{
-			off_t size = files::size(str::joinpath(m_root, last_file));
-			if (size > last_file_size)
-				has_hole = true;
-			else if (size < last_file_size)
-			{
-				// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-				next(last_file, writer::MaintFileVisitor::TO_RESCAN);
-				return;
-			}
+			// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
+			next(last_file, writer::MaintFileVisitor::TO_RESCAN);
+			return;
 		}
+
+		// Check if last_file_size matches the file size
+		if (size > last_file_size)
+			has_hole = true;
 
 		// Take note of files with holes
 		if (has_hole)

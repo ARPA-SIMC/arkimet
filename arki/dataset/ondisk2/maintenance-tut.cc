@@ -1029,6 +1029,81 @@ void to::test<14>()
 	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
+// Test accuracy of maintenance scan, on perfect dataset, with a truncated data file
+template<> template<>
+void to::test<15>()
+{
+	cfg.setValue("step", "yearly");
+	acquireSamples();
+	removeDontpackFlagfile("testdir");
+
+	// Truncate the last grib out of a file
+	if (truncate("testdir/20/2007.grib1", 42178) < 0)
+		throw wibble::exception::System("truncating testdir/20/2007.grib1");
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+	MaintenanceCollector c;
+	writer.maintenance(c);
+
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(OK), 0u);
+	ensure_equals(c.count(TO_RESCAN), 1u);
+	ensure_equals(c.remaining(), "");
+	ensure(not c.isClean());
+
+	stringstream s;
+
+	// Perform packing and check that things are still ok afterwards
+	writer.repack(s, true);
+	ensure_equals(s.str(),
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count(OK), 0u);
+	ensure_equals(c.count(TO_RESCAN), 1u);
+	ensure_equals(c.remaining(), "");
+	ensure(not c.isClean());
+
+	// Perform full maintenance and check that things are still ok afterwards
+	MetadataCounter counter;
+	s.str(std::string());
+	writer.check(s, counter);
+	ensure_equals(counter.count, 0u);
+	ensure_equals(s.str(), 
+		"testdir: rescanned 20/2007.grib1\n"
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count(OK), 0u);
+	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.remaining(), "");
+	ensure(not c.isClean());
+
+	// Perform packing after the file has been rescanned and check that
+	// things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(),
+		"testdir: packed 20/2007.grib1 (0 saved)\n"
+		"testdir: database cleaned up\n"
+		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 2576 total bytes freed.\n");
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.remaining(), "");
+	ensure(c.isClean());
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(!sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+}
+
 #if 0
 // Test accuracy of maintenance scan, with index, on dataset with some
 // outdated summaries
