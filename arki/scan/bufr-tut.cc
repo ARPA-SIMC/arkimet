@@ -265,19 +265,19 @@ void to::test<3>()
 
 	int fd = open("inbound/test.bufr", O_RDONLY);
 
-	v.validate(fd, 0, 194);
-	v.validate(fd, 194, 220);
-	v.validate(fd, 414, 220);
+	v.validate(fd, 0, 194, "inbound/test.bufr");
+	v.validate(fd, 194, 220, "inbound/test.bufr");
+	v.validate(fd, 414, 220, "inbound/test.bufr");
 
 #define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
 
-	ensure_throws(v.validate(fd, 1, 193));
-	ensure_throws(v.validate(fd, 0, 193));
-	ensure_throws(v.validate(fd, 0, 195));
-	ensure_throws(v.validate(fd, 193, 221));
-	ensure_throws(v.validate(fd, 414, 221));
-	ensure_throws(v.validate(fd, 634, 0));
-	ensure_throws(v.validate(fd, 634, 10));
+	ensure_throws(v.validate(fd, 1, 193, "inbound/test.bufr"));
+	ensure_throws(v.validate(fd, 0, 193, "inbound/test.bufr"));
+	ensure_throws(v.validate(fd, 0, 195, "inbound/test.bufr"));
+	ensure_throws(v.validate(fd, 193, 221, "inbound/test.bufr"));
+	ensure_throws(v.validate(fd, 414, 221, "inbound/test.bufr"));
+	ensure_throws(v.validate(fd, 634, 0, "inbound/test.bufr"));
+	ensure_throws(v.validate(fd, 634, 10, "inbound/test.bufr"));
 
 	close(fd);
 

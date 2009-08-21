@@ -31,6 +31,7 @@
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
+#include <cstring>
 
 using namespace wibble;
 
@@ -44,13 +45,35 @@ struct BufrValidator : public Validator
 	virtual ~BufrValidator() {}
 
 	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size) const
+	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
 	{
+		char buf[4];
+		ssize_t res;
+		if (size < 8)
+			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "buffer is shorter than 8 bytes");
+		if ((res = pread(fd, buf, 4, offset)) == -1)
+			throw wibble::exception::System("reading 4 bytes of BUFR header from " + fname);
+		if (res != 4)
+			throw wibble::exception::Consistency("reading 4 bytes of BUFR header from " + fname, "partial read");
+		if (memcmp(buf, "BUFR", 4) != 0)
+			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "segment does not start with 'BUFR'");
+		if ((res = pread(fd, buf, 4, offset + size - 4)) == -1)
+			throw wibble::exception::System("reading 4 bytes of BUFR trailer from " + fname);
+		if (res != 4)
+			throw wibble::exception::Consistency("reading 4 bytes of BUFR trailer from " + fname, "partial read");
+		if (memcmp(buf, "7777", 4) != 0)
+			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "segment does not end with 'BUFR'");
 	}
 
 	// Validate a memory buffer
 	virtual void validate(const void* buf, size_t size) const
 	{
+		if (size < 8)
+			throw wibble::exception::Consistency("checking BUFR buffer", "buffer is shorter than 8 bytes");
+		if (memcmp(buf, "BUFR", 4) != 0)
+			throw wibble::exception::Consistency("checking BUFR buffer", "buffer does not start with 'BUFR'");
+		if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
+			throw wibble::exception::Consistency("checking BUFR buffer", "buffer does not end with '7777'");
 	}
 };
 

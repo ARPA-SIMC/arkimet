@@ -37,6 +37,7 @@
 #include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
+#include <cstring>
 
 using namespace std;
 using namespace wibble;
@@ -51,13 +52,33 @@ struct GribValidator : public Validator
 	virtual ~GribValidator() {}
 
 	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size) const
+	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
 	{
+		char buf[4];
+		ssize_t res;
+		if ((res = pread(fd, buf, 4, offset)) == -1)
+			throw wibble::exception::System("reading 4 bytes of GRIB header from " + fname);
+		if (res != 4)
+			throw wibble::exception::Consistency("reading 4 bytes of GRIB header from " + fname, "partial read");
+		if (memcmp(buf, "GRIB", 4) != 0)
+			throw wibble::exception::Consistency("checking GRIB segment in file " + fname, "segment does not start with 'GRIB'");
+		if ((res = pread(fd, buf, 4, offset + size - 4)) == -1)
+			throw wibble::exception::System("reading 4 bytes of GRIB trailer from " + fname);
+		if (res != 4)
+			throw wibble::exception::Consistency("reading 4 bytes of GRIB trailer from " + fname, "partial read");
+		if (memcmp(buf, "7777", 4) != 0)
+			throw wibble::exception::Consistency("checking GRIB segment in file " + fname, "segment does not end with 'GRIB'");
 	}
 
 	// Validate a memory buffer
 	virtual void validate(const void* buf, size_t size) const
 	{
+		if (size < 8)
+			throw wibble::exception::Consistency("checking GRIB buffer", "buffer is shorter than 8 bytes");
+		if (memcmp(buf, "GRIB", 4) != 0)
+			throw wibble::exception::Consistency("checking GRIB buffer", "buffer does not start with 'GRIB'");
+		if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
+			throw wibble::exception::Consistency("checking GRIB buffer", "buffer does not end with '7777'");
 	}
 };
 
