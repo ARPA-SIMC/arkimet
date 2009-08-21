@@ -12,8 +12,9 @@ arkimet (0.24-1) UNRELEASED; urgency=low
     files can now only be removed from the archives manually
   * Since there are no automatic archive deletions anymore, archive check now
     acts the same as archive repack
+  * Store relative pathnames in .archive/ .metadata files
 
- -- Enrico Zini <enrico@debian.org>  Fri, 21 Aug 2009 10:06:08 +0100
+ -- Enrico Zini <enrico@debian.org>  Fri, 21 Aug 2009 12:25:17 +0100
 
 arkimet (0.23-1) UNRELEASED; urgency=low
 

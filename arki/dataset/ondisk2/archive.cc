@@ -192,13 +192,13 @@ void Archive::queryMetadata(const Matcher& matcher, bool withData, MetadataConsu
 	if (withData)
 	{
 		ds::DataInliner inliner(consumer);
-		ds::PathPrepender prepender(sys::fs::abspath(m_dir), inliner);
-		ds::MatcherFilter filter(matcher, prepender);
+		//ds::PathPrepender prepender(sys::fs::abspath(m_dir), inliner);
+		ds::MatcherFilter filter(matcher, inliner);
 		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 			scan::scan(str::joinpath(m_dir, *i), filter);
 	} else {
-		ds::PathPrepender prepender(sys::fs::abspath(m_dir), consumer);
-		ds::MatcherFilter filter(matcher, prepender);
+		//ds::PathPrepender prepender(sys::fs::abspath(m_dir), consumer);
+		ds::MatcherFilter filter(matcher, consumer);
 		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 			scan::scan(str::joinpath(m_dir, *i), filter);
 	}
@@ -324,11 +324,16 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 	if (mtime == 0)
 		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
 
-	// Compute the summary
+	// Iterate the metadata, computing the summary and making the data
+	// paths relative
 	Summary sum;
 	for (utils::metadata::Collector::const_iterator i = mds.begin();
 			i != mds.end(); ++i)
+	{
+		Item<source::Blob> s = i->source.upcast<source::Blob>();
+		s->filename = str::basename(s->filename);
 		sum.add(*i);
+	}
 
 	// Regenerate .metadata
 	mds.writeAtomically(pathname + ".metadata");
