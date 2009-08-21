@@ -179,9 +179,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
- - Nei .metadata degli archivi, ci sono i path completi e non relativi al
-   .metadata (devono praticamente essere senza path)
-
  - far andare il testdispatch per poter testare la scansione con le nuove
    grib_api
 
