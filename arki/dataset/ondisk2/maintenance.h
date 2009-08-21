@@ -30,6 +30,10 @@
 namespace arki {
 class MetadataConsumer;
 
+namespace scan {
+struct Validator;
+}
+
 namespace dataset {
 namespace ondisk2 {
 class Writer;
@@ -138,6 +142,7 @@ struct CheckAge : public writer::MaintFileVisitor
 struct FileCopier : writer::IndexFileVisitor
 {
 	WIndex& m_idx;
+	const scan::Validator& m_val;
 	wibble::sys::Buffer buf;
 	std::string src;
 	std::string dst;

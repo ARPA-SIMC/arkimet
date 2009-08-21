@@ -120,7 +120,7 @@ bool canScan(const std::string& file)
 	return false;
 }
 
-const Validator& Validator::get(const std::string& encoding)
+const Validator& Validator::by_encoding(const std::string& encoding)
 {
 #ifdef HAVE_GRIBAPI
 	if (str::tolower(encoding) == "grib")
@@ -133,6 +133,26 @@ const Validator& Validator::get(const std::string& encoding)
 	else
 #endif
 		throw wibble::exception::Consistency("looking for " + encoding + " validator", "no validator available");
+}
+
+const Validator& Validator::by_filename(const std::string& filename)
+{
+	// Get the file extension
+	size_t pos = filename.rfind('.');
+	if (pos == string::npos)
+		// No extension, we do not know what it is
+		throw wibble::exception::Consistency("looking for a validator for " + filename, "file name has no extension");
+	string ext = str::tolower(filename.substr(pos+1));
+
+#ifdef HAVE_GRIBAPI
+	if (ext == "grib" || ext == "grib1" || ext == "grib2")
+		return grib::validator();
+#endif
+#ifdef HAVE_DBALLE
+	if (ext == "bufr")
+		return bufr::validator();
+#endif
+	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
 }
 
 }

@@ -174,7 +174,7 @@ void CheckAge::operator()(const std::string& file, State state)
 }
 
 FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
-	: m_idx(idx), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
+	: m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
 {
 	fd_src = open(src.c_str(), O_RDONLY | O_NOATIME);
 	if (fd_src < 0)
@@ -197,6 +197,7 @@ void FileCopier::operator()(const std::string& file, int id, off_t offset, size_
 	ssize_t res = pread(fd_src, buf.data(), size, offset);
 	if (res < 0 || (unsigned)res != size)
 		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
+	m_val.validate(buf.data(), size);
 	res = write(fd_dst, buf.data(), size);
 	if (res < 0 || (unsigned)res != size)
 		throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");

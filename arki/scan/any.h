@@ -61,12 +61,20 @@ struct Validator
 	virtual void validate(const void* buf, size_t size) const = 0;
 
 	/**
+	 * Get the validator for a given file name
+	 *
+	 * @returns
+	 *   a pointer to a static object, which should not be deallocated.
+	 */
+	static const Validator& by_filename(const std::string& filename);
+
+	/**
 	 * Get the validator for a given encoding
 	 *
 	 * @returns
 	 *   a pointer to a static object, which should not be deallocated.
 	 */
-	static const Validator& get(const std::string& encoding);
+	static const Validator& by_encoding(const std::string& encoding);
 };
 
 }
