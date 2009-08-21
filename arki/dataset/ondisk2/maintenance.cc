@@ -196,7 +196,7 @@ void FileCopier::operator()(const std::string& file, int id, off_t offset, size_
 		buf.resize(size);
 	ssize_t res = pread(fd_src, buf.data(), size, offset);
 	if (res < 0 || (unsigned)res != size)
-		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
+		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes at " + str::fmt(offset));
 	m_val.validate(buf.data(), size);
 	res = write(fd_dst, buf.data(), size);
 	if (res < 0 || (unsigned)res != size)
