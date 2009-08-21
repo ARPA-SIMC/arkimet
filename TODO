@@ -182,11 +182,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  - far andare il testdispatch per poter testare la scansione con le nuove
    grib_api
 
- - non esiste il pack degli archivi, perché non esiste la cancellazione dagli
-   archivi se non la cancellazione manuale dei file di dati alla quale segue
-   l'aggiornamento degli indici. Se un file esiste su disco ma non nell'indice,
-   va aggiunto nell'indice.
-
  - pare che INDEXED BY indice funzioni solo con SQLite nuovi
 
  - Ricostruzione indici ondisk1 dopo la cancellazione di file
