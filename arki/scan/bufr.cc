@@ -1,7 +1,7 @@
 /*
  * scan/bufr - Scan a BUFR file for metadata.
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <arki/types/product.h>
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
+#include <arki/scan/any.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
@@ -35,6 +36,30 @@ using namespace wibble;
 
 namespace arki {
 namespace scan {
+
+namespace bufr {
+
+struct BufrValidator : public Validator
+{
+	virtual ~BufrValidator() {}
+
+	// Validate data found in a file
+	virtual void validate(int fd, off_t offset, size_t size) const
+	{
+	}
+
+	// Validate a memory buffer
+	virtual void validate(const void* buf, size_t size) const
+	{
+	}
+};
+
+static BufrValidator bufr_validator;
+
+const Validator& validator() { return bufr_validator; }
+
+}
+
 
 Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData)
 {

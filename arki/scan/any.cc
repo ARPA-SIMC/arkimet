@@ -120,6 +120,21 @@ bool canScan(const std::string& file)
 	return false;
 }
 
+const Validator& Validator::get(const std::string& encoding)
+{
+#ifdef HAVE_GRIBAPI
+	if (str::tolower(encoding) == "grib")
+		return grib::validator();
+	else
+#endif
+#ifdef HAVE_DBALLE
+	if (str::tolower(encoding) == "bufr")
+		return bufr::validator();
+	else
+#endif
+		throw wibble::exception::Consistency("looking for " + encoding + " validator", "no validator available");
+}
+
 }
 }
 // vim:set ts=4 sw=4:

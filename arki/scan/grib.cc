@@ -36,12 +36,36 @@
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>
+#include <arki/scan/any.h>
 
 using namespace std;
 using namespace wibble;
 
 namespace arki {
 namespace scan {
+
+namespace grib {
+
+struct GribValidator : public Validator
+{
+	virtual ~GribValidator() {}
+
+	// Validate data found in a file
+	virtual void validate(int fd, off_t offset, size_t size) const
+	{
+	}
+
+	// Validate a memory buffer
+	virtual void validate(const void* buf, size_t size) const
+	{
+	}
+};
+
+static GribValidator grib_validator;
+
+const Validator& validator() { return grib_validator; }
+
+}
 
 struct GribLua : public Lua
 {

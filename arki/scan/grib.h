@@ -33,6 +33,11 @@ namespace arki {
 class Metadata;
 
 namespace scan {
+struct Validator;
+
+namespace grib {
+const Validator& validator();
+}
 
 class Grib;
 struct GribLua;

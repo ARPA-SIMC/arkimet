@@ -179,6 +179,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
+
  - far andare il testdispatch per poter testare la scansione con le nuove
    grib_api
 
@@ -238,9 +240,6 @@ Importazione con tag:
    file, è discernibile dai path
  - permettere di querare per path o path parziale
    (select from md where file like "STRINGA/%")
-
- - bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
- - scan::listScannableFiles(const std::string& dir, ?);
 
  - controllare l'uso del match sui null in ondisk1 (select =? becomes =NULL
    that is always false)
@@ -336,10 +335,6 @@ Importazione con tag:
     - data needs to be sorted by reftime
     - performance should be a good approximation of the optimal case, because
       the data files are almost sorted (or fully sorted just after a repack)
-
- - dataset a scadenza
-    - aggiornare l'indice cancellando tutte le entry dei file vecchi
-    - cancellare i file vecchi
 
  - cannibalizzare l'encoder/decoder di varint dalla libreria Protocol Buffers
    di Google (o usare direttamente i Protocol Buffer per l'encoding, se si
@@ -500,13 +495,6 @@ lost during dataset rebuild"
  - Chi ha software di postproc
     - minguzzi estrazione di un parametro
     - patruno: cong
-
- + Calcolo della spezzata bounding di un'area dati i metadati
-   Approssimazione per punto e box, usando:
-     latitudeOfFirstGridPointInDegrees
-     longitudeOfFirstGridPointInDegrees
-     latitudeOfLastGridPointInDegrees
-     longitudeOfLastGridPointInDegrees
 
  - Audio, con arki-query che genera playlist (file:// o http://)
 

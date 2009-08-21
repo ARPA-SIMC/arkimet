@@ -26,17 +26,23 @@
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
+#include <arki/utils/metadata.h>
+#include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
 #include <dballe++/init.h>
 
 #include <sstream>
 #include <iostream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 
 struct arki_scan_bufr_shar {
 	dballe::DballeInit dballeInit;
@@ -246,6 +252,42 @@ void to::test<2>()
 
 	// No more bufrs
 	ensure(not scanner.next(md));
+}
+
+// Test validation
+template<> template<>
+void to::test<3>()
+{
+	Metadata md;
+	wibble::sys::Buffer buf;
+
+	const scan::Validator& v = scan::bufr::validator();
+
+	int fd = open("inbound/test.bufr", O_RDONLY);
+
+	v.validate(fd, 0, 194);
+	v.validate(fd, 194, 220);
+	v.validate(fd, 414, 220);
+
+#define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
+
+	ensure_throws(v.validate(fd, 1, 193));
+	ensure_throws(v.validate(fd, 0, 193));
+	ensure_throws(v.validate(fd, 0, 195));
+	ensure_throws(v.validate(fd, 193, 221));
+	ensure_throws(v.validate(fd, 414, 221));
+	ensure_throws(v.validate(fd, 634, 0));
+	ensure_throws(v.validate(fd, 634, 10));
+
+	close(fd);
+
+	metadata::Collector mdc;
+	scan::scan("inbound/test.bufr", mdc);
+	buf = mdc[0].getData();
+
+	v.validate(buf.data(), buf.size());
+	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
+	ensure_throws(v.validate(buf.data(), buf.size()-1));
 }
 
 }

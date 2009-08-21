@@ -30,16 +30,22 @@
 #include <arki/types/ensemble.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
+#include <arki/utils/metadata.h>
+#include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 
 struct arki_scan_grib_shar {
 };
@@ -439,6 +445,43 @@ void to::test<3>()
 	// Check the source info
 	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 0, 7218)));
 }
+
+// Test validation
+template<> template<>
+void to::test<4>()
+{
+	Metadata md;
+	wibble::sys::Buffer buf;
+
+	const scan::Validator& v = scan::grib::validator();
+
+	int fd = open("inbound/test.grib1", O_RDONLY);
+
+	v.validate(fd, 0, 7218);
+	v.validate(fd, 7218, 34960);
+	v.validate(fd, 42178, 2234);
+
+#define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
+
+	ensure_throws(v.validate(fd, 1, 7217));
+	ensure_throws(v.validate(fd, 0, 7217));
+	ensure_throws(v.validate(fd, 0, 7219));
+	ensure_throws(v.validate(fd, 7217, 34961));
+	ensure_throws(v.validate(fd, 42178, 2235));
+	ensure_throws(v.validate(fd, 44412, 0));
+	ensure_throws(v.validate(fd, 44412, 10));
+
+	close(fd);
+
+	metadata::Collector mdc;
+	scan::scan("inbound/test.grib1", mdc);
+	buf = mdc[0].getData();
+
+	v.validate(buf.data(), buf.size());
+	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
+	ensure_throws(v.validate(buf.data(), buf.size()-1));
+}
+
 
 }
 

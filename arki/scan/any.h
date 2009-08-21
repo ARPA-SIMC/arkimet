@@ -49,6 +49,26 @@ bool scan(const std::string& file, MetadataConsumer& c);
  */
 bool canScan(const std::string& file);
 
+/**
+ * Validate data
+ */
+struct Validator
+{
+	// Validate data found in a file
+	virtual void validate(int fd, off_t offset, size_t size) const = 0;
+
+	// Validate a memory buffer
+	virtual void validate(const void* buf, size_t size) const = 0;
+
+	/**
+	 * Get the validator for a given encoding
+	 *
+	 * @returns
+	 *   a pointer to a static object, which should not be deallocated.
+	 */
+	static const Validator& get(const std::string& encoding);
+};
+
 }
 }
 
