@@ -75,8 +75,13 @@ void to::test<1>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
 
-	// Query
 	metadata::Collector mdc;
+	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+	ensure_equals(mdc.size(), 3u);
+	ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
+
+	// Query
+	mdc.clear();
 	arc.queryMetadata(Matcher(), false, mdc);
 	ensure_equals(mdc.size(), 3u);
 
