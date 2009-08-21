@@ -179,7 +179,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
- - bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
+ + bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
+ - controllo di consistenza opzionale in arki-check
 
  - far andare il testdispatch per poter testare la scansione con le nuove
    grib_api
