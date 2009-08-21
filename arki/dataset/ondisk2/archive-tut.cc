@@ -90,72 +90,9 @@ void to::test<1>()
 	ensure(c.isClean());
 }
 
-// Acquire obsolete data and pack
-template<> template<>
-void to::test<2>()
-{
-	Archive arc("testds/.archive/last", 1);
-	arc.openRW();
-	system("cp inbound/test.grib1 testds/.archive/last/");
-	arc.acquire("test.grib1");
-	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
-
-	// Query now is ok
-	metadata::Collector mdc;
-	arc.queryMetadata(Matcher(), false, mdc);
-	ensure_equals(mdc.size(), 3u);
-
-	// Maintenance should show it's all ok
-	MaintenanceCollector c;
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_TO_DELETE), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(not c.isClean());
-
-	{
-		cfg.setValue("delete age", "1");
-		Writer writer(cfg);
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_DELETE), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-
-		MetadataCounter counter;
-		stringstream s;
-
-		// Check should do nothing
-		writer.check(s, counter);
-		ensure_equals(counter.count, 0u);
-		ensure_equals(s.str(),
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
-			"testds: 3616 bytes reclaimed cleaning the index.\n");
-
-		// Repack should delete the old data
-		s.str(std::string());
-		writer.repack(s, true);
-		ensure_equals(s.str(),
-			"testds: deleted from archive last/test.grib1 (44412 freed)\n"
-			"testds: archive cleaned up\n"
-			"testds: 1 file deleted, 1 file removed from index, 44412 total bytes freed.\n");
-	}
-
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
-}
-
 // Test maintenance scan on non-indexed files
 template<> template<>
-void to::test<3>()
+void to::test<2>()
 {
 	Archive arc("testds/.archive/last");
 	arc.openRW();
@@ -214,7 +151,7 @@ void to::test<3>()
 
 // Test maintenance scan on missing metadata
 template<> template<>
-void to::test<4>()
+void to::test<3>()
 {
 	Archive arc("testds/.archive/last");
 	arc.openRW();
@@ -280,7 +217,7 @@ void to::test<4>()
 
 // Test maintenance scan on missing summary
 template<> template<>
-void to::test<5>()
+void to::test<4>()
 {
 	Archive arc("testds/.archive/last");
 	arc.openRW();

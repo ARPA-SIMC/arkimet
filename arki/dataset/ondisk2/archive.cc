@@ -56,8 +56,8 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
-Archive::Archive(const std::string& dir, int delete_age)
-	: m_dir(dir), m_delete_age(delete_age), m_insert(m_db)
+Archive::Archive(const std::string& dir)
+	: m_dir(dir), m_insert(m_db)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
@@ -370,21 +370,9 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 void Archive::maintenance(writer::MaintFileVisitor& v)
 {
 	time_t now = time(NULL);
-	struct tm t;
-	string delete_threshold;
 
 	// Go to the beginning of the day
 	now -= (now % (3600*24));
-
-	// Compute the threshold for detecting files to delete
-	if (m_delete_age != -1)
-	{
-		time_t del_thr = now - m_delete_age * 3600 * 24;
-		gmtime_r(&del_thr, &t);
-		delete_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
-				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
-				t.tm_hour, t.tm_min, t.tm_sec);
-	}
 
 	// List of files existing on disk
 	writer::DirScanner disk(m_dir, true);
@@ -417,9 +405,6 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 			    ts_sum < ts_md)
 				// Check timestamp consistency
 				v(file, writer::MaintFileVisitor::ARC_TO_RESCAN);
-			else if (q.fetchString(2) < delete_threshold)
-				// Check for files older than delete age
-				v(file, writer::MaintFileVisitor::ARC_TO_DELETE);
 			else
 				v(file, writer::MaintFileVisitor::ARC_OK);
 
@@ -502,8 +487,8 @@ void Archive::vacuum()
 	s.writeAtomically(str::joinpath(m_dir, "summary"));
 }
 
-Archives::Archives(const std::string& dir, bool read_only, int delete_age)
-	: m_dir(dir), m_read_only(read_only), m_delete_age(delete_age), m_last(0)
+Archives::Archives(const std::string& dir, bool read_only)
+	: m_dir(dir), m_read_only(read_only), m_last(0)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
@@ -521,9 +506,9 @@ Archives::Archives(const std::string& dir, bool read_only, int delete_age)
 			continue;
 		Archive* a = 0;
 		if (*i == "last")
-			m_last = a = new Archive(pathname, delete_age);
+			m_last = a = new Archive(pathname);
 		else
-			m_archives.insert(make_pair(*i, a = new Archive(pathname, delete_age)));
+			m_archives.insert(make_pair(*i, a = new Archive(pathname)));
 
 		if (a)
 		{
@@ -538,7 +523,7 @@ Archives::Archives(const std::string& dir, bool read_only, int delete_age)
 	// if not read only
 	if (!read_only && !m_last)
 	{
-		m_last = new Archive(str::joinpath(m_dir, "last"), delete_age);
+		m_last = new Archive(str::joinpath(m_dir, "last"));
 		m_last->openRW();
 	}
 }

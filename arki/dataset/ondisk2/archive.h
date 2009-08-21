@@ -51,7 +51,6 @@ class Archive : public Local
 {
 protected:
 	std::string m_dir;
-	int m_delete_age;
 
 	mutable utils::sqlite::SQLiteDB m_db;
 	index::InsertQuery m_insert;
@@ -63,7 +62,7 @@ protected:
 	void querySummaries(const Matcher& matcher, Summary& summary) const;
 
 public:
-	Archive(const std::string& dir, int delete_age = -1);
+	Archive(const std::string& dir);
 	virtual ~Archive();
 
 	const std::string& path() const { return m_dir; }
@@ -116,7 +115,6 @@ class Archives : public Local
 protected:
 	std::string m_dir;
 	bool m_read_only;
-	int m_delete_age;
 
 	std::map<std::string, Archive*> m_archives;
 	Archive* m_last;
@@ -125,7 +123,7 @@ protected:
 	Archive* lookup(const std::string& name);
 
 public:
-	Archives(const std::string& dir, bool read_only = true, int delete_age = -1);
+	Archives(const std::string& dir, bool read_only = true);
 	virtual ~Archives();
 
 	const std::string& path() const { return m_dir; }

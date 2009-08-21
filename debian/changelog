@@ -4,8 +4,16 @@ arkimet (0.24-1) UNRELEASED; urgency=low
     grib_api can give different values depending on how it is queried
   * Force some types when scanning gribs, because grib_api 1.8.0 defaults to
     presenting some (like centre) as strings instead of numbers
+  * Put yearly files in subdirectories, so that, like with all others,
+    maintenance can ignore data files in the dataset root dir
+  * ondisk2 check: detect files with out of order data that have been
+    truncated
+  * Removed code for automatic deletion of old data from the archives. Data
+    files can now only be removed from the archives manually
+  * Since there are no automatic archive deletions anymore, archive check now
+    acts the same as archive repack
 
- -- Enrico Zini <enrico@debian.org>  Tue, 18 Aug 2009 14:50:34 +0100
+ -- Enrico Zini <enrico@debian.org>  Fri, 21 Aug 2009 10:06:08 +0100
 
 arkimet (0.23-1) UNRELEASED; urgency=low
 
