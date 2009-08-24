@@ -1004,6 +1004,83 @@ void to::test<15>()
 	ensure(!sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
+// Test accuracy of maintenance scan, on a dataset with a corrupted data file
+template<> template<>
+void to::test<16>()
+{
+	stringstream s;
+
+	cfg.setValue("step", "monthly");
+	acquireSamples();
+	system("rm testdir/needs-check-do-not-pack");
+	arki::dataset::ondisk2::Writer writer(cfg);
+	// Pack the dataset because 07.grib1 imported data out of order
+	writer.repack(s, true);
+	ensure_equals(s.str(),
+		"testdir: packed 2007/07.grib1 (0 saved)\n"
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 file packed, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+	s.str(std::string());
+
+	// Corrupt the first grib in the file
+	system("dd if=/dev/zero of=testdir/2007/07.grib1 bs=1 count=2 conv=notrunc status=noxfer > /dev/null 2>&1");
+
+	MaintenanceCollector c;
+	writer.maintenance(c);
+	ensure_equals(c.fileStates.size(), 2u);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
+	ensure(c.isClean());
+
+	c.clear();
+	writer.maintenance(c, false);
+	ensure_equals(c.fileStates.size(), 2u);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(TO_RESCAN), 1u);
+	ensure_equals(c.remaining(), "");
+	ensure(not c.isClean());
+
+	// Perform full maintenance and check that things are still ok afterwards
+	writer.check(s, true, false);
+	ensure_equals(s.str(),
+		"testdir: rescanned 2007/07.grib1\n"
+		"testdir: database cleaned up\n"
+		"testdir: rebuild summary cache\n"
+		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
+	c.clear();
+	writer.maintenance(c);
+	ensure_equals(c.count(OK), 1u);
+	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.remaining(), "");
+	ensure(not c.isClean());
+
+	// Perform packing and check that things are still ok afterwards
+	s.str(std::string());
+	writer.repack(s, true);
+	ensure_equals(s.str(), 
+		"testdir: packed 2007/07.grib1 (34960 saved)\n"
+		"testdir: database cleaned up\n"
+		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
+	c.clear();
+
+	// Maintenance and pack are ok now
+	writer.maintenance(c, false);
+	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.remaining(), "");
+	ensure(c.isClean());
+        s.str(std::string());
+        writer.repack(s, true);
+        ensure_equals(s.str(), string()); // Nothing should have happened
+        c.clear();
+
+	// Ensure that we have the summary cache
+	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+}
+
+
 }
 
 // vim:set ts=4 sw=4:

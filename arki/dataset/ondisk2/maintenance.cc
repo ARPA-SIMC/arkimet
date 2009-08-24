@@ -114,10 +114,14 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 		is_corrupted = false;
 		if (!quick)
 		{
-			validator = &scan::Validator::by_filename(file);
-			validator_fd = open(file.c_str(), O_RDONLY);
+			string fname = str::joinpath(m_root, file);
+			validator = &scan::Validator::by_filename(fname.c_str());
+			validator_fd = open(fname.c_str(), O_RDONLY);
 			if (validator_fd < 0)
+			{
+				perror(file.c_str());
 				is_corrupted = true;
+			}
 		}
 	}
 	// If we've already found that the file is corrupted, there is nothing
@@ -126,13 +130,14 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 	if (!quick)
 		try {
 			validator->validate(validator_fd, offset, size, file);
-		} catch (std::exception& e) {
+		} catch (wibble::exception::Generic& e) {
 			// FIXME: we do not have a better interface to report
 			// error strings, so we fall back to cerr. It will be
 			// useless if we are hidden behind a graphical
 			// interface, but in all other cases it's better than
-			// nothing.
-			cerr << file << ": " << e.what() << endl;
+			// nothing. HOWEVER, printing to stderr creates noise
+			// during the unit tests.
+			//cerr << "corruption detected at " << str::joinpath(m_root, file) << ":" << offset << "-" << size << ": " << e.desc() << endl;
 			is_corrupted = true;
 		}
 
