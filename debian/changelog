@@ -14,8 +14,9 @@ arkimet (0.24-1) UNRELEASED; urgency=low
     acts the same as archive repack
   * Store relative pathnames in .archive/ .metadata files
   * During repack, check for consistency of the data that's moved around
+  * arki-mergeconf: only scan directories contaning config files
 
- -- Enrico Zini <enrico@debian.org>  Fri, 21 Aug 2009 18:50:37 +0100
+ -- Enrico Zini <enrico@debian.org>  Mon, 24 Aug 2009 12:44:24 +0100
 
 arkimet (0.23-1) UNRELEASED; urgency=low
 

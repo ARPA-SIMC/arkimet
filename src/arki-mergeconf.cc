@@ -25,12 +25,15 @@
 #include <arki/matcher.h>
 #include <arki/runtime.h>
 #include <wibble/commandline/parser.h>
+#include <wibble/string.h>
+#include <wibble/sys/fs.h>
 #include <arki/utils/geosdef.h>
 #include "config.h"
 #include <memory>
 
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 namespace wibble {
 namespace commandline {
@@ -71,6 +74,11 @@ int main(int argc, const char* argv[])
 		while (opts.hasNext())
 		{
 			string file = opts.next();
+			if (!sys::fs::access(str::joinpath(file, "config"), F_OK))
+			{
+				cerr << file << "skipped: it does not look like a dataset" << endl;
+				continue;
+			}
 			try {
 				ReadonlyDataset::readConfig(file, cfg);
 				foundConfig = true;

@@ -179,6 +179,9 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - arki-mergeconf deve saltare la merda (se c'è un file 's' lo tira su come un
+   dataset e fa incazzare arki-scan)
+
  + bool scan::validate(int fd, const std::string& encoding, off_t offset, size_t size);
  - controllo di consistenza opzionale in arki-check
 
