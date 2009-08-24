@@ -78,10 +78,8 @@ struct Datafile
 	 * In case, during index regeneration, one of the data items turns out to
 	 * be duplicated, its corresponding metadata will be marked as deleted, and
 	 * the element will be removed from the archive during the next repack.
-	 * The metadata of the duplicated element will be sent to the \a salvage
-	 * consumer.
 	 */
-	void rebuild(MetadataConsumer& salvage, bool reindex);
+	void rebuild(bool reindex);
 
 	/**
 	 * Reindex the file contents.
@@ -89,10 +87,8 @@ struct Datafile
 	 * In case, during reindexing, one of the data items turns out to be
 	 * duplicated, its corresponding metadata will be marked as deleted, and
 	 * the element will be removed from the archive during the next repack.
-	 * The metadata of the duplicated element will be sent to the \a salvage
-	 * consumer.
 	 */
-	void reindex(MetadataConsumer& salvage);
+	void reindex();
 
 	/**
 	 * Rebuild the summary for this file

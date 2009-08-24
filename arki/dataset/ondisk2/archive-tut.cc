@@ -118,7 +118,6 @@ void to::test<2>()
 
 	{
 		Writer writer(cfg);
-		MetadataCounter counter;
 
 		c.clear();
 		writer.maintenance(c);
@@ -130,8 +129,7 @@ void to::test<2>()
 		stringstream s;
 
 		// Check should reindex the file
-		writer.check(s, counter);
-		ensure_equals(counter.count, 0u);
+		writer.check(s, true);
 		ensure_equals(s.str(), 
 				"testds: rescanned in archive last/test.grib1\n"
 				"testds: archive cleaned up\n"
@@ -184,7 +182,6 @@ void to::test<3>()
 
 	{
 		Writer writer(cfg);
-		MetadataCounter counter;
 
 		c.clear();
 		writer.maintenance(c);
@@ -196,8 +193,7 @@ void to::test<3>()
 		stringstream s;
 
 		// Check should reindex the file
-		writer.check(s, counter);
-		ensure_equals(counter.count, 0u);
+		writer.check(s, true);
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
@@ -249,7 +245,6 @@ void to::test<4>()
 
 	{
 		Writer writer(cfg);
-		MetadataCounter counter;
 
 		c.clear();
 		writer.maintenance(c);
@@ -261,8 +256,7 @@ void to::test<4>()
 		stringstream s;
 
 		// Check should reindex the file
-		writer.check(s, counter);
-		ensure_equals(counter.count, 0u);
+		writer.check(s, true);
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"

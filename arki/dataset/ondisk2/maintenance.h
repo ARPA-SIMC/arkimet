@@ -241,15 +241,13 @@ struct MockRepacker : public Agent
  */
 struct RealFixer : public Agent
 {
-	MetadataConsumer& salvage;
 	size_t m_count_packed;
 	size_t m_count_rescanned;
 	size_t m_count_deindexed;
-	size_t m_count_salvaged;
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage);
+	RealFixer(std::ostream& log, Writer& w);
 
 	void operator()(const std::string& file, State state);
 	void end();
@@ -324,13 +322,12 @@ class FullMaintenance : public MaintenanceAgent
 protected:
 	// This is where maintenance progess will be logged
 	std::ostream& log;
-	MetadataConsumer& salvage;
 	bool reindexAll;
 
 	Writer* writer;
 
 public:
-	FullMaintenance(std::ostream& log, MetadataConsumer& salvage);
+	FullMaintenance(std::ostream& log);
 	virtual ~FullMaintenance();
 
 	virtual void start(Writer& w);

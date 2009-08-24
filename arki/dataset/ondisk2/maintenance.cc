@@ -196,7 +196,7 @@ void FileCopier::operator()(const std::string& file, int id, off_t offset, size_
 		buf.resize(size);
 	ssize_t res = pread(fd_src, buf.data(), size, offset);
 	if (res < 0 || (unsigned)res != size)
-		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes at " + str::fmt(offset));
+		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
 	m_val.validate(buf.data(), size);
 	res = write(fd_dst, buf.data(), size);
 	if (res < 0 || (unsigned)res != size)
@@ -336,15 +336,11 @@ struct Reindexer : public MetadataConsumer
 	std::string dsname;
 	std::string relfile;
 	std::string basename;
-	MetadataConsumer& salvage;
-	size_t count_salvaged;
 
 	Reindexer(WIndex& idx,
 		  const std::string& dsname,
-		  const std::string& relfile,
-		  MetadataConsumer& salvage)
-	       	: idx(idx), dsname(dsname), relfile(relfile), basename(str::basename(relfile)),
-	          salvage(salvage), count_salvaged(0) {}
+		  const std::string& relfile)
+	       	: idx(idx), dsname(dsname), relfile(relfile), basename(str::basename(relfile)) {}
 
 	virtual bool operator()(Metadata& md)
 	{
@@ -358,20 +354,18 @@ struct Reindexer : public MetadataConsumer
 				       	"metadata points to the wrong file: " + blob->filename);
 			idx.index(md, relfile, blob->offset, &id);
 		} catch (index::DuplicateInsert& di) {
-			md.notes.push_back(types::Note::create("Failed to reindex in dataset '"+dsname+"' because the dataset already has the data: " + di.what()));
-			++count_salvaged;
-			salvage(md);
+			throw wibble::exception::Consistency("reindexing " + basename,
+					"data item at offset " + str::fmt(blob->offset) + " has a duplicate elsewhere in the dataset: manual fix is required");
 		} catch (std::exception& e) {
 			// sqlite will take care of transaction consistency
-			md.notes.push_back(types::Note::create("Failed to reindex in dataset '"+dsname+"': " + e.what()));
-			++count_salvaged;
-			salvage(md);
+			throw wibble::exception::Consistency("reindexing " + basename,
+					"failed to reindex data item at offset " + str::fmt(blob->offset) + ": " + e.what());
 		}
 		return true;
 	}
 };
 
-static size_t rescan(const std::string& dsname, const std::string& root, const std::string& file, WIndex& idx, MetadataConsumer& salvage)
+static void rescan(const std::string& dsname, const std::string& root, const std::string& file, WIndex& idx)
 {
 	// Lock away writes and reads
 	Pending p = idx.beginExclusiveTransaction();
@@ -410,7 +404,7 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 	}
 	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
-	Reindexer fixer(idx, dsname, file, salvage);
+	Reindexer fixer(idx, dsname, file);
 	bool res = mds.sendTo(fixer);
 	assert(res);
 	// cerr << " REINDEXED " << pathname << endl;
@@ -421,8 +415,6 @@ static size_t rescan(const std::string& dsname, const std::string& root, const s
 	// Commit the changes on the database
 	p.commit();
 	// cerr << " COMMITTED" << endl;
-
-	return fixer.count_salvaged;
 }
 
 // RealRepacker
@@ -650,9 +642,9 @@ void MockRepacker::end()
 
 // RealFixer
 
-RealFixer::RealFixer(std::ostream& log, Writer& w, MetadataConsumer& salvage)
-	: Agent(log, w), salvage(salvage),
-          m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0), m_count_salvaged(0),
+RealFixer::RealFixer(std::ostream& log, Writer& w)
+	: Agent(log, w), 
+          m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0),
 	  m_touched_archive(false), m_redo_summary(false)
 {
 }
@@ -673,7 +665,7 @@ void RealFixer::operator()(const std::string& file, State state)
 		*/
 		case TO_INDEX:
 		case TO_RESCAN: {
-			m_count_salvaged += rescan(w.m_name, w.m_path, file, w.m_idx, salvage);
+			rescan(w.m_name, w.m_path, file, w.m_idx);
 			log() << "rescanned " << file << endl;
 			++m_count_rescanned;
 			m_redo_summary = true;
@@ -748,8 +740,6 @@ void RealFixer::end()
 		logAdd() << nfiles(m_count_deindexed) << " removed from index";
 	if (size_pre > size_post)
 		logAdd() << (size_pre - size_post) << " bytes reclaimed cleaning the index";
-	if (m_count_salvaged)
-		logAdd() << m_count_salvaged << " data items could not be reindexed";
 	logEnd();
 }
 
@@ -806,97 +796,6 @@ void MockFixer::end()
 }
 
 }
-
-#if 0
-FullMaintenance::FullMaintenance(std::ostream& log, MetadataConsumer& salvage)
-	: log(log), salvage(salvage), reindexAll(false), writer(0)
-{
-}
-
-FullMaintenance::~FullMaintenance()
-{
-}
-
-void FullMaintenance::start(Writer& w)
-{
-	writer = &w;
-	reindexAll = true;
-}
-void FullMaintenance::end()
-{
-	if (writer)
-	{
-		writer->flush();
-		writer = 0;
-	}
-}
-
-void FullMaintenance::needsDatafileRebuild(Datafile& df)
-{
-	// Run the rebuild
-	log << df.pathname << ": rebuilding metadata." << endl;
-	df.rebuild(salvage, reindexAll);
-}
-
-void FullMaintenance::needsSummaryRebuild(Datafile& df)
-{
-	log << df.pathname << ": rebuilding summary." << endl;
-	df.rebuildSummary(reindexAll);
-}
-
-void FullMaintenance::needsReindex(maint::Datafile& df)
-{
-	log << df.pathname << ": reindexing data." << endl;
-	df.reindex(salvage);
-}
-
-void FullMaintenance::needsSummaryRebuild(Directory& df)
-{
-	log << df.fullpath() << ": rebuilding summary." << endl;
-	df.rebuildSummary();
-}
-
-void FullMaintenance::needsFullIndexRebuild(RootDirectory& df)
-{
-	if (writer)
-	{
-		log << writer->path() << ": fully rebuilding index." << endl;
-		// Delete the index and recreate it new
-		df.recreateIndex();
-		// Delete all summary files
-		df.deleteSummaries();
-		// Set a flag saying that we need to reindex every file
-		reindexAll = true;
-	}
-}
-
-
-FullRepack::FullRepack(MetadataConsumer& mdc, std::ostream& log)
-	: mdc(mdc), log(log), writer(0)
-{
-}
-
-FullRepack::~FullRepack()
-{
-}
-
-void FullRepack::start(Writer& w)
-{
-	writer = &w;
-}
-void FullRepack::end()
-{
-	writer = 0;
-}
-
-void FullRepack::needsRepack(Datafile& df)
-{
-	// Run the rebuild
-	log << df.pathname << ": repacking." << endl;
-	df.repack(mdc);
-	// TODO: Reindex
-}
-#endif
 
 }
 }

@@ -179,17 +179,17 @@ void Writer::repack(std::ostream& log, bool writable)
 	maint_root->commit();
 }
 
-void Writer::check(std::ostream& log)
+void Writer::check(std::ostream& log, bool fix)
 {
-	MaintenanceReport ma(log);
-	maintenance(ma);
-	ma.report();
-}
-
-void Writer::check(std::ostream& log, MetadataConsumer& salvage)
-{
-	dataset::ondisk::FullMaintenance ma(log, salvage);
-	maintenance(ma);
+	if (fix)
+	{
+		dataset::ondisk::FullMaintenance ma(log);
+		maintenance(ma);
+	} else {
+		MaintenanceReport ma(log);
+		maintenance(ma);
+		ma.report();
+	}
 }
 
 void Writer::depthFirstVisit(Visitor& v)

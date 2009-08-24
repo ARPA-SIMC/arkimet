@@ -110,7 +110,7 @@ public:
 	/**
 	 * Reindex the directory contents
 	 */
-	void reindex(MetadataConsumer& salvage);
+	void reindex();
 
 	/**
 	 * Read the summary info from the file into s.

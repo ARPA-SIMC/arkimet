@@ -15,8 +15,11 @@ arkimet (0.24-1) UNRELEASED; urgency=low
   * Store relative pathnames in .archive/ .metadata files
   * During repack, check for consistency of the data that's moved around
   * arki-mergeconf: only scan directories contaning config files
+  * arki-check: -s is not needed anymore. It now interrupts checking if
+    salvaging is needed, as salvaging was wrong anyway since it picked a
+    random item to remove.
 
- -- Enrico Zini <enrico@debian.org>  Mon, 24 Aug 2009 12:44:24 +0100
+ -- Enrico Zini <enrico@debian.org>  Mon, 24 Aug 2009 15:17:27 +0100
 
 arkimet (0.23-1) UNRELEASED; urgency=low
 

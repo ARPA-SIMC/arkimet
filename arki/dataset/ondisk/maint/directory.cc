@@ -265,7 +265,7 @@ void Directory::depthFirstVisit(Visitor& v)
 	v.leaveDirectory(*this);
 }
 
-void Directory::reindex(MetadataConsumer& salvage)
+void Directory::reindex()
 {
 	string rootDir = fullpath();
 	wibble::sys::fs::Directory dir(rootDir);
@@ -278,13 +278,13 @@ void Directory::reindex(MetadataConsumer& salvage)
 		if (utils::isdir(rootDir, i))
 		{
 			SubDirectory sub(this, *i);
-			sub.reindex(salvage);
+			sub.reindex();
 		} else if (str::endsWith(*i, ".metadata")) {
 			string name = (*i).substr(0, (*i).size() - 9);
 			if (hasRebuildFlagfile(name))
 				continue;
 			Datafile df(this, name);
-			df.reindex(salvage);
+			df.reindex();
 		}
 	}
 }

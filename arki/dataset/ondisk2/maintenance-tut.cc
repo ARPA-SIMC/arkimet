@@ -123,10 +123,8 @@ void to::test<1>()
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
 	s.str(std::string());
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -177,10 +175,8 @@ void to::test<2>()
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
 	s.str(std::string());
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -216,9 +212,7 @@ void to::test<3>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(),
 		"testdir: deindexed 2007/07-07.grib1\n"
 		"testdir: database cleaned up\n"
@@ -290,10 +284,8 @@ void to::test<4>()
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
 	s.str(std::string());
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -333,9 +325,7 @@ void to::test<5>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: database cleaned up\n"
@@ -405,10 +395,8 @@ void to::test<6>()
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
 	s.str(std::string());
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -450,9 +438,7 @@ void to::test<7>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	// No packing occurs here: check does not mangle data files
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(),
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
@@ -505,9 +491,7 @@ void to::test<8>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: rescanned 2007/07-08.grib1\n"
@@ -559,9 +543,7 @@ void to::test<9>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: rescanned 2007/07-08.grib1\n"
@@ -616,9 +598,7 @@ void to::test<10>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned foo/bar/test.grib1\n"
 		"testdir: database cleaned up\n"
@@ -689,9 +669,7 @@ void to::test<11>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned foo/bar/test.grib1\n"
 		"testdir: database cleaned up\n"
@@ -707,7 +685,8 @@ void to::test<11>()
 	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412*2);
 
 	{
-		// Test querying
+		// Test querying: reindexing should have chosen the last version of
+		// duplicate items
 		Reader reader(cfg);
 		ensure(reader.hasWorkingIndex());
 		MetadataCollector mdc;
@@ -719,9 +698,6 @@ void to::test<11>()
 		ensure_equals(blob->offset, 51630u);
 		ensure_equals(blob->size, 34960u);
 
-		// Query the second element and check that it starts after the first one
-		// (there used to be a bug where the rebuild would use the offsets of
-		// the metadata instead of the data)
 		mdc.clear();
 		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
 		ensure_equals(mdc.size(), 1u);
@@ -804,93 +780,23 @@ void to::test<12>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
-	writer.check(s, counter);
-	ensure_equals(counter.count, 2u);
-	ensure_equals(s.str(),
-		"testdir: rescanned 2007/07-08.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
-		"testdir: 1 file rescanned, 30448 bytes reclaimed cleaning the index, 2 data items could not be reindexed.\n");
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.count(TO_PACK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
 
-	ensure_equals(utils::files::size("testdir/2007/07-08.grib1"), 7218 + 44412);
-
-	{
-		// Test querying: reindexing should have chosen the last version of
-		// duplicate items
-		Reader reader(cfg);
-		ensure(reader.hasWorkingIndex());
-		MetadataCollector mdc;
-		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
-		ensure_equals(mdc.size(), 1u);
-		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-		ensure_equals(blob->format, "grib1"); 
-		ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-08.grib1"));
-		ensure_equals(blob->offset, 7218u);
-		ensure_equals(blob->size, 7218u);
-
-		// Query another element and check that it has not been relocated to
-		// the wrong file
-		mdc.clear();
-		reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
-		ensure_equals(mdc.size(), 1u);
-		blob = mdc[0].source.upcast<source::Blob>();
-		ensure_equals(blob->format, "grib1"); 
-		ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-07.grib1"));
-		ensure_equals(blob->offset, 0u);
-		ensure_equals(blob->size, 34960u);
+	// By catting test.grib1 into 07-08.grib1, we create 2 metadata that do
+	// not fit in that file (1 does).
+	// Because they are duplicates of metadata in other files, one cannot
+	// use the order of the data in the file to determine which one is the
+	// newest. The situation cannot be fixed automatically because it is
+	// impossible to determine which of the two duplicates should be thrown
+	// away; therefore, we can only interrupt the maintenance and raise an
+	// exception calling for manual fixing.
+	try {
+		writer.check(s, true);
+		ensure(false);
+	} catch (wibble::exception::Consistency& ce) {
+		ensure(true);
+	} catch (...) {
+		ensure(false);
 	}
-
-	// Perform packing and check that things are still ok afterwards
-	s.str(std::string());
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: packed 2007/07-08.grib1 (44412 saved)\n"
-		"testdir: database cleaned up\n"
-		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 46988 total bytes freed.\n");
-	c.clear();
-
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 3u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	ensure_equals(utils::files::size("testdir/2007/07-08.grib1"), 7218);
-
-	// Test querying, after repack this item should have been moved to the
-	// beginning of the file
-	Reader reader(cfg);
-	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
-	ensure_equals(mdc.size(), 1u);
-	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->format, "grib1"); 
-	ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-08.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 7218u);
-
-	// Query another element and check that it has not been relocated to
-	// the wrong file
-	mdc.clear();
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
-	ensure_equals(mdc.size(), 1u);
-	blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->format, "grib1"); 
-	ensure_equals(blob->filename, sys::fs::abspath("testdir/2007/07-07.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 34960u);
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive
@@ -942,10 +848,8 @@ void to::test<13>()
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
 	s.str(std::string());
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -1012,10 +916,8 @@ void to::test<14>()
 	ensure(c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
 	s.str(std::string());
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -1068,10 +970,8 @@ void to::test<15>()
 	ensure(not c.isClean());
 
 	// Perform full maintenance and check that things are still ok afterwards
-	MetadataCounter counter;
 	s.str(std::string());
-	writer.check(s, counter);
-	ensure_equals(counter.count, 0u);
+	writer.check(s, true);
 	ensure_equals(s.str(), 
 		"testdir: rescanned 20/2007.grib1\n"
 		"testdir: database cleaned up\n"
@@ -1103,152 +1003,6 @@ void to::test<15>()
 	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
 	ensure(!sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 }
-
-#if 0
-// Test accuracy of maintenance scan, with index, on dataset with some
-// outdated summaries
-template<> template<>
-void to::test<9>()
-{
-	acquireSamples();
-	system("touch -d yesterday testdir/2007/*");
-	system("touch -d yesterday testdir/*");
-	system("touch testdir/2007/07-08.grib1.metadata");
-
-	Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-	c.sort();
-
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, false);
-	ensure_equals(c.datafileRebuild.size(), 0u);
-	ensure_equals(c.summaryRebuildFile.size(), 1u);
-	ensure_equals(c.summaryRebuildFile[0], "2007/07-08.grib1");
-	ensure_equals(c.summaryRebuildDir.size(), 0u);
-
-	// Perform full maintenance and check that things are ok afterwards
-	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
-	ensure(c.isClean());
-}
-
-// Test accuracy of maintenance scan, with index, on dataset with some
-// outdated summaries
-template<> template<>
-void to::test<10>()
-{
-	acquireSamples();
-	system("touch -d yesterday testdir/2007/*");
-	system("touch -d yesterday testdir/*");
-	system("touch testdir/2007/07-08.grib1.summary");
-
-	Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-	c.sort();
-
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, false);
-	ensure_equals(c.datafileRebuild.size(), 0u);
-	ensure_equals(c.summaryRebuildFile.size(), 0u);
-	ensure_equals(c.summaryRebuildDir.size(), 1u);
-	ensure_equals(c.summaryRebuildDir[0], "2007");
-
-	// Perform full maintenance and check that things are ok afterwards
-	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
-	ensure(c.isClean());
-}
-
-// Test accuracy of maintenance scan, with index, on dataset with some
-// outdated summaries
-template<> template<>
-void to::test<11>()
-{
-	acquireSamples();
-	system("touch -d yesterday testdir/2007/*");
-	system("touch -d yesterday testdir/*");
-	system("touch testdir/2007/summary");
-
-	Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-	c.sort();
-
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, false);
-	ensure_equals(c.datafileRebuild.size(), 0u);
-	ensure_equals(c.summaryRebuildFile.size(), 0u);
-	ensure_equals(c.summaryRebuildDir.size(), 1u);
-	ensure_equals(c.summaryRebuildDir[0], "");
-
-	// Perform full maintenance and check that things are ok afterwards
-	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
-	ensure(c.isClean());
-}
-
-// Test invalidating and rebuilding a dataset
-template<> template<>
-void to::test<13>()
-{
-	acquireSamples();
-	system("touch -d yesterday testdir/2007/*");
-	system("touch -d yesterday testdir/*");
-
-	Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-	ensure(c.isClean());
-
-	writer.invalidateAll();
-
-	c.clear();
-	writer.maintenance(c);
-
-	ensure_equals(c.writerPath, "testdir");
-	ensure_equals(c.hasEnded, true);
-	ensure_equals(c.fullIndex, true);
-	ensure_equals(c.datafileRebuild.size(), 3u);
-	ensure_equals(c.summaryRebuildFile.size(), 0u);
-	ensure_equals(c.summaryRebuildDir.size(), 0u);
-	ensure(!c.isClean());
-
-	// Perform full maintenance and check that things are ok afterwards
-	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
-	ensure(c.isClean());
-}
-
-#endif
 
 }
 

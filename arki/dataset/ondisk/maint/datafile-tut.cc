@@ -214,9 +214,7 @@ void to::test<3>()
 {
 	system("cp inbound/test.grib1 testdatafile/testfile.grib1");
 	createRebuildFlagfile("testdatafile/testfile.grib1");
-	MetadataCollector mdc;
-	df->rebuild(mdc, false);
-	ensure_equals(mdc.size(), 0u);
+	df->rebuild(false);
 
 	ensure(utils::hasFlagfile("testdatafile/testfile.grib1"));
 	ensure(!utils::hasFlagfile("testdatafile/testfile.grib1.new"));

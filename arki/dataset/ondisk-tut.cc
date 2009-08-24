@@ -428,9 +428,8 @@ void to::test<7>()
 		dataset::ondisk::Writer d200(*config.section("test200"));
 		// Run a full maintenance run
 		d200.invalidateAll();
-		MetadataCollector mdc;
 		stringstream log;
-		FullMaintenance fr(log, mdc);
+		FullMaintenance fr(log);
 		//FullMaintenance fr(cerr, mdc);
 		d200.maintenance(fr);
 	}

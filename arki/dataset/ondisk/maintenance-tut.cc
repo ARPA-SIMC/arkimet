@@ -184,13 +184,10 @@ void to::test<1>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -222,13 +219,10 @@ void to::test<2>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -259,13 +253,10 @@ void to::test<3>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	//system("bash");
 	ensure(c.isClean());
 }
@@ -297,13 +288,10 @@ void to::test<4>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -334,13 +322,10 @@ void to::test<5>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -365,13 +350,10 @@ void to::test<6>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -396,13 +378,10 @@ void to::test<7>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -431,13 +410,10 @@ void to::test<8>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -466,13 +442,10 @@ void to::test<9>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -501,13 +474,10 @@ void to::test<10>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -536,13 +506,10 @@ void to::test<11>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -558,9 +525,8 @@ void to::test<12>()
 
 	Writer writer(cfg);
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	//FullMaintenance m(cerr, counter);
+	FullMaintenance m(maintlog);
+	//FullMaintenance m(cerr);
 	writer.maintenance(m);
 
 	ensure(!hasIndexFlagfile("testdir"));
@@ -626,13 +592,10 @@ void to::test<13>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
+	FullMaintenance m(maintlog);
 	writer.maintenance(m);
-	ensure_equals(counter.count, 0u);
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
 	ensure(c.isClean());
 }
 
@@ -648,12 +611,9 @@ void to::test<14>()
 
 	Writer writer(cfg);
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	//FullMaintenance m(cerr, counter);
+	FullMaintenance m(maintlog);
+	//FullMaintenance m(cerr);
 	writer.maintenance(m);
-
-	ensure_equals(counter.count, 0u);
 
 	ensure(!hasIndexFlagfile("testdir"));
 	ensure(!hasRebuildFlagfile("testdir/foo/bar/test.grib1"));
@@ -716,26 +676,23 @@ void to::test<15>()
 
 	// Perform full maintenance and check that things are ok afterwards
 	stringstream maintlog;
-	MetadataCounter counter;
-	FullMaintenance m(maintlog, counter);
-	writer.maintenance(m);
+	FullMaintenance m(maintlog);
 	// By catting test.grib1 into 07-08.grib1, we create 2 metadata that do
-	// not fit in that file (1 does). Therefore they end up in salvage,
-	// because they are duplicates of metadata in other files. The other
-	// that really fits in the file does not end in salvage, but causes the
-	// previous version to be marked as duplicate
-	ensure_equals(counter.count, 2u);
-	c.clear();
-	counter.count = 0;
-	writer.maintenance(c);
-	ensure_equals(counter.count, 0u);
-	ensure(c.isClean());
-
-	size_t count = 0;
-	count += countDeletedMetadata("testdir/2007/07-07.grib1.metadata");
-	count += countDeletedMetadata("testdir/2007/07-08.grib1.metadata");
-	count += countDeletedMetadata("testdir/2007/10-09.grib1.metadata");
-	ensure_equals(count, 3u);
+	// not fit in that file (1 does).
+	// Because they are duplicates of metadata in other files, one cannot
+	// use the order of the data in the file to determine which one is the
+	// newest. The situation cannot be fixed automatically because it is
+	// impossible to determine which of the two duplicates should be thrown
+	// away; therefore, we can only interrupt the maintenance and raise an
+	// exception calling for manual fixing.
+	try {
+		writer.maintenance(m);
+		ensure(false);
+	} catch (wibble::exception::Consistency& ce) {
+		ensure(true);
+	} catch (...) {
+		ensure(false);
+	}
 }
 
 // Test repack, with index

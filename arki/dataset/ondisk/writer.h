@@ -94,17 +94,10 @@ public:
 	/**
 	 * Check the dataset for errors, logging status to the given file.
 	 *
-	 * The process is simulated but no changes are saved.
+	 * If \a fix is false, the process is simulated but no changes are saved.
+	 * If \a fix is true, errors are fixed.
 	 */
-	virtual void check(std::ostream& log);
-
-	/**
-	 * Check the dataset for errors, logging status to the given file.
-	 *
-	 * Errors are fixed, and if data is found that does not fit in the
-	 * dataset it is sent to 'salvage'.
-	 */
-	virtual void check(std::ostream& log, MetadataConsumer& salvage);
+	virtual void check(std::ostream& log, bool fix=false);
 
 	/**
 	 * Iterate through the contents of the dataset, in depth-first order.

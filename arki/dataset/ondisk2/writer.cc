@@ -303,29 +303,27 @@ void Writer::repack(std::ostream& log, bool writable)
 	}
 }
 
-void Writer::check(std::ostream& log)
+void Writer::check(std::ostream& log, bool fix)
 {
 	using namespace writer;
 
-	MockFixer fixer(log, *this);
-	maintenance(fixer);
-	fixer.end();
-}
+	if (fix)
+	{
+		RealFixer fixer(log, *this);
+		try {
+			maintenance(fixer);
+			fixer.end();
+		} catch (...) {
+			createDontpackFlagfile(m_path);
+			throw;
+		}
 
-void Writer::check(std::ostream& log, MetadataConsumer& salvage)
-{
-	using namespace writer;
-
-	RealFixer fixer(log, *this, salvage);
-	try {
+		removeDontpackFlagfile(m_path);
+	} else {
+		MockFixer fixer(log, *this);
 		maintenance(fixer);
 		fixer.end();
-	} catch (...) {
-		createDontpackFlagfile(m_path);
-		throw;
 	}
-
-	removeDontpackFlagfile(m_path);
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

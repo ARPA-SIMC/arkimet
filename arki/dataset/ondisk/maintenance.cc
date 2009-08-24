@@ -114,8 +114,8 @@ void MaintenanceReport::report()
 }
 
 
-FullMaintenance::FullMaintenance(std::ostream& log, MetadataConsumer& salvage)
-	: log(log), salvage(salvage), reindexAll(false), writer(0)
+FullMaintenance::FullMaintenance(std::ostream& log)
+	: log(log), reindexAll(false), writer(0)
 {
 }
 
@@ -141,7 +141,7 @@ void FullMaintenance::needsDatafileRebuild(Datafile& df)
 {
 	// Run the rebuild
 	log << df.pathname << ": rebuilding metadata." << endl;
-	df.rebuild(salvage, reindexAll);
+	df.rebuild(reindexAll);
 }
 
 void FullMaintenance::needsSummaryRebuild(Datafile& df)
@@ -153,7 +153,7 @@ void FullMaintenance::needsSummaryRebuild(Datafile& df)
 void FullMaintenance::needsReindex(maint::Datafile& df)
 {
 	log << df.pathname << ": reindexing data." << endl;
-	df.reindex(salvage);
+	df.reindex();
 }
 
 void FullMaintenance::needsSummaryRebuild(Directory& df)

@@ -117,13 +117,12 @@ class FullMaintenance : public MaintenanceAgent
 protected:
 	// This is where maintenance progess will be logged
 	std::ostream& log;
-	MetadataConsumer& salvage;
 	bool reindexAll;
 
 	Writer* writer;
 
 public:
-	FullMaintenance(std::ostream& log, MetadataConsumer& salvage);
+	FullMaintenance(std::ostream& log);
 	virtual ~FullMaintenance();
 
 	virtual void start(Writer& w);

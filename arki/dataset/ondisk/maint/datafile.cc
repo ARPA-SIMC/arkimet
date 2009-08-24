@@ -301,7 +301,7 @@ size_t Datafile::repack()
 	return sorter.removed;
 }
 
-void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
+void Datafile::rebuild(bool reindex)
 {
 	// Remove the summary file if it exists
 	utils::removeFlagfile(pathname + ".summary");
@@ -354,10 +354,10 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 			try {
 				parent->addToIndex(*i, relname, ofs);
 			} catch (index::DuplicateInsert) {
-				// TODO: This really should not happen: what if
-				// it does? Salvage or throw an exception?
-				salvage(*i);
-				i->deleted = true;
+				// If we end up here, it means that we have a
+				// duplicate stored in a different file
+				throw wibble::exception::Consistency("repacking " + pathname,
+					"data item at offset " + str::fmt(ofs) + " has a duplicate elsewhere in the dataset: manual fix is required");
 			}
 		if (i->deleted)
 			createPackFlagfile(pathname);
@@ -373,40 +373,72 @@ void Datafile::rebuild(MetadataConsumer& salvage, bool reindex)
 	removeRebuildFlagfile(pathname);
 }
 
-void Datafile::reindex(MetadataConsumer& salvage)
+void Datafile::reindex()
 {
 	// Ensure that there are no rebuild or repack flagfiles
 	if (hasRebuildFlagfile(pathname))
 		throw wibble::exception::Consistency("reindexing " + pathname, "rebuild flagfile exists: perform a rebuild first");
 
-	string fname = pathname + ".metadata";
+        // Read all the metadata
+        string fname = pathname + ".metadata";
+        std::ifstream in;
+        in.open(fname.c_str(), ios::in);
+        if (!in.is_open() || in.fail())
+                throw wibble::exception::File(fname, "opening file for reading");
 
-	// Read all the metadata
-	std::ifstream in;
-	in.open(fname.c_str(), ios::in);
-	if (!in.is_open() || in.fail())
-		throw wibble::exception::File(fname, "opening file for reading");
+	metadata::Collector mds;
+	vector<size_t> offsets;
+        while (true)
+        {
+                size_t offset = in.tellg();
+		Metadata md;
+                if (!md.read(in, fname))
+                        break;
+                // Skip deleted metadata
+                if (md.deleted) continue;
+		mds.push_back(md);
+		offsets.push_back(offset);
+        }
 
-	// Reindex all the metadata
-	Metadata md;
-	while (true)
+        in.close();
+
+	// Scan the list of metadata, looking for duplicates and marking all
+	// the duplicates except the last one as deleted
+	map<string, Metadata*> finddupes;
+	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
 	{
-		size_t offset = in.tellg();
-		if (!md.read(in, fname))
-			break;
-		// Skip deleted metadata
-		if (md.deleted) continue;
-		try {
-			parent->addToIndex(md, relname, offset);
-		} catch (index::DuplicateInsert) {
-			// The datum has been found to be duplicated: mark it as deleted
-			salvage(md);
-			auto_ptr<NormalAccess> na(new NormalAccess(pathname));
-			na->remove(offset);
+		string id = parent->id(*i);
+		if (id.empty())
+			continue;
+		map<string, Metadata*>::iterator dup = finddupes.find(id);
+		if (dup == finddupes.end())
+			finddupes.insert(make_pair(id, &(*i)));
+		else
+		{
+			dup->second->deleted = true;
+			dup->second = &(*i);
 		}
 	}
 
-	in.close();
+	// Reindex all the metadata
+	for (size_t i = 0; i < mds.size(); ++i)
+	{
+		// Skip deleted metadata
+		if (mds[i].deleted)
+		{
+			auto_ptr<NormalAccess> na(new NormalAccess(pathname));
+			na->remove(offsets[i]);
+		} else {
+			try {
+				parent->addToIndex(mds[i], relname, offsets[i]);
+			} catch (index::DuplicateInsert) {
+				// If we end up here, it means that we have a
+				// duplicate stored in a different file
+				throw wibble::exception::Consistency("repacking " + pathname,
+					"data item at offset " + str::fmt(offsets[i]) + " has a duplicate elsewhere in the dataset: manual fix is required");
+			}
+		}
+	}
 }
 
 }

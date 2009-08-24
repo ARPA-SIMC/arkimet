@@ -84,7 +84,7 @@ struct Options : public StandardParserWithManpage
 		stats = add<BoolOption>("stats", 0, "stats", "",
 			"Compute statistics about the various datasets.");
 		salvage = add<StringOption>("salvage", 's', "salvage", "file",
-			"Where to store metadata of duplicate items, if found in the dataset ('-' means standard output)");
+			"This option is ignored, but left here for backwards compatibility");
 		op_remove = add<StringOption>("remove", 0, "remove", "file",
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
 	}
@@ -196,18 +196,15 @@ struct Worker
 struct Maintainer : public Worker
 {
 	bool fix;
-	MetadataConsumer* salvage;
 
-	Maintainer(bool fix, MetadataConsumer* salvage = 0) : fix(fix), salvage(salvage)
+	Maintainer(bool fix) : fix(fix)
 	{
-		if (fix && !salvage)
-			throw wibble::exception::Consistency("setting up maintenance run", "no metadata consumer given to salvage duplicate items");
 	}
 
 	virtual void operator()(WritableDataset& w)
 	{
 		if (fix)
-			w.check(cerr, *salvage);
+			w.check(cerr, true);
 		else
 			w.check(cout);
 	}
@@ -336,9 +333,6 @@ int main(int argc, const char* argv[])
 				}
 			}
 		} else {
-			auto_ptr<runtime::Output> salvageOutput;
-			auto_ptr<Printer> salvagePrinter;
-
 			if (opts.stats->boolValue())
 				worker.reset(new Statistician());
 			else if (opts.invalidate->boolValue())
@@ -346,13 +340,7 @@ int main(int argc, const char* argv[])
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
 			else
-			{
-				if (opts.fix->boolValue() && !opts.salvage->isSet())
-					throw wibble::exception::BadOption("please specify --salvage when using --fix");
-				salvageOutput.reset(new runtime::Output(*opts.salvage));
-				salvagePrinter.reset(new Printer(salvageOutput->stream(), salvageOutput->name()));
-				worker.reset(new Maintainer(opts.fix->boolValue(), salvagePrinter.get()));
-			}
+				worker.reset(new Maintainer(opts.fix->boolValue()));
 
 			// Harvest the paths from it
 			for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
