@@ -124,7 +124,7 @@ void to::test<1>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	s.str(std::string());
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -176,7 +176,7 @@ void to::test<2>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	s.str(std::string());
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -212,7 +212,7 @@ void to::test<3>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: deindexed 2007/07-07.grib1\n"
 		"testdir: database cleaned up\n"
@@ -285,7 +285,7 @@ void to::test<4>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	s.str(std::string());
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -325,7 +325,7 @@ void to::test<5>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: database cleaned up\n"
@@ -396,7 +396,7 @@ void to::test<6>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	s.str(std::string());
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -438,7 +438,7 @@ void to::test<7>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	// No packing occurs here: check does not mangle data files
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: database cleaned up\n"
 		"testdir: rebuild summary cache\n"
@@ -491,7 +491,7 @@ void to::test<8>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: rescanned 2007/07-08.grib1\n"
@@ -543,7 +543,7 @@ void to::test<9>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: rescanned 2007/07-08.grib1\n"
@@ -598,7 +598,7 @@ void to::test<10>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned foo/bar/test.grib1\n"
 		"testdir: database cleaned up\n"
@@ -669,7 +669,7 @@ void to::test<11>()
 	stringstream s;
 
 	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned foo/bar/test.grib1\n"
 		"testdir: database cleaned up\n"
@@ -790,7 +790,7 @@ void to::test<12>()
 	// away; therefore, we can only interrupt the maintenance and raise an
 	// exception calling for manual fixing.
 	try {
-		writer.check(s, true);
+		writer.check(s, true, true);
 		ensure(false);
 	} catch (wibble::exception::Consistency& ce) {
 		ensure(true);
@@ -849,7 +849,7 @@ void to::test<13>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	s.str(std::string());
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -917,7 +917,7 @@ void to::test<14>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	s.str(std::string());
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(), string()); // Nothing should have happened
 	c.clear();
 	writer.maintenance(c);
@@ -971,7 +971,7 @@ void to::test<15>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	s.str(std::string());
-	writer.check(s, true);
+	writer.check(s, true, true);
 	ensure_equals(s.str(), 
 		"testdir: rescanned 20/2007.grib1\n"
 		"testdir: database cleaned up\n"

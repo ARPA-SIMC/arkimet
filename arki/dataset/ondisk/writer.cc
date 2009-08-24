@@ -179,7 +179,7 @@ void Writer::repack(std::ostream& log, bool writable)
 	maint_root->commit();
 }
 
-void Writer::check(std::ostream& log, bool fix)
+void Writer::check(std::ostream& log, bool fix, bool quick)
 {
 	if (fix)
 	{

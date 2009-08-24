@@ -129,7 +129,7 @@ void to::test<2>()
 		stringstream s;
 
 		// Check should reindex the file
-		writer.check(s, true);
+		writer.check(s, true, true);
 		ensure_equals(s.str(), 
 				"testds: rescanned in archive last/test.grib1\n"
 				"testds: archive cleaned up\n"
@@ -193,7 +193,7 @@ void to::test<3>()
 		stringstream s;
 
 		// Check should reindex the file
-		writer.check(s, true);
+		writer.check(s, true, true);
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
@@ -256,7 +256,7 @@ void to::test<4>()
 		stringstream s;
 
 		// Check should reindex the file
-		writer.check(s, true);
+		writer.check(s, true, true);
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"

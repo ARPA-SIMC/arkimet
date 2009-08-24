@@ -186,7 +186,7 @@ public:
 	 * If \a fix is false, the process is simulated but no changes are saved.
 	 * If \a fix is true, errors are fixed.
 	 */
-	virtual void check(std::ostream& log, bool fix=false);
+	virtual void check(std::ostream& log, bool fix, bool quick);
 
 	/**
 	 * Instantiate an appropriate Dataset for the given configuration

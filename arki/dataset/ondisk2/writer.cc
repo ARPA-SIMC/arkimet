@@ -273,7 +273,7 @@ void Writer::repack(std::ostream& log, bool writable)
 	}
 }
 
-void Writer::check(std::ostream& log, bool fix)
+void Writer::check(std::ostream& log, bool fix, bool quick)
 {
 	using namespace writer;
 
@@ -281,7 +281,7 @@ void Writer::check(std::ostream& log, bool fix)
 	{
 		RealFixer fixer(log, *this);
 		try {
-			maintenance(fixer);
+			maintenance(fixer, quick);
 			fixer.end();
 		} catch (...) {
 			createDontpackFlagfile(m_path);
@@ -291,7 +291,7 @@ void Writer::check(std::ostream& log, bool fix)
 		removeDontpackFlagfile(m_path);
 	} else {
 		MockFixer fixer(log, *this);
-		maintenance(fixer);
+		maintenance(fixer, quick);
 		fixer.end();
 	}
 }

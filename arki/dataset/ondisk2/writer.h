@@ -121,7 +121,7 @@ public:
 	 * If \a fix is false, the process is simulated but no changes are saved.
 	 * If \a fix is true, errors are fixed.
 	 */
-	virtual void check(std::ostream& log, bool fix=false);
+	virtual void check(std::ostream& log, bool fix, bool quick);
 
 	/**
 	 * Iterate through the contents of the dataset, in depth-first order.

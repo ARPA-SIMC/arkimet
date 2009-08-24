@@ -59,6 +59,7 @@ struct Options : public StandardParserWithManpage
 {
 	VectorOption<String>* cfgfiles;
 	BoolOption* fix;
+	BoolOption* accurate;
 	BoolOption* repack;
 	BoolOption* invalidate;
 	BoolOption* stats;
@@ -77,6 +78,8 @@ struct Options : public StandardParserWithManpage
 			"read the configuration from the given file (can be given more than once)");
 		fix = add<BoolOption>("fix", 'f', "fix", "",
 			"Perform the changes instead of writing what would have been changed");
+		accurate = add<BoolOption>("accurate", 0, "accurate", "",
+			"Also verify the consistency of the contents of the data files (slow)");
 		repack = add<BoolOption>("repack", 'r', "repack", "",
 			"Perform a repack instead of a check");
 		invalidate = add<BoolOption>("invalidate", 0, "invalidate", "",
@@ -196,17 +199,15 @@ struct Worker
 struct Maintainer : public Worker
 {
 	bool fix;
+	bool quick;
 
-	Maintainer(bool fix) : fix(fix)
+	Maintainer(bool fix, bool quick) : fix(fix), quick(quick)
 	{
 	}
 
 	virtual void operator()(WritableDataset& w)
 	{
-		if (fix)
-			w.check(cerr, true);
-		else
-			w.check(cout);
+		w.check(cerr, fix, quick);
 	}
 
 	virtual void done()
@@ -340,7 +341,8 @@ int main(int argc, const char* argv[])
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
 			else
-				worker.reset(new Maintainer(opts.fix->boolValue()));
+				worker.reset(new Maintainer(opts.fix->boolValue(),
+						not opts.accurate->boolValue()));
 
 			// Harvest the paths from it
 			for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
