@@ -91,10 +91,13 @@ struct HoleFinder : IndexFileVisitor
 
 	std::string last_file;
 	off_t last_file_size;
+	bool quick;
+	const scan::Validator* validator;
+	int validator_fd;
 	bool has_hole;
+	bool is_corrupted;
 
-	HoleFinder(writer::MaintFileVisitor& next, const std::string& root)
-	       	: next(next), m_root(root), has_hole(false) {}
+	HoleFinder(writer::MaintFileVisitor& next, const std::string& root, bool quick=true);
 
 	void finaliseFile();
 

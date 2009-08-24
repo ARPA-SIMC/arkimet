@@ -103,9 +103,9 @@ public:
 	virtual void flush();
 
 	/**
-	 * Perform dataset maintenance, using a MaintenanceAgent to direct the operations
+	 * Perform dataset maintenance, sending information to \a v
 	 */
-	void maintenance(writer::MaintFileVisitor& v);
+	void maintenance(writer::MaintFileVisitor& v, bool quick=true);
 
 	/**
 	 * Repack the dataset, logging status to the given file.

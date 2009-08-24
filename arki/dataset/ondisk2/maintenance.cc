@@ -59,10 +59,28 @@ static std::string nfiles(const T& val)
 		return str::fmt(val) + " files";
 }
 
+HoleFinder::HoleFinder(writer::MaintFileVisitor& next, const std::string& root, bool quick)
+	: next(next), m_root(root), quick(quick), validator(0), validator_fd(-1),
+	  has_hole(false), is_corrupted(false)
+{
+}
+
 void HoleFinder::finaliseFile()
 {
 	if (!last_file.empty())
 	{
+		if (validator_fd >= 0)
+		{
+			close(validator_fd);
+			validator_fd = -1;
+		}
+
+		if (is_corrupted)
+		{
+			next(last_file, writer::MaintFileVisitor::TO_RESCAN);
+			return;
+		}
+
 		off_t size = files::size(str::joinpath(m_root, last_file));
 		if (size < last_file_size)
 		{
@@ -93,7 +111,31 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 		last_file = file;
 		last_file_size = 0;
 		has_hole = false;
+		is_corrupted = false;
+		if (!quick)
+		{
+			validator = &scan::Validator::by_filename(file);
+			validator_fd = open(file.c_str(), O_RDONLY);
+			if (validator_fd < 0)
+				is_corrupted = true;
+		}
 	}
+	// If we've already found that the file is corrupted, there is nothing
+	// else to do
+	if (is_corrupted) return;
+	if (!quick)
+		try {
+			validator->validate(validator_fd, offset, size, file);
+		} catch (std::exception& e) {
+			// FIXME: we do not have a better interface to report
+			// error strings, so we fall back to cerr. It will be
+			// useless if we are hidden behind a graphical
+			// interface, but in all other cases it's better than
+			// nothing.
+			cerr << file << ": " << e.what() << endl;
+			is_corrupted = true;
+		}
+
 	if (offset != last_file_size)
 		has_hole = true;
 	last_file_size += size;

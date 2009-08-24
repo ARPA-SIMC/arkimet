@@ -228,52 +228,22 @@ void Writer::flush()
 	m_df_cache.clear();
 }
 
-void Writer::maintenance(writer::MaintFileVisitor& v)
+void Writer::maintenance(writer::MaintFileVisitor& v, bool quick)
 {
+	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
+	// and delete the index if it fails
+
 	// Iterate subdirs in sorted order
 	// Also iterate files on index in sorted order
 	// Check each file for need to reindex or repack
 	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
 	writer::FindMissing fm(ca, m_path);
-	writer::HoleFinder hf(fm, m_path);	
+	writer::HoleFinder hf(fm, m_path, quick);
 	m_idx.scan_files(hf);
-	if (hasArchive())
-		archive().maintenance(v);
 	hf.end();
 	fm.end();
-
-	// TODO: if a datafile is not in the index, and next to it there is a
-	// file .metadata without a flagfile, scan from the metadata file
-	// instead of rescanning the data file
-
-	// TODO: rebuild of index
-	// TODO:  (empty the index, scan all files)
-	// TODO: also file:///usr/share/doc/sqlite3-doc/pragma.html#debug
-
-	// TODO: repack (vacuum of database and rebuild of data files with repack flagfiles)
-	// TODO:  (select all files, offsets, sizes in order, and look for gaps)
-	// TODO:  (also look for gaps at end of files and truncate)
-	// TODO:  (also look for files not in the database)
-	// TODO:  (maybe do all this only for files for which there is a
-	//         flagfile, and just warn about other files)
-
-#if 0
-	auto_ptr<maint::RootDirectory> maint_root(maint::RootDirectory::create(m_cfg));
-
-	a.start(*this);
-
-	// See if the main index is ok, eventually changing the indexing behaviour
-	// in the next steps
-	bool full_reindex = maint_root->checkMainIndex(a);
-	// See that all data files are ok or if they need rebuild
-	maint_root->checkDataFiles(a, full_reindex);
-	// See that all the index info are ok (summaries and index)
-	maint_root->checkDirectories(a);
-	// Commit database changes
-	maint_root->commit();
-
-	a.end();
-#endif
+	if (hasArchive())
+		archive().maintenance(v);
 }
 
 void Writer::repack(std::ostream& log, bool writable)
