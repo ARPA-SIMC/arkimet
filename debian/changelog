@@ -2,8 +2,9 @@ arkimet (0.25-1) UNRELEASED; urgency=low
 
   * Use nag module to report validation issues details in arki-check
     --accurate
+  * Removed --salvage backwards compatibility option
 
- -- Enrico Zini <enrico@debian.org>  Tue, 25 Aug 2009 10:55:05 +0100
+ -- Enrico Zini <enrico@debian.org>  Tue, 25 Aug 2009 11:03:14 +0100
 
 arkimet (0.24-1) UNRELEASED; urgency=low
 

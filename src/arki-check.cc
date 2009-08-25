@@ -63,7 +63,6 @@ struct Options : public StandardParserWithManpage
 	BoolOption* repack;
 	BoolOption* invalidate;
 	BoolOption* stats;
-	StringOption* salvage;
 	StringOption* op_remove;
 
 	Options() : StandardParserWithManpage("arki-check", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -86,8 +85,6 @@ struct Options : public StandardParserWithManpage
 			"Create flagfiles to invalidate all metadata in a dataset.  Warning, this will work without requiring -f, and should always be invoked after a repack.");
 		stats = add<BoolOption>("stats", 0, "stats", "",
 			"Compute statistics about the various datasets.");
-		salvage = add<StringOption>("salvage", 's', "salvage", "file",
-			"This option is ignored, but left here for backwards compatibility");
 		op_remove = add<StringOption>("remove", 0, "remove", "file",
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
 	}
