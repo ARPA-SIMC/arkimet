@@ -23,12 +23,14 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/exception.h>
 #include <arki/transaction.h>
 #include <arki/types.h>
+#include <wibble/exception.h>
+#include <wibble/string.h>
 #include <sqlite3.h>
 #include <string>
 #include <vector>
+#include <limits>
 
 // Enable compatibility with old sqlite.
 // TODO: use #if macros to test sqlite version instead
@@ -131,6 +133,29 @@ public:
 	void bind(int idx, const char* str, int len);
 
 	/// Bind a query parameter
+	template<typename T>
+	void bind(int idx, T val)
+	{
+		using namespace wibble;
+		if (std::numeric_limits<T>::is_exact)
+		{
+			if (sizeof(T) <= 4)
+			{
+				if (sqlite3_bind_int(m_stm, idx, val) != SQLITE_OK)
+					m_db.throwException("binding int to " + name + " query parameter #" + str::fmt(idx));
+			}
+			else
+			{
+				if (sqlite3_bind_int64(m_stm, idx, val) != SQLITE_OK)
+					m_db.throwException("binding int64 to " + name + " query parameter #" + str::fmt(idx));
+			}
+		} else {
+			if (sqlite3_bind_double(m_stm, idx, val) != SQLITE_OK)
+				m_db.throwException("binding double to " + name + " query parameter #" + str::fmt(idx));
+		}
+	}
+
+	/// Bind a query parameter
 	void bind(int idx, const std::string& str);
 
 	/// Bind a string that will not exist until the query is performed
@@ -141,9 +166,6 @@ public:
 
 	/// Bind a blob that will not exist until the query is performed
 	void bindBlobTransient(int idx, const std::string& str);
-
-	/// Bind a query parameter
-	void bind(int idx, int val);
 
 	/// Bind NULL to a query parameter
 	void bindNull(int idx);
@@ -179,6 +201,19 @@ public:
 		return sqlite3_column_type(m_stm, column);
 	}
 
+	template<typename T>
+	T fetch(int column)
+	{
+		if (std::numeric_limits<T>::is_exact)
+		{
+			if (sizeof(T) <= 4)
+				return sqlite3_column_int(m_stm, column);
+			else
+				return sqlite3_column_int64(m_stm, column);
+		} else
+			return sqlite3_column_double(m_stm, column);
+	}
+
 	std::string fetchString(int column)
 	{
 		const char* res = (const char*)sqlite3_column_text(m_stm, column);
@@ -186,18 +221,6 @@ public:
 			return std::string();
 		else
 			return res;
-	}
-	size_t fetchSizeT(int column)
-	{
-		return sqlite3_column_int(m_stm, column);
-	}
-	int fetchInt(int column)
-	{
-		return sqlite3_column_int(m_stm, column);
-	}
-	sqlite3_int64 fetchInt64(int column)
-	{
-		return sqlite3_column_int64(m_stm, column);
 	}
 	const void* fetchBlob(int column)
 	{

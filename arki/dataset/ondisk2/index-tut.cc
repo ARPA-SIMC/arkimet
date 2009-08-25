@@ -468,8 +468,8 @@ void to::test<6>()
 	p = test->beginTransaction();
 	
 	// Index the two metadata
-	test->index(md, "test-md", 0);
-	test->index(md1, "test-md1", 0);
+	test->index(md, "test-md", md.source.upcast<source::Blob>()->offset);
+	test->index(md1, "test-md1", md1.source.upcast<source::Blob>()->offset);
 
 	// Query various kinds of metadata
 	metadata::Collector mdc;

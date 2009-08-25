@@ -104,7 +104,7 @@ int Aggregate::get(const Metadata& md) const
 
 	int id = -1;
 	while (q_select.step())
-		id = q_select.fetchInt(0);
+		id = q_select.fetch<int>(0);
 	return id;
 }
 
@@ -118,7 +118,7 @@ void Aggregate::read(int id, Metadata& md) const
 		q_select_by_id.bind(1, id);
 		while (q_select_by_id.step())
 			for (size_t idx = 0; idx < m_attrs.size(); ++idx)
-				vals.push_back(q_select_by_id.fetchInt(idx));
+				vals.push_back(q_select_by_id.fetch<int>(idx));
 		pair<std::map< int, std::vector<int> >::iterator, bool> ins =
 			m_cache.insert(make_pair(id, vals));
 		i = ins.first;
@@ -195,7 +195,7 @@ int Aggregate::obtain(const Metadata& md)
 
 	int id = -1;
 	while (q_select.step())
-		id = q_select.fetchInt(0);
+		id = q_select.fetch<int>(0);
 
 	if (id != -1)
 		return id;

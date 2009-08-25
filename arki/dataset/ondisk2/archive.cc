@@ -403,7 +403,7 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 			time_t ts_data = files::timestamp(pathname);
 			time_t ts_md = files::timestamp(pathname + ".metadata");
 			time_t ts_sum = files::timestamp(pathname + ".summary");
-			time_t ts_idx = q.fetchInt64(1);
+			time_t ts_idx = q.fetch<time_t>(1);
 
 			if (ts_idx != ts_data ||
 			    ts_md < ts_data ||

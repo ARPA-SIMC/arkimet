@@ -189,7 +189,7 @@ int Index::id(const Metadata& md) const
 
 	int id = -1;
 	while (m_get_id.step())
-		id = m_get_id.fetchInt(0);
+		id = m_get_id.fetch<int>(0);
 
 	return id;
 }
@@ -200,7 +200,7 @@ size_t Index::count() const
 	sq.compile("SELECT COUNT(*) FROM md");
 	size_t res = 0;
 	while (sq.step())
-		res = sq.fetchSizeT(0);
+		res = sq.fetch<size_t>(0);
 	return res;
 }
 
@@ -267,11 +267,11 @@ void Index::scan_files(writer::IndexFileVisitor& v) const
 	FurtherSort fs(v);
 	while (sq.step())
 	{
-		int id = sq.fetchInt(0);
+		int id = sq.fetch<int>(0);
 		string file = sq.fetchString(1);
 		string reftime = sq.fetchString(2);
-		off_t offset = sq.fetchSizeT(3);
-		size_t size = sq.fetchSizeT(4);
+		off_t offset = sq.fetch<off_t>(3);
+		size_t size = sq.fetch<size_t>(4);
 
 		fs(file, reftime, id, offset, size);
 	}
@@ -285,9 +285,9 @@ void Index::scan_file(const std::string& relname, writer::IndexFileVisitor& v, c
 	sq.bind(1, relname);
 	while (sq.step())
 	{
-		int id = sq.fetchInt(0);
-		off_t offset = sq.fetchSizeT(1);
-		size_t size = sq.fetchSizeT(2);
+		int id = sq.fetch<int>(0);
+		off_t offset = sq.fetch<off_t>(1);
+		size_t size = sq.fetch<size_t>(2);
 		v(relname, id, offset, size);
 	}
 }
@@ -315,23 +315,23 @@ void Index::scan_file(const std::string& relname, MetadataConsumer& consumer) co
 		// Rebuild the Metadata
 		Metadata md;
 		md.create();
-		md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetchInt(0))));
+		md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetch<int>(0))));
 		md.source = source::Blob::create(
 				mdq.fetchString(1), mdq.fetchString(2),
-				mdq.fetchInt(3), mdq.fetchInt(4));
+				mdq.fetch<size_t>(3), mdq.fetch<size_t>(4));
 		md.notes = mdq.fetchItems<types::Note>(5);
 		md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
 		int j = 7;
 		if (m_uniques)
 		{
 			if (mdq.fetchType(j) != SQLITE_NULL)
-				m_uniques->read(mdq.fetchInt(j), md);
+				m_uniques->read(mdq.fetch<int>(j), md);
 			++j;
 		}
 		if (m_others)
 		{
 			if (mdq.fetchType(j) != SQLITE_NULL)
-				m_others->read(mdq.fetchInt(j), md);
+				m_others->read(mdq.fetch<int>(j), md);
 			++j;
 		}
 
@@ -505,23 +505,23 @@ bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
 			// Rebuild the Metadata
 			Metadata md;
 			md.create();
-			md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetchInt(0))));
+			md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetch<int>(0))));
 			md.source = source::Blob::create(
 					mdq.fetchString(1), mdq.fetchString(2),
-					mdq.fetchInt(3), mdq.fetchInt(4));
+					mdq.fetch<size_t>(3), mdq.fetch<size_t>(4));
 			md.notes = mdq.fetchItems<types::Note>(5);
 			md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
 			int j = 7;
 			if (m_uniques)
 			{
 				if (mdq.fetchType(j) != SQLITE_NULL)
-					m_uniques->read(mdq.fetchInt(j), md);
+					m_uniques->read(mdq.fetch<int>(j), md);
 				++j;
 			}
 			if (m_others)
 			{
 				if (mdq.fetchType(j) != SQLITE_NULL)
-					m_others->read(mdq.fetchInt(j), md);
+					m_others->read(mdq.fetch<int>(j), md);
 				++j;
 			}
 
@@ -591,8 +591,8 @@ void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
 	{
 		// Fill in the summary statistics
 		arki::Item<summary::Stats> st(new summary::Stats);
-		st->count = sq.fetchInt(0);
-		st->size = sq.fetchInt(1);
+		st->count = sq.fetch<size_t>(0);
+		st->size = sq.fetch<unsigned long long>(1);
 		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
 		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
 		st->reftimeMerger.mergeTime(min_time, max_time);
@@ -604,13 +604,13 @@ void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
 		if (m_uniques)
 		{
 			if (sq.fetchType(j) != SQLITE_NULL)
-				m_uniques->read(sq.fetchInt(j), md);
+				m_uniques->read(sq.fetch<int>(j), md);
 			++j;
 		}
 		if (m_others)
 		{
 			if (sq.fetchType(j) != SQLITE_NULL)
-				m_others->read(sq.fetchInt(j), md);
+				m_others->read(sq.fetch<int>(j), md);
 			++j;
 		}
 
@@ -735,8 +735,8 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 	{
 		// Fill in the summary statistics
 		arki::Item<summary::Stats> st(new summary::Stats);
-		st->count = sq.fetchInt(0);
-		st->size = sq.fetchInt(1);
+		st->count = sq.fetch<size_t>(0);
+		st->size = sq.fetch<unsigned long long>(1);
 		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
 		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
 		st->reftimeMerger.mergeTime(min_time, max_time);
@@ -748,13 +748,13 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 		if (m_uniques)
 		{
 			if (sq.fetchType(j) != SQLITE_NULL)
-				m_uniques->read(sq.fetchInt(j), md);
+				m_uniques->read(sq.fetch<int>(j), md);
 			++j;
 		}
 		if (m_others)
 		{
 			if (sq.fetchType(j) != SQLITE_NULL)
-				m_others->read(sq.fetchInt(j), md);
+				m_others->read(sq.fetch<int>(j), md);
 			++j;
 		}
 

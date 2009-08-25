@@ -1097,7 +1097,7 @@ void to::test<17>()
 	writer.maintenance(c, false);
 	ensure_equals(c.fileStates.size(), 3u);
 	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.count(TO_RESCAN), 1u);
+	ensure_equals(c.count(TO_PACK), 1u);
 	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 

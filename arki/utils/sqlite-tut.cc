@@ -76,7 +76,7 @@ void to::test<2>()
 	select.bind(1, 1);
 	vector<int> results;
 	while (select.step())
-		results.push_back(select.fetchInt(0));
+		results.push_back(select.fetch<int>(0));
 	ensure_equals(results.size(), 2u);
 	ensure_equals(results[0], 2);
 	ensure_equals(results[1], 3);
@@ -88,7 +88,7 @@ void to::test<2>()
 	select.bind(1, 2);
 	results.clear();
 	while (select.step())
-		results.push_back(select.fetchInt(0));
+		results.push_back(select.fetch<int>(0));
 	ensure_equals(results.size(), 2u);
 	ensure_equals(results[0], 3);
 	ensure_equals(results[1], 4);
@@ -117,6 +117,49 @@ void to::test<3>()
 		ensure(dynamic_cast<wibble::exception::System*>(&e));
 	}
 }
+
+// Test inserting 64bit size_t values
+template<> template<>
+void to::test<4>()
+{
+	size_t val = 0x42FFFFffffFFFF;
+	PrecompiledQuery insert("insert", db);
+	insert.compile("INSERT INTO test (val) VALUES (?)");
+	insert.bind(1, val);
+	while (insert.step())
+		;
+
+	PrecompiledQuery select("select", db);
+	select.compile("SELECT id, val FROM test ORDER BY id DESC LIMIT 1");
+
+	size_t val1;
+	while (select.step())
+		val1 = select.fetch<size_t>(1);
+
+	ensure_equals(val1, val);
+}
+
+// Test inserting 64bit off_t values
+template<> template<>
+void to::test<5>()
+{
+	off_t val = 0x42FFFFffffFFFF;
+	PrecompiledQuery insert("insert", db);
+	insert.compile("INSERT INTO test (val) VALUES (?)");
+	insert.bind(1, val);
+	while (insert.step())
+		;
+
+	PrecompiledQuery select("select", db);
+	select.compile("SELECT id, val FROM test ORDER BY id DESC LIMIT 1");
+
+	off_t val1;
+	while (select.step())
+		val1 = select.fetch<off_t>(1);
+
+	ensure_equals(val1, val);
+}
+
 
 }
 

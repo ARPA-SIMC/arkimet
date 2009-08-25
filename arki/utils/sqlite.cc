@@ -165,12 +165,6 @@ void Query::bindBlobTransient(int idx, const std::string& str)
 		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
 }
 
-void Query::bind(int idx, int val)
-{
-	if (sqlite3_bind_int(m_stm, idx, val) != SQLITE_OK)
-		m_db.throwException("binding int to " + name + " query parameter #" + str::fmt(idx));
-}
-
 void Query::bindNull(int idx)
 {
 	if (sqlite3_bind_null(m_stm, idx) != SQLITE_OK)

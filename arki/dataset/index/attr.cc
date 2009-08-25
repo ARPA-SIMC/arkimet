@@ -46,7 +46,7 @@ int AttrSubIndex::q_select_id(const std::string& blob) const
 	int id = -1;
 	while (m_select_id->step())
 	{
-		id = m_select_id->fetchInt(0);
+		id = m_select_id->fetch<int>(0);
 	}
 
 	return id;
@@ -165,7 +165,7 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 		int len = m_select_all->fetchBytes(1);
 		Item<> t = types::decodeInner(code, (const unsigned char*)buf, len);
 		if (m.matchItem(t))
-			ids.push_back(m_select_all->fetchInt(0));
+			ids.push_back(m_select_all->fetch<int>(0));
 	}
 	return ids;
 }

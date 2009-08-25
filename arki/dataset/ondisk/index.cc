@@ -148,7 +148,7 @@ bool RIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
 
 	// int iid = m_fetch_by_id.fetchInt(0);
 	file = m_fetch_by_id.fetchString(1);
-	ofs = m_fetch_by_id.fetchSizeT(2);
+	ofs = m_fetch_by_id.fetch<size_t>(2);
 
 	// Reset the query to close the statement
 	m_fetch_by_id.reset();
@@ -172,7 +172,7 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 			// database lock as soon as possible
 			fetcher.fetch(
 				mdq.fetchString(0),
-				mdq.fetchInt(1),
+				mdq.fetch<int>(1),
 				mdbuf);
 		}
 	}
@@ -406,9 +406,9 @@ void WIndex::remove(const std::string& id, std::string& file, size_t& ofs)
 		// No results, nothing to delete
 		return;
 
-	int iid = m_fetch_by_id.fetchInt(0);
+	int iid = m_fetch_by_id.fetch<int>(0);
 	file = m_fetch_by_id.fetchString(1);
-	ofs = m_fetch_by_id.fetchSizeT(2);
+	ofs = m_fetch_by_id.fetch<size_t>(2);
 
 	// Reset the query to close the statement
 	m_fetch_by_id.reset();
