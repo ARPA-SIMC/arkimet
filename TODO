@@ -179,10 +179,19 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
- - falsi positivi del --accurate (?)
- - --verbose da usare col --accurate
+ - select offset from md where file="2009/08-23.grib1" order by offset limit 10;
+   -2147382632
+   -2147196436
+   -2147010240
+   -2146824044
+   -2146637848
+   -2146451652
+   -2146265456
+   -2146079260
+   -2145893064
+   -2145706868
+ - i file di dati > 2**31 fanno casino
  - lm7tmpc eccezione maskata da sqlite
- - z199 ha una local definition
 
  - far andare il testdispatch per poter testare la scansione con le nuove
    grib_api

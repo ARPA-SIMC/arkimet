@@ -443,6 +443,50 @@ void to::test<5>()
 
 }
 
+// Trying indexing a few metadata in a large file
+template<> template<>
+void to::test<6>()
+{
+	// Pretend the data is in a very big file
+	md.source = source::Blob::create("grib", "antani", 0x100000000, 2000);
+	md1.source = source::Blob::create("grib", "blinda", 0xFFFFffffFFFF0000, 0xFFFF);
+
+	// Remove index if it exists
+	unlink("file1");
+
+	auto_ptr<WIndex> test = createIndex<WIndex>(
+		"type = ondisk2\n"
+		"path = .\n"
+		"indexfile = file1\n"
+		"index = origin, product, level\n"
+		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+	);
+	ensure(test.get() != 0);
+	Pending p;
+
+	test->open();
+	p = test->beginTransaction();
+	
+	// Index the two metadata
+	test->index(md, "test-md", 0);
+	test->index(md1, "test-md1", 0);
+
+	// Query various kinds of metadata
+	metadata::Collector mdc;
+	test->query(Matcher::parse(""), mdc);
+
+	Item<source::Blob> s = mdc[0].source.upcast<source::Blob>();
+	ensure_equals(s->offset, 0xFFFFffffFFFF0000u);
+	ensure_equals(s->size, 0xFFFFu);
+
+	s = mdc[1].source.upcast<source::Blob>();
+	ensure_equals(s->offset, 0x100000000u);
+	ensure_equals(s->size, 2000u);
+
+	// TODO: level, timerange, area, ensemble, reftime
+	p.commit();
+}
+
 }
 
 // vim:set ts=4 sw=4:
