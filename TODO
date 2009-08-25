@@ -179,6 +179,9 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - Usare varint per la lunghezza degli oggetti in arki/types, cosí non serve
+   piú mantenere la tabella apposta
+
  - cannibalizzare l'encoder/decoder di varint dalla libreria Protocol Buffers
    di Google (o usare direttamente i Protocol Buffer per l'encoding, se si
    riesce a incastrarli)

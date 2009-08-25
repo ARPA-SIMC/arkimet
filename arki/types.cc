@@ -1,7 +1,7 @@
 /*
  * types - arkimet metadata type system
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -128,8 +128,8 @@ std::string Type::encodeWithEnvelope() const
 {
 	using namespace utils::codec;
 	string contents = encodeWithoutEnvelope();
-	return encodeUInt(serialisationCode(), 2)
-		 + encodeUInt(contents.size(), serialisationSizeLength())
+	return encodeVarint((unsigned)serialisationCode())
+		 + encodeVarint(contents.size())
 		 + contents;
 }
 
@@ -138,22 +138,16 @@ types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
 	using namespace utils::codec;
 	using namespace str;
 
-	// Decode the element type to see what we're coping with
-	ensureSize(len, 2, "element header");
-	Code code = (Code)decodeUInt(buf, 2);
-	buf += 2; len -= 2;
+	Decoder dec(buf, len);
 
-	if (!decoders || decoders[code] == 0)
-		throw wibble::exception::Consistency("parsing binary data", "no decoder found for item type " + fmt(code));
-
+	// Decode the element type
+	Code code = (Code)dec.popVarint<unsigned>("element code");
 	// Decode the element size
-	int itemSize = decoders[code]->serialisationSizeLen;
-	ensureSize(len, itemSize, "element size");
-	size_t size = decodeUInt(buf, itemSize);
-	buf += itemSize; len -= itemSize;
+	size_t size = dec.popVarint<size_t>("element size");
 
 	// Finally decode the element body
-	ensureSize(len, size, "element body");
+	ensureSize(dec.len, size, "element body");
+	buf = dec.buf;
 	len = size;
 	return code;
 }

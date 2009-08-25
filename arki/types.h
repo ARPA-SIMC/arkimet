@@ -4,7 +4,7 @@
 /*
  * types - arkimet metadata type system
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -254,6 +254,13 @@ struct MetadataType
 
 /// Decode an item encoded in binary representation
 Item<> decode(const unsigned char* buf, size_t len);
+/**
+ * Decode the item envelope in buf:len
+ *
+ * Return the inside of the envelope start in buf and the inside length in len
+ *
+ * After the function returns, the start of the next envelope is at buf+len
+ */
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len);
 Item<> decodeInner(types::Code, const unsigned char* buf, size_t len);
 Item<> decodeString(types::Code, const std::string& val);
