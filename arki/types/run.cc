@@ -101,17 +101,17 @@ std::string Run::encodeWithoutEnvelope() const
 Item<Run> Run::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
-	ensureSize(len, 1, "Run");
-	Style s = (Style)decodeUInt(buf, 1);
+	Decoder dec(buf, len);
+	Style s = (Style)dec.popUInt(1, "run style");
 	switch (s)
 	{
 		case MINUTE: {
 			Item<run::Minute> res(new run::Minute);
-			res->minute = decodeUInt(buf+1, 2);
+			res->minute = dec.popVarint<unsigned>("run minute");
 			return res;
 		}
 		default:
-			throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE and BOX");
+			throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
 	}
 }
     
@@ -212,7 +212,7 @@ Run::Style Minute::style() const { return Run::MINUTE; }
 std::string Minute::encodeWithoutEnvelope() const
 {
 	using namespace utils::codec;
-	return Run::encodeWithoutEnvelope() + encodeUInt(minute, 2);
+	return Run::encodeWithoutEnvelope() + encodeVarint(minute);
 }
 std::ostream& Minute::writeToOstream(std::ostream& o) const
 {

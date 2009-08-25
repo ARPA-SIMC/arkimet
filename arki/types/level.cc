@@ -155,36 +155,41 @@ std::string Level::encodeWithoutEnvelope() const
 Item<Level> Level::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
-	ensureSize(len, 1, "Level");
-	Style s = (Style)decodeUInt(buf, 1);
-	buf += 1; len -= 1;
+	Decoder dec(buf, len);
+	Style s = (Style)dec.popUInt(1, "level style");
 	switch (s)
 	{
 		case GRIB1: {
-			ensureSize(len, 1, "Level type");
-			unsigned char ltype = decodeUInt(buf, 1);
-			buf += 1; len -= 1;
+			unsigned char ltype = dec.popUInt(1, "level type");
 			switch (level::GRIB1::getValType(ltype))
 			{
 				case 0:
 					return level::GRIB1::create(ltype);
-				case 1:
-					ensureSize(len, 2, "Level value");
-					return level::GRIB1::create(ltype, decodeUInt(buf, 2));
-				default:
-					ensureSize(len, 2, "Level value");
-					return level::GRIB1::create(ltype, decodeUInt(buf, 1), decodeUInt(buf+1, 1));
+				case 1: {
+					unsigned short l1 = dec.popVarint<unsigned short>("GRIB1 level l1");
+					return level::GRIB1::create(ltype, l1);
+				}
+				default: {
+					unsigned char l1 = dec.popUInt(1, "GRIB1 layer l1");
+					unsigned char l2 = dec.popUInt(1, "GRIB1 layer l2");
+					return level::GRIB1::create(ltype, l1, l2);
+				}
 			}
 		}
 		case GRIB2S: {
-			ensureSize(len, 6, "Level information");
-			return level::GRIB2S::create(decodeUInt(buf, 1), decodeUInt(buf+1, 1), decodeUInt(buf+2, 4));
+			unsigned char type = dec.popUInt(1, "GRIB2S level type");
+			unsigned char scale = dec.popUInt(1, "GRIB2S level scale");
+			unsigned long value = dec.popVarint<unsigned long>("GRIB2S level value");
+			return level::GRIB2S::create(type, scale, value);
 		}
 		case GRIB2D: {
-			ensureSize(len, 12, "Level type");
-			return level::GRIB2D::create(
-						decodeUInt(buf+0, 1), decodeUInt(buf+1, 1), decodeUInt(buf+2, 4),
-						decodeUInt(buf+6, 1), decodeUInt(buf+7, 1), decodeUInt(buf+8, 4));
+			unsigned char type1 = dec.popUInt(1, "GRIB2D type1");
+			unsigned char scale1 = dec.popUInt(1, "GRIB2D scale2");
+			unsigned long value1 = dec.popVarint<unsigned long>("GRIB2D value1");
+			unsigned char type2 = dec.popUInt(1, "GRIB2D type2");
+			unsigned char scale2 = dec.popUInt(1, "GRIB2D scale2");
+			unsigned long value2 = dec.popVarint<unsigned long>("GRIB2D value2");
+			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Level", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2S and GRIB2D");
@@ -335,7 +340,7 @@ std::string GRIB1::encodeWithoutEnvelope() const
 	switch (valType())
 	{
 		case 0: break;
-		case 1: res += encodeUInt(l1, 2); break;
+		case 1: res += encodeVarint(l1); break;
 		default: res += encodeUInt(l1, 1) + encodeUInt(l2, 1); break;
 	}
 	return res;
@@ -482,7 +487,7 @@ std::string GRIB2S::encodeWithoutEnvelope() const
 {
 	using namespace utils::codec;
 	string res = Level::encodeWithoutEnvelope()
-	           + encodeUInt(type, 1) + encodeUInt(scale, 1) + encodeUInt(value, 4);
+	           + encodeUInt(type, 1) + encodeUInt(scale, 1) + encodeVarint(value);
 	return res;
 }
 std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
@@ -542,8 +547,8 @@ std::string GRIB2D::encodeWithoutEnvelope() const
 {
 	using namespace utils::codec;
 	string res = Level::encodeWithoutEnvelope()
-	           + encodeUInt(type1, 1) + encodeUInt(scale1, 1) + encodeUInt(value1, 4)
-	           + encodeUInt(type2, 1) + encodeUInt(scale2, 1) + encodeUInt(value2, 4);
+	           + encodeUInt(type1, 1) + encodeUInt(scale1, 1) + encodeVarint(value1)
+	           + encodeUInt(type2, 1) + encodeUInt(scale2, 1) + encodeVarint(value2);
 	return res;
 }
 std::ostream& GRIB2D::writeToOstream(std::ostream& o) const

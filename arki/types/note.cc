@@ -80,16 +80,19 @@ std::string Note::tag() const { return TAG; }
 std::string Note::encodeWithoutEnvelope() const
 {
 	using namespace utils::codec;
-	return time->encodeWithoutEnvelope() + encodeUInt(content.size(), 2) + content;
+	return time->encodeWithoutEnvelope() + encodeVarint(content.size()) + content;
 }
 
 Item<Note> Note::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
-	ensureSize(len, 7, "Note");
-	size_t msg_len = decodeUInt(buf+5, 2);
-	ensureSize(len, 7 + msg_len, "Note");
-	return Note::create(Time::decode(buf, 5), string((const char*)buf + 7, 0, msg_len));
+
+	ensureSize(len, 5, "note time");
+	Item<Time> t = Time::decode(buf, 5);
+	Decoder dec(buf+5, len-5);
+	size_t msg_len = dec.popVarint<size_t>("note text size");
+	string msg = dec.popString(msg_len, "note text");
+	return Note::create(t, msg);
 }
 
 std::ostream& Note::writeToOstream(std::ostream& o) const
