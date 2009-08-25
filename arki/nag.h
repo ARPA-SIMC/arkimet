@@ -36,13 +36,16 @@ namespace nag {
  * from the environment and printing a little informational banner if any
  * level of verbose messages are enabled.
  */
-void init(bool verbose=false, bool debug=false);
+void init(bool verbose=false, bool debug=false, bool testing=false);
 
 /// Check if verbose output is enabled
 bool is_verbose();
 
 /// Check if debug output is enabled
 bool is_debug();
+
+/// Output a message, except during tests (a newline is automatically appended)
+void warning(const char* fmt, ...);
 
 /// Output a message, if verbose messages are allowed (a newline is automatically appended)
 void verbose(const char* fmt, ...);

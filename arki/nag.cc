@@ -45,9 +45,11 @@ namespace nag {
 
 static bool _verbose = false;
 static bool _debug = false;
+static bool _testing = false;
 
-void init(bool verbose, bool debug)
+void init(bool verbose, bool debug, bool testing)
 {
+	_testing = testing;
 	_verbose = verbose;
 	if (debug)
 		_debug = _verbose = true;
@@ -67,6 +69,17 @@ void init(bool verbose, bool debug)
 
 bool is_verbose() { return _verbose; }
 bool is_debug() { return _debug; }
+
+void warning(const char* fmt, ...)
+{
+	if (_testing) return;
+
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	putc('\n', stderr);
+}
 
 void verbose(const char* fmt, ...)
 {

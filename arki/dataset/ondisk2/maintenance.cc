@@ -28,6 +28,7 @@
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
 #include <arki/scan/any.h>
+#include <arki/nag.h>
 
 #include <wibble/sys/fs.h>
 
@@ -137,7 +138,8 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 			// interface, but in all other cases it's better than
 			// nothing. HOWEVER, printing to stderr creates noise
 			// during the unit tests.
-			//cerr << "corruption detected at " << str::joinpath(m_root, file) << ":" << offset << "-" << size << ": " << e.desc() << endl;
+			string fname = str::joinpath(m_root, file);
+			nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, size, e.desc().c_str());
 			is_corrupted = true;
 		}
 

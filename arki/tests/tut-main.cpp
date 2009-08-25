@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <cstring>
 #include <cstdlib>
+#include <arki/nag.h>
 
 namespace tut {
   test_runner_singleton runner;
@@ -16,6 +17,7 @@ void signal_to_exception(int)
 
 int main(int argc,const char* argv[])
 {
+  arki::nag::init(false, false, true);
   tut::reporter visi;
 
   signal(SIGSEGV,signal_to_exception);         
