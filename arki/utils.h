@@ -4,7 +4,7 @@
 /*
  * utils - General utility functions
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,17 @@
 namespace arki {
 namespace utils {
 
+// static_assert implementation (taken from boost)
+// It relies on sizeof(incomplete_type) generating an error message containing
+// the name of the incomplete type.
+template <bool x> struct STATIC_ASSERTION_FAILURE;
+template <> struct STATIC_ASSERTION_FAILURE<true> { enum { value = 1 }; };
+template<int x> struct static_assert_test{};
+#define ARKI_STATIC_ASSERT( B ) \
+	typedef ::arki::utils::static_assert_test<\
+		sizeof(::arki::utils::STATIC_ASSERTION_FAILURE<(bool)(B)>)> arki_utils_static_assert_typedef_ ## __LINE__
+
+
 bool isdir(const std::string& root, wibble::sys::fs::Directory::const_iterator& i);
 
 bool isdir(const std::string& pathname);
@@ -55,14 +66,6 @@ void removeFlagfile(const std::string& pathname);
 /// Check if a file exists
 bool hasFlagfile(const std::string& pathname);
 
-/// Simple boundary check
-static inline void ensureSize(size_t len, size_t req, const char* what)
-{
-	using namespace wibble::str;
-	if (len < req)
-		throw wibble::exception::Consistency(std::string("parsing ") + what, "size is " + fmt(len) + " but we need at least "+fmt(req)+" for the "+what);
-}
-
 template<typename A, typename B>
 int compareMaps(const A& m1, const B& m2)
 {
@@ -81,97 +84,6 @@ int compareMaps(const A& m1, const B& m2)
         if (a == m1.end())
                 return -1;
         return 1;
-}
-
-/// Encode an unsigned integer in the given amount of bytes, big endian
-std::string encodeUInt(unsigned int val, unsigned int bytes);
-
-/// Encode an unsigned integer in the given amount of bytes, big endian
-std::string encodeULInt(unsigned long long int val, unsigned int bytes);
-
-/// Encode a signed integer in the given amount of bytes, big endian
-static inline std::string encodeSInt(signed int val, unsigned int bytes)
-{
-	uint32_t uns;
-	if (val < 0)
-	{
-		// If it's negative, we encode the 2-complement of the positive value
-		uns = -val;
-		uns = ~uns + 1;
-	} else
-		uns = val;
-	return encodeUInt(uns, bytes);
-}
-
-/// Decode the first 'bytes' bytes from val as an int, big endian
-static inline uint32_t decodeUInt(const unsigned char* val, unsigned int bytes)
-{
-	uint32_t res = 0;
-	for (unsigned int i = 0; i < bytes; ++i)
-		res |= (unsigned char)val[i] << ((bytes - i - 1) * 8);
-	return res;
-}
-
-/// Decode the first 'bytes' bytes from val as an int, big endian
-uint64_t decodeULInt(const unsigned char* val, unsigned int bytes);
-
-/// Decode the first 'bytes' bytes from val as an int, big endian
-static inline int decodeSInt(const unsigned char* val, unsigned int bytes)
-{
-	uint32_t uns = decodeUInt(val, bytes);
-	// Check if it's negative
-	if (uns & 0x80u << ((bytes-1)*8))
-	{
-		const uint32_t mask = bytes == 1 ? 0xff : bytes == 2 ? 0xffff : bytes == 3 ? 0xffffff : 0xffffffff;
-		uns = (~(uns-1)) & mask;
-		return -uns;
-	} else
-		return uns;
-}
-
-/// Decode the first 'bytes' bytes from val as an int, little endian
-static inline unsigned int decodeIntLE(const unsigned char* val, unsigned int bytes)
-{
-	unsigned int res = 0;
-	for (unsigned int i = bytes - 1; i >= 0; --i)
-		res |= (unsigned char)val[i] << ((bytes - i - 1) * 8);
-	return res;
-}
-
-/// Encode a IEEE754 float
-static inline std::string encodeFloat(float val)
-{
-	std::string res(sizeof(float), 0);
-	for (unsigned int i = 0; i < sizeof(float); ++i)
-		res[i] = ((const unsigned char*)&val)[i];
-	return res;
-}
-
-/// Decode an IEEE754 float
-static inline float decodeFloat(const unsigned char* val)
-{
-	float res = 0;
-	for (unsigned int i = 0; i < sizeof(float); ++i)
-		((unsigned char*)&res)[i] = val[i];
-	return res;
-}
-
-/// Encode a IEEE754 double
-static inline std::string encodeDouble(double val)
-{
-	std::string res(sizeof(double), 0);
-	for (unsigned int i = 0; i < sizeof(double); ++i)
-		res[i] = ((const unsigned char*)&val)[i];
-	return res;
-}
-
-/// Decode an IEEE754 double
-static inline double decodeDouble(const unsigned char* val)
-{
-	double res = 0;
-	for (unsigned int i = 0; i < sizeof(double); ++i)
-		((unsigned char*)&res)[i] = val[i];
-	return res;
 }
 
 // Save the state of a stream, the RAII way

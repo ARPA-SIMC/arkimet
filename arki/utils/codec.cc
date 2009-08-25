@@ -1,4 +1,6 @@
 /*
+ * utils/codec - Encoding/decoding utilities
+ *
  * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,37 +20,42 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/tests/test-utils.h>
-#include <arki/utils.h>
-#include <arki/types/origin.h>
-#include <arki/types/run.h>
+#include <arki/utils/codec.h>
 
-#include <sstream>
-#include <iostream>
-
-namespace tut {
 using namespace std;
-using namespace arki;
 
-struct arki_utils_shar {
-};
-TESTGRP(arki_utils);
+namespace arki {
+namespace utils {
+namespace codec {
 
-// Check compareMaps
-template<> template<>
-void to::test<1>()
+std::string encodeUInt(unsigned int val, unsigned int bytes)
 {
-	using namespace utils;
-	map<string, UItem<> > a;
-	map<string, UItem<> > b;
+	std::string res(bytes, 0);
+	for (unsigned int i = 0; i < bytes; ++i)
+		res[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
+	return res;
+}
 
-	a["antani"] = b["antani"] = types::origin::GRIB1::create(1, 2, 3);
-	a["pippo"] = types::run::Minute::create(12);
+std::string encodeULInt(unsigned long long int val, unsigned int bytes)
+{
+	std::string res(bytes, 0);
+	for (unsigned int i = 0; i < bytes; ++i)
+		res[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
+	return res;
+}
 
-	ensure_equals(compareMaps(a, b), 1);
-	ensure_equals(compareMaps(b, a), -1);
+uint64_t decodeULInt(const unsigned char* val, unsigned int bytes)
+{
+	uint64_t res = 0;
+	for (unsigned int i = 0; i < bytes; ++i)
+	{
+		res <<= 8;
+		res |= val[i];
+	}
+	return res;
 }
 
 }
-
+}
+}
 // vim:set ts=4 sw=4:

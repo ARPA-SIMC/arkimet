@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/timerange.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <iomanip>
@@ -182,13 +182,13 @@ std::string Timerange::tag() const { return TAG; }
 
 std::string Timerange::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Timerange");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -494,7 +494,7 @@ Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
 std::string GRIB1::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Timerange::encodeWithoutEnvelope() + encodeUInt(type, 1) + encodeUInt(unit, 1) + encodeSInt(p1, 1) + encodeSInt(p2, 1);
 }
 
@@ -682,7 +682,7 @@ Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
 
 std::string GRIB2::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Timerange::encodeWithoutEnvelope() + encodeUInt(type, 1) + encodeUInt(unit, 1) + encodeSInt(p1, 4) + encodeSInt(p2, 4);
 }
 

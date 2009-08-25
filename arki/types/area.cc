@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -90,13 +90,13 @@ std::string Area::tag() const { return TAG; }
 
 std::string Area::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Area> Area::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Area");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -190,7 +190,7 @@ Area::Style GRIB::style() const { return Area::GRIB; }
 
 std::string GRIB::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Area::encodeWithoutEnvelope() + values.encode();
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const

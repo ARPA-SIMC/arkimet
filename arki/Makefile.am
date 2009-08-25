@@ -77,6 +77,7 @@ arkiinclude_HEADERS = \
 		types/run.h \
 		utils/geosfwd.h \
 		utils/geosdef.h \
+		utils/codec.h \
 		utils/sqlite.h \
 		utils/files.h \
 		utils/metadata.h \
@@ -108,6 +109,7 @@ lib_LTLIBRARIES = libarkimet.la
 libarkimet_la_SOURCES = \
 		nag.cc \
 		utils.cc \
+		utils/codec.cc \
 		utils/sqlite.cc \
 		utils/files.cc \
 		utils/metadata.cc \
@@ -189,6 +191,7 @@ TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
 check_PROGRAMS = tests/arki-test
 tests_arki_test_SOURCES = \
 		utils-tut.cc \
+		utils/codec-tut.cc \
 		utils/sqlite-tut.cc \
 		utils/files-tut.cc \
 		utils/metadata-tut.cc \

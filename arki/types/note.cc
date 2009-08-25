@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/note.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -79,13 +79,13 @@ std::string Note::tag() const { return TAG; }
 
 std::string Note::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return time->encodeWithoutEnvelope() + encodeUInt(content.size(), 2) + content;
 }
 
 Item<Note> Note::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 7, "Note");
 	size_t msg_len = decodeUInt(buf+5, 2);
 	ensureSize(len, 7 + msg_len, "Note");

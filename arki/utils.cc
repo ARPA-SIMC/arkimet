@@ -1,7 +1,7 @@
 /*
  * utils - General utility functions
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "utils.h"
+#include <arki/utils.h>
 #include <wibble/sys/fs.h>
 
 #include <fstream>
@@ -111,33 +111,6 @@ void removeFlagfile(const std::string& pathname)
 bool hasFlagfile(const std::string& pathname)
 {
 	return wibble::sys::fs::access(pathname, F_OK);
-}
-
-std::string encodeUInt(unsigned int val, unsigned int bytes)
-{
-	std::string res(bytes, 0);
-	for (unsigned int i = 0; i < bytes; ++i)
-		res[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
-	return res;
-}
-
-std::string encodeULInt(unsigned long long int val, unsigned int bytes)
-{
-	std::string res(bytes, 0);
-	for (unsigned int i = 0; i < bytes; ++i)
-		res[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
-	return res;
-}
-
-uint64_t decodeULInt(const unsigned char* val, unsigned int bytes)
-{
-	uint64_t res = 0;
-	for (unsigned int i = 0; i < bytes; ++i)
-	{
-		res <<= 8;
-		res |= val[i];
-	}
-	return res;
 }
 
 void hexdump(const char* name, const std::string& str)

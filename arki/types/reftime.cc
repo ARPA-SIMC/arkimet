@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/reftime.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -94,13 +94,13 @@ std::string Reftime::tag() const { return TAG; }
 
 std::string Reftime::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Reftime");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -206,7 +206,7 @@ Reftime::Style Position::style() const { return Reftime::POSITION; }
 
 std::string Position::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Reftime::encodeWithoutEnvelope() + time->encodeWithoutEnvelope();
 }
 
@@ -269,7 +269,7 @@ bool Period::setEndtimeToNow(int secondsAgo)
 
 std::string Period::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Reftime::encodeWithoutEnvelope() + begin->encodeWithoutEnvelope() + end->encodeWithoutEnvelope();
 }
 

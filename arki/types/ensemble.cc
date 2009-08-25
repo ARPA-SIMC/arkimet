@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/ensemble.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -90,13 +90,13 @@ std::string Ensemble::tag() const { return TAG; }
 
 std::string Ensemble::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Ensemble> Ensemble::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Ensemble");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -190,7 +190,7 @@ Ensemble::Style GRIB::style() const { return Ensemble::GRIB; }
 
 std::string GRIB::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Ensemble::encodeWithoutEnvelope() + values.encode();
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const

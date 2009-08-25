@@ -21,7 +21,7 @@
  */
 
 #include <arki/types.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -126,7 +126,7 @@ int Type::compare(const Type& o) const
 
 std::string Type::encodeWithEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	string contents = encodeWithoutEnvelope();
 	return encodeUInt(serialisationCode(), 2)
 		 + encodeUInt(contents.size(), serialisationSizeLength())
@@ -135,7 +135,7 @@ std::string Type::encodeWithEnvelope() const
 
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	using namespace str;
 
 	// Decode the element type to see what we're coping with
@@ -190,7 +190,7 @@ std::string tag(types::Code code)
 
 bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
 {
-	using namespace utils;
+	using namespace utils::codec;
 
 	// Skip all leading blank bytes
 	char c;
@@ -223,14 +223,14 @@ bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, s
 	// Read the metadata body
 	buf.resize(len);
 	res = read(fd, buf.data(), len);
-	if (res != len)
+	if ((unsigned)res != len)
 		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
 
 	return true;
 }
 bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
 {
-	using namespace utils;
+	using namespace utils::codec;
 
 	// Skip all leading blank bytes
 	int c;
@@ -277,7 +277,7 @@ bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buff
 
 bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filename, const unsigned char*& obuf, size_t& olen, std::string& signature, unsigned& version)
 {
-	using namespace utils;
+	using namespace utils::codec;
 
 	// Skip all leading blank bytes
 	while (len > 0 && *buf == 0)

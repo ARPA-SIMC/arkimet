@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/source.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 
@@ -108,13 +108,13 @@ std::string Source::tag() const
 
 std::string Source::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1) + encodeUInt(format.size(), 1) + format;
 }
 
 Item<Source> Source::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 2, "Source");
 	Style s = (Style)decodeUInt(buf, 1);
 	unsigned int format_len = decodeUInt(buf+1, 1);
@@ -271,7 +271,7 @@ Source::Style Blob::style() const { return Source::BLOB; }
 
 std::string Blob::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Source::encodeWithoutEnvelope() + encodeUInt(filename.size(), 2) + filename + encodeUInt(offset, 4) + encodeUInt(size, 4);
 }
 
@@ -331,7 +331,7 @@ Source::Style URL::style() const { return Source::URL; }
 
 std::string URL::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Source::encodeWithoutEnvelope() + encodeUInt(url.size(), 2) + url;
 }
 
@@ -382,7 +382,7 @@ Source::Style Inline::style() const { return Source::INLINE; }
 
 std::string Inline::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Source::encodeWithoutEnvelope() + encodeUInt(size, 4);
 }
 

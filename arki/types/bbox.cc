@@ -25,7 +25,7 @@
 #include <wibble/regexp.h>
 #include <arki/types/bbox.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <iomanip>
 #include <sstream>
@@ -123,13 +123,13 @@ std::string BBox::tag() const { return TAG; }
 
 std::string BBox::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<BBox> BBox::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "BBox");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -298,7 +298,7 @@ BBox::Style INVALID::style() const { return BBox::INVALID; }
 
 std::string INVALID::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return BBox::encodeWithoutEnvelope();
 }
 std::ostream& INVALID::writeToOstream(std::ostream& o) const
@@ -347,7 +347,7 @@ BBox::Style POINT::style() const { return BBox::POINT; }
 
 std::string POINT::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return BBox::encodeWithoutEnvelope()
 			+ encodeFloat(lat) + encodeFloat(lon);
 }
@@ -408,7 +408,7 @@ BBox::Style BOX::style() const { return BBox::BOX; }
 
 std::string BOX::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return BBox::encodeWithoutEnvelope()
 			+ encodeFloat(latmin) + encodeFloat(latmax)
 			+ encodeFloat(lonmin) + encodeFloat(lonmax);
@@ -486,7 +486,7 @@ BBox::Style HULL::style() const { return BBox::HULL; }
 
 std::string HULL::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	string res = BBox::encodeWithoutEnvelope();
 	res += encodeUInt(points.size(), 2);
 	for (size_t i = 0; i < points.size(); ++i)

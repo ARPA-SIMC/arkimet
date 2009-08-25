@@ -21,7 +21,7 @@
  */
 
 #include <arki/metadata.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include <arki/formatter.h>
 #include "config.h"
 
@@ -329,7 +329,7 @@ void Metadata::writeYaml(std::ostream& out, const Formatter* formatter) const
 
 string Metadata::encode() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	// Encode the various information
 	string encoded;
 	for (const_iterator i = begin(); i != end(); ++i)
@@ -408,7 +408,7 @@ void Metadata::prependPath(const std::string& path)
 
 void MetadataStream::checkMetadata()
 {
-	using namespace utils;
+	using namespace utils::codec;
 
 	if (buffer.size() < 8) return;
 

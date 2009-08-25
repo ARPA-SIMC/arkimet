@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/origin.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <iomanip>
 #include <sstream>
@@ -101,13 +101,13 @@ std::string Origin::tag() const { return TAG; }
 
 std::string Origin::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Origin> Origin::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Origin");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -240,7 +240,7 @@ Origin::Style GRIB1::style() const { return Origin::GRIB1; }
 
 std::string GRIB1::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Origin::encodeWithoutEnvelope() + encodeUInt(centre, 1) + encodeUInt(subcentre, 1) + encodeUInt(process, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
@@ -303,7 +303,7 @@ Origin::Style GRIB2::style() const { return Origin::GRIB2; }
 
 std::string GRIB2::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Origin::encodeWithoutEnvelope() + encodeUInt(centre, 2) + encodeUInt(subcentre, 2) + encodeUInt(processtype, 1)
 		 + encodeUInt(bgprocessid, 1) + encodeUInt(processid, 1); 
 }
@@ -377,7 +377,7 @@ Origin::Style BUFR::style() const { return Origin::BUFR; }
 
 std::string BUFR::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Origin::encodeWithoutEnvelope() + encodeUInt(centre, 1) + encodeUInt(subcentre, 1);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const

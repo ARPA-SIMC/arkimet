@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/level.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <iomanip>
@@ -148,13 +148,13 @@ std::string Level::tag() const { return TAG; }
 
 std::string Level::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Level> Level::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Level");
 	Style s = (Style)decodeUInt(buf, 1);
 	buf += 1; len -= 1;
@@ -330,7 +330,7 @@ Level::Style GRIB1::style() const { return Level::GRIB1; }
 
 std::string GRIB1::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	string res = Level::encodeWithoutEnvelope() + encodeUInt(type, 1);
 	switch (valType())
 	{
@@ -480,7 +480,7 @@ Level::Style GRIB2S::style() const { return Level::GRIB2S; }
 
 std::string GRIB2S::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	string res = Level::encodeWithoutEnvelope()
 	           + encodeUInt(type, 1) + encodeUInt(scale, 1) + encodeUInt(value, 4);
 	return res;
@@ -540,7 +540,7 @@ Level::Style GRIB2D::style() const { return Level::GRIB2D; }
 
 std::string GRIB2D::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	string res = Level::encodeWithoutEnvelope()
 	           + encodeUInt(type1, 1) + encodeUInt(scale1, 1) + encodeUInt(value1, 4)
 	           + encodeUInt(type2, 1) + encodeUInt(scale2, 1) + encodeUInt(value2, 4);

@@ -22,7 +22,7 @@
 
 #include <wibble/exception.h>
 #include <arki/values.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include <cstdlib>
 #include <cctype>
 #include "config.h"
@@ -36,6 +36,7 @@ extern "C" {
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 #if 0
 static void dump(const char* name, const std::string& str)
@@ -278,7 +279,7 @@ struct Integer : public Common<int>
 				throw wibble::exception::Consistency("encoding integer number", "value " + str::fmt(val) + " is too large to be encoded");
 				
 			type |= (nbytes-1);
-			return string((const char*)&type, 1u) + utils::encodeUInt(val, nbytes);
+			return string((const char*)&type, 1u) + codec::encodeUInt(val, nbytes);
 		}
 	}
 
@@ -345,7 +346,7 @@ struct String : public Common<std::string>
 
 Value* Value::decode(const void* buf, size_t len, size_t& used)
 {
-	using namespace utils;
+	using namespace codec;
 
 	unsigned char* s = (unsigned char*)buf;
 
@@ -599,7 +600,7 @@ void ValueBag::set(const std::string& key, Value* val)
 
 std::string ValueBag::encode() const
 {
-	using namespace utils;
+	using namespace codec;
 	string res;
 	for (const_iterator i = begin(); i != end(); ++i)
 	{
@@ -632,7 +633,7 @@ std::string ValueBag::toString() const
  */
 ValueBag ValueBag::decode(const void* buf, size_t len)
 {
-	using namespace utils;
+	using namespace codec;
 
 	ValueBag res;
 	const unsigned char* start = (const unsigned char*)buf;

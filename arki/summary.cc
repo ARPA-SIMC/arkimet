@@ -23,7 +23,7 @@
 #include <arki/summary.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include <arki/formatter.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -356,7 +356,7 @@ void Node::add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, siz
 
 static void addEncodedItem(string& encoded, const UItem<>& item, size_t msoIdx)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	size_t serlen = msoSerLen[msoIdx];
 	if (item.defined())
 	{
@@ -372,7 +372,7 @@ static void addEncodedItem(string& encoded, const UItem<>& item, size_t msoIdx)
 
 std::string Node::encode(const UItem<>& lead, size_t scanpos) const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	string encoded;
 
 	// Add the set of metadata that we have
@@ -414,7 +414,7 @@ std::string Node::encode(const UItem<>& lead, size_t scanpos) const
 
 static UItem<> decodeUItem(size_t msoIdx, const unsigned char*& buf, size_t& len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	codeclog("Decode metadata item " << msoIdx << " len " << msoSerLen[msoIdx]);
 	size_t itemsizelen = msoSerLen[msoIdx];
 	ensureSize(len, itemsizelen, "Metadata item size");
@@ -435,7 +435,7 @@ static UItem<> decodeUItem(size_t msoIdx, const unsigned char*& buf, size_t& len
 static void decodeFollowing(Node& node, const unsigned char*& buf, size_t& len, size_t scanpos)
 {
 	codeclog("Decode following");
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 2, "Number of child stripes");
 	size_t childnum = decodeUInt(buf, 2);
 	buf += 2; len -= 2;
@@ -479,7 +479,7 @@ static void decodeFollowing(Node& node, const unsigned char*& buf, size_t& len, 
 
 refcounted::Pointer<Node> Node::decode(const unsigned char* buf, size_t len, size_t scanpos)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	codeclog("Start decoding scanpos " << scanpos);
 
 	// Decode the metadata stripe length
@@ -699,10 +699,11 @@ std::string Stats::tag() const { return "summarystats"; }
 
 std::string Stats::encodeWithoutEnvelope() const
 {
+	using namespace utils::codec;
 	arki::Item<types::Reftime> reftime(reftimeMerger.makeReftime());
-	string encoded = utils::encodeUInt(count, 4);
+	string encoded = encodeUInt(count, 4);
 	encoded += reftime.encode();
-	encoded += utils::encodeULInt(size, 8);
+	encoded += encodeULInt(size, 8);
 	return encoded;
 }
 
@@ -729,7 +730,7 @@ void Stats::toYaml(std::ostream& out, size_t indent) const
 
 arki::Item<Stats> Stats::decode(const unsigned char* buf, size_t len, const std::string& filename)
 {
-	using namespace utils;
+	using namespace utils::codec;
 
 	arki::Item<Stats> res(new Stats);
 
@@ -1191,7 +1192,7 @@ void Summary::read(const wibble::sys::Buffer& buf, unsigned version, const std::
 
 std::string Summary::encode() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 
 	// Build the serialisation tables if it has not been done yet
 	summary::buildMsoSerLen();

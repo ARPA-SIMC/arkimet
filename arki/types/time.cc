@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -120,7 +120,7 @@ std::string Time::tag() const { return TAG; }
 
 Item<Time> Time::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 5, "Time");
 	uint32_t a = decodeUInt(buf, 4);
 	uint32_t b = decodeUInt(buf + 4, 1);
@@ -140,7 +140,7 @@ Item<Time> Time::decodeString(const std::string& val)
 
 std::string Time::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	uint32_t a = ((vals[0] & 0x3fff) << 18)
 	           | ((vals[1] & 0xf)    << 14)
 			   | ((vals[2] & 0x1f)   << 9)

@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -80,7 +80,7 @@ std::string AssignedDataset::tag() const { return TAG; }
 
 std::string AssignedDataset::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return changed->encodeWithoutEnvelope() + encodeUInt(name.size(), 1) + name + encodeUInt(id.size(), 2) + id;
 }
 
@@ -88,7 +88,7 @@ std::string AssignedDataset::encodeWithoutEnvelope() const
 
 Item<AssignedDataset> AssignedDataset::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 8, "AssignedDataset");
 	Item<Time> changed = Time::decode(buf, 5);
 	size_t name_len = decodeUInt(buf+5, 1);

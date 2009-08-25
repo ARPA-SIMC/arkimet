@@ -25,7 +25,7 @@
 #include <wibble/regexp.h>
 #include <arki/types/run.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include "config.h"
 #include <iomanip>
 #include <sstream>
@@ -94,13 +94,13 @@ std::string Run::tag() const { return TAG; }
 
 std::string Run::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Run> Run::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Run");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -211,7 +211,7 @@ Run::Style Minute::style() const { return Run::MINUTE; }
 
 std::string Minute::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Run::encodeWithoutEnvelope() + encodeUInt(minute, 2);
 }
 std::ostream& Minute::writeToOstream(std::ostream& o) const

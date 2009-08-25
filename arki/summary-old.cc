@@ -23,7 +23,7 @@
 #include <arki/summary-old.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include <arki/formatter.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -386,10 +386,12 @@ std::string Stats::tag() const { return "summarystats"; }
 
 std::string Stats::encodeWithoutEnvelope() const
 {
+	using namespace utils::codec;
+
 	arki::Item<types::Reftime> reftime(reftimeMerger.makeReftime());
-	string encoded = utils::encodeUInt(count, 4);
+	string encoded = encodeUInt(count, 4);
 	encoded += reftime.encode();
-	encoded += utils::encodeULInt(size, 8);
+	encoded += encodeULInt(size, 8);
 	return encoded;
 }
 
@@ -416,7 +418,7 @@ void Stats::toYaml(std::ostream& out, size_t indent) const
 
 arki::Item<Stats> Stats::decode(const unsigned char* buf, size_t len, const std::string& filename)
 {
-	using namespace utils;
+	using namespace utils::codec;
 
 	arki::Item<Stats> res(new Stats);
 
@@ -814,7 +816,7 @@ void OldSummary::read(const wibble::sys::Buffer& buf, unsigned version, const st
 std::string OldSummary::encode() const
 {
 	using namespace oldsummary;
-	using namespace utils;
+	using namespace utils::codec;
 
 	// Encode the various information
 	string encoded;

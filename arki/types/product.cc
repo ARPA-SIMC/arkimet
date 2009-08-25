@@ -24,7 +24,7 @@
 #include <wibble/string.h>
 #include <arki/types/product.h>
 #include <arki/types/utils.h>
-#include <arki/utils.h>
+#include <arki/utils/codec.h>
 #include <sstream>
 #include <iomanip>
 #include "config.h"
@@ -100,13 +100,13 @@ std::string Product::tag() const { return TAG; }
 
 std::string Product::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return encodeUInt(style(), 1);
 }
 
 Item<Product> Product::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils;
+	using namespace utils::codec;
 	ensureSize(len, 1, "Product");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
@@ -237,7 +237,7 @@ namespace product {
 Product::Style GRIB1::style() const { return Product::GRIB1; }
 std::string GRIB1::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Product::encodeWithoutEnvelope() + encodeUInt(origin, 1) + encodeUInt(table, 1) + encodeUInt(product, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
@@ -300,7 +300,7 @@ std::vector<int> GRIB1::toIntVector() const
 Product::Style GRIB2::style() const { return Product::GRIB2; }
 std::string GRIB2::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Product::encodeWithoutEnvelope() + encodeUInt(centre, 2) + encodeUInt(discipline, 1) + encodeUInt(category, 1) + encodeUInt(number, 1); 
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
@@ -368,7 +368,7 @@ std::vector<int> GRIB2::toIntVector() const
 Product::Style BUFR::style() const { return Product::BUFR; }
 std::string BUFR::encodeWithoutEnvelope() const
 {
-	using namespace utils;
+	using namespace utils::codec;
 	return Product::encodeWithoutEnvelope() + encodeUInt(type, 1) + encodeUInt(subtype, 1) + encodeUInt(localsubtype, 1);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
