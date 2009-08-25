@@ -6,8 +6,10 @@ arkimet (0.25-1) UNRELEASED; urgency=low
   * Correctly handle dataset data files that grow past 2**31 bytes.
     Note: this changes the structure of indices and binary metadata, existing
     metadata and summary files need to be regenerated
+  * Use new varint encoding for several bits of binary metadata
+    (took advantage of the opportunity since the format has changed)
 
- -- Enrico Zini <enrico@debian.org>  Tue, 25 Aug 2009 21:47:45 +0100
+ -- Enrico Zini <enrico@debian.org>  Tue, 25 Aug 2009 22:44:06 +0100
 
 arkimet (0.24-1) UNRELEASED; urgency=low
 
