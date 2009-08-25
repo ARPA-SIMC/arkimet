@@ -67,7 +67,7 @@ struct GribValidator : public Validator
 		if (res != 4)
 			throw wibble::exception::Consistency("reading 4 bytes of GRIB trailer from " + fname, "partial read");
 		if (memcmp(buf, "7777", 4) != 0)
-			throw wibble::exception::Consistency("checking GRIB segment in file " + fname, "segment does not end with 'GRIB'");
+			throw wibble::exception::Consistency("checking GRIB segment in file " + fname, "segment does not end with '7777'");
 	}
 
 	// Validate a memory buffer

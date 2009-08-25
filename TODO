@@ -179,11 +179,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - falsi positivi del --accurate (?)
  - --verbose da usare col --accurate
  - lm7tmpc eccezione maskata da sqlite
- - falsi positivi del --accurate (?)
  - z199 ha una local definition
- - arki-check: possiamo già togliere il -s di compatibilità
 
  - far andare il testdispatch per poter testare la scansione con le nuove
    grib_api
