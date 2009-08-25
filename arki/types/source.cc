@@ -115,36 +115,27 @@ std::string Source::encodeWithoutEnvelope() const
 Item<Source> Source::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
-	ensureSize(len, 2, "Source");
-	Style s = (Style)decodeUInt(buf, 1);
-	unsigned int format_len = decodeUInt(buf+1, 1);
-	ensureSize(len, 2+format_len, "Source");
-	string format = string((const char*)buf+2, 0, format_len);
+	Decoder dec(buf, len);
+	Style s = (Style)dec.popUInt(1, "source style");
+	unsigned int format_len = dec.popUInt(1, "source format length");
+	string format = dec.popString(format_len, "source format name");
 	switch (s)
 	{
 		case BLOB: {
-			unsigned int cur = 2+format_len;
-		    ensureSize(len, cur+2+8, "Source");
-			unsigned int fname_len = decodeUInt(buf+cur, 2);
-			cur += 2;
-		    ensureSize(len, cur+fname_len+8, "Source");
-			string fname = string((const char*)buf+cur, 0, fname_len);
-			cur += fname_len;
-			return source::Blob::create(format, fname, decodeUInt(buf+cur, 4), decodeUInt(buf+cur+4, 4));
+			unsigned fname_len = dec.popVarint<unsigned>("blob source file name length");
+			string fname = dec.popString(fname_len, "blob source file name");
+			size_t offset = dec.popVarint<size_t>("blob source offset");
+			size_t size = dec.popVarint<size_t>("blob source size");
+			return source::Blob::create(format, fname, offset, size);
 		}
 		case URL: {
-			unsigned int cur = 2+format_len;
-		    ensureSize(len, cur+2, "Source");
-			unsigned int fname_len = decodeUInt(buf+cur, 2);
-			cur += 2;
-		    ensureSize(len, cur+fname_len, "Source");
-			string url = string((const char*)buf+cur, 0, fname_len);
+			unsigned fname_len = dec.popVarint<unsigned>("url source file name length");
+			string url = dec.popString(fname_len, "url source url");
 			return source::URL::create(format, url);
 		}
 		case INLINE: {
-			unsigned int cur = 2+format_len;
-		    ensureSize(len, cur+4, "Source");
-			return source::Inline::create(format, decodeUInt(buf+cur, 4));
+			size_t size = dec.popVarint<size_t>("inline source size");
+			return source::Inline::create(format, size);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Source", "style " + str::fmt(s) + "but we can only decode BLOB, URL or INLINE");
@@ -272,7 +263,7 @@ Source::Style Blob::style() const { return Source::BLOB; }
 std::string Blob::encodeWithoutEnvelope() const
 {
 	using namespace utils::codec;
-	return Source::encodeWithoutEnvelope() + encodeUInt(filename.size(), 2) + filename + encodeUInt(offset, 4) + encodeUInt(size, 4);
+	return Source::encodeWithoutEnvelope() + encodeVarint(filename.size()) + filename + encodeVarint(offset) + encodeVarint(size);
 }
 
 std::ostream& Blob::writeToOstream(std::ostream& o) const
@@ -332,7 +323,7 @@ Source::Style URL::style() const { return Source::URL; }
 std::string URL::encodeWithoutEnvelope() const
 {
 	using namespace utils::codec;
-	return Source::encodeWithoutEnvelope() + encodeUInt(url.size(), 2) + url;
+	return Source::encodeWithoutEnvelope() + encodeVarint(url.size()) + url;
 }
 
 std::ostream& URL::writeToOstream(std::ostream& o) const
@@ -383,7 +374,7 @@ Source::Style Inline::style() const { return Source::INLINE; }
 std::string Inline::encodeWithoutEnvelope() const
 {
 	using namespace utils::codec;
-	return Source::encodeWithoutEnvelope() + encodeUInt(size, 4);
+	return Source::encodeWithoutEnvelope() + encodeVarint(size);
 }
 
 std::ostream& Inline::writeToOstream(std::ostream& o) const

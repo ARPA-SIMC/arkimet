@@ -179,6 +179,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - cannibalizzare l'encoder/decoder di varint dalla libreria Protocol Buffers
+   di Google (o usare direttamente i Protocol Buffer per l'encoding, se si
+   riesce a incastrarli)
+
  - select offset from md where file="2009/08-23.grib1" order by offset limit 10;
    -2147382632
    -2147196436
@@ -338,10 +342,6 @@ Importazione con tag:
     - data needs to be sorted by reftime
     - performance should be a good approximation of the optimal case, because
       the data files are almost sorted (or fully sorted just after a repack)
-
- - cannibalizzare l'encoder/decoder di varint dalla libreria Protocol Buffers
-   di Google (o usare direttamente i Protocol Buffer per l'encoding, se si
-   riesce a incastrarli)
 
  - cancellazione di dati dato un'estrazione di metadati
 

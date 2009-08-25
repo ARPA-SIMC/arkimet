@@ -93,6 +93,19 @@ size_t decodeVarint(const BTYPE* genbuf, unsigned int size, T& val)
 	return 0;
 }
 
+/**
+ * Convenience version of decodeVarint that throws an exception if decoding
+ * fails
+ */
+template<typename T, typename BTYPE>
+size_t decodeVarint(const BTYPE* genbuf, unsigned int size, T& val, const char* what)
+{
+	using namespace wibble::str;
+	size_t res = decodeVarint(genbuf, size, val);
+	if (res == 0)
+		throw wibble::exception::Consistency(std::string("parsing ") + what, "invalid varint data");
+}
+
 /// Encode an unsigned integer in the given amount of bytes, big endian
 std::string encodeUInt(unsigned int val, unsigned int bytes);
 
@@ -183,6 +196,96 @@ static inline double decodeDouble(const unsigned char* val)
 		((unsigned char*)&res)[i] = val[i];
 	return res;
 }
+
+/// Convenient front-end to the various decoding functions
+struct Decoder
+{
+	const unsigned char* buf;
+	size_t len;
+
+	Decoder(const unsigned char* buf, size_t len) : buf(buf), len(len) {}
+
+	template<typename T, typename STR>
+	T popVarint(STR what)
+	{
+		T val;
+		size_t res = decodeVarint(buf, len, val);
+		if (res == 0)
+			throw wibble::exception::Consistency(std::string("parsing ") + what, "invalid varint data");
+		buf += res;
+		len -= res;
+		return val;
+	}
+
+	template<typename STR>
+	uint32_t popUInt(unsigned int bytes, STR what)
+	{
+		ensureSize(len, bytes, what);
+		uint32_t val = decodeUInt(buf, bytes);
+		buf += bytes;
+		len -= bytes;
+		return val;
+	}
+
+	template<typename STR>
+	uint64_t popULint(unsigned int bytes, STR what)
+	{
+		ensureSize(len, bytes, what);
+		uint64_t val = decodeULInt(buf, bytes);
+		buf += bytes;
+		len -= bytes;
+		return val;
+	}
+
+	template<typename STR>
+	int popSInt(unsigned int bytes, STR what)
+	{
+		ensureSize(len, bytes, what);
+		int val = decodeSInt(buf, bytes);
+		buf += bytes;
+		len -= bytes;
+		return val;
+	}
+
+	template<typename STR>
+	unsigned int popIntLE(unsigned int bytes, STR what)
+	{
+		ensureSize(len, bytes, what);
+		unsigned int val = decodeIntLE(buf, bytes);
+		buf += bytes;
+		len -= bytes;
+		return val;
+	}
+
+	template<typename STR>
+	unsigned int popFloat(STR what)
+	{
+		ensureSize(len, sizeof(float), what);
+		float val = decodeFloat(buf);
+		buf += sizeof(float);
+		len -= sizeof(float);
+		return val;
+	}
+
+	template<typename STR>
+	unsigned int popDouble(STR what)
+	{
+		ensureSize(len, sizeof(double), what);
+		double val = decodeFloat(buf);
+		buf += sizeof(double);
+		len -= sizeof(double);
+		return val;
+	}
+
+	std::string popString(size_t size, const char* what)
+	{
+		ensureSize(len, size, what);
+		std::string val((const char*)buf, size);
+		buf += size;
+		len -= size;
+		return val;
+	}
+};
 
 }
 }
