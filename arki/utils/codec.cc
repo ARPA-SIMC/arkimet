@@ -28,22 +28,6 @@ namespace arki {
 namespace utils {
 namespace codec {
 
-std::string encodeUInt(unsigned int val, unsigned int bytes)
-{
-	std::string res(bytes, 0);
-	for (unsigned int i = 0; i < bytes; ++i)
-		res[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
-	return res;
-}
-
-std::string encodeULInt(unsigned long long int val, unsigned int bytes)
-{
-	std::string res(bytes, 0);
-	for (unsigned int i = 0; i < bytes; ++i)
-		res[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
-	return res;
-}
-
 uint64_t decodeULInt(const unsigned char* val, unsigned int bytes)
 {
 	uint64_t res = 0;

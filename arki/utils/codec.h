@@ -86,26 +86,6 @@ size_t decodeVarint(const BTYPE* genbuf, unsigned int size, T& val, const char* 
 		throw wibble::exception::Consistency(std::string("parsing ") + what, "invalid varint data");
 }
 
-/// Encode an unsigned integer in the given amount of bytes, big endian
-std::string encodeUInt(unsigned int val, unsigned int bytes);
-
-/// Encode an unsigned integer in the given amount of bytes, big endian
-std::string encodeULInt(unsigned long long int val, unsigned int bytes);
-
-/// Encode a signed integer in the given amount of bytes, big endian
-static inline std::string encodeSInt(signed int val, unsigned int bytes)
-{
-	uint32_t uns;
-	if (val < 0)
-	{
-		// If it's negative, we encode the 2-complement of the positive value
-		uns = -val;
-		uns = ~uns + 1;
-	} else
-		uns = val;
-	return encodeUInt(uns, bytes);
-}
-
 /// Decode the first 'bytes' bytes from val as an int, big endian
 static inline uint32_t decodeUInt(const unsigned char* val, unsigned int bytes)
 {
@@ -159,8 +139,15 @@ static inline double decodeDouble(const unsigned char* val)
 	return res;
 }
 
-struct Encoder
+class Encoder
 {
+	/// Encode an unsigned integer in the given amount of bytes, big endian
+	void _addUInt(unsigned int val, unsigned int bytes);
+
+	/// Encode an unsigned integer in the given amount of bytes, big endian
+	void _addULInt(unsigned long long int val, unsigned int bytes);
+
+public:
 	std::string& buf;
 
 	Encoder(std::string& buf) : buf(buf) {}
@@ -169,6 +156,21 @@ struct Encoder
 	Encoder& addString(const char* str, size_t n) { buf.append(str, n); return *this; }
 	Encoder& addString(const std::string& str) { buf += str; return *this; }
 
+	/// Encode an unsigned integer in the given amount of bytes, big endian
+	template<typename T>
+	Encoder& addU(T val, unsigned bytes)
+	{
+		// Only work with unsigned
+		ARKI_STATIC_ASSERT(((T)(-1)) > 0);
+
+		unsigned char data[bytes];
+		for (unsigned int i = 0; i < bytes; ++i)
+			data[i] = (val >> ((bytes - i - 1) * 8)) & 0xff;
+		buf.append((const char*)data, bytes);
+		return *this;
+	}
+
+	/// Encode an unsigned integer as a varint
 	template<typename T>
 	Encoder& addVarint(T val)
 	{
@@ -189,24 +191,30 @@ struct Encoder
 		return *this;
 	}
 
+	/// Encode an unsigned integer in the given amount of bytes, big endian
 	Encoder& addUInt(unsigned int val, unsigned int bytes)
 	{
-		// FIXME
-		buf += encodeUInt(val, bytes);
-		return *this;
+		return addU(val, bytes);
 	}
 
+	/// Encode an unsigned integer in the given amount of bytes, big endian
 	Encoder& addULInt(unsigned long long int val, unsigned int bytes)
 	{
-		// FIXME
-		buf += encodeULInt(val, bytes);
-		return *this;
+		return addU(val, bytes);
 	}
 
+	/// Encode a signed integer in the given amount of bytes, big endian
 	Encoder& addSInt(signed int val, unsigned int bytes)
 	{
-		buf += encodeSInt(val, bytes);
-		return *this;
+		uint32_t uns;
+		if (val < 0)
+		{
+			// If it's negative, we encode the 2-complement of the positive value
+			uns = -val;
+			uns = ~uns + 1;
+		} else
+			uns = val;
+		return addU(uns, bytes);
 	}
 
 	/// Encode a IEEE754 float

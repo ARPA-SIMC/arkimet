@@ -334,12 +334,18 @@ string Metadata::encode() const
 	string encoded;
 	for (const_iterator i = begin(); i != end(); ++i)
 		encoded += i->second->encodeWithEnvelope();
-    encoded += encodeItemList(notes.begin(), notes.end());
+	encoded += encodeItemList(notes.begin(), notes.end());
 	if (source.defined())
 		encoded += source.encode();
 
+	string res;
+	Encoder enc(res);
 	// Prepend header
-	return (deleted ? "!D" : "MD") + encodeUInt(0, 2) + encodeUInt(encoded.size(), 4) + encoded;
+	enc.addString(deleted ? "!D" : "MD");
+	enc.addUInt(0, 2);
+	enc.addUInt(encoded.size(), 4);
+	enc.addString(encoded);
+	return res;
 }
 
 wibble::sys::Buffer Metadata::getData() const
