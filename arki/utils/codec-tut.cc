@@ -39,96 +39,129 @@ template<> template<>
 void to::test<1>()
 {
 	using namespace utils::codec;
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0, 1).data(), 1), 0u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(1, 1).data(), 1), 1u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(10, 1).data(), 1), 10u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(80, 1).data(), 1), 80u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(127, 1).data(), 1), 127u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(128, 1).data(), 1), 128u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(200, 1).data(), 1), 200u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(255, 1).data(), 1), 255u);
 
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(0, 1).data(), 1), 0);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(1, 1).data(), 1), 1);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(10, 1).data(), 1), 10);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(80, 1).data(), 1), 80);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(127, 1).data(), 1), 127);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-1, 1).data(), 1), -1);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-100, 1).data(), 1), -100);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-127, 1).data(), 1), -127);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-128, 1).data(), 1), -128);
+#define TEST_CODEC(name, val, encsize) do { \
+		string enc; \
+		Encoder e(enc); \
+		e.add ## name((val), (encsize)); \
+		ensure_equals(enc.size(), (encsize)); \
+		\
+		Decoder dec((const unsigned char*)enc.data(), enc.size()); \
+		ensure_equals(dec.pop ## name((encsize), "value"), (val)); \
+	} while (0)
 
+	TEST_CODEC(UInt, 0u, 1);
+	TEST_CODEC(UInt, 1u, 1);
+	TEST_CODEC(UInt, 10u, 1);
+	TEST_CODEC(UInt, 80u, 1);
+	TEST_CODEC(UInt, 127u, 1);
+	TEST_CODEC(UInt, 128u, 1);
+	TEST_CODEC(UInt, 200u, 1);
+	TEST_CODEC(UInt, 255u, 1);
 
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0, 2).data(), 2), 0u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(1, 2).data(), 2), 1u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(128, 2).data(), 2), 128u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(256, 2).data(), 2), 256u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(10000, 2).data(), 2), 10000u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(32000, 2).data(), 2), 32000u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(33000, 2).data(), 2), 33000u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(65535, 2).data(), 2), 65535u);
-
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(0, 2).data(), 2), 0);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(1, 2).data(), 2), 1);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(10000, 2).data(), 2), 10000);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(30000, 2).data(), 2), 30000);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(32767, 2).data(), 2), 32767);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-1, 2).data(), 2), -1);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-30000, 2).data(), 2), -30000);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-32767, 2).data(), 2), -32767);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-32768, 2).data(), 2), -32768);
+	TEST_CODEC(SInt, 0, 1);
+	TEST_CODEC(SInt, 1, 1);
+	TEST_CODEC(SInt, 10, 1);
+	TEST_CODEC(SInt, 80, 1);
+	TEST_CODEC(SInt, 127, 1);
+	TEST_CODEC(SInt, -1, 1);
+	TEST_CODEC(SInt, -100, 1);
+	TEST_CODEC(SInt, -127, 1);
+	TEST_CODEC(SInt, -128, 1);
 
 
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0, 3).data(), 3), 0u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(1, 3).data(), 3), 1u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(128, 3).data(), 3), 128u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(256, 3).data(), 3), 256u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(33000, 3).data(), 3), 33000u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(65535, 3).data(), 3), 65535u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(100000, 3).data(), 3), 100000u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0x7fffff, 3).data(), 3), 0x7fffffu);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0xabcdef, 3).data(), 3), 0xabcdefu);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0xffffff, 3).data(), 3), 0xffffffu);
+	TEST_CODEC(UInt, 0u, 2);
+	TEST_CODEC(UInt, 1u, 2);
+	TEST_CODEC(UInt, 128u, 2);
+	TEST_CODEC(UInt, 256u, 2);
+	TEST_CODEC(UInt, 10000u, 2);
+	TEST_CODEC(UInt, 32000u, 2);
+	TEST_CODEC(UInt, 33000u, 2);
+	TEST_CODEC(UInt, 65535u, 2);
+
+	TEST_CODEC(SInt, 0, 2);
+	TEST_CODEC(SInt, 1, 2);
+	TEST_CODEC(SInt, 10000, 2);
+	TEST_CODEC(SInt, 30000, 2);
+	TEST_CODEC(SInt, 32767, 2);
+	TEST_CODEC(SInt, -1, 2);
+	TEST_CODEC(SInt, -30000, 2);
+	TEST_CODEC(SInt, -32767, 2);
+	TEST_CODEC(SInt, -32768, 2);
 
 
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0, 4).data(), 4), 0u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(1, 4).data(), 4), 1u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(128, 4).data(), 4), 128u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(256, 4).data(), 4), 256u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(10000, 4).data(), 4), 10000u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0xabcdef, 4).data(), 4), 0xabcdefu);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0xffffff, 4).data(), 4), 0xffffffu);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0x23456789, 4).data(), 4), 0x23456789u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0x7fffffff, 4).data(), 4), 0x7fffffffu);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0xabcdef01, 4).data(), 4), 0xabcdef01u);
-	ensure_equals(decodeUInt((const unsigned char*)encodeUInt(0xffffffff, 4).data(), 4), 0xffffffffu);
+	TEST_CODEC(UInt, 0u, 3);
+	TEST_CODEC(UInt, 1u, 3);
+	TEST_CODEC(UInt, 128u, 3);
+	TEST_CODEC(UInt, 256u, 3);
+	TEST_CODEC(UInt, 33000u, 3);
+	TEST_CODEC(UInt, 65535u, 3);
+	TEST_CODEC(UInt, 100000u, 3);
+	TEST_CODEC(UInt, 0x7fffffu, 3);
+	TEST_CODEC(UInt, 0xabcdefu, 3);
+	TEST_CODEC(UInt, 0xffffffu, 3);
 
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(0, 4).data(), 4), 0);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(1, 4).data(), 4), 1);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(10000, 4).data(), 4), 10000);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-10000, 4).data(), 4), -10000);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(0x23456789, 4).data(), 4), 0x23456789);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-0x23456789, 4).data(), 4), -0x23456789);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(0x7fffffff, 4).data(), 4), 0x7fffffff);
-	ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-0x7fffffff, 4).data(), 4), -0x7fffffff);
+
+	TEST_CODEC(UInt, 0u, 4);
+	TEST_CODEC(UInt, 1u, 4);
+	TEST_CODEC(UInt, 128u, 4);
+	TEST_CODEC(UInt, 256u, 4);
+	TEST_CODEC(UInt, 10000u, 4);
+	TEST_CODEC(UInt, 0xabcdefu, 4);
+	TEST_CODEC(UInt, 0xffffffu, 4);
+	TEST_CODEC(UInt, 0x23456789u, 4);
+	TEST_CODEC(UInt, 0x7fffffffu, 4);
+	TEST_CODEC(UInt, 0xabcdef01u, 4);
+	TEST_CODEC(UInt, 0xffffffffu, 4);
+
+	TEST_CODEC(SInt, 0, 4);
+	TEST_CODEC(SInt, 1, 4);
+	TEST_CODEC(SInt, 10000, 4);
+	TEST_CODEC(SInt, -10000, 4);
+	TEST_CODEC(SInt, 0x23456789, 4);
+	TEST_CODEC(SInt, -0x23456789, 4);
+	TEST_CODEC(SInt, 0x7fffffff, 4);
+	TEST_CODEC(SInt, -0x7fffffff, 4);
 	// g++ generates a comparison between signed and unsigned integer expressions warning here
 	//ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-0x80000000, 4).data(), 4), -0x80000000);
 
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0, 8).data(), 8), 0ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(1, 8).data(), 8), 1ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(128, 8).data(), 8), 128ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(256, 8).data(), 8), 256ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(10000, 8).data(), 8), 10000ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0xabcdef, 8).data(), 8), 0xabcdefull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0xffffff, 8).data(), 8), 0xffffffull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0x23456789, 8).data(), 8), 0x23456789ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0x7fffffffull, 8).data(), 8), 0x7fffffffull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0xabcdef01ull, 8).data(), 8), 0xabcdef01ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0xffffffffull, 8).data(), 8), 0xffffffffull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0x2345678901234567ull, 8).data(), 8), 0x2345678901234567ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0x7fffffffffffffffull, 8).data(), 8), 0x7fffffffffffffffull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0xabcdef0102030405ull, 8).data(), 8), 0xabcdef0102030405ull);
-	ensure_equals(decodeULInt((const unsigned char*)encodeULInt(0xffffffffffffffffull, 8).data(), 8), 0xffffffffffffffffull);
+	TEST_CODEC(ULInt, 0ull, 8);
+	TEST_CODEC(ULInt, 1ull, 8);
+	TEST_CODEC(ULInt, 128ull, 8);
+	TEST_CODEC(ULInt, 256ull, 8);
+	TEST_CODEC(ULInt, 10000ull, 8);
+	TEST_CODEC(ULInt, 0xabcdefull, 8);
+	TEST_CODEC(ULInt, 0xffffffull, 8);
+	TEST_CODEC(ULInt, 0x23456789ull, 8);
+	TEST_CODEC(ULInt, 0x7fffffffull, 8);
+	TEST_CODEC(ULInt, 0xabcdef01ull, 8);
+	TEST_CODEC(ULInt, 0xffffffffull, 8);
+	TEST_CODEC(ULInt, 0x2345678901234567ull, 8);
+	TEST_CODEC(ULInt, 0x7fffffffffffffffull, 8);
+	TEST_CODEC(ULInt, 0xabcdef0102030405ull, 8);
+	TEST_CODEC(ULInt, 0xffffffffffffffffull, 8);
+
+#undef TEST_CODEC
+#define TEST_CODEC(name, val, encsize) do { \
+		string enc; \
+		Encoder e(enc); \
+		e.add ## name((val)); \
+		ensure_equals(enc.size(), (encsize)); \
+		\
+		Decoder dec((const unsigned char*)enc.data(), enc.size()); \
+		ensure_equals(dec.pop ## name("value"), (val)); \
+	} while (0)
+	TEST_CODEC(Float, 0.0f, 4);
+	TEST_CODEC(Float, 0.1f, 4);
+	TEST_CODEC(Float, 10.0f, 4);
+	TEST_CODEC(Float, 0.0000001f, 4);
+	TEST_CODEC(Float, 10000000.0f, 4);
+	TEST_CODEC(Double, 0.0, 8);
+	TEST_CODEC(Double, 0.1, 8);
+	TEST_CODEC(Double, 10.0, 8);
+	TEST_CODEC(Double, 0.00000000000000001, 8);
+	TEST_CODEC(Double, 10000000000000000.0, 8);
+
 }
 
 // Check varints
@@ -139,7 +172,9 @@ void to::test<2>()
 
 #define TEST_VARINT(TYPE, val, encsize) do { \
 		TYPE v = (val); \
-		string enc = encodeVarint(v); \
+		string enc; \
+		Encoder e(enc); \
+		e.addVarint(v); \
 		ensure_equals(enc.size(), (encsize)); \
 		ensure((enc[encsize-1] & 0x80) == 0); \
 		TYPE v1; \

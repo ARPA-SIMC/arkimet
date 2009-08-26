@@ -41,26 +41,6 @@ static inline void ensureSize(size_t len, size_t req, const char* what)
 		throw wibble::exception::Consistency(std::string("parsing ") + what, "size is " + fmt(len) + " but we need at least "+fmt(req)+" for the "+what);
 }
 
-// Encodes a varint to a string
-template<typename T>
-std::string encodeVarint(T val)
-{
-	// Only work with unsigned
-	ARKI_STATIC_ASSERT(((T)(-1)) > 0);
-
-	// Varint idea taken from Google's protocol buffers, and code based on
-	// protbuf's varint implementation
-	uint8_t bytes[sizeof(val)+2];
-	int size = 0;
-	while (val > 0x7F)
-	{
-		bytes[size++] = ((uint8_t)val & 0x7F) | 0x80;
-		val >>= 7;
-	}
-	bytes[size++] = (uint8_t)val & 0x7F;
-	return std::string((const char*)bytes, size);
-}
-
 /**
  * Decodes a varint from a buffer
  *
@@ -161,30 +141,12 @@ static inline unsigned int decodeIntLE(const unsigned char* val, unsigned int by
 	return res;
 }
 
-/// Encode a IEEE754 float
-static inline std::string encodeFloat(float val)
-{
-	std::string res(sizeof(float), 0);
-	for (unsigned int i = 0; i < sizeof(float); ++i)
-		res[i] = ((const unsigned char*)&val)[i];
-	return res;
-}
-
 /// Decode an IEEE754 float
 static inline float decodeFloat(const unsigned char* val)
 {
 	float res = 0;
 	for (unsigned int i = 0; i < sizeof(float); ++i)
 		((unsigned char*)&res)[i] = val[i];
-	return res;
-}
-
-/// Encode a IEEE754 double
-static inline std::string encodeDouble(double val)
-{
-	std::string res(sizeof(double), 0);
-	for (unsigned int i = 0; i < sizeof(double); ++i)
-		res[i] = ((const unsigned char*)&val)[i];
 	return res;
 }
 
@@ -210,8 +172,20 @@ struct Encoder
 	template<typename T>
 	Encoder& addVarint(T val)
 	{
-		// FIXME
-		buf += encodeVarint(val);
+		// Only work with unsigned
+		ARKI_STATIC_ASSERT(((T)(-1)) > 0);
+
+		// Varint idea taken from Google's protocol buffers, and code based on
+		// protbuf's varint implementation
+		uint8_t bytes[sizeof(val)+2];
+		int size = 0;
+		while (val > 0x7F)
+		{
+			bytes[size++] = ((uint8_t)val & 0x7F) | 0x80;
+			val >>= 7;
+		}
+		bytes[size++] = (uint8_t)val & 0x7F;
+		buf.append((const char*)bytes, size);
 		return *this;
 	}
 
@@ -235,17 +209,28 @@ struct Encoder
 		return *this;
 	}
 
+	/// Encode a IEEE754 float
 	Encoder& addFloat(float val)
 	{
-		// FIXME
-		buf += encodeFloat(val);
+		std::string res(sizeof(float), 0);
+		for (unsigned int i = 0; i < sizeof(float); ++i)
+			res[i] = ((const unsigned char*)&val)[i];
+		buf += res;
+
+		/*
+		//buf.append((const char*)&val, sizeof(float));
+		for (unsigned int i = 0; i < sizeof(float); ++i)
+			buf.append((const char*)&val + i, 1);
+		*/
 		return *this;
 	}
 
+	/// Encode a IEEE754 double
 	Encoder& addDouble(double val)
 	{
-		// FIXME
-		buf += encodeDouble(val);
+		//buf.append((const char*)&val, sizeof(double));
+		for (unsigned int i = 0; i < sizeof(double); ++i)
+			buf.append((const char*)&val + i, 1);
 		return *this;
 	}
 };
@@ -281,7 +266,7 @@ struct Decoder
 	}
 
 	template<typename STR>
-	uint64_t popULint(unsigned int bytes, STR what)
+	uint64_t popULInt(unsigned int bytes, STR what)
 	{
 		ensureSize(len, bytes, what);
 		uint64_t val = decodeULInt(buf, bytes);
@@ -311,7 +296,7 @@ struct Decoder
 	}
 
 	template<typename STR>
-	unsigned int popFloat(STR what)
+	float popFloat(STR what)
 	{
 		ensureSize(len, sizeof(float), what);
 		float val = decodeFloat(buf);
@@ -321,10 +306,10 @@ struct Decoder
 	}
 
 	template<typename STR>
-	unsigned int popDouble(STR what)
+	double popDouble(STR what)
 	{
 		ensureSize(len, sizeof(double), what);
-		double val = decodeFloat(buf);
+		double val = decodeDouble(buf);
 		buf += sizeof(double);
 		len -= sizeof(double);
 		return val;
