@@ -1,3 +1,11 @@
+arkimet (0.26-1) UNRELEASED; urgency=low
+
+  * Fixed codec for floats and doubles
+  * Encoding now mostly works by appending to a single string, instead of
+    creating many strings, which should improve performance
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 26 Aug 2009 17:26:24 +0100
+
 arkimet (0.25-1) UNRELEASED; urgency=low
 
   * Use nag module to report validation issues details in arki-check
