@@ -179,204 +179,40 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ - a volta ci sono falsi positivi di TO_PACK
+
  - lm7tmpc eccezione maskata da sqlite
 
- - far andare il testdispatch per poter testare la scansione con le nuove
-   grib_api
-
- - pare che INDEXED BY indice funzioni solo con SQLite nuovi
-
- - Ricostruzione indici ondisk1 dopo la cancellazione di file
-   - select distinct file from md
-   - guarda uno per uno se esistono
-   - se ne manca uno, togliere i suoi dati dall'indice
-
- - Test dataset packati in arkibenchmark/dataset3
-
- - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
-   processo passando il nome del tempfile in env o in arg, per ogni grib
-   (xargs per i grib)
-    - codice per split di grib preso da meteosatlib
-
- - non creare needs-check-do-not-pack se index.sqlite non esiste ma non
-   esistono neanche file scannabili
-
-Archivio
- - nel rebuild, se un file contiene dati interamente precedenti all'archive
-   age, creare il suo .summary e aggiungerlo a mdarc invece che all'indice
-   principale
- - nell'acquire / replace / delete, confrontare con archive_age e delete_age
-   non si fa delete o replace o append di dati in mdarc: dare errore se si
-   prova a farlo. La roba precedente all'archive age diventa di fatto read only
-
+Minguzzi:
+ - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
+   +0100 di Minguzzi
  - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
    lo usa per validare la query, il server lo usa per fare la query). Ne
    battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query
    espanse
-
  - In arki-sort, grib:nomefile non funziona
  - Il sort funziona solo per reference time:
    arki-scan --sort=year:product file.grib --data > file1.grib
    Non sorta bene per product
-
  - Tenendo in memoria solo i metadati, --sort si potrebbe pure fare senza il
    bisogno degli intervalli di reference time
-
- - bufr: aprirli se esiste la tabella, altrimenti non matcheranno e finiranno in error
-
-Importazione con tag:
- - quando si importa, passare una stringa arbitraria che identifica in maniera
-   extra tutti i dati importati in quel file
- - la stringa, farla diventare un path, cosí anche se non è scannabile dal
-   file, è discernibile dai path
- - permettere di querare per path o path parziale
-   (select from md where file like "STRINGA/%")
-
- - controllare l'uso del match sui null in ondisk1 (select =? becomes =NULL
-   that is always false)
-
- - permettere di far acquire (ma non delete o replace) in archive, e usarlo per
-   duplicates, errors e outbound
-
- + verificare che il passo sia contato sul reftime e non sulla data di oggi
- - verificare che arki-check nel rebuild tenga l'ultimo grib in un file
- - arki-check per il rebuild dell'indice non deve usare il rusco
- - controllare/deindicizzare i file cancellati al repack di ondisk1
-   (solo se c'è replace: yes)
-
- - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
-   +0100 di Minguzzi
-
- - usare scan::scan in tutte le letture sequenziali (arki-scan, rebuild di
-   dataset, scansioni sequenziali di dataset senza indice, ...)
-
- - ondisk2: sort prima della roba che usa l'indice e poi di quella che non lo
-   usa
- - ondisk2: tabella "summary" con una entry che aggrega md sulla durata dello
-   step (magari pure in un db separato e aggregato al volo a quello centrale?)
-    - aggregazioni in stile RRD? (step fino a 1 mese fa, poi step successivo
-      per 6 mesi, poi step successivo per 6 mesi, etc.)
-    - per i dati vecchi, salvare i .metadata su disco e tenere nell'indice solo
-      un'aggregazione sullo step?
-    - dato un tempo di archiviazione ("piú vecchi di 6 mesi"), spostare i file
-      in archiveN/ e tenerlo nell'indice solo come summary. N viene
-      incrementato ogni volta che la archiveN diventa piú grande di una
-      dimensione data (tipo la dimensione del DVD)
-       - lo spostamento in archiviazione lo si fa solo quando si vuole
-	 archiviare: arki-check --archive=4G e lui tira fuori una fetta di 4G
-	 con solo roba piú vecchia di 6 mesi
- - in alternativa, normalizzare le combinazioni di metadati summarizzabili in
-   una seconda tabella, e nella md riferirili per indice. La seconda tabella
-   dovrebbe essere piccola, e ridurre di molto md e soprattutto il numero di
-   indici su md
-    - se si vuole poi fare una tabella aggregata (sempre che serva ancora) per
-      i summary, basta farla su (file, id_s)
- 
- - fare un comando per spostare, rinominare e concatenare i file grib
-
- - arki-scan --dispatch=.. --verbose che dica anche il tempo
-
- - arki-query per i summary stile meteomixer ci mette tipo 4 secondi
-   ma via arki-server forse molto di piú: perché?
-
- - calcolare sempre gli estremi e mettere all'inizio della query reftime un
-   >=X, <=X o BETWEEN(x,y), che danno a sqlite la possibilità di usare gli
-   >indici
- - nei benchmark, il repack riscrive il file di dati causando occupazione di
-   disco: fare un giro di truncate su tutti i file per rifare le hole e
-   recuperare spazio
-
- - Confronto con gribarch (da verificare):
-   gribarch accede direttamente all'NFS. Questo significa che se due macchine
-     accedono a gribarch, ogni macchina ha un link a 100Mbps con l'NFS server.
-   arkimet accede all'NFS da un punto solo. Questo significa che se due
-     macchine accedono ad arkimet, condividono la stessa CPU e lo stesso unico
-     link a 100Mbps
-
- - replica di dataset con però dati bucati
-   find dataset -type f -not -name "lock" -not -name "config*" -not -name "*summary" -not -name "*.metadata" -not -name "*.sqlite" -not -name "*.grib1" -not -path "*/.svn*"
-   find . -type f -not -name "lock" -not -name "*.grib1" -not -path "*/.svn*" -not -name "*~" -printf "%s\n" | numsum
-   find . -name "*.grib[12]" -printf "%s %p\n"
-   tar --files-from metadata.filelist -zcf metadata.tar.gz
-
- - Conversione ondisk->ondisk2
-   # Cambia type= rompendo gli hard link
-   find . -maxdepth 2 -name config | while read name; do sed -e 's/type = local/type = ondisk2/' $name > $name.ondisk2; done
-   find . -maxdepth 2 -name config | while read name; do if [ -e $name.ondisk2 ]; then mv $name.ondisk2 $name; fi; done
-   # Toglie 'index'
-   sed -i '/^index/d' */config
-   # Cancella i summary
-   find . -name "*summary" -delete
-   # Cancella gli indici
-   rm */index.sqlite*
-   # Lascia i metadati, cosí arki-check li può riusare
-
- - paola: è possibile modificare l mdstat o crearne uno simile che mi includa
-   anche le descrizioni?
-
- - Passi futuri:
-    - benchmark
-    - decisione di come deployare arkimet
-    - installazione arkimeow su nemo
-    - far andare arkimeow su nemo coi plugin in modo utile
-    - procedure di Minguzzi
-    - integrazione procedure di Minguzzi in arkimeow
-
- - if data does not need to be sorted, we can create a sorted I/O plan
-    - data needs to be sorted by reftime
-    - performance should be a good approximation of the optimal case, because
-      the data files are almost sorted (or fully sorted just after a repack)
-
- - cancellazione di dati dato un'estrazione di metadati
-
- - dataset offline
-
- - dataset nlaps* da rifare
-
+ - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
+   processo passando il nome del tempfile in env o in arg, per ogni grib
+   (xargs per i grib)
+    - codice per split di grib preso da meteosatlib
  - plugin chunked
     - programma che splitta lo stdin di grib un pezzo alla volta
     - esporta via environment dati sul chunk (tipo il range di date)
     - gli lascia i dati su standard input o su file temporaneo che viene poi
       cancellato
-
- - alcuni arki-query rimangono appesi (e non si sa perché)
- = Verificare l'idea di mettere tutto un dataset in un file .sqlite, o
-   summary+metadati in sqlite e i dati in plain file
-   (tutto in un .sqlite non richiede manutenzione se non un repack; dati in
-   plain file dà un sqlite piccolo e dei dati plain e append-only, ma richiede
-   procedure specifiche di repack)
-
-   Tutto in sqlite no: http://www.sqlite.org/whentouse.html "Situations Where
-   Another RDBMS May Work Better" / "Very large datasets" / "the engine has to
-   allocate a bitmap of dirty pages in the disk file to help it manage its
-   rollback journal. SQLite needs 256 bytes of RAM for every 1MiB of database"
-   / "when database begins to grow into the multi-gigabyte range, the size of
-   the bitmap can get quite large"
-
  - grib_api non funziona in pipe
    per i plugin, servirebbe poter lanciare il plugin su file con spezzoni di
      output della query
    l'ideale sarebbe usare i chunk del sorter
    a quel punto, assieme al chunk scrivere su disco anche il summary del chunk,
      ad uso del plugin
-
  - arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
    si aggiorna un alias sul server, i client non vedono l'aggiornamento)
-
- - Servirebbe script che fa setup di un sistema di partenza
-
- - arki-scan --testdispatch=cfg
-    - mostra i dati che andrebbero nello stesso dataset e con lo stesso id
-
- - dataset "offline", che tenga solo i file .summary (toplevel, per directory,
-   per file)
-
- - Triggering:
-    - Poll:
-      arki-query --summary --report=count "reftime:=today; run:MINUTE,0; timerange:GRIB1,0,120h or GRIB1,0,150h" http://arkimet.metarpa:8090/dataset/eur025
-    - Dataset toccati dall'ultimo import (ev. fare un reportino lua per estrarre la cosa):
-      arki-dump 2008-10-15_10-metadata.log --report=datasets | cut -f 2 -d ' '
-      arki-dump 2008-10-15_10-metadata.log --report=datasets | cut -f 2 -d ' ' | xargs -ipippo touch /tmp/importati/pippo
 
  - Possibilità di fare include del file degli alias
 
@@ -392,15 +228,6 @@ Importazione con tag:
  - Per i filtri che vogliono sapere in anticipo il volume di dati, dargli il
    summary in un file temporaneo il cui nome è messo in una variabile di ambiente
 
- - GRIB1
-   timeRangeIndicator
-   (endStepInHours - startStepInHours)
-   endStepInHours
-
- - arki-query run/conf dà segfault (senza usare -C prova a leggerlo come un
-   dataset su file)
-   (questo è perché per ogni file sconosciuto assume il formato "arkimet")
-
  - TimeIntervalSorter: permettere di configurarlo in modo che se ci sono 2 dati
    con lo stesso reftime e altri metadati, permetta di scegliere se darli in
    output tutti o se dare in output solo quello del primo dataset che ce l'ha
@@ -410,52 +237,78 @@ Importazione con tag:
    intervallo di reference time, facendoli precedere i dati per ogni intervallo
    (per ogni intervallo di reftime scelto, prefissare un summary del contenuto)
 
- - arki-server: mettere ulimit a arki-query quando lo si lancia
-
- - arki-query --watch
-   che ripete la query all'infinito ogni volta che arriva qualcosa nel dataset
-   pigliando notifiche da arki-scan e chiunque importi
- 
- - trigger per-dataset da lanciare dopo la query
-    - una query + un programmino in lua che decide se il trigger va lanciato +
-      vedere cosa vuol dire lanciare un trigger (e, nel caso, non rilanciarlo
-      due volte)
-
  + postprocessing e reporting sono per-dataset
+
+ - Chi ha software di postproc
+    - minguzzi estrazione di un parametro
+    - patruno: cong
+
+
+ - far andare il testdispatch per poter testare la scansione con le nuove
+   grib_api
+
+ - pare che INDEXED BY indice funzioni solo con SQLite nuovi
+
+ - Ricostruzione indici ondisk1 dopo la cancellazione di file
+   - select distinct file from md
+   - guarda uno per uno se esistono
+   - se ne manca uno, togliere i suoi dati dall'indice
+
+Bufr:
+ - bufr: aprirli se esiste la tabella, altrimenti non matcheranno e finiranno in error
+ - solo header (altrimenti bisogna separare BUFR con piú subset perché
+   potrebbero avere orari differenti (o altre informazioni discriminanti)
+ - altre cose possibili sono:
+    - la sequenza di descriptor della data section (senza espansione dei D)
+    - la versione delle tabelle (?)
+    - il numero di subset (?)
+ - fare per i bufr un dataset non indicizzato e senza metadati, solo coi summary
+    - fare un programma che fa pulizia di un file di dati cancellando i bufr
+      duplicati
+    - a ogni scrittura, creare il flagfile .needs-repack, cosí la pulizia
+      viene fatta girare solo sui file "dirty"
+    - ragionare se fare un indice solo con reftime e md5
+ - estremi di lat,lon (opzionale)
+ - estrazione dei BUFR dentro a un DB-All.e
+
+Messe a punto:
+ - Quando arki-check fa il rebuild perde le note, e quindi l'informazione sul
+   file originale da cui è stato fatto l'import.  Lí non si può ovviare perché
+   non possiamo fidarci dei metadati; è però il caso di segnare "original file
+   name lost during dataset rebuild"
+ - non creare needs-check-do-not-pack se index.sqlite non esiste ma non
+   esistono neanche file scannabili
+ - usare scan::scan in tutte le letture sequenziali (arki-scan, rebuild di
+   dataset, scansioni sequenziali di dataset senza indice, ...)
+ - spostare tutte le funzioni codec::decode* dentro a codec::Decoder
+ - Archivio:
+    - nel rebuild, se un file contiene dati interamente precedenti all'archive
+      age, creare il suo .summary e aggiungerlo a mdarc invece che all'indice
+      principale
+    - nell'acquire / replace / delete, confrontare con archive_age e delete_age
+      non si fa delete o replace o append di dati in mdarc: dare errore se si
+      prova a farlo. La roba precedente all'archive age diventa di fatto read only
+ - fare un comando per spostare, rinominare e concatenare i file grib
+   all'interno dei dataset
+ - calcolare sempre gli estremi e mettere all'inizio della query reftime un
+   >=X, <=X o BETWEEN(x,y), che danno a sqlite la possibilità di usare gli
+   >indici
+ - arki-query run/conf dà segfault (senza usare -C prova a leggerlo come un
+   dataset su file)
+   (questo è perché per ogni file sconosciuto assume il formato "arkimet")
+ - arki-server: mettere ulimit a arki-query quando lo si lancia
  - i file letti come dataset potrebbero rendere obsoleti arki-grep, arki-scan-*
    e arki-dump
-
- - scansione BUFR
-    - solo header (altrimenti bisogna separare BUFR con piú subset perché
-      potrebbero avere orari differenti (o altre informazioni discriminanti)
-    - altre cose possibili sono:
-       - la sequenza di descriptor della data section (senza espansione dei D)
-       - la versione delle tabelle (?)
-       - il numero di subset (?)
-    - fare per i bufr un dataset non indicizzato e senza metadati, solo coi summary
-       - fare un programma che fa pulizia di un file di dati cancellando i bufr
-         duplicati
-       - a ogni scrittura, creare il flagfile .needs-repack, cosí la pulizia
-	 viene fatta girare solo sui file "dirty"
-       - ragionare se fare un indice solo con reftime e md5
-
- - arki-check -r deve chiedere --salvage invece di vomitare in stdout
  - arki-check: fare un progress report se si esegue interattivo: per file
    grossi, sta lí a non far niente per un bel po' e ci starebbe almeno sapere
    che file sta checkando
  - Invalidate dovrebbe funzionare anche se metadata e summary e indice
    contengono rusco
  - Fare un invalidate solo per summary e indice
-
-Quando si dà errore [flagfile]: File exists, aggiungere "run arki-check"
-
-Quando arki-check fa il rebuild perde le note, e quindi l'informazione sul file
-originale da cui è stato fatto l'import.  Lí non si può ovviare perché non
-possiamo fidarci dei metadati; è però il caso di segnare "original file name
-lost during dataset rebuild"
- - importando nel dataset di errore, nell'output di arki-scangrib non si vede l'assegnazione
-
- + Query con timerange (0, 0h) non dà risultati
+   Fare un invalidate che salva file .metadata per i dati che ancora vanno
+   bene, da usare per ricostruzioni dell'indice in caso di cambio del formato,
+   cosí si preservano le note.  (ma in caso di cambio del formato, cosa me ne
+   faccio dei .metadata?)
  - Query con reftime esatto sull'estremo di un summary (e un'origin fissata
    presa dal summary) non dà risultati 
    (non riesco a riprodurlo: non è che in quel summary c'è piú di un'origin, e
@@ -468,31 +321,87 @@ lost during dataset rebuild"
  - In arki-query, aggiungere --allok per dire 'si, va bene la query vuota'; e
    per default, se la query (semplificata) non seleziona niente, rifiutarsi di
    eseguire
+ - Manpage 'arkimet' con:
+    - un'introduzione generale
+    - descrizione e puntatori alle manpage dei vari comandi
+    - puntatore alla manpage con la sintassi del matcher
+    - puntatore alla manpage con la sintassi dei file di configurazione e degli
+      alias
+ - Aggiungere agli errori un link al wiki
 
- - Pagine HTML
-    - Elenco dataset con statistiche
-    - Pagina del singolo dataset con statistiche e query (ev. un campo di query
-      per metadato, con esempi di espressioni di match)
-    - Anteprima dei risultati e download dei risultati
+Importazione con tag:
+ - quando si importa, passare una stringa arbitraria che identifica in maniera
+   extra tutti i dati importati in quel file
+ - la stringa, farla diventare un path, cosí anche se non è scannabile dal
+   file, è discernibile dai path
+ - permettere di querare per path o path parziale
+   (select from md where file like "STRINGA/%")
 
- - Verificare che sqlite3 sia opzionale, e se non c'è disabilitiamo
-   semplicemente i dataset indicizzati (ma reader funziona comunque come se non
-   ci fosse l'indice)
+Ondisk1:
+ - controllare l'uso del match sui null in ondisk1 (select =? becomes =NULL
+   that is always false)
+ - controllare/deindicizzare i file cancellati al repack di ondisk1
+   (solo se c'è replace: yes)
 
- - Chi ha software di postproc
-    - minguzzi estrazione di un parametro
-    - patruno: cong
+ - permettere di far acquire (ma non delete o replace) in archive, e usarlo per
+   duplicates, errors e outbound invece di ondisk1
+   (o fare merge di ondisk1 e archive da usare solo per duplicate, errors e
+   outbound)
+
+ - ondisk2: sort prima della roba che usa l'indice e poi di quella che non lo
+   usa
+
+ - paola: è possibile modificare l mdstat o crearne uno simile che mi includa
+   anche le descrizioni?
+
+ - cancellazione di dati data un'estrazione di metadati
+
+ - script che fa setup di un sistema di partenza
+
+ - dataset "offline", che tenga solo i file .summary (toplevel, per directory,
+   per file)
+
+Note:
+ - replica di dataset con però dati bucati
+   find dataset -type f -not -name "lock" -not -name "config*" -not -name "*summary" -not -name "*.metadata" -not -name "*.sqlite" -not -name "*.grib1" -not -path "*/.svn*"
+   find . -type f -not -name "lock" -not -name "*.grib1" -not -path "*/.svn*" -not -name "*~" -printf "%s\n" | numsum
+   find . -name "*.grib[12]" -printf "%s %p\n"
+   tar --files-from metadata.filelist -zcf metadata.tar.gz
+ - Conversione ondisk->ondisk2
+   # Cambia type= rompendo gli hard link
+   find . -maxdepth 2 -name config | while read name; do sed -e 's/type = local/type = ondisk2/' $name > $name.ondisk2; done
+   find . -maxdepth 2 -name config | while read name; do if [ -e $name.ondisk2 ]; then mv $name.ondisk2 $name; fi; done
+   # Toglie 'index'
+   sed -i '/^index/d' */config
+   # Cancella i summary
+   find . -name "*summary" -delete
+   # Cancella gli indici
+   rm */index.sqlite*
+   # Lascia i metadati, cosí arki-check li può riusare
+
+ - Passi futuri:
+    - far andare arkimeow su nemo coi plugin in modo utile
+    - procedure di Minguzzi
+    - integrazione procedure di Minguzzi in arkimeow
+
+Triggering:
+ - Poll:
+   arki-query --summary --report=count "reftime:=today; run:MINUTE,0; timerange:GRIB1,0,120h or GRIB1,0,150h" http://arkimet.metarpa:8090/dataset/eur025
+ - Dataset toccati dall'ultimo import (ev. fare un reportino lua per estrarre la cosa):
+   arki-dump 2008-10-15_10-metadata.log --report=datasets | cut -f 2 -d ' '
+   arki-dump 2008-10-15_10-metadata.log --report=datasets | cut -f 2 -d ' ' | xargs -ipippo touch /tmp/importati/pippo
+ - arki-query --watch
+   che ripete la query all'infinito ogni volta che arriva qualcosa nel dataset
+   pigliando notifiche da arki-scan e chiunque importi
+ - trigger per-dataset da lanciare dopo la query
+    - una query + un programmino in lua che decide se il trigger va lanciato +
+      vedere cosa vuol dire lanciare un trigger (e, nel caso, non rilanciarlo
+      due volte)
+
+
+
 
  - Audio, con arki-query che genera playlist (file:// o http://)
-
-Leggere i grib scritti da meteosatlib (bisogna configurare grib_api per gestire l'origin 200 con le estensioni strane)
-
-Salvare opzionalmente (--stats=file.csv) le statistiche raccolte da
-arki-benchmark in un file csv
- - statistiche anche replicate per utime, stime e total
-
-
-Sorting metadati all'uscita del DB per ottimizzare l'IO
 
 
 Whenever I do the image indexing experiment, I can use xmlindexer from strigi
@@ -516,15 +425,6 @@ squashfs seems to work nicely, but it needs to be tested with lots of BUFR files
 
 Dataset "un file per dato", per dati grandi (e foto)
 
-Fare dataset senza i file .metadata: per esempio, per i BUFR si fa forse prima
-a riestrarli dal bufr che non a leggerli dal metadata.
- - L'indice sqlite avrebbe poi posizione e offset del dato invece che del
-   metadato
- - A sto punto, vedere se permettere di disabilitare le query senza indice
-
-Sentire quelli di grib_api se mi fanno un flag "i dati non mi interessano" che
-fa si che la libreria non li legga (forse è già cosí per default).
-
 Usando il Source URL, vedere se guadagnamo gratis l'accesso a NOMADS
 
 arki-server: generazione risultati query usando Source URL
@@ -535,36 +435,13 @@ Catalogo di 2o livello
  - output: conf dei dataset che fanno match (pronta per essere passata ad arki-query)
  - estrazione summary da mars
 
-Manpage 'arkimet' con:
- - un'introduzione generale
- - descrizione e puntatori alle manpage dei vari comandi
- - puntatore alla manpage con la sintassi del matcher
- - puntatore alla manpage con la sintassi dei file di configurazione e degli
-   alias
-
- - test che i flagfile vengano creati per bene in caso di problemi
-    - Dopo errore di append a datafile, deve esserci il .appending e non
-      l'index-out-of-sync (??)
-    - Dopo errore in fase di commit al database, deve esserci il
-      index-out-of-sync e nessun appending
-
 Semplificazione di un matcher dato un summary, rimuovendo dagli OR i valori che
 non ci sono nel summary (e saltando la query se una subquery rimane senza
 nessun OR).
 
-Fare un campionario di '1 grib per ogni diverso tipo di livello' / scadenza / ...
-Test dei match sul campionario eseguito con script
-"versionamento file alias" per poter dire "questa procedura richiede il file di
- alias almeno con versione xxx'
- "versione 7.2, con gli incrementi alla minor che aggiungono alias nuovi senza
- cambiare gli esistenti, e gli incrementi alla major che cambiano gli esistenti
- poi dichiarare la versione richiesta prima di ogni query
- poi vedere di distribuire file di alias multipli
 alias in or: product:t* diventa product:ta or tb or tc...
 
 GRIB2
- - Livelli
- - Scadenze
  - Usare il tmpfile SOLO se si sta leggendo un multigrib (se è possibile
    saperlo)
     - patch a grib_api per sapere se si sta lavorando con un multigrib
@@ -576,9 +453,7 @@ XGRIB
  - Alias di xgrib
     - livelli e scadenze già scaricati (file *memo* in DAT.tar.gz)
     - bider mi deve dare le variabili
- - Risentire Minguzzi e Selvini per le loro richieste di aggiunte al linguaggio di
-   xgrib.
- - Conversione query xgrib
+ - Conversione query xgrib (lavoro fatto anche da Lazzeri)
     * ricerca per:
        * nome del dataset (obbligatorio)
        * data di emissione (obbligatorio)
@@ -601,8 +476,6 @@ XGRIB
        * variabile e codici estensione local definition (opzionale)
           * una o piú
           * wildcard sui mnemonici
-
-Postprocessazione
 
 Indicizzare aree
  Fare prove con GDAL di intersezioni proiezioni strane
@@ -632,48 +505,3 @@ Indicizzare aree
    r.Intersect(s)
 
 Pensare a "validity time" come reftime + timerange
-
-Compressione archivio
- Per ogni timestep, salvare non un solo file, ma un file .grib2.sec1, uno
- .grib2.sec2, uno .grib2.sec3 e cosí via.  Nel file con la sezione coi dati,
- aggiungere puntatori alle altre sezioni negli altri file.  Le sezioni vengono
- matchate bit a bit (volendo, velocizzando la cosa usando una cache di CRC per
- una prima scrematura).
-  - Fare poi un tool che dato un insieme di file, ricostruisce uno stream di
-    GRIB2
-  - A questo punto, nei metadati basta solo salvarsi posizione e offset del
-    blocco dei dati il quale a sua volta punta alle sezioni precedenti
-
- Eventualmente vedere una compressione stile huffman che scansiona gli header
- dei dati nell'archivio, trova i macropattern piú frequenti e costruisce un
- sistema di codifica compresso (salvare poi nel dataset un file .c con il
- codice per la decodifica)
-
-BUFR
- - estremi di lat,lon (opzionale)
- (estrazione dei BUFR dentro a un DB-All.e)
-
-Area ed Ensemble
-  Per l'indice di secondo livello (es. creare WKT delle aree) si fa di nuovo
-   con Lua
-
-Aggiungere agli errori un link al wiki
- - come lo gestirei io è, se non trova il file puntato dal metadata, di dire
-   "prova a usare l'opzione -i" (questo può andare sul wiki dopo l'errore)
-
-Provare a vedere quanto rallenta in fase di query se tolgo l'indice sqlite e
- tengo solo i summary (non riesco poi a beccare i duplicati; però posso fare un
- indice solo degli id, usato solo per beccare i duplicati)
- Se si forza che la data e il formato sono sempre considerati nella creazione
- di un id, allora l'indice degli id si può fare uno per ogni file .metadata
- (gdbm o bdb con id(binario?)->offset nel file metadata).
- Questo semplifica le cose *parecchio*, e l'indice sqlite si può aggiungere
- *dopo* (premature optimisation is the root of all evil) se ce n'è veramente
- bisogno.
- (sembra peggiorare notevolmente)
-
- = Nella generazione indici, se un campo unique è anche in index, salvare l'ID
-   del metadato nell'indice di quel metadato invece di tutto il metadato in
-   binario (se poi si fa rebuild dell'index, possono cambiare gli id dei
-   metadati, e si possono quindi creare dataset ID che vanno in conflitto con
-   dati già importati)
