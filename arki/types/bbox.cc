@@ -60,6 +60,7 @@ using namespace geos::geom;
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 using namespace wibble;
 
 namespace arki {
@@ -121,10 +122,9 @@ types::Code BBox::serialisationCode() const { return CODE; }
 size_t BBox::serialisationSizeLength() const { return SERSIZELEN; }
 std::string BBox::tag() const { return TAG; }
 
-std::string BBox::encodeWithoutEnvelope() const
+void BBox::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<BBox> BBox::decode(const unsigned char* buf, size_t len)
@@ -296,10 +296,9 @@ namespace bbox {
 
 BBox::Style INVALID::style() const { return BBox::INVALID; }
 
-std::string INVALID::encodeWithoutEnvelope() const
+void INVALID::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return BBox::encodeWithoutEnvelope();
+	BBox::encodeWithoutEnvelope(enc);
 }
 std::ostream& INVALID::writeToOstream(std::ostream& o) const
 {
@@ -345,11 +344,10 @@ Item<INVALID> INVALID::create()
 
 BBox::Style POINT::style() const { return BBox::POINT; }
 
-std::string POINT::encodeWithoutEnvelope() const
+void POINT::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return BBox::encodeWithoutEnvelope()
-			+ encodeFloat(lat) + encodeFloat(lon);
+	BBox::encodeWithoutEnvelope(enc);
+	enc.addFloat(lat).addFloat(lon);
 }
 std::ostream& POINT::writeToOstream(std::ostream& o) const
 {
@@ -406,12 +404,11 @@ Item<POINT> POINT::create(float lat, float lon)
 
 BBox::Style BOX::style() const { return BBox::BOX; }
 
-std::string BOX::encodeWithoutEnvelope() const
+void BOX::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return BBox::encodeWithoutEnvelope()
-			+ encodeFloat(latmin) + encodeFloat(latmax)
-			+ encodeFloat(lonmin) + encodeFloat(lonmax);
+	BBox::encodeWithoutEnvelope(enc);
+	enc.addFloat(latmin).addFloat(latmax);
+	enc.addFloat(lonmin).addFloat(lonmax);
 }
 std::ostream& BOX::writeToOstream(std::ostream& o) const
 {
@@ -484,14 +481,12 @@ Item<BOX> BOX::create(
 
 BBox::Style HULL::style() const { return BBox::HULL; }
 
-std::string HULL::encodeWithoutEnvelope() const
+void HULL::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	string res = BBox::encodeWithoutEnvelope();
-	res += encodeUInt(points.size(), 2);
+	BBox::encodeWithoutEnvelope(enc);
+	enc.addUInt(points.size(), 2);
 	for (size_t i = 0; i < points.size(); ++i)
-		res += encodeFloat(points[i].first) + encodeFloat(points[i].second);
-	return res;
+		enc.addFloat(points[i].first).addFloat(points[i].second);
 }
 std::ostream& HULL::writeToOstream(std::ostream& o) const
 {

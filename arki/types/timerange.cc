@@ -41,6 +41,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -180,10 +181,9 @@ types::Code Timerange::serialisationCode() const { return CODE; }
 size_t Timerange::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Timerange::tag() const { return TAG; }
 
-std::string Timerange::encodeWithoutEnvelope() const
+void Timerange::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
@@ -492,10 +492,10 @@ namespace timerange {
 
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
-std::string GRIB1::encodeWithoutEnvelope() const
+void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Timerange::encodeWithoutEnvelope() + encodeUInt(type, 1) + encodeUInt(unit, 1) + encodeSInt(p1, 1) + encodeSInt(p2, 1);
+	Timerange::encodeWithoutEnvelope(enc);
+	enc.addUInt(type, 1).addUInt(unit, 1).addSInt(p1, 1).addSInt(p2, 1);
 }
 
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
@@ -680,10 +680,10 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 
 Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
 
-std::string GRIB2::encodeWithoutEnvelope() const
+void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Timerange::encodeWithoutEnvelope() + encodeUInt(type, 1) + encodeUInt(unit, 1) + encodeSInt(p1, 4) + encodeSInt(p2, 4);
+	Timerange::encodeWithoutEnvelope(enc);
+	enc.addUInt(type, 1).addUInt(unit, 1).addSInt(p1, 4).addSInt(p2, 4);
 }
 
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const

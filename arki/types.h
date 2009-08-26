@@ -39,6 +39,12 @@ struct Buffer;
 }
 
 namespace arki {
+namespace utils {
+namespace codec {
+struct Encoder;
+}
+}
+
 namespace types {
 struct Type;
 
@@ -207,7 +213,7 @@ struct Type : public refcounted::Base
 	 * Encoding to compact binary representation, without identification
 	 * envelope
 	 */
-	virtual std::string encodeWithoutEnvelope() const = 0;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const = 0;
 
 	/**
 	 * Encode to compact binary representation, without identification

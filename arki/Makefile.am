@@ -56,7 +56,6 @@ arkiinclude_HEADERS = \
 		metadata.h \
 		scan/any.h \
 		summary.h \
-		summary-old.h \
 		refcounted.h \
 		runtime.h \
 		types.h \
@@ -136,7 +135,6 @@ libarkimet_la_SOURCES = \
 		bbox.cc \
 		metadata.cc \
 		summary.cc \
-		summary-old.cc \
 		matcher.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
@@ -219,7 +217,6 @@ tests_arki_test_SOURCES = \
 		bbox-tut.cc \
 		metadata-tut.cc \
 		summary-tut.cc \
-		summary-old-tut.cc \
 		matcher-tut.cc \
 		matcher/test-utils.cc \
 		matcher/utils-tut.cc \

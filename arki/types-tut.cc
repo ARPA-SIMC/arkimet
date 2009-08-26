@@ -43,7 +43,7 @@ struct TestImpl : public types::Type
 	virtual std::string tag() const { return string(); }
 	virtual types::Code serialisationCode() const { return types::TYPE_INVALID; }
 	virtual size_t serialisationSizeLength() const { return 1; }
-	virtual std::string encodeWithoutEnvelope() const { return string(); }
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder&) const {}
 	virtual std::ostream& writeToOstream(std::ostream& o) const { return o; }
 	virtual void lua_push(lua_State* L) const {}
 };

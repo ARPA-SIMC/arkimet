@@ -4,7 +4,7 @@
 /*
  * types/note - Metadata annotation
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ struct Note : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Note> decode(const unsigned char* buf, size_t len);
 	static Item<Note> decodeString(const std::string& val);
 	virtual std::ostream& writeToOstream(std::ostream& o) const;

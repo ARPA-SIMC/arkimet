@@ -4,7 +4,7 @@
 /*
  * values - Dynamic type system used by some types of arkimet metadata
  *
- * Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,11 @@
 struct lua_State;
 
 namespace arki {
+namespace utils {
+namespace codec {
+struct Encoder;
+}
+}
 
 /**
  * Base class for generic scalar values.
@@ -58,7 +63,7 @@ public:
 	/**
 	 * Encode into a compact binary representation
 	 */
-	virtual std::string encode() const = 0;
+	virtual void encode(utils::codec::Encoder& enc) const = 0;
 
 	/**
 	 * Decode from compact binary representation.
@@ -119,7 +124,7 @@ struct ValueBag : public std::map<std::string, Value*>
 	/**
 	 * Encode into a compact binary representation
 	 */
-	std::string encode() const;
+	void encode(utils::codec::Encoder& enc) const;
 
 	/**
 	 * Decode from compact binary representation

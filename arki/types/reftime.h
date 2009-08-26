@@ -60,7 +60,7 @@ struct Reftime : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Reftime> decode(const unsigned char* buf, size_t len);
 	static Item<Reftime> decodeString(const std::string& val);
 
@@ -80,7 +80,7 @@ struct Position : public Reftime
 	Position(const Item<types::Time>& time);
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Reftime& o) const;
@@ -108,7 +108,7 @@ struct Period : public Reftime
 	bool setEndtimeToNow(int secondsAgo);
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Reftime& o) const;

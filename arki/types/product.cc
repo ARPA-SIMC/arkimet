@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -98,10 +99,9 @@ types::Code Product::serialisationCode() const { return CODE; }
 size_t Product::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Product::tag() const { return TAG; }
 
-std::string Product::encodeWithoutEnvelope() const
+void Product::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Product> Product::decode(const unsigned char* buf, size_t len)
@@ -235,10 +235,12 @@ void Product::lua_push(lua_State* L) const
 namespace product {
 
 Product::Style GRIB1::style() const { return Product::GRIB1; }
-std::string GRIB1::encodeWithoutEnvelope() const
+void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Product::encodeWithoutEnvelope() + encodeUInt(origin, 1) + encodeUInt(table, 1) + encodeUInt(product, 1);
+	Product::encodeWithoutEnvelope(enc);
+	enc.addUInt(origin, 1);
+	enc.addUInt(table, 1);
+	enc.addUInt(product, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
@@ -298,10 +300,13 @@ std::vector<int> GRIB1::toIntVector() const
 
 
 Product::Style GRIB2::style() const { return Product::GRIB2; }
-std::string GRIB2::encodeWithoutEnvelope() const
+void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Product::encodeWithoutEnvelope() + encodeUInt(centre, 2) + encodeUInt(discipline, 1) + encodeUInt(category, 1) + encodeUInt(number, 1); 
+	Product::encodeWithoutEnvelope(enc);
+	enc.addUInt(centre, 2);
+	enc.addUInt(discipline, 1);
+	enc.addUInt(category, 1);
+	enc.addUInt(number, 1); 
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
@@ -366,10 +371,12 @@ std::vector<int> GRIB2::toIntVector() const
 
 
 Product::Style BUFR::style() const { return Product::BUFR; }
-std::string BUFR::encodeWithoutEnvelope() const
+void BUFR::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Product::encodeWithoutEnvelope() + encodeUInt(type, 1) + encodeUInt(subtype, 1) + encodeUInt(localsubtype, 1);
+	Product::encodeWithoutEnvelope(enc);
+	enc.addUInt(type, 1);
+	enc.addUInt(subtype, 1);
+	enc.addUInt(localsubtype, 1);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {

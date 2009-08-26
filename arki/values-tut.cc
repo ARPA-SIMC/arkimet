@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/values.h>
+#include <arki/utils/codec.h>
 
 #include <memory>
 #include <sstream>
@@ -28,6 +29,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils::codec;
 
 struct arki_values_shar {
 };
@@ -84,185 +86,39 @@ void to::test<2>()
 	// 2 bytes
 	std::auto_ptr<Value> tenthousand(Value::createInteger(10000));
 	std::auto_ptr<Value> minustenthousand(Value::createInteger(-10000));
-	std::auto_ptr<Value> v;
-	std::string enc;
-	size_t decsize;
 
+#define TESTENC(var, encsize) do { \
+		std::auto_ptr<Value> v; \
+		string enc; \
+		size_t decsize; \
+		Encoder e(enc); \
+		(var)->encode(e); \
+		ensure_equals(enc.size(), (encsize)); \
+		v.reset(Value::decode(enc.data(), enc.size(), decsize)); \
+		ensure_equals(decsize, (encsize)); \
+		ensure_equals(*v, *(var)); \
+		\
+		enc = (var)->toString(); \
+		v.reset(Value::parse(enc)); \
+		ensure_equals(*v, *(var)); \
+	} while (0)
 
-	enc = zero->encode();
-	ensure_equals(enc.size(), 1u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 1u);
-	ensure_equals(*v, *zero);
-
-	enc = zero->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *zero);
-
-
-	enc = one->encode();
-	ensure_equals(enc.size(), 1u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 1u);
-	ensure_equals(*v, *one);
-
-	enc = one->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *one);
-
-
-	enc = minusOne->encode();
-	ensure_equals(enc.size(), 1u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 1u);
-	ensure_equals(*v, *minusOne);
-
-	enc = minusOne->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *minusOne);
-
-
-	enc = u6bit->encode();
-	ensure_equals(enc.size(), 1u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 1u);
-	ensure_equals(*v, *u6bit);
-
-	enc = u6bit->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *u6bit);
-
-
-	enc = s6bit->encode();
-	ensure_equals(enc.size(), 1u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 1u);
-	ensure_equals(*v, *s6bit);
-
-	enc = s6bit->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *s6bit);
-
-
-	enc = onemillion->encode();
-	ensure_equals(enc.size(), 4u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 4u);
-	ensure_equals(*v, *onemillion);
-
-	enc = onemillion->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *onemillion);
-
-
-	enc = bignegative->encode();
-	ensure_equals(enc.size(), 4u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 4u);
-	ensure_equals(*v, *bignegative);
-
-	enc = bignegative->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *bignegative);
-
-
-	enc = empty->encode();
-	ensure_equals(enc.size(), 1u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 1u);
-	ensure_equals(*v, *empty);
-
-	enc = empty->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *empty);
-
-
-	enc = onechar->encode();
-	ensure_equals(enc.size(), 2u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 2u);
-	ensure_equals(*v, *onechar);
-
-	enc = onechar->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *onechar);
-
-
-	enc = numstr->encode();
-	ensure_equals(enc.size(), 3u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 3u);
-	ensure_equals(*v, *numstr);
-
-	enc = numstr->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *numstr);
-
-
-	enc = longname->encode();
-	ensure_equals(enc.size(), 56u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 56u);
-	ensure_equals(*v, *longname);
-
-	enc = longname->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *longname);
-
-
-	enc = escaped->encode();
-	ensure_equals(enc.size(), 9u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 9u);
-	ensure_equals(*v, *escaped);
-
-	enc = escaped->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *escaped);
-
-
-	enc = fourtythree->encode();
-	ensure_equals(enc.size(), 2u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 2u);
-	ensure_equals(*v, *fourtythree);
-
-	enc = fourtythree->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *fourtythree);
-
-
-	enc = minusfourtythree->encode();
-	ensure_equals(enc.size(), 2u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 2u);
-	ensure_equals(*v, *minusfourtythree);
-
-	enc = minusfourtythree->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *minusfourtythree);
-
-
-	enc = tenthousand->encode();
-	ensure_equals(enc.size(), 3u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 3u);
-	ensure_equals(*v, *tenthousand);
-
-	enc = tenthousand->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *tenthousand);
-
-
-	enc = minustenthousand->encode();
-	ensure_equals(enc.size(), 3u);
-	v.reset(Value::decode(enc.data(), enc.size(), decsize));
-	ensure_equals(decsize, 3u);
-	ensure_equals(*v, *minustenthousand);
-
-	enc = minustenthousand->toString();
-	v.reset(Value::parse(enc));
-	ensure_equals(*v, *minustenthousand);
+	TESTENC(zero, 1u);
+	TESTENC(one, 1u);
+	TESTENC(minusOne, 1u);
+	TESTENC(u6bit, 1u);
+	TESTENC(s6bit, 1u);
+	TESTENC(onemillion, 4u);
+	TESTENC(bignegative, 4u);
+	TESTENC(empty, 1u);
+	TESTENC(onechar, 2u);
+	TESTENC(numstr, 3u);
+	TESTENC(longname, 56u);
+	TESTENC(escaped, 9u);
+	TESTENC(fourtythree, 2u);
+	TESTENC(minusfourtythree, 2u);
+	TESTENC(tenthousand, 3u);
+	TESTENC(minustenthousand, 3u);
 }
 
 // Check ValueBag
@@ -307,8 +163,9 @@ void to::test<3>()
 
 	// Test encoding and decoding
 	std::string enc;
+	Encoder e(enc);
 
-	enc = v1.encode();
+	v1.encode(e);
 	v2 = ValueBag::decode(enc.data(), enc.size());
 	ensure_equals(v1, v2);
 

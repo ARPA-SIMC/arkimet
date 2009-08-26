@@ -41,6 +41,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -138,9 +139,8 @@ Item<Time> Time::decodeString(const std::string& val)
 	return Time::createFromISO8601(val);
 }
 
-std::string Time::encodeWithoutEnvelope() const
+void Time::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
 	uint32_t a = ((vals[0] & 0x3fff) << 18)
 	           | ((vals[1] & 0xf)    << 14)
 			   | ((vals[2] & 0x1f)   << 9)
@@ -148,7 +148,8 @@ std::string Time::encodeWithoutEnvelope() const
 			   | ((vals[4] >> 2) & 0xf);
 	uint32_t b = ((vals[4] & 0x3) << 6)
 	           | (vals[5] & 0x3f);
-	return encodeUInt(a, 4) + encodeUInt(b, 1);
+	enc.addUInt(a, 4);
+	enc.addUInt(b, 1);
 }
 
 std::ostream& Time::writeToOstream(std::ostream& o) const

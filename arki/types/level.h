@@ -60,7 +60,7 @@ struct Level : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Level> decode(const unsigned char* buf, size_t len);
 	static Item<Level> decodeString(const std::string& val);
 
@@ -80,7 +80,7 @@ struct GRIB1 : public Level
 	unsigned char l2;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	/**
@@ -110,7 +110,7 @@ struct GRIB2S : public Level
 	unsigned long value;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	/**
@@ -139,7 +139,7 @@ struct GRIB2D : public Level
 	unsigned long value2;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Level& o) const;

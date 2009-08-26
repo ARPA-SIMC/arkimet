@@ -59,7 +59,7 @@ struct Source : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Source> decode(const unsigned char* buf, size_t len);
 	static Item<Source> decodeString(const std::string& val);
 
@@ -79,7 +79,7 @@ struct Blob : public Source
 	size_t size;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Source& o) const;
@@ -99,7 +99,7 @@ struct URL : public Source
 	std::string url;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Source& o) const;
@@ -114,7 +114,7 @@ struct Inline : public Source
 	size_t size;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Source& o) const;

@@ -21,6 +21,7 @@
  */
 
 #include <arki/dataset/index/attr.h>
+#include <arki/utils/codec.h>
 #include <wibble/exception.h>
 #include <sstream>
 
@@ -117,7 +118,10 @@ int AttrSubIndex::id(const Metadata& md) const
 		return i->second;
 
 	// Else, fetch it from the database
-	int id = q_select_id(item->encodeWithoutEnvelope());
+	string encoded;
+	utils::codec::Encoder enc(encoded);
+	item->encodeWithoutEnvelope(enc);
+	int id = q_select_id(encoded);
 
 	// Add it to the cache
 	if (id != -1)
@@ -192,7 +196,9 @@ int AttrSubIndex::insert(const Metadata& md)
 		return ci->second;
 
 	// Extract the blob to insert
-	std::string blob = item->encodeWithoutEnvelope();
+	std::string blob;
+	utils::codec::Encoder enc(blob);
+	item->encodeWithoutEnvelope(enc);
 
 	// Check if we already have the blob in the database
 	int id = q_select_id(blob);

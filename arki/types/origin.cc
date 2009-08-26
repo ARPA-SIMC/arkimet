@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -99,10 +100,9 @@ types::Code Origin::serialisationCode() const { return CODE; }
 size_t Origin::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Origin::tag() const { return TAG; }
 
-std::string Origin::encodeWithoutEnvelope() const
+void Origin::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Origin> Origin::decode(const unsigned char* buf, size_t len)
@@ -238,10 +238,12 @@ namespace origin {
 
 Origin::Style GRIB1::style() const { return Origin::GRIB1; }
 
-std::string GRIB1::encodeWithoutEnvelope() const
+void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Origin::encodeWithoutEnvelope() + encodeUInt(centre, 1) + encodeUInt(subcentre, 1) + encodeUInt(process, 1);
+	Origin::encodeWithoutEnvelope(enc);
+	enc.addUInt(centre, 1);
+	enc.addUInt(subcentre, 1);
+	enc.addUInt(process, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
@@ -301,11 +303,14 @@ std::vector<int> GRIB1::toIntVector() const
 
 Origin::Style GRIB2::style() const { return Origin::GRIB2; }
 
-std::string GRIB2::encodeWithoutEnvelope() const
+void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Origin::encodeWithoutEnvelope() + encodeUInt(centre, 2) + encodeUInt(subcentre, 2) + encodeUInt(processtype, 1)
-		 + encodeUInt(bgprocessid, 1) + encodeUInt(processid, 1); 
+	Origin::encodeWithoutEnvelope(enc);
+	enc.addUInt(centre, 2);
+	enc.addUInt(subcentre, 2);
+	enc.addUInt(processtype, 1);
+	enc.addUInt(bgprocessid, 1);
+	enc.addUInt(processid, 1);
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
@@ -375,10 +380,11 @@ std::vector<int> GRIB2::toIntVector() const
 
 Origin::Style BUFR::style() const { return Origin::BUFR; }
 
-std::string BUFR::encodeWithoutEnvelope() const
+void BUFR::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Origin::encodeWithoutEnvelope() + encodeUInt(centre, 1) + encodeUInt(subcentre, 1);
+	Origin::encodeWithoutEnvelope(enc);
+	enc.addUInt(centre, 1);
+	enc.addUInt(subcentre, 1);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {

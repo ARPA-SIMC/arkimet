@@ -63,7 +63,7 @@ struct BBox : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<BBox> decode(const unsigned char* buf, size_t len);
 	static Item<BBox> decodeString(const std::string& val);
 
@@ -89,7 +89,7 @@ namespace bbox {
 struct INVALID : public BBox
 {
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const BBox& o) const;
@@ -107,7 +107,7 @@ struct POINT : public BBox
 	float lon;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const BBox& o) const;
@@ -127,7 +127,7 @@ struct BOX : public BBox
 	float lonmax;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const BBox& o) const;
@@ -146,7 +146,7 @@ struct HULL : public BBox
 	std::vector< std::pair<float, float> > points;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const BBox& o) const;

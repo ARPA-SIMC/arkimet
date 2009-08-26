@@ -197,6 +197,59 @@ static inline double decodeDouble(const unsigned char* val)
 	return res;
 }
 
+struct Encoder
+{
+	std::string& buf;
+
+	Encoder(std::string& buf) : buf(buf) {}
+	
+	Encoder& addString(const char* str) { buf += str; return *this; }
+	Encoder& addString(const char* str, size_t n) { buf.append(str, n); return *this; }
+	Encoder& addString(const std::string& str) { buf += str; return *this; }
+
+	template<typename T>
+	Encoder& addVarint(T val)
+	{
+		// FIXME
+		buf += encodeVarint(val);
+		return *this;
+	}
+
+	Encoder& addUInt(unsigned int val, unsigned int bytes)
+	{
+		// FIXME
+		buf += encodeUInt(val, bytes);
+		return *this;
+	}
+
+	Encoder& addULInt(unsigned long long int val, unsigned int bytes)
+	{
+		// FIXME
+		buf += encodeULInt(val, bytes);
+		return *this;
+	}
+
+	Encoder& addSInt(signed int val, unsigned int bytes)
+	{
+		buf += encodeSInt(val, bytes);
+		return *this;
+	}
+
+	Encoder& addFloat(float val)
+	{
+		// FIXME
+		buf += encodeFloat(val);
+		return *this;
+	}
+
+	Encoder& addDouble(double val)
+	{
+		// FIXME
+		buf += encodeDouble(val);
+		return *this;
+	}
+};
+
 /// Convenient front-end to the various decoding functions
 struct Decoder
 {

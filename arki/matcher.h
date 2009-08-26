@@ -34,12 +34,7 @@ namespace arki {
 
 class Metadata;
 class Summary;
-class OldSummary;
 class ConfigFile;
-
-namespace oldsummary {
-class Item;
-}
 
 /**
  * Represent a set of items to match.
@@ -121,8 +116,6 @@ struct AND : public std::map< types::Code, refcounted::Pointer<const Implementat
 
 	virtual bool matchItem(const Item<>& t) const;
 	virtual bool matchMetadata(const Metadata& s) const;
-	virtual bool matchSummaryItem(const oldsummary::Item& i) const;
-	virtual bool matchSummary(const OldSummary& s) const;
 
 	const OR* get(types::Code code) const;
 
@@ -270,27 +263,6 @@ struct Matcher
     bool operator()(const Metadata& md) const
 	{
 		if (m_impl) return m_impl->matchMetadata(md);
-		// An empty matcher always matches
-		return true;
-	}
-
-	/// Match a summary item
-    bool operator()(const oldsummary::Item& i) const
-	{
-		if (m_impl) return m_impl->matchSummaryItem(i);
-		// An empty matcher always matches
-		return true;
-	}
-
-	/**
-	 * Match a summary.
-	 *
-	 * Return true if there is at least a metadata in this summary that is
-	 * potentially matched by the matcher
-	 */
-    bool operator()(const OldSummary& i) const
-	{
-		if (m_impl) return m_impl->matchSummary(i);
 		// An empty matcher always matches
 		return true;
 	}

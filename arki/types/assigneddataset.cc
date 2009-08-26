@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -78,10 +79,10 @@ types::Code AssignedDataset::serialisationCode() const { return CODE; }
 size_t AssignedDataset::serialisationSizeLength() const { return SERSIZELEN; }
 std::string AssignedDataset::tag() const { return TAG; }
 
-std::string AssignedDataset::encodeWithoutEnvelope() const
+void AssignedDataset::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return changed->encodeWithoutEnvelope() + encodeUInt(name.size(), 1) + name + encodeUInt(id.size(), 2) + id;
+	changed->encodeWithoutEnvelope(enc);
+	enc.addUInt(name.size(), 1).addString(name).addUInt(id.size(), 2).addString(id);
 }
 
 //////////////////////////////////////

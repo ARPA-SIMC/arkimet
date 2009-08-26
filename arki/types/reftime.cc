@@ -40,6 +40,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -92,10 +93,9 @@ types::Code Reftime::serialisationCode() const { return CODE; }
 size_t Reftime::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Reftime::tag() const { return TAG; }
 
-std::string Reftime::encodeWithoutEnvelope() const
+void Reftime::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
@@ -204,10 +204,10 @@ Position::Position(const Item<types::Time>& time) : time(time) {}
 
 Reftime::Style Position::style() const { return Reftime::POSITION; }
 
-std::string Position::encodeWithoutEnvelope() const
+void Position::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Reftime::encodeWithoutEnvelope() + time->encodeWithoutEnvelope();
+	Reftime::encodeWithoutEnvelope(enc);
+	time->encodeWithoutEnvelope(enc);
 }
 
 std::ostream& Position::writeToOstream(std::ostream& o) const
@@ -267,10 +267,11 @@ bool Period::setEndtimeToNow(int secondsAgo)
 	return false;
 }
 
-std::string Period::encodeWithoutEnvelope() const
+void Period::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Reftime::encodeWithoutEnvelope() + begin->encodeWithoutEnvelope() + end->encodeWithoutEnvelope();
+	Reftime::encodeWithoutEnvelope(enc);
+	begin->encodeWithoutEnvelope(enc);
+	end->encodeWithoutEnvelope(enc);
 }
 
 std::ostream& Period::writeToOstream(std::ostream& o) const

@@ -40,6 +40,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -146,10 +147,9 @@ types::Code Level::serialisationCode() const { return CODE; }
 size_t Level::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Level::tag() const { return TAG; }
 
-std::string Level::encodeWithoutEnvelope() const
+void Level::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Level> Level::decode(const unsigned char* buf, size_t len)
@@ -333,17 +333,19 @@ namespace level {
 
 Level::Style GRIB1::style() const { return Level::GRIB1; }
 
-std::string GRIB1::encodeWithoutEnvelope() const
+void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	string res = Level::encodeWithoutEnvelope() + encodeUInt(type, 1);
+	Level::encodeWithoutEnvelope(enc) ;
+	enc.addUInt(type, 1);
 	switch (valType())
 	{
 		case 0: break;
-		case 1: res += encodeVarint(l1); break;
-		default: res += encodeUInt(l1, 1) + encodeUInt(l2, 1); break;
+		case 1: enc.addVarint(l1); break;
+		default:
+			enc.addUInt(l1, 1);
+			enc.addUInt(l2, 1);
+			break;
 	}
-	return res;
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
@@ -483,12 +485,12 @@ int GRIB1::getValType(unsigned char type)
 
 Level::Style GRIB2S::style() const { return Level::GRIB2S; }
 
-std::string GRIB2S::encodeWithoutEnvelope() const
+void GRIB2S::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	string res = Level::encodeWithoutEnvelope()
-	           + encodeUInt(type, 1) + encodeUInt(scale, 1) + encodeVarint(value);
-	return res;
+	Level::encodeWithoutEnvelope(enc);
+	enc.addUInt(type, 1);
+	enc.addUInt(scale, 1);
+	enc.addVarint(value);
 }
 std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 {
@@ -543,13 +545,11 @@ Item<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned lo
 
 Level::Style GRIB2D::style() const { return Level::GRIB2D; }
 
-std::string GRIB2D::encodeWithoutEnvelope() const
+void GRIB2D::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	string res = Level::encodeWithoutEnvelope()
-	           + encodeUInt(type1, 1) + encodeUInt(scale1, 1) + encodeVarint(value1)
-	           + encodeUInt(type2, 1) + encodeUInt(scale2, 1) + encodeVarint(value2);
-	return res;
+	Level::encodeWithoutEnvelope(enc);
+	enc.addUInt(type1, 1).addUInt(scale1, 1).addVarint(value1);
+	enc.addUInt(type2, 1).addUInt(scale2, 1).addVarint(value2);
 }
 std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 {

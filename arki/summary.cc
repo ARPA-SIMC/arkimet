@@ -63,6 +63,7 @@ extern "C" {
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils::codec;
 
 namespace arki {
 
@@ -354,62 +355,61 @@ void Node::add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, siz
 	}
 }
 
-static void addEncodedItem(string& encoded, const UItem<>& item, size_t msoIdx)
+static void addEncodedItem(Encoder& enc, const UItem<>& item, size_t msoIdx)
 {
-	using namespace utils::codec;
 	size_t serlen = msoSerLen[msoIdx];
 	if (item.defined())
 	{
-		string buf = item->encodeWithoutEnvelope();
-		encoded += encodeUInt(buf.size(), serlen);
-		encoded += buf;
+		// FIXME: use a varint
+		string buf;
+		Encoder bufenc(buf);
+		item->encodeWithoutEnvelope(bufenc);
+		enc.addUInt(buf.size(), serlen);
+		enc.addString(buf);
 		codeclog("Item " << msoIdx << " encoded, size " << buf.size() << " in " << serlen << " bytes");
 	} else {
 		codeclog("Item " << msoIdx << " is undef, encoding 0 in " << serlen << " bytes");
-		encoded += encodeUInt(0, serlen);
+		enc.addUInt(0, serlen);
 	}
 }
 
-std::string Node::encode(const UItem<>& lead, size_t scanpos) const
+void Node::encode(Encoder& enc, const UItem<>& lead, size_t scanpos) const
 {
-	using namespace utils::codec;
-	string encoded;
-
 	// Add the set of metadata that we have
 	if (scanpos == 0)
 	{
 		codeclog("Encode no lead stripe size " << md.size());
-		encoded = encodeUInt(md.size(), 2);
+		enc.addUInt(md.size(), 2);
 	} else {
 		codeclog("Encode stripe size " << md.size());
-		encoded = encodeUInt(md.size() + 1, 2);
+		enc.addUInt(md.size() + 1, 2);
 		codeclog("Encode lead");
-		addEncodedItem(encoded, lead, scanpos - 1);
+		addEncodedItem(enc, lead, scanpos - 1);
 	}
 	for (size_t i = 0; i < md.size(); ++i)
-		addEncodedItem(encoded, md[i], scanpos + i);
+		addEncodedItem(enc, md[i], scanpos + i);
 
 	if (stats.defined())
 	{
 		// If we have stats, we are a terminal node
-		encoded += encodeUInt(0, 2);
-		string buf = stats->encodeWithoutEnvelope();
+		enc.addUInt(0, 2);
+		string buf;
+		Encoder bufenc(buf);
+		stats->encodeWithoutEnvelope(bufenc);
 		codeclog("Encode 0 children, stats " << buf.size() << "b");
-		encoded += encodeUInt(buf.size(), 2);
-		encoded += buf;
+		enc.addUInt(buf.size(), 2);
+		enc.addString(buf);
 	} else {
 		codeclog("Encode " << children.size() << " children");
 		// Else, encode the children
-		encoded += encodeUInt(children.size(), 2);
+		enc.addUInt(children.size(), 2);
 		for (std::map< UItem<>, refcounted::Pointer<Node> >::const_iterator i = children.begin();
 			i != children.end(); ++i)
 		{
 			codeclog("Encode child");
-			encoded += i->second->encode(i->first, scanpos + md.size() + 1);
+			i->second->encode(enc, i->first, scanpos + md.size() + 1);
 		}
 	}
-
-	return encoded;
 }
 
 static UItem<> decodeUItem(size_t msoIdx, const unsigned char*& buf, size_t& len)
@@ -697,14 +697,12 @@ types::Code Stats::serialisationCode() const { return types::TYPE_SUMMARYSTATS; 
 size_t Stats::serialisationSizeLength() const { return 2; }
 std::string Stats::tag() const { return "summarystats"; }
 
-std::string Stats::encodeWithoutEnvelope() const
+void Stats::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
 	arki::Item<types::Reftime> reftime(reftimeMerger.makeReftime());
-	string encoded = encodeUInt(count, 4);
-	encoded += reftime.encode();
-	encoded += encodeULInt(size, 8);
-	return encoded;
+	enc.addUInt(count, 4);
+	enc.addString(reftime.encode());
+	enc.addULInt(size, 8);
 }
 
 std::ostream& Stats::writeToOstream(std::ostream& o) const
@@ -1198,10 +1196,18 @@ std::string Summary::encode() const
 	summary::buildMsoSerLen();
 
 	// Encode
-	string encoded = root.ptr() ? root->encode() : std::string();
+	string inner;
+	Encoder innerenc(inner);
+	if (root.ptr()) root->encode(innerenc);
 
 	// Prepend header
-	return "SU" + encodeUInt(1, 2) + encodeUInt(encoded.size(), 4) + encoded;
+	string res;
+	Encoder enc(res);
+	enc.addString("SU", 2);
+	enc.addUInt(1, 2);
+	enc.addUInt(inner.size(), 4);
+	enc.addString(inner);
+	return res;
 }
 
 void Summary::write(std::ostream& out, const std::string& filename) const

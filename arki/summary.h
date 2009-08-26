@@ -85,7 +85,7 @@ struct Stats : public types::Type
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
 
-	std::string encodeWithoutEnvelope() const;
+	void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	std::ostream& writeToOstream(std::ostream& o) const;
 	std::string toYaml(size_t indent = 0) const;
 	void toYaml(std::ostream& out, size_t indent = 0) const;
@@ -167,7 +167,7 @@ struct Node : public refcounted::Base
 	 */
 	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull() const;
 
-	virtual std::string encode(const UItem<>& lead = UItem<>(), size_t scanpos = 0) const;
+	virtual void encode(utils::codec::Encoder& enc, const UItem<>& lead = UItem<>(), size_t scanpos = 0) const;
 
 	int compare(const Node& node) const;
 

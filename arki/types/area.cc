@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -88,10 +89,9 @@ types::Code Area::serialisationCode() const { return CODE; }
 size_t Area::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Area::tag() const { return TAG; }
 
-std::string Area::encodeWithoutEnvelope() const
+void Area::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Area> Area::decode(const unsigned char* buf, size_t len)
@@ -188,10 +188,10 @@ namespace area {
 
 Area::Style GRIB::style() const { return Area::GRIB; }
 
-std::string GRIB::encodeWithoutEnvelope() const
+void GRIB::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Area::encodeWithoutEnvelope() + values.encode();
+	Area::encodeWithoutEnvelope(enc);
+	values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {

@@ -1,7 +1,7 @@
 /*
  * values - Dynamic type system used by some types of arkimet metadata
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ extern "C" {
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 #if 0
 static void dump(const char* name, const std::string& str)
@@ -234,7 +235,7 @@ struct Integer : public Common<int>
 	/**
 	 * Encode into a compact binary representation
 	 */
-	virtual std::string encode() const
+	virtual void encode(Encoder& enc) const
 	{
 		if (m_val >= -32 && m_val < 31)
 		{
@@ -246,7 +247,7 @@ struct Integer : public Common<int>
 			} else {
 				encoded |= (m_val & 0x3f);
 			}
-			return string((const char*)&encoded, 1u);
+			enc.addString((const char*)&encoded, 1u);
 		}
 		else 
 		{
@@ -279,7 +280,8 @@ struct Integer : public Common<int>
 				throw wibble::exception::Consistency("encoding integer number", "value " + str::fmt(val) + " is too large to be encoded");
 				
 			type |= (nbytes-1);
-			return string((const char*)&type, 1u) + codec::encodeUInt(val, nbytes);
+			enc.addString((const char*)&type, 1u);
+			enc.addUInt(val, nbytes);
 		}
 	}
 
@@ -312,13 +314,14 @@ struct String : public Common<std::string>
 			return sortKey() - v.sortKey();
 	}
 
-	virtual std::string encode() const
+	virtual void encode(Encoder& enc) const
 	{
 		if (m_val.size() < 64)
 		{
 			unsigned char type = ENC_NAME << 6;
 			type |= m_val.size() & 0x3f;
-			return string((const char*)&type, 1u) + m_val;
+			enc.addString((const char*)&type, 1u);
+			enc.addString(m_val);
 		}
 		else
 			// TODO: if needed, here we implement another string encoding type
@@ -598,20 +601,17 @@ void ValueBag::set(const std::string& key, Value* val)
 	}
 }
 
-std::string ValueBag::encode() const
+void ValueBag::encode(Encoder& enc) const
 {
-	using namespace codec;
-	string res;
 	for (const_iterator i = begin(); i != end(); ++i)
 	{
 		// Key length
-		res += encodeUInt(i->first.size(), 1);
+		enc.addUInt(i->first.size(), 1);
 		// Key
-		res += i->first;
+		enc.addString(i->first);
 		// Value
-		res += i->second->encode();
+		i->second->encode(enc);
 	}
-	return res;
 }
 
 std::string ValueBag::toString() const

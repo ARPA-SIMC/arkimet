@@ -127,10 +127,15 @@ int Type::compare(const Type& o) const
 std::string Type::encodeWithEnvelope() const
 {
 	using namespace utils::codec;
-	string contents = encodeWithoutEnvelope();
-	return encodeVarint((unsigned)serialisationCode())
-		 + encodeVarint(contents.size())
-		 + contents;
+	string contents;
+	Encoder contentsenc(contents);
+	encodeWithoutEnvelope(contentsenc);
+	string res;
+	Encoder enc(res);
+	enc.addVarint((unsigned)serialisationCode());
+	enc.addVarint(contents.size());
+	enc.addString(contents);
+	return res;
 }
 
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)

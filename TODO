@@ -179,6 +179,15 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+arkimet@arkimet:~/root/dataset/lm7tmpc$ arki-check -r -f .
+terminate called after throwing an instance of 'arki::utils::sqlite::SQLiteError'
+  what():  cannot rollback transaction - SQL statements in progress. Context:
+    executing query ROLLBACK
+Aborted
+
+ - Fare un encoder con dentro una stringa a cui si fa append, invece di
+   encodare creando ripetutamente stringhe
+
  - lm7tmpc eccezione maskata da sqlite
 
  - far andare il testdispatch per poter testare la scansione con le nuove

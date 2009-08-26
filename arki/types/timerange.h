@@ -60,7 +60,7 @@ struct Timerange : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Timerange> decode(const unsigned char* buf, size_t len);
 	static Item<Timerange> decodeString(const std::string& val);
 
@@ -84,7 +84,7 @@ struct GRIB1 : public Timerange
 	};
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Timerange& o) const;
@@ -102,7 +102,7 @@ struct GRIB2 : public Timerange
 	unsigned long p1, p2;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Timerange& o) const;

@@ -22,6 +22,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/types.h>
+#include <arki/utils/codec.h>
 #include <wibble/string.h>
 
 namespace arki {
@@ -32,7 +33,9 @@ template<typename T>
 static inline void impl_ensure_serialises(const wibble::tests::Location& loc, const arki::Item<T>& o, types::Code code)
 {
     // Binary encoding, without envelope
-    std::string enc = o->encodeWithoutEnvelope();
+    std::string enc;
+    utils::codec::Encoder e(enc);
+    o->encodeWithoutEnvelope(e);
     inner_ensure_equals(arki::Item<T>(T::decode((const unsigned char*)enc.data(), enc.size())), o);
 
 	// Binary encoding, with envelope
@@ -46,7 +49,12 @@ static inline void impl_ensure_serialises(const wibble::tests::Location& loc, co
     const unsigned char* buf = (const unsigned char*)enc.data();
     size_t len = enc.size();
     inner_ensure_equals(types::decodeEnvelope(buf, len), code);
-    inner_ensure_equals(o->encodeWithoutEnvelope().size(), len);
+    {
+	    std::string oenc;
+	    utils::codec::Encoder oe(oenc);
+	    o->encodeWithoutEnvelope(oe);
+	    inner_ensure_equals(oenc.size(), len);
+    }
     inner_ensure_equals(arki::Item<T>(T::decode(buf, len)), o);
 
 	// String encoding

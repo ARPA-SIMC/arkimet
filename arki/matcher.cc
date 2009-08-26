@@ -23,7 +23,6 @@
 #include <arki/matcher.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
-#include <arki/summary-old.h>
 #include <arki/configfile.h>
 #include <wibble/regexp.h>
 #include <wibble/string.h>
@@ -171,31 +170,6 @@ bool AND::matchMetadata(const Metadata& md) const
 		if (!i->second->matchItem(item)) return false;
 	}
 	return true;
-}
-
-bool AND::matchSummaryItem(const oldsummary::Item& si) const
-{
-	if (empty()) return true;
-
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		if (!oldsummary::Item::accepts(i->first)) continue;
-		UItem<> item = si.get(i->first);
-		if (!item.defined()) return false;
-		if (!i->second->matchItem(item)) return false;
-	}
-	return true;
-}
-
-bool AND::matchSummary(const OldSummary& s) const
-{
-	if (empty()) return true;
-
-	for (OldSummary::map_t::const_iterator i = s.m_items.begin();
-			i != s.m_items.end(); ++i)
-		if (matchItem(i->second->reftimeMerger.makeReftime()) && matchSummaryItem(*i->first))
-			return true;
-	return false;
 }
 
 const OR* AND::get(types::Code code) const

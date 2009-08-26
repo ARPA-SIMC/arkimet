@@ -40,6 +40,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 using namespace wibble;
 
 namespace arki {
@@ -92,10 +93,9 @@ types::Code Run::serialisationCode() const { return CODE; }
 size_t Run::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Run::tag() const { return TAG; }
 
-std::string Run::encodeWithoutEnvelope() const
+void Run::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Run> Run::decode(const unsigned char* buf, size_t len)
@@ -209,10 +209,10 @@ namespace run {
 
 Run::Style Minute::style() const { return Run::MINUTE; }
 
-std::string Minute::encodeWithoutEnvelope() const
+void Minute::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Run::encodeWithoutEnvelope() + encodeVarint(minute);
+	Run::encodeWithoutEnvelope(enc);
+	enc.addVarint(minute);
 }
 std::ostream& Minute::writeToOstream(std::ostream& o) const
 {

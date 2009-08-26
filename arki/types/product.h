@@ -59,7 +59,7 @@ struct Product : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Product> decode(const unsigned char* buf, size_t len);
 	static Item<Product> decodeString(const std::string& val);
 
@@ -84,7 +84,7 @@ struct GRIB1 : public Product
 	unsigned char product;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Product& o) const;
@@ -105,7 +105,7 @@ struct GRIB2 : public Product
 	unsigned char number;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Product& o) const;
@@ -125,7 +125,7 @@ struct BUFR : public Product
 	unsigned char localsubtype;
 
 	virtual Style style() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	virtual int compare(const Product& o) const;

@@ -42,6 +42,7 @@ extern "C" {
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -106,10 +107,11 @@ std::string Source::tag() const
 	return TAG;
 }
 
-std::string Source::encodeWithoutEnvelope() const
+void Source::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1) + encodeUInt(format.size(), 1) + format;
+	enc.addUInt(style(), 1);
+	enc.addUInt(format.size(), 1);
+	enc.addString(format);
 }
 
 Item<Source> Source::decode(const unsigned char* buf, size_t len)
@@ -260,10 +262,13 @@ namespace source {
 
 Source::Style Blob::style() const { return Source::BLOB; }
 
-std::string Blob::encodeWithoutEnvelope() const
+void Blob::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Source::encodeWithoutEnvelope() + encodeVarint(filename.size()) + filename + encodeVarint(offset) + encodeVarint(size);
+	Source::encodeWithoutEnvelope(enc);
+	enc.addVarint(filename.size());
+	enc.addString(filename);
+	enc.addVarint(offset);
+	enc.addVarint(size);
 }
 
 std::ostream& Blob::writeToOstream(std::ostream& o) const
@@ -320,10 +325,11 @@ Item<Blob> Blob::prependPath(const std::string& path)
 
 Source::Style URL::style() const { return Source::URL; }
 
-std::string URL::encodeWithoutEnvelope() const
+void URL::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Source::encodeWithoutEnvelope() + encodeVarint(url.size()) + url;
+	Source::encodeWithoutEnvelope(enc);
+	enc.addVarint(url.size());
+	enc.addString(url);
 }
 
 std::ostream& URL::writeToOstream(std::ostream& o) const
@@ -371,10 +377,10 @@ Item<URL> URL::create(const std::string& format, const std::string& url)
 
 Source::Style Inline::style() const { return Source::INLINE; }
 
-std::string Inline::encodeWithoutEnvelope() const
+void Inline::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Source::encodeWithoutEnvelope() + encodeVarint(size);
+	Source::encodeWithoutEnvelope(enc);
+	enc.addVarint(size);
 }
 
 std::ostream& Inline::writeToOstream(std::ostream& o) const

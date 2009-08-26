@@ -77,7 +77,7 @@ struct Time : public types::Type
 	/// CODEC functions
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
-	virtual std::string encodeWithoutEnvelope() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Time> decode(const unsigned char* buf, size_t len);
 	static Item<Time> decodeString(const std::string& val);
 	std::ostream& writeToOstream(std::ostream& o) const;

@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -77,10 +78,11 @@ types::Code Note::serialisationCode() const { return CODE; }
 size_t Note::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Note::tag() const { return TAG; }
 
-std::string Note::encodeWithoutEnvelope() const
+void Note::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return time->encodeWithoutEnvelope() + encodeVarint(content.size()) + content;
+	time->encodeWithoutEnvelope(enc);
+	enc.addVarint(content.size());
+	enc.addString(content);
 }
 
 Item<Note> Note::decode(const unsigned char* buf, size_t len)

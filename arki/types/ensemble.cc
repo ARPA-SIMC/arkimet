@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace arki::utils;
+using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
@@ -88,10 +89,9 @@ types::Code Ensemble::serialisationCode() const { return CODE; }
 size_t Ensemble::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Ensemble::tag() const { return TAG; }
 
-std::string Ensemble::encodeWithoutEnvelope() const
+void Ensemble::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return encodeUInt(style(), 1);
+	enc.addUInt(style(), 1);
 }
 
 Item<Ensemble> Ensemble::decode(const unsigned char* buf, size_t len)
@@ -188,10 +188,10 @@ namespace ensemble {
 
 Ensemble::Style GRIB::style() const { return Ensemble::GRIB; }
 
-std::string GRIB::encodeWithoutEnvelope() const
+void GRIB::encodeWithoutEnvelope(Encoder& enc) const
 {
-	using namespace utils::codec;
-	return Ensemble::encodeWithoutEnvelope() + values.encode();
+	Ensemble::encodeWithoutEnvelope(enc);
+	values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
