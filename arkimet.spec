@@ -1,13 +1,13 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.4
+Version: 0.25
 Release: 1
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/dettaglio_documento.asp?id=1172&idlivello=64
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-BuildRequires: doxygen, libdballe-devel >= 4.0.0, lua-devel >= 5.1, grib_api, sqlite-devel >= 3.0, curl-devel, geos-devel, pkgconfig, python-cherrypy
+BuildRequires: doxygen, libdballe-devel >= 4.0.0, lua-devel >= 5.1, grib_api, sqlite-devel >= 3.0, curl-devel, geos-devel, pkgconfig, python-cherrypy, readline-devel
 Requires: python-cherrypy
 
  
@@ -39,38 +39,31 @@ make
 #make check
 
 %install
-[ "%{buildroot}" != / ] && rm -rf "%{buildroot}"
-#rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
+[ "%{buildroot}" != / ] && rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}
 
 %clean
-[ "%{buildroot}" != / ] && rm -rf "%{buildroot}"
-#rm -rf $RPM_BUILD_ROOT
-
-
-
+[ "%{buildroot}" != / ] && rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%dir /etc/arkimet
-/etc/arkimet/*
-%dir /usr/bin
-%dir /usr/share/man/man1
-/usr/bin/*
-%doc /usr/share/man/man1/*
+%dir %{_sysconfdir}/arkimet
+%{_sysconfdir}/arkimet/*
+%{_bindir}/*
+%doc %{_mandir}/man1/*
 
 %files -n arkimet-devel
 %defattr(-,root,root,-)
-/usr/include/arki/*
-/usr/lib/libarkimet*.a
-/usr/lib/libarkimet*.la
-/usr/lib/libarkimet*.so
+%{_includedir}/arki/*
+%{_libdir}/libarkimet*.a
+%{_libdir}/libarkimet*.la
+%{_libdir}/libarkimet*.so
 #/usr/lib/pkgconfig/libarkimet*
 #/usr/share/aclocal/libarkimet*.m4
 
 %files -n libarkimet0
 %defattr(-,root,root,-)
-/usr/lib/libarkimet*.so.*
+%{_libdir}/libarkimet*.so.*
 
 %post
 /sbin/ldconfig
@@ -78,7 +71,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 %postun
 /sbin/ldconfig
 
-
 %changelog
+* Wed Aug 26 2009 Daniele Branchini <dbranchini@carenza.metarpa> - 0.25-1
+- Rebuild to reflect upstream changes.
+
 * Tue Jul  1 2008 root <enrico@enricozini.org> - 0.4-1
 - Initial build.
