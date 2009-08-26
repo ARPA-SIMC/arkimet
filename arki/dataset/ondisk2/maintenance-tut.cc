@@ -1088,7 +1088,10 @@ void to::test<17>()
 
 	// Simulate 2007/07-07.grib1 to be 6G already
 	system("mkdir -p testdir/2007");
-	system("truncate -s 6G testdir/2007/07-07.grib1");
+	system("touch testdir/2007/07-07.grib1");
+	// Truncate the last grib out of a file
+	if (truncate("testdir/2007/07-07.grib1", 6000000000) < 0)
+		throw wibble::exception::System("truncating testdir/2007/07-07.grib1");
 	acquireSamples();
 	system("rm testdir/needs-check-do-not-pack");
 	arki::dataset::ondisk2::Writer writer(cfg);

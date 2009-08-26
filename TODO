@@ -184,37 +184,44 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  - lm7tmpc eccezione maskata da sqlite
 
 Minguzzi:
- - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
-   +0100 di Minguzzi
- - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
-   lo usa per validare la query, il server lo usa per fare la query). Ne
-   battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query
-   espanse
- - In arki-sort, grib:nomefile non funziona
- - Il sort funziona solo per reference time:
-   arki-scan --sort=year:product file.grib --data > file1.grib
-   Non sorta bene per product
- - Tenendo in memoria solo i metadati, --sort si potrebbe pure fare senza il
-   bisogno degli intervalli di reference time
- - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
-   processo passando il nome del tempfile in env o in arg, per ogni grib
-   (xargs per i grib)
-    - codice per split di grib preso da meteosatlib
- - plugin chunked
-    - programma che splitta lo stdin di grib un pezzo alla volta
-    - esporta via environment dati sul chunk (tipo il range di date)
-    - gli lascia i dati su standard input o su file temporaneo che viene poi
-      cancellato
- - grib_api non funziona in pipe
-   per i plugin, servirebbe poter lanciare il plugin su file con spezzoni di
-     output della query
-   l'ideale sarebbe usare i chunk del sorter
-   a quel punto, assieme al chunk scrivere su disco anche il summary del chunk,
-     ad uso del plugin
- - arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
-   si aggiorna un alias sul server, i client non vedono l'aggiornamento)
+ - Sort:
+    - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
+      +0100 di Minguzzi
+    - In arki-sort, grib:nomefile non funziona
+    - Il sort funziona solo per reference time:
+      arki-scan --sort=year:product file.grib --data > file1.grib
+      Non sorta bene per product
+    - Tenendo in memoria solo i metadati, --sort si potrebbe pure fare senza il
+      bisogno degli intervalli di reference time
 
- - Possibilità di fare include del file degli alias
+ - Alias:
+    - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
+      lo usa per validare la query, il server lo usa per fare la query). Ne
+      battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query
+      espanse
+    - Possibilità di fare include del file degli alias
+    - arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
+      si aggiorna un alias sul server, i client non vedono l'aggiornamento)
+
+ - Postprocess:
+    - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
+      processo passando il nome del tempfile in env o in arg, per ogni grib
+      (xargs per i grib)
+       - codice per split di grib preso da meteosatlib
+    - plugin chunked
+       - programma che splitta lo stdin di grib un pezzo alla volta
+       - esporta via environment dati sul chunk (tipo il range di date)
+       - gli lascia i dati su standard input o su file temporaneo che viene poi
+         cancellato
+    - grib_api non funziona in pipe
+      per i plugin, servirebbe poter lanciare il plugin su file con spezzoni di
+        output della query
+      l'ideale sarebbe usare i chunk del sorter
+      a quel punto, assieme al chunk scrivere su disco anche il summary del chunk,
+        ad uso del plugin
+    - Chi ha software di postproc
+       - minguzzi estrazione di un parametro
+       - patruno: cong
 
  - --sort serve per lanciare plugin lato server, quindi servirebbe farlo andare
    lato server (e farlo combinare con --postprocess e tutto il resto, ma farlo
@@ -239,9 +246,6 @@ Minguzzi:
 
  + postprocessing e reporting sono per-dataset
 
- - Chi ha software di postproc
-    - minguzzi estrazione di un parametro
-    - patruno: cong
 
 
  - far andare il testdispatch per poter testare la scansione con le nuove
