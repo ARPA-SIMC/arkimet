@@ -1,7 +1,7 @@
 /*
  * arki/sort - Sorting routines for metadata
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
 
+#include <vector>
+#include <cctype>
 #include <cstring>
 
 using namespace std;
@@ -38,37 +40,134 @@ using namespace wibble;
 namespace arki {
 namespace sort {
 
-TimeIntervalSorter::TimeIntervalSorter(MetadataConsumer& nextConsumer, const std::string& desc)
-	: nextConsumer(nextConsumer)
+/// Comparison function for one metadata item
+struct Item
 {
-	size_t pos = desc.find(':');
+	types::Code code;
+	bool reverse;
+
+	Item(const std::string& expr)
+	{
+		if (expr.empty())
+			throw wibble::exception::Consistency("parsing sort expression", "metadata name is the empty string");
+		size_t start = 0;
+		switch (expr[0])
+		{
+			case '+': reverse = false; start = 1; break;
+			case '-': reverse = true; start = 1; break;
+			default: start = 0; break;
+		}
+		while (start < expr.size() && isspace(expr[start]))
+			++start;
+		code = types::parseCodeName(expr.substr(start));
+	}
+	Item(types::Code code, bool reverse) : code(code), reverse(reverse) {}
+
+	int compare(const Metadata& a, const Metadata& b) const
+	{
+		int res = a.get(code).compare(b.get(code));
+		return reverse ? -res : res;
+	}
+};
+
+/// Serializer for Item
+ostream& operator<<(ostream& out, const Item& i)
+{
+	if (i.reverse) out << "-";
+	out << str::tolower(types::formatCode(i.code));
+	return out;
+}
+
+/**
+ * Compare metadata according to sequence of sort items
+ */
+class Items : public std::vector<Item>, public Compare
+{
+public:
+	Items(const std::string& expr)
+	{
+		Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
+		for (Splitter::const_iterator i = splitter.begin(expr);
+				i != splitter.end(); ++i)
+			push_back(Item(*i));
+	}
+	virtual ~Items() {}
+
+	virtual int compare(const Metadata& a, const Metadata& b) const
+	{
+		for (const_iterator i = begin(); i != end(); ++i)
+		{
+			int cmp = i->compare(a, b);
+			if (cmp != 0) return cmp;
+		}
+		return 0;
+	}
+
+	virtual std::string toString() const
+	{
+		return str::join(begin(), end(), ",");
+	}
+};
+
+struct IntervalCompare : public Items
+{
+	Interval m_interval;
+
+	IntervalCompare(Interval interval, const std::string& expr)
+		: Items(expr), m_interval(interval) {}
+
+	virtual Interval interval() const { return m_interval; }
+
+	virtual int compare(const Metadata& a, const Metadata& b) const
+	{
+		return Items::compare(a, b);
+	}
+
+	virtual std::string toString() const
+	{
+		switch (m_interval)
+		{
+			case NONE: return Items::toString();
+			case MINUTE: return "minute:"+Items::toString();
+			case HOUR: return "hour:"+Items::toString();
+			case DAY: return "day:"+Items::toString();
+			case MONTH: return "month:"+Items::toString();
+			case YEAR: return "year:"+Items::toString();
+			default:
+				   throw wibble::exception::Consistency("formatting sort expression", "interval code " + str::fmt((int)m_interval) + " is not valid");
+		}
+		return Items::toString();
+	}
+};
+
+static Compare::Interval parseInterval(const std::string& name)
+{
+	using namespace str;
+
+	// TODO: convert into something faster, like a hash lookup or a gperf lookup
+	string nname = trim(tolower(name));
+	if (nname == "minute") return Compare::MINUTE;
+	if (nname == "hour") return Compare::HOUR;
+	if (nname == "day") return Compare::DAY;
+	if (nname == "month") return Compare::MONTH;
+	if (nname == "year") return Compare::YEAR;
+	throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + name + ".  Valid intervals are minute, hour, day, month and year");
+}
+
+std::auto_ptr<Compare> Compare::parse(const std::string& expr)
+{
+	size_t pos = expr.find(':');
 	if (pos == string::npos)
-		throw wibble::exception::Consistency("parsing sorting specification", "'"+desc+"' does not contain ':'");
-
-	period = parsePeriod(desc.substr(0, pos));
-
-	string order = str::trim(desc.substr(pos+1));
-	Splitter sp("[[:space:]]*([[:space:]]|,)[[:space:]]*", REG_EXTENDED);
-	for (Splitter::const_iterator i = sp.begin(order);
-			i != sp.end(); ++i)
-		if ((*i)[0] == '-')
-			addOrder(types::parseCodeName(i->substr(1)), true);
-		else
-			addOrder(types::parseCodeName(*i), false);
+	{
+//cerr << "creating intervalless: " << expr << endl;		
+		return auto_ptr<Compare>(new sort::Items(expr));
+	} else {
+//cerr << "creating with interval " << expr.substr(0, pos) << ": " << expr.substr(pos+1) << endl;
+		return auto_ptr<Compare>(new sort::IntervalCompare(sort::parseInterval(expr.substr(0, pos)), expr.substr(pos+1)));
+	}
 }
 
-TimeIntervalSorter::Period TimeIntervalSorter::parsePeriod(const std::string& p)
-{
-	string lp = str::tolower(p);
-	if (lp == "minute") return MINUTE;
-	if (lp == "hour") return HOUR;
-	if (lp == "day") return DAY;
-	if (lp == "month") return MONTH;
-	if (lp == "year") return YEAR;
-	throw wibble::exception::Consistency("parsing period", "invalid period: " + p + ".  Valid periods are minute, hour, day, month and year");
-}
-
-void TimeIntervalSorter::setEndOfPeriod(const UItem<types::Reftime>& rt)
+void Stream::setEndOfPeriod(const UItem<types::Reftime>& rt)
 {
 	UItem<types::Time> t;
 	switch (rt->style())
@@ -80,44 +179,50 @@ void TimeIntervalSorter::setEndOfPeriod(const UItem<types::Reftime>& rt)
 	}
 	int vals[6];
 	memcpy(vals, t->vals, 6 * sizeof(int));
-	switch (period)
+	switch (sorter.interval())
 	{
-		case YEAR: vals[1] = -1;
-		case MONTH: vals[2] = -1;
-		case DAY: vals[3] = -1;
-		case HOUR: vals[4] = -1;
-		case MINUTE: vals[5] = -1; break;
+		case Compare::YEAR: vals[1] = -1;
+		case Compare::MONTH: vals[2] = -1;
+		case Compare::DAY: vals[3] = -1;
+		case Compare::HOUR: vals[4] = -1;
+		case Compare::MINUTE: vals[5] = -1; break;
 		default:
-			throw wibble::exception::Consistency("setting end of period", "period type has invalid value: " + (int)period);
+			throw wibble::exception::Consistency("setting end of period", "interval type has invalid value: " + str::fmt((int)sorter.interval()));
 	}
 	wibble::grcal::date::upperbound(vals);
 	endofperiod = types::reftime::Position::create(types::Time::create(vals));
+//cerr << "Set end of period to " << endofperiod << endl;
 }
 
-void TimeIntervalSorter::flush()
+bool Stream::operator()(Metadata& m)
 {
-	if (buffer.empty()) return;
-	std::sort(buffer.begin(), buffer.end(), sorter);
-	for (vector<Metadata>::iterator i = buffer.begin();
-			i != buffer.end(); ++i)
-		nextConsumer(*i);
-	buffer.clear();
-}
-
-bool TimeIntervalSorter::operator()(Metadata& m)
-{
-	if (m.get(types::TYPE_REFTIME) > endofperiod)
+//cerr << "stream with " << sorter.toString() << endl;
+//cerr << "hasInterval: " << hasInterval << " got " << m.get(types::TYPE_REFTIME) << " eop: " << endofperiod << endl;
+	if (hasInterval && (!endofperiod.defined() || m.get(types::TYPE_REFTIME) > endofperiod))
 	{
+//cerr << "Flushing." << endl;
 		flush();
 		buffer.push_back(m);
 		setEndOfPeriod(m.get(types::TYPE_REFTIME).upcast<types::Reftime>());
 	}
 	else
 		buffer.push_back(m);
+//cerr << "Buffering " << m.get(types::TYPE_REFTIME) << endl;		
 	return true;
+}
+
+void Stream::flush()
+{
+	if (buffer.empty()) return;
+	std::sort(buffer.begin(), buffer.end(), STLCompare(sorter));
+	for (vector<Metadata>::iterator i = buffer.begin();
+			i != buffer.end(); ++i)
+		nextConsumer(*i);
+	buffer.clear();
 }
 
 }
 }
+
 
 // vim:set ts=4 sw=4:

@@ -499,7 +499,8 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 		}
 		else if (sort->isSet())
 		{
-			sort::TimeIntervalSorter sorter(consumer, sort->stringValue());
+			auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
+			sort::Stream sorter(*cmp, consumer);
 			ds.queryMetadata(m, false, sorter);
 			sorter.flush();
 		}
@@ -512,7 +513,8 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 		MetadataOutput consumer(*m_output);
 		if (sort->isSet())
 		{
-			sort::TimeIntervalSorter sorter(consumer, sort->stringValue());
+			auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
+			sort::Stream sorter(*cmp, consumer);
 			ds.queryMetadata(m, true, sorter);
 			sorter.flush();
 		} else
@@ -550,7 +552,8 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 #endif
 		} else if (sort->isSet()) {
 			DataOutput consumer(output());
-			sort::TimeIntervalSorter sorter(consumer, sort->stringValue());
+			auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
+			sort::Stream sorter(*cmp, consumer);
 			ds.queryMetadata(m, true, sorter);
 			sorter.flush();
 			consumer.flush();
@@ -569,7 +572,8 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 	else if (sort->isSet())
 	{
 		MetadataOutput consumer(*m_output);
-		sort::TimeIntervalSorter sorter(consumer, sort->stringValue());
+		auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
+		sort::Stream sorter(*cmp, consumer);
 		ds.queryMetadata(m, false, sorter);
 		sorter.flush();
 	}

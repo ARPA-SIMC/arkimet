@@ -185,8 +185,34 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
 Minguzzi:
  - Sort:
+    - serializable (to string) sorter
+      (interval:)?([+-]?metadata)(,[+-]?metadata)*
+    - assume input is sorted by time, to minimise ram usage if sorting in time
+      steps
+    - sorter to also work as merger of presorted data, in order to merge
+      multiple datasets together in a sorted way
+    - send sort expression to server when querying
+    - sort the metadata precache in query
+    - when sorting files, preread the metadata and sort it by time, then run
+      the sorter on it
+    - when sorting stdin, I don't know
+
     - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
       +0100 di Minguzzi
+      Il file e': ftp://ftp.smr.arpa.emr.it/ambiente/zoom2.grib
+      
+      Ho provato:
+      arki-scan zoom2.grib | arki-sort --data -o out.grib --sort=day:reftime
+      arki-scan zoom2.grib | arki-sort --data -o out.grib --sort=day:product
+      arki-scan zoom2.grib | arki-sort --data -o out.grib --sort=day:level
+      arki-scan zoom2.grib | arki-sort --data -o out.grib
+      
+      e il risultato e' sempre lo stesso (un file con i grib ordinati solo per
+      reference time)
+      
+      Forse sbaglio qualcosa nella sintassi?
+      O forse arki-sort non riesce a gestire i dati sui model layers COSMO?
+
     - In arki-sort, grib:nomefile non funziona
     - Il sort funziona solo per reference time:
       arki-scan --sort=year:product file.grib --data > file1.grib

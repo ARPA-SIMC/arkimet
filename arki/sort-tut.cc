@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,12 +40,11 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::sort;
 
 struct arki_sort_shar {
     arki_sort_shar()
     {
-	}
+    }
 };
 TESTGRP(arki_sort);
 
@@ -82,9 +81,8 @@ template<> template<>
 void to::test<1>()
 {
 	arki::tests::MetadataCollector mdc;
-	TimeIntervalSorter sorter(mdc, TimeIntervalSorter::HOUR);
-	sorter.addOrder(types::TYPE_RUN);
-	sorter.addOrder(types::TYPE_REFTIME, true);
+	auto_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
+	sort::Stream sorter(*cmp, mdc);
 
 	produce(0, 0, 10, sorter);
 	produce(0, 1, 9, sorter);
