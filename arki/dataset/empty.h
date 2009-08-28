@@ -49,7 +49,7 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	{
 		// The dataset is always empty
 	}
@@ -59,7 +59,7 @@ public:
 		// The dataset is always empty
 	}
 
-	virtual void queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype = BQ_DATA, const std::string& param = std::string())
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	{
 		// The dataset is always empty
 	}

@@ -70,8 +70,8 @@ public:
 	void openRO();
 	void openRW();
 
-	virtual void queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer);
-	virtual void queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype = BQ_DATA, const std::string& param = std::string());
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	void acquire(const std::string& relname);
@@ -128,8 +128,8 @@ public:
 
 	const std::string& path() const { return m_dir; }
 
-	virtual void queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer);
-	virtual void queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype = BQ_DATA, const std::string& param = std::string());
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	void acquire(const std::string& relname);

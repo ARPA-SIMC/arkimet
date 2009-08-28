@@ -99,7 +99,23 @@ const Archives& Reader::archive() const
 	return *m_archive;
 }
 
-void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+void Reader::queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+{
+	MetadataConsumer* c = &consumer;
+	auto_ptr<ds::DataInliner> inliner;
+
+	if (q.withData)
+	{
+		inliner.reset(new ds::DataInliner(*c));
+		c = inliner.get();
+	}
+
+	ds::PathPrepender prepender(sys::fs::abspath(m_root), *c);
+	if (!m_idx || !m_idx->query(q, prepender))
+		throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+}
+
+void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	// First ask the index.  If it can do something useful, iterate with it
 	//
@@ -111,68 +127,53 @@ void Reader::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 
 	// Query the archives first
 	if (hasArchive())
-		archive().queryMetadata(matcher, withData, consumer);
-
-	if (withData)
-	{
-		ds::DataInliner inliner(consumer);
-		ds::PathPrepender prepender(sys::fs::abspath(m_root), inliner);
-		if (!m_idx || !m_idx->query(matcher, prepender))
-			throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
-	} else {
-		ds::PathPrepender prepender(sys::fs::abspath(m_root), consumer);
-		if (!m_idx || !m_idx->query(matcher, prepender))
-			throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
-	}
+		archive().queryData(q, consumer);
+	queryLocalData(q, consumer);
 }
 
-void Reader::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
+void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	// Query the archives first
 	if (hasArchive())
-		archive().queryBytes(matcher, out, qtype, param);
+		archive().queryBytes(q, out);
 
-	switch (qtype)
+	switch (q.type())
 	{
-		case BQ_DATA: {
+		case dataset::ByteQuery::BQ_DATA: {
 			ds::DataOnly dataonly(out);
-			ds::PathPrepender prepender(sys::fs::abspath(m_root), dataonly);
-			if (!m_idx || !m_idx->query(matcher, prepender))
-				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+			queryLocalData(q, dataonly);
 			break;
 		}
-		case BQ_POSTPROCESS: {
-			Postprocess postproc(param, out);
-			ds::PathPrepender prepender(sys::fs::abspath(m_root), postproc);
-			if (!m_idx || !m_idx->query(matcher, prepender))
-				throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+		case dataset::ByteQuery::BQ_POSTPROCESS: {
+			Postprocess postproc(q.param, out);
+			queryLocalData(q, postproc);
 			postproc.flush();
 			break;
 		}
-		case BQ_REP_METADATA: {
+		case dataset::ByteQuery::BQ_REP_METADATA: {
 #ifdef HAVE_LUA
 			Report rep;
 			rep.captureOutput(out);
-			rep.load(param);
-			queryMetadata(matcher, false, rep);
+			rep.load(q.param);
+			queryLocalData(q, rep);
 			rep.report();
 #endif
 			break;
 		}
-		case BQ_REP_SUMMARY: {
+		case dataset::ByteQuery::BQ_REP_SUMMARY: {
 #ifdef HAVE_LUA
 			Report rep;
 			rep.captureOutput(out);
-			rep.load(param);
+			rep.load(q.param);
 			Summary s;
-			querySummary(matcher, s);
+			querySummary(q.matcher, s);
 			rep(s);
 			rep.report();
 #endif
 			break;
 		}
 		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)qtype));
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type()));
 	}
 }
 

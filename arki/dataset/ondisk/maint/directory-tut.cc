@@ -147,7 +147,7 @@ void to::test<1>()
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
 	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 
@@ -231,7 +231,7 @@ void to::test<2>()
 	Reader reader(cfg);
 	ensure(!reader.hasWorkingIndex());
 	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 

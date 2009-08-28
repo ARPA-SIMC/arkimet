@@ -1,7 +1,7 @@
 /*
  * dataset/merged - Access many datasets at the same time
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
+#include <arki/sort.h>
 
 #include <wibble/string.h>
 #include <wibble/sys/mutex.h>
@@ -122,15 +123,16 @@ protected:
 		}
 	};
 	ReadonlyDataset* dataset;
-	const Matcher* matcher;
-	bool withData;
+	const DataQuery* query;
 	string errorbuf;
 
 	virtual void* main()
 	{
 		try {
+			if (!query)
+				throw wibble::exception::Consistency("executing query in subthread", "no query has been set");
 			Consumer cons(mdbuf);
-			dataset->queryMetadata(*matcher, withData, cons);
+			dataset->queryData(*query, cons);
 			mdbuf.done();
 			return 0;
 		} catch (std::exception& e) {
@@ -143,13 +145,12 @@ protected:
 public:
 	SyncBuffer<Metadata> mdbuf;
 
-	MetadataReader() : dataset(0), matcher(0), withData(false) {}
+	MetadataReader() : dataset(0), query(0) {}
 
-	void init(ReadonlyDataset& dataset, const Matcher& matcher, bool withData)
+	void init(ReadonlyDataset& dataset, const DataQuery* query)
 	{
 		this->dataset = &dataset;
-		this->matcher = &matcher;
-		this->withData = withData;
+		this->query = query;
 	}
 };
 
@@ -196,12 +197,12 @@ void Merged::addDataset(ReadonlyDataset& ds)
 	datasets.push_back(&ds);
 }
 
-void Merged::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+void Merged::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	// Handle the trivial case of only one dataset
 	if (datasets.size() == 1)
 	{
-		datasets[0]->queryMetadata(matcher, withData, consumer);
+		datasets[0]->queryData(q, consumer);
 		return;
 	}
 
@@ -210,32 +211,38 @@ void Merged::queryMetadata(const Matcher& matcher, bool withData, MetadataConsum
 	// Start all the readers
 	for (size_t i = 0; i < datasets.size(); ++i)
 	{
-		readers[i].init(*datasets[i], matcher, withData);
+		readers[i].init(*datasets[i], &q);
 		readers[i].start();
 	}
 
-	// Output items in time-sorted order
+	// Output items in time-sorted order or in the order asked by q
+	// Note: we assume that every dataset will give us data sorted as q
+	// asks, so here we just merge sorted data
+	auto_ptr<sort::Compare> cmp;
+	const sort::Compare* sorter = q.sorter;
+	if (!sorter)
+	{
+		cmp = sort::Compare::parse("");
+		sorter = cmp.get();
+	}
 	while (true)
 	{
-		int minmd = -1;
-		UItem<types::Reftime> mintime;
-
+		Metadata* minmd = 0;
+		int minmd_idx = 0;
 		for (size_t i = 0; i < datasets.size(); ++i)
 		{
 			Metadata* md = readers[i].mdbuf.get();
 			if (!md) continue;
-
-			UItem<types::Reftime> mdtime = md->get(types::TYPE_REFTIME).upcast<types::Reftime>();
-			if (!mintime.defined() || (mdtime.defined() && mdtime < mintime))
+			if (!minmd || sorter->compare(*md, *minmd) < 0)
 			{
-				minmd = i;
-				mintime = mdtime;
+				minmd = md;
+				minmd_idx = i;
 			}
 		}
 		// When there's nothing more to read, we exit
-		if (minmd == -1) break;
-		consumer(*readers[minmd].mdbuf.get());
-		readers[minmd].mdbuf.pop();
+		if (minmd == 0) break;
+		consumer(*minmd);
+		readers[minmd_idx].mdbuf.pop();
 	}
 
 	// Collect all the results
@@ -282,12 +289,12 @@ void Merged::querySummary(const Matcher& matcher, Summary& summary)
 		throw wibble::exception::Consistency("running summary queries on multiple datasets", str::join(errors.begin(), errors.end(), "; "));
 }
 
-void Merged::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
+void Merged::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	// Here we must serialize, as we do not know how to merge raw data streams
 	for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
 			i != datasets.end(); ++i)
-		(*i)->queryBytes(matcher, out, qtype, param);
+		(*i)->queryBytes(q, out);
 }
 
 }

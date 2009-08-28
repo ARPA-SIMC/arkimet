@@ -114,7 +114,7 @@ template<> template<>
 void to::test<1>()
 {
 	MetadataCollector mdc;
-	ds.queryMetadata(Matcher(), false, mdc);
+	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 #if 0

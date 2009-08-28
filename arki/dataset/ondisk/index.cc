@@ -29,6 +29,7 @@
 #include <arki/dataset.h>
 #include <arki/types/reftime.h>
 #include <arki/utils/metadata.h>
+#include <arki/sort.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -37,6 +38,7 @@
 #include <sstream>
 #include <ctime>
 #include <cassert>
+#include <algorithm>
 
 // FIXME: for debugging
 //#include <iostream>
@@ -156,7 +158,7 @@ bool RIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
 	return true;
 }
 
-void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer) const
+void RIndex::metadataQuery(const std::string& query, const sort::Compare* compare, MetadataConsumer& consumer) const
 {
 	ondisk::Fetcher fetcher(m_root);
 	utils::metadata::Collector mdbuf;
@@ -177,13 +179,16 @@ void RIndex::metadataQuery(const std::string& query, MetadataConsumer& consumer)
 		}
 	}
 
+	if (compare)
+		std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*compare));
+
 	// pass it to consumer
 	for (utils::metadata::Collector::iterator i = mdbuf.begin();
 			i != mdbuf.end(); ++i)
 		consumer(*i);
 }
 
-bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const
+bool RIndex::query(const Matcher& m, const sort::Compare* sorter, MetadataConsumer& consumer) const
 {
 	string query = "SELECT file, offset FROM md WHERE ";
 	int found = 0;
@@ -243,11 +248,11 @@ bool RIndex::query(const Matcher& m, MetadataConsumer& consumer) const
 		if (m_index_reftime)
 			query += " ORDER BY reftime";
 		// If no non-SQL matcher comes out, then pipe direct to consumer
-		metadataQuery(query, consumer);
+		metadataQuery(query, sorter, consumer);
 	} else {
 		// Else add a filtering step to the consumer using 'others'
 		FilteredMetadataConsumer fc(others, consumer);
-		metadataQuery(query, fc);
+		metadataQuery(query, sorter, fc);
 	}
 
 	return true;

@@ -219,7 +219,7 @@ void to::test<2>()
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 	MetadataCollector mdc;
 
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -232,11 +232,11 @@ void to::test<2>()
 	ensure_equals(blob->size, 7218u);
 
 	mdc.clear();
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
 	mdc.clear();
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,98"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 }
 
@@ -247,11 +247,11 @@ void to::test<3>()
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
 	MetadataCollector mdc;
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
 	mdc.clear();
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -264,7 +264,7 @@ void to::test<3>()
 	ensure_equals(blob->size, 34960u);
 
 	mdc.clear();
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,98"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 }
 
@@ -275,15 +275,15 @@ void to::test<4>()
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test98")));
 	MetadataCollector mdc;
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
 	mdc.clear();
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
 	mdc.clear();
-	testds->queryMetadata(Matcher::parse("origin:GRIB1,98"), false, mdc);
+	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -307,7 +307,7 @@ void to::test<5>()
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
 
 		// Fetch an element
-		testds->queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+		testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
 
@@ -331,7 +331,7 @@ void to::test<5>()
 
 		// Fetch the element again
 		mdc.clear();
-		testds->queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+		testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
 
@@ -358,7 +358,7 @@ void to::test<6>()
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
 		// Fetch an element
-		testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
 
@@ -386,7 +386,7 @@ void to::test<6>()
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 		mdc.clear();
-		testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 0u);
 	}
 
@@ -395,7 +395,7 @@ void to::test<6>()
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 		mdc.clear();
-		testds->queryMetadata(Matcher::parse(""), false, mdc);
+		testds->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 		ensure_equals(mdc.size(), 2u);
 	}
 
@@ -405,7 +405,7 @@ void to::test<6>()
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 		mdc.clear();
-		testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 0u);
 	}
 
@@ -413,7 +413,7 @@ void to::test<6>()
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 		mdc.clear();
-		testds->queryMetadata(Matcher::parse(""), false, mdc);
+		testds->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 		ensure_equals(mdc.size(), 2u);
 	}
 #endif
@@ -432,7 +432,7 @@ void to::test<7>()
 		Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
 		MetadataCollector mdc;
-		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
 
@@ -453,7 +453,7 @@ void to::test<7>()
 		Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
 		MetadataCollector mdc;
-		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
 #endif
@@ -541,7 +541,7 @@ void to::test<10>()
 	{
 		Reader reader(*config.section("test200"));
 		MetadataCollector mdc;
-		reader.queryMetadata(Matcher(), false, mdc);
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
 		// Make sure we're not getting the deleted element
@@ -576,11 +576,11 @@ void to::test<11>()
 	ensure_equals(rt->style(), Reftime::PERIOD);
 	Item<reftime::Period> p = rt.upcast<reftime::Period>();
 	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin->toISO8601()), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin->toISO8601()), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	mdc.clear();
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,98; reftime:=" + p->end->toISO8601()), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98; reftime:=" + p->end->toISO8601()), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 }
 
@@ -591,7 +591,9 @@ void to::test<12>()
 	acquireSamplesAllInOne();
 	Reader reader(*configAll.section("testall"));
 	stringstream str;
-	reader.queryBytes(Matcher::parse("reftime:=2007"), str, ReadonlyDataset::BQ_DATA);
+	dataset::ByteQuery bq(dataset::ByteQuery::BQ_DATA);
+	bq.matcher = Matcher::parse("reftime:=2007");
+	reader.queryBytes(bq, str);
 	ensure_equals(str.str().size(), 44412u);
 }
 

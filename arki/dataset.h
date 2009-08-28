@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/matcher.h>
 #include <string>
 
 namespace arki {
@@ -31,7 +32,10 @@ class ConfigFile;
 class Metadata;
 class Summary;
 class MetadataConsumer;
-class Matcher;
+
+namespace sort {
+class Compare;
+}
 
 /**
  * Generic dataset interface.
@@ -75,6 +79,50 @@ class Matcher;
  * An archive index can therefore be built, indexing all dataset summaries,
  * to allow complex data searches across datasets.
  */
+namespace dataset {
+
+struct DataQuery {
+	Matcher matcher;
+	bool withData;
+	const sort::Compare* sorter;
+
+	DataQuery() : matcher(0), withData(false), sorter(0) {}
+	DataQuery(const Matcher& matcher, bool withData=false) : matcher(matcher), withData(withData), sorter(0) {}
+};
+
+struct ByteQuery : public DataQuery
+{
+	enum Type {
+		BQ_DATA = 0,
+		BQ_POSTPROCESS = 1,
+		BQ_REP_METADATA = 2,
+		BQ_REP_SUMMARY = 3
+	};
+	std::string param;
+
+protected:
+	Type m_type;
+
+public:
+	ByteQuery(Type type) { setType(type); }
+
+	Type type() const { return m_type; }
+	void setType(Type type)
+	{
+		m_type = type;
+		switch (type)
+		{
+			case BQ_DATA:
+			case BQ_POSTPROCESS:
+				withData = true; break;
+			case BQ_REP_METADATA:
+			case BQ_REP_SUMMARY:
+				withData = false; break;
+		}
+	}
+};
+
+}
 
 class ReadonlyDataset
 {
@@ -85,7 +133,7 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer) = 0;
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer) = 0;
 
 	/**
 	 * Add to summary the summary of the data that would be extracted with the
@@ -93,13 +141,10 @@ public:
 	 */
 	virtual void querySummary(const Matcher& matcher, Summary& summary) = 0;
 
-	enum ByteQuery {
-		BQ_DATA = 0,
-		BQ_POSTPROCESS = 1,
-		BQ_REP_METADATA = 2,
-		BQ_REP_SUMMARY = 3
-	};
-	virtual void queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype = BQ_DATA, const std::string& param = std::string()) = 0;
+	/**
+	 * Query the dataset obtaining a byte stream
+	 */
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out) = 0;
 
 	/**
 	 * Instantiate an appropriate Dataset for the given configuration

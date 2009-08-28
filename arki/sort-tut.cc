@@ -103,6 +103,33 @@ void to::test<1>()
 	ensure_equals(mdvals(mdc[6]), mdvals(1, 1, 9));
 }
 
+// An empty expression sorts by reference time
+template<> template<>
+void to::test<2>()
+{
+	arki::tests::MetadataCollector mdc;
+	auto_ptr<sort::Compare> cmp = sort::Compare::parse("");
+	sort::Stream sorter(*cmp, mdc);
+
+	produce(1, 0, 8, sorter);
+	produce(1, 1, 9, sorter);
+	produce(1, 2, 7, sorter);
+	produce(0, 0, 10, sorter);
+	produce(0, 1, 9, sorter);
+	produce(0, 3, 7, sorter);
+	produce(0, 2, 9, sorter);
+
+	sorter.flush();
+
+	ensure_equals(mdvals(mdc[0]), mdvals(0, 0, 10));
+	ensure_equals(mdvals(mdc[1]), mdvals(0, 1, 9));
+	ensure_equals(mdvals(mdc[2]), mdvals(0, 2, 9));
+	ensure_equals(mdvals(mdc[3]), mdvals(0, 3, 7));
+	ensure_equals(mdvals(mdc[4]), mdvals(1, 0, 8));
+	ensure_equals(mdvals(mdc[5]), mdvals(1, 1, 9));
+	ensure_equals(mdvals(mdc[6]), mdvals(1, 2, 7));
+}
+
 }
 
 // vim:set ts=4 sw=4:

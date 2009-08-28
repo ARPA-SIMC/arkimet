@@ -1,7 +1,7 @@
 /*
  * dataset/http - Remote HTTP dataset access
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
+#include <arki/sort.h>
 
 #include <wibble/string.h>
 
@@ -175,7 +176,7 @@ struct MDStreamState : public ReqState
 };
 
 
-void HTTP::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+void HTTP::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	using namespace wibble::str;
 
@@ -184,13 +185,17 @@ void HTTP::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(matcher.toString());
+	string postdata = "query=" + urlencode(q.matcher.toString());
+	if (q.sorter)
+	{
+		postdata += ";sort=" + urlencode(q.sorter->toString());
+	}
 	if (m_mischief)
 	{
 		postdata += urlencode(";MISCHIEF");
 		m_mischief = false;
 	}
-	if (withData)
+	if (q.withData)
 		postdata += "&style=inline";
 	postdata += '\n';
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
@@ -250,7 +255,7 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	summary.read(s.buf, url);
 }
 
-void HTTP::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
+void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	using namespace wibble::str;
 
@@ -259,28 +264,32 @@ void HTTP::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(matcher.toString());
+	string postdata = "query=" + urlencode(q.matcher.toString());
+	if (q.sorter)
+	{
+		postdata += ";sort=" + urlencode(q.sorter->toString());
+	}
 	if (m_mischief)
 	{
 		postdata += urlencode(";MISCHIEF");
 		m_mischief = false;
 	}
-	switch (qtype)
+	switch (q.type())
 	{
-		case ReadonlyDataset::BQ_DATA:
+		case dataset::ByteQuery::BQ_DATA:
 			postdata += "&style=data";
 			break;
-		case ReadonlyDataset::BQ_POSTPROCESS:
-			postdata += "&style=postprocess&command=" + urlencode(param);
+		case dataset::ByteQuery::BQ_POSTPROCESS:
+			postdata += "&style=postprocess&command=" + urlencode(q.param);
 			break;
-		case ReadonlyDataset::BQ_REP_METADATA:
-			postdata += "&style=rep_metadata&command=" + urlencode(param);
+		case dataset::ByteQuery::BQ_REP_METADATA:
+			postdata += "&style=rep_metadata&command=" + urlencode(q.param);
 			break;
-		case ReadonlyDataset::BQ_REP_SUMMARY:
-			postdata += "&style=rep_summary&command=" + urlencode(param);
+		case dataset::ByteQuery::BQ_REP_SUMMARY:
+			postdata += "&style=rep_summary&command=" + urlencode(q.param);
 			break;
 		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)qtype));
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type()));
 	}
 	postdata += '\n';
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());

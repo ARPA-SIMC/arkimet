@@ -635,7 +635,7 @@ void to::test<10>()
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
 	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 
@@ -690,7 +690,7 @@ void to::test<11>()
 		Reader reader(cfg);
 		ensure(reader.hasWorkingIndex());
 		MetadataCollector mdc;
-		reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
 		ensure_equals(blob->format, "grib1"); 
@@ -699,7 +699,7 @@ void to::test<11>()
 		ensure_equals(blob->size, 34960u);
 
 		mdc.clear();
-		reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 		blob = mdc[0].source.upcast<source::Blob>();
 		ensure_equals(blob->format, "grib1"); 
@@ -728,7 +728,7 @@ void to::test<11>()
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
 	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 
@@ -740,7 +740,7 @@ void to::test<11>()
 	// (there used to be a bug where the rebuild would use the offsets of
 	// the metadata instead of the data)
 	mdc.clear();
-	reader.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	blob = mdc[0].source.upcast<source::Blob>();
 	ensure_equals(blob->format, "grib1"); 
@@ -862,7 +862,7 @@ void to::test<13>()
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
 	MetadataCollector mdc;
-	reader.queryMetadata(Matcher::parse(""), false, mdc);
+	reader.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	// Ensure that we have the summary cache

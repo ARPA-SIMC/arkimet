@@ -4,7 +4,7 @@
 /*
  * dataset/file - Dataset on a single file
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,11 +49,11 @@ public:
 
 	const std::string& pathname() const { return m_pathname; }
 
-	virtual void scan(const Matcher& matcher, MetadataConsumer& consumer, bool inlineData = false) = 0;
+	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer) = 0;
 
-	virtual void queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
-	virtual void queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype = BQ_DATA, const std::string& param = std::string());
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 
@@ -81,7 +81,7 @@ public:
 	ArkimetFile(const ConfigFile& cfg);
 	virtual ~ArkimetFile();
 
-	virtual void scan(const Matcher& matcher, MetadataConsumer& consumer, bool inlineData = false);
+	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer);
 };
 
 class YamlFile : public IfstreamFile
@@ -91,18 +91,17 @@ public:
 	YamlFile(const ConfigFile& cfg);
 	virtual ~YamlFile();
 
-	virtual void scan(const Matcher& matcher, MetadataConsumer& consumer, bool inlineData = false);
+	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer);
 };
 
-template<typename Scanner>
 class RawFile : public File
 {
 public:
-	// Initialise the dataset with the information from the configurationa in 'cfg'
+	// Initialise the dataset with the information from the configuration in 'cfg'
 	RawFile(const ConfigFile& cfg);
 	virtual ~RawFile();
 
-	virtual void scan(const Matcher& matcher, MetadataConsumer& consumer, bool inlineData = false);
+	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer);
 };
 
 }

@@ -110,7 +110,7 @@ void to::test<1>()
 
 	ensure(testds.hasWorkingIndex());
 
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -123,11 +123,11 @@ void to::test<1>()
 	ensure_equals(blob->size, 7218u);
 
 	mdc.clear();
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	mdc.clear();
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,98"), false, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 }
 
@@ -143,7 +143,7 @@ void to::test<2>()
 
 	// If the last update looks incomplete, the data will be skipped
 	MetadataCollector mdc;
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 #endif
 }
@@ -162,7 +162,7 @@ void to::test<3>()
 
 	// However, we should still get good results
 	MetadataCollector mdc;
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -190,7 +190,7 @@ void to::test<4>()
 
 	// However, we should still get good results
 	MetadataCollector mdc;
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -217,7 +217,7 @@ void to::test<5>()
 
 	// If the last update looks inhomplete, the data will be skipped
 	MetadataCollector mdc;
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 #endif
 }
@@ -233,7 +233,10 @@ void to::test<6>()
 	// time
 	stream::PosixBuf pb(dup(2));
 	ostream os(&pb);
-	testds.queryBytes(Matcher::parse("origin:GRIB1,200"), os, ReadonlyDataset::BQ_POSTPROCESS, "testcountbytes");
+	dataset::ByteQuery bq(dataset::ByteQuery::BQ_POSTPROCESS);
+	bq.matcher = Matcher::parse("origin:GRIB1,200");
+	bq.param = "testcountbytes";
+	testds.queryBytes(bq, os);
 
 	string out = utils::readFile("testcountbytes.out");
 	ensure_equals(out, "7218\n");
@@ -247,7 +250,9 @@ void to::test<7>()
 	ensure(testds.hasWorkingIndex());
 
 	std::stringstream os;
-	testds.queryBytes(Matcher::parse("origin:GRIB1,200"), os, ReadonlyDataset::BQ_DATA);
+	dataset::ByteQuery bq(dataset::ByteQuery::BQ_DATA);
+	bq.matcher = Matcher::parse("origin:GRIB1,200");
+	testds.queryBytes(bq, os);
 
 	ensure_equals(os.str().substr(0, 4), "GRIB");
 }
@@ -261,7 +266,7 @@ void to::test<8>()
 
 	ensure(testds.hasWorkingIndex());
 
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -275,11 +280,11 @@ void to::test<8>()
 	ensure_equals(buf.size(), isource->size);
 
 	mdc.clear();
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,80"), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	mdc.clear();
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,98"), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 }
 
@@ -308,11 +313,11 @@ void to::test<9>()
 
 	ensure(testds.hasWorkingIndex());
 
-	testds.queryMetadata(Matcher::parse(""), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse(""), true), mdc);
 	ensure_equals(mdc.size(), 3u);
 	mdc.clear();
 
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,200"), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Check that the source record that comes out is ok
@@ -326,30 +331,34 @@ void to::test<9>()
 	ensure_equals(buf.size(), isource->size);
 
 	mdc.clear();
-	testds.queryMetadata(Matcher::parse("reftime:=2007-07-08"), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 	isource = mdc[0].source.upcast<source::Inline>();
 	ensure_equals(isource->size, 7218u);
 
 	mdc.clear();
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,80"), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	mdc.clear();
-	testds.queryMetadata(Matcher::parse("origin:GRIB1,98"), true, mdc);
+	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// Query bytes
 	stringstream out;
-	testds.queryBytes(Matcher::parse(""), out, ReadonlyDataset::BQ_DATA);
+	dataset::ByteQuery bq(dataset::ByteQuery::BQ_DATA);
+	bq.matcher = Matcher::parse("");
+	testds.queryBytes(bq, out);
 	ensure_equals(out.str().size(), 44412u);
 
 	out.str(string());
-	testds.queryBytes(Matcher::parse("origin:GRIB1,200"), out, ReadonlyDataset::BQ_DATA);
+	bq.matcher = Matcher::parse("origin:GRIB1,200");
+	testds.queryBytes(bq, out);
 	ensure_equals(out.str().size(), 7218u);
 
 	out.str(string());
-	testds.queryBytes(Matcher::parse("reftime:=2007-07-08"), out, ReadonlyDataset::BQ_DATA);
+	bq.matcher = Matcher::parse("reftime:=2007-07-08");
+	testds.queryBytes(bq, out);
 	ensure_equals(out.str().size(), 7218u);
 
 	/* TODO

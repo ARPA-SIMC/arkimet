@@ -82,7 +82,7 @@ void to::test<1>()
 
 	// Query
 	mdc.clear();
-	arc.queryMetadata(Matcher(), false, mdc);
+	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show it's all ok
@@ -105,7 +105,7 @@ void to::test<2>()
 
 	// Query now is ok
 	metadata::Collector mdc;
-	arc.queryMetadata(Matcher(), false, mdc);
+	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
 	// Maintenance should show one file to index
@@ -169,7 +169,7 @@ void to::test<3>()
 
 	// Query now is ok
 	metadata::Collector mdc;
-	arc.queryMetadata(Matcher(), false, mdc);
+	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show one file to rescan
@@ -232,7 +232,7 @@ void to::test<4>()
 
 	// Query now is ok
 	metadata::Collector mdc;
-	arc.queryMetadata(Matcher(), false, mdc);
+	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show one file to rescan

@@ -25,6 +25,9 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/postprocess.h>
+#include <arki/sort.h>
+#include <arki/utils/dataset.h>
+#include <arki/scan/any.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
@@ -46,6 +49,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -122,11 +126,11 @@ File* File::create(const ConfigFile& cfg)
 		return new YamlFile(cfg);
 #ifdef HAVE_GRIBAPI
 	if (format == "grib")
-		return new RawFile<scan::Grib>(cfg);
+		return new RawFile(cfg);
 #endif
 #ifdef HAVE_DBALLE
 	if (format == "bufr")
-		return new RawFile<scan::Bufr>(cfg);
+		return new RawFile(cfg);
 #endif
 
 	throw wibble::exception::Consistency("creating a file dataset", "unknown file format \""+format+"\"");
@@ -197,65 +201,81 @@ struct DataOnly : public MetadataConsumer
 	}
 };
 
-void File::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+void File::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
-	scan(matcher, consumer, withData);
+	scan(q, consumer);
 }
 
 void File::querySummary(const Matcher& matcher, Summary& summary)
 {
 	Summariser summariser(summary);
-	scan(matcher, summariser);
+	scan(DataQuery(matcher), summariser);
 }
 
-void File::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
+void File::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	switch (qtype)
+	switch (q.type())
 	{
-		case BQ_DATA: {
+		case dataset::ByteQuery::BQ_DATA: {
 			DataOnly dataonly(out);
-			scan(matcher, dataonly, true);
+			scan(q, dataonly);
 			break;
 		}
-		case BQ_POSTPROCESS: {
-			Postprocess postproc(param, out);
-			scan(matcher, postproc, true);
+		case dataset::ByteQuery::BQ_POSTPROCESS: {
+			Postprocess postproc(q.param, out);
+			scan(q, postproc);
 			postproc.flush();
 			break;
 		}
-		case BQ_REP_METADATA: {
+		case dataset::ByteQuery::BQ_REP_METADATA: {
 #ifdef HAVE_LUA
 			Report rep;
 			rep.captureOutput(out);
-			rep.load(param);
-			scan(matcher, rep);
+			rep.load(q.param);
+			scan(q, rep);
 			rep.report();
 #endif
 			break;
 		}
-		case BQ_REP_SUMMARY: {
+		case dataset::ByteQuery::BQ_REP_SUMMARY: {
 #ifdef HAVE_LUA
 			Report rep;
 			rep.captureOutput(out);
-			rep.load(param);
+			rep.load(q.param);
 			Summary s;
-			querySummary(matcher, s);
+			querySummary(q.matcher, s);
 			rep(s);
 			rep.report();
 #endif
 			break;
 		}
 		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)qtype));
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type()));
 	}
 }
 
 
 ArkimetFile::ArkimetFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 ArkimetFile::~ArkimetFile() {}
-void ArkimetFile::scan(const Matcher& matcher, MetadataConsumer& consumer, bool inlineData)
+void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
-	wibble::sys::Buffer buf;
+	MetadataConsumer* c = &consumer;
+	auto_ptr<sort::Stream> sorter;
+	auto_ptr<ds::DataInliner> inliner;
+
+	if (q.withData)
+	{
+		inliner.reset(new ds::DataInliner(*c));
+		c = inliner.get();
+	}
+		
+	if (q.sorter)
+	{
+		sorter.reset(new sort::Stream(*q.sorter, *c));
+		c = sorter.get();
+	}
+
+	sys::Buffer buf;
 	string signature;
 	unsigned version;
 
@@ -272,70 +292,68 @@ void ArkimetFile::scan(const Matcher& matcher, MetadataConsumer& consumer, bool 
 			if (signature == "!D")
 				continue;
 
-			if (!matcher(md))
+			if (!q.matcher(md))
 				continue;
-
-			if (inlineData && !md.source->style() == types::Source::INLINE)
-			{
-				// Read the data
-				wibble::sys::Buffer buf = md.getData();
-				// Change the source as inline
-				md.setInlineData(md.source->format, buf);
-			}
-
-			consumer(md);
+			
+			(*c)(md);
 		}
-		#if 0
-		else if (signature == "SU")
-		{
-			summary.read(buf, version, in.name());
-			opts.consumer().outputSummary(summary);
-		}
-		#endif
 	}
 }
 
 YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 YamlFile::~YamlFile() {}
-void YamlFile::scan(const Matcher& matcher, MetadataConsumer& consumer, bool inlineData)
+void YamlFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
+	MetadataConsumer* c = &consumer;
+	auto_ptr<sort::Stream> sorter;
+	auto_ptr<ds::DataInliner> inliner;
+
+	if (q.withData)
+	{
+		inliner.reset(new ds::DataInliner(*c));
+		c = inliner.get();
+	}
+		
+	if (q.sorter)
+	{
+		sorter.reset(new sort::Stream(*q.sorter, *c));
+		c = sorter.get();
+	}
+
 	Metadata md;
 	while (md.readYaml(m_file, m_pathname))
 	{
-		if (!matcher(md))
+		if (!q.matcher(md))
 			continue;
-
-		if (inlineData)
-		{
-			// Read the data
-			wibble::sys::Buffer buf = md.getData();
-			// Change the source as inline
-			md.setInlineData(md.source->format, buf);
-			consumer(md);
-		} else {
-			consumer(md);
-		}
+		(*c)(md);
 	}
 }
 
-template<typename Scanner>
-RawFile<Scanner>::RawFile(const ConfigFile& cfg) : File(cfg)
+RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
 {
 }
 
-template<typename Scanner>
-RawFile<Scanner>::~RawFile() {}
+RawFile::~RawFile() {}
 
-template<typename Scanner>
-void RawFile<Scanner>::scan(const Matcher& matcher, MetadataConsumer& consumer, bool inlineData)
+void RawFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
-	Scanner scanner(inlineData);
-	scanner.open(m_pathname);
+	MetadataConsumer* c = &consumer;
+	auto_ptr<sort::Stream> sorter;
+	auto_ptr<ds::DataInliner> inliner;
 
-	Metadata md;
-	while (scanner.next(md))
-		if (matcher(md))
-			consumer(md);
+	if (q.withData)
+	{
+		inliner.reset(new ds::DataInliner(*c));
+		c = inliner.get();
+	}
+		
+	if (q.sorter)
+	{
+		sorter.reset(new sort::Stream(*q.sorter, *c));
+		c = sorter.get();
+	}
+
+	scan::scan(m_pathname, *c);
 }
 
 }

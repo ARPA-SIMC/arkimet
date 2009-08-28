@@ -496,29 +496,17 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 			Summary s;
 			ds.querySummary(m, s);
 			consumer.outputSummary(s);
+		} else {
+			dataset::DataQuery q(m, false);
+
+			auto_ptr<sort::Compare> cmp;
+			if (sort->isSet())
+			{
+				cmp = sort::Compare::parse(sort->stringValue());
+				q.sorter = cmp.get();
+			}
+			ds.queryData(q, consumer);
 		}
-		else if (sort->isSet())
-		{
-			auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
-			sort::Stream sorter(*cmp, consumer);
-			ds.queryMetadata(m, false, sorter);
-			sorter.flush();
-		}
-		else
-			ds.queryMetadata(m, false, consumer);
-		consumer.flush();
-	}
-	else if (dataInline->boolValue())
-	{
-		MetadataOutput consumer(*m_output);
-		if (sort->isSet())
-		{
-			auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
-			sort::Stream sorter(*cmp, consumer);
-			ds.queryMetadata(m, true, sorter);
-			sorter.flush();
-		} else
-			ds.queryMetadata(m, true, consumer);
 		consumer.flush();
 	}
 	else if (dataOnly->boolValue() || postprocess->isSet()
@@ -527,40 +515,37 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 #endif
 		)
 	{
-		ReadonlyDataset::ByteQuery qtype = ReadonlyDataset::BQ_DATA;
-		string param;
+		dataset::ByteQuery q(dataset::ByteQuery::BQ_DATA);
+		auto_ptr<sort::Compare> cmp;
+		q.matcher = m;
+
+		if (sort->isSet())
+		{
+			cmp = sort::Compare::parse(sort->stringValue());
+			q.sorter = cmp.get();
+		}
 
 		if (postprocess->isSet())
 		{
-			qtype = ReadonlyDataset::BQ_POSTPROCESS;
-			param = postprocess->stringValue();
+			q.setType(dataset::ByteQuery::BQ_POSTPROCESS);
+			q.param = postprocess->stringValue();
 			/*
 			if (cfgtype != NONE)
 				m_consumer = new PostprocessedDataOutput(*m_output, postprocess->stringValue(), cfg);
 			else
 				m_consumer = new PostprocessedDataOutput(*m_output, postprocess->stringValue());
 			*/
-			ds.queryBytes(m, output().stream(), qtype, param);
 #ifdef HAVE_LUA
 		} else if (report->isSet()) {
 			if (summary->boolValue())
-				qtype = ReadonlyDataset::BQ_REP_SUMMARY;
+				q.setType(dataset::ByteQuery::BQ_REP_SUMMARY);
 			else
-				qtype = ReadonlyDataset::BQ_REP_METADATA;
-			param = report->stringValue();
-			ds.queryBytes(m, output().stream(), qtype, param);
+				q.setType(dataset::ByteQuery::BQ_REP_METADATA);
+			q.param = report->stringValue();
 #endif
-		} else if (sort->isSet()) {
-			DataOutput consumer(output());
-			auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
-			sort::Stream sorter(*cmp, consumer);
-			ds.queryMetadata(m, true, sorter);
-			sorter.flush();
-			consumer.flush();
-		} else {
-			ds.queryBytes(m, output().stream(), qtype, param);
 		}
 		
+		ds.queryBytes(q, output().stream());
 	}
 	else if (summary->boolValue())
 	{
@@ -569,18 +554,19 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 		ds.querySummary(m, s);
 		consumer.outputSummary(s);
 	}
-	else if (sort->isSet())
-	{
-		MetadataOutput consumer(*m_output);
-		auto_ptr<sort::Compare> cmp = sort::Compare::parse(sort->stringValue());
-		sort::Stream sorter(*cmp, consumer);
-		ds.queryMetadata(m, false, sorter);
-		sorter.flush();
-	}
 	else
 	{
 		MetadataOutput consumer(*m_output);
-		ds.queryMetadata(m, false, consumer);
+		dataset::DataQuery q(m, dataInline->boolValue());
+		auto_ptr<sort::Compare> cmp;
+		if (sort->isSet())
+		{
+			cmp = sort::Compare::parse(sort->stringValue());
+			q.sorter = cmp.get();
+		}
+
+		ds.queryData(q, consumer);
+		consumer.flush();
 	}
 }
 

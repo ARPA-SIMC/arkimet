@@ -235,7 +235,7 @@ size_t Datafile::repack()
 	// Collect all non-deleted metadata into a vector
 	Metadata::readFile(pathname + ".metadata", sorter);
 	vector<Metadata>& allmd = sorter.good;
-	sort(allmd.begin(), allmd.end(), mdcompare);
+	std::sort(allmd.begin(), allmd.end(), mdcompare);
 
 	// Write out the data
 	string outfname = pathname + ".new";

@@ -53,6 +53,9 @@ protected:
 	TargetFile* m_tf;
 	mutable Archives* m_archive;
 
+	// Query only the data in the dataset, without the archives
+	void queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
 	Reader(const ConfigFile& cfg);
@@ -66,9 +69,9 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 
-	virtual void queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype = BQ_DATA, const std::string& param = std::string());
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 

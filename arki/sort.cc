@@ -90,6 +90,8 @@ public:
 		for (Splitter::const_iterator i = splitter.begin(expr);
 				i != splitter.end(); ++i)
 			push_back(Item(*i));
+		if (empty())
+			push_back(Item("reftime"));
 	}
 	virtual ~Items() {}
 

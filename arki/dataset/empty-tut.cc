@@ -50,7 +50,7 @@ void to::test<1>()
 	dataset::Empty ds(cfg);
 
 	MetadataCollector mdc;
-	ds.queryMetadata(Matcher::parse("origin:GRIB1 or BUFR or GRIB2"), false, mdc);
+	ds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1 or BUFR or GRIB2"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 }
 

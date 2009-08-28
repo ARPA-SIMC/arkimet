@@ -39,6 +39,10 @@ class MetadataConsumer;
 class Matcher;
 class ConfigFile;
 
+namespace sort {
+class Compare;
+}
+
 namespace dataset {
 namespace ondisk {
 
@@ -94,7 +98,7 @@ protected:
 	void initQueries();
 
 	/// Run a query and output to a consumer all the metadata that come out
-	void metadataQuery(const std::string& query, MetadataConsumer& consumer) const;
+	void metadataQuery(const std::string& query, const sort::Compare* compare, MetadataConsumer& consumer) const;
 
 public:
 	RIndex(const ConfigFile& cfg);
@@ -120,7 +124,7 @@ public:
 	 * @return true if the index could be used for the query, false if the
 	 * query does not use the index and a full scan should be used instead
 	 */
-	bool query(const Matcher& m, MetadataConsumer& consumer) const;
+	bool query(const Matcher& m, const sort::Compare* compare, MetadataConsumer& consumer) const;
 };
 
 class WIndex : public RIndex

@@ -41,6 +41,8 @@ class Matcher;
 class ConfigFile;
 
 namespace dataset {
+struct DataQuery;
+
 namespace ondisk2 {
 
 struct Uniques;
@@ -162,7 +164,7 @@ public:
 	 * @return true if the index could be used for the query, false if the
 	 * query does not use the index and a full scan should be used instead
 	 */
-	bool query(const Matcher& m, MetadataConsumer& consumer) const;
+	bool query(const dataset::DataQuery& q, MetadataConsumer& consumer) const;
 
 	/**
 	 * Query this index, returning a summary

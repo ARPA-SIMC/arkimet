@@ -80,7 +80,7 @@ void to::test<2>()
     auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
     MetadataCollector mdc;
 
-    testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
@@ -93,11 +93,11 @@ void to::test<2>()
     ensure_equals(blob->size, 7218u);
 
     mdc.clear();
-    testds->queryMetadata(Matcher::parse("origin:GRIB1,80"), false, mdc);
+    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
     ensure_equals(mdc.size(), 0u);
 
     mdc.clear();
-    testds->queryMetadata(Matcher::parse("origin:GRIB1,98"), false, mdc);
+    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
     ensure_equals(mdc.size(), 0u);
 }
 
@@ -124,7 +124,10 @@ void to::test<4>()
 
     // Contrarily to ondisk, HTTP can use a stringstream
     stringstream str;
-    testds->queryBytes(Matcher::parse("origin:GRIB1,200"), str, ReadonlyDataset::BQ_POSTPROCESS, "say ciao");
+    dataset::ByteQuery bq(dataset::ByteQuery::BQ_POSTPROCESS);
+    bq.matcher = Matcher::parse("origin:GRIB1,200");
+    bq.param = "say ciao";
+    testds->queryBytes(bq, str);
     ensure_equals(str.str(), "ciao\n");
 }
 
@@ -142,7 +145,7 @@ void to::test<5>()
     MetadataCollector mdc;
     htd->produce_one_wrong_query();
     try {
-        testds->queryMetadata(Matcher::parse("origin:GRIB1,200"), false, mdc);
+        testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
         ensure(false);
     } catch (std::exception& e) {}
     ensure_equals(mdc.size(), 0u);
@@ -160,7 +163,10 @@ void to::test<5>()
     stringstream str;
     htd->produce_one_wrong_query();
     try {
-        testds->queryBytes(Matcher::parse("origin:GRIB1,200"), str, ReadonlyDataset::BQ_POSTPROCESS, "say ciao");
+	dataset::ByteQuery bq(dataset::ByteQuery::BQ_POSTPROCESS);
+	bq.matcher = Matcher::parse("origin:GRIB1,200");
+	bq.param = "say ciao";
+        testds->queryBytes(bq, str);
         ensure(false);
     } catch (std::exception& e) {}
     ensure_equals(str.str().size(), 0u);

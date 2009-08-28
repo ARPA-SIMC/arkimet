@@ -32,6 +32,7 @@
 #include <arki/utils/dataset.h>
 #include <arki/scan/any.h>
 #include <arki/postprocess.h>
+#include <arki/sort.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -182,40 +183,46 @@ void Archive::fileList(const Matcher& matcher, std::vector<std::string>& files) 
 		files.push_back(q.fetchString(0));
 }
 
-void Archive::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+void Archive::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	vector<string> files;
-	fileList(matcher, files);
+	fileList(q.matcher, files);
 
 	// TODO: does it make sense to check with the summary first?
 
-	if (withData)
+	MetadataConsumer* c = &consumer;
+	auto_ptr<sort::Stream> sorter;
+	auto_ptr<ds::DataInliner> inliner;
+
+	if (q.withData)
 	{
-		ds::DataInliner inliner(consumer);
-		//ds::PathPrepender prepender(sys::fs::abspath(m_dir), inliner);
-		ds::MatcherFilter filter(matcher, inliner);
-		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-			scan::scan(str::joinpath(m_dir, *i), filter);
-	} else {
-		//ds::PathPrepender prepender(sys::fs::abspath(m_dir), consumer);
-		ds::MatcherFilter filter(matcher, consumer);
-		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-			scan::scan(str::joinpath(m_dir, *i), filter);
+		inliner.reset(new ds::DataInliner(*c));
+		c = inliner.get();
 	}
+		
+	if (q.sorter)
+	{
+		sorter.reset(new sort::Stream(*q.sorter, *c));
+		c = sorter.get();
+	}
+
+	ds::MatcherFilter filter(q.matcher, *c);
+	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+		scan::scan(str::joinpath(m_dir, *i), filter);
 }
 
-void Archive::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
+void Archive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	switch (qtype)
+	switch (q.type())
 	{
-		case BQ_DATA: {
+		case dataset::ByteQuery::BQ_DATA: {
 			ds::DataOnly dataonly(out);
-			queryMetadata(matcher, false, dataonly);
+			queryData(q, dataonly);
 			break;
 		}
-		case BQ_POSTPROCESS: {
-			Postprocess postproc(param, out);
-			queryMetadata(matcher, false, postproc);
+		case dataset::ByteQuery::BQ_POSTPROCESS: {
+			Postprocess postproc(q.param, out);
+			queryData(q, postproc);
 
 			// TODO: if we flush here, do we close the postprocessor for a further query?
 			// TODO: POSTPROCESS isn't it just a query for the metadata?
@@ -225,30 +232,30 @@ void Archive::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qt
 			postproc.flush();
 			break;
 		}
-		case BQ_REP_METADATA: {
+		case dataset::ByteQuery::BQ_REP_METADATA: {
 #ifdef HAVE_LUA
 			Report rep;
 			rep.captureOutput(out);
-			rep.load(param);
-			queryMetadata(matcher, false, rep);
+			rep.load(q.param);
+			queryData(q, rep);
 			rep.report();
 #endif
 			break;
 		}
-		case BQ_REP_SUMMARY: {
+		case dataset::ByteQuery::BQ_REP_SUMMARY: {
 #ifdef HAVE_LUA
 			Report rep;
 			rep.captureOutput(out);
-			rep.load(param);
+			rep.load(q.param);
 			Summary s;
-			querySummary(matcher, s);
+			querySummary(q.matcher, s);
 			rep(s);
 			rep.report();
 #endif
 			break;
 		}
 		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)qtype));
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type()));
 	}
 }
 
@@ -553,22 +560,22 @@ Archive* Archives::lookup(const std::string& name)
 	return i->second;
 }
 
-void Archives::queryMetadata(const Matcher& matcher, bool withData, MetadataConsumer& consumer)
+void Archives::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	for (map<string, Archive*>::iterator i = m_archives.begin();
 			i != m_archives.end(); ++i)
-		i->second->queryMetadata(matcher, withData, consumer);
+		i->second->queryData(q, consumer);
 	if (m_last)
-		m_last->queryMetadata(matcher, withData, consumer);
+		m_last->queryData(q, consumer);
 }
 
-void Archives::queryBytes(const Matcher& matcher, std::ostream& out, ByteQuery qtype, const std::string& param)
+void Archives::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	for (map<string, Archive*>::iterator i = m_archives.begin();
 			i != m_archives.end(); ++i)
-		i->second->queryBytes(matcher, out, qtype, param);
+		i->second->queryBytes(q, out);
 	if (m_last)
-		m_last->queryBytes(matcher, out, qtype, param);
+		m_last->queryBytes(q, out);
 }
 
 void Archives::querySummary(const Matcher& matcher, Summary& summary)

@@ -118,7 +118,8 @@ int main(int argc, const char* argv[])
 				if (opts.mdispatch)
 					opts.mdispatch->setStartTime();
 
-				ds->queryMetadata(Matcher(), scanInline, opts.consumer());
+				dataset::DataQuery dq(Matcher(), scanInline);
+				ds->queryData(dq, opts.consumer());
 
 				if (opts.mdispatch)
 				{

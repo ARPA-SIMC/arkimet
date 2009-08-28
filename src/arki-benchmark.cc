@@ -264,7 +264,8 @@ struct DSBenchmark : public Benchmark
 		virtual void main()
 		{
 			MetadataCounter mdc;
-			ds->queryMetadata(query, withData, mdc);
+			dataset::DataQuery dq(query, withData);
+			ds->queryData(dq, mdc);
 
 			double user, system, total;
 			elapsed(user, system, total);

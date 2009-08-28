@@ -34,6 +34,7 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
+#include <arki/sort.h>
 #include <arki/nag.h>
 
 #include <wibble/exception.h>
@@ -468,7 +469,7 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 	return true;
 }
 
-bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
+bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
@@ -478,7 +479,7 @@ bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
 	query += " FROM md AS m";
 
 	try {
-		if (!addJoinsAndConstraints(m, query))
+		if (!addJoinsAndConstraints(q.matcher, query))
 			return false;
 	} catch (NotFound) {
 		// If one of the subqueries did not find any match, we can directly
@@ -529,6 +530,9 @@ bool Index::query(const Matcher& m, MetadataConsumer& consumer) const
 			mdbuf(md);
 		}
 	}
+
+	if (q.sorter)
+		std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
 
 	// pass it to consumer
 	mdbuf.sendTo(consumer);

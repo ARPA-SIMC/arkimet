@@ -146,11 +146,11 @@ void to::test<1>()
 
 	// Query various kinds of metadata
 	metadata::Collector mdc;
-	test->query(Matcher::parse("origin:GRIB1,200"), mdc);
+	test->query(Matcher::parse("origin:GRIB1,200"), 0, mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	mdc.clear();
-	test->query(Matcher::parse("product:GRIB1,3"), mdc);
+	test->query(Matcher::parse("product:GRIB1,3"), 0, mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// TODO: level, timerange, area, ensemble, reftime
@@ -194,7 +194,7 @@ void to::test<2>()
 
 	// Ensure that we have two items
 	metadata::Collector mdc;
-	test->query(Matcher::parse("origin:GRIB1"), mdc);
+	test->query(Matcher::parse("origin:GRIB1"), 0, mdc);
 	ensure_equals(mdc.size(), 2u);
 	mdc.clear();
 
@@ -211,7 +211,7 @@ void to::test<2>()
 	p.commit();
 
 	// There should be only one result now
-	test->query(Matcher::parse("origin:GRIB1"), mdc);
+	test->query(Matcher::parse("origin:GRIB1"), 0, mdc);
 	ensure_equals(mdc.size(), 1u);
 
 	// It should be the second item we inserted
@@ -222,7 +222,7 @@ void to::test<2>()
 	test->replace(md1, "test-md", 0);
 
 	// See that it changed
-	test->query(Matcher::parse("origin:GRIB1"), mdc);
+	test->query(Matcher::parse("origin:GRIB1"), 0, mdc);
 	ensure_equals(mdc.size(), 1u);
 	ensure_equals(test->id(mdc[0]), id1);
 
@@ -253,7 +253,7 @@ struct ReadHang : public sys::ChildProcess, public MetadataConsumer
 		try {
 			RIndex idx(cfg);
 			idx.open();
-			idx.query(Matcher::parse("origin:GRIB1"), *this);
+			idx.query(Matcher::parse("origin:GRIB1"), 0, *this);
 		} catch (std::exception& e) {
 			cerr << e.what() << endl;
 			cout << "E" << endl;
