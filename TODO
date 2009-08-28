@@ -185,20 +185,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
 Minguzzi:
  - Sort:
-    + serializable (to string) sorter
-      (interval:)?([+-]?metadata)(,[+-]?metadata)*
-    + http is not passing sorter info atm
-    - arki-server is not passing sorter info to arki-query
-    - assume input is sorted by time, to minimise ram usage if sorting in time
-      steps
-    - sorter to also work as merger of presorted data, in order to merge
-      multiple datasets together in a sorted way
-    - send sort expression to server when querying
-    - sort the metadata precache in query
-    - when sorting files, preread the metadata and sort it by time, then run
-      the sorter on it
-    - when sorting stdin, I don't know
-
     - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
       +0100 di Minguzzi
       Il file e': ftp://ftp.smr.arpa.emr.it/ambiente/zoom2.grib
@@ -219,8 +205,6 @@ Minguzzi:
     - Il sort funziona solo per reference time:
       arki-scan --sort=year:product file.grib --data > file1.grib
       Non sorta bene per product
-    - Tenendo in memoria solo i metadati, --sort si potrebbe pure fare senza il
-      bisogno degli intervalli di reference time
 
  - Alias:
     - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
