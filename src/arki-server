@@ -137,6 +137,8 @@ class ArkiDataset:
         elif style == "rep_summary":
             args.append("--summary")
             args.append("--report="+kw.get("command", ""))
+        if "sort" in kw:
+            args.append("--sort=" + kw["sort"]);
         args.append(kw.get("query", "").strip())
         args.append(self.dsconf['path'])
 

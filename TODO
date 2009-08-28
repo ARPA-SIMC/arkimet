@@ -187,7 +187,8 @@ Minguzzi:
  - Sort:
     + serializable (to string) sorter
       (interval:)?([+-]?metadata)(,[+-]?metadata)*
-    - http is not passing sorter info atm
+    + http is not passing sorter info atm
+    - arki-server is not passing sorter info to arki-query
     - assume input is sorted by time, to minimise ram usage if sorting in time
       steps
     - sorter to also work as merger of presorted data, in order to merge
