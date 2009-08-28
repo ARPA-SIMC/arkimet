@@ -63,7 +63,7 @@ arki_dump_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 arki_sort_SOURCES = arki-sort.cc
 arki_sort_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 
-TESTS = test-arki-server run-test-src
+TESTS = test-arki-server test-arki-scan run-test-src
 check_PROGRAMS = test-src
 test_src_SOURCES = \
 		arki-server-tut.cc \

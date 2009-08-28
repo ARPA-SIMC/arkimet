@@ -75,7 +75,7 @@ EOT
 
     arki-mergeconf -o conf test200 test80 error
 
-    arki-scan-grib --dispatch=conf inbound/test.grib1 > /dev/null 2>&1
+    arki-scan --dispatch=conf inbound/test.grib1 > /dev/null 2>&1
 }
 
 OKCOUNT=0

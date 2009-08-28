@@ -183,6 +183,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - lm7tmpc eccezione maskata da sqlite
 
+ - cleanup src: remove arki-scan-* arki-sort arki-dump? arki-summarise arki-grep?
+
 Minguzzi:
  - Sort:
     - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35

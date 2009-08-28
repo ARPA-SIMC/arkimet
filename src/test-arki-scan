@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+. testlib.sh
+
+setup
+
+importtest
+
+echo -n "Testing arki-scan"
+
+# Try scanning a GRIB1 file
+runtest "arki-scan --yaml inbound/test.grib1 | grep -q ^Origin"
+
+# Try scanning a BUFR file
+runtest "arki-scan --yaml inbound/test.bufr | grep -q ^Origin"
+
+testtotals
+
+exit $BADCOUNT
