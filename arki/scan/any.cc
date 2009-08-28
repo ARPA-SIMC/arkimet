@@ -54,11 +54,11 @@ static bool scan_file(const std::string& file, MetadataConsumer& c)
 	if (pos == string::npos)
 		// No extension, we do not know what it is
 		return false;
-	string ext = file.substr(pos+1);
+	string ext = str::tolower(file.substr(pos+1));
 
 	// Scan the file
 #ifdef HAVE_GRIBAPI
-	if (ext == "grib1" || ext == "grib2")
+	if (ext == "grib" || ext == "grib1" || ext == "grib2")
 	{
 		scan::Grib scanner;
 		scanner.open(file);
