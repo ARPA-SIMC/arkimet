@@ -124,9 +124,8 @@ void to::test<4>()
 
     // Contrarily to ondisk, HTTP can use a stringstream
     stringstream str;
-    dataset::ByteQuery bq(dataset::ByteQuery::BQ_POSTPROCESS);
-    bq.matcher = Matcher::parse("origin:GRIB1,200");
-    bq.param = "say ciao";
+    dataset::ByteQuery bq;
+    bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
     testds->queryBytes(bq, str);
     ensure_equals(str.str(), "ciao\n");
 }
@@ -163,9 +162,8 @@ void to::test<5>()
     stringstream str;
     htd->produce_one_wrong_query();
     try {
-	dataset::ByteQuery bq(dataset::ByteQuery::BQ_POSTPROCESS);
-	bq.matcher = Matcher::parse("origin:GRIB1,200");
-	bq.param = "say ciao";
+	dataset::ByteQuery bq;
+	bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
         testds->queryBytes(bq, str);
         ensure(false);
     } catch (std::exception& e) {}

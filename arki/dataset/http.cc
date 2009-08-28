@@ -274,7 +274,7 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 		postdata += urlencode(";MISCHIEF");
 		m_mischief = false;
 	}
-	switch (q.type())
+	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA:
 			postdata += "&style=data";
@@ -289,7 +289,7 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			postdata += "&style=rep_summary&command=" + urlencode(q.param);
 			break;
 		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type()));
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type));
 	}
 	postdata += '\n';
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());

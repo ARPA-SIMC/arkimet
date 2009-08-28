@@ -515,9 +515,8 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 #endif
 		)
 	{
-		dataset::ByteQuery q(dataset::ByteQuery::BQ_DATA);
+		dataset::ByteQuery q;
 		auto_ptr<sort::Compare> cmp;
-		q.matcher = m;
 
 		if (sort->isSet())
 		{
@@ -527,8 +526,7 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 
 		if (postprocess->isSet())
 		{
-			q.setType(dataset::ByteQuery::BQ_POSTPROCESS);
-			q.param = postprocess->stringValue();
+			q.setPostprocess(m, postprocess->stringValue());
 			/*
 			if (cfgtype != NONE)
 				m_consumer = new PostprocessedDataOutput(*m_output, postprocess->stringValue(), cfg);
@@ -538,12 +536,12 @@ void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
 #ifdef HAVE_LUA
 		} else if (report->isSet()) {
 			if (summary->boolValue())
-				q.setType(dataset::ByteQuery::BQ_REP_SUMMARY);
+				q.setRepSummary(m, report->stringValue());
 			else
-				q.setType(dataset::ByteQuery::BQ_REP_METADATA);
-			q.param = report->stringValue();
+				q.setRepMetadata(m, report->stringValue());
 #endif
-		}
+		} else
+			q.setData(m);
 		
 		ds.queryBytes(q, output().stream());
 	}

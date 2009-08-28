@@ -184,6 +184,13 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
  - lm7tmpc eccezione maskata da sqlite
 
  - cleanup src: remove arki-scan-* arki-sort arki-dump? arki-summarise arki-grep?
+ - unify arki-scan and arki-query (then ship them as links, or with different
+   defaults)
+
+ - scanoptions
+    -> queryable by output type
+ - outputoptions
+    -> ask scanoptions about their input
 
 Minguzzi:
  - Sort:

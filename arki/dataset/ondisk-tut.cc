@@ -576,8 +576,8 @@ void to::test<12>()
 	acquireSamplesAllInOne();
 	Reader reader(*configAll.section("testall"));
 	stringstream str;
-	dataset::ByteQuery bq(dataset::ByteQuery::BQ_DATA);
-	bq.matcher = Matcher::parse("reftime:=2007");
+	dataset::ByteQuery bq;
+	bq.setData(Matcher::parse("reftime:=2007"));
 	reader.queryBytes(bq, str);
 	ensure_equals(str.str().size(), 44412u);
 }

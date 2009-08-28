@@ -214,7 +214,7 @@ void File::querySummary(const Matcher& matcher, Summary& summary)
 
 void File::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	switch (q.type())
+	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA: {
 			DataOnly dataonly(out);
@@ -250,7 +250,7 @@ void File::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			break;
 		}
 		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type()));
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
 	}
 }
 

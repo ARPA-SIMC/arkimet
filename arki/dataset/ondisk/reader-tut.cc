@@ -207,9 +207,8 @@ void to::test<6>()
 	// time
 	stream::PosixBuf pb(dup(2));
 	ostream os(&pb);
-	dataset::ByteQuery bq(dataset::ByteQuery::BQ_POSTPROCESS);
-	bq.matcher = Matcher::parse("origin:GRIB1,200");
-	bq.param = "testcountbytes";
+	dataset::ByteQuery bq;
+	bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
 	testds.queryBytes(bq, os);
 
 	string out = utils::readFile("testcountbytes.out");
@@ -224,8 +223,8 @@ void to::test<7>()
 	ensure(testds.hasWorkingIndex());
 
 	std::stringstream os;
-	dataset::ByteQuery bq(dataset::ByteQuery::BQ_DATA);
-	bq.matcher = Matcher::parse("origin:GRIB1,200");
+	dataset::ByteQuery bq;
+	bq.setData(Matcher::parse("origin:GRIB1,200"));
 	testds.queryBytes(bq, os);
 
 	ensure_equals(os.str().substr(0, 4), "GRIB");

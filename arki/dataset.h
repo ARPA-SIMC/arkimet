@@ -98,27 +98,41 @@ struct ByteQuery : public DataQuery
 		BQ_REP_METADATA = 2,
 		BQ_REP_SUMMARY = 3
 	};
+
 	std::string param;
+	Type type;
 
-protected:
-	Type m_type;
+	ByteQuery() : type(BQ_DATA) {}
 
-public:
-	ByteQuery(Type type) { setType(type); }
-
-	Type type() const { return m_type; }
-	void setType(Type type)
+	void setData(const Matcher& m)
 	{
-		m_type = type;
-		switch (type)
-		{
-			case BQ_DATA:
-			case BQ_POSTPROCESS:
-				withData = true; break;
-			case BQ_REP_METADATA:
-			case BQ_REP_SUMMARY:
-				withData = false; break;
-		}
+		type = BQ_DATA;
+		matcher = m;
+		withData = true;
+	}
+
+	void setPostprocess(const Matcher& m, const std::string& procname)
+	{
+		type = BQ_POSTPROCESS;
+		matcher = m;
+		withData = true;
+		param = procname;
+	}
+
+	void setRepMetadata(const Matcher& m, const std::string& repname)
+	{
+		type = BQ_REP_METADATA;
+		matcher = m;
+		withData = false;
+		param = repname;
+	}
+
+	void setRepSummary(const Matcher& m, const std::string& repname)
+	{
+		type = BQ_REP_SUMMARY;
+		matcher = m;
+		withData = false;
+		param = repname;
 	}
 };
 

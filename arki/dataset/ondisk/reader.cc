@@ -229,7 +229,7 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 
 void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	switch (q.type())
+	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA: {
 			ds::DataOnly dataonly(out);
@@ -265,7 +265,7 @@ void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			break;
 		}
 		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type()));
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
 	}
 }
 
