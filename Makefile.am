@@ -7,8 +7,7 @@ man_MANS = \
 	arki-query.1 \
 	arki-check.1 \
 	arki-mergeconf.1 \
-	arki-scan.1 \
-	arki-sort.1
+	arki-scan.1
 
 arki-%.1: src/arki-% doc/mhooks-%
 	$< --manpage="$(word 2,$^)" > $@
@@ -43,7 +42,6 @@ EXTRA_DIST = arkimet.spec \
 	     doc/mhooks-scan \
 	     doc/mhooks-check \
 	     doc/mhooks-mergeconf \
-	     doc/mhooks-sort \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
 	     test/data/padded.grib1 \
