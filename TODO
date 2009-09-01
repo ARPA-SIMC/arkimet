@@ -197,26 +197,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
 Minguzzi:
  - Sort:
-    - problema arki-sort su zoom2.grib da mail Date: Fri, 13 Feb 2009 12:01:35
-      +0100 di Minguzzi
-      Il file e': ftp://ftp.smr.arpa.emr.it/ambiente/zoom2.grib
-      
-      Ho provato:
-      arki-scan zoom2.grib | arki-sort --data -o out.grib --sort=day:reftime
-      arki-scan zoom2.grib | arki-sort --data -o out.grib --sort=day:product
-      arki-scan zoom2.grib | arki-sort --data -o out.grib --sort=day:level
-      arki-scan zoom2.grib | arki-sort --data -o out.grib
-      
-      e il risultato e' sempre lo stesso (un file con i grib ordinati solo per
-      reference time)
-      
-      Forse sbaglio qualcosa nella sintassi?
-      O forse arki-sort non riesce a gestire i dati sui model layers COSMO?
-
     - In arki-sort, grib:nomefile non funziona
-    - Il sort funziona solo per reference time:
-      arki-scan --sort=year:product file.grib --data > file1.grib
-      Non sorta bene per product
 
  - Alias:
     - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
@@ -300,7 +281,6 @@ Bufr:
  - estrazione dei BUFR dentro a un DB-All.e
 
 Messe a punto:
- - togliere da runtime tutto quello che non è usato (tipo i FlushableProcessor)
  - bbox dipende da runtime: runtime::rcFiles -> utils/files
  - Quando arki-check fa il rebuild perde le note, e quindi l'informazione sul
    file originale da cui è stato fatto l'import.  Lí non si può ovviare perché
