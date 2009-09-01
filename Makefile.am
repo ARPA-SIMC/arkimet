@@ -4,7 +4,6 @@ SUBDIRS = wibble arki src .
 
 man_MANS = \
 	arki-config.1 \
-	arki-dump.1 \
 	arki-query.1 \
 	arki-check.1 \
 	arki-mergeconf.1 \
@@ -40,7 +39,6 @@ dist_reportconf_DATA = conf/report/mdstats
 
 EXTRA_DIST = arkimet.spec \
 	     doc/mhooks-config \
-	     doc/mhooks-dump \
 	     doc/mhooks-query \
 	     doc/mhooks-scan \
 	     doc/mhooks-check \
