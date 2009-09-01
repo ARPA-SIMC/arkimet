@@ -6,17 +6,11 @@ man_MANS = \
 	arki-config.1 \
 	arki-dispatch.1 \
 	arki-dump.1 \
-	arki-grep.1 \
 	arki-query.1 \
 	arki-check.1 \
 	arki-mergeconf.1 \
 	arki-scan.1 \
 	arki-sort.1
-
-if GRIBAPI
-man_MANS += \
-	arki-scan-grib.1
-endif
 
 arki-%.1: src/arki-% doc/mhooks-%
 	$< --manpage="$(word 2,$^)" > $@
@@ -49,10 +43,8 @@ EXTRA_DIST = arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dispatch \
 	     doc/mhooks-dump \
-	     doc/mhooks-grep \
 	     doc/mhooks-query \
 	     doc/mhooks-scan \
-	     doc/mhooks-scan-grib \
 	     doc/mhooks-check \
 	     doc/mhooks-mergeconf \
 	     doc/mhooks-sort \
