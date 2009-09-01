@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = arki-dispatch arki-grep arki-summarise arki-check arki-query arki-dump arki-sort arki-mergeconf arki-benchmark arki-scan
+bin_PROGRAMS = arki-dispatch arki-grep arki-check arki-query arki-dump arki-sort arki-mergeconf arki-benchmark arki-scan
 
 dist_bin_SCRIPTS = arki-server
 
@@ -50,9 +50,6 @@ arki_mergeconf_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 
 arki_query_SOURCES = arki-query.cc
 arki_query_LDFLAGS = ../arki/libarkimet.la $(all_libs)
-
-arki_summarise_SOURCES = arki-summarise.cc
-arki_summarise_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 
 arki_check_SOURCES = arki-check.cc
 arki_check_LDFLAGS = ../arki/libarkimet.la $(all_libs)

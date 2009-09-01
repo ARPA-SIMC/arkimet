@@ -8,7 +8,6 @@ man_MANS = \
 	arki-dump.1 \
 	arki-grep.1 \
 	arki-query.1 \
-	arki-summarise.1 \
 	arki-check.1 \
 	arki-mergeconf.1 \
 	arki-scan.1 \
@@ -54,7 +53,6 @@ EXTRA_DIST = arkimet.spec \
 	     doc/mhooks-query \
 	     doc/mhooks-scan \
 	     doc/mhooks-scan-grib \
-	     doc/mhooks-summarise \
 	     doc/mhooks-check \
 	     doc/mhooks-mergeconf \
 	     doc/mhooks-sort \
