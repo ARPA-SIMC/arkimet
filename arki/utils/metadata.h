@@ -24,6 +24,7 @@
  */
 
 #include <arki/metadata.h>
+#include <arki/dataset.h>
 #include <vector>
 #include <string>
 #include <iosfwd>
@@ -35,13 +36,17 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Collector : public std::vector<Metadata>, public MetadataConsumer
+struct Collector : public std::vector<Metadata>, public MetadataConsumer, public ReadonlyDataset
 {
 	bool operator()(Metadata& md)
 	{
 		push_back(md);
 		return true;
 	}
+
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void querySummary(const Matcher& matcher, Summary& summary);
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter
