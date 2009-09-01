@@ -224,6 +224,8 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 		}
 
 		queryWithoutIndex("", q.matcher, *c);
+
+		if (sorter.get()) sorter->flush();
 	}
 }
 

@@ -363,6 +363,8 @@ void RawFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	}
 
 	scan::scan(m_pathname, *c);
+
+	if (sorter.get()) sorter->flush();
 }
 
 }
