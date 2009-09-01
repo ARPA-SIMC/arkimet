@@ -5,8 +5,10 @@ arkimet (0.26-1) UNRELEASED; urgency=low
     creating many strings, which should improve performance
   * Get rid of oldsummary and arki-sbenchmark
   * Sorting, if requested is now done server-side and before preprocessing
+  * Removed several unused arki-* utilities (arki-summarise, arki-grep,
+    arki-scan-grib, arki-dispatch)
 
- -- Enrico Zini <enrico@debian.org>  Fri, 28 Aug 2009 14:20:34 +0100
+ -- Enrico Zini <enrico@debian.org>  Fri, 28 Aug 2009 15:42:22 +0100
 
 arkimet (0.25-1) UNRELEASED; urgency=low
 
