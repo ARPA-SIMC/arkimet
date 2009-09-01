@@ -66,7 +66,8 @@ public:
 class IfstreamFile : public File
 {
 protected:
-	std::ifstream m_file;
+	std::istream* m_file;
+	bool m_close;
 
 public:
 	IfstreamFile(const ConfigFile& cfg);

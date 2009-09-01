@@ -33,7 +33,7 @@ mkdir inbound/work
 echo "`date`: Scanning and dispatching..."
 #valgrind --tool=callgrind ../src/.libs/lt-arki-scan --verbose --dispatch=conf -o dispatched
 #gdb --args ../src/.libs/lt-arki-scan --verbose --dispatch=`pwd`/conf -o dispatched
-../src/arki-scan --verbose --dispatch=conf -o dispatched \
+../src/arki-scan --status --dispatch=conf -o dispatched \
 	--moveok=inbound/ok \
 	--moveko=inbound/ko \
 	--movework=inbound/work \

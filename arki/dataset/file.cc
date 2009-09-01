@@ -141,16 +141,25 @@ File::File(const ConfigFile& cfg)
 	m_pathname = cfg.value("path");
 }
 
-IfstreamFile::IfstreamFile(const ConfigFile& cfg) : File(cfg)
+IfstreamFile::IfstreamFile(const ConfigFile& cfg) : File(cfg), m_file(0), m_close(false)
 {
-	m_file.open(m_pathname.c_str(), ios::in);
-	if (!m_file.is_open() || m_file.fail())
-		throw wibble::exception::File(m_pathname, "opening file for reading");
+	if (m_pathname == "-")
+	{
+		m_file = &std::cin;
+	} else {
+		m_file = new std::ifstream(m_pathname.c_str(), ios::in);
+		if (!/*m_file->is_open() ||*/ m_file->fail())
+			throw wibble::exception::File(m_pathname, "opening file for reading");
+		m_close = true;
+	}
 }
 
 IfstreamFile::~IfstreamFile()
 {
-	m_file.close();
+	if (m_file && m_close)
+	{
+		delete m_file;
+	}
 }
 
 /**
@@ -280,13 +289,13 @@ void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	unsigned version;
 
 	Metadata md;
-	while (types::readBundle(m_file, m_pathname, buf, signature, version))
+	while (types::readBundle(*m_file, m_pathname, buf, signature, version))
 	{
 		if (signature == "MD" || signature == "!D")
 		{
 			md.read(buf, version, m_pathname);
 			if (md.source->style() == types::Source::INLINE)
-				md.readInlineData(m_file, m_pathname);
+				md.readInlineData(*m_file, m_pathname);
 
 			// Don't consume the deleted ones
 			if (signature == "!D")
@@ -321,7 +330,7 @@ void YamlFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	}
 
 	Metadata md;
-	while (md.readYaml(m_file, m_pathname))
+	while (md.readYaml(*m_file, m_pathname))
 	{
 		if (!q.matcher(md))
 			continue;

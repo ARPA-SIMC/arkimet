@@ -104,6 +104,11 @@ runtest() {
 
 testtotals() {
     echo "$TOTCOUNT tests, $OKCOUNT ok, $BADCOUNT fail"
+
+    if [ ! -z "$SERVERPAUSE" ]
+    then
+	    bash
+    fi
 }
 
 testempty() {

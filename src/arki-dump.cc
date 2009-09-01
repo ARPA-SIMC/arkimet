@@ -1,7 +1,7 @@
 /*
  * arki-dump - Dump a metadata file
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,21 +38,33 @@ using namespace arki;
 namespace wibble {
 namespace commandline {
 
-struct Options : public runtime::OutputOptions
+struct Options : public StandardParserWithManpage
 {
-	BoolOption* reverse;
+	BoolOption* reverse_data;
+	BoolOption* reverse_summary;
+	BoolOption* annotate;
+	StringOption* outfile;
 
-	Options() : runtime::OutputOptions("arki-dump")
+	Options() : StandardParserWithManpage("arki-dump", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
 		usage = "[options] [input]";
 		description =
-			"Read metadata from the given input file (or stdin), and dump their content"
+			"Read data from the given input file (or stdin), and dump them"
 			" in human readable format on stdout.";
 
-		reverse = add<BoolOption>("reverse", 'r', "reverse", "",
-			"read a Yaml dump and write binary metadata");
+		outfile = add<StringOption>("output", 'o', "output", "file",
+				"write the output to the given file instead of standard output");
+		annotate = add<BoolOption>("annotate", 0, "annotate", "",
+				"annotate the human-readable Yaml output with field descriptions");
+
+		reverse_data = add<BoolOption>("from-yaml-data", 0, "from-yaml-data", "",
+			"read a Yaml data dump and write binary metadata");
+
+		reverse_summary = add<BoolOption>("from-yaml-summary", 0, "from-yaml-summary", "",
+			"read a Yaml summary dump and write a binary summary");
 	}
 };
+
 
 }
 }
@@ -64,11 +76,38 @@ int main(int argc, const char* argv[])
 		if (opts.parse(argc, argv))
 			return 0;
 
+		// Validate command line options
+		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
+			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
+		if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
+			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-data");
+		if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
+			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
+
 		// Open the input file
 		runtime::Input in(opts);
 
-		if (!opts.reverse->boolValue())
+		// Open the output channel
+		runtime::Output out(*opts.outfile);
+
+		if (opts.reverse_data->boolValue())
 		{
+			Metadata md;
+			while (md.readYaml(in.stream(), in.name()))
+				md.write(out.stream(), out.name());
+		}
+		else if (opts.reverse_summary->boolValue())
+		{
+			Summary summary;
+			while (summary.readYaml(in.stream(), in.name()))
+				summary.write(out.stream(), out.name());
+		}
+		else
+		{
+			Formatter* formatter = 0;
+			if (opts.annotate->boolValue())
+				formatter = Formatter::create();
+
 			Metadata md;
 			Summary summary;
 
@@ -83,27 +122,15 @@ int main(int argc, const char* argv[])
 					md.read(buf, version, in.name());
 					if (md.source->style() == types::Source::INLINE)
 						md.readInlineData(in.stream(), in.name());
-					opts.consumer()(md);
+					md.writeYaml(out.stream(), formatter);
 				}
 				else if (signature == "SU")
 				{
 					summary.read(buf, version, in.name());
-					opts.consumer().outputSummary(summary);
+					summary.writeYaml(out.stream(), formatter);
 				}
 			}
-		} else {
-			if (opts.summary->boolValue())
-			{
-				Summary summary;
-				while (summary.readYaml(in.stream(), in.name()))
-					opts.consumer().outputSummary(summary);
-			} else {
-				Metadata md;
-				while (md.readYaml(in.stream(), in.name()))
-					opts.consumer()(md);
-			}
 		}
-		opts.consumer().flush();
 
 		return 0;
 	} catch (wibble::exception::BadOption& e) {

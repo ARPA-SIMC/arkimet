@@ -33,12 +33,6 @@
 #include <iostream>
 #include <cstdio>
 
-#include "config.h"
-
-#if HAVE_DBALLE
-#include <dballe++/init.h>
-#endif
-
 using namespace std;
 using namespace arki;
 using namespace wibble;
@@ -46,74 +40,65 @@ using namespace wibble;
 namespace wibble {
 namespace commandline {
 
-struct Options : public runtime::ScanOptions
+struct Options : public runtime::CommandLine
 {
-	commandline::StringOption* moveok;
-	commandline::StringOption* moveko;
-	commandline::StringOption* movework;
-
-	Options() : runtime::ScanOptions("arki-scan")
+	Options() : runtime::CommandLine("arki-scan")
 	{
 		usage = "[options] [input...]";
 		description =
-			"Read one or more files or datasets and output the metadata that "
-			"describe them, or import them in a dataset.";
-
-		moveok = add<StringOption>("moveok", 0, "moveok", "directory",
-				"move input files imported successfully to the given directory");
-		moveko = add<StringOption>("moveko", 0, "moveko", "directory",
-				"move input files with problems to the given directory");
-		movework = add<StringOption>("movework", 0, "movework", "directory",
-				"move input files here before opening them. This is useful to "
-				"catch the cases where arki-scan crashes without having a "
-				"chance to handle errors.");
+			"Read one or more files or datasets and process their data "
+			"or import them in a dataset.";
+		addScanOptions();
 	}
 };
 
 }
 }
 
-std::string moveFile(const std::string& source, const std::string& targetdir)
-{
-	string targetFile = str::joinpath(targetdir, str::basename(source));
-	if (rename(source.c_str(), targetFile.c_str()) == -1)
-		throw wibble::exception::System("Moving " + source + " to " + targetFile);
-	return targetFile;
-}
-
-std::string moveFile(const ReadonlyDataset& ds, const std::string& targetdir)
-{
-	if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
-		return moveFile(d->pathname(), targetdir);
-	else
-		return string();
-}
-
 int main(int argc, const char* argv[])
 {
 	wibble::commandline::Options opts;
+	
 	try {
 		if (opts.parse(argc, argv))
 			return 0;
 
+		runtime::init();
+
+		opts.setupProcessing();
+
+
+		for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
+				i != opts.inputInfo.sectionEnd(); ++i)
+		{
+			auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
+
+			bool success = true;
+			try {
+				success = opts.processSource(*ds, i->second->value("path"));
+			} catch (std::exception& e) {
+				// FIXME: this is a quick experiment: a better message can
+				// print some of the stats to document partial imports
+				cerr << i->second->value("path") << " failed: " << e.what() << endl;
+				success = false;
+			}
+
+			opts.closeSource(ds, success);
+		}
+
+		opts.doneProcessing();
+#if 0
+
 		bool scanInline = opts.dataInline->boolValue() || opts.dispatch->isSet();
 
-#if HAVE_DBALLE
-		dballe::DballeInit dballeInit;
-#endif
-
-		// Get the list of files to process
-		ConfigFile cfg;
-		while (opts.hasNext())
-			ReadonlyDataset::readConfig(opts.next(), cfg);
 
 		// Query/scan all the "datasets"
-		for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-				i != cfg.sectionEnd(); ++i)
+		for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
+				i != opts.inputInfo.sectionEnd(); ++i)
 		{
-			if (opts.movework->isSet() && i->second->value("type") == "file")
-				i->second->setValue("path", moveFile(i->second->value("path"), opts.movework->stringValue()));
-			auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*i->second));
+			auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
+
+			opts.processSource(*ds);
 			try {
 				if (opts.mdispatch)
 					opts.mdispatch->setStartTime();
@@ -158,7 +143,7 @@ int main(int argc, const char* argv[])
 		}
 
 		opts.flush();
-
+#endif
 		return 0;
 	} catch (wibble::exception::BadOption& e) {
 		cerr << e.desc() << endl;

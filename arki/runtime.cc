@@ -31,6 +31,7 @@
 #include <arki/matcher.h>
 #include <arki/utils.h>
 #include <arki/dataset.h>
+#include <arki/dataset/file.h>
 #include <arki/dispatcher.h>
 #include <arki/formatter.h>
 #include <arki/postprocess.h>
@@ -43,6 +44,9 @@
 #include <cstdlib>
 #include "config.h"
 
+#if HAVE_DBALLE
+#include <dballe++/init.h>
+#endif
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
@@ -52,262 +56,35 @@ using namespace std;
 using namespace wibble;
 using namespace wibble::commandline;
 
+#if HAVE_DBALLE
+dballe::DballeInit dballeInit;
+#endif
+
 namespace arki {
 namespace runtime {
 
-FlushableMetadataConsumer::FlushableMetadataConsumer()
-	: countMetadata(0), countSummary(0)
+void init()
 {
-}
-FlushableMetadataConsumer::~FlushableMetadataConsumer()
-{
+	runtime::readMatcherAliasDatabase();
 }
 
-void FlushableMetadataConsumer::flush()
-{
-	// By default, do nothing
-}
-
-/**
- * Raw output of metadata
- */
-struct MetadataOutput : public FlushableMetadataConsumer
-{
-	Output& output;
-
-	MetadataOutput(Output& output) : output(output) {}
-
-	virtual bool outputSummary(Summary& s)
-	{
-		++countSummary;
-		s.write(output.stream(), output.name());
-		return true;
-	}
-	bool operator()(Metadata& md)
-	{
-		++countMetadata;
-		md.write(output.stream(), output.name());
-		return true;
-	}
-};
-
-/**
- * Raw output of metadata
- */
-struct MetadataInlineOutput : public FlushableMetadataConsumer
-{
-	Output& output;
-	sigset_t blocked;
-
-	MetadataInlineOutput(Output& output) : output(output)
-	{
-		sigemptyset(&blocked);
-		sigaddset(&blocked, SIGINT);
-		sigaddset(&blocked, SIGTERM);
-	}
-
-	virtual bool outputSummary(Summary& s)
-	{
-		// Can't print summaries here
-		++countSummary;
-		return true;
-	}
-	bool operator()(Metadata& md)
-	{
-		// Read the data
-		wibble::sys::Buffer buf = md.getData();
-		// Change the source as inline
-		md.setInlineData(md.source->format, buf);
-		sys::sig::ProcMask pm(blocked);
-		md.write(output.stream(), output.name());
-		output.stream().flush();
-		++countMetadata;
-		return true;
-	}
-};
-
-/**
- * Raw output of metadata
- */
-struct DataOutput : public FlushableMetadataConsumer
-{
-	Output& output;
-	sigset_t blocked;
-
-	DataOutput(Output& output) : output(output)
-	{
-		sigemptyset(&blocked);
-		sigaddset(&blocked, SIGINT);
-		sigaddset(&blocked, SIGTERM);
-	}
-
-	virtual bool outputSummary(Summary& s)
-	{
-		// Can't print summaries here
-		++countSummary;
-		return true;
-	}
-	bool operator()(Metadata& md)
-	{
-		// Read the data
-		wibble::sys::Buffer buf = md.getData();
-		// Write the data only
-		sys::sig::ProcMask pm(blocked);
-		output.stream().write((const char*)buf.data(), buf.size());
-		output.stream().flush();
-		++countMetadata;
-		return true;
-	}
-};
-
-/**
- * Raw output of metadata
- */
-struct PostprocessedDataOutput : public FlushableMetadataConsumer
-{
-	Output& output;
-	Postprocess postproc;
-
-	// FIXME: hardcoded to stdout until we find a way to get a proper fd out of 'output'
-	PostprocessedDataOutput(Output& output, const std::string& command)
-		: output(output), postproc(command, 1) {}
-
-	PostprocessedDataOutput(Output& output, const std::string& command, const ConfigFile& cfg)
-		: output(output), postproc(command, 1, cfg) {}
-
-	virtual bool outputSummary(Summary& s)
-	{
-		// Can't print summaries here
-		++countSummary;
-		return true;
-	}
-	bool operator()(Metadata& md)
-	{
-		if (!postproc(md))
-			return false;
-		++countMetadata;
-		return true;
-	}
-	virtual void flush()
-	{
-		postproc.flush();
-	}
-};
-
-/**
- * Yaml output of metadata
- */
-class MetadataYamlOutput : public FlushableMetadataConsumer
-{
-protected:
-	Output& output;
-	const Formatter* formatter;
-
-public:
-	MetadataYamlOutput(Output& output, const Formatter* formatter = 0)
-		: output(output), formatter(formatter) {}
-
-	virtual bool outputSummary(Summary& s)
-	{
-		s.writeYaml(output.stream(), formatter);
-		output.stream() << endl;
-		++countSummary;
-		return true;
-	}
-	virtual bool operator()(Metadata& md)
-	{
-		md.writeYaml(output.stream(), formatter);
-		output.stream() << endl;
-		++countMetadata;
-		return true;
-	}
-};
-
-struct MetadataSummarise : public FlushableMetadataConsumer
-{
-	FlushableMetadataConsumer* chained;
-	Summary summary;
-
-	MetadataSummarise(FlushableMetadataConsumer* chained) : chained(chained) {}
-	virtual ~MetadataSummarise()
-	{
-		if (chained) delete chained;
-	}
-
-	virtual bool operator()(Metadata& md)
-	{
-		summary.add(md);
-		++countMetadata;
-		return true;
-	}
-	virtual bool outputSummary(Summary& s)
-	{
-		summary.add(s);
-		++countSummary;
-		return true;
-	}
-	virtual void flush()
-	{
-		chained->outputSummary(summary);
-		chained->flush();
-	}
-};
-
-#ifdef HAVE_LUA
-/**
- * Use Lua to produce a report of a metadata/summary stream
- */
-struct MetadataReport : public FlushableMetadataConsumer
-{
-	Output& output;
-	Report rep;
-
-	MetadataReport(Output& output, const std::string name)
-		: output(output)
-	{
-		string filename;
-
-		// Otherwise the file given in the environment variable ARKI_ALIASES is tried.
-		char* dir = getenv("ARKI_REPORT");
-		if (dir)
-			filename = str::joinpath(dir, name);
-		else
-			filename = str::joinpath(str::joinpath(CONF_DIR, "report"), name);
-
-		rep.captureOutput(output.stream());
-		rep.loadFile(filename);
-	}
-
-	virtual bool operator()(Metadata& md)
-	{
-		if (!rep(md))
-			return false;
-		++countMetadata;
-		return true;
-	}
-	virtual bool outputSummary(Summary& s)
-	{
-		if (!rep(s))
-			return false;
-		++countSummary;
-		return true;
-	}
-	virtual void flush()
-	{
-		rep.report();
-	}
-};
-#endif
-
-
-OutputOptions::OutputOptions(const std::string& name, int mansection, ConfigType cfgtype)
+CommandLine::CommandLine(const std::string& name, int mansection)
 	: StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
-	  cfgfiles(0), cfgtype(cfgtype),
-	  m_formatter(0), m_output(0), m_consumer(0)
+	  output(0), processor(0), dispatcher(0)
 {
-	OptionGroup* outputOpts = createGroup("Options controlling output style");
-	
-	debug = outputOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
+	infoOpts = createGroup("Options controlling verbosity");
+	debug = infoOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
+	verbose = infoOpts->add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
+	status = infoOpts->add<BoolOption>("status", 0, "status", "",
+			"print to standard error a line per every file with a summary of how it was handled");
+
+	// Used only if requested
+	inputOpts = createGroup("Options controlling input data");
+	cfgfiles = 0; exprfile = 0;
+	files = 0; moveok = moveko = movework = 0;
+
+	outputOpts = createGroup("Options controlling output style");
+	merged = 0;
 	yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",
 			"dump the metadata as human-readable Yaml records");
 	yaml->longNames.push_back("dump");
@@ -336,49 +113,64 @@ OutputOptions::OutputOptions(const std::string& name, int mansection, ConfigType
 			" 'day:origin, -timerange, reftime' orders one day at a time"
 			" by origin first, then by reverse timerange, then by reftime."
 			" Default: do not sort");
+
+	dispatchOpts = createGroup("Options controlling dispatching data to datasets");
+	dispatch = add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
+			"dispatch the data to the datasets described in the "
+			"given configuration file (or a dataset path can also "
+			"be given), then output the metadata of the data that "
+			"has been dispatched (can be specified multiple times)");
+	testdispatch = add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
+			"simulate dispatching the files right after scanning, using the given configuration file "
+			"or dataset directory (can be specified multiple times)");
+}
+
+CommandLine::~CommandLine()
+{
+	if (dispatcher) delete dispatcher;
+	if (processor) delete processor;
+	if (output) delete output;
+}
+
+void CommandLine::addScanOptions()
+{
+	files = inputOpts->add<StringOption>("files", 0, "files", "file",
+			"read the list of files to scan from the given file instead of the command line");
+	moveok = inputOpts->add<StringOption>("moveok", 0, "moveok", "directory",
+			"move input files imported successfully to the given directory");
+	moveko = inputOpts->add<StringOption>("moveko", 0, "moveko", "directory",
+			"move input files with problems to the given directory");
+	movework = inputOpts->add<StringOption>("movework", 0, "movework", "directory",
+			"move input files here before opening them. This is useful to "
+			"catch the cases where arki-scan crashes without having a "
+			"chance to handle errors.");
+}
+
+void CommandLine::addQueryOptions()
+{
+	cfgfiles = inputOpts->add< VectorOption<String> >("config", 'C', "config", "file",
+		"read configuration about input sources from the given file (can be given more than once)");
+	exprfile = inputOpts->add<StringOption>("file", 'f', "file", "file",
+		"read the expression from the given file");
+	merged = outputOpts->add<BoolOption>("merged", 0, "merged", "",
+		"if multiple datasets are given, merge their data and output it in"
+		" reference time order.  Note: sorting does not work when using"
+		" --postprocess, --data or --report");
+}
+
+bool CommandLine::parse(int argc, const char* argv[])
+{
+	add(infoOpts);
+	add(inputOpts);
 	add(outputOpts);
+	add(dispatchOpts);
 
-	if (cfgtype != NONE)
-		cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
-			"read the configuration from the given file (can be given more than once)");
-}
-
-OutputOptions::~OutputOptions()
-{
-	if (m_consumer)
-		delete m_consumer;
-	if (m_formatter)
-		delete m_formatter;
-	if (m_output)
-		delete m_output;
-}
-
-bool OutputOptions::isBinaryMetadataOutput() const
-{
-	return dynamic_cast<MetadataOutput*>(m_consumer) != 0;
-}
-
-bool OutputOptions::parse(int argc, const char* argv[])
-{
 	if (StandardParserWithManpage::parse(argc, argv))
 		return true;
 
-	// Parse config files if requested
-	if (cfgfiles)
-	{
-		bool found = runtime::parseConfigFiles(cfg, *cfgfiles);
-		if (cfgtype == PARMS)
-		{
-			parseLeadingParameters();
-			found = runtime::parseConfigFiles(cfg, *this) || found;
-		}
-		if (!found)
-			throw wibble::exception::BadOption("you need to specify at least one dataset or configuration file");
-	}
+	nag::init(verbose->isSet(), debug->isSet());
 
-	nag::init(debug->isSet(), debug->isSet());
-
-	// Option conflict checks
+	// Check conflicts among options
 #ifdef HAVE_LUA
 	if (report->isSet())
 	{
@@ -396,7 +188,6 @@ bool OutputOptions::parse(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--sort conflicts with --report");
 	}
 #endif
-
 	if (yaml->boolValue())
 	{
 		if (dataInline->boolValue())
@@ -438,203 +229,236 @@ bool OutputOptions::parse(int argc, const char* argv[])
 		if (sort->isSet())
 			throw wibble::exception::BadOption("--sort conflicts with --postprocess");
 	}
-
-	if (annotate->boolValue())
-		m_formatter = Formatter::create();
-
+	
 	return false;
 }
 
-void OutputOptions::createConsumer()
+struct YamlProcessor : public DatasetProcessor, public MetadataConsumer
 {
-	if (!m_output)
-		m_output = new Output(*outfile);
-	
-	// Create the consumer that we want
-	if (yaml->boolValue())
-		// Output the Yaml metadata
-		m_consumer = new MetadataYamlOutput(*m_output, m_formatter);
-	else if (dataInline->boolValue())
-		// Output inline metadata
-		m_consumer = new MetadataInlineOutput(*m_output);
-	else if (dataOnly->boolValue() || postprocess->isSet())
-		// Output data only
-		if (postprocess->isSet())
-			if (cfgtype != NONE)
-				m_consumer = new PostprocessedDataOutput(*m_output, postprocess->stringValue(), cfg);
-			else
-				m_consumer = new PostprocessedDataOutput(*m_output, postprocess->stringValue());
-		else
-			m_consumer = new DataOutput(*m_output);
-#ifdef HAVE_LUA
-	else if (report->isSet())
-		m_consumer = new MetadataReport(*m_output, report->stringValue());
-#endif
-	else
-		// Output metadata or summaries only
-		m_consumer = new MetadataOutput(*m_output);
+        Formatter* formatter;
+	Output& output;
+	Summary* summary;
+	sort::Compare* sorter;
+	dataset::DataQuery query;
 
-	// If a summary is requested, prepend the summariser
-	if (summary->boolValue())
-		m_consumer = new MetadataSummarise(m_consumer);
-}
-
-void OutputOptions::processDataset(ReadonlyDataset& ds, const Matcher& m)
-{
-	if (!m_output)
-		m_output = new Output(*outfile);
-
-	// Perform the appropriate query to the dataset
-	if (yaml->boolValue() || annotate->isSet())
+	YamlProcessor(const CommandLine& opts)
+		: formatter(0), output(*opts.output), summary(0), sorter(0),
+		  query(opts.query, false)
 	{
-		// Output the Yaml metadata
-		MetadataYamlOutput consumer(*m_output, m_formatter);
+		if (opts.annotate->boolValue())
+			formatter = Formatter::create();
 
-		// If a summary is requested, prepend the summariser
-		if (summary->boolValue())
+		if (opts.summary->boolValue())
+			summary = new Summary();
+		else if (opts.sort->boolValue())
 		{
-			Summary s;
-			ds.querySummary(m, s);
-			consumer.outputSummary(s);
-		} else {
-			dataset::DataQuery q(m, false);
-
-			auto_ptr<sort::Compare> cmp;
-			if (sort->isSet())
-			{
-				cmp = sort::Compare::parse(sort->stringValue());
-				q.sorter = cmp.get();
-			}
-			ds.queryData(q, consumer);
+			sorter = sort::Compare::parse(opts.sort->stringValue()).release();
+			query.sorter = sorter;
 		}
-		consumer.flush();
 	}
+
+	virtual ~YamlProcessor()
+	{
+		if (sorter) delete sorter;
+		if (summary) delete summary;
+		if (formatter) delete formatter;
+	}
+
+	virtual void process(ReadonlyDataset& ds, const std::string& name)
+	{
+		if (summary)
+			ds.querySummary(query.matcher, *summary);
+		else
+			ds.queryData(query, *this);
+	}
+
+	virtual bool operator()(Metadata& md)
+	{
+		md.writeYaml(output.stream(), formatter);
+		output.stream() << endl;
+		return true;
+	}
+
+	virtual void end()
+	{
+		if (summary)
+		{
+			summary->writeYaml(output.stream(), formatter);
+			output.stream() << endl;
+		}
+	}
+};
+
+struct BinaryProcessor : public DatasetProcessor
+{
+	Output& out;
+	sort::Compare* sorter;
+	dataset::ByteQuery query;
+
+	BinaryProcessor(const CommandLine& opts)
+		: out(*opts.output), sorter(0)
+	{
+		if (opts.postprocess->isSet())
+		{
+			query.setPostprocess(opts.query, opts.postprocess->stringValue());
+#ifdef HAVE_LUA
+		} else if (opts.report->isSet()) {
+			if (opts.summary->boolValue())
+				query.setRepSummary(opts.query, opts.report->stringValue());
+			else
+				query.setRepMetadata(opts.query, opts.report->stringValue());
+#endif
+		} else
+			query.setData(opts.query);
+		
+		if (opts.sort->isSet())
+		{
+			sorter = sort::Compare::parse(opts.sort->stringValue()).release();
+			query.sorter = sorter;
+		}
+	}
+
+	virtual ~BinaryProcessor()
+	{
+		if (sorter) delete sorter;
+	}
+
+	virtual void process(ReadonlyDataset& ds, const std::string& name)
+	{
+		ds.queryBytes(query, out.stream());
+	}
+};
+
+struct DataProcessor : public DatasetProcessor, public MetadataConsumer
+{
+	Output& output;
+	Summary* summary;
+	sort::Compare* sorter;
+	dataset::DataQuery query;
+
+	DataProcessor(const CommandLine& opts)
+		: output(*opts.output), summary(0), sorter(0),
+		  query(opts.query, false)
+	{
+		if (opts.summary->boolValue())
+			summary = new Summary();
+		else
+		{
+			query.withData = opts.dataInline->boolValue();
+
+			if (opts.sort->boolValue())
+			{
+				sorter = sort::Compare::parse(opts.sort->stringValue()).release();
+				query.sorter = sorter;
+			}
+		}
+	}
+
+	virtual ~DataProcessor()
+	{
+		if (sorter) delete sorter;
+		if (summary) delete summary;
+	}
+
+	virtual void process(ReadonlyDataset& ds, const std::string& name)
+	{
+		if (summary)
+			ds.querySummary(query.matcher, *summary);
+		else
+			ds.queryData(query, *this);
+	}
+
+	virtual bool operator()(Metadata& md)
+	{
+		md.write(output.stream(), output.name());
+		return true;
+	}
+
+	virtual void end()
+	{
+		if (summary)
+		{
+			summary->write(output.stream(), output.name());
+		}
+	}
+};
+
+void CommandLine::setupProcessing()
+{
+	// Parse the matcher query
+	if (exprfile)
+	{
+		if (exprfile->isSet())
+		{
+			// Read the entire file into memory and parse it as an expression
+			query = Matcher::parse(utils::readFile(exprfile->stringValue()));
+		} else {
+			// Read from the first commandline argument
+			if (!hasNext())
+			{
+				if (exprfile)
+					throw wibble::exception::BadOption("you need to specify a filter expression or use --"+exprfile->longNames[0]);
+				else
+					throw wibble::exception::BadOption("you need to specify a filter expression");
+			}
+			// And parse it as an expression
+			query = Matcher::parse(next());
+		}
+	}
+
+	// Open output stream
+
+	if (!output)
+		output = new Output(*outfile);
+
+
+	// Create the appropriate processor
+
+	if (yaml->boolValue() || annotate->isSet())
+		processor = new YamlProcessor(*this);
 	else if (dataOnly->boolValue() || postprocess->isSet()
 #ifdef HAVE_LUA
 		|| report->isSet()
 #endif
 		)
-	{
-		dataset::ByteQuery q;
-		auto_ptr<sort::Compare> cmp;
-
-		if (sort->isSet())
-		{
-			cmp = sort::Compare::parse(sort->stringValue());
-			q.sorter = cmp.get();
-		}
-
-		if (postprocess->isSet())
-		{
-			q.setPostprocess(m, postprocess->stringValue());
-			/*
-			if (cfgtype != NONE)
-				m_consumer = new PostprocessedDataOutput(*m_output, postprocess->stringValue(), cfg);
-			else
-				m_consumer = new PostprocessedDataOutput(*m_output, postprocess->stringValue());
-			*/
-#ifdef HAVE_LUA
-		} else if (report->isSet()) {
-			if (summary->boolValue())
-				q.setRepSummary(m, report->stringValue());
-			else
-				q.setRepMetadata(m, report->stringValue());
-#endif
-		} else
-			q.setData(m);
-		
-		ds.queryBytes(q, output().stream());
-	}
-	else if (summary->boolValue())
-	{
-		MetadataOutput consumer(*m_output);
-		Summary s;
-		ds.querySummary(m, s);
-		consumer.outputSummary(s);
-	}
+		processor = new BinaryProcessor(*this);
 	else
-	{
-		MetadataOutput consumer(*m_output);
-		dataset::DataQuery q(m, dataInline->boolValue());
-		auto_ptr<sort::Compare> cmp;
-		if (sort->isSet())
-		{
-			cmp = sort::Compare::parse(sort->stringValue());
-			q.sorter = cmp.get();
-		}
+		processor = new DataProcessor(*this);
 
-		ds.queryData(q, consumer);
-		consumer.flush();
-	}
-}
 
-ScanOptions::ScanOptions(const std::string& name, int mansection)
-	: OutputOptions(name, mansection), cfg(0), mdispatch(0)
-{
-	files = add<StringOption>("files", 0, "files", "file",
-			"read the list of files to scan from the given file instead of the command line");
-	dispatch = add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
-			"dispatch the files right after scanning, using the given configuration file "
-			"or dataset directory (can be specified multiple times)");
-	testdispatch = add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
-			"simulate dispatching the files right after scanning, using the given configuration file "
-			"or dataset directory (can be specified multiple times)");
-	verbose = add<BoolOption>("verbose", 0, "verbose", "",
-			"print to standard error a line per every file with a summary of how it was handled");
-}
+	// Create the dispatcher if needed
 
-ScanOptions::~ScanOptions()
-{
-	if (mdispatch) delete mdispatch;
-	if (cfg) delete cfg;
-}
-
-MetadataConsumer& ScanOptions::consumer()
-{
-	if (mdispatch)
-		return *mdispatch;
-	else
-		return OutputOptions::consumer();
-}
-
-void ScanOptions::flush()
-{
-	if (mdispatch)
-		mdispatch->flush();
-	else
-		OutputOptions::consumer().flush();
-}
-
-bool ScanOptions::parse(int argc, const char* argv[])
-{
-	if (OutputOptions::parse(argc, argv))
-		return true;
-	
 	if (dispatch->isSet() || testdispatch->isSet())
 	{
 		if (dispatch->isSet() && testdispatch->isSet())
 			throw wibble::exception::BadOption("you cannot use --dispatch together with --testdispatch");
 		runtime::readMatcherAliasDatabase();
-		cfg = new ConfigFile;
 
 		if (testdispatch->isSet()) {
-			if (!runtime::parseConfigFiles(*cfg, *testdispatch))
-				throw wibble::exception::BadOption("you need to specify the config file");
-			mdispatch = new MetadataDispatch(*cfg, OutputOptions::consumer(), true);
+			for (vector<string>::const_iterator i = testdispatch->values().begin();
+					i != testdispatch->values().end(); ++i)
+				parseConfigFile(dispatchInfo, *i);
+			dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
 		} else {
-			if (!runtime::parseConfigFiles(*cfg, *dispatch))
-				throw wibble::exception::BadOption("you need to specify the config file");
-			mdispatch = new MetadataDispatch(*cfg, OutputOptions::consumer());
+			for (vector<string>::const_iterator i = dispatch->values().begin();
+					i != dispatch->values().end(); ++i)
+				parseConfigFile(dispatchInfo, *i);
+			dispatcher = new MetadataDispatch(dispatchInfo, *processor);
 		}
 	}
-	
-	// Handle --files, appending its contents to the arg list
-	// and complaining if the arg list is not empty
-	if (files->isSet())
-	{
-		if (!m_args.empty())
-			throw wibble::exception::BadOption("input files in the command line are not allowed if you use --files");
+	if (dispatcher)
+		dispatcher->reportStatus = status->boolValue();
 
+
+	// Initialise the dataset list
+
+	if (cfgfiles)	// From -C options, looking for config files or datasets
+		for (vector<string>::const_iterator i = cfgfiles->values().begin();
+				i != cfgfiles->values().end(); ++i)
+			 parseConfigFile(inputInfo, *i);
+
+	if (files && files->isSet())	// From --files option, looking for data files or datasets
+	{
 		// Open the file
 		string file = files->stringValue();
 		std::istream* input;
@@ -649,7 +473,7 @@ bool ScanOptions::parse(int argc, const char* argv[])
 			input = &cin;
 		}
 
-		// Read the content and append to m_args
+		// Read the content and scan the related files or dataset directories
 		string line;
 		while (!input->eof())
 		{
@@ -659,11 +483,77 @@ bool ScanOptions::parse(int argc, const char* argv[])
 			line = str::trim(line);
 			if (line.empty())
 				continue;
-			m_args.push_back(line);
+			ReadonlyDataset::readConfig(line, inputInfo);
 		}
 	}
 
-	return false;
+	while (hasNext())	// From command line arguments, looking for data files or datasets
+		ReadonlyDataset::readConfig(next(), inputInfo);
+
+	if (inputInfo.sectionSize() == 0)
+		throw wibble::exception::BadOption("you need to specify at least one input file or dataset");
+
+	// Some things cannot be done when querying multiple datasets at the same time
+	if (inputInfo.sectionSize() > 1 && !dispatcher)
+	{
+		if (postprocess->boolValue())
+			throw wibble::exception::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
+		if (report->boolValue())
+			throw wibble::exception::BadOption("reports are not possible when querying more than one dataset at the same time");
+	}
+}
+
+void CommandLine::doneProcessing()
+{
+	if (processor)
+		processor->end();
+}
+
+static std::string moveFile(const std::string& source, const std::string& targetdir)
+{
+	string targetFile = str::joinpath(targetdir, str::basename(source));
+	if (rename(source.c_str(), targetFile.c_str()) == -1)
+		throw wibble::exception::System("Moving " + source + " to " + targetFile);
+	return targetFile;
+}
+
+static std::string moveFile(const ReadonlyDataset& ds, const std::string& targetdir)
+{
+	if (const dataset::File* d = dynamic_cast<const dataset::File*>(&ds))
+		return moveFile(d->pathname(), targetdir);
+	else
+		return string();
+}
+
+std::auto_ptr<ReadonlyDataset> CommandLine::openSource(ConfigFile& info)
+{
+	if (movework && movework->isSet() && info.value("type") == "file")
+		info.setValue("path", moveFile(info.value("path"), movework->stringValue()));
+
+	return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(info));
+}
+
+bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
+{
+	if (dispatcher)
+		return dispatcher->process(ds, name);
+	processor->process(ds, name);
+	return true;
+}
+
+void CommandLine::closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful)
+{
+	if (successful && moveok && moveok->isSet())
+	{
+		moveFile(*ds, moveok->stringValue());
+	}
+	else if (!successful && moveko && moveko->isSet())
+	{
+		moveFile(*ds, moveko->stringValue());
+	}
+	// TODO: print status
+
+	// ds will be automatically deallocated here
 }
 
 
@@ -797,19 +687,6 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 	}
 }
 
-bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files)
-{
-	bool found = false;
-	for (vector<string>::const_iterator i = files.values().begin();
-			i != files.values().end(); ++i)
-	{
-		parseConfigFile(cfg, *i);
-		//ReadonlyDataset::readConfig(*i, cfg);
-		found = true;
-	}
-	return found;
-}
-
 bool parseConfigFiles(ConfigFile& cfg, wibble::commandline::Parser& opts)
 {
 	bool found = false;
@@ -820,6 +697,21 @@ bool parseConfigFiles(ConfigFile& cfg, wibble::commandline::Parser& opts)
 	}
 	return found;
 }
+
+bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files)
+{
+       bool found = false;
+       for (vector<string>::const_iterator i = files.values().begin();
+                       i != files.values().end(); ++i)
+       {
+               parseConfigFile(cfg, *i);
+               //ReadonlyDataset::readConfig(*i, cfg);
+               found = true;
+       }
+       return found;
+}
+
+
 
 void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 {
@@ -937,28 +829,8 @@ SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::stri
 	return res;
 }
 
-void readQuery(Matcher& expr, wibble::commandline::Parser& opts, wibble::commandline::StringOption* fromFile)
-{
-	if (fromFile && fromFile->isSet())
-	{
-		// Read the entire file into memory and parse it as an expression
-		expr = Matcher::parse(utils::readFile(fromFile->stringValue()));
-	} else {
-		// Read from the first commandline argument
-		if (!opts.hasNext())
-		{
-			if (fromFile)
-				throw wibble::exception::BadOption("you need to specify a filter expression or use --"+fromFile->longNames[0]);
-			else
-				throw wibble::exception::BadOption("you need to specify a filter expression");
-		}
-		// And parse it as an expression
-		expr = Matcher::parse(opts.next());
-	}
-}
-
-MetadataDispatch::MetadataDispatch(const ConfigFile& cfg, MetadataConsumer& next, bool test)
-	: cfg(cfg), dispatcher(0), next(next),
+MetadataDispatch::MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test)
+	: cfg(cfg), dispatcher(0), next(next), reportStatus(false),
 	  countSuccessful(0), countDuplicates(0), countInErrorDataset(0), countNotImported(0)
 {
 	timerclear(&startTime);
@@ -975,12 +847,51 @@ MetadataDispatch::~MetadataDispatch()
 		delete dispatcher;
 }
 
+bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
+{
+	setStartTime();
+	results.clear();
+
+	dataset::DataQuery dq(Matcher(), true);
+	try {
+		ds.queryData(dq, *this);
+	} catch (std::exception& e) {
+		// FIXME: this is a quick experiment: a better message can
+		// print some of the stats to document partial imports
+		//cerr << i->second->value("path") << ": import FAILED: " << e.what() << endl;
+		nag::warning("import FAILED: %s", e.what());
+		// Still process what we've got so far
+		next.process(results, name);
+		throw;
+	}
+
+	// Process the resulting annotated metadata as a dataset
+	next.process(results, name);
+
+	if (reportStatus)
+		cerr << name << ": " << summarySoFar() << endl;
+
+	bool success = !(
+		    countNotImported
+		 && countDuplicates
+		 && countInErrorDataset);
+
+	flush();
+
+	countSuccessful = 0;
+	countNotImported = 0;
+	countDuplicates = 0;
+	countInErrorDataset = 0;
+
+	return success;
+}
+
 bool MetadataDispatch::operator()(Metadata& md)
 {
 	bool problems = false;
 
 	// Try dispatching
-	switch (dispatcher->dispatch(md, next))
+	switch (dispatcher->dispatch(md, results))
 	{
 		case Dispatcher::DISP_OK:
 			++countSuccessful;

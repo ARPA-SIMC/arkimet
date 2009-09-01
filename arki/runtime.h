@@ -26,11 +26,14 @@
 #include <wibble/commandline/parser.h>
 #include <wibble/stream/posix.h>
 #include <arki/metadata.h>
+#include <arki/utils/metadata.h>
+#include <arki/matcher.h>
 #include <arki/configfile.h>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 #include <sys/time.h>
 
 namespace arki {
@@ -45,15 +48,17 @@ class Formatter;
 namespace runtime {
 class MetadataDispatch;
 
-struct FlushableMetadataConsumer : public MetadataConsumer
-{
-	size_t countMetadata;
-	size_t countSummary;
+/**
+ * Initialise the libraries that we use and parse the matcher alias database.
+ */
+void init();
 
-	FlushableMetadataConsumer();
-	virtual ~FlushableMetadataConsumer();
-	virtual bool outputSummary(Summary& s) = 0;
-	virtual void flush();
+struct DatasetProcessor
+{
+	virtual ~DatasetProcessor() {}
+
+	virtual void process(ReadonlyDataset& ds, const std::string& name) = 0;
+	virtual void end() {}
 };
 
 /**
@@ -83,83 +88,93 @@ public:
 	const std::string& name() const { return m_name; }
 };
 
-struct OutputOptions : public wibble::commandline::StandardParserWithManpage
+struct CommandLine : public wibble::commandline::StandardParserWithManpage
 {
-	enum ConfigType {
-		/// Do not attempt to read dataset configuration from anywhere
-		NONE,
-		/// Read dataset configuration from --config/-C switches
-		SWITCH,
-		/// Read dataset configuration from --config/-C switches and from
-		/// non-switch commandline arguments
-		PARMS
-	};
+	wibble::commandline::OptionGroup* infoOpts;
+	wibble::commandline::OptionGroup* inputOpts;
+	wibble::commandline::OptionGroup* outputOpts;
+	wibble::commandline::OptionGroup* dispatchOpts;
 
 	wibble::commandline::BoolOption* verbose;
 	wibble::commandline::BoolOption* debug;
+	wibble::commandline::BoolOption* status;
 	wibble::commandline::BoolOption* yaml;
 	wibble::commandline::BoolOption* annotate;
 	wibble::commandline::BoolOption* dataInline;
 	wibble::commandline::BoolOption* dataOnly;
 	wibble::commandline::BoolOption* summary;
+	wibble::commandline::BoolOption* merged;
+	wibble::commandline::StringOption* exprfile;
 	wibble::commandline::StringOption* outfile;
 	wibble::commandline::StringOption* postprocess;
 	wibble::commandline::StringOption* report;
 	wibble::commandline::StringOption* sort;
-	wibble::commandline::VectorOption<wibble::commandline::String>* cfgfiles;
-	ConfigFile cfg;
-	ConfigType cfgtype;
-
-	OutputOptions(const std::string& name, int mansection = 1, ConfigType cfgtype = NONE);
-	~OutputOptions();
-
-	// Parse leading parameters before we consume all config file parameters if cfgtype = PARMS
-	virtual void parseLeadingParameters() {}
-
-	bool parse(int argc, const char* argv[]);
-
-	void createConsumer();
-
-	void processDataset(ReadonlyDataset& ds, const Matcher& m);
-
-	// Consumer to use for output of metadata
-	FlushableMetadataConsumer& consumer()
-	{
-		if (!m_consumer) createConsumer();
-		return *m_consumer;
-	}
-	// Output stream
-	Output& output() { return *m_output; }
-
-	/// Return true if the selected output style is raw binary metadata
-	bool isBinaryMetadataOutput() const;
-
-protected:
-	Formatter* m_formatter;
-	Output* m_output;
-	FlushableMetadataConsumer* m_consumer;
-};
-
-struct ScanOptions : public OutputOptions
-{
-	wibble::commandline::BoolOption* verbose;
 	wibble::commandline::StringOption* files;
+	wibble::commandline::StringOption* moveok;
+	wibble::commandline::StringOption* moveko;
+	wibble::commandline::StringOption* movework;
+	wibble::commandline::VectorOption<wibble::commandline::String>* cfgfiles;
 	wibble::commandline::VectorOption<wibble::commandline::String>* dispatch;
 	wibble::commandline::VectorOption<wibble::commandline::String>* testdispatch;
 
-	ConfigFile* cfg;
-	MetadataDispatch* mdispatch;
+	ConfigFile inputInfo;
+	ConfigFile dispatchInfo;
+	Matcher query;	// TODO
+	Output* output;
+	DatasetProcessor* processor;
+	MetadataDispatch* dispatcher;
 
-	ScanOptions(const std::string& name, int mansection = 1);
-	~ScanOptions();
+	CommandLine(const std::string& name, int mansection = 1);
+	~CommandLine();
 
+	/// Add scan-type options (--files, --moveok, --movework, --moveko)
+	void addScanOptions();
+
+	/// Add query-type options (--merged, --file, --cfgfiles)
+	void addQueryOptions();
+
+	/**
+	 * Parse the command line
+	 */
 	bool parse(int argc, const char* argv[]);
 
-	// Consumer to use for the scanned metadata
-	MetadataConsumer& consumer();
+	/**
+	 * Set up processing after the command line has been parsed and
+	 * additional tweaks have been applied
+	 */
+	void setupProcessing();
 
-	// Flush the imports done so far
-	void flush();
+	/**
+	 * End processing and flush partial data
+	 */
+	void doneProcessing();
+
+	/**
+	 * Open the next data source to process
+	 *
+	 * @return the pointer to the datasource, or 0 for no more datasets
+	 */
+	std::auto_ptr<ReadonlyDataset> openSource(ConfigFile& info);
+
+	/**
+	 * Process one data source
+	 *
+	 * If everything went perfectly well, returns true, else false. It can
+	 * still throw an exception if things go wrong.
+	 */
+	bool processSource(ReadonlyDataset& ds, const std::string& name);
+
+	/**
+	 * Done working with one data source
+	 *
+	 * @param successful
+	 *   true if everything went well, false if there were issues
+	 * FIXME: put something that contains a status report instead, for
+	 * FIXME: --status, as well as a boolean for moveok/moveko
+	 */
+	void closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful = true);
+
+	// TODO: set a query
 };
 
 
@@ -191,18 +206,19 @@ public:
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName);
 
 /**
+ * Parse the config files from the remaining commandline arguments
+ *
+ * Return true if at least one config file was found in \a opts
+ */
+bool parseConfigFiles(ConfigFile& cfg, wibble::commandline::Parser& opts);
+
+/**
  * Parse the config files indicated by the given commandline option.
  *
  * Return true if at least one config file was found in \a files
  */
 bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files);
 
-/**
- * Parse the config files from the remaining commandline arguments
- *
- * Return true if at least one config file was found in \a opts
- */
-bool parseConfigFiles(ConfigFile& cfg, wibble::commandline::Parser& opts);
 
 /**
  * Read the Matcher alias database.
@@ -252,19 +268,15 @@ struct SourceCode : public std::vector<FileInfo>
 SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir = 0);
 
 /**
- * Parse a Matcher expression, either from a file specified in a commandline
- * switch (optional, ignored if fromFile == 0), or from a commandline argument.
- */
-void readQuery(Matcher& expr, wibble::commandline::Parser& opts, wibble::commandline::StringOption* fromFile = 0);
-
-/**
  * Dispatch metadata
  */
 struct MetadataDispatch : public MetadataConsumer
 {
 	const ConfigFile& cfg;
 	Dispatcher* dispatcher;
-	MetadataConsumer& next;
+	arki::utils::metadata::Collector results;
+	DatasetProcessor& next;
+	bool reportStatus;
 
 	// Used for timings. Read with gettimeofday at the beginning of a task,
 	// and summarySoFar will report the elapsed time
@@ -286,9 +298,18 @@ struct MetadataDispatch : public MetadataConsumer
 	// it to 0 anytime.
 	int countNotImported;
 
-	MetadataDispatch(const ConfigFile& cfg, MetadataConsumer& next, bool test=false);
+	MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test=false);
 	virtual ~MetadataDispatch();
 
+	/**
+	 * Dispatch the data from one source
+	 *
+	 * @returns true if all went well, false if any problem happend.
+	 * It can still throw in case of big trouble.
+	 */
+	bool process(ReadonlyDataset& ds, const std::string& name);
+
+	// Note: used only internally, but needs to be public
 	virtual bool operator()(Metadata& md);
 
 	// Flush all imports done so far

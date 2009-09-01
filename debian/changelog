@@ -6,9 +6,14 @@ arkimet (0.26-1) UNRELEASED; urgency=low
   * Get rid of oldsummary and arki-sbenchmark
   * Sorting, if requested is now done server-side and before preprocessing
   * Removed several unused arki-* utilities (arki-summarise, arki-grep,
-    arki-scan-grib, arki-dispatch)
+    arki-scan-grib, arki-dispatch, arki-sort)
+  * Reorganised arki-dump as a simple dump to/from yaml
+  * Reorganised arki-scan and arki-check to simplify their code and clear up
+    some inconsistencies in some command line option combinations. Some
+    behaviour may change. One behaviour changes: arki-scan --verbose becomes
+    arki-scan --status
 
- -- Enrico Zini <enrico@debian.org>  Fri, 28 Aug 2009 15:42:22 +0100
+ -- Enrico Zini <enrico@debian.org>  Tue, 01 Sep 2009 18:37:21 +0100
 
 arkimet (0.25-1) UNRELEASED; urgency=low
 

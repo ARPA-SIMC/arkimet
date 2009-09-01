@@ -34,15 +34,11 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/runtime.h>
 
+#include "config.h"
+
 #include <fstream>
 #include <iostream>
 #include <sys/stat.h>
-
-#include "config.h"
-
-#if HAVE_DBALLE
-#include <dballe++/init.h>
-#endif
 
 //#define debug(...) fprintf(stderr, __VA_ARGS__)
 #define debug(...) do{}while(0)
@@ -272,9 +268,7 @@ int main(int argc, const char* argv[])
 		if (opts.parse(argc, argv))
 			return 0;
 
-#if HAVE_DBALLE
-		dballe::DballeInit dballeInit;
-#endif
+		runtime::init();
 
 		set<string> dirs;
 

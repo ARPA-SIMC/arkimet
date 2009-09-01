@@ -183,9 +183,12 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - lm7tmpc eccezione maskata da sqlite
 
- - cleanup src: remove arki-scan-* arki-sort arki-dump? arki-summarise arki-grep?
  - unify arki-scan and arki-query (then ship them as links, or with different
    defaults)
+   arki-query: --merged --cfgfiles
+   arki-scan: --moveok et al., --files
+ - input: list of datasets
+ - processDataset produces output
 
  - scanoptions
     -> queryable by output type
@@ -297,6 +300,8 @@ Bufr:
  - estrazione dei BUFR dentro a un DB-All.e
 
 Messe a punto:
+ - togliere da runtime tutto quello che non è usato (tipo i FlushableProcessor)
+ - bbox dipende da runtime: runtime::rcFiles -> utils/files
  - Quando arki-check fa il rebuild perde le note, e quindi l'informazione sul
    file originale da cui è stato fatto l'import.  Lí non si può ovviare perché
    non possiamo fidarci dei metadati; è però il caso di segnare "original file

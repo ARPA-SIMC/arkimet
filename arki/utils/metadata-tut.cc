@@ -18,25 +18,95 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/utils/metadata.h>
+#include <arki/types/source.h>
+#include <arki/summary.h>
+#include <arki/scan/any.h>
+#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
+using namespace wibble;
 using namespace arki;
+using namespace arki::types;
 using namespace arki::utils::metadata;
 
 struct arki_utils_metadata_shar {
+	Collector c;
+
 	arki_utils_metadata_shar()
 	{
+	}
+
+	void acquireSamples()
+	{
+		scan::scan("inbound/test.grib1", c);
 	}
 };
 TESTGRP(arki_utils_metadata);
 
+// Test querying
 template<> template<>
 void to::test<1>()
 {
+	acquireSamples();
+
+	Collector mdc;
+
+	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+	UItem<Source> source = mdc[0].source;
+	ensure_equals(source->style(), Source::BLOB);
+	ensure_equals(source->format, "grib1");
+	UItem<source::Blob> blob = source.upcast<source::Blob>();
+	ensure_equals(blob->filename, sys::fs::abspath("inbound/test.grib1"));
+	ensure_equals(blob->offset, 0u);
+	ensure_equals(blob->size, 7218u);
+
+	mdc.clear();
+	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+	source = mdc[0].source;
+	ensure_equals(source->style(), Source::BLOB);
+	ensure_equals(source->format, "grib1");
+	blob = source.upcast<source::Blob>();
+	ensure_equals(blob->filename, sys::fs::abspath("inbound/test.grib1"));
+	ensure_equals(blob->offset, 7218u);
+	ensure_equals(blob->size, 34960u);
+
+	mdc.clear();
+	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+	source = mdc[0].source;
+	ensure_equals(source->style(), Source::BLOB);
+	ensure_equals(source->format, "grib1");
+	blob = source.upcast<source::Blob>();
+	ensure_equals(blob->filename, sys::fs::abspath("inbound/test.grib1"));
+	ensure_equals(blob->offset, 42178u);
+	ensure_equals(blob->size, 2234u);
+}
+
+// Test querying the summary
+template<> template<>
+void to::test<2>()
+{
+	acquireSamples();
+	Summary summary;
+	c.querySummary(Matcher::parse("origin:GRIB1,200"), summary);
+	ensure_equals(summary.count(), 1u);
+}
+
+// Test querying the summary by reftime
+template<> template<>
+void to::test<3>()
+{
+	acquireSamples();
+	Summary summary;
+	//system("bash");
+	c.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
+	ensure_equals(summary.count(), 3u);
 }
 
 }

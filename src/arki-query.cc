@@ -1,7 +1,7 @@
 /*
  * arki-query - Query datasets using a matcher expression
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,19 +23,14 @@
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
 #include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/summary.h>
-#include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/dataset/merged.h>
 #include <arki/utils.h>
-#include <arki/formatter.h>
+#include <arki/nag.h>
 #include <arki/runtime.h>
 
 #include <fstream>
 #include <iostream>
-
-#include "config.h"
 
 using namespace std;
 using namespace arki;
@@ -43,33 +38,16 @@ using namespace arki;
 namespace wibble {
 namespace commandline {
 
-struct Options : public runtime::OutputOptions
+struct Options : public arki::runtime::CommandLine
 {
-	StringOption* exprfile;
-	BoolOption* merged;
-	Matcher expr;
-
-	Options() : runtime::OutputOptions("arki-query", 1, runtime::OutputOptions::PARMS)
+	Options() : runtime::CommandLine("arki-query", 1)
 	{
 		usage = "[options] [expression] [configfile or directory...]";
 		description =
 		    "Query the datasets in the given config file for data matching the"
 			" given expression, and output the matching metadata.";
 
-		exprfile = add<StringOption>("file", 'f', "file", "file",
-			"read the expression from the given file");
-		merged = add<BoolOption>("merged", 0, "merged", "",
-			"if multiple datasets are given, merge their data and output it in"
-			" reference time order.  Note: sorting does not work when using"
-			" --postprocess, --data or --report");
-	}
-
-	void parseLeadingParameters()
-	{
-		runtime::readMatcherAliasDatabase();
-
-		// Instantiate the filter
-		runtime::readQuery(expr, *this, exprfile);
+		addQueryOptions();
 	}
 };
 
@@ -83,46 +61,50 @@ int main(int argc, const char* argv[])
 		if (opts.parse(argc, argv))
 			return 0;
 
-		if (opts.postprocess->boolValue() && opts.cfg.sectionSize() > 1)
-			throw wibble::exception::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
-		if (opts.report->boolValue() && opts.cfg.sectionSize() > 1)
-			throw wibble::exception::BadOption("reports are not possible when querying more than one dataset at the same time");
-		while (opts.hasNext())
-			ReadonlyDataset::readConfig(opts.next(), opts.cfg);
+		runtime::init();
+
+		opts.setupProcessing();
 
 		if (opts.merged->boolValue())
 		{
 			dataset::Merged merger;
-			size_t dscount = 0;
-
-			// Count all the datasets
-			for (ConfigFile::const_section_iterator i = opts.cfg.sectionBegin();
-					i != opts.cfg.sectionEnd(); ++i)
-				++dscount;
+			size_t dscount = opts.inputInfo.sectionSize();
 			
 			// Create an auto_ptr array to take care of memory management
 			auto_ptr<ReadonlyDataset> datasets[dscount];
 
 			// Instantiate the datasets and add them to the merger
 			int idx = 0;
-			for (ConfigFile::const_section_iterator i = opts.cfg.sectionBegin();
-					i != opts.cfg.sectionEnd(); ++i, ++idx)
+			string names;
+			for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
+					i != opts.inputInfo.sectionEnd(); ++i, ++idx)
 			{
-				datasets[idx].reset(ReadonlyDataset::create(*i->second));
+				datasets[idx] = opts.openSource(*i->second);
 				merger.addDataset(*datasets[idx]);
+				if (names.empty())
+					names = i->first;
+				else
+					names += ","+i->first;
 			}
 
 			// Perform the query
-			opts.processDataset(merger, opts.expr);
+			opts.processSource(merger, names);
+
+			for (size_t i = 0; i < dscount; ++i)
+				opts.closeSource(datasets[i], true);
 		} else {
 			// Query all the datasets in sequence
-			for (ConfigFile::const_section_iterator i = opts.cfg.sectionBegin();
-					i != opts.cfg.sectionEnd(); ++i)
+			for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
+					i != opts.inputInfo.sectionEnd(); ++i)
 			{
-				auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*i->second));
-				opts.processDataset(*ds, opts.expr);
+				auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
+				nag::verbose("Processing %s...", i->second->value("path").c_str());
+				opts.processSource(*ds, i->second->value("path"));
+				opts.closeSource(ds, true);
 			}
 		}
+
+		opts.doneProcessing();
 
 		return 0;
 		//return summary.count() > 0 ? 0 : 1;
