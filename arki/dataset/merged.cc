@@ -292,6 +292,11 @@ void Merged::querySummary(const Matcher& matcher, Summary& summary)
 void Merged::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	// Here we must serialize, as we do not know how to merge raw data streams
+	//
+	// We cannot just wrap queryData because some subdatasets could be
+	// remote, and that would mean doing postprocessing on the client side,
+	// potentially transferring terabytes of data just to produce a number
+
 	for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
 			i != datasets.end(); ++i)
 		(*i)->queryBytes(q, out);
