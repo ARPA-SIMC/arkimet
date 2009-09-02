@@ -203,8 +203,8 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	// For each directory try to match its summary first, and if it matches
 	// then produce all the contents.
 	MetadataConsumer* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
 	auto_ptr<ds::DataInliner> inliner;
+	auto_ptr<sort::Stream> sorter;
 
 	if (q.withData)
 	{
@@ -224,8 +224,6 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 		}
 
 		queryWithoutIndex("", q.matcher, *c);
-
-		if (sorter.get()) sorter->flush();
 	}
 }
 

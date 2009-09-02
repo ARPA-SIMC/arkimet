@@ -228,7 +228,7 @@ Minguzzi:
        - minguzzi estrazione di un parametro
        - patruno: cong
 
- - --sort serve per lanciare plugin lato server, quindi servirebbe farlo andare
+ + --sort serve per lanciare plugin lato server, quindi servirebbe farlo andare
    lato server (e farlo combinare con --postprocess e tutto il resto, ma farlo
    conflittare con --merged)
  - spostare --merged lato server (e farlo solo tra dataset che stanno sullo

@@ -269,8 +269,8 @@ ArkimetFile::~ArkimetFile() {}
 void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	MetadataConsumer* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
 	auto_ptr<ds::DataInliner> inliner;
+	auto_ptr<sort::Stream> sorter;
 
 	if (q.withData)
 	{
@@ -347,8 +347,8 @@ RawFile::~RawFile() {}
 void RawFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	MetadataConsumer* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
 	auto_ptr<ds::DataInliner> inliner;
+	auto_ptr<sort::Stream> sorter;
 
 	if (q.withData)
 	{
@@ -363,8 +363,6 @@ void RawFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	}
 
 	scan::scan(m_pathname, *c);
-
-	if (sorter.get()) sorter->flush();
 }
 
 }
