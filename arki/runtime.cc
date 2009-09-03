@@ -32,6 +32,7 @@
 #include <arki/utils.h>
 #include <arki/dataset.h>
 #include <arki/dataset/file.h>
+#include <arki/dataset/http.h>
 #include <arki/dispatcher.h>
 #include <arki/formatter.h>
 #include <arki/postprocess.h>
@@ -406,49 +407,6 @@ void CommandLine::setupProcessing()
 		}
 	}
 
-	// Open output stream
-
-	if (!output)
-		output = new Output(*outfile);
-
-
-	// Create the appropriate processor
-
-	if (yaml->boolValue() || annotate->isSet())
-		processor = new YamlProcessor(*this);
-	else if (dataOnly->boolValue() || postprocess->isSet()
-#ifdef HAVE_LUA
-		|| report->isSet()
-#endif
-		)
-		processor = new BinaryProcessor(*this);
-	else
-		processor = new DataProcessor(*this);
-
-
-	// Create the dispatcher if needed
-
-	if (dispatch->isSet() || testdispatch->isSet())
-	{
-		if (dispatch->isSet() && testdispatch->isSet())
-			throw wibble::exception::BadOption("you cannot use --dispatch together with --testdispatch");
-		runtime::readMatcherAliasDatabase();
-
-		if (testdispatch->isSet()) {
-			for (vector<string>::const_iterator i = testdispatch->values().begin();
-					i != testdispatch->values().end(); ++i)
-				parseConfigFile(dispatchInfo, *i);
-			dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
-		} else {
-			for (vector<string>::const_iterator i = dispatch->values().begin();
-					i != dispatch->values().end(); ++i)
-				parseConfigFile(dispatchInfo, *i);
-			dispatcher = new MetadataDispatch(dispatchInfo, *processor);
-		}
-	}
-	if (dispatcher)
-		dispatcher->reportStatus = status->boolValue();
-
 
 	// Initialise the dataset list
 
@@ -501,6 +459,95 @@ void CommandLine::setupProcessing()
 		if (report->boolValue())
 			throw wibble::exception::BadOption("reports are not possible when querying more than one dataset at the same time");
 	}
+
+
+	// Validate the query with all the servers
+
+	if (exprfile)
+	{
+		string orig = query.toString();
+		string wanted = query.toStringExpanded();
+		if (orig != wanted)
+		{
+			std::set<std::string> servers;
+			for (ConfigFile::const_section_iterator i = inputInfo.sectionBegin();
+					i != inputInfo.sectionEnd(); ++i)
+			{
+				string server = i->second->value("server");
+				if (!server.empty()) servers.insert(server);
+			}
+			bool mismatch = false;
+			for (set<string>::const_iterator i = servers.begin();
+					i != servers.end(); ++i)
+			{
+				string got;
+				try {
+					got = dataset::HTTP::expandMatcher(orig, *i);
+				} catch (wibble::exception::Generic& e) {
+					// If the server cannot expand the query, we're
+					// ok as we send it expanded. What we are
+					// checking here is that the server does not
+					// have a different idea of the same aliases
+					// that we use
+					continue;
+				}
+				if (got != wanted)
+				{
+					nag::warning("Server %s expands the query as %s", i->c_str(), got.c_str());
+					mismatch = true;
+				}
+			}
+			if (mismatch)
+			{
+				nag::warning("Locally, we expand the query as %s", wanted.c_str());
+				throw wibble::exception::Consistency("checking alias consistency", "aliases locally and on the server differ");
+			}
+		}
+	}
+
+
+	// Open output stream
+
+	if (!output)
+		output = new Output(*outfile);
+
+
+	// Create the appropriate processor
+
+	if (yaml->boolValue() || annotate->isSet())
+		processor = new YamlProcessor(*this);
+	else if (dataOnly->boolValue() || postprocess->isSet()
+#ifdef HAVE_LUA
+		|| report->isSet()
+#endif
+		)
+		processor = new BinaryProcessor(*this);
+	else
+		processor = new DataProcessor(*this);
+
+
+	// Create the dispatcher if needed
+
+	if (dispatch->isSet() || testdispatch->isSet())
+	{
+		if (dispatch->isSet() && testdispatch->isSet())
+			throw wibble::exception::BadOption("you cannot use --dispatch together with --testdispatch");
+		runtime::readMatcherAliasDatabase();
+
+		if (testdispatch->isSet()) {
+			for (vector<string>::const_iterator i = testdispatch->values().begin();
+					i != testdispatch->values().end(); ++i)
+				parseConfigFile(dispatchInfo, *i);
+			dispatcher = new MetadataDispatch(dispatchInfo, *processor, true);
+		} else {
+			for (vector<string>::const_iterator i = dispatch->values().begin();
+					i != dispatch->values().end(); ++i)
+				parseConfigFile(dispatchInfo, *i);
+			dispatcher = new MetadataDispatch(dispatchInfo, *processor);
+		}
+	}
+	if (dispatcher)
+		dispatcher->reportStatus = status->boolValue();
 }
 
 void CommandLine::doneProcessing()

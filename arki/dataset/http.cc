@@ -185,7 +185,7 @@ void HTTP::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(q.matcher.toString());
+	string postdata = "query=" + urlencode(q.matcher.toStringExpanded());
 	if (q.sorter)
 	{
 		postdata += ";sort=" + urlencode(q.sorter->toString());
@@ -226,7 +226,7 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	string url = joinpath(m_baseurl, "summary");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(matcher.toString());
+	string postdata = "query=" + urlencode(matcher.toStringExpanded());
 	if (m_mischief)
 	{
 		postdata += urlencode(";MISCHIEF");
@@ -264,7 +264,7 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(q.matcher.toString());
+	string postdata = "query=" + urlencode(q.matcher.toStringExpanded());
 	if (q.sorter)
 	{
 		postdata += ";sort=" + urlencode(q.sorter->toString());
@@ -339,6 +339,36 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 void HTTP::produce_one_wrong_query()
 {
 	m_mischief = true;
+}
+
+std::string HTTP::expandMatcher(const std::string& matcher, const std::string& server)
+{
+	using namespace wibble::str;
+	using namespace http;
+
+	CurlEasy m_curl;
+	m_curl.reset();
+
+	string url = joinpath(server, "qexpand");
+	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+	string postdata = "query=" + urlencode(matcher) + "\n";
+	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
+	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
+	SStreamState content(m_curl);
+	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
+	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &content));
+	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+	
+	CURLcode code = curl_easy_perform(m_curl);
+	if (code != CURLE_OK)
+		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
+
+    if (content.response_code >= 400)
+        content.throwError("expanding query at " + url);
+
+	content.buf.seekg(0);
+	return str::trim(content.buf.str());
 }
 
 }

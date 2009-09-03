@@ -68,8 +68,13 @@ void to::test<1>()
     dataset::HTTP::readConfig("http://localhost:7117", config);
 
     ensure(config.section("test200") != 0);
+    ensure_equals(config.section("test200")->value("server"), "http://localhost:7117");
+
     ensure(config.section("test80") != 0);
+    ensure_equals(config.section("test80")->value("server"), "http://localhost:7117");
+
     ensure(config.section("error") != 0);
+    ensure_equals(config.section("error")->value("server"), "http://localhost:7117");
 }
 
 // Test querying the datasets
@@ -168,6 +173,20 @@ void to::test<5>()
         ensure(false);
     } catch (std::exception& e) {}
     ensure_equals(str.str().size(), 0u);
+}
+
+// Test expanding a query
+template<> template<>
+void to::test<6>()
+{
+    ensure_equals(dataset::HTTP::expandMatcher("origin:GRIB1,200;product:t", "http://localhost:7117"),
+          "origin:GRIB1,200; product:GRIB1,98,123 or GRIB1,200,321");
+    try {
+        dataset::HTTP::expandMatcher("origin:GRIB1,200;product:pippo", "http://localhost:7117");
+        ensure(false);
+    } catch (...) {
+        ensure(true);
+    }
 }
 
 }

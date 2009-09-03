@@ -105,6 +105,11 @@ public:
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 
+    /**
+     * Expand the given matcher expression using the aliases on this server
+     */
+    static std::string expandMatcher(const std::string& matcher, const std::string& server);
+
 	/**
 	 * Introduce a syntax error in the next query sent to the server.
 	 *

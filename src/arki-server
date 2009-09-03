@@ -91,6 +91,7 @@ class ArkiDataset:
         c = self.dsconf.dict()
         c['path'] = self.baseurl + "/dataset/" + self.name
         c['type'] = 'remote'
+        c['server'] = self.baseurl
         amended = ConfigObj(list_values = False)
         amended[self.name] = {}
         amended[self.name].update(c)
@@ -223,6 +224,7 @@ class ArkiServer:
         for s in self.dsconf.sections:
             c[s]['path'] = self.baseurl + "/dataset/" + s
             c[s]['type'] = 'remote'
+            c[s]['server'] = self.baseurl
         amended = ConfigObj(list_values = False)
         amended.update(c)
         out = StringIO()
