@@ -100,6 +100,13 @@ std::string OR::toString() const
 
 	if (not unparsed.empty()) return front()->name() + ":" + unparsed;
 
+	return toStringExpanded();
+}
+
+std::string OR::toStringExpanded() const
+{
+	if (empty()) return string();
+
 	std::string res = front()->name() + ":";
 	for (const_iterator i = begin(); i != end(); ++i)
 	{
@@ -189,6 +196,20 @@ std::string AND::toString() const
 		if (i != begin())
 			res += "; ";
 		res += i->second->toString();
+	}
+	return res;
+}
+
+std::string AND::toStringExpanded() const
+{
+	if (empty()) return string();
+
+	std::string res;
+	for (const_iterator i = begin(); i != end(); ++i)
+	{
+		if (i != begin())
+			res += "; ";
+		res += i->second->toStringExpanded();
 	}
 	return res;
 }

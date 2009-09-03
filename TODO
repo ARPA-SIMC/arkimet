@@ -199,6 +199,12 @@ Minguzzi:
 Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bufr qualita' aria)
 
  - Alias:
+    - arki-mergeconf su http deve aggiungere alla conf anche l'indirizzo del server
+    - arki-server: aggiungere un metodo per espandere una query
+    - arki-query: fare il set di tutti i server che si querano, espandere la
+      query in ognuno, verificare che tutti espandono uguale, mostrare le
+      diverse espansioni e uscire in caso contrario: uno può poi scegliere
+      l'espansione giusta e rifare la query esplicita
     - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
       lo usa per validare la query, il server lo usa per fare la query). Ne
       battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query

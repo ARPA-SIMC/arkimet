@@ -43,6 +43,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* reverse_data;
 	BoolOption* reverse_summary;
 	BoolOption* annotate;
+	BoolOption* query;
 	StringOption* outfile;
 
 	Options() : StandardParserWithManpage("arki-dump", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -62,6 +63,9 @@ struct Options : public StandardParserWithManpage
 
 		reverse_summary = add<BoolOption>("from-yaml-summary", 0, "from-yaml-summary", "",
 			"read a Yaml summary dump and write a binary summary");
+
+		query = add<BoolOption>("quuery", 0, "query", "",
+			"print a query (specified on the command line) with the aliases expanded");
 	}
 };
 
@@ -76,13 +80,30 @@ int main(int argc, const char* argv[])
 		if (opts.parse(argc, argv))
 			return 0;
 
+		runtime::init();
+
 		// Validate command line options
+		if (opts.query->boolValue() && opts.reverse_data->boolValue())
+			throw wibble::exception::BadOption("--query conflicts with --from-yaml-data");
+		if (opts.query->boolValue() && opts.reverse_summary->boolValue())
+			throw wibble::exception::BadOption("--query conflicts with --from-yaml-summary");
+		if (opts.query->boolValue() && opts.annotate->boolValue())
+			throw wibble::exception::BadOption("--query conflicts with --annotate");
 		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
 		if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-data");
 		if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
+		
+		if (opts.query->boolValue())
+		{
+			if (!opts.hasNext())
+				throw wibble::exception::BadOption("--query wants the query on the command line");
+			Matcher m = Matcher::parse(opts.next());
+			cout << m.toStringExpanded() << endl;
+			return 0;
+		}
 
 		// Open the input file
 		runtime::Input in(opts);

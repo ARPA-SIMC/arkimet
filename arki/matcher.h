@@ -83,6 +83,12 @@ public:
 	/// Format back into a string that can be parsed again
 	virtual std::string toString() const = 0;
 
+	/**
+	 * Format back into a string that can be parsed again, with all aliases
+	 * expanded.
+	 */
+	virtual std::string toStringExpanded() const { return toString(); }
+
 	/// Push to the LUA stack a function for this matcher
 	//virtual void lua_push(lua_State* L) const = 0;
 };
@@ -100,6 +106,7 @@ struct OR : public std::vector< refcounted::Pointer<const Implementation> >, pub
 	virtual bool matchItem(const Item<>& t) const;
 
 	std::string toString() const;
+	std::string toStringExpanded() const;
 
 	static OR* parse(const MatcherType& type, const std::string& pattern);
 };
@@ -122,6 +129,7 @@ struct AND : public std::map< types::Code, refcounted::Pointer<const Implementat
 	void split(const std::set<types::Code>& codes, AND& with, AND& without) const;
 
 	std::string toString() const;
+	std::string toStringExpanded() const;
 
 	static AND* parse(const std::string& pattern);
 };
@@ -293,6 +301,16 @@ struct Matcher
 	std::string toString() const
 	{
 		if (m_impl) return m_impl->toString();
+		return std::string();
+	}
+
+	/**
+	 * Format back into a string that can be parsed again, with all
+	 * aliases expanded
+	 */
+	std::string toStringExpanded() const
+	{
+		if (m_impl) return m_impl->toStringExpanded();
 		return std::string();
 	}
 
