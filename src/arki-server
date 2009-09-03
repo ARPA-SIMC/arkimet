@@ -81,7 +81,7 @@ class ArkiDataset:
         self.name = name
         self.dsconf = dsconf
         self.baseurl = baseurl
-	cherrypy.config.update({('/dataset/%s/query'%name): {'streamResponse': True, 'stream_response': True}}) 
+        cherrypy.config.update({('/dataset/%s/query'%name): {'streamResponse': True, 'stream_response': True}}) 
 
     @cherrypy.expose
     def config(self):

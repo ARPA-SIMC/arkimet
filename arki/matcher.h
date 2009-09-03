@@ -268,7 +268,7 @@ struct Matcher
 	}
 
 	/// Match a full metadata
-    bool operator()(const Metadata& md) const
+	bool operator()(const Metadata& md) const
 	{
 		if (m_impl) return m_impl->matchMetadata(md);
 		// An empty matcher always matches
@@ -281,7 +281,7 @@ struct Matcher
 	 * Return true if there is at least a metadata in this summary that is
 	 * potentially matched by the matcher
 	 */
-    bool operator()(const Summary& i) const;
+	bool operator()(const Summary& i) const;
 
 #if 0
 	/// Match a collection of metadata items
