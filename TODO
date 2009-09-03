@@ -196,8 +196,7 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
     -> ask scanoptions about their input
 
 Minguzzi:
- - Sort:
-    - In arki-sort, grib:nomefile non funziona
+Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bufr qualita' aria)
 
  - Alias:
     - Il file di alias ora deve essere lo stesso su tutte le macchine (il client
@@ -207,6 +206,9 @@ Minguzzi:
     - Possibilità di fare include del file degli alias
     - arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
       si aggiorna un alias sul server, i client non vedono l'aggiornamento)
+
+ - Sort:
+    - In arki-sort, grib:nomefile non funziona
 
  - Postprocess:
     - tool che prende grib in stdin, li salva su tempfile uno a uno, poi chiama un
