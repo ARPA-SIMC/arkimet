@@ -198,23 +198,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 Minguzzi:
 Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bufr qualita' aria)
 
- - Alias:
-    + arki-server: aggiungere un metodo per espandere una query
-    + arki-mergeconf su http deve aggiungere alla conf anche l'indirizzo del server
-    + arki-query: fare il set di tutti i server che si querano, espandere la
-      query in ognuno, verificare che tutti espandono uguale, mostrare le
-      diverse espansioni e uscire in caso contrario: uno può poi scegliere
-      l'espansione giusta e rifare la query esplicita
-    + mandare al server la query expansa, che ora viene validata e quindi non
-      si rischia il mismatch degli alias comuni
-    = Il file di alias ora deve essere lo stesso su tutte le macchine (il client
-      lo usa per validare la query, il server lo usa per fare la query). Ne
-      battezziamo uno solo? Per esempio sul client, e poi mandiamo su le query
-      espanse
-    = arki-server non trova gli alias (cioè, sono espansi lato client, quindi se
-      si aggiorna un alias sul server, i client non vedono l'aggiornamento)
-    - Possibilità di fare include del file degli alias
-
  - Sort:
     - In arki-sort, grib:nomefile non funziona
 
@@ -292,6 +275,7 @@ Bufr:
 
 Messe a punto:
  - bbox dipende da runtime: runtime::rcFiles -> utils/files
+ - Possibilità di fare include del file degli alias
  - Quando arki-check fa il rebuild perde le note, e quindi l'informazione sul
    file originale da cui è stato fatto l'import.  Lí non si può ovviare perché
    non possiamo fidarci dei metadati; è però il caso di segnare "original file
