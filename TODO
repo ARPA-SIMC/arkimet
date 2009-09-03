@@ -199,8 +199,8 @@ Minguzzi:
 Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bufr qualita' aria)
 
  - Alias:
+    + arki-server: aggiungere un metodo per espandere una query
     - arki-mergeconf su http deve aggiungere alla conf anche l'indirizzo del server
-    - arki-server: aggiungere un metodo per espandere una query
     - arki-query: fare il set di tutti i server che si querano, espandere la
       query in ognuno, verificare che tutti espandono uguale, mostrare le
       diverse espansioni e uscire in caso contrario: uno può poi scegliere

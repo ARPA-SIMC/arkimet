@@ -32,6 +32,9 @@ then
     runtest "grep -q 'error' serverconfig"
     runtest "grep -q 'path *= *http://' serverconfig"
 
+    # Expand a query
+    runtest "curl --data-urlencode query='origin:GRIB1,200;product:t' -s $BASEURL/qexpand > tmpfile && grep -q 'origin:GRIB1,200; product:GRIB1,98,123 or GRIB1,200,321' tmpfile"
+
     # Get the summary from all datasets
     runtest "curl -s $BASEURL/dataset/test200/summary | head -c 2 | grep -q ^SU"
     runtest "curl -s $BASEURL/dataset/test80/summary | arki-dump >tmpfile && grep -q SummaryItem tmpfile"

@@ -231,6 +231,15 @@ class ArkiServer:
         return out.getvalue()
 
     @cherrypy.expose
+    def qexpand(self, query):
+        """
+        Expand a query
+        """
+        args = [ARKI_DUMP, '--query', query]
+        log_access("Running %s", repr(args));
+        return get_output(args, ctype="text/plain")
+
+    @cherrypy.expose
     def index(self):
         """
         Show a list of all available datasets

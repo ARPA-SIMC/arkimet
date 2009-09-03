@@ -12,8 +12,10 @@ arkimet (0.26-1) UNRELEASED; urgency=low
     some inconsistencies in some command line option combinations. Some
     behaviour may change. One behaviour changes: arki-scan --verbose becomes
     arki-scan --status
+  * arki-dump --query
+  * arki-server can now expand a query with /qexpand
 
- -- Enrico Zini <enrico@debian.org>  Tue, 01 Sep 2009 18:37:21 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 03 Sep 2009 17:02:25 +0100
 
 arkimet (0.25-1) UNRELEASED; urgency=low
 
