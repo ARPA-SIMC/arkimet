@@ -1,6 +1,8 @@
 #!/bin/sh -e
 
-. testlib.sh
+BINDIR=`dirname $0`
+
+. $BINDIR/testlib.sh
 
 if [ $# == 0 ]
 then
