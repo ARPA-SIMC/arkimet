@@ -120,12 +120,11 @@ protected:
 		sys::Exec child(args[0]);
 		child.args = args;
 		child.args.push_back(tmpfile_name);
-		child.envFromParent = false;
 		child.searchInPath = true;
 		child.importEnv();
 
-		child.env.push_back("ARKI_XARGS_FORMAT=" + str::toupper(format));
-		child.env.push_back("ARKI_XARGS_COUNT=" + str::fmt(count));
+		setenv("ARKI_XARGS_FORMAT", str::toupper(format).c_str(), 1);
+		setenv("ARKI_XARGS_COUNT", str::fmt(count).c_str(), 1);
 
 		child.fork();
 		int res = child.wait();
