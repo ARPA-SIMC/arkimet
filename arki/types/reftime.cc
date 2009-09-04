@@ -313,6 +313,11 @@ Item<Period> Period::create(const Item<Time>& begin, const Item<Time>& end)
 	return new Period(begin, end);
 }
 
+void Collector::clear()
+{
+	begin.clear();
+	end.clear();
+}
 
 int Collector::compare(const Collector& c) const
 {

@@ -123,6 +123,8 @@ struct Collector
 	UItem<types::Time> begin;
 	UItem<types::Time> end;
 
+	void clear();
+
 	int compare(const Collector& o) const;
 	bool operator==(const Collector& c) const;
 	bool operator<(const Collector& c) const;
