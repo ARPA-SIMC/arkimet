@@ -99,11 +99,11 @@ int Time::compare(const Time& o) const
 	return 0;
 }
 
-std::string Time::toISO8601() const
+std::string Time::toISO8601(char sep) const
 {
 	char buf[25];
-	snprintf(buf, 25, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-			vals[0], vals[1], vals[2], vals[3], vals[4], vals[5]);
+	snprintf(buf, 25, "%04d-%02d-%02d%c%02d:%02d:%02dZ",
+			vals[0], vals[1], vals[2], sep, vals[3], vals[4], vals[5]);
 	return buf;
 }
 

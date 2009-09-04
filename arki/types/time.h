@@ -67,7 +67,7 @@ struct Time : public types::Type
 	int& operator[](unsigned idx) { return vals[idx]; }
 
 	/// Return the time formatted as a string in ISO-8601 format
-	std::string toISO8601() const;
+	std::string toISO8601(char sep='T') const;
 
 	/// Return the time formatted as a string in SQL format
 	std::string toSQL() const;
