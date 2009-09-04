@@ -198,30 +198,10 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 Minguzzi:
 Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bufr qualita' aria)
 
- - arki-xargs
-    - clusterare
-       - per dimensione
-       - per intervallo di reference time
-    - cambiar cluster se cambia il formato (o fare un file diverso per formato)
-    - esportare nell'ambiente il numero di dati presenti nel file clusterato
-
  - Sort:
     - In arki-sort, grib:nomefile non funziona
 
  - Postprocess:
-    - i postprocessor ora si beccano anche i metadati arkimet, e usano poi
-      arki-xargs o arki-scan o arki-dump se la cosa non gli va bene
-    - arki-xargs: tool che prende grib in stdin, li salva su tempfile uno a
-      uno, poi chiama un processo passando il nome del tempfile in env o in
-      arg, per ogni grib (xargs per i grib)
-       - codice per split di grib preso da meteosatlib
-       - legge metadati arkimet, non grib o bufr
-       - metadati messi in environment come ARKI_MD_*
-    - plugin chunked
-       - programma che splitta lo stdin di grib un pezzo alla volta
-       - esporta via environment dati sul chunk (tipo il range di date)
-       - gli lascia i dati su standard input o su file temporaneo che viene poi
-         cancellato
     - grib_api non funziona in pipe
       per i plugin, servirebbe poter lanciare il plugin su file con spezzoni di
         output della query

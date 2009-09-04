@@ -70,7 +70,7 @@ struct Options : public StandardParserWithManpage
 			"by the following multiplicative suffixes: c=1, w=2, "
 			"b=512, kB=1000, K=1024, MB=1000*1000, M=1024*1024, "
 			"xM=M GB=1000*1000*1000, G=1024*1024*1024, and so on "
-			"for T, P, E, Z, Y.");
+			"for T, P, E, Z, Y");
 		time_interval = add<StringOption>("time-interval", 0, "time-interval", "interval",
 			"create one data file per 'interval', where interval "
 			"can be minute, hour, day, month or year");
@@ -93,6 +93,7 @@ protected:
 	string tmpfile_name;
 	int tmpfile_fd;
 	int cur_interval[6];
+	types::reftime::Collector timespan;
 
 	void startCluster(const std::string& new_format)
 	{
@@ -135,6 +136,7 @@ protected:
 		count = 0;
 		size = 0;
 		cur_interval[0] = -1;
+		timespan.clear();
 	}
 
 	void run_child()
@@ -149,6 +151,15 @@ protected:
 
 		setenv("ARKI_XARGS_FORMAT", str::toupper(format).c_str(), 1);
 		setenv("ARKI_XARGS_COUNT", str::fmt(count).c_str(), 1);
+
+		if (timespan.begin.defined())
+		{
+			setenv("ARKI_XARGS_TIME_START", timespan.begin->toISO8601(' ').c_str(), 1);
+			if (timespan.end.defined())
+				setenv("ARKI_XARGS_TIME_END", timespan.end->toISO8601(' ').c_str(), 1);
+			else
+				setenv("ARKI_XARGS_TIME_END", timespan.begin->toISO8601(' ').c_str(), 1);
+		}
 
 		child.fork();
 		int res = child.wait();
@@ -184,6 +195,7 @@ protected:
 		size += buf.size();
 		if (cur_interval[0] == -1 && max_interval != 0)
 			md_to_interval(md, cur_interval);
+		timespan.merge(md.get(types::TYPE_REFTIME).upcast<types::Reftime>());
 	}
 
 	bool exceeds_count(Metadata& md) const

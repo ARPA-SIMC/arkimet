@@ -3,7 +3,28 @@ DESCRIPTION end
 |thatn they contain, and runs a program on each single data component.
 |.P
 |It can run on standard input, or on files passed with \fI\-i\fP.
-
+|.P
+|\fBarki-xargs\fP exports the following environment variables to the child
+|process:
+|.TP
+|\fBARKI_XARGS_FORMAT\fP
+|.br
+|Format of the data in the file
+|.TP
+|\fBARKI_XARGS_COUNT\fP 
+|.br
+|Number of data items in the file
+|.TP
+|\fBARKI_XARGS_TIME_START\fP 
+|.br
+|Minimum reference time of the data in the file, in the format
+|"YYYY-MM-DD HH:MM:SSZ" (always in UTC time zone, as indicated by the trailing
+|"Z").
+|.TP
+|\fBARKI_XARGS_TIME_END\fP 
+|.br
+|Maximum reference time of the data in the file, in the same format as
+|ARKI_XARGS_TIME_START
 OPTIONS end
 |.SH EXAMPLES
 |Here are some example invocations of \fBarki-xargs\fP:
