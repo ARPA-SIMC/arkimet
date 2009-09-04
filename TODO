@@ -275,7 +275,11 @@ Bufr:
 
 Messe a punto:
  - bbox dipende da runtime: runtime::rcFiles -> utils/files
- - Possibilità di fare include del file degli alias
+ - Alias
+    - possibilità di fare include del file degli alias
+    - permettere di includere gli alias, con un URL che punti a un server
+    - cachare l'alias remoto in una directory e tenerlo buono per un certo 
+      numero di ore (o se il server non risponde)
  - Quando arki-check fa il rebuild perde le note, e quindi l'informazione sul
    file originale da cui è stato fatto l'import.  Lí non si può ovviare perché
    non possiamo fidarci dei metadati; è però il caso di segnare "original file

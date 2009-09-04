@@ -482,6 +482,75 @@ void to::test<4>()
 	ensure_throws(v.validate(buf.data(), buf.size()-1));
 }
 
+// Test scanning layers instead of levels
+template<> template<>
+void to::test<5>()
+{
+	Metadata md;
+	scan::Grib scanner;
+	ValueBag vb;
+	types::Time reftime;
+	wibble::sys::Buffer buf;
+
+	scanner.open("inbound/layer.grib1");
+
+	// See how we scan the first BUFR
+	ensure(scanner.next(md));
+
+	// Check the source info
+	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/layer.grib1"), 0, 30682)));
+
+	// Check that the source can be read properly
+	buf = md.getData();
+	ensure_equals(buf.size(), 30682u);
+	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
+	ensure_equals(string((const char*)buf.data() + 30678, 4), "7777");
+
+	// Check origin
+	ensure(md.get(types::TYPE_ORIGIN).defined());
+	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(200, 255, 45)));
+
+	// Check product
+	ensure(md.get(types::TYPE_PRODUCT).defined());
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(200, 2, 33)));
+
+	// Check level
+	ensure(md.get(types::TYPE_LEVEL).defined());
+	ensure_equals(md.get(types::TYPE_LEVEL), Item<>(level::GRIB1::create(110, 1, 2)));
+
+	// Check timerange
+	ensure(md.get(types::TYPE_TIMERANGE).defined());
+	ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(13, 254, 0, 0)));
+
+	// Check area
+	vb.clear();
+	vb.set("Ni", Value::createInteger(169));
+	vb.set("Nj", Value::createInteger(181));
+	vb.set("latfirst", Value::createInteger(-21125));
+	vb.set("latlast", Value::createInteger(-9875));
+	vb.set("lonfirst", Value::createInteger(-2937));
+	vb.set("lonlast", Value::createInteger(7563));
+	vb.set("rot", Value::createInteger(0));
+	vb.set("type", Value::createInteger(10));
+	ensure(md.get(types::TYPE_AREA).defined());
+	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
+
+	// Check ensemble
+	vb.clear();
+	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
+
+	// Check reftime
+	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
+	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2009, 9, 2, 0, 0, 0))));
+
+	// Check run
+	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
+	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(0)));
+
+	// No more gribs
+	ensure(not scanner.next(md));
+}
+
 
 }
 
