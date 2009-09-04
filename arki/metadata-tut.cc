@@ -31,6 +31,10 @@
 
 #include <sstream>
 #include <iostream>
+#include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "config.h"
 
@@ -549,11 +553,11 @@ void to::test<16>()
 	ensure(md1.deleted);
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<17>()
 {
+#ifdef HAVE_LUA
 	md.source = source::Blob::create("grib", "fname", 1, 2);
 	fill(md);
 
@@ -582,8 +586,31 @@ void to::test<17>()
 	);
 	test.pusharg(md);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
+
+// Serialise using unix file descriptors
+template<> template<>
+void to::test<18>()
+{
+	const char* tmpfile = "testmd.tmp";
+	fill(md);
+	md.source = source::Blob::create("grib", "fname", 1, 2);
+
+	// Encode
+	int out = open(tmpfile, O_WRONLY | O_CREAT, 0666);
+	if (out < 0) throw wibble::exception::File(tmpfile, "opening file");
+	md.write(out, tmpfile);
+	if (close(out) < 0) throw wibble::exception::File(tmpfile, "closing file");
+
+	// Decode
+	ifstream input(tmpfile);
+	Metadata md1;
+	md1.read(input, tmpfile);
+	input.close();
+
+	ensure_equals(md, md1);
+}
 
 }
 

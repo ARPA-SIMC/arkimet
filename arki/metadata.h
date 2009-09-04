@@ -172,6 +172,14 @@ public:
 	void write(std::ostream& out, const std::string& filename) const;
 
 	/**
+	 * Write the metadata to the given output stream.
+	 *
+	 * The filename string is used to generate nicer parse error messages when
+	 * throwing exceptions, and can be anything.
+	 */
+	void write(int outfd, const std::string& filename) const;
+
+	/**
 	 * Write the metadata as YAML text to the given output stream.
 	 */
 	void writeYaml(std::ostream& out, const Formatter* formatter = 0) const;
@@ -194,6 +202,11 @@ public:
 	 * Set the inline data for the metadata
 	 */
 	void setInlineData(const std::string& format, const wibble::sys::Buffer& buf);
+
+	/**
+	 * Read the data and inline them in the metadata
+	 */
+	void makeInline();
 
 	/**
 	 * Return the size of the data, if known
