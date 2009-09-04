@@ -1,0 +1,14 @@
+DESCRIPTION end
+|\fBarki-xargs\fP reads streams of data, identify the separate data components
+|thatn they contain, and runs a program on each single data component.
+|.P
+|It can run on standard input, or on files passed with \fI\-i\fP.
+
+OPTIONS end
+|.SH EXAMPLES
+|Here are some example invocations of \fBarki-xargs\fP:
+|.P
+|.nf
+|  # Run process-grib-file on every grib contained in file.grib
+|  cat file.grib | arki-xargs process-grib-file
+.fi
