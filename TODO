@@ -201,37 +201,15 @@ Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bu
  - Sort:
     - In arki-sort, grib:nomefile non funziona
 
- - Postprocess:
-    - grib_api non funziona in pipe
-      per i plugin, servirebbe poter lanciare il plugin su file con spezzoni di
-        output della query
-      l'ideale sarebbe usare i chunk del sorter
-      a quel punto, assieme al chunk scrivere su disco anche il summary del chunk,
-        ad uso del plugin
-    - Chi ha software di postproc
-       - minguzzi estrazione di un parametro
-       - patruno: cong
-
- + --sort serve per lanciare plugin lato server, quindi servirebbe farlo andare
-   lato server (e farlo combinare con --postprocess e tutto il resto, ma farlo
-   conflittare con --merged)
  - spostare --merged lato server (e farlo solo tra dataset che stanno sullo
    stesso server)
     - Mergia il possibile lato server, poi rimergia lato client se piglia da
       server diversi
        - Se si rimergia lato client, rifare il sort
 
- - Per i filtri che vogliono sapere in anticipo il volume di dati, dargli il
-   summary in un file temporaneo il cui nome è messo in una variabile di ambiente
-
  - TimeIntervalSorter: permettere di configurarlo in modo che se ci sono 2 dati
    con lo stesso reftime e altri metadati, permetta di scegliere se darli in
    output tutti o se dare in output solo quello del primo dataset che ce l'ha
- - vedere eventualmente di fare tutto questo lato server
-
- - Quando si usa --sort, vedere se/come dare dei summary parziali uno per ogni
-   intervallo di reference time, facendoli precedere i dati per ogni intervallo
-   (per ogni intervallo di reftime scelto, prefissare un summary del contenuto)
 
  + postprocessing e reporting sono per-dataset
 
