@@ -144,11 +144,13 @@ int main(int argc, const char* argv[])
 					if (md.source->style() == types::Source::INLINE)
 						md.readInlineData(in.stream(), in.name());
 					md.writeYaml(out.stream(), formatter);
+					out.stream() << endl;
 				}
 				else if (signature == "SU")
 				{
 					summary.read(buf, version, in.name());
 					summary.writeYaml(out.stream(), formatter);
+					out.stream() << endl;
 				}
 			}
 		}
