@@ -20,20 +20,23 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/scan/any.h>
 #include <arki/runtime.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <wibble/exception.h>
+#include <wibble/commandline/parser.h>
+#include <wibble/string.h>
+#include <wibble/sys/fs.h>
+
+#include <cstdlib>
+#include <unistd.h>
 
 #include "config.h"
 
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 namespace wibble {
 namespace commandline {
@@ -51,14 +54,66 @@ struct Options : public StandardParserWithManpage
 			"'command [initial-arguments] filename' on it";
 		inputfiles = add< VectorOption<String> >("input", 'i', "input", "file",
 			"read data from this file instead of standard input (can be given more than once)");
+
+		// We need to pass switches in [initial-arguments] untouched
+		no_switches_after_first_arg = true;
 	}
 };
 
 }
 }
 
-static void process(const vector<string>& args, int infd, const std::string& inname)
+static std::string makeTempFile(const wibble::sys::Buffer& buf)
 {
+	char fname[] = "arkidata.XXXXXX";
+	int out = mkstemp(fname);
+	if (out < 0)
+		throw wibble::exception::System("creating temporary file");
+	ssize_t res = write(out, buf.data(), buf.size());
+	if (res < 0)
+		throw wibble::exception::File(fname, "writing " + str::fmt(buf.size()));
+	if ((size_t)res != buf.size())
+		throw wibble::exception::Consistency("writing to " + str::fmt(fname), "wrote only " + str::fmt(res) + " bytes out of " + str::fmt(buf.size()));
+	if (close(out) < 0)
+		throw wibble::exception::File(fname, "closing file");
+	return fname;
+}
+
+static void process(const vector<string>& args, runtime::Input& in)
+{
+	Metadata md;
+	wibble::sys::Buffer buf;
+	string signature;
+	unsigned version;
+	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
+	{
+		if (signature == "MD" || signature == "!D")
+		{
+			md.read(buf, version, in.name());
+			if (md.source->style() == types::Source::INLINE)
+				md.readInlineData(in.stream(), in.name());
+			// Save data to temporary file
+			string fname = makeTempFile(md.getData());
+
+			try {
+				// TODO: Run process with fname as parameter
+				;
+			} catch (...) {
+				// Use unlink and ignore errors, so that we can
+				// rethrow the right exception here
+				unlink(fname.c_str());
+				throw;
+			} 
+
+			// Delete the file, and tolerate if the child process
+			// already deleted it
+			sys::fs::deleteIfExists(fname);
+		}
+		else if (signature == "SU")
+		{
+			continue;
+		}
+	}
 }
 
 int main(int argc, const char* argv[])
@@ -80,17 +135,15 @@ int main(int argc, const char* argv[])
 		if (opts.inputfiles->values().empty())
 		{
 			// Process stdin
-			process(args, 0, "(stdin)");
+			runtime::Input in("-");
+			process(args, in);
 		} else {
 			// Process the files
 			for (vector<string>::const_iterator i = opts.inputfiles->values().begin();
 					i != opts.inputfiles->values().end(); ++i)
 			{
-				int fd = open(i->c_str(), O_RDONLY);
-				if (fd < 0)
-					throw wibble::exception::File(*i, "opening file");
-				process(args, fd, *i);
-				close(fd);
+				runtime::Input in(i->c_str());
+				process(args, in);
 			}
 		}
 
