@@ -198,6 +198,13 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 Minguzzi:
 Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bufr qualita' aria)
 
+ - arki-xargs
+    - clusterare
+       - per dimensione
+       - per intervallo di reference time
+    - cambiar cluster se cambia il formato (o fare un file diverso per formato)
+    - esportare nell'ambiente il numero di dati presenti nel file clusterato
+
  - Sort:
     - In arki-sort, grib:nomefile non funziona
 
