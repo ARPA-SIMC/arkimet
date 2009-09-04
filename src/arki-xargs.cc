@@ -171,13 +171,11 @@ public:
 	}
 };
 
-static void process(const vector<string>& args, runtime::Input& in)
+static void process(Clusterer& consumer, runtime::Input& in)
 {
 	wibble::sys::Buffer buf;
 	string signature;
 	unsigned version;
-
-	Clusterer consumer(args);
 
 	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
 	{
@@ -209,18 +207,22 @@ int main(int argc, const char* argv[])
 
 		runtime::init();
 
+		Clusterer consumer(args);
+
 		if (opts.inputfiles->values().empty())
 		{
 			// Process stdin
 			runtime::Input in("-");
-			process(args, in);
+			process(consumer, in);
+			consumer.flush();
 		} else {
 			// Process the files
 			for (vector<string>::const_iterator i = opts.inputfiles->values().begin();
 					i != opts.inputfiles->values().end(); ++i)
 			{
 				runtime::Input in(i->c_str());
-				process(args, in);
+				process(consumer, in);
+				consumer.flush();
 			}
 		}
 
