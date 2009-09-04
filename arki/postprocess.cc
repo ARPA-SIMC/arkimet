@@ -225,13 +225,9 @@ bool Postprocess::operator()(Metadata& md)
 {
 	if (m_infd == -1)
 		return false;
-	wibble::sys::Buffer buf = md.getData();
+	md.makeInline();
 	Sigignore sigignore(SIGPIPE);
-	int res = ::write(m_infd, buf.data(), buf.size());
-	if (res < 0)
-		throw wibble::exception::System("writing data to postprocessing filter");
-	if ((unsigned)res != buf.size())
-		throw wibble::exception::Consistency("writing data to postprocessing filter", "only " + str::fmt(res) + "/" + str::fmt(buf.size()) + " bytes have been written");
+	md.write(m_infd, "postprocessing filter");
 	return true;
 }
 
@@ -240,7 +236,8 @@ void Postprocess::flush()
 	if (m_infd != -1)
 	{
 		//cerr << "Closing pipe" << endl;
-		close(m_infd);
+		if (close(m_infd) < 0)
+			throw wibble::exception::System("closing output to postprocessing filter");
 		m_infd = -1;
 	}
 	if (m_child)

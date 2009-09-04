@@ -238,7 +238,7 @@ void to::test<6>()
 	testds.queryBytes(bq, os);
 
 	string out = utils::readFile("testcountbytes.out");
-	ensure_equals(out, "7218\n");
+	ensure_equals(out, "7393\n");
 }
 
 // Test querying with data only
