@@ -179,9 +179,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
- + arki-mergeconf non prende http perché non esiste il file */config
- + GRIB:file.grb fallisce perché sotto valida comunque l'estensione
-
  - Autenticazione
     - autorizzare o no a livello di archivio
     - anche magari su host locale
