@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.25
-Release: 1
+Version: 0.26.1
+Release: 1409
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/dettaglio_documento.asp?id=1172&idlivello=64
@@ -40,7 +40,7 @@ make
 
 %install
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
-make install DESTDIR=%{buildroot}
+%makeinstall
 
 %clean
 [ "%{buildroot}" != / ] && rm -rf %{buildroot}
@@ -51,6 +51,9 @@ make install DESTDIR=%{buildroot}
 %{_sysconfdir}/arkimet/*
 %{_bindir}/*
 %doc %{_mandir}/man1/*
+%doc README
+%doc MATCHER
+%doc DATASET
 
 %files -n arkimet-devel
 %defattr(-,root,root,-)
@@ -72,6 +75,12 @@ make install DESTDIR=%{buildroot}
 /sbin/ldconfig
 
 %changelog
+* Tue Sep  8 2009 root <root@localhost.localdomain> - 0.26.1-1409
+- added some documentation files
+
+* Mon Sep  7 2009 Daniele Branchini <dbranchini@carenza.metarpa> - 0.26.1-1
+- Rebuild to reflect upstream changes.
+
 * Wed Aug 26 2009 Daniele Branchini <dbranchini@carenza.metarpa> - 0.25-1
 - Rebuild to reflect upstream changes.
 
