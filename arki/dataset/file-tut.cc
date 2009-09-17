@@ -21,13 +21,16 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/dataset/file.h>
+#include <arki/utils/metadata.h>
 
 #include <sstream>
 #include <iostream>
+#include <memory>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 
 struct arki_dataset_file_shar {
 };
@@ -59,6 +62,28 @@ void to::test<2>()
 	ensure_equals(s->value("name"), "test.grib1");
 	ensure_equals(s->value("type"), "file");
 	ensure_equals(s->value("format"), "bufr");
+}
+
+template<> template<>
+void to::test<3>()
+{
+	ConfigFile cfg;
+	system("cp inbound/test.grib1 strangename");
+	dataset::File::readConfig("GRIB:strangename", cfg);
+
+	ConfigFile* s = cfg.section("strangename");
+	ensure(s);
+
+	ensure_equals(s->value("name"), "strangename");
+	ensure_equals(s->value("type"), "file");
+	ensure_equals(s->value("format"), "grib");
+
+	// Scan it to be sure it can be read
+	auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
+	dataset::DataQuery q(Matcher::parse(""), true);
+	metadata::Collector mdc;
+	ds->queryData(q, mdc);
+	ensure_equals(mdc.size(), 3u);
 }
 
 }

@@ -139,6 +139,7 @@ File* File::create(const ConfigFile& cfg)
 File::File(const ConfigFile& cfg)
 {
 	m_pathname = cfg.value("path");
+	m_format = cfg.value("format");
 }
 
 IfstreamFile::IfstreamFile(const ConfigFile& cfg) : File(cfg), m_file(0), m_close(false)
@@ -362,7 +363,7 @@ void RawFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 		c = sorter.get();
 	}
 
-	scan::scan(m_pathname, *c);
+	scan::scan(m_pathname, m_format, *c);
 }
 
 }

@@ -43,6 +43,7 @@ class File : public ReadonlyDataset
 {
 protected:
 	std::string m_pathname;
+	std::string m_format;
 
 public:
 	File(const ConfigFile& cfg);

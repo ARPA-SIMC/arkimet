@@ -179,6 +179,24 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+ + arki-mergeconf non prende http perché non esiste il file */config
+ + GRIB:file.grb fallisce perché sotto valida comunque l'estensione
+
+ - Autenticazione
+    - autorizzare o no a livello di archivio
+    - anche magari su host locale
+    - associazione utente->archivi che può vedere
+ - --restrict=tag --restrict=tag1,tag2
+   (restrict to datasets visible by the given user)
+   poi arkimeow e arki-server passano direttamente --restrict=
+ - arki-query con opzioni per l'autenticazione https
+
+ - verificare nei test che errori di sintassi o logici dei formatter non
+   piantino tutto
+ - arki-dump che testa il formatting di un metadato
+ - dar tutto in mano a Emanuele edigiacomo@arpa.emr.it
+   (come testare: con env var che punta a formatter locali)
+
  - a volta ci sono falsi positivi di TO_PACK
 
  - lm7tmpc eccezione maskata da sqlite
@@ -274,6 +292,7 @@ Messe a punto:
    dataset su file)
    (questo è perché per ogni file sconosciuto assume il formato "arkimet")
  - arki-server: mettere ulimit a arki-query quando lo si lancia
+ - arki-server: genera un feed RSS per dataset con gli ultimi arrivi
  - i file letti come dataset potrebbero rendere obsoleti arki-grep, arki-scan-*
    e arki-dump
  - arki-check: fare un progress report se si esegue interattivo: per file
