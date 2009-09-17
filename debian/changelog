@@ -1,4 +1,4 @@
-arkimet (0.26-1) UNRELEASED; urgency=low
+arkimet (0.27-1) UNRELEASED; urgency=low
 
   * Fixed codec for floats and doubles
   * Encoding now mostly works by appending to a single string, instead of
@@ -19,7 +19,7 @@ arkimet (0.26-1) UNRELEASED; urgency=low
   * Also send the metadata to the --postprocess processor process
   * New tool: arki-xargs
 
- -- Enrico Zini <enrico@debian.org>  Fri, 04 Sep 2009 18:29:50 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 17 Sep 2009 10:55:49 +0200
 
 arkimet (0.25-1) UNRELEASED; urgency=low
 
