@@ -31,5 +31,5 @@ OPTIONS end
 |.P
 |.nf
 |  # Run process-grib-file on every grib contained in file.grib
-|  cat file.grib | arki-xargs process-grib-file
+|  arki-scan file.grib | arki-xargs process-grib-file
 .fi
