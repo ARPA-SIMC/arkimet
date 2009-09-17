@@ -22,7 +22,7 @@ arki.product = gribl.indicatorOfParameter
 
 -- Level
 arki.ltype = gribl.indicatorOfTypeOfLevel
-if grib.level
+if grib.levels == nil
 then
 	arki.l1 = grib.level
 	arki.l2 = nil
