@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.26.1
-Release: 1409
+Version: 0.27
+Release: 1418
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/dettaglio_documento.asp?id=1172&idlivello=64
@@ -75,6 +75,9 @@ make
 /sbin/ldconfig
 
 %changelog
+* Thu Sep 17 2009 root <root@localhost.localdomain> - 0.27-1418
+- Rebuild to reflect upstream changes.
+
 * Tue Sep  8 2009 root <root@localhost.localdomain> - 0.26.1-1409
 - added some documentation files
 
