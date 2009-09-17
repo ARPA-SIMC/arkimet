@@ -47,18 +47,11 @@ static void scan_metadata(const std::string& file, MetadataConsumer& c)
 	Metadata::readFile(file, c);
 }
 
-static bool scan_file(const std::string& file, MetadataConsumer& c)
+static bool scan_file(const std::string& file, const std::string& format, MetadataConsumer& c)
 {
-	// Get the file extension
-	size_t pos = file.rfind('.');
-	if (pos == string::npos)
-		// No extension, we do not know what it is
-		return false;
-	string ext = str::tolower(file.substr(pos+1));
-
 	// Scan the file
 #ifdef HAVE_GRIBAPI
-	if (ext == "grib" || ext == "grib1" || ext == "grib2")
+	if (format == "grib" || format == "grib1" || format == "grib2")
 	{
 		scan::Grib scanner;
 		scanner.open(file);
@@ -69,7 +62,7 @@ static bool scan_file(const std::string& file, MetadataConsumer& c)
 	}
 #endif
 #ifdef HAVE_DBALLE
-	if (ext == "bufr") {
+	if (format == "bufr") {
 		scan::Bufr scanner;
 		scanner.open(file);
 		Metadata md;
@@ -79,6 +72,16 @@ static bool scan_file(const std::string& file, MetadataConsumer& c)
 	}
 #endif
 	return false;
+}
+
+static bool scan_file(const std::string& file, MetadataConsumer& c)
+{
+	// Get the file extension
+	size_t pos = file.rfind('.');
+	if (pos == string::npos)
+		// No extension, we do not know what it is
+		return false;
+	return scan_file(file, str::tolower(file.substr(pos+1)), c);
 }
 
 bool scan(const std::string& file, MetadataConsumer& c)
@@ -96,6 +99,24 @@ bool scan(const std::string& file, MetadataConsumer& c)
 		return true;
 	} else {
 		return scan_file(file, c);
+	}
+}
+
+bool scan(const std::string& file, const std::string& format, MetadataConsumer& c)
+{
+	string md_fname = file + ".metadata";
+	auto_ptr<struct stat> st_file = sys::fs::stat(file);
+	if (!st_file.get())
+		throw wibble::exception::File(file, "getting file information");
+	auto_ptr<struct stat> st_md = sys::fs::stat(md_fname);
+
+	if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
+	{
+		// If there is a metadata file, use it to save time
+		scan_metadata(md_fname, c);
+		return true;
+	} else {
+		return scan_file(file, format, c);
 	}
 }
 

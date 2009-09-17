@@ -42,6 +42,18 @@ namespace scan {
 bool scan(const std::string& file, MetadataConsumer& c);
 
 /**
+ * Scan the given file without format autodetection, sending its metadata to a
+ * consumer.
+ *
+ * If `filename`.metadata exists and its timestamp is the same of the file or
+ * newer, it will be used instead of the file.
+ *
+ * @return true if the file has been scanned, false if the file is in a format
+ * that is not supported or recognised.
+ */
+bool scan(const std::string& file, const std::string& format, MetadataConsumer& c);
+
+/**
  * Return true if the file looks like a file with data that can be scanned.
  *
  * The current implementation only looks at the file extension. Future
