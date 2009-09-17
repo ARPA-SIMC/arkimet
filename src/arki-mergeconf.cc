@@ -74,9 +74,11 @@ int main(int argc, const char* argv[])
 		while (opts.hasNext())
 		{
 			string file = opts.next();
-			if (!sys::fs::access(str::joinpath(file, "config"), F_OK))
+			if (!str::startsWith(file, "http://") &&
+			    !str::startsWith(file, "https://") &&
+			    !sys::fs::access(str::joinpath(file, "config"), F_OK))
 			{
-				cerr << file << "skipped: it does not look like a dataset" << endl;
+				cerr << file << " skipped: it does not look like a dataset" << endl;
 				continue;
 			}
 			try {
