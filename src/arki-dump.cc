@@ -44,6 +44,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* reverse_summary;
 	BoolOption* annotate;
 	BoolOption* query;
+	BoolOption* config;
 	StringOption* outfile;
 
 	Options() : StandardParserWithManpage("arki-dump", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -64,8 +65,11 @@ struct Options : public StandardParserWithManpage
 		reverse_summary = add<BoolOption>("from-yaml-summary", 0, "from-yaml-summary", "",
 			"read a Yaml summary dump and write a binary summary");
 
-		query = add<BoolOption>("quuery", 0, "query", "",
+		query = add<BoolOption>("query", 0, "query", "",
 			"print a query (specified on the command line) with the aliases expanded");
+
+		config = add<BoolOption>("config", 0, "config", "",
+			"print the arkimet configuration used to access the given file or dataset or URL");
 	}
 };
 
@@ -83,12 +87,22 @@ int main(int argc, const char* argv[])
 		runtime::init();
 
 		// Validate command line options
+		if (opts.query->boolValue() && opts.config->boolValue())
+			throw wibble::exception::BadOption("--query conflicts with --config");
 		if (opts.query->boolValue() && opts.reverse_data->boolValue())
 			throw wibble::exception::BadOption("--query conflicts with --from-yaml-data");
 		if (opts.query->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--query conflicts with --from-yaml-summary");
 		if (opts.query->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--query conflicts with --annotate");
+
+		if (opts.config->boolValue() && opts.reverse_data->boolValue())
+			throw wibble::exception::BadOption("--config conflicts with --from-yaml-data");
+		if (opts.config->boolValue() && opts.reverse_summary->boolValue())
+			throw wibble::exception::BadOption("--config conflicts with --from-yaml-summary");
+		if (opts.config->boolValue() && opts.annotate->boolValue())
+			throw wibble::exception::BadOption("--config conflicts with --annotate");
+
 		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
 		if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
@@ -102,6 +116,23 @@ int main(int argc, const char* argv[])
 				throw wibble::exception::BadOption("--query wants the query on the command line");
 			Matcher m = Matcher::parse(opts.next());
 			cout << m.toStringExpanded() << endl;
+			return 0;
+		}
+		
+		if (opts.config->boolValue())
+		{
+			ConfigFile cfg;
+			while (opts.hasNext())
+			{
+				ReadonlyDataset::readConfig(opts.next(), cfg);
+			}
+			
+			// Open the output file
+			runtime::Output out(*opts.outfile);
+
+			// Output the merged configuration
+			cfg.output(out.stream(), out.name());
+
 			return 0;
 		}
 

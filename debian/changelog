@@ -18,8 +18,9 @@ arkimet (0.27-1) UNRELEASED; urgency=low
     the query against each server to see if the alias expansions would match
   * Also send the metadata to the --postprocess processor process
   * New tool: arki-xargs
+  * arki-dump --config
 
- -- Enrico Zini <enrico@debian.org>  Thu, 17 Sep 2009 10:55:49 +0200
+ -- Enrico Zini <enrico@debian.org>  Thu, 17 Sep 2009 14:16:57 +0200
 
 arkimet (0.25-1) UNRELEASED; urgency=low
 
