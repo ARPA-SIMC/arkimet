@@ -35,15 +35,15 @@ class ConfigFileParseError : public wibble::exception::Generic
 protected:
 	std::string m_name;
 	int m_line;
-    std::string m_error;
+	std::string m_error;
 
 public:
-    ConfigFileParseError(const std::string& filename, int line, const std::string& error)
+	ConfigFileParseError(const std::string& filename, int line, const std::string& error)
 		: m_name(filename), m_line(line), m_error(error) {}
-    ~ConfigFileParseError() throw () {}
+	~ConfigFileParseError() throw () {}
 
-    virtual const char* type() const throw ();
-    virtual std::string desc() const throw ();
+	virtual const char* type() const throw ();
+	virtual std::string desc() const throw ();
 };
 
 
@@ -153,10 +153,10 @@ public:
 	 */
 	const FilePos* valueInfo(const std::string& key) const;
 
-    /**
-     * Set a value.
-     */
-    void setValue(const std::string& key, const std::string& value);
+	/**
+	 * Set a value.
+	 */
+	void setValue(const std::string& key, const std::string& value);
 
 	/**
 	 * Retrieve a section from this config file.
