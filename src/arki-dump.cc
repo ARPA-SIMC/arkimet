@@ -23,6 +23,8 @@
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
 #include <arki/metadata.h>
+#include <arki/matcher.h>
+#include <arki/dataset/http.h>
 #include <arki/summary.h>
 #include <arki/formatter.h>
 #include <arki/runtime.h>
@@ -45,6 +47,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* annotate;
 	BoolOption* query;
 	BoolOption* config;
+	BoolOption* aliases;
 	StringOption* outfile;
 
 	Options() : StandardParserWithManpage("arki-dump", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -70,6 +73,8 @@ struct Options : public StandardParserWithManpage
 
 		config = add<BoolOption>("config", 0, "config", "",
 			"print the arkimet configuration used to access the given file or dataset or URL");
+
+		aliases = add<BoolOption>("aliases", 0, "aliases", "", "dump the alias database (to dump the aliases of a remote server, put the server URL on the command line)");
 	}
 };
 
@@ -87,6 +92,8 @@ int main(int argc, const char* argv[])
 		runtime::init();
 
 		// Validate command line options
+		if (opts.query->boolValue() && opts.aliases->boolValue())
+			throw wibble::exception::BadOption("--query conflicts with --aliases");
 		if (opts.query->boolValue() && opts.config->boolValue())
 			throw wibble::exception::BadOption("--query conflicts with --config");
 		if (opts.query->boolValue() && opts.reverse_data->boolValue())
@@ -96,12 +103,21 @@ int main(int argc, const char* argv[])
 		if (opts.query->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--query conflicts with --annotate");
 
+		if (opts.config->boolValue() && opts.aliases->boolValue())
+			throw wibble::exception::BadOption("--config conflicts with --aliases");
 		if (opts.config->boolValue() && opts.reverse_data->boolValue())
 			throw wibble::exception::BadOption("--config conflicts with --from-yaml-data");
 		if (opts.config->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--config conflicts with --from-yaml-summary");
 		if (opts.config->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--config conflicts with --annotate");
+
+		if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
+			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-data");
+		if (opts.aliases->boolValue() && opts.reverse_summary->boolValue())
+			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-summary");
+		if (opts.aliases->boolValue() && opts.annotate->boolValue())
+			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
 
 		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
@@ -119,6 +135,25 @@ int main(int argc, const char* argv[])
 			return 0;
 		}
 		
+		if (opts.aliases->boolValue())
+		{
+			ConfigFile cfg;
+			if (opts.hasNext())
+			{
+				dataset::HTTP::getAliasDatabase(opts.next(), cfg);
+			} else {
+				MatcherAliasDatabase::serialise(cfg);
+			}
+			
+			// Open the output file
+			runtime::Output out(*opts.outfile);
+
+			// Output the merged configuration
+			cfg.output(out.stream(), out.name());
+
+			return 0;
+		}
+
 		if (opts.config->boolValue())
 		{
 			ConfigFile cfg;

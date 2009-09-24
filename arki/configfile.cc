@@ -208,6 +208,17 @@ ConfigFile* ConfigFile::section(const std::string& key) const
 	return i->second;
 }
 
+ConfigFile* ConfigFile::obtainSection(const std::string& name)
+{
+	const_section_iterator i = sections.find(name);
+	if (i != sections.end())
+		return i->second;
+
+	ConfigFile* c;
+	sections.insert(make_pair(name, c = new ConfigFile()));
+	return c;
+}
+
 void ConfigFile::output(std::ostream& out, const std::string& fileName, const std::string& secName)
 {
 	// First, the values

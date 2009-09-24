@@ -371,6 +371,33 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
 	return str::trim(content.buf.str());
 }
 
+void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
+{
+	using namespace wibble::str;
+	using namespace http;
+
+	CurlEasy m_curl;
+	m_curl.reset();
+
+	string url = joinpath(server, "aliases");
+	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+	SStreamState content(m_curl);
+	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
+	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &content));
+	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+
+	CURLcode code = curl_easy_perform(m_curl);
+	if (code != CURLE_OK)
+		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
+
+	if (content.response_code >= 400)
+		content.throwError("expanding query at " + url);
+
+	content.buf.seekg(0);
+
+	cfg.parse(content.buf, server);
+}
+
 }
 }
 // vim:set ts=4 sw=4:

@@ -111,6 +111,11 @@ public:
 	static std::string expandMatcher(const std::string& matcher, const std::string& server);
 
 	/**
+	 * Read the alias database from the given remote dataset
+	 */
+	static void getAliasDatabase(const std::string& server, ConfigFile& cfg);
+
+	/**
 	 * Introduce a syntax error in the next query sent to the server.
 	 *
 	 * This is only used by test suites: since the queries are preparsed

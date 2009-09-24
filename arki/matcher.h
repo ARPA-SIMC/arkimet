@@ -173,6 +173,7 @@ public:
 
 	void add(const MatcherType& type, const ConfigFile& entries);
 	void reset();
+	void serialise(ConfigFile& cfg) const;
 };
 
 }
@@ -346,6 +347,7 @@ struct MatcherAliasDatabase
 
 	static const matcher::Aliases* get(const std::string& type);
 	static const void reset();
+	static void serialise(ConfigFile& cfg);
 };
 
 }

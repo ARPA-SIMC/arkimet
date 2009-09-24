@@ -272,6 +272,13 @@ void Aliases::reset()
 	db.clear();
 }
 
+void Aliases::serialise(ConfigFile& cfg) const
+{
+	for (std::map< std::string, const OR* >::const_iterator i = db.begin();
+			i != db.end(); ++i)
+		cfg.setValue(i->first, i->second->toString());
+}
+
 void Aliases::add(const MatcherType& type, const ConfigFile& entries)
 {
 	vector< pair<string, string> > aliases;
@@ -435,6 +442,19 @@ const void MatcherAliasDatabase::reset()
 {
 	if (matcher::aliasdb)
 		matcher::aliasdb->aliasDatabase.clear();
+}
+
+void MatcherAliasDatabase::serialise(ConfigFile& cfg)
+{
+	if (!matcher::aliasdb)
+		return;
+
+	for (std::map<std::string, matcher::Aliases>::const_iterator i = matcher::aliasdb->aliasDatabase.begin();
+			i != matcher::aliasdb->aliasDatabase.end(); ++i)
+	{
+		ConfigFile* c = cfg.obtainSection(i->first);
+		i->second.serialise(*c);
+	}
 }
 
 }

@@ -1,3 +1,9 @@
+arkimet (0.28-1) UNRELEASED; urgency=low
+
+  * Added "arki-dump --aliases" and "arki-dump --aliases URL"
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 24 Sep 2009 10:41:11 +0200
+
 arkimet (0.27-1) UNRELEASED; urgency=low
 
   * Fixed codec for floats and doubles

@@ -166,6 +166,12 @@ public:
 	ConfigFile* section(const std::string& key) const;
 
 	/**
+	 * Retrieve a section from this config file, creating it if it is
+	 * missing.
+	 */
+	ConfigFile* obtainSection(const std::string& key);
+
+	/**
 	 * Parse configuration from the given input stream.
 	 *
 	 * The sections that are found are added to this ConfigFile.

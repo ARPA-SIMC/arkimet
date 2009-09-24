@@ -179,15 +179,19 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
- - Autenticazione
-    - autorizzare o no a livello di archivio
-    - anche magari su host locale
-    - associazione utente->archivi che può vedere
+
+Se c'è --dispatch e non viene dispatchato niente, dare errore.
+
+Autenticazione (Bider)
+ - autorizzare o no a livello di archivio
+ - anche magari su host locale
+ - associazione utente->archivi che può vedere
  - --restrict=tag --restrict=tag1,tag2
    (restrict to datasets visible by the given user)
    poi arkimeow e arki-server passano direttamente --restrict=
  - arki-query con opzioni per l'autenticazione https
 
+Formatter (Emanuele)
  - verificare nei test che errori di sintassi o logici dei formatter non
    piantino tutto
  - arki-dump che testa il formatting di un metadato
@@ -198,47 +202,25 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
 
  - lm7tmpc eccezione maskata da sqlite
 
- - unify arki-scan and arki-query (then ship them as links, or with different
-   defaults)
-   arki-query: --merged --cfgfiles
-   arki-scan: --moveok et al., --files
- - input: list of datasets
- - processDataset produces output
-
- - scanoptions
-    -> queryable by output type
- - outputoptions
-    -> ask scanoptions about their input
-
 Minguzzi:
 Se posso esprimere una preferenza, le mie priorita' sarebbero a2 (alias) e D (bufr qualita' aria)
-
- - Sort:
-    - In arki-sort, grib:nomefile non funziona
-
  - spostare --merged lato server (e farlo solo tra dataset che stanno sullo
    stesso server)
     - Mergia il possibile lato server, poi rimergia lato client se piglia da
       server diversi
        - Se si rimergia lato client, rifare il sort
-
  - TimeIntervalSorter: permettere di configurarlo in modo che se ci sono 2 dati
    con lo stesso reftime e altri metadati, permetta di scegliere se darli in
    output tutti o se dare in output solo quello del primo dataset che ce l'ha
-
+   (solo nel caso di multidataset, va rivisto a cosa serve, perché se serve
+   come precondizione al postprocessing, non si facomunque postprocessing nel
+   multidataset)
+   Caso d'uso: quero i modelli multidataset, l'operativo e il backup. Se non
+   c'è il dato dell'operativo, lo prendo dal backup, ma se c'è il dato in
+   entrambi, voglio solo il primo.
  + postprocessing e reporting sono per-dataset
-
-
-
- - far andare il testdispatch per poter testare la scansione con le nuove
-   grib_api
-
- - pare che INDEXED BY indice funzioni solo con SQLite nuovi
-
- - Ricostruzione indici ondisk1 dopo la cancellazione di file
-   - select distinct file from md
-   - guarda uno per uno se esistono
-   - se ne manca uno, togliere i suoi dati dall'indice
+ + Alias: come faccio a sapere cosa c'è sul server?
+   arki-dump --aliases
 
 Bufr:
  - bufr: aprirli se esiste la tabella, altrimenti non matcheranno e finiranno in error
@@ -257,7 +239,18 @@ Bufr:
  - estremi di lat,lon (opzionale)
  - estrazione dei BUFR dentro a un DB-All.e
 
+Dati fuori linea:
+ - fare un source "on media <nome>"
+ - nell'archive, se viene querato un archivio fuori linea, generare metadati
+   "virtuali" dal dataset, col source preso da "on media <nome cartella>"
+ - tenere online .metadata e .summary
+ - le query metadati e summary e report, rimangono ok
+ - le query solo dati, danno un valore di ritorno != 0 ma con un valore
+   specifico che dice "ci sarebbero altri dati, ma sono archiviati" (e magari
+   un messaggio in stderr)
+
 Messe a punto:
+ - pare che INDEXED BY indice funzioni solo con SQLite nuovi
  - bbox dipende da runtime: runtime::rcFiles -> utils/files
  - Alias
     - possibilità di fare include del file degli alias
@@ -268,6 +261,10 @@ Messe a punto:
    file originale da cui è stato fatto l'import.  Lí non si può ovviare perché
    non possiamo fidarci dei metadati; è però il caso di segnare "original file
    name lost during dataset rebuild"
+ - Ricostruzione indici ondisk1 dopo la cancellazione di file
+   - select distinct file from md
+   - guarda uno per uno se esistono
+   - se ne manca uno, togliere i suoi dati dall'indice
  - non creare needs-check-do-not-pack se index.sqlite non esiste ma non
    esistono neanche file scannabili
  - usare scan::scan in tutte le letture sequenziali (arki-scan, rebuild di
