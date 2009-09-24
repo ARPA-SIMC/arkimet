@@ -104,75 +104,75 @@ HTTP::~HTTP()
 
 struct ReqState
 {
-    http::CurlEasy& m_curl;
-    long response_code;
-    std::stringstream response_error;
+	http::CurlEasy& m_curl;
+	long response_code;
+	std::stringstream response_error;
 
-    size_t check_error(void* ptr, size_t size, size_t nmemb)
-    {
-        // See if we have a response code
-        if (response_code == -1)
-            checked("reading response code", curl_easy_getinfo(m_curl, CURLINFO_RESPONSE_CODE, &response_code));
-        // If we do not have an error, we are fine
-        if (response_code < 400)
-            return 0;
-        // If we have an error, save it in response_error
-        response_error.write((const char*)ptr, size * nmemb);
-        return size * nmemb;
-    }
+	size_t check_error(void* ptr, size_t size, size_t nmemb)
+	{
+		// See if we have a response code
+		if (response_code == -1)
+			checked("reading response code", curl_easy_getinfo(m_curl, CURLINFO_RESPONSE_CODE, &response_code));
+		// If we do not have an error, we are fine
+		if (response_code < 400)
+			return 0;
+		// If we have an error, save it in response_error
+		response_error.write((const char*)ptr, size * nmemb);
+		return size * nmemb;
+	}
 
-    void throwError(const std::string& context)
-    {
-        throw wibble::exception::Consistency(context, "Server gave status " + str::fmt(response_code) + ": " + response_error.str());
-    }
-    ReqState(http::CurlEasy& curl) : m_curl(curl), response_code(-1) {}
+	void throwError(const std::string& context)
+	{
+		throw wibble::exception::Consistency(context, "Server gave status " + str::fmt(response_code) + ": " + response_error.str());
+	}
+	ReqState(http::CurlEasy& curl) : m_curl(curl), response_code(-1) {}
 };
 
 struct SStreamState : public ReqState
 {
-    std::stringstream buf;
+	std::stringstream buf;
 
-    SStreamState(http::CurlEasy& curl) : ReqState(curl) {}
+	SStreamState(http::CurlEasy& curl) : ReqState(curl) {}
 
-    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
-    {
-        SStreamState& s = *(SStreamState*)stream;
-        if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-        s.buf.write((const char*)ptr, size * nmemb);
-        return size * nmemb;
-    }
+	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
+	{
+		SStreamState& s = *(SStreamState*)stream;
+		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
+		s.buf.write((const char*)ptr, size * nmemb);
+		return size * nmemb;
+	}
 };
 
 struct OstreamState : public ReqState
 {
-    ostream& os;
+	ostream& os;
 
-    OstreamState(http::CurlEasy& curl, ostream& os)
-        : ReqState(curl), os(os) {}
+	OstreamState(http::CurlEasy& curl, ostream& os)
+		: ReqState(curl), os(os) {}
 
-    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
-    {
-        OstreamState& s = *(OstreamState*)stream;
-        if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-        s.os.write((const char*)ptr, size * nmemb);
-        return size * nmemb;
-    }
+	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
+	{
+		OstreamState& s = *(OstreamState*)stream;
+		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
+		s.os.write((const char*)ptr, size * nmemb);
+		return size * nmemb;
+	}
 };
 
 struct MDStreamState : public ReqState
 {
-    MetadataStream mdc;
+	MetadataStream mdc;
 
-    MDStreamState(http::CurlEasy& curl, MetadataConsumer& consumer, const std::string& baseurl)
-        : ReqState(curl), mdc(consumer, "HTTP download from " + baseurl) {}
+	MDStreamState(http::CurlEasy& curl, MetadataConsumer& consumer, const std::string& baseurl)
+		: ReqState(curl), mdc(consumer, "HTTP download from " + baseurl) {}
 
-    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
-    {
-        MDStreamState& s = *(MDStreamState*)stream;
-        if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-        s.mdc.readData(ptr, size * nmemb);
-        return size * nmemb;
-    }
+	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
+	{
+		MDStreamState& s = *(MDStreamState*)stream;
+		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
+		s.mdc.readData(ptr, size * nmemb);
+		return size * nmemb;
+	}
 };
 
 
@@ -208,13 +208,13 @@ void HTTP::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
 	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
-	
+
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
 
-    if (s.response_code >= 400)
-        s.throwError("querying summary from " + url);
+	if (s.response_code >= 400)
+		s.throwError("querying summary from " + url);
 }
 
 void HTTP::querySummary(const Matcher& matcher, Summary& summary)
@@ -239,17 +239,17 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	// Size of postfields argument if it's non text
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-    SStreamState s(m_curl);
+	SStreamState s(m_curl);
 	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
 	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
-	
+
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
 
-    if (s.response_code >= 400)
-        s.throwError("querying summary from " + url);
+	if (s.response_code >= 400)
+		s.throwError("querying summary from " + url);
 
 	s.buf.seekg(0);
 	summary.read(s.buf, url);
@@ -297,17 +297,17 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
 	// Size of postfields argument if it's non text
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-    OstreamState s(m_curl, out);
+	OstreamState s(m_curl, out);
 	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
 	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
-	
+
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
 
-    if (s.response_code >= 400)
-        s.throwError("querying configuration from " + url);
+	if (s.response_code >= 400)
+		s.throwError("querying configuration from " + url);
 }
 
 void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
@@ -329,8 +329,8 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 	if (code != CURLE_OK)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
 
-    if (content.response_code >= 400)
-        content.throwError("querying configuration from " + url);
+	if (content.response_code >= 400)
+		content.throwError("querying configuration from " + url);
 
 	content.buf.seekg(0);
 	cfg.parse(content.buf, url);
@@ -359,13 +359,13 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
 	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
 	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &content));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
-	
+
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
 
-    if (content.response_code >= 400)
-        content.throwError("expanding query at " + url);
+	if (content.response_code >= 400)
+		content.throwError("expanding query at " + url);
 
 	content.buf.seekg(0);
 	return str::trim(content.buf.str());
