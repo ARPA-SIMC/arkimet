@@ -124,6 +124,9 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
 			"simulate dispatching the files right after scanning, using the given configuration file "
 			"or dataset directory (can be specified multiple times)");
+
+	restr = add<StringOption>("restrict", 0, "restrict", "names",
+			"restrict operations to only those datasets that allow one of the given (comma separated) names");
 }
 
 CommandLine::~CommandLine()

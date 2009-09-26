@@ -180,7 +180,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
 
-Se c'è --dispatch e non viene dispatchato niente, dare errore.
+Se c'è --dispatch e non viene dispatchato niente per un file in input, andare
+avanti ma restituire un exit code != 0
 
 Autenticazione (Bider)
  - autorizzare o no a livello di archivio
@@ -318,6 +319,8 @@ Messe a punto:
     - puntatore alla manpage con la sintassi dei file di configurazione e degli
       alias
  - Aggiungere agli errori un link al wiki
+ - Grafici di come sono processati i dati a seconda di vari comandi di
+   arki-query e arki-scan
 
 Importazione con tag:
  - quando si importa, passare una stringa arbitraria che identifica in maniera

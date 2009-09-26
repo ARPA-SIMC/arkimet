@@ -104,6 +104,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::BoolOption* dataOnly;
 	wibble::commandline::BoolOption* summary;
 	wibble::commandline::BoolOption* merged;
+	wibble::commandline::StringOption* restr;
 	wibble::commandline::StringOption* exprfile;
 	wibble::commandline::StringOption* outfile;
 	wibble::commandline::StringOption* postprocess;
