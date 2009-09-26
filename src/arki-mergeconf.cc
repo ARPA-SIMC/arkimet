@@ -42,6 +42,7 @@ struct Options : public StandardParserWithManpage
 {
 	StringOption* outfile;
 	BoolOption* extra;
+	StringOption* restr;
 
 	Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -55,6 +56,8 @@ struct Options : public StandardParserWithManpage
 		extra = add<BoolOption>("extra", 0, "extra", "",
 			"extract extra information from the datasets (such as bounding box) "
 			"and include it in the configuration");
+		restr = add<StringOption>("restrict", 0, "restrict", "names",
+			"restrict operations to only those datasets that allow one of the given (comma separated) names");
 	}
 };
 
@@ -112,6 +115,13 @@ int main(int argc, const char* argv[])
 		{
 			cerr << "Some input files did not validate." << endl;
 			return 1;
+		}
+
+		// Remove unallowed entries
+		if (opts.restr->isSet())
+		{
+			runtime::Restrict rest(opts.restr->stringValue());
+			rest.remove_unallowed(cfg);
 		}
 
 		// If requested, compute extra information

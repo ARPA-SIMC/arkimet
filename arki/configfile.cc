@@ -219,6 +219,16 @@ ConfigFile* ConfigFile::obtainSection(const std::string& name)
 	return c;
 }
 
+void ConfigFile::deleteSection(const std::string& key)
+{
+	std::map<std::string, ConfigFile*>::iterator i = sections.find(key);
+	if (i != sections.end())
+	{
+		delete i->second;
+		sections.erase(i);
+	}
+}
+
 void ConfigFile::output(std::ostream& out, const std::string& fileName, const std::string& secName)
 {
 	// First, the values

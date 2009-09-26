@@ -71,7 +71,7 @@ void init()
 
 CommandLine::CommandLine(const std::string& name, int mansection)
 	: StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
-	  output(0), processor(0), dispatcher(0)
+	  output(0), processor(0), dispatcher(0), restr(0)
 {
 	infoOpts = createGroup("Options controlling verbosity");
 	debug = infoOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
@@ -124,9 +124,6 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
 			"simulate dispatching the files right after scanning, using the given configuration file "
 			"or dataset directory (can be specified multiple times)");
-
-	restr = add<StringOption>("restrict", 0, "restrict", "names",
-			"restrict operations to only those datasets that allow one of the given (comma separated) names");
 }
 
 CommandLine::~CommandLine()
@@ -160,6 +157,8 @@ void CommandLine::addQueryOptions()
 		"if multiple datasets are given, merge their data and output it in"
 		" reference time order.  Note: sorting does not work when using"
 		" --postprocess, --data or --report");
+	restr = add<StringOption>("restrict", 0, "restrict", "names",
+			"restrict operations to only those datasets that allow one of the given (comma separated) names");
 }
 
 bool CommandLine::parse(int argc, const char* argv[])
@@ -416,7 +415,7 @@ void CommandLine::setupProcessing()
 	if (cfgfiles)	// From -C options, looking for config files or datasets
 		for (vector<string>::const_iterator i = cfgfiles->values().begin();
 				i != cfgfiles->values().end(); ++i)
-			 parseConfigFile(inputInfo, *i);
+			parseConfigFile(inputInfo, *i);
 
 	if (files && files->isSet())	// From --files option, looking for data files or datasets
 	{
@@ -450,6 +449,13 @@ void CommandLine::setupProcessing()
 
 	while (hasNext())	// From command line arguments, looking for data files or datasets
 		ReadonlyDataset::readConfig(next(), inputInfo);
+
+	// Filter the dataset list
+	if (restr && restr->isSet())
+	{
+		Restrict rest(restr->stringValue());
+		rest.remove_unallowed(inputInfo);
+	}
 
 	if (inputInfo.sectionSize() == 0)
 		throw wibble::exception::BadOption("you need to specify at least one input file or dataset");
@@ -761,7 +767,60 @@ bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<w
        return found;
 }
 
+std::set<std::string> parseRestrict(const std::string& str)
+{
+	set<string> res;
+	string cur;
+	for (string::const_iterator i = str.begin(); i != str.end(); ++i)
+	{
+		if (isspace(*i) || *i == ',')
+		{
+			if (!cur.empty())
+			{
+				res.insert(cur);
+				cur.clear();
+			}
+			continue;
+		} else
+			cur += *i;
+	}
+	if (!cur.empty())
+		res.insert(cur);
+	return res;
+}
 
+bool Restrict::is_allowed(const std::string& str)
+{
+	if (wanted.empty()) return true;
+	return is_allowed(parseRestrict(str));
+
+}
+bool Restrict::is_allowed(const std::set<std::string>& names)
+{
+	if (wanted.empty()) return true;
+	for (set<string>::const_iterator i = wanted.begin(); i != wanted.end(); ++i)
+		if (names.find(*i) != names.end())
+			return true;
+	return false;
+}
+bool Restrict::is_allowed(const ConfigFile& cfg)
+{
+	if (wanted.empty()) return true;
+	return is_allowed(parseRestrict(cfg.value("restrict")));
+}
+void Restrict::remove_unallowed(ConfigFile& cfg)
+{
+	vector<string> to_delete;
+	for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
+			i != cfg.sectionEnd(); ++i)
+	{
+		if (not is_allowed(*i->second))
+			to_delete.push_back(i->first);
+	}
+	for (vector<string>::const_iterator i = to_delete.begin();
+			i != to_delete.end(); ++i)
+		cfg.deleteSection(*i);
+}
 
 void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 {

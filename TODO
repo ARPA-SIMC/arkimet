@@ -187,9 +187,10 @@ Autenticazione (Bider)
  - autorizzare o no a livello di archivio
  - anche magari su host locale
  - associazione utente->archivi che può vedere
- - --restrict=tag --restrict=tag1,tag2
+ + --restrict=tag --restrict=tag1,tag2
    (restrict to datasets visible by the given user)
-   poi arkimeow e arki-server passano direttamente --restrict=
+ + usare in arki-query, arki-scan, arki-check, arki-mergeconf
+ - arki-server: passare --restrict= dall'env di configurazione
  - arki-query con opzioni per l'autenticazione https
 
 Formatter (Emanuele)

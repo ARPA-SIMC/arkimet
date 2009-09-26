@@ -218,6 +218,22 @@ bool parseConfigFiles(ConfigFile& cfg, wibble::commandline::Parser& opts);
  */
 bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files);
 
+/**
+ * Parse a comma separated restrict list into a set of strings
+ */
+std::set<std::string> parseRestrict(const std::string& str);
+
+struct Restrict
+{
+	std::set<std::string> wanted;
+
+	Restrict(const std::string& str) : wanted(parseRestrict(str)) {}
+
+	bool is_allowed(const std::string& str);
+	bool is_allowed(const std::set<std::string>& names);
+	bool is_allowed(const ConfigFile& cfg);
+	void remove_unallowed(ConfigFile& cfg);
+};
 
 /**
  * Read the Matcher alias database.

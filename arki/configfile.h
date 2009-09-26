@@ -172,6 +172,11 @@ public:
 	ConfigFile* obtainSection(const std::string& key);
 
 	/**
+	 * Delete a section, if present
+	 */
+	void deleteSection(const std::string& key);
+
+	/**
 	 * Parse configuration from the given input stream.
 	 *
 	 * The sections that are found are added to this ConfigFile.

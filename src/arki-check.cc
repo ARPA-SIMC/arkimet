@@ -60,6 +60,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* invalidate;
 	BoolOption* stats;
 	StringOption* op_remove;
+	StringOption* restr;
 
 	Options() : StandardParserWithManpage("arki-check", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -83,6 +84,8 @@ struct Options : public StandardParserWithManpage
 			"Compute statistics about the various datasets.");
 		op_remove = add<StringOption>("remove", 0, "remove", "file",
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
+		restr = add<StringOption>("restrict", 0, "restrict", "names",
+			"restrict operations to only those datasets that allow one of the given (comma separated) names");
 	}
 };
 
@@ -288,6 +291,13 @@ int main(int argc, const char* argv[])
 		bool foundConfig2 = runtime::parseConfigFiles(cfg, opts);
 		if (!foundConfig1 && !foundConfig2)
 			throw wibble::exception::BadOption("you need to specify the config file");
+
+		// Remove unallowed entries
+		if (opts.restr->isSet())
+		{
+			runtime::Restrict rest(opts.restr->stringValue());
+			rest.remove_unallowed(cfg);
+		}
 
 		if (opts.op_remove->isSet())
 		{
