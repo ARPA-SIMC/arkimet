@@ -116,12 +116,12 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" Default: do not sort");
 
 	dispatchOpts = createGroup("Options controlling dispatching data to datasets");
-	dispatch = add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
+	dispatch = dispatchOpts->add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
 			"dispatch the data to the datasets described in the "
 			"given configuration file (or a dataset path can also "
 			"be given), then output the metadata of the data that "
 			"has been dispatched (can be specified multiple times)");
-	testdispatch = add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
+	testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
 			"simulate dispatching the files right after scanning, using the given configuration file "
 			"or dataset directory (can be specified multiple times)");
 }
