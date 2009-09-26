@@ -227,8 +227,8 @@ bool CommandLine::parse(int argc, const char* argv[])
 	}
 	if (postprocess->isSet())
 	{
-		if (sort->isSet())
-			throw wibble::exception::BadOption("--sort conflicts with --postprocess");
+		if (dataOnly->boolValue())
+			throw wibble::exception::BadOption("--postprocess conflicts with --data");
 	}
 	
 	return false;
