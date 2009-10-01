@@ -40,6 +40,7 @@ dist_reportconf_DATA = conf/report/mdstats
 
 EXTRA_DIST = doc/MATCHER \
 	     doc/DATASET \
+	     doc/adding-formats.txt \
              arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dump \

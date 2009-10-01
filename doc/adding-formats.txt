@@ -1,0 +1,25 @@
+Adding support for new data formats
+===================================
+
+Arkimet is designed to be as much format agnostic as possible. Format-specific
+code is only used for metadata extraction and (optionally) for consistency
+checks of archived data; everywhere else the data to archive is treated like
+opaque bitstrings.
+
+Code for metadata extraction is found in arki/scan/ and accessed via
+arki/scan/any.h, which provide general, format-independent, scanning and
+validation functions.
+
+The only medatata that is always required from a metadata scan is the reference
+time. Everything else is optional, although the more can be extracted, the more
+it will be possible to create useful queries to extract the data.
+
+To implement support for a new data format, just add a new module in arki/scan/
+and wire it into arki/scan/any.cc. You can use arki/scan/grib and
+arki/scan/bufr as examples.
+
+arki/scan/grib uses Lua to make the scanning process configurable, because GRIB
+files are extremely diverse. Using Lua is however a choice of the GRIB scanner:
+it is not required that all scanners use Lua. The idea is that, while it would
+be good to try to maintain some consistency if possible, every scanner is free
+to do whatever works best for the data format that needs to be scanned.
