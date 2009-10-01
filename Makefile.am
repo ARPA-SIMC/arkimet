@@ -38,8 +38,8 @@ dist_fmtconf_DATA = \
 	conf/format/10-timerange
 dist_reportconf_DATA = conf/report/mdstats
 
-EXTRA_DIST = MATCHER \
-	     DATASET \
+EXTRA_DIST = doc/MATCHER \
+	     doc/DATASET \
              arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dump \
