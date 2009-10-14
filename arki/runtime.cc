@@ -71,7 +71,7 @@ void init()
 
 CommandLine::CommandLine(const std::string& name, int mansection)
 	: StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
-	  output(0), processor(0), dispatcher(0), restr(0)
+	  output(0), processor(0), dispatcher(0)
 {
 	infoOpts = createGroup("Options controlling verbosity");
 	debug = infoOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
@@ -83,6 +83,7 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	inputOpts = createGroup("Options controlling input data");
 	cfgfiles = 0; exprfile = 0;
 	files = 0; moveok = moveko = movework = 0;
+	restr = 0;
 
 	outputOpts = createGroup("Options controlling output style");
 	merged = 0;
