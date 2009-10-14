@@ -981,7 +981,7 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 	if (reportStatus)
 		cerr << name << ": " << summarySoFar() << endl;
 
-	bool success = !(
+	bool success = countSuccessful != 0 && !(
 		    countNotImported
 		 && countDuplicates
 		 && countInErrorDataset);

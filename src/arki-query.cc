@@ -65,6 +65,7 @@ int main(int argc, const char* argv[])
 
 		opts.setupProcessing();
 
+		bool all_successful = true;
 		if (opts.merged->boolValue())
 		{
 			dataset::Merged merger;
@@ -88,10 +89,10 @@ int main(int argc, const char* argv[])
 			}
 
 			// Perform the query
-			opts.processSource(merger, names);
+			all_successful = opts.processSource(merger, names);
 
 			for (size_t i = 0; i < dscount; ++i)
-				opts.closeSource(datasets[i], true);
+				opts.closeSource(datasets[i], all_successful);
 		} else {
 			// Query all the datasets in sequence
 			for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
@@ -99,14 +100,18 @@ int main(int argc, const char* argv[])
 			{
 				auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
 				nag::verbose("Processing %s...", i->second->value("path").c_str());
-				opts.processSource(*ds, i->second->value("path"));
-				opts.closeSource(ds, true);
+				bool success = opts.processSource(*ds, i->second->value("path"));
+				opts.closeSource(ds, success);
+				if (!success) all_successful = false;
 			}
 		}
 
 		opts.doneProcessing();
 
-		return 0;
+		if (all_successful)
+			return 0;
+		else
+			return 2;
 		//return summary.count() > 0 ? 0 : 1;
 	} catch (wibble::exception::BadOption& e) {
 		cerr << e.desc() << endl;

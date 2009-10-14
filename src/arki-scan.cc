@@ -67,7 +67,7 @@ int main(int argc, const char* argv[])
 
 		opts.setupProcessing();
 
-
+		bool all_successful = true;
 		for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
 				i != opts.inputInfo.sectionEnd(); ++i)
 		{
@@ -84,6 +84,9 @@ int main(int argc, const char* argv[])
 			}
 
 			opts.closeSource(ds, success);
+
+			// Take note if something went wrong
+			if (!success) all_successful = false;
 		}
 
 		opts.doneProcessing();
@@ -144,7 +147,10 @@ int main(int argc, const char* argv[])
 
 		opts.flush();
 #endif
-		return 0;
+		if (all_successful)
+			return 0;
+		else
+			return 2;
 	} catch (wibble::exception::BadOption& e) {
 		cerr << e.desc() << endl;
 		opts.outputHelp(cerr);

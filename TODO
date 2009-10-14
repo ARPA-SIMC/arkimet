@@ -180,8 +180,9 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
 
-Se c'è --dispatch e non viene dispatchato niente per un file in input, andare
-avanti ma restituire un exit code != 0
+Bider:
+ - Se c'è --dispatch e non viene dispatchato niente per un file in input,
+   andare avanti ma restituire un exit code != 0
 
 Autenticazione (Bider)
  - autorizzare o no a livello di archivio
@@ -228,6 +229,8 @@ Bufr:
  - bufr: aprirli se esiste la tabella, altrimenti non matcheranno e finiranno in error
  - solo header (altrimenti bisogna separare BUFR con piú subset perché
    potrebbero avere orari differenti (o altre informazioni discriminanti)
+    - si possono anche aprire: se entrano BUFR che vanno smistati a livello di
+      subset invece di dataset, li si preprocessa prima di importarli
  - altre cose possibili sono:
     - la sequenza di descriptor della data section (senza espansione dei D)
     - la versione delle tabelle (?)

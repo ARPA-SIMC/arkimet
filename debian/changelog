@@ -1,3 +1,10 @@
+arkimet (0.29-1) UNRELEASED; urgency=low
+
+  * arki-scan and arki-query now exit with status 2 if one of their sources
+    did not produce any data
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 14 Oct 2009 15:53:41 +0100
+
 arkimet (0.28-1) UNRELEASED; urgency=low
 
   * Added "arki-dump --aliases" and "arki-dump --aliases URL"
