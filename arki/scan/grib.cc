@@ -623,7 +623,7 @@ bool Grib::next(Metadata& md)
 	}
 
 	gh = grib_handle_new_from_file(context, in, &griberror);
-	if (gh == 0 || griberror == GRIB_END_OF_FILE)
+	if (gh == 0 && griberror == GRIB_END_OF_FILE)
 		return false;
 	check_grib_error(griberror, "reading GRIB from file");
 
