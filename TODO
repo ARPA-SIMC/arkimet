@@ -179,11 +179,6 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
-
-Bider:
- - Se c'è --dispatch e non viene dispatchato niente per un file in input,
-   andare avanti ma restituire un exit code != 0
-
 Autenticazione (Bider)
  - autorizzare o no a livello di archivio
  - anche magari su host locale
