@@ -626,6 +626,8 @@ bool Grib::next(Metadata& md)
 	if (gh == 0 && griberror == GRIB_END_OF_FILE)
 		return false;
 	check_grib_error(griberror, "reading GRIB from file");
+	if (gh == 0)
+		return false;
 
 	md.create();
 
