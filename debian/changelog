@@ -1,3 +1,9 @@
+arkimet (0.30-1) UNRELEASED; urgency=low
+
+  * New scanning configuration for grib2
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 27 Oct 2009 17:30:54 +0100
+
 arkimet (0.29-1) UNRELEASED; urgency=low
 
   * arki-scan and arki-query now exit with status 2 if one of their sources
