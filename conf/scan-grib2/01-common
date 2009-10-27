@@ -23,25 +23,40 @@ arki.category = gribl.parameterCategory
 arki.number = gribl.parameterNumber
 
 -- Level
--- TODO
-arki.ltype1  = grib.typeOfFirstFixedSurface
-arki.lscale1 = grib.scaleFactorOfFirstFixedSurface
-arki.lvalue1 = grib.scaledValueOfFirstFixedSurface
+arki.ltype1  = gribl.typeOfFirstFixedSurface
+if gribl.scaleFactorOfFirstFixedSurface == -1 then
+	arki.lscale1 = 0
+	arki.lvalue1 = 0
+else
+	arki.lscale1 = gribl.scaleFactorOfFirstFixedSurface
+	arki.lvalue1 = gribl.scaledValueOfFirstFixedSurface
+end
+
 if grib.typeOfSecondFixedSurface and grib.typeOfSecondFixedSurface ~= 255 then
 	arki.ltype2 =  grib.typeOfSecondFixedSurface
-	arki.lscale2 = grib.scaleFactorOfSecondFixedSurface
-	arki.lvalue2 = grib.scaledValueOfSecondFixedSurface
+	if gribl.scaleFactorOfSecondFixedSurface == -1 then
+		arki.lscale2 = 0
+		arki.lvalue2 = 0
+	else
+		arki.lscale2 = grib.scaleFactorOfSecondFixedSurface
+		arki.lvalue2 = grib.scaledValueOfSecondFixedSurface
+	end
 end
 
 -- Time range
-if grib.typeOfStatisticalProcessing then
-	arki.ptype = grib.typeOfStatisticalProcessing
+if grib.productDefinitionTemplateNumber then
+	arki.ptype = grib.productDefinitionTemplateNumber
 else
 	arki.ptype = 0
 end
-arki.punit = 254 -- seconds
-arki.p1 = (grib.endStepInHours - grib.startStepInHours) * 3600
-arki.p2 = grib.endStepInHours * 3600
+
+arki.punit = gribl.stepUnits
+if gribl.lengthOfTimeRange ~= nil then
+	arki.p1 = gribl.lengthOfTimeRange
+else
+	arki.p1 = 0
+end
+arki.p2 = gribl.endStep
 
 function norm_lon(lon)
 	if lon > 180 then
