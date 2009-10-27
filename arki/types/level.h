@@ -103,7 +103,19 @@ struct GRIB1 : public Level
 	static int getValType(unsigned char type);
 };
 
-struct GRIB2S : public Level
+struct GRIB2 : public Level
+{
+	/**
+	 * Get information on how l1 and l2 should be treated:
+	 *
+	 * \l 0 means 'l1 and l2 should be ignored'
+	 * \l 1 means 'level, only l1 is to be considered'
+	 * \l 2 means 'layer from l1 to l2'
+	 */
+	//int valType() const;
+};
+
+struct GRIB2S : public GRIB2
 {
     unsigned char type;
     unsigned char scale;
@@ -113,15 +125,6 @@ struct GRIB2S : public Level
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
-	/**
-	 * Get information on how l1 and l2 should be treated:
-	 *
-	 * \l 0 means 'l1 and l2 should be ignored'
-	 * \l 1 means 'level, only l1 is to be considered'
-	 * \l 2 means 'layer from l1 to l2'
-	 */
-	int valType() const;
-
 	virtual int compare(const Level& o) const;
 	virtual int compare(const GRIB2S& o) const;
 	virtual bool operator==(const Type& o) const;
@@ -129,7 +132,7 @@ struct GRIB2S : public Level
 	static Item<GRIB2S> create(unsigned char type, unsigned char scale, unsigned long val);
 };
 
-struct GRIB2D : public Level
+struct GRIB2D : public GRIB2
 {
     unsigned char type1;
     unsigned char scale1;
