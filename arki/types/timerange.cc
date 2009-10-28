@@ -721,7 +721,7 @@ int GRIB2::compare(const GRIB2& o) const
 	if (int res = type - o.type) return res;
 	if (int res = unit - o.unit) return res;
 	if (int res = p1 - o.p1) return res;
-	return o.p2 - o.p2;
+	return p2 - o.p2;
 }
 
 bool GRIB2::operator==(const Type& o) const

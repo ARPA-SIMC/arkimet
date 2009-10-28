@@ -269,10 +269,34 @@ void to::test<9>()
 	ensure_serialises(o, types::TYPE_TIMERANGE);
 }
 
+// Check GRIB2 with some values that used to fail
+template<> template<>
+void to::test<10>()
+{
+	Item<Timerange> o1 = timerange::GRIB2::create(11, 1, 3, 3);
+	Item<Timerange> o2 = timerange::GRIB2::create(11, 1, 3, 6);
+	const timerange::GRIB2* v1 = o1->upcast<timerange::GRIB2>();
+	const timerange::GRIB2* v2 = o2->upcast<timerange::GRIB2>();
+	ensure_equals(v1->type, 11);
+	ensure_equals(v1->unit, 1);
+	ensure_equals(v1->p1, 3);
+	ensure_equals(v1->p2, 3);
+	ensure_equals(v2->type, 11);
+	ensure_equals(v2->unit, 1);
+	ensure_equals(v2->p1, 3);
+	ensure_equals(v2->p2, 6);
+
+	ensure(o1 != o2);
+
+	ensure(o1.encode() != o2.encode());
+	ensure(o1 < o2);
+	ensure(o2 > o1);
+}
+
 #ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
-void to::test<10>()
+void to::test<11>()
 {
 	Item<Timerange> o = timerange::GRIB1::create(2, 254, 2, 3);
 
