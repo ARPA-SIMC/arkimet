@@ -43,6 +43,7 @@ struct Options : public StandardParserWithManpage
 	StringOption* outfile;
 	BoolOption* extra;
 	StringOption* restr;
+	VectorOption<String>* cfgfiles;
 
 	Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -58,6 +59,8 @@ struct Options : public StandardParserWithManpage
 			"and include it in the configuration");
 		restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
+		cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
+			"merge configuration from the given file (can be given more than once)");
 	}
 };
 
@@ -71,9 +74,18 @@ int main(int argc, const char* argv[])
 		if (opts.parse(argc, argv))
 			return 0;
 
-		// Read the config files from the remaining commandline arguments
 		ConfigFile cfg;
 		bool foundConfig = false;
+
+		// Read the config files from the -C options
+		for (vector<string>::const_iterator i = opts.cfgfiles->values().begin();
+				i != opts.cfgfiles->values().end(); ++i)
+		{
+			runtime::parseConfigFile(cfg, *i);
+			foundConfig = true;
+		}
+
+		// Read the config files from the remaining commandline arguments
 		while (opts.hasNext())
 		{
 			string file = opts.next();
