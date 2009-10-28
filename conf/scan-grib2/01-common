@@ -91,6 +91,8 @@ end
 
 -- Ensemble
 if grib.typeOfProcessedData >= 3 and grib.typeOfProcessedData <= 5 then
+	arki.ensemble.mc = grib.marsClass
+	arki.ensemble.mt = grib.marsType
 	arki.ensemble.ty = grib.typeOfEnsembleForecast
 	arki.ensemble.pf = grib.perturbationNumber
 	arki.ensemble.tf = grib.numberOfForecastsInEnsemble
