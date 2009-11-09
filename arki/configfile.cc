@@ -27,6 +27,7 @@
 #include <wibble/string.h>
 #include <cctype>
 #include <sstream>
+#include <cstdio>
 
 using namespace std;
 using namespace wibble;

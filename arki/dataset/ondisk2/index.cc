@@ -51,6 +51,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstdio>
 
 using namespace std;
 using namespace wibble;

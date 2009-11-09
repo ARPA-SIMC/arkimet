@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <ostream>
+#include <cstdio>
 
 using namespace std;
 

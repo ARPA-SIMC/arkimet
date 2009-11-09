@@ -33,6 +33,7 @@
 #include <vector>
 #include <set>
 #include <sstream>
+#include <cstdio>
 
 using namespace std;
 using namespace wibble;
