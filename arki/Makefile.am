@@ -4,7 +4,7 @@ SUBDIRS = .
 
 arkiincludedir = $(includedir)/arki
 
-arkiinclude_HEADERS = \
+dist_noinst_HEADERS = \
 		config.h \
 		configfile.h \
 		transaction.h \
@@ -90,7 +90,7 @@ arkiinclude_HEADERS = \
 		utils.h \
 		nag.h
 
-dist_noinst_HEADERS = \
+dist_noinst_HEADERS += \
 		tests/test-utils.h \
 		tests/metadata.h
 
@@ -272,7 +272,7 @@ tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS)
 INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\"
 
 if GRIBAPI
-arkiinclude_HEADERS += scan/grib.h
+dist_noinst_HEADERS += scan/grib.h
 libarkimet_la_SOURCES += scan/grib.cc
 tests_arki_test_SOURCES += scan/grib-tut.cc
 INCLUDES += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
@@ -281,7 +281,7 @@ tests_arki_test_LDADD += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
 
 if LUA
-arkiinclude_HEADERS += formatter/lua.h utils/lua.h report.h tests/lua.h
+dist_noinst_HEADERS += formatter/lua.h utils/lua.h report.h tests/lua.h
 libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
 tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
 INCLUDES += $(LUA_CFLAGS)
@@ -290,7 +290,7 @@ tests_arki_test_LDADD += $(LUA_LIBS)
 endif
 
 if DBALLE
-arkiinclude_HEADERS += scan/bufr.h
+dist_noinst_HEADERS += scan/bufr.h
 libarkimet_la_SOURCES += scan/bufr.cc
 tests_arki_test_SOURCES += scan/bufr-tut.cc
 INCLUDES += $(LIBDBALLEPP_CFLAGS)
@@ -299,7 +299,7 @@ tests_arki_test_LDADD += $(LIBDBALLEPP_LIBS)
 endif
 
 if CURL
-arkiinclude_HEADERS += dataset/http.h
+dist_noinst_HEADERS += dataset/http.h
 libarkimet_la_SOURCES += dataset/http.cc
 tests_arki_test_SOURCES += dataset/http-tut.cc
 INCLUDES += @LIBCURL_CPPFLAGS@
