@@ -179,6 +179,12 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
+Query sottoaree (ISAC)
+ - query per sottoaree
+ - upload in Debian
+    - build con wibble di sistema
+    - documentazione, manpage, descrizioni in debian/control...
+
 Autenticazione (Bider)
  - autorizzare o no a livello di archivio
  - anche magari su host locale
@@ -238,6 +244,24 @@ Bufr:
     - ragionare se fare un indice solo con reftime e md5
  - estremi di lat,lon (opzionale)
  - estrazione dei BUFR dentro a un DB-All.e
+ - ignorare il problema dei bufr multisubset, perché si possono sempre
+   esplodere prima dell'import
+ - usare i classici metadati DB-All.e come metadati: lat, lon, year, month,
+   day, hour, minu, sec, rep_memo
+    - lavorare a livello di dba_msg a questo punto
+    - i metadati però diventano piú grossi dei dati
+
+(12:08:20) spanezz@jabber.linux.it/Home: ma quello che mi dici ora significa che praticamente io se voglio esportare un anno di una stazione, devo esportare un anno di TUTTE le stazioni, e poi a valle filtrare
+(12:08:30) spanezz@jabber.linux.it/Home: a valle == sul client
+(12:08:55) pat1@jabber.linux.it: io pensavo a valle con un postprocessatore sul server 
+(12:08:57) spanezz@jabber.linux.it/Home: perché se si decide di non fare esplodere arkimet coi bufr strani, io non li parso, mai
+(12:09:24) pat1@jabber.linux.it: io pensavo alla stessa identica logica dei grib
+(12:09:24) spanezz@jabber.linux.it/Home: ah, ok, se volete si può fare anche cosí
+(12:09:43) spanezz@jabber.linux.it/Home: a quel punto posso importare anche i bufr multisubset, e il vostro postprocessatore sceglie i subset che vuole
+(12:09:58) pat1@jabber.linux.it: bhe pensiamoci
+(12:10:11) pat1@jabber.linux.it: io davo per scontata questa strada
+(12:10:18) pat1@jabber.linux.it: ma se ce ne sono altre bene
+(12:10:18) spanezz@jabber.linux.it/Home: nel qual caso, già va
 
 Dati fuori linea:
  - fare un source "on media <nome>"
