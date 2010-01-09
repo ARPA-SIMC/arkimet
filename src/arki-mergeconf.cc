@@ -47,7 +47,7 @@ struct Options : public StandardParserWithManpage
 
 	Options() : StandardParserWithManpage("arki-mergeconf", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
-		usage = "[options] [configfile(s) or directories]";
+		usage = "[options] [directories]";
 		description =
 		    "Read dataset configuration from the given directories or config files, "
 			" merge them and output the merged config file to standard output";
