@@ -6,6 +6,8 @@ AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AM_CONFIG_HEADER(config.h)
 AM_CONFIG_HEADER(arki/config.h)
 
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_ARG_ENABLE([bufr],
     [AS_HELP_STRING(
         [--enable-bufr],

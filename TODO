@@ -180,7 +180,8 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
 Query sottoaree (ISAC)
- - query per sottoaree
+ + query per sottoaree
+ - annunciare
  - upload in Debian
     - build con wibble di sistema
     - documentazione, manpage, descrizioni in debian/control...
