@@ -41,6 +41,10 @@
 #include <ctime>
 #include <cstdio>
 
+// Be compatible with systems without O_NOATIME
+#ifndef O_NOATIME
+#  define O_NOATIME 0
+#endif
 
 using namespace std;
 using namespace wibble;
