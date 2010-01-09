@@ -232,7 +232,7 @@ area:GRIB:type=2
 
 
 Ensemble
-----
+--------
 
  * ensemble:stile:expr1[,expr2...]
 
@@ -247,6 +247,28 @@ Ensemble
 
 ensemble:GRIB:value=1
 ensemble:GRIB:value=1,hour=12
+
+
+BBox
+----
+
+ * bbox:verb value
+
+ Matches bounding boxes against a sample value.
+
+ Available verbs:
+
+  is: the bounding box to match must be the same as the sample value
+  contains: the bounding box to match must contain the sample value
+
+bbox:is INVALID()
+bbox:is POINT(44, 11)
+bbox:is BOX(43, 45, 10, 12)
+bbox:is HULL(43 12, 44 10, 45 12, 43 12)
+
+bbox:contains POINT(44, 11)
+bbox:contains BOX(43.5, 44.5, 10.5, 11.5)
+bbox:contains HULL(43 12, 44 10, 45 12, 43 12)
 
 
 Alias

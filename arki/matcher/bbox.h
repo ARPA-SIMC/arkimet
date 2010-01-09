@@ -25,6 +25,7 @@
 
 #include <arki/matcher.h>
 #include <arki/types/area.h>
+#include <arki/utils/geosfwd.h>
 
 namespace arki {
 
@@ -53,6 +54,20 @@ struct MatchBBoxExact : public MatchBBox
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
 };
+
+#ifdef HAVE_GEOS
+struct MatchBBoxContains : public MatchBBox
+{
+	Item<types::BBox> sample;
+	ARKI_GEOS_GEOMETRYFACTORY* gf;
+	ARKI_GEOS_GEOMETRY* geom;
+
+	MatchBBoxContains(const std::string& pattern);
+	~MatchBBoxContains();
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+};
+#endif
 
 }
 }

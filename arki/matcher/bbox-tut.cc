@@ -54,29 +54,82 @@ void to::test<1>()
 	ensure_matches("bbox:IS INVALID()", md);
 	ensure_not_matches("bbox:is POINT(44, 11)", md);
 	ensure_not_matches("bbox:is BOX(43, 45, 10, 12)", md);
-	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12, 43 12)", md);
 
 	md.set(bbox::POINT::create(44, 11));
 	ensure_matches("bbox:is POINT(44, 11)", md);
 	ensure_not_matches("bbox:is INVALID()", md);
 	ensure_not_matches("bbox:is BOX(43, 45, 10, 12)", md);
-	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12, 43 12)", md);
 
 	md.set(bbox::BOX::create(43, 45, 10, 12));
 	ensure_matches("bbox:is BOX(43, 45, 10, 12)", md);
 	ensure_not_matches("bbox:is INVALID()", md);
 	ensure_not_matches("bbox:is POINT(44, 11)", md);
-	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12, 43 12)", md);
 
 	std::vector< std::pair<float, float> > points;
 	points.push_back(make_pair(43.0, 12.0));
 	points.push_back(make_pair(44.0, 10.0));
 	points.push_back(make_pair(45.0, 12.0));
+	points.push_back(make_pair(43.0, 12.0));
 	md.set(bbox::HULL::create(points));
-	ensure_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+	ensure_matches("bbox:is HULL(43 12, 44 10, 45 12, 43 12)", md);
 	ensure_not_matches("bbox:is INVALID()", md);
 	ensure_not_matches("bbox:is POINT(44, 11)", md);
 	ensure_not_matches("bbox:is BOX(43, 45, 10, 12)", md);
+}
+
+// Try matching with "contains"
+template<> template<>
+void to::test<2>()
+{
+#ifdef HAVE_GEOS
+	md.set(bbox::INVALID::create());
+	ensure_not_matches("bbox:contains INVALID()", md);
+	ensure_not_matches("bbox:contains POINT(44, 11)", md);
+	ensure_not_matches("bbox:contains BOX(43, 45, 10, 12)", md);
+	ensure_not_matches("bbox:contains HULL(43 12, 44 10, 45 12, 43 12)", md);
+
+	md.set(bbox::POINT::create(44, 11));
+	ensure_matches("bbox:contains POINT(44, 11)", md);
+	ensure_not_matches("bbox:contains INVALID()", md);
+	ensure_not_matches("bbox:contains BOX(43, 45, 10, 12)", md);
+	ensure_not_matches("bbox:contains HULL(43 12, 44 10, 45 12, 43 12)", md);
+
+	md.set(bbox::BOX::create(43, 45, 10, 12));
+	ensure_matches("bbox:contains POINT(44, 11)", md);
+	ensure_matches("bbox:contains POINT(43, 12)", md);
+	ensure_matches("bbox:contains BOX(43, 45, 10, 12)", md);
+	ensure_matches("bbox:contains BOX(43.5, 44.5, 10.5, 11.5)", md);
+	ensure_matches("bbox:contains HULL(43 12, 44 10, 45 12, 43 12)", md);
+	ensure_not_matches("bbox:contains INVALID()", md);
+	ensure_not_matches("bbox:contains POINT(40, 11)", md);
+	ensure_not_matches("bbox:contains POINT(44, 13)", md);
+	ensure_not_matches("bbox:contains POINT(40, 5)", md);
+	ensure_not_matches("bbox:contains BOX(43, 45, 10, 13)", md);
+	ensure_not_matches("bbox:contains HULL(42 12, 44 10, 45 12, 42 12)", md);
+
+	std::vector< std::pair<float, float> > points;
+	points.push_back(make_pair(43.0, 12.0));
+	points.push_back(make_pair(44.0, 12.0));
+	points.push_back(make_pair(45.0, 13.0));
+	points.push_back(make_pair(42.0, 13.0));
+	points.push_back(make_pair(43.0, 12.0));
+	md.set(bbox::HULL::create(points));
+	ensure_matches("bbox:contains POINT(43.5, 12.5)", md);
+	ensure_matches("bbox:contains POINT(43, 12)", md);
+	ensure_matches("bbox:contains BOX(43, 44, 12, 13)", md);
+	ensure_matches("bbox:contains BOX(43.2, 43.8, 12.2, 12.8)", md);
+	ensure_matches("bbox:contains HULL(43.5 12, 44 13, 43 13, 43.5 12)", md);
+	ensure_matches("bbox:contains HULL(43 12, 44 12, 45 13, 42 13, 43 12)", md);
+	ensure_matches("bbox:contains HULL(43 12, 44 12, 44 13, 43 13, 43 12)", md);
+	ensure_not_matches("bbox:contains INVALID()", md);
+	ensure_not_matches("bbox:contains POINT(44, 11)", md);
+	ensure_not_matches("bbox:contains BOX(42, 45, 12, 13)", md);
+#if 0
+#endif
+#endif
 }
 
 }
