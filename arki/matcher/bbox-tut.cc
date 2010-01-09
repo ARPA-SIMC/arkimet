@@ -44,7 +44,7 @@ struct arki_matcher_bbox_shar {
 };
 TESTGRP(arki_matcher_bbox);
 
-// Try matching BBox
+// Try matching with "is"
 template<> template<>
 void to::test<1>()
 {
@@ -55,6 +55,28 @@ void to::test<1>()
 	ensure_not_matches("bbox:is POINT(44, 11)", md);
 	ensure_not_matches("bbox:is BOX(43, 45, 10, 12)", md);
 	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+
+	md.set(bbox::POINT::create(44, 11));
+	ensure_matches("bbox:is POINT(44, 11)", md);
+	ensure_not_matches("bbox:is INVALID()", md);
+	ensure_not_matches("bbox:is BOX(43, 45, 10, 12)", md);
+	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+
+	md.set(bbox::BOX::create(43, 45, 10, 12));
+	ensure_matches("bbox:is BOX(43, 45, 10, 12)", md);
+	ensure_not_matches("bbox:is INVALID()", md);
+	ensure_not_matches("bbox:is POINT(44, 11)", md);
+	ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+
+	std::vector< std::pair<float, float> > points;
+	points.push_back(make_pair(43.0, 12.0));
+	points.push_back(make_pair(44.0, 10.0));
+	points.push_back(make_pair(45.0, 12.0));
+	md.set(bbox::HULL::create(points));
+	ensure_matches("bbox:is HULL(43 12, 44 10, 45 12)", md);
+	ensure_not_matches("bbox:is INVALID()", md);
+	ensure_not_matches("bbox:is POINT(44, 11)", md);
+	ensure_not_matches("bbox:is BOX(43, 45, 10, 12)", md);
 }
 
 }
