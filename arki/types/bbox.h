@@ -163,7 +163,5 @@ struct HULL : public BBox
 }
 }
 
-#undef ARKI_GEOS_GEOMETRY
-
 // vim:set ts=4 sw=4:
 #endif
