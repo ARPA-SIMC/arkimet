@@ -265,6 +265,7 @@ struct Wizard
 				cfg.setValue("type", "local");
 				if (datasetName != "error" and datasetName != "duplicates")
 				{
+					cfg.setValue("type", "ondisk2");
 					cfg.setValue("unique", "reftime, timerange, product, level, area");
 					cfg.setValue("index", "reftime, timerange, product, level");
 				}
@@ -364,9 +365,11 @@ public:
 		string cur = str::tolower(w.cfg.value("type"));
 		AnnotatedChoice cur_choice;
 		vector<AnnotatedChoice> types;
-		types.push_back(AnnotatedChoice("local", "data, metadata, summaries and indices"));
+		types.push_back(AnnotatedChoice("ondisk2", "for normal datasets"));
 		if (cur == types.back().value) cur_choice = types.back();
-		types.push_back(AnnotatedChoice("outbound", "data only"));
+		types.push_back(AnnotatedChoice("local", "for error or duplicates datasets"));
+		if (cur == types.back().value) cur_choice = types.back();
+		types.push_back(AnnotatedChoice("outbound", "not searchable, only stores plain data"));
 		if (cur == types.back().value) cur_choice = types.back();
 		types.push_back(AnnotatedChoice("discard", "nothing is written: all the data is discarded"));
 		if (cur == types.back().value) cur_choice = types.back();
