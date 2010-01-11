@@ -451,15 +451,17 @@ void CommandLine::setupProcessing()
 	while (hasNext())	// From command line arguments, looking for data files or datasets
 		ReadonlyDataset::readConfig(next(), inputInfo);
 
+	if (inputInfo.sectionSize() == 0)
+		throw wibble::exception::BadOption("you need to specify at least one input file or dataset");
+
 	// Filter the dataset list
 	if (restr && restr->isSet())
 	{
 		Restrict rest(restr->stringValue());
 		rest.remove_unallowed(inputInfo);
+		if (inputInfo.sectionSize() == 0)
+			throw wibble::exception::BadOption("no accessible datasets found for the given --restrict value");
 	}
-
-	if (inputInfo.sectionSize() == 0)
-		throw wibble::exception::BadOption("you need to specify at least one input file or dataset");
 
 	// Some things cannot be done when querying multiple datasets at the same time
 	if (inputInfo.sectionSize() > 1 && !dispatcher)
