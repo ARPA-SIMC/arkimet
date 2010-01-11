@@ -224,7 +224,7 @@ struct Wizard
 		md_descs[types::TYPE_AREA] = "geographical area";
 		md_descs[types::TYPE_ENSEMBLE] = "description of the ensemble forecast run";
 		md_descs[types::TYPE_RUN] = "identification of the forecast run within a day";
-		//md_descs[types::TYPE_BBOX] = "bounding box";
+		md_descs[types::TYPE_BBOX] = "bounding box";
 
 		if (opts.hasNext())
 		{
@@ -389,7 +389,7 @@ public:
 		string type = str::tolower(w.cfg.value("type"));
 		// FIXME: 'test' is deprecated, and is here only for backward
 		// compatibility
-		return type == "local" || type == "test";
+		return type == "ondisk2" || type == "local" || type == "test";
 	}
 	virtual std::string description() const
 	{
@@ -433,7 +433,7 @@ public:
 		string type = str::tolower(w.cfg.value("type"));
 		// FIXME: 'test' is deprecated, and is here only for backward
 		// compatibility
-		return type == "local" || type == "test";
+		return type == "ondisk2" || type == "local" || type == "test";
 	}
 	virtual std::string description() const
 	{
@@ -611,6 +611,22 @@ public:
 			" - MINUTE,12\n"
 			" - MINUTE,18:30\n"
 			;
+    	filter_help[types::TYPE_BBOX] = 
+			"Syntax:\n"
+			" - bbox:verb value\n"
+			" - Matches bounding boxes against a sample value.\n"
+			" - Available verbs:\n"
+			" -  is: the bounding box to match must be the same as the sample value\n"
+			" -  contains: the bounding box to match must contain the sample value\n"
+			"Examples:\n"
+			" - bbox:is INVALID()\n"
+			" - bbox:is POINT(44, 11)\n"
+			" - bbox:is BOX(43, 45, 10, 12)\n"
+			" - bbox:is HULL(43 12, 44 10, 45 12, 43 12)\n"
+			" - bbox:contains POINT(44, 11)\n"
+			" - bbox:contains BOX(43.5, 44.5, 10.5, 11.5)\n"
+			" - bbox:contains HULL(43 12, 44 10, 45 12, 43 12)\n"
+			;
 		matchers = matcher::MatcherType::matcherNames();
 		for (vector<string>::const_iterator i = matchers.begin();
 				i != matchers.end(); ++i)
@@ -626,7 +642,7 @@ public:
 		string type = str::tolower(w.cfg.value("type"));
 		// FIXME: 'test' is deprecated, and is here only for backward
 		// compatibility
-		return type == "local" || type == "test";
+		return type == "ondisk2" || type == "local" || type == "test";
 	}
 	virtual std::string description() const
 	{
