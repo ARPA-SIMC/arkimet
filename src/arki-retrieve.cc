@@ -82,12 +82,12 @@ struct MDGrid
 
 	// Find the linearised matrix index for md. Returns -1 if md does not
 	// match a point in the matrix
-	int index(const Metadata& md)
+	int index(const Metadata& md) const
 	{
 		int res = 0;
 		// Consolidate the soup space: remove duplicates, sort the vectors
 		size_t dim = 0;
-                for (std::map<types::Code, std::vector< Item<> > >::iterator i = soup.begin();
+                for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = soup.begin();
 				i != soup.end(); ++i, ++dim)
 		{
 			UItem<> mdi = md.get(i->first);
@@ -103,11 +103,11 @@ struct MDGrid
 		return res;
 	}
 
-	std::vector< Item<> > expand(size_t index)
+	std::vector< Item<> > expand(size_t index) const
 	{
 		vector< Item<> > res;
 		size_t dim = 0;
-                for (std::map<types::Code, std::vector< Item<> > >::iterator i = soup.begin();
+                for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = soup.begin();
 				i != soup.end(); ++i, ++dim)
 		{
 			size_t idx = index / dim_sizes[dim];
@@ -115,6 +115,22 @@ struct MDGrid
 			index = index % dim_sizes[dim];
 		}
 		return res;
+	}
+
+	std::string make_query() const
+	{
+		vector<string> ands;
+                for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = soup.begin();
+				i != soup.end(); ++i)
+		{
+			vector<string> ors;
+			for (std::vector< Item<> >::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+				ors.push_back((*j)->exactQuery());
+			ands.push_back(str::tolower(types::formatCode(i->first)) + ":" +
+					str::join(ors.begin(), ors.end(), " or "));
+		}
+		return str::join(ands.begin(), ands.end(), "; ");
 	}
 
 	void read(std::istream& input, const std::string& fname)
@@ -204,10 +220,18 @@ int main(int argc, const char* argv[])
 			}
 		}
 
+		cerr << "Arkimet query: " << mdgrid.make_query() << endl;
+
 		// Open the dataset
 		ConfigFile cfg;
 		ReadonlyDataset::readConfig(opts.next(), cfg);
 		auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+
+		// Read the metadata and fit in a vector sized with maxidx
+		
+		// Check that elements of the vector are there
+
+		// Output from the vector
 
 		return 0;
 	} catch (wibble::exception::BadOption& e) {
