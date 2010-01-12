@@ -100,6 +100,16 @@ struct Visitor
 {
 	virtual ~Visitor() {}
 	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<Stats>& stats) = 0;
+
+	/// Return the metadata code for a given md vector position
+	static types::Code codeForPos(size_t pos);
+
+	/**
+	 * Return md vector position for a given code
+	 *
+	 * Returns -1 if the given type code is not included in summaries
+	 */
+	static int posForCode(types::Code code);
 };
 
 struct StatsVisitor
@@ -315,6 +325,14 @@ public:
 	 * Merge a summary into this summary
 	 */
 	void add(const Summary& s);
+
+	/**
+	 * Visit all the contents of this summary
+	 *
+	 * Returns true if the visit was completed, false if the visitor
+	 * aborted the visit.
+	 */
+	bool visit(summary::Visitor& visitor) const;
 
 	/**
 	 * Get the reference time interval covered by the metadata bundle.

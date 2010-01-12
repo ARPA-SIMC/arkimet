@@ -112,6 +112,16 @@ static void buildItemMsoMap()
 		itemMsoMap[(size_t)summary::mso[i]] = i;
 }
 
+types::Code Visitor::codeForPos(size_t pos)
+{
+	return mso[pos];
+}
+
+int Visitor::posForCode(types::Code code)
+{
+	if ((size_t)code >= itemMsoMapSize) return -1;
+	return itemMsoMap[(size_t)code];
+}
 
 Node::Node() {}
 Node::Node(const Metadata& m, size_t scanpos)
@@ -1282,13 +1292,21 @@ struct YamlPrinter : public Visitor
 };
 }
 
+bool Summary::visit(summary::Visitor& visitor) const
+{
+	if (!root.ptr()) return true;
+
+	summary::buildItemMsoMap();
+	vector< UItem<> > visitmd(summary::msoSize, UItem<>());
+	return root->visit(visitor, visitmd);
+}
+
 void Summary::writeYaml(std::ostream& out, const Formatter* f) const
 {
 	if (!root.ptr()) return;
 
 	summary::YamlPrinter printer(out, 2, f);
-	vector< UItem<> > visitmd(summary::msoSize, UItem<>());
-	root->visit(printer, visitmd);
+	visit(printer);
 }
 
 static vector< UItem<> > decodeItem(const std::string& str)
@@ -1302,7 +1320,7 @@ static vector< UItem<> > decodeItem(const std::string& str)
 			i != yamlStream.end(); ++i)
 	{
 		types::Code type = types::parseCodeName(i->first);
-		if ((size_t)type > summary::itemMsoMapSize || summary::itemMsoMap[(size_t)type] == -1)
+		if ((size_t)type >= summary::itemMsoMapSize || summary::itemMsoMap[(size_t)type] == -1)
 			throw wibble::exception::Consistency("parsing summary item", "found element of unsupported type " + types::formatCode(type));
 		itemmd[summary::itemMsoMap[(size_t)type]] = types::decodeString(type, i->second);
 	}
