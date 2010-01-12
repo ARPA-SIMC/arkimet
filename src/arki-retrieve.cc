@@ -25,6 +25,8 @@
 #include <wibble/commandline/parser.h>
 #include <wibble/string.h>
 #include <arki/metadata.h>
+#include <arki/summary.h>
+#include <arki/dataset.h>
 #include <arki/runtime.h>
 
 #include <fstream>
@@ -56,6 +58,48 @@ struct Options : public StandardParserWithManpage
 }
 }
 
+struct UnresolvedMatcher : public std::string
+{
+	std::vector< Item<> > candidates;
+	Matcher matcher;
+
+	UnresolvedMatcher(types::Code code, const std::string& expr)
+		: std::string(expr), matcher(Matcher::parse(types::tag(code) + ":" + expr)) {}
+};
+
+struct MatcherResolver : public summary::Visitor
+{
+	std::map<types::Code, std::vector<UnresolvedMatcher> >& matchers;
+
+	MatcherResolver(std::map<types::Code, std::vector<UnresolvedMatcher> >& matchers)
+		: matchers(matchers) {}
+
+	virtual bool operator()(const std::vector< UItem<> >& md, const Item<summary::Stats>& stats)
+	{
+		for (map<types::Code, vector<UnresolvedMatcher> >::iterator i = matchers.begin();
+				i != matchers.end(); ++i)
+		{
+			int pos = posForCode(i->first);
+			if (pos == -1)
+				throw wibble::exception::Consistency(
+						"resolving matcher for " + types::tag(i->first),
+						"metadata item not tracked by summaries");
+
+			if (!md[pos].defined()) continue;
+
+			for (vector<UnresolvedMatcher>::iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+			{
+				if (j->matcher(md[pos]))
+				{
+					j->candidates.push_back(md[pos]);
+				}
+			}
+		}
+		return true;
+	}
+};
+
 /**
  * Define a linear metadata space.
  *
@@ -77,7 +121,7 @@ struct Options : public StandardParserWithManpage
 struct MDGrid
 {
 	std::map<types::Code, std::vector< Item<> > > soup;
-	std::map<types::Code, std::string> matchers;
+	std::map<types::Code, std::vector<UnresolvedMatcher> > matchers;
 	std::vector<size_t> dim_sizes;
 	size_t maxidx;
 
@@ -125,23 +169,42 @@ struct MDGrid
 				i != soup.end(); ++i)
 		{
 			vector<string> ors;
-			map<types::Code, string>::const_iterator mi = matchers.find(i->first);
+			map< types::Code, vector<UnresolvedMatcher> >::const_iterator mi = matchers.find(i->first);
 			if (mi != matchers.end())
-				ors.push_back(mi->second);
+				std::copy(mi->second.begin(), mi->second.end(), back_inserter(ors));
 			for (std::vector< Item<> >::const_iterator j = i->second.begin();
 					j != i->second.end(); ++j)
 				ors.push_back((*j)->exactQuery());
-			ands.push_back(str::tolower(types::formatCode(i->first)) + ":" +
+			ands.push_back(types::tag(i->first) + ":" +
 					str::join(ors.begin(), ors.end(), " or "));
 		}
-		for (map<types::Code, string>::const_iterator i = matchers.begin();
+		for (map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = matchers.begin();
 				i != matchers.end(); ++i)
 		{
 			// Codes that are in soup have already been handled
 			if (soup.find(i->first) != soup.end()) continue;
-			ands.push_back(str::tolower(types::formatCode(i->first)) + ":" + i->second);
+			ands.push_back(types::tag(i->first) + ":" +
+					str::join(i->second.begin(), i->second.end(), " or "));
 		}
 		return str::join(ands.begin(), ands.end(), "; ");
+	}
+
+	/**
+	 * Resolve matchers into metadata.
+	 *
+	 * For every unresolved matcher, check it against the dataset summary
+	 * to find a single matching metadata item.
+	 */
+	void resolveMatchers(ReadonlyDataset& rd)
+	{
+		if (matchers.empty()) return;
+
+		Matcher matcher = Matcher::parse(make_query());
+		Summary summary;
+		rd.querySummary(matcher, summary);
+
+		MatcherResolver mr(matchers);
+		summary.visit(mr);
 	}
 
 	void read(std::istream& input, const std::string& fname)
@@ -176,10 +239,7 @@ struct MDGrid
 				auto_ptr<matcher::OR> m(matcher::OR::parse(*mt, rest));
 
 				// Add to the list of matchers to resolve
-				if (matchers[code].empty())
-					matchers[code] = rest;
-				else
-					matchers[code] += " or " + rest;
+				matchers[code].push_back(UnresolvedMatcher(code, rest));
 			} else {
 				types::Code code = types::parseCodeName(type);
 				Item<> item = decodeString(code, rest);
@@ -187,7 +247,20 @@ struct MDGrid
 			}
 		}
 
-		// Consolidate the soup space: remove duplicates, sort the vectors
+		consolidate();
+	}
+
+	/**
+	 * Consolidate the soup space: remove duplicates, sort the vectors
+	 *
+	 * This can be called more than once if the space changes, but it
+	 * invalidates the previous linearisation of the matrix space, which
+	 * means that all previously generated indices are to be considered
+	 * invalid.
+	 */
+	void consolidate()
+	{
+		dim_sizes.clear();
 		maxidx = soup.empty() ? 0 : 1;
                 for (std::map<types::Code, std::vector< Item<> > >::iterator i = soup.begin();
 				i != soup.end(); ++i)
@@ -240,9 +313,42 @@ int main(int argc, const char* argv[])
 		}
 
 		cerr << "Unresolved matchers:" << endl;
-                for (std::map<types::Code, string>::const_iterator i = mdgrid.matchers.begin();
+                for (std::map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = mdgrid.matchers.begin();
 				i != mdgrid.matchers.end(); ++i)
-			cerr << " " << types::tag(i->first) << ":" << i->second << endl;
+		{
+			cerr << " " << types::tag(i->first) << ":" << endl;
+			for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+			{
+				cerr << "  " << *j << endl;
+			}
+		}
+
+		// Detect the dataset
+		ConfigFile cfg;
+		ReadonlyDataset::readConfig(opts.next(), cfg);
+		cerr << "Dataset config:" << endl;
+		cfg.output(cerr, "(stderr)");
+
+		// Open the dataset
+		auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.sectionBegin()->second));
+
+		// Resolve matchers
+		mdgrid.resolveMatchers(*ds);
+                for (std::map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = mdgrid.matchers.begin();
+				i != mdgrid.matchers.end(); ++i)
+		{
+			for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+			{
+				cerr << "Matcher " << j->matcher << " resolved as: "
+			             << str::join(j->candidates.begin(), j->candidates.end(), "; ")
+				     << endl;
+			}
+		}
+
+		// Consolidate the result space
+		mdgrid.consolidate();
 
 		cerr << "Number of combinations: " << mdgrid.maxidx << endl;
 
@@ -258,11 +364,6 @@ int main(int argc, const char* argv[])
 		}
 
 		cerr << "Arkimet query: " << mdgrid.make_query() << endl;
-
-		// Open the dataset
-		ConfigFile cfg;
-		ReadonlyDataset::readConfig(opts.next(), cfg);
-		auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
 
 		// Read the metadata and fit in a vector sized with maxidx
 		

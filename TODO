@@ -180,7 +180,19 @@ http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
    http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
 
 Query sottoaree (ISAC)
- + query per sottoaree
+ + matcher per BBox
+ + il type::Area con un mutable per il bbox per non doverlo ricalcolare
+ - il matcher bbox deve diventare un matcher sull'area
+ - types::BBox deve sparire
+   (se non rompe il formato binario, sparire del tutto, anche dai summary)
+ - i BBox non sono salvati nel database, ma sono calcolati al volo dalle aree.
+   Quindi, al momento il match sui bbox funziona solo per modo di dire, perché
+   non ha niente da matchare nei metadati, nei summary e nei dataset, quindi
+   restituisce sempre un risultato vuoto
+    - nel database, se si matcha un bbox si tirano fuori le aree, si calcolano
+      i loro bbox e si matcha sulle aree
+    - nei summary, implementare una funzione che aggiunge bbox ai summary
+    - nei metadata, se si fa get di bbox, calcolarlo al volo
  - annunciare
  - upload in Debian
     - build con wibble di sistema
