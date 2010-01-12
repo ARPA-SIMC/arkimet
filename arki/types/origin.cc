@@ -40,6 +40,7 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
+using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -253,6 +254,10 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 			 << setfill(' ')
 			 << ")";
 }
+std::string GRIB1::exactQuery() const
+{
+    return str::fmtf("GRIB1,%d,%d,%d", (int)centre, (int)subcentre, (int)process);
+}
 
 int GRIB1::compare(const Origin& o) const
 {
@@ -320,6 +325,10 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 			 << setw(3) << (int)bgprocessid << ", " << setw(3) << (int)processid
 			 << setfill(' ')
 			 << ")";
+}
+std::string GRIB2::exactQuery() const
+{
+    return str::fmtf("GRIB2,%d,%d,%d,%d,%d", (int)centre, (int)subcentre, (int)processtype, (int)bgprocessid, (int)processid);
 }
 
 int GRIB2::compare(const Origin& o) const
@@ -393,6 +402,10 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 	         << setw(3) << (int)centre << ", " << setw(3) << (int)subcentre
 			 << setfill(' ')
 			 << ")";
+}
+std::string BUFR::exactQuery() const
+{
+    return str::fmtf("BUFR,%d,%d", (int)centre, (int)subcentre);
 }
 
 int BUFR::compare(const Origin& o) const

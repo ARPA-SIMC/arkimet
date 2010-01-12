@@ -41,6 +41,7 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
+using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -365,6 +366,15 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	o << setfill(' ');
 	return o << ")";
 }
+std::string GRIB1::exactQuery() const
+{
+	switch (valType())
+	{
+		case 0: return str::fmtf("GRIB1,%d", (int)type);
+		case 1: return str::fmtf("GRIB1,%d,%d", (int)type, (int)l1);
+		default: return str::fmtf("GRIB1,%d,%d,%d", (int)type, (int)l1, (int)l2);
+	}
+}
 
 int GRIB1::compare(const Level& o) const
 {
@@ -502,6 +512,10 @@ std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 	  << setw(3) << (int)scale << ", "
 	  << setw(10) << (int)value << ")";
 }
+std::string GRIB2S::exactQuery() const
+{
+	return str::fmtf("GRIB2S,%d,%d,%d", (int)type, (int)scale, (int)value);
+}
 
 int GRIB2S::compare(const Level& o) const
 {
@@ -563,6 +577,12 @@ std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 	  << setw(3) << (int)type2 << ", "
 	  << setw(3) << (int)scale2 << ", "
 	  << setw(10) << (int)value2 << ")";
+}
+std::string GRIB2D::exactQuery() const
+{
+	return str::fmtf("GRIB2D,%d,%d,%d,%d,%d,%d",
+			(int)type1, (int)scale1, (int)value1,
+			(int)type2, (int)scale2, (int)value2);
 }
 
 int GRIB2D::compare(const Level& o) const

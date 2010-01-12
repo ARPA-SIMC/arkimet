@@ -138,6 +138,11 @@ std::string Type::encodeWithEnvelope() const
 	return res;
 }
 
+std::string Type::exactQuery() const
+{
+	throw wibble::exception::Consistency("creating a query to match " + tag(), "not implemented");
+}
+
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
 {
 	using namespace utils::codec;

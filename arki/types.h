@@ -224,6 +224,11 @@ struct Type : public refcounted::Base
 	/// Write as a string to an output stream
 	virtual std::ostream& writeToOstream(std::ostream& o) const = 0;
 
+	/**
+	 * Return a matcher query (without the metadata type prefix) that
+	 * exactly matches this metadata item
+	 */
+	virtual std::string exactQuery() const;
 
 	/// Push to the LUA stack a userdata to access this item
 	virtual void lua_push(lua_State* L) const = 0;

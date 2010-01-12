@@ -40,6 +40,7 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
+using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -250,6 +251,10 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 			 << setfill(' ')
 			 << ")";
 }
+std::string GRIB1::exactQuery() const
+{
+    return str::fmtf("GRIB1,%d,%d,%d", (int)origin, (int)table, (int)product);
+}
 
 int GRIB1::compare(const Product& o) const
 {
@@ -315,6 +320,10 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 			 << setw(5) << (int)centre << ", " << setw(3) << (int)discipline << ", " << setw(3) << (int)category << ", " << (int)number
 			 << setfill(' ')
 			 << ")";
+}
+std::string GRIB2::exactQuery() const
+{
+    return str::fmtf("GRIB2,%d,%d,%d,%d", (int)centre, (int)discipline, (int)category, (int)number);
 }
 int GRIB2::compare(const Product& o) const
 {
@@ -385,6 +394,10 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 			 << setw(3) << (int)type << ", " << setw(3) << (int)subtype << ", " << setw(3) << (int)localsubtype
 			 << setfill(' ')
 			 << ")";
+}
+std::string BUFR::exactQuery() const
+{
+    return str::fmtf("BUFR,%d,%d,%d", (int)type, (int)subtype, (int)localsubtype);
 }
 int BUFR::compare(const Product& o) const
 {

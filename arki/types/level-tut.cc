@@ -58,6 +58,9 @@ void to::test<1>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_LEVEL);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1,1");
 }
 
 // Check GRIB1 with an 8 bit l1
@@ -81,6 +84,9 @@ void to::test<2>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_LEVEL);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1,103,132");
 }
 
 // Check GRIB1 with a 16 bit l1
@@ -102,6 +108,9 @@ void to::test<3>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_LEVEL);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1,103,13200");
 }
 
 // Check GRIB1 with a layer
@@ -124,6 +133,9 @@ void to::test<4>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_LEVEL);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1,104,132,231");
 }
 
 // Check GRIB2S
@@ -146,6 +158,9 @@ void to::test<5>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_LEVEL);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2S,100,100,500");
 }
 
 // Check GRIB2D
@@ -168,6 +183,9 @@ void to::test<6>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_LEVEL);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2D,100,100,500,100,100,1000");
 }
 
 #ifdef HAVE_LUA

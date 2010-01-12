@@ -58,6 +58,9 @@ void to::test<1>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_ORIGIN);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1,1,2,3");
 }
 
 // Check GRIB2
@@ -81,6 +84,9 @@ void to::test<2>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_ORIGIN);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,5");
 }
 
 // Check BUFR
@@ -101,6 +107,9 @@ void to::test<3>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_ORIGIN);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "BUFR,1,2");
 }
 
 #ifdef HAVE_LUA

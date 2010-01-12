@@ -86,6 +86,7 @@ struct GRIB1 : public Product
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Product& o) const;
 	virtual int compare(const GRIB1& o) const;
@@ -107,6 +108,7 @@ struct GRIB2 : public Product
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Product& o) const;
 	virtual int compare(const GRIB2& o) const;
@@ -127,6 +129,7 @@ struct BUFR : public Product
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Product& o) const;
 	virtual int compare(const BUFR& o) const;

@@ -82,6 +82,7 @@ struct GRIB1 : public Level
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	/**
 	 * Get information on how l1 and l2 should be treated:
@@ -124,6 +125,7 @@ struct GRIB2S : public GRIB2
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Level& o) const;
 	virtual int compare(const GRIB2S& o) const;
@@ -144,6 +146,7 @@ struct GRIB2D : public GRIB2
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Level& o) const;
 	virtual int compare(const GRIB2D& o) const;
