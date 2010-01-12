@@ -77,6 +77,7 @@ struct Options : public StandardParserWithManpage
 struct MDGrid
 {
 	std::map<types::Code, std::vector< Item<> > > soup;
+	std::map<types::Code, std::string> matchers;
 	std::vector<size_t> dim_sizes;
 	size_t maxidx;
 
@@ -124,11 +125,21 @@ struct MDGrid
 				i != soup.end(); ++i)
 		{
 			vector<string> ors;
+			map<types::Code, string>::const_iterator mi = matchers.find(i->first);
+			if (mi != matchers.end())
+				ors.push_back(mi->second);
 			for (std::vector< Item<> >::const_iterator j = i->second.begin();
 					j != i->second.end(); ++j)
 				ors.push_back((*j)->exactQuery());
 			ands.push_back(str::tolower(types::formatCode(i->first)) + ":" +
 					str::join(ors.begin(), ors.end(), " or "));
+		}
+		for (map<types::Code, string>::const_iterator i = matchers.begin();
+				i != matchers.end(); ++i)
+		{
+			// Codes that are in soup have already been handled
+			if (soup.find(i->first) != soup.end()) continue;
+			ands.push_back(str::tolower(types::formatCode(i->first)) + ":" + i->second);
 		}
 		return str::join(ands.begin(), ands.end(), "; ");
 	}
@@ -150,9 +161,30 @@ struct MDGrid
 				throw wibble::exception::Consistency("parsing file " + fname,
 						"cannot parse line \"" + line + "\"");
 			}
-			types::Code code = types::parseCodeName(line.substr(0, pos));
-			Item<> item = decodeString(code, str::trim(line.substr(pos+1)));
-			soup[code].push_back(item);
+			string type = line.substr(0, pos);
+			string rest = str::trim(line.substr(pos+1));
+			if (str::startsWith(type, "match "))
+			{
+				type = str::trim(type.substr(6));
+				types::Code code = types::parseCodeName(type);
+				matcher::MatcherType* mt = matcher::MatcherType::find(type);
+				if (!mt)
+					throw wibble::exception::Consistency("parsing file " + fname,
+							"cannot find a matcher for \"" + type + "\"");
+
+				// Parse in order to validate
+				auto_ptr<matcher::OR> m(matcher::OR::parse(*mt, rest));
+
+				// Add to the list of matchers to resolve
+				if (matchers[code].empty())
+					matchers[code] = rest;
+				else
+					matchers[code] += " or " + rest;
+			} else {
+				types::Code code = types::parseCodeName(type);
+				Item<> item = decodeString(code, rest);
+				soup[code].push_back(item);
+			}
 		}
 
 		// Consolidate the soup space: remove duplicates, sort the vectors
@@ -206,6 +238,11 @@ int main(int argc, const char* argv[])
 				cerr << "  " << *j << endl;
 			}
 		}
+
+		cerr << "Unresolved matchers:" << endl;
+                for (std::map<types::Code, string>::const_iterator i = mdgrid.matchers.begin();
+				i != mdgrid.matchers.end(); ++i)
+			cerr << " " << types::tag(i->first) << ":" << i->second << endl;
 
 		cerr << "Number of combinations: " << mdgrid.maxidx << endl;
 
