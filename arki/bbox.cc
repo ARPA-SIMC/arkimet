@@ -156,8 +156,13 @@ static vector< pair<float, float> > bbox(lua_State* L)
 
 auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const Item<types::Area>& v) const
 {
+	return (*this)(*v);
+}
+
+std::auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
+{
 	// Set the area information as the 'area' global
-	v->lua_push(*L);
+	v.lua_push(*L);
 	lua_setglobal(*L, "area");
 	lua_newtable(*L);
 	lua_setglobal(*L, "bbox");

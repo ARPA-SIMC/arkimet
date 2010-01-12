@@ -52,6 +52,7 @@ public:
 	 * computation is unsupported for this area.
 	 */
 	virtual std::auto_ptr<ARKI_GEOS_GEOMETRY> operator()(const Item<types::Area>& v) const;
+	virtual std::auto_ptr<ARKI_GEOS_GEOMETRY> operator()(const types::Area& v) const;
 };
 
 }

@@ -25,6 +25,7 @@
 
 #include <arki/types.h>
 #include <arki/values.h>
+#include <arki/utils/geosfwd.h>
 
 struct lua_State;
 
@@ -40,8 +41,12 @@ struct Area : public types::Type
 {
 	typedef unsigned char Style;
 
+	mutable ARKI_GEOS_GEOMETRY* cached_bbox;
+
 	/// Style values
 	static const Style GRIB = 1;
+
+	Area();
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -61,6 +66,9 @@ struct Area : public types::Type
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Area> decode(const unsigned char* buf, size_t len);
 	static Item<Area> decodeString(const std::string& val);
+
+	/// Return the geographical bounding box
+	const ARKI_GEOS_GEOMETRY* bbox() const;
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Area

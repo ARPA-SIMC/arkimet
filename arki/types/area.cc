@@ -25,6 +25,8 @@
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/geosdef.h>
+#include <arki/bbox.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -43,6 +45,11 @@ using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
+
+namespace area {
+// FIXME: move as a singleton to arki/bbox.cc?
+static __thread BBox* bbox = 0;
+}
 
 // Style constants
 const unsigned char Area::GRIB;
@@ -63,6 +70,26 @@ std::string Area::formatStyle(Area::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
+}
+
+Area::Area() : cached_bbox(0)
+{
+}
+
+const ARKI_GEOS_GEOMETRY* Area::bbox() const
+{
+#ifdef HAVE_GEOS
+	if (!cached_bbox)
+	{
+		// Create the bbox generator if missing
+		if (!area::bbox) area::bbox = new BBox();
+
+		std::auto_ptr<ARKI_GEOS_GEOMETRY> res = (*area::bbox)(*this);
+		if (res.get())
+			cached_bbox = res.release();
+	}
+#endif
+	return cached_bbox;
 }
 
 int Area::compare(const Type& o) const
