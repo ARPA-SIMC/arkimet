@@ -20,6 +20,7 @@
 
 #include <arki/types/test-utils.h>
 #include <arki/types/origin.h>
+#include <arki/matcher.h>
 
 #include <sstream>
 #include <iostream>
@@ -61,6 +62,8 @@ void to::test<1>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,1,2,3");
+	Matcher m = Matcher::parse("origin:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2
@@ -87,6 +90,8 @@ void to::test<2>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,5");
+	Matcher m = Matcher::parse("origin:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check BUFR
@@ -110,6 +115,8 @@ void to::test<3>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "BUFR,1,2");
+	Matcher m = Matcher::parse("origin:" + o->exactQuery());
+	ensure(m(o));
 }
 
 #ifdef HAVE_LUA

@@ -195,10 +195,16 @@ struct MDGrid
 	 *
 	 * For every unresolved matcher, check it against the dataset summary
 	 * to find a single matching metadata item.
+	 *
+	 * Returns true if all matchers have been resolved to only one item,
+	 * false if there are some ambiguous matchers.
+	 *
+	 * This method calls consolidate(), therefore altering the matrix
+	 * space and invalidating indices.
 	 */
-	void resolveMatchers(ReadonlyDataset& rd)
+	bool resolveMatchers(ReadonlyDataset& rd)
 	{
-		if (matchers.empty()) return;
+		if (matchers.empty()) return true;
 
 		Matcher matcher = Matcher::parse(make_query());
 		Summary summary;
@@ -206,6 +212,34 @@ struct MDGrid
 
 		MatcherResolver mr(matchers);
 		summary.visit(mr);
+
+		vector<types::Code> solved;
+		for (map< types::Code, vector<UnresolvedMatcher> >::iterator i = matchers.begin();
+				i != matchers.end(); ++i)
+		{
+			vector<UnresolvedMatcher> unsolved;
+			for (vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+			{
+				if (j->candidates.size() == 1)
+				{
+					soup[i->first].push_back(*j->candidates.begin());
+				} else {
+					unsolved.push_back(*j);
+				}
+			}
+			if (unsolved.empty())
+				solved.push_back(i->first);
+			else
+				i->second = unsolved;
+		}
+		for (vector<types::Code>::const_iterator i = solved.begin();
+				i != solved.end(); ++i)
+			matchers.erase(*i);
+
+		consolidate();		
+
+		return matchers.empty();
 	}
 
 	void read(std::istream& input, const std::string& fname)
@@ -313,7 +347,7 @@ int main(int argc, const char* argv[])
 			}
 		}
 
-		cerr << "Unresolved matchers:" << endl;
+		cerr << "Matchers to resolve:" << endl;
                 for (std::map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = mdgrid.matchers.begin();
 				i != mdgrid.matchers.end(); ++i)
 		{
@@ -335,21 +369,30 @@ int main(int argc, const char* argv[])
 		auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.sectionBegin()->second));
 
 		// Resolve matchers
-		mdgrid.resolveMatchers(*ds);
-                for (std::map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = mdgrid.matchers.begin();
-				i != mdgrid.matchers.end(); ++i)
+		if (!mdgrid.resolveMatchers(*ds))
 		{
-			for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
-					j != i->second.end(); ++j)
+			cerr << "These matchers did not match one item unambigously:" << endl;
+			for (std::map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = mdgrid.matchers.begin();
+					i != mdgrid.matchers.end(); ++i)
 			{
-				cerr << "Matcher " << j->matcher << " resolved as: "
-			             << str::join(j->candidates.begin(), j->candidates.end(), "; ")
-				     << endl;
+				for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+						j != i->second.end(); ++j)
+				{
+					cerr << " " << j->matcher << ": ";
+					if (j->candidates.empty())
+						cerr << "no valid candidates found." << endl;
+					else
+					{
+						cerr << "found more than one candidate:" << endl;
+						for (std::set< Item<> >::const_iterator k = j->candidates.begin();
+								k != j->candidates.end(); ++k)
+							cerr << "  " << *k << endl;
+					}
+				}
 			}
-		}
-
-		// Consolidate the result space
-		mdgrid.consolidate();
+			return 1;
+		} else
+			cerr << "All matchers resolved." << endl;
 
 		cerr << "Number of combinations: " << mdgrid.maxidx << endl;
 

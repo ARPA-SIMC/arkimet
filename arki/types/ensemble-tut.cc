@@ -20,6 +20,7 @@
 
 #include <arki/types/test-utils.h>
 #include <arki/types/ensemble.h>
+#include <arki/matcher.h>
 
 #include <sstream>
 #include <iostream>
@@ -67,6 +68,11 @@ void to::test<1>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_ENSEMBLE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
+	Matcher m = Matcher::parse("ensemble:" + o->exactQuery());
+	ensure(m(o));
 }
 
 #ifdef HAVE_LUA

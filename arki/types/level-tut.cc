@@ -20,6 +20,7 @@
 
 #include <arki/types/test-utils.h>
 #include <arki/types/level.h>
+#include <arki/matcher.h>
 
 #include <sstream>
 #include <iostream>
@@ -61,6 +62,8 @@ void to::test<1>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,1");
+	Matcher m = Matcher::parse("level:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB1 with an 8 bit l1
@@ -87,6 +90,8 @@ void to::test<2>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,103,132");
+	Matcher m = Matcher::parse("level:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB1 with a 16 bit l1
@@ -111,6 +116,8 @@ void to::test<3>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,103,13200");
+	Matcher m = Matcher::parse("level:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB1 with a layer
@@ -136,6 +143,8 @@ void to::test<4>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,104,132,231");
+	Matcher m = Matcher::parse("level:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2S
@@ -161,6 +170,8 @@ void to::test<5>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2S,100,100,500");
+	Matcher m = Matcher::parse("level:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2D
@@ -186,6 +197,8 @@ void to::test<6>()
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2D,100,100,500,100,100,1000");
+	Matcher m = Matcher::parse("level:" + o->exactQuery());
+	ensure(m(o));
 }
 
 #ifdef HAVE_LUA

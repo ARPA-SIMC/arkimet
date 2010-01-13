@@ -197,6 +197,10 @@ std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << values.toString() << ")";
 }
+std::string GRIB::exactQuery() const
+{
+    return "GRIB:" + values.toString();
+}
 
 int GRIB::compare(const Ensemble& o) const
 {
