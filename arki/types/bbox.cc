@@ -138,19 +138,19 @@ Item<BBox> BBox::decode(const unsigned char* buf, size_t len)
 			return bbox::INVALID::create();
 		case POINT:
 			ensureSize(len, 9, "BBox");
-			return bbox::POINT::create(decodeFloat(buf+1), decodeFloat(buf+5));
+			decodeFloat(buf+1), decodeFloat(buf+5);
+			return bbox::INVALID::create();
 		case BOX:
 			ensureSize(len, 17, "BBox");
-			return bbox::BOX::create(
-				decodeFloat(buf+1), decodeFloat(buf+5), decodeFloat(buf+9), decodeFloat(buf+13));
+			decodeFloat(buf+1), decodeFloat(buf+5), decodeFloat(buf+9), decodeFloat(buf+13);
+			return bbox::INVALID::create();
 		case HULL: {
 			ensureSize(len, 3, "BBox");
 			size_t pointCount = decodeUInt(buf+1, 2);
 			ensureSize(len, 3+pointCount*8, "BBox");
-			vector< pair<float, float> > points;
 			for (size_t i = 0; i < pointCount; ++i)
-				points.push_back(make_pair(decodeFloat(buf+3+i*8), decodeFloat(buf+3+i*8+4)));
-			return bbox::HULL::create(points);
+				decodeFloat(buf+3+i*8), decodeFloat(buf+3+i*8+4);
+			return bbox::INVALID::create();
 		}
 		default:
 			throw wibble::exception::Consistency("parsing BBox", "style is " + formatStyle(s) + " but we can only decode INVALID and BOX");
@@ -159,41 +159,7 @@ Item<BBox> BBox::decode(const unsigned char* buf, size_t len)
     
 Item<BBox> BBox::decodeString(const std::string& val)
 {
-	string inner;
-	BBox::Style style = outerParse<BBox>(val, inner);
-	switch (style)
-	{
-		//case BBox::NONE: return BBox();
-		case BBox::INVALID: {
-			return bbox::INVALID::create();
-		}
-		case BBox::POINT: {
-			FloatList<2> nums(inner, "BBox");
-			return bbox::POINT::create(nums.vals[0], nums.vals[1]);
-		}
-		case BBox::BOX: {
-			FloatList<4> nums(inner, "BBox");
-			return bbox::BOX::create(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3]);
-		}
-		case BBox::HULL: {
-			vector< pair<float, float> > points;
-			wibble::Splitter split("[ \t]*,[ \t]*", REG_EXTENDED);
-			wibble::Splitter split1("[ \t]+", REG_EXTENDED);
-			// First split the , separators
-			for (wibble::Splitter::const_iterator i = split.begin(inner); i != split.end(); ++i)
-			{
-				// Then split the point coordinates separated by space
-				vector<string> coords;
-				std::copy(split1.begin(*i), split1.end(), back_inserter(coords));
-				if (coords.size() != 2)
-					throw wibble::exception::Consistency("parsing HULL bbox", "point " + *i + " has " + str::fmt(coords.size()) + " coordinates instead of 2");
-				points.push_back(make_pair(strtof(coords[0].c_str(), 0), strtof(coords[1].c_str(), 0)));
-			}
-			return bbox::HULL::create(points);
-		}
-		default:
-			throw wibble::exception::Consistency("parsing BBox", "unknown BBox style " + formatStyle(style));
-	}
+	return bbox::INVALID::create();
 }
 
 #ifdef HAVE_LUA
@@ -224,36 +190,21 @@ int BBox::lua_lookup(lua_State* L)
 	}
 	else if (name == "point" && v.style() == BBox::POINT)
 	{
-		const bbox::POINT* v1 = v.upcast<bbox::POINT>();
-		lua_pushnumber(L, v1->lat);
-		lua_pushnumber(L, v1->lon);
+		lua_pushnil(L);
+		lua_pushnil(L);
 		return 2;
 	}
 	else if (name == "box" && v.style() == BBox::BOX)
 	{
-		const bbox::BOX* v1 = v.upcast<bbox::BOX>();
-		lua_pushnumber(L, v1->latmin);
-		lua_pushnumber(L, v1->latmax);
-		lua_pushnumber(L, v1->lonmin);
-		lua_pushnumber(L, v1->lonmax);
+		lua_pushnil(L);
+		lua_pushnil(L);
+		lua_pushnil(L);
+		lua_pushnil(L);
 		return 4;
 	}
 	else if (name == "hull" && v.style() == BBox::HULL)
 	{
-		const bbox::HULL* v1 = v.upcast<bbox::HULL>();
 		lua_newtable(L);
-		for (size_t i = 0; i < v1->points.size(); ++i)
-		{
-			lua_pushnumber(L, i);
-			lua_newtable(L);
-			lua_pushnumber(L, 0);
-			lua_pushnumber(L, v1->points[i].first);
-			lua_rawset(L, -3);
-			lua_pushnumber(L, 1);
-			lua_pushnumber(L, v1->points[i].second);
-			lua_rawset(L, -3);
-			lua_rawset(L, -3);
-		}
 		return 1;
 	}
 	else
@@ -340,218 +291,6 @@ Item<INVALID> INVALID::create()
 {
 	return new INVALID;
 }
-
-
-BBox::Style POINT::style() const { return BBox::POINT; }
-
-void POINT::encodeWithoutEnvelope(Encoder& enc) const
-{
-	BBox::encodeWithoutEnvelope(enc);
-	enc.addFloat(lat).addFloat(lon);
-}
-std::ostream& POINT::writeToOstream(std::ostream& o) const
-{
-	utils::SaveIOState sis(o);
-    return o << formatStyle(style()) << "("
-			 << setfill('0') << fixed << setprecision(4)
-		     << setw(8) << lat << ", " << setw(8) << lon
-			 << ")";
-}
-
-int POINT::compare(const BBox& o) const
-{
-	int res = BBox::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const POINT* v = dynamic_cast<const POINT*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a POINT BBox, but is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-int POINT::compare(const POINT& o) const
-{
-	if (int res = lat - o.lat) return res;
-	return lon - o.lon;
-}
-bool POINT::operator==(const Type& o) const
-{
-	const POINT* v = dynamic_cast<const POINT*>(&o);
-	if (!v) return false;
-	return lat == v->lat && lon == v->lon;
-}
-
-Geometry* POINT::geometry(const GeometryFactory& gf) const
-{
-#ifdef HAVE_GEOS
-	return gf.createPoint(Coordinate(lon, lat));
-#else
-	return 0;
-#endif
-}
-
-Item<POINT> POINT::create(float lat, float lon)
-{
-	POINT* res = new POINT;
-	res->lat = lat;
-	res->lon = lon;
-	return res;
-}
-
-
-BBox::Style BOX::style() const { return BBox::BOX; }
-
-void BOX::encodeWithoutEnvelope(Encoder& enc) const
-{
-	BBox::encodeWithoutEnvelope(enc);
-	enc.addFloat(latmin).addFloat(latmax);
-	enc.addFloat(lonmin).addFloat(lonmax);
-}
-std::ostream& BOX::writeToOstream(std::ostream& o) const
-{
-	utils::SaveIOState sis(o);
-    return o << formatStyle(style()) << "("
-			 << setfill('0') << fixed << setprecision(4)
-		     << setw(8) << latmin << ", " << setw(8) << latmax << ", "
-			 << setw(8) << lonmin << ", " << setw(8) << lonmax
-			 << ")";
-}
-
-int BOX::compare(const BBox& o) const
-{
-	int res = BBox::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const BOX* v = dynamic_cast<const BOX*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a BOX BBox, but is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-int BOX::compare(const BOX& o) const
-{
-	if (int res = latmin - o.latmin) return res;
-	if (int res = latmax - o.latmax) return res;
-	if (int res = lonmin - o.lonmin) return res;
-	return lonmax - o.lonmax;
-}
-bool BOX::operator==(const Type& o) const
-{
-	const BOX* v = dynamic_cast<const BOX*>(&o);
-	if (!v) return false;
-	return latmin == v->latmin && latmax == v->latmax 
-		&& lonmin == v->lonmin && lonmax == v->lonmax;
-}
-
-Geometry* BOX::geometry(const GeometryFactory& gf) const
-{
-#ifdef HAVE_GEOS
-	CoordinateArraySequence cas;
-	cas.add(Coordinate(lonmin, latmin));
-	cas.add(Coordinate(lonmax, latmin));
-	cas.add(Coordinate(lonmax, latmax));
-	cas.add(Coordinate(lonmin, latmax));
-	cas.add(Coordinate(lonmin, latmin));
-	auto_ptr<LinearRing> lr(gf.createLinearRing(cas));
-	return gf.createPolygon(*lr, vector<Geometry*>());
-#else
-	return 0;
-#endif
-}
-
-Item<BOX> BOX::create(
-			  float latmin, float latmax,
-			  float lonmin, float lonmax)
-{
-	BOX* res = new BOX;
-	res->latmin = latmin;
-	res->latmax = latmax;
-	res->lonmin = lonmin;
-	res->lonmax = lonmax;
-	return res;
-}
-
-
-
-BBox::Style HULL::style() const { return BBox::HULL; }
-
-void HULL::encodeWithoutEnvelope(Encoder& enc) const
-{
-	BBox::encodeWithoutEnvelope(enc);
-	enc.addUInt(points.size(), 2);
-	for (size_t i = 0; i < points.size(); ++i)
-		enc.addFloat(points[i].first).addFloat(points[i].second);
-}
-std::ostream& HULL::writeToOstream(std::ostream& o) const
-{
-	utils::SaveIOState sis(o);
-    o << formatStyle(style()) << "(" << setfill('0') << fixed << setprecision(4);
-	for (size_t i = 0; i < points.size(); ++i)
-	{
-		if (i) o << ", ";
-		o << setw(8) << points[i].first << " " << setw(8) << points[i].second;
-	}
-	return o << ")";
-}
-
-int HULL::compare(const BBox& o) const
-{
-	int res = BBox::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const HULL* v = dynamic_cast<const HULL*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a HULL BBox, but is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-int HULL::compare(const HULL& o) const
-{
-	if (int res = points.size() - o.points.size()) return res;
-
-	for (size_t i = 0; i < points.size(); ++i)
-	{
-		if (int res = points[i].first - o.points[i].first) return res;
-		if (int res = points[i].second - o.points[i].second) return res;
-	}
-	return 0;
-}
-bool HULL::operator==(const Type& o) const
-{
-	const HULL* v = dynamic_cast<const HULL*>(&o);
-	if (!v) return false;
-	return points == v->points;
-}
-
-Geometry* HULL::geometry(const GeometryFactory& gf) const
-{
-#ifdef HAVE_GEOS
-	CoordinateArraySequence cas;
-	for (size_t i = 0; i < points.size(); ++i)
-		cas.add(Coordinate(points[i].second, points[i].first));
-	auto_ptr<LinearRing> lr(gf.createLinearRing(cas));
-	return gf.createPolygon(*lr, vector<Geometry*>());
-#else
-	return 0;
-#endif
-}
-
-Item<HULL> HULL::create(const std::vector< std::pair<float, float> >& points)
-{	
-	HULL* res = new HULL;
-	res->points = points;
-	return res;
-}
-
 
 }
 

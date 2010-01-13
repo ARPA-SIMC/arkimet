@@ -101,63 +101,6 @@ struct INVALID : public BBox
 	static Item<INVALID> create();
 };
 
-struct POINT : public BBox
-{
-	float lat;
-	float lon;
-
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-
-	virtual int compare(const BBox& o) const;
-	virtual int compare(const POINT& o) const;
-	virtual bool operator==(const Type& o) const;
-
-	ARKI_GEOS_GEOMETRY* geometry(const ARKI_GEOS_GEOMETRYFACTORY& gf) const;
-
-	static Item<POINT> create(float lat, float lon);
-};
-
-struct BOX : public BBox
-{
-	float latmin;
-	float latmax;
-	float lonmin;
-	float lonmax;
-
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-
-	virtual int compare(const BBox& o) const;
-	virtual int compare(const BOX& o) const;
-	virtual bool operator==(const Type& o) const;
-
-	ARKI_GEOS_GEOMETRY* geometry(const ARKI_GEOS_GEOMETRYFACTORY& gf) const;
-
-	static Item<BOX> create(
-				  float latmin, float latmax,
-				  float lonmin, float lonmax);
-};
-
-struct HULL : public BBox
-{
-	std::vector< std::pair<float, float> > points;
-
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-
-	virtual int compare(const BBox& o) const;
-	virtual int compare(const HULL& o) const;
-	virtual bool operator==(const Type& o) const;
-
-	ARKI_GEOS_GEOMETRY* geometry(const ARKI_GEOS_GEOMETRYFACTORY& gf) const;
-
-	static Item<HULL> create(const std::vector< std::pair<float, float> >& points);
-};
-
 }
 
 }
