@@ -316,6 +316,54 @@ struct MDGrid
 	}
 };
 
+struct SpaceChecker : public std::vector<bool>, public MetadataConsumer
+{
+	const MDGrid& mdg;
+	size_t received;
+	size_t duplicates;
+	size_t notfit;
+
+	SpaceChecker(const MDGrid& mdg) : mdg(mdg), received(0), duplicates(0), notfit(0)
+	{
+		resize(mdg.maxidx, false);
+	}
+
+        virtual bool operator()(Metadata& md)
+	{
+		int idx = mdg.index(md);
+		cerr << "IDX " << idx << "/" << size() << endl;
+		if (idx == -1)
+			++notfit;
+		else if (at(idx))
+			++duplicates;
+		else
+		{
+			(*this)[idx] = true;
+			++received;
+		}
+		return true;
+	}
+};
+
+struct OutputValid : public MetadataConsumer
+{
+	const MDGrid& mdg;
+	//MetadataConsumer& next;
+
+	OutputValid(const MDGrid& mdg/*, MetadataConsumer& next*/) : mdg(mdg)//, next(next)
+	{
+	}
+
+        virtual bool operator()(Metadata& md)
+	{
+		if (mdg.index(md) != -1)
+			md.write(cout, "(stdout)");
+		//	return next(md);
+		return true;
+	}
+};
+
+
 int main(int argc, const char* argv[])
 {
 	wibble::commandline::Options opts;
@@ -410,10 +458,31 @@ int main(int argc, const char* argv[])
 		cerr << "Arkimet query: " << mdgrid.make_query() << endl;
 
 		// Read the metadata and fit in a vector sized with maxidx
-		
-		// Check that elements of the vector are there
+		SpaceChecker sc(mdgrid);
+		dataset::DataQuery dq(Matcher::parse(mdgrid.make_query()), false);
+		ds->queryData(dq, sc);
 
-		// Output from the vector
+		cerr << "Found: " << sc.received << "/" << mdgrid.maxidx << endl;
+		cerr << "Duplicates: " << sc.duplicates << endl;
+		cerr << "Unfit: " << sc.notfit << endl;
+		
+		if (sc.received < mdgrid.maxidx)
+		{
+			cerr << "There are missing items in the result set" << endl;
+			return 1;
+		}
+
+		if (sc.duplicates)
+		{
+			cerr << "The query gives ambiguous elements" << endl;
+			return 1;
+		}
+
+		// Now that we validated, reread with the data
+		
+		OutputValid ov(mdgrid/*, next*/);
+		dq.withData = true;
+		ds->queryData(dq, ov);
 
 		return 0;
 	} catch (wibble::exception::BadOption& e) {
