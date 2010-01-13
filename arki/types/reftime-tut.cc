@@ -20,6 +20,7 @@
 
 #include <arki/types/test-utils.h>
 #include <arki/types/reftime.h>
+#include <arki/matcher.h>
 
 #include <sstream>
 #include <iostream>
@@ -53,6 +54,11 @@ void to::test<1>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_REFTIME);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "=2007-06-05T04:03:02Z");
+	Matcher m = Matcher::parse("reftime:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check Period
@@ -76,6 +82,11 @@ void to::test<2>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_REFTIME);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "=2007-06-05T04:03:02Z");
+	Matcher m = Matcher::parse("reftime:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check collector

@@ -215,6 +215,11 @@ std::ostream& Position::writeToOstream(std::ostream& o) const
 	return time->writeToOstream(o);
 }
 
+std::string Position::exactQuery() const
+{
+	return "=" + time->toISO8601();
+}
+
 int Position::compare(const Reftime& o) const
 {
 	int res = Reftime::compare(o);
@@ -279,6 +284,11 @@ std::ostream& Period::writeToOstream(std::ostream& o) const
 	begin->writeToOstream(o);
 	o << " to ";
 	return end->writeToOstream(o);
+}
+
+std::string Period::exactQuery() const
+{
+	return "=" + begin->toISO8601();
 }
 
 int Period::compare(const Reftime& o) const

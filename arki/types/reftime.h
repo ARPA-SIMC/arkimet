@@ -82,6 +82,7 @@ struct Position : public Reftime
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Reftime& o) const;
 	virtual int compare(const Position& o) const;
@@ -110,6 +111,7 @@ struct Period : public Reftime
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Reftime& o) const;
 	virtual int compare(const Period& o) const;
