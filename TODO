@@ -184,9 +184,9 @@ Query sottoaree (ISAC)
  + il type::Area con un mutable per il bbox per non doverlo ricalcolare
  + mettere direttamente il WKT nella sintassi del matcher sul bbox
  + il matcher bbox deve diventare un matcher sull'area
- - types::BBox deve sparire
+ + types::BBox deve sparire
    (se non rompe il formato binario, sparire del tutto, anche dai summary)
- - i BBox non sono salvati nel database, ma sono calcolati al volo dalle aree.
+ + i BBox non sono salvati nel database, ma sono calcolati al volo dalle aree.
    Quindi, al momento il match sui bbox funziona solo per modo di dire, perché
    non ha niente da matchare nei metadati, nei summary e nei dataset, quindi
    restituisce sempre un risultato vuoto

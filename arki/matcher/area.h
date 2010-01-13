@@ -58,26 +58,41 @@ struct MatchAreaBBox : public MatchArea
 {
 	ARKI_GEOS_GEOMETRYFACTORY* gf;
 	ARKI_GEOS_GEOMETRY* geom;
+	std::string verb;
 	std::string geom_str;
 
-	MatchAreaBBox();
+	MatchAreaBBox(const std::string& verb, const std::string& geom);
 	~MatchAreaBBox();
+
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const = 0;
 
 	static MatchAreaBBox* parse(const std::string& pattern);
 };
 
-struct MatchAreaBBoxExact : public MatchAreaBBox
+struct MatchAreaBBoxEquals : public MatchAreaBBox
 {
-	MatchAreaBBoxExact(const std::string& geom);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+	MatchAreaBBoxEquals(const std::string& geom);
+	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
 };
 
-struct MatchAreaBBoxContains : public MatchAreaBBox
+struct MatchAreaBBoxCovers : public MatchAreaBBox
 {
-	MatchAreaBBoxContains(const std::string& geom);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+	MatchAreaBBoxCovers(const std::string& geom);
+	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
+};
+
+struct MatchAreaBBoxIntersects : public MatchAreaBBox
+{
+	MatchAreaBBoxIntersects(const std::string& geom);
+	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
+};
+
+struct MatchAreaBBoxCoveredBy : public MatchAreaBBox
+{
+	MatchAreaBBoxCoveredBy(const std::string& geom);
+	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
 };
 #endif
 

@@ -98,10 +98,10 @@ void to::test<2>()
 	//ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12, 43 12)", md);
 
 	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
-	ensure_matches("area: bbox is POLYGON((10 43, 12 43, 12 45, 10 45, 10 43))", md);
-	ensure_not_matches("area: bbox is POINT EMPTY", md);
-	ensure_not_matches("area: bbox is POINT(11 44)", md);
-	ensure_not_matches("area: bbox is POLYGON((12 43, 10 44, 12 45, 12 43))", md);
+	ensure_matches("area: bbox equals POLYGON((10 43, 12 43, 12 45, 10 45, 10 43))", md);
+	ensure_not_matches("area: bbox equals POINT EMPTY", md);
+	ensure_not_matches("area: bbox equals POINT(11 44)", md);
+	ensure_not_matches("area: bbox equals POLYGON((12 43, 10 44, 12 45, 12 43))", md);
 
 	//std::vector< std::pair<float, float> > points;
 	//points.push_back(make_pair(43.0, 12.0));
@@ -134,19 +134,19 @@ void to::test<3>()
 	//ensure_not_matches("bbox:contains HULL(43 12, 44 10, 45 12, 43 12)", md);
 
 	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
-	ensure_matches("area: bbox contains POINT(11 44)", md);
-	ensure_matches("area: bbox contains POINT(12 43)", md);
-	ensure_matches("area: bbox contains LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md);
-	ensure_matches("area: bbox contains POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))", md);
-	ensure_matches("area: bbox contains POLYGON((10.5 43.5, 10.5 44.5, 11.5 44.5, 11.5 43.5, 10.5 43.5))", md);
-	ensure_matches("area: bbox contains POLYGON((12 43, 10 44, 12 45, 12 43))", md);
-	//ensure_not_matches("area: bbox contains INVALID()", md);
-	ensure_not_matches("area: bbox contains POINT(11 40)", md);
-	ensure_not_matches("area: bbox contains POINT(13 44)", md);
-	ensure_not_matches("area: bbox contains POINT( 5 40)", md);
-	ensure_not_matches("area: bbox contains LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)", md);
-	ensure_not_matches("area: bbox contains POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))", md);
-	ensure_not_matches("area: bbox contains POLYGON((12 42, 10 44, 12 45, 12 42))", md);
+	ensure_matches("area: bbox covers POINT(11 44)", md);
+	ensure_matches("area: bbox covers POINT(12 43)", md);
+	ensure_matches("area: bbox covers LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md);
+	ensure_matches("area: bbox covers POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))", md);
+	ensure_matches("area: bbox covers POLYGON((10.5 43.5, 10.5 44.5, 11.5 44.5, 11.5 43.5, 10.5 43.5))", md);
+	ensure_matches("area: bbox covers POLYGON((12 43, 10 44, 12 45, 12 43))", md);
+	//ensure_not_matches("area: bbox covers INVALID()", md);
+	ensure_not_matches("area: bbox covers POINT(11 40)", md);
+	ensure_not_matches("area: bbox covers POINT(13 44)", md);
+	ensure_not_matches("area: bbox covers POINT( 5 40)", md);
+	ensure_not_matches("area: bbox covers LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)", md);
+	ensure_not_matches("area: bbox covers POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))", md);
+	ensure_not_matches("area: bbox covers POLYGON((12 42, 10 44, 12 45, 12 42))", md);
 
 	//std::vector< std::pair<float, float> > points;
 	//points.push_back(make_pair(43.0, 12.0));
@@ -167,6 +167,54 @@ void to::test<3>()
 	//ensure_not_matches("bbox:contains BOX(42, 45, 12, 13)", md);
 #endif
 }
+
+// Try matching with "bbox intersects"
+template<> template<>
+void to::test<4>()
+{
+#ifdef HAVE_GEOS
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
+	ensure_matches("area: bbox intersects POINT(11 44)", md);
+	ensure_matches("area: bbox intersects POINT(12 43)", md);
+	ensure_matches("area: bbox intersects LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md);
+	ensure_matches("area: bbox intersects POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))", md);
+	ensure_matches("area: bbox intersects POLYGON((10.5 43.5, 10.5 44.5, 11.5 44.5, 11.5 43.5, 10.5 43.5))", md);
+	ensure_matches("area: bbox intersects POLYGON((12 43, 10 44, 12 45, 12 43))", md);
+	ensure_matches("area: bbox intersects POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))", md);
+	ensure_matches("area: bbox intersects POLYGON((12 42, 10 44, 12 45, 12 42))", md);
+	ensure_matches("area: bbox intersects POLYGON((9 40, 10 43, 10 40, 9 40))", md);  // Touches one vertex
+	ensure_not_matches("area: bbox intersects POINT(11 40)", md); // Outside
+	ensure_not_matches("area: bbox intersects POINT(13 44)", md); // Outside
+	ensure_not_matches("area: bbox intersects POINT( 5 40)", md); // Outside
+	ensure_not_matches("area: bbox intersects LINESTRING(9 40, 10 42, 10 40, 9 40)", md); // Disjoint
+	ensure_not_matches("area: bbox intersects POLYGON((9 40, 10 42, 10 40, 9 40))", md);  // Disjoint
+#endif
+}
+
+// Try matching with "bbox coveredby"
+template<> template<>
+void to::test<5>()
+{
+#ifdef HAVE_GEOS
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
+	ensure_matches("area: bbox coveredby POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))", md); // Same shape
+	ensure_matches("area: bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))", md); // Trapezoid containing area
+	ensure_not_matches("area: bbox coveredby POINT(11 44)", md); // Intersection exists but area is 0
+	ensure_not_matches("area: bbox coveredby POINT(12 43)", md); // Intersection exists but area is 0
+	ensure_not_matches("area: bbox coveredby POINT(11 40)", md); // Outside
+	ensure_not_matches("area: bbox coveredby POINT(13 44)", md); // Outside
+	ensure_not_matches("area: bbox coveredby POINT( 5 40)", md); // Outside
+	ensure_not_matches("area: bbox coveredby POLYGON((12 42, 10 44, 12 45, 12 42))", md);
+	ensure_not_matches("area: bbox coveredby POLYGON((12 43, 10 44, 12 45, 12 43))", md); // Triangle contained inside, touching borders (?)
+	ensure_not_matches("area: bbox coveredby POLYGON((10.5 43.5, 10.5 44.5, 11.5 44.5, 11.5 43.5, 10.5 43.5))", md); // Fully inside
+	ensure_not_matches("area: bbox coveredby LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md); // Same shape, but intersection area is 0
+	ensure_not_matches("area: bbox coveredby POLYGON((9 40, 10 43, 10 40, 9 40))", md);  // Touches one vertex
+	ensure_not_matches("area: bbox coveredby LINESTRING(9 40, 10 42, 10 40, 9 40)", md); // Disjoint
+	ensure_not_matches("area: bbox coveredby POLYGON((9 40, 10 42, 10 40, 9 40))", md);  // Disjoint
+#endif
+}
+
+
 
 }
 

@@ -224,7 +224,6 @@ struct Wizard
 		md_descs[types::TYPE_AREA] = "geographical area";
 		md_descs[types::TYPE_ENSEMBLE] = "description of the ensemble forecast run";
 		md_descs[types::TYPE_RUN] = "identification of the forecast run within a day";
-		md_descs[types::TYPE_BBOX] = "bounding box";
 
 		if (opts.hasNext())
 		{
@@ -424,7 +423,6 @@ public:
     	metadatas.push_back(types::TYPE_REFTIME);
     	metadatas.push_back(types::TYPE_AREA);
     	metadatas.push_back(types::TYPE_ENSEMBLE);
-    	//metadatas.push_back(types::TYPE_BBOX);
     	metadatas.push_back(types::TYPE_RUN);
 	}
 
@@ -594,6 +592,20 @@ public:
 			"Examples:\n"
 			" - GRIB:latfirst=100000,lonfirst=100000\n"
 			" - GRIB:Ni=1000,Nj=1000\n"
+			"\n"
+			"Syntax:\n"
+			" - area:bbox verb value\n"
+			" - Matches bounding boxes against a sample value.\n"
+			" - Available verbs:\n"
+			" -  equals: the bounding box to match must be the same as the sample value\n"
+			" -  covers: the bounding box to match must contain the sample value\n"
+			" -  coveredby: the bounding box to match must be contained inside the sample value\n"
+			" -  intersects: the bounding box to match must intersect the sample value\n"
+			"Examples:\n"
+			" - area:bbox equals POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))\n"
+			" - area:bbox covers POINT(11 44)\n"
+			" - area:bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))\n"
+			" - area:bbox intersects LINESTRING(10 43, 10 45, 13 45, 13 43)\n"
 			;
     	filter_help[types::TYPE_ENSEMBLE] = 
 			"Syntax:\n"
@@ -610,22 +622,6 @@ public:
 			"Examples:\n"
 			" - MINUTE,12\n"
 			" - MINUTE,18:30\n"
-			;
-    	filter_help[types::TYPE_BBOX] = 
-			"Syntax:\n"
-			" - bbox:verb value\n"
-			" - Matches bounding boxes against a sample value.\n"
-			" - Available verbs:\n"
-			" -  is: the bounding box to match must be the same as the sample value\n"
-			" -  contains: the bounding box to match must contain the sample value\n"
-			"Examples:\n"
-			" - bbox:is INVALID()\n"
-			" - bbox:is POINT(44, 11)\n"
-			" - bbox:is BOX(43, 45, 10, 12)\n"
-			" - bbox:is HULL(43 12, 44 10, 45 12, 43 12)\n"
-			" - bbox:contains POINT(44, 11)\n"
-			" - bbox:contains BOX(43.5, 44.5, 10.5, 11.5)\n"
-			" - bbox:contains HULL(43 12, 44 10, 45 12, 43 12)\n"
 			;
 		matchers = matcher::MatcherType::matcherNames();
 		for (vector<string>::const_iterator i = matchers.begin();

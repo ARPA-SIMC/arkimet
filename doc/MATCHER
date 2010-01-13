@@ -230,6 +230,30 @@ area:GRIB:type=2
 area:GRIB:type=0,latmin=4852500
 area:GRIB:type=2
 
+ * area:bbox verb value
+
+ Matches area bounding box against a sample value.
+ The sample value is represented by a WKT geometry.
+
+ Available verbs:
+
+  equals: the bounding box to match must be the same as the sample value
+  covers: the bounding box to match must contain the sample value
+  coveredby: the bounding box to match must be contained inside the sample value
+  intersects: the bounding box to match must intersect the sample value
+
+area:bbox equals POINT(11 44)
+area:bbox equals POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))
+area:bbox covers POINT(11 44)
+area:bbox covers LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)
+area:bbox covers POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))
+area:bbox coveredby POINT(11 44)
+area:bbox coveredby LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)
+area:bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))
+area:bbox intersects POINT(11 44)
+area:bbox intersects LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)
+area:bbox intersects POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))
+
 
 Ensemble
 --------
@@ -247,28 +271,6 @@ Ensemble
 
 ensemble:GRIB:value=1
 ensemble:GRIB:value=1,hour=12
-
-
-BBox
-----
-
- * bbox:verb value
-
- Matches bounding boxes against a sample value.
-
- Available verbs:
-
-  is: the bounding box to match must be the same as the sample value
-  contains: the bounding box to match must contain the sample value
-
-bbox:is INVALID()
-bbox:is POINT(44, 11)
-bbox:is BOX(43, 45, 10, 12)
-bbox:is HULL(43 12, 44 10, 45 12, 43 12)
-
-bbox:contains POINT(44, 11)
-bbox:contains BOX(43.5, 44.5, 10.5, 11.5)
-bbox:contains HULL(43 12, 44 10, 45 12, 43 12)
 
 
 Alias
