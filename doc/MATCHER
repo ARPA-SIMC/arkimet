@@ -254,6 +254,8 @@ area:bbox intersects POINT(11 44)
 area:bbox intersects LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)
 area:bbox intersects POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))
 
+ See: http://www.cs.montana.edu/courses/535/resources/Understanding%20spatial%20relations.htm
+
 
 Ensemble
 --------
