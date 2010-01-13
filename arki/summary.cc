@@ -1071,6 +1071,7 @@ struct StatsHull : public ItemVisitor
 {
 	ARKI_GEOS_GEOMETRYFACTORY gf;
 	vector<ARKI_GEOS_GEOMETRY*>* geoms;
+	std::set< Item<types::Area> > seen;
 
 	StatsHull() : geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
 	virtual ~StatsHull()
@@ -1086,11 +1087,16 @@ struct StatsHull : public ItemVisitor
 	virtual bool operator()(const arki::UItem<>& area)
 	{
 		if (!area.defined()) return true;
-		const ARKI_GEOS_GEOMETRY* g = area.upcast<types::Area>()->bbox();
-		//cerr << "Got: " << g << g->getGeometryType() << endl;
-		if (!g) return true;
-		//cerr << "Adding: " << g->toString() << endl;
-		geoms->push_back(g->clone());
+		Item<types::Area> a = area.upcast<types::Area>();
+		pair<set< Item<types::Area> >::iterator, bool> i = seen.insert(a);
+		if (i.second)
+		{
+			const ARKI_GEOS_GEOMETRY* g = a->bbox();
+			//cerr << "Got: " << g << g->getGeometryType() << endl;
+			if (!g) return true;
+			//cerr << "Adding: " << g->toString() << endl;
+			geoms->push_back(g->clone());
+		}
 		return true;
 	}
 
