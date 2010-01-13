@@ -222,6 +222,12 @@ std::ostream& Minute::writeToOstream(std::ostream& o) const
 			 << setw(2) << (minute / 60) << ":"
 			 << setw(2) << (minute % 60) << ")";
 }
+std::string Minute::exactQuery() const
+{
+	stringstream res;
+	res << "MINUTE," << setfill('0') << setw(2) << (minute/60) << ":" << setw(2) << (minute % 60);
+	return res.str();
+}
 
 int Minute::compare(const Run& o) const
 {

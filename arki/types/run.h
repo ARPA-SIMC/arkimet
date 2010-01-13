@@ -79,6 +79,7 @@ struct Minute : public Run
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Run& o) const;
 	virtual int compare(const Minute& o) const;
