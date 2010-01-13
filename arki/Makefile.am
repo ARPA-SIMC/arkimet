@@ -36,6 +36,7 @@ dist_noinst_HEADERS = \
 		dataset/discard.h \
 		dataset/empty.h \
 		dataset/merged.h \
+		dataset/gridspace.h \
 		dataset/index/base.h \
 		dataset/index/attr.h \
 		dataset/test-utils.h \
@@ -177,6 +178,7 @@ libarkimet_la_SOURCES = \
 		dataset/discard.cc \
 		dataset/empty.cc \
 		dataset/merged.cc \
+		dataset/gridspace.cc \
 		datasetpool.cc \
 		dispatcher.cc \
 		postprocess.cc \
@@ -258,6 +260,7 @@ tests_arki_test_SOURCES = \
 		dataset/discard-tut.cc \
 		dataset/empty-tut.cc \
 		dataset/merged-tut.cc \
+		dataset/gridspace-tut.cc \
 		dataset-tut.cc \
 		postprocess-tut.cc \
 		datasetpool-tut.cc \
