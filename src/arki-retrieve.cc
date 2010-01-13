@@ -28,6 +28,7 @@
 #include <arki/summary.h>
 #include <arki/dataset.h>
 #include <arki/runtime.h>
+#include <arki/nag.h>
 
 #include <fstream>
 #include <iostream>
@@ -331,7 +332,6 @@ struct SpaceChecker : public std::vector<bool>, public MetadataConsumer
         virtual bool operator()(Metadata& md)
 	{
 		int idx = mdg.index(md);
-		cerr << "IDX " << idx << "/" << size() << endl;
 		if (idx == -1)
 			++notfit;
 		else if (at(idx))
@@ -383,6 +383,7 @@ int main(int argc, const char* argv[])
 		runtime::Input in(file);
 		mdgrid.read(in.stream(), in.name());
 
+		/*
 		cerr << "Metadata soup:" << endl;
                 for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.soup.begin();
 				i != mdgrid.soup.end(); ++i)
@@ -394,7 +395,9 @@ int main(int argc, const char* argv[])
 				cerr << "  " << *j << endl;
 			}
 		}
+		*/
 
+		/*
 		cerr << "Matchers to resolve:" << endl;
                 for (std::map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = mdgrid.matchers.begin();
 				i != mdgrid.matchers.end(); ++i)
@@ -406,12 +409,16 @@ int main(int argc, const char* argv[])
 				cerr << "  " << *j << endl;
 			}
 		}
+		*/
 
 		// Detect the dataset
 		ConfigFile cfg;
 		ReadonlyDataset::readConfig(opts.next(), cfg);
+
+		/*
 		cerr << "Dataset config:" << endl;
 		cfg.output(cerr, "(stderr)");
+		*/
 
 		// Open the dataset
 		auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.sectionBegin()->second));
@@ -440,10 +447,11 @@ int main(int argc, const char* argv[])
 			}
 			return 1;
 		} else
-			cerr << "All matchers resolved." << endl;
+			nag::verbose("All matchers resolved unambiguously.");
 
-		cerr << "Number of combinations: " << mdgrid.maxidx << endl;
+		nag::verbose("Number of combinations: %d.", mdgrid.maxidx);
 
+		/*
 		for (size_t i = 0; i < mdgrid.maxidx; ++i)
 		{
 			cerr << " Combination " << i << ":" << endl;
@@ -456,15 +464,16 @@ int main(int argc, const char* argv[])
 		}
 
 		cerr << "Arkimet query: " << mdgrid.make_query() << endl;
+		*/
 
 		// Read the metadata and fit in a vector sized with maxidx
 		SpaceChecker sc(mdgrid);
 		dataset::DataQuery dq(Matcher::parse(mdgrid.make_query()), false);
 		ds->queryData(dq, sc);
 
-		cerr << "Found: " << sc.received << "/" << mdgrid.maxidx << endl;
-		cerr << "Duplicates: " << sc.duplicates << endl;
-		cerr << "Unfit: " << sc.notfit << endl;
+		nag::verbose("Found: %d/%d.", sc.received, mdgrid.maxidx);
+		nag::verbose("Duplicates: %d.", sc.duplicates);
+		nag::verbose("Unfit: %d.", sc.notfit);
 		
 		if (sc.received < mdgrid.maxidx)
 		{
