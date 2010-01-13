@@ -30,7 +30,6 @@
 #include <arki/types/level.h>
 #include <arki/types/timerange.h>
 #include <arki/types/area.h>
-#include <arki/bbox.h>
 #include <arki/utils/geosdef.h>
 
 #include <wibble/exception.h>
@@ -1070,26 +1069,28 @@ struct StatsReftime : public StatsVisitor
 #ifdef HAVE_GEOS
 struct StatsHull : public ItemVisitor
 {
-	BBox bbox;
 	ARKI_GEOS_GEOMETRYFACTORY gf;
-	auto_ptr< vector<ARKI_GEOS_GEOMETRY*> > geoms;
+	vector<ARKI_GEOS_GEOMETRY*>* geoms;
 
 	StatsHull() : geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
 	virtual ~StatsHull()
 	{
-		if (geoms.get())
+		if (geoms)
+		{
 			for (vector<ARKI_GEOS_GEOMETRY*>::iterator i = geoms->begin(); i != geoms->end(); ++i)
 				delete *i;
+			delete geoms;
+		}
 	}
 
 	virtual bool operator()(const arki::UItem<>& area)
 	{
 		if (!area.defined()) return true;
-		auto_ptr<ARKI_GEOS_GEOMETRY> g = bbox(area.upcast<types::Area>());
+		const ARKI_GEOS_GEOMETRY* g = area.upcast<types::Area>()->bbox();
 		//cerr << "Got: " << g << g->getGeometryType() << endl;
-		if (!g.get()) return true;
+		if (!g) return true;
 		//cerr << "Adding: " << g->toString() << endl;
-		geoms->push_back(g.release());
+		geoms->push_back(g->clone());
 		return true;
 	}
 
@@ -1098,7 +1099,8 @@ struct StatsHull : public ItemVisitor
 		if (geoms->empty())
 			return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
 
-		auto_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms.release()));
+		auto_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms));
+		geoms = 0;
 		return auto_ptr<ARKI_GEOS_GEOMETRY>(gc->convexHull());
 	}
 };
