@@ -75,6 +75,10 @@ namespace timerange {
 
 struct GRIB1 : public Timerange
 {
+protected:
+	std::ostream& writeNumbers(std::ostream& o) const;
+
+public:
 	unsigned char type, unit;
 	unsigned char p1, p2;
 
@@ -86,6 +90,7 @@ struct GRIB1 : public Timerange
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Timerange& o) const;
 	virtual int compare(const GRIB1& o) const;
@@ -104,6 +109,7 @@ struct GRIB2 : public Timerange
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
 
 	virtual int compare(const Timerange& o) const;
 	virtual int compare(const GRIB2& o) const;

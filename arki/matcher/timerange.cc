@@ -64,7 +64,9 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 		else if (second == missingUnit)
 			unit = first;
 		// Ensure that they are the same
-		else if (first != second)
+		else if (first == second)
+			unit = first;
+		else
 			throw wibble::exception::Consistency(
 					"parsing 'timerange' match expression",
 					"the two time values '" + args[1] + "' and '" + args[2] + "' have different units");

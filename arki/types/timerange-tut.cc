@@ -20,6 +20,7 @@
 
 #include <arki/types/test-utils.h>
 #include <arki/types/timerange.h>
+#include <arki/matcher.h>
 
 #include <sstream>
 #include <iostream>
@@ -67,6 +68,11 @@ void to::test<1>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1, 002, 002s, 003s");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB1 with hours
@@ -97,6 +103,11 @@ void to::test<2>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1, 002, 002h, 003h");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB1 with years
@@ -127,6 +138,11 @@ void to::test<3>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1, 002, 002y, 003y");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB1 with unknown values
@@ -157,6 +173,11 @@ void to::test<4>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB1, 250, 240h, 129h");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2 with seconds
@@ -179,6 +200,11 @@ void to::test<5>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2,2,254,2,3");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2 with hours
@@ -201,6 +227,11 @@ void to::test<6>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2,2,1,2,3");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2 with years
@@ -223,6 +254,11 @@ void to::test<7>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2,2,4,2,3");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2 with negative values
@@ -245,6 +281,11 @@ void to::test<8>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2,2,1,-2,-3");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2 with unknown values
@@ -267,6 +308,11 @@ void to::test<9>()
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "GRIB2,250,1,-2,-3");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
 }
 
 // Check GRIB2 with some values that used to fail

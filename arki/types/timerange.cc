@@ -498,9 +498,8 @@ void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 	enc.addUInt(type, 1).addUInt(unit, 1).addSInt(p1, 1).addSInt(p2, 1);
 }
 
-std::ostream& GRIB1::writeToOstream(std::ostream& o) const
+std::ostream& GRIB1::writeNumbers(std::ostream& o) const
 {
-	o << formatStyle(style()) << "(";
 	o << setfill('0') << internal;
 	switch ((t_enum_GRIB_TIMERANGE)type)
 	{
@@ -553,8 +552,22 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 			break;
 	}
 
-	o << setfill(' ');
+	return o << setfill(' ');
+}
+
+std::ostream& GRIB1::writeToOstream(std::ostream& o) const
+{
+	o << formatStyle(style()) << "(";
+	writeNumbers(o);
 	return o << ")";
+}
+
+std::string GRIB1::exactQuery() const
+{
+	stringstream o;
+	o << formatStyle(style()) << ", ";
+	writeNumbers(o);
+	return o.str();
 }
 
 int GRIB1::compare(const Timerange& o) const
@@ -699,6 +712,17 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 	  << setw(10) << (int)p1 << suffix << ", "
 	  << setw(10) << (int)p2 << suffix
 	  << ")";
+}
+
+std::string GRIB2::exactQuery() const
+{
+	stringstream o;
+	o << formatStyle(style()) << ","
+	  << (int)type << ","
+	  << (int)unit << ","
+	  << (int)p1 << ","
+	  << (int)p2;
+	return o.str();
 }
 
 int GRIB2::compare(const Timerange& o) const

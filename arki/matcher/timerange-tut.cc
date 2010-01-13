@@ -58,6 +58,10 @@ void to::test<1>()
 	ensure_not_matches("timerange:GRIB1,2,23s,23s", md);
 	ensure_not_matches("timerange:GRIB1,2,22s,22s", md);
 	// ensure_not_matches("timerange:GRIB1,2,22,23");
+
+	// Match timerange in years, which gave problems
+	md.set(timerange::GRIB1::create(2, 4, 2, 3));
+	ensure_matches("timerange:GRIB1,2,2y,3y", md);
 }
 
 // Try matching GRIB2 timerange
