@@ -60,7 +60,7 @@ struct Options : public StandardParserWithManpage
 
 struct UnresolvedMatcher : public std::string
 {
-	std::vector< Item<> > candidates;
+	std::set< Item<> > candidates;
 	Matcher matcher;
 
 	UnresolvedMatcher(types::Code code, const std::string& expr)
@@ -90,9 +90,10 @@ struct MatcherResolver : public summary::Visitor
 			for (vector<UnresolvedMatcher>::iterator j = i->second.begin();
 					j != i->second.end(); ++j)
 			{
+				if (j->candidates.find(md[pos]) != j->candidates.end()) continue;
 				if (j->matcher(md[pos]))
 				{
-					j->candidates.push_back(md[pos]);
+					j->candidates.insert(md[pos]);
 				}
 			}
 		}
