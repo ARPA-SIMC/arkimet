@@ -4,7 +4,7 @@
 /*
  * types/bbox - Bounding box metadata item
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,13 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+/**
+ * WARNING
+ * This metadata type is discontinued, and it exists only to preserve
+ * compatibility with existing saved data
+ */
+
 
 #include <arki/types.h>
 #include <arki/utils/geosfwd.h>

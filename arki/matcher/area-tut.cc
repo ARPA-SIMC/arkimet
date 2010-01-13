@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ void to::test<1>()
 	ensure_matches("area:GRIB:foo=15", md);
 }
 
-// Try matching with "bbox is"
+// Try matching with "bbox equals"
 template<> template<>
 void to::test<2>()
 {
@@ -116,7 +116,7 @@ void to::test<2>()
 #endif
 }
 
-// Try matching with "bbox contains"
+// Try matching with "bbox covers"
 template<> template<>
 void to::test<3>()
 {
@@ -147,6 +147,10 @@ void to::test<3>()
 	ensure_not_matches("area: bbox covers LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)", md);
 	ensure_not_matches("area: bbox covers POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))", md);
 	ensure_not_matches("area: bbox covers POLYGON((12 42, 10 44, 12 45, 12 42))", md);
+
+	// Known cases that gave trouble
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=75000, latlast=30000, lonfirst=-45000, lonlast=65000, type=0)"));
+	ensure_matches("area:bbox covers POLYGON((30 60, -20 60, -20 30, 30 30, 30 60))", md);
 
 	//std::vector< std::pair<float, float> > points;
 	//points.push_back(make_pair(43.0, 12.0));
