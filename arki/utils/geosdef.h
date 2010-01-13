@@ -29,6 +29,7 @@
 #if GEOS_VERSION < 3
 
 #include <geos/geom.h>
+#include <geos/io.h>
 #ifdef INLINE
 #undef INLINE
 #endif
@@ -46,6 +47,7 @@ typedef DefaultCoordinateSequence CoordinateArraySequence;
 #include <geos/geom/Point.h>
 #include <geos/geom/LinearRing.h>
 #include <geos/geom/Polygon.h>
+#include <geos/io/WKTReader.h>
 #ifdef INLINE
 #undef INLINE
 #endif
