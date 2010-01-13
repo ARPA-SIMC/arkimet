@@ -53,7 +53,6 @@ dist_noinst_HEADERS = \
 		matcher/area.h \
 		matcher/ensemble.h \
 		matcher/run.h \
-		matcher/bbox.h \
 		metadata.h \
 		scan/any.h \
 		summary.h \
@@ -148,7 +147,6 @@ libarkimet_la_SOURCES = \
 		matcher/area.cc \
 		matcher/ensemble.cc \
 		matcher/run.cc \
-		matcher/bbox.cc \
 		scan/any.cc \
 		dataset.cc \
 		dataset/index/base.cc \
@@ -231,7 +229,6 @@ tests_arki_test_SOURCES = \
 		matcher/area-tut.cc \
 		matcher/ensemble-tut.cc \
 		matcher/run-tut.cc \
-		matcher/bbox-tut.cc \
 		scan/any-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
