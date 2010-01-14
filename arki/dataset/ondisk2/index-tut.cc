@@ -449,8 +449,8 @@ template<> template<>
 void to::test<6>()
 {
 	// Pretend the data is in a very big file
-	md.source = source::Blob::create("grib", "antani", 0x100000000, 2000);
-	md1.source = source::Blob::create("grib", "blinda", 0xFFFFffffFFFF0000, 0xFFFF);
+	md.source = source::Blob::create("grib", "antani", 0x100000000LLU, 2000);
+	md1.source = source::Blob::create("grib", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF);
 
 	// Remove index if it exists
 	unlink("file1");
@@ -477,11 +477,11 @@ void to::test<6>()
 	test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
 	Item<source::Blob> s = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(s->offset, 0xFFFFffffFFFF0000u);
+	ensure_equals(s->offset, 0xFFFFffffFFFF0000LLU);
 	ensure_equals(s->size, 0xFFFFu);
 
 	s = mdc[1].source.upcast<source::Blob>();
-	ensure_equals(s->offset, 0x100000000u);
+	ensure_equals(s->offset, 0x100000000LLU);
 	ensure_equals(s->size, 2000u);
 
 	// TODO: level, timerange, area, ensemble, reftime
