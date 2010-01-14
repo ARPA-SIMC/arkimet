@@ -53,5 +53,7 @@ struct DummyGeos {}
 #define ARKI_GEOS_GEOMETRY DummyGeos
 #define ARKI_GEOS_GEOMETRYFACTORY DummyGeos
 
+#endif
+
 // vim:set ts=4 sw=4:
 #endif
