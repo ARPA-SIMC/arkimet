@@ -114,7 +114,7 @@ struct MDGrid
 	/**
 	 * Read metadata items and matchers from a file descriptor
 	 *
-	 * The input files is parsed one line at a time. Empty lines are
+	 * The input file is parsed one line at a time. Empty lines are
 	 * ignored.
 	 *
 	 * A line in the form:

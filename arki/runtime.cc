@@ -37,6 +37,7 @@
 #include <arki/formatter.h>
 #include <arki/postprocess.h>
 #include <arki/sort.h>
+#include <arki/dataset/gridspace.h>
 #include <arki/nag.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -115,6 +116,14 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" 'day:origin, -timerange, reftime' orders one day at a time"
 			" by origin first, then by reverse timerange, then by reftime."
 			" Default: do not sort");
+	gridspace = outputOpts->add<StringOption>("gridspace", 0, "gridspace", "file",
+			"output only those items that fit in a dense, discrete"
+			" matrix of metadata. The input file is parsed one"
+			" line at a time. A line in the form: 'type: value'"
+			" adds a metadata item to the corresponding grid"
+			" dimension. A line in the form: 'match type: expr'"
+			" adds the a metadata item that matches the given"
+			" arkimet expression.");
 
 	dispatchOpts = createGroup("Options controlling dispatching data to datasets");
 	dispatch = dispatchOpts->add< VectorOption<String> >("dispatch", 0, "dispatch", "conffile",
@@ -232,6 +241,19 @@ bool CommandLine::parse(int argc, const char* argv[])
 	{
 		if (dataOnly->boolValue())
 			throw wibble::exception::BadOption("--postprocess conflicts with --data");
+	}
+	if (gridspace->isSet())
+	{
+		Input in(gridspace->stringValue());
+		char c;
+		while (true)
+		{
+			in.stream().get(c);
+			if (in.stream().eof()) break;
+			if (in.stream().bad())
+				throw wibble::exception::File(gridspace->stringValue(), "reading one character");
+			gridspace_def << c;
+		}
 	}
 	
 	return false;
@@ -596,7 +618,15 @@ bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
 {
 	if (dispatcher)
 		return dispatcher->process(ds, name);
-	processor->process(ds, name);
+	if (gridspace->isSet())
+	{
+		gridspace_def.seekg(0);
+		dataset::Gridspace gs(ds);
+		gs.read(gridspace_def, gridspace->stringValue());
+		gs.validate();
+		processor->process(gs, name);
+	} else
+		processor->process(ds, name);
 	return true;
 }
 

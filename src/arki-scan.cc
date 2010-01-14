@@ -1,7 +1,7 @@
 /*
  * arki-scan - Scan files for metadata and import them into datasets.
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,63 +90,7 @@ int main(int argc, const char* argv[])
 		}
 
 		opts.doneProcessing();
-#if 0
 
-		bool scanInline = opts.dataInline->boolValue() || opts.dispatch->isSet();
-
-
-		// Query/scan all the "datasets"
-		for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
-				i != opts.inputInfo.sectionEnd(); ++i)
-		{
-			auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
-
-			opts.processSource(*ds);
-			try {
-				if (opts.mdispatch)
-					opts.mdispatch->setStartTime();
-
-				dataset::DataQuery dq(Matcher(), scanInline);
-				ds->queryData(dq, opts.consumer());
-
-				if (opts.mdispatch)
-				{
-				   	if (opts.verbose->boolValue())
-						cerr << i->second->value("path") << ": " << opts.mdispatch->summarySoFar() << endl;
-
-					if (opts.moveok->isSet())
-					{
-						if (!opts.mdispatch->countNotImported
-						 && !opts.mdispatch->countDuplicates
-						 && !opts.mdispatch->countInErrorDataset)
-							moveFile(*ds, opts.moveok->stringValue());
-					}
-					if (opts.moveko->isSet())
-					{
-						if (opts.mdispatch->countNotImported
-						 || opts.mdispatch->countDuplicates
-						 || opts.mdispatch->countInErrorDataset)
-							moveFile(*ds, opts.moveko->stringValue());
-					}
-
-					opts.mdispatch->flush();
-
-					opts.mdispatch->countSuccessful = 0;
-					opts.mdispatch->countNotImported = 0;
-					opts.mdispatch->countDuplicates = 0;
-					opts.mdispatch->countInErrorDataset = 0;
-				}
-			} catch (std::exception& e) {
-				// FIXME: this is a quick experiment: a better message can
-				// print some of the stats to document partial imports
-				cerr << i->second->value("path") << ": import FAILED: " << e.what() << endl;
-				//if (opts.moveko->isSet())
-					//moveFile(*ds, opts.moveko->stringValue());
-			}
-		}
-
-		opts.flush();
-#endif
 		if (all_successful)
 			return 0;
 		else

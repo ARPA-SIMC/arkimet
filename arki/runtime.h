@@ -111,6 +111,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::StringOption* report;
 	wibble::commandline::StringOption* sort;
 	wibble::commandline::StringOption* files;
+	wibble::commandline::StringOption* gridspace;
 	wibble::commandline::StringOption* moveok;
 	wibble::commandline::StringOption* moveko;
 	wibble::commandline::StringOption* movework;
@@ -124,6 +125,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	Output* output;
 	DatasetProcessor* processor;
 	MetadataDispatch* dispatcher;
+	std::stringstream gridspace_def;
 
 	CommandLine(const std::string& name, int mansection = 1);
 	~CommandLine();
