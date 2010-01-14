@@ -282,7 +282,7 @@ bool INVALID::operator==(const Type& o) const
 	return true;
 }
 
-Geometry* INVALID::geometry(const GeometryFactory& gf) const
+ARKI_GEOS_GEOMETRY* INVALID::geometry(const GeometryFactory& gf) const
 {
 	return 0;
 }
