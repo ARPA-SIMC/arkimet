@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -ue
+
 SOURCE="`pwd`/$1"
 TGDIR=`dirname "$1"`
 mkdir -p "$TGDIR"
