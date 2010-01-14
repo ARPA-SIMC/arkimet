@@ -27,15 +27,14 @@
 #include <string>
 #include <iosfwd>
 
-struct lua_State;
-
 namespace arki {
+struct Lua;
 struct Summary;
 
 class Report : public MetadataConsumer
 {
 protected:
-	mutable lua_State *L;
+	mutable Lua *L;
 	std::string m_filename;
 	bool m_accepts_metadata;
 	bool m_accepts_summary;
