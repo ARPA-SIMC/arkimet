@@ -46,7 +46,7 @@ dnl PKG_CHECK_EXISTS inside an if
 PKG_PROG_PKG_CONFIG
 
 dnl Compulsory libraries
-AX_LIB_SQLITE3
+AX_LIB_SQLITE3([3.6])
 
 dnl Wibble is embedded
 dnl LIBWIBBLE_DEFS
