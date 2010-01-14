@@ -122,7 +122,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	size_t val = 0x42FFFFffffFFFF;
+	size_t val = 0x42FFFFffffFFFFLLU;
 	PrecompiledQuery insert("insert", db);
 	insert.compile("INSERT INTO test (val) VALUES (?)");
 	insert.bind(1, val);
@@ -143,7 +143,7 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	off_t val = 0x42FFFFffffFFFF;
+	off_t val = 0x42FFFFffffFFFFLLU;
 	PrecompiledQuery insert("insert", db);
 	insert.compile("INSERT INTO test (val) VALUES (?)");
 	insert.bind(1, val);
