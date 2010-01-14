@@ -51,6 +51,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
+#ifdef HAVE_GEOS
 	BBox bbox;
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(97));
@@ -85,12 +86,14 @@ void to::test<2>()
 	ensure_equals(cs->getAt(4).y, 40.00);
 
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+#endif
 }
 
 // Test UTM areas
 template<> template<>
 void to::test<3>()
 {
+#ifdef HAVE_GEOS
 	BBox bbox;
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(90));
@@ -125,12 +128,14 @@ void to::test<3>()
 	ensure_similar(cs->getAt(4).y, 43.6864, 0.0001); // 43.8211
 
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+#endif
 }
 
 // Test rotated latlon areas
 template<> template<>
 void to::test<4>()
 {
+#ifdef HAVE_GEOS
 	BBox bbox;
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(447));
@@ -180,6 +185,7 @@ void to::test<4>()
 	ensure_similar(cs->getAt(22).x,  5.8357, 0.0001); ensure_similar(cs->getAt(22).y, 37.6802, 0.0001);
 	ensure_similar(cs->getAt(23).x,  6.0124, 0.0001); ensure_similar(cs->getAt(23).y, 35.4723, 0.0001);
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+#endif
 }
 
 }
