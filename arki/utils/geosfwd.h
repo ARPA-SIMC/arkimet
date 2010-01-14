@@ -49,9 +49,13 @@ struct GeometryFactory;
 
 #else
 
+namespace dummygeos {
 struct DummyGeos {}
-#define ARKI_GEOS_GEOMETRY DummyGeos
-#define ARKI_GEOS_GEOMETRYFACTORY DummyGeos
+}
+
+#define ARKI_GEOS_NS dummygeos
+#define ARKI_GEOS_GEOMETRY ARKI_GEOS_NS::DummyGeos
+#define ARKI_GEOS_GEOMETRYFACTORY ARKI_GEOS_NS::DummyGeos
 
 #endif
 
