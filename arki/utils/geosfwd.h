@@ -47,7 +47,11 @@ struct GeometryFactory;
 #define ARKI_GEOS_GEOMETRY ARKI_GEOS_NS::Geometry
 #define ARKI_GEOS_GEOMETRYFACTORY ARKI_GEOS_NS::GeometryFactory
 
-#endif
+#else
+
+struct DummyGeos {}
+#define ARKI_GEOS_GEOMETRY DummyGeos
+#define ARKI_GEOS_GEOMETRYFACTORY DummyGeos
 
 // vim:set ts=4 sw=4:
 #endif
