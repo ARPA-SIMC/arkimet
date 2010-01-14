@@ -4,7 +4,7 @@
 /*
  * arki/formatter/lua - Format arkimet values via a LUA script
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,9 @@
 #include <string>
 #include <arki/formatter.h>
 
-struct lua_State;
+namespace arki {
+struct Lua;
+}
 
 namespace arki {
 namespace formatter {
@@ -37,7 +39,7 @@ class Lua : public Formatter
 	std::string invoke(const char* func, const char* type, const T& v) const;
 
 protected:
-	mutable lua_State *L;
+	mutable arki::Lua *L;
 
 public:
 	Lua();
