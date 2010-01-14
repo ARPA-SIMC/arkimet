@@ -1090,7 +1090,7 @@ void to::test<17>()
 	system("mkdir -p testdir/2007");
 	system("touch testdir/2007/07-07.grib1");
 	// Truncate the last grib out of a file
-	if (truncate("testdir/2007/07-07.grib1", 6000000000) < 0)
+	if (truncate("testdir/2007/07-07.grib1", 6000000000LLU) < 0)
 		throw wibble::exception::System("truncating testdir/2007/07-07.grib1");
 	acquireSamples();
 	system("rm testdir/needs-check-do-not-pack");
