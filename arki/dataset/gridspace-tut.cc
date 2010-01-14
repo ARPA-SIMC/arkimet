@@ -47,9 +47,9 @@ struct arki_dataset_gridspace_shar {
 	ReadonlyDataset* ds2;
 	ReadonlyDataset* ds3;
 #endif
-	dataset::Gridspace ds;
+	//dataset::Gridspace ds;
 
-	arki_dataset_gridspace_shar() : ds1(0), ds2(0), ds3(0)
+	arki_dataset_gridspace_shar() // : ds1(0), ds2(0), ds3(0)
 	{
 #if 0
 		// Cleanup the test datasets
