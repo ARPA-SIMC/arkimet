@@ -20,21 +20,17 @@
 #ifndef ARKI_TESTS_LUA_H
 #define ARKI_TESTS_LUA_H
 
+#include <arki/utils/lua.h>
 #include <string>
 
-// This header is only included when we have lua support, so we do not need
-// conditional compilation here
-extern "C" {
-#include <lauxlib.h>
-#include <lualib.h>
-}
-
 namespace arki {
+struct Lua;
+
 namespace tests {
 
 struct Lua
 {
-	lua_State *L;
+	arki::Lua *L;
 	std::string m_filename;
 	size_t arg_count;
 
@@ -61,8 +57,8 @@ struct Lua
 	{
 		// If we are pushing the first argument, then also push the function
 		if (arg_count == 0)
-			lua_getglobal(L, "test");
-		arg.lua_push(L);
+			lua_getglobal(*L, "test");
+		arg.lua_push(*L);
 		++arg_count;
 	}
 
