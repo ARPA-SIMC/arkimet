@@ -161,6 +161,7 @@ auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const Item<types::Area>& v) const
 
 std::auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 {
+#ifdef HAVE_GEOS
 	// Set the area information as the 'area' global
 	v.lua_push(*L);
 	lua_setglobal(*L, "area");
@@ -190,6 +191,9 @@ std::auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 						gf->createPolygon(*lr, vector<Geometry*>()));
 		}
 	}
+#else
+	return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
+#endif
 }
 
 }
