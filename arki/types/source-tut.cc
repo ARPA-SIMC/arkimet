@@ -107,12 +107,12 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Item<Source> o = source::Blob::create("test", "testfile", 0x8000FFFFffffFFFF, 42);
+	Item<Source> o = source::Blob::create("test", "testfile", 0x8000FFFFffffFFFFLLU, 42);
 	ensure_equals(o->style(), Source::BLOB);
 	const source::Blob* v = o->upcast<source::Blob>();
 	ensure_equals(v->format, "test");
 	ensure_equals(v->filename, "testfile");
-	ensure_equals(v->offset, 0x8000FFFFffffFFFFu);
+	ensure_equals(v->offset, 0x8000FFFFffffFFFFLLU);
 	ensure_equals(v->size, 42u);
 
 	// Test encoding/decoding
