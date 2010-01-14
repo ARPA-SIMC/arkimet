@@ -50,7 +50,7 @@ struct GeometryFactory;
 #else
 
 namespace dummygeos {
-struct DummyGeos {}
+struct DummyGeos {};
 }
 
 #define ARKI_GEOS_NS dummygeos
