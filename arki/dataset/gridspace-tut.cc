@@ -21,6 +21,8 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
+#include <arki/types/origin.h>
+#include <arki/types/product.h>
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
 
@@ -42,38 +44,24 @@ struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
 
 struct arki_dataset_gridspace_shar {
 	ConfigFile config;
-#if 0
-	ReadonlyDataset* ds1;
-	ReadonlyDataset* ds2;
-	ReadonlyDataset* ds3;
-#endif
-	//dataset::Gridspace ds;
+	ReadonlyDataset* ds;
+	dataset::Gridspace* gs;
 
-	arki_dataset_gridspace_shar() // : ds1(0), ds2(0), ds3(0)
+	arki_dataset_gridspace_shar() : ds(0), gs(0)
 	{
-#if 0
 		// Cleanup the test datasets
-		system("rm -rf test200/*");
-		system("rm -rf test80/*");
-		system("rm -rf error/*");
+		system("rm -rf testds ; mkdir testds");
+		system("rm -rf error ; mkdir error");
 
 		// In-memory dataset configuration
 		string conf =
-			"[test200]\n"
+			"[testds]\n"
 			"type = test\n"
 			"step = daily\n"
-			"filter = origin: GRIB1,200\n"
+			"filter = origin: GRIB1\n"
 			"index = origin, reftime\n"
-			"name = test200\n"
-			"path = test200\n"
-			"\n"
-			"[test80]\n"
-			"type = test\n"
-			"step = daily\n"
-			"filter = origin: GRIB1,80\n"
-			"index = origin, reftime\n"
-			"name = test80\n"
-			"path = test80\n"
+			"name = testds\n"
+			"path = testds\n"
 			"\n"
 			"[error]\n"
 			"type = error\n"
@@ -94,63 +82,40 @@ struct arki_dataset_gridspace_shar {
 		ensure(scanner.next(md));
 		ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
 		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+		ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
 		ensure(!scanner.next(md));
 		dispatcher.flush();
 
-		ds.addDataset(*(ds1 = ReadonlyDataset::create(*config.section("test200"))));
-		ds.addDataset(*(ds2 = ReadonlyDataset::create(*config.section("test80"))));
-		ds.addDataset(*(ds3 = ReadonlyDataset::create(*config.section("error"))));
-#endif
+		ds = ReadonlyDataset::create(*config.section("testds"));
+		gs = new dataset::Gridspace(*ds);
 	}
 
 	~arki_dataset_gridspace_shar()
 	{
-#if 0
-		if (ds1) delete ds1;
-		if (ds2) delete ds2;
-		if (ds3) delete ds3;
-#endif
+		if (gs) delete gs;
+		if (ds) delete ds;
 	}
 };
 TESTGRP(arki_dataset_gridspace);
+
 
 // Test querying the datasets
 template<> template<>
 void to::test<1>()
 {
-#if 0
-	MetadataCollector mdc;
-	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 3u);
-#endif
+	// Trivially query only one item
+	gs->clear();
+	gs->add(types::origin::GRIB1::create(200, 0, 101));
+	gs->add(types::product::GRIB1::create(200, 140, 229));
+	gs->validate();
 
-#if 0
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 	MetadataCollector mdc;
-
-	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);
+	gs->queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// Check that the source record that comes out is ok
-	Source source = mdc[0].source;
-	ensure_equals(source.style, Source::BLOB);
-	ensure_equals(source.format, "grib1");
-	string fname;
-	size_t offset, len;
-	source.getBlob(fname, offset, len);
-	ensure_equals(fname, "test200/2007/07-08.grib1");
-	ensure_equals(offset, 0u);
-	ensure_equals(len, 7218u);
-
 	mdc.clear();
-	testds->query(Matcher::parse("origin:GRIB1,80"), false, mdc);
-	ensure_equals(mdc.size(), 0u);
-
-	mdc.clear();
-	testds->query(Matcher::parse("origin:GRIB1,98"), false, mdc);
-	ensure_equals(mdc.size(), 0u);
-#endif
+	gs->queryData(dataset::DataQuery(Matcher(), true), mdc);
+	ensure_equals(mdc.size(), 1u);
 }
 
 }

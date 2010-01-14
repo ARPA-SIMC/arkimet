@@ -179,6 +179,14 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 	return matchers.empty();
 }
 
+void MDGrid::clear()
+{
+	soup.clear();
+	matchers.clear();
+	dim_sizes.clear();
+	maxidx = 0;
+}
+
 void MDGrid::add(const Item<>& item)
 {
 	soup[item->serialisationCode()].push_back(item);
@@ -358,7 +366,7 @@ void Gridspace::validate()
 	nag::verbose("Found: %d/%d.", sc.received, mdgrid.maxidx);
 	nag::verbose("Duplicates: %d.", sc.duplicates);
 	nag::verbose("Unfit: %d.", sc.notfit);
-	
+
 	if (sc.received < mdgrid.maxidx)
 		throw wibble::exception::Consistency("validating gridspace",
 				str::fmtf("There are %d/%d missing items in the result set",

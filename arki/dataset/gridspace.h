@@ -101,6 +101,9 @@ struct MDGrid
 	 */
 	bool resolveMatchers(ReadonlyDataset& rd);
 
+	// Clear the grid space, starting afresh
+	void clear();
+
 	// Add an item to the grid space
 	void add(const Item<>& item);
 
@@ -154,6 +157,9 @@ public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'
 	Gridspace(ReadonlyDataset& nextds);
 	virtual ~Gridspace();
+
+	// Clear the grid space, starting afresh
+	void clear() { mdgrid.clear(); }
 
 	// Add an item to the grid space
 	void add(const Item<>& item) { mdgrid.add(item); }
