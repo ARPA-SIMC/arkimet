@@ -92,6 +92,8 @@ int MDGrid::index(const Metadata& md) const
 			return -1;
 		vector< Item<> >::const_iterator lb =
 			lower_bound(i->second.begin(), i->second.end(), mdi);
+		if (lb == i->second.end())
+			return -1;
 		if (*lb != mdi)
 			return -1;
 		int idx = lb - i->second.begin();
