@@ -195,8 +195,13 @@ Query sottoaree (ISAC)
     - nei summary, implementare una funzione che aggiunge bbox ai summary
     - nei metadata, se si fa get di bbox, calcolarlo al volo
  + arki-retrieve to gridspace
- - add --gridspace=file (where file is passed to Gridspace::read) to runtime.cc
+ + add --gridspace=file (where file is passed to Gridspace::read) to runtime.cc
    to be used in arki-scan and arki-query
+ - dispatch in file il cui nome dipende dal dato
+    - dataset sincronizzato con un Output, quando dà fuori un dato, cambia
+      l'output al file corrispondente
+    - lua per generare i nomi di file
+    - un qualche sistema per testare la cosa
  - annunciare
  - upload in Debian
     - build con wibble di sistema

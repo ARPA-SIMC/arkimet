@@ -426,7 +426,11 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 					// if the time span, force the use of
 					// the reftime index
 					if (dbrange > 0 && qrange * 100 / dbrange < 20)
+					{
 						query += " INDEXED BY md_idx_reftime";
+						constraints.push_back("reftime BETWEEN \'" + begin->toSQL()
+							    + "\' AND \'" + end->toSQL() + "\'");
+					}
 				}
 			}
 
