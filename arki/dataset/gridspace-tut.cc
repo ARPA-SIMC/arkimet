@@ -118,6 +118,25 @@ void to::test<1>()
 	ensure_equals(mdc.size(), 1u);
 }
 
+// Test querying the datasets, using matchers
+template<> template<>
+void to::test<2>()
+{
+	// Trivially query only one item
+	gs->clear();
+	gs->add(types::TYPE_ORIGIN, "GRIB1,200,0,101");
+	gs->add(types::TYPE_PRODUCT, "GRIB1,200,140,229");
+	gs->validate();
+
+	MetadataCollector mdc;
+	gs->queryData(dataset::DataQuery(Matcher(), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	mdc.clear();
+	gs->queryData(dataset::DataQuery(Matcher(), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+}
+
 }
 
 // vim:set ts=4 sw=4:

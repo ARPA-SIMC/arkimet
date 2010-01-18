@@ -345,6 +345,8 @@ void Gridspace::validate()
 	} else
 		nag::verbose("All matchers resolved unambiguously.");
 
+	mdgrid.consolidate();
+
 	nag::verbose("Number of combinations: %d.", mdgrid.maxidx);
 
 	/*
