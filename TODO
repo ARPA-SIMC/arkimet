@@ -209,14 +209,10 @@ Query sottoaree (ISAC)
     + if the metadata are remote, requery trying to condense reftime matchers
       (for the "match all of", use the original matcher expression, and maybe
       skip the redundant pure items that match it)
+ + per il reftime, espandere senza guardare il dataset, per beccare buchi
 
- - per il reftime, espandere senza guardare il dataset, per beccare buchi
- - match only (semplicemente aggiunge la query al resto, ma non fa filtraggio
-   successivo)
  - arki-dump --gridspace=file dataset
    show all gridspace steps
- - match all reftime: ...
-   espande in TUTTI i risultati del match
 
  - dispatch in file il cui nome dipende dal dato
     - --multioutput="tipo:pattern"

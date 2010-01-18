@@ -32,6 +32,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <iosfwd>
 
 namespace arki {
 
@@ -81,6 +82,8 @@ struct MDGrid
 	std::vector<size_t> dim_sizes;
 	size_t maxidx;
 	bool all_local;
+
+	MDGrid();
 
 	// Find the linearised matrix index for md. Returns -1 if md does not
 	// match a point in the matrix
@@ -214,6 +217,9 @@ public:
 	 * This needs to be called before querying the dataset
 	 */
 	void validate();
+
+	/// Dump details about this gridspace to the given output stream
+	void dump(std::ostream& out, const std::string& prefix = std::string()) const;
 
 	/**
 	 * Query the dataset using the given matcher, and sending the results to

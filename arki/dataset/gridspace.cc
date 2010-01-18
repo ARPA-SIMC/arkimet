@@ -85,6 +85,9 @@ struct MatcherResolver : public MetadataConsumer
 	}
 };
 
+MDGrid::MDGrid()
+	: maxidx(0), all_local(false) {}
+
 int MDGrid::index(const Metadata& md) const
 {
 	int res = 0;
@@ -499,6 +502,63 @@ void Gridspace::validate()
 	if (sc.duplicates)
 		throw wibble::exception::Consistency("validating gridspace",
 				"The dataset contains more than one element per data grid point");
+}
+
+/// Dump details about this gridspace to the given output stream
+void Gridspace::dump(ostream& o, const std::string& prefix) const
+{
+	using namespace gridspace;
+
+	// Dump soup
+	o << prefix << "Resolved metadata:" << endl;
+	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.soup.begin();
+			i != mdgrid.soup.end(); ++i)
+	{
+		o << prefix << " " << types::tag(i->first) << ":" << endl;
+		for (std::vector< Item<> >::const_iterator j = i->second.begin();
+				j != i->second.end(); ++j)
+			o << prefix << "  " << *j << endl;
+	}
+
+	// Dump one matchers
+	o << prefix << "Unresolved \"match one\" matchers:" << endl;
+	for (std::map<types::Code, std::vector<UnresolvedMatcher> >::const_iterator i = mdgrid.oneMatchers.begin();
+			i != mdgrid.oneMatchers.end(); ++i)
+	{
+		o << prefix << " " << types::tag(i->first) << ":" << endl;
+		for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+				j != i->second.end(); ++j)
+			o << prefix << "  " << *j << endl;
+	}
+
+	// Dump all matchers
+	o << prefix << "Unresolved \"match all\" matchers:" << endl;
+	for (std::map<types::Code, std::vector<UnresolvedMatcher> >::const_iterator i = mdgrid.allMatchers.begin();
+			i != mdgrid.allMatchers.end(); ++i)
+	{
+		o << prefix << " " << types::tag(i->first) << ":" << endl;
+		for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+				j != i->second.end(); ++j)
+			o << prefix << "  " << *j << endl;
+	}
+
+	// Dump extra matchers
+	o << prefix << "Extra match expressions used to make the dataset query:" << endl;
+	for (std::map<types::Code, std::vector<string> >::const_iterator i = mdgrid.extraMatchers.begin();
+			i != mdgrid.extraMatchers.end(); ++i)
+	{
+		o << prefix << " " << types::tag(i->first) << ":" << endl;
+		for (std::vector<string>::const_iterator j = i->second.begin();
+				j != i->second.end(); ++j)
+			o << prefix << "  " << *j << endl;
+	}
+
+	// Dump misc gridspace info
+	o << prefix << "Elements in metadata cache: " << mdgrid.mds.size() << endl;
+	o << prefix << "Number of grid dimensions: " << mdgrid.dim_sizes.size() << endl;
+	o << prefix << "Number of items in grid: " << mdgrid.maxidx << endl;
+	o << prefix << "Item data is " << (mdgrid.all_local ? "local" : "remote") << endl;
+	o << prefix << "Arkimet query: " << mdgrid.make_query() << endl;
 }
 
 void Gridspace::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
