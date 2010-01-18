@@ -150,6 +150,8 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 	Matcher matcher = Matcher::parse(make_query());
 	Summary summary;
 	rd.querySummary(matcher, summary);
+	if (summary.count() == 0)
+		throw wibble::exception::Consistency("validating gridspace information", "the metadata and matcher given do not match any item in the dataset");
 
 	MatcherResolver mr(matchers);
 	summary.visit(mr);

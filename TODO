@@ -197,6 +197,9 @@ Query sottoaree (ISAC)
  + arki-retrieve to gridspace
  + add --gridspace=file (where file is passed to Gridspace::read) to runtime.cc
    to be used in arki-scan and arki-query
+ - gridspace: fare query del summary dei dati dati senza i matcher, per evitare
+   di avere errori di matcher che non matchano quando in realtà sono stati
+   richiesti metadati assurdi
  - dispatch in file il cui nome dipende dal dato
     - dataset sincronizzato con un Output, quando dà fuori un dato, cambia
       l'output al file corrispondente
