@@ -197,10 +197,36 @@ Query sottoaree (ISAC)
  + arki-retrieve to gridspace
  + add --gridspace=file (where file is passed to Gridspace::read) to runtime.cc
    to be used in arki-scan and arki-query
- - gridspace: fare query del summary dei dati dati senza i matcher, per evitare
+ + gridspace: fare query del summary dei dati dati senza i matcher, per evitare
    di avere errori di matcher che non matchano quando in realtà sono stati
    richiesti metadati assurdi
+ - query metadata instead of summary
+    - query metadata matching the pure items given, plus the "match only"
+    - then run any/all expansions and add the items
+    - if the metadata are local, no need to requery: filter that
+    - if the metadata are remote, requery trying to condense reftime matchers
+      (for the "match all of", use the original matcher expression, and maybe
+      skip the redundant pure items that match it)
+
+ - match one (espande con un solo elemento)
+ - match all existing (espande con tutte le possibilità)
+   (per il reftime, espandere senza guardare il dataset, per beccare buchi)
+ - match only (semplicemente aggiunge la query al resto, ma non fa filtraggio
+   successivo)
+ - arki-dump --gridspace=file dataset
+   show all gridspace steps
+ - match all reftime: ...
+   espande in TUTTI i risultati del match
+   (a sto punto invece di querare i summary querare direttamente i metadati,
+    tenerli in memoria e farci sopra i conti)
+    - avendo tutti i metadati in memoria, si può anche far caso a che tipo di
+      source hanno: se hanno source locali, non importa rifare la query per
+      avere i dati
  - dispatch in file il cui nome dipende dal dato
+    - --multioutput="tipo:pattern"
+    - tipo è un file lua in /etc/arkimet/multioutput/
+    - pattern è passato alla variabile global "pattern"
+    - il file parsa il pattern e restituisce una funzione (md)->string
     - dataset sincronizzato con un Output, quando dà fuori un dato, cambia
       l'output al file corrispondente
     - lua per generare i nomi di file

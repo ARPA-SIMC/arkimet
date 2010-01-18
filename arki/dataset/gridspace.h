@@ -26,6 +26,7 @@
 #include <arki/dataset.h>
 #include <arki/types.h>
 #include <arki/matcher.h>
+#include <arki/utils/metadata.h>
 #include <string>
 #include <vector>
 #include <set>
@@ -72,9 +73,12 @@ struct UnresolvedMatcher : public std::string
 struct MDGrid
 {
 	std::map<types::Code, std::vector< Item<> > > soup;
-	std::map<types::Code, std::vector<UnresolvedMatcher> > matchers;
+	std::map<types::Code, std::vector<UnresolvedMatcher> > oneMatchers;
+	std::map<types::Code, std::vector<UnresolvedMatcher> > allMatchers;
+	utils::metadata::Collector mds;
 	std::vector<size_t> dim_sizes;
 	size_t maxidx;
+	bool all_local;
 
 	// Find the linearised matrix index for md. Returns -1 if md does not
 	// match a point in the matrix
@@ -109,7 +113,11 @@ struct MDGrid
 
 	// Add a match expression (to be resolved in one item) to the grid
 	// space
-	void add(types::Code code, const std::string& expr);
+	void addOne(types::Code code, const std::string& expr);
+
+	// Add a match expression (to be resolved in all existing matching
+	// items) to the grid space
+	void addAll(types::Code code, const std::string& expr);
 
 	/**
 	 * Read metadata items and matchers from a file descriptor
@@ -166,9 +174,16 @@ public:
 
 	// Add a match expression (to be resolved in one item) to the grid
 	// space
-	void add(types::Code code, const std::string& expr)
+	void addOne(types::Code code, const std::string& expr)
 	{
-		mdgrid.add(code, expr);
+		mdgrid.addOne(code, expr);
+	}
+
+	// Add a match expression (to be resolved in all existing matching
+	// items) to the grid space
+	void addAll(types::Code code, const std::string& expr)
+	{
+		mdgrid.addAll(code, expr);
 	}
 
 	/**

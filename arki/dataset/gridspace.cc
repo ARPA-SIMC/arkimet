@@ -45,36 +45,40 @@ namespace dataset {
 
 namespace gridspace {
 
-struct MatcherResolver : public summary::Visitor
+struct MatcherResolver : public MetadataConsumer
 {
-	std::map<types::Code, std::vector<UnresolvedMatcher> >& matchers;
+	std::map<types::Code, std::vector<UnresolvedMatcher> >& oneMatchers;
+	std::map<types::Code, std::vector<UnresolvedMatcher> >& allMatchers;
 
-	MatcherResolver(std::map<types::Code, std::vector<UnresolvedMatcher> >& matchers)
-		: matchers(matchers) {}
+	MatcherResolver(std::map<types::Code, std::vector<UnresolvedMatcher> >& oneMatchers,
+			std::map<types::Code, std::vector<UnresolvedMatcher> >& allMatchers)
+		: oneMatchers(oneMatchers), allMatchers(allMatchers) {}
 
-	virtual bool operator()(const std::vector< UItem<> >& md, const Item<summary::Stats>& stats)
+	void resolve(std::map<types::Code, std::vector<UnresolvedMatcher> >& matchers, const Metadata& md)
 	{
 		for (map<types::Code, vector<UnresolvedMatcher> >::iterator i = matchers.begin();
 				i != matchers.end(); ++i)
 		{
-			int pos = posForCode(i->first);
-			if (pos == -1)
-				throw wibble::exception::Consistency(
-						"resolving matcher for " + types::tag(i->first),
-						"metadata item not tracked by summaries");
+			UItem<> item = md.get(i->first);
 
-			if (!md[pos].defined()) continue;
+			if (!item.defined()) continue;
 
 			for (vector<UnresolvedMatcher>::iterator j = i->second.begin();
 					j != i->second.end(); ++j)
 			{
-				if (j->candidates.find(md[pos]) != j->candidates.end()) continue;
-				if (j->matcher(md[pos]))
+				if (j->candidates.find(item) != j->candidates.end()) continue;
+				if (j->matcher(item))
 				{
-					j->candidates.insert(md[pos]);
+					j->candidates.insert(item);
 				}
 			}
 		}
+	}
+
+	virtual bool operator()(Metadata& md)
+        {
+		resolve(oneMatchers, md);
+		resolve(allMatchers, md);
 		return true;
 	}
 };
@@ -118,77 +122,141 @@ std::vector< Item<> > MDGrid::expand(size_t index) const
 
 std::string MDGrid::make_query() const
 {
-	vector<string> ands;
+	set<types::Code> dimensions;
+
+	// Collect the codes as dimensions of relevance
 	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = soup.begin();
 			i != soup.end(); ++i)
+		dimensions.insert(i->first);
+	for (map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = oneMatchers.begin();
+			i != oneMatchers.end(); ++i)
+		dimensions.insert(i->first);
+	for (map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = allMatchers.begin();
+			i != allMatchers.end(); ++i)
+		dimensions.insert(i->first);
+
+	vector<string> ands;
+	for (set<types::Code>::const_iterator i = dimensions.begin(); i != dimensions.end(); ++i)
 	{
 		vector<string> ors;
-		map< types::Code, vector<UnresolvedMatcher> >::const_iterator mi = matchers.find(i->first);
-		if (mi != matchers.end())
-			std::copy(mi->second.begin(), mi->second.end(), back_inserter(ors));
-		for (std::vector< Item<> >::const_iterator j = i->second.begin();
-				j != i->second.end(); ++j)
-			ors.push_back((*j)->exactQuery());
-		ands.push_back(types::tag(i->first) + ":" +
+
+		std::map<types::Code, std::vector< Item<> > >::const_iterator si = soup.find(*i);
+		map< types::Code, vector<UnresolvedMatcher> >::const_iterator oi = oneMatchers.find(*i);
+		map< types::Code, vector<UnresolvedMatcher> >::const_iterator ai = allMatchers.find(*i);
+
+		// OR all the matchers first
+		if (oi != oneMatchers.end())
+			std::copy(oi->second.begin(), oi->second.end(), back_inserter(ors));
+		if (ai != allMatchers.end())
+			std::copy(ai->second.begin(), ai->second.end(), back_inserter(ors));
+
+		Matcher m = Matcher::parse(types::tag(*i) + ":" +
 				str::join(ors.begin(), ors.end(), " or "));
-	}
-	for (map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = matchers.begin();
-			i != matchers.end(); ++i)
-	{
-		// Codes that are in soup have already been handled
-		if (soup.find(i->first) != soup.end()) continue;
-		ands.push_back(types::tag(i->first) + ":" +
-				str::join(i->second.begin(), i->second.end(), " or "));
+
+		// then OR all the soup items that are not matched by the ORed matchers
+		for (std::vector< Item<> >::const_iterator j = si->second.begin();
+				j != si->second.end(); ++j)
+			if (!m(*j))
+				ors.push_back((*j)->exactQuery());
 	}
 	return str::join(ands.begin(), ands.end(), "; ");
 }
 
+struct AreAllLocal : public MetadataConsumer
+{
+	bool allLocal;
+	MetadataConsumer& next;
+
+	AreAllLocal(MetadataConsumer& next) : allLocal(true), next(next) {}
+
+	bool operator()(Metadata& md)
+        {
+		if (allLocal && md.source->style() == types::Source::INLINE)
+			allLocal = false;
+		return next(md);
+        }
+
+};
+
 bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 {
-	if (matchers.empty()) return true;
+	if (oneMatchers.empty() && allMatchers.empty()) return true;
 
+	// Query the metadata only and keep them around
 	Matcher matcher = Matcher::parse(make_query());
-	Summary summary;
-	rd.querySummary(matcher, summary);
-	if (summary.count() == 0)
+	mds.clear();
+	AreAllLocal aal(mds);
+	rd.queryData(DataQuery(matcher, false), aal);
+	all_local = aal.allLocal;
+
+	if (mds.empty())
 		throw wibble::exception::Consistency("validating gridspace information", "the metadata and matcher given do not match any item in the dataset");
 
-	MatcherResolver mr(matchers);
-	summary.visit(mr);
+	MatcherResolver mr(oneMatchers, allMatchers);
+	mds.queryData(DataQuery(Matcher(), false), mr);
 
-	vector<types::Code> solved;
-	for (map< types::Code, vector<UnresolvedMatcher> >::iterator i = matchers.begin();
-			i != matchers.end(); ++i)
+	// Copy items from solved oneMatchers to the soup
+	for (map< types::Code, vector<UnresolvedMatcher> >::iterator i = oneMatchers.begin();
+			i != oneMatchers.end(); )
 	{
 		vector<UnresolvedMatcher> unsolved;
 		for (vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
 				j != i->second.end(); ++j)
-		{
 			if (j->candidates.size() == 1)
-			{
 				soup[i->first].push_back(*j->candidates.begin());
-			} else {
+			else
 				unsolved.push_back(*j);
-			}
-		}
 		if (unsolved.empty())
-			solved.push_back(i->first);
+		{
+			map< types::Code, vector<UnresolvedMatcher> >::iterator next = i;
+			++next;
+			oneMatchers.erase(i);
+			i = next;
+		}
 		else
+		{
 			i->second = unsolved;
+			++i;
+		}
 	}
-	for (vector<types::Code>::const_iterator i = solved.begin();
-			i != solved.end(); ++i)
-		matchers.erase(*i);
 
-	return matchers.empty();
+	// Copy items from solved allMatchers to the soup
+	for (map< types::Code, vector<UnresolvedMatcher> >::iterator i = allMatchers.begin();
+			i != allMatchers.end(); )
+	{
+		vector<UnresolvedMatcher> unsolved;
+		for (vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+				j != i->second.end(); ++j)
+			if (j->candidates.empty())
+				unsolved.push_back(*j);
+			else
+				std::copy(j->candidates.begin(), j->candidates.end(), back_inserter(soup[i->first]));
+		if (unsolved.empty())
+		{
+			map< types::Code, vector<UnresolvedMatcher> >::iterator next = i;
+			++next;
+			allMatchers.erase(i);
+			i = next;
+		}
+		else
+		{
+			i->second = unsolved;
+			++i;
+		}
+	}
+
+	return oneMatchers.empty() && allMatchers.empty();
 }
 
 void MDGrid::clear()
 {
 	soup.clear();
-	matchers.clear();
+	oneMatchers.clear();
+	allMatchers.clear();
+	mds.clear();
 	dim_sizes.clear();
 	maxidx = 0;
+	all_local = false;
 }
 
 void MDGrid::add(const Item<>& item)
@@ -196,9 +264,14 @@ void MDGrid::add(const Item<>& item)
 	soup[item->serialisationCode()].push_back(item);
 }
 
-void MDGrid::add(types::Code code, const std::string& expr)
+void MDGrid::addOne(types::Code code, const std::string& expr)
 {
-	matchers[code].push_back(UnresolvedMatcher(code, expr));
+	oneMatchers[code].push_back(UnresolvedMatcher(code, expr));
+}
+
+void MDGrid::addAll(types::Code code, const std::string& expr)
+{
+	allMatchers[code].push_back(UnresolvedMatcher(code, expr));
 }
 
 void MDGrid::read(std::istream& input, const std::string& fname)
@@ -220,11 +293,15 @@ void MDGrid::read(std::istream& input, const std::string& fname)
 		}
 		string type = line.substr(0, pos);
 		string rest = str::trim(line.substr(pos+1));
-		if (str::startsWith(type, "match "))
+		if (str::startsWith(type, "match one "))
 		{
-			type = str::trim(type.substr(6));
+			type = str::trim(type.substr(10));
 			types::Code code = types::parseCodeName(type);
-			add(code, rest);
+			addOne(code, rest);
+		} else if (str::startsWith(type, "match all ")) {
+			type = str::trim(type.substr(10));
+			types::Code code = types::parseCodeName(type);
+			addAll(code, rest);
 		} else {
 			types::Code code = types::parseCodeName(type);
 			Item<> item = decodeString(code, rest);
@@ -324,9 +401,8 @@ void Gridspace::validate()
 	{
 		stringstream err;
 		err << "Some matchers did not resolve unambiguously to one metadata item:" << endl;
-		for (std::map< types::Code, vector<gridspace::UnresolvedMatcher> >::const_iterator i = mdgrid.matchers.begin();
-				i != mdgrid.matchers.end(); ++i)
-		{
+		for (std::map< types::Code, vector<gridspace::UnresolvedMatcher> >::const_iterator i = mdgrid.oneMatchers.begin();
+				i != mdgrid.oneMatchers.end(); ++i)
 			for (std::vector<gridspace::UnresolvedMatcher>::const_iterator j = i->second.begin();
 					j != i->second.end(); ++j)
 			{
@@ -340,7 +416,11 @@ void Gridspace::validate()
 					    << ")" << endl;
 				}
 			}
-		}
+		for (std::map< types::Code, vector<gridspace::UnresolvedMatcher> >::const_iterator i = mdgrid.allMatchers.begin();
+				i != mdgrid.allMatchers.end(); ++i)
+			for (std::vector<gridspace::UnresolvedMatcher>::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+				err << " " << j->matcher << "(no match)" << endl;
 		throw wibble::exception::Consistency("resolving gridspace matchers", err.str());
 	} else
 		nag::verbose("All matchers resolved unambiguously.");
