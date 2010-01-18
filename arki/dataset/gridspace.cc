@@ -150,17 +150,18 @@ std::string MDGrid::make_query() const
 		if (ai != allMatchers.end())
 			std::copy(ai->second.begin(), ai->second.end(), back_inserter(ors));
 
-		Matcher m = Matcher::parse(types::tag(*i) + ":" +
+		Matcher m;
+		if (!ors.empty())
+			m = Matcher::parse(types::tag(*i) + ":" +
 				str::join(ors.begin(), ors.end(), " or "));
 
 		// then OR all the soup items that are not matched by the ORed matchers
 		if (si != soup.end())
-		{
 			for (std::vector< Item<> >::const_iterator j = si->second.begin();
 					j != si->second.end(); ++j)
-				if (!m(*j))
+				if (m.empty() || !m(*j))
 					ors.push_back((*j)->exactQuery());
-		}
+		ands.push_back(types::tag(*i) + ":" + str::join(ors.begin(), ors.end(), " or "));
 	}
 	return str::join(ands.begin(), ands.end(), "; ");
 }
@@ -183,8 +184,6 @@ struct AreAllLocal : public MetadataConsumer
 
 bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 {
-	if (oneMatchers.empty() && allMatchers.empty()) return true;
-
 	// Query the metadata only and keep them around
 	Matcher matcher = Matcher::parse(make_query());
 	mds.clear();
@@ -194,6 +193,8 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 
 	if (mds.empty())
 		throw wibble::exception::Consistency("validating gridspace information", "the metadata and matcher given do not match any item in the dataset");
+
+	if (oneMatchers.empty() && allMatchers.empty()) return true;
 
 	MatcherResolver mr(oneMatchers, allMatchers);
 	mds.queryData(DataQuery(Matcher(), false), mr);
@@ -450,7 +451,7 @@ void Gridspace::validate()
 	// Read the metadata and fit in a vector sized with maxidx
 	gridspace::SpaceChecker sc(mdgrid);
 	dataset::DataQuery dq(Matcher::parse(mdgrid.make_query()), false);
-	nextds.queryData(dq, sc);
+	mdgrid.mds.queryData(dq, sc);
 
 	nag::verbose("Found: %d/%d.", sc.received, mdgrid.maxidx);
 	nag::verbose("Duplicates: %d.", sc.duplicates);
@@ -468,8 +469,14 @@ void Gridspace::validate()
 
 void Gridspace::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
-	gridspace::FilterValid fv(mdgrid, consumer);
-	nextds.queryData(q, fv);
+	if (mdgrid.all_local || !q.withData)
+	{
+		gridspace::FilterValid fv(mdgrid, consumer);
+		mdgrid.mds.queryData(q, fv);
+	} else {
+		gridspace::FilterValid fv(mdgrid, consumer);
+		nextds.queryData(q, fv);
+	}
 }
 
 void Gridspace::querySummary(const Matcher& matcher, Summary& summary)

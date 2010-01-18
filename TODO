@@ -201,14 +201,14 @@ Query sottoaree (ISAC)
    di avere errori di matcher che non matchano quando in realtà sono stati
    richiesti metadati assurdi
  - query metadata instead of summary
-    - query metadata matching the pure items given, plus the "match only"
-    - then run any/all expansions and add the items
+    + query metadata matching the pure items given, plus the "match only"
+    + then run any/all expansions and add the items
     - if the metadata are local, no need to requery: filter that
     - if the metadata are remote, requery trying to condense reftime matchers
       (for the "match all of", use the original matcher expression, and maybe
       skip the redundant pure items that match it)
 
- - match one (espande con un solo elemento)
+ + match one (espande con un solo elemento)
  - match all existing (espande con tutte le possibilità)
    (per il reftime, espandere senza guardare il dataset, per beccare buchi)
  - match only (semplicemente aggiunge la query al resto, ma non fa filtraggio
