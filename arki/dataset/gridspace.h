@@ -25,6 +25,7 @@
 
 #include <arki/dataset.h>
 #include <arki/types.h>
+#include <arki/types/time.h>
 #include <arki/matcher.h>
 #include <arki/utils/metadata.h>
 #include <string>
@@ -75,6 +76,7 @@ struct MDGrid
 	std::map<types::Code, std::vector< Item<> > > soup;
 	std::map<types::Code, std::vector<UnresolvedMatcher> > oneMatchers;
 	std::map<types::Code, std::vector<UnresolvedMatcher> > allMatchers;
+	std::map<types::Code, std::vector<std::string> > extraMatchers;
 	utils::metadata::Collector mds;
 	std::vector<size_t> dim_sizes;
 	size_t maxidx;
@@ -118,6 +120,9 @@ struct MDGrid
 	// Add a match expression (to be resolved in all existing matching
 	// items) to the grid space
 	void addAll(types::Code code, const std::string& expr);
+
+	// Add a discrete time sequence (@see types::reftime::Position::generate())
+	void addTimeInterval(const Item<types::Time>& begin, const Item<types::Time>& end, int step);
 
 	/**
 	 * Read metadata items and matchers from a file descriptor
@@ -185,6 +190,13 @@ public:
 	{
 		mdgrid.addAll(code, expr);
 	}
+
+	// Add a discrete time sequence (@see types::reftime::Position::generate())
+	void addTimeInterval(const Item<types::Time>& begin, const Item<types::Time>& end, int step)
+	{
+		mdgrid.addTimeInterval(begin, end, step);
+	}
+
 
 	/**
 	 * Read grid space information from the given input stream

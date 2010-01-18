@@ -156,6 +156,27 @@ void to::test<3>()
 	ensure_equals(mdc.size(), 1u);
 }
 
+// Test parsing reftime sequences
+template<> template<>
+void to::test<4>()
+{
+	stringstream str(
+			"origin: GRIB1(200,0,101)\n"
+			"match one product: GRIB1,200,140,229\n"
+			"reftime sequence: from 2007-07-08 13:00:00 to 2007-07-08 13:00:01 step 10\n"
+	);
+	gs->read(str, "(memory)");
+	gs->validate();
+
+	MetadataCollector mdc;
+	gs->queryData(dataset::DataQuery(Matcher(), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	mdc.clear();
+	gs->queryData(dataset::DataQuery(Matcher(), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+}
+
 }
 
 // vim:set ts=4 sw=4:

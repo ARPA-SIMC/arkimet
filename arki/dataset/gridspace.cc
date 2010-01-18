@@ -34,6 +34,8 @@
 #include <arki/report.h>
 #endif
 
+#include <wibble/regexp.h>
+
 // #include <iostream>
 
 using namespace std;
@@ -134,6 +136,9 @@ std::string MDGrid::make_query() const
 	for (map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = allMatchers.begin();
 			i != allMatchers.end(); ++i)
 		dimensions.insert(i->first);
+	for (map< types::Code, vector<string> >::const_iterator i = extraMatchers.begin();
+			i != extraMatchers.end(); ++i)
+		dimensions.insert(i->first);
 
 	vector<string> ands;
 	for (set<types::Code>::const_iterator i = dimensions.begin(); i != dimensions.end(); ++i)
@@ -143,12 +148,15 @@ std::string MDGrid::make_query() const
 		std::map<types::Code, std::vector< Item<> > >::const_iterator si = soup.find(*i);
 		map< types::Code, vector<UnresolvedMatcher> >::const_iterator oi = oneMatchers.find(*i);
 		map< types::Code, vector<UnresolvedMatcher> >::const_iterator ai = allMatchers.find(*i);
+		map< types::Code, vector<string> >::const_iterator ei = extraMatchers.find(*i);
 
 		// OR all the matchers first
 		if (oi != oneMatchers.end())
 			std::copy(oi->second.begin(), oi->second.end(), back_inserter(ors));
 		if (ai != allMatchers.end())
 			std::copy(ai->second.begin(), ai->second.end(), back_inserter(ors));
+		if (ei != extraMatchers.end())
+			std::copy(ei->second.begin(), ei->second.end(), back_inserter(ors));
 
 		Matcher m;
 		if (!ors.empty())
@@ -278,8 +286,24 @@ void MDGrid::addAll(types::Code code, const std::string& expr)
 	allMatchers[code].push_back(UnresolvedMatcher(code, expr));
 }
 
+void MDGrid::addTimeInterval(const Item<types::Time>& begin, const Item<types::Time>& end, int step)
+{
+	// Condense the interval in a query, to avoid make_query generating
+	// huge queries when there are long dense intervals
+	extraMatchers[types::TYPE_REFTIME].push_back(">= " + begin->toSQL() + ",<" + end->toSQL());
+
+	vector< Item<types::reftime::Position> > items = types::reftime::Position::generate(*begin, *end, step);
+	for (vector< Item<types::reftime::Position> >::const_iterator i = items.begin();
+			i != items.end(); ++i)
+		soup[types::TYPE_REFTIME].push_back(*i);
+}
+
 void MDGrid::read(std::istream& input, const std::string& fname)
 {
+#define SEP "[[:blank:]]+"
+	ERegexp re_rtinterval("^[[:blank:]]*from" SEP "(.+)" SEP "to" SEP "(.+)" SEP "step" SEP "([0-9]+)[[:space:]]*$", 4, REG_ICASE);
+#undef SEP
+
 	string line;
 	while (!input.eof())
 	{
@@ -306,6 +330,16 @@ void MDGrid::read(std::istream& input, const std::string& fname)
 			type = str::trim(type.substr(10));
 			types::Code code = types::parseCodeName(type);
 			addAll(code, rest);
+		} else if (str::startsWith(type, "reftime sequence")) {
+			if (re_rtinterval.match(rest))
+			{
+				Item<types::Time> begin = types::Time::createFromSQL(re_rtinterval[1]);
+				Item<types::Time> end = types::Time::createFromSQL(re_rtinterval[2]);
+				int step = strtoul(re_rtinterval[3].c_str(), 0, 10);
+				addTimeInterval(begin, end, step);
+			} else
+				throw wibble::exception::Consistency("parsing file " + fname,
+						"cannot parse reftime sequence \"" + rest + "\"");
 		} else {
 			types::Code code = types::parseCodeName(type);
 			Item<> item = decodeString(code, rest);
