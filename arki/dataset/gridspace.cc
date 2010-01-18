@@ -483,9 +483,8 @@ void Gridspace::querySummary(const Matcher& matcher, Summary& summary)
 {
 	using namespace wibble::str;
 
-	Summary s;
-	nextds.querySummary(Matcher::parse(mdgrid.make_query()), s);
-	s.filter(matcher, summary);
+	utils::metadata::Summarise cons(summary);
+	queryData(dataset::DataQuery(matcher, false), cons);
 }
 
 void Gridspace::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
@@ -494,14 +493,12 @@ void Gridspace::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	{
 		case dataset::ByteQuery::BQ_DATA: {
 			ds::DataOnly dataonly(out);
-			gridspace::FilterValid fv(mdgrid, dataonly);
-			nextds.queryData(q, fv);
+			queryData(q, dataonly);
 			break;
 		}
 		case dataset::ByteQuery::BQ_POSTPROCESS: {
 			Postprocess postproc(q.param, out);
-			gridspace::FilterValid fv(mdgrid, postproc);
-			nextds.queryData(q, fv);
+			nextds.queryData(q, postproc);
 			postproc.flush();
 			break;
 		}
@@ -510,8 +507,7 @@ void Gridspace::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			Report rep;
 			rep.captureOutput(out);
 			rep.load(q.param);
-			gridspace::FilterValid fv(mdgrid, rep);
-			nextds.queryData(q, fv);
+			nextds.queryData(q, rep);
 			rep.report();
 #endif
 			break;

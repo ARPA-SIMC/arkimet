@@ -171,6 +171,12 @@ void AtomicWriter::close()
 	}
 }
 
+bool Summarise::operator()(Metadata& md)
+{
+	s.add(md);
+	return true;
+}
+
 }
 }
 }

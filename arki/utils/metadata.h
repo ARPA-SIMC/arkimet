@@ -30,6 +30,8 @@
 #include <iosfwd>
 
 namespace arki {
+struct Summary;
+
 namespace utils {
 namespace metadata {
 
@@ -87,6 +89,14 @@ struct AtomicWriter : public MetadataConsumer
 	bool operator()(const Metadata& md);
 
 	void close();
+};
+
+struct Summarise : public MetadataConsumer
+{
+	Summary& s;
+	Summarise(Summary& s) : s(s) {}
+
+	bool operator()(Metadata& md);
 };
 
 }
