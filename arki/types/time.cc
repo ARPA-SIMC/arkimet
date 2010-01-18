@@ -63,6 +63,16 @@ Time::Time(const int (&vals)[6])
 {
 	memcpy(this->vals, vals, 6*sizeof(const int));
 }
+Time::Time(const Time& t)
+{
+	memcpy(this->vals, t.vals, 6*sizeof(const int));
+}
+
+Time& Time::operator=(const Time& t)
+{
+	memcpy(this->vals, t.vals, 6*sizeof(const int));
+	return *this;
+}
 
 bool Time::isNow() const
 {

@@ -42,8 +42,11 @@ struct Time : public types::Type
 	Time();
 	Time(int ye, int mo, int da, int ho, int mi, int se);
 	Time(const int (&vals)[6]);
+	Time(const Time& t);
 
 	bool isNow() const;
+
+	Time& operator=(const Time& t);
 
 	virtual int compare(const Type& o) const;
 	virtual int compare(const Time& o) const;
