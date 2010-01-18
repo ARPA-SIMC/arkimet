@@ -154,10 +154,13 @@ std::string MDGrid::make_query() const
 				str::join(ors.begin(), ors.end(), " or "));
 
 		// then OR all the soup items that are not matched by the ORed matchers
-		for (std::vector< Item<> >::const_iterator j = si->second.begin();
-				j != si->second.end(); ++j)
-			if (!m(*j))
-				ors.push_back((*j)->exactQuery());
+		if (si != soup.end())
+		{
+			for (std::vector< Item<> >::const_iterator j = si->second.begin();
+					j != si->second.end(); ++j)
+				if (!m(*j))
+					ors.push_back((*j)->exactQuery());
+		}
 	}
 	return str::join(ands.begin(), ands.end(), "; ");
 }
