@@ -77,7 +77,7 @@ void Collector::queryData(const dataset::DataQuery& q, MetadataConsumer& consume
 	for (std::vector<Metadata>::iterator i = begin();
 			i != end(); ++i)
 		if (q.matcher(*i))
-			if (!consumer(*i))
+			if (!(*c)(*i))
 				break;
 }
 
