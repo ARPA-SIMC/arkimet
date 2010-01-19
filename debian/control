@@ -8,6 +8,13 @@ XS-Vcs-Svn: https://svn.smr.arpa.emr.it/xgribarch
 Package: arkimet
 Section: misc
 Architecture: any
-Depends: python-cherrypy, python-configobj
+Depends: python-cherrypy, python-configobj, ${shlibs:Depends}, ${misc:Depends}
 Description: Archive for weather information
  Description to be written.
+
+Package: arkimet-dbg
+Section: debug
+Architecture: any
+Depends: arkimet, ${shlibs:Depends}, ${misc:Depends} 
+Description: arkimet debugging symbols
+ debugging symbols for the arkimet package

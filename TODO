@@ -211,6 +211,9 @@ Query sottoaree (ISAC)
       skip the redundant pure items that match it)
  + per il reftime, espandere senza guardare il dataset, per beccare buchi
 
+ - check that queries don't block imports if client doesn't read
+ - arki-server: time out if client hangs
+
  - arki-dump --gridspace=file dataset
    show all gridspace steps
 
