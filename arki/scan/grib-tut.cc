@@ -530,6 +530,8 @@ void to::test<5>()
 	vb.set("latlast", Value::createInteger(-9875));
 	vb.set("lonfirst", Value::createInteger(-2937));
 	vb.set("lonlast", Value::createInteger(7563));
+	vb.set("latp", Value::createInteger(-32));
+	vb.set("lonp", Value::createInteger(10));
 	vb.set("rot", Value::createInteger(0));
 	vb.set("type", Value::createInteger(10));
 	ensure(md.get(types::TYPE_AREA).defined());
