@@ -3,8 +3,10 @@ arkimet (0.31-1) UNRELEASED; urgency=low
   * Implemented bounding box matchers (exact and contains)
   * Updated datset types in arki-config
   * Added --gridspace to arki-scan and arki-query
+  * arki-dump --gridspace
+  * Build a -dbg package
 
- -- Enrico Zini <enrico@debian.org>  Fri, 15 Jan 2010 08:48:47 +0000
+ -- Enrico Zini <enrico@debian.org>  Tue, 19 Jan 2010 13:24:59 +0000
 
 arkimet (0.30-1) UNRELEASED; urgency=low
 
