@@ -114,6 +114,11 @@ void SQLiteDB::throwException(const std::string& msg) const
 	throw SQLiteError(m_db, msg);
 }
 
+Query::~Query()
+{
+	if (m_stm) sqlite3_finalize(m_stm);
+}
+
 void Query::compile(const std::string& query)
 {
 	m_stm = m_db.prepare(query);

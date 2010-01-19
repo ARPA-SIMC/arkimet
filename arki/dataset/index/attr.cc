@@ -66,13 +66,14 @@ UItem<> AttrSubIndex::q_select_one(int id) const
 	m_select_one->bind(1, id);
 
 	// Decode every blob and run the matcher on it
-	if (m_select_one->step())
+	UItem<> res;
+	while (m_select_one->step())
 	{
 		const void* buf = m_select_one->fetchBlob(0);
 		int len = m_select_one->fetchBytes(0);
-		return types::decodeInner(code, (const unsigned char*)buf, len);
+		res = types::decodeInner(code, (const unsigned char*)buf, len);
 	}
-	return UItem<>();
+	return res;
 }
 
 int AttrSubIndex::q_insert(const std::string& blob)

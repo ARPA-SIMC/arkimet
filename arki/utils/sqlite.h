@@ -121,7 +121,7 @@ protected:
 
 public:
 	Query(const std::string& name, SQLiteDB& db) : m_db(db), m_stm(0), name(name) {}
-	~Query() { if (m_stm) sqlite3_finalize(m_stm); }
+	~Query();
 
 	/// Compile the query
 	void compile(const std::string& query);
