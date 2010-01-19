@@ -5,8 +5,10 @@ arkimet (0.31-1) UNRELEASED; urgency=low
   * Added --gridspace to arki-scan and arki-query
   * arki-dump --gridspace
   * Build a -dbg package
+  * ondisk2 readers really release the index after querying metadata
+    information
 
- -- Enrico Zini <enrico@debian.org>  Tue, 19 Jan 2010 13:24:59 +0000
+ -- Enrico Zini <enrico@debian.org>  Tue, 19 Jan 2010 15:08:32 +0000
 
 arkimet (0.30-1) UNRELEASED; urgency=low
 
