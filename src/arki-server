@@ -9,7 +9,7 @@ import cherrypy
 import subprocess
 from StringIO import StringIO
 import logging
-import fcntl, os, select
+import fcntl, os, select, signal
 
 def log_access(fmt, *args):
     msg = fmt % args
@@ -28,6 +28,7 @@ def run_subprocess(args, **kw):
             stderr=subprocess.PIPE,
             close_fds=True,
             **kw)
+    cherrypy.request.params["arkiserver:proc"] = proc
     fds = [proc.stdout, proc.stderr]
     prefixes = ["O", "E"]
     # Set both pipes as non-blocking
@@ -46,6 +47,7 @@ def run_subprocess(args, **kw):
                 yield prefixes[idx], buf
     res = proc.wait()
     yield "R", res
+
 
 def get_output(args, ctype="application/octet-stream", fname=None):
     # http://www.cherrypy.org/wiki/FileDownload
@@ -76,7 +78,22 @@ def get_output(args, ctype="application/octet-stream", fname=None):
                         yield val
             return stream(val, proc)
 
+class CleanupFilter:
+    def on_end_request(self): 
+        # This runs after the request has been completely written out. 
+        proc = cherrypy.request.params["arkiserver:proc"]
+        res = proc.poll()
+        if res == None:
+            log_access("seding SIGTERM to arki-query with pid %d", proc.pid);
+            os.kill(proc.pid, signal.SIGTERM)
+            proc.wait()
+            log_access("arki-query %d terminated.", proc.pid);
+        else:
+            log_access("arki-query %d exited with code %d.", proc.pid, res);
+
 class ArkiDataset:
+    _cp_filters = [ CleanupFilter() ]
+
     def __init__(self, name, dsconf, baseurl):
         self.name = name
         self.dsconf = dsconf
