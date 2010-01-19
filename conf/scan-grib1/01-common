@@ -55,8 +55,8 @@ if grib.numberOfPointsAlongXAxis then
 end
 if grib.angleOfRotationInDegrees then
 	arki.area.rot = grib.angleOfRotationInDegrees
-	arki.area.latp = latitudeOfSouthernPoleInDegrees
-	arki.area.lonp = longitudeOfSouthernPoleInDegrees
+	arki.area.latp = grib.latitudeOfSouthernPoleInDegrees
+	arki.area.lonp = grib.longitudeOfSouthernPoleInDegrees
 end
 
 -- Ensemble
