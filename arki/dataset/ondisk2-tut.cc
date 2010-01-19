@@ -28,6 +28,7 @@
 #include <arki/scan/grib.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
+#include <wibble/sys/childprocess.h>
 
 #include <sstream>
 #include <iostream>
@@ -595,6 +596,93 @@ void to::test<12>()
 	bq.setData(Matcher::parse("reftime:=2007"));
 	reader.queryBytes(bq, str);
 	ensure_equals(str.str().size(), 44412u);
+}
+
+namespace {
+struct ReadHang : public sys::ChildProcess, public MetadataConsumer
+{
+	const ConfigFile& cfg;
+	int commfd;
+
+	ReadHang(const ConfigFile& cfg) : cfg(cfg) {}
+
+	virtual bool operator()(Metadata& md)
+	{
+		// Notify start of reading
+		cout << "H" << endl;
+		// Get stuck while reading
+		while (true)
+			usleep(100000);
+		return true;
+	}
+
+	virtual int main()
+	{
+		try {
+			Reader reader(cfg);
+			reader.queryData(dataset::DataQuery(Matcher(), false), *this);
+		} catch (std::exception& e) {
+			cerr << e.what() << endl;
+			cout << "E" << endl;
+			return 1;
+		}
+		return 0;
+	}
+
+	void start()
+	{
+		forkAndRedirect(0, &commfd);
+	}
+
+	char waitUntilHung()
+	{
+		char buf[2];
+		if (read(commfd, buf, 1) != 1)
+			throw wibble::exception::System("reading 1 byte from child process");
+		return buf[0];
+	}
+};
+}
+
+// Test acquiring with a reader who's stuck on output
+template<> template<>
+void to::test<13>()
+{
+	// Clean the dataset
+	system("rm -rf test200/*");
+
+	Metadata md;
+
+	// Import one grib in the dataset
+	{
+		scan::Grib scanner;
+		scanner.open("inbound/test.grib1");
+
+		dataset::ondisk2::Writer d200(*config.section("test200"));
+		scanner.next(md);
+		ensure(d200.acquire(md) == WritableDataset::ACQ_OK);
+		d200.flush();
+	}
+
+	// Query the index and hang
+	ReadHang readHang(*config.section("test200"));
+	readHang.start();
+	ensure_equals(readHang.waitUntilHung(), 'H');
+
+	// Import another grib in the dataset
+	{
+		scan::Grib scanner;
+		scanner.open("inbound/test.grib1");
+
+		dataset::ondisk2::Writer d200(*config.section("test200"));
+		scanner.next(md);
+		scanner.next(md);
+		ensure(d200.acquire(md) == WritableDataset::ACQ_OK);
+		d200.flush();
+	}
+
+	readHang.kill(9);
+	readHang.wait();
 }
 
 }
