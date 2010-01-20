@@ -90,14 +90,14 @@ BBox::BBox(const std::string& code) : L(new Lua), gf(new ARKI_GEOS_GEOMETRYFACTO
 {
 	/// Load the bounding box functions
 
-	/// Load the grib1 scanning functions
+	/// Load the bbox scanning functions
 	if (code.empty())
 	{
 		vector<string> files = runtime::rcFiles("bbox", "ARKI_BBOX");
 		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 			L->functionFromFile("BBOX_" + str::fmt(funcCount++), *i);
 	} else
-		L->functionFromString("BBOX_" + str::fmt(funcCount++), code, "grib1 scan instructions");
+		L->functionFromString("BBOX_" + str::fmt(funcCount++), code, "bbox scan instructions");
 
 	//arkilua_dumpstack(L, "Afterinit", stderr);
 }
