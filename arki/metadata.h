@@ -204,6 +204,13 @@ public:
 	void setInlineData(const std::string& format, const wibble::sys::Buffer& buf);
 
 	/**
+	 * Remove the cached data from the metadata
+	 *
+	 * Note: this will do nothing if the source type is INLINE
+	 */
+	void resetInlineData();
+
+	/**
 	 * Read the data and inline them in the metadata
 	 */
 	void makeInline();

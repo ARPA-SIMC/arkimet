@@ -41,6 +41,28 @@ bool DataInliner::operator()(Metadata& md)
 	return next(md);
 }
 
+bool TemporaryDataInliner::operator()(Metadata& md)
+{
+	// If we get data already inlined, we can shortcut
+	if (md.source->style() == types::Source::INLINE)
+		return next(md);
+
+	// Save the old source
+	UItem<types::Source> oldSource = md.source;
+
+	// Read the data
+	wibble::sys::Buffer buf = md.getData();
+	// Change the source as inline
+	md.setInlineData(md.source->format, buf);
+	bool res = next(md);
+
+	// Restore the old source
+	md.source = oldSource;
+	md.resetInlineData();
+
+	return res;
+}
+
 bool DataOnly::operator()(Metadata& md)
 {
 	wibble::sys::Buffer buf = md.getData();

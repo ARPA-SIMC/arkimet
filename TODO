@@ -225,6 +225,10 @@ Query sottoaree (ISAC)
     - build con wibble di sistema
     - documentazione, manpage, descrizioni in debian/control...
 
+ - al momento, l'inliner chiama Metadata::getData che apre e chiude il file di
+   dati ogni volta. Se servono prestazioni, si può passare a qualcosa di piú
+   furbo.
+
 Autenticazione (Bider)
  - autorizzare o no a livello di archivio
  - anche magari su host locale

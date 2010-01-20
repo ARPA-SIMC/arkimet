@@ -73,6 +73,17 @@ struct DataInliner : public MetadataConsumer
 };
 
 /**
+ * Inline the data into all metadata, but after the next consumer has finished
+ * it restores the previous source, deleting the cached data.
+ */
+struct TemporaryDataInliner : public MetadataConsumer
+{
+	MetadataConsumer& next;
+	TemporaryDataInliner(MetadataConsumer& next) : next(next) {}
+	bool operator()(Metadata& md);
+};
+
+/**
  * Output the data from a metadata stream into an ostream
  */
 struct DataOnly : public MetadataConsumer

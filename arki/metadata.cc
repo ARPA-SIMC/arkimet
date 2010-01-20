@@ -430,6 +430,12 @@ void Metadata::setInlineData(const std::string& format, const wibble::sys::Buffe
 	m_inline_buf = buf;
 }
 
+void Metadata::resetInlineData()
+{
+	if (source->style() == types::Source::INLINE) return;
+	m_inline_buf = wibble::sys::Buffer();
+}
+
 void Metadata::makeInline()
 {
 	setInlineData(source->format, getData());

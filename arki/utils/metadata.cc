@@ -60,11 +60,11 @@ void Collector::queryData(const dataset::DataQuery& q, MetadataConsumer& consume
 	// then produce all the contents.
 	MetadataConsumer* c = &consumer;
 	auto_ptr<sort::Stream> sorter;
-	auto_ptr<ds::DataInliner> inliner;
+	auto_ptr<ds::TemporaryDataInliner> inliner;
 
 	if (q.withData)
 	{
-		inliner.reset(new ds::DataInliner(*c));
+		inliner.reset(new ds::TemporaryDataInliner(*c));
 		c = inliner.get();
 	}
 
