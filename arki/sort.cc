@@ -55,7 +55,7 @@ struct Item
 		{
 			case '+': reverse = false; start = 1; break;
 			case '-': reverse = true; start = 1; break;
-			default: start = 0; break;
+			default: reverse = false; start = 0; break;
 		}
 		while (start < expr.size() && isspace(expr[start]))
 			++start;
