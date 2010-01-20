@@ -224,6 +224,8 @@ int main(int argc, const char* argv[])
 			// Dump the state after validation
 			o << "After validation:" << endl;
 			gs.dump(o, " ");
+
+			return 0;
 		}
 
 		// Open the input file
