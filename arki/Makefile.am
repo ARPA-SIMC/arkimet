@@ -85,6 +85,7 @@ dist_noinst_HEADERS = \
 		sort.h \
 		formatter.h \
 		bbox.h \
+		targetfile.h \
 		postprocess.h \
 		values.h \
 		utils.h \
@@ -134,6 +135,7 @@ libarkimet_la_SOURCES = \
 		sort.cc \
 		formatter.cc \
 		bbox.cc \
+		targetfile.cc \
 		metadata.cc \
 		summary.cc \
 		matcher.cc \
@@ -217,6 +219,7 @@ tests_arki_test_SOURCES = \
 		sort-tut.cc \
 		formatter-tut.cc \
 		bbox-tut.cc \
+		targetfile-tut.cc \
 		metadata-tut.cc \
 		summary-tut.cc \
 		matcher-tut.cc \
