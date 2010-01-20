@@ -211,9 +211,6 @@ Query sottoaree (ISAC)
       skip the redundant pure items that match it)
  + per il reftime, espandere senza guardare il dataset, per beccare buchi
 
- - arki-dump --gridspace=file dataset
-   show all gridspace steps
-
  - dispatch in file il cui nome dipende dal dato
     - --multioutput="tipo:pattern"
     - tipo è un file lua in /etc/arkimet/multioutput/

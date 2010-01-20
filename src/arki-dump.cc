@@ -203,10 +203,25 @@ int main(int argc, const char* argv[])
 
 			ostream& o = out.stream();
 
-			// Dump info
+			// Dump the state before validation
 			o << "Before validation:" << endl;
 			gs.dump(o, " ");
+
+			// Dump how matchers are expanded
+			o << "Matcher expansions:" << endl;
+			gs.dumpExpands(o, " ");
+
+			// Expand matchers into the soup
+			gs.validateMatchers();
+
+			// Dump how many values per item in the soup
+			o << "Data count per item:" << endl;
+			gs.dumpCountPerItem(o, " ");
+
+			// Finally perform validation
 			gs.validate();
+
+			// Dump the state after validation
 			o << "After validation:" << endl;
 			gs.dump(o, " ");
 		}

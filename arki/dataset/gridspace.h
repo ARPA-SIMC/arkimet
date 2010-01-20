@@ -92,6 +92,12 @@ struct MDGrid
 	// Expand an index in its corresponding set of metadata
 	std::vector< Item<> > expand(size_t index) const;
 
+	/// Ensure mds has been populated
+	void want_mds(ReadonlyDataset& rd);
+
+	/// Find candidates for matchers
+	void find_matcher_candidates();
+
 	// Create the minimal arkimet query that matches at least the whole
 	// data space
 	std::string make_query() const;
@@ -218,8 +224,34 @@ public:
 	 */
 	void validate();
 
+	/**
+	 * Perform expansion and validation of matchers only.
+	 *
+	 * There is no need to call this, as it is called by validate().
+	 *
+	 * It is exposed here only so that it can be called before
+	 * dumpCountPerItem() for debugging purposes.
+	 */
+	void validateMatchers();
+
 	/// Dump details about this gridspace to the given output stream
 	void dump(std::ostream& out, const std::string& prefix = std::string()) const;
+
+	/**
+	 * For exery matcher to be resolved, show that items resolve it.
+	 *
+	 * This needs to be called before validate(), because after validate()
+	 * the resolved matchers are deleted from the matcher lists.
+	 */
+	void dumpExpands(std::ostream& out, const std::string& prefix = std::string());
+
+	/**
+	 * For every item in the soup, dump the number of data that match it.
+	 *
+	 * This can be called after validateMatchers() and before validate(),
+	 * to debug what items cause validation to fail.
+	 */
+	void dumpCountPerItem(std::ostream& out, const std::string& prefix = std::string());
 
 	/**
 	 * Query the dataset using the given matcher, and sending the results to

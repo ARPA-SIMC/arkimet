@@ -193,22 +193,33 @@ struct AreAllLocal : public MetadataConsumer
 
 };
 
-bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
+void MDGrid::want_mds(ReadonlyDataset& rd)
 {
+	if (!mds.empty()) return;
+
 	// Query the metadata only and keep them around
 	Matcher matcher = Matcher::parse(make_query());
 	mds.clear();
 	AreAllLocal aal(mds);
 	rd.queryData(DataQuery(matcher, false), aal);
 	all_local = aal.allLocal;
+}
 
+void MDGrid::find_matcher_candidates()
+{
+	MatcherResolver mr(oneMatchers, allMatchers);
+	mds.queryData(DataQuery(Matcher(), false), mr);
+}
+
+bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
+{
+	want_mds(rd);
 	if (mds.empty())
 		throw wibble::exception::Consistency("validating gridspace information", "the metadata and matcher given do not match any item in the dataset");
 
 	if (oneMatchers.empty() && allMatchers.empty()) return true;
 
-	MatcherResolver mr(oneMatchers, allMatchers);
-	mds.queryData(DataQuery(Matcher(), false), mr);
+	find_matcher_candidates();
 
 	// Copy items from solved oneMatchers to the soup
 	for (map< types::Code, vector<UnresolvedMatcher> >::iterator i = oneMatchers.begin();
@@ -433,7 +444,7 @@ Gridspace::~Gridspace()
 {
 }
 
-void Gridspace::validate()
+void Gridspace::validateMatchers()
 {
 	mdgrid.consolidate();
 
@@ -467,6 +478,11 @@ void Gridspace::validate()
 		nag::verbose("All matchers resolved unambiguously.");
 
 	mdgrid.consolidate();
+}
+
+void Gridspace::validate()
+{
+	validateMatchers();
 
 	nag::verbose("Number of combinations: %d.", mdgrid.maxidx);
 
@@ -559,6 +575,116 @@ void Gridspace::dump(ostream& o, const std::string& prefix) const
 	o << prefix << "Number of items in grid: " << mdgrid.maxidx << endl;
 	o << prefix << "Item data is " << (mdgrid.all_local ? "local" : "remote") << endl;
 	o << prefix << "Arkimet query: " << mdgrid.make_query() << endl;
+}
+
+void Gridspace::dumpExpands(std::ostream& o, const std::string& prefix)
+{
+	using namespace gridspace;
+
+	mdgrid.consolidate();
+
+	mdgrid.want_mds(nextds);
+	if (mdgrid.mds.empty())
+	{
+		o << prefix << "The metadata and matchers given do not match any item in the dataset." << endl;
+		return;
+	}
+
+	if (mdgrid.oneMatchers.empty() && mdgrid.allMatchers.empty())
+	{
+		o << prefix << "There are no matchers to resolve." << endl;
+		return;
+	}
+
+	mdgrid.find_matcher_candidates();
+
+	// Dump matchers and candidates
+
+	// Dump one matchers
+	if (!mdgrid.oneMatchers.empty())
+	{
+		o << prefix << "\"match one\" matchers:" << endl;
+		for (std::map<types::Code, std::vector<UnresolvedMatcher> >::const_iterator i = mdgrid.oneMatchers.begin();
+				i != mdgrid.oneMatchers.end(); ++i)
+		{
+			o << prefix << " " << types::tag(i->first) << ":" << endl;
+			for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+			{
+				o << prefix << "  " << *j << " expands to: " << endl;
+				for (set< Item<> >::const_iterator k = j->candidates.begin();
+						k != j->candidates.end(); ++k)
+				{
+					o << prefix << "   " << *k << endl;
+				}
+			}
+		}
+	}
+
+	// Dump all matchers
+	if (!mdgrid.allMatchers.empty())
+	{
+		o << prefix << "\"match all\" matchers:" << endl;
+		for (std::map<types::Code, std::vector<UnresolvedMatcher> >::const_iterator i = mdgrid.allMatchers.begin();
+				i != mdgrid.allMatchers.end(); ++i)
+		{
+			o << prefix << " " << types::tag(i->first) << ":" << endl;
+			for (std::vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+			{
+				o << prefix << "  " << *j << " expands to: " << endl;
+				for (set< Item<> >::const_iterator k = j->candidates.begin();
+						k != j->candidates.end(); ++k)
+				{
+					o << prefix << "   " << *k << endl;
+				}
+			}
+		}
+	}
+}
+
+namespace {
+
+struct ItemCountDumper : public MetadataConsumer
+{
+	const gridspace::MDGrid& mdg;
+	std::map< Item<>, int > counts;
+
+	ItemCountDumper(const gridspace::MDGrid& mdg) : mdg(mdg) {}
+
+	virtual bool operator()(Metadata& md)
+	{
+		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdg.soup.begin();
+				i != mdg.soup.end(); ++i)
+		{
+			UItem<> item = md.get(i->first);
+			if (!item.defined()) continue;
+			vector< Item<> >::const_iterator lb =
+				lower_bound(i->second.begin(), i->second.end(), item);
+			if (lb == i->second.end()) continue;
+			if (*lb != item) continue;
+			map< Item<>, int >::iterator j = counts.find(item);
+			if (j == counts.end())
+				counts.insert(make_pair(item, 1));
+			else
+				++(j->second);
+		}
+		return true;
+	}
+};
+
+}
+
+void Gridspace::dumpCountPerItem(std::ostream& out, const std::string& prefix)
+{
+	ItemCountDumper icd(mdgrid);
+	mdgrid.mds.sendTo(icd);
+	for (std::map< Item<>, int >::const_iterator i = icd.counts.begin();
+			i != icd.counts.end(); ++i)
+	{
+		out << prefix << i->first << ": "
+	            << i->second << "/" << mdgrid.maxidx / mdgrid.soup[i->first->serialisationCode()].size() << endl;
+	}
 }
 
 void Gridspace::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
