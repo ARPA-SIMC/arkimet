@@ -682,7 +682,7 @@ void Gridspace::dumpCountPerItem(std::ostream& out, const std::string& prefix)
 	for (std::map< Item<>, int >::const_iterator i = icd.counts.begin();
 			i != icd.counts.end(); ++i)
 	{
-		out << prefix << i->first << ": "
+		out << prefix << i->first->tag() << ":" << i->first << ": "
 	            << i->second << "/" << mdgrid.maxidx / mdgrid.soup[i->first->serialisationCode()].size() << endl;
 	}
 }
