@@ -52,6 +52,14 @@ public:
 	virtual ~Targetfile();
 
 	/**
+	 * Load definition from the rc files.
+	 *
+	 * This is called automatically by the costructor if the constructor
+	 * code parameter is empty.
+	 */
+	void loadRCFiles();
+
+	/**
 	 * Get a target file generator
 	 *
 	 * @param def

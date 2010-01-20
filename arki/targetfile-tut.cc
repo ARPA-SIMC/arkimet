@@ -51,6 +51,7 @@ struct arki_targetfile_shar {
 			"end\n"
 		)
 	{
+		tf.loadRCFiles();
 		using namespace arki::types;
 		ValueBag testValues;
 		testValues.set("antani", Value::createInteger(-1));

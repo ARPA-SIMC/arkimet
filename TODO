@@ -212,8 +212,8 @@ Query sottoaree (ISAC)
  + per il reftime, espandere senza guardare il dataset, per beccare buchi
 
  - dispatch in file il cui nome dipende dal dato
-    - --multioutput="tipo:pattern"
-    - tipo è un file lua in /etc/arkimet/multioutput/
+    + --targetfile="tipo:pattern"
+    + tipo è un file lua in /etc/arkimet/targetfile/
     - pattern è passato alla variabile global "pattern"
     - il file parsa il pattern e restituisce una funzione (md)->string
     - dataset sincronizzato con un Output, quando dà fuori un dato, cambia

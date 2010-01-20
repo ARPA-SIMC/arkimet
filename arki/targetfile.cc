@@ -93,18 +93,7 @@ Targetfile::Targetfile(const std::string& code) : L(new Lua)
 	/// Load the targetfile functions
 	if (code.empty())
 	{
-		vector<string> files = runtime::rcFiles("targetfile", "ARKI_TARGETFILE");
-		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-		{
-			if (luaL_dofile(*L, i->c_str()))
-			{
-				// Copy the error, so that it will exist after the pop
-				string error = lua_tostring(*L, -1);
-				// Pop the error from the stack
-				lua_pop(*L, 1);
-				throw wibble::exception::Consistency("executing Lua file " + *i, error);
-			}
-		}
+		loadRCFiles();
 	} else {
 		if (luaL_dostring(*L, code.c_str()))
 		{
@@ -122,6 +111,22 @@ Targetfile::Targetfile(const std::string& code) : L(new Lua)
 Targetfile::~Targetfile()
 {
 	if (L) delete L;
+}
+
+void Targetfile::loadRCFiles()
+{
+	vector<string> files = runtime::rcFiles("targetfile", "ARKI_TARGETFILE");
+	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+	{
+		if (luaL_dofile(*L, i->c_str()))
+		{
+			// Copy the error, so that it will exist after the pop
+			string error = lua_tostring(*L, -1);
+			// Pop the error from the stack
+			lua_pop(*L, 1);
+			throw wibble::exception::Consistency("executing Lua file " + *i, error);
+		}
+	}
 }
 
 Targetfile::Func Targetfile::get(const std::string& def)
