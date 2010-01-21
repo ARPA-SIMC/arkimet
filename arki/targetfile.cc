@@ -33,6 +33,18 @@ using namespace wibble;
 
 namespace arki {
 
+namespace targetfile {
+// FIXME: move as a singleton to arki/bbox.cc?
+static __thread Targetfile* targetfile = 0;
+}
+
+Targetfile& Targetfile::instance()
+{
+	if (targetfile::targetfile == 0)
+		targetfile::targetfile = new Targetfile();
+	return *targetfile::targetfile;
+}
+
 #if 0
 static string arkilua_dumptablekeys(lua_State* L, int index)
 {
@@ -133,43 +145,52 @@ void Targetfile::loadRCFiles()
 
 Targetfile::Func Targetfile::get(const std::string& def)
 {
-	size_t pos = def.find(':');
-	if (pos == string::npos)
-		throw wibble::exception::Consistency(
-				"parsing targetfile definition \""+def+"\"",
-				"definition not in the form type:parms");
-	string type = def.substr(0, pos);
-	string parms = def.substr(pos+1);
+	std::map<std::string, int>::iterator i = ref_cache.find(def);
 
-	// Get targetfile[type]
-	lua_getglobal(*L, "targetfile");
-	lua_pushlstring(*L, type.data(), type.size());
-	lua_gettable(*L, -2);
-	if (lua_type(*L, -1) == LUA_TNIL)
+	if (i == ref_cache.end())
 	{
-		lua_pop(*L, 2);
-		throw wibble::exception::Consistency(
-				"parsing targetfile definition \""+def+"\"",
-				"no targetfile found of type \""+type+"\"");
-	}
+		size_t pos = def.find(':');
+		if (pos == string::npos)
+			throw wibble::exception::Consistency(
+					"parsing targetfile definition \""+def+"\"",
+					"definition not in the form type:parms");
+		string type = def.substr(0, pos);
+		string parms = def.substr(pos+1);
 
-	// Call targetfile[type](parms)
-	lua_pushlstring(*L, parms.data(), parms.size());
-	if (lua_pcall(*L, 1, 1, 0))
-	{
-		string error = lua_tostring(*L, -1);
-		lua_pop(*L, 2);
-		throw wibble::exception::Consistency(
-				"creating targetfile function \""+def+"\"",
-				error);
+		// Get targetfile[type]
+		lua_getglobal(*L, "targetfile");
+		lua_pushlstring(*L, type.data(), type.size());
+		lua_gettable(*L, -2);
+		if (lua_type(*L, -1) == LUA_TNIL)
+		{
+			lua_pop(*L, 2);
+			throw wibble::exception::Consistency(
+					"parsing targetfile definition \""+def+"\"",
+					"no targetfile found of type \""+type+"\"");
+		}
+
+		// Call targetfile[type](parms)
+		lua_pushlstring(*L, parms.data(), parms.size());
+		if (lua_pcall(*L, 1, 1, 0))
+		{
+			string error = lua_tostring(*L, -1);
+			lua_pop(*L, 2);
+			throw wibble::exception::Consistency(
+					"creating targetfile function \""+def+"\"",
+					error);
+		}
+		
+		// Ref the created function into the registry
+		int idx = luaL_ref(*L, LUA_REGISTRYINDEX);
+		lua_pop(*L, 1);
+
+		pair< std::map<std::string, int>::iterator, bool > res =
+			ref_cache.insert(make_pair(def, idx));
+		i = res.first;
 	}
-	
-	// Ref the created function into the registry
-	int idx = luaL_ref(*L, LUA_REGISTRYINDEX);
-	lua_pop(*L, 1);
 
 	// Return the functor wrapper to the function
-	return Func(L, idx);
+	return Func(L, i->second);
 }
 
 std::string Targetfile::Func::operator()(const Metadata& md)
@@ -194,7 +215,7 @@ std::string Targetfile::Func::operator()(const Metadata& md)
 }
 
 TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const std::string& def)
-	: func(tf.get(def)), ds(ds), output(output)
+	: func(Targetfile::instance().get(def)), ds(ds), output(output)
 {
 }
 

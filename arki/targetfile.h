@@ -26,6 +26,7 @@
 #include <arki/utils/lua.h>
 #include <arki/dataset.h>
 #include <string>
+#include <map>
 
 namespace arki {
 class Metadata;
@@ -38,6 +39,7 @@ class Targetfile
 {
 protected:
 	Lua *L;
+	std::map<std::string, int> ref_cache;
 
 public:
 	struct Func
@@ -72,6 +74,11 @@ public:
 	 *   Target file definition in the form "type:parms".
 	 */
 	Func get(const std::string& def);
+
+	/**
+	 * Return a global, yet thread-local instance
+	 */
+	static Targetfile& instance();
 };
 
 /**
@@ -82,7 +89,6 @@ public:
  */
 class TargetfileSpy : public ReadonlyDataset
 {
-	Targetfile tf;
 	Targetfile::Func func;
 	ReadonlyDataset& ds;
 	runtime::Output& output;

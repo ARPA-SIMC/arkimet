@@ -41,6 +41,7 @@ class ReadonlyDataset;
 class Summary;
 class Dispatcher;
 class Formatter;
+class Targetfile;
 
 namespace runtime {
 class MetadataDispatch;
@@ -78,6 +79,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::StringOption* restr;
 	wibble::commandline::StringOption* exprfile;
 	wibble::commandline::StringOption* outfile;
+	wibble::commandline::StringOption* targetfile;
 	wibble::commandline::StringOption* postprocess;
 	wibble::commandline::StringOption* report;
 	wibble::commandline::StringOption* sort;
@@ -92,7 +94,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 
 	ConfigFile inputInfo;
 	ConfigFile dispatchInfo;
-	Matcher query;	// TODO
+	Matcher query;
 	Output* output;
 	DatasetProcessor* processor;
 	MetadataDispatch* dispatcher;

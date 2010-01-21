@@ -34,6 +34,7 @@
 #include <arki/dataset/file.h>
 #include <arki/dataset/http.h>
 #include <arki/dispatcher.h>
+#include <arki/targetfile.h>
 #include <arki/formatter.h>
 #include <arki/postprocess.h>
 #include <arki/sort.h>
@@ -106,6 +107,9 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 #endif
 	outfile = outputOpts->add<StringOption>("output", 'o', "output", "file",
 			"write the output to the given file instead of standard output");
+	targetfile = outputOpts->add<StringOption>("targetfile", 0, "targetfile", "pattern",
+			"append the output to file names computed from the data"
+			" to be written. See /etc/arkimet/targetfile for details.");
 	summary = outputOpts->add<BoolOption>("summary", 0, "summary", "",
 			"output only the summary of the data");
 	sort = outputOpts->add<StringOption>("sort", 0, "sort", "period:order",
@@ -545,7 +549,6 @@ void CommandLine::setupProcessing()
 	if (!output)
 		output = new Output(*outfile);
 
-
 	// Create the appropriate processor
 
 	if (yaml->boolValue() || annotate->isSet())
@@ -618,15 +621,27 @@ bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
 {
 	if (dispatcher)
 		return dispatcher->process(ds, name);
+
+	ReadonlyDataset* this_source = &ds;
+	auto_ptr<dataset::Gridspace> gs;
+	auto_ptr<TargetfileSpy> tf;
+
 	if (gridspace->isSet())
 	{
 		gridspace_def.seekg(0);
-		dataset::Gridspace gs(ds);
-		gs.read(gridspace_def, gridspace->stringValue());
-		gs.validate();
-		processor->process(gs, name);
-	} else
-		processor->process(ds, name);
+		gs.reset(new dataset::Gridspace(*this_source));
+		gs->read(gridspace_def, gridspace->stringValue());
+		gs->validate();
+		this_source = gs.get();
+	}
+
+	if (targetfile->isSet())
+	{
+		tf.reset(new TargetfileSpy(*this_source, *output, targetfile->stringValue()));
+		this_source = tf.get();
+	}
+
+	processor->process(*this_source, name);
 	return true;
 }
 
