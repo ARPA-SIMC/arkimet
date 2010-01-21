@@ -59,6 +59,7 @@ dist_noinst_HEADERS = \
 		summary.h \
 		refcounted.h \
 		runtime.h \
+		runtime/io.h \
 		types.h \
 		types/test-utils.h \
 		types/time.h \
@@ -184,6 +185,7 @@ libarkimet_la_SOURCES = \
 		datasetpool.cc \
 		dispatcher.cc \
 		postprocess.cc \
+		runtime/io.cc \
 		runtime.cc
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS)
 
@@ -268,6 +270,7 @@ tests_arki_test_SOURCES = \
 		postprocess-tut.cc \
 		datasetpool-tut.cc \
 		dispatcher-tut.cc \
+		runtime/io-tut.cc \
 		runtime-tut.cc \
 		tests/tut-main.cpp
 tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS)

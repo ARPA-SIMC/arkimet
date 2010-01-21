@@ -1,7 +1,7 @@
 /*
- * runtime - Common code used in most xgribarch executables
+ * runtime - Common code used in most arkimet executables
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -643,109 +643,6 @@ void CommandLine::closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful
 	// TODO: print status
 
 	// ds will be automatically deallocated here
-}
-
-
-Input::Input(wibble::commandline::Parser& opts)
-	: m_in(&cin), m_name("(stdin)")
-{
-	if (opts.hasNext())
-	{
-		string file = opts.next();
-		if (file != "-")
-		{
-			m_file_in.open(file.c_str(), ios::in);
-			if (!m_file_in.is_open() || m_file_in.fail())
-				throw wibble::exception::File(file, "opening file for reading");
-			m_in = &m_file_in;
-			m_name = file;
-		}
-	}
-}
-
-Input::Input(const std::string& file)
-	: m_in(&cin), m_name("(stdin)")
-{
-	if (file != "-")
-	{
-		m_file_in.open(file.c_str(), ios::in);
-		if (!m_file_in.is_open() || m_file_in.fail())
-			throw wibble::exception::File(file, "opening file for reading");
-		m_in = &m_file_in;
-		m_name = file;
-	}
-}
-
-Output::Output() : m_out(0) {}
-
-Output::Output(const std::string& fileName) : m_out(0)
-{
-	openFile(fileName);
-}
-
-Output::Output(wibble::commandline::Parser& opts) : m_out(0)
-{
-	if (opts.hasNext())
-	{
-		string file = opts.next();
-		if (file != "-")
-			openFile(file);
-	}
-	if (!m_out)
-		openStdout();
-}
-
-Output::Output(wibble::commandline::StringOption& opt) : m_out(0)
-{
-	if (opt.isSet())
-	{
-		string file = opt.value();
-		if (file != "-")
-			openFile(file);
-	}
-	if (!m_out)
-		openStdout();
-}
-
-Output::~Output()
-{
-	if (m_out) delete m_out;
-}
-
-void Output::closeCurrent()
-{
-	if (!m_out) return;
-	posixBuf.sync();
-	int fd = posixBuf.detach();
-	if (fd != 1)
-		::close(fd);
-	delete m_out;
-	m_out = 0;
-}
-
-void Output::openStdout()
-{
-	if (m_name == "-") return;
-	closeCurrent();
-	m_name = "-";
-	posixBuf.attach(1);
-	m_out = new ostream(&posixBuf);
-}
-
-void Output::openFile(const std::string& fname, bool append)
-{
-	if (m_name == fname) return;
-	closeCurrent();
-	int fd;
-	if (append)
-		fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
-	else
-		fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	if (fd == -1)
-		throw wibble::exception::File(fname, "opening file for writing");
-	m_name = fname;
-	posixBuf.attach(fd);
-	m_out = new ostream(&posixBuf);
 }
 
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName)

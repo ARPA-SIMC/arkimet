@@ -2,9 +2,9 @@
 #define ARKI_RUNTIME_H
 
 /*
- * runtime - Common code used in most xgribarch executables
+ * runtime - Common code used in most arkimet executables
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,12 +24,11 @@
  */
 
 #include <wibble/commandline/parser.h>
-#include <wibble/stream/posix.h>
+#include <arki/runtime/io.h>
 #include <arki/metadata.h>
 #include <arki/utils/metadata.h>
 #include <arki/matcher.h>
 #include <arki/configfile.h>
-#include <fstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -61,35 +60,6 @@ struct DatasetProcessor
 	virtual void end() {}
 };
 
-/**
- * Open an output file.
- *
- * If there is a commandline parameter available in the parser, use that as a
- * file name; else use the standard output.
- *
- * If a file is used, in case it already exists it will be overwritten.
- */
-class Output
-{
-	wibble::stream::PosixBuf posixBuf;
-	std::ostream *m_out;
-	std::string m_name;
-	void closeCurrent();
-
-public:
-	Output();
-	Output(const std::string& fileName);
-	Output(wibble::commandline::Parser& opts);
-	Output(wibble::commandline::StringOption& opt);
-	~Output();
-
-	// Close existing file (if any) and 
-	void openFile(const std::string& fname, bool append = false);
-	void openStdout();
-
-	std::ostream& stream() { return *m_out; }
-	const std::string& name() const { return m_name; }
-};
 
 struct CommandLine : public wibble::commandline::StandardParserWithManpage
 {
@@ -181,27 +151,6 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	void closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful = true);
 };
 
-
-/**
- * Open an input file.
- *
- * If there is a commandline parameter available in the parser, use that as a
- * file name; else use the standard input.
- */
-class Input
-{
-	std::istream* m_in;
-	std::ifstream m_file_in;
-	std::string m_name;
-
-public:
-	Input(wibble::commandline::Parser& opts);
-	Input(const std::string& file);
-
-	std::istream& stream() { return *m_in; }
-	const std::string& name() const { return m_name; }
-};
-
 /**
  * Parse the config file with the given name into the ConfigFile object 'cfg'.
  *
@@ -245,7 +194,7 @@ struct Restrict
  *
  * The file named in the given StringOption (if any) is tried first.
  * Otherwise the file given in the environment variable XGAR_ALIASES is tried.
- * Else, $(sysconfdir)/xgribarch/match-alias.conf is tried.
+ * Else, $(sysconfdir)/arkimet/match-alias.conf is tried.
  * Else, nothing is loaded.
  *
  * The alias database is kept statically for all the lifetime of the program,
