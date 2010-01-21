@@ -74,15 +74,18 @@ class Output
 	wibble::stream::PosixBuf posixBuf;
 	std::ostream *m_out;
 	std::string m_name;
-
-	void openFile(const std::string& fname);
-	void openStdout();
+	void closeCurrent();
 
 public:
+	Output();
 	Output(const std::string& fileName);
 	Output(wibble::commandline::Parser& opts);
 	Output(wibble::commandline::StringOption& opt);
 	~Output();
+
+	// Close existing file (if any) and 
+	void openFile(const std::string& fname, bool append = false);
+	void openStdout();
 
 	std::ostream& stream() { return *m_out; }
 	const std::string& name() const { return m_name; }

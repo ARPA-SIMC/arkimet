@@ -676,7 +676,9 @@ Input::Input(const std::string& file)
 	}
 }
 
-Output::Output(const std::string& fileName)
+Output::Output() : m_out(0) {}
+
+Output::Output(const std::string& fileName) : m_out(0)
 {
 	openFile(fileName);
 }
@@ -710,16 +712,35 @@ Output::~Output()
 	if (m_out) delete m_out;
 }
 
+void Output::closeCurrent()
+{
+	if (!m_out) return;
+	posixBuf.sync();
+	int fd = posixBuf.detach();
+	if (fd != 1)
+		::close(fd);
+	delete m_out;
+	m_out = 0;
+}
+
 void Output::openStdout()
 {
-	m_name = "(stdout)";
+	if (m_name == "-") return;
+	closeCurrent();
+	m_name = "-";
 	posixBuf.attach(1);
 	m_out = new ostream(&posixBuf);
 }
 
-void Output::openFile(const std::string& fname)
+void Output::openFile(const std::string& fname, bool append)
 {
-	int fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	if (m_name == fname) return;
+	closeCurrent();
+	int fd;
+	if (append)
+		fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+	else
+		fd = open(fname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1)
 		throw wibble::exception::File(fname, "opening file for writing");
 	m_name = fname;
