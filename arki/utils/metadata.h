@@ -48,7 +48,6 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 
 	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter

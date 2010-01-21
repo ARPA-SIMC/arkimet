@@ -91,48 +91,6 @@ void Collector::querySummary(const Matcher& matcher, Summary& summary)
 			summary.add(*i);
 }
 
-void Collector::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
-{
-	switch (q.type)
-	{
-		case dataset::ByteQuery::BQ_DATA: {
-			ds::DataOnly dataonly(out);
-			queryData(q, dataonly);
-			break;
-		}
-		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param, out);
-			queryData(q, postproc);
-			postproc.flush();
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			queryData(q, rep);
-			rep.report();
-#endif
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			Summary s;
-			querySummary(q.matcher, s);
-			rep(s);
-			rep.report();
-#endif
-			break;
-		}
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
-	}
-}
-
 AtomicWriter::AtomicWriter(const std::string& fname)
 	: fname(fname), tmpfname(fname + ".tmp"), outmd(0)
 {

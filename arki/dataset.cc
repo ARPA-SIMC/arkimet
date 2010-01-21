@@ -32,6 +32,10 @@
 #include <arki/metadata.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/utils.h>
+#include <arki/utils/dataset.h>
+#include <arki/postprocess.h>
+#include <arki/report.h>
+#include <arki/summary.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -61,6 +65,50 @@ void WritableDataset::remove(Metadata& md)
 	// reset source and dataset in the metadata
 	md.source.clear();
 	md.unset(types::TYPE_ASSIGNEDDATASET);
+}
+
+void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+{
+	using namespace arki::utils;
+
+	switch (q.type)
+	{
+		case dataset::ByteQuery::BQ_DATA: {
+			ds::DataOnly dataonly(out);
+			queryData(q, dataonly);
+			break;
+		}
+		case dataset::ByteQuery::BQ_POSTPROCESS: {
+			Postprocess postproc(q.param, out);
+			queryData(q, postproc);
+			postproc.flush();
+			break;
+		}
+		case dataset::ByteQuery::BQ_REP_METADATA: {
+#ifdef HAVE_LUA
+			Report rep;
+			rep.captureOutput(out);
+			rep.load(q.param);
+			queryData(q, rep);
+			rep.report();
+#endif
+			break;
+		}
+		case dataset::ByteQuery::BQ_REP_SUMMARY: {
+#ifdef HAVE_LUA
+			Report rep;
+			rep.captureOutput(out);
+			rep.load(q.param);
+			Summary s;
+			querySummary(q.matcher, s);
+			rep(s);
+			rep.report();
+#endif
+			break;
+		}
+		default:
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
+	}
 }
 
 ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
