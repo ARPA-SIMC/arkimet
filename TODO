@@ -216,10 +216,10 @@ Query sottoaree (ISAC)
     + tipo è un file lua in /etc/arkimet/targetfile/
     + pattern è passato alla variabile global "pattern"
     + il file parsa il pattern e restituisce una funzione (md)->string
-    - dataset sincronizzato con un Output, quando dà fuori un dato, cambia
+    + dataset sincronizzato con un Output, quando dà fuori un dato, cambia
       l'output al file corrispondente
-    - lua per generare i nomi di file
-    - un qualche sistema per testare la cosa
+    + lua per generare i nomi di file
+    + un qualche sistema per testare la cosa
  - annunciare
  - upload in Debian
     - build con wibble di sistema

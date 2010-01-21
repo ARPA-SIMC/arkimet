@@ -650,7 +650,15 @@ struct ItemCountDumper : public MetadataConsumer
 	const gridspace::MDGrid& mdg;
 	std::map< Item<>, int > counts;
 
-	ItemCountDumper(const gridspace::MDGrid& mdg) : mdg(mdg) {}
+	ItemCountDumper(const gridspace::MDGrid& mdg) : mdg(mdg)
+	{
+		// Initialise all counts at 0
+		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdg.soup.begin();
+				i != mdg.soup.end(); ++i)
+			for (std::vector< Item<> >::const_iterator j = i->second.begin();
+					j != i->second.end(); ++j)
+				counts[*j] = 0;
+	}
 
 	virtual bool operator()(Metadata& md)
 	{
@@ -663,11 +671,7 @@ struct ItemCountDumper : public MetadataConsumer
 				lower_bound(i->second.begin(), i->second.end(), item);
 			if (lb == i->second.end()) continue;
 			if (*lb != item) continue;
-			map< Item<>, int >::iterator j = counts.find(item);
-			if (j == counts.end())
-				counts.insert(make_pair(item, 1));
-			else
-				++(j->second);
+			++counts[item];
 		}
 		return true;
 	}
