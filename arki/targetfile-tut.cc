@@ -60,7 +60,7 @@ struct arki_targetfile_shar {
 		md.set(origin::GRIB1::create(1, 2, 3));
 		md.set(product::GRIB1::create(1, 2, 3));
 		md.set(level::GRIB1::create(110, 12, 13));
-		md.set(timerange::GRIB1::create(2, 254u, 22, 23));
+		md.set(timerange::GRIB1::create(0, 0, 0, 0));
 		md.set(area::GRIB::create(testValues));
 		md.set(ensemble::GRIB::create(testValues));
 		md.notes.push_back(types::Note::create("test note"));
@@ -76,6 +76,14 @@ void to::test<1>()
 {
 	Targetfile::Func f = tf.get("echo:foo");
 	ensure_equals(f(md), "foo");
+}
+
+// Test MARS expansion
+template<> template<>
+void to::test<2>()
+{
+	Targetfile::Func f = tf.get("mars:foo[DATE][TIME]+[STEP].grib");
+	ensure_equals(f(md), "foo200701020304+00.grib");
 }
 
 }
