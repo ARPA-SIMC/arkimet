@@ -21,7 +21,7 @@
  */
 
 #include <arki/targetfile.h>
-#include <arki/runtime.h>
+#include <arki/runtime/config.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include "config.h"

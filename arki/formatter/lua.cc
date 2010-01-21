@@ -24,7 +24,7 @@
 #include <wibble/exception.h>
 #include <arki/types.h>
 #include <arki/utils/lua.h>
-#include <arki/runtime.h>
+#include <arki/runtime/config.h>
 
 extern "C" {
 #include <lauxlib.h>

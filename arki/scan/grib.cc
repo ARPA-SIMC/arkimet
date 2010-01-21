@@ -31,7 +31,7 @@
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
 #include <arki/types/run.h>
-#include <arki/runtime.h>
+#include <arki/runtime/config.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
