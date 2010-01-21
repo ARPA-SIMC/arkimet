@@ -21,7 +21,9 @@
  */
 
 #include <arki/targetfile.h>
+#include <arki/metadata.h>
 #include <arki/runtime/config.h>
+#include <arki/runtime/io.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include "config.h"
@@ -189,6 +191,43 @@ std::string Targetfile::Func::operator()(const Metadata& md)
 	string res = lua_tostring(*L, -1);
 	lua_pop(*L, 1);
 	return res;
+}
+
+TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const std::string& def)
+	: func(tf.get(def)), ds(ds), output(output)
+{
+}
+
+namespace {
+struct MetadataSpy : public MetadataConsumer
+{
+	TargetfileSpy& tfs;
+	MetadataConsumer& next;
+
+	MetadataSpy(TargetfileSpy& tfs, MetadataConsumer& next) : tfs(tfs), next(next) {}
+
+	bool operator()(Metadata& md)
+	{
+		tfs.redirect(md);
+		return next(md);
+	}
+};
+}
+
+void TargetfileSpy::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+{
+	MetadataSpy spy(*this, consumer);
+	ds.queryData(q, spy);
+}
+
+void TargetfileSpy::querySummary(const Matcher& matcher, Summary& summary)
+{
+	ds.querySummary(matcher, summary);
+}
+
+void TargetfileSpy::redirect(Metadata& md)
+{
+	output.openFile(func(md));
 }
 
 }

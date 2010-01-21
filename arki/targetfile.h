@@ -23,11 +23,16 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/metadata.h>
 #include <arki/utils/lua.h>
+#include <arki/dataset.h>
 #include <string>
 
 namespace arki {
+class Metadata;
+
+namespace runtime {
+class Output;
+}
 
 class Targetfile
 {
@@ -40,6 +45,7 @@ public:
 		Lua* L;
 		int idx;
 
+		Func(const Func& f) : L(f.L), idx(f.idx) {}
 		Func(Lua* L, int idx) : L(L), idx(idx) {}
 
 		/**
@@ -67,6 +73,29 @@ public:
 	 */
 	Func get(const std::string& def);
 };
+
+/**
+ * Dynamically open an Output according to what is coming out of a dataset.
+ *
+ * Wrap a dataset. As query results arrive, use arki::Targetfile to generate a
+ * file name for their output, and open/reopen an Output accordingly.
+ */
+class TargetfileSpy : public ReadonlyDataset
+{
+	Targetfile tf;
+	Targetfile::Func func;
+	ReadonlyDataset& ds;
+	runtime::Output& output;
+
+public:
+	TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const std::string& def);
+
+	void redirect(Metadata& md);
+
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void querySummary(const Matcher& matcher, Summary& summary);
+};
+
 
 }
 
