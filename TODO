@@ -220,6 +220,7 @@ Query sottoaree (ISAC)
       l'output al file corrispondente
     + lua per generare i nomi di file
     + un qualche sistema per testare la cosa
+ - --targetfile non funziona con --postprocess (e --report?)
  - annunciare
  - upload in Debian
     - build con wibble di sistema
