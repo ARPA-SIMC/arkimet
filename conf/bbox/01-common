@@ -121,7 +121,7 @@ if area.style() == "GRIB" then
   
   
   -- ...ProjectionInDegrees è grib2
-  if a.rot ~= 0 then
+  if a.rot ~= nil then
     if a.type == 10 and a.latp ~= nil and a.lonp ~= nil then
       --print ("ROTATED")
       local latsp = a.latp / 1000.0
