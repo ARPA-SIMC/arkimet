@@ -154,32 +154,6 @@ Da annunciare:
     + perform ANALYZE on repack/check
     + rebuild the cached summary after repack/check
     + il detect della roba di cui far pack continua ad avere falsi positivi
-
----
-
- - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
-   tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
-   solo massimo/minimo per lato)
- - Guardare con Selvini i LUA che estraggono i BBOX
- = Togliere il bounding box dai metadati
- = Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
-   meglio e non pone il problema di decidere qual'è il minimo e massimo
- = Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
- = Definire come creare un matcher sul bbox in arkimet
-
-
-http://www.unidata.ucar.edu/committees/polcom/2005fall/THREDDS20050912.htm
-http://www.ecmwf.int/products/data/software/simdat.html
-http://code.ecmwf.int/trac/vmc
-http://www.openchannelsoftware.com/projects/Earth_Science_Datacasting
-http://code.ecmwf.int/trac/vmc/wiki
-http://code.ecmwf.int/trac/vmc/wiki/MetadataGuidelines
-http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
- - Vedere se/come interfacciarsi a LDM
-   http://www.unidata.ucar.edu/software/ldm/
-   http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
-
-Query sottoaree (ISAC)
  + matcher per BBox
  + il type::Area con un mutable per il bbox per non doverlo ricalcolare
  + mettere direttamente il WKT nella sintassi del matcher sul bbox
@@ -210,8 +184,7 @@ Query sottoaree (ISAC)
       (for the "match all of", use the original matcher expression, and maybe
       skip the redundant pure items that match it)
  + per il reftime, espandere senza guardare il dataset, per beccare buchi
-
- - dispatch in file il cui nome dipende dal dato
+ + dispatch in file il cui nome dipende dal dato
     + --targetfile="tipo:pattern"
     + tipo è un file lua in /etc/arkimet/targetfile/
     + pattern è passato alla variabile global "pattern"
@@ -220,11 +193,38 @@ Query sottoaree (ISAC)
       l'output al file corrispondente
     + lua per generare i nomi di file
     + un qualche sistema per testare la cosa
+
+---
+
+ - vedere se è possibile calcolare i minimi/massimi dei vari lati della griglia
+   tramite bisezione sul lati (per beccare tutte le proiezioni che hanno un
+   solo massimo/minimo per lato)
+ - Guardare con Selvini i LUA che estraggono i BBOX
+ = Togliere il bounding box dai metadati
+ = Bbox BOX: prendere {lat,lon}{first,last} invece di {min,max} perché suona
+   meglio e non pone il problema di decidere qual'è il minimo e massimo
+ = Bbox BOX: stampare i numeri con N, S, W, E invece che solo una lista
+ = Definire come creare un matcher sul bbox in arkimet
+
+
+http://www.unidata.ucar.edu/committees/polcom/2005fall/THREDDS20050912.htm
+http://www.ecmwf.int/products/data/software/simdat.html
+http://code.ecmwf.int/trac/vmc
+http://www.openchannelsoftware.com/projects/Earth_Science_Datacasting
+http://code.ecmwf.int/trac/vmc/wiki
+http://code.ecmwf.int/trac/vmc/wiki/MetadataGuidelines
+http://code.ecmwf.int/trac/vmc/wiki/TestingScenarios#TestingScenarios
+ - Vedere se/come interfacciarsi a LDM
+   http://www.unidata.ucar.edu/software/ldm/
+   http://www.unidata.ucar.edu/software/ldm/ldm-6.6.5/
+
  - --targetfile non funziona con --postprocess (e --report?)
- - annunciare
  - upload in Debian
     - build con wibble di sistema
     - documentazione, manpage, descrizioni in debian/control...
+
+ - arki-server: export data files plainly via HTTP, and include HTTP ranges.
+   Then the HTTP Source can include range information and allow remote fetch
 
  - al momento, l'inliner chiama Metadata::getData che apre e chiude il file di
    dati ogni volta. Se servono prestazioni, si può passare a qualcosa di piú

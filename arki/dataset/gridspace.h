@@ -144,8 +144,17 @@ struct MDGrid
 	 * Enters a metadata item to the appropriate grid dimension.
 	 *
 	 * A line in the form:
-	 *   match type: expr
+	 *   match one type: expr
 	 * Enters a metadata item that matches the given arkimet query.
+	 *
+	 * A line in the form:
+	 *   match all type: expr
+	 * Enters all the metadata items that match the given arkimet query.
+	 *
+	 * A line in the form:
+	 *   reftime sequence: from DATETIME1 to DATETIME1 step SECONDS
+	 * Enters all reference time items from DATETIME1 (inclusive) to
+	 * DATETIME2 (exclusive) every SECONDS seconds.
 	 */
 	void read(std::istream& input, const std::string& fname);
 
