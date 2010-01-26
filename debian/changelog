@@ -1,3 +1,13 @@
+arkimet (0.32-1) UNRELEASED; urgency=low
+
+  * Fixed bounding box calculation for rotated areas
+  * Added --targetfile option
+  * Several gridspace bugfixes
+  * Fixed unpredictable behaviour on --sort
+  * arki-dump --gridspace
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 26 Jan 2010 16:37:23 +0000
+
 arkimet (0.31-1) UNRELEASED; urgency=low
 
   * Implemented bounding box matchers (exact and contains)
