@@ -1,7 +1,7 @@
 Source: arkimet
 Priority: optional
 Maintainer: Enrico Zini <enrico@debian.org>
-Build-Depends: cdbs (>= 0.4.43), debhelper (>> 4.1), dh-buildinfo, doxygen, libdballepp-dev (>= 4.0.0), liblua5.1-0-dev, libgribapi-dev, libsqlite3-dev, libcurl4-openssl-dev | libcurl-ssl-dev, python-cherrypy, libgeos-dev, pkg-config, python-configobj, curl
+Build-Depends: cdbs (>= 0.4.43), debhelper (>> 4.1), dh-buildinfo, doxygen, libdballepp-dev (>= 4.0.0), liblua5.1-0-dev, libgrib-api-dev, libsqlite3-dev, libcurl4-openssl-dev | libcurl-ssl-dev, python-cherrypy, libgeos-dev, pkg-config, python-configobj, curl
 Standards-Version: 3.7.2.0
 XS-Vcs-Svn: https://svn.smr.arpa.emr.it/xgribarch
 
