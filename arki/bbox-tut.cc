@@ -147,6 +147,7 @@ void to::test<4>()
 	vb.set("latp", Value::createInteger(-32500));
 	vb.set("lonp", Value::createInteger(10000));
 	vb.set("type", Value::createInteger(10));
+	vb.set("rot", Value::createInteger(0));
 
 	Item<types::Area> area(types::area::GRIB::create(vb));
 	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
