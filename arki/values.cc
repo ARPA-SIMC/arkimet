@@ -25,6 +25,7 @@
 #include <arki/utils/codec.h>
 #include <cstdlib>
 #include <cctype>
+#include <cstdio>
 #include "config.h"
 
 #ifdef HAVE_LUA
