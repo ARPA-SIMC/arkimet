@@ -30,6 +30,7 @@
 #include <cmath>
 #include <cstring>
 #include <ctime>
+#include <cstdio>
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
