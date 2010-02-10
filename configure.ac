@@ -47,6 +47,9 @@ PKG_PROG_PKG_CONFIG
 
 dnl Compulsory libraries
 AX_LIB_SQLITE3([3.6])
+if test x"$success" = x"no"; then
+	AC_MSG_ERROR([Cannot find an appropriate version of SQLite])
+fi
 
 dnl Wibble is embedded
 dnl LIBWIBBLE_DEFS
