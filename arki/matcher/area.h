@@ -77,15 +77,16 @@ struct MatchAreaBBoxEquals : public MatchAreaBBox
 	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
 };
 
-struct MatchAreaBBoxCovers : public MatchAreaBBox
-{
-	MatchAreaBBoxCovers(const std::string& geom);
-	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
-};
-
 struct MatchAreaBBoxIntersects : public MatchAreaBBox
 {
 	MatchAreaBBoxIntersects(const std::string& geom);
+	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
+};
+
+#ifdef ARKI_NEW_GEOS
+struct MatchAreaBBoxCovers : public MatchAreaBBox
+{
+	MatchAreaBBoxCovers(const std::string& geom);
 	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
 };
 
@@ -94,6 +95,8 @@ struct MatchAreaBBoxCoveredBy : public MatchAreaBBox
 	MatchAreaBBoxCoveredBy(const std::string& geom);
 	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
 };
+#endif
+
 #endif
 
 }

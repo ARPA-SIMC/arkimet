@@ -34,6 +34,8 @@ struct Geometry;
 struct GeometryFactory;
 }
 #define ARKI_GEOS_NS geos
+#define ARKI_GEOS_IO_NS geos
+#define ARKI_OLD_GEOS
 #else
 namespace geos {
 namespace geom {
@@ -42,6 +44,8 @@ struct GeometryFactory;
 }
 }
 #define ARKI_GEOS_NS geos::geom
+#define ARKI_GEOS_IO_NS geos::io
+#define ARKI_NEW_GEOS
 #endif
 
 #define ARKI_GEOS_GEOMETRY ARKI_GEOS_NS::Geometry

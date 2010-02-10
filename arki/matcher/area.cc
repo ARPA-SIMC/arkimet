@@ -69,9 +69,9 @@ MatchArea* MatchArea::parse(const std::string& pattern)
 #ifdef HAVE_GEOS
 static auto_ptr<ARKI_GEOS_GEOMETRY> parseBBox(const ARKI_GEOS_GEOMETRYFACTORY& gf, const std::string sb)
 {
-	using namespace ARKI_GEOS_NS;
+	using namespace ARKI_GEOS_IO_NS;
 
-	geos::io::WKTReader reader(&gf);
+	WKTReader reader(&gf);
 	return auto_ptr<ARKI_GEOS_GEOMETRY>(reader.read(sb));
 }
 
@@ -106,12 +106,14 @@ MatchAreaBBox* MatchAreaBBox::parse(const std::string& pattern)
 	if (verb == "equals")
 	{
 		return new MatchAreaBBoxEquals(rest);
-	} else if (verb == "covers") {
-		return new MatchAreaBBoxCovers(rest);
 	} else if (verb == "intersects") {
 		return new MatchAreaBBoxIntersects(rest);
+#ifdef ARKI_NEW_GEOS
+	} else if (verb == "covers") {
+		return new MatchAreaBBoxCovers(rest);
 	} else if (verb == "coveredby") {
 		return new MatchAreaBBoxCoveredBy(rest);
+#endif
 	} else {
 		throw wibble::exception::Consistency("parsing type of bbox match", "unsupported match type: " + verb);
 	}
@@ -145,18 +147,19 @@ bool MatchAreaBBoxEquals::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
 	return val->equals(geom);
 }
 
-MatchAreaBBoxCovers::MatchAreaBBoxCovers(const std::string& geom) : MatchAreaBBox("covers", geom) {}
-
-bool MatchAreaBBoxCovers::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
-{
-	return val->covers(geom);
-}
-
 MatchAreaBBoxIntersects::MatchAreaBBoxIntersects(const std::string& geom) : MatchAreaBBox("intersects", geom) {}
 
 bool MatchAreaBBoxIntersects::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
 {
 	return val->intersects(geom);
+}
+
+#ifdef ARKI_NEW_GEOS
+MatchAreaBBoxCovers::MatchAreaBBoxCovers(const std::string& geom) : MatchAreaBBox("covers", geom) {}
+
+bool MatchAreaBBoxCovers::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
+{
+	return val->covers(geom);
 }
 
 MatchAreaBBoxCoveredBy::MatchAreaBBoxCoveredBy(const std::string& geom) : MatchAreaBBox("coveredby", geom) {}
@@ -165,6 +168,8 @@ bool MatchAreaBBoxCoveredBy::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
 {
 	return val->coveredBy(geom);
 }
+#endif
+
 #endif
 
 MatcherType area("area", types::TYPE_AREA, (MatcherType::subexpr_parser)MatchArea::parse);
