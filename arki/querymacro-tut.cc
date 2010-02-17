@@ -19,7 +19,7 @@
  */
 
 #include <arki/tests/test-utils.h>
-#include <arki/targetfile.h>
+#include <arki/querymacro.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -38,19 +38,21 @@ namespace tut {
 using namespace std;
 using namespace arki;
 
-struct arki_targetfile_shar {
-	Targetfile tf;
+struct arki_querymacro_shar {
+	//Targetfile tf;
 	Metadata md;
 
-	arki_targetfile_shar()
+	arki_querymacro_shar()
+		/*
 		: tf(
 			"targetfile['echo'] = function(format)\n"
 			"  return function(md)\n"
 			"    return format\n"
 			"  end\n"
 			"end\n"
-		)
+		) */
 	{
+		/*
 		tf.loadRCFiles();
 		using namespace arki::types;
 		ValueBag testValues;
@@ -66,24 +68,29 @@ struct arki_targetfile_shar {
 		md.notes.push_back(types::Note::create("test note"));
 		md.set(run::Minute::create(12));
 		md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
+		*/
 	}
 };
-TESTGRP(arki_targetfile);
+TESTGRP(arki_querymacro);
 
 // Empty or unsupported area should give 0
 template<> template<>
 void to::test<1>()
 {
+#if 0
 	Targetfile::Func f = tf.get("echo:foo");
 	ensure_equals(f(md), "foo");
+#endif
 }
 
 // Test MARS expansion
 template<> template<>
 void to::test<2>()
 {
+#if 0
 	Targetfile::Func f = tf.get("mars:foo[DATE][TIME]+[STEP].grib");
 	ensure_equals(f(md), "foo200701020304+00.grib");
+#endif
 }
 
 }
