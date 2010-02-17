@@ -700,7 +700,10 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 	next.process(results, name);
 
 	if (reportStatus)
+	{
 		cerr << name << ": " << summarySoFar() << endl;
+		cerr.flush();
+	}
 
 	bool success = countSuccessful != 0 && !(
 		    countNotImported
