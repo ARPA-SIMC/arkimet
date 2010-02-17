@@ -157,20 +157,20 @@ if area.style() == "GRIB" then
     end
     
     idx = 1
-    for i = 1, xsamples do
-      bbox[idx] = r2ll(lonmin + lonsize*(i-1)/xsamples, latmin)
+    for i = 0, xsamples do
+      bbox[idx] = r2ll(lonmin + lonsize*i/xsamples, latmin)
       idx = idx + 1
     end
-    for i = 1, ysamples do
-      bbox[idx] = r2ll(lonmax, latmin + (latmax-latmin)*(i-1)/ysamples)
+    for i = 0, ysamples do
+      bbox[idx] = r2ll(lonmax, latmin + (latmax-latmin)*i/ysamples)
       idx = idx + 1
     end
-    for i = xsamples,1,-1 do
-      bbox[idx] = r2ll(lonmin + lonsize*(i-1)/xsamples, latmax)
+    for i = xsamples,0,-1 do
+      bbox[idx] = r2ll(lonmin + lonsize*i/xsamples, latmax)
       idx = idx + 1
     end
-    for i = ysamples,1,-1 do
-      bbox[idx] = r2ll(lonmin, latmin + (latmax-latmin)*(i-1)/ysamples)
+    for i = ysamples,0,-1 do
+      bbox[idx] = r2ll(lonmin, latmin + (latmax-latmin)*i/ysamples)
       idx = idx + 1
     end
     
