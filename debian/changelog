@@ -4,11 +4,13 @@ arkimet (0.33-1) UNRELEASED; urgency=low
     dataset filters.
   * UTM areas hacked into latlon grids are now detected and their area marked
     with utm=1
+  * GRIB2 areas use tm=.. (template number) instead of type=.. to avoid
+    confusing two numbering schemes with different meanings
   * Fixed computation of bounding boxes
   * Only allow use of a postprocessor if listed in "postprocess=" directive in
     dataset config
 
- -- Enrico Zini <enrico@debian.org>  Wed, 17 Feb 2010 18:19:26 +0100
+ -- Enrico Zini <enrico@debian.org>  Wed, 17 Feb 2010 18:25:36 +0100
 
 arkimet (0.32-1) UNRELEASED; urgency=low
 
