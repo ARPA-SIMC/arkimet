@@ -97,7 +97,7 @@ void to::test<2>()
 	//ensure_not_matches("bbox:is BOX(43, 45, 10, 12)", md);
 	//ensure_not_matches("bbox:is HULL(43 12, 44 10, 45 12, 43 12)", md);
 
-	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
 	ensure_matches("area: bbox equals POLYGON((10 43, 12 43, 12 45, 10 45, 10 43))", md);
 	ensure_not_matches("area: bbox equals POINT EMPTY", md);
 	ensure_not_matches("area: bbox equals POINT(11 44)", md);
@@ -133,7 +133,7 @@ void to::test<3>()
 	//ensure_not_matches("bbox:contains BOX(43, 45, 10, 12)", md);
 	//ensure_not_matches("bbox:contains HULL(43 12, 44 10, 45 12, 43 12)", md);
 
-	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
 	ensure_matches("area: bbox covers POINT(11 44)", md);
 	ensure_matches("area: bbox covers POINT(12 43)", md);
 	ensure_matches("area: bbox covers LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md);
@@ -149,7 +149,7 @@ void to::test<3>()
 	ensure_not_matches("area: bbox covers POLYGON((12 42, 10 44, 12 45, 12 42))", md);
 
 	// Known cases that gave trouble
-	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=75000, latlast=30000, lonfirst=-45000, lonlast=65000, type=0)"));
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=75000000, latlast=30000000, lonfirst=-45000000, lonlast=65000000, type=0)"));
 	ensure_matches("area:bbox covers POLYGON((30 60, -20 60, -20 30, 30 30, 30 60))", md);
 
 	//std::vector< std::pair<float, float> > points;
@@ -177,7 +177,7 @@ template<> template<>
 void to::test<4>()
 {
 #ifdef HAVE_GEOS
-	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
 	ensure_matches("area: bbox intersects POINT(11 44)", md);
 	ensure_matches("area: bbox intersects POINT(12 43)", md);
 	ensure_matches("area: bbox intersects LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)", md);
@@ -200,7 +200,7 @@ template<> template<>
 void to::test<5>()
 {
 #ifdef HAVE_GEOS
-	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000, latlast=43000, lonfirst=10000, lonlast=12000, type=0)"));
+	md.set(types::Area::decodeString("GRIB(Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0)"));
 	ensure_matches("area: bbox coveredby POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))", md); // Same shape
 	ensure_matches("area: bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))", md); // Trapezoid containing area
 	ensure_not_matches("area: bbox coveredby POINT(11 44)", md); // Intersection exists but area is 0
