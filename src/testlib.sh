@@ -59,7 +59,7 @@ type=local
 step=daily
 filter=origin:GRIB1,200
 indef=origin
-postprocess=cat,echo
+postprocess=cat,echo,say
 EOT
 
     cat <<EOT > test80/config
