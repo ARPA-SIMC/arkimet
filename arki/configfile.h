@@ -68,7 +68,7 @@ public:
 
 private:
 	/// The configuration values in this node
-	std::map<std::string, std::string> values;
+	std::map<std::string, std::string> m_values;
 
 	/**
 	 * The source file information of where the configuration values have been
@@ -110,8 +110,8 @@ public:
 
 	//iterator begin() { return values.begin(); }
 	//iterator end() { return values.end(); }
-	const_iterator begin() const { return values.begin(); }
-	const_iterator end() const { return values.end(); }
+	const_iterator begin() const { return m_values.begin(); }
+	const_iterator end() const { return m_values.end(); }
 	section_iterator sectionBegin() { return sections.begin(); }
 	section_iterator sectionEnd() { return sections.end(); }
 	const_section_iterator sectionBegin() const { return sections.begin(); }
@@ -121,7 +121,10 @@ public:
 	size_t sectionSize() const { return sections.size(); }
 
 	/// Number of values at this level (does not include values inside subsections)
-	size_t valueSize() const { return values.size(); }
+	size_t valueSize() const { return m_values.size(); }
+
+	/// Get the values map
+	const std::map<std::string, std::string>& values() const { return m_values; }
 
 	/**
 	 * Copy all the values from c into this ConfigFile, merging with existing

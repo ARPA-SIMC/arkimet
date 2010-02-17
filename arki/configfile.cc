@@ -79,7 +79,7 @@ void ConfigFile::merge(const ConfigFile& c)
 	// Copy the values and the values information
 	for (const_iterator i = c.begin(); i != c.end(); ++i)
 	{
-		values.insert(*i);
+		m_values.insert(*i);
 		std::map<std::string, FilePos>::const_iterator j = c.values_pos.find(i->first);
 		if (j == c.values_pos.end())
 			values_pos.erase(i->first);
@@ -129,7 +129,7 @@ void ConfigFile::parseLine(ConfigFileParserHelper& h, const std::string& line)
 		// Strip double quotes, if they appear
 		if (value[0] == '"' && value[value.size()-1] == '"')
 			value = value.substr(1, value.size()-2);
-		values.insert(make_pair(h.assignment[1], value));
+		m_values.insert(make_pair(h.assignment[1], value));
 		values_pos.insert(make_pair(h.assignment[1], FilePos(h.fileName, h.line)));
 	}
 	else
@@ -181,8 +181,8 @@ void ConfigFile::parseSection(ConfigFileParserHelper& h, std::istream& in)
 
 std::string ConfigFile::value(const std::string& key) const
 {
-	const_iterator i = values.find(key);
-	if (i == values.end())
+	const_iterator i = m_values.find(key);
+	if (i == m_values.end())
 		return string();
 	return i->second;
 }
@@ -197,7 +197,7 @@ const ConfigFile::FilePos* ConfigFile::valueInfo(const std::string& key) const
 
 void ConfigFile::setValue(const std::string& key, const std::string& value)
 {
-    values[key] = value;
+    m_values[key] = value;
 	values_pos.erase(key);
 }
 
