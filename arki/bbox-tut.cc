@@ -56,10 +56,10 @@ void to::test<2>()
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(97));
 	vb.set("Nj", Value::createInteger(73));
-	vb.set("latfirst", Value::createInteger(40000));
-	vb.set("latlast", Value::createInteger(46000));
-	vb.set("lonfirst", Value::createInteger(12000));
-	vb.set("lonlast", Value::createInteger(20000));
+	vb.set("latfirst", Value::createInteger(40000000));
+	vb.set("latlast", Value::createInteger(46000000));
+	vb.set("lonfirst", Value::createInteger(12000000));
+	vb.set("lonlast", Value::createInteger(20000000));
 	vb.set("type", Value::createInteger(0));
 
 	Item<types::Area> area(types::area::GRIB::create(vb));
@@ -103,6 +103,7 @@ void to::test<3>()
 	vb.set("lonfirst", Value::createInteger(402500));
 	vb.set("lonlast", Value::createInteger(847500));
 	vb.set("type", Value::createInteger(0));
+	vb.set("utm", Value::createInteger(1));
 
 	Item<types::Area> area(types::area::GRIB::create(vb));
 	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
@@ -140,12 +141,12 @@ void to::test<4>()
 	ValueBag vb;
 	vb.set("Ni", Value::createInteger(447));
 	vb.set("Nj", Value::createInteger(532));
-	vb.set("latfirst", Value::createInteger(-21925));
-	vb.set("latlast", Value::createInteger(-8650));
-	vb.set("lonfirst", Value::createInteger(-3500));
-	vb.set("lonlast", Value::createInteger(7650));
-	vb.set("latp", Value::createInteger(-32500));
-	vb.set("lonp", Value::createInteger(10000));
+	vb.set("latfirst", Value::createInteger(-21925000));
+	vb.set("latlast", Value::createInteger(-8650000));
+	vb.set("lonfirst", Value::createInteger(-3500000));
+	vb.set("lonlast", Value::createInteger(7650000));
+	vb.set("latp", Value::createInteger(-32500000));
+	vb.set("lonp", Value::createInteger(10000000));
 	vb.set("type", Value::createInteger(10));
 	vb.set("rot", Value::createInteger(0));
 
@@ -154,7 +155,7 @@ void to::test<4>()
 	//cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
-	ensure_equals(g->getNumPoints(), 24u);
+	ensure_equals(g->getNumPoints(), 28u);
 	ensure_equals(g->getGeometryType(), "Polygon");
 	//ensure_equals(g->getNumGeometries(), 1u);
 	//ensure(g->isRectangle());
@@ -168,23 +169,27 @@ void to::test<4>()
 	ensure_similar(cs->getAt( 4).x, 14.4800, 0.0001); ensure_similar(cs->getAt( 4).y, 35.4453, 0.0001);
 	ensure_similar(cs->getAt( 5).x, 16.5860, 0.0001); ensure_similar(cs->getAt( 5).y, 35.2942, 0.0001);
 	ensure_similar(cs->getAt( 6).x, 18.6800, 0.0001); ensure_similar(cs->getAt( 6).y, 35.0860, 0.0001);
-	ensure_similar(cs->getAt( 7).x, 19.0614, 0.0001); ensure_similar(cs->getAt( 7).y, 37.2769, 0.0001);
-	ensure_similar(cs->getAt( 8).x, 19.4657, 0.0001); ensure_similar(cs->getAt( 8).y, 39.4666, 0.0001);
-	ensure_similar(cs->getAt( 9).x, 19.8963, 0.0001); ensure_similar(cs->getAt( 9).y, 41.6548, 0.0001);
-	ensure_similar(cs->getAt(10).x, 20.3571, 0.0001); ensure_similar(cs->getAt(10).y, 43.8413, 0.0001);
-	ensure_similar(cs->getAt(11).x, 20.8530, 0.0001); ensure_similar(cs->getAt(11).y, 46.0258, 0.0001);
-	ensure_similar(cs->getAt(12).x, 18.6560, 0.0001); ensure_similar(cs->getAt(12).y, 48.4808, 0.0001);
-	ensure_similar(cs->getAt(13).x, 15.8951, 0.0001); ensure_similar(cs->getAt(13).y, 48.6793, 0.0001);
-	ensure_similar(cs->getAt(14).x, 13.1154, 0.0001); ensure_similar(cs->getAt(14).y, 48.8024, 0.0001);
-	ensure_similar(cs->getAt(15).x, 10.3255, 0.0001); ensure_similar(cs->getAt(15).y, 48.8495, 0.0001);
-	ensure_similar(cs->getAt(16).x,  7.5346, 0.0001); ensure_similar(cs->getAt(16).y, 48.8202, 0.0001);
-	ensure_similar(cs->getAt(17).x,  4.7517, 0.0001); ensure_similar(cs->getAt(17).y, 48.7148, 0.0001);
-	ensure_similar(cs->getAt(18).x,  5.0025, 0.0001); ensure_similar(cs->getAt(18).y, 46.5087, 0.0001);
-	ensure_similar(cs->getAt(19).x,  5.2337, 0.0001); ensure_similar(cs->getAt(19).y, 44.3022, 0.0001);
-	ensure_similar(cs->getAt(20).x,  5.4482, 0.0001); ensure_similar(cs->getAt(20).y, 42.0952, 0.0001);
-	ensure_similar(cs->getAt(21).x,  5.6482, 0.0001); ensure_similar(cs->getAt(21).y, 39.8879, 0.0001);
-	ensure_similar(cs->getAt(22).x,  5.8357, 0.0001); ensure_similar(cs->getAt(22).y, 37.6802, 0.0001);
-	ensure_similar(cs->getAt(23).x,  6.0124, 0.0001); ensure_similar(cs->getAt(23).y, 35.4723, 0.0001);
+	ensure_similar(cs->getAt( 7).x, 18.6800, 0.0001); ensure_similar(cs->getAt( 7).y, 35.0860, 0.0001);
+	ensure_similar(cs->getAt( 8).x, 19.0614, 0.0001); ensure_similar(cs->getAt( 8).y, 37.2769, 0.0001);
+	ensure_similar(cs->getAt( 9).x, 19.4657, 0.0001); ensure_similar(cs->getAt( 9).y, 39.4666, 0.0001);
+	ensure_similar(cs->getAt(10).x, 19.8963, 0.0001); ensure_similar(cs->getAt(10).y, 41.6548, 0.0001);
+	ensure_similar(cs->getAt(11).x, 20.3571, 0.0001); ensure_similar(cs->getAt(11).y, 43.8413, 0.0001);
+	ensure_similar(cs->getAt(12).x, 20.8530, 0.0001); ensure_similar(cs->getAt(12).y, 46.0258, 0.0001);
+	ensure_similar(cs->getAt(13).x, 21.3897, 0.0001); ensure_similar(cs->getAt(13).y, 48.2079, 0.0001);
+	ensure_similar(cs->getAt(14).x, 21.3897, 0.0001); ensure_similar(cs->getAt(14).y, 48.2079, 0.0001);
+	ensure_similar(cs->getAt(15).x, 18.6560, 0.0001); ensure_similar(cs->getAt(15).y, 48.4808, 0.0001);
+	ensure_similar(cs->getAt(16).x, 15.8951, 0.0001); ensure_similar(cs->getAt(16).y, 48.6793, 0.0001);
+	ensure_similar(cs->getAt(17).x, 13.1154, 0.0001); ensure_similar(cs->getAt(17).y, 48.8024, 0.0001);
+	ensure_similar(cs->getAt(18).x, 10.3255, 0.0001); ensure_similar(cs->getAt(18).y, 48.8495, 0.0001);
+	ensure_similar(cs->getAt(19).x,  7.5346, 0.0001); ensure_similar(cs->getAt(19).y, 48.8202, 0.0001);
+	ensure_similar(cs->getAt(20).x,  4.7517, 0.0001); ensure_similar(cs->getAt(20).y, 48.7148, 0.0001);
+	ensure_similar(cs->getAt(21).x,  4.7517, 0.0001); ensure_similar(cs->getAt(21).y, 48.7148, 0.0001);
+	ensure_similar(cs->getAt(22).x,  5.0025, 0.0001); ensure_similar(cs->getAt(22).y, 46.5087, 0.0001);
+	ensure_similar(cs->getAt(23).x,  5.2337, 0.0001); ensure_similar(cs->getAt(23).y, 44.3022, 0.0001);
+	ensure_similar(cs->getAt(24).x,  5.4482, 0.0001); ensure_similar(cs->getAt(24).y, 42.0952, 0.0001);
+	ensure_similar(cs->getAt(25).x,  5.6482, 0.0001); ensure_similar(cs->getAt(25).y, 39.8879, 0.0001);
+	ensure_similar(cs->getAt(26).x,  5.8357, 0.0001); ensure_similar(cs->getAt(26).y, 37.6802, 0.0001);
+	ensure_similar(cs->getAt(27).x,  6.0124, 0.0001); ensure_similar(cs->getAt(27).y, 35.4723, 0.0001);
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
 }
