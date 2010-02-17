@@ -67,25 +67,25 @@ function norm_lon(lon)
 end
 
 -- Area
-arki.area.type = grib.gridDefinitionTemplateNumber
+arki.area.tn = grib.gridDefinitionTemplateNumber
 
-arki.area.latfirst = grib.latitudeOfFirstGridPointInDegrees
-arki.area.lonfirst = grib.longitudeOfFirstGridPointInDegrees
+arki.area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
+arki.area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
 
 if grib.numberOfPointsAlongAParallel then
 	arki.area.Ni = grib.numberOfPointsAlongAParallel
 	arki.area.Nj = grib.numberOfPointsAlongAMeridian
-	arki.area.latlast = grib.latitudeOfLastGridPointInDegrees
-	arki.area.lonlast = grib.longitudeOfLastGridPointInDegrees
+	arki.area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000000
+	arki.area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000000
 end
 if grib.numberOfPointsAlongXAxis then
 	arki.area.Ni = grib.numberOfPointsAlongXAxis
 	arki.area.Nj = grib.numberOfPointsAlongYAxis
 end
 if grib.angleOfRotationInDegrees then
-	arki.area.rot = grib.angleOfRotationInDegrees
-	arki.area.latp = grib.latitudeOfSouthernPoleInDegrees
-	arki.area.lonp = grib.longitudeOfSouthernPoleInDegrees
+	arki.area.rot = grib.angleOfRotationInDegrees * 1000000
+	arki.area.latp = grib.latitudeOfSouthernPoleInDegrees * 1000000
+	arki.area.lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000
 end
 
 

@@ -91,21 +91,12 @@ end
 
 if area.style() == "GRIB" then
   a = area.grib()
-  if a.latfirst ~= nil then
-    latfirst = a.latfirst / 1000.0
-    latlast = a.latlast / 1000.0
-    lonfirst = norm_lon(a.lonfirst / 1000.0)
-    lonlast = norm_lon(a.lonlast / 1000.0)
+  if a.utm == 1 then
+      latfirst = a.latfirst / 1000.0
+      latlast = a.latlast / 1000.0
+      lonfirst = norm_lon(a.lonfirst / 1000.0)
+      lonlast = norm_lon(a.lonlast / 1000.0)
 
-    if latfirst < 1000 then
-      -- print ("NORMLATLON")
-      bbox = {}
-      bbox[1] = { latfirst, lonfirst }
-      bbox[2] = { latlast,  lonfirst }
-      bbox[3] = { latlast,  lonlast }
-      bbox[4] = { latfirst, lonlast }
-      bbox[5] = bbox[1]
-    else
       -- Compute the bounding box for the Calmet gribs, that memorize the UTM
       -- coordinates instead of lat and lon
       -- print ("CALMET")
@@ -115,83 +106,93 @@ if area.style() == "GRIB" then
       bbox[3] = utm2ll(lonlast,  latlast)
       bbox[4] = utm2ll(lonfirst, latlast)
       bbox[5] = bbox[1]
-    end
-  end
-  
-  
-  
-  -- ...ProjectionInDegrees è grib2
-  if a.rot ~= nil then
-    if a.type == 10 and a.latp ~= nil and a.lonp ~= nil then
-      --print ("ROTATED")
-      local latsp = a.latp / 1000.0
-      local lonsp = a.lonp / 1000.0
-    
-      -- Common parameters to unrotate coordinates
-      local latsouthpole = math.acos(-math.sin(math.rad(latsp)))
-      local cy0 = math.cos(latsouthpole)
-      local sy0 = math.sin(latsouthpole)
-      local lonsouthpole = lonsp
-    
-      function r2ll(x, y)
-        local x = math.rad(x)
-        local y = math.rad(y)
-        local rlat = math.asin(sy0 * math.cos(y) * math.cos(x) + cy0 * math.sin(y))
-        local lat = math.deg(rlat)
-        local lon = lonsouthpole + math.deg(math.asin(math.sin(x) * math.cos(y) / math.cos(rlat)))
-        --print ("GIVE", lat, lon)
-        return { lat, lon }
-      end
-    
-      -- Number of points to sample
-      local xsamples = math.floor(math.log(a.Ni))
-      local ysamples = math.floor(math.log(a.Nj))
-    
+  elseif (a.type == 0 or a.tn == 0) and a.latfirst ~= nil then
+      latfirst = a.latfirst / 1000000.0
+      latlast = a.latlast / 1000000.0
+      lonfirst = norm_lon(a.lonfirst / 1000000.0)
+      lonlast = norm_lon(a.lonlast / 1000000.0)
+
+      -- print ("NORMLATLON")
       bbox = {}
-  
-      latmin = a.latfirst / 1000.0
-      latmax = a.latlast / 1000.0
-      lonmin = a.lonfirst / 1000.0
-      lonmax = a.lonlast / 1000.0
+      bbox[1] = { latfirst, lonfirst }
+      bbox[2] = { latlast,  lonfirst }
+      bbox[3] = { latlast,  lonlast }
+      bbox[4] = { latfirst, lonlast }
+      bbox[5] = bbox[1]
+  elseif (a.type == 10 or a.tn == 1) and a.latp ~= nil and a.lonp ~= nil and a.rot == 0 then
+    -- ...ProjectionInDegrees è grib2
+    -- print ("ROTATED")
+    local latsp = a.latp / 1000000.0
+    local lonsp = a.lonp / 1000000.0
     
-      idx = 1
-      for i = 1, xsamples do
-        bbox[idx] = r2ll(lonmin + (lonmax-lonmin)*(i-1)/xsamples, latmin)
-        idx = idx + 1
-      end
-      for i = 1, ysamples do
-        bbox[idx] = r2ll(lonmax, latmin + (latmax-latmin)*(i-1)/ysamples)
-        idx = idx + 1
-      end
-      for i = xsamples,1,-1 do
-        bbox[idx] = r2ll(lonmin + (lonmax-lonmin)*(i-1)/xsamples, latmax)
-        idx = idx + 1
-      end
-      for i = ysamples,1,-1 do
-        bbox[idx] = r2ll(lonmin, latmin + (latmax-latmin)*(i-1)/ysamples)
-        idx = idx + 1
-      end
+    -- Common parameters to unrotate coordinates
+    local latsouthpole = math.acos(-math.sin(math.rad(latsp)))
+    local cy0 = math.cos(latsouthpole)
+    local sy0 = math.sin(latsouthpole)
+    local lonsouthpole = lonsp
     
-      -- Print a polygon definition to be tested in arkimeow
-      -- function map(func, array)
-      --   local new_array = {}
-      --   for i,v in ipairs(array) do
-      --     new_array[i] = func(v)
-      --   end
-      --   return new_array
-      -- end
-      -- function strgfy(a)
-      --   return a[2].." "..a[1]
-      -- end
-      -- print ("POLYGON(("..table.concat(map(strgfy, bbox),",").."))")
-    
-    
-      -- arki.bbox = { }
-      --  r2ll(arki.lonmin, arki.latmin),
-      --  r2ll(arki.lonmax, arki.latmin),
-      --  r2ll(arki.lonmax, arki.latmax),
-      --  r2ll(arki.lonmin, arki.latmax)
-      -- }
+    function r2ll(x, y)
+      local x = math.rad(x)
+      local y = math.rad(y)
+      local rlat = math.asin(sy0 * math.cos(y) * math.cos(x) + cy0 * math.sin(y))
+      local lat = math.deg(rlat)
+      local lon = lonsouthpole + math.deg(math.asin(math.sin(x) * math.cos(y) / math.cos(rlat)))
+      return { lat, lon }
     end
+    
+    -- Number of points to sample
+    local xsamples = math.floor(math.log(a.Ni))
+    local ysamples = math.floor(math.log(a.Nj))
+    
+    bbox = {}
+  
+    latmin = a.latfirst / 1000000.0
+    latmax = a.latlast / 1000000.0
+    lonmin = a.lonfirst / 1000000.0
+    lonmax = a.lonlast / 1000000.0
+    if lonmax < lonmin then
+	    lonsize = lonmax + 360 - lonmin
+    else
+	    lonsize = lonmax - lonmin
+    end
+    
+    idx = 1
+    for i = 1, xsamples do
+      bbox[idx] = r2ll(lonmin + lonsize*(i-1)/xsamples, latmin)
+      idx = idx + 1
+    end
+    for i = 1, ysamples do
+      bbox[idx] = r2ll(lonmax, latmin + (latmax-latmin)*(i-1)/ysamples)
+      idx = idx + 1
+    end
+    for i = xsamples,1,-1 do
+      bbox[idx] = r2ll(lonmin + lonsize*(i-1)/xsamples, latmax)
+      idx = idx + 1
+    end
+    for i = ysamples,1,-1 do
+      bbox[idx] = r2ll(lonmin, latmin + (latmax-latmin)*(i-1)/ysamples)
+      idx = idx + 1
+    end
+    
+    -- Print a polygon definition to be tested in arkimeow
+    -- function map(func, array)
+    --   local new_array = {}
+    --   for i,v in ipairs(array) do
+    --     new_array[i] = func(v)
+    --   end
+    --   return new_array
+    -- end
+    -- function strgfy(a)
+    --   return a[2].." "..a[1]
+    -- end
+    -- print ("POLYGON(("..table.concat(map(strgfy, bbox),",").."))")
+    
+    
+    -- arki.bbox = { }
+    --  r2ll(arki.lonmin, arki.latmin),
+    --  r2ll(arki.lonmax, arki.latmin),
+    --  r2ll(arki.lonmax, arki.latmax),
+    --  r2ll(arki.lonmin, arki.latmax)
+    -- }
   end
 end
