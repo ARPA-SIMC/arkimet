@@ -89,32 +89,19 @@ public:
 
 }
 
-void Postprocess::init(const ConfigFile* cfg)
+void Postprocess::init(const map<string, string>& cfg)
 {
 	using namespace wibble::operators;
 	Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
 
 	// Build the set of allowed postprocessors
 	set<string> allowed;
-	if (cfg)
+	map<string, string>::const_iterator i = cfg.find("postprocess");
+	if (i != cfg.end())
 	{
-		bool first = true;
-		for (ConfigFile::const_section_iterator i = cfg->sectionBegin();
-				i != cfg->sectionEnd(); ++i)
-		{
-			set<string> allowedHere;
-			string pp = i->second->value("postprocess");
-			for (Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
-				allowedHere.insert(*j);
-				
-			if (first == true)
-			{
-				first = false;
-				allowed = allowedHere;
-			} else {
-				allowed &= allowedHere;
-			}
-		}
+		string pp = i->second;
+		for (Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
+			allowed.insert(*j);
 	}
 
 	// Parse command into its components
@@ -126,7 +113,7 @@ void Postprocess::init(const ConfigFile* cfg)
 	// Validate the command
 	if (args.empty())
 		throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command is empty");
-	if (cfg && allowed.find(args[0]) == allowed.end())
+	if (!cfg.empty() && allowed.find(args[0]) == allowed.end())
 	{
 		throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command " + m_command + " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(allowed.begin(), allowed.end()) + ")");
 	}
@@ -162,12 +149,6 @@ Postprocess::Postprocess(const std::string& command, int outfd)
 	init();
 }
 
-Postprocess::Postprocess(const std::string& command, int outfd, const ConfigFile& cfg)
-	: m_child(0), m_command(command), m_infd(-1), m_outfd(outfd)
-{
-	init(&cfg);
-}
-
 Postprocess::Postprocess(const std::string& command, std::ostream& out)
 	: m_child(0), m_command(command), m_infd(1), m_outfd(-1)
 {
@@ -179,7 +160,7 @@ Postprocess::Postprocess(const std::string& command, std::ostream& out)
 	init();
 }
 
-Postprocess::Postprocess(const std::string& command, std::ostream& out, const ConfigFile& cfg)
+Postprocess::Postprocess(const std::string& command, std::ostream& out, const map<string, string>& cfg)
 	: m_child(0), m_command(command), m_infd(-1), m_outfd(-1)
 {
 	stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf());
@@ -187,7 +168,7 @@ Postprocess::Postprocess(const std::string& command, std::ostream& out, const Co
 		throw wibble::exception::Consistency("starting postprocessor", "cannot get a posix file descriptor out of an ostream.  This is a programming error");
 	m_outfd = ps->fd();
 
-	init(&cfg);
+	init(cfg);
 }
 
 Postprocess::~Postprocess()

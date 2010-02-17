@@ -24,11 +24,10 @@
  */
 
 #include <string>
+#include <map>
 #include <arki/metadata.h>
 
 namespace arki {
-class ConfigFile;
-
 namespace postproc {
 class Subcommand;
 }
@@ -41,7 +40,7 @@ protected:
 	int m_infd;
 	int m_outfd;
 
-	void init(const ConfigFile* cfg = 0);
+	void init(const std::map<std::string, std::string>& cfg = std::map<std::string, std::string>());
 
 public:
 	/**
@@ -52,13 +51,13 @@ public:
 	 * not.
 	 */
 	Postprocess(const std::string& command, int outfd);
-	Postprocess(const std::string& command, int outfd, const ConfigFile& cfg);
+	Postprocess(const std::string& command, int outfd, const std::map<std::string, std::string>& cfg);
 	// When using an ostream, it tries to get a file descriptor out of it with
 	// any known method (so far it's only by checking if the underlying
 	// streambuf is a wibble::stream::PosixBuf).  Otherwise, it throws
 	// exception::Consistency
 	Postprocess(const std::string& command, std::ostream& out);
-	Postprocess(const std::string& command, std::ostream& out, const ConfigFile& cfg);
+	Postprocess(const std::string& command, std::ostream& out, const std::map<std::string, std::string>& cfg);
 	virtual ~Postprocess();
 
 	// Process one metadata
