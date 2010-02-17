@@ -67,7 +67,8 @@ struct arki_dataset_ondisk2_reader_shar {
 			"step = daily\n"
 			"filter = origin: GRIB1,200\n"
 			"name = testds\n"
-			"path = testds\n";
+			"path = testds\n"
+			"postprocess = testcountbytes\n";
 		stringstream incfg(conf);
 		config.parse(incfg, "(memory)");
 

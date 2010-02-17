@@ -54,7 +54,6 @@ public:
 
 	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 

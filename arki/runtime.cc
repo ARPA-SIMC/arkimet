@@ -355,6 +355,7 @@ struct BinaryProcessor : public DatasetProcessor
 
 	virtual void process(ReadonlyDataset& ds, const std::string& name)
 	{
+		// TODO: validate query's postprocessor with ds' config
 		ds.queryBytes(query, out.stream());
 	}
 };

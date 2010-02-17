@@ -64,6 +64,7 @@ namespace ondisk {
 
 Reader::Reader(const ConfigFile& cfg) : m_idx(0), m_tf(0)
 {
+	this->cfg = cfg.values();
 	m_root = cfg.value("path");
 	m_tf = TargetFile::create(cfg);
 
@@ -237,7 +238,7 @@ void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			break;
 		}
 		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param, out);
+			Postprocess postproc(q.param, out, cfg);
 			queryData(q, postproc);
 			postproc.flush();
 			break;

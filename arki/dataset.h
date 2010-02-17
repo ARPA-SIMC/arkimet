@@ -141,6 +141,9 @@ struct ByteQuery : public DataQuery
 class ReadonlyDataset
 {
 public:
+	// Configuration items (normally extracted from ConfigFile)
+	std::map<std::string, std::string> cfg;
+
 	virtual ~ReadonlyDataset() {}
 
 	/**

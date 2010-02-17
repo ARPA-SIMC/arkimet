@@ -64,7 +64,7 @@ TESTGRP(arki_postprocess);
 template<> template<>
 void to::test<1>()
 {
-	Postprocess p("null", STDERR_FILENO, config);
+	Postprocess p("null", STDERR_FILENO, config.section("testall")->values());
 
 	produceGRIB(p);
 

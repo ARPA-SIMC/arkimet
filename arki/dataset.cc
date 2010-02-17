@@ -79,7 +79,7 @@ void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			break;
 		}
 		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param, out);
+			Postprocess postproc(q.param, out, cfg);
 			queryData(q, postproc);
 			postproc.flush();
 			break;

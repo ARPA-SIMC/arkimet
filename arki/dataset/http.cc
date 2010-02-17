@@ -94,6 +94,7 @@ void CurlEasy::reset()
 HTTP::HTTP(const ConfigFile& cfg)
 	: m_mischief(false)
 {
+	this->cfg = cfg.values();
 	m_name = cfg.value("name");
 	m_baseurl = cfg.value("path");
 }

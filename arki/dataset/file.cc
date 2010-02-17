@@ -222,49 +222,6 @@ void File::querySummary(const Matcher& matcher, Summary& summary)
 	scan(DataQuery(matcher), summariser);
 }
 
-void File::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
-{
-	switch (q.type)
-	{
-		case dataset::ByteQuery::BQ_DATA: {
-			DataOnly dataonly(out);
-			scan(q, dataonly);
-			break;
-		}
-		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param, out);
-			scan(q, postproc);
-			postproc.flush();
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			scan(q, rep);
-			rep.report();
-#endif
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			Summary s;
-			querySummary(q.matcher, s);
-			rep(s);
-			rep.report();
-#endif
-			break;
-		}
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
-	}
-}
-
-
 ArkimetFile::ArkimetFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 ArkimetFile::~ArkimetFile() {}
 void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)

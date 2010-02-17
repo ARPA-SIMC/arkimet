@@ -67,6 +67,7 @@ Reader::Reader(const ConfigFile& cfg)
        	: m_name(cfg.value("name")), m_root(cfg.value("path")),
 	  m_idx(0), m_tf(0), m_archive(0)
 {
+	this->cfg = cfg.values();
 	m_tf = TargetFile::create(cfg);
 	m_idx = new RIndex(cfg);
 	m_idx->open();
@@ -145,7 +146,7 @@ void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			break;
 		}
 		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param, out);
+			Postprocess postproc(q.param, out, cfg);
 			queryLocalData(q, postproc);
 			postproc.flush();
 			break;

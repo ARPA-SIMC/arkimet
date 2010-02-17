@@ -93,7 +93,6 @@ void Postprocess::init(const map<string, string>& cfg)
 {
 	using namespace wibble::operators;
 	Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
-
 	// Build the set of allowed postprocessors
 	set<string> allowed;
 	map<string, string>::const_iterator i = cfg.find("postprocess");
@@ -147,6 +146,12 @@ Postprocess::Postprocess(const std::string& command, int outfd)
 	: m_child(0), m_command(command), m_infd(-1), m_outfd(outfd)
 {
 	init();
+}
+
+Postprocess::Postprocess(const std::string& command, int outfd, const map<string, string>& cfg)
+	: m_child(0), m_command(command), m_infd(-1), m_outfd(outfd)
+{
+	init(cfg);
 }
 
 Postprocess::Postprocess(const std::string& command, std::ostream& out)
