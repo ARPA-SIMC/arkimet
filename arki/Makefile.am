@@ -89,6 +89,7 @@ dist_noinst_HEADERS = \
 		bbox.h \
 		targetfile.h \
 		postprocess.h \
+		querymacro.h \
 		values.h \
 		utils.h \
 		nag.h
@@ -186,6 +187,7 @@ libarkimet_la_SOURCES = \
 		datasetpool.cc \
 		dispatcher.cc \
 		postprocess.cc \
+		querymacro.cc \
 		runtime/io.cc \
 		runtime/config.cc \
 		runtime.cc
@@ -270,6 +272,7 @@ tests_arki_test_SOURCES = \
 		dataset/gridspace-tut.cc \
 		dataset-tut.cc \
 		postprocess-tut.cc \
+		querymacro-tut.cc \
 		datasetpool-tut.cc \
 		dispatcher-tut.cc \
 		runtime/io-tut.cc \
