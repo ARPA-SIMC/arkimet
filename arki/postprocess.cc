@@ -89,6 +89,14 @@ public:
 
 }
 
+void Postprocess::init()
+{
+	// This could have been handled using a default argument, but it fails
+	// to compile on at least fc8
+	map<string, string> cfg;
+	init(cfg);
+}
+
 void Postprocess::init(const map<string, string>& cfg)
 {
 	using namespace wibble::operators;

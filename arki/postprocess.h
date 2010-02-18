@@ -40,7 +40,8 @@ protected:
 	int m_infd;
 	int m_outfd;
 
-	void init(const std::map<std::string, std::string>& cfg = std::map<std::string, std::string>());
+	void init();
+	void init(const std::map<std::string, std::string>& cfg);
 
 public:
 	/**
