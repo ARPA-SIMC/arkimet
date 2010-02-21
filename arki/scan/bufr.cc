@@ -86,6 +86,8 @@ const Validator& validator() { return bufr_validator; }
 
 Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData)
 {
+	dba_rawmsg rmsg;
+	bufrex_msg msg;
 	dballe::checked(dba_rawmsg_create(&rmsg));
 	dballe::checked(bufrex_msg_create(BUFREX_BUFR, &msg));
 }

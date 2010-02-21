@@ -22,6 +22,7 @@
  */
 
 #include <arki/runtime.h>
+#include <arki/nag.h>
 #if 0
 #include <arki/metadata.h>
 #include <arki/types/reftime.h>
@@ -37,6 +38,7 @@
 #include <dballe/core/rawmsg.h>
 #include <dballe/core/file.h>
 #include <dballe/bufrex/msg.h>
+#include <dballe++/error.h>
 
 #if 0
 #include <cstdlib>
@@ -55,41 +57,22 @@ namespace commandline {
 
 struct Options : public StandardParserWithManpage
 {
-#if 0
-	VectorOption<String>* inputfiles;
-	IntOption* max_args;
-	StringOption* max_bytes;
-	StringOption* time_interval;
-#endif
+	BoolOption* verbose;
+	BoolOption* debug;
+	StringOption* outfile;
 
 	Options() : StandardParserWithManpage("arki-bufr-scan", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
-#if 0
-		usage = "[options] command [initial-arguments]";
+		usage = "[options] file1 file2...";
 		description =
-			"For every item of data read from standard input, save "
-			"it on a temporary file and run "
-			"'command [initial-arguments] filename' on it";
-		inputfiles = add< VectorOption<String> >("input", 'i', "input", "file",
-			"read data from this file instead of standard input (can be given more than once)");
+			"Read BUFR messages, encode each subsection in a "
+			"separate message and add an optional section with "
+			"information useful for arki-scan";
 
-		max_args = add<IntOption>("max-args", 'n', "max-args", "count",
-			"group at most this amount of data items per command invocation");
-		max_bytes = add<StringOption>("max-size", 's', "max-size", "size",
-			"create data files no bigger than this size. This may "
-			"NOT be respected if there is one single data item "
-			"greater than the size specified.  size may be followed "
-			"by the following multiplicative suffixes: c=1, w=2, "
-			"b=512, kB=1000, K=1024, MB=1000*1000, M=1024*1024, "
-			"xM=M GB=1000*1000*1000, G=1024*1024*1024, and so on "
-			"for T, P, E, Z, Y");
-		time_interval = add<StringOption>("time-interval", 0, "time-interval", "interval",
-			"create one data file per 'interval', where interval "
-			"can be minute, hour, day, month or year");
-
-		// We need to pass switches in [initial-arguments] untouched
-		no_switches_after_first_arg = true;
-#endif
+		debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
+		verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
+		outfile = add<StringOption>("output", 'o', "output", "file",
+				"write the output to the given file instead of standard output");
 	}
 };
 
@@ -331,6 +314,29 @@ static size_t parse_interval(const std::string& str)
 }
 #endif
 
+static void process(const std::string& filename, dba_file outfile)
+{
+	dba_rawmsg rmsg;
+	bufrex_msg msg;
+	dba_file file;
+	dballe::checked(dba_rawmsg_create(&rmsg));
+	dballe::checked(bufrex_msg_create(BUFREX_BUFR, &msg));
+	dballe::checked(dba_file_create(BUFR, filename.c_str(), "r", &file));
+
+	while (true)
+	{
+		int found;
+		dballe::checked(dba_file_read(file, rmsg, &found));
+		if (!found) break;
+
+		// TODO: here
+
+		dballe::checked(dba_file_write(outfile, rmsg));
+	}
+
+	dba_file_delete(file);
+}
+
 int main(int argc, const char* argv[])
 {
 	wibble::commandline::Options opts;
@@ -338,15 +344,25 @@ int main(int argc, const char* argv[])
 		if (opts.parse(argc, argv))
 			return 0;
 
-		if (!opts.hasNext())
-			throw wibble::exception::BadOption("please specify a command to run");
-
-		vector<string> args;
-		while (opts.hasNext())
-			args.push_back(opts.next());
+		nag::init(opts.verbose->isSet(), opts.debug->isSet());
 
 		runtime::init();
 
+		dba_file outfile;
+		if (opts.outfile->isSet())
+			dballe::checked(dba_file_create(BUFR, opts.outfile->stringValue().c_str(), "w", &outfile));
+		else
+			dballe::checked(dba_file_create(BUFR, "(stdout)", "w", &outfile));
+
+		if (!opts.hasNext())
+		{
+			process("(stdin)", outfile);
+		} else {
+			while (opts.hasNext())
+			{
+				process(opts.next().c_str(), outfile);
+			}
+		}
 #if 0
 		Clusterer consumer(args);
 		if (opts.max_args->isSet())
