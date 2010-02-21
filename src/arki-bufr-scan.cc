@@ -79,240 +79,67 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-#if 0
-class Clusterer : public MetadataConsumer
+static dba_err copy_base_msg(bufrex_msg orig, bufrex_msg* newmsg)
 {
-protected:
-	const vector<string>& args;
-	string format;
-	size_t count;
-	size_t size;
-	string tmpfile_name;
-	int tmpfile_fd;
-	int cur_interval[6];
-	types::reftime::Collector timespan;
+	dba_err err = DBA_OK;
+	bufrex_msg msg = NULL;
 
-	void startCluster(const std::string& new_format)
-	{
-		char fname[] = "arkidata.XXXXXX";
-		tmpfile_fd = mkstemp(fname);
-		if (tmpfile_fd < 0)
-			throw wibble::exception::System("creating temporary file");
-		tmpfile_name = fname;
-		format = new_format;
-		count = 0;
-		size = 0;
-	}
+	DBA_RUN_OR_RETURN(bufrex_msg_create(BUFREX_BUFR, &msg));
 
-	void flushCluster()
-	{
-		if (tmpfile_fd < 0) return;
+	// Copy message attributes
+	msg->type = orig->type;
+	msg->subtype = orig->subtype;
+	msg->localsubtype = orig->localsubtype;
+	msg->edition = orig->edition;
+	msg->rep_year = orig->rep_year;
+	msg->rep_month = orig->rep_month;
+	msg->rep_day = orig->rep_day;
+	msg->rep_hour = orig->rep_hour;
+	msg->rep_minute = orig->rep_minute;
+	msg->rep_second = orig->rep_second;
+	msg->opt.bufr.centre = orig->opt.bufr.centre;
+	msg->opt.bufr.subcentre = orig->opt.bufr.subcentre;
+	msg->opt.bufr.master_table = orig->opt.bufr.master_table;
+	msg->opt.bufr.local_table = orig->opt.bufr.local_table;
+	// Do not compress, since it only makes sense for multisubset messages
+	msg->opt.bufr.compression = 0;
 
-		// Close the file so that it can be fully read
-		if (close(tmpfile_fd) < 0)
-		{
-			tmpfile_fd = -1;
-			throw wibble::exception::File(tmpfile_name, "closing file");
-		}
-		tmpfile_fd = -1;
+	// Copy data descriptor section
+	for (bufrex_opcode i = orig->datadesc; i != NULL; i = i->next)
+		DBA_RUN_OR_GOTO(cleanup, bufrex_msg_append_datadesc(msg, i->val));
 
-		try {
-			// Run process with fname as parameter
-			run_child();
-		} catch (...) {
-			// Use unlink and ignore errors, so that we can
-			// rethrow the right exception here
-			unlink(tmpfile_name.c_str());
-			throw;
-		} 
+	// Load encoding tables
+	DBA_RUN_OR_GOTO(cleanup, bufrex_msg_load_tables(msg));
 
-		// Delete the file, and tolerate if the child process
-		// already deleted it
-		sys::fs::deleteIfExists(tmpfile_name);
-		format.clear();
-		count = 0;
-		size = 0;
-		cur_interval[0] = -1;
-		timespan.clear();
-	}
+	// Pass new message ownership to caller
+	*newmsg = msg;
+	msg = NULL;
 
-	void run_child()
-	{
-		if (count == 0) return;
-
-		sys::Exec child(args[0]);
-		child.args = args;
-		child.args.push_back(tmpfile_name);
-		child.searchInPath = true;
-		child.importEnv();
-
-		setenv("ARKI_XARGS_FORMAT", str::toupper(format).c_str(), 1);
-		setenv("ARKI_XARGS_COUNT", str::fmt(count).c_str(), 1);
-
-		if (timespan.begin.defined())
-		{
-			setenv("ARKI_XARGS_TIME_START", timespan.begin->toISO8601(' ').c_str(), 1);
-			if (timespan.end.defined())
-				setenv("ARKI_XARGS_TIME_END", timespan.end->toISO8601(' ').c_str(), 1);
-			else
-				setenv("ARKI_XARGS_TIME_END", timespan.begin->toISO8601(' ').c_str(), 1);
-		}
-
-		child.fork();
-		int res = child.wait();
-		if (res != 0)
-			throw wibble::exception::Consistency("running " + args[0], "process returned exit status " + str::fmt(res));
-	}
-
-	void md_to_interval(Metadata& md, int* interval) const
-	{
-		UItem<types::Reftime> rt = md.get(types::TYPE_REFTIME).upcast<types::Reftime>();
-		if (!rt.defined())
-			throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");
-		UItem<types::Time> t;
-		switch (rt->style())
-		{
-			case types::Reftime::POSITION: t = rt.upcast<types::reftime::Position>()->time; break;
-			case types::Reftime::PERIOD: t = rt.upcast<types::reftime::Period>()->end; break;
-			default:
-				throw wibble::exception::Consistency("computing time interval", "reference time has invalid style: " + types::Reftime::formatStyle(rt->style()));
-		}
-		for (unsigned i = 0; i < 6; ++i)
-			interval[i] = i < max_interval ? t->vals[i] : -1;
-	}
-
-	void add_to_cluster(Metadata& md, sys::Buffer& buf)
-	{
-		ssize_t res = write(tmpfile_fd, buf.data(), buf.size());
-		if (res < 0)
-			throw wibble::exception::File(tmpfile_name, "writing " + str::fmt(buf.size()));
-		if ((size_t)res != buf.size())
-			throw wibble::exception::Consistency("writing to " + tmpfile_name, "wrote only " + str::fmt(res) + " bytes out of " + str::fmt(buf.size()));
-		++count;
-		size += buf.size();
-		if (cur_interval[0] == -1 && max_interval != 0)
-			md_to_interval(md, cur_interval);
-		timespan.merge(md.get(types::TYPE_REFTIME).upcast<types::Reftime>());
-	}
-
-	bool exceeds_count(Metadata& md) const
-	{
-		return (max_args != 0 && count >= max_args);
-	}
-
-	bool exceeds_size(sys::Buffer& buf) const
-	{
-		if (max_bytes == 0 || size == 0) return false;
-		return size + buf.size() > max_bytes;
-	}
-
-	bool exceeds_interval(Metadata& md) const
-	{
-		if (max_interval == 0) return false;
-		if (cur_interval[0] == -1) return false;
-		int candidate[6];
-		md_to_interval(md, candidate);
-		return memcmp(cur_interval, candidate, 6*sizeof(int)) != 0;
-	}
-
-public:
-	size_t max_args;
-	size_t max_bytes;
-	size_t max_interval;
-
-	Clusterer(const vector<string>& args) :
-		args(args), tmpfile_fd(-1), max_args(0), max_bytes(0), max_interval(0)
-	{
-		cur_interval[0] = -1;
-	}
-	~Clusterer()
-	{
-		if (tmpfile_fd >= 0)
-			flushCluster();
-	}
-
-	virtual bool operator()(Metadata& md)
-	{
-		sys::Buffer buf = md.getData();
-
-		if (format.empty() || format != md.source->format ||
-		    exceeds_count(md) || exceeds_size(buf) || exceeds_interval(md))
-		{
-			flush();
-			startCluster(md.source->format);
-		}
-
-		add_to_cluster(md, buf);
-
-		return true;
-	}
-
-	void flush()
-	{
-		flushCluster();
-	}
-};
-
-static void process(Clusterer& consumer, runtime::Input& in)
-{
-	wibble::sys::Buffer buf;
-	string signature;
-	unsigned version;
-
-	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
-	{
-		if (signature != "MD") continue;
-
-		// Read the metadata
-		Metadata md;
-		md.read(buf, version, in.name());
-		if (md.source->style() == types::Source::INLINE)
-			md.readInlineData(in.stream(), in.name());
-		if (!consumer(md))
-			break;
-	}
+cleanup:
+	if (msg != NULL) bufrex_msg_delete(msg);
+	return err == DBA_OK ? dba_error_ok() : err;
 }
 
-static size_t parse_size(const std::string& str)
+static dba_err subset_to_msg(bufrex_msg dest, bufrex_msg orig, size_t subset_no)
 {
-	const char* s = str.c_str();
-	char* e;
-	unsigned long long int res = strtoull(s, &e, 10);
-	string suffix = str.substr(e-s);
-	if (suffix.empty() || suffix == "c")
-		return res;
-	if (suffix == "w") return res * 2;
-	if (suffix == "b") return res * 512;
-	if (suffix == "kB") return res * 1000;
-	if (suffix == "K") return res * 1024;
-	if (suffix == "MB") return res * 1000*1000;
-	if (suffix == "M" || suffix == "xM") return res * 1024*1024;
-	if (suffix == "GB") return res * 1000*1000*1000;
-	if (suffix == "G") return res * 1024*1024*1024;
-	if (suffix == "TB") return res * 1000*1000*1000*1000;
-	if (suffix == "T") return res * 1024*1024*1024*1024;
-	if (suffix == "PB") return res * 1000*1000*1000*1000*1000;
-	if (suffix == "P") return res * 1024*1024*1024*1024*1024;
-	if (suffix == "EB") return res * 1000*1000*1000*1000*1000*1000;
-	if (suffix == "E") return res * 1024*1024*1024*1024*1024*1024;
-	if (suffix == "ZB") return res * 1000*1000*1000*1000*1000*1000*1000;
-	if (suffix == "Z") return res * 1024*1024*1024*1024*1024*1024*1024;
-	if (suffix == "YB") return res * 1000*1000*1000*1000*1000*1000*1000*1000;
-	if (suffix == "Y") return res * 1024*1024*1024*1024*1024*1024*1024*1024;
-	throw wibble::exception::Consistency("parsing size", "unknown suffix: '"+suffix+"'");
-}
+	bufrex_subset sorig = orig->subsets[subset_no];
+	bufrex_subset s;
 
-static size_t parse_interval(const std::string& str)
-{
-        string name = str::trim(str::tolower(str));
-        if (name == "minute") return 5;
-        if (name == "hour") return 4;
-        if (name == "day") return 3;
-        if (name == "month") return 2;
-        if (name == "year") return 1;
-        throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + str + ".  Valid intervals are minute, hour, day, month and year");
+	// Remove existing subsets
+	bufrex_msg_reset_sections(dest);
+
+	// Copy subset
+	DBA_RUN_OR_RETURN(bufrex_msg_get_subset(dest, 0, &s));
+
+	// Copy variables
+	for (size_t i = 0; i < sorig->vars_count; ++i)
+	{
+		dba_var vorig = sorig->vars[i];
+		DBA_RUN_OR_RETURN(bufrex_subset_store_variable_var(s, dba_var_code(vorig), vorig));
+	}
+
+	return dba_error_ok();
 }
-#endif
 
 static void process(const std::string& filename, dba_file outfile)
 {
@@ -325,13 +152,35 @@ static void process(const std::string& filename, dba_file outfile)
 
 	while (true)
 	{
+		bufrex_msg newmsg = NULL;
+
 		int found;
 		dballe::checked(dba_file_read(file, rmsg, &found));
 		if (!found) break;
 
-		// TODO: here
+		// Decode message
+		dballe::checked(bufrex_msg_decode(msg, rmsg));
 
-		dballe::checked(dba_file_write(outfile, rmsg));
+		// Create new message with the same info as the old one
+		dballe::checked(copy_base_msg(msg, &newmsg));
+
+		// Loop over subsets
+		for (size_t i = 0; i < msg->subsets_count; ++i)
+		{
+			// Create a bufrex_msg with the subset contents
+			dballe::checked(subset_to_msg(newmsg, msg, i));
+
+			// TODO: parse into bufrex_msg
+			// TODO: extract info
+			// TODO: add optional section
+
+			// Write out the message
+			dba_rawmsg newrmsg;
+			dballe::checked(bufrex_msg_encode(newmsg, &newrmsg));
+			dballe::checked(dba_file_write(outfile, newrmsg));
+			dba_rawmsg_delete(newrmsg);
+		}
+		bufrex_msg_delete(newmsg);
 	}
 
 	dba_file_delete(file);
@@ -363,32 +212,8 @@ int main(int argc, const char* argv[])
 				process(opts.next().c_str(), outfile);
 			}
 		}
-#if 0
-		Clusterer consumer(args);
-		if (opts.max_args->isSet())
-			consumer.max_args = opts.max_args->intValue();
-		if (opts.max_bytes->isSet())
-			consumer.max_bytes = parse_size(opts.max_bytes->stringValue());
-		if (opts.time_interval->isSet())
-			consumer.max_interval = parse_interval(opts.time_interval->stringValue());
 
-		if (opts.inputfiles->values().empty())
-		{
-			// Process stdin
-			runtime::Input in("-");
-			process(consumer, in);
-			consumer.flush();
-		} else {
-			// Process the files
-			for (vector<string>::const_iterator i = opts.inputfiles->values().begin();
-					i != opts.inputfiles->values().end(); ++i)
-			{
-				runtime::Input in(i->c_str());
-				process(consumer, in);
-				consumer.flush();
-			}
-		}
-#endif
+		dba_file_delete(outfile);
 
 		return 0;
 	} catch (wibble::exception::BadOption& e) {
