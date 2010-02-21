@@ -13,6 +13,10 @@ man_MANS = \
 	arki-scan.1 \
 	arki-xargs.1
 
+if DBALLE
+man_MANS += arki-bufr-scan.1
+endif
+
 arki-%.1: src/arki-% doc/mhooks-%
 	$< --manpage="$(word 2,$^)" > $@
 
@@ -53,6 +57,7 @@ EXTRA_DIST = doc/MATCHER \
 	     doc/mhooks-check \
 	     doc/mhooks-mergeconf \
 	     doc/mhooks-xargs \
+	     doc/mhooks-bufr-scan \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
 	     test/data/padded.grib1 \

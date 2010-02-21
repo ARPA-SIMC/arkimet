@@ -42,6 +42,7 @@ Makefile
 /arki-query.1
 /arki-scan.1
 /arki-xargs.1
+/arki-bufr-scan.1
 /_darcs
 /wibble
 /src/arki-benchmark
@@ -52,6 +53,7 @@ Makefile
 /src/arki-query
 /src/arki-scan
 /src/arki-xargs
+/src/arki-bufr-scan
 /src/test-src
 /arki/tests/arki-test
 /data/*.GRIB

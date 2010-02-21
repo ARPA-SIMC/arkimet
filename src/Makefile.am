@@ -27,6 +27,13 @@ arki_config_SOURCES = arki-config.cc
 arki_config_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 endif
 
+if DBALLE
+bin_PROGRAMS += arki-bufr-scan
+
+arki_bufr_scan_SOURCES = arki-bufr-scan.cc
+arki_bufr_scan_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+endif
+
 arki_scan_SOURCES = arki-scan.cc
 arki_scan_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 
