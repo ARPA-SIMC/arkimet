@@ -23,6 +23,7 @@
 
 #include <arki/runtime.h>
 #include <arki/nag.h>
+
 #if 0
 #include <arki/metadata.h>
 #include <arki/types/reftime.h>
@@ -38,6 +39,8 @@
 #include <dballe/core/rawmsg.h>
 #include <dballe/core/file.h>
 #include <dballe/bufrex/msg.h>
+#include <dballe/msg/msgs.h>
+#include <dballe/msg/bufrex_codec.h>
 #include <dballe++/error.h>
 
 #if 0
@@ -141,6 +144,47 @@ static dba_err subset_to_msg(bufrex_msg dest, bufrex_msg orig, size_t subset_no)
 	return dba_error_ok();
 }
 
+void add_info_fixed(bufrex_msg newmsg, dba_msg m)
+{
+	struct fixed
+	{
+		int lat;
+		int lon;
+		int block;
+		int station;
+	};
+// 	- lat, lon, wmo block, wmo station (per stazioni)
+// inline static dba_var dba_msg_get_latitude_var(dba_msg msg)
+// inline static dba_var dba_msg_get_longitude_var(dba_msg msg)
+// inline static dba_var dba_msg_get_block_var(dba_msg msg)
+// inline static dba_var dba_msg_get_station_var(dba_msg msg)
+
+}
+
+void add_info_mobile(bufrex_msg newmsg, dba_msg m)
+{
+	struct mobile
+	{
+		int lat;
+		int lon;
+		char ident[6];
+	};
+//        - lat, lon, ident                  (per aerei)
+// inline static dba_var dba_msg_get_latitude_var(dba_msg msg)
+// inline static dba_var dba_msg_get_longitude_var(dba_msg msg)
+// if (dba_msg_get_ident_var(m) != NULL)
+// 
+}
+
+void add_info_generic(bufrex_msg newmsg, dba_msg m)
+{
+	// Check if there is "ident" and dispatch to fixed or mobile
+	if (dba_msg_get_ident_var(m) != NULL)
+		add_info_mobile(newmsg, m);
+	else
+		add_info_fixed(newmsg, m);
+}
+
 static void process(const std::string& filename, dba_file outfile)
 {
 	dba_rawmsg rmsg;
@@ -170,8 +214,34 @@ static void process(const std::string& filename, dba_file outfile)
 			// Create a bufrex_msg with the subset contents
 			dballe::checked(subset_to_msg(newmsg, msg, i));
 
-			// TODO: parse into bufrex_msg
-			// TODO: extract info
+			// Parse into bufrex_msg
+			dba_msgs msgs;
+			dballe::checked(bufrex_msg_to_dba_msgs(newmsg, &msgs));
+
+			// Extract info and add optional section
+			dba_msg m = msgs->msgs[0];
+			switch (m->type)
+			{
+				case MSG_GENERIC:
+					add_info_generic(newmsg, m);
+					break;
+				case MSG_SYNOP:
+				case MSG_PILOT:
+				case MSG_TEMP:
+				case MSG_BUOY:
+				case MSG_METAR:
+				case MSG_POLLUTION:
+					add_info_fixed(newmsg, m);
+					break;
+				case MSG_TEMP_SHIP:
+				case MSG_AIREP:
+				case MSG_AMDAR:
+				case MSG_ACARS:
+				case MSG_SHIP:
+				case MSG_SAT:
+					add_info_mobile(newmsg, m);
+					break;
+			}
 			// TODO: add optional section
 
 			// Write out the message
