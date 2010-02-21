@@ -43,9 +43,10 @@
 #include <dballe/msg/bufrex_codec.h>
 #include <dballe++/error.h>
 
+#include <arpa/inet.h>
+#include <cstring>
 #if 0
 #include <cstdlib>
-#include <cstring>
 #include <unistd.h>
 #endif
 
@@ -63,6 +64,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* verbose;
 	BoolOption* debug;
 	StringOption* outfile;
+	BoolOption* annotate;
 
 	Options() : StandardParserWithManpage("arki-bufr-scan", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -76,11 +78,15 @@ struct Options : public StandardParserWithManpage
 		verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
 		outfile = add<StringOption>("output", 'o', "output", "file",
 				"write the output to the given file instead of standard output");
+		annotate = add<BoolOption>("annotate", 0, "annotate", "", "add optional section with extra information from BUFR contents");
 	}
 };
 
 }
 }
+
+static bool do_optional_section = false;
+
 
 static dba_err copy_base_msg(bufrex_msg orig, bufrex_msg* newmsg)
 {
@@ -144,39 +150,116 @@ static dba_err subset_to_msg(bufrex_msg dest, bufrex_msg orig, size_t subset_no)
 	return dba_error_ok();
 }
 
-void add_info_fixed(bufrex_msg newmsg, dba_msg m)
+static int extract_rep_cod(dba_msg m)
 {
-	struct fixed
-	{
-		int lat;
-		int lon;
-		int block;
-		int station;
-	};
-// 	- lat, lon, wmo block, wmo station (per stazioni)
-// inline static dba_var dba_msg_get_latitude_var(dba_msg msg)
-// inline static dba_var dba_msg_get_longitude_var(dba_msg msg)
-// inline static dba_var dba_msg_get_block_var(dba_msg msg)
-// inline static dba_var dba_msg_get_station_var(dba_msg msg)
-
+	dba_var var;
+	const char* rep_memo = NULL;
+	if ((var = dba_msg_get_rep_memo_var(m)) != NULL)
+		rep_memo = dba_var_value(var);
+	else
+		rep_memo = dba_msg_repmemo_from_type(m->type);
+	// TODO: convert rep_memo to rep_cod
+	return 0;
 }
 
-void add_info_mobile(bufrex_msg newmsg, dba_msg m)
+static void add_info_fixed(bufrex_msg newmsg, dba_msg m)
 {
-	struct mobile
-	{
-		int lat;
-		int lon;
-		char ident[6];
-	};
+	uint16_t rep_cod;
+	uint32_t lat;
+	uint32_t lon;
+	uint8_t block;
+	uint16_t station;
+	int ival;
+	dba_var var;
+
+	// rep_cod
+	rep_cod = htons(extract_rep_cod(m));
+
+	// Latitude
+	var = dba_msg_get_latitude_var(m);
+	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "latitude not found");
+	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
+	lat = htonl(ival);
+
+	// Longitude
+	var = dba_msg_get_longitude_var(m);
+	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "longitude not found");
+	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
+	lon = htonl(ival);
+
+	// Block number
+	var = dba_msg_get_block_var(m);
+	if (var == NULL)
+		block = 0;
+	else {
+		dballe::checked(dba_var_enqi(var, &ival));
+		block = ival;
+	}
+
+	// Station number
+	var = dba_msg_get_station_var(m);
+	if (var == NULL)
+		station = 0;
+	else {
+		dballe::checked(dba_var_enqi(var, &ival));
+		station = htons(ival);
+	}
+
+	char *buf = (char*)malloc(13);
+	if (buf == NULL) throw wibble::exception::Consistency("creating buffer with metadata info", "allocation failed");
+	memcpy(buf +  0, &rep_cod, 2);
+	memcpy(buf +  2, &lat, 4);
+	memcpy(buf +  6, &lon, 4);
+	memcpy(buf + 10, &block, 1);
+	memcpy(buf + 11, &station, 2);
+	newmsg->opt.bufr.optional_section_length = 13;
+	newmsg->opt.bufr.optional_section = buf;
+}
+
+static void add_info_mobile(bufrex_msg newmsg, dba_msg m)
+{
 //        - lat, lon, ident                  (per aerei)
 // inline static dba_var dba_msg_get_latitude_var(dba_msg msg)
 // inline static dba_var dba_msg_get_longitude_var(dba_msg msg)
 // if (dba_msg_get_ident_var(m) != NULL)
 // 
+	uint16_t rep_cod;
+	uint32_t lat;
+	uint32_t lon;
+	int ival;
+	dba_var var;
+
+	// rep_cod
+	rep_cod = htons(extract_rep_cod(m));
+
+	// Latitude
+	var = dba_msg_get_latitude_var(m);
+	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "latitude not found");
+	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
+	lat = htonl(ival);
+
+	// Longitude
+	var = dba_msg_get_longitude_var(m);
+	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "longitude not found");
+	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
+	lon = htonl(ival);
+
+	char *buf = (char*)calloc(1, 19);
+	if (buf == NULL) throw wibble::exception::Consistency("creating buffer with metadata info", "allocation failed");
+	memcpy(buf +  0, &rep_cod, 2);
+	memcpy(buf +  2, &lat, 4);
+	memcpy(buf +  6, &lon, 4);
+
+	// Ident
+	var = dba_msg_get_ident_var(m);
+	if (var != NULL)
+		strncpy(buf + 10, dba_var_value(var), 9);
+
+	newmsg->opt.bufr.optional_section_length = 19;
+	newmsg->opt.bufr.optional_section = buf;
 }
 
-void add_info_generic(bufrex_msg newmsg, dba_msg m)
+static void add_info_generic(bufrex_msg newmsg, dba_msg m)
 {
 	// Check if there is "ident" and dispatch to fixed or mobile
 	if (dba_msg_get_ident_var(m) != NULL)
@@ -214,35 +297,37 @@ static void process(const std::string& filename, dba_file outfile)
 			// Create a bufrex_msg with the subset contents
 			dballe::checked(subset_to_msg(newmsg, msg, i));
 
-			// Parse into bufrex_msg
-			dba_msgs msgs;
-			dballe::checked(bufrex_msg_to_dba_msgs(newmsg, &msgs));
-
-			// Extract info and add optional section
-			dba_msg m = msgs->msgs[0];
-			switch (m->type)
+			if (do_optional_section)
 			{
-				case MSG_GENERIC:
-					add_info_generic(newmsg, m);
-					break;
-				case MSG_SYNOP:
-				case MSG_PILOT:
-				case MSG_TEMP:
-				case MSG_BUOY:
-				case MSG_METAR:
-				case MSG_POLLUTION:
-					add_info_fixed(newmsg, m);
-					break;
-				case MSG_TEMP_SHIP:
-				case MSG_AIREP:
-				case MSG_AMDAR:
-				case MSG_ACARS:
-				case MSG_SHIP:
-				case MSG_SAT:
-					add_info_mobile(newmsg, m);
-					break;
+				// Parse into dba_msg
+				dba_msgs msgs;
+				dballe::checked(bufrex_msg_to_dba_msgs(newmsg, &msgs));
+
+				// Extract info and add optional section
+				dba_msg m = msgs->msgs[0];
+				switch (m->type)
+				{
+					case MSG_GENERIC:
+						add_info_generic(newmsg, m);
+						break;
+					case MSG_SYNOP:
+					case MSG_PILOT:
+					case MSG_TEMP:
+					case MSG_BUOY:
+					case MSG_METAR:
+					case MSG_POLLUTION:
+						add_info_fixed(newmsg, m);
+						break;
+					case MSG_TEMP_SHIP:
+					case MSG_AIREP:
+					case MSG_AMDAR:
+					case MSG_ACARS:
+					case MSG_SHIP:
+					case MSG_SAT:
+						add_info_mobile(newmsg, m);
+						break;
+				}
 			}
-			// TODO: add optional section
 
 			// Write out the message
 			dba_rawmsg newrmsg;
@@ -264,6 +349,8 @@ int main(int argc, const char* argv[])
 			return 0;
 
 		nag::init(opts.verbose->isSet(), opts.debug->isSet());
+
+		do_optional_section = opts.annotate->boolValue();
 
 		runtime::init();
 

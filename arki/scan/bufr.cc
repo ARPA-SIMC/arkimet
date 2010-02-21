@@ -26,13 +26,17 @@
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/reftime.h>
+#include <arki/types/area.h>
 #include <arki/types/run.h>
 #include <arki/scan/any.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
 #include <cstring>
+#include <stdint.h>
+#include <arpa/inet.h>
 
+using namespace std;
 using namespace wibble;
 
 namespace arki {
@@ -86,8 +90,6 @@ const Validator& validator() { return bufr_validator; }
 
 Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData)
 {
-	dba_rawmsg rmsg;
-	bufrex_msg msg;
 	dballe::checked(dba_rawmsg_create(&rmsg));
 	dballe::checked(bufrex_msg_create(BUFREX_BUFR, &msg));
 }
@@ -117,6 +119,59 @@ void Bufr::close()
 	}
 }
 
+static void read_info_fixed(char* buf, Metadata& md)
+{
+	uint16_t rep_cod;
+	uint32_t lat;
+	uint32_t lon;
+	uint8_t block;
+	uint16_t station;
+
+	memcpy(&rep_cod, buf +  0, 2);
+	memcpy(&lat,     buf +  2, 4);
+	memcpy(&lon,     buf +  6, 4);
+	memcpy(&block,   buf + 10, 1);
+	memcpy(&station, buf + 11, 2);
+
+	rep_cod = ntohs(rep_cod);
+	lat = ntohl(lat);
+	lon = ntohl(lon);
+	station = ntohs(station);
+
+	ValueBag area;
+	area.set("lat", Value::createInteger(lat * 10));
+	area.set("lon", Value::createInteger(lon * 10));
+	if (block) area.set("blo", Value::createInteger(block));
+	if (station) area.set("sta", Value::createInteger(station));
+	area.set("rep", Value::createString("TODO")); // reconstructed rep_memo here
+	md.set(types::area::GRIB::create(area));
+}
+
+static void read_info_mobile(char* buf, Metadata& md)
+{
+	uint16_t rep_cod;
+	uint32_t lat;
+	uint32_t lon;
+	string ident;
+
+	memcpy(&rep_cod, buf +  0, 2);
+	memcpy(&lat,     buf +  2, 4);
+	memcpy(&lon,     buf +  6, 4);
+	ident = string(buf + 10, 9);
+
+	rep_cod = ntohs(rep_cod);
+	lat = ntohl(lat);
+	lon = ntohl(lon);
+
+	ValueBag area;
+	area.set("lat", Value::createInteger(lat * 10));
+	area.set("lon", Value::createInteger(lon * 10));
+	area.set("ide", Value::createString(ident));
+	area.set("rep", Value::createString("TODO")); // reconstructed rep_memo here
+	md.set(types::area::GRIB::create(area));
+}
+
+
 bool Bufr::next(Metadata& md)
 {
 	int found;
@@ -126,6 +181,14 @@ bool Bufr::next(Metadata& md)
 	dballe::checked(bufr_decoder_decode_header(rmsg, msg));
 
 	md.create();
+
+	// Detect optional section and handle it
+	switch (msg->opt.bufr.optional_section_length)
+	{
+		case 14: read_info_fixed(msg->opt.bufr.optional_section, md); break;
+		case 20: read_info_mobile(msg->opt.bufr.optional_section, md); break;
+		default: break;
+	}
 
 	// Set source
 	if (m_inline_data)
