@@ -23,12 +23,9 @@
 
 #include <arki/runtime.h>
 #include <arki/nag.h>
+#include <arki/scan/bufr.h>
 
 #if 0
-#include <arki/metadata.h>
-#include <arki/types/reftime.h>
-#include <arki/scan/any.h>
-
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
 #include <wibble/string.h>
@@ -87,6 +84,7 @@ struct Options : public StandardParserWithManpage
 
 static bool do_optional_section = false;
 
+static std::map<std::string, int> to_rep_cod;
 
 static dba_err copy_base_msg(bufrex_msg orig, bufrex_msg* newmsg)
 {
@@ -158,8 +156,13 @@ static int extract_rep_cod(dba_msg m)
 		rep_memo = dba_var_value(var);
 	else
 		rep_memo = dba_msg_repmemo_from_type(m->type);
-	// TODO: convert rep_memo to rep_cod
-	return 0;
+
+	// Convert rep_memo to rep_cod
+	std::map<std::string, int>::const_iterator rc = to_rep_cod.find(rep_memo);
+	if (rc == to_rep_cod.end())
+		return 0;
+	else
+		return rc->second;
 }
 
 static void add_info_fixed(bufrex_msg newmsg, dba_msg m)
@@ -353,6 +356,8 @@ int main(int argc, const char* argv[])
 		do_optional_section = opts.annotate->boolValue();
 
 		runtime::init();
+
+		to_rep_cod = scan::Bufr::read_map_to_rep_cod();
 
 		dba_file outfile;
 		if (opts.outfile->isSet())

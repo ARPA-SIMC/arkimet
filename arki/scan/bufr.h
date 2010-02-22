@@ -27,9 +27,11 @@
 #include <dballe/core/file.h>
 #include <dballe/bufrex/msg.h>
 #include <string>
+#include <map>
 
 namespace arki {
 class Metadata;
+class ValueBag;
 
 namespace scan {
 struct Validator;
@@ -48,6 +50,11 @@ class Bufr
 	bufrex_msg msg;
 	dba_file file;
 	bool m_inline_data;
+	std::map<int, std::string> to_rep_memo;
+
+	void read_info_base(char* buf, ValueBag& area);
+	void read_info_fixed(char* buf, Metadata& md);
+	void read_info_mobile(char* buf, Metadata& md);
 
 public:
 	Bufr(bool inlineData = false);
@@ -73,6 +80,9 @@ public:
 	 *   false if there are no more BUFR messages in the file
 	 */
 	bool next(Metadata& md);
+
+	static std::map<std::string, int> read_map_to_rep_cod(const std::string& fname = std::string());
+	static std::map<int, std::string> read_map_to_rep_memo(const std::string& fname = std::string());
 };
 
 }

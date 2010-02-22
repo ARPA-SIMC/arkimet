@@ -22,6 +22,8 @@
 
 #include "bufr.h"
 #include <dballe++/error.h>
+#include <dballe/msg/repinfo.h>
+#include <dballe/core/csv.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -92,6 +94,7 @@ Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData
 {
 	dballe::checked(dba_rawmsg_create(&rmsg));
 	dballe::checked(bufrex_msg_create(BUFREX_BUFR, &msg));
+	to_rep_memo = read_map_to_rep_memo();
 }
 
 Bufr::~Bufr()
@@ -119,55 +122,53 @@ void Bufr::close()
 	}
 }
 
-static void read_info_fixed(char* buf, Metadata& md)
+void Bufr::read_info_base(char* buf, ValueBag& area)
 {
 	uint16_t rep_cod;
 	uint32_t lat;
 	uint32_t lon;
+
+	memcpy(&rep_cod, buf +  0, 2);
+	memcpy(&lat,     buf +  2, 4);
+	memcpy(&lon,     buf +  6, 4);
+
+	rep_cod = ntohs(rep_cod);
+	lat = ntohl(lat);
+	lon = ntohl(lon);
+
+	area.set("lat", Value::createInteger(lat * 10));
+	area.set("lon", Value::createInteger(lon * 10));
+	std::map<int, std::string>::const_iterator rm = to_rep_memo.find(rep_cod);
+	if (rm == to_rep_memo.end())
+		area.set("rep", Value::createString(str::fmt(rep_cod)));
+	else
+		area.set("rep", Value::createString(rm->second));
+}
+
+void Bufr::read_info_fixed(char* buf, Metadata& md)
+{
 	uint8_t block;
 	uint16_t station;
 
-	memcpy(&rep_cod, buf +  0, 2);
-	memcpy(&lat,     buf +  2, 4);
-	memcpy(&lon,     buf +  6, 4);
 	memcpy(&block,   buf + 10, 1);
 	memcpy(&station, buf + 11, 2);
-
-	rep_cod = ntohs(rep_cod);
-	lat = ntohl(lat);
-	lon = ntohl(lon);
 	station = ntohs(station);
 
 	ValueBag area;
-	area.set("lat", Value::createInteger(lat * 10));
-	area.set("lon", Value::createInteger(lon * 10));
+	read_info_base(buf, area);
 	if (block) area.set("blo", Value::createInteger(block));
 	if (station) area.set("sta", Value::createInteger(station));
-	area.set("rep", Value::createString("TODO")); // reconstructed rep_memo here
 	md.set(types::area::GRIB::create(area));
 }
 
-static void read_info_mobile(char* buf, Metadata& md)
+void Bufr::read_info_mobile(char* buf, Metadata& md)
 {
-	uint16_t rep_cod;
-	uint32_t lat;
-	uint32_t lon;
 	string ident;
-
-	memcpy(&rep_cod, buf +  0, 2);
-	memcpy(&lat,     buf +  2, 4);
-	memcpy(&lon,     buf +  6, 4);
 	ident = string(buf + 10, 9);
 
-	rep_cod = ntohs(rep_cod);
-	lat = ntohl(lat);
-	lon = ntohl(lon);
-
 	ValueBag area;
-	area.set("lat", Value::createInteger(lat * 10));
-	area.set("lon", Value::createInteger(lon * 10));
+	read_info_base(buf, area);
 	area.set("ide", Value::createString(ident));
-	area.set("rep", Value::createString("TODO")); // reconstructed rep_memo here
 	md.set(types::area::GRIB::create(area));
 }
 
@@ -220,6 +221,100 @@ bool Bufr::next(Metadata& md)
 	}
 
 	return true;
+}
+
+namespace {
+	struct fill_to_repmemo
+	{
+		std::map<int, std::string>& dest;
+		fill_to_repmemo(std::map<int, std::string>& dest) : dest(dest) {}
+		void operator()(int cod, const std::string& memo)
+		{
+			dest.insert(make_pair(cod, memo));
+		}
+	};
+	struct fill_to_repcod
+	{
+		std::map<std::string, int>& dest;
+		fill_to_repcod(std::map<std::string, int>& dest) : dest(dest) {}
+		void operator()(int cod, const char* memo)
+		{
+			dest.insert(make_pair(memo, cod));
+		}
+	};
+}
+
+static inline void inplace_tolower(char* buf)
+{
+	for ( ; *buf; ++buf)
+		*buf = tolower(*buf);
+}
+
+template<typename T>
+static dba_err read_repinfo(const std::string& fname, T& consumer)
+{
+	dba_err err = DBA_OK;
+	FILE* in;
+	const char* name;
+
+	if (fname.empty())
+		DBA_RUN_OR_RETURN(dba_repinfo_default_filename(&name));
+	else
+		name = fname.c_str();
+
+
+	/* Open the input CSV file */
+	in = fopen(name, "r");
+	if (in == NULL)
+		return dba_error_system("opening file %s", name);
+
+	/* Read the CSV file */
+	{
+		char* columns[7];
+		int line;
+		int i;
+
+		for (line = 0; (i = dba_csv_read_next(in, columns, 7)) != 0; line++)
+		{
+			int id;
+
+			if (i != 6)
+			{
+				err = dba_error_parse(name, line, "Expected 6 columns, got %d", i);
+				goto cleanup;
+			}
+
+			// Lowercase all rep_memos
+			inplace_tolower(columns[1]);
+			id = strtol(columns[0], 0, 10);
+
+			// Hand it to consumer
+			consumer(id, columns[1]);
+
+			for (int j = 0; j < 6; ++j)
+				free(columns[j]);
+		}
+	}
+
+cleanup:
+	fclose(in);
+	return err == DBA_OK ? dba_error_ok() : err;
+}
+
+std::map<std::string, int> Bufr::read_map_to_rep_cod(const std::string& fname)
+{
+	std::map<std::string, int> res;
+	fill_to_repcod consumer(res);
+	dballe::checked(read_repinfo(fname, consumer));
+	return res;
+}
+
+std::map<int, std::string> Bufr::read_map_to_rep_memo(const std::string& fname)
+{
+	std::map<int, std::string> res;
+	fill_to_repmemo consumer(res);
+	dballe::checked(read_repinfo(fname, consumer));
+	return res;
 }
 
 }
