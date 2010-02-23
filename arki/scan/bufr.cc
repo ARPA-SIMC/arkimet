@@ -125,19 +125,11 @@ void Bufr::close()
 void Bufr::read_info_base(char* buf, ValueBag& area)
 {
 	uint16_t rep_cod;
-	uint32_t lat;
-	uint32_t lon;
 
 	memcpy(&rep_cod, buf +  0, 2);
-	memcpy(&lat,     buf +  2, 4);
-	memcpy(&lon,     buf +  6, 4);
 
 	rep_cod = ntohs(rep_cod);
-	lat = ntohl(lat);
-	lon = ntohl(lon);
 
-	area.set("lat", Value::createInteger(lat * 10));
-	area.set("lon", Value::createInteger(lon * 10));
 	std::map<int, std::string>::const_iterator rm = to_rep_memo.find(rep_cod);
 	if (rm == to_rep_memo.end())
 		area.set("rep", Value::createString(str::fmt(rep_cod)));
@@ -147,15 +139,23 @@ void Bufr::read_info_base(char* buf, ValueBag& area)
 
 void Bufr::read_info_fixed(char* buf, Metadata& md)
 {
+	uint32_t lat;
+	uint32_t lon;
 	uint8_t block;
 	uint16_t station;
 
+	memcpy(&lat,     buf +  2, 4);
+	memcpy(&lon,     buf +  6, 4);
 	memcpy(&block,   buf + 10, 1);
 	memcpy(&station, buf + 11, 2);
+	lat = ntohl(lat);
+	lon = ntohl(lon);
 	station = ntohs(station);
 
 	ValueBag area;
 	read_info_base(buf, area);
+	area.set("lat", Value::createInteger(lat * 10));
+	area.set("lon", Value::createInteger(lon * 10));
 	if (block) area.set("blo", Value::createInteger(block));
 	if (station) area.set("sta", Value::createInteger(station));
 	md.set(types::area::GRIB::create(area));
@@ -164,7 +164,7 @@ void Bufr::read_info_fixed(char* buf, Metadata& md)
 void Bufr::read_info_mobile(char* buf, Metadata& md)
 {
 	string ident;
-	ident = string(buf + 10, 9);
+	ident = string(buf + 2, 9);
 
 	ValueBag area;
 	read_info_base(buf, area);
@@ -187,7 +187,7 @@ bool Bufr::next(Metadata& md)
 	switch (msg->opt.bufr.optional_section_length)
 	{
 		case 14: read_info_fixed(msg->opt.bufr.optional_section, md); break;
-		case 20: read_info_mobile(msg->opt.bufr.optional_section, md); break;
+		case 11: read_info_mobile(msg->opt.bufr.optional_section, md); break;
 		default: break;
 	}
 

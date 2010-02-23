@@ -227,38 +227,22 @@ static void add_info_mobile(bufrex_msg newmsg, dba_msg m)
 // if (dba_msg_get_ident_var(m) != NULL)
 // 
 	uint16_t rep_cod;
-	uint32_t lat;
-	uint32_t lon;
 	int ival;
 	dba_var var;
 
 	// rep_cod
 	rep_cod = htons(extract_rep_cod(m));
 
-	// Latitude
-	var = dba_msg_get_latitude_var(m);
-	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "latitude not found");
-	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
-	lat = htonl(ival);
-
-	// Longitude
-	var = dba_msg_get_longitude_var(m);
-	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "longitude not found");
-	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
-	lon = htonl(ival);
-
-	char *buf = (char*)calloc(1, 19);
+	char *buf = (char*)calloc(1, 11);
 	if (buf == NULL) throw wibble::exception::Consistency("creating buffer with metadata info", "allocation failed");
-	memcpy(buf +  0, &rep_cod, 2);
-	memcpy(buf +  2, &lat, 4);
-	memcpy(buf +  6, &lon, 4);
+	memcpy(buf + 0, &rep_cod, 2);
 
 	// Ident
 	var = dba_msg_get_ident_var(m);
 	if (var != NULL)
-		strncpy(buf + 10, dba_var_value(var), 9);
+		strncpy(buf + 2, dba_var_value(var), 9);
 
-	newmsg->opt.bufr.optional_section_length = 19;
+	newmsg->opt.bufr.optional_section_length = 11;
 	newmsg->opt.bufr.optional_section = buf;
 }
 

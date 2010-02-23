@@ -1,3 +1,12 @@
+arkimet (0.34-1) UNRELEASED; urgency=low
+
+  * Added arki-bufr-scan to prepare BUFR messages for import.  It annotates
+    them an optional section with area information (lan, lon, wmo station
+    code, airplane identifiers, ...), and it unpacks subsections as separate
+    messages.
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 23 Feb 2010 15:13:14 +0000
+
 arkimet (0.33-1) UNRELEASED; urgency=low
 
   * Scanned areas are now in millionth of a degree. Beware with existing
@@ -10,7 +19,7 @@ arkimet (0.33-1) UNRELEASED; urgency=low
   * Only allow use of a postprocessor if listed in "postprocess=" directive in
     dataset config
 
- -- Enrico Zini <enrico@debian.org>  Wed, 17 Feb 2010 18:25:36 +0100
+ -- Enrico Zini <enrico@debian.org>  Tue, 23 Feb 2010 15:11:15 +0000
 
 arkimet (0.32-1) UNRELEASED; urgency=low
 
