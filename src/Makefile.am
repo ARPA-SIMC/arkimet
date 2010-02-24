@@ -28,10 +28,10 @@ arki_config_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 endif
 
 if DBALLE
-bin_PROGRAMS += arki-bufr-scan
+bin_PROGRAMS += arki-bufr-prepare
 
-arki_bufr_scan_SOURCES = arki-bufr-scan.cc
-arki_bufr_scan_LDFLAGS = ../arki/libarkimet.la $(all_libs)
+arki_bufr_prepare_SOURCES = arki-bufr-prepare.cc
+arki_bufr_prepare_LDFLAGS = ../arki/libarkimet.la $(all_libs)
 endif
 
 arki_scan_SOURCES = arki-scan.cc

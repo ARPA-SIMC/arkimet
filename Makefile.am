@@ -14,7 +14,7 @@ man_MANS = \
 	arki-xargs.1
 
 if DBALLE
-man_MANS += arki-bufr-scan.1
+man_MANS += arki-bufr-prepare.1
 endif
 
 arki-%.1: src/arki-% doc/mhooks-%
@@ -57,7 +57,7 @@ EXTRA_DIST = doc/MATCHER \
 	     doc/mhooks-check \
 	     doc/mhooks-mergeconf \
 	     doc/mhooks-xargs \
-	     doc/mhooks-bufr-scan \
+	     doc/mhooks-bufr-prepare \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
 	     test/data/padded.grib1 \
