@@ -29,20 +29,29 @@
 #include <map>
 
 namespace arki {
+class ConfigFile;
 class Metadata;
+class ReadonlyDataset;
 
 class Querymacro : public ReadonlyDataset
 {
 protected:
+	const ConfigFile& cfg;
 	Lua *L;
+	std::map<std::string, ReadonlyDataset*> ds_cache;
 	// std::map<std::string, int> ref_cache;
+
+	ReadonlyDataset* dataset(const std::string& name);
 
 public:
 	/**
 	 * Create a query macro read from the query macro file with the given
-	 * name
+	 * name.
+	 *
+	 * @param cfg
+	 *   Configuration used to instantiate datasets
 	 */
-	Querymacro(const std::string& name, const std::string& data);
+	Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& data);
 	virtual ~Querymacro();
 
 	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);

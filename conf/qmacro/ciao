@@ -1,1 +1,3 @@
-print("ciao", qmacro.data)
+print("ciao", data)
+print("qmacro", qmacro)
+qmacro:foo()

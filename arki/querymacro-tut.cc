@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/querymacro.h>
+#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -77,7 +78,8 @@ TESTGRP(arki_querymacro);
 template<> template<>
 void to::test<1>()
 {
-	Querymacro qm("ciao", "foo");
+	ConfigFile cfg;
+	Querymacro qm(cfg, "ciao", "foo");
 #if 0
 	Targetfile::Func f = tf.get("echo:foo");
 	ensure_equals(f(md), "foo");

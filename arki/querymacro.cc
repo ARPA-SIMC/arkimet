@@ -21,6 +21,7 @@
  */
 
 #include <arki/querymacro.h>
+#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
@@ -83,18 +84,60 @@ static void arkilua_dumpstack(lua_State* L, const std::string& title, FILE* out)
 }
 #endif
 
-
-Querymacro::Querymacro(const std::string& name, const std::string& data) : L(new Lua)
+static Querymacro* checkqmacro(lua_State *L)
 {
-	/// Load the target file functions
+	void* ud = luaL_checkudata(L, 1, "arki.querymacro");
+	luaL_argcheck(L, ud != NULL, 1, "`querymacro' expected");
+	return (Querymacro*)ud;
+}
 
-	// Create the function table
-	lua_newtable(*L);
-	// macro.data = data
-	lua_pushstring(*L, "data");
-	lua_pushstring(*L, data.c_str());
-	lua_settable(*L, -3);
+static int arkilua_foo(lua_State *L)
+{
+	Querymacro* rd = checkqmacro(L);
+	fprintf(stderr, "ZAZEAWLUEKYHB AW\n");
+	// lua_pushnumber(L, 5);
+	// return 1;
+	return 0;
+}
+
+static const struct luaL_reg querymacrolib [] = {
+	// TODO: add newsummary()
+	// TODO: add dataset(dsname)
+	// TODO: add onQueryData(func)
+	// TODO: add onQuerySummary(func)
+	//{ "queryData", arkilua_queryData },
+	//{ "querySummary", arkilua_querySummary },
+	{ "foo", arkilua_foo },
+	{NULL, NULL}
+};
+
+Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& data)
+	: cfg(cfg), L(new Lua)
+{
+	// Create the Querymacro object
+	Querymacro** s = (Querymacro**)lua_newuserdata(*L, sizeof(Querymacro*));
+	*s = this;
+
+	// Set the metatable for the userdata
+	if (luaL_newmetatable(*L, "arki.querymacro"));
+	{
+		// If the metatable wasn't previously created, create it now
+		lua_pushstring(*L, "__index");
+		lua_pushvalue(*L, -2);  /* pushes the metatable */
+		lua_settable(*L, -3);  /* metatable.__index = metatable */
+
+		// Load normal methods
+		luaL_register(*L, NULL, querymacrolib);
+	}
+
+	lua_setmetatable(*L, -2);
+
+	// global qmacro = our userdata object
 	lua_setglobal(*L, "qmacro");
+
+	// Load the data as a global variable
+	lua_pushstring(*L, data.c_str());
+	lua_setglobal(*L, "data");
 	
 	/// Load the right qmacro file
 	string dirname = runtime::rcDirName("qmacro", "ARKI_QMACRO");
@@ -114,6 +157,23 @@ Querymacro::Querymacro(const std::string& name, const std::string& data) : L(new
 Querymacro::~Querymacro()
 {
 	if (L) delete L;
+	for (std::map<std::string, ReadonlyDataset*>::iterator i = ds_cache.begin();
+			i != ds_cache.end(); ++i)
+		delete i->second;
+}
+
+ReadonlyDataset* Querymacro::dataset(const std::string& name)
+{
+	std::map<std::string, ReadonlyDataset*>::iterator i = ds_cache.find(name);
+	if (i == ds_cache.end())
+	{
+		ConfigFile* dscfg = cfg.section(name);
+		if (!dscfg) return 0;
+		ReadonlyDataset* ds = ReadonlyDataset::create(*dscfg);
+		pair<map<string, ReadonlyDataset*>::iterator, bool> res = ds_cache.insert(make_pair(name, ds));
+		i = res.first;
+	}
+	return i->second;
 }
 
 void Querymacro::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)

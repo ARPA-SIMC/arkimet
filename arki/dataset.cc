@@ -44,6 +44,10 @@
 #include <arki/dataset/http.h>
 #endif
 
+#ifdef HAVE_LUA
+#include <arki/utils/lua.h>
+#endif
+
 using namespace std;
 using namespace wibble;
 
@@ -110,6 +114,138 @@ void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
 	}
 }
+
+#ifdef HAVE_LUA
+
+#if 0
+int ReadonlyDataset::lua_lookup(lua_State* L)
+{
+	int udataidx = lua_upvalueindex(1);
+	int keyidx = lua_upvalueindex(2);
+	// Fetch the Summary reference from the userdata value
+	luaL_checkudata(L, udataidx, "arki_readonlydataset");
+	void* userdata = lua_touserdata(L, udataidx);
+	const Summary& v = **(const Summary**)userdata;
+
+	// Get the name to lookup from lua
+	// (we use 2 because 1 is the table, since we are a __index function)
+	luaL_checkstring(L, keyidx);
+	string name = lua_tostring(L, keyidx);
+
+	if (name == "count")
+	{
+		lua_pushinteger(L, v.count());
+		return 1;
+	}
+	else if (name == "size")
+	{
+		lua_pushinteger(L, v.size());
+		return 1;
+	}
+	else if (name == "data")
+	{
+		// Return a big table with a dump of the summary inside
+		lua_newtable(L);
+		if (v.root.ptr())
+		{
+			summary::LuaPusher pusher(L);
+			vector< UItem<> > visitmd(summary::msoSize, UItem<>());
+			v.root->visit(pusher, visitmd);
+		}
+		return 1;
+	}
+#if 0
+	else if (name == "iter")
+	{
+		// Iterate
+
+		/* create a userdatum to store an iterator structure address */
+		summary::LuaIter**d = (summary::LuaIter**)lua_newuserdata(L, sizeof(summary::LuaIter*));
+
+		// Get the metatable for the iterator
+		if (luaL_newmetatable(L, "arki_summary_iter"));
+		{
+			/* set its __gc field */
+			lua_pushstring(L, "__gc");
+			lua_pushcfunction(L, summary::LuaIter::gc);
+			lua_settable(L, -3);
+		}
+
+		// Set its metatable
+		lua_setmetatable(L, -2);
+
+		// Instantiate the iterator
+		*d = new summary::LuaIter(v);
+
+		// Creates and returns the iterator function (its sole upvalue, the
+		// iterator userdatum, is already on the stack top
+		lua_pushcclosure(L, summary::LuaIter::iterate, 1);
+		return 1;
+	}
+#endif
+	else
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+	return 0;
+}
+static int arkilua_lookup_readonlydataset(lua_State* L)
+{
+	// build a closure with the parameters passed, and return it
+	lua_pushcclosure(L, ReadonlyDataset::lua_lookup, 2);
+	return 1;
+}
+#endif
+
+static ReadonlyDataset* checkrodataset(lua_State *L)
+{
+	void* ud = luaL_checkudata(L, 1, "arki.rodataset");
+	luaL_argcheck(L, ud != NULL, 1, "`rodataset' expected");
+	return (ReadonlyDataset*)ud;
+}
+
+static int arkilua_queryData(lua_State *L)
+{
+	// TODO: add queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
+	ReadonlyDataset* rd = checkrodataset(L);
+	// lua_pushnumber(L, 5);
+	// return 1;
+	return 0;
+}
+
+static int arkilua_querySummary(lua_State *L)
+{
+	// TODO: add querySummary(self, matcher="", summary)
+	ReadonlyDataset* rd = checkrodataset(L);
+	// lua_pushnumber(L, 5);
+	// return 1;
+	return 0;
+}
+
+static const struct luaL_reg readonlydatasetlib [] = {
+	{ "queryData", arkilua_queryData },
+	{ "querySummary", arkilua_querySummary },
+	{NULL, NULL}
+};
+
+void ReadonlyDataset::lua_push(lua_State* L)
+{
+	// The 'grib' object is a userdata that holds a pointer to this Grib structure
+	ReadonlyDataset** s = (ReadonlyDataset**)lua_newuserdata(L, sizeof(ReadonlyDataset*));
+	*s = this;
+
+	// Set the metatable for the userdata
+	if (luaL_newmetatable(L, "arki.rodataset"));
+	{
+		// If the metatable wasn't previously created, create it now
+		luaL_register(L, "arki.rodataset", readonlydatasetlib);
+	}
+
+	lua_setmetatable(L, -2);
+}
+#endif
+
 
 ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 {

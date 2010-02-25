@@ -26,6 +26,8 @@
 #include <arki/matcher.h>
 #include <string>
 
+struct lua_State;
+
 namespace arki {
 
 class ConfigFile;
@@ -164,6 +166,12 @@ public:
 	 * The default implementation in ReadonlyDataset is based on queryData.
 	 */
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+
+
+	// LUA functions
+	/// Push to the LUA stack a userdata to access this Origin
+	void lua_push(lua_State* L);
+
 
 	/**
 	 * Instantiate an appropriate Dataset for the given configuration
