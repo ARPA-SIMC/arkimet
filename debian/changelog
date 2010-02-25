@@ -4,8 +4,9 @@ arkimet (0.34-1) UNRELEASED; urgency=low
     them an optional section with area information (lan, lon, wmo station
     code, airplane identifiers, ...), and it unpacks subsections as separate
     messages.
+  * arki-bufr-prepare: copy time from subsections to BUFR headers 
 
- -- Enrico Zini <enrico@debian.org>  Wed, 24 Feb 2010 10:35:28 +0000
+ -- Enrico Zini <enrico@debian.org>  Thu, 25 Feb 2010 13:44:37 +0000
 
 arkimet (0.33-1) UNRELEASED; urgency=low
 
