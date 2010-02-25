@@ -31,7 +31,6 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::dataset;
 
 struct arki_dataset_index_attr_shar {
 	utils::sqlite::SQLiteDB db;
@@ -41,7 +40,7 @@ struct arki_dataset_index_attr_shar {
 		db.open(":memory:");
 		//db.open("/tmp/zaza.sqlite");
 		//db.exec("DROP TABLE IF EXISTS sub_origin");
-		index::AttrSubIndex(db, types::TYPE_ORIGIN).initDB();
+		dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).initDB();
 	}
 };
 TESTGRP(arki_dataset_index_attr);
@@ -52,7 +51,7 @@ void to::test<1>()
 	Metadata md;
 	Item<types::Origin> origin(types::origin::GRIB1::create(200, 0, 0));
 
-	index::AttrSubIndex attr(db, types::TYPE_ORIGIN);
+	dataset::index::AttrSubIndex attr(db, types::TYPE_ORIGIN);
 
 	// ID is -1 if it is not in the database
 	ensure_equals(attr.id(md), -1);
@@ -63,7 +62,7 @@ void to::test<1>()
 	try {
 		attr.id(md);
 		ensure(false);
-	} catch (index::NotFound) {
+	} catch (dataset::index::NotFound) {
 		ensure(true);
 	}
 
@@ -96,36 +95,36 @@ void to::test<2>()
 	Item<types::Origin> origin(types::origin::GRIB1::create(200, 0, 0));
 
 	// ID is -1 if it is not in the database
-	ensure_equals(index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md), -1);
+	ensure_equals(dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md), -1);
 
 	md.set(origin);
 
 	// id() is read-only so it throws NotFound when the item does not exist
 	try {
-		index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md);
+		dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md);
 		ensure(false);
-	} catch (index::NotFound) {
+	} catch (dataset::index::NotFound) {
 		ensure(true);
 	}
 
-	int id = index::AttrSubIndex(db, types::TYPE_ORIGIN).insert(md);
+	int id = dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).insert(md);
 	ensure_equals(id, 1);
 
 	// Insert again, we should have the same result
-	ensure_equals(index::AttrSubIndex(db, types::TYPE_ORIGIN).insert(md), 1);
+	ensure_equals(dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).insert(md), 1);
 
-	ensure_equals(index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md), 1);
+	ensure_equals(dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md), 1);
 
 	// Retrieve from the database
 	Metadata md1;
-	index::AttrSubIndex(db, types::TYPE_ORIGIN).read(1, md1);
+	dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).read(1, md1);
 	ensure_equals(md1.get(types::TYPE_ORIGIN).upcast<types::Origin>(), origin);
 
 	// Query the database
 	Matcher m = Matcher::parse("origin:GRIB1,200");
 	const matcher::OR* matcher = m.m_impl->get(types::TYPE_ORIGIN);
 	ensure(matcher);
-	vector<int> ids = index::AttrSubIndex(db, types::TYPE_ORIGIN).query(*matcher);
+	vector<int> ids = dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).query(*matcher);
 	ensure_equals(ids.size(), 1u);
 	ensure_equals(ids[0], 1);
 }
@@ -137,7 +136,7 @@ void to::test<3>()
 	members.insert(types::TYPE_ORIGIN);
 	members.insert(types::TYPE_PRODUCT);
 	members.insert(types::TYPE_LEVEL);
-	index::Attrs attrs(db, members);
+	dataset::index::Attrs attrs(db, members);
 
 	Metadata md;
 	vector<int> ids = attrs.obtainIDs(md);
