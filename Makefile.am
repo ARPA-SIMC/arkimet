@@ -28,6 +28,7 @@ sg1confdir = $(confdir)/scan-grib1
 sg2confdir = $(confdir)/scan-grib2
 fmtconfdir = $(confdir)/format
 reportconfdir = $(confdir)/report
+qmconfdir = $(confdir)/qmacro
 tfconfdir = $(confdir)/targetfile
 
 dist_conf_DATA = conf/match-alias.conf
@@ -44,6 +45,7 @@ dist_fmtconf_DATA = \
 	conf/format/10-product \
 	conf/format/10-timerange
 dist_reportconf_DATA = conf/report/mdstats
+dist_qmconf_DATA = conf/qmacro/ciao
 dist_tfconf_DATA = conf/targetfile/mars
 
 EXTRA_DIST = doc/MATCHER \

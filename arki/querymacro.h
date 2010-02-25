@@ -31,42 +31,23 @@
 namespace arki {
 class Metadata;
 
-namespace runtime {
-class Output;
-}
-
-class Querymacro
+class Querymacro : public ReadonlyDataset
 {
 protected:
 	Lua *L;
-	std::map<std::string, int> ref_cache;
+	// std::map<std::string, int> ref_cache;
 
 public:
-	struct Func
-	{
-		Lua* L;
-		int idx;
-
-		Func(const Func& f) : L(f.L), idx(f.idx) {}
-		Func(Lua* L, int idx) : L(L), idx(idx) {}
-
-		/**
-		 * Compute a target file name for a metadata
-		 */
-		std::string operator()(const Metadata& md);
-	};
-	
-	Querymacro(const std::string& code = std::string());
+	/**
+	 * Create a query macro read from the query macro file with the given
+	 * name
+	 */
+	Querymacro(const std::string& name, const std::string& data);
 	virtual ~Querymacro();
 
-	/**
-	 * Load definition from the rc files.
-	 *
-	 * This is called automatically by the costructor if the constructor
-	 * code parameter is empty.
-	 */
-	void loadRCFiles();
-
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void querySummary(const Matcher& matcher, Summary& summary);
+#if 0
 	/**
 	 * Get a target file generator
 	 *
@@ -74,11 +55,7 @@ public:
 	 *   Target file definition in the form "type:parms".
 	 */
 	Func get(const std::string& def);
-
-	/**
-	 * Return a global, yet thread-local instance
-	 */
-	static Querymacro& instance();
+#endif
 };
 
 }

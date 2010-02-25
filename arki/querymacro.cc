@@ -33,18 +33,6 @@ using namespace wibble;
 
 namespace arki {
 
-namespace querymacro {
-// FIXME: move as a singleton to arki/bbox.cc?
-static __thread Querymacro* querymacro = 0;
-}
-
-Querymacro& Querymacro::instance()
-{
-	if (querymacro::querymacro == 0)
-		querymacro::querymacro = new Querymacro();
-	return *querymacro::querymacro;
-}
-
 #if 0
 static string arkilua_dumptablekeys(lua_State* L, int index)
 {
@@ -96,29 +84,30 @@ static void arkilua_dumpstack(lua_State* L, const std::string& title, FILE* out)
 #endif
 
 
-Querymacro::Querymacro(const std::string& code) : L(new Lua)
+Querymacro::Querymacro(const std::string& name, const std::string& data) : L(new Lua)
 {
 	/// Load the target file functions
 
 	// Create the function table
 	lua_newtable(*L);
-	lua_setglobal(*L, "targetfile");
+	// macro.data = data
+	lua_pushstring(*L, "data");
+	lua_pushstring(*L, data.c_str());
+	lua_settable(*L, -3);
+	lua_setglobal(*L, "qmacro");
 	
-	/// Load the targetfile functions
-	if (code.empty())
+	/// Load the right qmacro file
+	string dirname = runtime::rcDirName("qmacro", "ARKI_QMACRO");
+	string fname = str::joinpath(dirname, name);
+	if (luaL_dofile(*L, fname.c_str()))
 	{
-		loadRCFiles();
-	} else {
-		if (luaL_dostring(*L, code.c_str()))
-		{
-			// Copy the error, so that it will exist after the pop
-			string error = lua_tostring(*L, -1);
-			// Pop the error from the stack
-			lua_pop(*L, 1);
-			throw wibble::exception::Consistency("executing Lua code from memory", error);
-		}
+		// Copy the error, so that it will exist after the pop
+		string error = lua_tostring(*L, -1);
+		// Pop the error from the stack
+		lua_pop(*L, 1);
+		throw wibble::exception::Consistency("parsing " + fname, error);
 	}
-
+		
 	//arkilua_dumpstack(L, "Afterinit", stderr);
 }
 
@@ -127,22 +116,15 @@ Querymacro::~Querymacro()
 	if (L) delete L;
 }
 
-void Querymacro::loadRCFiles()
+void Querymacro::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
-	vector<string> files = runtime::rcFiles("targetfile", "ARKI_TARGETFILE");
-	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-	{
-		if (luaL_dofile(*L, i->c_str()))
-		{
-			// Copy the error, so that it will exist after the pop
-			string error = lua_tostring(*L, -1);
-			// Pop the error from the stack
-			lua_pop(*L, 1);
-			throw wibble::exception::Consistency("executing Lua file " + *i, error);
-		}
-	}
 }
 
+void Querymacro::querySummary(const Matcher& matcher, Summary& summary)
+{
+}
+
+#if 0
 Querymacro::Func Querymacro::get(const std::string& def)
 {
 	std::map<std::string, int>::iterator i = ref_cache.find(def);
@@ -213,6 +195,7 @@ std::string Querymacro::Func::operator()(const Metadata& md)
 	lua_pop(*L, 1);
 	return res;
 }
+#endif
 
 }
 // vim:set ts=4 sw=4:

@@ -201,31 +201,31 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 	// Else, nothing is loaded.
 }
 
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir)
 {
 	std::string dirname;
 	char* fromEnv = 0;
 
-	if (dirOption && dirOption->isSet())
-	{
-		// The directory named in the given StringOption (if any) is tried first.
-		dirname = dirOption->stringValue();
-	}
+	// The directory named in the given StringOption (if any) is tried first.
+	if (dir && dir->isSet())
+		return dir->stringValue();
 	
-	else if ((fromEnv = getenv(nameInEnv.c_str())))
-	{
-		// Otherwise the directory given in the environment variable nameInEnv is tried.
-		dirname = fromEnv;
-	}
+	// Otherwise the directory given in the environment variable nameInEnv is tried.
+	if ((fromEnv = getenv(nameInEnv.c_str())))
+		return fromEnv;
+
 #ifdef CONF_DIR
 	// Else, CONF_DIR is tried.
-	else
-		dirname = string(CONF_DIR) + "/" + nameInConfdir;
+	return string(CONF_DIR) + "/" + nameInConfdir;
 #else
 	// Or if there is no config, we fail to read anything
-	else
-		return string();
+	return string();
 #endif
+}
+
+std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+{
+	std::string dirname = rcDirName(nameInConfdir, nameInEnv, dirOption);
 
 	vector<string> files;
 	wibble::sys::fs::Directory dir(dirname);

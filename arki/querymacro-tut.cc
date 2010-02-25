@@ -77,6 +77,7 @@ TESTGRP(arki_querymacro);
 template<> template<>
 void to::test<1>()
 {
+	Querymacro qm("ciao", "foo");
 #if 0
 	Targetfile::Func f = tf.get("echo:foo");
 	ensure_equals(f(md), "foo");
