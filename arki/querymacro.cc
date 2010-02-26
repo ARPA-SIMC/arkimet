@@ -146,7 +146,7 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	
 	/// Load the right qmacro file
 	string dirname = runtime::rcDirName("qmacro", "ARKI_QMACRO");
-	string fname = str::joinpath(dirname, name);
+	string fname = str::joinpath(dirname, name + ".lua");
 	if (luaL_dofile(*L, fname.c_str()))
 	{
 		// Copy the error, so that it will exist after the pop

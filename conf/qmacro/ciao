@@ -1,9 +1,0 @@
-print("ciao", data)
-print("qmacro", qmacro)
-ds = qmacro:dataset("testds")
-print(ds)
-ds:queryData({matcher="origin:GRIB1,200"}, function (md)
-	print("got md")
-	return true
-end)
-ds:querySummary("reftime:>=today")

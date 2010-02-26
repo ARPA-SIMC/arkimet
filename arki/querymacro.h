@@ -36,12 +36,13 @@ class ReadonlyDataset;
 class Querymacro : public ReadonlyDataset
 {
 protected:
-	const ConfigFile& cfg;
-	Lua *L;
 	std::map<std::string, ReadonlyDataset*> ds_cache;
 	// std::map<std::string, int> ref_cache;
 
 public:
+	const ConfigFile& cfg;
+	Lua *L;
+
 	/**
 	 * Create a query macro read from the query macro file with the given
 	 * name.

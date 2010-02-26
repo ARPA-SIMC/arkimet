@@ -24,6 +24,7 @@
 #include <arki/metadata.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/scan/grib.h>
+#include <arki/utils/lua.h>
 
 #include <sstream>
 #include <iostream>
@@ -75,7 +76,18 @@ TESTGRP(arki_querymacro);
 template<> template<>
 void to::test<1>()
 {
-	Querymacro qm(cfg, "ciao", "foo");
+	Querymacro qm(cfg, "test0", "foo");
+
+	lua_getglobal(*qm.L, "count1");
+	int count1 = lua_tointeger(*qm.L, -1);
+
+	lua_getglobal(*qm.L, "count2");
+	int count2 = lua_tointeger(*qm.L, -1);
+
+	lua_pop(*qm.L, 2);
+
+	ensure_equals(count1, 3);
+	ensure_equals(count2, 1);
 #if 0
 	Targetfile::Func f = tf.get("echo:foo");
 	ensure_equals(f(md), "foo");
