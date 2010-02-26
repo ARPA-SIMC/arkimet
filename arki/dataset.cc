@@ -206,6 +206,63 @@ static ReadonlyDataset* checkrodataset(lua_State *L)
 	return *(ReadonlyDataset**)ud;
 }
 
+namespace dataset {
+auto_ptr<sort::Compare> DataQuery::lua_from_table(lua_State* L, int idx)
+{
+	lua_pushstring(L, "matcher");
+	lua_gettable(L, 2);
+	const char* str_matcher = lua_tostring(L, -1);
+	lua_pop(L, 1);
+	if (str_matcher) matcher = Matcher::parse(str_matcher);
+
+	lua_pushstring(L, "withdata");
+	lua_gettable(L, 2);
+	withData = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+
+	lua_pushstring(L, "sorter");
+	lua_gettable(L, 2);
+	const char* str_sorter = lua_tostring(L, -1);
+	lua_pop(L, 1);
+	auto_ptr<sort::Compare> compare;
+	if (str_sorter)
+	{
+		compare = sort::Compare::parse(str_sorter);
+		sorter = compare.get();
+	}
+	return compare;
+}
+
+void DataQuery::lua_push_table(lua_State* L, int idx) const
+{
+	string str;
+
+	if (idx < 0) idx -= 2;
+
+	// table["matcher"] = this->matcher
+	lua_pushstring(L, "matcher");
+	str = matcher.toString();
+	lua_pushstring(L, str.c_str());
+	lua_settable(L, idx);
+
+	// table["withdata"] = this->withData
+	lua_pushstring(L, "withdata");
+	lua_pushboolean(L, withData);
+	lua_settable(L, idx);
+
+	// table["sorter"] = this->sorter
+	lua_pushstring(L, "sorter");
+	if (sorter)
+		str = sorter->toString();
+	else
+		str.clear();
+	lua_pushstring(L, str.c_str());
+	lua_settable(L, idx);
+}
+
+}
+
+
 namespace {
 struct LuaMetadataConsumer : public MetadataConsumer
 {
@@ -248,27 +305,7 @@ static int arkilua_queryData(lua_State *L)
 
 	// Create a DataQuery with data from the table
 	dataset::DataQuery dq;
-	lua_pushstring(L, "matcher");
-	lua_gettable(L, 2);
-	const char* matcher = lua_tostring(L, -1);
-	lua_pop(L, 1);
-	if (matcher) dq.matcher = Matcher::parse(matcher);
-
-	lua_pushstring(L, "withdata");
-	lua_gettable(L, 2);
-	dq.withData = lua_toboolean(L, -1);
-	lua_pop(L, 1);
-
-	lua_pushstring(L, "sorter");
-	lua_gettable(L, 2);
-	const char* sorter = lua_tostring(L, -1);
-	lua_pop(L, 1);
-	auto_ptr<sort::Compare> compare;
-	if (sorter)
-	{
-		compare = sort::Compare::parse(sorter);
-		dq.sorter = compare.get();
-	}
+	auto_ptr<sort::Compare> compare = dq.lua_from_table(L, 2);
 
 	// Ref the created function into the registry
 	lua_pushvalue(L, 3);

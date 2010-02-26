@@ -25,6 +25,7 @@
 
 #include <arki/matcher.h>
 #include <string>
+#include <memory>
 
 struct lua_State;
 
@@ -90,6 +91,9 @@ struct DataQuery {
 
 	DataQuery() : matcher(0), withData(false), sorter(0) {}
 	DataQuery(const Matcher& matcher, bool withData=false) : matcher(matcher), withData(withData), sorter(0) {}
+
+	std::auto_ptr<sort::Compare> lua_from_table(lua_State* L, int idx);
+	void lua_push_table(lua_State* L, int idx) const;
 };
 
 struct ByteQuery : public DataQuery
@@ -167,11 +171,9 @@ public:
 	 */
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 
-
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this dataset
 	void lua_push(lua_State* L);
-
 
 	/**
 	 * Instantiate an appropriate Dataset for the given configuration

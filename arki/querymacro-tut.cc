@@ -25,6 +25,7 @@
 #include <arki/dataset/ondisk2.h>
 #include <arki/scan/grib.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/metadata.h>
 
 #include <sstream>
 #include <iostream>
@@ -33,6 +34,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 
 struct arki_querymacro_shar {
 	ConfigFile cfg;
@@ -72,7 +74,7 @@ struct arki_querymacro_shar {
 };
 TESTGRP(arki_querymacro);
 
-// Empty or unsupported area should give 0
+// Test running queries from Lua
 template<> template<>
 void to::test<1>()
 {
@@ -88,20 +90,30 @@ void to::test<1>()
 
 	ensure_equals(count1, 3);
 	ensure_equals(count2, 1);
-#if 0
-	Targetfile::Func f = tf.get("echo:foo");
-	ensure_equals(f(md), "foo");
-#endif
 }
 
-// Test MARS expansion
+// Lua script that simply passes through the queries
 template<> template<>
 void to::test<2>()
 {
-#if 0
-	Targetfile::Func f = tf.get("mars:foo[DATE][TIME]+[STEP].grib");
-	ensure_equals(f(md), "foo200701020304+00.grib");
-#endif
+	Querymacro qm(cfg, "test1", "testds");
+
+	dataset::DataQuery dq;
+	metadata::Collector mdc;
+	qm.queryData(dq, mdc);
+
+	ensure_equals(mdc.size(), 3);
+
+//	lua_getglobal(*qm.L, "count1");
+//	int count1 = lua_tointeger(*qm.L, -1);
+//
+//	lua_getglobal(*qm.L, "count2");
+//	int count2 = lua_tointeger(*qm.L, -1);
+//
+//	lua_pop(*qm.L, 2);
+//
+//	ensure_equals(count1, 3);
+//	ensure_equals(count2, 1);
 }
 
 }

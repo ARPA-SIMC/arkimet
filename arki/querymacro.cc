@@ -183,6 +183,14 @@ ReadonlyDataset* Querymacro::dataset(const std::string& name)
 
 void Querymacro::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
+	lua_newtable(*L);
+	q.lua_push_table(*L, -1);
+
+	// TODO: do something about consumer
+
+	// TODO: retrieve the lua function registered for this
+	
+	// TODO: run the lua function registered for this
 }
 
 void Querymacro::querySummary(const Matcher& matcher, Summary& summary)
