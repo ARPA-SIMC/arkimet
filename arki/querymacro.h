@@ -41,8 +41,6 @@ protected:
 	std::map<std::string, ReadonlyDataset*> ds_cache;
 	// std::map<std::string, int> ref_cache;
 
-	ReadonlyDataset* dataset(const std::string& name);
-
 public:
 	/**
 	 * Create a query macro read from the query macro file with the given
@@ -53,6 +51,12 @@ public:
 	 */
 	Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& data);
 	virtual ~Querymacro();
+
+	/**
+	 * Get a dataset from the querymacro dataset cache, instantiating it in
+	 * the cache if it is not already there
+	 */
+	ReadonlyDataset* dataset(const std::string& name);
 
 	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);

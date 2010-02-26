@@ -169,7 +169,7 @@ public:
 
 
 	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
+	/// Push to the LUA stack a userdata to access this dataset
 	void lua_push(lua_State* L);
 
 

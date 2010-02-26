@@ -239,7 +239,12 @@ void ReadonlyDataset::lua_push(lua_State* L)
 	if (luaL_newmetatable(L, "arki.rodataset"));
 	{
 		// If the metatable wasn't previously created, create it now
-		luaL_register(L, "arki.rodataset", readonlydatasetlib);
+		lua_pushstring(L, "__index");
+		lua_pushvalue(L, -2);  /* pushes the metatable */
+		lua_settable(L, -3);  /* metatable.__index = metatable */
+
+		// Load normal methods
+		luaL_register(L, NULL, readonlydatasetlib);
 	}
 
 	lua_setmetatable(L, -2);

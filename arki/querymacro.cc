@@ -88,26 +88,31 @@ static Querymacro* checkqmacro(lua_State *L)
 {
 	void* ud = luaL_checkudata(L, 1, "arki.querymacro");
 	luaL_argcheck(L, ud != NULL, 1, "`querymacro' expected");
-	return (Querymacro*)ud;
+	return *(Querymacro**)ud;
 }
 
-static int arkilua_foo(lua_State *L)
+static int arkilua_dataset(lua_State *L)
 {
 	Querymacro* rd = checkqmacro(L);
-	fprintf(stderr, "ZAZEAWLUEKYHB AW\n");
-	// lua_pushnumber(L, 5);
-	// return 1;
-	return 0;
+	const char* name = luaL_checkstring(L, 2);
+	ReadonlyDataset* ds = rd->dataset(name);
+	if (ds) 
+	{
+		ds->lua_push(L);
+		return 1;
+	} else {
+		lua_pushnil(L);
+		return 1;
+	}
 }
 
 static const struct luaL_reg querymacrolib [] = {
 	// TODO: add newsummary()
-	// TODO: add dataset(dsname)
+	{ "dataset", arkilua_dataset },
 	// TODO: add onQueryData(func)
 	// TODO: add onQuerySummary(func)
 	//{ "queryData", arkilua_queryData },
 	//{ "querySummary", arkilua_querySummary },
-	{ "foo", arkilua_foo },
 	{NULL, NULL}
 };
 
