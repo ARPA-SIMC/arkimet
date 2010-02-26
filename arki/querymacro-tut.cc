@@ -22,14 +22,8 @@
 #include <arki/querymacro.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/area.h>
-#include <arki/types/ensemble.h>
-#include <arki/types/run.h>
-#include <arki/types/reftime.h>
+#include <arki/dataset/ondisk2.h>
+#include <arki/scan/grib.h>
 
 #include <sstream>
 #include <iostream>
@@ -40,36 +34,39 @@ using namespace std;
 using namespace arki;
 
 struct arki_querymacro_shar {
-	//Targetfile tf;
-	Metadata md;
+	ConfigFile cfg;
 
 	arki_querymacro_shar()
-		/*
-		: tf(
-			"targetfile['echo'] = function(format)\n"
-			"  return function(md)\n"
-			"    return format\n"
-			"  end\n"
-			"end\n"
-		) */
 	{
-		/*
-		tf.loadRCFiles();
-		using namespace arki::types;
-		ValueBag testValues;
-		testValues.set("antani", Value::createInteger(-1));
-		testValues.set("blinda", Value::createInteger(0));
+		// Cleanup the test datasets
+		system("rm -rf testds");
+		system("mkdir testds");
 
-		md.set(origin::GRIB1::create(1, 2, 3));
-		md.set(product::GRIB1::create(1, 2, 3));
-		md.set(level::GRIB1::create(110, 12, 13));
-		md.set(timerange::GRIB1::create(0, 0, 0, 0));
-		md.set(area::GRIB::create(testValues));
-		md.set(ensemble::GRIB::create(testValues));
-		md.notes.push_back(types::Note::create("test note"));
-		md.set(run::Minute::create(12));
-		md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
-		*/
+		// In-memory dataset configuration
+		string conf =
+			"[testds]\n"
+			"type = ondisk2\n"
+			"step = daily\n"
+			"filter = origin: GRIB1,200\n"
+			"name = testds\n"
+			"path = testds\n";
+		stringstream incfg(conf);
+		cfg.parse(incfg, "(memory)");
+
+		// Import all data from test.grib1
+		Metadata md;
+		scan::Grib scanner;
+		scanner.open("inbound/test.grib1");
+
+		dataset::ondisk2::Writer testds(*cfg.section("testds"));
+		size_t count = 0;
+		while (scanner.next(md))
+		{
+			ensure(testds.acquire(md) == WritableDataset::ACQ_OK);
+			++count;
+		}
+		ensure_equals(count, 3u);
+		testds.flush();
 	}
 };
 TESTGRP(arki_querymacro);
@@ -78,7 +75,6 @@ TESTGRP(arki_querymacro);
 template<> template<>
 void to::test<1>()
 {
-	ConfigFile cfg;
 	Querymacro qm(cfg, "ciao", "foo");
 #if 0
 	Targetfile::Func f = tf.get("echo:foo");
