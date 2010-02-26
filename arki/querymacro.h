@@ -60,15 +60,6 @@ public:
 
 	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
-#if 0
-	/**
-	 * Get a target file generator
-	 *
-	 * @param def
-	 *   Target file definition in the form "type:parms".
-	 */
-	Func get(const std::string& def);
-#endif
 };
 
 }

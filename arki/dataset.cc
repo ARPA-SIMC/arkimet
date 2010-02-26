@@ -202,13 +202,65 @@ static ReadonlyDataset* checkrodataset(lua_State *L)
 {
 	void* ud = luaL_checkudata(L, 1, "arki.rodataset");
 	luaL_argcheck(L, ud != NULL, 1, "`rodataset' expected");
-	return (ReadonlyDataset*)ud;
+	return *(ReadonlyDataset**)ud;
+}
+
+namespace {
+struct LuaMetadataConsumer : public MetadataConsumer
+{
+	lua_State* L;
+	int funcid;
+
+	LuaMetadataConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
+	virtual ~LuaMetadataConsumer() {}
+
+	virtual bool operator()(Metadata& md)
+	{
+		// Get the function
+		lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
+
+		// Push the metadata
+		md.lua_push(L);
+
+		// Call the function
+		if (lua_pcall(L, 1, 1, 0))
+		{
+			string error = lua_tostring(L, -1);
+			lua_pop(L, 1);
+			throw wibble::exception::Consistency("running targetfile function", error);
+		}
+
+		int res = lua_toboolean(L, -1);
+		lua_pop(L, 1);
+		return res;
+	}
+};
+
 }
 
 static int arkilua_queryData(lua_State *L)
 {
 	// TODO: add queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
 	ReadonlyDataset* rd = checkrodataset(L);
+	luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
+	luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
+
+	// TODO: create a DataQuery with data from the table
+	dataset::DataQuery dq;
+
+	// Ref the created function into the registry
+	lua_pushvalue(L, 3);
+	int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	// Create a consumer using the function
+	LuaMetadataConsumer mdc(L, funcid);
+
+	// Run the query
+	rd->queryData(dq, mdc);
+	
+	// Unindex the function
+	luaL_unref(L, LUA_REGISTRYINDEX, funcid);
+
 	// lua_pushnumber(L, 5);
 	// return 1;
 	return 0;
@@ -218,6 +270,8 @@ static int arkilua_querySummary(lua_State *L)
 {
 	// TODO: add querySummary(self, matcher="", summary)
 	ReadonlyDataset* rd = checkrodataset(L);
+	const char* matcher = luaL_checkstring(L, 2);
+	luaL_argcheck(L, matcher != NULL, 2, "`string' expected");
 	// lua_pushnumber(L, 5);
 	// return 1;
 	return 0;

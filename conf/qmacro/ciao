@@ -1,3 +1,9 @@
 print("ciao", data)
 print("qmacro", qmacro)
-print(qmacro:dataset("testds"))
+ds = qmacro:dataset("testds")
+print(ds)
+ds:queryData({}, function (md)
+	print("got md")
+	return true
+end)
+ds:querySummary("reftime:>=today")
