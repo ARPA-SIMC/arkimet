@@ -4,7 +4,7 @@
 /*
  * summary - Handle a summary of a group of summary
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -352,6 +352,13 @@ public:
 	void lua_push(lua_State* L) const;
 	/// Callback used for the __index function of the Origin LUA object
 	static int lua_lookup(lua_State* L);
+
+	/**
+	 * Check that the element at \a idx is a Summary userdata
+	 *
+	 * @return the Summary element, or 0 if the check failed
+	 */
+	static Summary* lua_check(lua_State* L, int idx);
 
 	friend class matcher::AND;
 };

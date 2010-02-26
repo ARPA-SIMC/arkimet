@@ -23,6 +23,7 @@
 #include <arki/querymacro.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/summary.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
 #include <wibble/exception.h>
@@ -149,9 +150,7 @@ static int arkilua_metadataconsumer(lua_State *L)
 	Metadata* md = Metadata::lua_check(L, 1);
 	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
 
-	int qmidx = lua_upvalueindex(1);
-	int considx = lua_upvalueindex(2);
-	Querymacro* rd = checkqmacro(L, qmidx);
+	int considx = lua_upvalueindex(1);
 	MetadataConsumer* cons = (MetadataConsumer*)lua_touserdata(L, considx);
 
 	lua_pushboolean(L, (*cons)(*md));
@@ -163,8 +162,6 @@ static const struct luaL_reg querymacrolib [] = {
 	{ "dataset", arkilua_dataset },	                // qm:dataset(name) -> dataset
 	{ "setquerydata", arkilua_setquerydata },       // qm:setquerydata(func)
 	{ "setquerysummary", arkilua_setquerysummary }, // qm:setquerysummary(func)
-	//{ "queryData", arkilua_queryData },
-	//{ "querySummary", arkilua_querySummary },
 	{NULL, NULL}
 };
 
@@ -245,9 +242,8 @@ void Querymacro::queryData(const dataset::DataQuery& q, MetadataConsumer& consum
 	q.lua_push_table(*L, -1);
 
 	// Push consumer C closure
-	lua_getglobal(*L, "qmacro");
 	lua_pushlightuserdata(*L, &consumer);
-	lua_pushcclosure(*L, arkilua_metadataconsumer, 2);
+	lua_pushcclosure(*L, arkilua_metadataconsumer, 1);
 
 	// Call the function
 	if (lua_pcall(*L, 2, 0, 0))
@@ -260,6 +256,25 @@ void Querymacro::queryData(const dataset::DataQuery& q, MetadataConsumer& consum
 
 void Querymacro::querySummary(const Matcher& matcher, Summary& summary)
 {
+	if (funcid_querysummary == -1) return;
+
+	// Retrieve the Lua function registered for this
+	lua_rawgeti(*L, LUA_REGISTRYINDEX, funcid_querysummary);
+
+	// Pass matcher
+	string m = matcher.toString();
+	lua_pushstring(*L, m.c_str());
+
+	// Pass summary
+	summary.lua_push(*L);
+
+	// Call the function
+	if (lua_pcall(*L, 2, 0, 0))
+	{
+		string error = lua_tostring(*L, -1);
+		lua_pop(*L, 1);
+		throw wibble::exception::Consistency("running querySummary function", error);
+	}
 }
 
 #if 0

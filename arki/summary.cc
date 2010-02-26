@@ -1,7 +1,7 @@
 /*
  * summary - Handle a summary of a group of summary
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -797,7 +797,7 @@ int Stats::lua_lookup(lua_State* L)
 	int udataidx = lua_upvalueindex(1);
 	int keyidx = lua_upvalueindex(2);
 	// Fetch the Stats reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_summarystats");
+	luaL_checkudata(L, udataidx, "arki.summarystats");
 	void* userdata = lua_touserdata(L, udataidx);
 	const Stats& v = **(const Stats**)userdata;
 
@@ -836,7 +836,7 @@ void Stats::lua_push(lua_State* L) const
 	*s = this;
 
 	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_summarystats"));
+	if (luaL_newmetatable(L, "arki.summarystats"));
 	{
 		// If the metatable wasn't previously created, create it now
 		// Set the __index metamethod to the lookup function
@@ -930,7 +930,7 @@ int Summary::lua_lookup(lua_State* L)
 	int udataidx = lua_upvalueindex(1);
 	int keyidx = lua_upvalueindex(2);
 	// Fetch the Summary reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_summary");
+	luaL_checkudata(L, udataidx, "arki.summary");
 	void* userdata = lua_touserdata(L, udataidx);
 	const Summary& v = **(const Summary**)userdata;
 
@@ -1009,7 +1009,7 @@ void Summary::lua_push(lua_State* L) const
 	*s = this;
 
 	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_summary"));
+	if (luaL_newmetatable(L, "arki.summary"));
 	{
 		// If the metatable wasn't previously created, create it now
 		// Set the __index metamethod to the lookup function
@@ -1019,6 +1019,11 @@ void Summary::lua_push(lua_State* L) const
 	}
 
 	lua_setmetatable(L, -2);
+}
+Summary* Summary::lua_check(lua_State* L, int idx)
+{
+	void* ud = luaL_checkudata(L, idx, "arki.summary");
+	return *(Summary**)ud;
 }
 #endif
 

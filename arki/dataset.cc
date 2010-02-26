@@ -327,12 +327,13 @@ static int arkilua_queryData(lua_State *L)
 
 static int arkilua_querySummary(lua_State *L)
 {
-	// TODO: add querySummary(self, matcher="", summary)
+	// querySummary(self, matcher="", summary)
 	ReadonlyDataset* rd = checkrodataset(L);
 	const char* matcher = luaL_checkstring(L, 2);
 	luaL_argcheck(L, matcher != NULL, 2, "`string' expected");
-	// lua_pushnumber(L, 5);
-	// return 1;
+	Summary* sum = Summary::lua_check(L, 3);
+	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
+	rd->querySummary(Matcher::parse(matcher), *sum);
 	return 0;
 }
 

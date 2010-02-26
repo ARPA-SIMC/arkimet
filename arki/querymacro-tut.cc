@@ -22,6 +22,7 @@
 #include <arki/querymacro.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/summary.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/scan/grib.h>
 #include <arki/utils/lua.h>
@@ -105,6 +106,10 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 3u);
 
 	ensure(mdc[0].source.defined());
+
+	Summary s;
+	qm.querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 3u);
 
 //	lua_getglobal(*qm.L, "count1");
 //	int count1 = lua_tointeger(*qm.L, -1);
