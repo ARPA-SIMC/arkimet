@@ -4,7 +4,7 @@
 /*
  * metadata - Handle xgribarch metadata
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -242,6 +242,13 @@ public:
 	void lua_push(lua_State* L) const;
 	/// Callback used for the __index function of the Origin LUA object
 	static int lua_lookup(lua_State* L);
+
+	/**
+	 * Check that the element at \a idx is a Metadata userdata
+	 *
+	 * @return the Metadata element, or 0 if the check failed
+	 */
+	static Metadata* lua_check(lua_State* L, int idx);
 };
 
 /**

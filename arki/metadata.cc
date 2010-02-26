@@ -1,7 +1,7 @@
 /*
  * metadata - Handle arkimet metadata
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -583,7 +583,7 @@ int Metadata::lua_lookup(lua_State* L)
 	int udataidx = lua_upvalueindex(1);
 	int keyidx = lua_upvalueindex(2);
 	// Fetch the Metadata reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_metadata");
+	luaL_checkudata(L, udataidx, "arki.metadata");
 	void* userdata = lua_touserdata(L, udataidx);
 	const Metadata& v = **(const Metadata**)userdata;
 
@@ -627,7 +627,7 @@ int Metadata::lua_lookup(lua_State* L)
 		metadata::LuaIter**d = (metadata::LuaIter**)lua_newuserdata(L, sizeof(metadata::LuaIter*));
 
 		// Get the metatable for the iterator
-		if (luaL_newmetatable(L, "arki_metadata_iter"));
+		if (luaL_newmetatable(L, "arki.metadata_iter"));
 		{
 			/* set its __gc field */
 			lua_pushstring(L, "__gc");
@@ -671,7 +671,7 @@ void Metadata::lua_push(lua_State* L) const
 	*s = this;
 
 	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_metadata"));
+	if (luaL_newmetatable(L, "arki.metadata"));
 	{
 		// If the metatable wasn't previously created, create it now
 		// Set the __index metamethod to the lookup function
@@ -681,6 +681,11 @@ void Metadata::lua_push(lua_State* L) const
 	}
 
 	lua_setmetatable(L, -2);
+}
+Metadata* Metadata::lua_check(lua_State* L, int idx)
+{
+	void* ud = luaL_checkudata(L, idx, "arki.metadata");
+	return *(Metadata**)ud;
 }
 #endif
 

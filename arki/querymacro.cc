@@ -146,10 +146,8 @@ static int arkilua_setquerysummary(lua_State *L)
 
 static int arkilua_metadataconsumer(lua_State *L)
 {
-	Metadata zmd;
-	Metadata* md = &zmd;
-	// Metadata* md = checkmd(L, 1);
-	// luaL_argcheck(L, arkilua_ismetadata(L, 1), 1, "`arki.metadata' expected");
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
 
 	int qmidx = lua_upvalueindex(1);
 	int considx = lua_upvalueindex(2);
