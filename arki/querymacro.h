@@ -42,6 +42,8 @@ protected:
 public:
 	const ConfigFile& cfg;
 	Lua *L;
+	int funcid_querydata;
+	int funcid_querysummary;
 
 	/**
 	 * Create a query macro read from the query macro file with the given

@@ -84,10 +84,10 @@ static void arkilua_dumpstack(lua_State* L, const std::string& title, FILE* out)
 }
 #endif
 
-static Querymacro* checkqmacro(lua_State *L)
+static Querymacro* checkqmacro(lua_State *L, int idx = 1)
 {
-	void* ud = luaL_checkudata(L, 1, "arki.querymacro");
-	luaL_argcheck(L, ud != NULL, 1, "`querymacro' expected");
+	void* ud = luaL_checkudata(L, idx, "arki.querymacro");
+	luaL_argcheck(L, ud != NULL, idx, "`querymacro' expected");
 	return *(Querymacro**)ud;
 }
 
@@ -106,18 +106,72 @@ static int arkilua_dataset(lua_State *L)
 	}
 }
 
+static int arkilua_setquerydata(lua_State *L)
+{
+	Querymacro* rd = checkqmacro(L);
+	luaL_argcheck(L, lua_isfunction(L, 2), 2, "`function' expected");
+
+	// Unref the previous function if set
+	if (rd->funcid_querydata != -1)
+	{
+		luaL_unref(L, LUA_REGISTRYINDEX, rd->funcid_querydata);
+		rd->funcid_querydata = -1;
+	}
+
+	// Ref the created function into the registry
+	lua_pushvalue(L, 2);
+	rd->funcid_querydata = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	return 0;
+}
+
+static int arkilua_setquerysummary(lua_State *L)
+{
+	Querymacro* rd = checkqmacro(L);
+	luaL_argcheck(L, lua_isfunction(L, 2), 2, "`function' expected");
+
+	// Unref the previous function if set
+	if (rd->funcid_querysummary != -1)
+	{
+		luaL_unref(L, LUA_REGISTRYINDEX, rd->funcid_querysummary);
+		rd->funcid_querysummary = -1;
+	}
+
+	// Ref the created function into the registry
+	lua_pushvalue(L, 2);
+	rd->funcid_querysummary = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	return 0;
+}
+
+static int arkilua_metadataconsumer(lua_State *L)
+{
+	Metadata zmd;
+	Metadata* md = &zmd;
+	// Metadata* md = checkmd(L, 1);
+	// luaL_argcheck(L, arkilua_ismetadata(L, 1), 1, "`arki.metadata' expected");
+
+	int qmidx = lua_upvalueindex(1);
+	int considx = lua_upvalueindex(2);
+	Querymacro* rd = checkqmacro(L, qmidx);
+	MetadataConsumer* cons = (MetadataConsumer*)lua_touserdata(L, considx);
+
+	lua_pushboolean(L, (*cons)(*md));
+	return 1;
+}
+
 static const struct luaL_reg querymacrolib [] = {
 	// TODO: add newsummary()
-	{ "dataset", arkilua_dataset },
-	// TODO: add onQueryData(func)
-	// TODO: add onQuerySummary(func)
+	{ "dataset", arkilua_dataset },	                // qm:dataset(name) -> dataset
+	{ "setquerydata", arkilua_setquerydata },       // qm:setquerydata(func)
+	{ "setquerysummary", arkilua_setquerysummary }, // qm:setquerysummary(func)
 	//{ "queryData", arkilua_queryData },
 	//{ "querySummary", arkilua_querySummary },
 	{NULL, NULL}
 };
 
 Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& data)
-	: cfg(cfg), L(new Lua)
+	: cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
 	// Create the Querymacro object
 	Querymacro** s = (Querymacro**)lua_newuserdata(*L, sizeof(Querymacro*));
@@ -183,14 +237,27 @@ ReadonlyDataset* Querymacro::dataset(const std::string& name)
 
 void Querymacro::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
+	if (funcid_querydata == -1) return;
+
+	// Retrieve the Lua function registered for this
+	lua_rawgeti(*L, LUA_REGISTRYINDEX, funcid_querydata);
+
+	// Pass DataQuery
 	lua_newtable(*L);
 	q.lua_push_table(*L, -1);
 
-	// TODO: do something about consumer
+	// Push consumer C closure
+	lua_getglobal(*L, "qmacro");
+	lua_pushlightuserdata(*L, &consumer);
+	lua_pushcclosure(*L, arkilua_metadataconsumer, 2);
 
-	// TODO: retrieve the lua function registered for this
-	
-	// TODO: run the lua function registered for this
+	// Call the function
+	if (lua_pcall(*L, 2, 0, 0))
+	{
+		string error = lua_tostring(*L, -1);
+		lua_pop(*L, 1);
+		throw wibble::exception::Consistency("running queryData function", error);
+	}
 }
 
 void Querymacro::querySummary(const Matcher& matcher, Summary& summary)

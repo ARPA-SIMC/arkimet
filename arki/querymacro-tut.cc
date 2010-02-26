@@ -96,13 +96,15 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Querymacro qm(cfg, "test1", "testds");
+	Querymacro qm(cfg, "noop", "testds");
 
 	dataset::DataQuery dq;
 	metadata::Collector mdc;
 	qm.queryData(dq, mdc);
 
-	ensure_equals(mdc.size(), 3);
+	ensure_equals(mdc.size(), 3u);
+
+	ensure(mdc[0].source.defined());
 
 //	lua_getglobal(*qm.L, "count1");
 //	int count1 = lua_tointeger(*qm.L, -1);

@@ -45,12 +45,13 @@ dist_fmtconf_DATA = \
 	conf/format/10-product \
 	conf/format/10-timerange
 dist_reportconf_DATA = conf/report/mdstats
-dist_qmconf_DATA = conf/qmacro/ciao
+dist_qmconf_DATA = conf/qmacro/noop.lua
 dist_tfconf_DATA = conf/targetfile/mars
 
 EXTRA_DIST = doc/MATCHER \
 	     doc/DATASET \
 	     doc/adding-formats.txt \
+	     conf/qmacro/test0.lua \
              arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dump \
