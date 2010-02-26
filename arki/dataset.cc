@@ -30,6 +30,7 @@
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
 #include <arki/metadata.h>
+#include <arki/sort.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/utils.h>
 #include <arki/utils/dataset.h>
@@ -240,13 +241,34 @@ struct LuaMetadataConsumer : public MetadataConsumer
 
 static int arkilua_queryData(lua_State *L)
 {
-	// TODO: add queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
+	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
 	ReadonlyDataset* rd = checkrodataset(L);
 	luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
 	luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
 
-	// TODO: create a DataQuery with data from the table
+	// Create a DataQuery with data from the table
 	dataset::DataQuery dq;
+	lua_pushstring(L, "matcher");
+	lua_gettable(L, 2);
+	const char* matcher = lua_tostring(L, -1);
+	lua_pop(L, 1);
+	if (matcher) dq.matcher = Matcher::parse(matcher);
+
+	lua_pushstring(L, "withdata");
+	lua_gettable(L, 2);
+	dq.withData = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+
+	lua_pushstring(L, "sorter");
+	lua_gettable(L, 2);
+	const char* sorter = lua_tostring(L, -1);
+	lua_pop(L, 1);
+	auto_ptr<sort::Compare> compare;
+	if (sorter)
+	{
+		compare = sort::Compare::parse(sorter);
+		dq.sorter = compare.get();
+	}
 
 	// Ref the created function into the registry
 	lua_pushvalue(L, 3);

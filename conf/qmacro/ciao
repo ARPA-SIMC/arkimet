@@ -2,7 +2,7 @@ print("ciao", data)
 print("qmacro", qmacro)
 ds = qmacro:dataset("testds")
 print(ds)
-ds:queryData({}, function (md)
+ds:queryData({matcher="origin:GRIB1,200"}, function (md)
 	print("got md")
 	return true
 end)
