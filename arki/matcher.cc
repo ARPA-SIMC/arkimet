@@ -136,7 +136,7 @@ OR* OR::parse(const MatcherType& mt, const std::string& pattern)
 	for (Splitter::const_iterator i = splitter.begin(pattern);
 			i != splitter.end(); ++i)
 	{
-		const OR* exprs = aliases ? aliases->get(*i) : 0;
+		const OR* exprs = aliases ? aliases->get(str::tolower(*i)) : 0;
 		if (exprs)
 			for (OR::const_iterator j = exprs->begin(); j != exprs->end(); ++j)
 				res->push_back(*j);
@@ -269,6 +269,13 @@ Aliases::~Aliases()
 {
 	reset();
 }
+const OR* Aliases::get(const std::string& name) const
+{
+	std::map< std::string, const OR* >::const_iterator i = db.find(name);
+	if (i == db.end())
+		return 0;
+	return i->second;
+}
 void Aliases::reset()
 {
 	for (map<string, const OR*>::iterator i = db.begin();
@@ -290,7 +297,7 @@ void Aliases::add(const MatcherType& type, const ConfigFile& entries)
 	vector< pair<string, string> > aliases;
 	vector< pair<string, string> > failed;
 	for (ConfigFile::const_iterator i = entries.begin(); i != entries.end(); ++i)
-		aliases.push_back(*i);
+		aliases.push_back(make_pair(str::tolower(i->first), i->second));
 	
 	/*
 	 * Try multiple times to catch aliases referring to other aliases.

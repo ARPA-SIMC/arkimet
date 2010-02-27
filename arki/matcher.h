@@ -163,14 +163,7 @@ class Aliases
 public:
 	~Aliases();
 
-	const OR* get(const std::string& name) const
-	{
-		std::map< std::string, const OR* >::const_iterator i = db.find(name);
-		if (i == db.end())
-			return 0;
-		return i->second;
-	}
-
+	const OR* get(const std::string& name) const;
 	void add(const MatcherType& type, const ConfigFile& entries);
 	void reset();
 	void serialise(ConfigFile& cfg) const;
