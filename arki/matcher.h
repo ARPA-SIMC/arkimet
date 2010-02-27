@@ -4,7 +4,7 @@
 /*
  * matcher - Match metadata expressions
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -317,6 +317,23 @@ struct Matcher
 
 	/// Parse a string into a matcher
 	static Matcher parse(const std::string& pattern);
+
+
+	// LUA functions
+	/// Push to the LUA stack a userdata to access this Origin
+	void lua_push(lua_State* L);
+
+	/**
+	 * Check that the element at \a idx is a Summary userdata
+	 *
+	 * @return the Summary element, or 0 if the check failed
+	 */
+	static Matcher lua_check(lua_State* L, int idx);
+
+	/**
+	 * Load summary functions into a lua VM
+	 */
+	static void lua_openlib(lua_State* L);
 };
 
 /// Write as a string to an output stream

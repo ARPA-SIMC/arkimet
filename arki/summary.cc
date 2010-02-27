@@ -46,10 +46,7 @@
 #include "config.h"
 
 #ifdef HAVE_LUA
-extern "C" {
-#include <lauxlib.h>
-#include <lualib.h>
-}
+#include <arki/utils/lua.h>
 #endif
 
 //#define DEBUG_THIS
@@ -973,17 +970,16 @@ static int arkilua_filter(lua_State* L)
 	// utils::lua::dumpstack(L, "FILTER", cerr);
 	Summary* s = Summary::lua_check(L, 1);
 	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-	const char* matcher = lua_tostring(L, 2);
-	luaL_argcheck(L, matcher != NULL, 2, "`string' expected");
+	Matcher m = Matcher::lua_check(L, 2);
 	if (lua_gettop(L) > 2)
 	{
 		// s.filter(matcher, s1)
 		Summary* s1 = Summary::lua_check(L, 3);
 		luaL_argcheck(L, s1 != NULL, 3, "`arki.summary' expected");
-		s->filter(Matcher::parse(matcher), *s1);
+		s->filter(m, *s1);
 		return 0;
 	} else {
-		SummaryUD::create(L, new Summary(s->filter(Matcher::parse(matcher))), true);
+		SummaryUD::create(L, new Summary(s->filter(m)), true);
 		return 1;
 	}
 }

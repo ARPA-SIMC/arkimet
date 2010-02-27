@@ -211,9 +211,8 @@ auto_ptr<sort::Compare> DataQuery::lua_from_table(lua_State* L, int idx)
 {
 	lua_pushstring(L, "matcher");
 	lua_gettable(L, 2);
-	const char* str_matcher = lua_tostring(L, -1);
+	matcher = Matcher::lua_check(L, -1);
 	lua_pop(L, 1);
-	if (str_matcher) matcher = Matcher::parse(str_matcher);
 
 	lua_pushstring(L, "withdata");
 	lua_gettable(L, 2);
@@ -329,11 +328,10 @@ static int arkilua_querySummary(lua_State *L)
 {
 	// querySummary(self, matcher="", summary)
 	ReadonlyDataset* rd = checkrodataset(L);
-	const char* matcher = luaL_checkstring(L, 2);
-	luaL_argcheck(L, matcher != NULL, 2, "`string' expected");
+	Matcher matcher = Matcher::lua_check(L, 2);luaL_checkstring(L, 2);
 	Summary* sum = Summary::lua_check(L, 3);
 	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");
-	rd->querySummary(Matcher::parse(matcher), *sum);
+	rd->querySummary(matcher, *sum);
 	return 0;
 }
 

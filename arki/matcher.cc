@@ -1,7 +1,7 @@
 /*
  * matcher - Match metadata expressions
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,12 @@
 #include <wibble/regexp.h>
 #include <wibble/string.h>
 #include <memory>
+
+#include "config.h"
+
+#ifdef HAVE_LUA
+#include <arki/utils/lua.h>
+#endif
 
 using namespace std;
 using namespace wibble;
@@ -398,6 +404,142 @@ std::string Matcher::toString(bool formatted) const
 	if (!reftime.empty()) appendList(res, sep, reftime.toString());
 
 	return res;
+}
+#endif
+
+#ifdef HAVE_LUA
+#if 0
+static int arkilua_count(lua_State* L)
+{
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	lua_pushinteger(L, s->count());
+	return 1;
+}
+
+static int arkilua_size(lua_State* L)
+{
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	lua_pushinteger(L, s->size());
+	return 1;
+}
+
+static int arkilua_data(lua_State* L)
+{
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	// Return a big table with a dump of the summary inside
+	lua_newtable(L);
+	LuaPusher pusher(L);
+	s->visit(pusher);
+	return 1;
+}
+
+static int arkilua_filter(lua_State* L)
+{
+	// utils::lua::dumpstack(L, "FILTER", cerr);
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	const char* matcher = lua_tostring(L, 2);
+	luaL_argcheck(L, matcher != NULL, 2, "`string' expected");
+	if (lua_gettop(L) > 2)
+	{
+		// s.filter(matcher, s1)
+		Summary* s1 = Summary::lua_check(L, 3);
+		luaL_argcheck(L, s1 != NULL, 3, "`arki.summary' expected");
+		s->filter(Matcher::parse(matcher), *s1);
+		return 0;
+	} else {
+		SummaryUD::create(L, new Summary(s->filter(Matcher::parse(matcher))), true);
+		return 1;
+	}
+}
+#endif
+
+static void arkilua_matchermetatable(lua_State* L);
+
+static int arkilua_new(lua_State* L)
+{
+	Matcher* ud = (Matcher*)lua_newuserdata(L, sizeof(Matcher));
+	if (lua_gettop(L) == 0)
+		new(ud) Matcher();
+	else
+	{
+		const char* expr = lua_tostring(L, 1);
+		luaL_argcheck(L, expr != NULL, 1, "`string' expected");
+		new(ud) Matcher(Matcher::parse(expr));
+	}
+
+	// Set the summary for the userdata
+	arkilua_matchermetatable(L);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+static int arkilua_gc (lua_State *L)
+{
+	Matcher* ud = (Matcher*)luaL_checkudata(L, 1, "arki.matcher");
+	ud->~Matcher();
+	return 0;
+}
+
+static const struct luaL_reg matcherclasslib [] = {
+	{ "new", arkilua_new },
+	{ NULL, NULL }
+};
+
+static const struct luaL_reg matcherlib [] = {
+	/*
+	{ "count", arkilua_count },
+	{ "size", arkilua_size },
+	{ "data", arkilua_data },
+	{ "filter", arkilua_filter },
+	{ "copy", arkilua_copy },
+	*/
+	{ "__gc", arkilua_gc },
+	{ NULL, NULL }
+};
+
+// Push the arki.matcher metatable on the stack, creating it if needed
+static void arkilua_matchermetatable(lua_State* L)
+{
+	if (luaL_newmetatable(L, "arki.matcher"));
+	{
+		// If the metatable wasn't previously created, create it now
+		lua_pushstring(L, "__index");
+		lua_pushvalue(L, -2);  /* pushes the metatable */
+		lua_settable(L, -3);  /* metatable.__index = metatable */
+
+		// Load normal methods
+		luaL_register(L, NULL, matcherlib);
+	}
+}
+
+void Matcher::lua_push(lua_State* L)
+{
+	Matcher* ud = (Matcher*)lua_newuserdata(L, sizeof(Matcher));
+	new(ud) Matcher(*this);
+
+	arkilua_matchermetatable(L);
+	lua_setmetatable(L, -2);
+}
+
+void Matcher::lua_openlib(lua_State* L)
+{
+	luaL_register(L, "arki.matcher", matcherclasslib);
+}
+
+Matcher Matcher::lua_check(lua_State* L, int idx)
+{
+	if (lua_isstring(L, idx))
+	{
+		return Matcher::parse(lua_tostring(L, idx));
+	} else {
+		Matcher* ud = (Matcher*)luaL_checkudata(L, idx, "arki.matcher");
+		return *ud;
+	}
 }
 #endif
 
