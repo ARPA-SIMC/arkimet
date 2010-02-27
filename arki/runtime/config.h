@@ -73,7 +73,7 @@ struct Restrict
  * Read the Matcher alias database.
  *
  * The file named in the given StringOption (if any) is tried first.
- * Otherwise the file given in the environment variable XGAR_ALIASES is tried.
+ * Otherwise the file given in the environment variable ARKI_ALIASES is tried.
  * Else, $(sysconfdir)/arkimet/match-alias.conf is tried.
  * Else, nothing is loaded.
  *
