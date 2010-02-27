@@ -78,6 +78,8 @@ static const struct luaL_reg querymacrolib [] = {
 Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& data)
 	: cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
+	Summary::lua_openlib(*L);
+
 	// Create the Querymacro object
 	Querymacro** s = (Querymacro**)lua_newuserdata(*L, sizeof(Querymacro*));
 	*s = this;

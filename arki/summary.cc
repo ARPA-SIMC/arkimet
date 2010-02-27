@@ -858,7 +858,7 @@ static types::MetadataType summaryStatsType(
 
 #ifdef HAVE_LUA
 #warning To be implemented
-namespace summary {
+namespace {
 #if 0
 	struct LuaIter
 	{
@@ -889,13 +889,13 @@ namespace summary {
 		}
 	};
 #endif
-struct LuaPusher: public Visitor
+struct LuaPusher: public summary::Visitor
 {
 	lua_State* L;
 	int index;
 
 	LuaPusher(lua_State* L) : L(L), index(1) {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<Stats>& stats)
+	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<summary::Stats>& stats)
 	{
 		// Table with the couple
 		lua_newtable(L);
@@ -905,7 +905,7 @@ struct LuaPusher: public Visitor
 		for (size_t i = 0; i < md.size(); ++i)
 		{
 			// Name
-			string name = str::tolower(types::formatCode(mso[i]));
+			string name = str::tolower(types::formatCode(summary::mso[i]));
 			lua_pushlstring(L, name.data(), name.size());
 			// Value
 			if (md[i].defined())
@@ -923,44 +923,92 @@ struct LuaPusher: public Visitor
 		return true;
 	}
 };
+struct SummaryUD
+{
+	Summary* s;
+	bool collected;
+
+	static SummaryUD* create(lua_State* L, Summary* s, bool collected = false);
+};
+
+SummaryUD* SummaryUD::create(lua_State* L, Summary* s, bool collected)
+{
+	SummaryUD* ud = (SummaryUD*)lua_newuserdata(L, sizeof(SummaryUD));
+	ud->s = s;
+	ud->collected = collected;
+	return ud;
+}
 }
 
-int Summary::lua_lookup(lua_State* L)
+static int arkilua_count(lua_State* L)
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Summary reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki.summary");
-	void* userdata = lua_touserdata(L, udataidx);
-	const Summary& v = **(const Summary**)userdata;
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	lua_pushinteger(L, s->count());
+	return 1;
+}
 
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
+static int arkilua_size(lua_State* L)
+{
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	lua_pushinteger(L, s->size());
+	return 1;
+}
 
-	if (name == "count")
-	{
-		lua_pushinteger(L, v.count());
-		return 1;
-	}
-	else if (name == "size")
-	{
-		lua_pushinteger(L, v.size());
-		return 1;
-	}
-	else if (name == "data")
-	{
-		// Return a big table with a dump of the summary inside
-		lua_newtable(L);
-		if (v.root.ptr())
-		{
-			summary::LuaPusher pusher(L);
-			vector< UItem<> > visitmd(summary::msoSize, UItem<>());
-			v.root->visit(pusher, visitmd);
-		}
-		return 1;
-	}
+static int arkilua_data(lua_State* L)
+{
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	// Return a big table with a dump of the summary inside
+	lua_newtable(L);
+	LuaPusher pusher(L);
+	s->visit(pusher);
+	return 1;
+}
+
+// Make a new summary
+// Memory management of the copy will be done by Lua
+static int arkilua_new(lua_State* L)
+{
+	// Make a new copy
+	SummaryUD::create(L, new Summary, true);
+
+	// Set the summary for the userdata
+	luaL_getmetatable(L, "arki.summary");
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+// Make a copy of the metadata.
+// Memory management of the copy will be done by Lua
+static int arkilua_copy(lua_State* L)
+{
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+
+	// Make a new copy
+	SummaryUD* ud = SummaryUD::create(L, new Summary, true);
+	*(ud->s) = *s;
+
+	// Set the summary for the userdata
+	luaL_getmetatable(L, "arki.summary");
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+
+static int arkilua_gc (lua_State *L)
+{
+	SummaryUD* ud = (SummaryUD*)luaL_checkudata(L, 1, "arki.summary");
+	if (ud != NULL && ud->collected)
+		delete ud->s;
+	return 0;
+}
+
+
 #if 0
 	else if (name == "iter")
 	{
@@ -990,40 +1038,50 @@ int Summary::lua_lookup(lua_State* L)
 		return 1;
 	}
 #endif
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_summary(lua_State* L)
+
+static const struct luaL_reg summaryclasslib [] = {
+	{ "new", arkilua_new },
+	{ NULL, NULL }
+};
+
+static const struct luaL_reg summarylib [] = {
+	{ "count", arkilua_count },
+	{ "size", arkilua_size },
+	{ "data", arkilua_data },
+	{ "copy", arkilua_copy },
+	{ "__gc", arkilua_gc },
+	{ NULL, NULL }
+};
+
+void Summary::lua_push(lua_State* L)
 {
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Summary::lua_lookup, 2);
-	return 1;
-}
-void Summary::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Summary** s = (const Summary**)lua_newuserdata(L, sizeof(const Summary*));
-	*s = this;
+	SummaryUD::create(L, this, false);
 
 	// Set the metatable for the userdata
 	if (luaL_newmetatable(L, "arki.summary"));
 	{
 		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
 		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_summary);
-		lua_settable(L, -3);
+		lua_pushvalue(L, -2);  /* pushes the metatable */
+		lua_settable(L, -3);  /* metatable.__index = metatable */
+
+		// Load normal methods
+		luaL_register(L, NULL, summarylib);
 	}
 
 	lua_setmetatable(L, -2);
 }
+
+void Summary::lua_openlib(lua_State* L)
+{
+	luaL_register(L, "arki.summary", summaryclasslib);
+}
+
 Summary* Summary::lua_check(lua_State* L, int idx)
 {
-	void* ud = luaL_checkudata(L, idx, "arki.summary");
-	return *(Summary**)ud;
+	SummaryUD* ud = (SummaryUD*)luaL_checkudata(L, idx, "arki.summary");
+	if (ud) return ud->s;
+	return NULL;
 }
 #endif
 

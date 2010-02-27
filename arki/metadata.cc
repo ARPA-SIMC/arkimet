@@ -610,8 +610,6 @@ static int arkilua_copy(lua_State* L)
 	luaL_getmetatable(L, "arki.metadata");
 	lua_setmetatable(L, -2);
 
-	// Set __gc to delete the metadata
-
 	return 1;
 }
 

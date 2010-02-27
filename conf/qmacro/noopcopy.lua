@@ -14,7 +14,7 @@ function queryData(q, cons)
 end
 
 function querySummary(q, sum)
-	s = sum:copy()
+	s = arki.summary.new()
 	ds:querySummary(q, s)
 	s:output(sum)
 end

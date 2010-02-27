@@ -349,9 +349,7 @@ public:
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin
-	void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Origin LUA object
-	static int lua_lookup(lua_State* L);
+	void lua_push(lua_State* L);
 
 	/**
 	 * Check that the element at \a idx is a Summary userdata
@@ -359,6 +357,11 @@ public:
 	 * @return the Summary element, or 0 if the check failed
 	 */
 	static Summary* lua_check(lua_State* L, int idx);
+
+	/**
+	 * Load summary functions into a lua VM
+	 */
+	static void lua_openlib(lua_State* L);
 
 	friend class matcher::AND;
 };
