@@ -193,7 +193,7 @@ Targetfile::Func Targetfile::get(const std::string& def)
 	return Func(L, i->second);
 }
 
-std::string Targetfile::Func::operator()(const Metadata& md)
+std::string Targetfile::Func::operator()(Metadata& md)
 {
 	// Get the function
 	lua_rawgeti(*L, LUA_REGISTRYINDEX, idx);

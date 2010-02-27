@@ -53,7 +53,7 @@ public:
 		/**
 		 * Compute a target file name for a metadata
 		 */
-		std::string operator()(const Metadata& md);
+		std::string operator()(Metadata& md);
 	};
 	
 	Targetfile(const std::string& code = std::string());

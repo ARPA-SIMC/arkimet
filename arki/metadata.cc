@@ -547,91 +547,122 @@ void Metadata::readFile(const std::string& fname, MetadataConsumer& mdc)
 }
 
 #ifdef HAVE_LUA
-namespace metadata {
-	struct LuaIter
+namespace {
+struct LuaIter
+{
+	const Metadata& s;
+	Metadata::const_iterator iter;
+
+	LuaIter(const Metadata& s) : s(s), iter(s.begin()) {}
+	
+	// Lua iterator for summaries
+	static int iterate(lua_State* L)
 	{
-		const Metadata& s;
-		Metadata::const_iterator iter;
-
-		LuaIter(const Metadata& s) : s(s), iter(s.begin()) {}
-		
-		// Lua iterator for summaries
-		static int iterate(lua_State* L)
+		LuaIter& i = **(LuaIter**)lua_touserdata(L, lua_upvalueindex(1));
+		if (i.iter != i.s.end())
 		{
-			LuaIter& i = **(LuaIter**)lua_touserdata(L, lua_upvalueindex(1));
-			if (i.iter != i.s.end())
-			{
-				lua_pushstring(L, str::tolower(types::formatCode(i.iter->first)).c_str());
-				i.iter->second->lua_push(L);
-				++i.iter;
-				return 2;
-			}
-			else
-				return 0;  /* no more values to return */
+			lua_pushstring(L, str::tolower(types::formatCode(i.iter->first)).c_str());
+			i.iter->second->lua_push(L);
+			++i.iter;
+			return 2;
 		}
+		else
+			return 0;  /* no more values to return */
+	}
 
-		static int gc (lua_State *L) {
-			LuaIter* i = *(LuaIter**)lua_touserdata(L, 1);
-			if (i) delete i;
-			return 0;
-		}
-	};
+	static int gc (lua_State *L) {
+		LuaIter* i = *(LuaIter**)lua_touserdata(L, 1);
+		if (i) delete i;
+		return 0;
+	}
+};
+
+struct MetadataUD
+{
+	Metadata* md;
+	bool collected;
+
+	static MetadataUD* create(lua_State* L, Metadata* md, bool collected = false);
+};
+
+MetadataUD* MetadataUD::create(lua_State* L, Metadata* md, bool collected)
+{
+	MetadataUD* ud = (MetadataUD*)lua_newuserdata(L, sizeof(MetadataUD));
+	ud->md = md;
+	ud->collected = collected;
+	return ud;
 }
 
-int Metadata::lua_lookup(lua_State* L)
+}
+
+// Make a copy of the metadata.
+// Memory management of the copy will be done by Lua
+static int arkilua_copy(lua_State* L)
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Metadata reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki.metadata");
-	void* userdata = lua_touserdata(L, udataidx);
-	const Metadata& v = **(const Metadata**)userdata;
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
 
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
+	// Make a new copy
+	MetadataUD* ud = MetadataUD::create(L, new Metadata, true);
+	*(ud->md) = *md;
 
-	if (name == "source")
+	// Set the metatable for the userdata
+	luaL_getmetatable(L, "arki.metadata");
+	lua_setmetatable(L, -2);
+
+	// Set __gc to delete the metadata
+
+	return 1;
+}
+
+static int arkilua_lookup(lua_State* L)
+{
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+	const char* skey = lua_tostring(L, 2);
+	luaL_argcheck(L, skey != NULL, 2, "`string' expected");
+	string key = skey;
+
+	if (key == "source")
 	{
 		// Return the source element
-		if (v.source.defined())
-			v.source->lua_push(L);
+		if (md->source.defined())
+			md->source->lua_push(L);
 		else
 			lua_pushnil(L);
 		return 1;
 	}
-	else if (name == "notes")
+	else if (key == "notes")
 	{
 		// Return a table with all the notes in the metadata
-		lua_createtable(L, v.notes.size(), 0);
+		lua_createtable(L, md->notes.size(), 0);
 		// Set the array elements
-		for (size_t i = 0; i < v.notes.size(); ++i)
+		for (size_t i = 0; i < md->notes.size(); ++i)
 		{
-			v.notes[i]->lua_push(L);
+			md->notes[i]->lua_push(L);
 			lua_rawseti(L, -2, i+1);
 		}
 		return 1;
 	}
-	else if (name == "deleted")
+	else if (key == "deleted")
 	{
 		// Return true if the metadata is marked deleted, else false
-		lua_pushboolean(L, v.deleted);
+		lua_pushboolean(L, md->deleted);
 		return 1;
 	}
-	else if (name == "iter")
+	else if (key == "iter")
 	{
 		// Iterate
 
 		/* create a userdatum to store an iterator structure address */
-		metadata::LuaIter**d = (metadata::LuaIter**)lua_newuserdata(L, sizeof(metadata::LuaIter*));
+		LuaIter**d = (LuaIter**)lua_newuserdata(L, sizeof(LuaIter*));
 
 		// Get the metatable for the iterator
 		if (luaL_newmetatable(L, "arki.metadata_iter"));
 		{
 			/* set its __gc field */
 			lua_pushstring(L, "__gc");
-			lua_pushcfunction(L, metadata::LuaIter::gc);
+			lua_pushcfunction(L, LuaIter::gc);
 			lua_settable(L, -3);
 		}
 
@@ -639,18 +670,23 @@ int Metadata::lua_lookup(lua_State* L)
 		lua_setmetatable(L, -2);
 
 		// Instantiate the iterator
-		*d = new metadata::LuaIter(v);
+		*d = new LuaIter(*md);
 
 		// Creates and returns the iterator function (its sole upvalue, the
 		// iterator userdatum, is already on the stack top
-		lua_pushcclosure(L, metadata::LuaIter::iterate, 1);
+		lua_pushcclosure(L, LuaIter::iterate, 1);
+		return 1;
+	}
+	else if (key == "copy")
+	{
+		lua_pushcfunction(L, arkilua_copy);
 		return 1;
 	}
 	else
 	{
 		// Get an arbitrary element by name
-		types::Code code = types::parseCodeName(name);
-		UItem<> item = v.get(code);
+		types::Code code = types::parseCodeName(key);
+		UItem<> item = md->get(code);
 		if (item.defined())
 			item->lua_push(L);
 		else
@@ -658,34 +694,41 @@ int Metadata::lua_lookup(lua_State* L)
 		return 1;
 	}
 }
-static int arkilua_lookup_metadata(lua_State* L)
+
+static int arkilua_gc (lua_State *L)
 {
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Metadata::lua_lookup, 2);
-	return 1;
+	MetadataUD* ud = (MetadataUD*)luaL_checkudata(L, 1, "arki.metadata");
+	if (ud != NULL && ud->collected)
+		delete ud->md;
+	return 0;
 }
-void Metadata::lua_push(lua_State* L) const
+
+void Metadata::lua_push(lua_State* L)
 {
 	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Metadata** s = (const Metadata**)lua_newuserdata(L, sizeof(const Metadata*));
-	*s = this;
+	MetadataUD::create(L, this, false);
 
 	// Set the metatable for the userdata
 	if (luaL_newmetatable(L, "arki.metadata"));
 	{
 		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
 		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_metadata);
-		lua_settable(L, -3);
+		lua_pushcfunction(L, arkilua_lookup);
+		lua_settable(L, -3);  /* metatable.__index = arkilua_lookup */
+
+		lua_pushstring(L, "__gc");
+		lua_pushcfunction(L, arkilua_gc);
+		lua_settable(L, -3);  /* metatable.__gc = arkilua_gc */
 	}
 
 	lua_setmetatable(L, -2);
 }
+
 Metadata* Metadata::lua_check(lua_State* L, int idx)
 {
-	void* ud = luaL_checkudata(L, idx, "arki.metadata");
-	return *(Metadata**)ud;
+	MetadataUD* ud = (MetadataUD*)luaL_checkudata(L, idx, "arki.metadata");
+	if (ud == NULL) return NULL;
+	return ud->md;
 }
 #endif
 

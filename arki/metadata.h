@@ -239,9 +239,7 @@ public:
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin
-	void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Origin LUA object
-	static int lua_lookup(lua_State* L);
+	void lua_push(lua_State* L);
 
 	/**
 	 * Check that the element at \a idx is a Metadata userdata

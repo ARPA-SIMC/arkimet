@@ -52,6 +52,7 @@ EXTRA_DIST = doc/MATCHER \
 	     doc/DATASET \
 	     doc/adding-formats.txt \
 	     conf/qmacro/test0.lua \
+	     conf/qmacro/noopcopy.lua \
              arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dump \

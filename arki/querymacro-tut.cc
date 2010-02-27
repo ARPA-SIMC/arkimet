@@ -102,25 +102,33 @@ void to::test<2>()
 	dataset::DataQuery dq;
 	metadata::Collector mdc;
 	qm.queryData(dq, mdc);
-
 	ensure_equals(mdc.size(), 3u);
-
 	ensure(mdc[0].source.defined());
+	ensure(mdc[1].source.defined());
+	ensure(mdc[2].source.defined());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
 	ensure_equals(s.count(), 3u);
+}
 
-//	lua_getglobal(*qm.L, "count1");
-//	int count1 = lua_tointeger(*qm.L, -1);
-//
-//	lua_getglobal(*qm.L, "count2");
-//	int count2 = lua_tointeger(*qm.L, -1);
-//
-//	lua_pop(*qm.L, 2);
-//
-//	ensure_equals(count1, 3);
-//	ensure_equals(count2, 1);
+// Lua script that simply passes through the queries, making temporary copies of data
+template<> template<>
+void to::test<3>()
+{
+	Querymacro qm(cfg, "noopcopy", "testds");
+
+	dataset::DataQuery dq;
+	metadata::Collector mdc;
+	qm.queryData(dq, mdc);
+	ensure_equals(mdc.size(), 3u);
+	ensure(mdc[0].source.defined());
+	ensure(mdc[1].source.defined());
+	ensure(mdc[2].source.defined());
+
+	Summary s;
+	qm.querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 3u);
 }
 
 }
