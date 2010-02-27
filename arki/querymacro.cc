@@ -35,56 +35,6 @@ using namespace wibble;
 
 namespace arki {
 
-#if 0
-static string arkilua_dumptablekeys(lua_State* L, int index)
-{
-	string res;
-	// Start iteration
-	lua_pushnil(L);
-	while (lua_next(L, index) != 0)
-	{
-		if (!res.empty()) res += ", ";
-		// key is at index -2 and we want it to be a string
-		if (lua_type(L, -2) != LUA_TSTRING)
-			res += "<not a string>";
-		else
-			res += lua_tostring(L, -2);
-		lua_pop(L, 1);
-	}
-	return res;
-}
-
-static void arkilua_dumpstack(lua_State* L, const std::string& title, FILE* out)
-{
-	fprintf(out, "%s\n", title.c_str());
-	for (int i = lua_gettop(L); i; --i)
-	{
-		int t = lua_type(L, i);
-		switch (t)
-		{
-			case LUA_TNIL:
-				fprintf(out, " %d: nil\n", i);
-				break;
-			case LUA_TBOOLEAN:
-				fprintf(out, " %d: %s\n", i, lua_toboolean(L, i) ? "true" : "false");
-				break;
-			case LUA_TNUMBER:
-				fprintf(out, " %d: %g\n", i, lua_tonumber(L, i));
-				break;
-			case LUA_TSTRING:
-				fprintf(out, " %d: '%s'\n", i, lua_tostring(L, i));
-				break;
-			case LUA_TTABLE:
-				fprintf(out, " %d: table: '%s'\n", i, arkilua_dumptablekeys(L, i).c_str());
-				break;
-			default:
-				fprintf(out, " %d: <%s>\n", i, lua_typename(L, t));
-				break;
-		}
-	}
-}
-#endif
-
 static Querymacro* checkqmacro(lua_State *L, int idx = 1)
 {
 	void* ud = luaL_checkudata(L, idx, "arki.querymacro");
@@ -107,44 +57,6 @@ static int arkilua_dataset(lua_State *L)
 	}
 }
 
-static int arkilua_setquerydata(lua_State *L)
-{
-	Querymacro* rd = checkqmacro(L);
-	luaL_argcheck(L, lua_isfunction(L, 2), 2, "`function' expected");
-
-	// Unref the previous function if set
-	if (rd->funcid_querydata != -1)
-	{
-		luaL_unref(L, LUA_REGISTRYINDEX, rd->funcid_querydata);
-		rd->funcid_querydata = -1;
-	}
-
-	// Ref the created function into the registry
-	lua_pushvalue(L, 2);
-	rd->funcid_querydata = luaL_ref(L, LUA_REGISTRYINDEX);
-
-	return 0;
-}
-
-static int arkilua_setquerysummary(lua_State *L)
-{
-	Querymacro* rd = checkqmacro(L);
-	luaL_argcheck(L, lua_isfunction(L, 2), 2, "`function' expected");
-
-	// Unref the previous function if set
-	if (rd->funcid_querysummary != -1)
-	{
-		luaL_unref(L, LUA_REGISTRYINDEX, rd->funcid_querysummary);
-		rd->funcid_querysummary = -1;
-	}
-
-	// Ref the created function into the registry
-	lua_pushvalue(L, 2);
-	rd->funcid_querysummary = luaL_ref(L, LUA_REGISTRYINDEX);
-
-	return 0;
-}
-
 static int arkilua_metadataconsumer(lua_State *L)
 {
 	Metadata* md = Metadata::lua_check(L, 1);
@@ -160,8 +72,6 @@ static int arkilua_metadataconsumer(lua_State *L)
 static const struct luaL_reg querymacrolib [] = {
 	// TODO: add newsummary()
 	{ "dataset", arkilua_dataset },	                // qm:dataset(name) -> dataset
-	{ "setquerydata", arkilua_setquerydata },       // qm:setquerydata(func)
-	{ "setquerysummary", arkilua_setquerysummary }, // qm:setquerysummary(func)
 	{NULL, NULL}
 };
 
@@ -204,8 +114,18 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 		lua_pop(*L, 1);
 		throw wibble::exception::Consistency("parsing " + fname, error);
 	}
-		
-	//arkilua_dumpstack(L, "Afterinit", stderr);
+
+	/// Index the queryData function
+	lua_getglobal(*L, "queryData");
+	if (lua_isfunction(*L, -1))
+		funcid_querydata = luaL_ref(*L, LUA_REGISTRYINDEX);
+
+	/// Index the querySummary function
+	lua_getglobal(*L, "querySummary");
+	if (lua_isfunction(*L, -1))
+		funcid_querysummary = luaL_ref(*L, LUA_REGISTRYINDEX);
+
+	// utils::lua::dumpstack(*L, "Afterinit", cerr);
 }
 
 Querymacro::~Querymacro()
