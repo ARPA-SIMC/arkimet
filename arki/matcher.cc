@@ -415,55 +415,6 @@ std::string Matcher::toString(bool formatted) const
 #endif
 
 #ifdef HAVE_LUA
-#if 0
-static int arkilua_count(lua_State* L)
-{
-	Summary* s = Summary::lua_check(L, 1);
-	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-	lua_pushinteger(L, s->count());
-	return 1;
-}
-
-static int arkilua_size(lua_State* L)
-{
-	Summary* s = Summary::lua_check(L, 1);
-	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-	lua_pushinteger(L, s->size());
-	return 1;
-}
-
-static int arkilua_data(lua_State* L)
-{
-	Summary* s = Summary::lua_check(L, 1);
-	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-	// Return a big table with a dump of the summary inside
-	lua_newtable(L);
-	LuaPusher pusher(L);
-	s->visit(pusher);
-	return 1;
-}
-
-static int arkilua_filter(lua_State* L)
-{
-	// utils::lua::dumpstack(L, "FILTER", cerr);
-	Summary* s = Summary::lua_check(L, 1);
-	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
-	const char* matcher = lua_tostring(L, 2);
-	luaL_argcheck(L, matcher != NULL, 2, "`string' expected");
-	if (lua_gettop(L) > 2)
-	{
-		// s.filter(matcher, s1)
-		Summary* s1 = Summary::lua_check(L, 3);
-		luaL_argcheck(L, s1 != NULL, 3, "`arki.summary' expected");
-		s->filter(Matcher::parse(matcher), *s1);
-		return 0;
-	} else {
-		SummaryUD::create(L, new Summary(s->filter(Matcher::parse(matcher))), true);
-		return 1;
-	}
-}
-#endif
-
 static void arkilua_matchermetatable(lua_State* L);
 
 static int arkilua_new(lua_State* L)
@@ -492,19 +443,37 @@ static int arkilua_gc (lua_State *L)
 	return 0;
 }
 
+static int arkilua_tostring (lua_State *L)
+{
+	Matcher m = Matcher::lua_check(L, 1);
+	lua_pushstring(L, m.toString().c_str());
+	return 1;
+}
+
+static int arkilua_expanded (lua_State *L)
+{
+	Matcher m = Matcher::lua_check(L, 1);
+	lua_pushstring(L, m.toStringExpanded().c_str());
+	return 1;
+}
+
+static int arkilua_match (lua_State *L)
+{
+	Matcher m = Matcher::lua_check(L, 1);
+	Metadata* md = Metadata::lua_check(L, 2);
+	lua_pushboolean(L, m(*md));
+	return 1;
+}
+
 static const struct luaL_reg matcherclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
 };
 
 static const struct luaL_reg matcherlib [] = {
-	/*
-	{ "count", arkilua_count },
-	{ "size", arkilua_size },
-	{ "data", arkilua_data },
-	{ "filter", arkilua_filter },
-	{ "copy", arkilua_copy },
-	*/
+	{ "match", arkilua_match },
+	{ "expanded", arkilua_expanded },
+	{ "__tostring", arkilua_tostring },
 	{ "__gc", arkilua_gc },
 	{ NULL, NULL }
 };
@@ -580,7 +549,6 @@ const matcher::Aliases* MatcherAliasDatabase::get(const std::string& type)
 		return 0;
 
 	const std::map<std::string, matcher::Aliases>& aliasDatabase = matcher::aliasdb->aliasDatabase;
-
 	std::map<std::string, matcher::Aliases>::const_iterator i = aliasDatabase.find(type);
 	if (i == aliasDatabase.end())
 		return 0;
