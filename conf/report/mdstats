@@ -18,7 +18,7 @@ Report = {
 
     -- Process a metadata item
     readMetadata = function (self, md)
-        for name, val in md.iter() do
+        for name, val in md.iter do
             o = self.hash(self, name, val)
             if o ~= nil then
                 count = self.items[o] or 0
@@ -29,7 +29,7 @@ Report = {
 
     -- Process a summary
     readSummary = function (self, s)
-	for idx, entry in ipairs(s.data()) do
+	for idx, entry in ipairs(s:data()) do
 	    item, stats = unpack(entry)
             for name, val in pairs(item) do
                 o = self.hash(self, name, val)

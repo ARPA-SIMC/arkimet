@@ -7,7 +7,7 @@ Report = {
 
     -- Process a metadata item
     readMetadata = function (self, md)
-        dsname = md.assigneddataset()
+        dsname = md.assigneddataset
         if dsname ~= nil then
             dsname = dsname.name()
             if dsname ~= nil then

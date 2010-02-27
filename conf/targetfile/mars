@@ -3,21 +3,21 @@ targetfile["mars"] = function(pattern)
 	-- (tag names are uppercase in the table)
 	local tags = {}
 	tags["DATE"] = function(md)
-		local rt = md.reftime()
+		local rt = md.reftime
 		if rt == nil then return nil end
 		local t = rt.position()
 		if t == nil then return nil end
 		return string.format("%04d%02d%02d", t.year(), t.month(), t.day())
 	end
 	tags["TIME"] = function(md)
-		local rt = md.reftime()
+		local rt = md.reftime
 		if rt == nil then return nil end
 		local t = rt.position()
 		if t == nil then return nil end
 		return string.format("%02d%02d", t.hour(), t.minute())
 	end
 	tags["STEP"] = function(md)
-		local tr = md.timerange()
+		local tr = md.timerange
 		if tr == nil then return nil end
 		pind, u, p1, p2 = tr.grib1()
 		if pind == nil then return nil end

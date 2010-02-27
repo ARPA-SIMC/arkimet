@@ -227,11 +227,11 @@ void to::test<11>()
 
 	tests::Lua test(
 		"function test(s) \n"
-		"  if s.count() ~= 3 then return 'count is '..s.count()..' instead of 3' end \n"
-		"  if s.size() ~= 50 then return 'size is '..s.size()..' instead of 50' end \n"
+		"  if s:count() ~= 3 then return 'count is '..s.count()..' instead of 3' end \n"
+		"  if s:size() ~= 50 then return 'size is '..s.size()..' instead of 50' end \n"
 		"  i = 0 \n"
 		"  items = {} \n"
-		"  for idx, entry in ipairs(s.data()) do \n"
+		"  for idx, entry in ipairs(s:data()) do \n"
 		"    item, stats = unpack(entry) \n"
 		"    for name, val in pairs(item) do \n"
 		"      o = name..':'..tostring(val) \n"

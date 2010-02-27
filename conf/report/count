@@ -11,7 +11,7 @@ Report = {
 
     -- Process a summary
     readSummary = function (self, s)
-    	self.count = self.count + s.count()
+    	self.count = self.count + s:count()
     end,
 
     -- Produce the final report
