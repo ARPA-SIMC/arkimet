@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/querymacro.h>
+#include <arki/runtime/config.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
@@ -43,6 +44,8 @@ struct arki_querymacro_shar {
 
 	arki_querymacro_shar()
 	{
+		runtime::readMatcherAliasDatabase();
+
 		// Cleanup the test datasets
 		system("rm -rf testds");
 		system("mkdir testds");
@@ -136,19 +139,22 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Querymacro qm(cfg, "expa", utils::readFile("misc/erse00.expa"));
+	Querymacro qm(cfg, "expa", 
+			"ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+			"ds:testds. d:@. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+//			utils::readFile("misc/erse00.expa")
+	);
 
 	dataset::DataQuery dq;
 	metadata::Collector mdc;
 	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 3u);
+	ensure_equals(mdc.size(), 2u);
 	ensure(mdc[0].source.defined());
 	ensure(mdc[1].source.defined());
-	ensure(mdc[2].source.defined());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 3u);
+	ensure_equals(s.count(), 2u);
 }
 
 }

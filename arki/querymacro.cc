@@ -79,6 +79,7 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	: cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
 	Summary::lua_openlib(*L);
+	Matcher::lua_openlib(*L);
 
 	// Create the Querymacro object
 	Querymacro** s = (Querymacro**)lua_newuserdata(*L, sizeof(Querymacro*));

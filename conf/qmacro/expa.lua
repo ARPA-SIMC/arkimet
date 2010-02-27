@@ -2,16 +2,33 @@
 -- linepat = "^ds:(.-)%.%s+d:(.-)%.%s+t:(.-)%.%s+s:(.-)%.%s+l:(.-)%.%s+v:(.-)%.$"
 linepat =    "^ds:(.-)%.%s+d:(.-)%.%s+t:(.-)%.%s+s:(.-)%.%s+l:(.-)%.%s+v:(.-)%.%s*"
 
-function addtoset(s, set)
+Set = {}
+
+function Set:new(o)
+	o = o or {}
+	setmetatable(o, self)
+	self.__index = self
+	return o
+end
+
+function Set:parse(s)
+	set = Set:new()
 	for name in s:gmatch("%s*([^,]+)%s*") do
-		set[name] = 1
+		set[name:gsub("/",",")] = true
+	end
+	return set
+end
+
+function Set:addset(set)
+	for k, v in pairs(set) do
+		self[k] = true
 	end
 end
 
-function settoors(set)
+function Set:orexpr()
 	res = ""
 	first = true
-	for k, v in pairs(set) do
+	for k, v in pairs(self) do
 		if first then
 			res = k
 			first = false
@@ -22,47 +39,107 @@ function settoors(set)
 	return res
 end
 
+MatchGrid = {}
+
+function MatchGrid:new(o)
+	o = o or {}
+	setmetatable(o, self)
+	self.__index = self
+	return o
+end
+
+function MatchGrid:add(matcher)
+	self[matcher] = false
+end
+
+function MatchGrid:reset()
+	for k, v in pairs(self) do
+		self[k] = false
+	end
+end
+
+function MatchGrid:acquire(md)
+	found = nil
+	for k, v in pairs(self) do
+		if k:match(md) then
+			found = k
+			break
+		end
+	end
+	if found ~= nil then
+		if self[found] then
+			error("Result conflict for " .. found)
+		else
+			self[found] = md:copy()
+		end
+	end
+end
+
+function MatchGrid:satisfied()
+	for k, v in pairs(self) do
+		if not v then return false end
+	end
+	return true
+end
+
+function MatchGrid:feed(cons)
+	for k, v in pairs(self) do
+		if v then
+			if not cons(v) then break end
+		end
+	end
+end
+
+function buildmatcher(s, l, v)
+	query = {}
+	table.insert(query, "timerange:" .. s:orexpr())
+	table.insert(query, "level:" .. l:orexpr())
+	table.insert(query, "product:" .. v:orexpr())
+	return arki.matcher.new(table.concat(query, "; "))
+end
+
 -- Parse input
-set_ds = {}
-set_s = {}
-set_l = {}
-set_v = {}
+all_ds = Set:new()
+all_s = Set:new()
+all_l = Set:new()
+all_v = Set:new()
+all_matchers = MatchGrid:new()
 for line in data:gmatch("[^\r\n]+") do
 	ds, d, t, s, l, v = line:match(linepat)
 	if ds ~= nil then
-		addtoset(ds, set_ds)
-		addtoset(s, set_s)
-		addtoset(l, set_l)
-		addtoset(v, set_v)
+		ds = Set:parse(ds)
+		s = Set:parse(s)
+		l = Set:parse(l)
+		v = Set:parse(v)
+		all_ds:addset(ds)
+		all_s:addset(s)
+		all_l:addset(l)
+		all_v:addset(v)
+		all_matchers:add(buildmatcher(s, l, v))
 	else
 		print("line not parsed:", line)
 	end
 end
 
 -- Build the merged query
-query = {}
-table.insert(query, "timerange:" .. settoors(set_s))
-table.insert(query, "level:" .. settoors(set_l))
-table.insert(query, "product:" .. settoors(set_v))
-query = table.concat(query, "; ")
+query = buildmatcher(all_s, all_l, all_v)
 -- print (query)
+-- print (query:expanded())
 
 function queryData(q, cons)
-	for k, v in pairs(set_ds) do
+	for k, v in pairs(all_ds) do
 		-- Query dataset storing results
 		ds = qmacro:dataset(k)
+		all_matchers:reset()
 		if ds ~= nil then
-			mds = {}
-			ds:queryData(query, function(md)
-				table.insert(mds, md:copy())
+			ds:queryData({matcher=query}, function(md)
+				all_matchers:acquire(md)
 				return true
 			end)
 
 			-- If results are good, output them and stop here
-			if #mds > 0 then
-				for idx, m in pairs(mds) do
-					if not cons(m) then break end
-				end
+			if all_matchers:satisfied() then
+				all_matchers:feed(cons)
 				break
 			end
 		end
@@ -70,7 +147,7 @@ function queryData(q, cons)
 end
 
 function querySummary(q, sum)
-	for k, v in pairs(set_ds) do
+	for k, v in pairs(all_ds) do
 		-- Query dataset storing results
 		ds = qmacro:dataset(k)
 		if ds ~= nil then
