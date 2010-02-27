@@ -31,6 +31,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/area.h>
 #include <arki/utils/geosdef.h>
+// #include <arki/utils/lua.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -967,6 +968,26 @@ static int arkilua_data(lua_State* L)
 	return 1;
 }
 
+static int arkilua_filter(lua_State* L)
+{
+	// utils::lua::dumpstack(L, "FILTER", cerr);
+	Summary* s = Summary::lua_check(L, 1);
+	luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+	const char* matcher = lua_tostring(L, 2);
+	luaL_argcheck(L, matcher != NULL, 2, "`string' expected");
+	if (lua_gettop(L) > 2)
+	{
+		// s.filter(matcher, s1)
+		Summary* s1 = Summary::lua_check(L, 3);
+		luaL_argcheck(L, s1 != NULL, 3, "`arki.summary' expected");
+		s->filter(Matcher::parse(matcher), *s1);
+		return 0;
+	} else {
+		SummaryUD::create(L, new Summary(s->filter(Matcher::parse(matcher))), true);
+		return 1;
+	}
+}
+
 // Make a new summary
 // Memory management of the copy will be done by Lua
 static int arkilua_new(lua_State* L)
@@ -1048,6 +1069,7 @@ static const struct luaL_reg summarylib [] = {
 	{ "count", arkilua_count },
 	{ "size", arkilua_size },
 	{ "data", arkilua_data },
+	{ "filter", arkilua_filter },
 	{ "copy", arkilua_copy },
 	{ "__gc", arkilua_gc },
 	{ NULL, NULL }

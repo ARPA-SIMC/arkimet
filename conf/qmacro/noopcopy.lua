@@ -16,7 +16,7 @@ end
 function querySummary(q, sum)
 	s = arki.summary.new()
 	ds:querySummary(q, s)
-	s:output(sum)
+	s:filter("", sum)
 end
 
 
