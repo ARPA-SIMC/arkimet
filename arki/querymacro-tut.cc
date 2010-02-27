@@ -25,6 +25,7 @@
 #include <arki/summary.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/scan/grib.h>
+#include <arki/utils.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/metadata.h>
 
@@ -117,6 +118,25 @@ template<> template<>
 void to::test<3>()
 {
 	Querymacro qm(cfg, "noopcopy", "testds");
+
+	dataset::DataQuery dq;
+	metadata::Collector mdc;
+	qm.queryData(dq, mdc);
+	ensure_equals(mdc.size(), 3u);
+	ensure(mdc[0].source.defined());
+	ensure(mdc[1].source.defined());
+	ensure(mdc[2].source.defined());
+
+	Summary s;
+	qm.querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 3u);
+}
+
+// Try "expa" matchers
+template<> template<>
+void to::test<4>()
+{
+	Querymacro qm(cfg, "expa", utils::readFile("misc/erse00.expa"));
 
 	dataset::DataQuery dq;
 	metadata::Collector mdc;

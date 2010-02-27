@@ -45,7 +45,7 @@ dist_fmtconf_DATA = \
 	conf/format/10-product \
 	conf/format/10-timerange
 dist_reportconf_DATA = conf/report/mdstats
-dist_qmconf_DATA = conf/qmacro/noop.lua
+dist_qmconf_DATA = conf/qmacro/noop.lua conf/qmacro/expa.lua
 dist_tfconf_DATA = conf/targetfile/mars
 
 EXTRA_DIST = doc/MATCHER \
@@ -68,6 +68,7 @@ EXTRA_DIST = doc/MATCHER \
 	     test/data/padded.bufr \
 	     test/error/config \
 	     test/dataset1/config \
+	     test/misc/erse00.expa \
 	     test/postproc/say
 
 CLEANFILES = $(man_MANS)
