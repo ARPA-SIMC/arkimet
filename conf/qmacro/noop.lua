@@ -1,5 +1,8 @@
 -- Pass through
 ds = qmacro:dataset(query)
+if ds == nil then
+	error("Dataset " .. query .. " not found")
+end
 
 function queryData(q, cons)
 	ds:queryData(q, function(md)
