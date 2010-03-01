@@ -84,6 +84,7 @@ dist_noinst_HEADERS = \
 		utils/files.h \
 		utils/metadata.h \
 		utils/dataset.h \
+		metadatagrid.h \
 		sort.h \
 		formatter.h \
 		bbox.h \
@@ -185,6 +186,7 @@ libarkimet_la_SOURCES = \
 		dataset/merged.cc \
 		dataset/gridspace.cc \
 		datasetpool.cc \
+		metadatagrid.cc \
 		dispatcher.cc \
 		postprocess.cc \
 		querymacro.cc \
@@ -271,6 +273,7 @@ tests_arki_test_SOURCES = \
 		dataset/merged-tut.cc \
 		dataset/gridspace-tut.cc \
 		dataset-tut.cc \
+		metadatagrid-tut.cc \
 		postprocess-tut.cc \
 		querymacro-tut.cc \
 		datasetpool-tut.cc \
