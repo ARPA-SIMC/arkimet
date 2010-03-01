@@ -27,6 +27,7 @@
 #include <arki/types.h>
 #include <arki/types/time.h>
 #include <arki/matcher.h>
+#include <arki/metadatagrid.h>
 #include <arki/utils/metadata.h>
 #include <string>
 #include <vector>
@@ -72,25 +73,15 @@ struct UnresolvedMatcher : public std::string
  * What is required at the end of the game is to have one and only one metadata
  * item per matrix element.
  */
-struct MDGrid
+struct MDGrid : public MetadataGrid
 {
-	std::map<types::Code, std::vector< Item<> > > soup;
 	std::map<types::Code, std::vector<UnresolvedMatcher> > oneMatchers;
 	std::map<types::Code, std::vector<UnresolvedMatcher> > allMatchers;
 	std::map<types::Code, std::vector<std::string> > extraMatchers;
 	utils::metadata::Collector mds;
-	std::vector<size_t> dim_sizes;
-	size_t maxidx;
 	bool all_local;
 
 	MDGrid();
-
-	// Find the linearised matrix index for md. Returns -1 if md does not
-	// match a point in the matrix
-	int index(const Metadata& md) const;
-
-	// Expand an index in its corresponding set of metadata
-	std::vector< Item<> > expand(size_t index) const;
 
 	/// Ensure mds has been populated
 	void want_mds(ReadonlyDataset& rd);
@@ -118,9 +109,6 @@ struct MDGrid
 
 	// Clear the grid space, starting afresh
 	void clear();
-
-	// Add an item to the grid space
-	void add(const Item<>& item);
 
 	// Add a match expression (to be resolved in one item) to the grid
 	// space
@@ -157,16 +145,6 @@ struct MDGrid
 	 * DATETIME2 (exclusive) every SECONDS seconds.
 	 */
 	void read(std::istream& input, const std::string& fname);
-
-	/**
-	 * Consolidate the soup space: remove duplicates, sort the vectors
-	 *
-	 * This can be called more than once if the space changes, but it
-	 * invalidates the previous linearisation of the matrix space, which
-	 * means that all previously generated indices are to be considered
-	 * invalid.
-	 */
-	void consolidate();
 };
 
 
@@ -255,7 +233,7 @@ public:
 	void dumpExpands(std::ostream& out, const std::string& prefix = std::string());
 
 	/**
-	 * For every item in the soup, dump the number of data that match it.
+	 * For every item in the dims, dump the number of data that match it.
 	 *
 	 * This can be called after validateMatchers() and before validate(),
 	 * to debug what items cause validation to fail.

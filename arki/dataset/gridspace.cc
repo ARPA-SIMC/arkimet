@@ -86,52 +86,15 @@ struct MatcherResolver : public MetadataConsumer
 };
 
 MDGrid::MDGrid()
-	: maxidx(0), all_local(false) {}
-
-int MDGrid::index(const Metadata& md) const
-{
-	int res = 0;
-	// Consolidate the soup space: remove duplicates, sort the vectors
-	size_t dim = 0;
-	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = soup.begin();
-			i != soup.end(); ++i, ++dim)
-	{
-		UItem<> mdi = md.get(i->first);
-		if (!mdi.defined())
-			return -1;
-		vector< Item<> >::const_iterator lb =
-			lower_bound(i->second.begin(), i->second.end(), mdi);
-		if (lb == i->second.end())
-			return -1;
-		if (*lb != mdi)
-			return -1;
-		int idx = lb - i->second.begin();
-		res += idx * dim_sizes[dim];
-	}
-	return res;
-}
-
-std::vector< Item<> > MDGrid::expand(size_t index) const
-{
-	vector< Item<> > res;
-	size_t dim = 0;
-	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = soup.begin();
-			i != soup.end(); ++i, ++dim)
-	{
-		size_t idx = index / dim_sizes[dim];
-		res.push_back(i->second[idx]);
-		index = index % dim_sizes[dim];
-	}
-	return res;
-}
+	: all_local(false) {}
 
 std::string MDGrid::make_query() const
 {
 	set<types::Code> dimensions;
 
 	// Collect the codes as dimensions of relevance
-	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = soup.begin();
-			i != soup.end(); ++i)
+	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = dims.begin();
+			i != dims.end(); ++i)
 		dimensions.insert(i->first);
 	for (map< types::Code, vector<UnresolvedMatcher> >::const_iterator i = oneMatchers.begin();
 			i != oneMatchers.end(); ++i)
@@ -148,7 +111,7 @@ std::string MDGrid::make_query() const
 	{
 		vector<string> ors;
 
-		std::map<types::Code, std::vector< Item<> > >::const_iterator si = soup.find(*i);
+		std::map<types::Code, std::vector< Item<> > >::const_iterator si = dims.find(*i);
 		map< types::Code, vector<UnresolvedMatcher> >::const_iterator oi = oneMatchers.find(*i);
 		map< types::Code, vector<UnresolvedMatcher> >::const_iterator ai = allMatchers.find(*i);
 		map< types::Code, vector<string> >::const_iterator ei = extraMatchers.find(*i);
@@ -166,8 +129,8 @@ std::string MDGrid::make_query() const
 			m = Matcher::parse(types::tag(*i) + ":" +
 				str::join(ors.begin(), ors.end(), " or "));
 
-		// then OR all the soup items that are not matched by the ORed matchers
-		if (si != soup.end())
+		// then OR all the dims items that are not matched by the ORed matchers
+		if (si != dims.end())
 			for (std::vector< Item<> >::const_iterator j = si->second.begin();
 					j != si->second.end(); ++j)
 				if (m.empty() || !m(*j))
@@ -221,7 +184,7 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 
 	find_matcher_candidates();
 
-	// Copy items from solved oneMatchers to the soup
+	// Copy items from solved oneMatchers to the dims
 	for (map< types::Code, vector<UnresolvedMatcher> >::iterator i = oneMatchers.begin();
 			i != oneMatchers.end(); )
 	{
@@ -229,7 +192,7 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 		for (vector<UnresolvedMatcher>::const_iterator j = i->second.begin();
 				j != i->second.end(); ++j)
 			if (j->candidates.size() == 1)
-				soup[i->first].push_back(*j->candidates.begin());
+				dims[i->first].push_back(*j->candidates.begin());
 			else
 				unsolved.push_back(*j);
 		if (unsolved.empty())
@@ -246,7 +209,7 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 		}
 	}
 
-	// Copy items from solved allMatchers to the soup
+	// Copy items from solved allMatchers to the dims
 	for (map< types::Code, vector<UnresolvedMatcher> >::iterator i = allMatchers.begin();
 			i != allMatchers.end(); )
 	{
@@ -256,7 +219,7 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 			if (j->candidates.empty())
 				unsolved.push_back(*j);
 			else
-				std::copy(j->candidates.begin(), j->candidates.end(), back_inserter(soup[i->first]));
+				std::copy(j->candidates.begin(), j->candidates.end(), back_inserter(dims[i->first]));
 		if (unsolved.empty())
 		{
 			map< types::Code, vector<UnresolvedMatcher> >::iterator next = i;
@@ -276,18 +239,11 @@ bool MDGrid::resolveMatchers(ReadonlyDataset& rd)
 
 void MDGrid::clear()
 {
-	soup.clear();
+    MetadataGrid::clear();
 	oneMatchers.clear();
 	allMatchers.clear();
 	mds.clear();
-	dim_sizes.clear();
-	maxidx = 0;
 	all_local = false;
-}
-
-void MDGrid::add(const Item<>& item)
-{
-	soup[item->serialisationCode()].push_back(item);
 }
 
 void MDGrid::addOne(types::Code code, const std::string& expr)
@@ -309,7 +265,7 @@ void MDGrid::addTimeInterval(const Item<types::Time>& begin, const Item<types::T
 	vector< Item<types::reftime::Position> > items = types::reftime::Position::generate(*begin, *end, step);
 	for (vector< Item<types::reftime::Position> >::const_iterator i = items.begin();
 			i != items.end(); ++i)
-		soup[types::TYPE_REFTIME].push_back(*i);
+		dims[types::TYPE_REFTIME].push_back(*i);
 }
 
 void MDGrid::read(std::istream& input, const std::string& fname)
@@ -359,28 +315,6 @@ void MDGrid::read(std::istream& input, const std::string& fname)
 			Item<> item = decodeString(code, rest);
 			add(item);
 		}
-	}
-}
-
-void MDGrid::consolidate()
-{
-	dim_sizes.clear();
-	maxidx = soup.empty() ? 0 : 1;
-	for (std::map<types::Code, std::vector< Item<> > >::iterator i = soup.begin();
-			i != soup.end(); ++i)
-	{
-		// Copy to a set then back to the vector
-		set< Item<> > s;
-		std::copy(i->second.begin(), i->second.end(), inserter(s, s.begin()));
-		i->second.clear();
-		std::copy(s.begin(), s.end(), back_inserter(i->second));
-
-		// Update the number of matrix elements below every dimension
-		for (vector<size_t>::iterator j = dim_sizes.begin();
-				j != dim_sizes.end(); ++j)
-			*j *= i->second.size();
-		dim_sizes.push_back(1);
-		maxidx *= i->second.size();
 	}
 }
 
@@ -525,10 +459,10 @@ void Gridspace::dump(ostream& o, const std::string& prefix) const
 {
 	using namespace gridspace;
 
-	// Dump soup
+	// Dump dims
 	o << prefix << "Resolved metadata:" << endl;
-	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.soup.begin();
-			i != mdgrid.soup.end(); ++i)
+	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.dims.begin();
+			i != mdgrid.dims.end(); ++i)
 	{
 		o << prefix << " " << types::tag(i->first) << ":" << endl;
 		for (std::vector< Item<> >::const_iterator j = i->second.begin();
@@ -653,8 +587,8 @@ struct ItemCountDumper : public MetadataConsumer
 	ItemCountDumper(const gridspace::MDGrid& mdg) : mdg(mdg)
 	{
 		// Initialise all counts at 0
-		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdg.soup.begin();
-				i != mdg.soup.end(); ++i)
+		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdg.dims.begin();
+				i != mdg.dims.end(); ++i)
 			for (std::vector< Item<> >::const_iterator j = i->second.begin();
 					j != i->second.end(); ++j)
 				counts[*j] = 0;
@@ -662,8 +596,8 @@ struct ItemCountDumper : public MetadataConsumer
 
 	virtual bool operator()(Metadata& md)
 	{
-		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdg.soup.begin();
-				i != mdg.soup.end(); ++i)
+		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdg.dims.begin();
+				i != mdg.dims.end(); ++i)
 		{
 			UItem<> item = md.get(i->first);
 			if (!item.defined()) continue;
@@ -687,7 +621,7 @@ void Gridspace::dumpCountPerItem(std::ostream& out, const std::string& prefix)
 			i != icd.counts.end(); ++i)
 	{
 		out << prefix << i->first->tag() << ":" << i->first << ": "
-	            << i->second << "/" << mdgrid.maxidx / mdgrid.soup[i->first->serialisationCode()].size() << endl;
+	            << i->second << "/" << mdgrid.maxidx / mdgrid.dims[i->first->serialisationCode()].size() << endl;
 	}
 }
 
