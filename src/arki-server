@@ -139,8 +139,9 @@ class QueryProcess(object):
 class CleanupFilter:
     def on_end_request(self): 
         # This runs after the request has been completely written out. 
-        proc = cherrypy.request.params["arkiserver:proc"]
-        proc.cleanup()
+        if "arkiserver:proc" in cherrypy.request.params:
+            proc = cherrypy.request.params["arkiserver:proc"]
+            proc.cleanup()
 
 class ArkiDataset:
     _cp_filters = [ CleanupFilter() ]
@@ -254,6 +255,8 @@ class ArkiDownload:
 
 
 class ArkiServer:
+    _cp_filters = [ CleanupFilter() ]
+
     def __init__(self, info):
         self.info = info
         self.baseurl = info.url
