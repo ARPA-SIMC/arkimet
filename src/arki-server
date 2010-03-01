@@ -318,7 +318,7 @@ class ArkiServer:
         """
         Download the results of a query
         """
-        qmacro = kw.get("qmacro", None)
+        qmacro = kw.get("qmacro", "").strip()
         if qmacro is None:
             raise RuntimeError, "Root-level query withouth qmacro argument"
         proc = QueryProcess(owndir = True)
@@ -331,9 +331,28 @@ class ArkiServer:
         fd.close()
         proc.args.append("--file=" + qfname)
         proc.args.append("--config=" + self.info.configfile)
-        return proc.get_output(fname="%s.%s" % (self.name, proc.ext))
+        return proc.get_output(fname="%s.%s" % (qmacro, proc.ext))
     query._cp_config = { 'response.stream': True }
 
+    @cherrypy.expose
+    def summary(self, *args, **kw):
+        """
+        Download the summary of a dataset
+        """
+        qmacro = kw.get("qmacro", "").strip()
+        if qmacro is None:
+            raise RuntimeError, "Root-level query withouth qmacro argument"
+        proc = QueryProcess(owndir = True)
+        proc.add_summary_args(kw)
+        proc.args.append("--qmacro=" + qmacro)
+        qfname = os.path.join(proc.subdir, "query")
+        fd = open(qfname, "w")
+        fd.write(kw.get("query", "").strip())
+        fd.flush()
+        fd.close()
+        proc.args.append("--file=" + qfname)
+        proc.args.append("--config=" + self.info.configfile)
+        return proc.get_output(fname="%s.%s" % (qmacro, proc.ext))
 
 def start_server(info, options, blocking=True):
     cherrypy.config.update({"server.socket_port": info.port})
