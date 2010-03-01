@@ -1,5 +1,5 @@
 -- Pass through
-ds = qmacro:dataset(data)
+ds = qmacro:dataset(query)
 
 function queryData(q, cons)
 	ds:queryData(q, function(md)

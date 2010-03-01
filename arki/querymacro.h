@@ -52,7 +52,7 @@ public:
 	 * @param cfg
 	 *   Configuration used to instantiate datasets
 	 */
-	Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& data);
+	Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& query);
 	virtual ~Querymacro();
 
 	/**

@@ -75,7 +75,7 @@ static const struct luaL_reg querymacrolib [] = {
 	{NULL, NULL}
 };
 
-Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& data)
+Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std::string& query)
 	: cfg(cfg), L(new Lua), funcid_querydata(-1), funcid_querysummary(-1)
 {
 	Summary::lua_openlib(*L);
@@ -103,8 +103,8 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	lua_setglobal(*L, "qmacro");
 
 	// Load the data as a global variable
-	lua_pushstring(*L, data.c_str());
-	lua_setglobal(*L, "data");
+	lua_pushstring(*L, query.c_str());
+	lua_setglobal(*L, "query");
 	
 	/// Load the right qmacro file
 	string dirname = runtime::rcDirName("qmacro", "ARKI_QMACRO");

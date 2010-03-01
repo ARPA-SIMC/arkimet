@@ -104,7 +104,7 @@ all_s = Set:new()
 all_l = Set:new()
 all_v = Set:new()
 all_matchers = MatchGrid:new()
-for line in data:gmatch("[^\r\n]+") do
+for line in query:gmatch("[^\r\n]+") do
 	ds, d, t, s, l, v = line:match(linepat)
 	if ds ~= nil then
 		ds = Set:parse(ds)
