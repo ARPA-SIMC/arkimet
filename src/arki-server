@@ -10,86 +10,137 @@ import subprocess
 from StringIO import StringIO
 import logging
 import fcntl, os, select, signal
+import tempfile, shutil, os.path
 
 def log_access(fmt, *args):
     msg = fmt % args
     cherrypy.log(msg, context='arkiserver', severity=logging.INFO, traceback=False)
 
-def run_subprocess(args, **kw):
-    """
-    Run a process, and generate its output and return value.
-    Every generation returns a couple (id, val).
-    id can be 'O' (stdout), 'E' (stderr) or 'R' (return value).
-    For 'O' and 'E', val is the data that came in from the pipe.
-    For 'R', val is the return value of the process.
-    """
-    proc = subprocess.Popen(args, stdin=open("/dev/null", "r"),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            close_fds=True,
-            **kw)
-    cherrypy.request.params["arkiserver:proc"] = proc
-    fds = [proc.stdout, proc.stderr]
-    prefixes = ["O", "E"]
-    # Set both pipes as non-blocking
-    for fd in fds:
-        fcntl.fcntl(fd, fcntl.F_SETFL, os.O_NONBLOCK)
-    # Multiplex stdout and stderr with different prefixes
-    while len(fds) > 0:
-        s = select.select(fds, (), ())
-        for fd in s[0]:
-            idx = fds.index(fd)
-            buf = fd.read()
-            if len(buf) == 0:
-                fds.pop(idx)
-                prefixes.pop(idx)
-            else:
-                yield prefixes[idx], buf
-    res = proc.wait()
-    yield "R", res
-
-
-def get_output(args, ctype="application/octet-stream", fname=None):
-    # http://www.cherrypy.org/wiki/FileDownload
-
-    #import sys
-    #print >>sys.stderr, ", ".join(["%s->%s"%(a,b) for a,b in kw.iteritems()])
-    #print >>sys.stderr, kw.get("inline", "NOPE"), kw.get("query", "NOPE")
-
-    cherrypy.response.headerMap["Content-Type"] = ctype
-    if fname:
-        cherrypy.response.headerMap["Content-Disposition"] = "attachment; filename=%s" % fname
-    proc = run_subprocess(args, bufsize=-1)
-    errbuf = str()
-    for id, val in proc:
-        if id == 'E':
-            errbuf += val
-        elif id == 'R':
-            if val != 0:
-                cherrypy.response.status = 400
-                return errbuf
-            else:
-                return str()
+class QueryProcess(object):
+    def __init__(self, owndir=False):
+        if owndir:
+            self.subdir = tempfile.mkdtemp()
         else:
-            def stream(start, rest):
-                yield start
-                for id, val in rest:
-                    if id == 'O':
-                        yield val
-            return stream(val, proc)
+            self.subdir = None
+        self.args = []
+        self.ext = "out"
+
+    def cleanup(self):
+        "Cleanup everything after the session ends"
+        res = self.proc.poll()
+        if res == None:
+            log_access("seding SIGTERM to arki-query with pid %d", self.proc.pid);
+            os.kill(self.proc.pid, signal.SIGTERM)
+            self.proc.wait()
+            log_access("arki-query %d terminated.", self.proc.pid);
+        else:
+            log_access("arki-query %d exited with code %d.", self.proc.pid, res);
+
+        if self.subdir:
+            shutil.rmtree(self.subdir)
+
+    def add_query_args(self, kw):
+        "Add arguments from query parameters"
+        self.args = [ARKI_QUERY]
+        style = kw.get("style", "metadata").strip()
+        if style == "metadata":
+            pass
+        elif style == "yaml":
+            self.args.append("--yaml")
+        elif style == "inline":
+            self.args.append("--inline")
+        elif style == "data":
+            self.args.append("--data")
+        elif style == "postprocess":
+            self.args.append("--postproc="+kw.get("command", ""))
+        elif style == "rep_metadata":
+            self.args.append("--report="+kw.get("command", ""))
+        elif style == "rep_summary":
+            self.args.append("--summary")
+            self.args.append("--report="+kw.get("command", ""))
+        if "sort" in kw:
+            self.args.append("--sort=" + kw["sort"]);
+        self.ext = style
+
+    def add_summary_args(self, kw):
+        "Add arguments from summary query parameters"
+        self.args = [ARKI_QUERY, '--summary']
+        styles = dict(yaml = '--yaml')
+        req = kw.get("style", "summary")
+        if req in styles:
+            self.args.append(styles[req])
+        self.ext = req
+
+    def run_subprocess(self, **kw):
+        """
+        Run a process, and generate its output and return value.
+        Every generation returns a couple (id, val).
+        id can be 'O' (stdout), 'E' (stderr) or 'R' (return value).
+        For 'O' and 'E', val is the data that came in from the pipe.
+        For 'R', val is the return value of the process.
+        """
+        log_access("Running %s", repr(self.args));
+        self.proc = subprocess.Popen(self.args, stdin=open("/dev/null", "r"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=True,
+                **kw)
+        cherrypy.request.params["arkiserver:proc"] = self
+        fds = [self.proc.stdout, self.proc.stderr]
+        prefixes = ["O", "E"]
+        # Set both pipes as non-blocking
+        for fd in fds:
+            fcntl.fcntl(fd, fcntl.F_SETFL, os.O_NONBLOCK)
+        # Multiplex stdout and stderr with different prefixes
+        while len(fds) > 0:
+            s = select.select(fds, (), ())
+            for fd in s[0]:
+                idx = fds.index(fd)
+                buf = fd.read()
+                if len(buf) == 0:
+                    fds.pop(idx)
+                    prefixes.pop(idx)
+                else:
+                    yield prefixes[idx], buf
+        res = self.proc.wait()
+        yield "R", res
+
+
+    def get_output(self, ctype="application/octet-stream", fname=None):
+        "Run the subprocess and stream its output"
+        # http://www.cherrypy.org/wiki/FileDownload
+
+        #import sys
+        #print >>sys.stderr, ", ".join(["%s->%s"%(a,b) for a,b in kw.iteritems()])
+        #print >>sys.stderr, kw.get("inline", "NOPE"), kw.get("query", "NOPE")
+
+        cherrypy.response.headerMap["Content-Type"] = ctype
+        if fname:
+            cherrypy.response.headerMap["Content-Disposition"] = "attachment; filename=%s" % fname
+        lines = self.run_subprocess(bufsize=-1)
+        errbuf = str()
+        for id, val in lines:
+            if id == 'E':
+                errbuf += val
+            elif id == 'R':
+                if val != 0:
+                    cherrypy.response.status = 400
+                    return errbuf
+                else:
+                    return str()
+            else:
+                def stream(start, rest):
+                    yield start
+                    for id, val in rest:
+                        if id == 'O':
+                            yield val
+                return stream(val, lines)
 
 class CleanupFilter:
     def on_end_request(self): 
         # This runs after the request has been completely written out. 
         proc = cherrypy.request.params["arkiserver:proc"]
-        res = proc.poll()
-        if res == None:
-            log_access("seding SIGTERM to arki-query with pid %d", proc.pid);
-            os.kill(proc.pid, signal.SIGTERM)
-            proc.wait()
-            log_access("arki-query %d terminated.", proc.pid);
-        else:
-            log_access("arki-query %d exited with code %d.", proc.pid, res);
+        proc.cleanup()
 
 class ArkiDataset:
     _cp_filters = [ CleanupFilter() ]
@@ -122,46 +173,22 @@ class ArkiDataset:
         """
         Download the summary of a dataset
         """
-        args = [ARKI_QUERY, '--summary']
-        styles = dict(yaml = '--yaml')
-        req = kw.get("style", "summary")
-        if req in styles:
-            args.append(styles[req])
-        args.append(kw.get("query", ""))
-        args.append(self.dsconf['path'])
-
-        log_access("Running %s", repr(args));
-        return get_output(args, fname="%s.%s" % (self.name, req))
+        proc = QueryProcess()
+        proc.add_summary_args(kw)
+        proc.args.append(kw.get("query", ""))
+        proc.args.append(self.dsconf['path'])
+        return proc.get_output(fname="%s.%s" % (self.name, proc.ext))
 
     @cherrypy.expose
     def query(self, *args, **kw):
         """
         Download the results of a query
         """
-        args = [ARKI_QUERY]
-        style = kw.get("style", "metadata").strip()
-        if style == "metadata":
-            pass
-        elif style == "yaml":
-            args.append("--yaml")
-        elif style == "inline":
-            args.append("--inline")
-        elif style == "data":
-            args.append("--data")
-        elif style == "postprocess":
-            args.append("--postproc="+kw.get("command", ""))
-        elif style == "rep_metadata":
-            args.append("--report="+kw.get("command", ""))
-        elif style == "rep_summary":
-            args.append("--summary")
-            args.append("--report="+kw.get("command", ""))
-        if "sort" in kw:
-            args.append("--sort=" + kw["sort"]);
-        args.append(kw.get("query", "").strip())
-        args.append(self.dsconf['path'])
-
-        log_access("Running %s", repr(args));
-        return get_output(args, fname="%s.%s" % (self.name, style))
+        proc = QueryProcess()
+        proc.add_query_args(kw)
+        proc.args.append(kw.get("query", "").strip())
+        proc.args.append(self.dsconf['path'])
+        return proc.get_output(fname="%s.%s" % (self.name, proc.ext))
     query._cp_config = { 'response.stream': True }
 
     @cherrypy.expose
@@ -173,7 +200,8 @@ class ArkiDataset:
         """
         Show the summary of a dataset
         """
-        args = [ARKI_QUERY, '--summary', '--yaml', '', self.dsconf['path']]
+        proc = QueryProcess()
+        proc.args = [ARKI_QUERY, '--summary', '--yaml', '', self.dsconf['path']]
 
         def result(output, name):
             yield "<html><body>"
@@ -187,7 +215,7 @@ class ArkiDataset:
             yield "</pre>"
             yield "</body></html>"
 
-        return result(get_output(args, ctype="text/html"), self.name)
+        return result(proc.get_output(ctype="text/html"), self.name)
 
     @cherrypy.expose
     def queryform(self, **kw):
@@ -226,11 +254,12 @@ class ArkiDownload:
 
 
 class ArkiServer:
-    def __init__(self, dsconf, baseurl):
-        self.baseurl = baseurl
-        self.dsconf = dsconf
-        self.download = ArkiDownload(dsconf)
-        self.dataset = ArkiDatasets(dsconf, baseurl)
+    def __init__(self, info):
+        self.info = info
+        self.baseurl = info.url
+        self.dsconf = info.config
+        self.download = ArkiDownload(self.dsconf)
+        self.dataset = ArkiDatasets(self.dsconf, self.baseurl)
 
     @cherrypy.expose
     def config(self):
@@ -254,18 +283,18 @@ class ArkiServer:
         """
         Dump the alias database
         """
-        args = [ARKI_DUMP, '--aliases']
-        log_access("Running %s", repr(args));
-        return get_output(args, ctype="text/plain")
+        proc = QueryProcess()
+        proc.args = [ARKI_DUMP, '--aliases']
+        return proc.get_output(ctype="text/plain")
 
     @cherrypy.expose
     def qexpand(self, query):
         """
         Expand a query
         """
-        args = [ARKI_DUMP, '--query', query]
-        log_access("Running %s", repr(args));
-        return get_output(args, ctype="text/plain")
+        proc = QueryProcess()
+        proc.args = [ARKI_DUMP, '--query', query]
+        return proc.get_output(ctype="text/plain")
 
     @cherrypy.expose
     def index(self):
@@ -284,15 +313,30 @@ class ArkiServer:
 #        """
         return res
 
-def start_server(dsconfig, port, url, options, blocking=True):
-    if url == None:
-        if port == 443:
-            url = "https://localhost"
-        else:
-            url = "http://localhost"
-            if port != 80:
-                url += ":" + str(port)
-    cherrypy.config.update({"server.socket_port": port})
+    @cherrypy.expose
+    def query(self, *args, **kw):
+        """
+        Download the results of a query
+        """
+        qmacro = kw.get("qmacro", None)
+        if qmacro is None:
+            raise RuntimeError, "Root-level query withouth qmacro argument"
+        proc = QueryProcess(owndir = True)
+        proc.add_query_args(kw)
+        proc.args.append("--qmacro=" + qmacro)
+        qfname = os.path.join(proc.subdir, "query")
+        fd = open(qfname, "w")
+        fd.write(kw.get("query", "").strip())
+        fd.flush()
+        fd.close()
+        proc.args.append("--file=" + qfname)
+        proc.args.append("--config=" + self.info.configfile)
+        return proc.get_output(fname="%s.%s" % (self.name, proc.ext))
+    query._cp_config = { 'response.stream': True }
+
+
+def start_server(info, options, blocking=True):
+    cherrypy.config.update({"server.socket_port": info.port})
     cherrypy.config.update({"autoreload.on": False})
     if options.cpconfig:
         cherrypy.config.update(file=options.cpconfig)
@@ -308,7 +352,7 @@ def start_server(dsconfig, port, url, options, blocking=True):
         cherrypy.config.update({"server.logFile": options.errorlog,
                                 "server.log_file": options.errorlog,
                                 "log.error_file": options.errorlog})
-    cherrypy.root = ArkiServer(dsconfig, url)
+    cherrypy.root = ArkiServer(info)
     if not blocking:
         cherrypy.server.start(init_only=True)
         # Wait until HTTP is ready
@@ -316,6 +360,26 @@ def start_server(dsconfig, port, url, options, blocking=True):
     else:
         cherrypy.server.start()
 
+class ServerInfo(object):
+    def __init__(self, configfile, opts = None):
+        self.configfile = configfile
+        self.config = ConfigObj(configfile, list_values = False)
+
+        self.port = 80
+        self.url = None
+
+        if opts:
+            if opts.port != None: self.port = opts.port
+            if opts.url != None: self.url = opts.url
+
+        # Create url if not provided
+        if self.url == None:
+            if self.port == 443:
+                self.url = "https://localhost"
+            else:
+                self.url = "http://localhost"
+                if self.port != 80:
+                    self.url += ":" + str(self.port)
 
 if __name__ == "__main__":
     from optparse import OptionParser
@@ -351,14 +415,14 @@ if __name__ == "__main__":
         print >>sys.stderr, "Usage:", sys.argv[0], "config"
         parser.print_help(sys.stderr)
         sys.exit(1)
-    configpath = args[0]
-    dsconfig = ConfigObj(configpath, list_values = False)
+
+    serverinfo = ServerInfo(args[0], options)
 
     if options.runtest:
-        start_server(dsconfig, options.port, options.url, options, blocking=False)
+        start_server(serverinfo, options, blocking=False)
         import subprocess
         res = subprocess.call(options.runtest, shell=True)
         cherrypy.server.stop()
         sys.exit(res)
     else:
-        start_server(dsconfig, options.port, options.url, options)
+        start_server(serverinfo, options)
