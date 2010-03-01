@@ -83,7 +83,7 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 
 	// Used only if requested
 	inputOpts = createGroup("Options controlling input data");
-	cfgfiles = 0; exprfile = 0;
+	cfgfiles = 0; exprfile = 0; qmacro = 0;
 	files = 0; moveok = moveko = movework = 0;
 	restr = 0;
 
@@ -171,6 +171,8 @@ void CommandLine::addQueryOptions()
 		"if multiple datasets are given, merge their data and output it in"
 		" reference time order.  Note: sorting does not work when using"
 		" --postprocess, --data or --report");
+	qmacro = add<StringOption>("qmacro", 0, "qmacro", "name",
+		"run the given query macro instead of a plain query");
 	restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
 }
@@ -422,7 +424,7 @@ void CommandLine::setupProcessing()
 		if (exprfile->isSet())
 		{
 			// Read the entire file into memory and parse it as an expression
-			query = Matcher::parse(utils::readFile(exprfile->stringValue()));
+			strquery = utils::readFile(exprfile->stringValue());
 		} else {
 			// Read from the first commandline argument
 			if (!hasNext())
@@ -433,7 +435,15 @@ void CommandLine::setupProcessing()
 					throw wibble::exception::BadOption("you need to specify a filter expression");
 			}
 			// And parse it as an expression
-			query = Matcher::parse(next());
+			strquery = next();
+		}
+
+
+		if (qmacro && qmacro->isSet())
+		{
+			query = Matcher::parse("");
+		} else {
+			query = Matcher::parse(strquery);
 		}
 	}
 
@@ -501,7 +511,6 @@ void CommandLine::setupProcessing()
 
 
 	// Validate the query with all the servers
-
 	if (exprfile)
 	{
 		string orig = query.toString();
@@ -543,7 +552,6 @@ void CommandLine::setupProcessing()
 			}
 		}
 	}
-
 
 	// Open output stream
 

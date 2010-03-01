@@ -78,6 +78,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::BoolOption* merged;
 	wibble::commandline::StringOption* restr;
 	wibble::commandline::StringOption* exprfile;
+	wibble::commandline::StringOption* qmacro;
 	wibble::commandline::StringOption* outfile;
 	wibble::commandline::StringOption* targetfile;
 	wibble::commandline::StringOption* postprocess;
@@ -94,6 +95,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 
 	ConfigFile inputInfo;
 	ConfigFile dispatchInfo;
+	std::string strquery;
 	Matcher query;
 	Output* output;
 	DatasetProcessor* processor;

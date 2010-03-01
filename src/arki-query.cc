@@ -25,6 +25,7 @@
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/dataset/merged.h>
+#include <arki/querymacro.h>
 #include <arki/utils.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
@@ -93,6 +94,12 @@ int main(int argc, const char* argv[])
 
 			for (size_t i = 0; i < dscount; ++i)
 				opts.closeSource(datasets[i], all_successful);
+		} else if (opts.qmacro->isSet()) {
+			// Create the query macro
+			Querymacro qm(opts.inputInfo, opts.qmacro->stringValue(), opts.strquery);
+
+			// Perform the query
+			all_successful = opts.processSource(qm, opts.qmacro->stringValue());
 		} else {
 			// Query all the datasets in sequence
 			for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
