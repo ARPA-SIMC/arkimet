@@ -1,5 +1,3 @@
-// FIXME: this is a copy of ondisk: see how to redo it properly
-
 /*
  * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
  *
@@ -20,6 +18,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/dataset.h>
+#include <arki/dataset/http.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
@@ -96,10 +95,71 @@ struct arki_dataset_http_shar {
 };
 TESTGRP(arki_dataset_http);
 
-// Test querying the datasets
+// Test allSameRemoteServer
 template<> template<>
 void to::test<1>()
 {
+	using namespace arki::dataset;
+
+	{
+		string conf =
+			"[test200]\n"
+			"type = remote\n"
+			"path = http://foo.bar/foo/dataset/test200\n"
+			"\n"
+			"[test80]\n"
+			"type = remote\n"
+			"path = http://foo.bar/foo/dataset/test80\n"
+			"\n"
+			"[error]\n"
+			"type = remote\n"
+			"path = http://foo.bar/foo/dataset/error\n";
+		stringstream incfg(conf);
+		ConfigFile cfg;
+		cfg.parse(incfg, "(memory)");
+
+		ensure_equals(HTTP::allSameRemoteServer(cfg), true);
+	}
+
+	{
+		string conf =
+			"[test200]\n"
+			"type = remote\n"
+			"path = http://bar.foo.bar/foo/dataset/test200\n"
+			"\n"
+			"[test80]\n"
+			"type = remote\n"
+			"path = http://foo.bar/foo/dataset/test80\n"
+			"\n"
+			"[error]\n"
+			"type = remote\n"
+			"path = http://foo.bar/foo/dataset/error\n";
+		stringstream incfg(conf);
+		ConfigFile cfg;
+		cfg.parse(incfg, "(memory)");
+
+		ensure_equals(HTTP::allSameRemoteServer(cfg), false);
+	}
+
+	{
+		string conf =
+			"[test200]\n"
+			"type = ondisk2\n"
+			"path = http://foo.bar/foo/dataset/test200\n"
+			"\n"
+			"[test80]\n"
+			"type = remote\n"
+			"path = http://foo.bar/foo/dataset/test80\n"
+			"\n"
+			"[error]\n"
+			"type = remote\n"
+			"path = http://foo.bar/foo/dataset/error\n";
+		stringstream incfg(conf);
+		ConfigFile cfg;
+		cfg.parse(incfg, "(memory)");
+
+		ensure_equals(HTTP::allSameRemoteServer(cfg), false);
+	}
 #if 0
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 	MetadataCollector mdc;

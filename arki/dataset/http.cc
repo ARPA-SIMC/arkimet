@@ -1,7 +1,7 @@
 /*
  * dataset/http - Remote HTTP dataset access
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -397,6 +397,31 @@ void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 	content.buf.seekg(0);
 
 	cfg.parse(content.buf, server);
+}
+
+static string geturlprefix(const std::string& s)
+{
+	// Take until /dataset/
+	size_t pos = s.find("/dataset/");
+	if (pos == string::npos) return string();
+	return s.substr(0, pos);
+}
+
+bool HTTP::allSameRemoteServer(ConfigFile& cfg)
+{
+	string base;
+	for (ConfigFile::section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+	{
+		string type = wibble::str::tolower(i->second->value("type"));
+		if (type != "remote") return false;
+		string urlprefix = geturlprefix(i->second->value("path"));
+		if (urlprefix.empty()) return false;
+		if (base.empty())
+			base = urlprefix;
+		else if (base != urlprefix)
+			return false;
+	}
+	return true;
 }
 
 }
