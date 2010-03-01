@@ -170,10 +170,14 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 	// table["sorter"] = this->sorter
 	lua_pushstring(L, "sorter");
 	if (sorter)
+	{
 		str = sorter->toString();
+		lua_pushstring(L, str.c_str());
+	}
 	else
-		str.clear();
-	lua_pushstring(L, str.c_str());
+	{
+		lua_pushnil(L);
+	}
 	lua_settable(L, idx);
 }
 
@@ -237,8 +241,6 @@ static int arkilua_queryData(lua_State *L)
 	// Unindex the function
 	luaL_unref(L, LUA_REGISTRYINDEX, funcid);
 
-	// lua_pushnumber(L, 5);
-	// return 1;
 	return 0;
 }
 

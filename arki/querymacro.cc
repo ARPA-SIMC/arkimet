@@ -70,7 +70,6 @@ static int arkilua_metadataconsumer(lua_State *L)
 }
 
 static const struct luaL_reg querymacrolib [] = {
-	// TODO: add newsummary()
 	{ "dataset", arkilua_dataset },	                // qm:dataset(name) -> dataset
 	{NULL, NULL}
 };
