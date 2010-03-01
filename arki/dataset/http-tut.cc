@@ -118,7 +118,7 @@ void to::test<1>()
 		ConfigFile cfg;
 		cfg.parse(incfg, "(memory)");
 
-		ensure_equals(HTTP::allSameRemoteServer(cfg), true);
+		ensure_equals(HTTP::allSameRemoteServer(cfg), "http://foo.bar/foo");
 	}
 
 	{
@@ -138,7 +138,7 @@ void to::test<1>()
 		ConfigFile cfg;
 		cfg.parse(incfg, "(memory)");
 
-		ensure_equals(HTTP::allSameRemoteServer(cfg), false);
+		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}
 
 	{
@@ -158,7 +158,7 @@ void to::test<1>()
 		ConfigFile cfg;
 		cfg.parse(incfg, "(memory)");
 
-		ensure_equals(HTTP::allSameRemoteServer(cfg), false);
+		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}
 #if 0
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));

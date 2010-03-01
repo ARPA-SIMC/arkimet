@@ -126,10 +126,13 @@ public:
 	void produce_one_wrong_query();
 
 	/**
-	 * Return true if all the datasets in the given config are remote and
-	 * from the same server
+	 * Check if all the datasets in the given config are remote and from
+	 * the same server.
+	 *
+	 * @return the common server URL, or the empty string if some datasets
+	 * are local or from different servers
 	 */
-	static bool allSameRemoteServer(ConfigFile& cfg);
+	static std::string allSameRemoteServer(ConfigFile& cfg);
 };
 
 }

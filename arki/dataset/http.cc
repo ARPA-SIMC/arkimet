@@ -407,21 +407,21 @@ static string geturlprefix(const std::string& s)
 	return s.substr(0, pos);
 }
 
-bool HTTP::allSameRemoteServer(ConfigFile& cfg)
+std::string HTTP::allSameRemoteServer(ConfigFile& cfg)
 {
 	string base;
 	for (ConfigFile::section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
 	{
 		string type = wibble::str::tolower(i->second->value("type"));
-		if (type != "remote") return false;
+		if (type != "remote") return string();
 		string urlprefix = geturlprefix(i->second->value("path"));
-		if (urlprefix.empty()) return false;
+		if (urlprefix.empty()) return string();
 		if (base.empty())
 			base = urlprefix;
 		else if (base != urlprefix)
-			return false;
+			return string();
 	}
-	return true;
+	return base;
 }
 
 }
