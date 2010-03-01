@@ -87,6 +87,7 @@ class HTTP : public Local
 protected:
 	std::string m_name;
 	std::string m_baseurl;
+	std::string m_qmacro;
 	mutable http::CurlEasy m_curl;
 	bool m_mischief;
 

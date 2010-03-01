@@ -106,7 +106,12 @@ int main(int argc, const char* argv[])
 			} else {
 				// Create the remote query macro
 				nag::verbose("Running query macro %s on %s", opts.qmacro->stringValue().c_str(), baseurl.c_str());
-				ds.reset(new Querymacro(opts.inputInfo, opts.qmacro->stringValue(), opts.strquery));
+				ConfigFile cfg;
+				cfg.setValue("name", opts.qmacro->stringValue());
+				cfg.setValue("type", "remote");
+				cfg.setValue("path", baseurl);
+				cfg.setValue("qmacro", opts.strquery);
+				ds.reset(ReadonlyDataset::create(cfg));
 			}
 
 			// Perform the query

@@ -97,6 +97,7 @@ HTTP::HTTP(const ConfigFile& cfg)
 	this->cfg = cfg.values();
 	m_name = cfg.value("name");
 	m_baseurl = cfg.value("path");
+	m_qmacro = cfg.value("qmacro");
 }
 
 HTTP::~HTTP()
@@ -186,7 +187,11 @@ void HTTP::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(q.matcher.toStringExpanded());
+	string postdata;
+	if (m_qmacro.empty())
+		postdata = "query=" + urlencode(q.matcher.toStringExpanded());
+	else
+		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
 	if (q.sorter)
 	{
 		postdata += ";sort=" + urlencode(q.sorter->toString());
@@ -227,7 +232,11 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	string url = joinpath(m_baseurl, "summary");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(matcher.toStringExpanded());
+	string postdata;
+	if (m_qmacro.empty())
+		postdata = "query=" + urlencode(matcher.toStringExpanded());
+	else
+		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
 	if (m_mischief)
 	{
 		postdata += urlencode(";MISCHIEF");
@@ -265,7 +274,11 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(q.matcher.toStringExpanded());
+	string postdata;
+	if (m_qmacro.empty())
+		postdata = "query=" + urlencode(q.matcher.toStringExpanded());
+	else
+		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
 	if (q.sorter)
 	{
 		postdata += ";sort=" + urlencode(q.sorter->toString());
