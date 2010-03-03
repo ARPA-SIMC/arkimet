@@ -177,6 +177,28 @@ void to::test<4>()
 	ensure_equals(mdc.size(), 1u);
 }
 
+// Test GridQuery
+template<> template<>
+void to::test<5>()
+{
+	dataset::GridQuery gq(*ds);
+
+	Item<types::Reftime> rt = types::reftime::Position::create(types::Time::create(2007, 7, 8, 13, 0, 0));
+
+	// Trivially query only one item
+	gq.add(Matcher::parse("origin:GRIB1,200,0,101;product:GRIB1,200,140,229"));
+	gq.addReftime(rt);
+	gq.consolidate();
+
+	ItemSet is;
+	is.set(types::origin::GRIB1::create(200, 0, 101));
+	is.set(types::product::GRIB1::create(200, 140, 229));
+	is.set(rt);
+
+	ensure(gq.checkAndMark(is));
+	ensure(not gq.checkAndMark(is));
+}
+
 }
 
 // vim:set ts=4 sw=4:

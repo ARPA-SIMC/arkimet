@@ -27,6 +27,7 @@
 #include <arki/types.h>
 #include <arki/types/time.h>
 #include <arki/matcher.h>
+#include <arki/summary.h>
 #include <arki/metadatagrid.h>
 #include <arki/utils/metadata.h>
 #include <string>
@@ -43,6 +44,43 @@ class MetadataConsumer;
 class Matcher;
 
 namespace dataset {
+
+struct GridQuery
+{
+protected:
+    // Dataset we query
+    ReadonlyDataset& ds;
+    // Global summary of ds
+    Summary summary;
+    // Metadata grid of requested items per every reference time
+    MetadataGrid mdgrid;
+    // Itemsets actually requested (not all elements in the grid are needed)
+    std::vector<ItemSet> items;
+    // Reference times requested
+    std::vector< Item<types::Reftime> > reftimes;
+    // Sorted list of mdgrid indices requested per every reference time
+    std::vector<int> wantedidx;
+    // Bitmaps corresponding to wantedidx, of seen items per reftime step
+    std::vector<bool> todolist;
+
+public:
+    GridQuery(ReadonlyDataset& ds);
+
+    /// Add metadata resulting from the matcher expansion
+    void add(const Matcher& m);
+
+    /// Add a reftime
+    void addReftime(const Item<types::Reftime>& rt);
+
+    /**
+     * Done with adding requests, initialise structure to filter results
+     */
+    void consolidate();
+
+    /// Check if a metadata fits in the result, and mark it as seen
+    bool checkAndMark(const ItemSet& md);
+};
+
 
 namespace gridspace {
 

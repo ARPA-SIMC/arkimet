@@ -45,6 +45,71 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
+GridQuery::GridQuery(ReadonlyDataset& ds) : ds(ds)
+{
+	// Initialise with the global summary
+	ds.querySummary(Matcher(), summary);
+}
+
+void GridQuery::add(const Matcher& m)
+{
+	summary.resolveMatcher(m, items);
+}
+
+void GridQuery::addReftime(const Item<types::Reftime>& rt)
+{
+	reftimes.push_back(rt);
+}
+
+void GridQuery::consolidate()
+{
+	mdgrid.consolidate();
+
+	// Sort reftimes
+	std::sort(reftimes.begin(), reftimes.end());
+
+	// Compute wantedidx
+	for (std::vector<ItemSet>::const_iterator i = items.begin(); i != items.end(); ++i)
+		wantedidx.push_back(mdgrid.index(*i));
+	std::sort(wantedidx.begin(), wantedidx.end());
+
+	// Create bitmap of wanted items
+	todolist.resize(wantedidx.size() * reftimes.size(), false);
+}
+
+bool GridQuery::checkAndMark(const ItemSet& md)
+{
+	// Get the reftime field from md
+	UItem<types::Reftime> rt = md.get<types::Reftime>();
+	if (!rt.defined()) return false;
+
+	// Find the wantedidx index
+	int mdidx = mdgrid.index(md);
+	if (mdidx == -1) return false;
+	std::vector<int>::const_iterator i =
+		std::lower_bound(wantedidx.begin(), wantedidx.end(), mdidx);
+	if (*i != mdidx) return false;
+	mdidx = i - wantedidx.begin();
+
+	// Find the reftime index
+	std::vector< Item<types::Reftime> >::const_iterator j =
+		std::lower_bound(reftimes.begin(), reftimes.end(), rt);
+	if (*j != rt) return false;
+	int rtidx = j - reftimes.begin();
+
+	// Find the todolist index
+	int idx = rtidx * wantedidx.size() + mdidx;
+
+	// Reject if already seen
+	if (todolist[idx]) return false;
+
+	// Mark as seen
+	todolist[idx] = true;
+
+	// Accept
+	return true;
+}
+
 namespace gridspace {
 
 struct MatcherResolver : public MetadataConsumer
