@@ -54,6 +54,7 @@ dist_noinst_HEADERS = \
 		matcher/area.h \
 		matcher/ensemble.h \
 		matcher/run.h \
+		itemset.h \
 		metadata.h \
 		scan/any.h \
 		summary.h \
@@ -136,6 +137,7 @@ libarkimet_la_SOURCES = \
 		types/assigneddataset.cc \
 		types/bbox.cc \
 		types/run.cc \
+		itemset.cc \
 		sort.cc \
 		formatter.cc \
 		bbox.cc \
@@ -224,6 +226,7 @@ tests_arki_test_SOURCES = \
 		types/assigneddataset-tut.cc \
 		types/bbox-tut.cc \
 		types/run-tut.cc \
+		itemset-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
 		bbox-tut.cc \

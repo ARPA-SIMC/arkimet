@@ -113,51 +113,6 @@ struct arki_metadata_shar {
 };
 TESTGRP(arki_metadata);
 
-#define ensure_stores(x, y, z) impl_ensure_stores(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))
-template<typename T1, typename T2>
-static inline void impl_ensure_stores(const wibble::tests::Location& loc, Metadata& md, const Item<T1>& val, const Item<T2>& val1)
-{
-	// Make sure that val and val1 have the same serialisation code
-	types::Code code = val->serialisationCode();
-	ensure_equals(val1->serialisationCode(), code);
-
-	// Start empty
-	//inner_ensure_equals(md.size(), 0u);
-
-	// Add one and check that it works
-	md.set(val);
-	//inner_ensure_equals(md.size(), 1u);
-	inner_ensure_equals(md.get(code), val);
-
-	// Add the same again and check that things are still fine
-	md.set(val);
-	//inner_ensure_equals(md.size(), 1u);
-	inner_ensure_equals(md.get(code), val);
-
-	Metadata md1;
-	md1.create();
-	md1.set(val);
-	inner_ensure_equals(md, md1);
-
-	// Add a different one and see that we get it
-	md.set(val1);
-	//inner_ensure_equals(md.size(), 1u);
-	inner_ensure_equals(md.get(code), val1);
-
-	Metadata md2;
-	md2.create();
-	md2.set(val1);
-	inner_ensure_equals(md, md2);
-}
-
-/*
- * It looks like most of these tests are just testing if std::set and
- * std::vector work.
- *
- * I thought about removing them, but then I relised that they're in fact
- * testing if all our metadata items work properly inside stl containers, so I
- * decided to keep them.
- */
 
 // Test sources
 template<> template<>
@@ -171,151 +126,6 @@ void to::test<1>()
 	ensure_equals(blob->filename, "fname");
 	ensure_equals(blob->offset, 1u);
 	ensure_equals(blob->size, 2u);
-}
-
-// Test GRIB1 origins
-template<> template<>
-void to::test<2>()
-{
-	Item<> val(origin::GRIB1::create(1, 2, 3));
-	Item<> val1(origin::GRIB1::create(2, 3, 4));
-	ensure_stores(md, val, val1);
-}
-
-// Test BUFR origins
-template<> template<>
-void to::test<3>()
-{
-	// Add one and check that it works
-	Item<> val(origin::BUFR::create(1, 2));
-	Item<> val1(origin::BUFR::create(2, 3));
-	ensure_stores(md, val, val1);
-}
-
-// Test Position reference times
-template<> template<>
-void to::test<4>()
-{
-	Item<> val(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-	Item<> val1(reftime::Position::create(types::Time::create(2008, 7, 6, 5, 4, 3)));
-	ensure_stores(md, val, val1);
-#if 0
-	// Test PERIOD reference times
-	md.reftime.set(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
-	ensure_equals(md.reftime.style, Reftime::PERIOD);
-
-	Time tbegin;
-	Time tend;
-	md.reftime.get(tbegin, tend);
-	ensure_equals(tbegin, Time(2007, 6, 5, 4, 3, 2));
-	ensure_equals(tend, Time(2008, 7, 6, 5, 4, 3));
-
-// Work-around for a bug in old gcc versions
-#if __GNUC__ && __GNUC__ < 4
-#else
-	// Test open-ended PERIOD reference times
-	md.reftime.set(tbegin, Time());
-	ensure_equals(md.reftime.style, Reftime::PERIOD);
-
-	tbegin = Time();
-	tend = Time();
-	md.reftime.get(tbegin, tend);
-
-	ensure_equals(tbegin, Time(2007, 6, 5, 4, 3, 2));
-	ensure_equals(tend, Time());
-#endif
-#endif
-}
-
-// Test GRIB product info
-template<> template<>
-void to::test<5>()
-{
-	Item<> val(product::GRIB1::create(1, 2, 3));
-	Item<> val1(product::GRIB1::create(2, 3, 4));
-	ensure_stores(md, val, val1);
-}
-
-// Test BUFR product info
-template<> template<>
-void to::test<6>()
-{
-	Item<> val(product::BUFR::create(1, 2, 3));
-	Item<> val1(product::BUFR::create(2, 3, 4));
-	ensure_stores(md, val, val1);
-}
-
-// Test levels
-template<> template<>
-void to::test<7>()
-{
-	Item<> val(level::GRIB1::create(114, 260));
-	Item<> val1(level::GRIB1::create(120, 280));
-	ensure_stores(md, val, val1);
-}
-
-// Test time ranges
-template<> template<>
-void to::test<8>()
-{
-	Item<> val(timerange::GRIB1::create(1, 1, 2, 3));
-	Item<> val1(timerange::GRIB1::create(2, 2, 3, 4));
-	ensure_stores(md, val, val1);
-}
-
-// Test areas
-template<> template<>
-void to::test<9>()
-{
-	ValueBag test1;
-	test1.set("foo", Value::createInteger(5));
-	test1.set("bar", Value::createInteger(5000));
-	test1.set("baz", Value::createInteger(-200));
-	test1.set("moo", Value::createInteger(0x5ffffff));
-	test1.set("pippo", Value::createString("pippo"));
-	test1.set("pluto", Value::createString("12"));
-	test1.set("cippo", Value::createString(""));
-
-	ValueBag test2;
-	test2.set("antani", Value::createInteger(-1));
-	test2.set("blinda", Value::createInteger(0));
-	test2.set("supercazzola", Value::createInteger(-1234567));
-
-	Item<> val(area::GRIB::create(test1));
-	Item<> val1(area::GRIB::create(test2));
-	ensure_stores(md, val, val1);
-}
-
-// Test ensembles
-template<> template<>
-void to::test<10>()
-{
-	ValueBag test1;
-	test1.set("foo", Value::createInteger(5));
-	test1.set("bar", Value::createInteger(5000));
-	test1.set("baz", Value::createInteger(-200));
-	test1.set("moo", Value::createInteger(0x5ffffff));
-	test1.set("pippo", Value::createString("pippo"));
-	test1.set("pluto", Value::createString("12"));
-	test1.set("cippo", Value::createString(""));
-
-	ValueBag test2;
-	test2.set("antani", Value::createInteger(-1));
-	test2.set("blinda", Value::createInteger(0));
-	test2.set("supercazzola", Value::createInteger(-1234567));
-
-	Item<> val(ensemble::GRIB::create(test1));
-	Item<> val1(ensemble::GRIB::create(test2));
-	ensure_stores(md, val, val1);
-}
-
-// Test dataset info
-template<> template<>
-void to::test<11>()
-{
-	Item<> val(AssignedDataset::create("test", "abcdefg"));
-	Item<> val1(AssignedDataset::create("test1", "abcdefgh"));
-	ensure_stores(md, val, val1);
 }
 
 #if 0
@@ -332,7 +142,7 @@ static void dump(const char* name, const std::string& str)
 
 // Test encoding and decoding
 template<> template<>
-void to::test<12>()
+void to::test<2>()
 {
 	md.source = source::Blob::create("grib", "fname", 1, 2);
 	fill(md);
@@ -368,7 +178,7 @@ void to::test<12>()
 
 // Test Yaml encoding and decoding
 template<> template<>
-void to::test<13>()
+void to::test<3>()
 {
 	md.source = source::Blob::create("grib", "fname", 1, 2);
 	fill(md);
@@ -406,7 +216,7 @@ void to::test<13>()
 
 // Test encoding and decoding with inline data
 template<> template<>
-void to::test<14>()
+void to::test<4>()
 {
 	// Here is some data
 	wibble::sys::Buffer buf(4);
@@ -463,7 +273,7 @@ inline bool cmpmd(const Metadata& md1, const Metadata& md2)
 
 // Test metadata stream
 template<> template<>
-void to::test<15>()
+void to::test<5>()
 {
 	// Create test metadata
 	Metadata md1;
@@ -536,7 +346,7 @@ void to::test<15>()
 
 // Ensure that serialisation to binary preserves the deleted flag
 template<> template<>
-void to::test<16>()
+void to::test<6>()
 {
 	md.source = source::Blob::create("grib", "fname", 1, 2);
 	md.deleted = true;
@@ -555,7 +365,7 @@ void to::test<16>()
 
 // Test Lua functions
 template<> template<>
-void to::test<17>()
+void to::test<7>()
 {
 #ifdef HAVE_LUA
 	md.source = source::Blob::create("grib", "fname", 1, 2);
@@ -591,7 +401,7 @@ void to::test<17>()
 
 // Serialise using unix file descriptors
 template<> template<>
-void to::test<18>()
+void to::test<8>()
 {
 	const char* tmpfile = "testmd.tmp";
 	fill(md);

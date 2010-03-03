@@ -58,6 +58,8 @@ static std::string encodeItemList(const ITER& begin, const ITER& end)
 	return res;
 }
 
+
+
 Metadata::~Metadata()
 {
 }
@@ -72,17 +74,9 @@ void Metadata::reset()
 	m_inline_buf = wibble::sys::Buffer();
 }
 
-UItem<> Metadata::get(types::Code code) const
-{
-	const_iterator i = m_vals.find(code);
-	if (i == m_vals.end())
-		return UItem<>();
-	return i->second;
-}
-
 bool Metadata::operator==(const Metadata& m) const
 {
-	if (m_vals != m.m_vals) return false;
+	if (!ItemSet::operator==(m)) return false;
 
 	//if (m_filename != m.m_filename) return false;
 	if (notes != m.notes) return false;
@@ -93,7 +87,7 @@ bool Metadata::operator==(const Metadata& m) const
 
 int Metadata::compare(const Metadata& m) const
 {
-	if (int res = utils::compareMaps(m_vals, m.m_vals)) return res;
+	if (int res = ItemSet::compare(m)) return res;
 	
 	// TODO: replace with source.compare() when ready
 	//if (source < m.source) return -1;
@@ -107,21 +101,6 @@ void Metadata::create()
 {
 	reset();
 	m_filename = "(in memory)";
-}
-
-void Metadata::set(const Item<>& i)
-{
-	types::Code code = i->serialisationCode();
-	std::map< types::Code, Item<> >::iterator it = m_vals.find(code);
-	if (it == m_vals.end())
-		m_vals.insert(make_pair(i->serialisationCode(), i));
-	else
-		it->second = i;
-}
-
-void Metadata::unset(types::Code code)
-{
-	m_vals.erase(code);
 }
 
 bool Metadata::read(istream& in, const std::string& filename, bool readInline)

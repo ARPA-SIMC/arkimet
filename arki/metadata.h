@@ -24,6 +24,7 @@
  */
 
 
+#include <arki/itemset.h>
 #include <arki/types.h>
 #include <arki/types/note.h>
 #include <arki/types/source.h>
@@ -42,19 +43,14 @@ class MetadataConsumer;
 /**
  * Metadata information about a message
  */
-struct Metadata
+struct Metadata : public ItemSet
 {
 protected:
-	std::map< types::Code, Item<> > m_vals;
-
 	std::string m_filename;
 
+	void clear();
+
 public:
-	typedef std::map< types::Code, Item<> >::const_iterator const_iterator;
-
-	const_iterator begin() const { return m_vals.begin(); }
-	const_iterator end() const { return m_vals.end(); }
-
 	bool deleted;
 
 	std::vector< Item<types::Note> > notes;
@@ -73,8 +69,6 @@ protected:
 public:
 	Metadata() {}
 	~Metadata();
-
-	UItem<> get(types::Code code) const;
 
 	/**
 	 * Check that two Metadata contain the same information
@@ -96,16 +90,6 @@ public:
 	 * Create a new, empty in-memory metadata document
 	 */
 	void create();
-
-	/// Set an item
-	void set(const Item<>& i);
-
-	/// Unset an item
-	void unset(types::Code code);
-
-	/// Set an item
-	template<typename T>
-	void set(const Item<T>& i) { set(Item<>(i)); }
 
 	/**
 	 * Read a metadata document from the given input stream.
