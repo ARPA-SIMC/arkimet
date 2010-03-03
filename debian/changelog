@@ -1,3 +1,10 @@
+arkimet (0.35-1) UNRELEASED; urgency=low
+
+  * Added quermacro support to arki-query and arki-server
+  * 'noop' and 'expa' style querymacros
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 03 Mar 2010 13:37:50 +0000
+
 arkimet (0.34-1) UNRELEASED; urgency=low
 
   * Added arki-bufr-prepare to prepare BUFR messages for import.  It annotates
