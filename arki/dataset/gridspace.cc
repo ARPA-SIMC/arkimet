@@ -32,6 +32,7 @@
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
+#include <arki/utils/lua.h>
 #endif
 
 #include <wibble/regexp.h>
@@ -109,6 +110,87 @@ bool GridQuery::checkAndMark(const ItemSet& md)
 	// Accept
 	return true;
 }
+
+#ifdef HAVE_LUA
+typedef utils::lua::ManagedUD<GridQuery> GridQueryUD;
+
+static void arkilua_getmetatable(lua_State* L);
+
+// Make a new summary
+// Memory management of the copy will be done by Lua
+static int arkilua_new(lua_State* L)
+{
+	ReadonlyDataset* ds = ReadonlyDataset::lua_check(L, 1);
+	GridQueryUD::create(L, new GridQuery(*ds), true);
+
+	// Set the summary for the userdata
+	arkilua_getmetatable(L);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+static int arkilua_gc (lua_State *L)
+{
+	GridQueryUD* ud = (GridQueryUD*)luaL_checkudata(L, 1, "arki.gridquery");
+	if (ud != NULL && ud->collected)
+		delete ud->val;
+	return 0;
+}
+
+static int arkilua_tostring (lua_State *L)
+{
+	lua_pushstring(L, "gridquery");
+	return 1;
+}
+
+
+static const struct luaL_reg gridqueryclasslib [] = {
+	{ "new", arkilua_new },
+	{ NULL, NULL }
+};
+
+static const struct luaL_reg gridquerylib [] = {
+	{ "__gc", arkilua_gc },
+	{ "__tostring", arkilua_tostring },
+	{ NULL, NULL }
+};
+
+static void arkilua_getmetatable(lua_State* L)
+{
+	// Set the metatable for the userdata
+	if (luaL_newmetatable(L, "arki.gridquery"));
+	{
+		// If the metatable wasn't previously created, create it now
+		lua_pushstring(L, "__index");
+		lua_pushvalue(L, -2);  /* pushes the metatable */
+		lua_settable(L, -3);  /* metatable.__index = metatable */
+
+		// Load normal methods
+		luaL_register(L, NULL, gridquerylib);
+	}
+}
+
+void GridQuery::lua_push(lua_State* L)
+{
+	GridQueryUD::create(L, this, false);
+	arkilua_getmetatable(L);
+	lua_setmetatable(L, -2);
+}
+
+GridQuery* GridQuery::lua_check(lua_State* L, int idx)
+{
+	GridQueryUD* ud = (GridQueryUD*)luaL_checkudata(L, idx, "arki.gridquery");
+	if (ud) return ud->val;
+	return NULL;
+}
+
+void GridQuery::lua_openlib(lua_State* L)
+{
+	luaL_register(L, "arki.gridquery", gridqueryclasslib);
+}
+#endif
+
 
 namespace gridspace {
 

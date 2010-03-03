@@ -36,6 +36,8 @@
 #include <map>
 #include <iosfwd>
 
+struct lua_State;
+
 namespace arki {
 
 class ConfigFile;
@@ -79,6 +81,23 @@ public:
 
     /// Check if a metadata fits in the result, and mark it as seen
     bool checkAndMark(const ItemSet& md);
+
+
+    // LUA functions
+    /// Push to the LUA stack a userdata to access this Origin
+    void lua_push(lua_State* L);
+
+    /**
+     * Check that the element at \a idx is a GridQuery userdata
+     *
+     * @return the GridQuery element, or 0 if the check failed
+     */
+    static GridQuery* lua_check(lua_State* L, int idx);
+
+    /**
+     * Load summary functions into a lua VM
+     */
+    static void lua_openlib(lua_State* L);
 };
 
 

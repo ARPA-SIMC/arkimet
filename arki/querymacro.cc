@@ -24,6 +24,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
+#include <arki/dataset/gridspace.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
 #include <wibble/exception.h>
@@ -86,6 +87,7 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 {
 	Summary::lua_openlib(*L);
 	Matcher::lua_openlib(*L);
+	dataset::GridQuery::lua_openlib(*L);
 
 	// Create the Querymacro object
 	Querymacro** s = (Querymacro**)lua_newuserdata(*L, sizeof(Querymacro*));
