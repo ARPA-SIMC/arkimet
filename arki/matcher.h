@@ -30,6 +30,8 @@
 #include <map>
 #include <set>
 
+struct lua_State;
+
 namespace arki {
 
 class Metadata;
