@@ -938,6 +938,8 @@ SummaryUD* SummaryUD::create(lua_State* L, Summary* s, bool collected)
 }
 }
 
+static void arkilua_getmetatable(lua_State* L);
+
 static int arkilua_count(lua_State* L)
 {
 	Summary* s = Summary::lua_check(L, 1);
@@ -992,7 +994,7 @@ static int arkilua_new(lua_State* L)
 	SummaryUD::create(L, new Summary, true);
 
 	// Set the summary for the userdata
-	luaL_getmetatable(L, "arki.summary");
+	arkilua_getmetatable(L);
 	lua_setmetatable(L, -2);
 
 	return 1;
@@ -1010,7 +1012,7 @@ static int arkilua_copy(lua_State* L)
 	*(ud->s) = *s;
 
 	// Set the summary for the userdata
-	luaL_getmetatable(L, "arki.summary");
+	arkilua_getmetatable(L);
 	lua_setmetatable(L, -2);
 
 	return 1;
@@ -1023,6 +1025,12 @@ static int arkilua_gc (lua_State *L)
 	if (ud != NULL && ud->collected)
 		delete ud->s;
 	return 0;
+}
+
+static int arkilua_tostring (lua_State *L)
+{
+	lua_pushstring(L, "summary");
+	return 1;
 }
 
 
@@ -1068,13 +1076,12 @@ static const struct luaL_reg summarylib [] = {
 	{ "filter", arkilua_filter },
 	{ "copy", arkilua_copy },
 	{ "__gc", arkilua_gc },
+	{ "__tostring", arkilua_tostring },
 	{ NULL, NULL }
 };
 
-void Summary::lua_push(lua_State* L)
+static void arkilua_getmetatable(lua_State* L)
 {
-	SummaryUD::create(L, this, false);
-
 	// Set the metatable for the userdata
 	if (luaL_newmetatable(L, "arki.summary"));
 	{
@@ -1086,7 +1093,12 @@ void Summary::lua_push(lua_State* L)
 		// Load normal methods
 		luaL_register(L, NULL, summarylib);
 	}
+}
 
+void Summary::lua_push(lua_State* L)
+{
+	SummaryUD::create(L, this, false);
+	arkilua_getmetatable(L);
 	lua_setmetatable(L, -2);
 }
 

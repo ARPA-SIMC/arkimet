@@ -98,6 +98,28 @@ function buildmatcher(s, l, v)
 	return arki.matcher.new(table.concat(query, "; "))
 end
 
+
+DSInfo = {}
+
+function DSInfo:new(o)
+	o = o or {}
+	setmetatable(o, self)
+	self.__index = self
+	return o
+end
+
+function DSInfo:init(dsname)
+	local ds = qmacro:dataset(dsname)
+	self["dataset"] = ds
+	local s = arki.summary.new()
+	ds:querySummary("", s)
+	self["summary"] = s
+end
+
+
+-- Cache of summary information
+dsinfo = {}
+
 -- Parse input
 all_ds = Set:new()
 all_s = Set:new()
@@ -108,6 +130,16 @@ for line in query:gmatch("[^\r\n]+") do
 	ds, d, t, s, l, v = line:match(linepat)
 	if ds ~= nil then
 		ds = Set:parse(ds)
+
+		for name, _ in pairs(ds) do
+			info = dsinfo[name]
+			if dsinfo[name] == nil then
+				info = DSInfo:new()
+				info:init(name)
+				dsinfo[name] = info
+			end
+		end
+
 		s = Set:parse(s)
 		l = Set:parse(l)
 		v = Set:parse(v)

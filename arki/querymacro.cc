@@ -69,8 +69,15 @@ static int arkilua_metadataconsumer(lua_State *L)
 	return 1;
 }
 
+static int arkilua_tostring(lua_State *L)
+{
+	lua_pushstring(L, "querymacro");
+	return 1;
+}
+
 static const struct luaL_reg querymacrolib [] = {
 	{ "dataset", arkilua_dataset },	                // qm:dataset(name) -> dataset
+	{ "__tostring", arkilua_tostring },
 	{NULL, NULL}
 };
 

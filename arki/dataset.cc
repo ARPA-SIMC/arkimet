@@ -255,9 +255,16 @@ static int arkilua_querySummary(lua_State *L)
 	return 0;
 }
 
+static int arkilua_tostring(lua_State *L)
+{
+	lua_pushstring(L, "dataset");
+	return 1;
+}
+
 static const struct luaL_reg readonlydatasetlib [] = {
 	{ "queryData", arkilua_queryData },
 	{ "querySummary", arkilua_querySummary },
+	{ "__tostring", arkilua_tostring },
 	{NULL, NULL}
 };
 
