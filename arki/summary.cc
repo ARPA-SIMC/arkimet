@@ -230,19 +230,23 @@ bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< 
 		if (!visitor(visitmd, arki::Item<Stats>(stats)))
 			return false;
 	} else {
+		const matcher::Implementation* m = 0;
+		if (matcher.m_impl)
+		{
+			const matcher::AND& mand = *matcher.m_impl;
+			// Check with the matcher if we should bother about this child node
+			matcher::AND::const_iterator j = mand.find(mso[scanpos + md.size()]);
+			if (j != mand.end())
+				m = j->second.ptr();
+		}
+
 		for (std::map< UItem<>, refcounted::Pointer<Node> >::const_iterator i = children.begin();
 				i != children.end(); ++i)
 		{
-			if (matcher.m_impl)
+			if (m)
 			{
-				const matcher::AND& mand = *matcher.m_impl;
-				// Check with the matcher if we should bother about this child node
-				matcher::AND::const_iterator j = mand.find(mso[scanpos + md.size()]);
-				if (j != mand.end())
-				{
-					if (!i->first.defined()) continue;
-					if (!j->second->matchItem(i->first)) continue;
-				}
+				if (!i->first.defined()) continue;
+				if (!m->matchItem(i->first)) continue;
 			}
 			visitmd[scanpos + md.size()] = i->first;
 			if (!i->second->visitFiltered(matcher, visitor, visitmd, scanpos + md.size() + 1))
