@@ -66,6 +66,7 @@ struct Area : public types::Type
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Area> decode(const unsigned char* buf, size_t len);
 	static Item<Area> decodeString(const std::string& val);
+	static types::Code typecode();
 
 	/// Return the geographical bounding box
 	const ARKI_GEOS_GEOMETRY* bbox() const;

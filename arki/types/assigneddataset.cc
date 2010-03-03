@@ -78,6 +78,7 @@ bool AssignedDataset::operator==(const Type& o) const
 types::Code AssignedDataset::serialisationCode() const { return CODE; }
 size_t AssignedDataset::serialisationSizeLength() const { return SERSIZELEN; }
 std::string AssignedDataset::tag() const { return TAG; }
+types::Code AssignedDataset::typecode() { return CODE; }
 
 void AssignedDataset::encodeWithoutEnvelope(Encoder& enc) const
 {

@@ -180,6 +180,7 @@ int Timerange::compare(const Timerange& o) const
 types::Code Timerange::serialisationCode() const { return CODE; }
 size_t Timerange::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Timerange::tag() const { return TAG; }
+types::Code Timerange::typecode() { return CODE; }
 
 void Timerange::encodeWithoutEnvelope(Encoder& enc) const
 {

@@ -88,6 +88,7 @@ int Ensemble::compare(const Ensemble& o) const
 types::Code Ensemble::serialisationCode() const { return CODE; }
 size_t Ensemble::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Ensemble::tag() const { return TAG; }
+types::Code Ensemble::typecode() { return CODE; }
 
 void Ensemble::encodeWithoutEnvelope(Encoder& enc) const
 {

@@ -46,6 +46,13 @@ public:
 
 	UItem<> get(types::Code code) const;
 
+	template<typename T>
+	UItem<T> get() const
+	{
+		UItem<> i = get(T::typecode());
+		return i.upcast<T>();
+	};
+
 	/// Set an item
 	void set(const Item<>& i);
 

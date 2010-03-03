@@ -93,6 +93,7 @@ int Reftime::compare(const Reftime& o) const
 types::Code Reftime::serialisationCode() const { return CODE; }
 size_t Reftime::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Reftime::tag() const { return TAG; }
+types::Code Reftime::typecode() { return CODE; }
 
 void Reftime::encodeWithoutEnvelope(Encoder& enc) const
 {

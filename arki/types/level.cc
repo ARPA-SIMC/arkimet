@@ -147,6 +147,7 @@ int Level::compare(const Level& o) const
 types::Code Level::serialisationCode() const { return CODE; }
 size_t Level::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Level::tag() const { return TAG; }
+types::Code Level::typecode() { return CODE; }
 
 void Level::encodeWithoutEnvelope(Encoder& enc) const
 {

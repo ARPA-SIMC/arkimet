@@ -88,9 +88,9 @@ struct arki_itemset_shar {
 };
 TESTGRP(arki_itemset);
 
-#define ensure_stores(x, y, z) impl_ensure_stores(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))
-template<typename T1, typename T2>
-static inline void impl_ensure_stores(const wibble::tests::Location& loc, ItemSet& md, const Item<T1>& val, const Item<T2>& val1)
+#define ensure_stores(T, x, y, z) impl_ensure_stores<T>(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))
+template<typename T>
+static inline void impl_ensure_stores(const wibble::tests::Location& loc, ItemSet& md, const Item<>& val, const Item<>& val1)
 {
 	// Make sure that val and val1 have the same serialisation code
 	types::Code code = val->serialisationCode();
@@ -104,10 +104,20 @@ static inline void impl_ensure_stores(const wibble::tests::Location& loc, ItemSe
 	//inner_ensure_equals(md.size(), 1u);
 	inner_ensure_equals(md.get(code), val);
 
+	// Test template get
+	Item<T> i = md.get<T>();
+	inner_ensure(i.defined());
+	inner_ensure_equals(i, val);
+
 	// Add the same again and check that things are still fine
 	md.set(val);
 	//inner_ensure_equals(md.size(), 1u);
 	inner_ensure_equals(md.get(code), val);
+
+	// Test template get
+	i = md.get<T>();
+	inner_ensure(i.defined());
+	inner_ensure_equals(i, val);
 
 	ItemSet md1;
 	md1.clear();
@@ -140,7 +150,7 @@ void to::test<1>()
 {
 	Item<> val(origin::GRIB1::create(1, 2, 3));
 	Item<> val1(origin::GRIB1::create(2, 3, 4));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Origin, md, val, val1);
 }
 
 // Test BUFR origins
@@ -150,7 +160,7 @@ void to::test<3>()
 	// Add one and check that it works
 	Item<> val(origin::BUFR::create(1, 2));
 	Item<> val1(origin::BUFR::create(2, 3));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Origin, md, val, val1);
 }
 
 // Test Position reference times
@@ -159,7 +169,7 @@ void to::test<4>()
 {
 	Item<> val(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 	Item<> val1(reftime::Position::create(types::Time::create(2008, 7, 6, 5, 4, 3)));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Reftime, md, val, val1);
 #if 0
 	// Test PERIOD reference times
 	md.reftime.set(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
@@ -194,7 +204,7 @@ void to::test<5>()
 {
 	Item<> val(product::GRIB1::create(1, 2, 3));
 	Item<> val1(product::GRIB1::create(2, 3, 4));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Product, md, val, val1);
 }
 
 // Test BUFR product info
@@ -203,7 +213,7 @@ void to::test<6>()
 {
 	Item<> val(product::BUFR::create(1, 2, 3));
 	Item<> val1(product::BUFR::create(2, 3, 4));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Product, md, val, val1);
 }
 
 // Test levels
@@ -212,7 +222,7 @@ void to::test<7>()
 {
 	Item<> val(level::GRIB1::create(114, 260));
 	Item<> val1(level::GRIB1::create(120, 280));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Level, md, val, val1);
 }
 
 // Test time ranges
@@ -221,7 +231,7 @@ void to::test<8>()
 {
 	Item<> val(timerange::GRIB1::create(1, 1, 2, 3));
 	Item<> val1(timerange::GRIB1::create(2, 2, 3, 4));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Timerange, md, val, val1);
 }
 
 // Test areas
@@ -244,7 +254,7 @@ void to::test<9>()
 
 	Item<> val(area::GRIB::create(test1));
 	Item<> val1(area::GRIB::create(test2));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Area, md, val, val1);
 }
 
 // Test ensembles
@@ -267,7 +277,7 @@ void to::test<10>()
 
 	Item<> val(ensemble::GRIB::create(test1));
 	Item<> val1(ensemble::GRIB::create(test2));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::Ensemble, md, val, val1);
 }
 
 // Test dataset info
@@ -276,7 +286,7 @@ void to::test<11>()
 {
 	Item<> val(AssignedDataset::create("test", "abcdefg"));
 	Item<> val1(AssignedDataset::create("test1", "abcdefgh"));
-	ensure_stores(md, val, val1);
+	ensure_stores(types::AssignedDataset, md, val, val1);
 }
 
 

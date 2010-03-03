@@ -99,6 +99,7 @@ int Product::compare(const Product& o) const
 types::Code Product::serialisationCode() const { return CODE; }
 size_t Product::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Product::tag() const { return TAG; }
+types::Code Product::typecode() { return CODE; }
 
 void Product::encodeWithoutEnvelope(Encoder& enc) const
 {

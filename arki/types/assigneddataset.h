@@ -55,6 +55,7 @@ struct AssignedDataset : public types::Type
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<AssignedDataset> decode(const unsigned char* buf, size_t len);
 	static Item<AssignedDataset> decodeString(const std::string& val);
+	static types::Code typecode();
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 
 	// LUA functions

@@ -62,6 +62,7 @@ struct Product : public types::Type
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Product> decode(const unsigned char* buf, size_t len);
 	static Item<Product> decodeString(const std::string& val);
+	static types::Code typecode();
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin

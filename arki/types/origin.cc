@@ -100,6 +100,7 @@ int Origin::compare(const Origin& o) const
 types::Code Origin::serialisationCode() const { return CODE; }
 size_t Origin::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Origin::tag() const { return TAG; }
+types::Code Origin::typecode() { return CODE; }
 
 void Origin::encodeWithoutEnvelope(Encoder& enc) const
 {

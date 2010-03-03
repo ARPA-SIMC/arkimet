@@ -63,6 +63,7 @@ struct Timerange : public types::Type
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Timerange> decode(const unsigned char* buf, size_t len);
 	static Item<Timerange> decodeString(const std::string& val);
+	static types::Code typecode();
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Timerange

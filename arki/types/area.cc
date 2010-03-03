@@ -115,6 +115,7 @@ int Area::compare(const Area& o) const
 types::Code Area::serialisationCode() const { return CODE; }
 size_t Area::serialisationSizeLength() const { return SERSIZELEN; }
 std::string Area::tag() const { return TAG; }
+types::Code Area::typecode() { return CODE; }
 
 void Area::encodeWithoutEnvelope(Encoder& enc) const
 {

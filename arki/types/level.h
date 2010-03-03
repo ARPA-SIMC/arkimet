@@ -63,6 +63,7 @@ struct Level : public types::Type
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Level> decode(const unsigned char* buf, size_t len);
 	static Item<Level> decodeString(const std::string& val);
+	static types::Code typecode();
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Level
