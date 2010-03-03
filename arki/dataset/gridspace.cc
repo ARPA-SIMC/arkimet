@@ -78,6 +78,40 @@ void GridQuery::consolidate()
 	todolist.resize(wantedidx.size() * reftimes.size(), false);
 }
 
+Matcher GridQuery::mergedQuery() const
+{
+	stringstream q;
+	bool added = false;
+
+	map< types::Code, set< Item<> > > byType;
+	for (std::vector<ItemSet>::const_iterator i = items.begin();
+			i != items.end(); ++i)
+		for (ItemSet::const_iterator j = i->begin();
+				j != i->end(); ++j)
+			byType[j->first].insert(j->second);
+
+	for (map< types::Code, set< Item<> > >::const_iterator i = byType.begin();
+			i != byType.end(); ++i)
+	{
+		if (added) q << "; ";
+		q << types::tag(i->first) + ":";
+		for (set< Item<> >::const_iterator j = i->second.begin();
+				j != i->second.end(); ++j)
+		{
+			if (j != i->second.begin())
+				q << " or ";
+			q << (*j)->exactQuery();
+		}
+		added = true;
+	}
+
+	// Add reftimes
+	if (added) q << "; ";
+	q << "reftime:>=" << reftimes.front() << ",<=" << reftimes.back();
+
+	return Matcher::parse(q.str());
+}
+
 bool GridQuery::checkAndMark(const ItemSet& md)
 {
 	// Get the reftime field from md
@@ -159,6 +193,14 @@ static int arkilua_consolidate(lua_State *L)
 	return 0;
 }
 
+static int arkilua_mergedquery(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	Matcher m = gq->mergedQuery();
+	m.lua_push(L);
+	return 1;
+}
+
 static const struct luaL_reg gridqueryclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
@@ -167,6 +209,7 @@ static const struct luaL_reg gridqueryclasslib [] = {
 static const struct luaL_reg gridquerylib [] = {
 	{ "add", arkilua_add },
 	{ "consolidate", arkilua_consolidate },
+	{ "mergedquery", arkilua_mergedquery },
 	{ "__gc", arkilua_gc },
 	{ "__tostring", arkilua_tostring },
 	{ NULL, NULL }

@@ -79,6 +79,12 @@ public:
      */
     void consolidate();
 
+    /**
+     * Build the merged query matching at least all the items accepted by this
+     * GridQuery
+     */
+    Matcher mergedQuery() const;
+
     /// Check if a metadata fits in the result, and mark it as seen
     bool checkAndMark(const ItemSet& md);
 
