@@ -34,7 +34,7 @@ namespace arki {
 MetadataGrid::MetadataGrid()
         : maxidx(0) {}
 
-int MetadataGrid::index(const Metadata& md) const
+int MetadataGrid::index(const ItemSet& md) const
 {
         int res = 0;
         size_t dim = 0;

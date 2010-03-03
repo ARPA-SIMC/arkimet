@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/metadata.h>
+#include <arki/itemset.h>
 #include <string>
 #include <vector>
 #include <set>
@@ -62,7 +62,7 @@ struct MetadataGrid
 
 	// Find the linearised matrix index for md. Returns -1 if md does not
 	// match a point in the matrix
-	int index(const Metadata& md) const;
+	int index(const ItemSet& md) const;
 
 	// Expand an index in its corresponding set of metadata
 	std::vector< Item<> > expand(size_t index) const;
