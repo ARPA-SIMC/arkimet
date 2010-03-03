@@ -40,6 +40,10 @@ public:
 	const_iterator begin() const { return m_vals.begin(); }
 	const_iterator end() const { return m_vals.end(); }
 
+        size_t empty() const { return m_vals.empty(); }
+
+        size_t size() const { return m_vals.size(); }
+
 	UItem<> get(types::Code code) const;
 
 	/// Set an item

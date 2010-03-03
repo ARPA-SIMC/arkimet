@@ -316,6 +316,20 @@ void to::test<13>()
 	ensure_equals(s.size(), 123486u);
 }
 
+// Test resolveMatcher
+template<> template<>
+void to::test<14>()
+{
+	std::vector<ItemSet> res = s.resolveMatcher(Matcher::parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
+
+	ensure_equals(res.size(), 1u);
+
+	ItemSet& is = res[0];
+	ensure_equals(is.size(), 2u);
+	ensure_equals(is.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(1, 2, 3)));
+	ensure_equals(is.get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(1, 2, 3)));
+}
+
 }
 
 // vim:set ts=4 sw=4:

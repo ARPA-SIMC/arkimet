@@ -26,6 +26,7 @@
 
 #include <arki/types.h>
 #include <arki/types/reftime.h>
+#include <arki/itemset.h>
 #include <arki/utils/geosfwd.h>
 #include <map>
 #include <string>
@@ -354,6 +355,15 @@ public:
 	 * metadata bundle.
 	 */
 	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull() const;
+
+	/**
+	 * Return all the unique combination of metadata items that are found
+	 * by the matcher in this summary.
+	 *
+	 * Only metadata items for which there is an expression in matcher are
+	 * present in the output.
+	 */
+	std::vector<ItemSet> resolveMatcher(const Matcher& matcher) const;
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin

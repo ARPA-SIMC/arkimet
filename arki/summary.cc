@@ -1234,6 +1234,50 @@ Item<types::Reftime> Summary::getReferenceTime() const
 	return counter.merger.makeReftime();
 }
 
+namespace {
+struct ResolveVisitor : public summary::Visitor
+{
+	std::vector<types::Code> codes;
+	std::vector<ItemSet> result;
+
+	ResolveVisitor(const Matcher& m)
+	{
+		for (matcher::AND::const_iterator i = m.m_impl->begin(); i != m.m_impl->end(); ++i)
+			codes.push_back(i->first);
+	}
+	virtual ~ResolveVisitor() {}
+	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<summary::Stats>& stats)
+	{
+		ItemSet is;
+		for (std::vector<types::Code>::const_iterator i = codes.begin();
+				i != codes.end(); ++i)
+		{
+			int pos = posForCode(*i);
+			if (!md[pos].defined()) return true;
+			is.set(md[pos]);
+		}
+		// Insertion sort, as we expect to have lots of duplicates
+		std::vector<ItemSet>::iterator i = std::lower_bound(result.begin(), result.end(), is);
+		if (i == result.end())
+			result.push_back(is);
+		else if (*i != is)
+			result.insert(i, is);
+
+		return true;
+	}
+};
+}
+
+std::vector<ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
+{
+	if (matcher.empty()) return std::vector<ItemSet>();
+
+	ResolveVisitor visitor(matcher);
+	visitFiltered(matcher, visitor);
+
+	return visitor.result;
+}
+
 std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull() const
 {
 #ifdef HAVE_GEOS
