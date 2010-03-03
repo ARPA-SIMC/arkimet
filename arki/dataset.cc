@@ -184,39 +184,6 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 }
 
 
-namespace {
-struct LuaMetadataConsumer : public MetadataConsumer
-{
-	lua_State* L;
-	int funcid;
-
-	LuaMetadataConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
-	virtual ~LuaMetadataConsumer() {}
-
-	virtual bool operator()(Metadata& md)
-	{
-		// Get the function
-		lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
-
-		// Push the metadata
-		md.lua_push(L);
-
-		// Call the function
-		if (lua_pcall(L, 1, 1, 0))
-		{
-			string error = lua_tostring(L, -1);
-			lua_pop(L, 1);
-			throw wibble::exception::Consistency("running metadata consumer function", error);
-		}
-
-		int res = lua_toboolean(L, -1);
-		lua_pop(L, 1);
-		return res;
-	}
-};
-
-}
-
 static int arkilua_queryData(lua_State *L)
 {
 	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
@@ -228,18 +195,11 @@ static int arkilua_queryData(lua_State *L)
 	dataset::DataQuery dq;
 	auto_ptr<sort::Compare> compare = dq.lua_from_table(L, 2);
 
-	// Ref the created function into the registry
-	lua_pushvalue(L, 3);
-	int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
-
-	// Create a consumer using the function
-	LuaMetadataConsumer mdc(L, funcid);
+	// Create metadata consumer proxy
+	std::auto_ptr<LuaMetadataConsumer> mdc = LuaMetadataConsumer::lua_check(L, 3);
 
 	// Run the query
-	rd->queryData(dq, mdc);
-	
-	// Unindex the function
-	luaL_unref(L, LUA_REGISTRYINDEX, funcid);
+	rd->queryData(dq, *mdc);
 
 	return 0;
 }

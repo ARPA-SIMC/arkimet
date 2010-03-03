@@ -30,6 +30,7 @@
 #include <wibble/sys/buffer.h>
 #include <set>
 #include <string>
+#include <memory>
 
 struct lua_State;
 
@@ -264,7 +265,24 @@ struct MetadataConsumer
 	 * sent any more metadata.
 	 */
 	virtual bool operator()(Metadata&) = 0;
+
+	/// Push to the LUA stack a userdata to access this MetadataConsumer
+	void lua_push(lua_State* L);
 };
+
+// Metadata consumer that passes the metadata to a Lua function
+struct LuaMetadataConsumer : public MetadataConsumer
+{
+	lua_State* L;
+	int funcid;
+
+	LuaMetadataConsumer(lua_State* L, int funcid);
+	virtual ~LuaMetadataConsumer();
+	virtual bool operator()(Metadata&);
+
+	static std::auto_ptr<LuaMetadataConsumer> lua_check(lua_State* L, int idx);
+};
+
 
 /**
  * Turn a stream of bytes into a stream of metadata

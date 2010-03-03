@@ -728,6 +728,47 @@ Metadata* Metadata::lua_check(lua_State* L, int idx)
 	if (ud == NULL) return NULL;
 	return ud->md;
 }
+
+LuaMetadataConsumer::LuaMetadataConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
+LuaMetadataConsumer::~LuaMetadataConsumer()
+{
+	// Unindex the function
+	luaL_unref(L, LUA_REGISTRYINDEX, funcid);
+}
+
+bool LuaMetadataConsumer::operator()(Metadata& md)
+{
+	// Get the function
+	lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
+
+	// Push the metadata
+	md.lua_push(L);
+
+	// Call the function
+	if (lua_pcall(L, 1, 1, 0))
+	{
+		string error = lua_tostring(L, -1);
+		lua_pop(L, 1);
+		throw wibble::exception::Consistency("running metadata consumer function", error);
+	}
+
+	int res = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	return res;
+}
+
+auto_ptr<LuaMetadataConsumer> LuaMetadataConsumer::lua_check(lua_State* L, int idx)
+{
+	luaL_checktype(L, idx, LUA_TFUNCTION);
+
+	// Ref the created function into the registry
+	lua_pushvalue(L, idx);
+	int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	// Create a consumer using the function
+	return auto_ptr<LuaMetadataConsumer>(new LuaMetadataConsumer(L, funcid));
+}
+
 #endif
 
 
