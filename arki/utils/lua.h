@@ -74,6 +74,22 @@ struct Lua
 namespace utils {
 namespace lua {
 
+template<typename T>
+struct ManagedUD
+{
+	T* val;
+	bool collected;
+
+	static ManagedUD<T>* create(lua_State* L, T* val, bool collected = false)
+	{
+		ManagedUD<T>* ud = (ManagedUD<T>*)lua_newuserdata(L, sizeof(ManagedUD<T>));
+		ud->val = val;
+		ud->collected = collected;
+		return ud;
+	}
+};
+
+
 /**
  * Replace the 'print' function inside \a L so that all its output goes to the
  * given ostream.
