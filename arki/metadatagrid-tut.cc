@@ -46,21 +46,21 @@ TESTGRP(arki_dataset_metadatagrid);
 template<> template<>
 void to::test<1>()
 {
-    // Create a 2x2 metadata grid
-    MetadataGrid mdg;
+	// Create a 2x2 metadata grid
+	MetadataGrid mdg;
 	mdg.add(types::origin::GRIB1::create(200, 0, 101));
 	mdg.add(types::origin::GRIB1::create(200, 0, 102));
 	mdg.add(types::product::GRIB1::create(200, 140, 229));
 	mdg.add(types::product::GRIB1::create(200, 140, 230));
-    mdg.consolidate();
+	mdg.consolidate();
 
-    ensure_equals(mdg.maxidx, 4u);
+	ensure_equals(mdg.maxidx, 4u);
 
-    Metadata md;
-    md.set(types::origin::GRIB1::create(200, 0, 101));
+	Metadata md;
+	md.set(types::origin::GRIB1::create(200, 0, 101));
 	md.set(types::product::GRIB1::create(200, 140, 229));
 
-    ensure_equals(mdg.index(md), 0);
+	ensure_equals(mdg.index(md), 0);
 }
 
 }

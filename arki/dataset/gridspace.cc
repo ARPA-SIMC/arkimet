@@ -57,17 +57,20 @@ void GridQuery::add(const Matcher& m)
 	summary.resolveMatcher(m, items);
 }
 
-void GridQuery::addReftime(const Item<types::Reftime>& rt)
+void GridQuery::addTime(const Item<types::Time>& rt)
 {
-	reftimes.push_back(rt);
+	times.push_back(rt);
 }
 
 void GridQuery::consolidate()
 {
 	mdgrid.consolidate();
 
-	// Sort reftimes
-	std::sort(reftimes.begin(), reftimes.end());
+	if (times.empty())
+		throw wibble::exception::Consistency("consolidating GridQuery", "no times have been requested");
+
+	// Sort times
+	std::sort(times.begin(), times.end());
 
 	// Compute wantedidx
 	for (std::vector<ItemSet>::const_iterator i = items.begin(); i != items.end(); ++i)
@@ -75,7 +78,7 @@ void GridQuery::consolidate()
 	std::sort(wantedidx.begin(), wantedidx.end());
 
 	// Create bitmap of wanted items
-	todolist.resize(wantedidx.size() * reftimes.size(), false);
+	todolist.resize(wantedidx.size() * times.size(), false);
 }
 
 Matcher GridQuery::mergedQuery() const
@@ -105,9 +108,9 @@ Matcher GridQuery::mergedQuery() const
 		added = true;
 	}
 
-	// Add reftimes
+	// Add times
 	if (added) q << "; ";
-	q << "reftime:>=" << reftimes.front() << ",<=" << reftimes.back();
+	q << "reftime:>=" << times.front() << ",<=" << times.back();
 
 	return Matcher::parse(q.str());
 }
@@ -115,7 +118,7 @@ Matcher GridQuery::mergedQuery() const
 bool GridQuery::checkAndMark(const ItemSet& md)
 {
 	// Get the reftime field from md
-	UItem<types::Reftime> rt = md.get<types::Reftime>();
+	UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
 	if (!rt.defined()) return false;
 
 	// Find the wantedidx index
@@ -127,10 +130,10 @@ bool GridQuery::checkAndMark(const ItemSet& md)
 	mdidx = i - wantedidx.begin();
 
 	// Find the reftime index
-	std::vector< Item<types::Reftime> >::const_iterator j =
-		std::lower_bound(reftimes.begin(), reftimes.end(), rt);
-	if (*j != rt) return false;
-	int rtidx = j - reftimes.begin();
+	std::vector< Item<types::Time> >::const_iterator j =
+		std::lower_bound(times.begin(), times.end(), rt->time);
+	if (*j != rt->time) return false;
+	int rtidx = j - times.begin();
 
 	// Find the todolist index
 	int idx = rtidx * wantedidx.size() + mdidx;
@@ -186,6 +189,14 @@ static int arkilua_add(lua_State *L)
 	return 0;
 }
 
+static int arkilua_addtime(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	const char* timestr luaL_checkstring(L, 2);
+	gq->addTime(types::Time::createFromSQL(timestr));
+	return 0;
+}
+
 static int arkilua_consolidate(lua_State *L)
 {
 	GridQuery* gq = GridQuery::lua_check(L, 1);
@@ -208,6 +219,7 @@ static const struct luaL_reg gridqueryclasslib [] = {
 
 static const struct luaL_reg gridquerylib [] = {
 	{ "add", arkilua_add },
+	{ "addtime", arkilua_addtime },
 	{ "consolidate", arkilua_consolidate },
 	{ "mergedquery", arkilua_mergedquery },
 	{ "__gc", arkilua_gc },

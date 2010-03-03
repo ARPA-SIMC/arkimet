@@ -59,7 +59,7 @@ protected:
     // Itemsets actually requested (not all elements in the grid are needed)
     std::vector<ItemSet> items;
     // Reference times requested
-    std::vector< Item<types::Reftime> > reftimes;
+    std::vector< Item<types::Time> > times;
     // Sorted list of mdgrid indices requested per every reference time
     std::vector<int> wantedidx;
     // Bitmaps corresponding to wantedidx, of seen items per reftime step
@@ -72,7 +72,7 @@ public:
     void add(const Matcher& m);
 
     /// Add a reftime
-    void addReftime(const Item<types::Reftime>& rt);
+    void addTime(const Item<types::Time>& rt);
 
     /**
      * Done with adding requests, initialise structure to filter results
