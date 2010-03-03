@@ -335,6 +335,14 @@ public:
 	bool visit(summary::Visitor& visitor) const;
 
 	/**
+	 * Visit all the contents of this summary
+	 *
+	 * Returns true if the visit was completed, false if the visitor
+	 * aborted the visit.
+	 */
+	bool visitFiltered(const Matcher& matcher, summary::Visitor& visitor) const;
+
+	/**
 	 * Get the reference time interval covered by the metadata bundle.
 	 *
 	 * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".

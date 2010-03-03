@@ -1406,6 +1406,15 @@ bool Summary::visit(summary::Visitor& visitor) const
 	return root->visit(visitor, visitmd);
 }
 
+bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) const
+{
+	if (!root.ptr()) return true;
+
+	summary::buildItemMsoMap();
+	vector< UItem<> > visitmd(summary::msoSize, UItem<>());
+	return root->visitFiltered(matcher, visitor, visitmd);
+}
+
 void Summary::writeYaml(std::ostream& out, const Formatter* f) const
 {
 	if (!root.ptr()) return;
