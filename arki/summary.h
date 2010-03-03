@@ -365,6 +365,14 @@ public:
 	 */
 	std::vector<ItemSet> resolveMatcher(const Matcher& matcher) const;
 
+	/**
+	 * Return all the unique combination of metadata items that are found
+	 * by the matcher in this summary.
+	 *
+	 * Metadata are added to res, sorted and avoiding duplicated.
+	 */
+	void resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const;
+
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin
 	void lua_push(lua_State* L);

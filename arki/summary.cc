@@ -1237,10 +1237,10 @@ Item<types::Reftime> Summary::getReferenceTime() const
 namespace {
 struct ResolveVisitor : public summary::Visitor
 {
+	std::vector<ItemSet>& result;
 	std::vector<types::Code> codes;
-	std::vector<ItemSet> result;
 
-	ResolveVisitor(const Matcher& m)
+	ResolveVisitor(std::vector<ItemSet>& result, const Matcher& m) : result(result)
 	{
 		for (matcher::AND::const_iterator i = m.m_impl->begin(); i != m.m_impl->end(); ++i)
 			codes.push_back(i->first);
@@ -1272,10 +1272,19 @@ std::vector<ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
 {
 	if (matcher.empty()) return std::vector<ItemSet>();
 
-	ResolveVisitor visitor(matcher);
+	std::vector<ItemSet> result;
+	ResolveVisitor visitor(result, matcher);
 	visitFiltered(matcher, visitor);
 
-	return visitor.result;
+	return result;
+}
+
+void Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const
+{
+	if (matcher.empty()) return;
+
+	ResolveVisitor visitor(res, matcher);
+	visitFiltered(matcher, visitor);
 }
 
 std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull() const
