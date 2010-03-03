@@ -39,57 +39,6 @@ function Set:orexpr()
 	return res
 end
 
-MatchGrid = {}
-
-function MatchGrid:new(o)
-	o = o or {}
-	setmetatable(o, self)
-	self.__index = self
-	return o
-end
-
-function MatchGrid:add(matcher)
-	self[matcher] = false
-end
-
-function MatchGrid:reset()
-	for k, v in pairs(self) do
-		self[k] = false
-	end
-end
-
-function MatchGrid:acquire(md)
-	found = nil
-	for k, v in pairs(self) do
-		if k:match(md) then
-			found = k
-			break
-		end
-	end
-	if found ~= nil then
-		if self[found] then
-			error("Result conflict for " .. found)
-		else
-			self[found] = md:copy()
-		end
-	end
-end
-
-function MatchGrid:satisfied()
-	for k, v in pairs(self) do
-		if not v then return false end
-	end
-	return true
-end
-
-function MatchGrid:feed(cons)
-	for k, v in pairs(self) do
-		if v then
-			if not cons(v) then break end
-		end
-	end
-end
-
 function buildmatcher(s, l, v)
 	query = {}
 	table.insert(query, "timerange:" .. s:orexpr())
@@ -125,11 +74,11 @@ all_ds = Set:new()
 all_s = Set:new()
 all_l = Set:new()
 all_v = Set:new()
-all_matchers = MatchGrid:new()
 for line in query:gmatch("[^\r\n]+") do
 	ds, d, t, s, l, v = line:match(linepat)
 	if ds ~= nil then
 		ds = Set:parse(ds)
+		d = Set:parse(d)
 		s = Set:parse(s)
 		l = Set:parse(l)
 		v = Set:parse(v)
@@ -144,64 +93,71 @@ for line in query:gmatch("[^\r\n]+") do
 			q = buildmatcher(s, l, v)
 			-- print("ADD", name, q)
 			info.gq:add(q)
-			-- TODO: resolve s, l and v using info's summary
-			--        - build (s + l + v) matcher
-			--        - get all matching s, l, v triplets in the summary
-			--        - add them to the metadata grid
+
+			-- Add times
+			for k, _ in pairs(d) do
+				if k == "@" then
+					-- Expand '@' in yesterday
+					yesterday = os.time() - (3600*24)
+					k = os.date("%Y-%m-%d 00:00:00", yesterday)
+				end
+				info.gq:addtime(k)
+			end
 		end
 
 		all_ds:addset(ds)
 		all_s:addset(s)
 		all_l:addset(l)
 		all_v:addset(v)
-		all_matchers:add(buildmatcher(s, l, v))
 	else
 		print("line not parsed:", line)
 	end
 end
 
 -- Consolidate the query grids
-for _, v in pairs(dsinfo) do
-	v.gq:consolidate()
+for name, info in pairs(dsinfo) do
+	info.gq:consolidate()
+	-- print ("MQ", name, info.gq:mergedquery())
 end
 
--- Build the merged query
-query = buildmatcher(all_s, all_l, all_v)
--- print (query)
--- print (query:expanded())
-
 function queryData(q, cons)
-	for k, v in pairs(all_ds) do
-		-- Query dataset storing results
-		ds = qmacro:dataset(k)
-		all_matchers:reset()
-		if ds ~= nil then
-			ds:queryData({matcher=query}, function(md)
-				all_matchers:acquire(md)
-				return true
-			end)
+	for name, info in pairs(dsinfo) do
+		-- Build the merged query
+		query = info.gq:mergedquery()
+		-- print (query)
+		-- print (query:expanded())
 
-			-- If results are good, output them and stop here
-			if all_matchers:satisfied() then
-				all_matchers:feed(cons)
-				break
+		-- Query dataset storing results
+		mds = {}
+		info.dataset:queryData({matcher=query}, function(md)
+			if info.gq:checkandmark(md) then
+				table.insert(mds, md:copy())
 			end
+			return true
+		end)
+
+		if info.gq:satisfied() then
+			for idx, md in ipairs(mds) do
+				cons(md)
+			end
+		else
+			print("Master query: " .. tostring(query))
+			print(info.gq:dump())
+			error("Query cannot be satisfied on dataset " .. name)
 		end
 	end
 end
 
 function querySummary(q, sum)
-	for k, v in pairs(all_ds) do
-		-- Query dataset storing results
-		ds = qmacro:dataset(k)
-		if ds ~= nil then
-			s = arki.summary.new()
-			ds:querySummary(query, s)
+	s = arki.summary.new()
+	for name, info in pairs(dsinfo) do
+		-- Build the merged query
+		query = info.gq:mergedquery()
+		-- print (query)
+		-- print (query:expanded())
 
-			if s:count() > 0 then
-				s:filter("", sum)
-				break
-			end
-		end
+		-- Query dataset merging all summaries
+		info.dataset:querySummary(query, s)
 	end
+	s:filter("", sum)
 end

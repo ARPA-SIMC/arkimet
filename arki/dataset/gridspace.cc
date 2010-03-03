@@ -59,11 +59,21 @@ void GridQuery::add(const Matcher& m)
 
 void GridQuery::addTime(const Item<types::Time>& rt)
 {
-	times.push_back(rt);
+	vector< Item<types::Time> >::iterator lb =
+		lower_bound(times.begin(), times.end(), rt);
+	if (lb == times.end())
+		times.push_back(rt);
+	else if (*lb != rt)
+		times.insert(lb, rt);
 }
 
 void GridQuery::consolidate()
 {
+	// Feed all items into mdgrid
+	for (std::vector<ItemSet>::const_iterator i = items.begin();
+			i != items.end(); ++i)
+		mdgrid.add(*i);
+
 	mdgrid.consolidate();
 
 	if (times.empty())
@@ -148,6 +158,82 @@ bool GridQuery::checkAndMark(const ItemSet& md)
 	return true;
 }
 
+bool GridQuery::satisfied() const
+{
+	for (std::vector<bool>::const_iterator i = todolist.begin();
+			i != todolist.end(); ++i)
+		if (!*i) return false;
+	return true;
+}
+
+static void dumpItemset(std::ostream& out, const ItemSet& is)
+{
+	for (ItemSet::const_iterator i = is.begin(); i != is.end(); ++i)
+	{
+		if (i != is.begin())
+			out << "; ";
+		out << types::tag(i->first) << ":" << i->second;
+	}
+}
+
+void GridQuery::dump(std::ostream& out) const
+{
+	if (todolist.empty())
+	{
+		// Not consolidated
+		out << "GridQuery still being build:" << endl;
+		out << "  Grid dimensions so far:" << endl;
+		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.dims.begin();
+				i != mdgrid.dims.end(); ++i)
+			out << "    " << types::tag(i->first) << ": "
+		            << str::join(i->second.begin(), i->second.end(), ", ")
+			    << endl;
+		out << "  Combinations so far:" << endl;
+		for (std::vector<ItemSet>::const_iterator i = items.begin();
+				i != items.end(); ++i)
+		{
+			out << "    ";
+			dumpItemset(out, *i);
+		}
+		out << "  Times so far:" << endl;
+		for (std::vector< Item<types::Time> >::const_iterator i = times.begin();
+				i != times.end(); ++i)
+			out << "    " << *i << endl;
+	} else {
+		// Consolidated
+		out << "GridQuery fully built:" << endl;
+		out << "  Wanted indices:" << endl;
+		for (size_t i = 0; i < wantedidx.size(); ++i)
+		{
+			std::vector< Item<> > items = mdgrid.expand(wantedidx[i]);
+			if (i == 0)
+			{
+				// Print titles
+				out << "       ";
+				for (std::vector< Item<> >::const_iterator j = items.begin();
+						j != items.end(); ++j)
+				{
+					if (j != items.begin()) out << "; ";
+					out << types::tag((*j)->serialisationCode());
+				}
+				out << endl;
+			}
+			out << "    " << (i+1) << ": " << str::join(items.begin(), items.end(), "; ") << endl;
+		}
+		out << "  Marked so far:" << endl;
+		for (size_t i = 0; i < times.size(); ++i)
+		{
+			out << "    " << times[i] << ": ";
+			for (size_t j = 0; j < wantedidx.size(); ++j)
+			{
+				int idx = i * wantedidx.size() + j;
+				out << (todolist[idx] ? "1" : "0");
+			}
+			out << endl;
+		}
+	}
+}
+
 #ifdef HAVE_LUA
 typedef utils::lua::ManagedUD<GridQuery> GridQueryUD;
 
@@ -212,6 +298,32 @@ static int arkilua_mergedquery(lua_State *L)
 	return 1;
 }
 
+static int arkilua_checkandmark(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	Metadata* md = Metadata::lua_check(L, 2);
+	bool res = gq->checkAndMark(*md);
+	lua_pushboolean(L, res);
+	return 1;
+}
+
+static int arkilua_satisfied(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	bool res = gq->satisfied();
+	lua_pushboolean(L, res);
+	return 1;
+}
+
+static int arkilua_dump(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	stringstream out;
+	gq->dump(out);
+	lua_pushlstring(L, out.str().data(), out.str().size());
+	return 1;
+}
+
 static const struct luaL_reg gridqueryclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
@@ -222,6 +334,9 @@ static const struct luaL_reg gridquerylib [] = {
 	{ "addtime", arkilua_addtime },
 	{ "consolidate", arkilua_consolidate },
 	{ "mergedquery", arkilua_mergedquery },
+	{ "checkandmark", arkilua_checkandmark },
+	{ "satisfied", arkilua_satisfied },
+	{ "dump", arkilua_dump },
 	{ "__gc", arkilua_gc },
 	{ "__tostring", arkilua_tostring },
 	{ NULL, NULL }

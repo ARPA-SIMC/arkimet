@@ -53,6 +53,7 @@ struct arki_querymacro_shar {
 		// In-memory dataset configuration
 		string conf =
 			"[testds]\n"
+			"unique = origin\n"
 			"type = ondisk2\n"
 			"step = daily\n"
 			"filter = origin: GRIB1,200\n"
@@ -67,10 +68,19 @@ struct arki_querymacro_shar {
 		scanner.open("inbound/test.grib1");
 
 		dataset::ondisk2::Writer testds(*cfg.section("testds"));
+		vector< Item<types::Time> > times;
+		times.push_back(types::Time::create(2009, 8, 7, 0, 0, 0));
+		times.push_back(types::Time::create(2009, 8, 8, 0, 0, 0));
+		times.push_back(types::Time::create(2009, 8, 9, 0, 0, 0));
 		size_t count = 0;
 		while (scanner.next(md))
 		{
-			ensure(testds.acquire(md) == WritableDataset::ACQ_OK);
+			for (vector< Item<types::Time> >::const_iterator i = times.begin();
+					i != times.end(); ++i)
+			{
+				md.set(types::reftime::Position::create(*i));
+				ensure(testds.acquire(md) == WritableDataset::ACQ_OK);
+			}
 			++count;
 		}
 		ensure_equals(count, 3u);
@@ -93,8 +103,8 @@ void to::test<1>()
 
 	lua_pop(*qm.L, 2);
 
-	ensure_equals(count1, 3);
-	ensure_equals(count2, 1);
+	ensure_equals(count1, 9);
+	ensure_equals(count2, 3);
 }
 
 // Lua script that simply passes through the queries
@@ -106,14 +116,14 @@ void to::test<2>()
 	dataset::DataQuery dq;
 	metadata::Collector mdc;
 	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 3u);
+	ensure_equals(mdc.size(), 9u);
 	ensure(mdc[0].source.defined());
 	ensure(mdc[1].source.defined());
 	ensure(mdc[2].source.defined());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 3u);
+	ensure_equals(s.count(), 9u);
 }
 
 // Lua script that simply passes through the queries, making temporary copies of data
@@ -125,14 +135,14 @@ void to::test<3>()
 	dataset::DataQuery dq;
 	metadata::Collector mdc;
 	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 3u);
+	ensure_equals(mdc.size(), 9u);
 	ensure(mdc[0].source.defined());
 	ensure(mdc[1].source.defined());
 	ensure(mdc[2].source.defined());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 3u);
+	ensure_equals(s.count(), 9u);
 }
 
 // Try "expa" matchers
@@ -140,8 +150,8 @@ template<> template<>
 void to::test<4>()
 {
 	Querymacro qm(cfg, "expa", 
-			"ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-			"ds:testds. d:@. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+			"ds:testds. d:2009-08-07 00:00:00. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+			"ds:testds. d:2009-08-07 00:00:00. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
 //			utils::readFile("misc/erse00.expa")
 	);
 

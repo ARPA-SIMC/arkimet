@@ -195,8 +195,10 @@ void to::test<5>()
 	is.set(types::product::GRIB1::create(200, 140, 229));
 	is.set(types::reftime::Position::create(t));
 
+	ensure(not gq.satisfied());
 	ensure(gq.checkAndMark(is));
 	ensure(not gq.checkAndMark(is));
+	ensure(gq.satisfied());
 }
 
 }

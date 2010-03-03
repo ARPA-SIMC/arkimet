@@ -88,6 +88,11 @@ public:
     /// Check if a metadata fits in the result, and mark it as seen
     bool checkAndMark(const ItemSet& md);
 
+    /// Check that all items in todolist are true
+    bool satisfied() const;
+
+    /// Dump the GridQuery state to the given stream
+    void dump(std::ostream& out) const;
 
     // LUA functions
     /// Push to the LUA stack a userdata to access this Origin
