@@ -130,7 +130,7 @@ static int arkilua_new(lua_State* L)
 	return 1;
 }
 
-static int arkilua_gc (lua_State *L)
+static int arkilua_gc(lua_State *L)
 {
 	GridQueryUD* ud = (GridQueryUD*)luaL_checkudata(L, 1, "arki.gridquery");
 	if (ud != NULL && ud->collected)
@@ -138,12 +138,19 @@ static int arkilua_gc (lua_State *L)
 	return 0;
 }
 
-static int arkilua_tostring (lua_State *L)
+static int arkilua_tostring(lua_State *L)
 {
 	lua_pushstring(L, "gridquery");
 	return 1;
 }
 
+static int arkilua_add(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	Matcher m = Matcher::lua_check(L, 2);
+	gq->add(m);
+	return 0;
+}
 
 static const struct luaL_reg gridqueryclasslib [] = {
 	{ "new", arkilua_new },
@@ -151,6 +158,7 @@ static const struct luaL_reg gridqueryclasslib [] = {
 };
 
 static const struct luaL_reg gridquerylib [] = {
+	{ "add", arkilua_add },
 	{ "__gc", arkilua_gc },
 	{ "__tostring", arkilua_tostring },
 	{ NULL, NULL }

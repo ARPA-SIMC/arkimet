@@ -110,10 +110,10 @@ end
 
 function DSInfo:init(dsname)
 	local ds = qmacro:dataset(dsname)
+	if ds == nil then error("Cannot access dataset " .. dsname) end
 	self["dataset"] = ds
-	local s = arki.summary.new()
-	ds:querySummary("", s)
-	self["summary"] = s
+	local gq = arki.gridquery.new(ds)
+	self["gq"] = gq
 end
 
 
@@ -130,6 +130,9 @@ for line in query:gmatch("[^\r\n]+") do
 	ds, d, t, s, l, v = line:match(linepat)
 	if ds ~= nil then
 		ds = Set:parse(ds)
+		s = Set:parse(s)
+		l = Set:parse(l)
+		v = Set:parse(v)
 
 		for name, _ in pairs(ds) do
 			info = dsinfo[name]
@@ -138,11 +141,15 @@ for line in query:gmatch("[^\r\n]+") do
 				info:init(name)
 				dsinfo[name] = info
 			end
+			q = buildmatcher(s, l, v)
+			-- print("ADD", name, q)
+			info.gq:add(q)
+			-- TODO: resolve s, l and v using info's summary
+			--        - build (s + l + v) matcher
+			--        - get all matching s, l, v triplets in the summary
+			--        - add them to the metadata grid
 		end
 
-		s = Set:parse(s)
-		l = Set:parse(l)
-		v = Set:parse(v)
 		all_ds:addset(ds)
 		all_s:addset(s)
 		all_l:addset(l)
