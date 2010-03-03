@@ -152,6 +152,13 @@ static int arkilua_add(lua_State *L)
 	return 0;
 }
 
+static int arkilua_consolidate(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	gq->consolidate();
+	return 0;
+}
+
 static const struct luaL_reg gridqueryclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
@@ -159,6 +166,7 @@ static const struct luaL_reg gridqueryclasslib [] = {
 
 static const struct luaL_reg gridquerylib [] = {
 	{ "add", arkilua_add },
+	{ "consolidate", arkilua_consolidate },
 	{ "__gc", arkilua_gc },
 	{ "__tostring", arkilua_tostring },
 	{ NULL, NULL }

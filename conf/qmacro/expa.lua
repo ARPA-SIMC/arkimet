@@ -160,6 +160,11 @@ for line in query:gmatch("[^\r\n]+") do
 	end
 end
 
+-- Consolidate the query grids
+for _, v in pairs(dsinfo) do
+	v.gq:consolidate()
+end
+
 -- Build the merged query
 query = buildmatcher(all_s, all_l, all_v)
 -- print (query)
