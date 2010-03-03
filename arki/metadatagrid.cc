@@ -112,6 +112,12 @@ void MetadataGrid::add(const Item<>& item)
                 v.insert(lb, item);
 }
 
+void MetadataGrid::add(const ItemSet& is)
+{
+	for (ItemSet::const_iterator i = is.begin(); i != is.end(); ++i)
+		add(i->second);
+}
+
 void MetadataGrid::consolidate()
 {
         dim_sizes.clear();

@@ -77,6 +77,9 @@ struct MetadataGrid
 	// Add an item to the grid space
 	void add(const Item<>& item);
 
+	// Add all items from an itemset
+	void add(const ItemSet& is);
+
 	/**
 	 * Consolidate the grid: remove duplicates, sort the vectors
 	 *
