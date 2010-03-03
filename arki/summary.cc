@@ -925,22 +925,10 @@ struct LuaPusher: public summary::Visitor
 		return true;
 	}
 };
-struct SummaryUD
-{
-	Summary* s;
-	bool collected;
 
-	static SummaryUD* create(lua_State* L, Summary* s, bool collected = false);
-};
+}
 
-SummaryUD* SummaryUD::create(lua_State* L, Summary* s, bool collected)
-{
-	SummaryUD* ud = (SummaryUD*)lua_newuserdata(L, sizeof(SummaryUD));
-	ud->s = s;
-	ud->collected = collected;
-	return ud;
-}
-}
+typedef utils::lua::ManagedUD<Summary> SummaryUD;
 
 static void arkilua_getmetatable(lua_State* L);
 
@@ -1013,7 +1001,7 @@ static int arkilua_copy(lua_State* L)
 
 	// Make a new copy
 	SummaryUD* ud = SummaryUD::create(L, new Summary, true);
-	*(ud->s) = *s;
+	*(ud->val) = *s;
 
 	// Set the summary for the userdata
 	arkilua_getmetatable(L);
@@ -1027,7 +1015,7 @@ static int arkilua_gc (lua_State *L)
 {
 	SummaryUD* ud = (SummaryUD*)luaL_checkudata(L, 1, "arki.summary");
 	if (ud != NULL && ud->collected)
-		delete ud->s;
+		delete ud->val;
 	return 0;
 }
 
@@ -1114,7 +1102,7 @@ void Summary::lua_openlib(lua_State* L)
 Summary* Summary::lua_check(lua_State* L, int idx)
 {
 	SummaryUD* ud = (SummaryUD*)luaL_checkudata(L, idx, "arki.summary");
-	if (ud) return ud->s;
+	if (ud) return ud->val;
 	return NULL;
 }
 #endif
