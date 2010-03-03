@@ -117,11 +117,9 @@ void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 }
 
 #ifdef HAVE_LUA
-static ReadonlyDataset* checkrodataset(lua_State *L)
+ReadonlyDataset* ReadonlyDataset::lua_check(lua_State* L, int idx)
 {
-	void* ud = luaL_checkudata(L, 1, "arki.rodataset");
-	luaL_argcheck(L, ud != NULL, 1, "`rodataset' expected");
-	return *(ReadonlyDataset**)ud;
+	return *(ReadonlyDataset**)luaL_checkudata(L, idx, "arki.rodataset");
 }
 
 namespace dataset {
@@ -187,7 +185,7 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 static int arkilua_queryData(lua_State *L)
 {
 	// queryData(self, { matcher="", withdata=false, sorter="" }, consumer_func)
-	ReadonlyDataset* rd = checkrodataset(L);
+	ReadonlyDataset* rd = ReadonlyDataset::lua_check(L, 1);
 	luaL_argcheck(L, lua_istable(L, 2), 2, "`table' expected");
 	luaL_argcheck(L, lua_isfunction(L, 3), 3, "`function' expected");
 
@@ -207,7 +205,7 @@ static int arkilua_queryData(lua_State *L)
 static int arkilua_querySummary(lua_State *L)
 {
 	// querySummary(self, matcher="", summary)
-	ReadonlyDataset* rd = checkrodataset(L);
+	ReadonlyDataset* rd = ReadonlyDataset::lua_check(L, 1);
 	Matcher matcher = Matcher::lua_check(L, 2);
 	Summary* sum = Summary::lua_check(L, 3);
 	luaL_argcheck(L, sum != NULL, 3, "`arki.summary' expected");

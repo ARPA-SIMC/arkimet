@@ -176,6 +176,13 @@ public:
 	void lua_push(lua_State* L);
 
 	/**
+	 * Check that the element at \a idx is a ReadonlyDataset userdata
+	 *
+	 * @return the ReadonlyDataset element, or 0 if the check failed
+	 */
+	static ReadonlyDataset* lua_check(lua_State* L, int idx);
+
+	/**
 	 * Instantiate an appropriate Dataset for the given configuration
 	 */
 	static ReadonlyDataset* create(const ConfigFile& cfg);
