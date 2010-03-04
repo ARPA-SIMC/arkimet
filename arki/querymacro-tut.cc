@@ -150,8 +150,8 @@ template<> template<>
 void to::test<4>()
 {
 	Querymacro qm(cfg, "expa", 
-			"ds:testds. d:2009-08-07 00:00:00. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-			"ds:testds. d:2009-08-07 00:00:00. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+			"ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+			"ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
 //			utils::readFile("misc/erse00.expa")
 	);
 

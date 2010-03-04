@@ -1,9 +1,6 @@
 -- Build the merged query
 linepat = "^ds:(.-)%.%s+d:(.-)%.%s+t:(.-)%.%s+s:(.-)%.%s+l:(.-)%.%s+v:(.-)%.%s*$"
 
--- TODO: replace with QueryMacro passing verbose settings in variables
-verbose = os.getenv("VERBOSE")
-
 dataset_aliases = {
 	LMSMR = { "lmsmr4x46", "lmsmr4x45", "lmsmr4x47" }
 }
@@ -75,6 +72,8 @@ function QueryChunk:init(dsname, d, t)
 	elseif d:match("^%s*@%s*$") then
 		d = os.getenv("DAY")
 		if d == nil then error("If using @, set $DAY to YYYY-MM-DD") end
+	elseif d:match("^%d+-%d+-%d+$") then
+		-- d is already as we want it
 	else
 		pm, val = d:match("^%s*[Tt]%s*([+-])%s*(%d+)%s*$")
 		if pm == nil then error("Expected 'T+n' or 'T-n'") end
@@ -159,6 +158,25 @@ function QueryChunk:queryData(cons)
 	error("Query cannot be satisfied")
 end
 
+function QueryChunk:querySummary(sum)
+	for idx, dsname in ipairs(self:datasets()) do
+		if verbose then io.stderr:write("Getting summary from ", dsname, "\n") end
+
+		local ds = qmacro:dataset(dsname)
+		if ds == nil then error("Cannot access dataset " .. dsname) end
+		local gq = arki.gridquery.new(ds)
+
+		-- Prepare the GridQuery
+		self:setupgq(gq)
+
+		-- Build the merged query
+		query = gq:mergedquery()
+
+		-- Add the summary to sum
+		ds:querySummary(query, sum)
+	end
+end
+
 
 -- Cache of summary information
 chunks = {}
@@ -193,15 +211,7 @@ function queryData(q, cons)
 end
 
 function querySummary(q, sum)
-	s = arki.summary.new()
-	for name, info in pairs(chunks) do
-		-- Build the merged query
-		query = info.gq:mergedquery()
-		-- print (query)
-		-- print (query:expanded())
-
-		-- Query dataset merging all summaries
-		info.dataset:querySummary(query, s)
+	for _, info in pairs(chunks) do
+		info:querySummary(sum)
 	end
-	s:filter("", sum)
 end
