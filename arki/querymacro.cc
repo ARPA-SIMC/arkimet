@@ -25,6 +25,7 @@
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/dataset/gridspace.h>
+#include <arki/nag.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
 #include <wibble/exception.h>
@@ -113,6 +114,12 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	// Load the data as a global variable
 	lua_pushstring(*L, query.c_str());
 	lua_setglobal(*L, "query");
+
+	// Set 'debug' and 'verbose' globals
+	lua_pushboolean(*L, nag::is_verbose());
+	lua_setglobal(*L, "verbose");
+	lua_pushboolean(*L, nag::is_debug());
+	lua_setglobal(*L, "debug");
 	
 	/// Load the right qmacro file
 	string dirname = runtime::rcDirName("qmacro", "ARKI_QMACRO");
