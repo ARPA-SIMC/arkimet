@@ -139,6 +139,8 @@ int main(int argc, const char* argv[])
 		// If requested, compute extra information
 		if (opts.extra->boolValue())
 		{
+			ARKI_GEOS_GEOMETRYFACTORY gf;
+
 			for (ConfigFile::section_iterator i = cfg.sectionBegin();
 					i != cfg.sectionEnd(); ++i)
 			{
@@ -150,7 +152,7 @@ int main(int argc, const char* argv[])
 
 #ifdef HAVE_GEOS
 				// Compute bounding box, and store the WKT in bounding
-				auto_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull();
+				auto_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
 				if (bbox.get())
 					i->second->setValue("bounding", bbox->toString());
 #endif

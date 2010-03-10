@@ -172,12 +172,6 @@ struct Node : public refcounted::Base
 	 */
 	Item<types::Reftime> getReferenceTime() const;
 
-	/**
-	 * Get the convex hull of the union of all bounding boxes covered by the
-	 * metadata bundle.
-	 */
-	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull() const;
-
 	virtual void encode(utils::codec::Encoder& enc, const UItem<>& lead = UItem<>(), size_t scanpos = 0) const;
 
 	int compare(const Node& node) const;
@@ -354,7 +348,7 @@ public:
 	 * Get the convex hull of the union of all bounding boxes covered by the
 	 * metadata bundle.
 	 */
-	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull() const;
+	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const;
 
 	/**
 	 * Return all the unique combination of metadata items that are found

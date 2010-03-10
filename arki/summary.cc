@@ -1154,11 +1154,11 @@ struct StatsReftime : public StatsVisitor
 #ifdef HAVE_GEOS
 struct StatsHull : public ItemVisitor
 {
-	ARKI_GEOS_GEOMETRYFACTORY gf;
+	ARKI_GEOS_GEOMETRYFACTORY& gf;
 	vector<ARKI_GEOS_GEOMETRY*>* geoms;
 	std::set< Item<types::Area> > seen;
 
-	StatsHull() : geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
+	StatsHull(ARKI_GEOS_GEOMETRYFACTORY& gf) : gf(gf), geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
 	virtual ~StatsHull()
 	{
 		if (geoms)
@@ -1275,10 +1275,10 @@ void Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) 
 	visitFiltered(matcher, visitor);
 }
 
-std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull() const
+std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const
 {
 #ifdef HAVE_GEOS
-	summary::StatsHull merger;
+	summary::StatsHull merger(gf);
 	if (root.ptr())
 	{
 		summary::buildItemMsoMap();
