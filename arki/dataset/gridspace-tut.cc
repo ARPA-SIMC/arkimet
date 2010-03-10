@@ -190,6 +190,8 @@ void to::test<5>()
 	gq.addTime(t);
 	gq.consolidate();
 
+	ensure_equals(gq.expectedItems(), 1u);
+
 	ItemSet is;
 	is.set(types::origin::GRIB1::create(200, 0, 101));
 	is.set(types::product::GRIB1::create(200, 140, 229));

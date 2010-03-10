@@ -85,6 +85,9 @@ public:
      */
     Matcher mergedQuery() const;
 
+    /// Return the number of items in TODO list
+    size_t expectedItems() const;
+
     /// Check if a metadata fits in the result, and mark it as seen
     bool checkAndMark(const ItemSet& md);
 

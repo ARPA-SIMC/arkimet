@@ -125,6 +125,11 @@ Matcher GridQuery::mergedQuery() const
 	return Matcher::parse(q.str());
 }
 
+size_t GridQuery::expectedItems() const
+{
+	return todolist.size();
+}
+
 bool GridQuery::checkAndMark(const ItemSet& md)
 {
 	// Get the reftime field from md
@@ -181,7 +186,7 @@ void GridQuery::dump(std::ostream& out) const
 	if (todolist.empty())
 	{
 		// Not consolidated
-		out << "GridQuery still being build:" << endl;
+		out << "GridQuery still being built:" << endl;
 		out << "  Grid dimensions so far:" << endl;
 		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.dims.begin();
 				i != mdgrid.dims.end(); ++i)
@@ -324,6 +329,13 @@ static int arkilua_dump(lua_State *L)
 	return 1;
 }
 
+static int arkilua_expecteditems(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	lua_pushnumber(L, gq->expectedItems());
+	return 1;
+}
+
 static const struct luaL_reg gridqueryclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
@@ -336,6 +348,7 @@ static const struct luaL_reg gridquerylib [] = {
 	{ "mergedquery", arkilua_mergedquery },
 	{ "checkandmark", arkilua_checkandmark },
 	{ "satisfied", arkilua_satisfied },
+	{ "expecteditems", arkilua_expecteditems },
 	{ "dump", arkilua_dump },
 	{ "__gc", arkilua_gc },
 	{ "__tostring", arkilua_tostring },
