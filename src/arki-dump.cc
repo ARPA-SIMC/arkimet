@@ -28,6 +28,7 @@
 #include <arki/dataset/gridspace.h>
 #include <arki/summary.h>
 #include <arki/formatter.h>
+#include <arki/utils/geosdef.h>
 #include <arki/runtime.h>
 
 #include <fstream>
@@ -49,6 +50,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* query;
 	BoolOption* config;
 	BoolOption* aliases;
+	BoolOption* bbox;
 	StringOption* outfile;
 	StringOption* gridspace;
 
@@ -82,11 +84,41 @@ struct Options : public StandardParserWithManpage
 				"access the given input through a gridspace "
 				"described by `file', printing information "
 				"about the process.");
+
+		bbox = add<BoolOption>("bbox", 0, "bbox", "", "dump the bounding box");
+
 	}
 };
 
 
 }
+}
+
+// Add to \a s the info from all data read from \a in
+static void addToSummary(runtime::Input& in, Summary& s)
+{
+	Metadata md;
+	Summary summary;
+
+	wibble::sys::Buffer buf;
+	string signature;
+	unsigned version;
+
+	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
+	{
+		if (signature == "MD" || signature == "!D")
+		{
+			md.read(buf, version, in.name());
+			if (md.source->style() == types::Source::INLINE)
+				md.readInlineData(in.stream(), in.name());
+			s.add(md);
+		}
+		else if (signature == "SU")
+		{
+			summary.read(buf, version, in.name());
+			s.add(summary);
+		}
+	}
 }
 
 int main(int argc, const char* argv[])
@@ -111,6 +143,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--query conflicts with --annotate");
 		if (opts.query->boolValue() && opts.gridspace->isSet())
 			throw wibble::exception::BadOption("--query conflicts with --gridspace");
+		if (opts.query->boolValue() && opts.bbox->isSet())
+			throw wibble::exception::BadOption("--query conflicts with --bbox");
 
 		if (opts.config->boolValue() && opts.aliases->boolValue())
 			throw wibble::exception::BadOption("--config conflicts with --aliases");
@@ -122,6 +156,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--config conflicts with --annotate");
 		if (opts.config->boolValue() && opts.gridspace->isSet())
 			throw wibble::exception::BadOption("--config conflicts with --gridspace");
+		if (opts.config->boolValue() && opts.bbox->isSet())
+			throw wibble::exception::BadOption("--config conflicts with --bbox");
 
 		if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
 			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-data");
@@ -131,6 +167,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
 		if (opts.aliases->boolValue() && opts.gridspace->isSet())
 			throw wibble::exception::BadOption("--aliases conflicts with --gridspace");
+		if (opts.aliases->boolValue() && opts.bbox->isSet())
+			throw wibble::exception::BadOption("--aliases conflicts with --bbox");
 
 		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
@@ -140,6 +178,11 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
 		if (opts.annotate->boolValue() && opts.gridspace->isSet())
 			throw wibble::exception::BadOption("--annotate conflicts with --gridspace");
+		if (opts.annotate->boolValue() && opts.bbox->isSet())
+			throw wibble::exception::BadOption("--annotate conflicts with --bbox");
+
+		if (opts.gridspace->boolValue() && opts.bbox->isSet())
+			throw wibble::exception::BadOption("--gridspace conflicts with --bbox");
 		
 		if (opts.query->boolValue())
 		{
@@ -224,6 +267,30 @@ int main(int argc, const char* argv[])
 			// Dump the state after validation
 			o << "After validation:" << endl;
 			gs.dump(o, " ");
+
+			return 0;
+		}
+
+		if (opts.bbox->boolValue())
+		{
+			// Open the input file
+			runtime::Input in(opts);
+
+			// Read everything into a single summary
+			Summary summary;
+			addToSummary(in, summary);
+
+			// Get the bounding box
+			std::auto_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull();
+
+			// Open the output file
+			runtime::Output out(*opts.outfile);
+
+			// Print it out
+			if (hull.get())
+				out.stream() << hull->toString() << endl;
+			else
+				out.stream() << "no bounding box could be computed." << endl;
 
 			return 0;
 		}

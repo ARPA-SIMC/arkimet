@@ -2,8 +2,9 @@ arkimet (0.35-1) UNRELEASED; urgency=low
 
   * Added quermacro support to arki-query and arki-server
   * 'noop' and 'expa' style querymacros
+  * Added arki-dump --bbox
 
- -- Enrico Zini <enrico@debian.org>  Wed, 03 Mar 2010 13:37:50 +0000
+ -- Enrico Zini <enrico@debian.org>  Wed, 10 Mar 2010 11:55:50 +0100
 
 arkimet (0.34-1) UNRELEASED; urgency=low
 
