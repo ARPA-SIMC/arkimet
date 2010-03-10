@@ -127,31 +127,42 @@ function QueryChunk:queryData(cons)
 		-- Prepare the GridQuery
 		self:setupgq(gq)
 
-		-- Build the merged query
-		query = gq:mergedquery()
-		-- print (query)
-		-- print (query:expanded())
-	
-		-- Query dataset storing results
-		mds = {}
-		ds:queryData({matcher=query}, function(md)
-			if gq:checkandmark(md) then
-				table.insert(mds, md:copy())
-			end
-			return true
-		end)
+		if gq:expecteditems() == 0 then
+			if verbose then
+                                io.stderr:write("No results expected from ", dsname, "\n")
+                        end
+		else
+			-- Build the merged query
+			query = gq:mergedquery()
+			-- print (query)
+			-- print (query:expanded())
+		
+			-- Query dataset storing results
+			mds = {}
+			ds:queryData({matcher=query}, function(md)
+				if gq:checkandmark(md) then
+					table.insert(mds, md:copy())
+				end
+				return true
+			end)
 
-		if gq:satisfied() then
-			if verbose then io.stderr:write("Satisfied query on ", dsname, "\n") end
-			for idx, md in ipairs(mds) do
-				cons(md)
+			
+			if #mds == 0 then
+				if verbose then
+					io.stderr:write("No results from ", dsname, "\n")
+				end
+			elseif gq:satisfied() then
+				if verbose then io.stderr:write("Satisfied query on ", dsname, "\n") end
+				for idx, md in ipairs(mds) do
+					cons(md)
+				end
+				return
+			elseif verbose then
+				io.stderr:write("Unsatisfied query on ", dsname, "\n")
+				io.stderr:write("Master query: ", tostring(query), "\n")
+				io.stderr:write("Result space:\n")
+				io.stderr:write(gq:dump(), "\n")
 			end
-			return
-		elseif verbose then
-			io.stderr:write("Unsatisfied query on ", dsname, "\n")
-			io.stderr:write("Master query: ", tostring(query), "\n")
-			io.stderr:write("Result space:\n")
-			io.stderr:write(gq:dump(), "\n")
 		end
 	end
 
