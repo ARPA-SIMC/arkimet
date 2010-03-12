@@ -67,6 +67,14 @@ void GridQuery::addTime(const Item<types::Time>& rt)
 		times.insert(lb, rt);
 }
 
+void GridQuery::addTimes(const Item<types::Time>& begin, const Item<types::Time>& end, int step)
+{
+	vector< Item<types::Time> > items = types::Time::generate(*begin, *end, step);
+	for (vector< Item<types::Time> >::const_iterator i = items.begin();
+			i != items.end(); ++i)
+		addTime(*i);
+}
+
 void GridQuery::addFilter(const Matcher& m)
 {
 	filters.push_back(m);
@@ -318,6 +326,18 @@ static int arkilua_addtime(lua_State *L)
 	return 0;
 }
 
+static int arkilua_addtimes(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	const char* tstart = luaL_checkstring(L, 2);
+	const char* tend = luaL_checkstring(L, 3);
+	int tstep = luaL_checkinteger(L, 4);
+	gq->addTimes(types::Time::createFromSQL(tstart),
+		     types::Time::createFromSQL(tend),
+		     tstep);
+	return 0;
+}
+
 static int arkilua_addfilter(lua_State *L)
 {
 	GridQuery* gq = GridQuery::lua_check(L, 1);
@@ -382,6 +402,7 @@ static const struct luaL_reg gridqueryclasslib [] = {
 static const struct luaL_reg gridquerylib [] = {
 	{ "add", arkilua_add },
 	{ "addtime", arkilua_addtime },
+	{ "addtimes", arkilua_addtimes },
 	{ "addfilter", arkilua_addfilter },
 	{ "consolidate", arkilua_consolidate },
 	{ "mergedquery", arkilua_mergedquery },

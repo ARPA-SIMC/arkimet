@@ -76,6 +76,9 @@ public:
     /// Add a reftime
     void addTime(const Item<types::Time>& rt);
 
+    // Add a discrete time sequence (@see types::Time::generate())
+    void addTimes(const Item<types::Time>& begin, const Item<types::Time>& end, int step);
+
     /// Add an extra filter expression
     void addFilter(const Matcher& m);
 
