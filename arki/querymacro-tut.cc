@@ -167,6 +167,29 @@ void to::test<4>()
 	ensure_equals(s.count(), 2u);
 }
 
+// Try "gridspace" matchers
+template<> template<>
+void to::test<5>()
+{
+	Querymacro qm(cfg, "gridspace", 
+			"dataset: testds\n"
+			"addtime: 2009-08-07 00:00:00\n"
+			"add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
+			"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
+	);
+
+	dataset::DataQuery dq;
+	metadata::Collector mdc;
+	qm.queryData(dq, mdc);
+	ensure_equals(mdc.size(), 2u);
+	ensure(mdc[0].source.defined());
+	ensure(mdc[1].source.defined());
+
+	Summary s;
+	qm.querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 2u);
+}
+
 }
 
 // vim:set ts=4 sw=4:
