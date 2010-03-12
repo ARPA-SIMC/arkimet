@@ -171,23 +171,44 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	Querymacro qm(cfg, "gridspace", 
-			"dataset: testds\n"
-			"addtime: 2009-08-07 00:00:00\n"
-			"add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
-			"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
-	);
+	{
+		Querymacro qm(cfg, "gridspace", 
+				"dataset: testds\n"
+				"addtime: 2009-08-07 00:00:00\n"
+				"add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
+				"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
+		);
 
-	dataset::DataQuery dq;
-	metadata::Collector mdc;
-	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 2u);
-	ensure(mdc[0].source.defined());
-	ensure(mdc[1].source.defined());
+		dataset::DataQuery dq;
+		metadata::Collector mdc;
+		qm.queryData(dq, mdc);
+		ensure_equals(mdc.size(), 2u);
+		ensure(mdc[0].source.defined());
+		ensure(mdc[1].source.defined());
 
-	Summary s;
-	qm.querySummary(Matcher::parse(""), s);
-	ensure_equals(s.count(), 2u);
+		Summary s;
+		qm.querySummary(Matcher::parse(""), s);
+		ensure_equals(s.count(), 2u);
+	}
+	{
+		Querymacro qm(cfg, "gridspace", 
+				"dataset: testds\n"
+				"addtimes: 2009-08-07 00:00:00 2009-08-08 00:00:00 86400\n"
+				"add: timerange:AN; level:G00; product:GRIB1,200,140,229\n"
+				"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
+		);
+
+		dataset::DataQuery dq;
+		metadata::Collector mdc;
+		qm.queryData(dq, mdc);
+		ensure_equals(mdc.size(), 2u);
+		ensure(mdc[0].source.defined());
+		ensure(mdc[1].source.defined());
+
+		Summary s;
+		qm.querySummary(Matcher::parse(""), s);
+		ensure_equals(s.count(), 2u);
+	}
 }
 
 }

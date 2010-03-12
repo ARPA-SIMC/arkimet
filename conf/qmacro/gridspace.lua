@@ -55,7 +55,7 @@ function makedsgq()
 	-- self.timestr = d .. string.format(" %02d:%02d:00", h, m)
 		end,
 		addtimes = function(val)
-			from, to, step = val:gmatch("(%d+-%d+-%d+ %d+:%d+:%d+)%s+(%d+-%d+-%d+ %d+:%d+:%d+)%s+(%d+)")
+			from, to, step = val:match("(%d+-%d+-%d+ %d+:%d+:%d+)%s+(%d+-%d+-%d+ %d+:%d+:%d+)%s+(%d+)")
 			if from == nil then error("Invalid addtimes value; expected 'TS_FROM TS_TO STEP_SECS'") end
 
 			gq:addtimes(from, to, step)
