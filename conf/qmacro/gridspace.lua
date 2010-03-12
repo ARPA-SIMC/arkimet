@@ -94,8 +94,10 @@ function makedsgq()
 		end
 	end
 
-	-- Consolidate in the end
-	gq:consolidate()
+	if gq ~= nil then
+		-- Consolidate in the end
+		gq:consolidate()
+	end
 
 	return name, ds, gq
 end
@@ -152,6 +154,7 @@ end
 
 function querySummary(q, sum)
 	datasets_tried = {}
+	local tried = 0
 	while true do
 		local dsname, ds, gq = makedsgq()
 		if dsname == nil then break end
@@ -161,5 +164,8 @@ function querySummary(q, sum)
 
 		-- Add the summary to sum
 		ds:querySummary(query, sum)
+
+		tried = tried + 1
 	end
+	if tried == 0 then error("Query cannot be satisfied") end
 end
