@@ -64,6 +64,8 @@ protected:
     std::vector<int> wantedidx;
     // Bitmaps corresponding to wantedidx, of seen items per reftime step
     std::vector<bool> todolist;
+    // Extra filters to add to the merged query
+    std::vector<Matcher> filters;
 
 public:
     GridQuery(ReadonlyDataset& ds);
@@ -73,6 +75,9 @@ public:
 
     /// Add a reftime
     void addTime(const Item<types::Time>& rt);
+
+    /// Add an extra filter expression
+    void addFilter(const Matcher& m);
 
     /**
      * Done with adding requests, initialise structure to filter results

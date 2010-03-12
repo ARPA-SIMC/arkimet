@@ -67,6 +67,11 @@ void GridQuery::addTime(const Item<types::Time>& rt)
 		times.insert(lb, rt);
 }
 
+void GridQuery::addFilter(const Matcher& m)
+{
+	filters.push_back(m);
+}
+
 void GridQuery::consolidate()
 {
 	// Feed all items into mdgrid
@@ -89,6 +94,24 @@ void GridQuery::consolidate()
 
 	// Create bitmap of wanted items
 	todolist.resize(wantedidx.size() * times.size(), false);
+
+	// Check that extra filters do not conflict
+	set<types::Code> codes;
+	codes.insert(types::TYPE_REFTIME);
+	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.dims.begin();
+			i != mdgrid.dims.end(); ++i)
+		codes.insert(i->first);
+	for (vector<Matcher>::const_iterator i = filters.begin();
+			i != filters.end(); ++i)
+	{
+		if (i->empty()) continue;
+		for (matcher::AND::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j)
+		{
+			if (codes.find(j->first) != codes.end())
+				throw wibble::exception::Consistency("consolidating GridQuery", "filters conflict on " + types::tag(j->first));
+			codes.insert(j->first);
+		}
+	}
 }
 
 Matcher GridQuery::mergedQuery() const
@@ -121,6 +144,13 @@ Matcher GridQuery::mergedQuery() const
 	// Add times
 	if (added) q << "; ";
 	q << "reftime:>=" << times.front() << ",<=" << times.back();
+
+	// Add extra filters
+	for (vector<Matcher>::const_iterator i = filters.begin(); i != filters.end(); ++i)
+	{
+		if (i->empty()) continue;
+		q << "; " << i->toString();
+	}
 
 	return Matcher::parse(q.str());
 }
@@ -288,6 +318,14 @@ static int arkilua_addtime(lua_State *L)
 	return 0;
 }
 
+static int arkilua_addfilter(lua_State *L)
+{
+	GridQuery* gq = GridQuery::lua_check(L, 1);
+	Matcher m = Matcher::lua_check(L, 2);
+	gq->addFilter(m);
+	return 0;
+}
+
 static int arkilua_consolidate(lua_State *L)
 {
 	GridQuery* gq = GridQuery::lua_check(L, 1);
@@ -344,6 +382,7 @@ static const struct luaL_reg gridqueryclasslib [] = {
 static const struct luaL_reg gridquerylib [] = {
 	{ "add", arkilua_add },
 	{ "addtime", arkilua_addtime },
+	{ "addfilter", arkilua_addfilter },
 	{ "consolidate", arkilua_consolidate },
 	{ "mergedquery", arkilua_mergedquery },
 	{ "checkandmark", arkilua_checkandmark },
