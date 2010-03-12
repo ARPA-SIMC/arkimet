@@ -99,6 +99,13 @@ function makedsgq()
 		gq:consolidate()
 	end
 
+	if debug then
+		io.stderr:write("Gridspace ready for ", name, "\n")
+		io.stderr:write("Master query: ", tostring(gq:mergedquery()), "\n")
+		io.stderr:write("Result space:\n")
+		io.stderr:write(gq:dump(), "\n")
+	end
+
 	return name, ds, gq
 end
 
