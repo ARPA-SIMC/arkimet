@@ -90,15 +90,6 @@ struct Position : public Reftime
 	virtual bool operator==(const Type& o) const;
 
 	static Item<Position> create(const Item<types::Time>& position);
-
-	/**
-	 * Generate a sequence of Position reftime values.
-	 *
-	 * The sequence starts at \a begin (included) and ends at \a end
-	 * (excluded). Element are \a step seconds apart.
-	 */
-	static std::vector< Item<Position> > generate(
-			const types::Time& begin, const types::Time& end, int step);
 };
 
 struct Period : public Reftime

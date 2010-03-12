@@ -647,10 +647,10 @@ void MDGrid::addTimeInterval(const Item<types::Time>& begin, const Item<types::T
 	// huge queries when there are long dense intervals
 	extraMatchers[types::TYPE_REFTIME].push_back(">= " + begin->toSQL() + ",<" + end->toSQL());
 
-	vector< Item<types::reftime::Position> > items = types::reftime::Position::generate(*begin, *end, step);
-	for (vector< Item<types::reftime::Position> >::const_iterator i = items.begin();
+	vector< Item<types::Time> > items = types::Time::generate(*begin, *end, step);
+	for (vector< Item<types::Time> >::const_iterator i = items.begin();
 			i != items.end(); ++i)
-		dims[types::TYPE_REFTIME].push_back(*i);
+		dims[types::TYPE_REFTIME].push_back(types::reftime::Position::create(*i));
 }
 
 void MDGrid::read(std::istream& input, const std::string& fname)

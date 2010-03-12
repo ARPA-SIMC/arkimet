@@ -25,6 +25,7 @@
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <wibble/grcal/grcal.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -43,6 +44,7 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
+using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -405,6 +407,20 @@ Item<Time> Time::createDifference(const Item<Time>& a, const Item<Time>& b)
 	else
 		return Time::create(res[0], res[1], res[2], res[3], res[4], res[5]);
 }
+
+std::vector< Item<Time> > Time::generate(
+		const types::Time& begin, const types::Time& end, int step)
+{
+	vector< Item<Time> > res;
+	for (Time cur = begin; cur < end; )
+	{
+		res.push_back(Time::create(cur.vals));
+		cur.vals[5] += step;
+		grcal::date::normalise(cur.vals);
+	}
+	return res;
+}
+
 
 namespace time {
 

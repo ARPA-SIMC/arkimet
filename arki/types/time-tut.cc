@@ -132,11 +132,11 @@ void to::test<3>()
 	ensure_equals(t, Item<Time>(Time::create(0, 0, 0, 0, 0, 0)));
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<4>()
 {
+#ifdef HAVE_LUA
 	Item<Time> o = Time::create(1, 2, 3, 4, 5, 6);
 
 	tests::Lua test(
@@ -153,8 +153,19 @@ void to::test<4>()
 
 	test.pusharg(*o);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
+
+// Test Time::generate
+template<> template<>
+void to::test<5>()
+{
+	vector< Item<Time> > v = Time::generate(
+			*Time::create(2009, 1, 1, 0, 0, 0),
+			*Time::create(2009, 2, 1, 0, 0, 0),
+			3600);
+	ensure_equals(v.size(), 31u*24u);
+}
 
 }
 

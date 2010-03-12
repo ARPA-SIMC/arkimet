@@ -158,17 +158,6 @@ void to::test<4>()
 #endif
 }
 
-// Test Position::generate
-template<> template<>
-void to::test<5>()
-{
-	vector< Item<reftime::Position> > v = reftime::Position::generate(
-			*Time::create(2009, 1, 1, 0, 0, 0),
-			*Time::create(2009, 2, 1, 0, 0, 0),
-			3600);
-	ensure_equals(v.size(), 31u*24u);
-}
-
 }
 
 // vim:set ts=4 sw=4:

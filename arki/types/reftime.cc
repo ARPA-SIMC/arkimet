@@ -22,7 +22,6 @@
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
-#include <wibble/grcal/grcal.h>
 #include <arki/types/reftime.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
@@ -251,19 +250,6 @@ bool Position::operator==(const Type& o) const
 Item<Position> Position::create(const Item<Time>& position)
 {
 	return new Position(position);
-}
-
-std::vector< Item<Position> > Position::generate(
-		const types::Time& begin, const types::Time& end, int step)
-{
-	vector< Item<Position> > res;
-	for (Time cur = begin; cur < end; )
-	{
-		res.push_back(Position::create(Time::create(cur.vals)));
-		cur.vals[5] += step;
-		grcal::date::normalise(cur.vals);
-	}
-	return res;
 }
 
 Period::Period(const Item<types::Time>& begin, const Item<types::Time>& end)

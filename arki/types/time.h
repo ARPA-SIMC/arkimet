@@ -119,6 +119,15 @@ struct Time : public types::Type
 	 * If a is not greather than b, returns 0000-00-00 00:00:00
 	 */
 	static Item<Time> createDifference(const Item<Time>& a, const Item<Time>& b);
+
+	/**
+	 * Generate a sequence of Position reftime values.
+	 *
+	 * The sequence starts at \a begin (included) and ends at \a end
+	 * (excluded). Element are \a step seconds apart.
+	 */
+	static std::vector< Item<Time> > generate(
+			const types::Time& begin, const types::Time& end, int step);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)
