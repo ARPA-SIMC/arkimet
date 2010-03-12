@@ -61,11 +61,15 @@ bool isdir(const std::string& pathname)
 
 std::string readFile(const std::string& filename)
 {
-	// Read from file fromFile->stringValue()
-	ifstream input(filename.c_str(), ios::in);
-	if (!input.is_open() || input.fail())
-		throw wibble::exception::File(filename, "opening file for reading");
-	return readFile(input, filename);
+	if (filename == "-")
+		return readFile(cin, filename);
+	else
+	{
+		ifstream input(filename.c_str(), ios::in);
+		if (!input.is_open() || input.fail())
+			throw wibble::exception::File(filename, "opening file for reading");
+		return readFile(input, filename);
+	}
 }
 
 std::string readFile(std::istream& input, const std::string& filename)
