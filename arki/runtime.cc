@@ -635,6 +635,12 @@ bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
 	auto_ptr<dataset::Gridspace> gs;
 	auto_ptr<TargetfileSpy> tf;
 
+	if (targetfile->isSet())
+	{
+		tf.reset(new TargetfileSpy(*this_source, *output, targetfile->stringValue()));
+		this_source = tf.get();
+	}
+
 	if (gridspace->isSet())
 	{
 		gridspace_def.seekg(0);
@@ -642,12 +648,6 @@ bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
 		gs->read(gridspace_def, gridspace->stringValue());
 		gs->validate();
 		this_source = gs.get();
-	}
-
-	if (targetfile->isSet())
-	{
-		tf.reset(new TargetfileSpy(*this_source, *output, targetfile->stringValue()));
-		this_source = tf.get();
 	}
 
 	processor->process(*this_source, name);
