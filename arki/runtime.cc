@@ -501,7 +501,7 @@ void CommandLine::setupProcessing()
 	}
 
 	// Some things cannot be done when querying multiple datasets at the same time
-	if (inputInfo.sectionSize() > 1 && !dispatcher)
+	if (inputInfo.sectionSize() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
 	{
 		if (postprocess->boolValue())
 			throw wibble::exception::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
