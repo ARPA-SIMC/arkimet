@@ -247,6 +247,8 @@ bool CommandLine::parse(int argc, const char* argv[])
 	{
 		if (dataOnly->boolValue())
 			throw wibble::exception::BadOption("--postprocess conflicts with --data");
+		if (targetfile->boolValue())
+			throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
 	}
 	if (gridspace->isSet())
 	{
