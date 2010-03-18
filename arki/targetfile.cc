@@ -248,7 +248,7 @@ void TargetfileSpy::querySummary(const Matcher& matcher, Summary& summary)
 
 void TargetfileSpy::redirect(Metadata& md)
 {
-	output.openFile(func(md));
+	output.openFile(func(md), true);
 }
 
 }
