@@ -5,8 +5,9 @@ arkimet (0.35-1) UNRELEASED; urgency=low
   * Added arki-dump --bbox
   * 'gridspace' query macro
   * Allow --file=-
+  * Allow --postprocess and --report with --querymacro
 
- -- Enrico Zini <enrico@debian.org>  Fri, 12 Mar 2010 12:40:00 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 18 Mar 2010 08:57:01 +0000
 
 arkimet (0.34-1) UNRELEASED; urgency=low
 
