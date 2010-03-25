@@ -453,6 +453,15 @@ int Timerange::lua_lookup(lua_State* L)
 		lua_pushnumber(L, p2);
 		return 4;
 	}
+	else if (name == "grib2" && v.style() == Timerange::GRIB2)
+	{
+		const timerange::GRIB2* v1 = v.upcast<timerange::GRIB2>();
+		lua_pushnumber(L, v1->type);
+		lua_pushstring(L, formatTimeUnit((t_enum_GRIB_TIMEUNIT)v1->unit).c_str());
+		lua_pushnumber(L, v1->p1);
+		lua_pushnumber(L, v1->p2);
+		return 4;
+	}
 	else
 	{
 		lua_pushnil(L);
