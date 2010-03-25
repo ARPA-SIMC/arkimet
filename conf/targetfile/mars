@@ -19,9 +19,17 @@ targetfile["mars"] = function(pattern)
 	tags["STEP"] = function(md)
 		local tr = md.timerange
 		if tr == nil then return nil end
-		pind, u, p1, p2 = tr.grib1()
-		if pind == nil then return nil end
-		return string.format("%02d", p1)
+		if tr.style() == "GRIB1" then
+			pind, u, p1, p2 = tr.grib1()
+			if pind == nil then return nil end
+			return string.format("%02d", p1)
+		elseif tr.style() == "GRIB2" then
+			pind, u, p1, p2 = tr.grib2()
+			if pind == nil then return nil end
+			return string.format("%02d", p1)
+		else
+			return nil
+		end
 	end
 
 	-- TODO: normalise pattern to remove the need for string.upper later on

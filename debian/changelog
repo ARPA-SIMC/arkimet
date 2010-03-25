@@ -7,8 +7,9 @@ arkimet (0.35-1) UNRELEASED; urgency=low
   * Allow --file=-
   * Allow --postprocess and --report with --querymacro
   * Pass GRIB2 time ranges to Lua
+  * targetfile mars step rendered for grib2 as well
 
- -- Enrico Zini <enrico@debian.org>  Thu, 25 Mar 2010 19:17:05 +0000
+ -- Enrico Zini <enrico@debian.org>  Thu, 25 Mar 2010 19:22:28 +0000
 
 arkimet (0.34-1) UNRELEASED; urgency=low
 
