@@ -6,8 +6,9 @@ arkimet (0.35-1) UNRELEASED; urgency=low
   * 'gridspace' query macro
   * Allow --file=-
   * Allow --postprocess and --report with --querymacro
+  * Pass GRIB2 time ranges to Lua
 
- -- Enrico Zini <enrico@debian.org>  Thu, 18 Mar 2010 08:57:01 +0000
+ -- Enrico Zini <enrico@debian.org>  Thu, 25 Mar 2010 19:17:05 +0000
 
 arkimet (0.34-1) UNRELEASED; urgency=low
 
