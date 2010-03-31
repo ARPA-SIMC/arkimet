@@ -539,6 +539,9 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 	if (q.sorter)
 		std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
 
+// Uncomment as a quick hack to check memory usage at this point:
+// system(str::fmtf("ps u %d >&2", getpid()).c_str());
+
 	// pass it to consumer
 	mdbuf.sendTo(consumer);
 
