@@ -9,8 +9,9 @@ arkimet (0.35-1) UNRELEASED; urgency=low
   * Pass GRIB2 time ranges to Lua
   * targetfile mars step rendered for grib2 as well
   * Better error message when reading non-arkimet files
+  * Cache formatter results for a significant performance speedup
 
- -- Enrico Zini <enrico@debian.org>  Wed, 31 Mar 2010 12:00:24 +0100
+ -- Enrico Zini <enrico@debian.org>  Wed, 31 Mar 2010 15:26:51 +0100
 
 arkimet (0.34-1) UNRELEASED; urgency=low
 

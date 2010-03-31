@@ -35,6 +35,11 @@ namespace formatter {
 
 class Lua : public Formatter
 {
+	// Cache already formatted items
+	mutable std::map<Item<>, std::string> m_cache;
+
+	virtual std::string compute(const Item<>& v) const;
+
 	template<typename T>
 	std::string invoke(const char* func, const char* type, const T& v) const;
 

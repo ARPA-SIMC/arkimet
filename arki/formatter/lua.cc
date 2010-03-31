@@ -114,6 +114,18 @@ Lua::~Lua()
 
 std::string Lua::operator()(const Item<>& v) const
 {
+	std::map<Item<>, std::string>::const_iterator i = m_cache.find(v);
+	if (i != m_cache.end())
+		return i->second;
+
+	string res = compute(v);
+	m_cache.insert(make_pair(v, res));
+	return res;
+}
+	
+
+std::string Lua::compute(const Item<>& v) const
+{
 	string tag = v->tag();
 	string func = "fmt_"+tag;
 
