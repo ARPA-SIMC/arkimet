@@ -106,7 +106,7 @@ struct UItem : public refcounted::Pointer<TYPE>
 	int compare(const UItem<TYPE>& o) const
 	{
 		if (this->m_ptr == 0 && o.m_ptr != 0) return -1;
-		if (this->m_ptr == 0 && o.m_ptr == 0) return 0;
+		if (this->m_ptr == o.m_ptr) return 0;
 		if (this->m_ptr != 0 && o.m_ptr == 0) return 1;
 		return this->m_ptr->compare(*o.m_ptr);
 	}
@@ -118,7 +118,7 @@ struct UItem : public refcounted::Pointer<TYPE>
 	/// Equality
 	bool operator==(const UItem<TYPE>& o) const
 	{
-		if (this->m_ptr == 0 && o.m_ptr == 0)
+		if (this->m_ptr == o.m_ptr)
 			return true;
 		if (this->m_ptr == 0 || o.m_ptr == 0)
 			return false;
