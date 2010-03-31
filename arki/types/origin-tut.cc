@@ -47,9 +47,9 @@ void to::test<1>()
 	Item<Origin> o = origin::GRIB1::create(1, 2, 3);
 	ensure_equals(o->style(), Origin::GRIB1);
 	const origin::GRIB1* v = o->upcast<origin::GRIB1>();
-	ensure_equals(v->centre, 1);
-	ensure_equals(v->subcentre, 2);
-	ensure_equals(v->process, 3);
+	ensure_equals(v->centre(), 1);
+	ensure_equals(v->subcentre(), 2);
+	ensure_equals(v->process(), 3);
 
 	ensure_equals(o, Item<Origin>(origin::GRIB1::create(1, 2, 3)));
 
@@ -73,11 +73,11 @@ void to::test<2>()
 	Item<Origin> o = origin::GRIB2::create(1, 2, 3, 4, 5);
 	ensure_equals(o->style(), Origin::GRIB2);
 	const origin::GRIB2* v = o->upcast<origin::GRIB2>();
-	ensure_equals(v->centre, 1);
-	ensure_equals(v->subcentre, 2);
-	ensure_equals(v->processtype, 3);
-	ensure_equals(v->bgprocessid, 4);
-	ensure_equals(v->processid, 5);
+	ensure_equals(v->centre(), 1);
+	ensure_equals(v->subcentre(), 2);
+	ensure_equals(v->processtype(), 3);
+	ensure_equals(v->bgprocessid(), 4);
+	ensure_equals(v->processid(), 5);
 
 	ensure_equals(o, Item<Origin>(origin::GRIB2::create(1, 2, 3, 4, 5)));
 
@@ -101,8 +101,8 @@ void to::test<3>()
 	Item<Origin> o = origin::BUFR::create(1, 2);
 	ensure_equals(o->style(), Origin::BUFR);
 	const origin::BUFR* v = o->upcast<origin::BUFR>();
-	ensure_equals(v->centre, 1);
-	ensure_equals(v->subcentre, 2);
+	ensure_equals(v->centre(), 1);
+	ensure_equals(v->subcentre(), 2);
 
 	ensure_equals(o, Item<Origin>(origin::BUFR::create(1, 2)));
 

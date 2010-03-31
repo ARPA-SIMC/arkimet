@@ -80,11 +80,17 @@ struct Origin : public types::Type
 
 namespace origin {
 
-struct GRIB1 : public Origin
+class GRIB1 : public Origin
 {
-	unsigned char centre;
-	unsigned char subcentre;
-	unsigned char process;
+protected:
+	unsigned char m_centre;
+	unsigned char m_subcentre;
+	unsigned char m_process;
+
+public:
+	int centre() const { return m_centre; }
+	int subcentre() const { return m_subcentre; }
+	int process() const { return m_process; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -101,13 +107,21 @@ struct GRIB1 : public Origin
 	virtual std::vector<int> toIntVector() const;
 };
 
-struct GRIB2 : public Origin
+class GRIB2 : public Origin
 {
-	unsigned short centre;
-	unsigned short subcentre;
-	unsigned char processtype;
-	unsigned char bgprocessid;
-	unsigned char processid;
+protected:
+	unsigned short m_centre;
+	unsigned short m_subcentre;
+	unsigned char m_processtype;
+	unsigned char m_bgprocessid;
+	unsigned char m_processid;
+
+public:
+	unsigned short centre() const { return m_centre; }
+	unsigned short subcentre() const { return m_subcentre; }
+	unsigned char processtype() const { return m_processtype; }
+	unsigned char bgprocessid() const { return m_bgprocessid; }
+	unsigned char processid() const { return m_processid; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -126,10 +140,15 @@ struct GRIB2 : public Origin
 	virtual std::vector<int> toIntVector() const;
 };
 
-struct BUFR : public Origin
+class BUFR : public Origin
 {
-	unsigned char centre;
-	unsigned char subcentre;
+protected:
+	unsigned char m_centre;
+	unsigned char m_subcentre;
+
+public:
+	unsigned char centre() const { return m_centre; }
+	unsigned char subcentre() const { return m_subcentre; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;

@@ -178,26 +178,26 @@ int Origin::lua_lookup(lua_State* L)
 	else if (name == "grib1" && v.style() == Origin::GRIB1)
 	{
 		const origin::GRIB1* v1 = v.upcast<origin::GRIB1>();
-		lua_pushnumber(L, v1->centre);
-		lua_pushnumber(L, v1->subcentre);
-		lua_pushnumber(L, v1->process);
+		lua_pushnumber(L, v1->centre());
+		lua_pushnumber(L, v1->subcentre());
+		lua_pushnumber(L, v1->process());
 		return 3;
 	}
 	else if (name == "grib2" && v.style() == Origin::GRIB2)
 	{
 		const origin::GRIB2* v1 = v.upcast<origin::GRIB2>();
-		lua_pushnumber(L, v1->centre);
-		lua_pushnumber(L, v1->subcentre);
-		lua_pushnumber(L, v1->processtype);
-		lua_pushnumber(L, v1->bgprocessid);
-		lua_pushnumber(L, v1->processid);
+		lua_pushnumber(L, v1->centre());
+		lua_pushnumber(L, v1->subcentre());
+		lua_pushnumber(L, v1->processtype());
+		lua_pushnumber(L, v1->bgprocessid());
+		lua_pushnumber(L, v1->processid());
 		return 5;
 	}
 	else if (name == "bufr" && v.style() == Origin::BUFR)
 	{
 		const origin::GRIB2* v1 = v.upcast<origin::GRIB2>();
-		lua_pushnumber(L, v1->centre);
-		lua_pushnumber(L, v1->subcentre);
+		lua_pushnumber(L, v1->centre());
+		lua_pushnumber(L, v1->subcentre());
 		return 2;
 	}
 	else
@@ -243,21 +243,23 @@ Origin::Style GRIB1::style() const { return Origin::GRIB1; }
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Origin::encodeWithoutEnvelope(enc);
-	enc.addUInt(centre, 1);
-	enc.addUInt(subcentre, 1);
-	enc.addUInt(process, 1);
+	enc.addUInt(m_centre, 1);
+	enc.addUInt(m_subcentre, 1);
+	enc.addUInt(m_process, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-			 << setfill('0')
-	         << setw(3) << (int)centre << ", " << setw(3) << (int)subcentre << ", " << setw(3) << (int)process
-			 << setfill(' ')
-			 << ")";
+		 << setfill('0')
+	         << setw(3) << (int)m_centre << ", "
+		 << setw(3) << (int)m_subcentre << ", "
+		 << setw(3) << (int)m_process
+		 << setfill(' ')
+		 << ")";
 }
 std::string GRIB1::exactQuery() const
 {
-    return str::fmtf("GRIB1,%d,%d,%d", (int)centre, (int)subcentre, (int)process);
+    return str::fmtf("GRIB1,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_process);
 }
 
 int GRIB1::compare(const Origin& o) const
@@ -276,33 +278,33 @@ int GRIB1::compare(const Origin& o) const
 }
 int GRIB1::compare(const GRIB1& o) const
 {
-	if (int res = centre - o.centre) return res;
-	if (int res = subcentre - o.subcentre) return res;
-	return process - o.process;
+	if (int res = m_centre - o.m_centre) return res;
+	if (int res = m_subcentre - o.m_subcentre) return res;
+	return m_process - o.m_process;
 }
 
 bool GRIB1::operator==(const Type& o) const
 {
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v) return false;
-	return centre == v->centre && subcentre == v->subcentre && process == v->process;
+	return m_centre == v->m_centre && m_subcentre == v->m_subcentre && m_process == v->m_process;
 }
 
 Item<GRIB1> GRIB1::create(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
 	GRIB1* res = new GRIB1;
-	res->centre = centre;
-	res->subcentre = subcentre;
-	res->process = process;
+	res->m_centre = centre;
+	res->m_subcentre = subcentre;
+	res->m_process = process;
 	return res;
 }
 
 std::vector<int> GRIB1::toIntVector() const
 {
 	vector<int> res;
-	res.push_back(centre);
-	res.push_back(subcentre);
-	res.push_back(process);
+	res.push_back(m_centre);
+	res.push_back(m_subcentre);
+	res.push_back(m_process);
 	return res;
 }
 
@@ -312,24 +314,27 @@ Origin::Style GRIB2::style() const { return Origin::GRIB2; }
 void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Origin::encodeWithoutEnvelope(enc);
-	enc.addUInt(centre, 2);
-	enc.addUInt(subcentre, 2);
-	enc.addUInt(processtype, 1);
-	enc.addUInt(bgprocessid, 1);
-	enc.addUInt(processid, 1);
+	enc.addUInt(m_centre, 2);
+	enc.addUInt(m_subcentre, 2);
+	enc.addUInt(m_processtype, 1);
+	enc.addUInt(m_bgprocessid, 1);
+	enc.addUInt(m_processid, 1);
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-			 << setfill('0')
-		     << setw(5) << (int)centre << ", " << setw(5) << (int)subcentre << ", " << setw(3) << (int)processtype << ", "
-			 << setw(3) << (int)bgprocessid << ", " << setw(3) << (int)processid
-			 << setfill(' ')
-			 << ")";
+		 << setfill('0')
+		 << setw(5) << (int)m_centre << ", "
+		 << setw(5) << (int)m_subcentre << ", "
+		 << setw(3) << (int)m_processtype << ", "
+		 << setw(3) << (int)m_bgprocessid << ", "
+		 << setw(3) << (int)m_processid
+		 << setfill(' ')
+		 << ")";
 }
 std::string GRIB2::exactQuery() const
 {
-    return str::fmtf("GRIB2,%d,%d,%d,%d,%d", (int)centre, (int)subcentre, (int)processtype, (int)bgprocessid, (int)processid);
+    return str::fmtf("GRIB2,%d,%d,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_processtype, (int)m_bgprocessid, (int)m_processid);
 }
 
 int GRIB2::compare(const Origin& o) const
@@ -348,19 +353,19 @@ int GRIB2::compare(const Origin& o) const
 }
 int GRIB2::compare(const GRIB2& o) const
 {
-	if (int res = centre - o.centre) return res;
-	if (int res = subcentre - o.subcentre) return res;
-	if (int res = processtype - o.processtype) return res;
-	if (int res = bgprocessid - o.bgprocessid) return res;
-	return processid - o.processid;
+	if (int res = m_centre - o.m_centre) return res;
+	if (int res = m_subcentre - o.m_subcentre) return res;
+	if (int res = m_processtype - o.m_processtype) return res;
+	if (int res = m_bgprocessid - o.m_bgprocessid) return res;
+	return m_processid - o.m_processid;
 }
 bool GRIB2::operator==(const Type& o) const
 {
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v) return false;
-	return centre == v->centre && subcentre == v->subcentre 
-		&& processtype == v->processtype && bgprocessid == v->bgprocessid
-		&& processid == v->processid;
+	return m_centre == v->m_centre && m_subcentre == v->m_subcentre 
+		&& m_processtype == v->m_processtype && m_bgprocessid == v->m_bgprocessid
+		&& m_processid == v->m_processid;
 }
 
 Item<GRIB2> GRIB2::create(
@@ -368,22 +373,22 @@ Item<GRIB2> GRIB2::create(
 			  unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
 {
 	GRIB2* res = new GRIB2;
-	res->centre = centre;
-	res->subcentre = subcentre;
-	res->processtype = processtype;
-	res->bgprocessid = bgprocessid;
-	res->processid = processid;
+	res->m_centre = centre;
+	res->m_subcentre = subcentre;
+	res->m_processtype = processtype;
+	res->m_bgprocessid = bgprocessid;
+	res->m_processid = processid;
 	return res;
 }
 
 std::vector<int> GRIB2::toIntVector() const
 {
 	vector<int> res;
-	res.push_back(centre);
-	res.push_back(subcentre);
-	res.push_back(processtype);
-	res.push_back(bgprocessid);
-	res.push_back(processid);
+	res.push_back(m_centre);
+	res.push_back(m_subcentre);
+	res.push_back(m_processtype);
+	res.push_back(m_bgprocessid);
+	res.push_back(m_processid);
 	return res;
 }
 
@@ -393,20 +398,21 @@ Origin::Style BUFR::style() const { return Origin::BUFR; }
 void BUFR::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Origin::encodeWithoutEnvelope(enc);
-	enc.addUInt(centre, 1);
-	enc.addUInt(subcentre, 1);
+	enc.addUInt(m_centre, 1);
+	enc.addUInt(m_subcentre, 1);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-			 << setfill('0')
-	         << setw(3) << (int)centre << ", " << setw(3) << (int)subcentre
-			 << setfill(' ')
-			 << ")";
+		 << setfill('0')
+	         << setw(3) << (int)m_centre << ", "
+		 << setw(3) << (int)m_subcentre
+		 << setfill(' ')
+		 << ")";
 }
 std::string BUFR::exactQuery() const
 {
-    return str::fmtf("BUFR,%d,%d", (int)centre, (int)subcentre);
+    return str::fmtf("BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
 }
 
 int BUFR::compare(const Origin& o) const
@@ -425,29 +431,29 @@ int BUFR::compare(const Origin& o) const
 }
 int BUFR::compare(const BUFR& o) const
 {
-	if (int res = centre - o.centre) return res;
-	return subcentre - o.subcentre;
+	if (int res = m_centre - o.m_centre) return res;
+	return m_subcentre - o.m_subcentre;
 }
 bool BUFR::operator==(const Type& o) const
 {
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v) return false;
-	return centre == v->centre && subcentre == v->subcentre;
+	return m_centre == v->m_centre && m_subcentre == v->m_subcentre;
 }
 
 Item<BUFR> BUFR::create(unsigned char centre, unsigned char subcentre)
 {
 	BUFR* res = new BUFR;
-	res->centre = centre;
-	res->subcentre = subcentre;
+	res->m_centre = centre;
+	res->m_subcentre = subcentre;
 	return res;
 }
 
 std::vector<int> BUFR::toIntVector() const
 {
 	vector<int> res;
-	res.push_back(centre);
-	res.push_back(subcentre);
+	res.push_back(m_centre);
+	res.push_back(m_subcentre);
 	return res;
 }
 
