@@ -3,9 +3,12 @@
 function fmt_product(v)
 	if v.style() == "GRIB1" then
 		origin, table, product = v.grib1()
+		if origin == 200 or origin == 80 then
+			origin = 0
+		end
 		names = read_grib_table(1, string.format("2.%d.%d", origin, table))
 		if names[product] then
-			return names:desc(product)
+			return string.gsub(names:desc(product), '[*][*]', "^")
 		end
 	elseif v.style() == "GRIB2" then
 		centre, discipline, category, number = v.grib2()

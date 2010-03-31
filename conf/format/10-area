@@ -5,8 +5,16 @@ function fmt_area(v)
 		values = v.grib()
 		-- values is now a table, you can access it for example as
 		-- values["lat"] or values.lat
-		return nil
+		if not values or not values.type then
+			return nil
+		end
+		drt = read_grib_table(1, "6")
+		if not drt then
+			return nil
+		end
+		out= drt:abbr(values.type).." - "..drt:desc(values.type)..": "
 	else
 		return nil
 	end
+	return nil
 end
