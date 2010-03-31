@@ -292,11 +292,13 @@ bool GRIB1::operator==(const Type& o) const
 
 Item<GRIB1> GRIB1::create(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
+	static TypeCache<GRIB1> cache;
+
 	GRIB1* res = new GRIB1;
 	res->m_centre = centre;
 	res->m_subcentre = subcentre;
 	res->m_process = process;
-	return res;
+	return cache.intern(res);
 }
 
 std::vector<int> GRIB1::toIntVector() const

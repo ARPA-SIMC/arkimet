@@ -29,6 +29,7 @@
 #include <string>
 #include <iosfwd>
 #include <map>
+#include <set>
 
 struct lua_State;
 
@@ -232,6 +233,28 @@ struct Type : public refcounted::Base
 
 	/// Push to the LUA stack a userdata to access this item
 	virtual void lua_push(lua_State* L) const = 0;
+};
+
+template<typename T>
+class TypeCache
+{
+protected:
+	// TODO: use unordered_set when it becomes available
+	std::set< Item<T> > m_cache;
+
+public:
+	/**
+	 * If \a item exists in the cache, return the cached version.
+	 * Else, enter \a item in the cache and return it
+	 */
+	Item<T> intern(Item<T> item)
+	{
+		typename std::set< Item<T> >::const_iterator i = m_cache.find(item);
+		if (i != m_cache.end())
+			return *i;
+		m_cache.insert(item);
+		return item;
+	}
 };
 
 /**
