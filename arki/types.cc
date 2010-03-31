@@ -227,8 +227,10 @@ bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, s
 	// Read the metadata body
 	buf.resize(len);
 	res = read(fd, buf.data(), len);
-	if ((unsigned)res != len)
+	if (res < 0)
 		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
+	if ((unsigned)res != len)
+		throw wibble::exception::Consistency("reading " + filename, "read only " + str::fmt(res) + " of " + str::fmt(res) + " bytes: either the file is corrupted or it does not contain arkimet metadata");
 
 	return true;
 }
@@ -273,7 +275,9 @@ bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buff
 	// Read the metadata body
 	buf.resize(len);
 	in.read((char*)buf.data(), len);
-	if (in.fail())
+	if (in.fail() && in.eof())
+		throw wibble::exception::Consistency("reading " + filename, "read less than " + str::fmt(len) + " bytes: either the file is corrupted or it does not contain arkimet metadata");
+	if (in.bad())
 		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
 
 	return true;
