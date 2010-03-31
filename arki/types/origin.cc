@@ -374,13 +374,15 @@ Item<GRIB2> GRIB2::create(
 			  unsigned short centre, unsigned short subcentre,
 			  unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
 {
+	static TypeCache<GRIB2> cache;
+
 	GRIB2* res = new GRIB2;
 	res->m_centre = centre;
 	res->m_subcentre = subcentre;
 	res->m_processtype = processtype;
 	res->m_bgprocessid = bgprocessid;
 	res->m_processid = processid;
-	return res;
+	return cache.intern(res);
 }
 
 std::vector<int> GRIB2::toIntVector() const
