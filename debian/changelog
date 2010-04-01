@@ -1,3 +1,12 @@
+arkimet (0.36-1) UNRELEASED; urgency=low
+
+  * Reduced memory usage when handling summaries, by reusing metadata Item
+    objects as much as possible
+  * When making big queries, use a temporary file on disk to store data coming
+    out of the database, to avoid using too much RAM
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 01 Apr 2010 18:55:52 +0100
+
 arkimet (0.35-1) UNRELEASED; urgency=low
 
   * Added quermacro support to arki-query and arki-server
