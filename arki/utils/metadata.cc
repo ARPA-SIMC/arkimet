@@ -49,6 +49,17 @@ void Collector::writeAtomically(const std::string& fname) const
 	writer.close();
 }
 
+void Collector::appendTo(const std::string& fname) const
+{
+	std::ofstream outmd;
+	outmd.open(fname.c_str(), ios::out | ios::app);
+	if (!outmd.is_open() || outmd.fail())
+		throw wibble::exception::File(fname, "opening file for appending");
+	for (const_iterator i = begin(); i != end(); ++i)
+		i->write(outmd, fname);
+	outmd.close();
+}
+
 void Collector::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	// First ask the index.  If it can do something useful, iterate with it

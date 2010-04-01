@@ -55,6 +55,11 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 	void writeAtomically(const std::string& fname) const;
 
 	/**
+	 * Append all metadata to the given file
+	 */
+	void appendTo(const std::string& fname) const;
+
+	/**
 	 * Send all metadata to a consumer
 	 */
 	bool sendTo(MetadataConsumer& out)
