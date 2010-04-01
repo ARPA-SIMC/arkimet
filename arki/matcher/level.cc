@@ -44,13 +44,13 @@ bool MatchLevelGRIB1::matchItem(const Item<>& o) const
 {
 	const types::level::GRIB1* v = dynamic_cast<const types::level::GRIB1*>(o.ptr());
 	if (!v) return false;
-	if (type != -1 && type != v->type) return false;
+	if (type != -1 && (unsigned)type != v->type()) return false;
 	int ol1 = -1, ol2 = -1;
 	switch (v->valType())
 	{
 		case 0: break;
-		case 1: ol1 = v->l1; break;
-		case 2: ol1 = v->l1; ol2 = v->l2; break;
+		case 1: ol1 = v->l1(); break;
+		case 2: ol1 = v->l1(); ol2 = v->l2(); break;
 	}
 	if (l1 != -1 && l1 != ol1) return false;
 	if (l2 != -1 && l2 != ol2) return false;
@@ -80,9 +80,9 @@ bool MatchLevelGRIB2S::matchItem(const Item<>& o) const
 {
 	const types::level::GRIB2S* v = dynamic_cast<const types::level::GRIB2S*>(o.ptr());
 	if (!v) return false;
-	if (type != -1 && type != v->type) return false;
-	if (scale != -1 && scale != v->scale) return false;
-	if (value >= 0 && (unsigned)value != v->value) return false;
+	if (type != -1 && (unsigned)type != v->type()) return false;
+	if (scale != -1 && (unsigned)scale != v->scale()) return false;
+	if (value >= 0 && (unsigned)value != v->value()) return false;
 	return true;
 }
 
@@ -112,12 +112,12 @@ bool MatchLevelGRIB2D::matchItem(const Item<>& o) const
 {
 	const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(o.ptr());
 	if (!v) return false;
-	if (type1 != -1 && type1 != v->type1) return false;
-	if (scale1 != -1 && scale1 != v->scale1) return false;
-	if (value1 >= 0 && (unsigned)value1 != v->value1) return false;
-	if (type2 != -1 && type2 != v->type2) return false;
-	if (scale2 != -1 && scale2 != v->scale2) return false;
-	if (value2 >= 0 && (unsigned)value2 != v->value2) return false;
+	if (type1 != -1 && (unsigned)type1 != v->type1()) return false;
+	if (scale1 != -1 && (unsigned)scale1 != v->scale1()) return false;
+	if (value1 >= 0 && (unsigned)value1 != v->value1()) return false;
+	if (type2 != -1 && (unsigned)type2 != v->type2()) return false;
+	if (scale2 != -1 && (unsigned)scale2 != v->scale2()) return false;
+	if (value2 >= 0 && (unsigned)value2 != v->value2()) return false;
 	return true;
 }
 

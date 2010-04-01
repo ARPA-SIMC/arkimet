@@ -86,9 +86,9 @@ protected:
 	unsigned char m_product;
 
 public:
-	int origin() const { return m_origin; }
-	int table() const { return m_table; }
-	int product() const { return m_product; }
+	unsigned origin() const { return m_origin; }
+	unsigned table() const { return m_table; }
+	unsigned product() const { return m_product; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -114,10 +114,10 @@ protected:
 	unsigned char m_number;
 
 public:
-	int centre() const { return m_centre; }
-	int discipline() const { return m_discipline; }
-	int category() const { return m_category; }
-	int number() const { return m_number; }
+	unsigned centre() const { return m_centre; }
+	unsigned discipline() const { return m_discipline; }
+	unsigned category() const { return m_category; }
+	unsigned number() const { return m_number; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -142,9 +142,9 @@ protected:
 	unsigned char m_localsubtype;
 
 public:
-	int type() const { return m_type; }
-	int subtype() const { return m_subtype; }
-	int localsubtype() const { return m_localsubtype; }
+	unsigned type() const { return m_type; }
+	unsigned subtype() const { return m_subtype; }
+	unsigned localsubtype() const { return m_localsubtype; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;

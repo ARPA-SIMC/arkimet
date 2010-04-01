@@ -290,10 +290,29 @@ int Level::lua_lookup(lua_State* L)
 	else if (name == "grib1" && v.style() == Level::GRIB1)
 	{
 		const level::GRIB1* v1 = v.upcast<level::GRIB1>();
-		lua_pushnumber(L, v1->type);
-		lua_pushnumber(L, v1->l1);
-		lua_pushnumber(L, v1->l2);
+		lua_pushnumber(L, v1->type());
+		lua_pushnumber(L, v1->l1());
+		lua_pushnumber(L, v1->l2());
 		return 3;
+	}
+	else if (name == "grib2s" && v.style() == Level::GRIB2S)
+	{
+		const level::GRIB2S* v1 = v.upcast<level::GRIB2S>();
+		lua_pushnumber(L, v1->type());
+		lua_pushnumber(L, v1->scale());
+		lua_pushnumber(L, v1->value());
+		return 3;
+	}
+	else if (name == "grib2d" && v.style() == Level::GRIB2D)
+	{
+		const level::GRIB2D* v1 = v.upcast<level::GRIB2D>();
+		lua_pushnumber(L, v1->type1());
+		lua_pushnumber(L, v1->scale1());
+		lua_pushnumber(L, v1->value1());
+		lua_pushnumber(L, v1->type2());
+		lua_pushnumber(L, v1->scale2());
+		lua_pushnumber(L, v1->value2());
+		return 6;
 	}
 	else
 	{
@@ -333,35 +352,39 @@ void Level::lua_push(lua_State* L) const
 
 namespace level {
 
+static TypeCache<GRIB1> cache_grib1;
+static TypeCache<GRIB2S> cache_grib2s;
+static TypeCache<GRIB2D> cache_grib2d;
+
 Level::Style GRIB1::style() const { return Level::GRIB1; }
 
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Level::encodeWithoutEnvelope(enc) ;
-	enc.addUInt(type, 1);
+	enc.addUInt(m_type, 1);
 	switch (valType())
 	{
 		case 0: break;
-		case 1: enc.addVarint(l1); break;
+		case 1: enc.addVarint(m_l1); break;
 		default:
-			enc.addUInt(l1, 1);
-			enc.addUInt(l2, 1);
+			enc.addUInt(m_l1, 1);
+			enc.addUInt(m_l2, 1);
 			break;
 	}
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
-    o << formatStyle(style()) << "(";
+	o << formatStyle(style()) << "(";
 	o << setfill('0') << internal;
-	o << setw(3) << (int)type;
+	o << setw(3) << (int)m_type;
 	switch (valType())
 	{
 		case 0: break;
 		case 1:
-			 o << ", " << setw(5) << (int)l1;
+			 o << ", " << setw(5) << (int)m_l1;
 			 break;
 		default:
-			 o << ", " << setw(3) << (int)l1 << ", " << setw(3) << (int)l2;
+			 o << ", " << setw(3) << (int)m_l1 << ", " << setw(3) << (int)m_l2;
 			 break;
 	}
 	o << setfill(' ');
@@ -371,9 +394,9 @@ std::string GRIB1::exactQuery() const
 {
 	switch (valType())
 	{
-		case 0: return str::fmtf("GRIB1,%d", (int)type);
-		case 1: return str::fmtf("GRIB1,%d,%d", (int)type, (int)l1);
-		default: return str::fmtf("GRIB1,%d,%d,%d", (int)type, (int)l1, (int)l2);
+		case 0: return str::fmtf("GRIB1,%d", (int)m_type);
+		case 1: return str::fmtf("GRIB1,%d,%d", (int)m_type, (int)m_l1);
+		default: return str::fmtf("GRIB1,%d,%d,%d", (int)m_type, (int)m_l1, (int)m_l2);
 	}
 }
 
@@ -393,56 +416,56 @@ int GRIB1::compare(const Level& o) const
 }
 int GRIB1::compare(const GRIB1& o) const
 {
-	if (int res = type - o.type) return res;
-	if (int res = l1 - o.l1) return res;
-	return l2 - o.l2;
+	if (int res = m_type - o.m_type) return res;
+	if (int res = m_l1 - o.m_l1) return res;
+	return m_l2 - o.m_l2;
 }
 
 bool GRIB1::operator==(const Type& o) const
 {
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v) return false;
-	return type == v->type && l1 == v->l1 && l2 == v->l2;
+	return m_type == v->m_type && m_l1 == v->m_l1 && m_l2 == v->m_l2;
 }
 
 Item<GRIB1> GRIB1::create(unsigned char type)
 {
 	GRIB1* res = new GRIB1;
-	res->type = type;
-	res->l1 = 0;
-	res->l2 = 0;
-	return res;
+	res->m_type = type;
+	res->m_l1 = 0;
+	res->m_l2 = 0;
+	return cache_grib1.intern(res);
 }
 
 Item<GRIB1> GRIB1::create(unsigned char type, unsigned short l1)
 {
 	GRIB1* res = new GRIB1;
-	res->type = type;
+	res->m_type = type;
 	switch (getValType(type))
 	{
-		case 0: res->l1 = 0; break;
-		default: res->l1 = l1; break;
+		case 0: res->m_l1 = 0; break;
+		default: res->m_l1 = l1; break;
 	}
-	res->l2 = 0;
-	return res;
+	res->m_l2 = 0;
+	return cache_grib1.intern(res);
 }
 
 Item<GRIB1> GRIB1::create(unsigned char type, unsigned char l1, unsigned char l2)
 {
 	GRIB1* res = new GRIB1;
-	res->type = type;
+	res->m_type = type;
 	switch (getValType(type))
 	{
-		case 0: res->l1 = 0; res->l2 = 0; break;
-		case 1: res->l1 = l1; res->l2 = 0; break;
-		default: res->l1 = l1; res->l2 = l2; break;
+		case 0: res->m_l1 = 0; res->m_l2 = 0; break;
+		case 1: res->m_l1 = l1; res->m_l2 = 0; break;
+		default: res->m_l1 = l1; res->m_l2 = l2; break;
 	}
-	return res;
+	return cache_grib1.intern(res);
 }
 
 int GRIB1::valType() const
 {
-	return getValType(type);
+	return getValType(m_type);
 }
 
 int GRIB1::getValType(unsigned char type)
@@ -499,9 +522,9 @@ Level::Style GRIB2S::style() const { return Level::GRIB2S; }
 void GRIB2S::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Level::encodeWithoutEnvelope(enc);
-	enc.addUInt(type, 1);
-	enc.addUInt(scale, 1);
-	enc.addVarint(value);
+	enc.addUInt(m_type, 1);
+	enc.addUInt(m_scale, 1);
+	enc.addVarint(m_value);
 }
 std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 {
@@ -509,13 +532,13 @@ std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
     return o
 	  << formatStyle(style()) << "("
 	  << setfill('0') << internal
-	  << setw(3) << (int)type << ", "
-	  << setw(3) << (int)scale << ", "
-	  << setw(10) << (int)value << ")";
+	  << setw(3) << (int)m_type << ", "
+	  << setw(3) << (int)m_scale << ", "
+	  << setw(10) << (int)m_value << ")";
 }
 std::string GRIB2S::exactQuery() const
 {
-	return str::fmtf("GRIB2S,%d,%d,%d", (int)type, (int)scale, (int)value);
+	return str::fmtf("GRIB2S,%d,%d,%d", (int)m_type, (int)m_scale, (int)m_value);
 }
 
 int GRIB2S::compare(const Level& o) const
@@ -535,9 +558,9 @@ int GRIB2S::compare(const Level& o) const
 int GRIB2S::compare(const GRIB2S& o) const
 {
 	// FIXME: here we can handle uniforming the scales if needed
-	if (int res = type - o.type) return res;
-	if (int res = scale - o.scale) return res;
-	return value - o.value;
+	if (int res = m_type - o.m_type) return res;
+	if (int res = m_scale - o.m_scale) return res;
+	return m_value - o.m_value;
 }
 
 bool GRIB2S::operator==(const Type& o) const
@@ -545,16 +568,16 @@ bool GRIB2S::operator==(const Type& o) const
 	const GRIB2S* v = dynamic_cast<const GRIB2S*>(&o);
 	if (!v) return false;
 	// FIXME: here we can handle uniforming the scales if needed
-	return type == v->type && scale == v->scale && value == v->value;
+	return m_type == v->m_type && m_scale == v->m_scale && m_value == v->m_value;
 }
 
 Item<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned long value)
 {
 	GRIB2S* res = new GRIB2S;
-	res->type = type;
-	res->scale = scale;
-	res->value = value;
-	return res;
+	res->m_type = type;
+	res->m_scale = scale;
+	res->m_value = value;
+	return cache_grib2s.intern(res);
 }
 
 
@@ -563,8 +586,8 @@ Level::Style GRIB2D::style() const { return Level::GRIB2D; }
 void GRIB2D::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Level::encodeWithoutEnvelope(enc);
-	enc.addUInt(type1, 1).addUInt(scale1, 1).addVarint(value1);
-	enc.addUInt(type2, 1).addUInt(scale2, 1).addVarint(value2);
+	enc.addUInt(m_type1, 1).addUInt(m_scale1, 1).addVarint(m_value1);
+	enc.addUInt(m_type2, 1).addUInt(m_scale2, 1).addVarint(m_value2);
 }
 std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 {
@@ -572,18 +595,18 @@ std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
     return o
 	  << formatStyle(style()) << "("
 	  << setfill('0') << internal
-	  << setw(3) << (int)type1 << ", "
-	  << setw(3) << (int)scale1 << ", "
-	  << setw(10) << (int)value1 << ", "
-	  << setw(3) << (int)type2 << ", "
-	  << setw(3) << (int)scale2 << ", "
-	  << setw(10) << (int)value2 << ")";
+	  << setw(3) << (int)m_type1 << ", "
+	  << setw(3) << (int)m_scale1 << ", "
+	  << setw(10) << (int)m_value1 << ", "
+	  << setw(3) << (int)m_type2 << ", "
+	  << setw(3) << (int)m_scale2 << ", "
+	  << setw(10) << (int)m_value2 << ")";
 }
 std::string GRIB2D::exactQuery() const
 {
 	return str::fmtf("GRIB2D,%d,%d,%d,%d,%d,%d",
-			(int)type1, (int)scale1, (int)value1,
-			(int)type2, (int)scale2, (int)value2);
+			(int)m_type1, (int)m_scale1, (int)m_value1,
+			(int)m_type2, (int)m_scale2, (int)m_value2);
 }
 
 int GRIB2D::compare(const Level& o) const
@@ -603,12 +626,12 @@ int GRIB2D::compare(const Level& o) const
 int GRIB2D::compare(const GRIB2D& o) const
 {
 	// FIXME: here we can handle uniforming the scales if needed
-	if (int res = type1 - o.type1) return res;
-	if (int res = scale1 - o.scale1) return res;
-	if (int res = value1 - o.value1) return res;
-	if (int res = type2 - o.type2) return res;
-	if (int res = scale2 - o.scale2) return res;
-	return value2 - o.value2;
+	if (int res = m_type1 - o.m_type1) return res;
+	if (int res = m_scale1 - o.m_scale1) return res;
+	if (int res = m_value1 - o.m_value1) return res;
+	if (int res = m_type2 - o.m_type2) return res;
+	if (int res = m_scale2 - o.m_scale2) return res;
+	return m_value2 - o.m_value2;
 }
 
 bool GRIB2D::operator==(const Type& o) const
@@ -616,8 +639,8 @@ bool GRIB2D::operator==(const Type& o) const
 	const GRIB2D* v = dynamic_cast<const GRIB2D*>(&o);
 	if (!v) return false;
 	// FIXME: here we can handle uniforming the scales if needed
-	return type1 == v->type1 && scale1 == v->scale1 && value1 == v->value1
-	    && type2 == v->type2 && scale2 == v->scale2 && value2 == v->value2;
+	return m_type1 == v->m_type1 && m_scale1 == v->m_scale1 && m_value1 == v->m_value1
+	    && m_type2 == v->m_type2 && m_scale2 == v->m_scale2 && m_value2 == v->m_value2;
 }
 
 Item<GRIB2D> GRIB2D::create(
@@ -625,13 +648,20 @@ Item<GRIB2D> GRIB2D::create(
 	unsigned char type2, unsigned char scale2, unsigned long value2)
 {
 	GRIB2D* res = new GRIB2D;
-	res->type1 = type1;
-	res->scale1 = scale1;
-	res->value1 = value1;
-	res->type2 = type2;
-	res->scale2 = scale2;
-	res->value2 = value2;
-	return res;
+	res->m_type1 = type1;
+	res->m_scale1 = scale1;
+	res->m_value1 = value1;
+	res->m_type2 = type2;
+	res->m_scale2 = scale2;
+	res->m_value2 = value2;
+	return cache_grib2d.intern(res);
+}
+
+static void debug_interns()
+{
+	fprintf(stderr, "level GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
+	fprintf(stderr, "level GRIB2S: sz %zd reused %zd\n", cache_grib2s.size(), cache_grib2s.reused());
+	fprintf(stderr, "level GRIB2D: sz %zd reused %zd\n", cache_grib2d.size(), cache_grib2d.reused());
 }
 
 }
@@ -639,7 +669,8 @@ Item<GRIB2D> GRIB2D::create(
 static MetadataType levelType(
 	CODE, SERSIZELEN, TAG,
 	(MetadataType::item_decoder)(&Level::decode),
-	(MetadataType::string_decoder)(&Level::decodeString));
+	(MetadataType::string_decoder)(&Level::decodeString),
+	level::debug_interns);
 
 }
 }

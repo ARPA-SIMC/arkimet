@@ -44,9 +44,9 @@ bool MatchProductGRIB1::matchItem(const Item<>& o) const
 {
 	const types::product::GRIB1* v = dynamic_cast<const types::product::GRIB1*>(o.ptr());
 	if (!v) return false;
-	if (origin != -1 && origin != v->origin()) return false;
-	if (table != -1 && table != v->table()) return false;
-	if (product != -1 && product != v->product()) return false;
+	if (origin != -1 && (unsigned)origin != v->origin()) return false;
+	if (table != -1 && (unsigned)table != v->table()) return false;
+	if (product != -1 && (unsigned)product != v->product()) return false;
 	return true;
 }
 
@@ -73,10 +73,10 @@ bool MatchProductGRIB2::matchItem(const Item<>& o) const
 {
 	const types::product::GRIB2* v = dynamic_cast<const types::product::GRIB2*>(o.ptr());
 	if (!v) return false;
-	if (centre != -1 && centre != v->centre()) return false;
-	if (discipline != -1 && discipline != v->discipline()) return false;
-	if (category != -1 && category != v->category()) return false;
-	if (number != -1 && number != v->number()) return false;
+	if (centre != -1 && (unsigned)centre != v->centre()) return false;
+	if (discipline != -1 && (unsigned)discipline != v->discipline()) return false;
+	if (category != -1 && (unsigned)category != v->category()) return false;
+	if (number != -1 && (unsigned)number != v->number()) return false;
 	return true;
 }
 
@@ -103,9 +103,9 @@ bool MatchProductBUFR::matchItem(const Item<>& o) const
 {
 	const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(o.ptr());
 	if (!v) return false;
-	if (type != -1 && type != v->type()) return false;
-	if (subtype != -1 && subtype != v->subtype()) return false;
-	if (localsubtype != -1 && localsubtype != v->localsubtype()) return false;
+	if (type != -1 && (unsigned)type != v->type()) return false;
+	if (subtype != -1 && (unsigned)subtype != v->subtype()) return false;
+	if (localsubtype != -1 && (unsigned)localsubtype != v->localsubtype()) return false;
 	return true;
 }
 

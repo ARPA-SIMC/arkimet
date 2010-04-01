@@ -74,11 +74,17 @@ struct Level : public types::Type
 
 namespace level {
 
-struct GRIB1 : public Level
+class GRIB1 : public Level
 {
-    unsigned char type;
-	unsigned short l1;
-	unsigned char l2;
+protected:
+	unsigned char m_type;
+	unsigned short m_l1;
+	unsigned char m_l2;
+
+public:
+	unsigned type() const { return m_type; }
+	unsigned l1() const { return m_l1; }
+	unsigned l2() const { return m_l2; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -117,11 +123,17 @@ struct GRIB2 : public Level
 	//int valType() const;
 };
 
-struct GRIB2S : public GRIB2
+class GRIB2S : public GRIB2
 {
-    unsigned char type;
-    unsigned char scale;
-	unsigned long value;
+protected:
+	unsigned char m_type;
+	unsigned char m_scale;
+	unsigned long m_value;
+
+public:
+	unsigned type() const { return m_type; }
+	unsigned scale() const { return m_scale; }
+	unsigned value() const { return m_value; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -135,14 +147,23 @@ struct GRIB2S : public GRIB2
 	static Item<GRIB2S> create(unsigned char type, unsigned char scale, unsigned long val);
 };
 
-struct GRIB2D : public GRIB2
+class GRIB2D : public GRIB2
 {
-    unsigned char type1;
-    unsigned char scale1;
-	unsigned long value1;
-    unsigned char type2;
-    unsigned char scale2;
-	unsigned long value2;
+protected:
+	unsigned char m_type1;
+	unsigned char m_scale1;
+	unsigned long m_value1;
+	unsigned char m_type2;
+	unsigned char m_scale2;
+	unsigned long m_value2;
+
+public:
+	unsigned type1() const { return m_type1; }
+	unsigned scale1() const { return m_scale1; }
+	unsigned value1() const { return m_value1; }
+	unsigned type2() const { return m_type2; }
+	unsigned scale2() const { return m_scale2; }
+	unsigned value2() const { return m_value2; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;

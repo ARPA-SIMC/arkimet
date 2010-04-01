@@ -90,9 +90,9 @@ protected:
 public:
 	virtual ~GRIB1();
 
-	int centre() const { return m_centre; }
-	int subcentre() const { return m_subcentre; }
-	int process() const { return m_process; }
+	unsigned centre() const { return m_centre; }
+	unsigned subcentre() const { return m_subcentre; }
+	unsigned process() const { return m_process; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -121,11 +121,11 @@ protected:
 public:
 	virtual ~GRIB2();
 
-	unsigned short centre() const { return m_centre; }
-	unsigned short subcentre() const { return m_subcentre; }
-	unsigned char processtype() const { return m_processtype; }
-	unsigned char bgprocessid() const { return m_bgprocessid; }
-	unsigned char processid() const { return m_processid; }
+	unsigned centre() const { return m_centre; }
+	unsigned subcentre() const { return m_subcentre; }
+	unsigned processtype() const { return m_processtype; }
+	unsigned bgprocessid() const { return m_bgprocessid; }
+	unsigned processid() const { return m_processid; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -153,8 +153,8 @@ protected:
 public:
 	virtual ~BUFR();
 
-	unsigned char centre() const { return m_centre; }
-	unsigned char subcentre() const { return m_subcentre; }
+	unsigned centre() const { return m_centre; }
+	unsigned subcentre() const { return m_subcentre; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
