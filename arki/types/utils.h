@@ -2,9 +2,9 @@
 #define ARKI_TYPES_UTILS_H
 
 /*
- * types/utils - Utility code for implementing arkimet types
+ * types/utils - arkimet metadata type system implementation utilities
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +23,84 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/types.h>
 #include <wibble/exception.h>
-#include <wibble/string.h>
-#include <cctype>
+#include <string>
+#include <set>
 
 namespace arki {
 namespace types {
+
+template<typename T>
+class TypeCache
+{
+protected:
+	// TODO: use unordered_set when it becomes available
+	std::set< Item<T> > m_cache;
+	size_t m_reused;
+
+public:
+	TypeCache() : m_reused(0) {}
+
+	size_t size() const { return m_cache.size(); }
+	size_t reused() const { return m_reused; }
+
+	/**
+	 * If \a item exists in the cache, return the cached version.
+	 * Else, enter \a item in the cache and return it
+	 */
+	Item<T> intern(Item<T> item)
+	{
+		typename std::set< Item<T> >::const_iterator i = m_cache.find(item);
+		if (i != m_cache.end())
+		{
+			++m_reused;
+			return *i;
+		}
+		m_cache.insert(item);
+		return item;
+	}
+
+	void uncache(Item<T> item)
+	{
+		m_cache.erase(item);
+	}
+};
+
+/**
+ * This class is used to register types with the arkimet metadata type system.
+ *
+ * Registration is done by declaring a static RegisterItem object, passing the
+ * metadata details in the constructor.
+ */
+struct MetadataType
+{
+	typedef Item<Type> (*item_decoder)(const unsigned char* start, size_t len);
+	typedef Item<Type> (*string_decoder)(const std::string& val);
+	typedef void (*intern_stats)();
+
+	types::Code serialisationCode;
+	int serialisationSizeLen;
+	std::string tag;
+	item_decoder decode_func;
+	string_decoder string_decode_func;
+	intern_stats intern_stats_func;
+	
+	MetadataType(
+		types::Code serialisationCode,
+		int serialisationSizeLen,
+		const std::string& tag,
+		item_decoder decode_func,
+		string_decoder string_decode_func,
+		intern_stats intern_stats_func = 0
+		);
+	~MetadataType();
+
+	// Get information about the given metadata
+	static const MetadataType* get(types::Code);
+};
+
+void debug_intern_stats();
 
 // Parse the outer style of a TYPE(val1, val2...) string
 template<typename T>
@@ -123,7 +195,9 @@ struct FloatList
 	}
 };
 
+
 }
 }
+
 // vim:set ts=4 sw=4:
 #endif

@@ -235,57 +235,6 @@ struct Type : public refcounted::Base
 	virtual void lua_push(lua_State* L) const = 0;
 };
 
-template<typename T>
-class TypeCache
-{
-protected:
-	// TODO: use unordered_set when it becomes available
-	std::set< Item<T> > m_cache;
-
-public:
-	/**
-	 * If \a item exists in the cache, return the cached version.
-	 * Else, enter \a item in the cache and return it
-	 */
-	Item<T> intern(Item<T> item)
-	{
-		typename std::set< Item<T> >::const_iterator i = m_cache.find(item);
-		if (i != m_cache.end())
-			return *i;
-		m_cache.insert(item);
-		return item;
-	}
-};
-
-/**
- * This class is used to register types with the arkimet metadata type system.
- *
- * Registration is done by declaring a static RegisterItem object, passing the
- * metadata details in the constructor.
- */
-struct MetadataType
-{
-	typedef Item<Type> (*item_decoder)(const unsigned char* start, size_t len);
-	typedef Item<Type> (*string_decoder)(const std::string& val);
-
-	types::Code serialisationCode;
-	int serialisationSizeLen;
-	std::string tag;
-	item_decoder decode_func;
-	string_decoder string_decode_func;
-	
-	MetadataType(
-		types::Code serialisationCode,
-		int serialisationSizeLen,
-		const std::string& tag,
-		item_decoder decode_func,
-		string_decoder string_decode_func);
-	~MetadataType();
-
-	// Get information about the given metadata
-	static const MetadataType* get(types::Code);
-};
-
 /// Decode an item encoded in binary representation
 Item<> decode(const unsigned char* buf, size_t len);
 /**

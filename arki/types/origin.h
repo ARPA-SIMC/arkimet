@@ -88,6 +88,8 @@ protected:
 	unsigned char m_process;
 
 public:
+	virtual ~GRIB1();
+
 	int centre() const { return m_centre; }
 	int subcentre() const { return m_subcentre; }
 	int process() const { return m_process; }
@@ -117,6 +119,8 @@ protected:
 	unsigned char m_processid;
 
 public:
+	virtual ~GRIB2();
+
 	unsigned short centre() const { return m_centre; }
 	unsigned short subcentre() const { return m_subcentre; }
 	unsigned char processtype() const { return m_processtype; }
@@ -147,6 +151,8 @@ protected:
 	unsigned char m_subcentre;
 
 public:
+	virtual ~BUFR();
+
 	unsigned char centre() const { return m_centre; }
 	unsigned char subcentre() const { return m_subcentre; }
 

@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/types.h>
+#include <arki/types/utils.h>
 
 #include <sstream>
 #include <iostream>

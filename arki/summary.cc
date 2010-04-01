@@ -25,6 +25,7 @@
 #include <arki/matcher.h>
 #include <arki/utils/codec.h>
 #include <arki/formatter.h>
+#include <arki/types/utils.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/level.h>

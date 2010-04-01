@@ -238,6 +238,12 @@ void Origin::lua_push(lua_State* L) const
 
 namespace origin {
 
+static TypeCache<GRIB1> cache_grib1;
+static TypeCache<GRIB2> cache_grib2;
+static TypeCache<BUFR> cache_bufr;
+
+GRIB1::~GRIB1() { /* cache_grib1.uncache(this); */ }
+
 Origin::Style GRIB1::style() const { return Origin::GRIB1; }
 
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
@@ -292,13 +298,11 @@ bool GRIB1::operator==(const Type& o) const
 
 Item<GRIB1> GRIB1::create(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
-	static TypeCache<GRIB1> cache;
-
 	GRIB1* res = new GRIB1;
 	res->m_centre = centre;
 	res->m_subcentre = subcentre;
 	res->m_process = process;
-	return cache.intern(res);
+	return cache_grib1.intern(res);
 }
 
 std::vector<int> GRIB1::toIntVector() const
@@ -310,6 +314,7 @@ std::vector<int> GRIB1::toIntVector() const
 	return res;
 }
 
+GRIB2::~GRIB2() { /* cache_grib2.uncache(this); */ }
 
 Origin::Style GRIB2::style() const { return Origin::GRIB2; }
 
@@ -374,15 +379,13 @@ Item<GRIB2> GRIB2::create(
 			  unsigned short centre, unsigned short subcentre,
 			  unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
 {
-	static TypeCache<GRIB2> cache;
-
 	GRIB2* res = new GRIB2;
 	res->m_centre = centre;
 	res->m_subcentre = subcentre;
 	res->m_processtype = processtype;
 	res->m_bgprocessid = bgprocessid;
 	res->m_processid = processid;
-	return cache.intern(res);
+	return cache_grib2.intern(res);
 }
 
 std::vector<int> GRIB2::toIntVector() const
@@ -396,6 +399,7 @@ std::vector<int> GRIB2::toIntVector() const
 	return res;
 }
 
+BUFR::~BUFR() { /* cache_bufr.uncache(this); */ }
 
 Origin::Style BUFR::style() const { return Origin::BUFR; }
 
@@ -450,7 +454,7 @@ Item<BUFR> BUFR::create(unsigned char centre, unsigned char subcentre)
 	BUFR* res = new BUFR;
 	res->m_centre = centre;
 	res->m_subcentre = subcentre;
-	return res;
+	return cache_bufr.intern(res);
 }
 
 std::vector<int> BUFR::toIntVector() const
@@ -461,12 +465,20 @@ std::vector<int> BUFR::toIntVector() const
 	return res;
 }
 
+static void debug_interns()
+{
+	fprintf(stderr, "origin GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
+	fprintf(stderr, "origin GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
+	fprintf(stderr, "origin BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
+}
+
 }
 
 static MetadataType originType(
 	CODE, SERSIZELEN, TAG,
 	(MetadataType::item_decoder)(&Origin::decode),
-	(MetadataType::string_decoder)(&Origin::decodeString));
+	(MetadataType::string_decoder)(&Origin::decodeString),
+	origin::debug_interns);
 
 }
 }

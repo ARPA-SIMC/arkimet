@@ -60,8 +60,8 @@ void to::test<1>()
 	Item<Area> o = area::GRIB::create(test1);
 	ensure_equals(o->style(), Area::GRIB);
 	const area::GRIB* v = o->upcast<area::GRIB>();
-	ensure_equals(v->values.size(), 7u);
-	ensure_equals(v->values, test1);
+	ensure_equals(v->values().size(), 7u);
+	ensure_equals(v->values(), test1);
 
 	ensure_equals(o, Item<Area>(area::GRIB::create(test1)));
 	ensure(o != area::GRIB::create(test2));

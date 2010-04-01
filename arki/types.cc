@@ -21,6 +21,7 @@
  */
 
 #include <arki/types.h>
+#include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 
 #include <wibble/exception.h>
@@ -80,45 +81,6 @@ std::string formatCode(const Code& c)
 	}
 }
 
-// Registry of item information
-static const int decoders_size = 1024;
-static const MetadataType** decoders = 0;
-
-MetadataType::MetadataType(
-		types::Code serialisationCode,
-		int serialisationSizeLen,
-		const std::string& tag,
-		item_decoder decode_func,
-		string_decoder string_decode_func)
-    : serialisationCode(serialisationCode),
-	  serialisationSizeLen(serialisationSizeLen),
-	  tag(tag),
-	  decode_func(decode_func),
-	  string_decode_func(string_decode_func)
-{
-	// Ensure that the map is created before we add items to it
-	if (!decoders)
-	{
-		decoders = new const MetadataType*[decoders_size];
-		memset(decoders, 0, decoders_size * sizeof(int));
-	}
-
-	decoders[serialisationCode] = this;
-}
-
-MetadataType::~MetadataType()
-{
-	if (!decoders)
-		return;
-	
-	decoders[serialisationCode] = 0;
-}
-
-const MetadataType* MetadataType::get(types::Code code)
-{
-	return decoders[code];
-}
-
 int Type::compare(const Type& o) const
 {
 	return serialisationCode() - o.serialisationCode();
@@ -165,31 +127,22 @@ types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
 Item<> decode(const unsigned char* buf, size_t len)
 {
 	types::Code code = decodeEnvelope(buf, len);
-	return decoders[code]->decode_func(buf, len);
+	return types::MetadataType::get(code)->decode_func(buf, len);
 }
 
 Item<> decodeInner(types::Code code, const unsigned char* buf, size_t len)
 {
-	using namespace wibble::str;
-	if (!decoders || decoders[code] == 0)
-		throw wibble::exception::Consistency("parsing binary data", "no decoder found for item type " + fmt(code));
-	return decoders[code]->decode_func(buf, len);
+	return types::MetadataType::get(code)->decode_func(buf, len);
 }
 
 Item<> decodeString(types::Code code, const std::string& val)
 {
-	using namespace wibble::str;
-	if (!decoders || decoders[code] == 0)
-		throw wibble::exception::Consistency("parsing string", "no decoder found for item type " + fmt(code));
-	return decoders[code]->string_decode_func(val);
+	return types::MetadataType::get(code)->string_decode_func(val);
 }
 
 std::string tag(types::Code code)
 {
-	using namespace wibble::str;
-	if (!decoders || decoders[code] == 0)
-		throw wibble::exception::Consistency("parsing string", "no decoder found for item type " + fmt(code));
-	return decoders[code]->tag;
+	return types::MetadataType::get(code)->tag;
 }
 
 bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
@@ -322,7 +275,6 @@ bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filen
 
 	return true;
 }
-
 
 }
 }

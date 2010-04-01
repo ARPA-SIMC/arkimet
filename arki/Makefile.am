@@ -63,6 +63,7 @@ dist_noinst_HEADERS = \
 		runtime/io.h \
 		runtime/config.h \
 		types.h \
+		types/utils.h \
 		types/test-utils.h \
 		types/time.h \
 		types/reftime.h \
@@ -124,6 +125,7 @@ libarkimet_la_SOURCES = \
 		transaction.cc \
 		values.cc \
 		types.cc \
+		types/utils.cc \
 		types/source.cc \
 		types/time.cc \
 		types/reftime.cc \
@@ -213,6 +215,7 @@ tests_arki_test_SOURCES = \
 		transaction-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
+		types/utils-tut.cc \
 		types/source-tut.cc \
 		types/time-tut.cc \
 		types/reftime-tut.cc \

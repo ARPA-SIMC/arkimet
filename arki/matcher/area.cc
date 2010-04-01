@@ -44,7 +44,7 @@ bool MatchAreaGRIB::matchItem(const Item<>& o) const
 {
 	const types::area::GRIB* v = dynamic_cast<const types::area::GRIB*>(o.ptr());
 	if (!v) return false;
-	return v->values.contains(expr);
+	return v->values().contains(expr);
 }
 
 std::string MatchAreaGRIB::toString() const
