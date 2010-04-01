@@ -47,10 +47,10 @@ void to::test<1>()
 	Item<Timerange> o = timerange::GRIB1::create(2, 254, 2, 3);
 	ensure_equals(o->style(), Timerange::GRIB1);
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type, 2);
-	ensure_equals(v->unit, 254);
-	ensure_equals(v->p1, 2);
-	ensure_equals(v->p2, 3);
+	ensure_equals(v->type(), 2u);
+	ensure_equals(v->unit(), 254u);
+	ensure_equals(v->p1(), 2u);
+	ensure_equals(v->p2(), 3u);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
@@ -82,10 +82,10 @@ void to::test<2>()
 	Item<Timerange> o = timerange::GRIB1::create(2, 1, 2, 3);
 	ensure_equals(o->style(), Timerange::GRIB1);
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type, 2);
-	ensure_equals(v->unit, 1);
-	ensure_equals(v->p1, 2);
-	ensure_equals(v->p2, 3);
+	ensure_equals(v->type(), 2u);
+	ensure_equals(v->unit(), 1u);
+	ensure_equals(v->p1(), 2u);
+	ensure_equals(v->p2(), 3u);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
@@ -117,10 +117,10 @@ void to::test<3>()
 	Item<Timerange> o = timerange::GRIB1::create(2, 4, 2, 3);
 	ensure_equals(o->style(), Timerange::GRIB1);
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type, 2);
-	ensure_equals(v->unit, 4);
-	ensure_equals(v->p1, 2);
-	ensure_equals(v->p2, 3);
+	ensure_equals(v->type(), 2u);
+	ensure_equals(v->unit(), 4u);
+	ensure_equals(v->p1(), 2u);
+	ensure_equals(v->p2(), 3u);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
@@ -152,10 +152,10 @@ void to::test<4>()
 	Item<Timerange> o = timerange::GRIB1::create(250, 1, 240, 129);
 	ensure_equals(o->style(), Timerange::GRIB1);
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type, 250);
-	ensure_equals(v->unit, 1);
-	ensure_equals((int)v->p1, 240);
-	ensure_equals((int)v->p2, 129);
+	ensure_equals(v->type(), 250u);
+	ensure_equals(v->unit(), 1u);
+	ensure_equals(v->p1(), 240u);
+	ensure_equals(v->p2(), 129u);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
@@ -187,10 +187,10 @@ void to::test<5>()
 	Item<Timerange> o = timerange::GRIB2::create(2, 254, 2, 3);
 	ensure_equals(o->style(), Timerange::GRIB2);
 	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type, 2);
-	ensure_equals(v->unit, 254);
-	ensure_equals(v->p1, 2);
-	ensure_equals(v->p2, 3);
+	ensure_equals(v->type(), 2u);
+	ensure_equals(v->unit(), 254u);
+	ensure_equals(v->p1(), 2u);
+	ensure_equals(v->p2(), 3u);
 
 	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 254, 2, 3)));
 
@@ -214,10 +214,10 @@ void to::test<6>()
 	Item<Timerange> o = timerange::GRIB2::create(2, 1, 2, 3);
 	ensure_equals(o->style(), Timerange::GRIB2);
 	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type, 2);
-	ensure_equals(v->unit, 1);
-	ensure_equals(v->p1, 2);
-	ensure_equals(v->p2, 3);
+	ensure_equals(v->type(), 2u);
+	ensure_equals(v->unit(), 1u);
+	ensure_equals(v->p1(), 2u);
+	ensure_equals(v->p2(), 3u);
 
 	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 1, 2, 3)));
 
@@ -241,10 +241,10 @@ void to::test<7>()
 	Item<Timerange> o = timerange::GRIB2::create(2, 4, 2, 3);
 	ensure_equals(o->style(), Timerange::GRIB2);
 	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type, 2);
-	ensure_equals(v->unit, 4);
-	ensure_equals(v->p1, 2);
-	ensure_equals(v->p2, 3);
+	ensure_equals(v->type(), 2u);
+	ensure_equals(v->unit(), 4u);
+	ensure_equals(v->p1(), 2u);
+	ensure_equals(v->p2(), 3u);
 
 	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 4, 2, 3)));
 
@@ -268,10 +268,10 @@ void to::test<8>()
 	Item<Timerange> o = timerange::GRIB2::create(2, 1, -2, -3);
 	ensure_equals(o->style(), Timerange::GRIB2);
 	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type, 2);
-	ensure_equals(v->unit, 1);
-	ensure_equals(v->p1, -2);
-	ensure_equals(v->p2, -3);
+	ensure_equals(v->type(), 2u);
+	ensure_equals(v->unit(), 1u);
+	ensure_equals((int)v->p1(), -2);
+	ensure_equals((int)v->p2(), -3);
 
 	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 1, -2, -3)));
 
@@ -295,10 +295,10 @@ void to::test<9>()
 	Item<Timerange> o = timerange::GRIB2::create(250, 1, -2, -3);
 	ensure_equals(o->style(), Timerange::GRIB2);
 	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type, 250);
-	ensure_equals(v->unit, 1);
-	ensure_equals(v->p1, -2);
-	ensure_equals(v->p2, -3);
+	ensure_equals(v->type(), 250u);
+	ensure_equals(v->unit(), 1u);
+	ensure_equals((int)v->p1(), -2);
+	ensure_equals((int)v->p2(), -3);
 
 	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(250, 1, -2, -3)));
 
@@ -323,14 +323,14 @@ void to::test<10>()
 	Item<Timerange> o2 = timerange::GRIB2::create(11, 1, 3, 6);
 	const timerange::GRIB2* v1 = o1->upcast<timerange::GRIB2>();
 	const timerange::GRIB2* v2 = o2->upcast<timerange::GRIB2>();
-	ensure_equals(v1->type, 11);
-	ensure_equals(v1->unit, 1);
-	ensure_equals(v1->p1, 3);
-	ensure_equals(v1->p2, 3);
-	ensure_equals(v2->type, 11);
-	ensure_equals(v2->unit, 1);
-	ensure_equals(v2->p1, 3);
-	ensure_equals(v2->p2, 6);
+	ensure_equals(v1->type(), 11u);
+	ensure_equals(v1->unit(), 1u);
+	ensure_equals(v1->p1(), 3u);
+	ensure_equals(v1->p2(), 3u);
+	ensure_equals(v2->type(), 11u);
+	ensure_equals(v2->unit(), 1u);
+	ensure_equals(v2->p1(), 3u);
+	ensure_equals(v2->p2(), 6u);
 
 	ensure(o1 != o2);
 

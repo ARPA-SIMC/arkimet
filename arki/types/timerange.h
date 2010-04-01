@@ -79,9 +79,14 @@ struct GRIB1 : public Timerange
 protected:
 	std::ostream& writeNumbers(std::ostream& o) const;
 
+	unsigned char m_type, m_unit;
+	unsigned char m_p1, m_p2;
+
 public:
-	unsigned char type, unit;
-	unsigned char p1, p2;
+	unsigned type() const { return m_type; }
+	unsigned unit() const { return m_unit; }
+	unsigned p1() const { return m_p1; }
+	unsigned p2() const { return m_p2; }
 
 	enum Unit {
 		SECOND = 0,
@@ -102,10 +107,17 @@ public:
 	static Item<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
 };
 
-struct GRIB2 : public Timerange
+class GRIB2 : public Timerange
 {
-	unsigned char type, unit;
-	unsigned long p1, p2;
+protected:
+	unsigned char m_type, m_unit;
+	unsigned long m_p1, m_p2;
+
+public:
+	unsigned type() const { return m_type; }
+	unsigned unit() const { return m_unit; }
+	unsigned p1() const { return m_p1; }
+	unsigned p2() const { return m_p2; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;

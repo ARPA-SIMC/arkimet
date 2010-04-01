@@ -456,10 +456,10 @@ int Timerange::lua_lookup(lua_State* L)
 	else if (name == "grib2" && v.style() == Timerange::GRIB2)
 	{
 		const timerange::GRIB2* v1 = v.upcast<timerange::GRIB2>();
-		lua_pushnumber(L, v1->type);
-		lua_pushstring(L, formatTimeUnit((t_enum_GRIB_TIMEUNIT)v1->unit).c_str());
-		lua_pushnumber(L, v1->p1);
-		lua_pushnumber(L, v1->p2);
+		lua_pushnumber(L, v1->type());
+		lua_pushstring(L, formatTimeUnit((t_enum_GRIB_TIMEUNIT)v1->unit()).c_str());
+		lua_pushnumber(L, v1->p1());
+		lua_pushnumber(L, v1->p2());
 		return 4;
 	}
 	else
@@ -500,26 +500,29 @@ void Timerange::lua_push(lua_State* L) const
 
 namespace timerange {
 
+static TypeCache<GRIB1> cache_grib1;
+static TypeCache<GRIB2> cache_grib2;
+
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Timerange::encodeWithoutEnvelope(enc);
-	enc.addUInt(type, 1).addUInt(unit, 1).addSInt(p1, 1).addSInt(p2, 1);
+	enc.addUInt(m_type, 1).addUInt(m_unit, 1).addSInt(m_p1, 1).addSInt(m_p2, 1);
 }
 
 std::ostream& GRIB1::writeNumbers(std::ostream& o) const
 {
 	o << setfill('0') << internal;
-	switch ((t_enum_GRIB_TIMERANGE)type)
+	switch ((t_enum_GRIB_TIMERANGE)m_type)
 	{
 		case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1: {
-			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit);
-			o << setw(3) << (int)type << ", " << setw(3) << (int)p1 << suffix;
+			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+			o << setw(3) << (int)m_type << ", " << setw(3) << (int)m_p1 << suffix;
 			break;
 		}
 		case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
-			o << setw(3) << (int)type;
+			o << setw(3) << (int)m_type;
 			break;
 		case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
 		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
@@ -539,26 +542,26 @@ std::ostream& GRIB1::writeNumbers(std::ostream& o) const
 		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS:
 		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES:
 		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
-			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit);
-			o << setw(3) << (int)type << ", " << setw(3) << (int)p1 << suffix << ", " << setw(3) << (int)p2 << suffix;
+			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+			o << setw(3) << (int)m_type << ", " << setw(3) << (int)m_p1 << suffix << ", " << setw(3) << (int)m_p2 << suffix;
 			break;
 		}
 		case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2: {
-			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit);
-			o << setw(3) << (int)type << ", " << setw(5) << ((int)p1 << 8 | (int)p2) << suffix;
+			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+			o << setw(3) << (int)m_type << ", " << setw(5) << ((int)m_p1 << 8 | (int)m_p2) << suffix;
 			break;
 		}
 		case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2:
 		case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2:
 		case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2: {
-			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit);
-			o << setw(3) << (int)type << ", " << setw(3) << (int)p2 << suffix;
+			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+			o << setw(3) << (int)m_type << ", " << setw(3) << (int)m_p2 << suffix;
 			break;
 		}
 		default:
 			// Fallback for unknown types
-			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit);
-			o << setw(3) << (int)type << ", " << setw(3) << (int)p1 << suffix << ", " << setw(3) << (int)p2 << suffix;
+			string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+			o << setw(3) << (int)m_type << ", " << setw(3) << (int)m_p1 << suffix << ", " << setw(3) << (int)m_p2 << suffix;
 			break;
 	}
 
@@ -623,21 +626,21 @@ bool GRIB1::operator==(const Type& o) const
 Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
 {
 	GRIB1* res = new GRIB1;
-	res->type = type;
-	res->unit = unit;
-	res->p1 = p1;
-	res->p2 = p2;
-	return res;
+	res->m_type = type;
+	res->m_unit = unit;
+	res->m_p1 = p1;
+	res->m_p2 = p2;
+	return cache_grib1.intern(res);
 }
 
 void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 {
-	otype = type;
+	otype = m_type;
 
 	// Make sense of the time range unit
 	int timemul = 1;
 	ounit = SECOND;
-	switch ((t_enum_GRIB_TIMEUNIT)unit)
+	switch ((t_enum_GRIB_TIMEUNIT)m_unit)
 	{
 		case GRIB_TIMEUNIT_UNKNOWN:
 			throw wibble::exception::Consistency("normalising TimeRange", "time unit is UNKNOWN (-1)");
@@ -654,15 +657,15 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 		case GRIB_TIMEUNIT_HOURS12: timemul = 3600*12; break;
 		case GRIB_TIMEUNIT_SECOND: timemul = 1; break;
 		default:
-			throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(unit)+")");
+			throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(m_unit)+")");
 	}
 
 	op1 = 0, op2 = 0;
 
-	switch ((t_enum_GRIB_TIMERANGE)type)
+	switch ((t_enum_GRIB_TIMERANGE)m_type)
 	{
 		case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
-			op1 = p1; break;
+			op1 = m_p1; break;
 		case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
 			break;
 		case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
@@ -671,9 +674,9 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 		case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1:
 		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2:
 		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2:
-			op1 = p1; op2 = p2; break;
+			op1 = m_p1; op2 = m_p2; break;
 		case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
-			op1 = p1 << 8 | p2; break;
+			op1 = m_p1 << 8 | m_p2; break;
 		case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2:
 		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2:
 		case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2:
@@ -686,14 +689,14 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS:
 		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES:
 		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
-			op1 = p1; op2 = p2; break;
+			op1 = m_p1; op2 = m_p2; break;
 		case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2:
 		case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2:
 		case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
-			op2 = p2; break;
+			op2 = m_p2; break;
 		default:
 			// Fallback for unknown time range types
-			op1 = p1; op2 = p2; break;
+			op1 = m_p1; op2 = m_p2; break;
 	}
 
 	op1 *= timemul;
@@ -706,21 +709,21 @@ Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
 void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Timerange::encodeWithoutEnvelope(enc);
-	enc.addUInt(type, 1).addUInt(unit, 1).addSInt(p1, 4).addSInt(p2, 4);
+	enc.addUInt(m_type, 1).addUInt(m_unit, 1).addSInt(m_p1, 4).addSInt(m_p2, 4);
 }
 
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
 	utils::SaveIOState sios(o);
-	string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit);
+	string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
 
 	return o
 	  << formatStyle(style()) << "("
 	  << setfill('0') << internal
-	  << setw(3) << (int)type << ", "
-	  << setw(3) << (int)unit << ", "
-	  << setw(10) << (int)p1 << suffix << ", "
-	  << setw(10) << (int)p2 << suffix
+	  << setw(3) << (int)m_type << ", "
+	  << setw(3) << (int)m_unit << ", "
+	  << setw(10) << (int)m_p1 << suffix << ", "
+	  << setw(10) << (int)m_p2 << suffix
 	  << ")";
 }
 
@@ -728,10 +731,10 @@ std::string GRIB2::exactQuery() const
 {
 	stringstream o;
 	o << formatStyle(style()) << ","
-	  << (int)type << ","
-	  << (int)unit << ","
-	  << (int)p1 << ","
-	  << (int)p2;
+	  << (int)m_type << ","
+	  << (int)m_unit << ","
+	  << (int)m_p1 << ","
+	  << (int)m_p2;
 	return o.str();
 }
 
@@ -752,10 +755,10 @@ int GRIB2::compare(const Timerange& o) const
 int GRIB2::compare(const GRIB2& o) const
 {
 	// TODO: normalise the time units if needed
-	if (int res = type - o.type) return res;
-	if (int res = unit - o.unit) return res;
-	if (int res = p1 - o.p1) return res;
-	return p2 - o.p2;
+	if (int res = m_type - o.m_type) return res;
+	if (int res = m_unit - o.m_unit) return res;
+	if (int res = m_p1 - o.m_p1) return res;
+	return m_p2 - o.m_p2;
 }
 
 bool GRIB2::operator==(const Type& o) const
@@ -763,17 +766,23 @@ bool GRIB2::operator==(const Type& o) const
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v) return false;
 	// TODO: normalise the time units if needed
-	return type == v->type && unit == v->unit && p1 == v->p1 && p2 == v->p2;
+	return m_type == v->m_type && m_unit == v->m_unit && m_p1 == v->m_p1 && m_p2 == v->m_p2;
 }
 
 Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, unsigned long p1, unsigned long p2)
 {
 	GRIB2* res = new GRIB2;
-	res->type = type;
-	res->unit = unit;
-	res->p1 = p1;
-	res->p2 = p2;
-	return res;
+	res->m_type = type;
+	res->m_unit = unit;
+	res->m_p1 = p1;
+	res->m_p2 = p2;
+	return cache_grib2.intern(res);
+}
+
+static void debug_interns()
+{
+	fprintf(stderr, "timerange GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
+	fprintf(stderr, "timerange GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
 }
 
 }
@@ -781,7 +790,8 @@ Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, unsigned long 
 static MetadataType timerangeType(
 	CODE, SERSIZELEN, TAG,
 	(MetadataType::item_decoder)(&Timerange::decode),
-	(MetadataType::string_decoder)(&Timerange::decodeString));
+	(MetadataType::string_decoder)(&Timerange::decodeString),
+	timerange::debug_interns);
 
 }
 }

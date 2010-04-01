@@ -176,10 +176,10 @@ bool MatchTimerangeGRIB2::matchItem(const Item<>& o) const
 {
 	const types::timerange::GRIB2* v = dynamic_cast<const types::timerange::GRIB2*>(o.ptr());
 	if (!v) return false;
-	if (type != -1 && type != v->type) return false;
-	if (unit != -1 && unit != v->unit) return false;
-	if (p1 >= 0 && (unsigned)p1 != v->p1) return false;
-	if (p2 >= 0 && (unsigned)p2 != v->p2) return false;
+	if (type != -1 && (unsigned)type != v->type()) return false;
+	if (unit != -1 && (unsigned)unit != v->unit()) return false;
+	if (p1 >= 0 && (unsigned)p1 != v->p1()) return false;
+	if (p2 >= 0 && (unsigned)p2 != v->p2()) return false;
 	return true;
 }
 
