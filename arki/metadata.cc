@@ -493,7 +493,7 @@ void MetadataStream::readData(const void* buf, size_t size)
 vector<Metadata> Metadata::readFile(const std::string& fname)
 {
 	// Read all the metadata
-    std::ifstream in;
+	std::ifstream in;
 	in.open(fname.c_str(), ios::in);
 	if (!in.is_open() || in.fail())
 		throw wibble::exception::File(fname, "opening file for reading");
@@ -512,7 +512,7 @@ vector<Metadata> Metadata::readFile(const std::string& fname)
 void Metadata::readFile(const std::string& fname, MetadataConsumer& mdc)
 {
 	// Read all the metadata
-    std::ifstream in;
+	std::ifstream in;
 	in.open(fname.c_str(), ios::in);
 	if (!in.is_open() || in.fail())
 		throw wibble::exception::File(fname, "opening file for reading");
