@@ -38,6 +38,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 namespace wibble {
 namespace commandline {
@@ -344,6 +345,10 @@ int main(int argc, const char* argv[])
 					out.stream() << endl;
 				}
 			}
+// Uncomment as a quick hack to check memory usage at this point:
+//system(str::fmtf("ps u %d >&2", getpid()).c_str());
+//types::debug_intern_stats();
+
 		}
 
 		return 0;
