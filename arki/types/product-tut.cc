@@ -47,9 +47,9 @@ void to::test<1>()
 	Item<Product> o = product::GRIB1::create(1, 2, 3);
 	ensure_equals(o->style(), Product::GRIB1);
 	const product::GRIB1* v = o->upcast<product::GRIB1>();
-	ensure_equals(v->origin, 1);
-	ensure_equals(v->table, 2);
-	ensure_equals(v->product, 3);
+	ensure_equals(v->origin(), 1);
+	ensure_equals(v->table(), 2);
+	ensure_equals(v->product(), 3);
 
 	ensure_equals(o, Item<Product>(product::GRIB1::create(1, 2, 3)));
 
@@ -73,10 +73,10 @@ void to::test<2>()
 	Item<Product> o = product::GRIB2::create(1, 2, 3, 4);
 	ensure_equals(o->style(), Product::GRIB2);
 	const product::GRIB2* v = o->upcast<product::GRIB2>();
-	ensure_equals(v->centre, 1);
-	ensure_equals(v->discipline, 2);
-	ensure_equals(v->category, 3);
-	ensure_equals(v->number, 4);
+	ensure_equals(v->centre(), 1);
+	ensure_equals(v->discipline(), 2);
+	ensure_equals(v->category(), 3);
+	ensure_equals(v->number(), 4);
 
 	ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4)));
 
@@ -100,9 +100,9 @@ void to::test<3>()
 	Item<Product> o = product::BUFR::create(1, 2, 3);
 	ensure_equals(o->style(), Product::BUFR);
 	const product::BUFR* v = o->upcast<product::BUFR>();
-	ensure_equals(v->type, 1);
-	ensure_equals(v->subtype, 2);
-	ensure_equals(v->localsubtype, 3);
+	ensure_equals(v->type(), 1);
+	ensure_equals(v->subtype(), 2);
+	ensure_equals(v->localsubtype(), 3);
 
 	ensure_equals(o, Item<Product>(product::BUFR::create(1, 2, 3)));
 

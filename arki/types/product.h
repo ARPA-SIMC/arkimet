@@ -78,11 +78,17 @@ struct Product : public types::Type
 
 namespace product {
 
-struct GRIB1 : public Product
+class GRIB1 : public Product
 {
-	unsigned char origin;
-	unsigned char table;
-	unsigned char product;
+protected:
+	unsigned char m_origin;
+	unsigned char m_table;
+	unsigned char m_product;
+
+public:
+	int origin() const { return m_origin; }
+	int table() const { return m_table; }
+	int product() const { return m_product; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -99,12 +105,19 @@ struct GRIB1 : public Product
 	virtual std::vector<int> toIntVector() const;
 };
 
-struct GRIB2 : public Product
+class GRIB2 : public Product
 {
-	unsigned short centre;
-	unsigned char discipline;
-	unsigned char category;
-	unsigned char number;
+protected:
+	unsigned short m_centre;
+	unsigned char m_discipline;
+	unsigned char m_category;
+	unsigned char m_number;
+
+public:
+	int centre() const { return m_centre; }
+	int discipline() const { return m_discipline; }
+	int category() const { return m_category; }
+	int number() const { return m_number; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -121,11 +134,17 @@ struct GRIB2 : public Product
 	virtual std::vector<int> toIntVector() const;
 };
 
-struct BUFR : public Product
+class BUFR : public Product
 {
-	unsigned char type;
-	unsigned char subtype;
-	unsigned char localsubtype;
+protected:
+	unsigned char m_type;
+	unsigned char m_subtype;
+	unsigned char m_localsubtype;
+
+public:
+	int type() const { return m_type; }
+	int subtype() const { return m_subtype; }
+	int localsubtype() const { return m_localsubtype; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;

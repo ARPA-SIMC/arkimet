@@ -175,26 +175,26 @@ int Product::lua_lookup(lua_State* L)
 	else if (name == "grib1" && v.style() == Product::GRIB1)
 	{
 		const product::GRIB1* v1 = v.upcast<product::GRIB1>();
-		lua_pushnumber(L, v1->origin);
-		lua_pushnumber(L, v1->table);
-		lua_pushnumber(L, v1->product);
+		lua_pushnumber(L, v1->origin());
+		lua_pushnumber(L, v1->table());
+		lua_pushnumber(L, v1->product());
 		return 3;
 	}
 	else if (name == "grib2" && v.style() == Product::GRIB2)
 	{
 		const product::GRIB2* v1 = v.upcast<product::GRIB2>();
-		lua_pushnumber(L, v1->centre);
-		lua_pushnumber(L, v1->discipline);
-		lua_pushnumber(L, v1->category);
-		lua_pushnumber(L, v1->number);
+		lua_pushnumber(L, v1->centre());
+		lua_pushnumber(L, v1->discipline());
+		lua_pushnumber(L, v1->category());
+		lua_pushnumber(L, v1->number());
 		return 4;
 	}
 	else if (name == "bufr" && v.style() == Product::BUFR)
 	{
 		const product::BUFR* v1 = v.upcast<product::BUFR>();
-		lua_pushnumber(L, v1->type);
-		lua_pushnumber(L, v1->subtype);
-		lua_pushnumber(L, v1->localsubtype);
+		lua_pushnumber(L, v1->type());
+		lua_pushnumber(L, v1->subtype());
+		lua_pushnumber(L, v1->localsubtype());
 		return 3;
 	}
 	else
@@ -236,25 +236,32 @@ void Product::lua_push(lua_State* L) const
 
 namespace product {
 
+static TypeCache<GRIB1> cache_grib1;
+static TypeCache<GRIB2> cache_grib2;
+static TypeCache<BUFR> cache_bufr;
+
+
 Product::Style GRIB1::style() const { return Product::GRIB1; }
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(origin, 1);
-	enc.addUInt(table, 1);
-	enc.addUInt(product, 1);
+	enc.addUInt(m_origin, 1);
+	enc.addUInt(m_table, 1);
+	enc.addUInt(m_product, 1);
 }
 std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-			 << setfill('0')
-	         << setw(3) << (int)origin << ", " << setw(3) << (int)table << ", " << setw(3) << (int)product
-			 << setfill(' ')
-			 << ")";
+	     << setfill('0')
+	     << setw(3) << (int)m_origin << ", "
+	     << setw(3) << (int)m_table << ", "
+	     << setw(3) << (int)m_product
+	     << setfill(' ')
+	     << ")";
 }
 std::string GRIB1::exactQuery() const
 {
-    return str::fmtf("GRIB1,%d,%d,%d", (int)origin, (int)table, (int)product);
+    return str::fmtf("GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
 }
 
 int GRIB1::compare(const Product& o) const
@@ -274,33 +281,33 @@ int GRIB1::compare(const Product& o) const
 
 int GRIB1::compare(const GRIB1& o) const
 {
-	if (int res = origin - o.origin) return res;
-	if (int res = table - o.table) return res;
-	return product - o.product;
+	if (int res = m_origin - o.m_origin) return res;
+	if (int res = m_table - o.m_table) return res;
+	return m_product - o.m_product;
 }
 
 bool GRIB1::operator==(const Type& o) const
 {
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v) return false;
-	return origin == v->origin && table == v->table && product == v->product;
+	return m_origin == v->m_origin && m_table == v->m_table && m_product == v->m_product;
 }
 
 Item<GRIB1> GRIB1::create(unsigned char origin, unsigned char table, unsigned char product)
 {
 	GRIB1* res = new GRIB1;
-	res->origin = origin;
-	res->table = table;
-	res->product = product;
-	return res;
+	res->m_origin = origin;
+	res->m_table = table;
+	res->m_product = product;
+	return cache_grib1.intern(res);
 }
 
 std::vector<int> GRIB1::toIntVector() const
 {
 	vector<int> res;
-	res.push_back(origin);
-	res.push_back(table);
-	res.push_back(product);
+	res.push_back(m_origin);
+	res.push_back(m_table);
+	res.push_back(m_product);
 	return res;
 }
 
@@ -309,22 +316,25 @@ Product::Style GRIB2::style() const { return Product::GRIB2; }
 void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(centre, 2);
-	enc.addUInt(discipline, 1);
-	enc.addUInt(category, 1);
-	enc.addUInt(number, 1); 
+	enc.addUInt(m_centre, 2);
+	enc.addUInt(m_discipline, 1);
+	enc.addUInt(m_category, 1);
+	enc.addUInt(m_number, 1); 
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-			 << setfill('0')
-			 << setw(5) << (int)centre << ", " << setw(3) << (int)discipline << ", " << setw(3) << (int)category << ", " << (int)number
-			 << setfill(' ')
-			 << ")";
+	     << setfill('0')
+	     << setw(5) << (int)m_centre << ", "
+	     << setw(3) << (int)m_discipline << ", "
+	     << setw(3) << (int)m_category << ", "
+	     << setw(3) << (int)m_number
+	     << setfill(' ')
+	     << ")";
 }
 std::string GRIB2::exactQuery() const
 {
-    return str::fmtf("GRIB2,%d,%d,%d,%d", (int)centre, (int)discipline, (int)category, (int)number);
+    return str::fmtf("GRIB2,%d,%d,%d,%d", (int)m_centre, (int)m_discipline, (int)m_category, (int)m_number);
 }
 int GRIB2::compare(const Product& o) const
 {
@@ -343,39 +353,39 @@ int GRIB2::compare(const Product& o) const
 
 int GRIB2::compare(const GRIB2& o) const
 {
-	if (int res = centre - o.centre) return res;
-	if (int res = discipline - o.discipline) return res;
-	if (int res = category - o.category) return res;
-	return number - o.number;
+	if (int res = m_centre - o.m_centre) return res;
+	if (int res = m_discipline - o.m_discipline) return res;
+	if (int res = m_category - o.m_category) return res;
+	return m_number - o.m_number;
 }
 
 bool GRIB2::operator==(const Type& o) const
 {
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v) return false;
-	return centre == v->centre
-	    && discipline == v->discipline
-		&& category == v->category
-		&& number == v->number;
+	return m_centre == v->m_centre
+	    && m_discipline == v->m_discipline
+	    && m_category == v->m_category
+	    && m_number == v->m_number;
 }
 
 Item<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number)
 {
 	GRIB2* res = new GRIB2;
-	res->centre = centre;
-	res->discipline = discipline;
-	res->category = category;
-	res->number = number;
-	return res;
+	res->m_centre = centre;
+	res->m_discipline = discipline;
+	res->m_category = category;
+	res->m_number = number;
+	return cache_grib2.intern(res);
 }
 
 std::vector<int> GRIB2::toIntVector() const
 {
 	vector<int> res;
-	res.push_back(centre);
-	res.push_back(discipline);
-	res.push_back(category);
-	res.push_back(number);
+	res.push_back(m_centre);
+	res.push_back(m_discipline);
+	res.push_back(m_category);
+	res.push_back(m_number);
 	return res;
 }
 
@@ -384,21 +394,23 @@ Product::Style BUFR::style() const { return Product::BUFR; }
 void BUFR::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(type, 1);
-	enc.addUInt(subtype, 1);
-	enc.addUInt(localsubtype, 1);
+	enc.addUInt(m_type, 1);
+	enc.addUInt(m_subtype, 1);
+	enc.addUInt(m_localsubtype, 1);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
 			 << setfill('0')
-			 << setw(3) << (int)type << ", " << setw(3) << (int)subtype << ", " << setw(3) << (int)localsubtype
+			 << setw(3) << (int)m_type << ", "
+			 << setw(3) << (int)m_subtype << ", "
+			 << setw(3) << (int)m_localsubtype
 			 << setfill(' ')
 			 << ")";
 }
 std::string BUFR::exactQuery() const
 {
-    return str::fmtf("BUFR,%d,%d,%d", (int)type, (int)subtype, (int)localsubtype);
+    return str::fmtf("BUFR,%d,%d,%d", (int)m_type, (int)m_subtype, (int)m_localsubtype);
 }
 int BUFR::compare(const Product& o) const
 {
@@ -416,35 +428,42 @@ int BUFR::compare(const Product& o) const
 }
 int BUFR::compare(const BUFR& o) const
 {
-	if (int res = type - o.type) return res;
-	if (int res = subtype - o.subtype) return res;
-	return localsubtype - o.localsubtype;
+	if (int res = m_type - o.m_type) return res;
+	if (int res = m_subtype - o.m_subtype) return res;
+	return m_localsubtype - o.m_localsubtype;
 }
 bool BUFR::operator==(const Type& o) const
 {
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v) return false;
-	return type == v->type
-	    && subtype == v->subtype
-		&& localsubtype == v->localsubtype;
+	return m_type == v->m_type
+	    && m_subtype == v->m_subtype
+	    && m_localsubtype == v->m_localsubtype;
 }
 
 Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
 {
 	BUFR* res = new BUFR;
-	res->type = type;
-	res->subtype = subtype;
-	res->localsubtype = localsubtype;
-	return res;
+	res->m_type = type;
+	res->m_subtype = subtype;
+	res->m_localsubtype = localsubtype;
+	return cache_bufr.intern(res);
 }
 
 std::vector<int> BUFR::toIntVector() const
 {
 	vector<int> res;
-	res.push_back(type);
-	res.push_back(subtype);
-	res.push_back(localsubtype);
+	res.push_back(m_type);
+	res.push_back(m_subtype);
+	res.push_back(m_localsubtype);
 	return res;
+}
+
+static void debug_interns()
+{
+	fprintf(stderr, "product GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
+	fprintf(stderr, "product GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
+	fprintf(stderr, "product BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
 }
 
 }
@@ -452,7 +471,8 @@ std::vector<int> BUFR::toIntVector() const
 static MetadataType productType(
 	CODE, SERSIZELEN, TAG,
 	(MetadataType::item_decoder)(&Product::decode),
-	(MetadataType::string_decoder)(&Product::decodeString));
+	(MetadataType::string_decoder)(&Product::decodeString),
+	product::debug_interns);
 
 }
 }
