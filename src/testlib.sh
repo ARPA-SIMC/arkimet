@@ -27,6 +27,7 @@ setup() {
     export ARKI_POSTPROC=$TOP_SRCDIR/test/postproc/
     export ARKI_ALIASES=$TOP_SRCDIR/conf/match-alias.conf
     export http_proxy=
+    ulimit -v 1048576
 
     TESTDIR="`mktemp -d`"
     cd "$TESTDIR"
