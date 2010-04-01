@@ -189,6 +189,8 @@ namespace ensemble {
 
 static TypeCache<GRIB> cache_grib;
 
+GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
+
 Ensemble::Style GRIB::style() const { return Ensemble::GRIB; }
 
 void GRIB::encodeWithoutEnvelope(Encoder& enc) const

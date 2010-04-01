@@ -60,8 +60,8 @@ void to::test<1>()
 	Item<Ensemble> o = ensemble::GRIB::create(test1);
 	ensure_equals(o->style(), Ensemble::GRIB);
 	const ensemble::GRIB* v = o->upcast<ensemble::GRIB>();
-	ensure_equals(v->values.size(), 7u);
-	ensure_equals(v->values, test1);
+	ensure_equals(v->values().size(), 7u);
+	ensure_equals(v->values(), test1);
 
 	ensure_equals(o, Item<Ensemble>(ensemble::GRIB::create(test1)));
 	ensure(o != ensemble::GRIB::create(test2));
