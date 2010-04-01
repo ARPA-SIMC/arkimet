@@ -146,7 +146,7 @@ int Ensemble::lua_lookup(lua_State* L)
 	else if (name == "grib" && v.style() == Ensemble::GRIB)
 	{
 		const ensemble::GRIB* v1 = v.upcast<ensemble::GRIB>();
-		v1->values.lua_push(L);
+		v1->values().lua_push(L);
 		return 1;
 	}
 	else
@@ -187,20 +187,22 @@ void Ensemble::lua_push(lua_State* L) const
 
 namespace ensemble {
 
+static TypeCache<GRIB> cache_grib;
+
 Ensemble::Style GRIB::style() const { return Ensemble::GRIB; }
 
 void GRIB::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Ensemble::encodeWithoutEnvelope(enc);
-	values.encode(enc);
+	m_values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
-    return o << formatStyle(style()) << "(" << values.toString() << ")";
+    return o << formatStyle(style()) << "(" << m_values.toString() << ")";
 }
 std::string GRIB::exactQuery() const
 {
-    return "GRIB:" + values.toString();
+    return "GRIB:" + m_values.toString();
 }
 
 int GRIB::compare(const Ensemble& o) const
@@ -218,21 +220,26 @@ int GRIB::compare(const Ensemble& o) const
 }
 int GRIB::compare(const GRIB& o) const
 {
-	return values.compare(o.values);
+	return m_values.compare(o.m_values);
 }
 
 bool GRIB::operator==(const Type& o) const
 {
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v) return false;
-	return values == v->values;
+	return m_values == v->m_values;
 }
 
 Item<GRIB> GRIB::create(const ValueBag& values)
 {
 	GRIB* res = new GRIB;
-	res->values = values;
-	return res;
+	res->m_values = values;
+	return cache_grib.intern(res);
+}
+
+static void debug_interns()
+{
+	fprintf(stderr, "Ensemble GRIB: sz %zd reused %zd\n", cache_grib.size(), cache_grib.reused());
 }
 
 }
@@ -240,7 +247,8 @@ Item<GRIB> GRIB::create(const ValueBag& values)
 static MetadataType ensembleType(
 	CODE, SERSIZELEN, TAG,
 	(MetadataType::item_decoder)(&Ensemble::decode),
-	(MetadataType::string_decoder)(&Ensemble::decodeString));
+	(MetadataType::string_decoder)(&Ensemble::decodeString),
+	ensemble::debug_interns);
 
 }
 }

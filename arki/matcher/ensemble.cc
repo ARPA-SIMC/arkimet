@@ -41,7 +41,7 @@ bool MatchEnsembleGRIB::matchItem(const Item<>& o) const
 {
 	const types::ensemble::GRIB* v = dynamic_cast<const types::ensemble::GRIB*>(o.ptr());
 	if (!v) return false;
-	return v->values.contains(expr);
+	return v->values().contains(expr);
 }
 
 std::string MatchEnsembleGRIB::toString() const

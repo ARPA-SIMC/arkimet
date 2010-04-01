@@ -74,7 +74,13 @@ namespace ensemble {
 
 struct GRIB : public Ensemble
 {
-    ValueBag values;
+protected:
+	ValueBag m_values;
+
+public:
+	virtual ~GRIB();
+
+	const ValueBag& values() const { return m_values; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
