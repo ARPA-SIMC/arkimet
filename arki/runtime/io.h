@@ -81,6 +81,29 @@ public:
 	const std::string& name() const { return m_name; }
 };
 
+/**
+ * Open a temporary file.
+ *
+ * If a path is not given, $ARKI_TMPDIR is tried, then $TMPDIR, then /tmp
+ */
+class Tempfile
+{
+	wibble::stream::PosixBuf posixBuf;
+	std::ostream *m_out;
+	std::string m_name;
+	bool m_unlink_on_exit;
+
+public:
+	Tempfile(const std::string& dirname = std::string());
+	~Tempfile();
+
+	void unlink_on_exit(bool val);
+	void unlink();
+
+	std::ostream& stream() { return *m_out; }
+	const std::string& name() const { return m_name; }
+};
+
 }
 }
 

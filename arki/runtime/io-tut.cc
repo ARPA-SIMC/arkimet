@@ -20,10 +20,12 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/runtime/io.h>
+#include <wibble/sys/fs.h>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble;
 using namespace arki::runtime;
 
 struct arki_runtime_io_shar {
@@ -33,6 +35,13 @@ TESTGRP(arki_runtime_io);
 template<> template<>
 void to::test<1>()
 {
+	string name;
+	{
+		Tempfile foo;
+		name = foo.name();
+		ensure(sys::fs::access(name, F_OK));
+	}
+	ensure(!sys::fs::access(name, F_OK));
 }
 
 }
