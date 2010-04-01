@@ -54,7 +54,7 @@ bool MatchRunMinute::matchItem(const Item<>& o) const
 {
 	const types::run::Minute* v = dynamic_cast<const types::run::Minute*>(o.ptr());
 	if (!v) return false;
-	if (minute >= 0 && (unsigned)minute != v->minute) return false;
+	if (minute >= 0 && (unsigned)minute != v->minute()) return false;
 	return true;
 }
 

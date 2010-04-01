@@ -50,96 +50,96 @@ void to::test<1>()
 		ensure_equals(dec.pop ## name((encsize), "value"), (val)); \
 	} while (0)
 
-	TEST_CODEC(UInt, 0u, 1);
-	TEST_CODEC(UInt, 1u, 1);
-	TEST_CODEC(UInt, 10u, 1);
-	TEST_CODEC(UInt, 80u, 1);
-	TEST_CODEC(UInt, 127u, 1);
-	TEST_CODEC(UInt, 128u, 1);
-	TEST_CODEC(UInt, 200u, 1);
-	TEST_CODEC(UInt, 255u, 1);
+	TEST_CODEC(UInt, 0u, 1u);
+	TEST_CODEC(UInt, 1u, 1u);
+	TEST_CODEC(UInt, 10u, 1u);
+	TEST_CODEC(UInt, 80u, 1u);
+	TEST_CODEC(UInt, 127u, 1u);
+	TEST_CODEC(UInt, 128u, 1u);
+	TEST_CODEC(UInt, 200u, 1u);
+	TEST_CODEC(UInt, 255u, 1u);
 
-	TEST_CODEC(SInt, 0, 1);
-	TEST_CODEC(SInt, 1, 1);
-	TEST_CODEC(SInt, 10, 1);
-	TEST_CODEC(SInt, 80, 1);
-	TEST_CODEC(SInt, 127, 1);
-	TEST_CODEC(SInt, -1, 1);
-	TEST_CODEC(SInt, -100, 1);
-	TEST_CODEC(SInt, -127, 1);
-	TEST_CODEC(SInt, -128, 1);
-
-
-	TEST_CODEC(UInt, 0u, 2);
-	TEST_CODEC(UInt, 1u, 2);
-	TEST_CODEC(UInt, 128u, 2);
-	TEST_CODEC(UInt, 256u, 2);
-	TEST_CODEC(UInt, 10000u, 2);
-	TEST_CODEC(UInt, 32000u, 2);
-	TEST_CODEC(UInt, 33000u, 2);
-	TEST_CODEC(UInt, 65535u, 2);
-
-	TEST_CODEC(SInt, 0, 2);
-	TEST_CODEC(SInt, 1, 2);
-	TEST_CODEC(SInt, 10000, 2);
-	TEST_CODEC(SInt, 30000, 2);
-	TEST_CODEC(SInt, 32767, 2);
-	TEST_CODEC(SInt, -1, 2);
-	TEST_CODEC(SInt, -30000, 2);
-	TEST_CODEC(SInt, -32767, 2);
-	TEST_CODEC(SInt, -32768, 2);
+	TEST_CODEC(SInt, 0, 1u);
+	TEST_CODEC(SInt, 1, 1u);
+	TEST_CODEC(SInt, 10, 1u);
+	TEST_CODEC(SInt, 80, 1u);
+	TEST_CODEC(SInt, 127, 1u);
+	TEST_CODEC(SInt, -1, 1u);
+	TEST_CODEC(SInt, -100, 1u);
+	TEST_CODEC(SInt, -127, 1u);
+	TEST_CODEC(SInt, -128, 1u);
 
 
-	TEST_CODEC(UInt, 0u, 3);
-	TEST_CODEC(UInt, 1u, 3);
-	TEST_CODEC(UInt, 128u, 3);
-	TEST_CODEC(UInt, 256u, 3);
-	TEST_CODEC(UInt, 33000u, 3);
-	TEST_CODEC(UInt, 65535u, 3);
-	TEST_CODEC(UInt, 100000u, 3);
-	TEST_CODEC(UInt, 0x7fffffu, 3);
-	TEST_CODEC(UInt, 0xabcdefu, 3);
-	TEST_CODEC(UInt, 0xffffffu, 3);
+	TEST_CODEC(UInt, 0u, 2u);
+	TEST_CODEC(UInt, 1u, 2u);
+	TEST_CODEC(UInt, 128u, 2u);
+	TEST_CODEC(UInt, 256u, 2u);
+	TEST_CODEC(UInt, 10000u, 2u);
+	TEST_CODEC(UInt, 32000u, 2u);
+	TEST_CODEC(UInt, 33000u, 2u);
+	TEST_CODEC(UInt, 65535u, 2u);
+
+	TEST_CODEC(SInt, 0, 2u);
+	TEST_CODEC(SInt, 1, 2u);
+	TEST_CODEC(SInt, 10000, 2u);
+	TEST_CODEC(SInt, 30000, 2u);
+	TEST_CODEC(SInt, 32767, 2u);
+	TEST_CODEC(SInt, -1, 2u);
+	TEST_CODEC(SInt, -30000, 2u);
+	TEST_CODEC(SInt, -32767, 2u);
+	TEST_CODEC(SInt, -32768, 2u);
 
 
-	TEST_CODEC(UInt, 0u, 4);
-	TEST_CODEC(UInt, 1u, 4);
-	TEST_CODEC(UInt, 128u, 4);
-	TEST_CODEC(UInt, 256u, 4);
-	TEST_CODEC(UInt, 10000u, 4);
-	TEST_CODEC(UInt, 0xabcdefu, 4);
-	TEST_CODEC(UInt, 0xffffffu, 4);
-	TEST_CODEC(UInt, 0x23456789u, 4);
-	TEST_CODEC(UInt, 0x7fffffffu, 4);
-	TEST_CODEC(UInt, 0xabcdef01u, 4);
-	TEST_CODEC(UInt, 0xffffffffu, 4);
+	TEST_CODEC(UInt, 0u, 3u);
+	TEST_CODEC(UInt, 1u, 3u);
+	TEST_CODEC(UInt, 128u, 3u);
+	TEST_CODEC(UInt, 256u, 3u);
+	TEST_CODEC(UInt, 33000u, 3u);
+	TEST_CODEC(UInt, 65535u, 3u);
+	TEST_CODEC(UInt, 100000u, 3u);
+	TEST_CODEC(UInt, 0x7fffffu, 3u);
+	TEST_CODEC(UInt, 0xabcdefu, 3u);
+	TEST_CODEC(UInt, 0xffffffu, 3u);
 
-	TEST_CODEC(SInt, 0, 4);
-	TEST_CODEC(SInt, 1, 4);
-	TEST_CODEC(SInt, 10000, 4);
-	TEST_CODEC(SInt, -10000, 4);
-	TEST_CODEC(SInt, 0x23456789, 4);
-	TEST_CODEC(SInt, -0x23456789, 4);
-	TEST_CODEC(SInt, 0x7fffffff, 4);
-	TEST_CODEC(SInt, -0x7fffffff, 4);
+
+	TEST_CODEC(UInt, 0u, 4u);
+	TEST_CODEC(UInt, 1u, 4u);
+	TEST_CODEC(UInt, 128u, 4u);
+	TEST_CODEC(UInt, 256u, 4u);
+	TEST_CODEC(UInt, 10000u, 4u);
+	TEST_CODEC(UInt, 0xabcdefu, 4u);
+	TEST_CODEC(UInt, 0xffffffu, 4u);
+	TEST_CODEC(UInt, 0x23456789u, 4u);
+	TEST_CODEC(UInt, 0x7fffffffu, 4u);
+	TEST_CODEC(UInt, 0xabcdef01u, 4u);
+	TEST_CODEC(UInt, 0xffffffffu, 4u);
+
+	TEST_CODEC(SInt, 0, 4u);
+	TEST_CODEC(SInt, 1, 4u);
+	TEST_CODEC(SInt, 10000, 4u);
+	TEST_CODEC(SInt, -10000, 4u);
+	TEST_CODEC(SInt, 0x23456789, 4u);
+	TEST_CODEC(SInt, -0x23456789, 4u);
+	TEST_CODEC(SInt, 0x7fffffff, 4u);
+	TEST_CODEC(SInt, -0x7fffffff, 4u);
 	// g++ generates a comparison between signed and unsigned integer expressions warning here
 	//ensure_equals(decodeSInt((const unsigned char*)encodeSInt(-0x80000000, 4).data(), 4), -0x80000000);
 
-	TEST_CODEC(ULInt, 0ull, 8);
-	TEST_CODEC(ULInt, 1ull, 8);
-	TEST_CODEC(ULInt, 128ull, 8);
-	TEST_CODEC(ULInt, 256ull, 8);
-	TEST_CODEC(ULInt, 10000ull, 8);
-	TEST_CODEC(ULInt, 0xabcdefull, 8);
-	TEST_CODEC(ULInt, 0xffffffull, 8);
-	TEST_CODEC(ULInt, 0x23456789ull, 8);
-	TEST_CODEC(ULInt, 0x7fffffffull, 8);
-	TEST_CODEC(ULInt, 0xabcdef01ull, 8);
-	TEST_CODEC(ULInt, 0xffffffffull, 8);
-	TEST_CODEC(ULInt, 0x2345678901234567ull, 8);
-	TEST_CODEC(ULInt, 0x7fffffffffffffffull, 8);
-	TEST_CODEC(ULInt, 0xabcdef0102030405ull, 8);
-	TEST_CODEC(ULInt, 0xffffffffffffffffull, 8);
+	TEST_CODEC(ULInt, 0ull, 8u);
+	TEST_CODEC(ULInt, 1ull, 8u);
+	TEST_CODEC(ULInt, 128ull, 8u);
+	TEST_CODEC(ULInt, 256ull, 8u);
+	TEST_CODEC(ULInt, 10000ull, 8u);
+	TEST_CODEC(ULInt, 0xabcdefull, 8u);
+	TEST_CODEC(ULInt, 0xffffffull, 8u);
+	TEST_CODEC(ULInt, 0x23456789ull, 8u);
+	TEST_CODEC(ULInt, 0x7fffffffull, 8u);
+	TEST_CODEC(ULInt, 0xabcdef01ull, 8u);
+	TEST_CODEC(ULInt, 0xffffffffull, 8u);
+	TEST_CODEC(ULInt, 0x2345678901234567ull, 8u);
+	TEST_CODEC(ULInt, 0x7fffffffffffffffull, 8u);
+	TEST_CODEC(ULInt, 0xabcdef0102030405ull, 8u);
+	TEST_CODEC(ULInt, 0xffffffffffffffffull, 8u);
 
 #undef TEST_CODEC
 #define TEST_CODEC(name, val, encsize) do { \
@@ -151,16 +151,16 @@ void to::test<1>()
 		Decoder dec((const unsigned char*)enc.data(), enc.size()); \
 		ensure_equals(dec.pop ## name("value"), (val)); \
 	} while (0)
-	TEST_CODEC(Float, 0.0f, 4);
-	TEST_CODEC(Float, 0.1f, 4);
-	TEST_CODEC(Float, 10.0f, 4);
-	TEST_CODEC(Float, 0.0000001f, 4);
-	TEST_CODEC(Float, 10000000.0f, 4);
-	TEST_CODEC(Double, 0.0, 8);
-	TEST_CODEC(Double, 0.1, 8);
-	TEST_CODEC(Double, 10.0, 8);
-	TEST_CODEC(Double, 0.00000000000000001, 8);
-	TEST_CODEC(Double, 10000000000000000.0, 8);
+	TEST_CODEC(Float, 0.0f, 4u);
+	TEST_CODEC(Float, 0.1f, 4u);
+	TEST_CODEC(Float, 10.0f, 4u);
+	TEST_CODEC(Float, 0.0000001f, 4u);
+	TEST_CODEC(Float, 10000000.0f, 4u);
+	TEST_CODEC(Double, 0.0, 8u);
+	TEST_CODEC(Double, 0.1, 8u);
+	TEST_CODEC(Double, 10.0, 8u);
+	TEST_CODEC(Double, 0.00000000000000001, 8u);
+	TEST_CODEC(Double, 10000000000000000.0, 8u);
 
 }
 

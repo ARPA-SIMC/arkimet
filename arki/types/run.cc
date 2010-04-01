@@ -106,9 +106,8 @@ Item<Run> Run::decode(const unsigned char* buf, size_t len)
 	switch (s)
 	{
 		case MINUTE: {
-			Item<run::Minute> res(new run::Minute);
-			res->minute = dec.popVarint<unsigned>("run minute");
-			return res;
+		        unsigned int m = dec.popVarint<unsigned>("run minute");
+			return run::Minute::create(m / 60, m % 60);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
@@ -165,8 +164,8 @@ int Run::lua_lookup(lua_State* L)
 	else if (name == "minute" && v.style() == Run::MINUTE)
 	{
 		const run::Minute* v1 = v.upcast<run::Minute>();
-		lua_pushnumber(L, v1->minute / 60);
-		lua_pushnumber(L, v1->minute % 60);
+		lua_pushnumber(L, v1->minute() / 60);
+		lua_pushnumber(L, v1->minute() % 60);
 		return 2;
 	}
 	else
@@ -207,25 +206,27 @@ void Run::lua_push(lua_State* L) const
 
 namespace run {
 
+static TypeCache<Minute> cache_minute;
+
 Run::Style Minute::style() const { return Run::MINUTE; }
 
 void Minute::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Run::encodeWithoutEnvelope(enc);
-	enc.addVarint(minute);
+	enc.addVarint(m_minute);
 }
 std::ostream& Minute::writeToOstream(std::ostream& o) const
 {
 	utils::SaveIOState sis(o);
     return o << formatStyle(style()) << "("
 			 << setfill('0') << fixed
-			 << setw(2) << (minute / 60) << ":"
-			 << setw(2) << (minute % 60) << ")";
+			 << setw(2) << (m_minute / 60) << ":"
+			 << setw(2) << (m_minute % 60) << ")";
 }
 std::string Minute::exactQuery() const
 {
 	stringstream res;
-	res << "MINUTE," << setfill('0') << setw(2) << (minute/60) << ":" << setw(2) << (minute % 60);
+	res << "MINUTE," << setfill('0') << setw(2) << (m_minute/60) << ":" << setw(2) << (m_minute % 60);
 	return res.str();
 }
 
@@ -246,21 +247,26 @@ int Minute::compare(const Run& o) const
 
 int Minute::compare(const Minute& o) const
 {
-	return minute - o.minute;
+	return m_minute - o.m_minute;
 }
 
 bool Minute::operator==(const Type& o) const
 {
 	const Minute* v = dynamic_cast<const Minute*>(&o);
 	if (!v) return false;
-	return minute == v->minute;
+	return m_minute == v->m_minute;
 }
 
 Item<Minute> Minute::create(unsigned int hour, unsigned int minute)
 {
 	Item<Minute> res(new Minute);
-	res->minute = hour * 60 + minute;
-	return res;
+	res->m_minute = hour * 60 + minute;
+	return cache_minute.intern(res);
+}
+
+static void debug_interns()
+{
+	fprintf(stderr, "Run Minute: sz %zd reused %zd\n", cache_minute.size(), cache_minute.reused());
 }
 
 }
@@ -268,7 +274,8 @@ Item<Minute> Minute::create(unsigned int hour, unsigned int minute)
 static MetadataType runType(
 	CODE, SERSIZELEN, TAG,
 	(MetadataType::item_decoder)(&Run::decode),
-	(MetadataType::string_decoder)(&Run::decodeString));
+	(MetadataType::string_decoder)(&Run::decodeString),
+	run::debug_interns);
 
 }
 }

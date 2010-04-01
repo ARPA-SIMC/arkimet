@@ -63,7 +63,7 @@ static vector<int> mdvals(const Metadata& md)
 	vector<int> res;
 	res.push_back(rt->time->vals[3]);
 	res.push_back(rt->time->vals[4]);
-	res.push_back(run->minute/60);
+	res.push_back(run->minute()/60);
 	return res;
 }
 

@@ -72,9 +72,13 @@ struct Run : public types::Type
 
 namespace run {
 
-struct Minute : public Run
+class Minute : public Run
 {
-	unsigned int minute;
+protected:
+	unsigned int m_minute;
+
+public:
+	unsigned minute() const { return m_minute; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
