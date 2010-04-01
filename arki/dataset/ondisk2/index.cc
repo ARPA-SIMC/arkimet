@@ -36,6 +36,7 @@
 #include <arki/utils/metadata.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
+#include <arki/runtime/io.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -46,6 +47,7 @@
 #include <ctime>
 #include <cassert>
 #include <cerrno>
+#include <cstdlib>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -497,6 +499,8 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 	nag::verbose("Running query %s", query.c_str());
 
 	metadata::Collector mdbuf;
+	string last_fname;
+	auto_ptr<runtime::Tempfile> tmpfile;
 
 	// Limited scope for mdq, so we finalize the query before starting to
 	// emit results
@@ -506,8 +510,30 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 
 		// TODO: see if it's worth sorting mdbuf by file and offset
 
+//fprintf(stderr, "PRE\n");
+//system(str::fmtf("ps u %d >&2", getpid()).c_str());
 		while (mdq.step())
 		{
+			// At file boundary, sort and write out what we have so
+			// far, so we don't keep it all in memory
+			string srcname = mdq.fetchString(2);
+			if (srcname != last_fname)
+			{
+				if (mdbuf.size() > 8192)
+				{
+					// If we pile up too many metadata, write them out
+					if (q.sorter)
+						std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
+					if (tmpfile.get() == 0)
+						tmpfile.reset(new runtime::Tempfile);
+					for (metadata::Collector::const_iterator i = mdbuf.begin(); i != mdbuf.end(); ++i)
+						i->write(tmpfile->stream(), tmpfile->name());
+					tmpfile->stream().flush();
+					mdbuf.clear();
+				}
+				last_fname = srcname;
+			}
+
 			// Rebuild the Metadata
 			Metadata md;
 			md.create();
@@ -534,13 +560,24 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 			// Buffer the results in memory, to release the database lock as soon as possible
 			mdbuf(md);
 		}
+//fprintf(stderr, "POST %zd\n", mdbuf.size());
+//system(str::fmtf("ps u %d >&2", getpid()).c_str());
 	}
+//if (tmpfile.get()) system(str::fmtf("ls -la --si %s >&2", tmpfile->name().c_str()).c_str());
 
+	// Replay the data from the temporary file
+	if (tmpfile.get() != 0)
+		Metadata::readFile(tmpfile->name(), consumer);
+
+	// Sort and output the rest
 	if (q.sorter)
 		std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
 
 	// pass it to consumer
 	mdbuf.sendTo(consumer);
+
+//fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
+//system(str::fmtf("ps u %d >&2", getpid()).c_str());
 
 	return true;
 }
