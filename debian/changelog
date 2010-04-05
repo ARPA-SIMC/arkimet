@@ -4,8 +4,9 @@ arkimet (0.36-1) UNRELEASED; urgency=low
     objects as much as possible
   * When making big queries, use a temporary file on disk to store data coming
     out of the database, to avoid using too much RAM
+  * Avoid several encode/decode cycles for the notes
 
- -- Enrico Zini <enrico@debian.org>  Thu, 01 Apr 2010 18:55:52 +0100
+ -- Enrico Zini <enrico@debian.org>  Mon, 05 Apr 2010 23:36:02 +0100
 
 arkimet (0.35-1) UNRELEASED; urgency=low
 
