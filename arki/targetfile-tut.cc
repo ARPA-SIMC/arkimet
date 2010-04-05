@@ -63,7 +63,7 @@ struct arki_targetfile_shar {
 		md.set(timerange::GRIB1::create(0, 0, 0, 0));
 		md.set(area::GRIB::create(testValues));
 		md.set(ensemble::GRIB::create(testValues));
-		md.notes.push_back(types::Note::create("test note"));
+		md.add_note(types::Note::create("test note"));
 		md.set(run::Minute::create(12));
 		md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
 	}

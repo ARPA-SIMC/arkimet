@@ -671,7 +671,7 @@ void Grib::setSource(Metadata& md)
 	{
 		md.source = types::source::Blob::create("grib" + str::fmt(edition), filename, offset, size);
 	}
-	md.notes.push_back(types::Note::create("Scanned from " + basename + ":" + str::fmt(offset) + "+" + str::fmt(size)));
+	md.add_note(types::Note::create("Scanned from " + basename + ":" + str::fmt(offset) + "+" + str::fmt(size)));
 }
 
 void MultiGrib::setSource(Metadata& md)
@@ -706,7 +706,7 @@ void Grib::scanGrib1(Metadata& md)
 	std::string error = L->runFunctionSequence("GRIB1_", grib1FuncCount);
 	if (!error.empty())
 	{
-		md.notes.push_back(types::Note::create("Scanning GRIB1 failed: " + error));
+		md.add_note(types::Note::create("Scanning GRIB1 failed: " + error));
 	} else {
 		//arkilua_dumpstack(L, "Afterscan", stderr);
 
@@ -746,7 +746,7 @@ void Grib::scanGrib2(Metadata& md)
 	std::string error = L->runFunctionSequence("GRIB2_", grib2FuncCount);
 	if (!error.empty())
 	{
-		md.notes.push_back(types::Note::create("Scanning GRIB2 failed: " + error));
+		md.add_note(types::Note::create("Scanning GRIB2 failed: " + error));
 	} else {
 		// Access the arki object
 		lua_getglobal(*L, "arki");

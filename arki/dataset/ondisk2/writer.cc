@@ -164,11 +164,11 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 		md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
 		return ACQ_OK;
 	} catch (index::DuplicateInsert& di) {
-		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
+		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
 		return ACQ_ERROR_DUPLICATE;
 	} catch (std::exception& e) {
 		// sqlite will take care of transaction consistency
-		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
 		return ACQ_ERROR;
 	}
 }
@@ -196,7 +196,7 @@ bool Writer::replace(Metadata& md)
 		return true;
 	} catch (std::exception& e) {
 		// sqlite will take care of transaction consistency
-		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
 		return false;
 	}
 }

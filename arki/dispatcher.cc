@@ -105,7 +105,7 @@ Dispatcher::Outcome RealDispatcher::dispatch(Metadata& md, MetadataConsumer& mdc
 		// fail in bits of code that are more critical
 		md.getData();
 	} catch (std::exception& e) {
-		md.notes.push_back(types::Note::create(
+		md.add_note(types::Note::create(
 			string("Failed to read the data associated with the metadata: ") + e.what()));
 		return DISP_NOTWRITTEN;
 	}
@@ -150,7 +150,7 @@ Dispatcher::Outcome RealDispatcher::dispatch(Metadata& md, MetadataConsumer& mdc
 	}
 	else if (found.empty())
 	{
-		md.notes.push_back(types::Note::create("Message could not be assigned to any dataset"));
+		md.add_note(types::Note::create("Message could not be assigned to any dataset"));
 		target = dserror;
 		inErrorDS = true;
 	}
@@ -163,7 +163,7 @@ Dispatcher::Outcome RealDispatcher::dispatch(Metadata& md, MetadataConsumer& mdc
 				msg += *i;
 			else
 				msg += ", " + *i;
-		md.notes.push_back(types::Note::create(msg));
+		md.add_note(types::Note::create(msg));
 		target = dserror;
 		inErrorDS = true;
 	}

@@ -51,8 +51,9 @@ void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& disp
 		for (vector<Metadata>::iterator i = c.begin(); i != c.end(); ++i)
 		{
 			cerr << "Failed dispatch notes:" << endl;
-			for (std::vector< Item<types::Note> >::const_iterator j = i->notes.begin();
-					j != i->notes.end(); ++j)
+			std::vector< Item<types::Note> > notes = i->notes();
+			for (std::vector< Item<types::Note> >::const_iterator j = notes.begin();
+					j != notes.end(); ++j)
 				cerr << "   " << *j << endl;
 		}
 	}

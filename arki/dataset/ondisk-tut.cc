@@ -336,8 +336,9 @@ void to::test<5>()
 		// Replace it
 		if (!testds->replace(mdc[0]))
 		{
-			for (size_t i = 0; i < mdc[0].notes.size(); ++i)
-				cerr << " md note: " << mdc[0].notes[i] << endl;
+			std::vector< Item<types::Note> > notes = mdc[0].notes();
+			for (size_t i = 0; i < notes.size(); ++i)
+				cerr << " md note: " << notes[i] << endl;
 			ensure(false);
 		}
 		testds->flush();

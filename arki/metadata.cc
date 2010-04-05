@@ -64,12 +64,56 @@ Metadata::~Metadata()
 {
 }
 
+std::vector< Item<types::Note> > Metadata::notes() const
+{
+	std::vector< Item<types::Note> > res;
+	const unsigned char* buf = (const unsigned char*)m_notes.data();
+	const unsigned char* end = buf + m_notes.size();
+	for (const unsigned char* cur = buf; cur < end; )
+	{
+		const unsigned char* el_start = cur;
+		size_t el_len = end - cur;
+		// Fixme: replace with types::decode when fully available
+		types::Code el_type = types::decodeEnvelope(el_start, el_len);
+
+		if (el_type != types::TYPE_NOTE)
+			throw wibble::exception::Consistency(
+					"decoding binary encoded notes",
+					"item type is not a note");
+		res.push_back(types::Note::decode(el_start, el_len));
+		cur = el_start + el_len;
+	}
+	return res;
+}
+
+const std::string& Metadata::notes_encoded() const
+{
+	return m_notes;
+}
+
+void Metadata::set_notes(const std::vector< Item<types::Note> >& notes)
+{
+	m_notes.clear();
+	for (std::vector< Item<types::Note> >::const_iterator i = notes.begin(); i != notes.end(); ++i)
+		add_note(*i);
+}
+
+void Metadata::set_notes_encoded(const std::string& notes)
+{
+	m_notes = notes;
+}
+
+void Metadata::add_note(const Item<types::Note>& note)
+{
+	m_notes += note.encode();
+}
+
 void Metadata::reset()
 {
 	deleted = false;
 	m_filename.clear();
 	m_vals.clear();
-	notes.clear();
+	m_notes.clear();
 	source.clear();
 	m_inline_buf = wibble::sys::Buffer();
 }
@@ -79,7 +123,7 @@ bool Metadata::operator==(const Metadata& m) const
 	if (!ItemSet::operator==(m)) return false;
 
 	//if (m_filename != m.m_filename) return false;
-	if (notes != m.notes) return false;
+	if (m_notes != m.m_notes) return false;
 	if (source != m.source) return false;
 	if (m_inline_buf != m.m_inline_buf) return false;
 	return true;
@@ -188,7 +232,7 @@ void Metadata::read(const unsigned char* buf, size_t len, unsigned version, cons
 
 		switch (el_type)
 		{
-			case types::TYPE_NOTE: notes.push_back(types::Note::decode(el_start, el_len)); break;
+			case types::TYPE_NOTE: m_notes += string((const char*)cur, (el_start + el_len) - cur); break;
 			case types::TYPE_SOURCE: source = types::Source::decode(el_start, el_len); break;
 			default:
 				m_vals.insert(make_pair(el_type, types::decodeInner(el_type, el_start, el_len)));
@@ -228,7 +272,7 @@ bool Metadata::readYaml(std::istream& in, const std::string& filename)
 		string val = trim(i->second);
 		switch (type)
 		{
-			case types::TYPE_NOTE: notes.push_back(types::Note::decodeString(val)); break;
+			case types::TYPE_NOTE: add_note(types::Note::decodeString(val)); break;
 			case types::TYPE_SOURCE: source = types::Source::decodeString(val); break;
 			default:
 				m_vals.insert(make_pair(type, types::decodeString(type, val)));
@@ -326,7 +370,7 @@ void Metadata::writeYaml(std::ostream& out, const Formatter* formatter) const
 		out << endl;
 	}
 
-	writeYamlList(out, "Note", notes);
+	writeYamlList(out, "Note", notes());
 }
 
 string Metadata::encode() const
@@ -335,8 +379,8 @@ string Metadata::encode() const
 	// Encode the various information
 	string encoded;
 	for (const_iterator i = begin(); i != end(); ++i)
-		encoded += i->second->encodeWithEnvelope();
-	encoded += encodeItemList(notes.begin(), notes.end());
+		encoded += i->second.encode();
+	encoded += m_notes;
 	if (source.defined())
 		encoded += source.encode();
 
@@ -612,11 +656,12 @@ static int arkilua_lookup(lua_State* L)
 	else if (key == "notes")
 	{
 		// Return a table with all the notes in the metadata
-		lua_createtable(L, md->notes.size(), 0);
+		std::vector< Item<types::Note> > notes = md->notes();
+		lua_createtable(L, notes.size(), 0);
 		// Set the array elements
-		for (size_t i = 0; i < md->notes.size(); ++i)
+		for (size_t i = 0; i < notes.size(); ++i)
 		{
-			md->notes[i]->lua_push(L);
+			notes[i]->lua_push(L);
 			lua_rawseti(L, -2, i+1);
 		}
 		return 1;

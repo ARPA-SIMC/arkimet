@@ -100,7 +100,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 		else
 			md.unset(types::TYPE_ASSIGNEDDATASET);
 		md.source = origSource;
-		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
+		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
 		return ACQ_ERROR_DUPLICATE;
 	} catch (std::exception& e) {
 		// TODO: do something so that a following flush won't remove the
@@ -110,7 +110,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 		else
 			md.unset(types::TYPE_ASSIGNEDDATASET);
 		md.source = origSource;
-		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
 		return ACQ_ERROR;
 	}
 }
@@ -129,7 +129,7 @@ bool Writer::replace(Metadata& md)
 		else
 			md.unset(types::TYPE_ASSIGNEDDATASET);
 		md.source = origSource;
-		md.notes.push_back(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
 		return false;
 	}
 }

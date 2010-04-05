@@ -83,7 +83,7 @@ struct arki_metadata_shar {
 		md.set(timerange::GRIB1::create(1, 1, 2, 3));
 		md.set(area::GRIB::create(testValues));
 		md.set(ensemble::GRIB::create(testValues));
-		md.notes.push_back(types::Note::create("test note"));
+		md.add_note(types::Note::create("test note"));
 		md.set(AssignedDataset::create("dsname", "dsid"));
 		// Test POSITION reference times
 		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
@@ -104,8 +104,8 @@ struct arki_metadata_shar {
 		inner_ensure_equals(md1.get(types::TYPE_AREA), Item<>(area::GRIB::create(testValues)));
 		inner_ensure(md1.get(types::TYPE_ENSEMBLE).defined());
 		inner_ensure_equals(md1.get(types::TYPE_ENSEMBLE), Item<>(ensemble::GRIB::create(testValues)));
-		inner_ensure_equals(md1.notes.size(), 1u);
-		inner_ensure_equals((*md1.notes.begin())->content, "test note");
+		inner_ensure_equals(md1.notes().size(), 1u);
+		inner_ensure_equals((*md1.notes().begin())->content, "test note");
 		inner_ensure_equals(md1.get(types::TYPE_ASSIGNEDDATASET), Item<>(AssignedDataset::create("dsname", "dsid")));
 		inner_ensure(md1.get(types::TYPE_REFTIME).defined());
 		inner_ensure_equals(md1.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1))));

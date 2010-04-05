@@ -90,7 +90,7 @@ struct arki_dataset_ondisk_index_shar {
 		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 		md.set(area::GRIB::create(testArea));
 		md.set(ensemble::GRIB::create(testEnsemble));
-		md.notes.push_back(types::Note::create("this is a test"));
+		md.add_note(types::Note::create("this is a test"));
 		ofstream out("test-md.metadata");
 		if (out.fail()) throw wibble::exception::File("test-md.metadata", "opening file");
 		md.write(out, "test-md.metadata");
@@ -105,7 +105,7 @@ struct arki_dataset_ondisk_index_shar {
 		md1.set(reftime::Position::create(types::Time::create(2003, 4, 5, 6, 7, 8)));
 		md1.set(area::GRIB::create(testArea));
 		md1.set(ensemble::GRIB::create(testEnsemble));
-		md1.notes.push_back(types::Note::create("this is another test"));
+		md1.add_note(types::Note::create("this is another test"));
 		out.open("test-md1.metadata");
 		if (out.fail()) throw wibble::exception::File("test-md1.metadata", "opening file");
 		md1.write(out, "test-md1.metadata");
@@ -318,7 +318,7 @@ void to::test<3>()
 	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 	md3.set(area::GRIB::create(testArea));
 	md3.set(ensemble::GRIB::create(testEnsemble));
-	md3.notes.push_back(types::Note::create("this is a test"));
+	md3.add_note(types::Note::create("this is a test"));
 	{
 		auto_ptr<WIndex> test1 = createIndex<WIndex>(cfg);
 		test1->open();

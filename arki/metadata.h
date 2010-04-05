@@ -47,13 +47,12 @@ struct Metadata : public ItemSet
 {
 protected:
 	std::string m_filename;
+	std::string m_notes;
 
 	void clear();
 
 public:
 	bool deleted;
-
-	std::vector< Item<types::Note> > notes;
 
 	UItem<types::Source> source;
 
@@ -69,6 +68,12 @@ protected:
 public:
 	Metadata() {}
 	~Metadata();
+
+	std::vector< Item<types::Note> > notes() const;
+	const std::string& notes_encoded() const;
+	void set_notes(const std::vector< Item<types::Note> >& notes);
+	void set_notes_encoded(const std::string& notes);
+	void add_note(const Item<types::Note>& note);
 
 	/**
 	 * Check that two Metadata contain the same information

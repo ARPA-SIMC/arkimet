@@ -323,7 +323,10 @@ void Index::scan_file(const std::string& relname, MetadataConsumer& consumer) co
 		md.source = source::Blob::create(
 				mdq.fetchString(1), mdq.fetchString(2),
 				mdq.fetch<size_t>(3), mdq.fetch<size_t>(4));
-		md.notes = mdq.fetchItems<types::Note>(5);
+		//md.notes = mdq.fetchItems<types::Note>(5);
+		const void* notes_p = mdq.fetchBlob(5);
+		int notes_l = mdq.fetchBytes(5);
+		md.set_notes_encoded(string((const char*)notes_p, notes_l));
 		md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
 		int j = 7;
 		if (m_uniques)
@@ -541,7 +544,10 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 			md.source = source::Blob::create(
 					mdq.fetchString(1), mdq.fetchString(2),
 					mdq.fetch<size_t>(3), mdq.fetch<size_t>(4));
-			md.notes = mdq.fetchItems<types::Note>(5);
+			// md.notes = mdq.fetchItems<types::Note>(5);
+			const void* notes_p = mdq.fetchBlob(5);
+			int notes_l = mdq.fetchBytes(5);
+			md.set_notes_encoded(string((const char*)notes_p, notes_l));
 			md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
 			int j = 7;
 			if (m_uniques)
@@ -1138,7 +1144,8 @@ void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& file, s
 		default:
 			q.bind(++idx, 0);
 	}
-	q.bindItems(++idx, md.notes);
+	//q.bindItems(++idx, md.notes);
+	q.bind(++idx, md.notes_encoded());
 
 	const int* rt = md.get(types::TYPE_REFTIME)->upcast<types::reftime::Position>()->time->vals;
 	int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);
