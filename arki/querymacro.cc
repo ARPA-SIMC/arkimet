@@ -24,7 +24,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
-#include <arki/dataset/gridspace.h>
+#include <arki/dataset/gridquery.h>
 #include <arki/nag.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>

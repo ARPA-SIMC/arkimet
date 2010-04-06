@@ -25,7 +25,6 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/dataset/http.h>
-#include <arki/dataset/gridspace.h>
 #include <arki/summary.h>
 #include <arki/formatter.h>
 #include <arki/utils/geosdef.h>
@@ -53,7 +52,6 @@ struct Options : public StandardParserWithManpage
 	BoolOption* aliases;
 	BoolOption* bbox;
 	StringOption* outfile;
-	StringOption* gridspace;
 
 	Options() : StandardParserWithManpage("arki-dump", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -80,11 +78,6 @@ struct Options : public StandardParserWithManpage
 			"print the arkimet configuration used to access the given file or dataset or URL");
 
 		aliases = add<BoolOption>("aliases", 0, "aliases", "", "dump the alias database (to dump the aliases of a remote server, put the server URL on the command line)");
-
-		gridspace = add<StringOption>("gridspace", 0, "gridspace", "file",
-				"access the given input through a gridspace "
-				"described by `file', printing information "
-				"about the process.");
 
 		bbox = add<BoolOption>("bbox", 0, "bbox", "", "dump the bounding box");
 
@@ -142,8 +135,6 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--query conflicts with --from-yaml-summary");
 		if (opts.query->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--query conflicts with --annotate");
-		if (opts.query->boolValue() && opts.gridspace->isSet())
-			throw wibble::exception::BadOption("--query conflicts with --gridspace");
 		if (opts.query->boolValue() && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--query conflicts with --bbox");
 
@@ -155,8 +146,6 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--config conflicts with --from-yaml-summary");
 		if (opts.config->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--config conflicts with --annotate");
-		if (opts.config->boolValue() && opts.gridspace->isSet())
-			throw wibble::exception::BadOption("--config conflicts with --gridspace");
 		if (opts.config->boolValue() && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--config conflicts with --bbox");
 
@@ -166,8 +155,6 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-summary");
 		if (opts.aliases->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
-		if (opts.aliases->boolValue() && opts.gridspace->isSet())
-			throw wibble::exception::BadOption("--aliases conflicts with --gridspace");
 		if (opts.aliases->boolValue() && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--aliases conflicts with --bbox");
 
@@ -177,14 +164,9 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-data");
 		if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && opts.gridspace->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --gridspace");
 		if (opts.annotate->boolValue() && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--annotate conflicts with --bbox");
 
-		if (opts.gridspace->boolValue() && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--gridspace conflicts with --bbox");
-		
 		if (opts.query->boolValue())
 		{
 			if (!opts.hasNext())
@@ -226,48 +208,6 @@ int main(int argc, const char* argv[])
 
 			// Output the merged configuration
 			cfg.output(out.stream(), out.name());
-
-			return 0;
-		}
-
-		if (opts.gridspace->isSet())
-		{
-			// Access the data source
-			ConfigFile cfg;
-			ReadonlyDataset::readConfig(opts.next(), cfg);
-			auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.sectionBegin()->second));
-
-			// Wrap it with the gridspace
-			runtime::Input in(opts.gridspace->stringValue());
-			dataset::Gridspace gs(*ds);
-			gs.read(in.stream(), in.name());
-
-			// Open the output file
-			runtime::Output out(*opts.outfile);
-
-			ostream& o = out.stream();
-
-			// Dump the state before validation
-			o << "Before validation:" << endl;
-			gs.dump(o, " ");
-
-			// Dump how matchers are expanded
-			o << "Matcher expansions:" << endl;
-			gs.dumpExpands(o, " ");
-
-			// Expand matchers into the soup
-			gs.validateMatchers();
-
-			// Dump how many values per item in the soup
-			o << "Data count per item:" << endl;
-			gs.dumpCountPerItem(o, " ");
-
-			// Finally perform validation
-			gs.validate();
-
-			// Dump the state after validation
-			o << "After validation:" << endl;
-			gs.dump(o, " ");
 
 			return 0;
 		}

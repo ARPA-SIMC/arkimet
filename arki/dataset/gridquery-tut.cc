@@ -17,7 +17,7 @@
  */
 
 #include <arki/tests/test-utils.h>
-#include <arki/dataset/gridspace.h>
+#include <arki/dataset/gridquery.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
@@ -42,12 +42,11 @@ struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
 	}
 };
 
-struct arki_dataset_gridspace_shar {
+struct arki_dataset_gridquery_shar {
 	ConfigFile config;
 	ReadonlyDataset* ds;
-	dataset::Gridspace* gs;
 
-	arki_dataset_gridspace_shar() : ds(0), gs(0)
+	arki_dataset_gridquery_shar() : ds(0)
 	{
 		// Cleanup the test datasets
 		system("rm -rf testds ; mkdir testds");
@@ -87,99 +86,19 @@ struct arki_dataset_gridspace_shar {
 		dispatcher.flush();
 
 		ds = ReadonlyDataset::create(*config.section("testds"));
-		gs = new dataset::Gridspace(*ds);
 	}
 
-	~arki_dataset_gridspace_shar()
+	~arki_dataset_gridquery_shar()
 	{
-		if (gs) delete gs;
 		if (ds) delete ds;
 	}
 };
-TESTGRP(arki_dataset_gridspace);
+TESTGRP(arki_dataset_gridquery);
 
-
-// Test querying the datasets
-template<> template<>
-void to::test<1>()
-{
-	// Trivially query only one item
-	gs->clear();
-	gs->add(types::origin::GRIB1::create(200, 0, 101));
-	gs->add(types::product::GRIB1::create(200, 140, 229));
-	gs->validate();
-
-	MetadataCollector mdc;
-	gs->queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-
-	mdc.clear();
-	gs->queryData(dataset::DataQuery(Matcher(), true), mdc);
-	ensure_equals(mdc.size(), 1u);
-}
-
-// Test querying the datasets, using matchers
-template<> template<>
-void to::test<2>()
-{
-	// Trivially query only one item
-	gs->clear();
-	gs->addOne(types::TYPE_ORIGIN, "GRIB1,200,0,101");
-	gs->addOne(types::TYPE_PRODUCT, "GRIB1,200,140,229");
-	gs->validate();
-
-	MetadataCollector mdc;
-	gs->queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-
-	mdc.clear();
-	gs->queryData(dataset::DataQuery(Matcher(), true), mdc);
-	ensure_equals(mdc.size(), 1u);
-}
-
-// Test querying the datasets, using matchers
-template<> template<>
-void to::test<3>()
-{
-	// Trivially query only one item
-	gs->clear();
-	gs->addAll(types::TYPE_ORIGIN, "GRIB1,200,0,101");
-	gs->addAll(types::TYPE_PRODUCT, "GRIB1,200,140,229");
-	gs->validate();
-
-	MetadataCollector mdc;
-	gs->queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-
-	mdc.clear();
-	gs->queryData(dataset::DataQuery(Matcher(), true), mdc);
-	ensure_equals(mdc.size(), 1u);
-}
-
-// Test parsing reftime sequences
-template<> template<>
-void to::test<4>()
-{
-	stringstream str(
-			"origin: GRIB1(200,0,101)\n"
-			"match one product: GRIB1,200,140,229\n"
-			"reftime sequence: from 2007-07-08 13:00:00 to 2007-07-08 13:00:01 step 10\n"
-	);
-	gs->read(str, "(memory)");
-	gs->validate();
-
-	MetadataCollector mdc;
-	gs->queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-
-	mdc.clear();
-	gs->queryData(dataset::DataQuery(Matcher(), true), mdc);
-	ensure_equals(mdc.size(), 1u);
-}
 
 // Test GridQuery
 template<> template<>
-void to::test<5>()
+void to::test<1>()
 {
 	dataset::GridQuery gq(*ds);
 
