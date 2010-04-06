@@ -70,8 +70,8 @@ function QueryChunk:init(dsname, d, t)
 	if d:match("^%s*[Tt]%s*$") then
 		d = os.date("%Y-%m-%d")
 	elseif d:match("^%s*@%s*$") then
-		d = os.getenv("DAY")
-		if d == nil then error("If using @, set $DAY to YYYY-MM-DD") end
+		d = args
+		if d == nil then error("If using @, please invoke as --qmacro=\"expa YYYY-MM-DD\"") end
 	elseif d:match("^%d+-%d+-%d+$") then
 		-- d is already as we want it
 	else

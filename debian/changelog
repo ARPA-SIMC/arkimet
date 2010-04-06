@@ -1,8 +1,9 @@
 arkimet (0.37-1) UNRELEASED; urgency=low
 
   * More debugging info during ondisk2 maintenance
+  * Use arguments instead of env vars to expand @ in expa querymacro
 
- -- Enrico Zini <enrico@debian.org>  Tue, 06 Apr 2010 14:18:11 +0100
+ -- Enrico Zini <enrico@debian.org>  Tue, 06 Apr 2010 15:33:56 +0100
 
 arkimet (0.36-1) UNRELEASED; urgency=low
 

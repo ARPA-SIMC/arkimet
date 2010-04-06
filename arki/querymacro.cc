@@ -121,9 +121,24 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	lua_pushboolean(*L, nag::is_debug());
 	lua_setglobal(*L, "debug");
 	
+	// Split macro name and arguments
+	string macroname;
+	size_t pos = name.find(" ");
+	if (pos == string::npos)
+	{
+		macroname = name;
+		lua_pushnil(*L);
+	} else {
+		macroname = name.substr(0, pos);
+		string macroargs = str::trim(name.substr(pos + 1));
+		lua_pushstring(*L, macroargs.c_str());
+	}
+	// Load the arguments as a global variable
+	lua_setglobal(*L, "args");
+
 	/// Load the right qmacro file
 	string dirname = runtime::rcDirName("qmacro", "ARKI_QMACRO");
-	string fname = str::joinpath(dirname, name + ".lua");
+	string fname = str::joinpath(dirname, macroname + ".lua");
 	if (luaL_dofile(*L, fname.c_str()))
 	{
 		// Copy the error, so that it will exist after the pop

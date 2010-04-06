@@ -167,9 +167,32 @@ void to::test<4>()
 	ensure_equals(s.count(), 2u);
 }
 
-// Try "gridspace" matchers
+// Try "expa" matchers with parameter
 template<> template<>
 void to::test<5>()
+{
+	Querymacro qm(cfg, "expa 2009-08-07", 
+			"ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+			"ds:testds. d:@. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+//			utils::readFile("misc/erse00.expa")
+	);
+
+	dataset::DataQuery dq;
+	metadata::Collector mdc;
+	qm.queryData(dq, mdc);
+	ensure_equals(mdc.size(), 2u);
+	ensure(mdc[0].source.defined());
+	ensure(mdc[1].source.defined());
+
+	Summary s;
+	qm.querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 2u);
+}
+
+
+// Try "gridspace" matchers
+template<> template<>
+void to::test<6>()
 {
 	{
 		Querymacro qm(cfg, "gridspace", 
