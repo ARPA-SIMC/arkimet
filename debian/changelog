@@ -1,3 +1,9 @@
+arkimet (0.36.1-1) UNRELEASED; urgency=low
+
+  * More debugging info during ondisk2 maintenance
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 06 Apr 2010 14:18:11 +0100
+
 arkimet (0.36-1) UNRELEASED; urgency=low
 
   * Reduced memory usage when handling summaries, by reusing metadata Item
