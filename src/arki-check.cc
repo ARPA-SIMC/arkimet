@@ -32,6 +32,7 @@
 #include <arki/dataset/ondisk/maint/datafile.h>
 #include <arki/dataset/ondisk/maint/directory.h>
 #include <arki/types/assigneddataset.h>
+#include <arki/nag.h>
 #include <arki/runtime.h>
 
 #include "config.h"
@@ -54,6 +55,8 @@ namespace commandline {
 struct Options : public StandardParserWithManpage
 {
 	VectorOption<String>* cfgfiles;
+	BoolOption* verbose;
+	BoolOption* debug;
 	BoolOption* fix;
 	BoolOption* accurate;
 	BoolOption* repack;
@@ -70,6 +73,8 @@ struct Options : public StandardParserWithManpage
 			" read from config files), perform a maintenance run on them."
 			" Corrupted metadata files will be rebuilt, data files with deleted data"
 			" will be packed, outdated summaries and indices will be regenerated.";
+		debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
+		verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
 		cfgfiles = add< VectorOption<String> >("config", 'C', "config", "file",
 			"read the configuration from the given file (can be given more than once)");
 		fix = add<BoolOption>("fix", 'f', "fix", "",
@@ -270,6 +275,8 @@ int main(int argc, const char* argv[])
 	try {
 		if (opts.parse(argc, argv))
 			return 0;
+
+		nag::init(opts.verbose->isSet(), opts.debug->isSet());
 
 		runtime::init();
 
