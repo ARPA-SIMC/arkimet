@@ -82,6 +82,7 @@ dist_noinst_HEADERS = \
 		utils/geosfwd.h \
 		utils/geosdef.h \
 		utils/codec.h \
+		utils/datareader.h \
 		utils/sqlite.h \
 		utils/files.h \
 		utils/metadata.h \
@@ -117,6 +118,7 @@ libarkimet_la_SOURCES = \
 		nag.cc \
 		utils.cc \
 		utils/codec.cc \
+		utils/datareader.cc \
 		utils/sqlite.cc \
 		utils/files.cc \
 		utils/metadata.cc \
@@ -206,6 +208,7 @@ check_PROGRAMS = tests/arki-test
 tests_arki_test_SOURCES = \
 		utils-tut.cc \
 		utils/codec-tut.cc \
+		utils/datareader-tut.cc \
 		utils/sqlite-tut.cc \
 		utils/files-tut.cc \
 		utils/metadata-tut.cc \
