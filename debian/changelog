@@ -2,8 +2,11 @@ arkimet (0.36.1-1) UNRELEASED; urgency=low
 
   * More debugging info during ondisk2 maintenance
   * Use arguments instead of env vars to expand @ in expa querymacro
+  * Keep the last data file open to avoid reopening a file all the time when
+    reading data from it
+  * Use posix_fadvise to avoid caching data files
 
- -- Enrico Zini <enrico@debian.org>  Tue, 06 Apr 2010 15:33:56 +0100
+ -- Enrico Zini <enrico@debian.org>  Tue, 06 Apr 2010 17:01:55 +0100
 
 arkimet (0.36-1) UNRELEASED; urgency=low
 
