@@ -421,13 +421,13 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 				// Check timestamp consistency
 				if (ts_idx != ts_data)
 					nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
-							disk.cur().c_str(), ts_data, ts_idx);
+							file.c_str(), ts_data, ts_idx);
 				if (ts_md < ts_data)
 					nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
-							disk.cur().c_str(), ts_data, ts_md);
+							file.c_str(), ts_data, ts_md);
 				if (ts_md < ts_data)
 					nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
-							disk.cur().c_str(), ts_md, ts_sum);
+							file.c_str(), ts_md, ts_sum);
 				v(file, writer::MaintFileVisitor::ARC_TO_RESCAN);
 			}
 			else
