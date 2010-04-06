@@ -109,6 +109,9 @@ struct Append : public Transaction
 		// Set the source information that we are writing in the metadata
 		md.source = types::source::Blob::create(origSource->format, df.pathname, pos, buf.size());
 
+		// Prevent caching (ignore function result)
+		(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
+
 		// Append the data
 		ssize_t res = write(df.fd, buf.data(), buf.size());
 		if (res < 0 || (unsigned)res != buf.size())

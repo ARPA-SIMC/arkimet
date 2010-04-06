@@ -163,6 +163,9 @@ struct Datafile::NormalAccess
 			// Encode the metadata
 			string encoded = md.encode();
 
+			// Prevent caching (ignore function result)
+			(void)posix_fadvise(datafd, dataofs, buf.size(), POSIX_FADV_DONTNEED);
+
 			// Append the data
 			ssize_t res = write(datafd, buf.data(), buf.size());
 			if (res < 0 || (unsigned)res != buf.size())
