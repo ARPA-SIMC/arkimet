@@ -23,6 +23,7 @@
 #include <arki/metadata.h>
 #include <arki/utils/codec.h>
 #include <arki/formatter.h>
+#include <arki/utils/datareader.h>
 #include "config.h"
 
 #include <wibble/exception.h>
@@ -41,6 +42,8 @@ using namespace std;
 using namespace wibble;
 
 namespace arki {
+
+static utils::DataReader dataReader;
 
 static inline void ensureSize(size_t len, size_t req, const char* what)
 {
@@ -410,20 +413,9 @@ wibble::sys::Buffer Metadata::getData() const
 			if (!sys::fs::access(file.c_str(), F_OK))
 				file = wibble::str::joinpath(str::dirname(m_filename), blob->filename);
 
-			// Open the input file
-			ifstream in;
-			in.open(file.c_str(), ios::in);
-			if (!in.is_open() || in.fail())
-				throw wibble::exception::File(file, "opening file for reading");
-			in.seekg(blob->offset);
-			if (in.fail())
-				throw wibble::exception::File(file, "moving to position " + str::fmt(blob->offset));
-
 			// Read the data
 			m_inline_buf.resize(blob->size);
-			in.read((char*)m_inline_buf.data(), blob->size);
-			if (in.fail())
-				throw wibble::exception::File(file, "reading " + str::fmt(blob->size) + " bytes from the file");
+			dataReader.read(file, blob->offset, blob->size, m_inline_buf.data());
 
 			return m_inline_buf;
 		}
