@@ -5,8 +5,9 @@ arkimet (0.36.1-1) UNRELEASED; urgency=low
   * Keep the last data file open to avoid reopening a file all the time when
     reading data from it
   * Use posix_fadvise to avoid caching data files
+  * Avoid reading scanned data twice
 
- -- Enrico Zini <enrico@debian.org>  Tue, 06 Apr 2010 17:01:55 +0100
+ -- Enrico Zini <enrico@debian.org>  Tue, 06 Apr 2010 18:40:59 +0100
 
 arkimet (0.36-1) UNRELEASED; urgency=low
 

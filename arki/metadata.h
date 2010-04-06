@@ -189,6 +189,21 @@ public:
 	wibble::sys::Buffer getData() const;
 
 	/**
+	 * If the source is not inline, but the data are cached in memory, drop
+	 * them.
+	 *
+	 * Data for non-inline metadata can be cached in memory, for example,
+	 * by a getData() call or a setCachedData() call.
+	 */
+	void dropCachedData();
+
+	/**
+	 * Set cached data for non-inline sources, so that getData() won't have
+	 * to read it again.
+	 */
+	void setCachedData(const wibble::sys::Buffer& buf);
+
+	/**
 	 * Set the inline data for the metadata
 	 */
 	void setInlineData(const std::string& format, const wibble::sys::Buffer& buf);

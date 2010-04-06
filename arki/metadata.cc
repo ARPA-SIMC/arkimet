@@ -426,6 +426,17 @@ wibble::sys::Buffer Metadata::getData() const
 	}
 }
 
+void Metadata::dropCachedData()
+{
+	if (source.defined() && source->style() == types::Source::BLOB)
+		m_inline_buf = wibble::sys::Buffer();
+}
+
+void Metadata::setCachedData(const wibble::sys::Buffer& buf)
+{
+	m_inline_buf = buf;
+}
+
 size_t Metadata::dataSize() const
 {
 	switch (source->style())

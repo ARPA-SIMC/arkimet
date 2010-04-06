@@ -670,6 +670,7 @@ void Grib::setSource(Metadata& md)
 	else
 	{
 		md.source = types::source::Blob::create("grib" + str::fmt(edition), filename, offset, size);
+		md.setCachedData(wibble::sys::Buffer(vbuf, size));
 	}
 	md.add_note(types::Note::create("Scanned from " + basename + ":" + str::fmt(offset) + "+" + str::fmt(size)));
 }

@@ -42,6 +42,7 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 {
 	bool operator()(Metadata& md)
 	{
+		md.dropCachedData();
 		push_back(md);
 		return true;
 	}

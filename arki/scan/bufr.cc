@@ -194,8 +194,10 @@ bool Bufr::next(Metadata& md)
 	// Set source
 	if (m_inline_data)
 		md.setInlineData("bufr", wibble::sys::Buffer(rmsg->buf, rmsg->len, false));
-	else
+	else {
 		md.source = types::source::Blob::create("bufr", filename, rmsg->offset, rmsg->len);
+		md.setCachedData(wibble::sys::Buffer(rmsg->buf, rmsg->len, false));
+	}
 
 	// Set reference time
 	md.set(types::reftime::Position::create(new types::Time(msg->rep_year, msg->rep_month, msg->rep_day, msg->rep_hour, msg->rep_minute, msg->rep_second)));
