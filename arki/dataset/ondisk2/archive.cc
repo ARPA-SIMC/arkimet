@@ -399,7 +399,7 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 
 		while (not disk.cur().empty() and disk.cur() < file)
 		{
-			nag::debug("Archive: %s is not in index", disk.cur().c_str());
+			nag::verbose("Archive: %s is not in index", disk.cur().c_str());
 			v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
 			disk.next();
 		}
@@ -420,13 +420,13 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 			{
 				// Check timestamp consistency
 				if (ts_idx != ts_data)
-					nag::debug("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
+					nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
 							disk.cur().c_str(), ts_data, ts_idx);
 				if (ts_md < ts_data)
-					nag::debug("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
+					nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
 							disk.cur().c_str(), ts_data, ts_md);
 				if (ts_md < ts_data)
-					nag::debug("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
+					nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
 							disk.cur().c_str(), ts_md, ts_sum);
 				v(file, writer::MaintFileVisitor::ARC_TO_RESCAN);
 			}
@@ -440,13 +440,13 @@ void Archive::maintenance(writer::MaintFileVisitor& v)
 		}
 		else // if (disk.cur() > file)
 		{
-			nag::debug("Archive: %s has been deleted from the archive", disk.cur().c_str());
+			nag::verbose("Archive: %s has been deleted from the archive", disk.cur().c_str());
 			v(file, writer::MaintFileVisitor::ARC_DELETED);
 		}
 	}
 	while (not disk.cur().empty())
 	{
-		nag::debug("Archive: %s is not in index", disk.cur().c_str());
+		nag::verbose("Archive: %s is not in index", disk.cur().c_str());
 		v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
 		disk.next();
 	}

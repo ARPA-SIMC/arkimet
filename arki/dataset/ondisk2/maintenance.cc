@@ -83,7 +83,7 @@ void HoleFinder::finaliseFile()
 
 		if (is_corrupted)
 		{
-			nag::debug("HoleFinder: %s found corrupted", last_file.c_str());
+			nag::verbose("HoleFinder: %s found corrupted", last_file.c_str());
 			next(last_file, writer::MaintFileVisitor::TO_RESCAN);
 			return;
 		}
@@ -91,7 +91,7 @@ void HoleFinder::finaliseFile()
 		off_t size = files::size(str::joinpath(m_root, last_file));
 		if (size < last_file_size)
 		{
-			nag::debug("HoleFinder: %s found truncated", last_file.c_str());
+			nag::verbose("HoleFinder: %s found truncated", last_file.c_str());
 			// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
 			next(last_file, writer::MaintFileVisitor::TO_RESCAN);
 			return;
@@ -104,7 +104,7 @@ void HoleFinder::finaliseFile()
 		// Take note of files with holes
 		if (has_hole)
 		{
-			nag::debug("HoleFinder: %s contains deleted data", last_file.c_str());
+			nag::verbose("HoleFinder: %s contains deleted data", last_file.c_str());
 			next(last_file, writer::MaintFileVisitor::TO_PACK);
 		} else {
 			next(last_file, writer::MaintFileVisitor::OK);
@@ -160,7 +160,7 @@ void FindMissing::operator()(const std::string& file, State state)
 {
 	while (not disk.cur().empty() and disk.cur() < file)
 	{
-		nag::debug("FindMissing: %s is not in index", disk.cur().c_str());
+		nag::verbose("FindMissing: %s is not in index", disk.cur().c_str());
 		next(disk.cur(), TO_INDEX);
 		disk.next();
 	}
@@ -176,7 +176,7 @@ void FindMissing::operator()(const std::string& file, State state)
 	}
 	else // if (disk.cur() > file)
 	{
-		nag::debug("FindMissing: %s has been deleted", file.c_str());
+		nag::verbose("FindMissing: %s has been deleted", file.c_str());
 		next(file, DELETED);
 	}
 }
@@ -185,7 +185,7 @@ void FindMissing::end()
 {
 	while (not disk.cur().empty())
 	{
-		nag::debug("FindMissing: %s is not in index", disk.cur().c_str());
+		nag::verbose("FindMissing: %s is not in index", disk.cur().c_str());
 		next(disk.cur(), TO_INDEX);
 		disk.next();
 	}
@@ -228,12 +228,12 @@ void CheckAge::operator()(const std::string& file, State state)
 		//cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
 		if (delete_threshold > maxdate)
 		{
-			nag::debug("CheckAge: %s is old enough to be deleted", file.c_str());
+			nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
 			next(file, TO_DELETE);
 		}
 		else if (archive_threshold > maxdate)
 		{
-			nag::debug("CheckAge: %s is old enough to be archived", file.c_str());
+			nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
 			next(file, TO_ARCHIVE);
 		}
 		else
