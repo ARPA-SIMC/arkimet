@@ -130,7 +130,8 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 			{
 				perror(file.c_str());
 				is_corrupted = true;
-			}
+			} else
+				(void)posix_fadvise(validator_fd, 0, 0, POSIX_FADV_DONTNEED);
 		}
 	}
 	// If we've already found that the file is corrupted, there is nothing
