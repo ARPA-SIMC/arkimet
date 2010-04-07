@@ -82,6 +82,7 @@ dist_noinst_HEADERS = \
 		utils/geosfwd.h \
 		utils/geosdef.h \
 		utils/codec.h \
+		utils/compress.h \
 		utils/datareader.h \
 		utils/sqlite.h \
 		utils/files.h \
@@ -118,6 +119,7 @@ libarkimet_la_SOURCES = \
 		nag.cc \
 		utils.cc \
 		utils/codec.cc \
+		utils/compress.cc \
 		utils/datareader.cc \
 		utils/sqlite.cc \
 		utils/files.cc \
@@ -208,6 +210,7 @@ check_PROGRAMS = tests/arki-test
 tests_arki_test_SOURCES = \
 		utils-tut.cc \
 		utils/codec-tut.cc \
+		utils/compress-tut.cc \
 		utils/datareader-tut.cc \
 		utils/sqlite-tut.cc \
 		utils/files-tut.cc \
@@ -335,6 +338,12 @@ if GEOS
 INCLUDES += $(GEOS_CFLAGS)
 libarkimet_la_LDFLAGS += $(GEOS_LIBS)
 tests_arki_test_LDADD += $(GEOS_LIBS)
+endif
+
+if LZO
+INCLUDES += $(LZO_CFLAGS)
+libarkimet_la_LDFLAGS += $(LZO_LIBS)
+tests_arki_test_LDADD += $(LZO_LIBS)
 endif
 
 EXTRA_DIST = runtest buildbison buildflex \

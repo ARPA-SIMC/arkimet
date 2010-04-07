@@ -21,6 +21,11 @@ all_libs += @LIBCURL@
 INCLUDES += @LIBCURL_CPPFLAGS@
 endif
 
+if LZO
+all_libs += $(LZO_LIBS)
+INCLUDES += $(LZO_CFLAGS)
+endif
+
 if READLINE
 bin_PROGRAMS += arki-config
 arki_config_SOURCES = arki-config.cc

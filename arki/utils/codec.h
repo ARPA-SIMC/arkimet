@@ -4,7 +4,7 @@
 /*
  * utils/codec - Encoding/decoding utilities
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,12 @@
 #include <wibble/string.h>
 #include <stdint.h>
 #include <string>
+
+namespace wibble {
+namespace sys {
+class Buffer;
+}
+}
 
 namespace arki {
 namespace utils {
@@ -155,6 +161,7 @@ public:
 	Encoder& addString(const char* str) { buf += str; return *this; }
 	Encoder& addString(const char* str, size_t n) { buf.append(str, n); return *this; }
 	Encoder& addString(const std::string& str) { buf += str; return *this; }
+	Encoder& addBuffer(const wibble::sys::Buffer& buf);
 
 	/// Encode an unsigned integer in the given amount of bytes, big endian
 	template<typename T>

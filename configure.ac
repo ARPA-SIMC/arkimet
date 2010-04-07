@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 0.36.1, [enrico@enricozini.org])
+AC_INIT(arkimet, 0.36.2, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AM_CONFIG_HEADER(config.h)
@@ -156,6 +156,23 @@ then
 fi
 AM_CONDITIONAL([GEOS], [test x"$have_geos" = x"yes"])
 
+dnl Check for liblzo2
+have_lzo=yes
+AC_CHECK_LIB([lzo2], [__lzo_init_v2], [true], [have_lzo=no], [])
+AC_CHECK_HEADER([lzo/lzo1x.h], [true], [have_lzo=no])
+if test $have_lzo = yes
+then
+	AC_DEFINE([HAVE_LZO], 1, [lzo functions are available])
+	LZO_CFLAGS=
+	LZO_LIBS="-llzo2"
+	AC_SUBST(LZO_CFLAGS)
+	AC_SUBST(LZO_LIBS)
+else
+	AC_MSG_WARN([compiling without lzo])
+fi
+AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
+
+
 LIBARKI_VERSION_INFO=`echo $VERSION | awk -F. '{ printf "%d:%d:%d", $1+$2, $3, $2 }'`
 AC_SUBST(LIBARKI_VERSION_INFO)
 
@@ -198,6 +215,7 @@ AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([LUA support:], [$have_lua])
 AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])
 AS_HELP_STRING([GNU readline support:], [$have_readline])
+AS_HELP_STRING([LZO compression:], [$have_lzo])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB1 support via Meteosatlib's libgrib:], [$have_libgrib])
 dnl AS_HELP_STRING([GRIB1 and GRIB2 support via grib_api and Lua:], [$have_gribapi])

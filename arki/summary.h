@@ -286,7 +286,7 @@ public:
 	/**
 	 * Encode to a string
 	 */
-	std::string encode() const;
+	std::string encode(bool compressed = false) const;
 
 	/**
 	 * Check if this summary matches the given matcher

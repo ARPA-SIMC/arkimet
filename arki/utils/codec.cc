@@ -21,8 +21,10 @@
  */
 
 #include <arki/utils/codec.h>
+#include <wibble/sys/buffer.h>
 
 using namespace std;
+using namespace wibble;
 
 namespace arki {
 namespace utils {
@@ -37,6 +39,11 @@ uint64_t decodeULInt(const unsigned char* val, unsigned int bytes)
 		res |= val[i];
 	}
 	return res;
+}
+
+Encoder& Encoder::addBuffer(const wibble::sys::Buffer& buf)
+{
+	this->buf.append((const char*)buf.data(), buf.size());
 }
 
 }

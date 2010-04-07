@@ -32,6 +32,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/area.h>
 #include <arki/utils/geosdef.h>
+#include <arki/utils/compress.h>
 // #include <arki/utils/lua.h>
 
 #include <wibble/exception.h>
@@ -1334,18 +1335,34 @@ void Summary::read(const wibble::sys::Buffer& buf, unsigned version, const std::
 	m_filename = filename;
 
 	// Check version and ensure we can decode
-	if (version != 1)
-		throw wibble::exception::Consistency("parsing file " + m_filename, "version of the file is " + str::fmt(version) + " but I can only decode version 1");
-
-	if (buf.size())
+	switch (version)
 	{
-		// Build the serialisation tables if it has not been done yet
-		summary::buildMsoSerLen();
-		root = summary::Node::decode((const unsigned char*)buf.data(), buf.size());
+		case 1:
+			// Standard summary
+			if (buf.size() == 0) return;
+			summary::buildMsoSerLen();
+
+			root = summary::Node::decode((const unsigned char*)buf.data(), buf.size());
+			break;
+		case 2: {
+			// LZO compressed summary
+			if (buf.size() == 0) return;
+			summary::buildMsoSerLen();
+
+			// Read uncompressed size
+			ensureSize(buf.size(), 4, "uncompressed item size");
+			uint32_t uncsize = decodeUInt((const unsigned char*)buf.data(), 4);
+
+			sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
+			root = summary::Node::decode((const unsigned char*)decomp.data(), decomp.size());
+			break;
+		}
+		default:
+			throw wibble::exception::Consistency("parsing file " + m_filename, "version of the file is " + str::fmt(version) + " but I can only decode version 1 or 2");
 	}
 }
 
-std::string Summary::encode() const
+std::string Summary::encode(bool compressed) const
 {
 	using namespace utils::codec;
 
@@ -1361,16 +1378,37 @@ std::string Summary::encode() const
 	string res;
 	Encoder enc(res);
 	enc.addString("SU", 2);
-	enc.addUInt(1, 2);
-	enc.addUInt(inner.size(), 4);
-	enc.addString(inner);
+	if (compressed)
+	{
+		sys::Buffer comp = utils::compress::lzo(inner.data(), inner.size());
+		if (comp.size() + 4 >= inner.size())
+		{
+			// No point in compressing
+			enc.addUInt(1, 2);
+			enc.addUInt(inner.size(), 4);
+			enc.addString(inner);
+		} else {
+			// Compression makes sense
+			enc.addUInt(2, 2);
+			// Add total size
+			enc.addUInt(comp.size() + 4, 4);
+			// Add uncompressed size
+			enc.addUInt(inner.size(), 4);
+			// Add compressed data
+			enc.addBuffer(comp);
+		}
+	} else {
+		enc.addUInt(1, 2);
+		enc.addUInt(inner.size(), 4);
+		enc.addString(inner);
+	}
 	return res;
 }
 
 void Summary::write(std::ostream& out, const std::string& filename) const
 {
 	// Prepare the encoded data
-	string encoded = encode();
+	string encoded = encode(true);
 
 	// Write out
 	out.write(encoded.data(), encoded.size());
@@ -1381,7 +1419,7 @@ void Summary::write(std::ostream& out, const std::string& filename) const
 void Summary::writeAtomically(const std::string& fname)
 {
 	// Write summary to disk
-	string enc = encode();
+	string enc = encode(true);
 	string tmpfile = fname + ".tmp" + str::fmt(getpid());
 	int fd = open(tmpfile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1)

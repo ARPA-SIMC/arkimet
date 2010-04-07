@@ -1,3 +1,10 @@
+arkimet (0.36.2-1) UNRELEASED; urgency=low
+
+  * New dependency on LZO
+  * Compressed binary summary format
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 07 Apr 2010 17:22:07 +0100
+
 arkimet (0.36.1-1) UNRELEASED; urgency=low
 
   * More debugging info during ondisk2 maintenance
