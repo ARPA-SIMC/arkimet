@@ -507,8 +507,12 @@ void Archive::rescan(const std::string& relname)
 void Archive::vacuum()
 {
 	// Vacuum the database
-	m_db.exec("VACUUM");
-	m_db.exec("ANALYZE");
+	try {
+		m_db.exec("VACUUM");
+		m_db.exec("ANALYZE");
+	} catch (std::exception& e) {
+		nag::warning("ignoring failed attempt to optimize database: %s", e.what());
+	}
 
 	// Regenerate summary cache
 	Summary s;
