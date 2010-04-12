@@ -23,10 +23,12 @@
 #include <arki/dataset/ondisk2/archive.h>
 #include <arki/dataset/ondisk2/writer/utils.h>
 #include <arki/dataset/ondisk2/maintenance.h>
+#include <arki/dataset/index/base.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
 #include <arki/matcher/reftime.h>
+#include <arki/utils/sqlite.h>
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
@@ -58,136 +60,292 @@ namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
+namespace archive {
+
+Manifest::~Manifest() {}
+
+class SqliteManifest : public Manifest
+{
+	std::string m_dir;
+	mutable utils::sqlite::SQLiteDB m_db;
+	index::InsertQuery m_insert;
+
+	void setupPragmas()
+	{
+		// Also, since the way we do inserts cause no trouble if a reader reads a
+		// partial insert, we do not need read locking
+		m_db.exec("PRAGMA read_uncommitted = 1");
+		// Use new features, if we write we read it, so we do not need to
+		// support sqlite < 3.3.0 if we are above that version
+		m_db.exec("PRAGMA legacy_file_format = 0");
+	}
+
+	void initQueries()
+	{
+		m_insert.compile("INSERT INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
+	}
+
+	void initDB()
+	{
+		// Create the main table
+		string query = "CREATE TABLE IF NOT EXISTS files ("
+			"id INTEGER PRIMARY KEY,"
+			" file TEXT NOT NULL,"
+			" mtime INTEGER NOT NULL,"
+			" start_time TEXT NOT NULL,"
+			" end_time TEXT NOT NULL,"
+			" UNIQUE(file) )";
+		m_db.exec(query);
+		m_db.exec("CREATE INDEX idx_files_start ON files (start_time)");
+		m_db.exec("CREATE INDEX idx_files_end ON files (end_time)");
+	}
+
+
+public:
+	SqliteManifest(const std::string& dir)
+		: m_dir(dir), m_insert(m_db)
+	{
+	}
+
+	virtual ~SqliteManifest()
+	{
+	}
+
+	void openRO()
+	{
+		string pathname(str::joinpath(m_dir, "index.sqlite"));
+		if (m_db.isOpen())
+			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
+
+		if (!wibble::sys::fs::access(pathname, F_OK))
+			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " does not exist");
+
+		m_db.open(pathname);
+		setupPragmas();
+
+		initQueries();
+	}
+
+	void openRW()
+	{
+		string pathname(str::joinpath(m_dir, "index.sqlite"));
+		if (m_db.isOpen())
+			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
+
+		bool need_create = !wibble::sys::fs::access(pathname, F_OK);
+
+		m_db.open(pathname);
+		setupPragmas();
+		
+		if (need_create)
+			initDB();
+
+		initQueries();
+	}
+
+	void fileList(const Matcher& matcher, std::vector<std::string>& files) const
+	{
+		string query;
+		const matcher::OR* reftime = 0;
+		
+		if (matcher.m_impl)
+			reftime = matcher.m_impl->get(types::TYPE_REFTIME);
+
+		if (reftime)
+		{
+			UItem<types::Time> begin;
+			UItem<types::Time> end;
+			for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
+			{
+				if (j == reftime->begin())
+					(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
+				else {
+					UItem<types::Time> new_begin;
+					UItem<types::Time> new_end;
+					(*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
+					if (begin.defined() && (!new_begin.defined() || new_begin < begin))
+						begin = new_begin;
+					if (end.defined() && (!new_end.defined() || end < new_end))
+						end = new_end;
+
+				}
+			}
+			query = "SELECT file FROM files";
+
+			if (begin.defined())
+				query += " WHERE end_time >= '" + begin->toSQL() + "'";
+			if (end.defined())
+			{
+				if (begin.defined())
+					query += " AND start_time <= '" + end->toSQL() + "'";
+				else
+					query += " WHERE start_time <= '" + end->toSQL() + "'";
+			}
+
+			query += " ORDER BY file";
+		} else {
+			// No restrictions on reftime: get all files
+			query = "SELECT file FROM files ORDER BY file";
+		}
+
+		// cerr << "Query: " << query << endl;
+		
+		Query q("sel_archive", m_db);
+		q.compile(query);
+		while (q.step())
+			files.push_back(q.fetchString(0));
+	}
+
+	void vacuum()
+	{
+		// Vacuum the database
+		try {
+			m_db.exec("VACUUM");
+			m_db.exec("ANALYZE");
+		} catch (std::exception& e) {
+			nag::warning("ignoring failed attempt to optimize database: %s", e.what());
+		}
+	}
+
+	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
+	{
+		// Add to index
+		Item<types::Reftime> rt = sum.getReferenceTime();
+
+		string bt;
+		string et;
+
+		switch (rt->style())
+		{
+			case types::Reftime::POSITION: {
+				UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
+				bt = et = p->time->toSQL();
+				break;
+		        }
+			case types::Reftime::PERIOD: {
+			        UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
+			        bt = p->begin->toSQL();
+			        et = p->end->toSQL();
+			        break;
+		        }
+			default:
+			        throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
+		}
+
+		m_insert.reset();
+		m_insert.bind(1, relname);
+		m_insert.bind(2, mtime);
+		m_insert.bind(3, bt);
+		m_insert.bind(4, et);
+		m_insert.step();
+	}
+
+	virtual void remove(const std::string& relname)
+	{
+		Query q("del_file", m_db);
+		q.compile("DELETE FROM files WHERE file=?");
+		q.bind(1, relname);
+		while (q.step())
+			;
+	}
+
+	virtual void check(writer::MaintFileVisitor& v)
+	{
+		// List of files existing on disk
+		writer::DirScanner disk(m_dir, true);
+
+		Query q("sel_archive", m_db);
+		q.compile("SELECT file, mtime, end_time FROM files ORDER BY file");
+
+		while (q.step())
+		{
+			string file = q.fetchString(0);
+
+			while (not disk.cur().empty() and disk.cur() < file)
+			{
+				nag::verbose("Archive: %s is not in index", disk.cur().c_str());
+				v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
+				disk.next();
+			}
+			if (disk.cur() == file)
+			{
+				disk.next();
+
+				string pathname = str::joinpath(m_dir, file);
+
+				time_t ts_data = files::timestamp(pathname);
+				time_t ts_md = files::timestamp(pathname + ".metadata");
+				time_t ts_sum = files::timestamp(pathname + ".summary");
+				time_t ts_idx = q.fetch<time_t>(1);
+
+				if (ts_idx != ts_data ||
+				    ts_md < ts_data ||
+				    ts_sum < ts_md)
+				{
+					// Check timestamp consistency
+					if (ts_idx != ts_data)
+						nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
+								file.c_str(), ts_data, ts_idx);
+					if (ts_md < ts_data)
+						nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
+								file.c_str(), ts_data, ts_md);
+					if (ts_md < ts_data)
+						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
+								file.c_str(), ts_md, ts_sum);
+					v(file, writer::MaintFileVisitor::ARC_TO_RESCAN);
+				}
+				else
+					v(file, writer::MaintFileVisitor::ARC_OK);
+
+				// TODO: if requested, check for internal consistency
+				// TODO: it requires to have an infrastructure for quick
+				// TODO:   consistency checkers (like, "GRIB starts with GRIB
+				// TODO:   and ends with 7777")
+			}
+			else // if (disk.cur() > file)
+			{
+				nag::verbose("Archive: %s has been deleted from the archive", disk.cur().c_str());
+				v(file, writer::MaintFileVisitor::ARC_DELETED);
+			}
+		}
+		while (not disk.cur().empty())
+		{
+			nag::verbose("Archive: %s is not in index", disk.cur().c_str());
+			v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
+			disk.next();
+		}
+	}
+};
+
+}
+
 Archive::Archive(const std::string& dir)
-	: m_dir(dir), m_insert(m_db)
+	: m_dir(dir), m_mft(0)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
+	m_mft = new archive::SqliteManifest(m_dir);
 }
 
 Archive::~Archive()
 {
+	if (m_mft) delete m_mft;
 }
 
 void Archive::openRO()
 {
-	string pathname = str::joinpath(m_dir, "index.sqlite");
-	if (m_db.isOpen())
-		throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
-
-	if (!wibble::sys::fs::access(pathname, F_OK))
-		throw wibble::exception::Consistency("opening archive index", "index " + pathname + " does not exist");
-	
-	m_db.open(pathname);
-	setupPragmas();
-	
-	initQueries();
+	m_mft->openRO();
 }
 
 void Archive::openRW()
 {
-	string pathname = str::joinpath(m_dir, "index.sqlite");
-	if (m_db.isOpen())
-		throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
-
-	bool need_create = !wibble::sys::fs::access(pathname, F_OK);
-
-	m_db.open(pathname);
-	setupPragmas();
-	
-	if (need_create)
-		initDB();
-
-	initQueries();
-}
-
-void Archive::setupPragmas()
-{
-	// Also, since the way we do inserts cause no trouble if a reader reads a
-	// partial insert, we do not need read locking
-	m_db.exec("PRAGMA read_uncommitted = 1");
-	// Use new features, if we write we read it, so we do not need to
-	// support sqlite < 3.3.0 if we are above that version
-	m_db.exec("PRAGMA legacy_file_format = 0");
-}
-
-void Archive::initQueries()
-{
-	m_insert.compile("INSERT INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
-}
-
-void Archive::initDB()
-{
-	// Create the main table
-	string query = "CREATE TABLE IF NOT EXISTS files ("
-		"id INTEGER PRIMARY KEY,"
-		" file TEXT NOT NULL,"
-		" mtime INTEGER NOT NULL,"
-		" start_time TEXT NOT NULL,"
-		" end_time TEXT NOT NULL,"
-		" UNIQUE(file) )";
-	m_db.exec(query);
-	m_db.exec("CREATE INDEX idx_files_start ON files (start_time)");
-	m_db.exec("CREATE INDEX idx_files_end ON files (end_time)");
-}
-
-void Archive::fileList(const Matcher& matcher, std::vector<std::string>& files) const
-{
-	string query;
-	const matcher::OR* reftime = 0;
-	
-	if (matcher.m_impl)
-		reftime = matcher.m_impl->get(types::TYPE_REFTIME);
-
-	if (reftime)
-	{
-		UItem<types::Time> begin;
-		UItem<types::Time> end;
-		for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
-		{
-			if (j == reftime->begin())
-				(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
-			else {
-				UItem<types::Time> new_begin;
-				UItem<types::Time> new_end;
-				(*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
-				if (begin.defined() && (!new_begin.defined() || new_begin < begin))
-					begin = new_begin;
-				if (end.defined() && (!new_end.defined() || end < new_end))
-					end = new_end;
-
-			}
-		}
-		query = "SELECT file FROM files";
-
-		if (begin.defined())
-			query += " WHERE end_time >= '" + begin->toSQL() + "'";
-		if (end.defined())
-		{
-			if (begin.defined())
-				query += " AND start_time <= '" + end->toSQL() + "'";
-			else
-				query += " WHERE start_time <= '" + end->toSQL() + "'";
-		}
-
-		query += " ORDER BY file";
-	} else {
-		// No restrictions on reftime: get all files
-		query = "SELECT file FROM files ORDER BY file";
-	}
-
-	// cerr << "Query: " << query << endl;
-	
-	Query q("sel_archive", m_db);
-	q.compile(query);
-	while (q.step())
-		files.push_back(q.fetchString(0));
+	m_mft->openRW();
 }
 
 void Archive::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	vector<string> files;
-	fileList(q.matcher, files);
+	m_mft->fileList(q.matcher, files);
 
 	// TODO: does it make sense to check with the summary first?
 
@@ -263,7 +421,7 @@ void Archive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 void Archive::querySummaries(const Matcher& matcher, Summary& summary) const
 {
 	vector<string> files;
-	fileList(matcher, files);
+	m_mft->fileList(matcher, files);
 
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 	{
@@ -349,107 +507,13 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 	// Regenerate .summary
 	sum.writeAtomically(pathname + ".summary");
 
-	// Add to index
-	Item<types::Reftime> rt = sum.getReferenceTime();
-
-	string bt;
-	string et;
-
-	switch (rt->style())
-	{
-		case types::Reftime::POSITION: {
-			UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
-			bt = et = p->time->toSQL();
-			break;
-		}
-		case types::Reftime::PERIOD: {
-			UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
-			bt = p->begin->toSQL();
-			et = p->end->toSQL();
-			break;
-		}
-		default:
-			throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
-	}
-
-	m_insert.reset();
-	m_insert.bind(1, relname);
-	m_insert.bind(2, mtime);
-	m_insert.bind(3, bt);
-	m_insert.bind(4, et);
-	m_insert.step();
+	// Add to manifest
+	m_mft->acquire(relname, mtime, sum);
 }
 
 void Archive::maintenance(writer::MaintFileVisitor& v)
 {
-	time_t now = time(NULL);
-
-	// Go to the beginning of the day
-	now -= (now % (3600*24));
-
-	// List of files existing on disk
-	writer::DirScanner disk(m_dir, true);
-
-	Query q("sel_archive", m_db);
-	q.compile("SELECT file, mtime, end_time FROM files ORDER BY file");
-
-	while (q.step())
-	{
-		string file = q.fetchString(0);
-
-		while (not disk.cur().empty() and disk.cur() < file)
-		{
-			nag::verbose("Archive: %s is not in index", disk.cur().c_str());
-			v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
-			disk.next();
-		}
-		if (disk.cur() == file)
-		{
-			disk.next();
-
-			string pathname = str::joinpath(m_dir, file);
-
-			time_t ts_data = files::timestamp(pathname);
-			time_t ts_md = files::timestamp(pathname + ".metadata");
-			time_t ts_sum = files::timestamp(pathname + ".summary");
-			time_t ts_idx = q.fetch<time_t>(1);
-
-			if (ts_idx != ts_data ||
-			    ts_md < ts_data ||
-			    ts_sum < ts_md)
-			{
-				// Check timestamp consistency
-				if (ts_idx != ts_data)
-					nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
-							file.c_str(), ts_data, ts_idx);
-				if (ts_md < ts_data)
-					nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
-							file.c_str(), ts_data, ts_md);
-				if (ts_md < ts_data)
-					nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
-							file.c_str(), ts_md, ts_sum);
-				v(file, writer::MaintFileVisitor::ARC_TO_RESCAN);
-			}
-			else
-				v(file, writer::MaintFileVisitor::ARC_OK);
-
-			// TODO: if requested, check for internal consistency
-			// TODO: it requires to have an infrastructure for quick
-			// TODO:   consistency checkers (like, "GRIB starts with GRIB
-			// TODO:   and ends with 7777")
-		}
-		else // if (disk.cur() > file)
-		{
-			nag::verbose("Archive: %s has been deleted from the archive", disk.cur().c_str());
-			v(file, writer::MaintFileVisitor::ARC_DELETED);
-		}
-	}
-	while (not disk.cur().empty())
-	{
-		nag::verbose("Archive: %s is not in index", disk.cur().c_str());
-		v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
-		disk.next();
-	}
+	m_mft->check(v);
 }
 
 /*
@@ -477,11 +541,7 @@ void Archive::remove(const std::string& relname)
 
 void Archive::deindex(const std::string& relname)
 {
-	Query q("del_file", m_db);
-	q.compile("DELETE FROM files WHERE file=?");
-	q.bind(1, relname);
-	while (q.step())
-		;
+	m_mft->remove(relname);
 }
 
 void Archive::rescan(const std::string& relname)
@@ -506,13 +566,7 @@ void Archive::rescan(const std::string& relname)
 
 void Archive::vacuum()
 {
-	// Vacuum the database
-	try {
-		m_db.exec("VACUUM");
-		m_db.exec("ANALYZE");
-	} catch (std::exception& e) {
-		nag::warning("ignoring failed attempt to optimize database: %s", e.what());
-	}
+	m_mft->vacuum();
 
 	// Regenerate summary cache
 	Summary s;

@@ -23,9 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/utils/sqlite.h>
 #include <arki/dataset/local.h>
-#include <arki/dataset/index/base.h>
 
 #include <string>
 #include <iosfwd>
@@ -47,18 +45,30 @@ namespace writer {
 class MaintFileVisitor;
 }
 
+namespace archive {
+
+class Manifest
+{
+public:
+	virtual ~Manifest();
+
+	virtual void openRO() = 0;
+	virtual void openRW() = 0;
+	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) const = 0;
+	virtual void vacuum() = 0;
+	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
+	virtual void remove(const std::string& relname) = 0;
+	virtual void check(writer::MaintFileVisitor& v) = 0;
+};
+
+}
+
 class Archive : public Local
 {
 protected:
 	std::string m_dir;
+	archive::Manifest* m_mft;
 
-	mutable utils::sqlite::SQLiteDB m_db;
-	index::InsertQuery m_insert;
-
-	void setupPragmas();
-	void initQueries();
-	void initDB();
-	void fileList(const Matcher& matcher, std::vector<std::string>& files) const;
 	void querySummaries(const Matcher& matcher, Summary& summary) const;
 
 public:
