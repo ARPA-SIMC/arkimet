@@ -24,6 +24,7 @@
  */
 
 #include <string>
+#include <sys/types.h>
 
 #define FLAGFILE_REBUILD ".needs-rebuild"
 #define FLAGFILE_PACK ".needs-pack"
@@ -93,6 +94,9 @@ time_t timestamp(const std::string& file);
 
 /// File size
 off_t size(const std::string& file);
+
+/// File inode number
+ino_t inode(const std::string& file);
 
 }
 }
