@@ -40,41 +40,43 @@ arki.p2 = grib.P2
 -- Area
 arki.area.type = grib.dataRepresentationType
 
-if grib.latitudeOfFirstGridPointInDegrees >= 1000 then
-	-- UTM hack
-	arki.area.utm = 1
+if grib.latitudeOfFirstGridPointInDegrees ~= nil then
+	if grib.latitudeOfFirstGridPointInDegrees >= 1000 then
+		-- UTM hack
+		arki.area.utm = 1
 
-	arki.area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000
-	arki.area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000
+		arki.area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000
+		arki.area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000
 
-	if grib.numberOfPointsAlongAParallel then
-		arki.area.Ni = grib.numberOfPointsAlongAParallel
-		arki.area.Nj = grib.numberOfPointsAlongAMeridian
-		arki.area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000
-		arki.area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000
-	end
-	if grib.numberOfPointsAlongXAxis then
-		arki.area.Ni = grib.numberOfPointsAlongXAxis
-		arki.area.Nj = grib.numberOfPointsAlongYAxis
-	end
-else
-	arki.area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
-	arki.area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
+		if grib.numberOfPointsAlongAParallel then
+			arki.area.Ni = grib.numberOfPointsAlongAParallel
+			arki.area.Nj = grib.numberOfPointsAlongAMeridian
+			arki.area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000
+			arki.area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000
+		end
+		if grib.numberOfPointsAlongXAxis then
+			arki.area.Ni = grib.numberOfPointsAlongXAxis
+			arki.area.Nj = grib.numberOfPointsAlongYAxis
+		end
+	else
+		arki.area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
+		arki.area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
 
-	if grib.numberOfPointsAlongAParallel then
-		arki.area.Ni = grib.numberOfPointsAlongAParallel
-		arki.area.Nj = grib.numberOfPointsAlongAMeridian
-		arki.area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000000
-		arki.area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000000
-	end
-	if grib.numberOfPointsAlongXAxis then
-		arki.area.Ni = grib.numberOfPointsAlongXAxis
-		arki.area.Nj = grib.numberOfPointsAlongYAxis
-	end
-	if grib.angleOfRotationInDegrees then
-		arki.area.rot = grib.angleOfRotationInDegrees * 1000000
-		arki.area.latp = grib.latitudeOfSouthernPoleInDegrees * 1000000
-		arki.area.lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000
+		if grib.numberOfPointsAlongAParallel then
+			arki.area.Ni = grib.numberOfPointsAlongAParallel
+			arki.area.Nj = grib.numberOfPointsAlongAMeridian
+			arki.area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000000
+			arki.area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000000
+		end
+		if grib.numberOfPointsAlongXAxis then
+			arki.area.Ni = grib.numberOfPointsAlongXAxis
+			arki.area.Nj = grib.numberOfPointsAlongYAxis
+		end
+		if grib.angleOfRotationInDegrees then
+			arki.area.rot = grib.angleOfRotationInDegrees * 1000000
+			arki.area.latp = grib.latitudeOfSouthernPoleInDegrees * 1000000
+			arki.area.lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000
+		end
 	end
 end
 
