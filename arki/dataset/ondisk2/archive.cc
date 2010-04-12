@@ -42,7 +42,8 @@
 #include <wibble/string.h>
 
 #include <fstream>
-#include <time.h>
+#include <ctime>
+#include <cstdio>
 
 #include "config.h"
 
@@ -128,6 +129,7 @@ class PlainManifest : public Manifest
 	};
 	std::string m_dir;
 	vector<Info> info;
+	ino_t last_inode;
 
 	/**
 	 * Reread the MANIFEST file.
@@ -136,9 +138,14 @@ class PlainManifest : public Manifest
 	 */
 	bool reread()
 	{
-		info.clear();
 		string pathname(str::joinpath(m_dir, "MANIFEST"));
-		if (!wibble::sys::fs::access(pathname, F_OK))
+		ino_t inode = files::inode(pathname);
+
+		if (inode == last_inode) return inode != 0;
+
+		info.clear();
+		last_inode = inode;
+		if (last_inode == 0)
 			return false;
 
 		std::ifstream in;
@@ -154,6 +161,9 @@ class PlainManifest : public Manifest
 			getline(in, line);
 			if (in.fail() && !in.eof())
 				throw wibble::exception::File(pathname, "reading one line");
+
+			// Skip empty lines
+			if (line.empty()) continue;
 
 			size_t beg = 0;
 			size_t end = line.find(';');
@@ -184,13 +194,12 @@ class PlainManifest : public Manifest
 		}		
 
 		in.close();
+		return true;
 	}
 
 	void save()
 	{
-		std::sort(info.begin(), info.end());
-
-		string pathname(str::joinpath(m_dir, "MANIFEST"));
+		string pathname(str::joinpath(m_dir, "MANIFEST.tmp"));
 
 		std::ofstream out;
 		out.open(pathname.c_str(), ios::out);
@@ -202,6 +211,9 @@ class PlainManifest : public Manifest
 			i->write(out);
 
 		out.close();
+
+		if (::rename(pathname.c_str(), str::joinpath(m_dir, "MANIFEST").c_str()) < 0)
+			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_dir, "MANIFEST"));
 	}
 
 public:
@@ -225,8 +237,10 @@ public:
 		reread();
 	}
 
-	void fileList(const Matcher& matcher, std::vector<std::string>& files) const
+	void fileList(const Matcher& matcher, std::vector<std::string>& files)
 	{
+		reread();
+
 		string query;
 		UItem<types::Time> begin;
 		UItem<types::Time> end;
@@ -254,6 +268,8 @@ public:
 
 	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
 	{
+		reread();
+
 		Info item;
 		item.file = relname;
 		item.mtime = mtime;
@@ -290,20 +306,28 @@ public:
 			info.insert(lb, item);
 		else
 			*lb = item;
+
+		save();
 	}
 
 	virtual void remove(const std::string& relname)
 	{
+		reread();
+
 		vector<Info>::iterator i;
 		for (i = info.begin(); i != info.end(); ++i)
 			if (i->file == relname)
 				break;
 		if (i != info.end())
 			info.erase(i);
+
+		save();
 	}
 
 	virtual void check(writer::MaintFileVisitor& v)
 	{
+		reread();
+
 		// List of files existing on disk
 		writer::DirScanner disk(m_dir, true);
 
@@ -445,7 +469,7 @@ public:
 		initQueries();
 	}
 
-	void fileList(const Matcher& matcher, std::vector<std::string>& files) const
+	void fileList(const Matcher& matcher, std::vector<std::string>& files)
 	{
 		string query;
 		UItem<types::Time> begin;
@@ -537,7 +561,7 @@ public:
 		writer::DirScanner disk(m_dir, true);
 
 		Query q("sel_archive", m_db);
-		q.compile("SELECT file, mtime, end_time FROM files ORDER BY file");
+		q.compile("SELECT file, mtime FROM files ORDER BY file");
 
 		while (q.step())
 		{
@@ -597,6 +621,12 @@ public:
 			disk.next();
 		}
 	}
+
+	static bool exists(const std::string& dir)
+	{
+		string pathname(str::joinpath(dir, "index.sqlite"));
+		return wibble::sys::fs::access(pathname, F_OK);
+	}
 };
 
 }
@@ -606,7 +636,12 @@ Archive::Archive(const std::string& dir)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
-	m_mft = new archive::SqliteManifest(m_dir);
+
+	if (archive::SqliteManifest::exists(m_dir))
+		m_mft = new archive::SqliteManifest(m_dir);
+	else
+		//m_mft = new archive::SqliteManifest(m_dir);
+		m_mft = new archive::PlainManifest(m_dir);
 }
 
 Archive::~Archive()
@@ -700,7 +735,7 @@ void Archive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	}
 }
 
-void Archive::querySummaries(const Matcher& matcher, Summary& summary) const
+void Archive::querySummaries(const Matcher& matcher, Summary& summary)
 {
 	vector<string> files;
 	m_mft->fileList(matcher, files);

@@ -54,7 +54,7 @@ public:
 
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
-	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) const = 0;
+	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
 	virtual void vacuum() = 0;
 	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
 	virtual void remove(const std::string& relname) = 0;
@@ -69,7 +69,7 @@ protected:
 	std::string m_dir;
 	archive::Manifest* m_mft;
 
-	void querySummaries(const Matcher& matcher, Summary& summary) const;
+	void querySummaries(const Matcher& matcher, Summary& summary);
 
 public:
 	Archive(const std::string& dir);

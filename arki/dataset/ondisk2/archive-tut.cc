@@ -73,7 +73,8 @@ void to::test<1>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
+	//ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
 
 	metadata::Collector mdc;
 	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
@@ -146,6 +147,7 @@ void to::test<2>()
 	// Everything should be fine now
 	c.clear();
 	arc.maintenance(c);
+	//cerr << c.remaining() << endl;
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_OK), 1u);
 	ensure_equals(c.remaining(), string());
@@ -165,7 +167,8 @@ void to::test<3>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
+	//ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
@@ -228,7 +231,8 @@ void to::test<4>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
+	//ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
