@@ -41,6 +41,7 @@
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 
+#include <fstream>
 #include <time.h>
 
 #include "config.h"
@@ -62,7 +63,308 @@ namespace ondisk2 {
 
 namespace archive {
 
+static bool matcher_extremes(const Matcher& matcher, UItem<types::Time>& begin, UItem<types::Time>& end)
+{
+	const matcher::OR* reftime = 0;
+
+	begin.clear(); end.clear();
+	
+	if (!matcher.m_impl)
+		return false;
+
+	reftime = matcher.m_impl->get(types::TYPE_REFTIME);
+
+	if (!reftime)
+		return false;
+
+	for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
+	{
+		if (j == reftime->begin())
+			(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
+		else {
+			UItem<types::Time> new_begin;
+			UItem<types::Time> new_end;
+			(*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
+			if (begin.defined() && (!new_begin.defined() || new_begin < begin))
+				begin = new_begin;
+			if (end.defined() && (!new_end.defined() || end < new_end))
+				end = new_end;
+
+		}
+	}
+	return begin.defined() || end.defined();
+}
+
 Manifest::~Manifest() {}
+
+class PlainManifest : public Manifest
+{
+	struct Info
+	{
+		std::string file;
+		time_t mtime;
+		UItem<types::Time> start_time;
+		UItem<types::Time> end_time;
+
+		bool operator<(const Info& i) const
+		{
+			return file < i.file;
+		}
+
+		bool operator==(const Info& i) const
+		{
+			return file == i.file;
+		}
+
+		bool operator!=(const Info& i) const
+		{
+			return file != i.file;
+		}
+
+		void write(ostream& out) const
+		{
+			out << file << ";" << mtime << ";" << start_time->toSQL() << ";" << end_time->toSQL() << endl;
+		}
+	};
+	std::string m_dir;
+	vector<Info> info;
+
+	/**
+	 * Reread the MANIFEST file.
+	 *
+	 * @returns true if the MANIFEST file existed, false if not
+	 */
+	bool reread()
+	{
+		info.clear();
+		string pathname(str::joinpath(m_dir, "MANIFEST"));
+		if (!wibble::sys::fs::access(pathname, F_OK))
+			return false;
+
+		std::ifstream in;
+		in.open(pathname.c_str(), ios::in);
+		if (!in.is_open() || in.fail())
+			throw wibble::exception::File(pathname, "opening file for reading");
+
+		string line;
+		for (size_t lineno = 1; !in.eof(); ++lineno)
+		{
+			Info item;
+
+			getline(in, line);
+			if (in.fail() && !in.eof())
+				throw wibble::exception::File(pathname, "reading one line");
+
+			size_t beg = 0;
+			size_t end = line.find(';');
+			if (end == string::npos)
+				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
+						"line has only 1 field");
+
+			item.file = line.substr(beg, end-beg);
+			
+			beg = end + 1;
+			end = line.find(';', beg);
+			if (end == string::npos)
+				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
+						"line has only 2 fields");
+
+			item.mtime = strtoul(line.substr(beg, end-beg).c_str(), 0, 10);
+
+			beg = end + 1;
+			end = line.find(';', beg);
+			if (end == string::npos)
+				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
+						"line has only 3 fields");
+
+			item.start_time = Time::createFromSQL(line.substr(beg, end-beg));
+			item.end_time = Time::createFromSQL(line.substr(end+1));
+
+			info.push_back(item);
+		}		
+
+		in.close();
+	}
+
+	void save()
+	{
+		std::sort(info.begin(), info.end());
+
+		string pathname(str::joinpath(m_dir, "MANIFEST"));
+
+		std::ofstream out;
+		out.open(pathname.c_str(), ios::out);
+		if (!out.is_open() || out.fail())
+			throw wibble::exception::File(pathname, "opening file for writing");
+
+		for (vector<Info>::const_iterator i = info.begin();
+				i != info.end(); ++i)
+			i->write(out);
+
+		out.close();
+	}
+
+public:
+	PlainManifest(const std::string& dir)
+		: m_dir(dir)
+	{
+	}
+
+	virtual ~PlainManifest()
+	{
+	}
+
+	void openRO()
+	{
+		if (!reread())
+			throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_dir);
+	}
+
+	void openRW()
+	{
+		reread();
+	}
+
+	void fileList(const Matcher& matcher, std::vector<std::string>& files) const
+	{
+		string query;
+		UItem<types::Time> begin;
+		UItem<types::Time> end;
+		if (matcher_extremes(matcher, begin, end))
+		{
+			// Get files with matching reftime
+			for (vector<Info>::const_iterator i = info.begin();
+					i != info.end(); ++i)
+			{
+				if (begin.defined() && i->end_time < begin) continue;
+				if (end.defined() && i->start_time > end) continue;
+				files.push_back(i->file);
+			}
+		} else {
+			// No restrictions on reftime: get all files
+			for (vector<Info>::const_iterator i = info.begin();
+					i != info.end(); ++i)
+				files.push_back(i->file);
+		}
+	}
+
+	void vacuum()
+	{
+	}
+
+	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
+	{
+		Info item;
+		item.file = relname;
+		item.mtime = mtime;
+
+		// Add to index
+		Item<types::Reftime> rt = sum.getReferenceTime();
+
+		string bt;
+		string et;
+
+		switch (rt->style())
+		{
+			case types::Reftime::POSITION: {
+				UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
+				item.start_time = item.end_time = p->time;
+				break;
+		        }
+			case types::Reftime::PERIOD: {
+			        UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
+				item.start_time = p->begin;
+				item.end_time = p->end;
+			        break;
+		        }
+			default:
+			        throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
+		}
+
+		// Insertion sort; at the end, everything is already sorted and we
+		// avoid inserting lots of duplicate items
+		vector<Info>::iterator lb = lower_bound(info.begin(), info.end(), item);
+		if (lb == info.end())
+			info.push_back(item);
+		else if (*lb != item)
+			info.insert(lb, item);
+		else
+			*lb = item;
+	}
+
+	virtual void remove(const std::string& relname)
+	{
+		vector<Info>::iterator i;
+		for (i = info.begin(); i != info.end(); ++i)
+			if (i->file == relname)
+				break;
+		if (i != info.end())
+			info.erase(i);
+	}
+
+	virtual void check(writer::MaintFileVisitor& v)
+	{
+		// List of files existing on disk
+		writer::DirScanner disk(m_dir, true);
+
+		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
+		{
+			while (not disk.cur().empty() and disk.cur() < i->file)
+			{
+				nag::verbose("Archive: %s is not in index", disk.cur().c_str());
+				v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
+				disk.next();
+			}
+			if (disk.cur() == i->file)
+			{
+				disk.next();
+
+				string pathname = str::joinpath(m_dir, i->file);
+
+				time_t ts_data = files::timestamp(pathname);
+				time_t ts_md = files::timestamp(pathname + ".metadata");
+				time_t ts_sum = files::timestamp(pathname + ".summary");
+				time_t ts_idx = i->mtime;
+
+				if (ts_idx != ts_data ||
+				    ts_md < ts_data ||
+				    ts_sum < ts_md)
+				{
+					// Check timestamp consistency
+					if (ts_idx != ts_data)
+						nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
+								i->file.c_str(), ts_data, ts_idx);
+					if (ts_md < ts_data)
+						nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
+								i->file.c_str(), ts_data, ts_md);
+					if (ts_md < ts_data)
+						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
+								i->file.c_str(), ts_md, ts_sum);
+					v(i->file, writer::MaintFileVisitor::ARC_TO_RESCAN);
+				}
+				else
+					v(i->file, writer::MaintFileVisitor::ARC_OK);
+
+				// TODO: if requested, check for internal consistency
+				// TODO: it requires to have an infrastructure for quick
+				// TODO:   consistency checkers (like, "GRIB starts with GRIB
+				// TODO:   and ends with 7777")
+			}
+			else // if (disk.cur() > i->file)
+			{
+				nag::verbose("Archive: %s has been deleted from the archive", disk.cur().c_str());
+				v(i->file, writer::MaintFileVisitor::ARC_DELETED);
+			}
+		}
+		while (not disk.cur().empty())
+		{
+			nag::verbose("Archive: %s is not in index", disk.cur().c_str());
+			v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
+			disk.next();
+		}
+	}
+};
+
 
 class SqliteManifest : public Manifest
 {
@@ -146,30 +448,10 @@ public:
 	void fileList(const Matcher& matcher, std::vector<std::string>& files) const
 	{
 		string query;
-		const matcher::OR* reftime = 0;
-		
-		if (matcher.m_impl)
-			reftime = matcher.m_impl->get(types::TYPE_REFTIME);
-
-		if (reftime)
+		UItem<types::Time> begin;
+		UItem<types::Time> end;
+		if (matcher_extremes(matcher, begin, end))
 		{
-			UItem<types::Time> begin;
-			UItem<types::Time> end;
-			for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
-			{
-				if (j == reftime->begin())
-					(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
-				else {
-					UItem<types::Time> new_begin;
-					UItem<types::Time> new_end;
-					(*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
-					if (begin.defined() && (!new_begin.defined() || new_begin < begin))
-						begin = new_begin;
-					if (end.defined() && (!new_end.defined() || end < new_end))
-						end = new_end;
-
-				}
-			}
 			query = "SELECT file FROM files";
 
 			if (begin.defined())
