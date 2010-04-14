@@ -482,6 +482,8 @@ void MetadataStream::checkMetadata()
 	if (buffer[0] != 'M' || buffer[1] != 'D')
 		throw wibble::exception::Consistency("checking partial buffer", "buffer contains data that is not encoded metadata");
 
+	// Get version from next 2 bytes
+	unsigned int version = decodeUInt((const unsigned char*)buffer.data()+2, 2);
 	// Get length from next 4 bytes
 	unsigned int len = decodeUInt((const unsigned char*)buffer.data()+4, 4);
 
@@ -490,17 +492,9 @@ void MetadataStream::checkMetadata()
 	if (buffer.size() < 8 + len)
 		return;
 
-	size_t pos;
-	{
-		// Do this in a subscope, so we destroy 'in' and release a
-		// reference to the string before we modify the string
-		// (hopefully, this will spare us a copy-on-write)
-		stringstream in(buffer, ios_base::in);
-		if (!md.read(in, streamname, false))
-			throw wibble::exception::Consistency("decoding downloaded metadata", "Metadata claims it has enough data to read, then claims it hit end of file");
-		pos = in.tellg();
-	}
-	buffer = buffer.substr(pos);
+	md.read((const unsigned char*)buffer.data() + 8, len, version, streamname);
+
+	buffer = buffer.substr(len + 8);
 	if (md.source->style() == types::Source::INLINE)
 	{
 		Item<types::source::Inline> inl = md.source.upcast<types::source::Inline>();
@@ -537,25 +531,6 @@ void MetadataStream::readData(const void* buf, size_t size)
 	}
 }
 
-vector<Metadata> Metadata::readFile(const std::string& fname)
-{
-	// Read all the metadata
-	std::ifstream in;
-	in.open(fname.c_str(), ios::in);
-	if (!in.is_open() || in.fail())
-		throw wibble::exception::File(fname, "opening file for reading");
-
-	// Collect all metadata in a vector
-	vector<Metadata> res;
-	Metadata md;
-	while (md.read(in, fname))
-		res.push_back(md);
-
-	in.close();
-
-	return res;
-}
-
 void Metadata::readFile(const std::string& fname, MetadataConsumer& mdc)
 {
 	// Read all the metadata
@@ -564,12 +539,18 @@ void Metadata::readFile(const std::string& fname, MetadataConsumer& mdc)
 	if (!in.is_open() || in.fail())
 		throw wibble::exception::File(fname, "opening file for reading");
 
-	// Collect all metadata in a vector
-	Metadata md;
-	while (md.read(in, fname))
-		mdc(md);
+	readFile(in, fname, mdc);
 
 	in.close();
+}
+
+void Metadata::readFile(std::istream& in, const std::string& fname, MetadataConsumer& mdc)
+{
+	bool canceled = false;
+	Metadata md;
+	while (md.read(in, fname))
+		if (!canceled)
+			canceled = !mdc(md);
 }
 
 #ifdef HAVE_LUA

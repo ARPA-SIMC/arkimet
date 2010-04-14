@@ -97,22 +97,6 @@ public:
 	void create();
 
 	/**
-	 * Read a metadata document from the given input stream.
-	 *
-	 * The filename string is used to generate nicer parse error messages when
-	 * throwing exceptions, and can be anything.
-	 *
-	 * If readInline is true, in case the data is transmitted inline, it reads
-	 * the data as well: this is what you expect.
-	 *
-	 * If it's false, then the reader needs to check from the Metadata source
-	 * if it is inline, and in that case proceed to read the inline data.
-	 *
-	 * @returns false when end-of-file is reached
-	 */
-	bool read(std::istream& in, const std::string& filename, bool readInline = true);
-
-	/**
 	 * Read a metadata document from the given memory buffer
 	 *
 	 * The filename string is used to generate nicer parse error messages when
@@ -137,6 +121,22 @@ public:
 	 * Decode the metadata, without the outer bundle headers, from the given buffer.
 	 */
 	void read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
+
+	/**
+	 * Read a metadata document from the given input stream.
+	 *
+	 * The filename string is used to generate nicer parse error messages when
+	 * throwing exceptions, and can be anything.
+	 *
+	 * If readInline is true, in case the data is transmitted inline, it reads
+	 * the data as well: this is what you expect.
+	 *
+	 * If it's false, then the reader needs to check from the Metadata source
+	 * if it is inline, and in that case proceed to read the inline data.
+	 *
+	 * @returns false when end-of-file is reached
+	 */
+	bool read(std::istream& in, const std::string& filename, bool readInline = true);
 
 	/**
 	 * Read the inline data from the given stream
@@ -233,14 +233,14 @@ public:
 	void prependPath(const std::string& path);
 
 	/**
-	 * Read all metadata from a file into a vector
+	 * Read all metadata from a file into the given consumer
 	 */
-	static std::vector<Metadata> readFile(const std::string& fname);
+	static void readFile(const std::string& fname, MetadataConsumer& mdc);
 
 	/**
 	 * Read all metadata from a file into the given consumer
 	 */
-	static void readFile(const std::string& fname, MetadataConsumer& mdc);
+	static void readFile(std::istream& in, const std::string& fname, MetadataConsumer& mdc);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin
