@@ -44,9 +44,9 @@ bool MatchOriginGRIB1::matchItem(const Item<>& o) const
 {
 	const types::origin::GRIB1* v = dynamic_cast<const types::origin::GRIB1*>(o.ptr());
 	if (!v) return false;
-	if (centre != -1 && centre != v->centre()) return false;
-	if (subcentre != -1 && subcentre != v->subcentre()) return false;
-	if (process != -1 && process != v->process()) return false;
+	if (centre != -1 && (unsigned)centre != v->centre()) return false;
+	if (subcentre != -1 && (unsigned)subcentre != v->subcentre()) return false;
+	if (process != -1 && (unsigned)process != v->process()) return false;
 	return true;
 }
 
@@ -74,11 +74,11 @@ bool MatchOriginGRIB2::matchItem(const Item<>& o) const
 {
 	const types::origin::GRIB2* v = dynamic_cast<const types::origin::GRIB2*>(o.ptr());
 	if (!v) return false;
-	if (centre      != -1 && centre      != v->centre()) return false;
-	if (subcentre   != -1 && subcentre   != v->subcentre()) return false;
-	if (processtype != -1 && processtype != v->processtype()) return false;
-	if (bgprocessid != -1 && bgprocessid != v->bgprocessid()) return false;
-	if (processid   != -1 && processid   != v->processid()) return false;
+	if (centre      != -1 && (unsigned)centre      != v->centre()) return false;
+	if (subcentre   != -1 && (unsigned)subcentre   != v->subcentre()) return false;
+	if (processtype != -1 && (unsigned)processtype != v->processtype()) return false;
+	if (bgprocessid != -1 && (unsigned)bgprocessid != v->bgprocessid()) return false;
+	if (processid   != -1 && (unsigned)processid   != v->processid()) return false;
 	return true;
 }
 
@@ -105,8 +105,8 @@ bool MatchOriginBUFR::matchItem(const Item<>& o) const
 {
 	const types::origin::BUFR* v = dynamic_cast<const types::origin::BUFR*>(o.ptr());
 	if (!v) return false;
-	if (centre != -1 && centre != v->centre()) return false;
-	if (subcentre != -1 && subcentre != v->subcentre()) return false;
+	if (centre != -1 && (unsigned)centre != v->centre()) return false;
+	if (subcentre != -1 && (unsigned)subcentre != v->subcentre()) return false;
 	return true;
 }
 
