@@ -883,6 +883,9 @@ void Archive::rescan(const std::string& relname)
 
 void Archive::vacuum()
 {
+	// If archive dir is not writable, skip this section
+	if (!sys::fs::access(m_dir, W_OK)) return;
+
 	m_mft->vacuum();
 
 	// Regenerate summary cache
