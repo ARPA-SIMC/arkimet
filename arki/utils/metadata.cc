@@ -22,6 +22,8 @@
 
 #include <arki/utils/metadata.h>
 #include <arki/utils/dataset.h>
+#include <arki/utils/compress.h>
+#include <arki/utils/codec.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/postprocess.h>
@@ -41,12 +43,48 @@ namespace arki {
 namespace utils {
 namespace metadata {
 
+static void compressAndWrite(const std::string& buf, std::ostream& out, const std::string& fname)
+{
+	wibble::sys::Buffer obuf = compress::lzo(buf.data(), buf.size());
+	if (obuf.size() < buf.size() + 8)
+	{
+		// Write a metadata group
+		string tmp;
+		codec::Encoder enc(tmp);
+		enc.addString("MG");
+		enc.addUInt(0, 2);	// Version 0: LZO compressed
+		enc.addUInt(obuf.size() + 4, 4); // Compressed len
+		enc.addUInt(buf.size(), 4); // Uncompressed len
+		out.write(tmp.data(), tmp.size());
+		out.write((const char*)obuf.data(), obuf.size());
+	} else
+		// Write the plain metadata
+		out.write(buf.data(), buf.size());
+}
+
+void Collector::writeTo(std::ostream& out, const std::string& fname) const
+{
+	static const size_t blocksize = 256;
+
+	string buf;
+	for (size_t i = 0; i < size(); ++i)
+	{
+		if (i > 0 && (i % blocksize) == 0)
+		{
+			compressAndWrite(buf, out, fname);
+			buf.clear();
+		}
+		buf += (*this)[i].encode();
+	}
+	if (!buf.empty())
+		compressAndWrite(buf, out, fname);
+}
+
 void Collector::writeAtomically(const std::string& fname) const
 {
 	AtomicWriter writer(fname);
-	for (const_iterator i = begin(); i != end(); ++i)
-		writer(*i);
-	writer.close();
+	writeTo(writer.out(), writer.tmpfname);
+	writer.commit();
 }
 
 void Collector::appendTo(const std::string& fname) const
@@ -55,8 +93,7 @@ void Collector::appendTo(const std::string& fname) const
 	outmd.open(fname.c_str(), ios::out | ios::app);
 	if (!outmd.is_open() || outmd.fail())
 		throw wibble::exception::File(fname, "opening file for appending");
-	for (const_iterator i = begin(); i != end(); ++i)
-		i->write(outmd, fname);
+	writeTo(outmd, fname);
 	outmd.close();
 }
 
@@ -113,9 +150,10 @@ AtomicWriter::AtomicWriter(const std::string& fname)
 
 AtomicWriter::~AtomicWriter()
 {
-	close();
+	rollback();
 }
 
+/*
 bool AtomicWriter::operator()(Metadata& md)
 {
 	md.write(*outmd, tmpfname);
@@ -127,8 +165,9 @@ bool AtomicWriter::operator()(const Metadata& md)
 	md.write(*outmd, tmpfname);
 	return true;
 }
+*/
 
-void AtomicWriter::close()
+void AtomicWriter::commit()
 {
 	if (outmd)
 	{
@@ -137,6 +176,17 @@ void AtomicWriter::close()
 		outmd = 0;
 		if (rename(tmpfname.c_str(), fname.c_str()) < 0)
 			throw wibble::exception::System("Renaming " + tmpfname + " to " + fname);
+	}
+}
+
+void AtomicWriter::rollback()
+{
+	if (outmd)
+	{
+		outmd->close();
+		delete outmd;
+		outmd = 0;
+		::unlink(tmpfname.c_str());
 	}
 }
 

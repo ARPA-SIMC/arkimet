@@ -61,6 +61,11 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 	void appendTo(const std::string& fname) const;
 
 	/**
+	 * Write all metadata to the given output stream
+	 */
+	void writeTo(std::ostream& out, const std::string& fname) const;
+
+	/**
 	 * Send all metadata to a consumer
 	 */
 	bool sendTo(MetadataConsumer& out)
@@ -81,7 +86,7 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
  *
  * Note: the temporary file name will NOT be created securely.
  */
-struct AtomicWriter : public MetadataConsumer
+struct AtomicWriter
 {
 	std::string fname;
 	std::string tmpfname;
@@ -90,10 +95,10 @@ struct AtomicWriter : public MetadataConsumer
 	AtomicWriter(const std::string& fname);
 	~AtomicWriter();
 
-	bool operator()(Metadata& md);
-	bool operator()(const Metadata& md);
+	std::ofstream& out() { return *outmd; }
 
-	void close();
+	void commit();
+	void rollback();
 };
 
 struct Summarise : public MetadataConsumer

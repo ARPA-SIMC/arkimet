@@ -21,9 +21,10 @@
  */
 
 #include <arki/metadata.h>
-#include <arki/utils/codec.h>
 #include <arki/formatter.h>
+#include <arki/utils/codec.h>
 #include <arki/utils/datareader.h>
+#include <arki/utils/compress.h>
 #include "config.h"
 
 #include <wibble/exception.h>
@@ -40,6 +41,7 @@ extern "C" {
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 
@@ -483,9 +485,9 @@ void MetadataStream::checkMetadata()
 		throw wibble::exception::Consistency("checking partial buffer", "buffer contains data that is not encoded metadata");
 
 	// Get version from next 2 bytes
-	unsigned int version = decodeUInt((const unsigned char*)buffer.data()+2, 2);
+	unsigned int version = codec::decodeUInt((const unsigned char*)buffer.data()+2, 2);
 	// Get length from next 4 bytes
-	unsigned int len = decodeUInt((const unsigned char*)buffer.data()+4, 4);
+	unsigned int len = codec::decodeUInt((const unsigned char*)buffer.data()+4, 4);
 
 	// Check if we have a full metadata, in that case read it, remove it
 	// from the beginning of the string, then consume it it
@@ -547,10 +549,52 @@ void Metadata::readFile(const std::string& fname, MetadataConsumer& mdc)
 void Metadata::readFile(std::istream& in, const std::string& fname, MetadataConsumer& mdc)
 {
 	bool canceled = false;
+	wibble::sys::Buffer buf;
+	string signature;
+	unsigned version;
 	Metadata md;
-	while (md.read(in, fname))
-		if (!canceled)
+	while (types::readBundle(in, fname, buf, signature, version))
+	{
+		if (canceled) continue;
+
+		// Ensure first 2 bytes are MD or !D
+		if (signature != "MD" && signature != "!D" && signature != "MG")
+			throw wibble::exception::Consistency("parsing file " + fname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+
+		if (signature == "MG")
+		{
+			// Handle metadata group
+			if (version != 0)
+				throw wibble::exception::Consistency("parsing file " + fname, "can only decode metadata group version 0 (LZO compressed); found version: " + str::fmt(version));
+			
+			// Read uncompressed size
+			ensureSize(buf.size(), 4, "uncompressed item size");
+			uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
+
+			sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
+			const unsigned char* buf = (const unsigned char*)decomp.data();
+			size_t len = decomp.size(); 
+			const unsigned char* ibuf;
+			size_t ilen;
+			string isig;
+			unsigned iver;
+			while (!canceled && types::readBundle(buf, len, fname, ibuf, ilen, isig, iver))
+			{
+				md.read(ibuf, ilen, iver, fname);
+				canceled = !mdc(md);
+			}
+		} else {
+			md.read(buf, version, fname);
+
+			// If it starts with !D, it's a deleted metadata: take note of it
+			md.deleted = signature[0] == '!';
+
+			// If the source is inline, then the data follows the metadata
+			if (md.source->style() == types::Source::INLINE)
+				md.readInlineData(in, fname);
 			canceled = !mdc(md);
+		}
+	}
 }
 
 #ifdef HAVE_LUA
