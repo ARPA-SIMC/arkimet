@@ -61,6 +61,17 @@ struct MatcherFilter : public MetadataConsumer
 	}
 };
 
+struct SkipDeleted : public MetadataConsumer
+{
+	MetadataConsumer& next;
+	SkipDeleted(MetadataConsumer& next) : next(next) {}
+	bool operator()(Metadata& md)
+	{
+		if (md.deleted) return true;
+		return next(md);
+	}
+};
+
 
 /**
  * Inline the data into all metadata

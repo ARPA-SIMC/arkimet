@@ -242,29 +242,11 @@ void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 		c = sorter.get();
 	}
 
-	sys::Buffer buf;
-	string signature;
-	unsigned version;
 
-	Metadata md;
-	while (types::readBundle(*m_file, m_pathname, buf, signature, version))
-	{
-		if (signature == "MD" || signature == "!D")
-		{
-			md.read(buf, version, m_pathname);
-			if (md.source->style() == types::Source::INLINE)
-				md.readInlineData(*m_file, m_pathname);
+	ds::MatcherFilter mf(q.matcher, *c);
+	ds::SkipDeleted sd(mf);
 
-			// Don't consume the deleted ones
-			if (signature == "!D")
-				continue;
-
-			if (!q.matcher(md))
-				continue;
-			
-			(*c)(md);
-		}
-	}
+	Metadata::readFile(*m_file, m_pathname, sd);
 }
 
 YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
