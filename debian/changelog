@@ -1,3 +1,10 @@
+arkimet (0.38-1) UNRELEASED; urgency=low
+
+  * Compress metadata groups
+  * Do not vacuum readonly archives
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 14 Apr 2010 18:24:02 +0200
+
 arkimet (0.37-1) UNRELEASED; urgency=low
 
   * New dependency on LZO
