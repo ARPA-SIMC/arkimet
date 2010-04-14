@@ -21,6 +21,7 @@
 #include <arki/dataset/ondisk/maint/directory.h>
 #include <arki/dataset/ondisk/writer/directory.h>
 #include <arki/dataset/ondisk/writer/datafile.h>
+#include <arki/utils/metadata.h>
 #include <arki/metadata.h>
 #include <arki/scan/grib.h>
 #include <arki/configfile.h>
@@ -169,7 +170,8 @@ void to::test<1>()
 	ensure_equals(filesize("testdatafile/testfile.grib1"), origsize - firstsize + secondsize);
 
 	// There should be only 3 metadata now
-	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");
+	utils::metadata::Collector allmd;
+	Metadata::readFile("testdatafile/testfile.grib1.metadata", allmd);
 	ensure_equals(allmd.size(), 3u);
 	ensure(!allmd[0].deleted);
 	ensure(!allmd[1].deleted);
@@ -202,7 +204,8 @@ void to::test<2>()
 	ensure_equals(filesize("testdatafile/testfile.grib1"), origsize - firstsize);
 
 	// There should be only 2 metadata now
-	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");
+	utils::metadata::Collector allmd;
+	Metadata::readFile("testdatafile/testfile.grib1.metadata", allmd);
 	ensure_equals(allmd.size(), 2u);
 	ensure(!allmd[0].deleted);
 	ensure(!allmd[1].deleted);

@@ -32,7 +32,8 @@ namespace arki {
 size_t countDeletedMetadata(const std::string& fname)
 {
 	size_t count = 0;
-	vector<Metadata> mds = Metadata::readFile(fname);
+	utils::metadata::Collector mds;
+	Metadata::readFile(fname, mds);
 	for (vector<Metadata>::const_iterator i = mds.begin(); i != mds.end(); ++i)
 		if (i->deleted)
 			++count;

@@ -23,6 +23,7 @@
 #include <arki/scan/grib.h>
 #include <arki/configfile.h>
 #include <arki/utils/files.h>
+#include <arki/utils/metadata.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 
@@ -160,7 +161,8 @@ void to::test<1>()
 	ensure_equals(filesize("testdatafile/testfile.grib1"), totsize);
 	
 	// Check what is in the metadata file
-	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");
+	utils::metadata::Collector allmd;
+	Metadata::readFile("testdatafile/testfile.grib1.metadata", allmd);
 	ensure_equals(allmd.size(), 3u);
 }
 
@@ -215,7 +217,8 @@ void to::test<2>()
 	ensure_equals(filesize("testdatafile/testfile.grib1"), origsize + size);
 
 	// Check what is in the metadata file
-	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");
+	utils::metadata::Collector allmd;
+	Metadata::readFile("testdatafile/testfile.grib1.metadata", allmd);
 	ensure_equals(allmd.size(), 4u);
 
 	// The first metadata should be marked as deleted
@@ -273,7 +276,8 @@ void to::test<3>()
 	ensure_equals(filesize("testdatafile/testfile.grib1"), origsize);
 
 	// Check what is in the metadata file
-	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");
+	utils::metadata::Collector allmd;
+	Metadata::readFile("testdatafile/testfile.grib1.metadata", allmd);
 	ensure_equals(allmd.size(), 3u);
 
 	// The first metadata should be marked as deleted
