@@ -54,6 +54,7 @@ Makefile
 /src/arki-scan
 /src/arki-xargs
 /src/arki-bufr-prepare
+/src/arki-gzip
 /src/test-src
 /arki/tests/arki-test
 /data/*.GRIB

@@ -3,8 +3,9 @@ arkimet (0.38-1) UNRELEASED; urgency=low
   * Compress metadata groups
   * Do not vacuum readonly archives
   * ondisk2/index: LZO-compress temp file during big queries
+  * Added arki-gzip to compress data files
 
- -- Enrico Zini <enrico@debian.org>  Thu, 15 Apr 2010 01:32:24 +0200
+ -- Enrico Zini <enrico@debian.org>  Thu, 15 Apr 2010 15:19:35 +0200
 
 arkimet (0.37-1) UNRELEASED; urgency=low
 
