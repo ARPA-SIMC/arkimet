@@ -529,8 +529,7 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 						std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
 					if (tmpfile.get() == 0)
 						tmpfile.reset(new runtime::Tempfile);
-					for (metadata::Collector::const_iterator i = mdbuf.begin(); i != mdbuf.end(); ++i)
-						i->write(tmpfile->stream(), tmpfile->name());
+					mdbuf.writeTo(tmpfile->stream(), tmpfile->name());
 					tmpfile->stream().flush();
 					mdbuf.clear();
 				}
