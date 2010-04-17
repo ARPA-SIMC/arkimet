@@ -238,6 +238,19 @@ public:
 	static void readFile(const std::string& fname, MetadataConsumer& mdc);
 
 	/**
+	 * Flush open data readers.
+	 *
+	 * Metadata uses a persistent data reader to read data, which keeps the
+	 * last file opened and buffered to speed up reading multiple data
+	 * items from the same file. This function tells the data reader to
+	 * close its open files.
+	 *
+	 * It is useful for testing cases when data files are moved or
+	 * compressed.
+	 */
+	static void flushDataReaders();
+
+	/**
 	 * Read all metadata from a file into the given consumer
 	 */
 	static void readFile(std::istream& in, const std::string& fname, MetadataConsumer& mdc);

@@ -597,6 +597,11 @@ void Metadata::readFile(std::istream& in, const std::string& fname, MetadataCons
 	}
 }
 
+void Metadata::flushDataReaders()
+{
+	dataReader.flush();
+}
+
 #ifdef HAVE_LUA
 namespace {
 struct LuaIter
