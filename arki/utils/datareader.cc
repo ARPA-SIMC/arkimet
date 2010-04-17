@@ -24,11 +24,13 @@
 #include <arki/nag.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
+#include <wibble/sys/fs.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <zlib.h>
 
 using namespace std;
 using namespace wibble;
@@ -75,6 +77,43 @@ public:
 	}
 };
 
+struct ZlibFileReader : public Reader
+{
+public:
+	std::string fname;
+	std::string realfname;
+	gzFile fd;
+
+	ZlibFileReader(const std::string& fname)
+		: fname(fname), realfname(fname + ".gz")
+	{
+		// Open the new file
+		fd = gzopen(realfname.c_str(), "rb");
+		if (fd == NULL)
+			throw wibble::exception::File(realfname, "opening file");
+	}
+
+	~ZlibFileReader()
+	{
+		gzclose(fd);
+	}
+
+	bool is(const std::string& fname)
+	{
+		return this->fname == fname;
+	}
+
+	void read(off_t ofs, size_t size, void* buf)
+	{
+		if (gzseek(fd, ofs, SEEK_SET) != ofs)
+			throw wibble::exception::Consistency("seeking in " + realfname, "seek failed");
+
+		int res = gzread(fd, buf, size);
+		if (res == -1 || (size_t)res != size)
+			throw wibble::exception::Consistency("reading from " + realfname, "read failed");
+	}
+};
+
 }
 
 DataReader::DataReader() : last(0) {}
@@ -100,7 +139,10 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
 		flush();
 
 		// Open the new file
-		last = new datareader::FileReader(fname);
+		if (sys::fs::access(fname, F_OK))
+			last = new datareader::FileReader(fname);
+		else if (sys::fs::access(fname + ".gz", F_OK))
+			last = new datareader::ZlibFileReader(fname);
 	}
 
 	// Read the data
