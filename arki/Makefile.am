@@ -201,7 +201,7 @@ libarkimet_la_SOURCES = \
 		runtime/io.cc \
 		runtime/config.cc \
 		runtime.cc
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS)
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS)
 
 # Tests
 TESTS = tests/arki-test
@@ -296,7 +296,7 @@ tests_arki_test_SOURCES = \
 		tests/tut-main.cpp
 tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS)
 
-INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\"
+INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
 
 if GRIBAPI
 dist_noinst_HEADERS += scan/grib.h

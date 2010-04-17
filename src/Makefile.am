@@ -6,9 +6,9 @@ dist_bin_SCRIPTS = arki-server
 
 dist_noinst_HEADERS = bench/benchmark.h
 
-all_libs = ../wibble/libwibble.la $(LIBGRIB_LIBS) $(LIBDBALLEPP_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS)
+all_libs = ../wibble/libwibble.la $(LIBGRIB_LIBS) $(LIBDBALLEPP_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS)
 
-INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(LIBGRIB_CFLAGS) $(LIBDBALLEPP_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
+INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(LIBGRIB_CFLAGS) $(LIBDBALLEPP_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS) $(ZLIB_CFLAGS)
 
 if GEOS
 all_libs += $(GEOS_LIBS)

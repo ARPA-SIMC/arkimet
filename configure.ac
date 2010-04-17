@@ -81,6 +81,11 @@ else
 fi
 AM_CONDITIONAL([DBALLE], [test x"$have_dballe" = x"yes"])
 
+dnl Check for zlib
+PKG_CHECK_MODULES(ZLIB, zlib)
+AC_SUBST(ZLIB_CFLAGS)
+AC_SUBST(ZLIB_LIBS)
+
 dnl Check for lua
 PKG_CHECK_EXISTS([lua5.1], [have_lua=yes], [have_lua=no])
 if test x$have_lua = xyes
