@@ -45,6 +45,7 @@ using namespace arki::utils;
 
 namespace arki {
 
+// TODO: @WARNING this is NOT thread safe
 static utils::DataReader dataReader;
 
 static inline void ensureSize(size_t len, size_t req, const char* what)
