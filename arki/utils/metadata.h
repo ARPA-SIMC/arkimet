@@ -76,6 +76,20 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 				return false;
 		return true;
 	}
+
+	/**
+	 * Ensure that all metadata point to data in the same file and that
+	 * they completely cover the file.
+	 *
+	 * @returns the data file name
+	 */
+	std::string ensureContiguousData(const std::string& source = std::string("metadata")) const;
+
+	/**
+	 * If all the metadata here entirely cover a single data file, replace
+	 * it with a compressed version
+	 */
+	void compressDataFile(size_t groupsize = 512, const std::string& source = std::string("metadata")) const;
 };
 
 /**

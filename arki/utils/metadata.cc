@@ -24,11 +24,16 @@
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/codec.h>
+#include <arki/utils.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/postprocess.h>
 #include <fstream>
 #include <memory>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
 
 #include "config.h"
 
@@ -137,6 +142,96 @@ void Collector::querySummary(const Matcher& matcher, Summary& summary)
 			i != end(); ++i)
 		if (matcher(*i))
 			summary.add(*i);
+}
+
+std::string Collector::ensureContiguousData(const std::string& source) const
+{
+	// Check that the metadata completely cover the data file
+	string last_file;
+	off_t last_end = 0;
+	for (const_iterator i = begin(); i != end(); ++i)
+	{
+		Item<types::source::Blob> s = i->source.upcast<types::source::Blob>();
+		if (s->offset != (size_t)last_end)
+			throw wibble::exception::Consistency("validating " + source,
+					"metadata element points to data that does not start at the end of the previous element");
+		if (i == begin())
+		{
+			last_file = s->filename;
+		} else {
+			if (last_file != s->filename)
+				throw wibble::exception::Consistency("validating " + source,
+						"metadata element points at another data file (previous: " + last_file + ", this: " + s->filename + ")");
+		}
+		last_end += s->size;
+	}
+	std::auto_ptr<struct stat> st = sys::fs::stat(last_file);
+	if (st->st_size != last_end)
+		throw wibble::exception::Consistency("validating metadata " + source,
+				"metadata do not cover the entire data file");
+	return last_file;
+}
+
+void Collector::compressDataFile(size_t groupsize, const std::string& source) const
+{
+	string datafile = ensureContiguousData(source);
+
+	// Open output compressed file
+	string outfname = datafile + ".gz";
+	int outfd = open(outfname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
+	if (outfd < 0)
+		throw wibble::exception::File(outfname, "creating file");
+	utils::HandleWatch hwoutfd(outfname, outfd);
+
+	// Open output index
+	string idxfname = datafile + ".gz.idx";
+	int outidx = open(idxfname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
+	if (outidx < 0)
+		throw wibble::exception::File(idxfname, "creating file");
+	utils::HandleWatch hwoutidx(idxfname, outidx);
+
+	// Start compressor
+	utils::compress::ZlibCompressor compressor;
+
+	// Output buffer for the compressor
+	sys::Buffer outbuf(4096*2);
+
+	// Compress data
+	off_t last_ofs = 0;
+	for (size_t i = 0; i < size(); ++i)
+	{
+		wibble::sys::Buffer buf = (*this)[i].getData();
+		bool flush = (i == size() - 1) || (i > 0 && (i % groupsize) == 0);
+
+		compressor.feedData(buf.data(), buf.size());
+		while (true)
+		{
+			size_t len = compressor.get(outbuf, flush);
+			if (len > 0)
+			{
+				if (write(outfd, outbuf.data(), (size_t)len) != (ssize_t)len)
+					throw wibble::exception::File(outfname, "writing data");
+			}
+			if (len < outbuf.size())
+				break;
+		}
+
+		if (flush && i < size() - 1)
+		{
+			// Write last block size to the index
+			off_t cur = lseek(outfd, 0, SEEK_CUR);
+			uint32_t last_size = htonl(cur - last_ofs);
+			::write(outidx, &last_size, sizeof(last_size));
+			last_ofs = cur;
+
+			compressor.restart();
+		}
+	}
+
+	hwoutfd.close();
+	hwoutidx.close();
+
+	// TODO: delete uncompressed version
 }
 
 AtomicWriter::AtomicWriter(const std::string& fname)

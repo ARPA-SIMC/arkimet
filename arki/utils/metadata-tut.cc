@@ -18,10 +18,13 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/utils/metadata.h>
+#include <arki/utils.h>
 #include <arki/types/source.h>
 #include <arki/summary.h>
 #include <arki/scan/any.h>
+#include <arki/runtime/io.h>
 #include <wibble/sys/fs.h>
+#include <cstring>
 
 #include <sstream>
 #include <iostream>
@@ -66,6 +69,7 @@ void to::test<1>()
 	ensure_equals(blob->size, 7218u);
 
 	mdc.clear();
+
 	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	source = mdc[0].source;
@@ -107,6 +111,42 @@ void to::test<3>()
 	//system("bash");
 	c.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
 	ensure_equals(summary.count(), 3u);
+}
+
+// Test compression
+template<> template<>
+void to::test<4>()
+{
+	static const int repeats = 10;
+
+	// Create a test file with `repeats` BUFR entries
+	std::string bufr = utils::readFile("inbound/test.bufr");
+	ensure(bufr.size() > 0);
+	bufr = bufr.substr(0, 194);
+
+	runtime::Tempfile tf(".");
+	tf.unlink_on_exit(false);
+	for (int i = 0; i < repeats; ++i)
+		tf.stream().write(bufr.data(), bufr.size());
+	tf.stream().flush();
+
+	// Create metadata for the big BUFR file
+	scan::scan(tf.name(), "bufr", c);
+	ensure_equals(c.size(), repeats);
+
+	// Compress the data file
+	c.compressDataFile(127, "temp BUFR " + tf.name());
+	// Remove the original file
+	tf.unlink();
+	Metadata::flushDataReaders();
+
+	// Ensure that all data can still be read
+	for (int i = 0; i < repeats; ++i)
+	{
+		sys::Buffer b = c[i].getData();
+		ensure_equals(b.size(), bufr.size());
+		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
+	}
 }
 
 }

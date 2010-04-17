@@ -25,6 +25,10 @@
 
 #include <wibble/sys/buffer.h>
 
+// zlib forward declaration
+struct z_stream_s;
+typedef struct z_stream_s z_stream;
+
 namespace arki {
 namespace utils {
 
@@ -52,6 +56,38 @@ wibble::sys::Buffer lzo(const void* in, size_t in_size);
  *   The size of the uncompressed data
  */
 wibble::sys::Buffer unlzo(const void* in, size_t in_size, size_t out_size);
+
+/**
+ * Compressor engine based on Zlib
+ */
+class ZlibCompressor
+{
+protected:
+	z_stream* strm;
+
+public:
+	ZlibCompressor();
+	~ZlibCompressor();
+
+	/**
+	 * Set the data for the encoder/decoder
+	 */
+	void feedData(void* buf, size_t len);
+
+	/**
+	 * Run an encoder loop filling in the given buffer
+	 * 
+	 * @returns the count of data written (if the same as len, you need to
+	 *          call run() again before feedData)
+	 */
+	size_t get(void* buf, size_t len, bool flush = false);
+	size_t get(wibble::sys::Buffer& buf, bool flush = false);
+
+	/**
+	 * Restart compression after a flush
+	 */
+	void restart();
+};
 
 }
 }

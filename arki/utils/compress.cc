@@ -25,6 +25,8 @@
 
 #include "config.h"
 
+#include <zlib.h>
+
 #ifdef HAVE_LZO
 #include "lzo/lzoconf.h"
 #include "lzo/lzo1x.h"
@@ -102,6 +104,55 @@ wibble::sys::Buffer unlzo(const void* in, size_t in_size, size_t out_size)
 			"decompressing data with LZO",
 			"LZO support was not available at compile time");
 #endif
+}
+
+ZlibCompressor::ZlibCompressor() : strm(0)
+{
+	/* allocate deflate state */
+	strm = new z_stream;
+	strm->zalloc = Z_NULL;
+	strm->zfree = Z_NULL;
+	strm->opaque = Z_NULL;
+	int ret = deflateInit2(strm, 9, Z_DEFLATED, 15 + 16, 9, Z_DEFAULT_STRATEGY);
+	if (ret != Z_OK)
+		throw wibble::exception::Consistency("initializing zlib", "initialization failed");
+}
+
+ZlibCompressor::~ZlibCompressor()
+{
+	if (strm)
+	{
+		(void)deflateEnd(strm);
+		delete strm;
+	}
+}
+
+void ZlibCompressor::feedData(void* buf, size_t len)
+{
+	strm->avail_in = len;
+	strm->next_in = (Bytef*)buf;
+}
+
+size_t ZlibCompressor::get(void* buf, size_t len, bool flush)
+{
+	int z_flush = flush ? Z_FINISH : Z_NO_FLUSH;
+	strm->avail_out = len;
+	strm->next_out = (Bytef*)buf;
+	int ret = deflate(strm, z_flush);    /* no bad return value */
+	if (ret == Z_STREAM_ERROR)
+		throw wibble::exception::Consistency("running zlib deflate", "run failed");
+	return len - strm->avail_out;
+}
+
+size_t ZlibCompressor::get(wibble::sys::Buffer& buf, bool flush)
+{
+	return get(buf.data(), buf.size(), flush);
+}
+
+void ZlibCompressor::restart()
+{
+	if (deflateReset(strm) != Z_OK)
+		throw wibble::exception::Consistency("resetting zlib deflate stream", "stream error");
 }
 
 }
