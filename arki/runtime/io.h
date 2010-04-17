@@ -85,6 +85,8 @@ public:
  * Open a temporary file.
  *
  * If a path is not given, $ARKI_TMPDIR is tried, then $TMPDIR, then /tmp
+ *
+ * By default, the temporary file will be deleted when the object is deleted.
  */
 class Tempfile
 {
@@ -97,7 +99,10 @@ public:
 	Tempfile(const std::string& dirname = std::string());
 	~Tempfile();
 
+	/// Change the unlink-on-exit behaviour
 	void unlink_on_exit(bool val);
+
+	/// Unlink the file right now
 	void unlink();
 
 	std::ostream& stream() { return *m_out; }
