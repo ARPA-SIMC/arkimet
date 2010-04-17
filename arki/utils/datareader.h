@@ -28,6 +28,17 @@
 namespace arki {
 namespace utils {
 
+namespace datareader {
+struct Reader
+{
+public:
+	virtual ~Reader() {}
+
+	virtual void read(off_t ofs, size_t size, void* buf) = 0;
+	virtual bool is(const std::string& fname) = 0;
+};
+}
+
 /**
  * Read data from files, keeping the last file open.
  *
@@ -36,8 +47,7 @@ namespace utils {
 class DataReader
 {
 protected:
-	std::string last_file;
-	int last_fd;
+	datareader::Reader* last;
 	
 public:
 	DataReader();

@@ -36,7 +36,48 @@ using namespace wibble;
 namespace arki {
 namespace utils {
 
-DataReader::DataReader() : last_fd(-1) {}
+namespace datareader {
+
+struct FileReader : public Reader
+{
+public:
+	std::string fname;
+	int fd;
+
+	FileReader(const std::string& fname)
+		: fname(fname)
+	{
+		// Open the new file
+		fd = ::open(fname.c_str(), O_RDONLY | O_CLOEXEC);
+		if (fd == -1)
+			throw wibble::exception::File(fname, "opening file");
+	}
+
+	~FileReader()
+	{
+		::close(fd);
+	}
+
+	bool is(const std::string& fname)
+	{
+		return this->fname == fname;
+	}
+
+	void read(off_t ofs, size_t size, void* buf)
+	{
+		if (posix_fadvise(fd, ofs, size, POSIX_FADV_DONTNEED) != 0)
+			nag::debug("fadvise on %s failed: %m", fname.c_str());
+		ssize_t res = pread(fd, buf, size, ofs);
+		if (res < 0)
+			throw wibble::exception::File(fname, "reading " + str::fmt(size) + " bytes at " + str::fmt(ofs));
+		if ((size_t)res != size)
+			throw wibble::exception::Consistency("reading from " + fname, "read only " + str::fmt(res) + "/" + str::fmt(size) + " bytes at " + str::fmt(ofs));
+	}
+};
+
+}
+
+DataReader::DataReader() : last(0) {}
 DataReader::~DataReader()
 {
 	flush();
@@ -44,36 +85,26 @@ DataReader::~DataReader()
 
 void DataReader::flush()
 {
-	if (last_fd != -1)
+	if (last)
 	{
-		::close(last_fd);
-		last_fd = -1;
-		last_file.clear();
+		delete last;
+		last = 0;
 	}
 }
 
 void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* buf)
 {
-	if (last_file != fname)
+	if (!last || !last->is(fname))
 	{
 		// Close the last file
 		flush();
 
 		// Open the new file
-		last_fd = ::open(fname.c_str(), O_RDONLY | O_CLOEXEC);
-		if (last_fd == -1)
-			throw wibble::exception::File(fname, "opening file");
-		last_file = fname;
+		last = new datareader::FileReader(fname);
 	}
 
 	// Read the data
-	if (posix_fadvise(last_fd, ofs, size, POSIX_FADV_DONTNEED) != 0)
-		nag::debug("fadvise on %s failed: %m", last_file.c_str());
-	ssize_t res = pread(last_fd, buf, size, ofs);
-	if (res < 0)
-		throw wibble::exception::File(last_file, "reading " + str::fmt(size) + " bytes at " + str::fmt(ofs));
-	if ((size_t)res != size)
-		throw wibble::exception::Consistency("reading from " + last_file, "read only " + str::fmt(res) + "/" + str::fmt(size) + " bytes at " + str::fmt(ofs));
+	last->read(ofs, size, buf);
 }
 
 }
