@@ -89,6 +89,8 @@ bool scan(const std::string& file, MetadataConsumer& c)
 	string md_fname = file + ".metadata";
 	auto_ptr<struct stat> st_file = sys::fs::stat(file);
 	if (!st_file.get())
+		st_file = sys::fs::stat(file + ".gz");
+	if (!st_file.get())
 		throw wibble::exception::File(file, "getting file information");
 	auto_ptr<struct stat> st_md = sys::fs::stat(md_fname);
 

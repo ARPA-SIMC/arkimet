@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk2/archive - Handle archived data
  *
- * Copyright (C) 2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -346,6 +346,8 @@ public:
 				string pathname = str::joinpath(m_dir, i->file);
 
 				time_t ts_data = files::timestamp(pathname);
+				if (ts_data == 0)
+					ts_data = files::timestamp(pathname + ".gz");
 				time_t ts_md = files::timestamp(pathname + ".metadata");
 				time_t ts_sum = files::timestamp(pathname + ".summary");
 				time_t ts_idx = i->mtime;
@@ -376,7 +378,7 @@ public:
 			}
 			else // if (disk.cur() > i->file)
 			{
-				nag::verbose("Archive: %s has been deleted from the archive", disk.cur().c_str());
+				nag::verbose("Archive: %s has been deleted from the archive", i->file.c_str());
 				v(i->file, writer::MaintFileVisitor::ARC_DELETED);
 			}
 		}

@@ -71,6 +71,9 @@ void DirScanner::scan(const std::string& root, int level)
 		// Skip '.', '..' and hidden files
 		if ((*i)[0] == '.')
 			continue;
+		// Skip compressed data index files
+		if (str::endsWith(*i, ".gz.idx"))
+			continue;
 
 		// stat(2) the file
 		string pathname = str::joinpath(root, *i);
@@ -80,10 +83,13 @@ void DirScanner::scan(const std::string& root, int level)
 		{
 			// If it is a directory, recurse into it
 			scan(pathname, level + 1);
-		} else if ((files_in_root || level > 0) && S_ISREG(st->st_mode) && scan::canScan(pathname)) {
-			// Skip files in the root dir
-			// We point to a good file, keep it
-			names.push_back(pathname.substr(m_root.size() + 1));
+		} else if ((files_in_root || level > 0) && S_ISREG(st->st_mode)) {
+			if (str::endsWith(pathname, ".gz"))
+				pathname = pathname.substr(0, pathname.size() - 3);
+			if (scan::canScan(pathname))
+				// Skip files in the root dir
+				// We point to a good file, keep it
+				names.push_back(pathname.substr(m_root.size() + 1));
 		}
 	}
 }

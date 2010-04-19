@@ -34,6 +34,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <utime.h>
 
 #include "config.h"
 
@@ -147,6 +149,8 @@ void Collector::querySummary(const Matcher& matcher, Summary& summary)
 std::string Collector::ensureContiguousData(const std::string& source) const
 {
 	// Check that the metadata completely cover the data file
+	if (empty()) return std::string();
+
 	string last_file;
 	off_t last_end = 0;
 	for (const_iterator i = begin(); i != end(); ++i)
@@ -165,11 +169,14 @@ std::string Collector::ensureContiguousData(const std::string& source) const
 		}
 		last_end += s->size;
 	}
-	std::auto_ptr<struct stat> st = sys::fs::stat(last_file);
+	string fname = (*this)[0].completePathname(last_file);
+	std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+	if (st.get() == NULL)
+		throw wibble::exception::File(fname, "validating data described in " + source);
 	if (st->st_size != last_end)
-		throw wibble::exception::Consistency("validating metadata " + source,
-				"metadata do not cover the entire data file");
-	return last_file;
+		throw wibble::exception::Consistency("validating " + source,
+				"metadata do not cover the entire data file " + fname);
+	return fname;
 }
 
 void Collector::compressDataFile(size_t groupsize, const std::string& source) const
@@ -234,6 +241,13 @@ void Collector::compressDataFile(size_t groupsize, const std::string& source) co
 			compressor.restart();
 		}
 	}
+
+	// Set the same timestamp as the uncompressed file
+	std::auto_ptr<struct stat> st = sys::fs::stat(datafile);
+	struct utimbuf times;
+	times.actime = st->st_atime;
+	times.modtime = st->st_mtime;
+	utime(outfname.c_str(), &times);
 
 	hwoutfd.close();
 	hwoutidx.close();

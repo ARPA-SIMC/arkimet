@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -282,5 +282,44 @@ void to::test<4>()
 	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
 }
+
+// Test maintenance scan on compressed archives
+template<> template<>
+void to::test<5>()
+{
+	// Import a file
+	Archive arc("testds/.archive/last");
+	arc.openRW();
+	system("cp inbound/test.grib1 testds/.archive/last/");
+	arc.acquire("test.grib1");
+
+	// Compress it
+	metadata::Collector mdc;
+	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+	ensure_equals(mdc.size(), 3u);
+	mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
+	sys::fs::deleteIfExists("testds/.archive/last/test.grib1");
+
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.gz", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.gz.idx", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
+
+	// Query now is ok
+	mdc.clear();
+	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+	ensure_equals(mdc.size(), 3u);
+
+	// Maintenance should show that everything is ok now
+	MaintenanceCollector c;
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_OK), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(c.isClean());
+}
+
 
 }

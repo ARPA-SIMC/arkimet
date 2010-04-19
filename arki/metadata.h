@@ -189,6 +189,12 @@ public:
 	wibble::sys::Buffer getData() const;
 
 	/**
+	 * If \a pathname is absolute, return it. Else, prepend to it this
+	 * metadata position on the file system
+	 */
+	std::string completePathname(const std::string& pathname) const;
+
+	/**
 	 * If the source is not inline, but the data are cached in memory, drop
 	 * them.
 	 *

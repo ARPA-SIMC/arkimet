@@ -400,6 +400,13 @@ string Metadata::encode() const
 	return res;
 }
 
+std::string Metadata::completePathname(const std::string& pathname) const
+{
+	if (pathname[0] == '/') return pathname;
+	if (m_filename.empty()) return pathname;
+	return wibble::str::joinpath(str::dirname(m_filename), pathname);
+}
+
 wibble::sys::Buffer Metadata::getData() const
 {
 	if (m_inline_buf.size())
@@ -412,9 +419,7 @@ wibble::sys::Buffer Metadata::getData() const
 			Item<types::source::Blob> blob = source.upcast<types::source::Blob>();
 
 			// Compute the input file name
-			string file = blob->filename;
-			if (!sys::fs::access(file.c_str(), F_OK))
-				file = wibble::str::joinpath(str::dirname(m_filename), blob->filename);
+			string file = completePathname(blob->filename);
 
 			// Read the data
 			m_inline_buf.resize(blob->size);
