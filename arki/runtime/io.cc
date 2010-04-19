@@ -139,32 +139,41 @@ void Output::openFile(const std::string& fname, bool append)
 }
 
 
-Tempfile::Tempfile(const std::string& dirname) : m_out(0), m_unlink_on_exit(true)
+Tempfile::Tempfile(const std::string& dirname, bool dirname_is_pathname) : m_out(0), m_unlink_on_exit(true)
 {
-	// Start with the temp dir name
-	string tpl = dirname;
-	if (tpl.empty())
+	int fd;
+	if (dirname_is_pathname)
 	{
-		char* dir = getenv("ARKI_TMPDIR");
-		if (dir != NULL)
-			tpl = dir;
-		else
+		m_name = dirname;
+		fd = open(m_name.c_str(), O_RDWR | O_CREAT | O_EXCL, 0666);
+		if (fd < 0)
+			throw wibble::exception::File(m_name, "creating file");
+	} else {
+		// Start with the temp dir name
+		string tpl = dirname;
+		if (tpl.empty())
 		{
-			dir = getenv("TMPDIR");
+			char* dir = getenv("ARKI_TMPDIR");
 			if (dir != NULL)
 				tpl = dir;
 			else
-				tpl = "/tmp";
+			{
+				dir = getenv("TMPDIR");
+				if (dir != NULL)
+					tpl = dir;
+				else
+					tpl = "/tmp";
+			}
 		}
-	}
 
-	tpl += "/arkimet.XXXXXX";
-	char name[tpl.size() + 1];
-	memcpy(name, tpl.c_str(), tpl.size() + 1);
-	int fd = mkstemp(name);
-	if (fd < 0)
-		throw wibble::exception::File(name, "creating/opening temporary file");
-	m_name = name;
+		tpl += "/arkimet.XXXXXX";
+		char name[tpl.size() + 1];
+		memcpy(name, tpl.c_str(), tpl.size() + 1);
+		fd = mkstemp(name);
+		if (fd < 0)
+			throw wibble::exception::File(name, "creating/opening temporary file");
+		m_name = name;
+	}
 
 	posixBuf.attach(fd);
 	if (!m_out) m_out = new ostream(&posixBuf);

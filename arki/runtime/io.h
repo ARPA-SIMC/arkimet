@@ -96,7 +96,7 @@ class Tempfile
 	bool m_unlink_on_exit;
 
 public:
-	Tempfile(const std::string& dirname = std::string());
+	Tempfile(const std::string& dirname = std::string(), bool dirname_is_pathname = false);
 	~Tempfile();
 
 	/// Change the unlink-on-exit behaviour
