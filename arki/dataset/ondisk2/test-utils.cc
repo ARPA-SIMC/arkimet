@@ -97,7 +97,6 @@ const char* MaintenanceCollector::names[] = {
 	"to rescan",
 	"deleted",
 	"arc ok",
-	"arc to delete",
 	"arc to index",
 	"arc to rescan",
 	"arc deleted",
