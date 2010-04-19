@@ -32,6 +32,7 @@
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
+#include <arki/utils/compress.h>
 #include <arki/scan/any.h>
 #include <arki/postprocess.h>
 #include <arki/sort.h>
@@ -867,6 +868,8 @@ void Archive::rescan(const std::string& relname)
 {
 	string pathname = str::joinpath(m_dir, relname);
 	time_t ts_data = files::timestamp(pathname);
+	if (ts_data == 0)
+		ts_data = files::timestamp(pathname + ".gz");
 	time_t ts_md = files::timestamp(pathname + ".metadata");
 
 	// Invalidate summary
@@ -878,6 +881,11 @@ void Archive::rescan(const std::string& relname)
 
 	// Deindex the file
 	deindex(relname);
+
+	// Temporarily uncompress the file for scanning
+	auto_ptr<utils::compress::TempUnzip> tu;
+	if (!sys::fs::access(pathname, F_OK) && sys::fs::access(pathname + ".gz", F_OK))
+		tu.reset(new utils::compress::TempUnzip(pathname));
 
 	// Reindex the file
 	acquire(relname);
