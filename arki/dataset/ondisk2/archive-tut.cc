@@ -330,6 +330,7 @@ void to::test<5>()
 		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure(false);
 	} catch (std::exception& e) {
+		ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
 	}
 
 	// Maintenance should show one file to rescan
