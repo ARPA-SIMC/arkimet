@@ -218,7 +218,7 @@ class PlainManifest : public Manifest
 
 public:
 	PlainManifest(const std::string& dir)
-		: m_dir(dir)
+		: m_dir(dir), last_inode(0)
 	{
 	}
 
