@@ -131,6 +131,22 @@ private:
 	HandleWatch& operator=(const HandleWatch&);
 };
 
+/**
+ * Ensure that a posix file handle is closed when this object goes out of scope.
+ *
+ * unlink the file at destructor time
+ */
+struct TempfileHandleWatch : public HandleWatch
+{
+	TempfileHandleWatch(const std::string& fname, int fd) : HandleWatch(fname, fd) {}
+	~TempfileHandleWatch();
+
+private:
+	// Disallow copy
+	TempfileHandleWatch(const HandleWatch&);
+	TempfileHandleWatch& operator=(const HandleWatch&);
+};
+
 }
 }
 

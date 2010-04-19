@@ -147,6 +147,13 @@ void HandleWatch::close()
 	}
 }
 
+TempfileHandleWatch::~TempfileHandleWatch()
+{
+	if (fd > 0)
+		::unlink(fname.c_str());
+}
+
+
 }
 }
 // vim:set ts=4 sw=4:

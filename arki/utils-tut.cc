@@ -22,13 +22,19 @@
 #include <arki/utils.h>
 #include <arki/types/origin.h>
 #include <arki/types/run.h>
+#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 struct arki_utils_shar {
 };
@@ -47,6 +53,23 @@ void to::test<1>()
 
 	ensure_equals(compareMaps(a, b), 1);
 	ensure_equals(compareMaps(b, a), -1);
+}
+
+// Check TempfileHandleWatch
+template<> template<>
+void to::test<2>()
+{
+	using namespace utils;
+	const char* tmpfname = "tfhw.tmp";
+
+	int fd = open(tmpfname, O_WRONLY | O_CREAT | O_EXCL, 0666);
+	ensure(fd >= 0);
+
+	{
+		TempfileHandleWatch tfhw(tmpfname, fd);
+		ensure(sys::fs::access(tmpfname, F_OK));
+	}
+	ensure(!sys::fs::access(tmpfname, F_OK));
 }
 
 }
