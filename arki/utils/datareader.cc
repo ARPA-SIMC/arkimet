@@ -22,6 +22,7 @@
 
 #include <arki/utils/datareader.h>
 #include <arki/utils.h>
+#include <arki/utils/accounting.h>
 #include <arki/nag.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -76,6 +77,8 @@ public:
 			throw wibble::exception::File(fname, "reading " + str::fmt(size) + " bytes at " + str::fmt(ofs));
 		if ((size_t)res != size)
 			throw wibble::exception::Consistency("reading from " + fname, "read only " + str::fmt(res) + "/" + str::fmt(size) + " bytes at " + str::fmt(ofs));
+
+		acct::plain_data_read_count.incr();
 	}
 };
 
@@ -108,14 +111,24 @@ public:
 
 	void read(off_t ofs, size_t size, void* buf)
 	{
-		if (gzseek(fd, ofs, SEEK_SET) != ofs)
-			throw wibble::exception::Consistency("seeking in " + realfname, "seek failed");
+		if (ofs != last_ofs)
+		{
+			if (gzseek(fd, ofs, SEEK_SET) != ofs)
+				throw wibble::exception::Consistency("seeking in " + realfname, "seek failed");
+
+			if (ofs >= last_ofs)
+				acct::gzip_forward_seek_bytes.incr(ofs - last_ofs);
+			else
+				acct::gzip_forward_seek_bytes.incr(ofs);
+		}
 
 		int res = gzread(fd, buf, size);
 		if (res == -1 || (size_t)res != size)
 			throw wibble::exception::Consistency("reading from " + realfname, "read failed");
 
 		last_ofs = ofs + size;
+
+		acct::gzip_data_read_count.incr();
 	}
 };
 
@@ -213,20 +226,35 @@ public:
 			gzfd = gzdopen(fd1, "rb");
 			if (gzfd == NULL)
 				throw wibble::exception::File(realfname, "opening file");
+
+			last_block = idx;
+
+			acct::gzip_idx_reposition_count.incr();
 		}
 
 		// Seek inside the compressed chunk
 		int gzres = gzseek(gzfd, ofs - ofs_unc[idx], SEEK_SET);
 		if (gzres < 0 || (size_t)gzres != ofs - ofs_unc[idx])
 			throw wibble::exception::Consistency("seeking in " + realfname, "seek failed");
+
+		acct::gzip_forward_seek_bytes.incr(ofs - ofs_unc[idx]);
 	}
 
 	void read(off_t ofs, size_t size, void* buf)
 	{
 		if (gzfd == NULL || ofs != last_ofs)
 		{
-			// We need to seek
-			reposition(ofs);
+			if (gzfd != NULL && ofs > last_ofs && ofs < last_ofs + 4096)
+			{
+				// Just skip forward
+				int gzres = gzseek(gzfd, ofs - last_ofs, SEEK_CUR);
+				if (gzres < 0)
+					throw wibble::exception::Consistency("seeking in " + realfname, "seek failed");
+				acct::gzip_forward_seek_bytes.incr(ofs - last_ofs);
+			} else {
+				// We need to seek
+				reposition(ofs);
+			}
 		}
 
 		int res = gzread(gzfd, buf, size);
@@ -234,6 +262,8 @@ public:
 			throw wibble::exception::Consistency("reading from " + realfname, "read failed");
 
 		last_ofs = ofs + size;
+
+		acct::gzip_data_read_count.incr();
 	}
 };
 

@@ -19,6 +19,7 @@
 #include <arki/tests/test-utils.h>
 #include <arki/utils/metadata.h>
 #include <arki/utils.h>
+#include <arki/utils/accounting.h>
 #include <arki/types/source.h>
 #include <arki/summary.h>
 #include <arki/scan/any.h>
@@ -117,6 +118,8 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
+	using namespace utils;
+
 	static const int repeats = 1024;
 
 	// Create a test file with `repeats` BUFR entries
@@ -143,24 +146,55 @@ void to::test<4>()
 		i->dropCachedData();
 
 	// Ensure that all data can still be read
+	acct::gzip_data_read_count.reset();
+	acct::gzip_forward_seek_bytes.reset();
+	acct::gzip_idx_reposition_count.reset();
 	for (int i = 0; i < repeats; ++i)
 	{
 		sys::Buffer b = c[i].getData();
 		ensure_equals(b.size(), bufr.size());
 		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
 	}
+	// We read linearly, so there are no seeks or repositions
+	ensure_equals(acct::gzip_data_read_count.val(), (size_t)repeats);
+	ensure_equals(acct::gzip_forward_seek_bytes.val(), 0u);
+	ensure_equals(acct::gzip_idx_reposition_count.val(), 1u);
 
 	Metadata::flushDataReaders();
 	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
 		i->dropCachedData();
 
 	// Try to read backwards to avoid sequential reads
+	acct::gzip_data_read_count.reset();
+	acct::gzip_forward_seek_bytes.reset();
+	acct::gzip_idx_reposition_count.reset();
 	for (int i = repeats-1; i >= 0; --i)
 	{
 		sys::Buffer b = c[i].getData();
 		ensure_equals(b.size(), bufr.size());
 		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
 	}
+	ensure_equals(acct::gzip_data_read_count.val(), (size_t)repeats);
+	ensure_equals(acct::gzip_forward_seek_bytes.val(), 12791390u);
+	ensure_equals(acct::gzip_idx_reposition_count.val(), 8u);
+
+	Metadata::flushDataReaders();
+	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
+		i->dropCachedData();
+
+	// Read each other one
+	acct::gzip_data_read_count.reset();
+	acct::gzip_forward_seek_bytes.reset();
+	acct::gzip_idx_reposition_count.reset();
+	for (int i = 0; i < repeats; i += 2)
+	{
+		sys::Buffer b = c[i].getData();
+		ensure_equals(b.size(), bufr.size());
+		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
+	}
+	ensure_equals(acct::gzip_data_read_count.val(), (size_t)repeats / 2);
+	ensure_equals(acct::gzip_forward_seek_bytes.val(), 194u * 511u);
+	ensure_equals(acct::gzip_idx_reposition_count.val(), 1u);
 }
 
 }
