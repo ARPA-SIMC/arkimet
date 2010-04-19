@@ -21,9 +21,15 @@
  */
 
 #include <arki/utils/compress.h>
+#include <arki/utils.h>
 #include <wibble/exception.h>
 
 #include "config.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <utime.h>
 
 #include <zlib.h>
 
@@ -153,6 +159,70 @@ void ZlibCompressor::restart()
 {
 	if (deflateReset(strm) != Z_OK)
 		throw wibble::exception::Consistency("resetting zlib deflate stream", "stream error");
+}
+
+void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& wrfname, size_t bufsize)
+{
+	// (Re)open the compressed file
+	int rdfd1 = dup(rdfd);
+	gzFile gzfd = gzdopen(rdfd1, "rb");
+	if (gzfd == NULL)
+		throw wibble::exception::File(rdfname, "opening file with zlib");
+	
+	char* buf = new char[bufsize];
+
+	try {
+		while (true)
+		{
+			int res = gzread(gzfd, buf, bufsize);
+			if (res < 0)
+				throw wibble::exception::Consistency("reading from " + rdfname, "read failed");
+
+			ssize_t wres = write(wrfd, buf, res);
+			if (wres < 0)
+				throw wibble::exception::File(wrfname, "write failed");
+			if (wres != res)
+				throw wibble::exception::Consistency("writing to " + wrfname, "wrote only " + str::fmt(wres) + "/" + str::fmt(res) + " bytes");
+
+			if ((size_t)res < bufsize)
+				break;
+		}
+	} catch (...) {
+		delete[] buf;
+		gzclose(gzfd);
+		throw;
+	}
+
+	delete[] buf;
+	gzclose(gzfd);
+
+	// Let the caller close file descriptors
+}
+
+TempUnzip::TempUnzip(const std::string& fname)
+	: fname(fname)
+{
+	// zcat gzfname > fname
+	string gzfname = fname + ".gz";
+	int rdfd = open(gzfname.c_str(), O_RDONLY);
+	utils::HandleWatch hwrd(gzfname, rdfd);
+
+	int wrfd = open(fname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
+	utils::HandleWatch hwwr(fname, wrfd);
+
+	gunzip(rdfd, gzfname, wrfd, fname);
+
+	// Set the same timestamp as the compressed file
+	std::auto_ptr<struct stat> st = sys::fs::stat(gzfname);
+	struct utimbuf times;
+	times.actime = st->st_atime;
+	times.modtime = st->st_mtime;
+	utime(fname.c_str(), &times);
+}
+
+TempUnzip::~TempUnzip()
+{
+	::unlink(fname.c_str());
 }
 
 }

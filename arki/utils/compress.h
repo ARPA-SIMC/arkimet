@@ -24,6 +24,7 @@
  */
 
 #include <wibble/sys/buffer.h>
+#include <string>
 
 // zlib forward declaration
 struct z_stream_s;
@@ -87,6 +88,28 @@ public:
 	 * Restart compression after a flush
 	 */
 	void restart();
+};
+
+/**
+ * Gunzip the file opened at \a rdfd sending data to the file opened at \a wrfd
+ */
+void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& wrfname, size_t bufsize = 4096);
+
+/**
+ * At constructor time, create an uncompressed version of the given file
+ *
+ * At destructor time, delete the uncompressed version
+ */
+struct TempUnzip
+{
+	std::string fname;
+
+	/**
+	 * @param fname
+	 *   Refers to the uncompressed file name (i.e. without the trailing .gz)
+	 */
+	TempUnzip(const std::string& fname);
+	~TempUnzip();
 };
 
 }
