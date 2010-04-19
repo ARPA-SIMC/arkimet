@@ -117,7 +117,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	static const int repeats = 10;
+	static const int repeats = 1024;
 
 	// Create a test file with `repeats` BUFR entries
 	std::string bufr = utils::readFile("inbound/test.bufr");
@@ -132,16 +132,30 @@ void to::test<4>()
 
 	// Create metadata for the big BUFR file
 	scan::scan(tf.name(), "bufr", c);
-	ensure_equals(c.size(), repeats);
+	ensure_equals(c.size(), (size_t)repeats);
 
 	// Compress the data file
 	c.compressDataFile(127, "temp BUFR " + tf.name());
 	// Remove the original file
 	tf.unlink();
 	Metadata::flushDataReaders();
+	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
+		i->dropCachedData();
 
 	// Ensure that all data can still be read
 	for (int i = 0; i < repeats; ++i)
+	{
+		sys::Buffer b = c[i].getData();
+		ensure_equals(b.size(), bufr.size());
+		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
+	}
+
+	Metadata::flushDataReaders();
+	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
+		i->dropCachedData();
+
+	// Try to read backwards to avoid sequential reads
+	for (int i = repeats-1; i >= 0; --i)
 	{
 		sys::Buffer b = c[i].getData();
 		ensure_equals(b.size(), bufr.size());

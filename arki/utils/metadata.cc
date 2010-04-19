@@ -197,6 +197,7 @@ void Collector::compressDataFile(size_t groupsize, const std::string& source) co
 	sys::Buffer outbuf(4096*2);
 
 	// Compress data
+	off_t last_unc_ofs = 0;
 	off_t last_ofs = 0;
 	for (size_t i = 0; i < size(); ++i)
 	{
@@ -219,10 +220,16 @@ void Collector::compressDataFile(size_t groupsize, const std::string& source) co
 		if (flush && i < size() - 1)
 		{
 			// Write last block size to the index
+			Item<types::source::Blob> src = (*this)[i].source.upcast<types::source::Blob>();
+			size_t unc_ofs = src->offset + src->size;
+
 			off_t cur = lseek(outfd, 0, SEEK_CUR);
+			uint32_t ofs = htonl(unc_ofs - last_unc_ofs);
 			uint32_t last_size = htonl(cur - last_ofs);
+			::write(outidx, &ofs, sizeof(ofs));
 			::write(outidx, &last_size, sizeof(last_size));
 			last_ofs = cur;
+			last_unc_ofs = unc_ofs;
 
 			compressor.restart();
 		}
