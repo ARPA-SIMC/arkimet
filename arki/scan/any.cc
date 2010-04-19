@@ -51,7 +51,6 @@ static bool scan_file(const std::string& file, const std::string& format, Metada
 {
 	// Scan the file
 	if (!sys::fs::access(file, F_OK) && sys::fs::access(file + ".gz", F_OK))
-		// TODO: uncompress to a temporary file instead
 		throw wibble::exception::Consistency("scanning " + file + ".gz", "file needs to be manually decompressed before scanning");
 
 #ifdef HAVE_GRIBAPI
