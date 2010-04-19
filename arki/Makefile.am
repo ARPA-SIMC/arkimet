@@ -81,6 +81,7 @@ dist_noinst_HEADERS = \
 		types/run.h \
 		utils/geosfwd.h \
 		utils/geosdef.h \
+		utils/accounting.h \
 		utils/codec.h \
 		utils/compress.h \
 		utils/datareader.h \
@@ -118,6 +119,7 @@ lib_LTLIBRARIES = libarkimet.la
 libarkimet_la_SOURCES = \
 		nag.cc \
 		utils.cc \
+		utils/accounting.cc \
 		utils/codec.cc \
 		utils/compress.cc \
 		utils/datareader.cc \
@@ -209,6 +211,7 @@ TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
 check_PROGRAMS = tests/arki-test
 tests_arki_test_SOURCES = \
 		utils-tut.cc \
+		utils/accounting-tut.cc \
 		utils/codec-tut.cc \
 		utils/compress-tut.cc \
 		utils/datareader-tut.cc \
