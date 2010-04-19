@@ -127,12 +127,13 @@ public:
 	size_t* ofs_unc;
 	size_t* ofs_comp;
 	size_t idxcount;
+	size_t last_block;
 	int fd;
 	gzFile gzfd;
 	off_t last_ofs;
 
 	IdxZlibFileReader(const std::string& fname)
-		: fname(fname), realfname(fname + ".gz"), ofs_unc(NULL), ofs_comp(NULL), fd(-1), gzfd(NULL), last_ofs(0)
+		: fname(fname), realfname(fname + ".gz"), ofs_unc(NULL), ofs_comp(NULL), last_block(0), fd(-1), gzfd(NULL), last_ofs(0)
 	{
 		// Read index
 		readIndex(realfname + ".idx");
@@ -196,20 +197,23 @@ public:
 		size_t* lb = lower_bound(ofs_unc, ofs_unc+idxcount, (size_t)ofs);
 		size_t idx = lb - ofs_unc;
 		if (idx > 0) idx -= 1;
-		if (gzfd != NULL)
+		if (idx != last_block || gzfd == NULL)
 		{
-			gzclose(gzfd);
-			gzfd = NULL;
-		}
-		off_t res = lseek(fd, ofs_comp[idx], SEEK_SET);
-		if (res == -1 || (size_t)res != ofs_comp[idx])
-			throw wibble::exception::File(realfname, "seeking to byte " + str::fmt(ofs_comp[idx]));
+			if (gzfd != NULL)
+			{
+				gzclose(gzfd);
+				gzfd = NULL;
+			}
+			off_t res = lseek(fd, ofs_comp[idx], SEEK_SET);
+			if (res == -1 || (size_t)res != ofs_comp[idx])
+				throw wibble::exception::File(realfname, "seeking to byte " + str::fmt(ofs_comp[idx]));
 
-		// (Re)open the compressed file
-		int fd1 = dup(fd);
-		gzfd = gzdopen(fd1, "rb");
-		if (gzfd == NULL)
-			throw wibble::exception::File(realfname, "opening file");
+			// (Re)open the compressed file
+			int fd1 = dup(fd);
+			gzfd = gzdopen(fd1, "rb");
+			if (gzfd == NULL)
+				throw wibble::exception::File(realfname, "opening file");
+		}
 
 		// Seek inside the compressed chunk
 		int gzres = gzseek(gzfd, ofs - ofs_unc[idx], SEEK_SET);
