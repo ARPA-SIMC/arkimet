@@ -26,6 +26,7 @@
 #include <arki/matcher.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/scan/grib.h>
+#include <arki/utils/accounting.h>
 
 namespace tut {
 using namespace std;
@@ -88,6 +89,10 @@ static inline std::string dsname(const Metadata& md)
 template<> template<>
 void to::test<1>()
 {
+	using namespace arki::utils::acct;
+
+	plain_data_read_count.reset();
+
 	Metadata md;
 	MetadataCollector mdc;
 	scan::Grib scanner;
@@ -105,6 +110,8 @@ void to::test<1>()
 	ensure(!scanner.next(md));
 
 	dispatcher.flush();
+
+	ensure_equals(plain_data_read_count.val(), 0u);
 }
 
 }
