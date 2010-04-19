@@ -50,6 +50,10 @@ static void scan_metadata(const std::string& file, MetadataConsumer& c)
 static bool scan_file(const std::string& file, const std::string& format, MetadataConsumer& c)
 {
 	// Scan the file
+	if (!sys::fs::access(file, F_OK) && sys::fs::access(file + ".gz", F_OK))
+		// TODO: uncompress to a temporary file instead
+		throw wibble::exception::Consistency("scanning " + file + ".gz", "file needs to be manually decompressed before scanning");
+
 #ifdef HAVE_GRIBAPI
 	if (format == "grib" || format == "grib1" || format == "grib2")
 	{

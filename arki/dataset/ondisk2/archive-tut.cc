@@ -319,6 +319,53 @@ void to::test<5>()
 	ensure_equals(c.count(ARC_OK), 1u);
 	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
+
+	// Try removing summary and metadata
+	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
+	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
+
+	// Cannot query anymore
+	mdc.clear();
+	try {
+		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure(false);
+	} catch (std::exception& e) {
+	}
+
+	// Maintenance should show one file to rescan
+	c.clear();
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(not c.isClean());
+
+	{
+		Writer writer(cfg);
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+
+		stringstream s;
+
+		// Check should reindex the file
+		writer.check(s, true, true);
+		ensure_equals(s.str(),
+			"testds: rescanned in archive last/test.grib1\n"
+			"testds: archive cleaned up\n"
+			"testds: database cleaned up\n"
+			"testds: rebuild summary cache\n"
+			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+
+		// Repack should do nothing
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
 }
 
 
