@@ -1,6 +1,8 @@
 arkimet (0.39-1) UNRELEASED; urgency=low
 
-  * 
+  * Never unlink data files in archives
+  * Fixed bug where sqlite indices in archives would trigger deindexing of a
+    file after rescanning
 
  -- Enrico Zini <enrico@debian.org>  Tue, 20 Apr 2010 15:15:33 +0200
 
