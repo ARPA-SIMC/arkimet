@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/metadata.h>
 #include <wibble/sys/fs.h>
 #include <wibble/grcal/grcal.h>
 
@@ -1146,6 +1147,97 @@ cerr  << "ZAERBA 4" << endl;
 	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
 	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 #endif
+}
+
+// Test accuracy of maintenance scan, with index, on dataset with some
+// rebuild flagfiles, and duplicate items inside
+template<> template<>
+void to::test<18>()
+{
+	acquireSamples();
+
+	// Compress one data file
+	{
+		utils::metadata::Collector mdc;
+		Reader reader(cfg);
+		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+		ensure_equals(mdc.size(), 1u);
+		mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
+		sys::fs::deleteIfExists("testdir/2007/07-08.grib1");
+	}
+
+	// The dataset should still be clean
+	{
+		arki::dataset::ondisk2::Writer writer(cfg);
+		MaintenanceCollector c;
+		writer.maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+
+	// The dataset should still be clean even with an accurate scan
+	{
+		arki::dataset::ondisk2::Writer writer(cfg);
+		MaintenanceCollector c;
+		writer.maintenance(c, false);
+
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+
+	// Remove the index
+	system("rm testdir/index.sqlite");
+
+	// See how maintenance scan copes
+	{
+		arki::dataset::ondisk2::Writer writer(cfg);
+		MaintenanceCollector c;
+		writer.maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 0u);
+		ensure_equals(c.count(TO_INDEX), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(not c.isClean());
+
+		stringstream s;
+
+		// Perform full maintenance and check that things are still ok afterwards
+		writer.check(s, true, true);
+		ensure_equals(s.str(),
+			"testdir: rescanned 2007/07-07.grib1\n"
+			"testdir: rescanned 2007/07-08.grib1\n"
+			"testdir: rescanned 2007/10-09.grib1\n"
+			"testdir: database cleaned up\n"
+			"testdir: rebuild summary cache\n"
+			"testdir: 3 files rescanned, 30448 bytes reclaimed cleaning the index.\n");
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+
+		// Perform packing and check that things are still ok afterwards
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+		c.clear();
+
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+
+		// Ensure that we have the summary cache
+		ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
+		ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
+		ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+	}
 }
 
 
