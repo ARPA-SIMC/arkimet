@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <utime.h>
+#include <arpa/inet.h>
 
 #include <zlib.h>
 
@@ -223,6 +224,73 @@ TempUnzip::TempUnzip(const std::string& fname)
 TempUnzip::~TempUnzip()
 {
 	::unlink(fname.c_str());
+}
+
+size_t SeekIndex::lookup(size_t unc) const
+{
+	vector<size_t>::const_iterator i = lower_bound(ofs_unc.begin(), ofs_unc.end(), unc);
+	size_t idx = i - ofs_unc.begin();
+	if (idx > 0) idx -= 1;
+	return idx;
+}
+
+void SeekIndex::read(const std::string& fname)
+{
+	int fd = open(fname.c_str(), O_RDONLY);
+	if (fd == -1)
+		throw wibble::exception::File(fname, "opening file");
+	utils::HandleWatch hw(fname, fd);
+
+	read(fd, fname);
+}
+
+void SeekIndex::read(int fd, const std::string& fname)
+{
+	struct stat st;
+	if (fstat(fd, &st) == -1)
+		throw wibble::exception::File(fname, "checking file length");
+	size_t idxcount = st.st_size / sizeof(uint32_t) / 2;
+	uint32_t* diskidx = new uint32_t[idxcount * 2];
+	ssize_t res = ::read(fd, diskidx, idxcount * sizeof(uint32_t) * 2);
+	if (res < 0 || (size_t)res != idxcount * sizeof(uint32_t) * 2)
+	{
+		delete[] diskidx;
+		throw wibble::exception::File(fname, "reading index file");
+	}
+	ofs_unc.reserve(idxcount);
+	ofs_comp.reserve(idxcount);
+	for (size_t i = 0; i < idxcount; ++i)
+	{
+		if (i == 0)
+		{
+			ofs_unc[i] = 0;
+			ofs_comp[i] = 0;
+		}
+		else
+		{
+			ofs_unc[i] = ofs_unc[i-1] + ntohl(diskidx[(i-1) * 2]);
+			ofs_comp[i] = ofs_comp[i-1] + ntohl(diskidx[(i-1) * 2 + 1]);
+		}
+	}
+	delete[] diskidx;
+}
+
+off_t filesize(const std::string& file)
+{
+	// First try the uncompressed version
+	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
+	if (st.get() != NULL)
+		return st->st_size;
+
+	// Then try the gzipped version
+	st = wibble::sys::fs::stat(file + ".gz");
+	if (st.get() != NULL)
+	{
+		// Try to get the uncompressed size via the index
+	}
+
+	// If everything fails, return 0
+	return 0;
 }
 
 }

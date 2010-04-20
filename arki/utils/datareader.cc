@@ -23,6 +23,7 @@
 #include <arki/utils/datareader.h>
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
+#include <arki/utils/compress.h>
 #include <arki/nag.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -32,7 +33,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include <zlib.h>
 
 using namespace std;
@@ -137,19 +137,17 @@ struct IdxZlibFileReader : public Reader
 public:
 	std::string fname;
 	std::string realfname;
-	size_t* ofs_unc;
-	size_t* ofs_comp;
-	size_t idxcount;
+	compress::SeekIndex idx;
 	size_t last_block;
 	int fd;
 	gzFile gzfd;
 	off_t last_ofs;
 
 	IdxZlibFileReader(const std::string& fname)
-		: fname(fname), realfname(fname + ".gz"), ofs_unc(NULL), ofs_comp(NULL), last_block(0), fd(-1), gzfd(NULL), last_ofs(0)
+		: fname(fname), realfname(fname + ".gz"), last_block(0), fd(-1), gzfd(NULL), last_ofs(0)
 	{
 		// Read index
-		readIndex(realfname + ".idx");
+		idx.read(realfname + ".idx");
 
 		fd = open(realfname.c_str(), O_RDONLY);
 		if (fd < 0)
@@ -158,46 +156,8 @@ public:
 
 	~IdxZlibFileReader()
 	{
-		if (ofs_unc != NULL) delete[] ofs_unc;
-		if (ofs_comp != NULL) delete[] ofs_comp;
 		if (gzfd != NULL) gzclose(gzfd);
 		if (fd != -1) close(fd);
-	}
-
-	void readIndex(const std::string& idxfname)
-	{
-		int idxfd = open(idxfname.c_str(), O_RDONLY);
-		if (idxfd == -1)
-			throw wibble::exception::File(idxfname, "opening file");
-		utils::HandleWatch hwidx(idxfname, idxfd);
-		struct stat st;
-		if (fstat(idxfd, &st) == -1)
-			throw wibble::exception::File(idxfname, "checking file length");
-		idxcount = st.st_size / sizeof(uint32_t) / 2;
-		uint32_t* diskidx = new uint32_t[idxcount * 2];
-		ssize_t res = ::read(idxfd, diskidx, idxcount * sizeof(uint32_t) * 2);
-		if (res < 0 || (size_t)res != idxcount * sizeof(uint32_t) * 2)
-		{
-			delete[] diskidx;
-			throw wibble::exception::File(idxfname, "reading index file");
-		}
-		hwidx.close();
-		ofs_unc = new size_t[idxcount];
-		ofs_comp = new size_t[idxcount];
-		for (size_t i = 0; i < idxcount; ++i)
-		{
-			if (i == 0)
-			{
-				ofs_unc[i] = 0;
-				ofs_comp[i] = 0;
-			}
-			else
-			{
-				ofs_unc[i] = ofs_unc[i-1] + ntohl(diskidx[(i-1) * 2]);
-				ofs_comp[i] = ofs_comp[i-1] + ntohl(diskidx[(i-1) * 2 + 1]);
-			}
-		}
-		delete[] diskidx;
 	}
 
 	bool is(const std::string& fname)
@@ -207,19 +167,17 @@ public:
 
 	void reposition(off_t ofs)
 	{
-		size_t* lb = lower_bound(ofs_unc, ofs_unc+idxcount, (size_t)ofs);
-		size_t idx = lb - ofs_unc;
-		if (idx > 0) idx -= 1;
-		if (idx != last_block || gzfd == NULL)
+		size_t block = idx.lookup(ofs);
+		if (block != last_block || gzfd == NULL)
 		{
 			if (gzfd != NULL)
 			{
 				gzclose(gzfd);
 				gzfd = NULL;
 			}
-			off_t res = lseek(fd, ofs_comp[idx], SEEK_SET);
-			if (res == -1 || (size_t)res != ofs_comp[idx])
-				throw wibble::exception::File(realfname, "seeking to byte " + str::fmt(ofs_comp[idx]));
+			off_t res = lseek(fd, idx.ofs_comp[block], SEEK_SET);
+			if (res == -1 || (size_t)res != idx.ofs_comp[block])
+				throw wibble::exception::File(realfname, "seeking to byte " + str::fmt(idx.ofs_comp[block]));
 
 			// (Re)open the compressed file
 			int fd1 = dup(fd);
@@ -227,17 +185,17 @@ public:
 			if (gzfd == NULL)
 				throw wibble::exception::File(realfname, "opening file");
 
-			last_block = idx;
+			last_block = block;
 
 			acct::gzip_idx_reposition_count.incr();
 		}
 
 		// Seek inside the compressed chunk
-		int gzres = gzseek(gzfd, ofs - ofs_unc[idx], SEEK_SET);
-		if (gzres < 0 || (size_t)gzres != ofs - ofs_unc[idx])
+		int gzres = gzseek(gzfd, ofs - idx.ofs_unc[block], SEEK_SET);
+		if (gzres < 0 || (size_t)gzres != ofs - idx.ofs_unc[block])
 			throw wibble::exception::Consistency("seeking in " + realfname, "seek failed");
 
-		acct::gzip_forward_seek_bytes.incr(ofs - ofs_unc[idx]);
+		acct::gzip_forward_seek_bytes.incr(ofs - idx.ofs_unc[block]);
 	}
 
 	void read(off_t ofs, size_t size, void* buf)

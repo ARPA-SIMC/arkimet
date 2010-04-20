@@ -25,6 +25,7 @@
 
 #include <wibble/sys/buffer.h>
 #include <string>
+#include <vector>
 
 // zlib forward declaration
 struct z_stream_s;
@@ -111,6 +112,30 @@ struct TempUnzip
 	TempUnzip(const std::string& fname);
 	~TempUnzip();
 };
+
+struct SeekIndex
+{
+	std::vector<size_t> ofs_unc;
+	std::vector<size_t> ofs_comp;
+
+	/// Return the index of the block containing the given uncompressed
+	/// offset
+	size_t lookup(size_t unc) const;
+
+	/// Read the index from the given file descriptor
+	void read(int fd, const std::string& fname);
+
+	/// Read the index from the given file
+	void read(const std::string& fname);
+};
+
+/**
+ * Return the uncompressed size of a file
+ *
+ * @param fnam
+ *   Refers to the uncompressed file name (i.e. without the trailing .gz)
+ */
+off_t filesize(const std::string& file);
 
 }
 }
