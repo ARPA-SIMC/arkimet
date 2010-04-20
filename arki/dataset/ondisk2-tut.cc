@@ -27,6 +27,7 @@
 #include <arki/types/time.h>
 #include <arki/scan/grib.h>
 #include <arki/utils/files.h>
+#include <arki/utils/metadata.h>
 #include <wibble/sys/fs.h>
 #include <wibble/sys/childprocess.h>
 
@@ -685,6 +686,63 @@ void to::test<13>()
 	readHang.kill(9);
 	readHang.wait();
 }
+
+// Test acquiring data on a compressed file
+template<> template<>
+void to::test<14>()
+{
+	// In-memory dataset configuration
+	string conf =
+		"[testall]\n"
+		"type = ondisk2\n"
+		"step = yearly\n"
+		"filter = origin: GRIB1\n"
+		"index = origin, reftime\n"
+		"unique = reftime, origin, product, level, timerange, area\n"
+		"name = testall\n"
+		"path = testall\n";
+	stringstream incfg(conf);
+	config.parse(incfg, "(memory)");
+
+	// Clean the dataset
+	system("rm -rf testall/*");
+
+	Metadata md;
+	scan::Grib scanner;
+	scanner.open("inbound/test.grib1");
+
+	// Import the first two
+	{
+		dataset::ondisk2::Writer all(*config.section("testall"));
+		ensure(scanner.next(md));
+		ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
+	}
+	ensure(wibble::sys::fs::access("testall/20/2007.grib1", F_OK));
+
+	// Compress what is imported so far
+	{
+		utils::metadata::Collector mdc;
+		Reader reader(*config.section("testall"));
+		reader.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
+		ensure_equals(mdc.size(), 1u);
+		mdc.compressDataFile(1024, "metadata file testall/20/2007.grib1");
+		sys::fs::deleteIfExists("testall/20/2007.grib1");
+	}
+	ensure(!wibble::sys::fs::access("testall/20/2007.grib1", F_OK));
+
+	// Import the last data
+	{
+		dataset::ondisk2::Writer all(*config.section("testall"));
+		ensure(scanner.next(md));
+		try {
+			ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
+		} catch (std::exception& e) {
+			ensure(string(e.what()).find("cannot update compressed data files") != string::npos);
+		}
+	}
+	ensure(!wibble::sys::fs::access("testall/20/2007.grib1", F_OK));
+}
+
 
 }
 
