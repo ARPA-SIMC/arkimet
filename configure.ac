@@ -22,6 +22,11 @@ AC_ARG_ENABLE([gcov],
     [],
     [enable_gcov="no"])
 
+if test x$enable_gcov = xyes
+then
+	AM_DISABLE_SHARED
+fi
+
 dnl To use subdirs
 AC_PROG_MAKE_SET
 
@@ -223,7 +228,6 @@ if test x$enable_gcov = xyes
 then
 	DEVEL_CFLAGS="--coverage"
 	DEVEL_LIBS="--coverage"
-	AC_DISABLE_SHARED
 fi
 AC_SUBST(DEVEL_CFLAGS)
 AC_SUBST(DEVEL_LIBS)

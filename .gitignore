@@ -4,6 +4,9 @@ data/data
 *.loT
 *.swp
 *.la
+*.gcno
+*.gcda
+*.gcov
 .deps
 .libs
 .dirstamp

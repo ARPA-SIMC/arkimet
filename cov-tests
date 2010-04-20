@@ -1,0 +1,28 @@
+#!/bin/sh
+
+case "$1" in
+	clean)
+		if [ -e "arki/tests/arki-test" ]
+		then
+			echo "Please run make clean first" >&1
+			exit 1
+		fi
+		find arki src -name "*.gcda" -delete
+		find arki src -name "*.gcno" -delete
+		find arki src -name "*.gcov" -delete
+		find . -maxdepth 1 -name "*.gcov" -delete
+		rm -f trace_*.info
+		;;
+	browse)
+		sensible-browser file://`pwd`/lcov/index.html
+		;;
+	*)
+		lcov --zerocounters --directory .
+		make check "$@"
+		lcov --capture --directory arki --base-directory arki --output-file trace_arki.info --test-name testall
+		lcov --capture --directory src --base-directory src --output-file trace_src.info --test-name testall
+		lcov -a trace_arki.info -a trace_src.info -o trace_all.info
+		genhtml trace_all.info --output-directory lcov --title "Test coverage" --show-details --legend
+		echo "Please point browser to file://`pwd`/lcov/index.html"
+		;;
+esac
