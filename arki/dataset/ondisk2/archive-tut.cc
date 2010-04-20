@@ -283,9 +283,84 @@ void to::test<4>()
 	ensure(c.isClean());
 }
 
-// Test maintenance scan on compressed archives
+// Test maintenance scan on missing metadata
 template<> template<>
 void to::test<5>()
+{
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRW();
+		system("cp inbound/test.grib1 testds/.archive/last/");
+		arc.acquire("test.grib1");
+	}
+	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
+	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
+	//ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
+
+	// Query now is ok
+	{
+		metadata::Collector mdc;
+		Archive arc("testds/.archive/last");
+		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 3u);
+	}
+
+	// Maintenance should show one file to rescan
+	{
+		Archive arc("testds/.archive/last");
+		MaintenanceCollector c;
+		arc.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
+
+	{
+		Writer writer(cfg);
+
+		MaintenanceCollector c;
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+
+		stringstream s;
+
+		// Check should reindex the file
+		writer.check(s, true, true);
+		ensure_equals(s.str(),
+			"testds: rescanned in archive last/test.grib1\n"
+			"testds: archive cleaned up\n"
+			"testds: database cleaned up\n"
+			"testds: rebuild summary cache\n"
+			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+
+		// Repack should do nothing
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// Everything should be fine now
+	{
+		Archive arc("testds/.archive/last");
+		MaintenanceCollector c;
+		arc.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_OK), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
+}
+
+// Test maintenance scan on compressed archives
+template<> template<>
+void to::test<6>()
 {
 	// Import a file
 	Archive arc("testds/.archive/last");
