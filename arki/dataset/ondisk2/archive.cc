@@ -854,7 +854,7 @@ void Archive::remove(const std::string& relname)
 
 	sys::fs::deleteIfExists(pathname + ".summary");
 	sys::fs::deleteIfExists(pathname + ".metadata");
-	sys::fs::deleteIfExists(pathname);
+	//sys::fs::deleteIfExists(pathname);
 
 	deindex(relname);
 }
