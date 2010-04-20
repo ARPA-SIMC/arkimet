@@ -82,7 +82,18 @@ fi
 AM_CONDITIONAL([DBALLE], [test x"$have_dballe" = x"yes"])
 
 dnl Check for zlib
-PKG_CHECK_MODULES(ZLIB, zlib)
+PKG_CHECK_EXISTS([zlib], [have_zlib=yes], [have_zlib=no])
+if test x$have_zlib = xyes
+then
+	PKG_CHECK_MODULES(ZLIB, zlib)
+else
+	dnl We don't always have the luxury of .pc files for zlib, it seems
+	have_zlib=yes
+	AC_CHECK_LIB([zlib], [gzopen], [true], [have_zlib=no])
+	AC_CHECK_HEADER([zlib.h], [true], [have_zlib=no])
+	ZLIB_CFLAGS=
+	ZLIB_LIBS="-lzlib"
+fi
 AC_SUBST(ZLIB_CFLAGS)
 AC_SUBST(ZLIB_LIBS)
 
