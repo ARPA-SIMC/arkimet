@@ -290,13 +290,17 @@ void to::test<5>()
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRW();
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
+		system("cp inbound/test.grib1 testds/.archive/last/1.grib1");
+		system("cp inbound/test.grib1 testds/.archive/last/2.grib1");
+		system("cp inbound/test.grib1 testds/.archive/last/3.grib1");
+		arc.acquire("1.grib1");
+		arc.acquire("2.grib1");
+		arc.acquire("3.grib1");
 	}
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
-	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+	sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
+	ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/2.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2.grib1.summary", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
 	//ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
 
@@ -304,17 +308,20 @@ void to::test<5>()
 	{
 		metadata::Collector mdc;
 		Archive arc("testds/.archive/last");
+		arc.openRO();
 		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
+		ensure_equals(mdc.size(), 9u);
 	}
 
 	// Maintenance should show one file to rescan
 	{
 		Archive arc("testds/.archive/last");
+		arc.openRW();
 		MaintenanceCollector c;
 		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.fileStates.size(), 3u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(ARC_OK), 2u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -324,8 +331,9 @@ void to::test<5>()
 
 		MaintenanceCollector c;
 		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.fileStates.size(), 3u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(ARC_OK), 2u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 
@@ -334,11 +342,18 @@ void to::test<5>()
 		// Check should reindex the file
 		writer.check(s, true, true);
 		ensure_equals(s.str(),
-			"testds: rescanned in archive last/test.grib1\n"
+			"testds: rescanned in archive last/2.grib1\n"
 			"testds: archive cleaned up\n"
 			"testds: database cleaned up\n"
 			"testds: rebuild summary cache\n"
 			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(ARC_OK), 3u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -349,6 +364,7 @@ void to::test<5>()
 	// Everything should be fine now
 	{
 		Archive arc("testds/.archive/last");
+		arc.openRW();
 		MaintenanceCollector c;
 		arc.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
