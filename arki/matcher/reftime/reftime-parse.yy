@@ -34,7 +34,7 @@ struct LexInterval {
 	int idx;
 };
 
-#include "reftime-parse.h"
+#include "reftime-parse.hh"
 #include "reftime-lex.h"
 
 //#define YYDEBUG 1

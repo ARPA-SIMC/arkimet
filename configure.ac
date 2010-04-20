@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 0.38, [enrico@enricozini.org])
+AC_INIT(arkimet, 0.39, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AM_CONFIG_HEADER(config.h)
@@ -14,6 +14,13 @@ AC_ARG_ENABLE([bufr],
         [build BUFR support])],
     [],
     [enable_bufr="yes"])
+
+AC_ARG_ENABLE([gcov],
+    [AS_HELP_STRING(
+        [--enable-gcov],
+        [build binaries that generate code coverage information (used for development only)])],
+    [],
+    [enable_gcov="no"])
 
 dnl To use subdirs
 AC_PROG_MAKE_SET
@@ -198,8 +205,6 @@ then
 	AC_SUBST(docdir)
 fi
 
-LIBS="$LIBS -lm"
-
 confdir='$(sysconfdir)'"/$PACKAGE"
 AC_SUBST(confdir)
 
@@ -212,6 +217,20 @@ dnl def_tabledir=`echo "${sharedstatedir}/lib/$PACKAGE/tables"`
 dnl AC_DEFINE_UNQUOTED(TABLE_DIR, "$def_tabledir", "Default location for table files")
 
 CXXFLAGS="-Wall $CXXFLAGS"
+LIBS="$LIBS -lm"
+
+if test x$enable_gcov = xyes
+then
+	DEVEL_CFLAGS="--coverage"
+	DEVEL_LIBS="--coverage"
+	AC_DISABLE_SHARED
+fi
+AC_SUBST(DEVEL_CFLAGS)
+AC_SUBST(DEVEL_LIBS)
+
+dnl Conditional to enable GCOV snippets
+AM_CONDITIONAL([GCOV], [test x"$enable_gcov" = x"yes"])
+
 
 AC_CONFIG_FILES([
 Makefile
@@ -232,6 +251,7 @@ AS_HELP_STRING([LUA support:], [$have_lua])
 AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])
 AS_HELP_STRING([GNU readline support:], [$have_readline])
 AS_HELP_STRING([LZO compression:], [$have_lzo])
+AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB1 support via Meteosatlib's libgrib:], [$have_libgrib])
 dnl AS_HELP_STRING([GRIB1 and GRIB2 support via grib_api and Lua:], [$have_gribapi])

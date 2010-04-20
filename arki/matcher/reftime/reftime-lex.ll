@@ -28,7 +28,7 @@ struct LexInterval {
 	int idx;
 };
 
-#include "reftime-parse.h"
+#include "reftime-parse.hh"
 #include "parser.h"
 
 #include <string>
@@ -406,7 +406,7 @@ struct SParser : public ISParser
 %option bison-bridge
 %option reentrant
 %option prefix="arki_reftime"
-%option outfile="lex.yy.c"
+%option outfile="reftime-lex.cc"
 %option fast
 %option noyywrap nounput
 %option header-file="reftime-lex.h"

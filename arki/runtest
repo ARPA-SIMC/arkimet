@@ -46,6 +46,8 @@ trap cleanup EXIT
 #$DEBUGGER $BIN $ARGS 2>&1 | tee `pwd`/testrun-$id
 #echo Output saved in `pwd`/testrun-$id
 
+test x"$ARKI_HAS_GCOV" = x"yes" && lcov --zerocounters --directory .
+
 # Try to debug the libtool executable, if present
 DIR=`dirname $CMD`
 BASE=`basename $CMD`
@@ -75,5 +77,8 @@ then
 	echo "Exit this shell to cleanup the test environment."
 	bash
 fi
+
+test x"$ARKI_HAS_GCOV" = x"yes" && lcov --capture --directory . --base-directory . --output-file trace_all.info --test-name testall
+test x"$ARKI_HAS_GCOV" = x"yes" && genhtml trace_all.info --output-directory lcov --title "Test coverage" --show-details --legend
 
 exit $RES

@@ -6,7 +6,5 @@ SOURCE="`pwd`/$1"
 TGDIR=`dirname "$1"`
 mkdir -p "$TGDIR"
 cd "$TGDIR"
-bison "$SOURCE"
 BASENAME=`basename "$1" .yy`
-mv $BASENAME.tab.hh $BASENAME.h
-mv $BASENAME.tab.cc $BASENAME.cc
+bison --output=$BASENAME.cc "$SOURCE"

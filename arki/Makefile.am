@@ -106,13 +106,13 @@ dist_noinst_HEADERS += \
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
 		$(top_builddir)/arki/matcher/reftime/reftime-lex.cc \
-		$(top_builddir)/arki/matcher/reftime/reftime-parse.h \
+		$(top_builddir)/arki/matcher/reftime/reftime-parse.hh \
 		$(top_builddir)/arki/matcher/reftime/reftime-parse.cc
 
 $(top_builddir)/arki/matcher/reftime/reftime-lex.h $(top_builddir)/arki/matcher/reftime/reftime-lex.cc: $(srcdir)/matcher/reftime/reftime-lex.ll
 	$(srcdir)/buildflex $<
 
-$(top_builddir)/arki/matcher/reftime/reftime-parse.h $(top_builddir)/arki/matcher/reftime/reftime-parse.cc: $(srcdir)/matcher/reftime/reftime-parse.yy
+$(top_builddir)/arki/matcher/reftime/reftime-parse.hh $(top_builddir)/arki/matcher/reftime/reftime-parse.cc: $(srcdir)/matcher/reftime/reftime-parse.yy
 	$(srcdir)/buildbison $<
 
 lib_LTLIBRARIES = libarkimet.la
@@ -203,7 +203,11 @@ libarkimet_la_SOURCES = \
 		runtime/io.cc \
 		runtime/config.cc \
 		runtime.cc
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS)
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS)
+
+if GCOV
+export ARKI_HAS_GCOV=yes
+endif
 
 # Tests
 TESTS = tests/arki-test
@@ -297,9 +301,9 @@ tests_arki_test_SOURCES = \
 		runtime/config-tut.cc \
 		runtime-tut.cc \
 		tests/tut-main.cpp
-tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS)
+tests_arki_test_LDADD = -dlpreopen libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS)
 
-INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
+INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
 
 if GRIBAPI
 dist_noinst_HEADERS += scan/grib.h

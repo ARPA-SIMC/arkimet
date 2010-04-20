@@ -6,5 +6,4 @@ SOURCE="`pwd`/$1"
 TGDIR=`dirname "$1"`
 mkdir -p "$TGDIR"
 cd "$TGDIR"
-flex "$SOURCE"
-mv lex.yy.c `basename $1 .ll`.cc
+flex "$SOURCE" 

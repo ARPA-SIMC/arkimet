@@ -69,7 +69,7 @@ Makefile
 /testenv2
 /arki/matcher/reftime/reftime-lex.h
 /arki/matcher/reftime/reftime-lex.cc
-/arki/matcher/reftime/reftime-parse.h
+/arki/matcher/reftime/reftime-parse.hh
 /arki/matcher/reftime/reftime-parse.cc
 /debian/arkimet.debhelper.log
 /debian/arkimet.*.debhelper
