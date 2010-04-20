@@ -108,30 +108,46 @@ void to::test<1>()
 	// Check that maintenance does not accidentally create an archive
 	ensure(!sys::fs::access("testdir/.archive", F_OK));
 
-	stringstream s;
+	{
+		// Test packing has nothing to report
+		stringstream s;
+		writer.repack(s, false);
+		ensure_equals(s.str(), "");
 
-	// Perform packing and check that things are still ok afterwards
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
-		"testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
 
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 3u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	{
+		// Perform packing and check that things are still ok afterwards
+		stringstream s;
+		writer.repack(s, true);
+		ensure_equals(s.str(),
+			"testdir: database cleaned up\n"
+			"testdir: rebuild summary cache\n"
+			"testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
 
 	// Perform full maintenance and check that things are still ok afterwards
-	s.str(std::string());
-	writer.check(s, true, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 3u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	{
+		stringstream s;
+		writer.check(s, true, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
 
 	// Ensure that we have the summary cache
 	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
@@ -159,31 +175,51 @@ void to::test<2>()
 	ensure_equals(c.remaining(), string());
 	ensure(not c.isClean());
 
-	stringstream s;
+	{
+		// Test packing has something to report
+		stringstream s;
+		writer.repack(s, false);
+		ensure_equals(s.str(),
+			"testdir: 2007/07-07.grib1 should be removed from the index\n"
+			"testdir: 1 file should be removed from the index.\n");
 
-	// Perform packing and check that things are still ok afterwards
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: deleted from index 2007/07-07.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
-		"testdir: 1 file removed from index, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
-	c.clear();
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
 
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	{
+		// Perform packing and check that things are still ok afterwards
+		stringstream s;
+		writer.repack(s, true);
+		ensure_equals(s.str(),
+			"testdir: deleted from index 2007/07-07.grib1\n"
+			"testdir: database cleaned up\n"
+			"testdir: rebuild summary cache\n"
+			"testdir: 1 file removed from index, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+		c.clear();
+
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
 
 	// Perform full maintenance and check that things are still ok afterwards
-	s.str(std::string());
-	writer.check(s, true, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	{
+		stringstream s;
+		writer.check(s, true, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
 
 	// Ensure that we have the summary cache
 	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
@@ -268,31 +304,52 @@ void to::test<4>()
 	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
+	{
+		// Test packing has something to report
+		stringstream s;
+		writer.repack(s, false);
+		ensure_equals(s.str(),
+			"testdir: 2007/07-07.grib1 should be deleted\n"
+			"testdir: 1 file should be deleted.\n");
+
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.count(TO_INDEX), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
+
 	// Perform packing and check that things are still ok afterwards
-	stringstream s;
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
-		"testdir: 1 file deleted, 30448 bytes reclaimed on the index, 65408 total bytes freed.\n");
+	{
+		stringstream s;
+		writer.repack(s, true);
+		ensure_equals(s.str(),
+			"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
+			"testdir: database cleaned up\n"
+			"testdir: rebuild summary cache\n"
+			"testdir: 1 file deleted, 30448 bytes reclaimed on the index, 65408 total bytes freed.\n");
 
-	c.clear();
+		c.clear();
 
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
 
 	// Perform full maintenance and check that things are still ok afterwards
-	s.str(std::string());
-	writer.check(s, true, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
+	{
+		stringstream s;
+		writer.check(s, true, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+		c.clear();
+		writer.maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
 
 	// Ensure that we have the summary cache
 	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
