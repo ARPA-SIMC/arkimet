@@ -36,6 +36,20 @@ using namespace arki::dataset::ondisk2::writer;
 using namespace arki::types;
 using namespace arki::utils;
 
+struct ForceSqlite
+{
+	bool old;
+
+	ForceSqlite(bool val = true) : old(Archive::get_force_sqlite())
+	{
+		Archive::set_force_sqlite(val);
+	}
+	~ForceSqlite()
+	{
+		Archive::set_force_sqlite(old);
+	}
+};
+
 struct arki_dataset_ondisk2_archive_shar : public MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
@@ -57,6 +71,11 @@ struct arki_dataset_ondisk2_archive_shar : public MaintFileVisitor {
 	}
 
 	virtual void operator()(const std::string& file, State state) {}
+
+	std::string idxfname() const
+	{
+		return Archive::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+	}
 };
 TESTGRP(arki_dataset_ondisk2_archive);
 
@@ -73,8 +92,7 @@ void to::test<1>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	//ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	metadata::Collector mdc;
 	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
@@ -167,8 +185,7 @@ void to::test<3>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	//ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
@@ -231,8 +248,7 @@ void to::test<4>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	//ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	// Query now is ok
 	metadata::Collector mdc;
@@ -301,8 +317,7 @@ void to::test<5>()
 	ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/2.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/2.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/index.sqlite", F_OK));
-	//ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	// Query now is ok
 	{
@@ -353,7 +368,7 @@ void to::test<5>()
 		ensure_equals(c.fileStates.size(), 3u);
 		ensure_equals(c.count(ARC_OK), 3u);
 		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
+		ensure(c.isClean());
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -367,8 +382,8 @@ void to::test<5>()
 		arc.openRW();
 		MaintenanceCollector c;
 		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_OK), 1u);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(ARC_OK), 3u);
 		ensure_equals(c.remaining(), string());
 		ensure(c.isClean());
 	}
@@ -396,7 +411,7 @@ void to::test<6>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.gz.idx", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/MANIFEST", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	// Query now is ok
 	mdc.clear();
@@ -459,6 +474,14 @@ void to::test<6>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 }
+
+// Retest with sqlite
+template<> template<> void to::test<7>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<8>() { ForceSqlite fs; test<2>(); }
+template<> template<> void to::test<9>() { ForceSqlite fs; test<3>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; test<4>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; test<5>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; test<6>(); }
 
 
 }

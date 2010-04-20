@@ -58,7 +58,14 @@ DirScanner::DirScanner(const std::string& root, bool files_in_root)
 
 	scan(m_root);
 
+	// Sort backwards because we read from the end
 	sort(names.begin(), names.end(), sorter);
+
+//cerr << "RES" << endl;
+//for (vector<string>::const_iterator i = names.begin(); i != names.end(); ++i)
+//	cerr << "SNPB " << *i << endl;
+
+// TODO: remove duplicates
 }
 
 void DirScanner::scan(const std::string& root, int level)

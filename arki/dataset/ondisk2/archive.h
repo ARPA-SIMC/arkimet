@@ -97,6 +97,9 @@ public:
 	*/
 
 	void vacuum();
+
+	static bool get_force_sqlite();
+	static void set_force_sqlite(bool val);
 };
 
 /**

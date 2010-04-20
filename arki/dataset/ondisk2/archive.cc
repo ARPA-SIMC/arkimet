@@ -65,6 +65,8 @@ namespace ondisk2 {
 
 namespace archive {
 
+static bool mft_force_sqlite = false;
+
 static bool matcher_extremes(const Matcher& matcher, UItem<types::Time>& begin, UItem<types::Time>& end)
 {
 	const matcher::OR* reftime = 0;
@@ -563,29 +565,36 @@ public:
 		// List of files existing on disk
 		writer::DirScanner disk(m_dir, true);
 
-		Query q("sel_archive", m_db);
-		q.compile("SELECT file, mtime FROM files ORDER BY file");
-
-		while (q.step())
+		// Preread the file list, so it does not get modified as we scan
+		vector< pair<string, time_t> > files;
 		{
-			string file = q.fetchString(0);
+			Query q("sel_archive", m_db);
+			q.compile("SELECT file, mtime FROM files ORDER BY file");
 
-			while (not disk.cur().empty() and disk.cur() < file)
+			while (q.step())
+				files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));
+		}
+
+		for (vector< pair<string, time_t> >::const_iterator i = files.begin(); i != files.end(); ++i)
+		{
+			while (not disk.cur().empty() and disk.cur() < i->first)
 			{
 				nag::verbose("Archive: %s is not in index", disk.cur().c_str());
 				v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
 				disk.next();
 			}
-			if (disk.cur() == file)
+			if (disk.cur() == i->first)
 			{
 				disk.next();
 
-				string pathname = str::joinpath(m_dir, file);
+				string pathname = str::joinpath(m_dir, i->first);
 
 				time_t ts_data = files::timestamp(pathname);
+				if (ts_data == 0)
+					ts_data = files::timestamp(pathname + ".gz");
 				time_t ts_md = files::timestamp(pathname + ".metadata");
 				time_t ts_sum = files::timestamp(pathname + ".summary");
-				time_t ts_idx = q.fetch<time_t>(1);
+				time_t ts_idx = i->second;
 
 				if (ts_idx != ts_data ||
 				    ts_md < ts_data ||
@@ -594,27 +603,27 @@ public:
 					// Check timestamp consistency
 					if (ts_idx != ts_data)
 						nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
-								file.c_str(), ts_data, ts_idx);
+								i->first.c_str(), ts_data, ts_idx);
 					if (ts_md < ts_data)
 						nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
-								file.c_str(), ts_data, ts_md);
+								i->first.c_str(), ts_data, ts_md);
 					if (ts_md < ts_data)
 						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								file.c_str(), ts_md, ts_sum);
-					v(file, writer::MaintFileVisitor::ARC_TO_RESCAN);
+								i->first.c_str(), ts_md, ts_sum);
+					v(i->first, writer::MaintFileVisitor::ARC_TO_RESCAN);
 				}
 				else
-					v(file, writer::MaintFileVisitor::ARC_OK);
+					v(i->first, writer::MaintFileVisitor::ARC_OK);
 
 				// TODO: if requested, check for internal consistency
 				// TODO: it requires to have an infrastructure for quick
 				// TODO:   consistency checkers (like, "GRIB starts with GRIB
 				// TODO:   and ends with 7777")
 			}
-			else // if (disk.cur() > file)
+			else // if (disk.cur() > i->first)
 			{
-				nag::verbose("Archive: %s has been deleted from the archive", disk.cur().c_str());
-				v(file, writer::MaintFileVisitor::ARC_DELETED);
+				nag::verbose("Archive: %s has been deleted from the archive", i->first.c_str());
+				v(i->first, writer::MaintFileVisitor::ARC_DELETED);
 			}
 		}
 		while (not disk.cur().empty())
@@ -640,7 +649,7 @@ Archive::Archive(const std::string& dir)
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
 
-	if (archive::SqliteManifest::exists(m_dir))
+	if (archive::mft_force_sqlite || archive::SqliteManifest::exists(m_dir))
 		m_mft = new archive::SqliteManifest(m_dir);
 	else
 		//m_mft = new archive::SqliteManifest(m_dir);
@@ -903,6 +912,17 @@ void Archive::vacuum()
 	querySummaries(Matcher(), s);
 	s.writeAtomically(str::joinpath(m_dir, "summary"));
 }
+
+bool Archive::get_force_sqlite()
+{
+	return archive::mft_force_sqlite;
+}
+
+void Archive::set_force_sqlite(bool val)
+{
+	archive::mft_force_sqlite = val;
+}
+
 
 Archives::Archives(const std::string& dir, bool read_only)
 	: m_dir(dir), m_read_only(read_only), m_last(0)
