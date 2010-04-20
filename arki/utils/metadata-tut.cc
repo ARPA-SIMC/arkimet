@@ -175,8 +175,8 @@ void to::test<4>()
 		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
 	}
 	ensure_equals(acct::gzip_data_read_count.val(), (size_t)repeats);
-	ensure_equals(acct::gzip_forward_seek_bytes.val(), 12791390u);
-	ensure_equals(acct::gzip_idx_reposition_count.val(), 8u);
+	ensure_equals(acct::gzip_forward_seek_bytes.val(), 12446264u);
+	ensure_equals(acct::gzip_idx_reposition_count.val(), 9u);
 
 	Metadata::flushDataReaders();
 	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
