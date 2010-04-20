@@ -125,8 +125,13 @@ struct SeekIndex
 	/// Read the index from the given file descriptor
 	void read(int fd, const std::string& fname);
 
-	/// Read the index from the given file
-	void read(const std::string& fname);
+	/**
+	 * Read the index from the given file
+	 *
+	 * @returns true if the index was read, false if the index does not
+	 * exists, throws an exception in case of other errors
+	 */
+	bool read(const std::string& fname);
 };
 
 /**

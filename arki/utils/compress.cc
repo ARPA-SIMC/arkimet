@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <utime.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 #include <zlib.h>
 
@@ -228,20 +229,25 @@ TempUnzip::~TempUnzip()
 
 size_t SeekIndex::lookup(size_t unc) const
 {
-	vector<size_t>::const_iterator i = lower_bound(ofs_unc.begin(), ofs_unc.end(), unc);
-	size_t idx = i - ofs_unc.begin();
-	if (idx > 0) idx -= 1;
-	return idx;
+	vector<size_t>::const_iterator i = upper_bound(ofs_unc.begin(), ofs_unc.end(), unc);
+	return i - ofs_unc.begin() - 1;
 }
 
-void SeekIndex::read(const std::string& fname)
+bool SeekIndex::read(const std::string& fname)
 {
 	int fd = open(fname.c_str(), O_RDONLY);
 	if (fd == -1)
-		throw wibble::exception::File(fname, "opening file");
+	{
+		if (errno == ENOENT)
+			return false;
+		else
+			throw wibble::exception::File(fname, "opening file");
+	}
 	utils::HandleWatch hw(fname, fd);
 
 	read(fd, fname);
+
+	return true;
 }
 
 void SeekIndex::read(int fd, const std::string& fname)
@@ -257,20 +263,14 @@ void SeekIndex::read(int fd, const std::string& fname)
 		delete[] diskidx;
 		throw wibble::exception::File(fname, "reading index file");
 	}
-	ofs_unc.reserve(idxcount);
-	ofs_comp.reserve(idxcount);
+	ofs_unc.reserve(idxcount + 1);
+	ofs_comp.reserve(idxcount + 1);
+	ofs_unc.push_back(0);
+	ofs_comp.push_back(0);
 	for (size_t i = 0; i < idxcount; ++i)
 	{
-		if (i == 0)
-		{
-			ofs_unc[i] = 0;
-			ofs_comp[i] = 0;
-		}
-		else
-		{
-			ofs_unc[i] = ofs_unc[i-1] + ntohl(diskidx[(i-1) * 2]);
-			ofs_comp[i] = ofs_comp[i-1] + ntohl(diskidx[(i-1) * 2 + 1]);
-		}
+		ofs_unc.push_back(ofs_unc[i] + ntohl(diskidx[i * 2]));
+		ofs_comp.push_back(ofs_comp[i] + ntohl(diskidx[i * 2 + 1]));
 	}
 	delete[] diskidx;
 }
@@ -287,6 +287,17 @@ off_t filesize(const std::string& file)
 	if (st.get() != NULL)
 	{
 		// Try to get the uncompressed size via the index
+		SeekIndex idx;
+		if (idx.read(file + ".gz.idx"))
+		{
+			// Try to get the uncompressed size via the index
+			return idx.ofs_unc.back();
+		} else {
+			// Seek through the whole file (ouch, slow)
+			// for now, just throw an exception
+			throw wibble::exception::Consistency("computing file size of " + file + ".gz",
+					"compressed file has no index; to compute its uncompressed size it needs to be fully uncompressed. Please do it by hand and then recompress generating its .gz.idx index");
+		}
 	}
 
 	// If everything fails, return 0
