@@ -5,8 +5,9 @@ arkimet (0.38-1) UNRELEASED; urgency=low
   * ondisk2/index: LZO-compress temp file during big queries
   * Added arki-gzip to compress data files
   * Implemented read from compressed data files
+  * Implemented maintenance of datasets with compressed data files
 
- -- Enrico Zini <enrico@debian.org>  Sat, 17 Apr 2010 23:36:22 +0200
+ -- Enrico Zini <enrico@debian.org>  Tue, 20 Apr 2010 12:46:56 +0200
 
 arkimet (0.37-1) UNRELEASED; urgency=low
 
