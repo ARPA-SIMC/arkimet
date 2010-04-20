@@ -89,10 +89,10 @@ then
 else
 	dnl We don't always have the luxury of .pc files for zlib, it seems
 	have_zlib=yes
-	AC_CHECK_LIB([zlib], [gzopen], [true], [have_zlib=no])
+	AC_CHECK_LIB([z], [gzopen], [true], [have_zlib=no])
 	AC_CHECK_HEADER([zlib.h], [true], [have_zlib=no])
 	ZLIB_CFLAGS=
-	ZLIB_LIBS="-lzlib"
+	ZLIB_LIBS="-lz"
 fi
 AC_SUBST(ZLIB_CFLAGS)
 AC_SUBST(ZLIB_LIBS)
