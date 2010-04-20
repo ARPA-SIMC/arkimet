@@ -715,9 +715,9 @@ void MockRepacker::end()
 	if (m_count_deleted)
 		logAdd() << nfiles(m_count_deleted) << " should be deleted";
 	if (m_count_deindexed)
-		logAdd() << nfiles(m_count_deleted) << " should be removed from the index";
-	if (m_count_deindexed)
 		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
+	if (m_count_rescanned)
+		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
 	logEnd();
 }
 

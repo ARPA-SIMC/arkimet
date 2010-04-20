@@ -17,11 +17,19 @@ case "$1" in
 		sensible-browser file://`pwd`/lcov/index.html
 		;;
 	*)
-		lcov --zerocounters --directory .
-		make check "$@"
-		lcov --capture --directory arki --base-directory arki --output-file trace_arki.info --test-name testall
-		lcov --capture --directory src --base-directory src --output-file trace_src.info --test-name testall
+		lcov --zerocounters --directory arki
+		make check -C arki "$@"
+		rm -f trace_arki.info
+		lcov --capture --directory arki --base-directory arki --output-file trace_arki.info --test-name testarki
+
+		lcov --zerocounters --directory src
+		make check -C src "$@"
+		rm -f trace_src.info
+		lcov --capture --directory src --base-directory src --output-file trace_src.info --test-name testsrc
+
+		rm -f trace_all.info
 		lcov -a trace_arki.info -a trace_src.info -o trace_all.info
+
 		genhtml trace_all.info --output-directory lcov --title "Test coverage" --show-details --legend
 		echo "Please point browser to file://`pwd`/lcov/index.html"
 		;;
