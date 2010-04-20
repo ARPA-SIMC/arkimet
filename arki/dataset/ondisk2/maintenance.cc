@@ -27,6 +27,7 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
+#include <arki/utils/compress.h>
 #include <arki/scan/any.h>
 #include <arki/nag.h>
 
@@ -88,10 +89,10 @@ void HoleFinder::finaliseFile()
 			return;
 		}
 
-		off_t size = files::size(str::joinpath(m_root, last_file));
+		off_t size = compress::filesize(str::joinpath(m_root, last_file));
 		if (size < last_file_size)
 		{
-			nag::verbose("HoleFinder: %s found truncated", last_file.c_str());
+			nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", last_file.c_str(), size, last_file_size);
 			// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
 			next(last_file, writer::MaintFileVisitor::TO_RESCAN);
 			return;
