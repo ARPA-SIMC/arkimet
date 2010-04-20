@@ -223,7 +223,7 @@ void Collector::compressDataFile(size_t groupsize, const std::string& source) co
 				break;
 		}
 
-		if (flush && i < size() - 1)
+		if (flush)
 		{
 			// Write last block size to the index
 			Item<types::source::Blob> src = (*this)[i].source.upcast<types::source::Blob>();
@@ -237,7 +237,8 @@ void Collector::compressDataFile(size_t groupsize, const std::string& source) co
 			last_ofs = cur;
 			last_unc_ofs = unc_ofs;
 
-			compressor.restart();
+			if (i < size() - 1)
+				compressor.restart();
 		}
 	}
 
