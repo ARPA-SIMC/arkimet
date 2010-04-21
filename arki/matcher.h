@@ -24,7 +24,6 @@
  */
 
 #include <arki/types.h>
-#include <arki/types/time.h>
 #include <wibble/exception.h>
 #include <string>
 #include <vector>
@@ -34,6 +33,10 @@
 struct lua_State;
 
 namespace arki {
+namespace types {
+struct Time;
+}
+
 
 class Metadata;
 class Summary;
