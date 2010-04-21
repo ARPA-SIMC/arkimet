@@ -21,6 +21,7 @@
  */
 
 #include <arki/matcher.h>
+#include <arki/matcher/reftime.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/configfile.h>
@@ -359,6 +360,39 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
 		if (awithout->empty()) without = 0;
 	}
 }
+
+bool Matcher::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+{
+	const matcher::OR* reftime = 0;
+
+	begin.clear(); end.clear();
+	
+	if (!m_impl)
+		return false;
+
+	reftime = m_impl->get(types::TYPE_REFTIME);
+
+	if (!reftime)
+		return false;
+
+	for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
+	{
+		if (j == reftime->begin())
+			(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
+		else {
+			UItem<types::Time> new_begin;
+			UItem<types::Time> new_end;
+			(*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
+			if (begin.defined() && (!new_begin.defined() || new_begin < begin))
+				begin = new_begin;
+			if (end.defined() && (!new_end.defined() || end < new_end))
+				end = new_end;
+
+		}
+	}
+	return begin.defined() || end.defined();
+}
+
 
 Matcher Matcher::parse(const std::string& pattern)
 {

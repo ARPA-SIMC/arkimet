@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <arki/types/time.h>
 #include <wibble/exception.h>
 #include <string>
 #include <vector>
@@ -292,6 +293,14 @@ struct Matcher
 #endif
 
 	void split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const;
+
+	/**
+	 * Compute the date extremes of this matcher
+	 *
+	 * @returns true if the range has at least one bound (i.e. either with
+	 * or without are defined), false otherwise
+	 */
+	bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
 
 	/// Format back into a string that can be parsed again
 	std::string toString() const

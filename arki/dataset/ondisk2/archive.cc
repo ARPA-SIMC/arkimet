@@ -27,7 +27,6 @@
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
-#include <arki/matcher/reftime.h>
 #include <arki/utils/sqlite.h>
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
@@ -66,38 +65,6 @@ namespace ondisk2 {
 namespace archive {
 
 static bool mft_force_sqlite = false;
-
-static bool matcher_extremes(const Matcher& matcher, UItem<types::Time>& begin, UItem<types::Time>& end)
-{
-	const matcher::OR* reftime = 0;
-
-	begin.clear(); end.clear();
-	
-	if (!matcher.m_impl)
-		return false;
-
-	reftime = matcher.m_impl->get(types::TYPE_REFTIME);
-
-	if (!reftime)
-		return false;
-
-	for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
-	{
-		if (j == reftime->begin())
-			(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
-		else {
-			UItem<types::Time> new_begin;
-			UItem<types::Time> new_end;
-			(*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
-			if (begin.defined() && (!new_begin.defined() || new_begin < begin))
-				begin = new_begin;
-			if (end.defined() && (!new_end.defined() || end < new_end))
-				end = new_end;
-
-		}
-	}
-	return begin.defined() || end.defined();
-}
 
 Manifest::~Manifest() {}
 
@@ -247,7 +214,7 @@ public:
 		string query;
 		UItem<types::Time> begin;
 		UItem<types::Time> end;
-		if (matcher_extremes(matcher, begin, end))
+		if (matcher.date_extremes(begin, end))
 		{
 			// Get files with matching reftime
 			for (vector<Info>::const_iterator i = info.begin();
@@ -479,7 +446,7 @@ public:
 		string query;
 		UItem<types::Time> begin;
 		UItem<types::Time> end;
-		if (matcher_extremes(matcher, begin, end))
+		if (matcher.date_extremes(begin, end))
 		{
 			query = "SELECT file FROM files";
 
