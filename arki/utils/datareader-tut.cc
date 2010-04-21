@@ -20,19 +20,25 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/utils/datareader.h>
+#include <arki/utils/metadata.h>
+#include <arki/scan/any.h>
 #include <wibble/sys/buffer.h>
+#include <wibble/sys/fs.h>
 
+#include <cstdlib>
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 struct arki_utils_datareader_shar {
 };
 TESTGRP(arki_utils_datareader);
 
+// Read an uncompressed file
 template<> template<>
 void to::test<1>()
 {
@@ -49,6 +55,57 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
 }
+
+// Read an uncompressed file without index
+template<> template<>
+void to::test<2>()
+{
+	utils::DataReader dr;
+
+	sys::fs::deleteIfExists("testcompr.grib1");
+	sys::fs::deleteIfExists("testcompr.grib1.gz");
+	ensure(system("cp inbound/test.grib1 testcompr.grib1") == 0);
+	ensure(system("gzip testcompr.grib1") == 0);
+	
+	wibble::sys::Buffer buf;
+	buf.resize(7218);
+	dr.read("testcompr.grib1", 0, 7218, buf.data());
+	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
+	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
+
+	buf.resize(34960);
+	dr.read("testcompr.grib1", 7218, 34960, buf.data());
+	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
+	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
+}
+
+// Read an uncompressed file with the index
+template<> template<>
+void to::test<3>()
+{
+	utils::DataReader dr;
+
+	sys::fs::deleteIfExists("testcompr.grib1");
+	sys::fs::deleteIfExists("testcompr.grib1.gz");
+	ensure(system("cp inbound/test.grib1 testcompr.grib1") == 0);
+
+	utils::metadata::Collector mdc;
+	scan::scan("testcompr.grib1", mdc);
+	mdc.compressDataFile(2, "testcompr.grib1");
+	sys::fs::deleteIfExists("testcompr.grib1");
+	
+	wibble::sys::Buffer buf;
+	buf.resize(7218);
+	dr.read("testcompr.grib1", 0, 7218, buf.data());
+	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
+	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
+
+	buf.resize(34960);
+	dr.read("testcompr.grib1", 7218, 34960, buf.data());
+	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
+	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
+}
+
 
 }
 

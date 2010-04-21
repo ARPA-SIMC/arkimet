@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/utils/compress.h>
+#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
@@ -82,9 +83,20 @@ void to::test<3>()
 	ensure(unlzo(comp.data(), comp.size(), orig.size()) == orig);
 }
 
-// Test SeekIndex lookup
+// Test SeekIndex
 template<> template<>
 void to::test<4>()
+{
+	SeekIndex idx;
+
+	// Opening a nonexisting file returns false
+	ensure(!sys::fs::access("this-file-does-not-exists", F_OK));
+	ensure(!idx.read("this-file-does-not-exists"));
+}
+
+// Test SeekIndex lookup
+template<> template<>
+void to::test<5>()
 {
 	SeekIndex idx;
 
