@@ -359,6 +359,12 @@ public:
 			disk.next();
 		}
 	}
+
+	static bool exists(const std::string& dir)
+	{
+		string pathname(str::joinpath(dir, "MANIFEST"));
+		return wibble::sys::fs::access(pathname, F_OK);
+	}
 };
 
 
@@ -626,6 +632,12 @@ Archive::Archive(const std::string& dir)
 Archive::~Archive()
 {
 	if (m_mft) delete m_mft;
+}
+
+bool Archive::is_archive(const std::string& dir)
+{
+	return archive::PlainManifest::exists(dir) ||
+	       archive::SqliteManifest::exists(dir);
 }
 
 void Archive::openRO()
@@ -908,6 +920,9 @@ Archives::Archives(const std::string& dir, bool read_only)
 		string pathname = str::joinpath(m_dir, *i);
 		if (!sys::fs::isDirectory(pathname))
 			continue;
+		if (read_only && !Archive::is_archive(pathname))
+			continue;
+
 		Archive* a = 0;
 		if (*i == "last")
 			m_last = a = new Archive(pathname);

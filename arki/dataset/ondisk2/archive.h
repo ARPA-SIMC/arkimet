@@ -98,6 +98,8 @@ public:
 
 	void vacuum();
 
+	static bool is_archive(const std::string& dir);
+
 	static bool get_force_sqlite();
 	static void set_force_sqlite(bool val);
 };

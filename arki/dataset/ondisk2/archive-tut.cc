@@ -475,13 +475,45 @@ void to::test<6>()
 	}
 }
 
+// Test handling of empty archive dirs (such as last with everything moved away)
+template<> template<>
+void to::test<7>()
+{
+	// Import a file in a secondary archive
+	{
+		system("mkdir testds/.archive/foo");
+		Archive arc("testds/.archive/foo");
+		arc.openRW();
+		system("cp inbound/test.grib1 testds/.archive/foo/");
+		arc.acquire("test.grib1");
+	}
+
+	// Instantiate an archive group
+	Archives arc("testds/.archive");
+
+	// Query now is ok
+	metadata::Collector mdc;
+	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+	ensure_equals(mdc.size(), 3u);
+
+	// Maintenance should show that everything is ok now
+	MaintenanceCollector c;
+	arc.maintenance(c);
+	ensure_equals(c.fileStates.size(), 1u);
+	ensure_equals(c.count(ARC_OK), 1u);
+	ensure_equals(c.remaining(), string());
+	ensure(c.isClean());
+}
+
+
 // Retest with sqlite
-template<> template<> void to::test<7>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<8>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<9>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<6>(); }
+template<> template<> void to::test<8>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<9>() { ForceSqlite fs; test<2>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; test<3>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
 
 
 }
