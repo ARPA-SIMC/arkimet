@@ -25,6 +25,7 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/utils/metadata.h>
+#include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
 
 namespace tut {
@@ -127,10 +128,10 @@ template<> template<>
 void to::test<4>()
 {
 	// Opening a missing manifest read-write creates a new one
-	ensure(!Manifest::exists("testds/.archive/last/" + idxfname()));
+	ensure(!sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 	std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRW();
-	ensure(Manifest::exists("testds/.archive/last/" + idxfname()));
+	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 	
 	MaintenanceCollector c;
 	m->check(c);
@@ -157,6 +158,8 @@ void to::test<6>()
 	m->openRW();
 
 	Summary s;
+	metadata::Summarise summarise(s);
+	scan::scan("inbound/test.grib1", summarise);
 
 	m->acquire("a.grib1", 1000010, s);
 	m->acquire("foo/b.grib1", 1000011, s);

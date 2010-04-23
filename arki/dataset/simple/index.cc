@@ -203,7 +203,8 @@ public:
 
 	void openRW()
 	{
-		reread();
+		if (!reread())
+			save();
 	}
 
 	void fileList(const Matcher& matcher, std::vector<std::string>& files)
