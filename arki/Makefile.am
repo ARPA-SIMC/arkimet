@@ -12,6 +12,7 @@ dist_noinst_HEADERS = \
 		dataset/targetfile.h \
 		dataset/local.h \
 		dataset/file.h \
+		dataset/maintenance.h \
 		dataset/ondisk.h \
 		dataset/ondisk/index.h \
 		dataset/ondisk/maintenance.h \
@@ -30,8 +31,9 @@ dist_noinst_HEADERS = \
 		dataset/ondisk2/reader.h \
 		dataset/ondisk2/writer.h \
 		dataset/ondisk2/writer/datafile.h \
-		dataset/ondisk2/writer/utils.h \
 		dataset/ondisk2/test-utils.h \
+		dataset/simple/index.h \
+		dataset/simple/reader.h \
 		dataset/outbound.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -57,6 +59,7 @@ dist_noinst_HEADERS = \
 		itemset.h \
 		metadata.h \
 		scan/any.h \
+		scan/dir.h \
 		summary.h \
 		refcounted.h \
 		runtime.h \
@@ -165,12 +168,16 @@ libarkimet_la_SOURCES = \
 		matcher/ensemble.cc \
 		matcher/run.cc \
 		scan/any.cc \
+		scan/dir.cc \
 		dataset.cc \
+		dataset/maintenance.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
 		dataset/targetfile.cc \
 		dataset/local.cc \
 		dataset/file.cc \
+		dataset/simple/index.cc \
+		dataset/simple/reader.cc \
 		dataset/ondisk.cc \
 		dataset/ondisk/index.cc \
 		dataset/ondisk/maintenance.cc \
@@ -188,7 +195,6 @@ libarkimet_la_SOURCES = \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
 		dataset/ondisk2/writer/datafile.cc \
-		dataset/ondisk2/writer/utils.cc \
 		dataset/ondisk2/maintenance.cc \
 		dataset/outbound.cc \
 		dataset/discard.cc \
@@ -262,11 +268,15 @@ tests_arki_test_SOURCES = \
 		matcher/ensemble-tut.cc \
 		matcher/run-tut.cc \
 		scan/any-tut.cc \
+		scan/dir-tut.cc \
+		dataset/maintenance-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
 		dataset/targetfile-tut.cc \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
+		dataset/simple/index-tut.cc \
+		dataset/simple/reader-tut.cc \
 		dataset/ondisk-tut.cc \
 		dataset/ondisk/index-tut.cc \
 		dataset/ondisk/fetcher-tut.cc \
@@ -282,7 +292,6 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk2/index-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer/datafile-tut.cc \
-		dataset/ondisk2/writer/utils-tut.cc \
 		dataset/ondisk2/maintenance-tut.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/test-utils.cc \

@@ -202,7 +202,7 @@ void IndexedRootDirectory::testAcquire(const ConfigFile& cfg, const Metadata& md
 	idx.open();
 	string file; size_t ofs;
 	if (idx.fetch(md, file, ofs))
-		throw index::DuplicateInsert("Data is already in the dataset at " + file + ":" + str::fmt(ofs));
+		throw utils::sqlite::DuplicateInsert("Data is already in the dataset at " + file + ":" + str::fmt(ofs));
 	out << "Appended to file " << dest << " with id " << idx.id(md) << endl;
 }
 void IndexedRootDirectory::testReplace(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

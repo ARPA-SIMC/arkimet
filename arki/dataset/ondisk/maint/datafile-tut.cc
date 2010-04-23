@@ -78,7 +78,7 @@ struct TestWriter
 	void acquireAll()
 	{
 		writer::Datafile* df = rd.file(fname);
-		for (MetadataCollector::iterator i = testmd.begin(); i != testmd.end(); ++i)
+		for (utils::metadata::Collector::iterator i = testmd.begin(); i != testmd.end(); ++i)
 			df->append(*i);
 	}
 	void replace(size_t ofs, Metadata& md)

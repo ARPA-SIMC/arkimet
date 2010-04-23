@@ -21,29 +21,11 @@
 #define ARKI_DATASET_ONDISK2_TESTUTILS_H
 
 #include <arki/dataset/test-utils.h>
-#include <arki/dataset/ondisk2/maintenance.h>
 
 namespace arki {
 namespace dataset {
 namespace ondisk2 {
 namespace writer {
-
-struct MaintenanceCollector : public MaintFileVisitor
-{
-	std::map <std::string, State> fileStates;
-	size_t counts[STATE_MAX];
-	static const char* names[];
-	std::set<State> checked;
-
-	MaintenanceCollector();
-
-	void clear();
-	bool isClean() const;
-	virtual void operator()(const std::string& file, State state);
-	void dump(std::ostream& out) const;
-	size_t count(State s);
-	std::string remaining() const;
-};
 
 }
 }

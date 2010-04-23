@@ -85,29 +85,6 @@ struct NotFound {};
  */
 std::string fmtin(const std::vector<int>& vals);
 
-/**
- * Exception thrown in case of duplicate inserts
- */
-struct DuplicateInsert : public wibble::exception::Consistency
-{
-	DuplicateInsert(const std::string& context) throw () :
-		wibble::exception::Consistency(context, "duplicate element") {}
-	~DuplicateInsert() throw () {}
-
-	virtual const char* type() const throw () { return "index::DuplicateInsert"; }
-};
-
-/**
- * Query that in case of duplicates throws DuplicateInsert
- */
-struct InsertQuery : public utils::sqlite::Query
-{
-	InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
-
-	// Step, but throw DuplicateInsert in case of duplicates
-	bool step();
-};
-
 }
 }
 }

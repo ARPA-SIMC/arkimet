@@ -94,7 +94,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 	try {
 		m_root->acquire(md);
 		return ACQ_OK;
-	} catch (index::DuplicateInsert& di) {
+	} catch (utils::sqlite::DuplicateInsert& di) {
 		if (origDataset.defined())
 			md.set(origDataset);
 		else
@@ -227,7 +227,7 @@ WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const 
 				else
 					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
 				return ACQ_OK;
-			} catch (index::DuplicateInsert& di) {
+			} catch (utils::sqlite::DuplicateInsert& di) {
 				out << "Source information restored to original value" << endl;
 				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
 				return ACQ_ERROR_DUPLICATE;

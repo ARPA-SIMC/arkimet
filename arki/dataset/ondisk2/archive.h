@@ -39,35 +39,22 @@ class Collector;
 }
 
 namespace dataset {
-namespace ondisk2 {
 
-namespace writer {
+namespace maintenance {
 class MaintFileVisitor;
 }
 
-namespace archive {
-
-class Manifest
-{
-public:
-	virtual ~Manifest();
-
-	virtual void openRO() = 0;
-	virtual void openRW() = 0;
-	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
-	virtual void vacuum() = 0;
-	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
-	virtual void remove(const std::string& relname) = 0;
-	virtual void check(writer::MaintFileVisitor& v) = 0;
-};
-
+namespace simple {
+class Manifest;
 }
+
+namespace ondisk2 {
 
 class Archive : public Local
 {
 protected:
 	std::string m_dir;
-	archive::Manifest* m_mft;
+	simple::Manifest* m_mft;
 
 	void querySummaries(const Matcher& matcher, Summary& summary);
 
@@ -90,7 +77,7 @@ public:
 	void rescan(const std::string& relname);
 	void deindex(const std::string& relname);
 
-	void maintenance(writer::MaintFileVisitor& v);
+	void maintenance(maintenance::MaintFileVisitor& v);
 	/*
 	void repack(std::ostream& log, bool writable=false);
 	void check(std::ostream& log);
@@ -99,9 +86,6 @@ public:
 	void vacuum();
 
 	static bool is_archive(const std::string& dir);
-
-	static bool get_force_sqlite();
-	static void set_force_sqlite(bool val);
 };
 
 /**
@@ -152,7 +136,7 @@ public:
 	void remove(const std::string& relname);
 	void rescan(const std::string& relname);
 
-	void maintenance(writer::MaintFileVisitor& v);
+	void maintenance(maintenance::MaintFileVisitor& v);
 	/*
 	void repack(std::ostream& log, bool writable=false);
 	void check(std::ostream& log);

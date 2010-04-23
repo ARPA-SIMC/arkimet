@@ -146,7 +146,7 @@ void to::test<1>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -230,7 +230,7 @@ void to::test<2>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(!reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();

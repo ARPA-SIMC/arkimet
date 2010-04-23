@@ -43,7 +43,7 @@ using namespace arki::utils::files;
 
 namespace tut {
 
-struct arki_dataset_ondisk2_maintenance_shar : public MaintFileVisitor {
+struct arki_dataset_ondisk2_maintenance_shar : public dataset::maintenance::MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
 
@@ -692,7 +692,7 @@ void to::test<10>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -747,7 +747,7 @@ void to::test<11>()
 		// duplicate items
 		Reader reader(cfg);
 		ensure(reader.hasWorkingIndex());
-		MetadataCollector mdc;
+		utils::metadata::Collector mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -785,7 +785,7 @@ void to::test<11>()
 	// Test querying, and see that things have moved to the beginning
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -919,7 +919,7 @@ void to::test<13>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 

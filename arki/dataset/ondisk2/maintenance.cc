@@ -66,139 +66,6 @@ static std::string nfiles(const T& val)
 		return str::fmt(val) + " files";
 }
 
-HoleFinder::HoleFinder(writer::MaintFileVisitor& next, const std::string& root, bool quick)
-	: next(next), m_root(root), quick(quick), validator(0), validator_fd(-1),
-	  has_hole(false), is_corrupted(false)
-{
-}
-
-void HoleFinder::finaliseFile()
-{
-	if (!last_file.empty())
-	{
-		if (validator_fd >= 0)
-		{
-			close(validator_fd);
-			validator_fd = -1;
-		}
-
-		if (is_corrupted)
-		{
-			nag::verbose("HoleFinder: %s found corrupted", last_file.c_str());
-			next(last_file, writer::MaintFileVisitor::TO_RESCAN);
-			return;
-		}
-
-		off_t size = compress::filesize(str::joinpath(m_root, last_file));
-		if (size < last_file_size)
-		{
-			nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", last_file.c_str(), size, last_file_size);
-			// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-			next(last_file, writer::MaintFileVisitor::TO_RESCAN);
-			return;
-		}
-
-		// Check if last_file_size matches the file size
-		if (size > last_file_size)
-			has_hole = true;
-
-		// Take note of files with holes
-		if (has_hole)
-		{
-			nag::verbose("HoleFinder: %s contains deleted data", last_file.c_str());
-			next(last_file, writer::MaintFileVisitor::TO_PACK);
-		} else {
-			next(last_file, writer::MaintFileVisitor::OK);
-		}
-	}
-}
-
-void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_t size)
-{
-	if (last_file != file)
-	{
-		finaliseFile();
-		last_file = file;
-		last_file_size = 0;
-		has_hole = false;
-		is_corrupted = false;
-		if (!quick)
-		{
-			string fname = str::joinpath(m_root, file);
-
-			// If the data file is compressed, create a temporary uncompressed copy
-			auto_ptr<utils::compress::TempUnzip> tu;
-			if (!sys::fs::access(fname, F_OK) && sys::fs::access(fname + ".gz", F_OK))
-				tu.reset(new utils::compress::TempUnzip(fname));
-			
-			validator = &scan::Validator::by_filename(fname.c_str());
-			validator_fd = open(fname.c_str(), O_RDONLY);
-			if (validator_fd < 0)
-			{
-				perror(file.c_str());
-				is_corrupted = true;
-			} else
-				(void)posix_fadvise(validator_fd, 0, 0, POSIX_FADV_DONTNEED);
-		}
-	}
-	// If we've already found that the file is corrupted, there is nothing
-	// else to do
-	if (is_corrupted) return;
-	if (!quick)
-		try {
-			validator->validate(validator_fd, offset, size, file);
-		} catch (wibble::exception::Generic& e) {
-			// FIXME: we do not have a better interface to report
-			// error strings, so we fall back to cerr. It will be
-			// useless if we are hidden behind a graphical
-			// interface, but in all other cases it's better than
-			// nothing. HOWEVER, printing to stderr creates noise
-			// during the unit tests.
-			string fname = str::joinpath(m_root, file);
-			nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, size, e.desc().c_str());
-			is_corrupted = true;
-		}
-
-	if (offset != last_file_size)
-		has_hole = true;
-	last_file_size += size;
-}
-
-void FindMissing::operator()(const std::string& file, State state)
-{
-	while (not disk.cur().empty() and disk.cur() < file)
-	{
-		nag::verbose("FindMissing: %s is not in index", disk.cur().c_str());
-		next(disk.cur(), TO_INDEX);
-		disk.next();
-	}
-	if (disk.cur() == file)
-	{
-		// TODO: if requested, check for internal consistency
-		// TODO: it requires to have an infrastructure for quick
-		// TODO:   consistency checkers (like, "GRIB starts with GRIB
-		// TODO:   and ends with 7777")
-
-		disk.next();
-		next(file, state);
-	}
-	else // if (disk.cur() > file)
-	{
-		nag::verbose("FindMissing: %s has been deleted", file.c_str());
-		next(file, DELETED);
-	}
-}
-
-void FindMissing::end()
-{
-	while (not disk.cur().empty())
-	{
-		nag::verbose("FindMissing: %s is not in index", disk.cur().c_str());
-		next(disk.cur(), TO_INDEX);
-		disk.next();
-	}
-}
-
 CheckAge::CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age, int delete_age)
 	: next(next), idx(idx)
 {
@@ -294,24 +161,6 @@ void FileCopier::flush()
 	fd_dst = -1;
 }
 
-void MaintPrinter::operator()(const std::string& file, State state)
-{
-	switch (state)
-	{
-		case OK: cerr << file << " OK" << endl;
-		case TO_ARCHIVE: cerr << file << " TO ARCHIVE" << endl;
-		case TO_DELETE: cerr << file << " TO DELETE" << endl;
-		case TO_PACK: cerr << file << " TO PACK" << endl;
-		case TO_INDEX: cerr << file << " TO INDEX" << endl;
-		case TO_RESCAN: cerr << file << " TO RESCAN" << endl;
-		case DELETED: cerr << file << " DELETED" << endl;
-		case ARC_OK: cerr << file << " ARCHIVED OK" << endl;
-		case ARC_TO_INDEX: cerr << file << " TO INDEX IN ARCHIVE" << endl;
-		case ARC_TO_RESCAN: cerr << file << " TO RESCAN IN ARCHIVE" << endl;
-		case ARC_DELETED: cerr << " DELETED IN ARCHIVE" << endl;
-		default: cerr << " INVALID" << endl;
-	}
-}
 
 // Agent
 
@@ -429,7 +278,7 @@ struct Reindexer : public MetadataConsumer
 					"rescanning " + relfile,
 				       	"metadata points to the wrong file: " + blob->filename);
 			idx.index(md, relfile, blob->offset, &id);
-		} catch (index::DuplicateInsert& di) {
+		} catch (utils::sqlite::DuplicateInsert& di) {
 			throw wibble::exception::Consistency("reindexing " + basename,
 					"data item at offset " + str::fmt(blob->offset) + " has a duplicate elsewhere in the dataset: manual fix is required");
 		} catch (std::exception& e) {

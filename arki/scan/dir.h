@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_ONDISK_WRITER_UTILS_H
-#define ARKI_DATASET_ONDISK_WRITER_UTILS_H
+#ifndef ARKI_SCAN_DIR_H
+#define ARKI_SCAN_DIR_H
 
 /*
- * dataset/ondisk2/writer/utils - ondisk2 maintenance utilities
+ * scan/dir - Find data files inside directories
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,42 +27,15 @@
 #include <vector>
 
 namespace arki {
-namespace dataset {
-namespace ondisk2 {
-namespace writer {
+namespace scan {
 
 /**
  * Scan a dataset for data files, with a pull-style interface.
  *
  * The sequence of pathnames extracted by DirScanner is always sorted.
  */
-class DirScanner
-{
-protected:
-	std::string m_root;
-	bool files_in_root;
+std::vector<std::string> dir(const std::string& root, bool files_in_root=false);
 
-	std::vector<std::string> names;
-
-	void scan(const std::string& root, int level = 0);
-
-public:
-	DirScanner(const std::string& root, bool files_in_root=false);
-
-	/**
-	 * Return the pathname (relative to root) of the current file, or the
-	 * empty string if the iteration is finished.
-	 */
-	std::string cur() const;
-
-	/**
-	 * Advance to the next file
-	 */
-	void next();
-};
-
-}
-}
 }
 }
 

@@ -18,8 +18,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 #include <arki/dataset/ondisk2/test-utils.h>
-#include <wibble/string.h>
-#include <strings.h>
 
 using namespace std;
 using namespace arki;
@@ -31,77 +29,6 @@ namespace dataset {
 namespace ondisk2 {
 namespace writer {
 
-MaintenanceCollector::MaintenanceCollector()
-{
-	bzero(counts, sizeof(counts));
-}
-
-void MaintenanceCollector::clear()
-{
-	bzero(counts, sizeof(counts));
-	fileStates.clear();
-	checked.clear();
-}
-
-bool MaintenanceCollector::isClean() const
-{
-	for (size_t i = 0; i < STATE_MAX; ++i)
-		if (i != OK && i != ARC_OK && counts[i])
-			return false;
-	return true;
-}
-
-void MaintenanceCollector::operator()(const std::string& file, State state)
-{
-	fileStates[file] = state;
-	++counts[state];
-}
-
-size_t MaintenanceCollector::count(State s)
-{
-	checked.insert(s);
-	return counts[s];
-}
-
-std::string MaintenanceCollector::remaining() const
-{
-	std::vector<std::string> res;
-	for (size_t i = 0; i < MaintFileVisitor::STATE_MAX; ++i)
-	{
-		if (checked.find((State)i) != checked.end())
-			continue;
-		if (counts[i] == 0)
-			continue;
-		res.push_back(str::fmtf("%s: %d", names[i], counts[i]));
-	}
-	return str::join(res.begin(), res.end());
-}
-
-void MaintenanceCollector::dump(std::ostream& out) const
-{
-	using namespace std;
-	out << "Results:" << endl;
-	for (size_t i = 0; i < STATE_MAX; ++i)
-		out << " " << names[i] << ": " << counts[i] << endl;
-	for (std::map<std::string, State>::const_iterator i = fileStates.begin();
-			i != fileStates.end(); ++i)
-		out << "   " << i->first << ": " << names[i->second] << endl;
-}
-
-const char* MaintenanceCollector::names[] = {
-	"ok",
-	"to archive",
-	"to delete",
-	"to pack",
-	"to index",
-	"to rescan",
-	"deleted",
-	"arc ok",
-	"arc to index",
-	"arc to rescan",
-	"arc deleted",
-	"state max",
-};
 
 }
 }

@@ -39,13 +39,16 @@ class Summary;
 namespace dataset {
 class TargetFile;
 
+namespace maintenance {
+class MaintFileVisitor;
+}
+
 namespace ondisk2 {
 class Archive;
 class Archives;
 
 namespace writer {
 class Datafile;
-class MaintFileVisitor;
 class Agent;
 class RealRepacker;
 class MockRepacker;
@@ -105,7 +108,7 @@ public:
 	/**
 	 * Perform dataset maintenance, sending information to \a v
 	 */
-	void maintenance(writer::MaintFileVisitor& v, bool quick=true);
+	void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
 
 	/**
 	 * Repack the dataset, logging status to the given file.

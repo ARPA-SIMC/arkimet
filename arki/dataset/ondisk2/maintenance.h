@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk2/writer/utils.h>
+#include <arki/dataset/maintenance.h>
 #include <wibble/sys/buffer.h>
 #include <iosfwd>
 
@@ -35,6 +35,11 @@ struct Validator;
 }
 
 namespace dataset {
+
+namespace maintenance {
+class MaintFileVisitor;
+}
+
 namespace ondisk2 {
 class Writer;
 class WIndex;
@@ -42,97 +47,9 @@ class Index;
 
 namespace writer {
 
-/**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct MaintFileVisitor
+struct CheckAge : public maintenance::MaintFileVisitor
 {
-	enum State {
-		OK,		/// File fully and consistently indexed
-		TO_ARCHIVE,	/// File is ok, but old enough to be archived
-		TO_DELETE,	/// File is ok, but old enough to be deleted
-		TO_PACK,	/// File contains data that has been deleted
-		TO_INDEX,	/// File is not present in the index
-		TO_RESCAN,	/// File contents are inconsistent with the index
-		DELETED,	/// File does not exist but has entries in the index
-		ARC_OK,		/// File fully and consistently archived
-		ARC_TO_INDEX,	/// File is not present in the archive index
-		ARC_TO_RESCAN,	/// File contents need reindexing in the archive
-		ARC_DELETED,	/// File does not exist, but has entries in the archive index
-		STATE_MAX
-	};
-
-	virtual ~MaintFileVisitor() {}
-
-	virtual void operator()(const std::string& file, State state) = 0;
-};
-
-/**
- * Visitor interface for scanning information about the files indexed in the database
- */
-struct IndexFileVisitor
-{
-	virtual ~IndexFileVisitor() {}
-
-	virtual void operator()(const std::string& file, int id, off_t offset, size_t size) = 0;
-};
-
-/**
- * IndexFileVisitor that feeds a MaintFileVisitor with OK or HOLES status.
- *
- * TO_INDEX and TO_RESCAN will have to be detected by MaintFileVisitors
- * further down the chain.
- */
-struct HoleFinder : IndexFileVisitor
-{
-	writer::MaintFileVisitor& next;
-
-	const std::string& m_root;
-
-	std::string last_file;
-	off_t last_file_size;
-	bool quick;
-	const scan::Validator* validator;
-	int validator_fd;
-	bool has_hole;
-	bool is_corrupted;
-
-	HoleFinder(writer::MaintFileVisitor& next, const std::string& root, bool quick=true);
-
-	void finaliseFile();
-
-	void operator()(const std::string& file, int id, off_t offset, size_t size);
-
-	void end()
-	{
-		finaliseFile();
-	}
-};
-
-/**
- * MaintFileVisitor that feeds a MaintFileVisitor with TO_INDEX status.
- *
- * The input feed is assumed to come from the index, and is checked against the
- * files found on disk in order to detect files that are on disk but not in the
- * index.
- */
-struct FindMissing : public writer::MaintFileVisitor
-{
-	writer::MaintFileVisitor& next;
-	writer::DirScanner disk;
-
-	FindMissing(MaintFileVisitor& next, const std::string& root) : next(next), disk(root) {}
-
-	// disk:  a, b, c, e, f, g
-	// index:       c, d, e, f, g
-
-	void operator()(const std::string& file, State state);
-	void end();
-};
-
-struct CheckAge : public writer::MaintFileVisitor
-{
-	writer::MaintFileVisitor& next;
+	maintenance::MaintFileVisitor& next;
 	const Index& idx;
 	std::string archive_threshold;
 	std::string delete_threshold;
@@ -142,7 +59,7 @@ struct CheckAge : public writer::MaintFileVisitor
 	void operator()(const std::string& file, State state);
 };
 
-struct FileCopier : writer::IndexFileVisitor
+struct FileCopier : maintenance::IndexFileVisitor
 {
 	WIndex& m_idx;
 	const scan::Validator& m_val;
@@ -161,13 +78,8 @@ struct FileCopier : writer::IndexFileVisitor
 	void flush();
 };
 
-struct MaintPrinter : public writer::MaintFileVisitor
-{
-	void operator()(const std::string& file, State state);
-};
-
 /// Base class for all repackers and rebuilders
-struct Agent : public writer::MaintFileVisitor
+struct Agent : public maintenance::MaintFileVisitor
 {
 	std::ostream& m_log;
 	Writer& w;

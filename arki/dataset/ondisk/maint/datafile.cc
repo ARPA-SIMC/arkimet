@@ -353,7 +353,7 @@ void Datafile::rebuild(bool reindex)
 		if (reindex && !i->deleted)
 			try {
 				parent->addToIndex(*i, relname, ofs);
-			} catch (index::DuplicateInsert) {
+			} catch (utils::sqlite::DuplicateInsert) {
 				// If we end up here, it means that we have a
 				// duplicate stored in a different file
 				throw wibble::exception::Consistency("repacking " + pathname,
@@ -431,7 +431,7 @@ void Datafile::reindex()
 		} else {
 			try {
 				parent->addToIndex(mds[i], relname, offsets[i]);
-			} catch (index::DuplicateInsert) {
+			} catch (utils::sqlite::DuplicateInsert) {
 				// If we end up here, it means that we have a
 				// duplicate stored in a different file
 				throw wibble::exception::Consistency("repacking " + pathname,

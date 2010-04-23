@@ -130,7 +130,7 @@ public:
 class WIndex : public RIndex
 {
 protected:
-	index::InsertQuery m_insert;
+	utils::sqlite::InsertQuery m_insert;
 	utils::sqlite::PrecompiledQuery m_delete;
 	utils::sqlite::PrecompiledQuery m_replace;
 

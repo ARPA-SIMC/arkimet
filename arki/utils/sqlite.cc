@@ -230,6 +230,8 @@ bool Query::step()
 			sqlite3_reset(m_stm);
 			m_db.throwException("executing " + name + " query");
 	}
+	// Not reached, but makes gcc happy
+	return false;
 }
 
 void OneShotQuery::initQueries()
@@ -285,6 +287,25 @@ void SqliteTransaction::rollback()
 	committer.rollback();
 	fired = true;
 }
+
+bool InsertQuery::step()
+{
+	int rc = sqlite3_step(m_stm);
+	if (rc != SQLITE_DONE)
+		rc = sqlite3_reset(m_stm);
+	switch (rc)
+	{
+		case SQLITE_DONE:
+			return false;
+		case SQLITE_CONSTRAINT:
+			throw DuplicateInsert("executing " + name + " query");
+		default:
+			m_db.throwException("executing " + name + " query");
+	}
+	// Not reached, but makes gcc happy
+	return false;
+}
+
 
 }
 }

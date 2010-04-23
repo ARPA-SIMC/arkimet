@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007,2008,2009,2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,13 +50,13 @@ namespace dataset {
 namespace ondisk {
 namespace maint {
 
-struct MaintenanceCollector : public MaintenanceAgent
+struct CollectorAgent : public MaintenanceAgent
 {
 	std::string writerPath;
 	bool hasEnded, fullIndex;
 	std::vector<std::string> datafileRebuild, summaryRebuildFile, reindexFile, summaryRebuildDir;
 
-	MaintenanceCollector() :
+	CollectorAgent() :
 		hasEnded(false), fullIndex(false) {}
 
 	virtual void start(Writer& w) { writerPath = w.path(); }
@@ -171,7 +171,7 @@ void to::test<1>()
 	acquireSamples();
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 
 	ensure_equals(c.writerPath, "testdir");
@@ -203,7 +203,7 @@ void to::test<2>()
 	createNewRebuildFlagfile("testdir/2007/10-09.grib1");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -239,7 +239,7 @@ void to::test<3>()
 	system("touch testdir/2007/07-08.grib1.metadata");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -274,7 +274,7 @@ void to::test<4>()
 	system("touch testdir/2007/07-08.grib1.summary");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -308,7 +308,7 @@ void to::test<5>()
 	system("touch testdir/2007/summary");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -337,7 +337,7 @@ void to::test<6>()
 	acquireSamples();
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 
 	ensure_equals(c.writerPath, "testdir");
@@ -365,7 +365,7 @@ void to::test<7>()
 	createNewIndexFlagfile("testdir");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 
 	ensure_equals(c.writerPath, "testdir");
@@ -395,7 +395,7 @@ void to::test<8>()
 	createNewRebuildFlagfile("testdir/2007/10-09.grib1");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -428,7 +428,7 @@ void to::test<9>()
 	system("touch testdir/2007/07-08.grib1.metadata");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -460,7 +460,7 @@ void to::test<10>()
 	system("touch testdir/2007/07-08.grib1.summary");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -492,7 +492,7 @@ void to::test<11>()
 	system("touch testdir/2007/summary");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -542,7 +542,7 @@ void to::test<12>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -573,7 +573,7 @@ void to::test<13>()
 	system("touch -d yesterday testdir/*");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	ensure(c.isClean());
 
@@ -628,7 +628,7 @@ void to::test<14>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -661,7 +661,7 @@ void to::test<15>()
 	system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
 
 	Writer writer(cfg);
-	MaintenanceCollector c;
+	CollectorAgent c;
 	writer.maintenance(c);
 	c.sort();
 
@@ -746,7 +746,7 @@ void to::test<16>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	MetadataCollector mdc;
+	utils::metadata::Collector mdc;
 	// Use reftime in the query to force use of the index
 	reader.queryData(dataset::DataQuery(Matcher::parse("reftime:>=2000"), true), mdc);
 	ensure_equals(mdc.size(), 3u);

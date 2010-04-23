@@ -18,10 +18,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk2/test-utils.h>
-#include <arki/dataset/ondisk2/archive.h>
-#include <arki/dataset/ondisk2/writer.h>
+#include <arki/dataset/test-utils.h>
 #include <arki/dataset/simple/index.h>
+#include <arki/dataset/simple/reader.h>
+//#include <arki/dataset/simple/writer.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
@@ -32,32 +32,31 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::dataset::ondisk2;
-using namespace arki::dataset::ondisk2::writer;
 using namespace arki::types;
 using namespace arki::utils;
+using namespace arki::dataset::simple;
 
 struct ForceSqlite
 {
 	bool old;
 
-	ForceSqlite(bool val = true) : old(dataset::simple::Manifest::get_force_sqlite())
+	ForceSqlite(bool val = true) : old(Manifest::get_force_sqlite())
 	{
-		dataset::simple::Manifest::set_force_sqlite(val);
+		Manifest::set_force_sqlite(val);
 	}
 	~ForceSqlite()
 	{
-		dataset::simple::Manifest::set_force_sqlite(old);
+		Manifest::set_force_sqlite(old);
 	}
 };
 
-struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFileVisitor {
+struct arki_dataset_simple_reader_shar : public dataset::maintenance::MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
 
 	ConfigFile cfg;
 
-	arki_dataset_ondisk2_archive_shar()
+	arki_dataset_simple_reader_shar()
 	{
 		system("rm -rf testds");
 		system("mkdir testds");
@@ -75,15 +74,16 @@ struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFil
 
 	std::string idxfname() const
 	{
-		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+		return Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 	}
 };
-TESTGRP(arki_dataset_ondisk2_archive);
+TESTGRP(arki_dataset_simple_reader);
 
 // Acquire and query
 template<> template<>
 void to::test<1>()
 {
+#if 0
 	Archive arc("testds/.archive/last");
 	arc.openRW();
 
@@ -113,8 +113,10 @@ void to::test<1>()
 	ensure_equals(c.count(ARC_OK), 1u);
 	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
+#endif
 }
 
+#if 0
 // Test maintenance scan on non-indexed files
 template<> template<>
 void to::test<2>()
@@ -515,6 +517,8 @@ template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
 template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
 template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
 template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
+
+#endif
 
 
 }

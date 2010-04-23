@@ -23,14 +23,13 @@
 #include <arki/tests/test-utils.h>
 #include <arki/metadata.h>
 #include <arki/utils/metadata.h>
+#include <arki/dataset/maintenance.h>
 #include <vector>
 
 namespace arki {
 struct Metadata;
 struct MetadataConsumer;
 struct Dispatcher;
-
-typedef utils::metadata::Collector MetadataCollector;
 
 struct MetadataCounter : public MetadataConsumer
 {
@@ -50,6 +49,23 @@ namespace tests{
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, MetadataConsumer& mdc);
 }
+
+struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
+{
+	std::map <std::string, State> fileStates;
+	size_t counts[STATE_MAX];
+	static const char* names[];
+	std::set<State> checked;
+
+	MaintenanceCollector();
+
+	void clear();
+	bool isClean() const;
+	virtual void operator()(const std::string& file, State state);
+	void dump(std::ostream& out) const;
+	size_t count(State s);
+	std::string remaining() const;
+};
 
 }
 

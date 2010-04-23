@@ -43,14 +43,14 @@ class ConfigFile;
 namespace dataset {
 struct DataQuery;
 
+namespace maintenance {
+struct IndexFileVisitor;
+}
+
 namespace ondisk2 {
 
 struct Uniques;
 struct Others;
-
-namespace writer {
-class IndexFileVisitor;
-}
 
 /**
  * Dataset index.
@@ -139,12 +139,12 @@ public:
 	/**
 	 * Scan all file info in the database, sorted by file and offset
 	 */
-	void scan_files(writer::IndexFileVisitor& v) const;
+	void scan_files(maintenance::IndexFileVisitor& v) const;
 
 	/**
 	 * Scan the information about the given file, sorted by offset
 	 */
-	void scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
+	void scan_file(const std::string& relname, maintenance::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
 
 	/**
 	 * Send the metadata of all data items inside a file to the given consumer
@@ -250,7 +250,7 @@ public:
 class WIndex : public Index
 {
 protected:
-	index::InsertQuery m_insert;
+	utils::sqlite::InsertQuery m_insert;
 	utils::sqlite::PrecompiledQuery m_delete;
 	utils::sqlite::PrecompiledQuery m_replace;
 

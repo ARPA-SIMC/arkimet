@@ -22,7 +22,6 @@
 
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
-#include <arki/dataset/ondisk2/writer/utils.h>
 #include <arki/dataset/ondisk2/archive.h>
 #include <arki/dataset/ondisk2/maintenance.h>
 //#include <arki/dataset/ondisk2/maint/datafile.h>
@@ -32,6 +31,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
+#include <arki/scan/dir.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/summary.h>
@@ -167,7 +167,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 		p_idx.commit();
 		md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
 		return ACQ_OK;
-	} catch (index::DuplicateInsert& di) {
+	} catch (utils::sqlite::DuplicateInsert& di) {
 		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
 		return ACQ_ERROR_DUPLICATE;
 	} catch (std::exception& e) {
@@ -232,7 +232,7 @@ void Writer::flush()
 	m_df_cache.clear();
 }
 
-void Writer::maintenance(writer::MaintFileVisitor& v, bool quick)
+void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
 	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 	// and delete the index if it fails
@@ -241,8 +241,9 @@ void Writer::maintenance(writer::MaintFileVisitor& v, bool quick)
 	// Also iterate files on index in sorted order
 	// Check each file for need to reindex or repack
 	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
-	writer::FindMissing fm(ca, m_path);
-	writer::HoleFinder hf(fm, m_path, quick);
+	vector<string> files = scan::dir(m_path);
+	maintenance::FindMissing fm(ca, files);
+	maintenance::HoleFinder hf(fm, m_path, quick);
 	m_idx.scan_files(hf);
 	hf.end();
 	fm.end();

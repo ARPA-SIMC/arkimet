@@ -111,22 +111,6 @@ std::string fmtin(const std::vector<int>& vals)
 	}
 }
 
-bool InsertQuery::step()
-{
-	int rc = sqlite3_step(m_stm);
-	if (rc != SQLITE_DONE)
-		rc = sqlite3_reset(m_stm);
-	switch (rc)
-	{
-		case SQLITE_DONE:
-			return false;
-		case SQLITE_CONSTRAINT:
-			throw DuplicateInsert("executing " + name + " query");
-		default:
-			m_db.throwException("executing " + name + " query");
-	}
-}
-
 }
 }
 }

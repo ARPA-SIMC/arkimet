@@ -231,11 +231,11 @@ struct FurtherSort
 		return a.offset < b.offset;
 	}
 
-	writer::IndexFileVisitor& next;
+	maintenance::IndexFileVisitor& next;
 	string curfile;
 	vector<FileData> data;
 
-	FurtherSort(writer::IndexFileVisitor& next) : next(next) {}
+	FurtherSort(maintenance::IndexFileVisitor& next) : next(next) {}
 
 	virtual void operator()(const std::string& file, const std::string& reftime, int id, off_t offset, size_t size)
 	{
@@ -264,7 +264,7 @@ struct FurtherSort
 };
 }
 
-void Index::scan_files(writer::IndexFileVisitor& v) const
+void Index::scan_files(maintenance::IndexFileVisitor& v) const
 {
 	Query sq("scan_files", m_db);
 	sq.compile("SELECT id, file, reftime, offset, size FROM md ORDER BY file");
@@ -282,7 +282,7 @@ void Index::scan_files(writer::IndexFileVisitor& v) const
 	fs.end();
 }
 
-void Index::scan_file(const std::string& relname, writer::IndexFileVisitor& v, const std::string& orderBy) const
+void Index::scan_file(const std::string& relname, maintenance::IndexFileVisitor& v, const std::string& orderBy) const
 {
 	Query sq("scan_file", m_db);
 	sq.compile("SELECT id, offset, size FROM md WHERE file=? ORDER BY " + orderBy);

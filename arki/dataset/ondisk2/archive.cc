@@ -21,13 +21,11 @@
  */
 
 #include <arki/dataset/ondisk2/archive.h>
-#include <arki/dataset/ondisk2/writer/utils.h>
-#include <arki/dataset/ondisk2/maintenance.h>
-#include <arki/dataset/index/base.h>
+#include <arki/dataset/simple/index.h>
+#include <arki/dataset/maintenance.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
-#include <arki/utils/sqlite.h>
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
@@ -56,565 +54,10 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
-using namespace arki::utils::sqlite;
 
 namespace arki {
 namespace dataset {
 namespace ondisk2 {
-
-namespace archive {
-
-static bool mft_force_sqlite = false;
-
-Manifest::~Manifest() {}
-
-class PlainManifest : public Manifest
-{
-	struct Info
-	{
-		std::string file;
-		time_t mtime;
-		UItem<types::Time> start_time;
-		UItem<types::Time> end_time;
-
-		bool operator<(const Info& i) const
-		{
-			return file < i.file;
-		}
-
-		bool operator==(const Info& i) const
-		{
-			return file == i.file;
-		}
-
-		bool operator!=(const Info& i) const
-		{
-			return file != i.file;
-		}
-
-		void write(ostream& out) const
-		{
-			out << file << ";" << mtime << ";" << start_time->toSQL() << ";" << end_time->toSQL() << endl;
-		}
-	};
-	std::string m_dir;
-	vector<Info> info;
-	ino_t last_inode;
-
-	/**
-	 * Reread the MANIFEST file.
-	 *
-	 * @returns true if the MANIFEST file existed, false if not
-	 */
-	bool reread()
-	{
-		string pathname(str::joinpath(m_dir, "MANIFEST"));
-		ino_t inode = files::inode(pathname);
-
-		if (inode == last_inode) return inode != 0;
-
-		info.clear();
-		last_inode = inode;
-		if (last_inode == 0)
-			return false;
-
-		std::ifstream in;
-		in.open(pathname.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(pathname, "opening file for reading");
-
-		string line;
-		for (size_t lineno = 1; !in.eof(); ++lineno)
-		{
-			Info item;
-
-			getline(in, line);
-			if (in.fail() && !in.eof())
-				throw wibble::exception::File(pathname, "reading one line");
-
-			// Skip empty lines
-			if (line.empty()) continue;
-
-			size_t beg = 0;
-			size_t end = line.find(';');
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 1 field");
-
-			item.file = line.substr(beg, end-beg);
-			
-			beg = end + 1;
-			end = line.find(';', beg);
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 2 fields");
-
-			item.mtime = strtoul(line.substr(beg, end-beg).c_str(), 0, 10);
-
-			beg = end + 1;
-			end = line.find(';', beg);
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 3 fields");
-
-			item.start_time = Time::createFromSQL(line.substr(beg, end-beg));
-			item.end_time = Time::createFromSQL(line.substr(end+1));
-
-			info.push_back(item);
-		}		
-
-		in.close();
-		return true;
-	}
-
-	void save()
-	{
-		string pathname(str::joinpath(m_dir, "MANIFEST.tmp"));
-
-		std::ofstream out;
-		out.open(pathname.c_str(), ios::out);
-		if (!out.is_open() || out.fail())
-			throw wibble::exception::File(pathname, "opening file for writing");
-
-		for (vector<Info>::const_iterator i = info.begin();
-				i != info.end(); ++i)
-			i->write(out);
-
-		out.close();
-
-		if (::rename(pathname.c_str(), str::joinpath(m_dir, "MANIFEST").c_str()) < 0)
-			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_dir, "MANIFEST"));
-	}
-
-public:
-	PlainManifest(const std::string& dir)
-		: m_dir(dir), last_inode(0)
-	{
-	}
-
-	virtual ~PlainManifest()
-	{
-	}
-
-	void openRO()
-	{
-		if (!reread())
-			throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_dir);
-	}
-
-	void openRW()
-	{
-		reread();
-	}
-
-	void fileList(const Matcher& matcher, std::vector<std::string>& files)
-	{
-		reread();
-
-		string query;
-		UItem<types::Time> begin;
-		UItem<types::Time> end;
-		if (matcher.date_extremes(begin, end))
-		{
-			// Get files with matching reftime
-			for (vector<Info>::const_iterator i = info.begin();
-					i != info.end(); ++i)
-			{
-				if (begin.defined() && i->end_time < begin) continue;
-				if (end.defined() && i->start_time > end) continue;
-				files.push_back(i->file);
-			}
-		} else {
-			// No restrictions on reftime: get all files
-			for (vector<Info>::const_iterator i = info.begin();
-					i != info.end(); ++i)
-				files.push_back(i->file);
-		}
-	}
-
-	void vacuum()
-	{
-	}
-
-	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
-	{
-		reread();
-
-		Info item;
-		item.file = relname;
-		item.mtime = mtime;
-
-		// Add to index
-		Item<types::Reftime> rt = sum.getReferenceTime();
-
-		string bt;
-		string et;
-
-		switch (rt->style())
-		{
-			case types::Reftime::POSITION: {
-				UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
-				item.start_time = item.end_time = p->time;
-				break;
-		        }
-			case types::Reftime::PERIOD: {
-			        UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
-				item.start_time = p->begin;
-				item.end_time = p->end;
-			        break;
-		        }
-			default:
-			        throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
-		}
-
-		// Insertion sort; at the end, everything is already sorted and we
-		// avoid inserting lots of duplicate items
-		vector<Info>::iterator lb = lower_bound(info.begin(), info.end(), item);
-		if (lb == info.end())
-			info.push_back(item);
-		else if (*lb != item)
-			info.insert(lb, item);
-		else
-			*lb = item;
-
-		save();
-	}
-
-	virtual void remove(const std::string& relname)
-	{
-		reread();
-
-		vector<Info>::iterator i;
-		for (i = info.begin(); i != info.end(); ++i)
-			if (i->file == relname)
-				break;
-		if (i != info.end())
-			info.erase(i);
-
-		save();
-	}
-
-	virtual void check(writer::MaintFileVisitor& v)
-	{
-		reread();
-
-		// List of files existing on disk
-		writer::DirScanner disk(m_dir, true);
-
-		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
-		{
-			while (not disk.cur().empty() and disk.cur() < i->file)
-			{
-				nag::verbose("Archive: %s is not in index", disk.cur().c_str());
-				v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
-				disk.next();
-			}
-			if (disk.cur() == i->file)
-			{
-				disk.next();
-
-				string pathname = str::joinpath(m_dir, i->file);
-
-				time_t ts_data = files::timestamp(pathname);
-				if (ts_data == 0)
-					ts_data = files::timestamp(pathname + ".gz");
-				time_t ts_md = files::timestamp(pathname + ".metadata");
-				time_t ts_sum = files::timestamp(pathname + ".summary");
-				time_t ts_idx = i->mtime;
-
-				if (ts_idx != ts_data ||
-				    ts_md < ts_data ||
-				    ts_sum < ts_md)
-				{
-					// Check timestamp consistency
-					if (ts_idx != ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
-								i->file.c_str(), ts_data, ts_idx);
-					if (ts_md < ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
-								i->file.c_str(), ts_data, ts_md);
-					if (ts_md < ts_data)
-						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								i->file.c_str(), ts_md, ts_sum);
-					v(i->file, writer::MaintFileVisitor::ARC_TO_RESCAN);
-				}
-				else
-					v(i->file, writer::MaintFileVisitor::ARC_OK);
-
-				// TODO: if requested, check for internal consistency
-				// TODO: it requires to have an infrastructure for quick
-				// TODO:   consistency checkers (like, "GRIB starts with GRIB
-				// TODO:   and ends with 7777")
-			}
-			else // if (disk.cur() > i->file)
-			{
-				nag::verbose("Archive: %s has been deleted from the archive", i->file.c_str());
-				v(i->file, writer::MaintFileVisitor::ARC_DELETED);
-			}
-		}
-		while (not disk.cur().empty())
-		{
-			nag::verbose("Archive: %s is not in index", disk.cur().c_str());
-			v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
-			disk.next();
-		}
-	}
-
-	static bool exists(const std::string& dir)
-	{
-		string pathname(str::joinpath(dir, "MANIFEST"));
-		return wibble::sys::fs::access(pathname, F_OK);
-	}
-};
-
-
-class SqliteManifest : public Manifest
-{
-	std::string m_dir;
-	mutable utils::sqlite::SQLiteDB m_db;
-	index::InsertQuery m_insert;
-
-	void setupPragmas()
-	{
-		// Also, since the way we do inserts cause no trouble if a reader reads a
-		// partial insert, we do not need read locking
-		m_db.exec("PRAGMA read_uncommitted = 1");
-		// Use new features, if we write we read it, so we do not need to
-		// support sqlite < 3.3.0 if we are above that version
-		m_db.exec("PRAGMA legacy_file_format = 0");
-	}
-
-	void initQueries()
-	{
-		m_insert.compile("INSERT INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
-	}
-
-	void initDB()
-	{
-		// Create the main table
-		string query = "CREATE TABLE IF NOT EXISTS files ("
-			"id INTEGER PRIMARY KEY,"
-			" file TEXT NOT NULL,"
-			" mtime INTEGER NOT NULL,"
-			" start_time TEXT NOT NULL,"
-			" end_time TEXT NOT NULL,"
-			" UNIQUE(file) )";
-		m_db.exec(query);
-		m_db.exec("CREATE INDEX idx_files_start ON files (start_time)");
-		m_db.exec("CREATE INDEX idx_files_end ON files (end_time)");
-	}
-
-
-public:
-	SqliteManifest(const std::string& dir)
-		: m_dir(dir), m_insert(m_db)
-	{
-	}
-
-	virtual ~SqliteManifest()
-	{
-	}
-
-	void openRO()
-	{
-		string pathname(str::joinpath(m_dir, "index.sqlite"));
-		if (m_db.isOpen())
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
-
-		if (!wibble::sys::fs::access(pathname, F_OK))
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " does not exist");
-
-		m_db.open(pathname);
-		setupPragmas();
-
-		initQueries();
-	}
-
-	void openRW()
-	{
-		string pathname(str::joinpath(m_dir, "index.sqlite"));
-		if (m_db.isOpen())
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
-
-		bool need_create = !wibble::sys::fs::access(pathname, F_OK);
-
-		m_db.open(pathname);
-		setupPragmas();
-		
-		if (need_create)
-			initDB();
-
-		initQueries();
-	}
-
-	void fileList(const Matcher& matcher, std::vector<std::string>& files)
-	{
-		string query;
-		UItem<types::Time> begin;
-		UItem<types::Time> end;
-		if (matcher.date_extremes(begin, end))
-		{
-			query = "SELECT file FROM files";
-
-			if (begin.defined())
-				query += " WHERE end_time >= '" + begin->toSQL() + "'";
-			if (end.defined())
-			{
-				if (begin.defined())
-					query += " AND start_time <= '" + end->toSQL() + "'";
-				else
-					query += " WHERE start_time <= '" + end->toSQL() + "'";
-			}
-
-			query += " ORDER BY file";
-		} else {
-			// No restrictions on reftime: get all files
-			query = "SELECT file FROM files ORDER BY file";
-		}
-
-		// cerr << "Query: " << query << endl;
-		
-		Query q("sel_archive", m_db);
-		q.compile(query);
-		while (q.step())
-			files.push_back(q.fetchString(0));
-	}
-
-	void vacuum()
-	{
-		// Vacuum the database
-		try {
-			m_db.exec("VACUUM");
-			m_db.exec("ANALYZE");
-		} catch (std::exception& e) {
-			nag::warning("ignoring failed attempt to optimize database: %s", e.what());
-		}
-	}
-
-	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
-	{
-		// Add to index
-		Item<types::Reftime> rt = sum.getReferenceTime();
-
-		string bt;
-		string et;
-
-		switch (rt->style())
-		{
-			case types::Reftime::POSITION: {
-				UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
-				bt = et = p->time->toSQL();
-				break;
-		        }
-			case types::Reftime::PERIOD: {
-			        UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
-			        bt = p->begin->toSQL();
-			        et = p->end->toSQL();
-			        break;
-		        }
-			default:
-			        throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
-		}
-
-		m_insert.reset();
-		m_insert.bind(1, relname);
-		m_insert.bind(2, mtime);
-		m_insert.bind(3, bt);
-		m_insert.bind(4, et);
-		m_insert.step();
-	}
-
-	virtual void remove(const std::string& relname)
-	{
-		Query q("del_file", m_db);
-		q.compile("DELETE FROM files WHERE file=?");
-		q.bind(1, relname);
-		while (q.step())
-			;
-	}
-
-	virtual void check(writer::MaintFileVisitor& v)
-	{
-		// List of files existing on disk
-		writer::DirScanner disk(m_dir, true);
-
-		// Preread the file list, so it does not get modified as we scan
-		vector< pair<string, time_t> > files;
-		{
-			Query q("sel_archive", m_db);
-			q.compile("SELECT file, mtime FROM files ORDER BY file");
-
-			while (q.step())
-				files.push_back(make_pair(q.fetchString(0), q.fetch<time_t>(1)));
-		}
-
-		for (vector< pair<string, time_t> >::const_iterator i = files.begin(); i != files.end(); ++i)
-		{
-			while (not disk.cur().empty() and disk.cur() < i->first)
-			{
-				nag::verbose("Archive: %s is not in index", disk.cur().c_str());
-				v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
-				disk.next();
-			}
-			if (disk.cur() == i->first)
-			{
-				disk.next();
-
-				string pathname = str::joinpath(m_dir, i->first);
-
-				time_t ts_data = files::timestamp(pathname);
-				if (ts_data == 0)
-					ts_data = files::timestamp(pathname + ".gz");
-				time_t ts_md = files::timestamp(pathname + ".metadata");
-				time_t ts_sum = files::timestamp(pathname + ".summary");
-				time_t ts_idx = i->second;
-
-				if (ts_idx != ts_data ||
-				    ts_md < ts_data ||
-				    ts_sum < ts_md)
-				{
-					// Check timestamp consistency
-					if (ts_idx != ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
-								i->first.c_str(), ts_data, ts_idx);
-					if (ts_md < ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
-								i->first.c_str(), ts_data, ts_md);
-					if (ts_md < ts_data)
-						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								i->first.c_str(), ts_md, ts_sum);
-					v(i->first, writer::MaintFileVisitor::ARC_TO_RESCAN);
-				}
-				else
-					v(i->first, writer::MaintFileVisitor::ARC_OK);
-
-				// TODO: if requested, check for internal consistency
-				// TODO: it requires to have an infrastructure for quick
-				// TODO:   consistency checkers (like, "GRIB starts with GRIB
-				// TODO:   and ends with 7777")
-			}
-			else // if (disk.cur() > i->first)
-			{
-				nag::verbose("Archive: %s has been deleted from the archive", i->first.c_str());
-				v(i->first, writer::MaintFileVisitor::ARC_DELETED);
-			}
-		}
-		while (not disk.cur().empty())
-		{
-			nag::verbose("Archive: %s is not in index", disk.cur().c_str());
-			v(disk.cur(), writer::MaintFileVisitor::ARC_TO_INDEX);
-			disk.next();
-		}
-	}
-
-	static bool exists(const std::string& dir)
-	{
-		string pathname(str::joinpath(dir, "index.sqlite"));
-		return wibble::sys::fs::access(pathname, F_OK);
-	}
-};
-
-}
 
 Archive::Archive(const std::string& dir)
 	: m_dir(dir), m_mft(0)
@@ -622,11 +65,8 @@ Archive::Archive(const std::string& dir)
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
 
-	if (archive::mft_force_sqlite || archive::SqliteManifest::exists(m_dir))
-		m_mft = new archive::SqliteManifest(m_dir);
-	else
-		//m_mft = new archive::SqliteManifest(m_dir);
-		m_mft = new archive::PlainManifest(m_dir);
+	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_dir);
+	m_mft = mft.release();
 }
 
 Archive::~Archive()
@@ -636,8 +76,7 @@ Archive::~Archive()
 
 bool Archive::is_archive(const std::string& dir)
 {
-	return archive::PlainManifest::exists(dir) ||
-	       archive::SqliteManifest::exists(dir);
+	return simple::Manifest::exists(dir);
 }
 
 void Archive::openRO()
@@ -819,7 +258,7 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 	m_mft->acquire(relname, mtime, sum);
 }
 
-void Archive::maintenance(writer::MaintFileVisitor& v)
+void Archive::maintenance(maintenance::MaintFileVisitor& v)
 {
 	m_mft->check(v);
 }
@@ -891,17 +330,6 @@ void Archive::vacuum()
 	querySummaries(Matcher(), s);
 	s.writeAtomically(str::joinpath(m_dir, "summary"));
 }
-
-bool Archive::get_force_sqlite()
-{
-	return archive::mft_force_sqlite;
-}
-
-void Archive::set_force_sqlite(bool val)
-{
-	archive::mft_force_sqlite = val;
-}
-
 
 Archives::Archives(const std::string& dir, bool read_only)
 	: m_dir(dir), m_read_only(read_only), m_last(0)
@@ -1054,8 +482,8 @@ void Archives::rescan(const std::string& relname)
 				"archive " + name + " does not exist in " + m_dir);
 }
 
-namespace writer {
-struct MaintPathPrepender : public MaintFileVisitor
+namespace {
+struct MaintPathPrepender : public maintenance::MaintFileVisitor
 {
 	MaintFileVisitor& next;
 	std::string prefix;
@@ -1070,17 +498,17 @@ struct MaintPathPrepender : public MaintFileVisitor
 };
 }
 
-void Archives::maintenance(writer::MaintFileVisitor& v)
+void Archives::maintenance(maintenance::MaintFileVisitor& v)
 {
 	for (map<string, Archive*>::iterator i = m_archives.begin();
 			i != m_archives.end(); ++i)
 	{
-		writer::MaintPathPrepender p(v, i->first);
+		MaintPathPrepender p(v, i->first);
 		i->second->maintenance(p);
 	}
 	if (m_last)
 	{
-		writer::MaintPathPrepender p(v, "last");
+		MaintPathPrepender p(v, "last");
 		m_last->maintenance(p);
 	}
 }
