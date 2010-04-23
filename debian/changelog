@@ -1,3 +1,9 @@
+arkimet (0.41-1) UNRELEASED; urgency=low
+
+  * 
+
+ -- Enrico Zini <enrico@debian.org>  Sat, 24 Apr 2010 01:05:00 +0200
+
 arkimet (0.40-1) UNRELEASED; urgency=low
 
   * Added infrastructure to run tests with code coverage via lcov, while
