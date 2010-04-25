@@ -218,7 +218,10 @@ void Writer::flush()
 {
 	for (std::map<std::string, Datafile*>::iterator i = m_df_cache.begin();
 			i != m_df_cache.end(); ++i)
-		if (i->second) delete i->second;
+	{
+		m_mft->acquire(i->first, utils::files::timestamp(i->second->pathname), i->second->sum);
+		delete i->second;
+	}
 	m_df_cache.clear();
 	m_mft->flush();
 }

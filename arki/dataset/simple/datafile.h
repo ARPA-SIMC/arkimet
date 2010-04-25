@@ -24,6 +24,8 @@
  */
 
 #include <string>
+#include <arki/summary.h>
+#include <arki/utils/metadata.h>
 
 namespace arki {
 class Metadata;
@@ -40,6 +42,8 @@ struct Datafile
 	// Full path to the data file
 	std::string pathname;
 	int fd;
+	utils::metadata::Collector mds;
+	Summary sum;
 
 	Datafile(const std::string& pathname);
 	~Datafile();

@@ -24,6 +24,8 @@
 #include <arki/dataset/simple/datafile.h>
 #include <arki/metadata.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
+#include <arki/scan/any.h>
 #include <arki/nag.h>
 
 #include <wibble/exception.h>
@@ -45,10 +47,24 @@ namespace simple {
 
 Datafile::Datafile(const std::string& pathname) : pathname(pathname), fd(-1)
 {
-	// Note: we could use O_WRONLY instead of O_APPEND because we keep a
-	// local copy of the append offset, and in case of concurrent appends
-	// we would fail anyway.  However, we use O_APPEND to make sure we
-	// don't accidentally overwrite things, ever
+	if (sys::fs::access(pathname, F_OK))
+	{
+		// Read the metadata
+		scan::scan(pathname, mds);
+
+		// Read the summary
+		if (!mds.empty())
+		{
+			string sumfname = pathname + ".summary";
+			if (utils::files::timestamp(pathname) <= utils::files::timestamp(sumfname))
+				sum.readFile(sumfname);
+			else
+			{
+				utils::metadata::Summarise s(sum);
+				mds.sendTo(s);
+			}
+		}
+	}
 
 	// Open the data file
 	fd = ::open(pathname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
@@ -88,7 +104,8 @@ void Datafile::unlock()
 
 void Datafile::flush()
 {
-	// TODO: write out metadata and summary if they changed
+	mds.writeAtomically(pathname + ".metadata");
+	sum.writeAtomically(pathname + ".summary");
 }
 
 void Datafile::append(Metadata& md)
@@ -136,6 +153,9 @@ void Datafile::append(Metadata& md)
 	}
 
 	unlock();
+
+	mds.push_back(md);
+	sum.add(md);
 }
 			
 }
