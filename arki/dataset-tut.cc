@@ -42,6 +42,10 @@ struct arki_dataset_shar {
 
 	arki_dataset_shar()
 	{
+		system("rm -rf test200");
+		system("rm -rf test80");
+		system("rm -rf test98");
+		system("rm -rf testds");
 		// In-memory dataset configuration
 		string conf =
 			"[test]\n"
@@ -63,9 +67,9 @@ struct arki_dataset_shar {
 			"[simple]\n"
 			"type = simple\n"
 			"step = daily\n"
-			"filter = origin: GRIB1,200\n"
-			"name = test200\n"
-			"path = test200\n"
+			"filter = origin: GRIB1,1\n"
+			"name = testds\n"
+			"path = testds\n"
 			"\n"
 			"[ondisk2]\n"
 			"type = ondisk2\n"
