@@ -156,7 +156,10 @@ void Archive::flush()
 void Archive::maintenance(maintenance::MaintFileVisitor& v)
 {
 	if (m_mft)
+	{
 		m_mft->check(v);
+		m_mft->flush();
+	}
 	else
 		m_reader->maintenance(v);
 }
