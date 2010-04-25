@@ -282,6 +282,42 @@ void Writer::check(std::ostream& log, bool fix, bool quick)
 #endif
 }
 
+WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+{
+	// TODO
+#if 0
+	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
+
+	string name = cfg.value("name");
+	try {
+		if (ConfigFile::boolValue(cfg.value("replace")))
+		{
+			if (cfg.value("index") != string())
+				ondisk::writer::IndexedRootDirectory::testReplace(cfg, md, out);
+			else
+				ondisk::writer::RootDirectory::testReplace(cfg, md, out);
+			return ACQ_OK;
+		} else {
+			try {
+				if (cfg.value("index") != string())
+					ondisk::writer::IndexedRootDirectory::testAcquire(cfg, md, out);
+				else
+					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
+				return ACQ_OK;
+			} catch (Index::DuplicateInsert& di) {
+				out << "Source information restored to original value" << endl;
+				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
+				return ACQ_ERROR_DUPLICATE;
+			}
+		}
+	} catch (std::exception& e) {
+		out << "Source information restored to original value" << endl;
+		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
+		return ACQ_ERROR;
+	}
+#endif
+}
+
 
 }
 }
@@ -339,42 +375,6 @@ using namespace arki::utils::files;
 namespace arki {
 namespace dataset {
 namespace ondisk2 {
-
-WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
-{
-	// TODO
-#if 0
-	wibble::sys::fs::Lockfile lockfile(wibble::str::joinpath(cfg.value("path"), "lock"));
-
-	string name = cfg.value("name");
-	try {
-		if (ConfigFile::boolValue(cfg.value("replace")))
-		{
-			if (cfg.value("index") != string())
-				ondisk::writer::IndexedRootDirectory::testReplace(cfg, md, out);
-			else
-				ondisk::writer::RootDirectory::testReplace(cfg, md, out);
-			return ACQ_OK;
-		} else {
-			try {
-				if (cfg.value("index") != string())
-					ondisk::writer::IndexedRootDirectory::testAcquire(cfg, md, out);
-				else
-					ondisk::writer::RootDirectory::testAcquire(cfg, md, out);
-				return ACQ_OK;
-			} catch (Index::DuplicateInsert& di) {
-				out << "Source information restored to original value" << endl;
-				out << "Failed to store in dataset '"+name+"' because the dataset already has the data: " + di.what() << endl;
-				return ACQ_ERROR_DUPLICATE;
-			}
-		}
-	} catch (std::exception& e) {
-		out << "Source information restored to original value" << endl;
-		out << "Failed to store in dataset '"+name+"': " + e.what() << endl;
-		return ACQ_ERROR;
-	}
-#endif
-}
 
 }
 }
