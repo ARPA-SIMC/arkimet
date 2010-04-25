@@ -392,7 +392,7 @@ class SqliteManifest : public Manifest
 
 	void initQueries()
 	{
-		m_insert.compile("INSERT INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
+		m_insert.compile("INSERT OR REPLACE INTO files (file, mtime, start_time, end_time) VALUES (?, ?, ?, ?)");
 	}
 
 	void initDB()

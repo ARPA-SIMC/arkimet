@@ -174,6 +174,72 @@ void to::test<1>()
 	}
 }
 
+// Test appending to existing files
+template<> template<>
+void to::test<2>()
+{
+	ConfigFile cfg;
+	cfg.setValue("path", "testds");
+	cfg.setValue("name", "testds");
+	cfg.setValue("type", "simple");
+	cfg.setValue("step", "yearly");
+
+	// Clean the dataset
+	system("rm -rf testds");
+	system("mkdir testds");
+
+	Metadata md;
+	scan::Grib scanner;
+	scanner.open("inbound/test.grib1");
+
+	// Import once in the empty dataset
+	{
+		dataset::simple::Writer writer(cfg);
+		ensure(scanner.next(md));
+
+		WritableDataset::AcquireResult res = writer.acquire(md);
+		ensure_equals(res, WritableDataset::ACQ_OK);
+	}
+
+	// Import nother one, appending to the file
+	{
+		dataset::simple::Writer writer(cfg);
+		ensure(scanner.next(md));
+
+		WritableDataset::AcquireResult res = writer.acquire(md);
+		ensure_equals(res, WritableDataset::ACQ_OK);
+
+		UItem<types::AssignedDataset> ds = getDataset(md);
+		ensure(ds.defined());
+		ensure_equals(ds->name, "testds");
+		ensure_equals(ds->id, "");
+
+		UItem<types::source::Blob> source = md.source.upcast<types::source::Blob>();
+		ensure(source.defined());
+		ensure_equals(source->filename, "2007.grib1");
+		ensure_equals(source->offset, 7218u);
+		ensure_equals(source->size, 34960u);
+	}
+
+	ensure(wibble::sys::fs::access("testds/20/2007.grib1", F_OK));
+	ensure(wibble::sys::fs::access("testds/20/2007.grib1.metadata", F_OK));
+	ensure(wibble::sys::fs::access("testds/20/2007.grib1.summary", F_OK));
+	ensure(wibble::sys::fs::access("testds/" + idxfname(), F_OK));
+	ensure(files::timestamp("testds/20/2007.grib1") <= files::timestamp("testds/20/2007.grib1.metadata"));
+	ensure(files::timestamp("testds/20/2007.grib1.metadata") <= files::timestamp("testds/20/2007.grib1.summary"));
+	ensure(files::timestamp("testds/20/2007.grib1.summary") <= files::timestamp("testds/" + idxfname()));
+	
+	// Dataset is fine and clean
+	{
+		dataset::simple::Reader reader("testds");
+		ensure_dataset_clean(reader, 1, 2);
+	}
+}
+
+// Retest with sqlite
+template<> template<> void to::test<3>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<4>() { ForceSqlite fs; test<2>(); }
+
 #if 0
 // Test maintenance scan on non-indexed files
 template<> template<>
