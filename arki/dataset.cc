@@ -26,6 +26,8 @@
 #include <arki/dataset/file.h>
 #include <arki/dataset/ondisk.h>
 #include <arki/dataset/ondisk2.h>
+#include <arki/dataset/simple/reader.h>
+#include <arki/dataset/simple/writer.h>
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
@@ -255,10 +257,10 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 	if (type.empty())
 		type = "local";
 	
-	if (type == "local" || type == "test" || type == "error" || type == "duplicates")
-		return new dataset::ondisk::Reader(cfg);
 	if (type == "ondisk2")
 		return new dataset::ondisk2::Reader(cfg);
+	if (type == "simple" || type == "error" || type == "duplicates")
+		return new dataset::simple::Reader(cfg);
 #ifdef HAVE_LIBCURL
 	if (type == "remote")
 		return new dataset::HTTP(cfg);
@@ -269,6 +271,8 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 		return new dataset::Empty(cfg);
 	if (type == "file")
 		return dataset::File::create(cfg);
+	if (type == "local" || type == "test")
+		return new dataset::ondisk::Reader(cfg);
 
 	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
 }
@@ -293,16 +297,18 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 	if (type.empty())
 		type = "local";
 	
-	if (type == "local" || type == "test" || type == "error" || type == "duplicates")
-		return new dataset::ondisk::Writer(cfg);
 	if (type == "ondisk2")
 		return new dataset::ondisk2::Writer(cfg);
+	if (type == "simple" || type == "error" || type == "duplicates")
+		return new dataset::simple::Writer(cfg);
 	if (type == "remote")
 		throw wibble::exception::Consistency("creating a dataset", "remote datasets are not writable");
 	if (type == "outbound")
 		return new dataset::Outbound(cfg);
 	if (type == "discard")
 		return new dataset::Discard(cfg);
+	if (type == "local" || type == "test")
+		return new dataset::ondisk::Writer(cfg);
 
 	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
 }
@@ -313,10 +319,12 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
 	if (type.empty())
 		type = "local";
 	
-	if (type == "local" || type == "test" || type == "error" || type == "duplicates")
+	if (type == "local" || type == "test")
 		return dataset::ondisk::Writer::testAcquire(cfg, md, out);
 	if (type == "ondisk2")
 		return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
+	if (type == "simple" || type == "error" || type == "duplicates")
+		return dataset::simple::Writer::testAcquire(cfg, md, out);
 	if (type == "remote")
 		throw wibble::exception::Consistency("simulating dataset acquisition", "remote datasets are not writable");
 	if (type == "outbound")
