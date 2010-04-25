@@ -110,7 +110,7 @@ Datafile* Writer::file(const std::string& pathname)
 		throw wibble::exception::Consistency("accessing data file " + pathname,
 				"cannot update compressed data files: please manually uncompress it first");
 
-	Datafile* res = new Datafile(pn);
+	Datafile* res = new Datafile(m_dir, pathname);
 	m_df_cache.insert(make_pair(pathname, res));
 	return res;
 }

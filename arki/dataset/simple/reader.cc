@@ -124,7 +124,8 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 		c = sorter.get();
 	}
 
-	ds::MatcherFilter filter(q.matcher, *c);
+	ds::PathPrepender prepender(sys::fs::abspath(m_dir), *c);
+	ds::MatcherFilter filter(q.matcher, prepender);
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 		scan::scan(str::joinpath(m_dir, *i), filter);
 }

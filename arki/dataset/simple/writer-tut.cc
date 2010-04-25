@@ -139,12 +139,23 @@ void to::test<1>()
 	ensure_equals(ds->name, "testds");
 	ensure_equals(ds->id, "");
 
+	Item<types::source::Blob> source = md.source.upcast<types::source::Blob>();
+	ensure_equals(source->filename, "2007/07-08.grib1");
+	ensure_equals(source->offset, 0u);
+	ensure_equals(source->size, 7218u);
+
+
 	// Import again works fine
 	res = writer.acquire(md);
 	ensure_equals(res, WritableDataset::ACQ_OK);
 	ds = getDataset(md);
 	ensure_equals(ds->name, "testds");
 	ensure_equals(ds->id, "");
+
+	source = md.source.upcast<types::source::Blob>();
+	ensure_equals(source->filename, "2007/07-08.grib1");
+	ensure_equals(source->offset, 7218u);
+	ensure_equals(source->size, 7218u);
 
 	// Flush the changes and check that everything is allright
 	writer.flush();

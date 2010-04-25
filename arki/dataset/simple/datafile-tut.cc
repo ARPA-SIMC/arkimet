@@ -74,7 +74,7 @@ void to::test<1>()
 	scanner.open("inbound/test.grib1");
 
 	{
-		Datafile df(fname);
+		Datafile df(".", fname);
 
 		// It should exist but be empty
 		ensure(sys::fs::access(fname, F_OK));

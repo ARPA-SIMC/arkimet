@@ -45,7 +45,8 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Datafile::Datafile(const std::string& pathname) : pathname(pathname), fd(-1)
+Datafile::Datafile(const std::string& dirname, const std::string& relname)
+	: relname(relname), pathname(str::joinpath(dirname, relname)), fd(-1)
 {
 	if (sys::fs::access(pathname, F_OK))
 	{
@@ -125,7 +126,7 @@ void Datafile::append(Metadata& md)
 		throw wibble::exception::File(pathname, "reading the current position");
 
 	// Set the source information that we are writing in the metadata
-	md.source = types::source::Blob::create(origSource->format, pathname, wrpos, buf.size());
+	md.source = types::source::Blob::create(origSource->format, relname, wrpos, buf.size());
 
 	// Prevent caching (ignore function result)
 	(void)posix_fadvise(fd, wrpos, buf.size(), POSIX_FADV_DONTNEED);
