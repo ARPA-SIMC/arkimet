@@ -416,6 +416,31 @@ void to::test<10>()
 	ensure(!sys::fs::access("testds/.summaries/2008-01.summary", F_OK));
 }
 
+// Tolerate empty dirs
+template<> template<>
+void to::test<11>()
+{
+	// Start with an empty dir
+	system("rm -rf testds");
+	system("mkdir testds");
+
+	ondisk2::Reader testds(*config.section("testds"));
+
+	MetadataCollector mdc;
+	testds.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
+	ensure(mdc.empty());
+
+	Summary s;
+	testds.querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 0u);
+
+	std::stringstream os;
+	dataset::ByteQuery bq;
+	bq.setData(Matcher::parse(""));
+	testds.queryBytes(bq, os);
+	ensure(os.str().empty());
+}
+
 }
 
 // vim:set ts=4 sw=4:

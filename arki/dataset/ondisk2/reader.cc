@@ -69,8 +69,11 @@ Reader::Reader(const ConfigFile& cfg)
 {
 	this->cfg = cfg.values();
 	m_tf = TargetFile::create(cfg);
-	m_idx = new RIndex(cfg);
-	m_idx->open();
+	if (sys::fs::access(str::joinpath(m_root, "index.sqlite"), F_OK))
+	{
+		m_idx = new RIndex(cfg);
+		m_idx->open();
+	}
 }
 
 Reader::~Reader()
@@ -118,6 +121,8 @@ void Reader::queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consu
 
 void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
+	if (!m_idx) return;
+
 	// First ask the index.  If it can do something useful, iterate with it
 	//
 	// If the index would just do a linear scan of everything, then instead
@@ -134,6 +139,8 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 
 void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
+	if (!m_idx) return;
+
 	// Query the archives first
 	if (hasArchive())
 		archive().queryBytes(q, out);
@@ -251,6 +258,8 @@ void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summa
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
+	if (!m_idx) return;
+
 	using namespace wibble::str;
 
 	// Query the archives first
