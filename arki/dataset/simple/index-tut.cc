@@ -131,6 +131,7 @@ void to::test<4>()
 	ensure(!sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 	std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRW();
+	m->flush();
 	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 	
 	MaintenanceCollector c;
