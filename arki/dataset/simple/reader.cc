@@ -22,6 +22,7 @@
 
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/simple/index.h>
+#include <arki/configfile.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
@@ -58,16 +59,34 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
+Reader::Reader(const ConfigFile& cfg)
+	: m_dir(cfg.value("path")), m_mft(0)
+{
+	// Create the directory if it does not exist
+	wibble::sys::fs::mkpath(m_dir);
+	
+	if (Manifest::exists(m_dir))
+	{
+		auto_ptr<Manifest> mft = Manifest::create(m_dir);
+
+		m_mft = mft.release();
+		m_mft->openRO();
+	}
+}
+
 Reader::Reader(const std::string& dir)
 	: m_dir(dir), m_mft(0)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
 	
-	auto_ptr<Manifest> mft = Manifest::create(m_dir);
+	if (Manifest::exists(m_dir))
+	{
+		auto_ptr<Manifest> mft = Manifest::create(m_dir);
 
-	m_mft = mft.release();
-	m_mft->openRO();
+		m_mft = mft.release();
+		m_mft->openRO();
+	}
 }
 
 Reader::~Reader()
@@ -82,6 +101,8 @@ bool Reader::is_dataset(const std::string& dir)
 
 void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
+	if (!m_mft) return;
+
 	vector<string> files;
 	m_mft->fileList(q.matcher, files);
 
@@ -110,6 +131,8 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 
 void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
+	if (!m_mft) return;
+
 	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA: {
@@ -177,6 +200,8 @@ void Reader::querySummaries(const Matcher& matcher, Summary& summary)
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
+	if (!m_mft) return;
+
 	// Check if the matcher discriminates on reference times
 	const matcher::Implementation* rtmatch = 0;
 	if (matcher.m_impl)
@@ -213,6 +238,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 
 void Reader::maintenance(maintenance::MaintFileVisitor& v)
 {
+	if (!m_mft) return;
 	m_mft->check(v);
 }
 

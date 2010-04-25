@@ -29,6 +29,7 @@
 #include <iosfwd>
 
 namespace arki {
+class ConfigFile;
 class Matcher;
 class MetadataConsumer;
 
@@ -55,6 +56,7 @@ protected:
 	void querySummaries(const Matcher& matcher, Summary& summary);
 
 public:
+	Reader(const ConfigFile& cfg);
 	Reader(const std::string& dir);
 	virtual ~Reader();
 
