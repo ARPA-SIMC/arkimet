@@ -65,6 +65,8 @@ namespace simple {
 Writer::Writer(const ConfigFile& cfg)
 	: m_dir(cfg.value("path")), m_mft(0), m_tf(0)
 {
+	m_name = cfg.value("name");
+
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
 
