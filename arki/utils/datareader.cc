@@ -256,6 +256,8 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
 			last = new datareader::IdxZlibFileReader(fname);
 		else if (sys::fs::access(fname + ".gz", F_OK))
 			last = new datareader::ZlibFileReader(fname);
+		else
+			throw wibble::exception::Consistency("accessing file " + fname, "file does not exist");
 	}
 
 	// Read the data

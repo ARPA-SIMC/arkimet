@@ -106,6 +106,25 @@ void to::test<3>()
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
 }
 
+// Don't segfault on nonexisting files
+template<> template<>
+void to::test<4>()
+{
+	utils::DataReader dr;
+
+	sys::fs::deleteIfExists("test.grib1");
+
+	wibble::sys::Buffer buf;
+	buf.resize(7218);
+
+	try {
+		dr.read("test.grib1", 0, 7218, buf.data());
+		ensure(false);
+	} catch (std::exception& e) {
+		ensure(string(e.what()).find("file does not exist") != string::npos);
+	}
+}
+
 
 }
 
