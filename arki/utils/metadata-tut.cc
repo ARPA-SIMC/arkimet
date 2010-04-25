@@ -197,6 +197,29 @@ void to::test<4>()
 	ensure_equals(acct::gzip_idx_reposition_count.val(), 1u);
 }
 
+// Test compression when the data don't compress
+template<> template<>
+void to::test<5>()
+{
+	using namespace utils;
+
+	// Create a collector with only one small metadata inside
+	c.clear();
+	scan::scan("inbound/test.bufr", c);
+	ensure_equals(c.size(), 3u);
+	c.pop_back();
+	c.pop_back();
+	ensure_equals(c.size(), 1u);
+
+	c.writeAtomically("test.md");
+
+	metadata::Collector c1;
+	Metadata::readFile("test.md", c1);
+	ensure_equals(c.size(), 1u);
+	ensure(c[0] ==  c1[0]);
+}
+
+
 }
 
 // vim:set ts=4 sw=4:
