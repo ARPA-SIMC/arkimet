@@ -124,10 +124,15 @@ void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 		c = sorter.get();
 	}
 
-	ds::PathPrepender prepender(sys::fs::abspath(m_dir), *c);
+	string absdir = sys::fs::abspath(m_dir);
+	ds::PathPrepender prepender("", *c);
 	ds::MatcherFilter filter(q.matcher, prepender);
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-		scan::scan(str::joinpath(m_dir, *i), filter);
+	{
+		string fullpath = str::joinpath(absdir, *i);
+		prepender.path = str::dirname(fullpath);
+		scan::scan(fullpath, filter);
+	}
 }
 
 void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)

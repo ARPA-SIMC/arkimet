@@ -140,7 +140,7 @@ void to::test<1>()
 	ensure_equals(ds->id, "");
 
 	Item<types::source::Blob> source = md.source.upcast<types::source::Blob>();
-	ensure_equals(source->filename, "2007/07-08.grib1");
+	ensure_equals(source->filename, "07-08.grib1");
 	ensure_equals(source->offset, 0u);
 	ensure_equals(source->size, 7218u);
 
@@ -153,7 +153,7 @@ void to::test<1>()
 	ensure_equals(ds->id, "");
 
 	source = md.source.upcast<types::source::Blob>();
-	ensure_equals(source->filename, "2007/07-08.grib1");
+	ensure_equals(source->filename, "07-08.grib1");
 	ensure_equals(source->offset, 7218u);
 	ensure_equals(source->size, 7218u);
 

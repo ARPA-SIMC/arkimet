@@ -110,7 +110,7 @@ Datafile* Writer::file(const std::string& pathname)
 		throw wibble::exception::Consistency("accessing data file " + pathname,
 				"cannot update compressed data files: please manually uncompress it first");
 
-	Datafile* res = new Datafile(m_dir, pathname);
+	Datafile* res = new Datafile(pn);
 	m_df_cache.insert(make_pair(pathname, res));
 	return res;
 }
@@ -166,13 +166,18 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 	Datafile* df = file(reldest);
 
 	// Try appending
+	UItem<types::AssignedDataset> oldads = md.get<types::AssignedDataset>();
+	md.set(types::AssignedDataset::create(m_name, ""));
 
 	try {
 		df->append(md);
-		md.set(types::AssignedDataset::create(m_name, ""));
 		return ACQ_OK;
 	} catch (std::exception& e) {
 		// sqlite will take care of transaction consistency
+		if (oldads.defined())
+			md.set(oldads);
+		else
+			md.unset(types::TYPE_ASSIGNEDDATASET);
 		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
 		return ACQ_ERROR;
 	}

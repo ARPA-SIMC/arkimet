@@ -40,13 +40,13 @@ namespace simple {
 struct Datafile
 {
 	// Full path to the data file
-	std::string relname;
 	std::string pathname;
+	std::string basename;
 	int fd;
 	utils::metadata::Collector mds;
 	Summary sum;
 
-	Datafile(const std::string& dirname, const std::string& relname);
+	Datafile(const std::string& pathname);
 	~Datafile();
 
 	void lock();
