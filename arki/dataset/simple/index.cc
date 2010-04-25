@@ -99,6 +99,7 @@ class PlainManifest : public Manifest
 	std::string m_dir;
 	vector<Info> info;
 	ino_t last_inode;
+	bool dirty;
 
 	/**
 	 * Reread the MANIFEST file.
@@ -163,36 +164,19 @@ class PlainManifest : public Manifest
 		}		
 
 		in.close();
+		dirty = false;
 		return true;
-	}
-
-	void save()
-	{
-		string pathname(str::joinpath(m_dir, "MANIFEST.tmp"));
-
-		std::ofstream out;
-		out.open(pathname.c_str(), ios::out);
-		if (!out.is_open() || out.fail())
-			throw wibble::exception::File(pathname, "opening file for writing");
-
-		for (vector<Info>::const_iterator i = info.begin();
-				i != info.end(); ++i)
-			i->write(out);
-
-		out.close();
-
-		if (::rename(pathname.c_str(), str::joinpath(m_dir, "MANIFEST").c_str()) < 0)
-			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_dir, "MANIFEST"));
 	}
 
 public:
 	PlainManifest(const std::string& dir)
-		: m_dir(dir), last_inode(0)
+		: m_dir(dir), last_inode(0), dirty(false)
 	{
 	}
 
 	virtual ~PlainManifest()
 	{
+		flush();
 	}
 
 	void openRO()
@@ -204,7 +188,7 @@ public:
 	void openRW()
 	{
 		if (!reread())
-			save();
+			dirty = true;
 	}
 
 	void fileList(const Matcher& matcher, std::vector<std::string>& files)
@@ -277,7 +261,7 @@ public:
 		else
 			*lb = item;
 
-		save();
+		dirty = true;
 	}
 
 	virtual void remove(const std::string& relname)
@@ -291,10 +275,10 @@ public:
 		if (i != info.end())
 			info.erase(i);
 
-		save();
+		dirty = true;
 	}
 
-	virtual void check(MaintFileVisitor& v)
+	virtual void check(MaintFileVisitor& v, bool quick=true)
 	{
 		reread();
 
@@ -361,6 +345,27 @@ public:
 		}
 	}
 
+	void flush()
+	{
+		if (!dirty) return;
+		string pathname(str::joinpath(m_dir, "MANIFEST.tmp"));
+
+		std::ofstream out;
+		out.open(pathname.c_str(), ios::out);
+		if (!out.is_open() || out.fail())
+			throw wibble::exception::File(pathname, "opening file for writing");
+
+		for (vector<Info>::const_iterator i = info.begin();
+				i != info.end(); ++i)
+			i->write(out);
+
+		out.close();
+
+		if (::rename(pathname.c_str(), str::joinpath(m_dir, "MANIFEST").c_str()) < 0)
+			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_dir, "MANIFEST"));
+		dirty = false;
+	}
+
 	static bool exists(const std::string& dir)
 	{
 		string pathname(str::joinpath(dir, "MANIFEST"));
@@ -414,6 +419,11 @@ public:
 
 	virtual ~SqliteManifest()
 	{
+	}
+
+	void flush()
+	{
+		// Nothing to do: everything is saved right away
 	}
 
 	void openRO()
@@ -534,7 +544,7 @@ public:
 			;
 	}
 
-	virtual void check(MaintFileVisitor& v)
+	virtual void check(MaintFileVisitor& v, bool quick=true)
 	{
 		// List of files existing on disk
 		std::vector<std::string> disk = scan::dir(m_dir, true);

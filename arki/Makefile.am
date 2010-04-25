@@ -33,7 +33,9 @@ dist_noinst_HEADERS = \
 		dataset/ondisk2/writer/datafile.h \
 		dataset/ondisk2/test-utils.h \
 		dataset/simple/index.h \
+		dataset/simple/datafile.h \
 		dataset/simple/reader.h \
+		dataset/simple/writer.h \
 		dataset/outbound.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -177,7 +179,9 @@ libarkimet_la_SOURCES = \
 		dataset/local.cc \
 		dataset/file.cc \
 		dataset/simple/index.cc \
+		dataset/simple/datafile.cc \
 		dataset/simple/reader.cc \
+		dataset/simple/writer.cc \
 		dataset/ondisk.cc \
 		dataset/ondisk/index.cc \
 		dataset/ondisk/maintenance.cc \
@@ -276,7 +280,9 @@ tests_arki_test_SOURCES = \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
 		dataset/simple/index-tut.cc \
+		dataset/simple/datafile-tut.cc \
 		dataset/simple/reader-tut.cc \
+		dataset/simple/writer-tut.cc \
 		dataset/ondisk-tut.cc \
 		dataset/ondisk/index-tut.cc \
 		dataset/ondisk/fetcher-tut.cc \

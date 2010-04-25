@@ -18,14 +18,17 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk2/test-utils.h>
-#include <arki/dataset/ondisk2/archive.h>
-#include <arki/dataset/ondisk2/writer.h>
+#include <arki/dataset/test-utils.h>
+#include <arki/dataset/simple/writer.h>
 #include <arki/dataset/simple/index.h>
+#include <arki/dataset/simple/reader.h>
+#include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
+#include <arki/scan/grib.h>
 #include <arki/utils/metadata.h>
+#include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 
 namespace arki {
@@ -58,8 +61,7 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::dataset::ondisk2;
-using namespace arki::dataset::ondisk2::writer;
+using namespace arki::dataset::simple;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -77,13 +79,18 @@ struct ForceSqlite
 	}
 };
 
-struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFileVisitor {
+static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
+{
+	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+}
+
+struct arki_dataset_simple_writer_shar : public dataset::maintenance::MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
 
 	ConfigFile cfg;
 
-	arki_dataset_ondisk2_archive_shar()
+	arki_dataset_simple_writer_shar()
 	{
 		system("rm -rf testds");
 		system("mkdir testds");
@@ -92,9 +99,8 @@ struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFil
 
 		cfg.setValue("path", "testds");
 		cfg.setValue("name", "testds");
-		cfg.setValue("type", "ondisk2");
+		cfg.setValue("type", "simple");
 		cfg.setValue("step", "daily");
-		cfg.setValue("unique", "origin, reftime");
 	}
 
 	virtual void operator()(const std::string& file, State state) {}
@@ -103,44 +109,61 @@ struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFil
 	{
 		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 	}
-
-#define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-	void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
-	{
-		Archive arc(dir);
-		arc.openRO();
-		arki::tests::impl_ensure_dataset_clean(loc, arc, filecount, resultcount);
-		inner_ensure(sys::fs::access(str::joinpath(dir, idxfname()), F_OK));
-	}
 };
-TESTGRP(arki_dataset_ondisk2_archive);
+TESTGRP(arki_dataset_simple_writer);
 
-// Acquire and query
+// Test acquiring data
 template<> template<>
 void to::test<1>()
 {
-	metadata::Collector mdc;
+	// Clean the dataset
+	system("rm -rf testds");
+	system("mkdir testds");
+
+	Metadata md;
+	scan::Grib scanner;
+	scanner.open("inbound/test.grib1");
+
+	dataset::simple::Writer writer(cfg);
+	ensure(scanner.next(md));
+
+	// Import once in the empty dataset
+	WritableDataset::AcquireResult res = writer.acquire(md);
+	ensure_equals(res, WritableDataset::ACQ_OK);
+	#if 0
+	for (vector<Note>::const_iterator i = md.notes.begin();
+			i != md.notes.end(); ++i)
+		cerr << *i << endl;
+	#endif
+	UItem<types::AssignedDataset> ds = getDataset(md);
+	ensure_equals(ds->name, "testds");
+	ensure_equals(ds->id, "");
+
+	// Import again works fine
+	res = writer.acquire(md);
+	ensure_equals(res, WritableDataset::ACQ_OK);
+	ds = getDataset(md);
+	ensure_equals(ds->name, "testds");
+	ensure_equals(ds->id, "");
+
+	// Flush the changes and check that everything is allright
+	writer.flush();
+	ensure(wibble::sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(wibble::sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(wibble::sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(wibble::sys::fs::access("testds/" + idxfname(), F_OK));
+	ensure(files::timestamp("testds/2007/07-08.grib1") <= files::timestamp("testds/2007/07-08.grib1.metadata"));
+	ensure(files::timestamp("testds/2007/07-08.grib1.metadata") <= files::timestamp("testds/2007/07-08.grib1.summary"));
+	ensure(files::timestamp("testds/2007/07-08.grib1.summary") <= files::timestamp("testds/" + idxfname()));
+
+	
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-
-		// Acquire
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
-		arc.flush();
-		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
-
-		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
-		ensure_equals(mdc.size(), 3u);
-		ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
+		dataset::simple::Reader reader("testds");
+		ensure_dataset_clean(reader, 1, 2);
 	}
-
-	ensure_archive_clean("testds/.archive/last", 1, 3);
 }
 
+#if 0
 // Test maintenance scan on non-indexed files
 template<> template<>
 void to::test<2>()
@@ -209,7 +232,6 @@ void to::test<3>()
 		arc.openRW();
 		system("cp inbound/test.grib1 testds/.archive/last/");
 		arc.acquire("test.grib1");
-		arc.flush();
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
 		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
@@ -276,7 +298,6 @@ void to::test<4>()
 		arc.openRW();
 		system("cp inbound/test.grib1 testds/.archive/last/");
 		arc.acquire("test.grib1");
-		arc.flush();
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
 		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
@@ -344,7 +365,6 @@ void to::test<5>()
 		arc.acquire("1.grib1");
 		arc.acquire("2.grib1");
 		arc.acquire("3.grib1");
-		arc.flush();
 
 		sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
 		ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
@@ -425,7 +445,6 @@ void to::test<6>()
 		arc.openRW();
 		system("cp inbound/test.grib1 testds/.archive/last/");
 		arc.acquire("test.grib1");
-		arc.flush();
 
 		// Compress it
 		metadata::Collector mdc;
@@ -529,5 +548,6 @@ template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
 template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
 template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
 
+#endif
 
 }

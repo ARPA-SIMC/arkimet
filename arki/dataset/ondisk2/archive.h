@@ -79,6 +79,8 @@ public:
 	void rescan(const std::string& relname);
 	void deindex(const std::string& relname);
 
+	void flush();
+
 	void maintenance(maintenance::MaintFileVisitor& v);
 	/*
 	void repack(std::ostream& log, bool writable=false);
@@ -137,6 +139,8 @@ public:
 	void acquire(const std::string& relname, const utils::metadata::Collector& mds);
 	void remove(const std::string& relname);
 	void rescan(const std::string& relname);
+
+	void flush();
 
 	void maintenance(maintenance::MaintFileVisitor& v);
 	/*

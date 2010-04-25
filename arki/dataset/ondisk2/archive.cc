@@ -148,6 +148,11 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 	m_mft->acquire(relname, mtime, sum);
 }
 
+void Archive::flush()
+{
+	if (m_mft) m_mft->flush();
+}
+
 void Archive::maintenance(maintenance::MaintFileVisitor& v)
 {
 	if (m_mft)
@@ -279,6 +284,15 @@ Archives::~Archives()
 		delete i->second;
 	if (m_last)
 		delete m_last;
+}
+
+void Archives::flush()
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		i->second->flush();
+	if (m_last)
+		m_last->flush();
 }
 
 Archive* Archives::lookup(const std::string& name)
