@@ -28,6 +28,32 @@
 #include <arki/utils/metadata.h>
 #include <wibble/sys/fs.h>
 
+namespace arki {
+namespace tests {
+
+#define ensure_dataset_clean(x, y, z) arki::tests::impl_ensure_dataset_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
+template<typename DS>
+void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_t filecount, size_t resultcount)
+{
+	using namespace std;
+	using namespace arki;
+	using namespace arki::utils;
+
+	MaintenanceCollector c;
+	ds.maintenance(c);
+	inner_ensure_equals(c.fileStates.size(), filecount);
+	inner_ensure_equals(c.count(dataset::maintenance::MaintFileVisitor::ARC_OK), filecount);
+	inner_ensure_equals(c.remaining(), string());
+	inner_ensure(c.isClean());
+
+	metadata::Collector mdc;
+	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
+	inner_ensure_equals(mdc.size(), resultcount);
+}
+
+}
+}
+
 namespace tut {
 using namespace std;
 using namespace wibble;
@@ -77,6 +103,15 @@ struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFil
 	{
 		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 	}
+
+#define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
+	void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
+	{
+		Archive arc(dir);
+		arc.openRO();
+		arki::tests::impl_ensure_dataset_clean(loc, arc, filecount, resultcount);
+		inner_ensure(sys::fs::access(str::joinpath(dir, idxfname()), F_OK));
+	}
 };
 TESTGRP(arki_dataset_ondisk2_archive);
 
@@ -84,57 +119,53 @@ TESTGRP(arki_dataset_ondisk2_archive);
 template<> template<>
 void to::test<1>()
 {
-	Archive arc("testds/.archive/last");
-	arc.openRW();
-
-	// Acquire
-	system("cp inbound/test.grib1 testds/.archive/last/");
-	arc.acquire("test.grib1");
-	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
-
 	metadata::Collector mdc;
-	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
-	ensure_equals(mdc.size(), 3u);
-	ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRW();
 
-	// Query
-	mdc.clear();
-	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 3u);
+		// Acquire
+		system("cp inbound/test.grib1 testds/.archive/last/");
+		arc.acquire("test.grib1");
+		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
-	// Maintenance should show it's all ok
-	MaintenanceCollector c;
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	//c.dump(cerr);
-	ensure_equals(c.count(ARC_OK), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+		ensure_equals(mdc.size(), 3u);
+		ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
+	}
+
+	ensure_archive_clean("testds/.archive/last", 1, 3);
 }
 
 // Test maintenance scan on non-indexed files
 template<> template<>
 void to::test<2>()
 {
-	Archive arc("testds/.archive/last");
-	arc.openRW();
-	system("cp inbound/test.grib1 testds/.archive/last/");
+	MaintenanceCollector c;
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRW();
+		system("cp inbound/test.grib1 testds/.archive/last/");
+	}
 
 	// Query now is ok
-	metadata::Collector mdc;
-	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 0u);
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRO();
+		metadata::Collector mdc;
+		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 0u);
 
-	// Maintenance should show one file to index
-	MaintenanceCollector c;
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_TO_INDEX), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(not c.isClean());
+		// Maintenance should show one file to index
+		arc.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_INDEX), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
 
 	{
 		Writer writer(cfg);
@@ -164,43 +195,44 @@ void to::test<2>()
 	}
 
 	// Everything should be fine now
-	c.clear();
-	arc.maintenance(c);
-	//cerr << c.remaining() << endl;
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_OK), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	ensure_archive_clean("testds/.archive/last", 1, 3);
 }
 
 // Test maintenance scan on missing metadata
 template<> template<>
 void to::test<3>()
 {
-	Archive arc("testds/.archive/last");
-	arc.openRW();
-	system("cp inbound/test.grib1 testds/.archive/last/");
-	arc.acquire("test.grib1");
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+	MaintenanceCollector c;
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRW();
+		system("cp inbound/test.grib1 testds/.archive/last/");
+		arc.acquire("test.grib1");
+		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
+		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
+		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+		ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+	}
 
 	// Query now is ok
-	metadata::Collector mdc;
-	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 3u);
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRO();
+		metadata::Collector mdc;
+		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 3u);
 
-	// Maintenance should show one file to rescan
-	MaintenanceCollector c;
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(not c.isClean());
+		// Maintenance should show one file to rescan
+		arc.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
 
+	// Fix the database
 	{
 		Writer writer(cfg);
 
@@ -229,40 +261,41 @@ void to::test<3>()
 	}
 
 	// Everything should be fine now
-	c.clear();
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_OK), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	ensure_archive_clean("testds/.archive/last", 1, 3);
 }
 
 // Test maintenance scan on missing summary
 template<> template<>
 void to::test<4>()
 {
-	Archive arc("testds/.archive/last");
-	arc.openRW();
-	system("cp inbound/test.grib1 testds/.archive/last/");
-	arc.acquire("test.grib1");
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-	ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+	MaintenanceCollector c;
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRW();
+		system("cp inbound/test.grib1 testds/.archive/last/");
+		arc.acquire("test.grib1");
+		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
+		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+	}
 
 	// Query now is ok
-	metadata::Collector mdc;
-	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 3u);
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRO();
+		metadata::Collector mdc;
+		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 3u);
 
-	// Maintenance should show one file to rescan
-	MaintenanceCollector c;
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(not c.isClean());
+		// Maintenance should show one file to rescan
+		arc.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
 
 	{
 		Writer writer(cfg);
@@ -292,12 +325,7 @@ void to::test<4>()
 	}
 
 	// Everything should be fine now
-	c.clear();
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_OK), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	ensure_archive_clean("testds/.archive/last", 1, 3);
 }
 
 // Test maintenance scan on missing metadata
@@ -313,12 +341,13 @@ void to::test<5>()
 		arc.acquire("1.grib1");
 		arc.acquire("2.grib1");
 		arc.acquire("3.grib1");
+
+		sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
+		ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
+		ensure(!sys::fs::access("testds/.archive/last/2.grib1.metadata", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/2.grib1.summary", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 	}
-	sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
-	ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/2.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	// Query now is ok
 	{
@@ -378,75 +407,63 @@ void to::test<5>()
 	}
 
 	// Everything should be fine now
-	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-		MaintenanceCollector c;
-		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
-	}
+	ensure_archive_clean("testds/.archive/last", 3, 9);
 }
 
 // Test maintenance scan on compressed archives
 template<> template<>
 void to::test<6>()
 {
-	// Import a file
-	Archive arc("testds/.archive/last");
-	arc.openRW();
-	system("cp inbound/test.grib1 testds/.archive/last/");
-	arc.acquire("test.grib1");
-
-	// Compress it
-	metadata::Collector mdc;
-	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
-	ensure_equals(mdc.size(), 3u);
-	mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1");
-
-	ensure(!sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.gz", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.gz.idx", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
-
-	// Query now is ok
-	mdc.clear();
-	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 3u);
-
-	// Maintenance should show that everything is ok now
 	MaintenanceCollector c;
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_OK), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	{
+		// Import a file
+		Archive arc("testds/.archive/last");
+		arc.openRW();
+		system("cp inbound/test.grib1 testds/.archive/last/");
+		arc.acquire("test.grib1");
+
+		// Compress it
+		metadata::Collector mdc;
+		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+		ensure_equals(mdc.size(), 3u);
+		mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
+		sys::fs::deleteIfExists("testds/.archive/last/test.grib1");
+
+		ensure(!sys::fs::access("testds/.archive/last/test.grib1", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/test.grib1.gz", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/test.grib1.gz.idx", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+	}
+
+	// Everything is still ok
+	ensure_archive_clean("testds/.archive/last", 1, 3);
 
 	// Try removing summary and metadata
 	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
 	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
 
 	// Cannot query anymore
-	mdc.clear();
-	try {
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure(false);
-	} catch (std::exception& e) {
-		ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
-	}
+	{
+		Archive arc("testds/.archive/last");
+		arc.openRO();
+		metadata::Collector mdc;
+		try {
+			arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+			ensure(false);
+		} catch (std::exception& e) {
+			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
+		}
 
-	// Maintenance should show one file to rescan
-	c.clear();
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(not c.isClean());
+		// Maintenance should show one file to rescan
+		c.clear();
+		arc.maintenance(c);
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
 
 	{
 		Writer writer(cfg);
@@ -474,6 +491,9 @@ void to::test<6>()
 		writer.repack(s, true);
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
+
+	// Everything should be fine now
+	ensure_archive_clean("testds/.archive/last", 1, 3);
 }
 
 // Test handling of empty archive dirs (such as last with everything moved away)
@@ -489,21 +509,9 @@ void to::test<7>()
 		arc.acquire("test.grib1");
 	}
 
-	// Instantiate an archive group
+	// Everything should be fine now
 	Archives arc("testds/.archive");
-
-	// Query now is ok
-	metadata::Collector mdc;
-	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 3u);
-
-	// Maintenance should show that everything is ok now
-	MaintenanceCollector c;
-	arc.maintenance(c);
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(ARC_OK), 1u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
+	ensure_dataset_clean(arc, 1, 3);
 }
 
 

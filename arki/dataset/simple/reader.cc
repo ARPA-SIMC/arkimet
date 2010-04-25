@@ -211,6 +211,11 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 	}
 }
 
+void Reader::maintenance(maintenance::MaintFileVisitor& v)
+{
+	m_mft->check(v);
+}
+
 }
 }
 }

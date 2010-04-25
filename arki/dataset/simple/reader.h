@@ -64,6 +64,8 @@ public:
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
+	void maintenance(maintenance::MaintFileVisitor& v);
+
 	static bool is_dataset(const std::string& dir);
 };
 

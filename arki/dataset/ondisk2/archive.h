@@ -46,6 +46,7 @@ class MaintFileVisitor;
 
 namespace simple {
 class Manifest;
+class Reader;
 }
 
 namespace ondisk2 {
@@ -54,6 +55,7 @@ class Archive : public Local
 {
 protected:
 	std::string m_dir;
+	simple::Reader* m_reader;
 	simple::Manifest* m_mft;
 
 	void querySummaries(const Matcher& matcher, Summary& summary);
