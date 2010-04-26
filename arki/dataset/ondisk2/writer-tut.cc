@@ -42,13 +42,13 @@ using namespace arki::utils::files;
 
 namespace tut {
 
-struct arki_dataset_ondisk2_maintenance_shar : public dataset::maintenance::MaintFileVisitor {
+struct arki_dataset_ondisk2_writer_shar : public dataset::maintenance::MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
 
 	ConfigFile cfg;
 
-	arki_dataset_ondisk2_maintenance_shar()
+	arki_dataset_ondisk2_writer_shar()
 	{
 		system("rm -rf testdir");
 
@@ -86,7 +86,7 @@ struct arki_dataset_ondisk2_maintenance_shar : public dataset::maintenance::Main
 
 	virtual void operator()(const std::string& file, State state) {}
 };
-TESTGRP(arki_dataset_ondisk2_maintenance);
+TESTGRP(arki_dataset_ondisk2_writer);
 
 // Test accuracy of maintenance scan, on perfect dataset
 template<> template<>

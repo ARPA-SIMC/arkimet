@@ -21,7 +21,7 @@
  */
 
 #include <arki/dataset/ondisk2/index.h>
-#include <arki/dataset/ondisk2/maintenance.h>
+#include <arki/dataset/maintenance.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>

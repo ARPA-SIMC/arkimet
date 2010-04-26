@@ -267,7 +267,7 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk2/index-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer/datafile-tut.cc \
-		dataset/ondisk2/maintenance-tut.cc \
+		dataset/ondisk2/writer-tut.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/test-utils.cc \
 		dataset/outbound-tut.cc \

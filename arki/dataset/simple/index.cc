@@ -374,6 +374,23 @@ public:
 
 	virtual void check(MaintFileVisitor& v, bool quick=true)
 	{
+#if 0
+	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
+	// and delete the index if it fails
+
+	// Iterate subdirs in sorted order
+	// Also iterate files on index in sorted order
+	// Check each file for need to reindex or repack
+	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
+	vector<string> files = scan::dir(m_path);
+	maintenance::FindMissing fm(ca, files);
+	maintenance::HoleFinder hf(fm, m_path, quick);
+	m_idx.scan_files(hf);
+	hf.end();
+	fm.end();
+	if (hasArchive())
+		archive().maintenance(v);
+#endif
 		reread();
 
 		// List of files existing on disk

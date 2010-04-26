@@ -22,7 +22,7 @@
 
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
-#include <arki/dataset/ondisk2/maintenance.h>
+#include <arki/dataset/maintenance.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/types/assigneddataset.h>
