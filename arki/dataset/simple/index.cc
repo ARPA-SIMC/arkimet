@@ -402,7 +402,7 @@ public:
 			while (not disk.empty() and disk.back() < i->file)
 			{
 				nag::verbose("Archive: %s is not in index", disk.back().c_str());
-				v(disk.back(), MaintFileVisitor::ARC_TO_INDEX);
+				v(disk.back(), MaintFileVisitor::TO_INDEX);
 				disk.pop_back();
 			}
 			if (not disk.empty() and disk.back() == i->file)
@@ -432,10 +432,10 @@ public:
 					if (ts_md < ts_data)
 						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
 								i->file.c_str(), ts_md, ts_sum);
-					v(i->file, MaintFileVisitor::ARC_TO_RESCAN);
+					v(i->file, MaintFileVisitor::TO_RESCAN);
 				}
 				else
-					v(i->file, MaintFileVisitor::ARC_OK);
+					v(i->file, MaintFileVisitor::OK);
 
 				// TODO: if requested, check for internal consistency
 				// TODO: it requires to have an infrastructure for quick
@@ -445,13 +445,13 @@ public:
 			else // if (disk.empty() or disk.back() > i->file)
 			{
 				nag::verbose("Archive: %s has been deleted from the archive", i->file.c_str());
-				v(i->file, MaintFileVisitor::ARC_DELETED);
+				v(i->file, MaintFileVisitor::DELETED);
 			}
 		}
 		while (not disk.empty())
 		{
 			nag::verbose("Archive: %s is not in index", disk.back().c_str());
-			v(disk.back(), MaintFileVisitor::ARC_TO_INDEX);
+			v(disk.back(), MaintFileVisitor::TO_INDEX);
 			disk.pop_back();
 		}
 	}
@@ -675,7 +675,7 @@ public:
 			while (not disk.empty() and disk.back() < i->first)
 			{
 				nag::verbose("Archive: %s is not in index", disk.back().c_str());
-				v(disk.back(), MaintFileVisitor::ARC_TO_INDEX);
+				v(disk.back(), MaintFileVisitor::TO_INDEX);
 				disk.pop_back();
 			}
 			if (not disk.empty() and disk.back() == i->first)
@@ -705,10 +705,10 @@ public:
 					if (ts_md < ts_data)
 						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
 								i->first.c_str(), ts_md, ts_sum);
-					v(i->first, MaintFileVisitor::ARC_TO_RESCAN);
+					v(i->first, MaintFileVisitor::TO_RESCAN);
 				}
 				else
-					v(i->first, MaintFileVisitor::ARC_OK);
+					v(i->first, MaintFileVisitor::OK);
 
 				// TODO: if requested, check for internal consistency
 				// TODO: it requires to have an infrastructure for quick
@@ -718,13 +718,13 @@ public:
 			else // if (disk.empty() or disk.back() > i->first)
 			{
 				nag::verbose("Archive: %s has been deleted from the archive", i->first.c_str());
-				v(i->first, MaintFileVisitor::ARC_DELETED);
+				v(i->first, MaintFileVisitor::DELETED);
 			}
 		}
 		while (not disk.empty())
 		{
 			nag::verbose("Archive: %s is not in index", disk.back().c_str());
-			v(disk.back(), MaintFileVisitor::ARC_TO_INDEX);
+			v(disk.back(), MaintFileVisitor::TO_INDEX);
 			disk.pop_back();
 		}
 	}

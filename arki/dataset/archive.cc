@@ -148,9 +148,39 @@ void Archive::flush()
 	if (m_mft) m_mft->flush();
 }
 
+namespace {
+struct ToArchiveState : public maintenance::MaintFileVisitor
+{
+	maintenance::MaintFileVisitor& next;
+
+	ToArchiveState(maintenance::MaintFileVisitor& next) : next(next) {}
+
+	virtual void operator()(const std::string& file, State state)
+	{
+		switch (state)
+		{
+			case OK:		next(file, ARC_OK); break;
+			case TO_ARCHIVE:	next(file, ARC_OK); break;
+			case TO_DELETE:		next(file, ARC_OK); break;
+			case TO_PACK:		next(file, ARC_OK); break;
+			case TO_INDEX:		next(file, ARC_TO_INDEX); break;
+			case TO_RESCAN:		next(file, ARC_TO_RESCAN); break;
+			case DELETED:		next(file, ARC_DELETED); break;
+			case ARC_OK:
+			case ARC_TO_INDEX:
+			case ARC_TO_RESCAN:
+			case ARC_DELETED:	next(file, state); break;
+			default:
+				throw wibble::exception::Consistency("checking archive", "programming error: found unsupported file state");
+		}
+	}
+};
+}
+
 void Archive::maintenance(maintenance::MaintFileVisitor& v)
 {
-	m_mft->check(v);
+	ToArchiveState tas(v);
+	m_mft->check(tas);
 	m_mft->flush();
 }
 

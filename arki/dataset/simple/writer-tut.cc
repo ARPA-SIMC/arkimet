@@ -45,7 +45,7 @@ void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_
 	MaintenanceCollector c;
 	ds.maintenance(c);
 	inner_ensure_equals(c.fileStates.size(), filecount);
-	inner_ensure_equals(c.count(dataset::maintenance::MaintFileVisitor::ARC_OK), filecount);
+	inner_ensure_equals(c.count(dataset::maintenance::MaintFileVisitor::OK), filecount);
 	inner_ensure_equals(c.remaining(), string());
 	inner_ensure(c.isClean());
 
@@ -294,7 +294,7 @@ void to::test<3>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_INDEX), 1u);
+		ensure_equals(c.count(TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -372,7 +372,7 @@ void to::test<4>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -456,7 +456,7 @@ void to::test<5>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -571,8 +571,8 @@ void to::test<6>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_OK), 2u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.count(TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
