@@ -22,6 +22,7 @@
 
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/local.h>
+#include <arki/dataset/archive.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
@@ -62,6 +63,7 @@ static std::string nfiles(const T& val)
 namespace arki {
 namespace dataset {
 namespace maintenance {
+
 
 HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick)
 	: next(next), m_root(root), quick(quick), validator(0), validator_fd(-1),
@@ -399,6 +401,205 @@ void MockFixer::end()
 		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
 	if (m_count_deindexed)
 		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
+	logEnd();
+}
+
+// RealRepacker
+
+RealRepacker::RealRepacker(std::ostream& log, WritableLocal& w)
+	: Agent(log, w), m_count_packed(0), m_count_archived(0),
+	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0),
+	  m_count_freed(0), m_touched_archive(false), m_redo_summary(false)
+{
+}
+
+void RealRepacker::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_PACK: {
+		        // Repack the file
+			size_t saved = w.repackFile(file);
+			log() << "packed " << file << " (" << saved << " saved)" << endl;
+			++m_count_packed;
+			m_count_freed += saved;
+			break;
+		}
+		case TO_ARCHIVE: {
+			// Create the target directory in the archive
+			w.archiveFile(file);
+			log() << "archived " << file << endl;
+			++m_count_archived;
+			m_touched_archive = true;
+			m_redo_summary = true;
+			break;
+		}
+		case TO_DELETE: {
+			// Delete obsolete files
+			size_t size = w.removeFile(file, true);
+			log() << "deleted " << file << " (" << size << " freed)" << endl;
+			++m_count_deleted;
+			++m_count_deindexed;
+			m_count_freed += size;
+			m_redo_summary = true;
+			break;
+		}
+		case TO_INDEX: {
+			// Delete all files not indexed
+			string pathname = str::joinpath(w.path(), file);
+			size_t size = files::size(pathname);
+			if (unlink(pathname.c_str()) < 0)
+				throw wibble::exception::System("removing " + pathname);
+
+			log() << "deleted " << file << " (" << size << " freed)" << endl;
+			++m_count_deleted;
+			m_count_freed += size;
+			break;
+		}
+		case DELETED: {
+			// Remove from index those files that have been deleted
+			w.removeFile(file, false);
+			log() << "deleted from index " << file << endl;
+			++m_count_deindexed;
+			m_redo_summary = true;
+			break;
+	        }
+		case ARC_TO_INDEX:
+		case ARC_TO_RESCAN: {
+			/// File is not present in the archive index
+			/// File contents need reindexing in the archive
+			w.archive().rescan(file);
+			log() << "rescanned in archive " << file << endl;
+			++m_count_rescanned;
+			m_touched_archive = true;
+			break;
+		}
+		case ARC_DELETED: {
+			w.archive().remove(file);
+			log() << "deleted from archive index " << file << endl;
+			++m_count_deindexed;
+			m_touched_archive = true;
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+void RealRepacker::end()
+{
+	if (m_touched_archive)
+	{
+		w.archive().vacuum();
+		log() << "archive cleaned up" << endl;
+	}
+
+	// Finally, tidy up the database
+	size_t size_vacuum = w.vacuum();
+
+	logStart();
+	if (m_count_packed)
+		logAdd() << nfiles(m_count_packed) << " packed";
+	if (m_count_archived)
+		logAdd() << nfiles(m_count_archived) << " archived";
+	if (m_count_deleted)
+		logAdd() << nfiles(m_count_deleted) << " deleted";
+	if (m_count_deindexed)
+		logAdd() << nfiles(m_count_deindexed) << " removed from index";
+	if (m_count_rescanned)
+		logAdd() << nfiles(m_count_rescanned) << " rescanned";
+	if (size_vacuum)
+	{
+		logAdd() << size_vacuum << " bytes reclaimed on the index";
+		m_count_freed += size_vacuum;
+	}
+	if (m_count_freed > 0)
+		logAdd() << m_count_freed << " total bytes freed";
+	logEnd();
+}
+
+// RealFixer
+
+RealFixer::RealFixer(std::ostream& log, WritableLocal& w)
+	: Agent(log, w), 
+          m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0),
+	  m_touched_archive(false), m_redo_summary(false)
+{
+}
+
+void RealFixer::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		/* Packing is left to the repacker, during check we do not
+		 * mangle the data files
+		case TO_PACK: {
+		        // Repack the file
+			size_t saved = repack(w.path(), file, w.m_idx);
+			log() << "packed " << file << " (" << saved << " saved)" << endl;
+			++m_count_packed;
+			break;
+		}
+		*/
+		case TO_INDEX:
+		case TO_RESCAN: {
+			w.rescanFile(file);
+			log() << "rescanned " << file << endl;
+			++m_count_rescanned;
+			m_redo_summary = true;
+			break;
+		}
+		case DELETED: {
+			// Remove from index those files that have been deleted
+			w.removeFile(file, false);
+			log() << "deindexed " << file << endl;
+			++m_count_deindexed;
+			m_redo_summary = true;
+			break;
+	        }
+		case ARC_TO_INDEX:
+		case ARC_TO_RESCAN: {
+			/// File is not present in the archive index
+			/// File contents need reindexing in the archive
+			w.archive().rescan(file);
+			log() << "rescanned in archive " << file << endl;
+			++m_count_rescanned;
+			m_touched_archive = true;
+			break;
+		}
+		case ARC_DELETED: {
+			/// File does not exist, but has entries in the archive index
+			w.archive().remove(file);
+			log() << "deindexed in archive " << file << endl;
+			++m_count_deindexed;
+			m_touched_archive = true;
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+void RealFixer::end()
+{
+	if (m_touched_archive)
+	{
+		w.archive().vacuum();
+		log() << "archive cleaned up" << endl;
+	}
+
+	// Finally, tidy up the database
+	size_t size_vacuum = w.vacuum();
+
+	logStart();
+	if (m_count_packed)
+		logAdd() << nfiles(m_count_packed) << " packed";
+	if (m_count_rescanned)
+		logAdd() << nfiles(m_count_rescanned) << " rescanned";
+	if (m_count_deindexed)
+		logAdd() << nfiles(m_count_deindexed) << " removed from index";
+	if (size_vacuum)
+		logAdd() << size_vacuum << " bytes reclaimed cleaning the index";
 	logEnd();
 }
 

@@ -17,7 +17,6 @@ dist_noinst_HEADERS = \
 		dataset/ondisk2.h \
 		dataset/ondisk2/aggregate.h \
 		dataset/ondisk2/index.h \
-		dataset/ondisk2/maintenance.h \
 		dataset/ondisk2/reader.h \
 		dataset/ondisk2/writer.h \
 		dataset/ondisk2/writer/datafile.h \
@@ -179,7 +178,6 @@ libarkimet_la_SOURCES = \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
 		dataset/ondisk2/writer/datafile.cc \
-		dataset/ondisk2/maintenance.cc \
 		dataset/outbound.cc \
 		dataset/discard.cc \
 		dataset/empty.cc \

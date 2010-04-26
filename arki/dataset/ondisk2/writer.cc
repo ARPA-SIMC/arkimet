@@ -36,6 +36,7 @@
 #include <arki/utils/metadata.h>
 #include <arki/utils/compress.h>
 #include <arki/summary.h>
+#include <arki/nag.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -209,6 +210,70 @@ void Writer::flush()
 	m_df_cache.clear();
 }
 
+namespace {
+struct CheckAge : public maintenance::MaintFileVisitor
+{
+	maintenance::MaintFileVisitor& next;
+	const Index& idx;
+	std::string archive_threshold;
+	std::string delete_threshold;
+
+	CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age=-1, int delete_age=-1);
+
+	void operator()(const std::string& file, State state);
+};
+
+CheckAge::CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age, int delete_age)
+	: next(next), idx(idx)
+{
+	time_t now = time(NULL);
+	struct tm t;
+
+	// Go to the beginning of the day
+	now -= (now % (3600*24));
+
+	if (archive_age != -1)
+	{
+		time_t arc_thr = now - archive_age * 3600 * 24;
+		gmtime_r(&arc_thr, &t);
+		archive_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
+				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
+				t.tm_hour, t.tm_min, t.tm_sec);
+	}
+	if (delete_age != -1)
+	{
+		time_t del_thr = now - delete_age * 3600 * 24;
+		gmtime_r(&del_thr, &t);
+		delete_threshold = str::fmtf("%04d-%02d-%02d %02d:%02d:%02d",
+				t.tm_year + 1900, t.tm_mon+1, t.tm_mday,
+				t.tm_hour, t.tm_min, t.tm_sec);
+	}
+}
+
+void CheckAge::operator()(const std::string& file, State state)
+{
+	if (state != OK or (archive_threshold.empty() and delete_threshold.empty()))
+		next(file, state);
+	else
+	{
+		string maxdate = idx.max_file_reftime(file);
+		//cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
+		if (delete_threshold > maxdate)
+		{
+			nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
+			next(file, TO_DELETE);
+		}
+		else if (archive_threshold > maxdate)
+		{
+			nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
+			next(file, TO_ARCHIVE);
+		}
+		else
+			next(file, state);
+	}
+}
+}
+
 void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
 	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
@@ -217,7 +282,7 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	// Iterate subdirs in sorted order
 	// Also iterate files on index in sorted order
 	// Check each file for need to reindex or repack
-	writer::CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
+	CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
 	vector<string> files = scan::dir(m_path);
 	maintenance::FindMissing fm(ca, files);
 	maintenance::HoleFinder hf(fm, m_path, quick);
@@ -243,7 +308,7 @@ void Writer::repack(std::ostream& log, bool writable)
 	if (writable)
 		// No safeguard against a deleted index: we catch that in the
 		// constructor and create the don't pack flagfile
-		repacker.reset(new RealRepacker(log, *this));
+		repacker.reset(new maintenance::RealRepacker(log, *this));
 	else
 		repacker.reset(new maintenance::MockRepacker(log, *this));
 	try {
@@ -261,7 +326,7 @@ void Writer::check(std::ostream& log, bool fix, bool quick)
 
 	if (fix)
 	{
-		RealFixer fixer(log, *this);
+		maintenance::RealFixer fixer(log, *this);
 		try {
 			maintenance(fixer, quick);
 			fixer.end();

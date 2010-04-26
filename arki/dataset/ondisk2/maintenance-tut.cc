@@ -17,7 +17,6 @@
  */
 
 #include <arki/dataset/ondisk2/test-utils.h>
-#include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/reader.h>
 #include <arki/metadata.h>
