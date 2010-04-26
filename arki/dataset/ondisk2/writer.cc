@@ -580,7 +580,7 @@ void Writer::archiveFile(const std::string& relpath)
 size_t Writer::vacuum()
 {
 	size_t size_pre = 0, size_post = 0;
-	if (files::size(m_idx.pathname() + "-journal") > 0)
+	if (files::size(m_idx.pathname()) > 0)
 	{
 		size_pre = files::size(m_idx.pathname())
 				+ files::size(m_idx.pathname() + "-journal");
@@ -593,7 +593,7 @@ size_t Writer::vacuum()
 	if (!sys::fs::access(str::joinpath(m_path, ".summaries/all.summary"), F_OK))
 		m_idx.summaryForAll();
 
-	return size_post > size_pre ? size_post - size_pre : 0;
+	return size_pre > size_post ? size_pre - size_post : 0;
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
