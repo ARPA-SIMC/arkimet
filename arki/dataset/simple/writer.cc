@@ -190,39 +190,35 @@ void Writer::flush()
 
 void Writer::repack(std::ostream& log, bool writable)
 {
-#if 0
 	// TODO Sort data in reftime order
 	// TODO Regenerate summary or metadata if timestamp show it's needed
 	// TODO Move files to archive
-	auto_ptr<Agent> repacker;
+	auto_ptr<maintenance::Agent> repacker;
 
 	if (writable)
 		// No safeguard against a deleted index: we catch that in the
 		// constructor and create the don't pack flagfile
-		repacker.reset(new RealRepacker(log, *this));
+		repacker.reset(new maintenance::RealRepacker(log, *this));
 	else
-		repacker.reset(new MockRepacker(log, *this));
+		repacker.reset(new maintenance::MockRepacker(log, *this));
 
 	maintenance(*repacker);
 	repacker->end();
-#endif
 }
 
 void Writer::check(std::ostream& log, bool fix, bool quick)
 {
-#if 0
 	// TODO Regenerate summary or metadata if timestamp show it's needed
 	if (fix)
 	{
-		RealFixer fixer(log, *this);
+		maintenance::RealFixer fixer(log, *this);
 		maintenance(fixer, quick);
 		fixer.end();
 	} else {
-		MockFixer fixer(log, *this);
+		maintenance::MockFixer fixer(log, *this);
 		maintenance(fixer, quick);
 		fixer.end();
 	}
-#endif
 }
 
 void Writer::rescanFile(const std::string& relpath)
