@@ -21,6 +21,7 @@
  */
 
 #include <arki/dataset/local.h>
+#include <arki/dataset/archive.h>
 #include <arki/configfile.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -34,6 +35,37 @@ using namespace wibble;
 
 namespace arki {
 namespace dataset {
+
+Local::Local(const ConfigFile& cfg)
+	: m_name(cfg.value("name")), m_path(cfg.value("path")), m_archive(0)
+{
+}
+
+Local::~Local()
+{
+	if (m_archive) delete m_archive;
+}
+
+bool Local::hasArchive() const
+{
+	string arcdir = str::joinpath(m_path, ".archive");
+	return sys::fs::access(arcdir, F_OK);
+}
+
+Archives& Local::archive()
+{
+	if (!m_archive)
+		m_archive = new Archives(str::joinpath(m_path, ".archive"));
+	return *m_archive;
+}
+
+const Archives& Local::archive() const
+{
+	if (!m_archive)
+		m_archive = new Archives(str::joinpath(m_path, ".archive"));
+	return *m_archive;
+}
+
 
 void Local::readConfig(const std::string& path, ConfigFile& cfg)
 {
@@ -82,6 +114,39 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
 		// Parse the config file
 		cfg.parse(in, fname);
 	}
+}
+
+WritableLocal::WritableLocal(const ConfigFile& cfg)
+	: m_path(cfg.value("path")), m_archive(0)
+{
+}
+
+WritableLocal::~WritableLocal()
+{
+	if (m_archive) delete m_archive;
+}
+
+bool WritableLocal::hasArchive() const
+{
+	string arcdir = str::joinpath(m_path, ".archive");
+	return sys::fs::access(arcdir, F_OK);
+	//std::auto_ptr<struct stat> st = sys::fs::stat(arcdir);
+	//if (!st.get())
+		//return false;
+}
+
+Archives& WritableLocal::archive()
+{
+	if (!m_archive)
+		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
+	return *m_archive;
+}
+
+const Archives& WritableLocal::archive() const
+{
+	if (!m_archive)
+		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
+	return *m_archive;
 }
 
 

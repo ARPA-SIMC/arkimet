@@ -22,8 +22,8 @@
 
 #include <arki/dataset/ondisk2/reader.h>
 #include <arki/dataset/ondisk2/index.h>
-#include <arki/dataset/ondisk2/archive.h>
 #include <arki/dataset/targetfile.h>
+#include <arki/dataset/archive.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -64,12 +64,11 @@ namespace dataset {
 namespace ondisk2 {
 
 Reader::Reader(const ConfigFile& cfg)
-       	: m_name(cfg.value("name")), m_root(cfg.value("path")),
-	  m_idx(0), m_tf(0), m_archive(0)
+       	: Local(cfg), m_idx(0), m_tf(0)
 {
 	this->cfg = cfg.values();
 	m_tf = TargetFile::create(cfg);
-	if (sys::fs::access(str::joinpath(m_root, "index.sqlite"), F_OK))
+	if (sys::fs::access(str::joinpath(m_path, "index.sqlite"), F_OK))
 	{
 		m_idx = new RIndex(cfg);
 		m_idx->open();
@@ -80,27 +79,6 @@ Reader::~Reader()
 {
 	if (m_idx) delete m_idx;
 	if (m_tf) delete m_tf;
-	if (m_archive) delete m_archive;
-}
-
-bool Reader::hasArchive() const
-{
-	string arcdir = str::joinpath(m_root, ".archive");
-	return sys::fs::access(arcdir, F_OK);
-}
-
-Archives& Reader::archive()
-{
-	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_root, ".archive"));
-	return *m_archive;
-}
-
-const Archives& Reader::archive() const
-{
-	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_root, ".archive"));
-	return *m_archive;
 }
 
 void Reader::queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consumer)
@@ -114,9 +92,9 @@ void Reader::queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consu
 		c = inliner.get();
 	}
 
-	ds::PathPrepender prepender(sys::fs::abspath(m_root), *c);
+	ds::PathPrepender prepender(sys::fs::abspath(m_path), *c);
 	if (!m_idx || !m_idx->query(q, prepender))
-		throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
 void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
@@ -206,7 +184,7 @@ void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summa
 		}
 	}
 
-	string root = joinpath(m_root, top);
+	string root = joinpath(m_path, top);
 
 	// Read the summary of the directory: if it does not match, return right
 	// away
@@ -230,7 +208,7 @@ void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summa
 		} else if (str::endsWith(*i, ".summary")) {
 			string basename = (*i).substr(0, (*i).size() - 8);
 			string relname = joinpath(top, basename);
-			string fullname = joinpath(m_root, relname);
+			string fullname = joinpath(m_path, relname);
 
 			// If there is the rebuild flagfile, skip this data file
 			// because the metadata may be inconsistent
@@ -267,7 +245,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 		archive().querySummary(matcher, summary);
 
 	if (!m_idx || !m_idx->querySummary(matcher, summary))
-		throw wibble::exception::Consistency("querying " + m_root, "index could not be used");
+		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
 }

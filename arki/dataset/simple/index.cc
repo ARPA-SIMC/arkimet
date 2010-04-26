@@ -22,6 +22,7 @@
 
 #include <arki/dataset/simple/index.h>
 #include <arki/dataset/maintenance.h>
+#include <arki/configfile.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
@@ -30,6 +31,8 @@
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
+#include <arki/sort.h>
+#include <arki/scan/any.h>
 #include <arki/nag.h>
 
 #include <wibble/exception.h>
@@ -57,7 +60,99 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
+Manifest::Manifest(const ConfigFile& cfg) : m_path(cfg.value("path")) {}
+Manifest::Manifest(const std::string& path) : m_path(path) {}
 Manifest::~Manifest() {}
+
+void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
+{
+	vector<string> files;
+	fileList(matcher, files);
+
+	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+	{
+		string pathname = str::joinpath(m_path, *i);
+
+		// Silently skip files that have been deleted
+		if (!sys::fs::access(pathname + ".summary", R_OK))
+			continue;
+
+		Summary s;
+		s.readFile(pathname + ".summary");
+		s.filter(matcher, summary);
+	}
+}
+
+void Manifest::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+{
+	vector<string> files;
+	fileList(q.matcher, files);
+
+	// TODO: does it make sense to check with the summary first?
+
+	MetadataConsumer* c = &consumer;
+	auto_ptr<sort::Stream> sorter;
+	auto_ptr<ds::DataInliner> inliner;
+
+	if (q.withData)
+	{
+		inliner.reset(new ds::DataInliner(*c));
+		c = inliner.get();
+	}
+		
+	if (q.sorter)
+	{
+		sorter.reset(new sort::Stream(*q.sorter, *c));
+		c = sorter.get();
+	}
+
+	string absdir = sys::fs::abspath(m_path);
+	ds::PathPrepender prepender("", *c);
+	ds::MatcherFilter filter(q.matcher, prepender);
+	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+	{
+		string fullpath = str::joinpath(absdir, *i);
+		prepender.path = str::dirname(fullpath);
+		scan::scan(fullpath, filter);
+	}
+}
+
+void Manifest::querySummary(const Matcher& matcher, Summary& summary)
+{
+	// Check if the matcher discriminates on reference times
+	const matcher::Implementation* rtmatch = 0;
+	if (matcher.m_impl)
+		rtmatch = matcher.m_impl->get(types::TYPE_REFTIME);
+
+	if (!rtmatch)
+	{
+		// The matcher does not contain reftime, we can work with a
+		// global summary
+		string cache_pathname = str::joinpath(m_path, "summary");
+
+		if (sys::fs::access(cache_pathname, R_OK))
+		{
+			Summary s;
+			s.readFile(cache_pathname);
+			s.filter(matcher, summary);
+		} else if (sys::fs::access(m_path, W_OK)) {
+			// Rebuild the cache
+			Summary s;
+			querySummaries(Matcher(), s);
+
+			// Save the summary
+			s.writeAtomically(cache_pathname);
+
+			// Query the newly generated summary that we still have
+			// in memory
+			s.filter(matcher, summary);
+		} else
+			querySummaries(matcher, summary);
+	} else {
+		querySummaries(matcher, summary);
+	}
+}
+
 
 namespace manifest {
 static bool mft_force_sqlite = false;
@@ -96,7 +191,6 @@ class PlainManifest : public Manifest
 			out << file << ";" << mtime << ";" << start_time->toSQL() << ";" << end_time->toSQL() << endl;
 		}
 	};
-	std::string m_dir;
 	vector<Info> info;
 	ino_t last_inode;
 	bool dirty;
@@ -108,7 +202,7 @@ class PlainManifest : public Manifest
 	 */
 	bool reread()
 	{
-		string pathname(str::joinpath(m_dir, "MANIFEST"));
+		string pathname(str::joinpath(m_path, "MANIFEST"));
 		ino_t inode = files::inode(pathname);
 
 		if (inode == last_inode) return inode != 0;
@@ -170,7 +264,7 @@ class PlainManifest : public Manifest
 
 public:
 	PlainManifest(const std::string& dir)
-		: m_dir(dir), last_inode(0), dirty(false)
+		: Manifest(dir), last_inode(0), dirty(false)
 	{
 	}
 
@@ -182,7 +276,7 @@ public:
 	void openRO()
 	{
 		if (!reread())
-			throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_dir);
+			throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_path);
 	}
 
 	void openRW()
@@ -283,7 +377,7 @@ public:
 		reread();
 
 		// List of files existing on disk
-		std::vector<std::string> disk = scan::dir(m_dir, true);
+		std::vector<std::string> disk = scan::dir(m_path, true);
 		std::sort(disk.begin(), disk.end(), sorter);
 
 		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
@@ -298,7 +392,7 @@ public:
 			{
 				disk.pop_back();
 
-				string pathname = str::joinpath(m_dir, i->file);
+				string pathname = str::joinpath(m_path, i->file);
 
 				time_t ts_data = files::timestamp(pathname);
 				if (ts_data == 0)
@@ -348,7 +442,7 @@ public:
 	void flush()
 	{
 		if (!dirty) return;
-		string pathname(str::joinpath(m_dir, "MANIFEST.tmp"));
+		string pathname(str::joinpath(m_path, "MANIFEST.tmp"));
 
 		std::ofstream out;
 		out.open(pathname.c_str(), ios::out);
@@ -361,8 +455,8 @@ public:
 
 		out.close();
 
-		if (::rename(pathname.c_str(), str::joinpath(m_dir, "MANIFEST").c_str()) < 0)
-			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_dir, "MANIFEST"));
+		if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
+			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
 		dirty = false;
 	}
 
@@ -376,7 +470,6 @@ public:
 
 class SqliteManifest : public Manifest
 {
-	std::string m_dir;
 	mutable utils::sqlite::SQLiteDB m_db;
 	utils::sqlite::InsertQuery m_insert;
 
@@ -413,7 +506,7 @@ class SqliteManifest : public Manifest
 
 public:
 	SqliteManifest(const std::string& dir)
-		: m_dir(dir), m_insert(m_db)
+		: Manifest(dir), m_insert(m_db)
 	{
 	}
 
@@ -428,7 +521,7 @@ public:
 
 	void openRO()
 	{
-		string pathname(str::joinpath(m_dir, "index.sqlite"));
+		string pathname(str::joinpath(m_path, "index.sqlite"));
 		if (m_db.isOpen())
 			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
 
@@ -443,7 +536,7 @@ public:
 
 	void openRW()
 	{
-		string pathname(str::joinpath(m_dir, "index.sqlite"));
+		string pathname(str::joinpath(m_path, "index.sqlite"));
 		if (m_db.isOpen())
 			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
 
@@ -547,7 +640,7 @@ public:
 	virtual void check(MaintFileVisitor& v, bool quick=true)
 	{
 		// List of files existing on disk
-		std::vector<std::string> disk = scan::dir(m_dir, true);
+		std::vector<std::string> disk = scan::dir(m_path, true);
 		std::sort(disk.begin(), disk.end(), sorter);
 
 		// Preread the file list, so it does not get modified as we scan
@@ -572,7 +665,7 @@ public:
 			{
 				disk.pop_back();
 
-				string pathname = str::joinpath(m_dir, i->first);
+				string pathname = str::joinpath(m_path, i->first);
 
 				time_t ts_data = files::timestamp(pathname);
 				if (ts_data == 0)

@@ -271,8 +271,6 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 		return new dataset::Empty(cfg);
 	if (type == "file")
 		return dataset::File::create(cfg);
-	if (type == "local" || type == "test")
-		return new dataset::ondisk::Reader(cfg);
 
 	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
 }
@@ -307,8 +305,6 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 		return new dataset::Outbound(cfg);
 	if (type == "discard")
 		return new dataset::Discard(cfg);
-	if (type == "local" || type == "test")
-		return new dataset::ondisk::Writer(cfg);
 
 	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
 }
@@ -319,8 +315,6 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
 	if (type.empty())
 		type = "local";
 	
-	if (type == "local" || type == "test")
-		return dataset::ondisk::Writer::testAcquire(cfg, md, out);
 	if (type == "ondisk2")
 		return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
 	if (type == "simple" || type == "error" || type == "duplicates")

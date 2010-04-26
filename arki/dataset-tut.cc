@@ -20,7 +20,6 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/dataset.h>
-#include <arki/dataset/ondisk.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
@@ -110,110 +109,82 @@ TESTGRP(arki_dataset);
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test")));
-	ensure(dynamic_cast<dataset::ondisk::Reader*>(testds.get()) != 0);
-}
-
-template<> template<>
-void to::test<2>()
-{
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test")));
-	ensure(dynamic_cast<dataset::ondisk::Writer*>(testds.get()) != 0);
-}
-
-template<> template<>
-void to::test<3>()
-{
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("local")));
-	ensure(dynamic_cast<dataset::ondisk::Reader*>(testds.get()) != 0);
-}
-
-template<> template<>
-void to::test<4>()
-{
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("local")));
-	ensure(dynamic_cast<dataset::ondisk::Writer*>(testds.get()) != 0);
-}
-
-template<> template<>
-void to::test<5>()
-{
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<6>()
+void to::test<2>()
 {
 	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<7>()
+void to::test<3>()
 {
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<8>()
+void to::test<4>()
 {
 	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<9>()
+void to::test<5>()
 {
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<10>()
+void to::test<6>()
 {
 	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Outbound*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<11>()
+void to::test<7>()
 {
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<12>()
+void to::test<8>()
 {
 	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Discard*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<13>()
+void to::test<9>()
 {
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<14>()
+void to::test<10>()
 {
 	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<15>()
+void to::test<11>()
 {
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
-void to::test<16>()
+void to::test<12>()
 {
 	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);

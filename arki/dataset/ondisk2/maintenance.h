@@ -35,13 +35,13 @@ struct Validator;
 }
 
 namespace dataset {
+class WritableLocal;
 
 namespace maintenance {
 class MaintFileVisitor;
 }
 
 namespace ondisk2 {
-class Writer;
 class WIndex;
 class Index;
 
@@ -59,65 +59,10 @@ struct CheckAge : public maintenance::MaintFileVisitor
 	void operator()(const std::string& file, State state);
 };
 
-struct FileCopier : maintenance::IndexFileVisitor
-{
-	WIndex& m_idx;
-	const scan::Validator& m_val;
-	wibble::sys::Buffer buf;
-	std::string src;
-	std::string dst;
-	int fd_src;
-	int fd_dst;
-	off_t w_off;
-
-	FileCopier(WIndex& idx, const std::string& src, const std::string& dst);
-	virtual ~FileCopier();
-
-	void operator()(const std::string& file, int id, off_t offset, size_t size);
-
-	void flush();
-};
-
-/// Base class for all repackers and rebuilders
-struct Agent : public maintenance::MaintFileVisitor
-{
-	std::ostream& m_log;
-	Writer& w;
-	bool lineStart;
-
-	Agent(std::ostream& log, Writer& w);
-
-	std::ostream& log();
-
-	// Start a line with multiple items logged
-	void logStart();
-	// Log another item on the current line
-	std::ostream& logAdd();
-	// End the line with multiple things logged
-	void logEnd();
-
-	virtual void end() {}
-};
-
-/**
- * Repacker used when some failsafe is triggered.
- * 
- * It only reports how many files would be deleted.
- */
-struct FailsafeRepacker : public Agent
-{
-	size_t m_count_deleted;
-
-	FailsafeRepacker(std::ostream& log, Writer& w);
-
-	void operator()(const std::string& file, State state);
-	void end();
-};
-
 /**
  * Perform real repacking
  */
-struct RealRepacker : public Agent
+struct RealRepacker : public maintenance::Agent
 {
 	size_t m_count_packed;
 	size_t m_count_archived;
@@ -128,24 +73,7 @@ struct RealRepacker : public Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealRepacker(std::ostream& log, Writer& w);
-
-	void operator()(const std::string& file, State state);
-	void end();
-};
-
-/**
- * Simulate a repack and print information on what would have been done
- */
-struct MockRepacker : public Agent
-{
-	size_t m_count_packed;
-	size_t m_count_archived;
-	size_t m_count_deleted;
-	size_t m_count_deindexed;
-	size_t m_count_rescanned;
-
-	MockRepacker(std::ostream& log, Writer& w);
+	RealRepacker(std::ostream& log, WritableLocal& w);
 
 	void operator()(const std::string& file, State state);
 	void end();
@@ -154,7 +82,7 @@ struct MockRepacker : public Agent
 /**
  * Perform real repacking
  */
-struct RealFixer : public Agent
+struct RealFixer : public maintenance::Agent
 {
 	size_t m_count_packed;
 	size_t m_count_rescanned;
@@ -162,22 +90,7 @@ struct RealFixer : public Agent
 	bool m_touched_archive;
 	bool m_redo_summary;
 
-	RealFixer(std::ostream& log, Writer& w);
-
-	void operator()(const std::string& file, State state);
-	void end();
-};
-
-/**
- * Simulate a repack and print information on what would have been done
- */
-struct MockFixer : public Agent
-{
-	size_t m_count_packed;
-	size_t m_count_rescanned;
-	size_t m_count_deindexed;
-
-	MockFixer(std::ostream& log, Writer& w);
+	RealFixer(std::ostream& log, WritableLocal& w);
 
 	void operator()(const std::string& file, State state);
 	void end();
@@ -199,8 +112,8 @@ struct Visitor
 {
 	virtual ~Visitor() {}
 
-	virtual void enterDataset(Writer&) {}
-	virtual void leaveDataset(Writer&) {}
+	virtual void enterDataset(WritableLocal&) {}
+	virtual void leaveDataset(WritableLocal&) {}
 
 	virtual void enterDirectory(maint::Directory& dir) = 0;
 	virtual void leaveDirectory(maint::Directory& dir) = 0;
@@ -212,7 +125,7 @@ struct MaintenanceAgent
 {
 	virtual ~MaintenanceAgent() {}
 
-	virtual void start(Writer&) {}
+	virtual void start(WritableLocal&) {}
 	virtual void end() {}
 
 	virtual void needsDatafileRebuild(maint::Datafile& df) = 0;
@@ -239,13 +152,13 @@ protected:
 	std::ostream& log;
 	bool reindexAll;
 
-	Writer* writer;
+	WritableLocal* writer;
 
 public:
 	FullMaintenance(std::ostream& log);
 	virtual ~FullMaintenance();
 
-	virtual void start(Writer& w);
+	virtual void start(WritableLocal& w);
 	virtual void end();
 
 	virtual void needsDatafileRebuild(maint::Datafile& df);
@@ -267,13 +180,13 @@ protected:
 	// This is where repack progess will be logged
 	std::ostream& log;
 
-	Writer* writer;
+	WritableLocal* writer;
 
 public:
 	FullRepack(MetadataConsumer& mdc, std::ostream& log);
 	virtual ~FullRepack();
 
-	virtual void start(Writer& w);
+	virtual void start(WritableLocal& w);
 	virtual void end();
 
 	virtual void needsRepack(maint::Datafile& df);

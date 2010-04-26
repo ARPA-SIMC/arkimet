@@ -13,19 +13,9 @@ dist_noinst_HEADERS = \
 		dataset/local.h \
 		dataset/file.h \
 		dataset/maintenance.h \
-		dataset/ondisk.h \
-		dataset/ondisk/index.h \
-		dataset/ondisk/maintenance.h \
-		dataset/ondisk/fetcher.h \
-		dataset/ondisk/reader.h \
-		dataset/ondisk/writer.h \
-		dataset/ondisk/writer/datafile.h \
-		dataset/ondisk/writer/directory.h \
-		dataset/ondisk/maint/datafile.h \
-		dataset/ondisk/maint/directory.h \
+		dataset/archive.h \
 		dataset/ondisk2.h \
 		dataset/ondisk2/aggregate.h \
-		dataset/ondisk2/archive.h \
 		dataset/ondisk2/index.h \
 		dataset/ondisk2/maintenance.h \
 		dataset/ondisk2/reader.h \
@@ -178,23 +168,13 @@ libarkimet_la_SOURCES = \
 		dataset/targetfile.cc \
 		dataset/local.cc \
 		dataset/file.cc \
+		dataset/archive.cc \
 		dataset/simple/index.cc \
 		dataset/simple/datafile.cc \
 		dataset/simple/reader.cc \
 		dataset/simple/writer.cc \
-		dataset/ondisk.cc \
-		dataset/ondisk/index.cc \
-		dataset/ondisk/maintenance.cc \
-		dataset/ondisk/fetcher.cc \
-		dataset/ondisk/reader.cc \
-		dataset/ondisk/writer.cc \
-		dataset/ondisk/writer/directory.cc \
-		dataset/ondisk/writer/datafile.cc \
-		dataset/ondisk/maint/directory.cc \
-		dataset/ondisk/maint/datafile.cc \
 		dataset/ondisk2.cc \
 		dataset/ondisk2/aggregate.cc \
-		dataset/ondisk2/archive.cc \
 		dataset/ondisk2/index.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
@@ -279,22 +259,13 @@ tests_arki_test_SOURCES = \
 		dataset/targetfile-tut.cc \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
+		dataset/archive-tut.cc \
 		dataset/simple/index-tut.cc \
 		dataset/simple/datafile-tut.cc \
 		dataset/simple/reader-tut.cc \
 		dataset/simple/writer-tut.cc \
-		dataset/ondisk-tut.cc \
-		dataset/ondisk/index-tut.cc \
-		dataset/ondisk/fetcher-tut.cc \
-		dataset/ondisk/writer/datafile-tut.cc \
-		dataset/ondisk/writer/directory-tut.cc \
-		dataset/ondisk/maint/datafile-tut.cc \
-		dataset/ondisk/maint/directory-tut.cc \
-		dataset/ondisk/maintenance-tut.cc \
-		dataset/ondisk/reader-tut.cc \
 		dataset/ondisk2-tut.cc \
 		dataset/ondisk2/aggregate-tut.cc \
-		dataset/ondisk2/archive-tut.cc \
 		dataset/ondisk2/index-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer/datafile-tut.cc \

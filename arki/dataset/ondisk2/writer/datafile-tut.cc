@@ -124,7 +124,7 @@ void to::test<1>()
 	{
 		// Start the append transaction, nothing happens until commit
 		Pending p = df.append(md, &ofs);
-		ensure_equals(ofs, totsize);
+		ensure_equals(ofs, (off_t)totsize);
 		ensure_equals(filesize(fname), totsize);
 		ensure_equals(md.source, origSource);
 

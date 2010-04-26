@@ -82,7 +82,7 @@ struct CurlEasy
  *
  * The dataset is read only: remote import of new data is not supported.
  */
-class HTTP : public Local
+class HTTP : public ReadonlyDataset
 {
 protected:
 	std::string m_name;

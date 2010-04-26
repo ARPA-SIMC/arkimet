@@ -60,29 +60,14 @@ namespace dataset {
 namespace simple {
 
 Reader::Reader(const ConfigFile& cfg)
-	: m_dir(cfg.value("path")), m_mft(0)
+	: Local(cfg), m_mft(0)
 {
 	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_dir);
+	wibble::sys::fs::mkpath(m_path);
 	
-	if (Manifest::exists(m_dir))
+	if (Manifest::exists(m_path))
 	{
-		auto_ptr<Manifest> mft = Manifest::create(m_dir);
-
-		m_mft = mft.release();
-		m_mft->openRO();
-	}
-}
-
-Reader::Reader(const std::string& dir)
-	: m_dir(dir), m_mft(0)
-{
-	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_dir);
-	
-	if (Manifest::exists(m_dir))
-	{
-		auto_ptr<Manifest> mft = Manifest::create(m_dir);
+		auto_ptr<Manifest> mft = Manifest::create(m_path);
 
 		m_mft = mft.release();
 		m_mft->openRO();
@@ -102,144 +87,22 @@ bool Reader::is_dataset(const std::string& dir)
 void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
 	if (!m_mft) return;
-
-	vector<string> files;
-	m_mft->fileList(q.matcher, files);
-
-	// TODO: does it make sense to check with the summary first?
-
-	MetadataConsumer* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
-	auto_ptr<ds::DataInliner> inliner;
-
-	if (q.withData)
-	{
-		inliner.reset(new ds::DataInliner(*c));
-		c = inliner.get();
-	}
-		
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
-
-	string absdir = sys::fs::abspath(m_dir);
-	ds::PathPrepender prepender("", *c);
-	ds::MatcherFilter filter(q.matcher, prepender);
-	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-	{
-		string fullpath = str::joinpath(absdir, *i);
-		prepender.path = str::dirname(fullpath);
-		scan::scan(fullpath, filter);
-	}
+	// TODO: query archives
+	m_mft->queryData(q, consumer);
 }
 
 void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	if (!m_mft) return;
-
-	switch (q.type)
-	{
-		case dataset::ByteQuery::BQ_DATA: {
-			ds::DataOnly dataonly(out);
-			queryData(q, dataonly);
-			break;
-		}
-		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param, out);
-			queryData(q, postproc);
-
-			// TODO: if we flush here, do we close the postprocessor for a further query?
-			// TODO: POSTPROCESS isn't it just a query for the metadata?
-			// TODO: in that case, the reader should implement it
-			// TODO: as such: simpler code, and handle the case of
-			// TODO: multiple archives nicely
-			postproc.flush();
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			queryData(q, rep);
-			rep.report();
-#endif
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			Summary s;
-			querySummary(q.matcher, s);
-			rep(s);
-			rep.report();
-#endif
-			break;
-		}
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
-	}
-}
-
-void Reader::querySummaries(const Matcher& matcher, Summary& summary)
-{
-	vector<string> files;
-	m_mft->fileList(matcher, files);
-
-	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-	{
-		string pathname = str::joinpath(m_dir, *i);
-
-		// Silently skip files that have been deleted
-		if (!sys::fs::access(pathname + ".summary", R_OK))
-			continue;
-
-		Summary s;
-		s.readFile(pathname + ".summary");
-		s.filter(matcher, summary);
-	}
+	// TODO: query archives
+	m_mft->queryBytes(q, out);
 }
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
 	if (!m_mft) return;
-
-	// Check if the matcher discriminates on reference times
-	const matcher::Implementation* rtmatch = 0;
-	if (matcher.m_impl)
-		rtmatch = matcher.m_impl->get(types::TYPE_REFTIME);
-
-	if (!rtmatch)
-	{
-		// The matcher does not contain reftime, we can work with a
-		// global summary
-		string cache_pathname = str::joinpath(m_dir, "summary");
-
-		if (sys::fs::access(cache_pathname, R_OK))
-		{
-			Summary s;
-			s.readFile(cache_pathname);
-			s.filter(matcher, summary);
-		} else if (sys::fs::access(m_dir, W_OK)) {
-			// Rebuild the cache
-			Summary s;
-			querySummaries(Matcher(), s);
-
-			// Save the summary
-			s.writeAtomically(cache_pathname);
-
-			// Query the newly generated summary that we still have
-			// in memory
-			s.filter(matcher, summary);
-		} else
-			querySummaries(matcher, summary);
-	} else {
-		querySummaries(matcher, summary);
-	}
+	// TODO: query archives
+	m_mft->querySummary(matcher, summary);
 }
 
 void Reader::maintenance(maintenance::MaintFileVisitor& v)

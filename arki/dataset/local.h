@@ -34,14 +34,88 @@ class MetadataConsumer;
 class Matcher;
 
 namespace dataset {
+struct Archives;
 
 /**
  * Base class for local datasets
  */
 class Local : public ReadonlyDataset
 {
+protected:
+	std::string m_name;
+	std::string m_path;
+	mutable Archives* m_archive;
+
 public:
+	Local(const ConfigFile& cfg);
+	~Local();
+
+	// Return the dataset name
+	const std::string& name() const { return m_name; }
+
+	// Return the dataset path
+	const std::string& path() const { return m_path; }
+
+	bool hasArchive() const;
+	Archives& archive();
+	const Archives& archive() const;
+
 	static void readConfig(const std::string& path, ConfigFile& cfg);
+};
+
+class WritableLocal : public WritableDataset
+{
+protected:
+	std::string m_path;
+	mutable Archives* m_archive;
+
+public:
+	WritableLocal(const ConfigFile& cfg);
+	~WritableLocal();
+
+	// Return the dataset path
+	const std::string& path() const { return m_path; }
+
+	bool hasArchive() const;
+	Archives& archive();
+	const Archives& archive() const;
+
+	// Maintenance functions
+
+	/**
+	 * Consider all existing metadata about a file as invalid and rebuild
+	 * them by rescanning the file
+	 */
+	virtual void rescanFile(const std::string& relpath) = 0;
+
+	/**
+	 * Optimise the contents of a data file
+	 *
+	 * In the resulting file, there are no holes for deleted data and all
+	 * the data is sorted by reference time
+	 *
+	 * @returns The number of bytes freed on disk with this operation
+	 */
+	virtual size_t repackFile(const std::string& relpath) = 0;
+
+	/**
+	 * Remove the file from the dataset
+	 *
+	 * @returns The number of bytes freed on disk with this operation
+	 */
+	virtual size_t removeFile(const std::string& relpath, bool withData=false) = 0;
+
+	/**
+	 * Move the file to archive
+	 */
+	virtual void archiveFile(const std::string& relpath) = 0;
+
+	/**
+	 * Perform generic packing and optimisations
+	 *
+	 * @returns The number of bytes freed on disk with this operation
+	 */
+	virtual size_t vacuum() = 0;
 };
 
 }

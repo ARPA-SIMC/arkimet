@@ -22,12 +22,11 @@
 #include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/index.h>
-#include <arki/dataset/ondisk2/archive.h>
+#include <arki/dataset/archive.h>
 #include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
-#include <arki/utils/compress.h>
 #include <arki/scan/any.h>
 #include <arki/nag.h>
 
@@ -116,240 +115,11 @@ void CheckAge::operator()(const std::string& file, State state)
 	}
 }
 
-FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
-	: m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
-{
-	fd_src = open(src.c_str(), O_RDONLY | O_NOATIME);
-	if (fd_src < 0)
-		throw wibble::exception::File(src, "opening file");
 
-	fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	if (fd_dst < 0)
-		throw wibble::exception::File(dst, "opening file");
-}
-
-FileCopier::~FileCopier()
-{
-	flush();
-}
-
-void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
-{
-	if (buf.size() < size)
-		buf.resize(size);
-	ssize_t res = pread(fd_src, buf.data(), size, offset);
-	if (res < 0 || (unsigned)res != size)
-		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
-	m_val.validate(buf.data(), size);
-	res = write(fd_dst, buf.data(), size);
-	if (res < 0 || (unsigned)res != size)
-		throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");
-
-	// Reindex file from offset to w_off
-	m_idx.relocate_data(id, w_off);
-
-	w_off += size;
-}
-
-void FileCopier::flush()
-{
-	if (fd_src != -1 and close(fd_src) != 0)
-		throw wibble::exception::File(src, "closing file");
-	fd_src = -1;
-	if (fd_dst != -1 and close(fd_dst) != 0)
-		throw wibble::exception::File(dst, "closing file");
-	fd_dst = -1;
-}
-
-
-// Agent
-
-Agent::Agent(std::ostream& log, Writer& w)
-	: m_log(log), w(w), lineStart(true)
-{
-}
-
-std::ostream& Agent::log()
-{
-	return m_log << w.m_name << ": ";
-}
-
-void Agent::logStart()
-{
-	lineStart = true;
-}
-
-std::ostream& Agent::logAdd()
-{
-	if (lineStart)
-	{
-		lineStart = false;
-		return m_log << w.m_name << ": ";
-	}
-	else
-		return m_log << ", ";
-}
-
-void Agent::logEnd()
-{
-	if (! lineStart)
-		m_log << "." << endl;
-}
-
-// FailsafeRepacker
-
-FailsafeRepacker::FailsafeRepacker(std::ostream& log, Writer& w)
-	: Agent(log, w), m_count_deleted(0)
-{
-}
-
-void FailsafeRepacker::operator()(const std::string& file, State state)
-{
-	switch (state)
-	{
-		case TO_INDEX: ++m_count_deleted; break;
-		default: break;
-	}
-}
-
-void FailsafeRepacker::end()
-{
-	if (m_count_deleted == 0) return;
-	log() << "index is empty, skipping deletion of "
-	      << m_count_deleted << " files."
-	      << endl;
-}
-
-// Common maintenance functions
-
-static size_t repack(const std::string& root, const std::string& file, WIndex& idx)
-{
-	// Lock away writes and reads
-	Pending p = idx.beginExclusiveTransaction();
-
-	// Make a copy of the file with the right data in it, sorted by
-	// reftime, and update the offsets in the index
-	string pathname = str::joinpath(root, file);
-	string pntmp = pathname + ".repack";
-	FileCopier copier(idx, pathname, pntmp);
-	idx.scan_file(file, copier, "reftime, offset");
-	copier.flush();
-
-	size_t size_pre = files::size(pathname);
-	size_t size_post = files::size(pntmp);
-
-	// Remove the .metadata file if present, because we are shuffling the
-	// data file and it will not be valid anymore
-	string mdpathname = pathname + ".metadata";
-	if (sys::fs::access(mdpathname, F_OK))
-		if (unlink(mdpathname.c_str()) < 0)
-			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
-
-	// Rename the file with to final name
-	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
-		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
-
-	// Commit the changes on the database
-	p.commit();
-
-	return size_pre - size_post;
-}
-
-struct Reindexer : public MetadataConsumer
-{
-	WIndex& idx;
-	std::string dsname;
-	std::string relfile;
-	std::string basename;
-
-	Reindexer(WIndex& idx,
-		  const std::string& dsname,
-		  const std::string& relfile)
-	       	: idx(idx), dsname(dsname), relfile(relfile), basename(str::basename(relfile)) {}
-
-	virtual bool operator()(Metadata& md)
-	{
-		if (md.deleted) return true;
-		Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
-		try {
-			int id;
-			if (str::basename(blob->filename) != basename)
-				throw wibble::exception::Consistency(
-					"rescanning " + relfile,
-				       	"metadata points to the wrong file: " + blob->filename);
-			idx.index(md, relfile, blob->offset, &id);
-		} catch (utils::sqlite::DuplicateInsert& di) {
-			throw wibble::exception::Consistency("reindexing " + basename,
-					"data item at offset " + str::fmt(blob->offset) + " has a duplicate elsewhere in the dataset: manual fix is required");
-		} catch (std::exception& e) {
-			// sqlite will take care of transaction consistency
-			throw wibble::exception::Consistency("reindexing " + basename,
-					"failed to reindex data item at offset " + str::fmt(blob->offset) + ": " + e.what());
-		}
-		return true;
-	}
-};
-
-static void rescan(const std::string& dsname, const std::string& root, const std::string& file, WIndex& idx)
-{
-	// Lock away writes and reads
-	Pending p = idx.beginExclusiveTransaction();
-	// cerr << "LOCK" << endl;
-
-	// Remove from the index all data about the file
-	idx.reset(file);
-	// cerr << " RESET " << file << endl;
-
-	string pathname = str::joinpath(root, file);
-
-	// Temporarily uncompress the file for scanning
-	auto_ptr<utils::compress::TempUnzip> tu;
-	if (!sys::fs::access(pathname, F_OK) && sys::fs::access(pathname + ".gz", F_OK))
-		tu.reset(new utils::compress::TempUnzip(pathname));
-
-	// Collect the scan results in a metadata::Collector
-	metadata::Collector mds;
-	if (!scan::scan(pathname, mds))
-		throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
-	// cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
-
-	// Scan the list of metadata, looking for duplicates and marking all
-	// the duplicates except the last one as deleted
-	index::IDMaker id_maker(idx.unique_codes());
-
-	map<string, Metadata*> finddupes;
-	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
-	{
-		string id = id_maker.id(*i);
-		if (id.empty())
-			continue;
-		map<string, Metadata*>::iterator dup = finddupes.find(id);
-		if (dup == finddupes.end())
-			finddupes.insert(make_pair(id, &(*i)));
-		else
-		{
-			dup->second->deleted = true;
-			dup->second = &(*i);
-		}
-	}
-	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
-
-	Reindexer fixer(idx, dsname, file);
-	bool res = mds.sendTo(fixer);
-	assert(res);
-	// cerr << " REINDEXED " << pathname << endl;
-
-	// TODO: if scan fails, remove all info from the index and rename the
-	// file to something like .broken
-
-	// Commit the changes on the database
-	p.commit();
-	// cerr << " COMMITTED" << endl;
-}
 
 // RealRepacker
 
-RealRepacker::RealRepacker(std::ostream& log, Writer& w)
+RealRepacker::RealRepacker(std::ostream& log, WritableLocal& w)
 	: Agent(log, w), m_count_packed(0), m_count_archived(0),
 	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0),
 	  m_count_freed(0), m_touched_archive(false), m_redo_summary(false)
@@ -362,7 +132,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 	{
 		case TO_PACK: {
 		        // Repack the file
-			size_t saved = repack(w.m_path, file, w.m_idx);
+			size_t saved = w.repackFile(file);
 			log() << "packed " << file << " (" << saved << " saved)" << endl;
 			++m_count_packed;
 			m_count_freed += saved;
@@ -370,28 +140,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 		}
 		case TO_ARCHIVE: {
 			// Create the target directory in the archive
-			string pathname = str::joinpath(w.m_path, file);
-			string arcrelname = str::joinpath("last", file);
-			string arcabsname = str::joinpath(w.m_path, str::joinpath(".archive", arcrelname));
-			sys::fs::mkFilePath(arcabsname);
-
-			// Rebuild the metadata
-			metadata::Collector mds;
-			w.m_idx.scan_file(file, mds);
-
-			// Remove from index
-			w.m_idx.reset(file);
-
-			// Move to archive
-			if (sys::fs::access(arcabsname, F_OK))
-				throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
-						arcabsname + " already exists");
-			if (rename(pathname.c_str(), arcabsname.c_str()) < 0)
-				throw wibble::exception::System("moving " + pathname + " to " + arcabsname);
-
-			// Acquire in the achive
-			w.archive().acquire(arcrelname, mds);
-
+			w.archiveFile(file);
 			log() << "archived " << file << endl;
 			++m_count_archived;
 			m_touched_archive = true;
@@ -400,12 +149,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 		}
 		case TO_DELETE: {
 			// Delete obsolete files
-			w.m_idx.reset(file);
-			string pathname = str::joinpath(w.m_path, file);
-			size_t size = files::size(pathname);
-			if (unlink(pathname.c_str()) < 0)
-				throw wibble::exception::System("removing " + pathname);
-
+			size_t size = w.removeFile(file, true);
 			log() << "deleted " << file << " (" << size << " freed)" << endl;
 			++m_count_deleted;
 			++m_count_deindexed;
@@ -415,7 +159,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 		}
 		case TO_INDEX: {
 			// Delete all files not indexed
-			string pathname = str::joinpath(w.m_path, file);
+			string pathname = str::joinpath(w.path(), file);
 			size_t size = files::size(pathname);
 			if (unlink(pathname.c_str()) < 0)
 				throw wibble::exception::System("removing " + pathname);
@@ -427,7 +171,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 		}
 		case DELETED: {
 			// Remove from index those files that have been deleted
-			w.m_idx.reset(file);
+			w.removeFile(file, false);
 			log() << "deleted from index " << file << endl;
 			++m_count_deindexed;
 			m_redo_summary = true;
@@ -464,25 +208,7 @@ void RealRepacker::end()
 	}
 
 	// Finally, tidy up the database
-	size_t size_pre = 0, size_post = 0;
-	if (files::size(w.m_idx.pathname() + "-journal") > 0)
-	{
-		size_pre = files::size(w.m_idx.pathname())
-				+ files::size(w.m_idx.pathname() + "-journal");
-		w.m_idx.vacuum();
-		size_post = files::size(w.m_idx.pathname())
-				+ files::size(w.m_idx.pathname() + "-journal");
-		if (size_pre != size_post)
-			log() << "database cleaned up" << endl;
-	}
-
-	// Rebuild the cached summary
-	if (m_redo_summary ||
-	    !sys::fs::access(str::joinpath(w.m_path, ".summaries/all.summary"), F_OK))
-	{
-		w.m_idx.rebuildSummaryCache();
-		log() << "rebuild summary cache" << endl;
-	}
+	size_t size_vacuum = w.vacuum();
 
 	logStart();
 	if (m_count_packed)
@@ -495,84 +221,19 @@ void RealRepacker::end()
 		logAdd() << nfiles(m_count_deindexed) << " removed from index";
 	if (m_count_rescanned)
 		logAdd() << nfiles(m_count_rescanned) << " rescanned";
-	if (size_pre > size_post)
+	if (size_vacuum)
 	{
-		logAdd() << (size_pre - size_post) << " bytes reclaimed on the index";
-		m_count_freed += (size_pre - size_post);
+		logAdd() << size_vacuum << " bytes reclaimed on the index";
+		m_count_freed += size_vacuum;
 	}
 	if (m_count_freed > 0)
 		logAdd() << m_count_freed << " total bytes freed";
 	logEnd();
 }
 
-// MockRepacker
-
-MockRepacker::MockRepacker(std::ostream& log, Writer& w)
-	: Agent(log, w), m_count_packed(0), m_count_archived(0),
-	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0)
-{
-}
-
-void MockRepacker::operator()(const std::string& file, State state)
-{
-	switch (state)
-	{
-		case TO_PACK:
-			log() << file << " should be packed" << endl;
-			++m_count_packed;
-			break;
-		case TO_ARCHIVE:
-			log() << file << " should be archived" << endl;
-			++m_count_archived;
-			break;
-		case TO_DELETE:
-			log() << file << " should be deleted and removed from the index" << endl;
-			++m_count_deleted;
-			++m_count_deindexed;
-			break;
-		case TO_INDEX:
-			log() << file << " should be deleted" << endl;
-			++m_count_deleted;
-			break;
-		case DELETED:
-			log() << file << " should be removed from the index" << endl;
-			++m_count_deindexed;
-			break;
-		case ARC_TO_INDEX:
-		case ARC_TO_RESCAN: {
-			log() << file << " should be rescanned by the archive" << endl;
-			++m_count_rescanned;
-			break;
-		}
-		case ARC_DELETED: {
-			log() << file << " should be removed from the archive index" << endl;
-			++m_count_deindexed;
-			break;
-		}
-		default:
-			break;
-	}
-}
-
-void MockRepacker::end()
-{
-	logStart();
-	if (m_count_packed)
-		logAdd() << nfiles(m_count_packed) << " should be packed";
-	if (m_count_archived)
-		logAdd() << nfiles(m_count_archived) << " should be archived";
-	if (m_count_deleted)
-		logAdd() << nfiles(m_count_deleted) << " should be deleted";
-	if (m_count_deindexed)
-		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
-	if (m_count_rescanned)
-		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
-	logEnd();
-}
-
 // RealFixer
 
-RealFixer::RealFixer(std::ostream& log, Writer& w)
+RealFixer::RealFixer(std::ostream& log, WritableLocal& w)
 	: Agent(log, w), 
           m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0),
 	  m_touched_archive(false), m_redo_summary(false)
@@ -587,7 +248,7 @@ void RealFixer::operator()(const std::string& file, State state)
 		 * mangle the data files
 		case TO_PACK: {
 		        // Repack the file
-			size_t saved = repack(w.m_path, file, w.m_idx);
+			size_t saved = repack(w.path(), file, w.m_idx);
 			log() << "packed " << file << " (" << saved << " saved)" << endl;
 			++m_count_packed;
 			break;
@@ -595,7 +256,7 @@ void RealFixer::operator()(const std::string& file, State state)
 		*/
 		case TO_INDEX:
 		case TO_RESCAN: {
-			rescan(w.m_name, w.m_path, file, w.m_idx);
+			w.rescanFile(file);
 			log() << "rescanned " << file << endl;
 			++m_count_rescanned;
 			m_redo_summary = true;
@@ -603,7 +264,7 @@ void RealFixer::operator()(const std::string& file, State state)
 		}
 		case DELETED: {
 			// Remove from index those files that have been deleted
-			w.m_idx.reset(file);
+			w.removeFile(file, false);
 			log() << "deindexed " << file << endl;
 			++m_count_deindexed;
 			m_redo_summary = true;
@@ -641,25 +302,7 @@ void RealFixer::end()
 	}
 
 	// Finally, tidy up the database
-	size_t size_pre = 0, size_post = 0;
-	if (files::size(w.m_idx.pathname() + "-journal") > 0)
-	{
-		size_pre = files::size(w.m_idx.pathname())
-				+ files::size(w.m_idx.pathname() + "-journal");
-		w.m_idx.vacuum();
-		size_post = files::size(w.m_idx.pathname())
-				+ files::size(w.m_idx.pathname() + "-journal");
-		if (size_pre != size_post)
-			log() << "database cleaned up" << endl;
-	}
-
-	// Rebuild the cached summary
-	if (m_redo_summary ||
-	    !sys::fs::access(str::joinpath(w.m_path, ".summaries/all.summary"), F_OK))
-	{
-		w.m_idx.rebuildSummaryCache();
-		log() << "rebuild summary cache" << endl;
-	}
+	size_t size_vacuum = w.vacuum();
 
 	logStart();
 	if (m_count_packed)
@@ -668,65 +311,12 @@ void RealFixer::end()
 		logAdd() << nfiles(m_count_rescanned) << " rescanned";
 	if (m_count_deindexed)
 		logAdd() << nfiles(m_count_deindexed) << " removed from index";
-	if (size_pre > size_post)
-		logAdd() << (size_pre - size_post) << " bytes reclaimed cleaning the index";
-	logEnd();
-}
-
-// MockFixer
-
-MockFixer::MockFixer(std::ostream& log, Writer& w)
-	: Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0)
-{
-}
-
-void MockFixer::operator()(const std::string& file, State state)
-{
-	switch (state)
-	{
-		case TO_PACK:
-			log() << file << " should be packed" << endl;
-			++m_count_packed;
-			break;
-		case TO_INDEX:
-		case TO_RESCAN:
-			log() << file << " should be rescanned" << endl;
-			++m_count_rescanned;
-			break;
-		case DELETED:
-			log() << file << " should be removed from the index" << endl;
-			++m_count_deindexed;
-			break;
-		case ARC_TO_INDEX:
-		case ARC_TO_RESCAN: {
-			log() << file << " should be rescanned by the archive" << endl;
-			++m_count_rescanned;
-			break;
-		}
-		case ARC_DELETED: {
-			log() << file << " should be removed from the archive index" << endl;
-			++m_count_deindexed;
-			break;
-		}
-		default:
-			break;
-	}
-}
-
-void MockFixer::end()
-{
-	logStart();
-	if (m_count_packed)
-		logAdd() << nfiles(m_count_packed) << " should be packed";
-	if (m_count_rescanned)
-		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
-	if (m_count_deindexed)
-		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
+	if (size_vacuum)
+		logAdd() << size_vacuum << " bytes reclaimed cleaning the index";
 	logEnd();
 }
 
 }
-
 }
 }
 }

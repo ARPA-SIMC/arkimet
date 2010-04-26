@@ -97,6 +97,7 @@ struct Options : public StandardParserWithManpage
 }
 }
 
+#if 0
 struct Stats : public dataset::ondisk::Visitor
 {
 	string name;
@@ -171,6 +172,7 @@ struct Stats : public dataset::ondisk::Visitor
 				total/1000000.0, totData*100/total, totMd * 100 / total, totSum * 100 / total, totIdx * 100 / total);
 	}
 };
+#endif
 
 struct Printer : public MetadataConsumer
 {
@@ -233,6 +235,7 @@ struct Repacker : public Worker
 	}
 };
 
+#if 0
 struct Invalidator : public Worker
 {
 	virtual void operator()(WritableDataset& w)
@@ -248,7 +251,9 @@ struct Invalidator : public Worker
 	{
 	}
 };
+#endif
 
+#if 0
 struct Statistician : public Worker
 {
 	Stats st;
@@ -267,6 +272,7 @@ struct Statistician : public Worker
 		st.stats();
 	}
 };
+#endif
 
 
 int main(int argc, const char* argv[])
@@ -343,9 +349,11 @@ int main(int argc, const char* argv[])
 			}
 		} else {
 			if (opts.stats->boolValue())
-				worker.reset(new Statistician());
+				// worker.reset(new Statistician());
+				throw wibble::exception::Consistency("running --stats", "statistics code needs to be reimplemented");
 			else if (opts.invalidate->boolValue())
-				worker.reset(new Invalidator);
+				// worker.reset(new Invalidator);
+				throw wibble::exception::Consistency("running --invalidate", "invalidate code needs to be reimplemented");
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
 			else

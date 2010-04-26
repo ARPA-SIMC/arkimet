@@ -21,6 +21,7 @@
  */
 
 #include <arki/dataset/maintenance.h>
+#include <arki/dataset/local.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/metadata.h>
@@ -48,6 +49,15 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+
+template<typename T>
+static std::string nfiles(const T& val)
+{
+	if (val == 1)
+		return "1 file";
+	else
+		return str::fmt(val) + " files";
+}
 
 namespace arki {
 namespace dataset {
@@ -215,6 +225,181 @@ void MaintPrinter::operator()(const std::string& file, State state)
 		case ARC_DELETED: cerr << " DELETED IN ARCHIVE" << endl;
 		default: cerr << " INVALID" << endl;
 	}
+}
+
+// Agent
+
+Agent::Agent(std::ostream& log, WritableLocal& w)
+	: m_log(log), w(w), lineStart(true)
+{
+}
+
+std::ostream& Agent::log()
+{
+	return m_log << w.name() << ": ";
+}
+
+void Agent::logStart()
+{
+	lineStart = true;
+}
+
+std::ostream& Agent::logAdd()
+{
+	if (lineStart)
+	{
+		lineStart = false;
+		return m_log << w.name() << ": ";
+	}
+	else
+		return m_log << ", ";
+}
+
+void Agent::logEnd()
+{
+	if (! lineStart)
+		m_log << "." << endl;
+}
+
+// FailsafeRepacker
+
+FailsafeRepacker::FailsafeRepacker(std::ostream& log, WritableLocal& w)
+	: Agent(log, w), m_count_deleted(0)
+{
+}
+
+void FailsafeRepacker::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_INDEX: ++m_count_deleted; break;
+		default: break;
+	}
+}
+
+void FailsafeRepacker::end()
+{
+	if (m_count_deleted == 0) return;
+	log() << "index is empty, skipping deletion of "
+	      << m_count_deleted << " files."
+	      << endl;
+}
+
+// MockRepacker
+
+MockRepacker::MockRepacker(std::ostream& log, WritableLocal& w)
+	: Agent(log, w), m_count_packed(0), m_count_archived(0),
+	  m_count_deleted(0), m_count_deindexed(0), m_count_rescanned(0)
+{
+}
+
+void MockRepacker::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_PACK:
+			log() << file << " should be packed" << endl;
+			++m_count_packed;
+			break;
+		case TO_ARCHIVE:
+			log() << file << " should be archived" << endl;
+			++m_count_archived;
+			break;
+		case TO_DELETE:
+			log() << file << " should be deleted and removed from the index" << endl;
+			++m_count_deleted;
+			++m_count_deindexed;
+			break;
+		case TO_INDEX:
+			log() << file << " should be deleted" << endl;
+			++m_count_deleted;
+			break;
+		case DELETED:
+			log() << file << " should be removed from the index" << endl;
+			++m_count_deindexed;
+			break;
+		case ARC_TO_INDEX:
+		case ARC_TO_RESCAN: {
+			log() << file << " should be rescanned by the archive" << endl;
+			++m_count_rescanned;
+			break;
+		}
+		case ARC_DELETED: {
+			log() << file << " should be removed from the archive index" << endl;
+			++m_count_deindexed;
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+void MockRepacker::end()
+{
+	logStart();
+	if (m_count_packed)
+		logAdd() << nfiles(m_count_packed) << " should be packed";
+	if (m_count_archived)
+		logAdd() << nfiles(m_count_archived) << " should be archived";
+	if (m_count_deleted)
+		logAdd() << nfiles(m_count_deleted) << " should be deleted";
+	if (m_count_deindexed)
+		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
+	if (m_count_rescanned)
+		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
+	logEnd();
+}
+
+// MockFixer
+
+MockFixer::MockFixer(std::ostream& log, WritableLocal& w)
+	: Agent(log, w), m_count_packed(0), m_count_rescanned(0), m_count_deindexed(0)
+{
+}
+
+void MockFixer::operator()(const std::string& file, State state)
+{
+	switch (state)
+	{
+		case TO_PACK:
+			log() << file << " should be packed" << endl;
+			++m_count_packed;
+			break;
+		case TO_INDEX:
+		case TO_RESCAN:
+			log() << file << " should be rescanned" << endl;
+			++m_count_rescanned;
+			break;
+		case DELETED:
+			log() << file << " should be removed from the index" << endl;
+			++m_count_deindexed;
+			break;
+		case ARC_TO_INDEX:
+		case ARC_TO_RESCAN: {
+			log() << file << " should be rescanned by the archive" << endl;
+			++m_count_rescanned;
+			break;
+		}
+		case ARC_DELETED: {
+			log() << file << " should be removed from the archive index" << endl;
+			++m_count_deindexed;
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+void MockFixer::end()
+{
+	logStart();
+	if (m_count_packed)
+		logAdd() << nfiles(m_count_packed) << " should be packed";
+	if (m_count_rescanned)
+		logAdd() << nfiles(m_count_rescanned) << " should be rescanned";
+	if (m_count_deindexed)
+		logAdd() << nfiles(m_count_deindexed) << " should be removed from the index";
+	logEnd();
 }
 
 }

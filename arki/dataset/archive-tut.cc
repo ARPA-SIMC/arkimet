@@ -18,8 +18,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk2/test-utils.h>
-#include <arki/dataset/ondisk2/archive.h>
+#include <arki/dataset/test-utils.h>
+#include <arki/dataset/archive.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/simple/index.h>
 #include <arki/configfile.h>
@@ -58,8 +58,7 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::dataset::ondisk2;
-using namespace arki::dataset::ondisk2::writer;
+using namespace arki::dataset;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -77,13 +76,13 @@ struct ForceSqlite
 	}
 };
 
-struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFileVisitor {
+struct arki_dataset_archive_shar : public dataset::maintenance::MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
 
 	ConfigFile cfg;
 
-	arki_dataset_ondisk2_archive_shar()
+	arki_dataset_archive_shar()
 	{
 		system("rm -rf testds");
 		system("mkdir testds");
@@ -113,7 +112,7 @@ struct arki_dataset_ondisk2_archive_shar : public dataset::maintenance::MaintFil
 		inner_ensure(sys::fs::access(str::joinpath(dir, idxfname()), F_OK));
 	}
 };
-TESTGRP(arki_dataset_ondisk2_archive);
+TESTGRP(arki_dataset_archive);
 
 // Acquire and query
 template<> template<>
@@ -169,7 +168,7 @@ void to::test<2>()
 	}
 
 	{
-		Writer writer(cfg);
+		ondisk2::Writer writer(cfg);
 
 		c.clear();
 		writer.maintenance(c);
@@ -236,7 +235,7 @@ void to::test<3>()
 
 	// Fix the database
 	{
-		Writer writer(cfg);
+		ondisk2::Writer writer(cfg);
 
 		c.clear();
 		writer.maintenance(c);
@@ -301,7 +300,7 @@ void to::test<4>()
 	}
 
 	{
-		Writer writer(cfg);
+		ondisk2::Writer writer(cfg);
 
 		c.clear();
 		writer.maintenance(c);
@@ -376,7 +375,7 @@ void to::test<5>()
 	}
 
 	{
-		Writer writer(cfg);
+		ondisk2::Writer writer(cfg);
 
 		MaintenanceCollector c;
 		writer.maintenance(c);
@@ -471,7 +470,7 @@ void to::test<6>()
 	}
 
 	{
-		Writer writer(cfg);
+		ondisk2::Writer writer(cfg);
 
 		c.clear();
 		writer.maintenance(c);

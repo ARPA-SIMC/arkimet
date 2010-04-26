@@ -33,6 +33,8 @@ struct Validator;
 }
 
 namespace dataset {
+class WritableLocal;
+
 namespace maintenance {
 
 /**
@@ -130,6 +132,76 @@ struct MaintPrinter : public MaintFileVisitor
 {
 	void operator()(const std::string& file, State state);
 };
+
+
+/// Base class for all repackers and rebuilders
+struct Agent : public maintenance::MaintFileVisitor
+{
+	std::ostream& m_log;
+	WritableLocal& w;
+	bool lineStart;
+
+	Agent(std::ostream& log, WritableLocal& w);
+
+	std::ostream& log();
+
+	// Start a line with multiple items logged
+	void logStart();
+	// Log another item on the current line
+	std::ostream& logAdd();
+	// End the line with multiple things logged
+	void logEnd();
+
+	virtual void end() {}
+};
+
+/**
+ * Repacker used when some failsafe is triggered.
+ * 
+ * It only reports how many files would be deleted.
+ */
+struct FailsafeRepacker : public Agent
+{
+	size_t m_count_deleted;
+
+	FailsafeRepacker(std::ostream& log, WritableLocal& w);
+
+	void operator()(const std::string& file, State state);
+	void end();
+};
+
+/**
+ * Simulate a repack and print information on what would have been done
+ */
+struct MockRepacker : public Agent
+{
+	size_t m_count_packed;
+	size_t m_count_archived;
+	size_t m_count_deleted;
+	size_t m_count_deindexed;
+	size_t m_count_rescanned;
+
+	MockRepacker(std::ostream& log, WritableLocal& w);
+
+	void operator()(const std::string& file, State state);
+	void end();
+};
+
+/**
+ * Simulate a repack and print information on what would have been done
+ */
+struct MockFixer : public Agent
+{
+	size_t m_count_packed;
+	size_t m_count_rescanned;
+	size_t m_count_deindexed;
+
+	MockFixer(std::ostream& log, WritableLocal& w);
+
+	void operator()(const std::string& file, State state);
+	void end();
+};
+
 
 }
 }

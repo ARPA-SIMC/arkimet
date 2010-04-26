@@ -28,6 +28,7 @@ namespace arki {
 namespace dataset {
 
 Empty::Empty(const ConfigFile& cfg)
+	: Local(cfg)
 {
 }
 

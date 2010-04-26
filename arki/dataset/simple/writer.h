@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset.h>
+#include <arki/dataset/local.h>
 #include <arki/configfile.h>
 
 #include <string>
@@ -51,10 +51,9 @@ class Manifest;
 class Reader;
 class Datafile;
 
-class Writer : public WritableDataset
+class Writer : public WritableLocal
 {
 protected:
-	std::string m_dir;
 	simple::Manifest* m_mft;
 	TargetFile* m_tf;
 	std::map<std::string, Datafile*> m_df_cache;
@@ -65,8 +64,6 @@ protected:
 public:
 	Writer(const ConfigFile& cfg);
 	virtual ~Writer();
-
-	const std::string& path() const { return m_dir; }
 
 	/**
 	 * Compute the unique ID of a metadata in this dataset
@@ -120,6 +117,12 @@ public:
 	 * If \a fix is true, errors are fixed.
 	 */
 	virtual void check(std::ostream& log, bool fix, bool quick);
+
+	virtual void rescanFile(const std::string& relpath);
+	virtual size_t repackFile(const std::string& relpath);
+	virtual void archiveFile(const std::string& relpath);
+	virtual size_t removeFile(const std::string& relpath, bool withData=false);
+	virtual size_t vacuum();
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };

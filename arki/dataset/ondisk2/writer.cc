@@ -22,18 +22,19 @@
 
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
-#include <arki/dataset/ondisk2/archive.h>
 #include <arki/dataset/ondisk2/maintenance.h>
-//#include <arki/dataset/ondisk2/maint/datafile.h>
-//#include <arki/dataset/ondisk2/maint/directory.h>
+#include <arki/dataset/archive.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/scan/dir.h>
+#include <arki/scan/any.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/metadata.h>
+#include <arki/utils/compress.h>
 #include <arki/summary.h>
 
 #include <wibble/exception.h>
@@ -52,15 +53,15 @@
 
 using namespace std;
 using namespace wibble;
-using namespace arki::utils::files;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
 namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
-	: m_cfg(cfg), m_path(cfg.value("path")),
-	  m_idx(cfg), m_tf(0), m_archive(0), m_replace(false),
+	: WritableLocal(cfg), m_cfg(cfg),
+	  m_idx(cfg), m_tf(0), m_replace(false),
 	  m_archive_age(-1), m_delete_age(-1)
 {
 	m_name = cfg.value("name");
@@ -71,7 +72,7 @@ Writer::Writer(const ConfigFile& cfg)
 	// If the index is missing, take note not to perform a repack until a
 	// check is made
 	if (!sys::fs::access(str::joinpath(m_path, "index.sqlite"), F_OK))
-		createDontpackFlagfile(m_path);
+		files::createDontpackFlagfile(m_path);
 
 	m_tf = TargetFile::create(cfg);
 	m_replace = ConfigFile::boolValue(cfg.value("replace"), false);
@@ -90,30 +91,6 @@ Writer::~Writer()
 {
 	flush();
 	if (m_tf) delete m_tf;
-	if (m_archive) delete m_archive;
-}
-
-bool Writer::hasArchive() const
-{
-	string arcdir = str::joinpath(m_path, ".archive");
-	return sys::fs::access(arcdir, F_OK);
-	//std::auto_ptr<struct stat> st = sys::fs::stat(arcdir);
-	//if (!st.get())
-		//return false;
-}
-
-Archives& Writer::archive()
-{
-	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
-	return *m_archive;
-}
-
-const Archives& Writer::archive() const
-{
-	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
-	return *m_archive;
 }
 
 std::string Writer::id(const Metadata& md) const
@@ -255,25 +232,25 @@ void Writer::repack(std::ostream& log, bool writable)
 {
 	using namespace writer;
 
-	if (hasDontpackFlagfile(m_path))
+	if (files::hasDontpackFlagfile(m_path))
 	{
 		log << m_path << ": dataset needs checking first" << endl;
 		return;
 	}
 
-	auto_ptr<Agent> repacker;
+	auto_ptr<maintenance::Agent> repacker;
 
 	if (writable)
 		// No safeguard against a deleted index: we catch that in the
 		// constructor and create the don't pack flagfile
 		repacker.reset(new RealRepacker(log, *this));
 	else
-		repacker.reset(new MockRepacker(log, *this));
+		repacker.reset(new maintenance::MockRepacker(log, *this));
 	try {
 		maintenance(*repacker);
 		repacker->end();
 	} catch (...) {
-		createDontpackFlagfile(m_path);
+		files::createDontpackFlagfile(m_path);
 		throw;
 	}
 }
@@ -289,16 +266,269 @@ void Writer::check(std::ostream& log, bool fix, bool quick)
 			maintenance(fixer, quick);
 			fixer.end();
 		} catch (...) {
-			createDontpackFlagfile(m_path);
+			files::createDontpackFlagfile(m_path);
 			throw;
 		}
 
-		removeDontpackFlagfile(m_path);
+		files::removeDontpackFlagfile(m_path);
 	} else {
-		MockFixer fixer(log, *this);
+		maintenance::MockFixer fixer(log, *this);
 		maintenance(fixer, quick);
 		fixer.end();
 	}
+}
+
+namespace {
+struct FileCopier : maintenance::IndexFileVisitor
+{
+	WIndex& m_idx;
+	const scan::Validator& m_val;
+	wibble::sys::Buffer buf;
+	std::string src;
+	std::string dst;
+	int fd_src;
+	int fd_dst;
+	off_t w_off;
+
+	FileCopier(WIndex& idx, const std::string& src, const std::string& dst);
+	virtual ~FileCopier();
+
+	void operator()(const std::string& file, int id, off_t offset, size_t size);
+
+	void flush();
+};
+
+FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
+	: m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
+{
+	fd_src = open(src.c_str(), O_RDONLY | O_NOATIME);
+	if (fd_src < 0)
+		throw wibble::exception::File(src, "opening file");
+
+	fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	if (fd_dst < 0)
+		throw wibble::exception::File(dst, "opening file");
+}
+
+FileCopier::~FileCopier()
+{
+	flush();
+}
+
+void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
+{
+	if (buf.size() < size)
+		buf.resize(size);
+	ssize_t res = pread(fd_src, buf.data(), size, offset);
+	if (res < 0 || (unsigned)res != size)
+		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
+	m_val.validate(buf.data(), size);
+	res = write(fd_dst, buf.data(), size);
+	if (res < 0 || (unsigned)res != size)
+		throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");
+
+	// Reindex file from offset to w_off
+	m_idx.relocate_data(id, w_off);
+
+	w_off += size;
+}
+
+void FileCopier::flush()
+{
+	if (fd_src != -1 and close(fd_src) != 0)
+		throw wibble::exception::File(src, "closing file");
+	fd_src = -1;
+	if (fd_dst != -1 and close(fd_dst) != 0)
+		throw wibble::exception::File(dst, "closing file");
+	fd_dst = -1;
+}
+
+struct Reindexer : public MetadataConsumer
+{
+	WIndex& idx;
+	std::string relfile;
+	std::string basename;
+
+	Reindexer(WIndex& idx,
+		  const std::string& relfile)
+	       	: idx(idx), relfile(relfile), basename(str::basename(relfile)) {}
+
+	virtual bool operator()(Metadata& md)
+	{
+		if (md.deleted) return true;
+		Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
+		try {
+			int id;
+			if (str::basename(blob->filename) != basename)
+				throw wibble::exception::Consistency(
+					"rescanning " + relfile,
+				       	"metadata points to the wrong file: " + blob->filename);
+			idx.index(md, relfile, blob->offset, &id);
+		} catch (utils::sqlite::DuplicateInsert& di) {
+			throw wibble::exception::Consistency("reindexing " + basename,
+					"data item at offset " + str::fmt(blob->offset) + " has a duplicate elsewhere in the dataset: manual fix is required");
+		} catch (std::exception& e) {
+			// sqlite will take care of transaction consistency
+			throw wibble::exception::Consistency("reindexing " + basename,
+					"failed to reindex data item at offset " + str::fmt(blob->offset) + ": " + e.what());
+		}
+		return true;
+	}
+};
+
+}
+
+void Writer::rescanFile(const std::string& relpath)
+{
+	// Lock away writes and reads
+	Pending p = m_idx.beginExclusiveTransaction();
+	// cerr << "LOCK" << endl;
+
+	// Remove from the index all data about the file
+	m_idx.reset(relpath);
+	// cerr << " RESET " << file << endl;
+
+	string pathname = str::joinpath(m_path, relpath);
+
+	// Temporarily uncompress the file for scanning
+	auto_ptr<utils::compress::TempUnzip> tu;
+	if (!sys::fs::access(pathname, F_OK) && sys::fs::access(pathname + ".gz", F_OK))
+		tu.reset(new utils::compress::TempUnzip(pathname));
+
+	// Collect the scan results in a metadata::Collector
+	metadata::Collector mds;
+	if (!scan::scan(pathname, mds))
+		throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
+	// cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
+
+	// Scan the list of metadata, looking for duplicates and marking all
+	// the duplicates except the last one as deleted
+	index::IDMaker id_maker(m_idx.unique_codes());
+
+	map<string, Metadata*> finddupes;
+	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
+	{
+		string id = id_maker.id(*i);
+		if (id.empty())
+			continue;
+		map<string, Metadata*>::iterator dup = finddupes.find(id);
+		if (dup == finddupes.end())
+			finddupes.insert(make_pair(id, &(*i)));
+		else
+		{
+			dup->second->deleted = true;
+			dup->second = &(*i);
+		}
+	}
+	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
+
+	Reindexer fixer(m_idx, relpath);
+	bool res = mds.sendTo(fixer);
+	assert(res);
+	// cerr << " REINDEXED " << pathname << endl;
+
+	// TODO: if scan fails, remove all info from the index and rename the
+	// file to something like .broken
+
+	// Commit the changes on the database
+	p.commit();
+	// cerr << " COMMITTED" << endl;
+
+	// TODO: remove relevant summary
+}
+
+
+size_t Writer::repackFile(const std::string& relpath)
+{
+	// Lock away writes and reads
+	Pending p = m_idx.beginExclusiveTransaction();
+
+	// Make a copy of the file with the right data in it, sorted by
+	// reftime, and update the offsets in the index
+	string pathname = str::joinpath(m_path, relpath);
+	string pntmp = pathname + ".repack";
+	FileCopier copier(m_idx, pathname, pntmp);
+	m_idx.scan_file(relpath, copier, "reftime, offset");
+	copier.flush();
+
+	size_t size_pre = files::size(pathname);
+	size_t size_post = files::size(pntmp);
+
+	// Remove the .metadata file if present, because we are shuffling the
+	// data file and it will not be valid anymore
+	string mdpathname = pathname + ".metadata";
+	if (sys::fs::access(mdpathname, F_OK))
+		if (unlink(mdpathname.c_str()) < 0)
+			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
+
+	// Rename the file with to final name
+	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
+		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
+
+	// Commit the changes on the database
+	p.commit();
+
+	return size_pre - size_post;
+}
+
+size_t Writer::removeFile(const std::string& relpath, bool withData)
+{
+	m_idx.reset(relpath);
+
+	if (withData)
+	{
+		string pathname = str::joinpath(m_path, relpath);
+		size_t size = files::size(pathname);
+		if (unlink(pathname.c_str()) < 0)
+			throw wibble::exception::System("removing " + pathname);
+		return size;
+	} else
+		return 0;
+}
+
+void Writer::archiveFile(const std::string& relpath)
+{
+	// Create the target directory in the archive
+	string pathname = str::joinpath(m_path, relpath);
+	string arcrelname = str::joinpath("last", relpath);
+	string arcabsname = str::joinpath(m_path, str::joinpath(".archive", arcrelname));
+	sys::fs::mkFilePath(arcabsname);
+
+	// Rebuild the metadata
+	metadata::Collector mds;
+	m_idx.scan_file(relpath, mds);
+
+	// Remove from index
+	m_idx.reset(relpath);
+
+	// Move to archive
+	if (sys::fs::access(arcabsname, F_OK))
+		throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
+				arcabsname + " already exists");
+	if (rename(pathname.c_str(), arcabsname.c_str()) < 0)
+		throw wibble::exception::System("moving " + pathname + " to " + arcabsname);
+
+	// Acquire in the achive
+	archive().acquire(arcrelname, mds);
+}
+
+size_t Writer::vacuum()
+{
+	size_t size_pre = 0, size_post = 0;
+	if (files::size(m_idx.pathname() + "-journal") > 0)
+	{
+		size_pre = files::size(m_idx.pathname())
+				+ files::size(m_idx.pathname() + "-journal");
+		m_idx.vacuum();
+		size_post = files::size(m_idx.pathname())
+				+ files::size(m_idx.pathname() + "-journal");
+	}
+
+	// Rebuild the cached summaries, if needed
+	if (!sys::fs::access(str::joinpath(m_path, ".summaries/all.summary"), F_OK))
+		m_idx.summaryForAll();
+
+	return size_post > size_pre ? size_post - size_pre : 0;
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

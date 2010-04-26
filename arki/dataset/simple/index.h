@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/dataset.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -30,6 +31,7 @@
 namespace arki {
 class Matcher;
 class Summary;
+class MetadataConsumer;
 
 namespace dataset {
 
@@ -39,9 +41,15 @@ class MaintFileVisitor;
 
 namespace simple {
 
-class Manifest
+class Manifest : public ReadonlyDataset
 {
+protected:
+	std::string m_path;
+	void querySummaries(const Matcher& matcher, Summary& summary);
+
 public:
+	Manifest(const ConfigFile& cfg);
+	Manifest(const std::string& path);
 	virtual ~Manifest();
 
 	virtual void openRO() = 0;
@@ -52,6 +60,9 @@ public:
 	virtual void remove(const std::string& relname) = 0;
 	virtual void check(maintenance::MaintFileVisitor& v, bool quick=true) = 0;
 	virtual void flush() = 0;
+
+	void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	void querySummary(const Matcher& matcher, Summary& summary);
 
 	static bool exists(const std::string& dir);
 	static std::auto_ptr<Manifest> create(const std::string& dir);

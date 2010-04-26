@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_ONDISK2_ARCHIVE_H
-#define ARKI_DATASET_ONDISK2_ARCHIVE_H
+#ifndef ARKI_DATASET_ARCHIVE_H
+#define ARKI_DATASET_ARCHIVE_H
 
 /*
- * dataset/ondisk2/archive - Handle archived data
+ * dataset/archive - Handle archived data
  *
- * Copyright (C) 2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +23,12 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/local.h>
-
 #include <string>
+#include <map>
 #include <iosfwd>
 
 namespace arki {
+class Summary;
 class Matcher;
 class MetadataConsumer;
 
@@ -39,6 +39,8 @@ class Collector;
 }
 
 namespace dataset {
+class DataQuery;
+class ByteQuery;
 
 namespace maintenance {
 class MaintFileVisitor;
@@ -49,13 +51,10 @@ class Manifest;
 class Reader;
 }
 
-namespace ondisk2 {
-
-class Archive : public Local
+class Archive
 {
 protected:
 	std::string m_dir;
-	simple::Reader* m_reader;
 	simple::Manifest* m_mft;
 
 	void querySummaries(const Matcher& matcher, Summary& summary);
@@ -113,7 +112,7 @@ public:
  * When querying, all archives are queried, following the archive order:
  * alphabetical order except the archive named "last" is queried last.
  */
-class Archives : public Local
+class Archives
 {
 protected:
 	std::string m_dir;
@@ -151,7 +150,6 @@ public:
 	void vacuum();
 };
 
-}
 }
 }
 

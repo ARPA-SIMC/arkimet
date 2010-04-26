@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset.h>
+#include <arki/dataset/local.h>
 #include <arki/configfile.h>
 #include <arki/dataset/ondisk2/index.h>
 #include <string>
@@ -41,6 +41,7 @@ class TargetFile;
 
 namespace maintenance {
 class MaintFileVisitor;
+class Agent;
 }
 
 namespace ondisk2 {
@@ -49,21 +50,16 @@ class Archives;
 
 namespace writer {
 class Datafile;
-class Agent;
 class RealRepacker;
-class MockRepacker;
 class RealFixer;
-class MockFixer;
 }
 
-class Writer : public WritableDataset
+class Writer : public WritableLocal
 {
 protected:
 	ConfigFile m_cfg;
-	std::string m_path;
 	WIndex m_idx;
 	TargetFile* m_tf;
-	mutable Archives* m_archive;
 	bool m_replace;
 	int m_archive_age;
 	int m_delete_age;
@@ -78,10 +74,6 @@ public:
 	Writer(const ConfigFile& cfg);
 
 	virtual ~Writer();
-
-	bool hasArchive() const;
-	Archives& archive();
-	const Archives& archive() const;
 
 	// Compute the unique ID of a metadata in this dataset
 	virtual std::string id(const Metadata& md) const;
@@ -126,6 +118,12 @@ public:
 	 */
 	virtual void check(std::ostream& log, bool fix, bool quick);
 
+	virtual void rescanFile(const std::string& relpath);
+	virtual size_t repackFile(const std::string& relpath);
+	virtual size_t removeFile(const std::string& relpath, bool withData=false);
+	virtual void archiveFile(const std::string& relpath);
+	virtual size_t vacuum();
+
 	/**
 	 * Iterate through the contents of the dataset, in depth-first order.
 	 */
@@ -133,11 +131,8 @@ public:
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 
-	friend class writer::Agent;
 	friend class writer::RealRepacker;
-	friend class writer::MockRepacker;
 	friend class writer::RealFixer;
-	friend class writer::MockFixer;
 };
 
 }

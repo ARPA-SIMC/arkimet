@@ -1,5 +1,5 @@
 /*
- * dataset/ondisk2/archive - Handle archived data
+ * dataset/archive - Handle archived data
  *
  * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset/ondisk2/archive.h>
+#include <arki/dataset/archive.h>
 #include <arki/dataset/simple/index.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/maintenance.h>
@@ -32,8 +32,6 @@
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
 #include <arki/scan/any.h>
-#include <arki/postprocess.h>
-#include <arki/sort.h>
 #include <arki/nag.h>
 
 #include <wibble/exception.h>
@@ -58,10 +56,9 @@ using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
-namespace ondisk2 {
 
 Archive::Archive(const std::string& dir)
-	: m_dir(dir), m_reader(0), m_mft(0)
+	: m_dir(dir), m_mft(0)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_dir);
@@ -69,7 +66,6 @@ Archive::Archive(const std::string& dir)
 
 Archive::~Archive()
 {
-	if (m_reader) delete m_reader;
 	if (m_mft) delete m_mft;
 }
 
@@ -80,7 +76,9 @@ bool Archive::is_archive(const std::string& dir)
 
 void Archive::openRO()
 {
-	m_reader = new dataset::simple::Reader(m_dir);
+	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_dir);
+	m_mft = mft.release();
+	m_mft->openRO();
 }
 
 void Archive::openRW()
@@ -92,20 +90,17 @@ void Archive::openRW()
 
 void Archive::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
 {
-	if (!m_reader) throw wibble::exception::Consistency("querying archive " + m_dir, "archive opened in write mode");
-	m_reader->queryData(q, consumer);
+	m_mft->queryData(q, consumer);
 }
 
 void Archive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	if (!m_reader) throw wibble::exception::Consistency("querying archive " + m_dir, "archive opened in write mode");
-	m_reader->queryBytes(q, out);
+	m_mft->queryBytes(q, out);
 }
 
 void Archive::querySummary(const Matcher& matcher, Summary& summary)
 {
-	if (!m_reader) throw wibble::exception::Consistency("querying archive " + m_dir, "archive opened in write mode");
-	m_reader->querySummary(matcher, summary);
+	m_mft->querySummary(matcher, summary);
 }
 
 void Archive::acquire(const std::string& relname)
@@ -155,13 +150,8 @@ void Archive::flush()
 
 void Archive::maintenance(maintenance::MaintFileVisitor& v)
 {
-	if (m_mft)
-	{
-		m_mft->check(v);
-		m_mft->flush();
-	}
-	else
-		m_reader->maintenance(v);
+	m_mft->check(v);
+	m_mft->flush();
 }
 
 /*
@@ -231,9 +221,8 @@ void Archive::vacuum()
 	m_mft->vacuum();
 
 	// Regenerate summary cache if needed
-	dataset::simple::Reader r(m_dir);
 	Summary s;
-	r.querySummary(Matcher(), s);
+	m_mft->querySummary(Matcher(), s);
 }
 
 Archives::Archives(const std::string& dir, bool read_only)
@@ -436,6 +425,5 @@ void Archives::vacuum()
 		m_last->vacuum();
 }
 
-}
 }
 }

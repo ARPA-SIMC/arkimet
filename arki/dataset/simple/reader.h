@@ -50,17 +50,11 @@ struct Manifest;
 class Reader : public Local
 {
 protected:
-	std::string m_dir;
 	Manifest* m_mft;
-
-	void querySummaries(const Matcher& matcher, Summary& summary);
 
 public:
 	Reader(const ConfigFile& cfg);
-	Reader(const std::string& dir);
 	virtual ~Reader();
-
-	const std::string& path() const { return m_dir; }
 
 	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);

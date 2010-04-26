@@ -45,24 +45,16 @@ public:
 	Empty(const ConfigFile& cfg);
 	virtual ~Empty();
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
-	{
-		// The dataset is always empty
-	}
+	// Nothing to do: the dataset is always empty
+	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer) {}
+	virtual void querySummary(const Matcher& matcher, Summary& summary) {}
+	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out) {}
 
-	virtual void querySummary(const Matcher& matcher, Summary& summary)
-	{
-		// The dataset is always empty
-	}
-
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out)
-	{
-		// The dataset is always empty
-	}
+	virtual void rescanFile(const std::string& relpath) {}
+	virtual size_t repackFile(const std::string& relpath) { return 0; }
+	virtual size_t removeFile(const std::string& relpath, bool withData=false) { return 0; }
+	virtual void archiveFile(const std::string& relpath) {}
+	virtual size_t vacuum() { return 0; }
 };
 
 }

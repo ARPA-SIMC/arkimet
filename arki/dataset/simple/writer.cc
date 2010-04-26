@@ -63,21 +63,21 @@ namespace dataset {
 namespace simple {
 
 Writer::Writer(const ConfigFile& cfg)
-	: m_dir(cfg.value("path")), m_mft(0), m_tf(0)
+	: WritableLocal(cfg), m_mft(0), m_tf(0)
 {
 	m_name = cfg.value("name");
 
 	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_dir);
+	wibble::sys::fs::mkpath(m_path);
 
 	m_tf = TargetFile::create(cfg);
 
 	// If the index is missing, take note not to perform a repack until a
 	// check is made
-	if (!sys::fs::access(str::joinpath(m_dir, "index.sqlite"), F_OK))
-		files::createDontpackFlagfile(m_dir);
+	if (!sys::fs::access(str::joinpath(m_path, "index.sqlite"), F_OK))
+		files::createDontpackFlagfile(m_path);
 
-	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_dir);
+	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_path);
 	m_mft = mft.release();
 	m_mft->openRW();
 }
@@ -101,7 +101,7 @@ Datafile* Writer::file(const std::string& pathname)
 		return i->second;
 
 	// Ensure that the directory for 'pathname' exists
-	string pn = str::joinpath(m_dir, pathname);
+	string pn = str::joinpath(m_path, pathname);
 	size_t pos = pn.rfind('/');
 	if (pos != string::npos)
 		wibble::sys::fs::mkpath(pn.substr(0, pos));
@@ -114,49 +114,6 @@ Datafile* Writer::file(const std::string& pathname)
 	m_df_cache.insert(make_pair(pathname, res));
 	return res;
 }
-
-
-#if 0
-void Archive::acquire(const std::string& relname)
-{
-	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
-	// Scan file, reusing .metadata if still valid
-	utils::metadata::Collector mdc;
-	string pathname = str::joinpath(m_dir, relname);
-	if (!scan::scan(pathname, mdc))
-		throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
-	acquire(relname, mdc);
-}
-
-void Archive::acquire(const std::string& relname, const utils::metadata::Collector& mds)
-{
-	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
-	string pathname = str::joinpath(m_dir, relname);
-	time_t mtime = files::timestamp(pathname);
-	if (mtime == 0)
-		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
-
-	// Iterate the metadata, computing the summary and making the data
-	// paths relative
-	Summary sum;
-	for (utils::metadata::Collector::const_iterator i = mds.begin();
-			i != mds.end(); ++i)
-	{
-		Item<source::Blob> s = i->source.upcast<source::Blob>();
-		s->filename = str::basename(s->filename);
-		sum.add(*i);
-	}
-
-	// Regenerate .metadata
-	mds.writeAtomically(pathname + ".metadata");
-
-	// Regenerate .summary
-	sum.writeAtomically(pathname + ".summary");
-
-	// Add to manifest
-	m_mft->acquire(relname, mtime, sum);
-}
-#endif
 
 WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 {
@@ -233,16 +190,10 @@ void Writer::flush()
 
 void Writer::repack(std::ostream& log, bool writable)
 {
+#if 0
 	// TODO Sort data in reftime order
 	// TODO Regenerate summary or metadata if timestamp show it's needed
 	// TODO Move files to archive
-#if 0
-	if (hasDontpackFlagfile(m_path))
-	{
-		log << m_path << ": dataset needs checking first" << endl;
-		return;
-	}
-
 	auto_ptr<Agent> repacker;
 
 	if (writable)
@@ -251,40 +202,57 @@ void Writer::repack(std::ostream& log, bool writable)
 		repacker.reset(new RealRepacker(log, *this));
 	else
 		repacker.reset(new MockRepacker(log, *this));
-	try {
-		maintenance(*repacker);
-		repacker->end();
-	} catch (...) {
-		createDontpackFlagfile(m_path);
-		throw;
-	}
+
+	maintenance(*repacker);
+	repacker->end();
 #endif
 }
 
 void Writer::check(std::ostream& log, bool fix, bool quick)
 {
-	// TODO Regenerate summary or metadata if timestamp show it's needed
 #if 0
-	using namespace writer;
-
+	// TODO Regenerate summary or metadata if timestamp show it's needed
 	if (fix)
 	{
 		RealFixer fixer(log, *this);
-		try {
-			maintenance(fixer, quick);
-			fixer.end();
-		} catch (...) {
-			createDontpackFlagfile(m_path);
-			throw;
-		}
-
-		removeDontpackFlagfile(m_path);
+		maintenance(fixer, quick);
+		fixer.end();
 	} else {
 		MockFixer fixer(log, *this);
 		maintenance(fixer, quick);
 		fixer.end();
 	}
 #endif
+}
+
+void Writer::rescanFile(const std::string& relpath)
+{
+	// TODO
+	throw wibble::exception::Consistency("rescanning " + relpath, "function to be implemented");
+}
+
+size_t Writer::repackFile(const std::string& relpath)
+{
+	// TODO
+	throw wibble::exception::Consistency("repacking " + relpath, "function to be implemented");
+}
+
+size_t Writer::removeFile(const std::string& relpath, bool withData)
+{
+	// TODO
+	throw wibble::exception::Consistency("removing " + relpath, "function to be implemented");
+}
+
+void Writer::archiveFile(const std::string& relpath)
+{
+	// TODO
+	throw wibble::exception::Consistency("archiving " + relpath, "function to be implemented");
+}
+
+size_t Writer::vacuum()
+{
+	// TODO
+	throw wibble::exception::Consistency("vacuuming " + m_path, "function to be implemented");
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
@@ -328,61 +296,4 @@ WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const 
 }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-
-
-
-
-#include <arki/dataset/ondisk2/writer.h>
-#include <arki/dataset/ondisk2/writer/datafile.h>
-#include <arki/dataset/ondisk2/archive.h>
-#include <arki/dataset/ondisk2/maintenance.h>
-//#include <arki/dataset/ondisk2/maint/datafile.h>
-//#include <arki/dataset/ondisk2/maint/directory.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/scan/dir.h>
-#include <arki/utils.h>
-#include <arki/summary.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/lockfile.h>
-
-#include <fstream>
-#include <sstream>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cerrno>
-
-using namespace std;
-using namespace wibble;
-using namespace arki::utils::files;
-
-namespace arki {
-namespace dataset {
-namespace ondisk2 {
-
-}
-}
-}
-#endif
 // vim:set ts=4 sw=4:

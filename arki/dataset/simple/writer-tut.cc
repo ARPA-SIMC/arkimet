@@ -92,11 +92,6 @@ struct arki_dataset_simple_writer_shar : public dataset::maintenance::MaintFileV
 
 	arki_dataset_simple_writer_shar()
 	{
-		system("rm -rf testds");
-		system("mkdir testds");
-		system("mkdir testds/.archive");
-		system("mkdir testds/.archive/last");
-
 		cfg.setValue("path", "testds");
 		cfg.setValue("name", "testds");
 		cfg.setValue("type", "simple");
@@ -108,6 +103,39 @@ struct arki_dataset_simple_writer_shar : public dataset::maintenance::MaintFileV
 	std::string idxfname() const
 	{
 		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+	}
+
+#define ensure_simpleds_clean(x, y, z) impl_ensure_simpleds_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
+	void impl_ensure_simpleds_clean(const wibble::tests::Location& loc, const ConfigFile& cfg, size_t filecount, size_t resultcount)
+	{
+		dataset::simple::Reader reader(cfg);
+		arki::tests::impl_ensure_dataset_clean(loc, reader, filecount, resultcount);
+		inner_ensure(sys::fs::access(str::joinpath(reader.path(), idxfname()), F_OK));
+	}
+
+	// Recreate the dataset importing data into it
+	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1")
+	{
+		if (!wcfg) wcfg = &cfg;
+
+		system(("rm -rf " + wcfg->value("path")).c_str());
+		system(("mkdir " + wcfg->value("path")).c_str());
+
+		{
+			dataset::simple::Writer writer(*wcfg);
+
+			scan::Grib scanner;
+			scanner.open(testfile);
+
+			Metadata md;
+			while (scanner.next(md))
+			{
+				WritableDataset::AcquireResult res = writer.acquire(md);
+				ensure_equals(res, WritableDataset::ACQ_OK);
+			}
+		}
+
+		ensure_simpleds_clean(*wcfg, 3, 3);
 	}
 };
 TESTGRP(arki_dataset_simple_writer);
@@ -169,7 +197,7 @@ void to::test<1>()
 
 	
 	{
-		dataset::simple::Reader reader("testds");
+		dataset::simple::Reader reader(cfg);
 		ensure_dataset_clean(reader, 1, 2);
 	}
 }
@@ -231,54 +259,49 @@ void to::test<2>()
 	
 	// Dataset is fine and clean
 	{
-		dataset::simple::Reader reader("testds");
+		dataset::simple::Reader reader(cfg);
 		ensure_dataset_clean(reader, 1, 2);
 	}
 }
 
-// Retest with sqlite
-template<> template<> void to::test<3>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<4>() { ForceSqlite fs; test<2>(); }
-
-#if 0
 // Test maintenance scan on non-indexed files
 template<> template<>
-void to::test<2>()
+void to::test<3>()
 {
-	MaintenanceCollector c;
-	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-		system("cp inbound/test.grib1 testds/.archive/last/");
-	}
+	struct Setup {
+		void operator() ()
+		{
+			system("rm -rf testds");
+			system("mkdir testds");
+			system("mkdir testds/2007");
+			system("cp inbound/test.grib1 testds/2007/07-08.grib1");
+		}
+	} setup;
 
-	// Query now is ok
+	setup();
+
+	// Query now is ok, but empty
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
 		metadata::Collector mdc;
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		Reader reader(cfg);
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 0u);
-
-		// Maintenance should show one file to index
-		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_INDEX), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
 	}
 
+	// Maintenance should show one file to index
 	{
+		MaintenanceCollector c;
 		Writer writer(cfg);
-
-		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(ARC_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
+	}
 
+	{
 		stringstream s;
+		Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -289,62 +312,75 @@ void to::test<2>()
 				"testds: rebuild summary cache\n"
 				"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
 
-		// Repack should do nothing
+		// Repack should find nothing to repack
 		s.str(std::string());
 		writer.repack(s, true);
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
 	// Everything should be fine now
-	ensure_archive_clean("testds/.archive/last", 1, 3);
-}
+	ensure_simpleds_clean(cfg, 3, 3);
 
-// Test maintenance scan on missing metadata
-template<> template<>
-void to::test<3>()
-{
-	MaintenanceCollector c;
+	// Restart again
+	setup();
+
+	// Repack here should act as if the dataset were empty
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
-	}
-
-	// Query now is ok
-	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
-		metadata::Collector mdc;
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
-
-		// Maintenance should show one file to rescan
-		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
-
-	// Fix the database
-	{
+		stringstream s;
 		Writer writer(cfg);
 
-		c.clear();
+		// Repack should find nothing to repack
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// Query is still ok, but empty
+	{
+		metadata::Collector mdc;
+		Reader reader(cfg);
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 0u);
+	}
+}
+
+// Test maintenance scan with missing metadata and summary
+template<> template<>
+void to::test<4>()
+{
+	struct Setup {
+		void operator() ()
+		{
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1.metadata");
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
+			ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
+			ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+			ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+		}
+	} setup;
+
+	clean_and_import();
+	setup();
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+	// Query is ok
+	ensure_simpleds_clean(cfg, 3, 3);
+
+	// Maintenance should show one file to rescan
+	{
+		MaintenanceCollector c;
+		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
+	}
 
+	// Fix the dataset
+	{
 		stringstream s;
+		Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -362,53 +398,73 @@ void to::test<3>()
 	}
 
 	// Everything should be fine now
-	ensure_archive_clean("testds/.archive/last", 1, 3);
+	ensure_simpleds_clean(cfg, 3, 3);
+	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+
+	// Restart again
+	clean_and_import();
+	setup();
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+	// Repack here should act as if the dataset were empty
+	{
+		stringstream s;
+		Writer writer(cfg);
+
+		// Repack should find nothing to repack
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// And repack should have changed nothing
+	ensure_simpleds_clean(cfg, 3, 3);
+	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 }
 
 // Test maintenance scan on missing summary
 template<> template<>
-void to::test<4>()
+void to::test<5>()
 {
-	MaintenanceCollector c;
-	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
-	}
+	struct Setup {
+		void operator() ()
+		{
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
+			ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
+			ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+			ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+		}
+	} setup;
 
-	// Query now is ok
-	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
-		metadata::Collector mdc;
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
+	clean_and_import();
+	setup();
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
-		// Maintenance should show one file to rescan
-		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
+	// Query is ok
+	ensure_simpleds_clean(cfg, 3, 3);
 
+	// Maintenance should show one file to rescan
 	{
+		MaintenanceCollector c;
 		Writer writer(cfg);
-
-		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
+	}
 
+	// Fix the dataset
+	{
 		stringstream s;
+		Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -426,157 +482,105 @@ void to::test<4>()
 	}
 
 	// Everything should be fine now
-	ensure_archive_clean("testds/.archive/last", 1, 3);
-}
+	ensure_simpleds_clean(cfg, 3, 3);
+	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
-// Test maintenance scan on missing metadata
-template<> template<>
-void to::test<5>()
-{
+
+	// Restart again
+	clean_and_import();
+	setup();
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+	// Repack here should act as if the dataset were empty
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-		system("cp inbound/test.grib1 testds/.archive/last/1.grib1");
-		system("cp inbound/test.grib1 testds/.archive/last/2.grib1");
-		system("cp inbound/test.grib1 testds/.archive/last/3.grib1");
-		arc.acquire("1.grib1");
-		arc.acquire("2.grib1");
-		arc.acquire("3.grib1");
-
-		sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
-		ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/2.grib1.metadata", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/2.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
-	}
-
-	// Query now is ok
-	{
-		metadata::Collector mdc;
-		Archive arc("testds/.archive/last");
-		arc.openRO();
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 9u);
-	}
-
-	// Maintenance should show one file to rescan
-	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-		MaintenanceCollector c;
-		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
-
-	{
+		stringstream s;
 		Writer writer(cfg);
 
-		MaintenanceCollector c;
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-
-		stringstream s;
-
-		// Check should reindex the file
-		writer.check(s, true, true);
-		ensure_equals(s.str(),
-			"testds: rescanned in archive last/2.grib1\n"
-			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
-
-		// Repack should do nothing
+		// Repack should find nothing to repack
 		s.str(std::string());
 		writer.repack(s, true);
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// Everything should be fine now
-	ensure_archive_clean("testds/.archive/last", 3, 9);
+	// And repack should have changed nothing
+	ensure_simpleds_clean(cfg, 3, 3);
+	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 }
 
 // Test maintenance scan on compressed archives
 template<> template<>
 void to::test<6>()
 {
-	MaintenanceCollector c;
-	{
-		// Import a file
-		Archive arc("testds/.archive/last");
-		arc.openRW();
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
+	struct Setup {
+		void operator() ()
+		{
+			// Compress one file
+			metadata::Collector mdc;
+			Metadata::readFile("testds/2007/07-08.grib1.metadata", mdc);
+			ensure_equals(mdc.size(), 1u);
+			mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1.metadata");
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1");
 
-		// Compress it
-		metadata::Collector mdc;
-		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
-		ensure_equals(mdc.size(), 3u);
-		mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1");
+			ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
+			ensure(sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
+			ensure(sys::fs::access("testds/2007/07-08.grib1.gz.idx", F_OK));
+			ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+			ensure(sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+		}
 
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.gz", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.gz.idx", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
-	}
+		void removemd()
+		{
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1.metadata");
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
+			ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+			ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+		}
+	} setup;
 
-	// Everything is still ok
-	ensure_archive_clean("testds/.archive/last", 1, 3);
+	clean_and_import();
+	setup();
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+	// Query is ok
+	ensure_simpleds_clean(cfg, 3, 3);
 
 	// Try removing summary and metadata
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
+	setup.removemd();
 
 	// Cannot query anymore
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
 		metadata::Collector mdc;
+		Reader reader(cfg);
 		try {
-			arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+			reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 			ensure(false);
 		} catch (std::exception& e) {
 			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
 		}
+	}
 
-		// Maintenance should show one file to rescan
-		c.clear();
-		arc.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
+	// Maintenance should show one file to rescan
+	{
+		MaintenanceCollector c;
+		Writer writer(cfg);
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(ARC_OK), 2u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
 
+	// Fix the dataset
 	{
-		Writer writer(cfg);
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-
 		stringstream s;
+		Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -594,9 +598,43 @@ void to::test<6>()
 	}
 
 	// Everything should be fine now
-	ensure_archive_clean("testds/.archive/last", 1, 3);
+	ensure_simpleds_clean(cfg, 3, 3);
+	ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.gz.idx", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+
+	// Restart again
+	clean_and_import();
+	setup();
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+	setup.removemd();
+
+	// Repack here should act as if the dataset were empty
+	{
+		stringstream s;
+		Writer writer(cfg);
+
+		// Repack should find nothing to repack
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// And repack should have changed nothing
+	ensure_simpleds_clean(cfg, 3, 3);
+	ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
+	ensure(sys::fs::access("testds/2007/07-08.grib1.gz.idx", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 }
 
+#if 0
 // Test handling of empty archive dirs (such as last with everything moved away)
 template<> template<>
 void to::test<7>()
@@ -612,19 +650,18 @@ void to::test<7>()
 
 	// Everything should be fine now
 	Archives arc("testds/.archive");
-	ensure_dataset_clean(arc, 1, 3);
+	ensure_dataset_clean(arc, 3, 3);
 }
 
+#endif
 
 // Retest with sqlite
-template<> template<> void to::test<8>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<9>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
+template<> template<> void to::test<7>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<8>() { ForceSqlite fs; test<2>(); }
+template<> template<> void to::test<9>() { ForceSqlite fs; test<3>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; test<4>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; test<5>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; test<6>(); }
 
-#endif
 
 }
