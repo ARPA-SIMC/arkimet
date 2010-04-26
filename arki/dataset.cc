@@ -257,7 +257,7 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 	if (type.empty())
 		type = "local";
 	
-	if (type == "ondisk2")
+	if (type == "ondisk2" || type == "test")
 		return new dataset::ondisk2::Reader(cfg);
 	if (type == "simple" || type == "error" || type == "duplicates")
 		return new dataset::simple::Reader(cfg);
@@ -295,7 +295,7 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 	if (type.empty())
 		type = "local";
 	
-	if (type == "ondisk2")
+	if (type == "ondisk2" || type == "test")
 		return new dataset::ondisk2::Writer(cfg);
 	if (type == "simple" || type == "error" || type == "duplicates")
 		return new dataset::simple::Writer(cfg);
@@ -315,7 +315,7 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
 	if (type.empty())
 		type = "local";
 	
-	if (type == "ondisk2")
+	if (type == "ondisk2" || type == "test")
 		return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
 	if (type == "simple" || type == "error" || type == "duplicates")
 		return dataset::simple::Writer::testAcquire(cfg, md, out);
