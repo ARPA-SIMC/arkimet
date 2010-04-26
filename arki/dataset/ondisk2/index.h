@@ -197,6 +197,11 @@ public:
 	void rebuildSummaryCache();
 
 	/**
+	 * Invalidate all the summary cache
+	 */
+	void invalidateSummaryCache();
+
+	/**
 	 * Invalidate the summary for the given month AND the global summary
 	 */
 	void invalidateSummaryCache(int year, int month);

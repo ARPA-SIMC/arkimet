@@ -587,6 +587,20 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 	return true;
 }
 
+void Index::invalidateSummaryCache()
+{
+	// Delete all files *.summary in the cache directory
+	sys::fs::Directory dir(m_scache_root);
+	for (sys::fs::Directory::const_iterator i = dir.begin();
+			i != dir.end(); ++i)
+		if (str::endsWith(*i, ".summary"))
+		{
+			string pathname = str::joinpath(m_scache_root, *i);
+			if (unlink(pathname.c_str()) < 0)
+				throw wibble::exception::System("deleting file " + pathname);
+		}
+}
+
 void Index::invalidateSummaryCache(int year, int month)
 {
 	if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month))))
@@ -601,16 +615,7 @@ void Index::invalidateSummaryCache(const Metadata& md)
 
 void Index::rebuildSummaryCache()
 {
-	// Delete all files *.summary in the cache directory
-	sys::fs::Directory dir(m_scache_root);
-	for (sys::fs::Directory::const_iterator i = dir.begin();
-			i != dir.end(); ++i)
-		if (str::endsWith(*i, ".summary"))
-		{
-			string pathname = str::joinpath(m_scache_root, *i);
-			if (unlink(pathname.c_str()) < 0)
-				throw wibble::exception::System("deleting file " + pathname);
-		}
+	invalidateSummaryCache();
 	// Rebuild all summaries
 	summaryForAll();
 }
@@ -1236,14 +1241,55 @@ void WIndex::remove(int id, std::string& file)
 void WIndex::reset()
 {
 	m_db.exec("DELETE FROM md");
+	invalidateSummaryCache();
 }
 
 void WIndex::reset(const std::string& file)
 {
+	// Get the file date extremes to invalidate the summary cache
+	UItem<types::Time> tmin, tmax;
+	{
+		Query sq("file_reftime_extremes", m_db);
+		sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
+		sq.bind(1, file);
+		string fmin, fmax;
+		while (sq.step())
+		{
+			fmin = sq.fetchString(0);
+			fmax = sq.fetchString(1);
+		}
+		// If it did not find the file in the database, we do not need
+		// to remove it
+		if (fmin.empty())
+			return;
+		tmin = types::Time::createFromSQL(fmin);
+		tmax = types::Time::createFromSQL(fmax);
+		tmin->vals[2] = tmax->vals[2] = 0;
+		for (int i = 3; i < 6; ++i)
+			tmin->vals[i] = tmax->vals[i] = 0;
+	}
+
+	// Clean the database
 	Query query("reset_datafile", m_db);
 	query.compile("DELETE FROM md WHERE file = ?");
 	query.bind(1, file);
 	query.step();
+
+	// Clean affected summary cache
+	bool deleted = false;
+	while (tmin <= tmax)
+	{
+		if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", tmin->vals[0], tmin->vals[1]))))
+			deleted = true;
+		++(tmin->vals[1]);
+		if (tmin->vals[1] > 12)
+		{
+			++(tmin->vals[0]);
+			tmin->vals[1] = 1;
+		}
+	}
+	if (deleted)
+		sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
 }
 
 void WIndex::relocate_data(int id, off_t newofs)
