@@ -306,11 +306,8 @@ void to::test<3>()
 		// Check should reindex the file
 		writer.check(s, true, true);
 		ensure_equals(s.str(), 
-				"testds: rescanned in archive last/test.grib1\n"
-				"testds: archive cleaned up\n"
-				"testds: database cleaned up\n"
-				"testds: rebuild summary cache\n"
-				"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+				"testds: rescanned 2007/07-08.grib1\n"
+				"testds: 1 file rescanned.\n");
 
 		// Repack should find nothing to repack
 		s.str(std::string());
@@ -319,7 +316,7 @@ void to::test<3>()
 	}
 
 	// Everything should be fine now
-	ensure_simpleds_clean(cfg, 3, 3);
+	ensure_simpleds_clean(cfg, 1, 3);
 
 	// Restart again
 	setup();
@@ -585,11 +582,8 @@ void to::test<6>()
 		// Check should reindex the file
 		writer.check(s, true, true);
 		ensure_equals(s.str(),
-			"testds: rescanned in archive last/test.grib1\n"
-			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+			"testds: rescanned 2007/07-08.grib1\n"
+			"testds: 1 file rescanned.\n");
 
 		// Repack should do nothing
 		s.str(std::string());
