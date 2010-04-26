@@ -420,7 +420,6 @@ struct Reindexer : public MetadataConsumer
 
 	virtual bool operator()(Metadata& md)
 	{
-		if (md.deleted) return true;
 		Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
 		try {
 			int id;
@@ -480,16 +479,18 @@ void Writer::rescanFile(const std::string& relpath)
 		if (dup == finddupes.end())
 			finddupes.insert(make_pair(id, &(*i)));
 		else
-		{
-			dup->second->deleted = true;
 			dup->second = &(*i);
-		}
 	}
 	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
+	// Send the remaining metadata to the reindexer
 	Reindexer fixer(m_idx, relpath);
-	bool res = mds.sendTo(fixer);
-	assert(res);
+	for (map<string, Metadata*>::const_iterator i = finddupes.begin();
+			i != finddupes.end(); ++i)
+	{
+		bool res = fixer(*i->second);
+		assert(res);
+	}
 	// cerr << " REINDEXED " << pathname << endl;
 
 	// TODO: if scan fails, remove all info from the index and rename the

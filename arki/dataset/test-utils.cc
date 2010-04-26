@@ -31,18 +31,6 @@ using namespace wibble;
 using namespace arki::types;
 
 namespace arki {
-
-size_t countDeletedMetadata(const std::string& fname)
-{
-	size_t count = 0;
-	utils::metadata::Collector mds;
-	Metadata::readFile(fname, mds);
-	for (vector<Metadata>::const_iterator i = mds.begin(); i != mds.end(); ++i)
-		if (i->deleted)
-			++count;
-	return count;
-}
-
 namespace tests {
 
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, MetadataConsumer& mdc)

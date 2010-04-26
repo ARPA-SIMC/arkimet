@@ -52,8 +52,6 @@ protected:
 	void clear();
 
 public:
-	bool deleted;
-
 	UItem<types::Source> source;
 
 protected:

@@ -244,9 +244,7 @@ void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 
 
 	ds::MatcherFilter mf(q.matcher, *c);
-	ds::SkipDeleted sd(mf);
-
-	Metadata::readFile(*m_file, m_pathname, sd);
+	Metadata::readFile(*m_file, m_pathname, mf);
 }
 
 YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}

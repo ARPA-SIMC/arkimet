@@ -348,19 +348,7 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	md.source = source::Blob::create("grib", "fname", 1, 2);
-	md.deleted = true;
-
-	// Encode
-	stringstream output;
-	md.write(output, "(test memory buffer)");
-
-	// Decode
-	stringstream input(output.str(), ios_base::in);
-	Metadata md1;
-	md1.read(input, "(test memory buffer)");
-
-	ensure(md1.deleted);
+	// Skip: there is no deleted flag anymore
 }
 
 // Test Lua functions
@@ -383,7 +371,6 @@ void to::test<7>()
 		"  if md.assigneddataset == nil then return 'assigneddataset is nil' end \n"
 		"  if md.reftime == nil then return 'reftime is nil' end \n"
 		"  if md.bbox ~= nil then return 'bbox is not nil' end \n"
-		"  if md.deleted ~= false then return 'deleted is not false' end \n"
 		"  notes = md.notes \n"
 		"  if table.getn(notes) ~= 1 then return 'table has '..table.getn(notes)..' elements instead of 1' end \n"
 		"  i = 0 \n"

@@ -116,7 +116,6 @@ void Metadata::add_note(const Item<types::Note>& note)
 
 void Metadata::reset()
 {
-	deleted = false;
 	m_filename.clear();
 	m_vals.clear();
 	m_notes.clear();
@@ -162,13 +161,10 @@ bool Metadata::read(istream& in, const std::string& filename, bool readInline)
 		return false;
 
 	// Ensure first 2 bytes are MD or !D
-	if (signature != "MD" && signature != "!D")
-		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD' or '!D'");
+	if (signature != "MD")
+		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
 
 	read(buf, version, filename);
-
-	// If it starts with !D, it's a deleted metadata: take note of it
-	deleted = signature[0] == '!';
 
 	// If the source is inline, then the data follows the metadata
 	if (readInline && source->style() == types::Source::INLINE)
@@ -188,13 +184,10 @@ bool Metadata::read(const unsigned char*& buf, size_t& len, const std::string& f
 		return false;
 
 	// Ensure the signature is MD or !D
-	if (signature != "MD" && signature != "!D")
-		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD' or '!D'");
+	if (signature != "MD")
+		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
 	
 	read(obuf, olen, version, filename);
-
-	// If it starts with !D, it's a deleted metadata: take note of it
-	deleted = signature[0] == '!';
 
 	/*
 	// If the source is inline, then the data follows the metadata
@@ -393,7 +386,7 @@ string Metadata::encode() const
 	string res;
 	Encoder enc(res);
 	// Prepend header
-	enc.addString(deleted ? "!D" : "MD");
+	enc.addString("MD");
 	enc.addUInt(0, 2);
 	enc.addUInt(encoded.size(), 4);
 	enc.addString(encoded);
@@ -592,9 +585,6 @@ void Metadata::readFile(std::istream& in, const std::string& fname, MetadataCons
 		} else {
 			md.read(buf, version, fname);
 
-			// If it starts with !D, it's a deleted metadata: take note of it
-			md.deleted = signature[0] == '!';
-
 			// If the source is inline, then the data follows the metadata
 			if (md.source->style() == types::Source::INLINE)
 				md.readInlineData(in, fname);
@@ -703,12 +693,6 @@ static int arkilua_lookup(lua_State* L)
 			notes[i]->lua_push(L);
 			lua_rawseti(L, -2, i+1);
 		}
-		return 1;
-	}
-	else if (key == "deleted")
-	{
-		// Return true if the metadata is marked deleted, else false
-		lua_pushboolean(L, md->deleted);
 		return 1;
 	}
 	else if (key == "iter")
