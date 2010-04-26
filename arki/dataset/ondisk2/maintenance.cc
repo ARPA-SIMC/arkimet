@@ -49,7 +49,6 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
-using namespace arki::dataset::ondisk2::maint;
 
 namespace arki {
 namespace dataset {
