@@ -190,6 +190,13 @@ void to::test<12>()
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
+template<> template<>
+void to::test<13>()
+{
+	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test")));
+	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
+}
+
 }
 
 // vim:set ts=4 sw=4:

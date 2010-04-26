@@ -184,8 +184,6 @@ void to::test<2>()
 		ensure_equals(s.str(), 
 				"testds: rescanned in archive last/test.grib1\n"
 				"testds: archive cleaned up\n"
-				"testds: database cleaned up\n"
-				"testds: rebuild summary cache\n"
 				"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
 
 		// Repack should do nothing
@@ -251,8 +249,6 @@ void to::test<3>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
 			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
 
 		// Repack should do nothing
@@ -316,8 +312,6 @@ void to::test<4>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
 			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
 
 		// Repack should do nothing
@@ -392,8 +386,6 @@ void to::test<5>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/2.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
 			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
 
 		c.clear();
@@ -486,8 +478,6 @@ void to::test<6>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
 			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
 
 		// Repack should do nothing

@@ -125,8 +125,6 @@ void to::test<1>()
 		stringstream s;
 		writer.repack(s, true);
 		ensure_equals(s.str(),
-			"testdir: database cleaned up\n"
-			"testdir: rebuild summary cache\n"
 			"testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
 
 		c.clear();
@@ -197,8 +195,6 @@ void to::test<2>()
 		writer.repack(s, true);
 		ensure_equals(s.str(),
 			"testdir: deleted from index 2007/07-07.grib1\n"
-			"testdir: database cleaned up\n"
-			"testdir: rebuild summary cache\n"
 			"testdir: 1 file removed from index, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
 		c.clear();
 
@@ -251,8 +247,6 @@ void to::test<3>()
 	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: deindexed 2007/07-07.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file removed from index, 30448 bytes reclaimed cleaning the index.\n");
 
 	c.clear();
@@ -326,8 +320,6 @@ void to::test<4>()
 		writer.repack(s, true);
 		ensure_equals(s.str(),
 			"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
-			"testdir: database cleaned up\n"
-			"testdir: rebuild summary cache\n"
 			"testdir: 1 file deleted, 30448 bytes reclaimed on the index, 65408 total bytes freed.\n");
 
 		c.clear();
@@ -385,8 +377,6 @@ void to::test<5>()
 	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 30448 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -441,8 +431,6 @@ void to::test<6>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file packed, 30448 bytes reclaimed on the index, 65408 total bytes freed.\n");
 	c.clear();
 
@@ -497,8 +485,6 @@ void to::test<7>()
 	// No packing occurs here: check does not mangle data files
 	writer.check(s, true, true);
 	ensure_equals(s.str(),
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 30448 bytes reclaimed cleaning the index.\n");
 
 	c.clear();
@@ -513,7 +499,6 @@ void to::test<7>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: database cleaned up\n"
 		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
 	c.clear();
 
@@ -553,8 +538,6 @@ void to::test<8>()
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: rescanned 2007/07-08.grib1\n"
 		"testdir: rescanned 2007/10-09.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 3 files rescanned, 30448 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -605,8 +588,6 @@ void to::test<9>()
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: rescanned 2007/07-08.grib1\n"
 		"testdir: rescanned 2007/10-09.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 3 files rescanned, 30448 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -658,8 +639,6 @@ void to::test<10>()
 	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned foo/bar/test.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 30448 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -677,7 +656,6 @@ void to::test<10>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed foo/bar/test.grib1 (0 saved)\n"
-		"testdir: database cleaned up\n"
 		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 2576 total bytes freed.\n");
 	c.clear();
 
@@ -729,8 +707,6 @@ void to::test<11>()
 	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned foo/bar/test.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 30448 bytes reclaimed cleaning the index.\n");
 
 	c.clear();
@@ -770,7 +746,6 @@ void to::test<11>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed foo/bar/test.grib1 (44412 saved)\n"
-		"testdir: database cleaned up\n"
 		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 46988 total bytes freed.\n");
 	c.clear();
 
@@ -883,8 +858,6 @@ void to::test<13>()
 		"testdir: archived 2007/07-07.grib1\n"
 		"testdir: archived 2007/07-08.grib1\n"
 		"testdir: archive cleaned up\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 2 files archived, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
 
 	// Check that the files have been moved to the archive
@@ -961,8 +934,6 @@ void to::test<14>()
 	ensure_equals(s.str(),
 		"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
 		"testdir: deleted 2007/07-08.grib1 (7218 freed)\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 2 files deleted, 2 files removed from index, 30448 bytes reclaimed on the index, 72626 total bytes freed.\n");
 
 
@@ -1015,8 +986,6 @@ void to::test<15>()
 	// Perform packing and check that things are still ok afterwards
 	writer.repack(s, true);
 	ensure_equals(s.str(),
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
 
 	c.clear();
@@ -1031,8 +1000,6 @@ void to::test<15>()
 	writer.check(s, true, true);
 	ensure_equals(s.str(), 
 		"testdir: rescanned 20/2007.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -1047,7 +1014,6 @@ void to::test<15>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 20/2007.grib1 (0 saved)\n"
-		"testdir: database cleaned up\n"
 		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 2576 total bytes freed.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -1075,8 +1041,6 @@ void to::test<16>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (0 saved)\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file packed, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
 	s.str(std::string());
 
@@ -1102,8 +1066,6 @@ void to::test<16>()
 	writer.check(s, true, false);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -1117,7 +1079,6 @@ void to::test<16>()
 	writer.repack(s, true);
 	ensure_equals(s.str(), 
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: database cleaned up\n"
 		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
 	c.clear();
 
@@ -1168,8 +1129,6 @@ void to::test<17>()
 	writer.check(s, true, false);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07.grib1\n"
-		"testdir: database cleaned up\n"
-		"testdir: rebuild summary cache\n"
 		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
@@ -1184,7 +1143,6 @@ cerr  << "ZAERBA 4" << endl;
 	writer.repack(s, true);
 	ensure_equals(s.str(), 
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: database cleaned up\n"
 		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
 	c.clear();
 
@@ -1269,8 +1227,6 @@ void to::test<18>()
 			"testdir: rescanned 2007/07-07.grib1\n"
 			"testdir: rescanned 2007/07-08.grib1\n"
 			"testdir: rescanned 2007/10-09.grib1\n"
-			"testdir: database cleaned up\n"
-			"testdir: rebuild summary cache\n"
 			"testdir: 3 files rescanned, 30448 bytes reclaimed cleaning the index.\n");
 		c.clear();
 		writer.maintenance(c);

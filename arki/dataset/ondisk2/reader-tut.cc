@@ -295,8 +295,6 @@ void to::test<9>()
 			"testds: archived 2007/07-07.grib1\n"
 			"testds: archived 2007/07-08.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
 			"testds: 2 files archived, 27352 bytes reclaimed on the index, 27352 total bytes freed.\n");
 	}
 
