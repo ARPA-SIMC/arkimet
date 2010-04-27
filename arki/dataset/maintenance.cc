@@ -446,11 +446,7 @@ void RealRepacker::operator()(const std::string& file, State state)
 		}
 		case TO_INDEX: {
 			// Delete all files not indexed
-			string pathname = str::joinpath(w.path(), file);
-			size_t size = files::size(pathname);
-			if (unlink(pathname.c_str()) < 0)
-				throw wibble::exception::System("removing " + pathname);
-
+			size_t size = w.removeFile(file, true);
 			log() << "deleted " << file << " (" << size << " freed)" << endl;
 			++m_count_deleted;
 			m_count_freed += size;

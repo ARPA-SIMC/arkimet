@@ -401,7 +401,7 @@ public:
 		{
 			while (not disk.empty() and disk.back() < i->file)
 			{
-				nag::verbose("Archive: %s is not in index", disk.back().c_str());
+				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
 				v(disk.back(), MaintFileVisitor::TO_INDEX);
 				disk.pop_back();
 			}
@@ -424,14 +424,14 @@ public:
 				{
 					// Check timestamp consistency
 					if (ts_idx != ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
-								i->file.c_str(), ts_data, ts_idx);
+						nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
+								m_path.c_str(), i->file.c_str(), ts_data, ts_idx);
 					if (ts_md < ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
-								i->file.c_str(), ts_data, ts_md);
+						nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
+								m_path.c_str(), i->file.c_str(), ts_data, ts_md);
 					if (ts_md < ts_data)
-						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								i->file.c_str(), ts_md, ts_sum);
+						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
+								m_path.c_str(), i->file.c_str(), ts_md, ts_sum);
 					v(i->file, MaintFileVisitor::TO_RESCAN);
 				}
 				else
@@ -444,13 +444,13 @@ public:
 			}
 			else // if (disk.empty() or disk.back() > i->file)
 			{
-				nag::verbose("Archive: %s has been deleted from the archive", i->file.c_str());
+				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->file.c_str());
 				v(i->file, MaintFileVisitor::DELETED);
 			}
 		}
 		while (not disk.empty())
 		{
-			nag::verbose("Archive: %s is not in index", disk.back().c_str());
+			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
 			v(disk.back(), MaintFileVisitor::TO_INDEX);
 			disk.pop_back();
 		}
@@ -674,7 +674,7 @@ public:
 		{
 			while (not disk.empty() and disk.back() < i->first)
 			{
-				nag::verbose("Archive: %s is not in index", disk.back().c_str());
+				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
 				v(disk.back(), MaintFileVisitor::TO_INDEX);
 				disk.pop_back();
 			}
@@ -697,14 +697,14 @@ public:
 				{
 					// Check timestamp consistency
 					if (ts_idx != ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) different than the one in the index (%d)",
-								i->first.c_str(), ts_data, ts_idx);
+						nag::verbose("%s: %s has a timestamp (%d) different than the one in the index (%d)",
+								m_path.c_str(), i->first.c_str(), ts_data, ts_idx);
 					if (ts_md < ts_data)
-						nag::verbose("Archive: %s has a timestamp (%d) newer that its metadata (%d)",
-								i->first.c_str(), ts_data, ts_md);
+						nag::verbose("%s: %s has a timestamp (%d) newer that its metadata (%d)",
+								m_path.c_str(), i->first.c_str(), ts_data, ts_md);
 					if (ts_md < ts_data)
-						nag::verbose("Archive: %s metadata has a timestamp (%d) newer that its summary (%d)",
-								i->first.c_str(), ts_md, ts_sum);
+						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
+								m_path.c_str(), i->first.c_str(), ts_md, ts_sum);
 					v(i->first, MaintFileVisitor::TO_RESCAN);
 				}
 				else
@@ -717,13 +717,13 @@ public:
 			}
 			else // if (disk.empty() or disk.back() > i->first)
 			{
-				nag::verbose("Archive: %s has been deleted from the archive", i->first.c_str());
+				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->first.c_str());
 				v(i->first, MaintFileVisitor::DELETED);
 			}
 		}
 		while (not disk.empty())
 		{
-			nag::verbose("Archive: %s is not in index", disk.back().c_str());
+			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
 			v(disk.back(), MaintFileVisitor::TO_INDEX);
 			disk.pop_back();
 		}

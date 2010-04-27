@@ -110,7 +110,8 @@ struct arki_dataset_simple_writer_shar : public dataset::maintenance::MaintFileV
 	{
 		dataset::simple::Reader reader(cfg);
 		arki::tests::impl_ensure_dataset_clean(loc, reader, filecount, resultcount);
-		inner_ensure(sys::fs::access(str::joinpath(reader.path(), idxfname()), F_OK));
+		if (filecount > 0)
+			inner_ensure(sys::fs::access(str::joinpath(reader.path(), idxfname()), F_OK));
 	}
 
 	// Recreate the dataset importing data into it
@@ -258,10 +259,7 @@ void to::test<2>()
 	ensure(files::timestamp("testds/20/2007.grib1.summary") <= files::timestamp("testds/" + idxfname()));
 	
 	// Dataset is fine and clean
-	{
-		dataset::simple::Reader reader(cfg);
-		ensure_dataset_clean(reader, 1, 2);
-	}
+	ensure_simpleds_clean(cfg, 1, 2);
 }
 
 // Test maintenance scan on non-indexed files
@@ -281,17 +279,12 @@ void to::test<3>()
 	setup();
 
 	// Query now is ok, but empty
-	{
-		metadata::Collector mdc;
-		Reader reader(cfg);
-		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 0u);
-	}
+	ensure_simpleds_clean(cfg, 0, 0);
 
 	// Maintenance should show one file to index
 	{
 		MaintenanceCollector c;
-		Writer writer(cfg);
+		dataset::simple::Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(TO_INDEX), 1u);
@@ -301,7 +294,7 @@ void to::test<3>()
 
 	{
 		stringstream s;
-		Writer writer(cfg);
+		dataset::simple::Writer writer(cfg);
 
 		// Check should reindex the file
 		writer.check(s, true, true);
@@ -321,24 +314,20 @@ void to::test<3>()
 	// Restart again
 	setup();
 
-	// Repack here should act as if the dataset were empty
+	// Repack should delete the files not in index
 	{
 		stringstream s;
-		Writer writer(cfg);
+		dataset::simple::Writer writer(cfg);
 
-		// Repack should find nothing to repack
 		s.str(std::string());
 		writer.repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
+		ensure_equals(s.str(), string(
+				"testds: deleted 2007/07-08.grib1 (44412 freed)\n"
+				"testds: 1 file deleted, 44412 total bytes freed.\n"));
 	}
 
 	// Query is still ok, but empty
-	{
-		metadata::Collector mdc;
-		Reader reader(cfg);
-		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 0u);
-	}
+	ensure_simpleds_clean(cfg, 0, 0);
 }
 
 // Test maintenance scan with missing metadata and summary
@@ -361,14 +350,20 @@ void to::test<4>()
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
 	// Query is ok
-	ensure_simpleds_clean(cfg, 3, 3);
+	{
+		dataset::simple::Reader reader(cfg);
+		metadata::Collector mdc;
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 3u);
+	}
 
 	// Maintenance should show one file to rescan
 	{
 		MaintenanceCollector c;
 		Writer writer(cfg);
 		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
 		ensure_equals(c.count(TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
@@ -382,11 +377,8 @@ void to::test<4>()
 		// Check should reindex the file
 		writer.check(s, true, true);
 		ensure_equals(s.str(),
-			"testds: rescanned in archive last/test.grib1\n"
-			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+			"testds: rescanned 2007/07-08.grib1\n"
+			"testds: 1 file rescanned.\n");
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -419,7 +411,12 @@ void to::test<4>()
 	}
 
 	// And repack should have changed nothing
-	ensure_simpleds_clean(cfg, 3, 3);
+	{
+		dataset::simple::Reader reader(cfg);
+		metadata::Collector mdc;
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 3u);
+	}
 	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
@@ -445,14 +442,20 @@ void to::test<5>()
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
 	// Query is ok
-	ensure_simpleds_clean(cfg, 3, 3);
+	{
+		dataset::simple::Reader reader(cfg);
+		metadata::Collector mdc;
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 3u);
+	}
 
 	// Maintenance should show one file to rescan
 	{
 		MaintenanceCollector c;
 		Writer writer(cfg);
 		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
 		ensure_equals(c.count(TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
@@ -466,11 +469,8 @@ void to::test<5>()
 		// Check should reindex the file
 		writer.check(s, true, true);
 		ensure_equals(s.str(),
-			"testds: rescanned in archive last/test.grib1\n"
-			"testds: archive cleaned up\n"
-			"testds: database cleaned up\n"
-			"testds: rebuild summary cache\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+			"testds: rescanned 2007/07-08.grib1\n"
+			"testds: 1 file rescanned.\n");
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -503,7 +503,12 @@ void to::test<5>()
 	}
 
 	// And repack should have changed nothing
-	ensure_simpleds_clean(cfg, 3, 3);
+	{
+		dataset::simple::Reader reader(cfg);
+		metadata::Collector mdc;
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 3u);
+	}
 	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
@@ -619,7 +624,16 @@ void to::test<6>()
 	}
 
 	// And repack should have changed nothing
-	ensure_simpleds_clean(cfg, 3, 3);
+	{
+		metadata::Collector mdc;
+		Reader reader(cfg);
+		try {
+			reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
+			ensure(false);
+		} catch (std::exception& e) {
+			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
+		}
+	}
 	ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.gz.idx", F_OK));

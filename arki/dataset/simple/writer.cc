@@ -252,8 +252,16 @@ size_t Writer::repackFile(const std::string& relpath)
 
 size_t Writer::removeFile(const std::string& relpath, bool withData)
 {
-	// TODO
-	throw wibble::exception::Consistency("removing " + relpath, "function to be implemented");
+	m_mft->remove(relpath);
+	if (withData)
+	{
+		string pathname = str::joinpath(m_path, relpath);
+		size_t size = files::size(pathname);
+		if (unlink(pathname.c_str()) < 0)
+			throw wibble::exception::System("removing " + pathname);
+		return size;
+	} else
+		return 0;
 }
 
 void Writer::archiveFile(const std::string& relpath)
