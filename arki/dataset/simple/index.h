@@ -64,6 +64,8 @@ public:
 	void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
 	void querySummary(const Matcher& matcher, Summary& summary);
 
+	void rescanFile(const std::string& dir, const std::string& relpath);
+
 	static bool exists(const std::string& dir);
 	static std::auto_ptr<Manifest> create(const std::string& dir);
 

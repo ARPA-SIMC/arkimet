@@ -217,29 +217,7 @@ void Archive::deindex(const std::string& relname)
 void Archive::rescan(const std::string& relname)
 {
 	if (!m_mft) throw wibble::exception::Consistency("rescanning file in " + m_dir, "archive opened in read only mode");
-	string pathname = str::joinpath(m_dir, relname);
-	time_t ts_data = files::timestamp(pathname);
-	if (ts_data == 0)
-		ts_data = files::timestamp(pathname + ".gz");
-	time_t ts_md = files::timestamp(pathname + ".metadata");
-
-	// Invalidate summary
-	sys::fs::deleteIfExists(pathname + ".summary");
-
-	// Invalidate metadata if older than data
-	if (ts_md < ts_data)
-		sys::fs::deleteIfExists(pathname + ".metadata");
-
-	// Deindex the file
-	deindex(relname);
-
-	// Temporarily uncompress the file for scanning
-	auto_ptr<utils::compress::TempUnzip> tu;
-	if (!sys::fs::access(pathname, F_OK) && sys::fs::access(pathname + ".gz", F_OK))
-		tu.reset(new utils::compress::TempUnzip(pathname));
-
-	// Reindex the file
-	acquire(relname);
+	m_mft->rescanFile(m_dir, relname);
 }
 
 void Archive::vacuum()

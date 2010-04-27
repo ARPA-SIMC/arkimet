@@ -32,7 +32,6 @@
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
-#include <arki/utils/compress.h>
 #include <arki/scan/any.h>
 #include <arki/postprocess.h>
 #include <arki/sort.h>
@@ -206,42 +205,7 @@ void Writer::check(std::ostream& log, bool fix, bool quick)
 
 void Writer::rescanFile(const std::string& relpath)
 {
-	string pathname = str::joinpath(m_path, relpath);
-
-	// Temporarily uncompress the file for scanning
-	auto_ptr<utils::compress::TempUnzip> tu;
-	if (!sys::fs::access(pathname, F_OK) && sys::fs::access(pathname + ".gz", F_OK))
-		tu.reset(new utils::compress::TempUnzip(pathname));
-
-	// Read the timestamp
-	time_t mtime = files::timestamp(pathname);
-	if (mtime == 0)
-		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
-
-	// Scan the file
-	utils::metadata::Collector mds;
-	if (!scan::scan(pathname, mds))
-		throw wibble::exception::Consistency("rescanning " + pathname, "it does not look like a file we can scan");
-
-	// Iterate the metadata, computing the summary and making the data
-	// paths relative
-	Summary sum;
-	for (utils::metadata::Collector::const_iterator i = mds.begin();
-			i != mds.end(); ++i)
-	{
-		Item<source::Blob> s = i->source.upcast<source::Blob>();
-		s->filename = str::basename(s->filename);
-		sum.add(*i);
-	}
-
-	// Regenerate .metadata
-	mds.writeAtomically(pathname + ".metadata");
-
-	// Regenerate .summary
-	sum.writeAtomically(pathname + ".summary");
-
-	// Add to manifest
-	m_mft->acquire(relpath, mtime, sum);
+	m_mft->rescanFile(m_path, relpath);
 }
 
 size_t Writer::repackFile(const std::string& relpath)

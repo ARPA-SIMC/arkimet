@@ -31,6 +31,7 @@
 #include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
+#include <arki/utils/compress.h>
 #include <arki/sort.h>
 #include <arki/scan/any.h>
 #include <arki/nag.h>
@@ -153,6 +154,53 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 	}
 }
 
+void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
+{
+	string pathname = str::joinpath(dir, relpath);
+
+	// Temporarily uncompress the file for scanning
+	auto_ptr<utils::compress::TempUnzip> tu;
+	if (!sys::fs::access(pathname, F_OK) && sys::fs::access(pathname + ".gz", F_OK))
+		tu.reset(new utils::compress::TempUnzip(pathname));
+
+	// Read the timestamp
+	time_t mtime = files::timestamp(pathname);
+	if (mtime == 0)
+		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
+
+	// Invalidate summary
+	sys::fs::deleteIfExists(pathname + ".summary");
+
+	// Invalidate metadata if older than data
+	time_t ts_md = files::timestamp(pathname + ".metadata");
+	if (ts_md < mtime)
+		sys::fs::deleteIfExists(pathname + ".metadata");
+
+	// Scan the file
+	utils::metadata::Collector mds;
+	if (!scan::scan(pathname, mds))
+		throw wibble::exception::Consistency("rescanning " + pathname, "it does not look like a file we can scan");
+
+	// Iterate the metadata, computing the summary and making the data
+	// paths relative
+	Summary sum;
+	for (utils::metadata::Collector::const_iterator i = mds.begin();
+			i != mds.end(); ++i)
+	{
+		Item<source::Blob> s = i->source.upcast<source::Blob>();
+		s->filename = str::basename(s->filename);
+		sum.add(*i);
+	}
+
+	// Regenerate .metadata
+	mds.writeAtomically(pathname + ".metadata");
+
+	// Regenerate .summary
+	sum.writeAtomically(pathname + ".summary");
+
+	// Add to manifest
+	acquire(relpath, mtime, sum);
+}
 
 namespace manifest {
 static bool mft_force_sqlite = false;
