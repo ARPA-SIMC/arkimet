@@ -27,10 +27,6 @@
 #include <arki/configfile.h>
 #include <arki/datasetpool.h>
 #include <arki/dataset.h>
-#include <arki/dataset/ondisk/writer.h>
-#include <arki/dataset/ondisk/maintenance.h>
-#include <arki/dataset/ondisk/maint/datafile.h>
-#include <arki/dataset/ondisk/maint/directory.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>

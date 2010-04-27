@@ -24,7 +24,6 @@
 #include <arki/dataset.h>
 #include <arki/configfile.h>
 #include <arki/dataset/file.h>
-#include <arki/dataset/ondisk.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/simple/writer.h>
