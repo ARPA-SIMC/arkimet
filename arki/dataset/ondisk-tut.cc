@@ -45,15 +45,6 @@ static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
 	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
 }
 
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-
 struct arki_dataset_ondisk_shar {
 	ConfigFile config;
 	ConfigFile configAll;
@@ -234,7 +225,7 @@ void to::test<2>()
 {
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
@@ -263,7 +254,7 @@ void to::test<3>()
 {
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
@@ -291,7 +282,7 @@ void to::test<4>()
 {
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test98")));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
@@ -319,7 +310,7 @@ void to::test<5>()
 {
 	acquireSamples();
 
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
 
@@ -371,7 +362,7 @@ template<> template<>
 void to::test<6>()
 {
 	acquireSamples();
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
@@ -419,7 +410,7 @@ void to::test<7>()
 	{
 		Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
@@ -439,7 +430,7 @@ void to::test<7>()
 	{
 		Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
@@ -526,7 +517,7 @@ void to::test<10>()
 	// Test querying the dataset
 	{
 		Reader reader(*config.section("test200"));
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
@@ -561,7 +552,7 @@ void to::test<11>()
 	Item<types::Reftime> rt = summary.getReferenceTime();
 	ensure_equals(rt->style(), Reftime::PERIOD);
 	Item<reftime::Period> p = rt.upcast<reftime::Period>();
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin->toISO8601()), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 

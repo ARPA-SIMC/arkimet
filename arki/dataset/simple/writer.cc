@@ -29,7 +29,7 @@
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
 #include <arki/scan/any.h>

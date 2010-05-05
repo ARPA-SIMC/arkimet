@@ -24,6 +24,7 @@
  */
 
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/types/reftime.h>
 
 #include <string>
@@ -88,11 +89,11 @@ struct STLCompare
 	}
 };
 
-class Stream : public MetadataConsumer
+class Stream : public metadata::Consumer
 {
 protected:
 	const Compare& sorter;
-	MetadataConsumer& nextConsumer;
+	metadata::Consumer& nextConsumer;
 	bool hasInterval;
 	UItem<types::Reftime> endofperiod;
 	std::vector<Metadata> buffer;
@@ -100,7 +101,7 @@ protected:
 	void setEndOfPeriod(const UItem<types::Reftime>& rt);
 
 public:
-	Stream(const Compare& sorter, MetadataConsumer& nextConsumer)
+	Stream(const Compare& sorter, metadata::Consumer& nextConsumer)
 		: sorter(sorter), nextConsumer(nextConsumer)
 	{
 		hasInterval = sorter.interval() != Compare::NONE;

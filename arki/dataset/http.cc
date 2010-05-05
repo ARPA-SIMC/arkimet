@@ -23,6 +23,7 @@
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/stream.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
@@ -163,9 +164,9 @@ struct OstreamState : public ReqState
 
 struct MDStreamState : public ReqState
 {
-	MetadataStream mdc;
+	metadata::Stream mdc;
 
-	MDStreamState(http::CurlEasy& curl, MetadataConsumer& consumer, const std::string& baseurl)
+	MDStreamState(http::CurlEasy& curl, metadata::Consumer& consumer, const std::string& baseurl)
 		: ReqState(curl), mdc(consumer, "HTTP download from " + baseurl) {}
 
 	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
@@ -178,7 +179,7 @@ struct MDStreamState : public ReqState
 };
 
 
-void HTTP::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void HTTP::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	using namespace wibble::str;
 

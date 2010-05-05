@@ -26,7 +26,7 @@
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
@@ -84,7 +84,7 @@ bool Reader::is_dataset(const std::string& dir)
 	return Manifest::exists(dir);
 }
 
-void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	if (!m_mft) return;
 	// TODO: query archives

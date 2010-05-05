@@ -19,8 +19,8 @@
  */
 #include <arki/dataset/test-utils.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/dispatcher.h>
-#include <arki/utils/metadata.h>
 #include <wibble/string.h>
 #include <fstream>
 #include <strings.h>
@@ -33,9 +33,9 @@ using namespace arki::types;
 namespace arki {
 namespace tests {
 
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, MetadataConsumer& mdc)
+void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc)
 {
-	utils::metadata::Collector c;
+	metadata::Collection c;
 	Dispatcher::Outcome res = dispatcher.dispatch(md, c);
 	// If dispatch fails, print the notes
 	if (res != Dispatcher::DISP_OK)

@@ -206,7 +206,7 @@ bool mdcompare(const Metadata& md1, const Metadata& md2)
 	return md1 < md2;
 }
 
-struct RepackConsumer : public MetadataConsumer
+struct RepackConsumer : public metadata::Consumer
 {
 	vector<Metadata> good;
 	size_t removed;

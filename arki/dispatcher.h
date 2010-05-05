@@ -31,11 +31,13 @@
 #include <map>
 
 namespace arki {
-
 class ConfigFile;
 class WritableDataset;
 class Metadata;
-class MetadataConsumer;
+
+namespace metadata {
+class Consumer;
+}
 
 class Dispatcher
 {
@@ -80,7 +82,7 @@ public:
 	 */
 	size_t outboundFailures() const { return m_outbound_failures; }
 
-	virtual Outcome dispatch(Metadata& md, MetadataConsumer& mdc) = 0;
+	virtual Outcome dispatch(Metadata& md, metadata::Consumer& mdc) = 0;
 	virtual void flush() = 0;
 };
 
@@ -106,7 +108,7 @@ public:
 	 * Dispatch the metadata and its data.
 	 *
 	 * The metadata will be edited to reflect the data stored inside the target
-	 * dataset, and sent to the given MetadataConsumer.
+	 * dataset, and sent to the given metadata::Consumer.
 	 *
 	 * If there are outbound datasets, a different metadata can be sent to
 	 * the consumer for every output dataset that accepted it.
@@ -118,7 +120,7 @@ public:
 	 *
 	 * @returns The outcome of the dispatch.
 	 */
-	Outcome dispatch(Metadata& md, MetadataConsumer& mdc);
+	Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
 
 	/**
 	 * Flush all dataset data do disk
@@ -146,7 +148,7 @@ public:
 	 *
 	 * @returns The outcome of the dispatch.
 	 */
-	Outcome dispatch(Metadata& md, MetadataConsumer& mdc);
+	Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
 
 	/**
 	 * Flush all dataset data do disk

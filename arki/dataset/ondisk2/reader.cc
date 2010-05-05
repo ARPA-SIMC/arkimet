@@ -81,9 +81,9 @@ Reader::~Reader()
 	if (m_tf) delete m_tf;
 }
 
-void Reader::queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Reader::queryLocalData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
-	MetadataConsumer* c = &consumer;
+	metadata::Consumer* c = &consumer;
 	auto_ptr<ds::DataInliner> inliner;
 
 	if (q.withData)
@@ -97,7 +97,7 @@ void Reader::queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consu
 		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
-void Reader::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	if (!m_idx) return;
 

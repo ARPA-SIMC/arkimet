@@ -31,7 +31,10 @@
 namespace arki {
 class Matcher;
 class Summary;
-class MetadataConsumer;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 
@@ -61,7 +64,7 @@ public:
 	virtual void check(maintenance::MaintFileVisitor& v, bool quick=true) = 0;
 	virtual void flush() = 0;
 
-	void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	void querySummary(const Matcher& matcher, Summary& summary);
 
 	void rescanFile(const std::string& dir, const std::string& relpath);

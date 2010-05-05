@@ -22,16 +22,15 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/metadata.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/dataset/maintenance.h>
 #include <vector>
 
 namespace arki {
 struct Metadata;
-struct MetadataConsumer;
 struct Dispatcher;
 
-struct MetadataCounter : public MetadataConsumer
+struct MetadataCounter : public metadata::Consumer
 {
 	size_t count;
 	MetadataCounter() : count(0) {}
@@ -44,7 +43,7 @@ struct MetadataCounter : public MetadataConsumer
 
 namespace tests{
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, MetadataConsumer& mdc);
+void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc);
 }
 
 struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor

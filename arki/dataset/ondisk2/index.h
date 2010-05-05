@@ -36,9 +36,12 @@ struct sqlite3;
 
 namespace arki {
 class Metadata;
-class MetadataConsumer;
 class Matcher;
 class ConfigFile;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 struct DataQuery;
@@ -149,7 +152,7 @@ public:
 	/**
 	 * Send the metadata of all data items inside a file to the given consumer
 	 */
-	void scan_file(const std::string& relname, MetadataConsumer& consumer) const;
+	void scan_file(const std::string& relname, metadata::Consumer& consumer) const;
 
 	/**
 	 * Return the maximum reference time found in the given file.
@@ -164,7 +167,7 @@ public:
 	 * @return true if the index could be used for the query, false if the
 	 * query does not use the index and a full scan should be used instead
 	 */
-	bool query(const dataset::DataQuery& q, MetadataConsumer& consumer) const;
+	bool query(const dataset::DataQuery& q, metadata::Consumer& consumer) const;
 
 	/**
 	 * Query this index, returning a summary
@@ -242,7 +245,7 @@ protected:
 	void initQueries();
 
 	/// Run a query and output to a consumer all the metadata that come out
-	void metadataQuery(const std::string& query, MetadataConsumer& consumer) const;
+	void metadataQuery(const std::string& query, metadata::Consumer& consumer) const;
 
 public:
 	RIndex(const ConfigFile& cfg);

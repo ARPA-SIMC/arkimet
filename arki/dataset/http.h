@@ -29,11 +29,13 @@
 #include <string>
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
-class MetadataConsumer;
 class Matcher;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 
@@ -100,7 +102,7 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 

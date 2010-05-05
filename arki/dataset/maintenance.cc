@@ -23,9 +23,9 @@
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/local.h>
 #include <arki/dataset/archive.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/utils/metadata.h>
 #include <arki/utils/compress.h>
 #include <arki/scan/any.h>
 #include <arki/nag.h>

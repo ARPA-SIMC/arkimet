@@ -30,7 +30,7 @@
 #include <arki/types/ensemble.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
 
@@ -473,7 +473,7 @@ void to::test<4>()
 
 	close(fd);
 
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	scan::scan("inbound/test.grib1", mdc);
 	buf = mdc[0].getData();
 

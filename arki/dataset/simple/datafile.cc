@@ -61,7 +61,7 @@ Datafile::Datafile(const std::string& pathname)
 				sum.readFile(sumfname);
 			else
 			{
-				utils::metadata::Summarise s(sum);
+				metadata::Summarise s(sum);
 				mds.sendTo(s);
 			}
 		}

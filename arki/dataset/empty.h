@@ -27,11 +27,13 @@
 #include <string>
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
-class MetadataConsumer;
 class Matcher;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 
@@ -46,7 +48,7 @@ public:
 	virtual ~Empty();
 
 	// Nothing to do: the dataset is always empty
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer) {}
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer) {}
 	virtual void querySummary(const Matcher& matcher, Summary& summary) {}
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out) {}
 

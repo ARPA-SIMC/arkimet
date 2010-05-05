@@ -29,12 +29,14 @@
 #include <vector>
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
-class MetadataConsumer;
 class Matcher;
 class Summary;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 class TargetFile;
@@ -49,7 +51,7 @@ protected:
 	TargetFile* m_tf;
 
 	// Query only the data in the dataset, without the archives
-	void queryLocalData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	void queryLocalData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
@@ -60,7 +62,7 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 

@@ -40,19 +40,6 @@ class Matcher;
 namespace dataset {
 namespace index {
 
-// Pass through metadata to a consumer if it matches a Matcher expression
-struct FilteredMetadataConsumer : public MetadataConsumer
-{
-	const Matcher& matcher;
-	MetadataConsumer& chained;
-
-	FilteredMetadataConsumer(const Matcher& matcher, MetadataConsumer& chained)
-		: matcher(matcher), chained(chained) {}
-	~FilteredMetadataConsumer() {}
-
-	bool operator()(Metadata& m);
-};
-
 /**
  * Convert a [comma and optional spaces]-separated string with metadata
  * component names into a MetadataComponents bitfield

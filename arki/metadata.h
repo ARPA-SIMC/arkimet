@@ -29,16 +29,17 @@
 #include <arki/types/note.h>
 #include <arki/types/source.h>
 #include <wibble/sys/buffer.h>
-#include <set>
 #include <string>
-#include <memory>
 
 struct lua_State;
 
 namespace arki {
 
+namespace metadata {
+class Consumer;
+}
+
 class Formatter;
-class MetadataConsumer;
 
 /**
  * Metadata information about a message
@@ -239,7 +240,7 @@ public:
 	/**
 	 * Read all metadata from a file into the given consumer
 	 */
-	static void readFile(const std::string& fname, MetadataConsumer& mdc);
+	static void readFile(const std::string& fname, metadata::Consumer& mdc);
 
 	/**
 	 * Flush open data readers.
@@ -257,7 +258,7 @@ public:
 	/**
 	 * Read all metadata from a file into the given consumer
 	 */
-	static void readFile(std::istream& in, const std::string& fname, MetadataConsumer& mdc);
+	static void readFile(std::istream& in, const std::string& fname, metadata::Consumer& mdc);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin
@@ -269,73 +270,6 @@ public:
 	 * @return the Metadata element, or 0 if the check failed
 	 */
 	static Metadata* lua_check(lua_State* L, int idx);
-};
-
-/**
- * Generic interface for metadata consumers, used to handle a stream of
- * metadata, such as after scanning a file, or querying a dataset.
- */
-struct MetadataConsumer
-{
-	virtual ~MetadataConsumer() {}
-	/**
-	 * Consume a metadata.
-	 *
-	 * If the result is true, then the consumer is happy to accept more
-	 * metadata.  If it's false, then the consume is satisfied and must not be
-	 * sent any more metadata.
-	 */
-	virtual bool operator()(Metadata&) = 0;
-
-	/// Push to the LUA stack a userdata to access this MetadataConsumer
-	void lua_push(lua_State* L);
-};
-
-// Metadata consumer that passes the metadata to a Lua function
-struct LuaMetadataConsumer : public MetadataConsumer
-{
-	lua_State* L;
-	int funcid;
-
-	LuaMetadataConsumer(lua_State* L, int funcid);
-	virtual ~LuaMetadataConsumer();
-	virtual bool operator()(Metadata&);
-
-	static std::auto_ptr<LuaMetadataConsumer> lua_check(lua_State* L, int idx);
-};
-
-
-/**
- * Turn a stream of bytes into a stream of metadata
- */
-class MetadataStream
-{
-	MetadataConsumer& consumer;
-	Metadata md;
-	std::string streamname;
-	std::string buffer;
-	enum { METADATA, DATA } state;
-	size_t dataToGet;
-
-	void checkMetadata();
-	void checkData();
-
-public:
-	MetadataStream(MetadataConsumer& consumer, const std::string& streamname)
-		: consumer(consumer), streamname(streamname), state(METADATA) {}
-
-	/**
-	 * Return the number of bytes that have not been processed yet
-	 */
-	size_t countBytesUnprocessed() const { return buffer.size(); }
-
-	/**
-	 * Send some data to the stream.
-	 *
-	 * If the data completes one or more metadata and (when appropriate) the
-	 * attached inline data, then they will be sent to the consumer
-	 */
-	void readData(const void* buf, size_t size);
 };
 
 }

@@ -26,7 +26,10 @@
 #include <string>
 
 namespace arki {
-class MetadataConsumer;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace scan {
 
@@ -39,7 +42,7 @@ namespace scan {
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, MetadataConsumer& c);
+bool scan(const std::string& file, metadata::Consumer& c);
 
 /**
  * Scan the given file without format autodetection, sending its metadata to a
@@ -51,7 +54,7 @@ bool scan(const std::string& file, MetadataConsumer& c);
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, const std::string& format, MetadataConsumer& c);
+bool scan(const std::string& file, const std::string& format, metadata::Consumer& c);
 
 /**
  * Return true if the file looks like a file with data that can be scanned.

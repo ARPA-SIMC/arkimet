@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,7 +17,7 @@
  */
 
 #include <arki/tests/test-utils.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
 #include <arki/types/source.h>
@@ -35,12 +35,12 @@ using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
-using namespace arki::utils::metadata;
+using namespace arki::metadata;
 
-struct arki_utils_metadata_shar {
-	Collector c;
+struct arki_metadata_collection_shar {
+	Collection c;
 
-	arki_utils_metadata_shar()
+	arki_metadata_collection_shar()
 	{
 	}
 
@@ -49,7 +49,7 @@ struct arki_utils_metadata_shar {
 		scan::scan("inbound/test.grib1", c);
 	}
 };
-TESTGRP(arki_utils_metadata);
+TESTGRP(arki_metadata_collection);
 
 // Test querying
 template<> template<>
@@ -57,7 +57,7 @@ void to::test<1>()
 {
 	acquireSamples();
 
-	Collector mdc;
+	Collection mdc;
 
 	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
@@ -142,7 +142,7 @@ void to::test<4>()
 	// Remove the original file
 	tf.unlink();
 	Metadata::flushDataReaders();
-	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
+	for (Collection::iterator i = c.begin(); i != c.end(); ++i)
 		i->dropCachedData();
 
 	// Ensure that all data can still be read
@@ -161,7 +161,7 @@ void to::test<4>()
 	ensure_equals(acct::gzip_idx_reposition_count.val(), 1u);
 
 	Metadata::flushDataReaders();
-	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
+	for (Collection::iterator i = c.begin(); i != c.end(); ++i)
 		i->dropCachedData();
 
 	// Try to read backwards to avoid sequential reads
@@ -179,7 +179,7 @@ void to::test<4>()
 	ensure_equals(acct::gzip_idx_reposition_count.val(), 9u);
 
 	Metadata::flushDataReaders();
-	for (Collector::iterator i = c.begin(); i != c.end(); ++i)
+	for (Collection::iterator i = c.begin(); i != c.end(); ++i)
 		i->dropCachedData();
 
 	// Read each other one
@@ -213,7 +213,7 @@ void to::test<5>()
 
 	c.writeAtomically("test.md");
 
-	metadata::Collector c1;
+	metadata::Collection c1;
 	Metadata::readFile("test.md", c1);
 	ensure_equals(c.size(), 1u);
 	ensure(c[0] ==  c1[0]);

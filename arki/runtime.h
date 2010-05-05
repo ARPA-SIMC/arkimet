@@ -27,7 +27,7 @@
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
 #include <arki/metadata.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/configfile.h>
 #include <string>
@@ -154,11 +154,11 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 /**
  * Dispatch metadata
  */
-struct MetadataDispatch : public MetadataConsumer
+struct MetadataDispatch : public metadata::Consumer
 {
 	const ConfigFile& cfg;
 	Dispatcher* dispatcher;
-	arki::utils::metadata::Collector results;
+	metadata::Collection results;
 	DatasetProcessor& next;
 	bool reportStatus;
 

@@ -49,6 +49,9 @@ dist_noinst_HEADERS = \
 		matcher/run.h \
 		itemset.h \
 		metadata.h \
+		metadata/consumer.h \
+		metadata/collection.h \
+		metadata/stream.h \
 		scan/any.h \
 		scan/dir.h \
 		summary.h \
@@ -81,7 +84,6 @@ dist_noinst_HEADERS = \
 		utils/datareader.h \
 		utils/sqlite.h \
 		utils/files.h \
-		utils/metadata.h \
 		utils/dataset.h \
 		metadatagrid.h \
 		sort.h \
@@ -95,8 +97,7 @@ dist_noinst_HEADERS = \
 		nag.h
 
 dist_noinst_HEADERS += \
-		tests/test-utils.h \
-		tests/metadata.h
+		tests/test-utils.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
 		$(top_builddir)/arki/matcher/reftime/reftime-lex.cc \
@@ -119,7 +120,6 @@ libarkimet_la_SOURCES = \
 		utils/datareader.cc \
 		utils/sqlite.cc \
 		utils/files.cc \
-		utils/metadata.cc \
 		utils/dataset.cc \
 		configfile.cc \
 		transaction.cc \
@@ -140,11 +140,10 @@ libarkimet_la_SOURCES = \
 		types/bbox.cc \
 		types/run.cc \
 		itemset.cc \
-		sort.cc \
-		formatter.cc \
-		bbox.cc \
-		targetfile.cc \
 		metadata.cc \
+		metadata/consumer.cc \
+		metadata/collection.cc \
+		metadata/stream.cc \
 		summary.cc \
 		matcher.cc \
 		matcher/utils.cc \
@@ -158,6 +157,10 @@ libarkimet_la_SOURCES = \
 		matcher/area.cc \
 		matcher/ensemble.cc \
 		matcher/run.cc \
+		sort.cc \
+		formatter.cc \
+		bbox.cc \
+		targetfile.cc \
 		scan/any.cc \
 		scan/dir.cc \
 		dataset.cc \
@@ -209,7 +212,6 @@ tests_arki_test_SOURCES = \
 		utils/datareader-tut.cc \
 		utils/sqlite-tut.cc \
 		utils/files-tut.cc \
-		utils/metadata-tut.cc \
 		utils/dataset-tut.cc \
 		refcounted-tut.cc \
 		configfile-tut.cc \
@@ -236,6 +238,9 @@ tests_arki_test_SOURCES = \
 		bbox-tut.cc \
 		targetfile-tut.cc \
 		metadata-tut.cc \
+		metadata/consumer-tut.cc \
+		metadata/collection-tut.cc \
+		metadata/stream-tut.cc \
 		summary-tut.cc \
 		matcher-tut.cc \
 		matcher/test-utils.cc \

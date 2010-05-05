@@ -19,7 +19,7 @@
  */
 
 #include <arki/tests/test-utils.h>
-#include <arki/tests/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/sort.h>
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
@@ -48,7 +48,7 @@ struct arki_sort_shar {
 };
 TESTGRP(arki_sort);
 
-static void produce(int hour, int minute, int run, MetadataConsumer& c)
+static void produce(int hour, int minute, int run, metadata::Consumer& c)
 {
 	Metadata md;
 	md.set(types::reftime::Position::create(types::Time::create(2008, 7, 6, hour, minute, 0)));
@@ -80,7 +80,7 @@ static vector<int> mdvals(int h, int m, int r)
 template<> template<>
 void to::test<1>()
 {
-	arki::tests::MetadataCollector mdc;
+	metadata::Collection mdc;
 	auto_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
 	sort::Stream sorter(*cmp, mdc);
 
@@ -107,7 +107,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	arki::tests::MetadataCollector mdc;
+	metadata::Collection mdc;
 	auto_ptr<sort::Compare> cmp = sort::Compare::parse("");
 	sort::Stream sorter(*cmp, mdc);
 

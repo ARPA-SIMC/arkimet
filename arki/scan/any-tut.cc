@@ -30,7 +30,7 @@
 #include <arki/types/ensemble.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <wibble/sys/fs.h>
 
 #include "config.h"
@@ -59,7 +59,7 @@ TESTGRP(arki_scan_any);
 template<> template<>
 void to::test<1>()
 {
-	utils::metadata::Collector mdc;
+	metadata::Collection mdc;
 #ifndef HAVE_GRIBAPI
 	ensure(not scan::scan("inbound/test.grib1", mdc));
 #else
@@ -228,7 +228,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	utils::metadata::Collector mdc;
+	metadata::Collection mdc;
 #ifndef HAVE_DBALLE
 	ensure(not scan::scan("inbound/test.bufr", mdc));
 #else

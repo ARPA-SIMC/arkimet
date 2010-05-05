@@ -31,6 +31,7 @@
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/sort.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/utils.h>
@@ -195,7 +196,7 @@ static int arkilua_queryData(lua_State *L)
 	auto_ptr<sort::Compare> compare = dq.lua_from_table(L, 2);
 
 	// Create metadata consumer proxy
-	std::auto_ptr<LuaMetadataConsumer> mdc = LuaMetadataConsumer::lua_check(L, 3);
+	std::auto_ptr<metadata::LuaConsumer> mdc = metadata::LuaConsumer::lua_check(L, 3);
 
 	// Run the query
 	rd->queryData(dq, *mdc);

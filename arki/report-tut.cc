@@ -20,6 +20,7 @@
 
 #include <arki/matcher/test-utils.h>
 #include <arki/report.h>
+#include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/types.h>
 

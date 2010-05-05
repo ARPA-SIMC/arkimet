@@ -31,12 +31,9 @@
 namespace arki {
 class ConfigFile;
 class Matcher;
-class MetadataConsumer;
 
-namespace utils {
 namespace metadata {
-class Collector;
-}
+class Consumer;
 }
 
 namespace dataset {
@@ -56,7 +53,7 @@ public:
 	Reader(const ConfigFile& cfg);
 	virtual ~Reader();
 
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 

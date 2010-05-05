@@ -24,7 +24,7 @@
 #include <wibble/commandline/parser.h>
 #include <wibble/sys/fs.h>
 #include <arki/metadata.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils/compress.h>
 #include <arki/runtime.h>
 
@@ -62,9 +62,9 @@ struct Options : public StandardParserWithManpage
 
 static void do_mdfile(const std::string& mdfile, size_t groupsize = 128)
 {
-	using namespace utils::metadata;
+	using namespace metadata;
 
-	Collector mdc;
+	Collection mdc;
 	Metadata::readFile(mdfile, mdc);
 
 	mdc.compressDataFile(groupsize, "metadata file " + mdfile);

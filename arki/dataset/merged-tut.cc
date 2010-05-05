@@ -20,6 +20,7 @@
 #include <arki/dataset/merged.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
@@ -30,15 +31,6 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
 
 struct arki_dataset_merged_shar {
 	ConfigFile config;
@@ -82,7 +74,7 @@ struct arki_dataset_merged_shar {
 
 		// Import data into the datasets
 		Metadata md;
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		scan::Grib scanner;
 		RealDispatcher dispatcher(config);
 		scanner.open("inbound/test.grib1");
@@ -113,13 +105,13 @@ TESTGRP(arki_dataset_merged);
 template<> template<>
 void to::test<1>()
 {
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 #if 0
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 
 	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);
 	ensure_equals(mdc.size(), 1u);

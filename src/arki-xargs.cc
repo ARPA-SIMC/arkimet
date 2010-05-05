@@ -83,7 +83,7 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-class Clusterer : public MetadataConsumer
+class Clusterer : public metadata::Consumer
 {
 protected:
 	const vector<string>& args;

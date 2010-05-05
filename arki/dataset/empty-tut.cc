@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,7 @@
 #include <arki/tests/test-utils.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/dataset/empty.h>
 
@@ -33,15 +34,6 @@ struct arki_dataset_empty_shar {
 };
 TESTGRP(arki_dataset_empty);
 
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-
 // Test accessing the data
 template<> template<>
 void to::test<1>()
@@ -49,7 +41,7 @@ void to::test<1>()
 	ConfigFile cfg;
 	dataset::Empty ds(cfg);
 
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	ds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1 or BUFR or GRIB2"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 }

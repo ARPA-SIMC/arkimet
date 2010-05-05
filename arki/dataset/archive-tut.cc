@@ -24,8 +24,8 @@
 #include <arki/dataset/simple/index.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
-#include <arki/utils/metadata.h>
 #include <wibble/sys/fs.h>
 
 namespace arki {
@@ -46,7 +46,7 @@ void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_
 	inner_ensure_equals(c.remaining(), string());
 	inner_ensure(c.isClean());
 
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	inner_ensure_equals(mdc.size(), resultcount);
 }
@@ -118,7 +118,7 @@ TESTGRP(arki_dataset_archive);
 template<> template<>
 void to::test<1>()
 {
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRW();
@@ -155,7 +155,7 @@ void to::test<2>()
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRO();
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 0u);
 
@@ -219,7 +219,7 @@ void to::test<3>()
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRO();
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
@@ -283,7 +283,7 @@ void to::test<4>()
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRO();
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
@@ -348,7 +348,7 @@ void to::test<5>()
 
 	// Query now is ok
 	{
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		Archive arc("testds/.archive/last");
 		arc.openRO();
 		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
@@ -419,7 +419,7 @@ void to::test<6>()
 		arc.flush();
 
 		// Compress it
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
 		ensure_equals(mdc.size(), 3u);
 		mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
@@ -444,7 +444,7 @@ void to::test<6>()
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRO();
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		try {
 			arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 			ensure(false);

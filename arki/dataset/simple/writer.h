@@ -31,13 +31,6 @@
 
 namespace arki {
 class Matcher;
-class MetadataConsumer;
-
-namespace utils {
-namespace metadata {
-class Collector;
-}
-}
 
 namespace dataset {
 class TargetFile;
@@ -131,80 +124,5 @@ public:
 }
 }
 
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-namespace arki {
-
-class Metadata;
-class MetadataConsumer;
-class Matcher;
-class Summary;
-
-namespace dataset {
-
-namespace maintenance {
-class MaintFileVisitor;
-}
-
-namespace ondisk2 {
-class Archive;
-class Archives;
-
-namespace writer {
-class Datafile;
-class Agent;
-class RealRepacker;
-class MockRepacker;
-class RealFixer;
-class MockFixer;
-}
-
-class Writer : public WritableDataset
-{
-protected:
-	ConfigFile m_cfg;
-	std::string m_path;
-	WIndex m_idx;
-	mutable Archives* m_archive;
-	bool m_replace;
-	int m_archive_age;
-	int m_delete_age;
-
-public:
-	// Initialise the dataset with the information from the configurationa in 'cfg'
-	Writer(const ConfigFile& cfg);
-
-	virtual ~Writer();
-
-	/**
-	 * Iterate through the contents of the dataset, in depth-first order.
-	 */
-	//void depthFirstVisit(Visitor& v);
-
-	friend class writer::Agent;
-	friend class writer::RealRepacker;
-	friend class writer::MockRepacker;
-	friend class writer::RealFixer;
-	friend class writer::MockFixer;
-};
-
-}
-}
-}
-#endif
-
 // vim:set ts=4 sw=4:
+#endif

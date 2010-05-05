@@ -239,121 +239,16 @@ void to::test<4>()
 	ensure(md1.getData() == buf);
 }
 
-struct TestConsumer : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-
-inline bool cmpmd(const Metadata& md1, const Metadata& md2)
-{
-	if (md1 != md2)
-	{
-		cerr << "----- The two metadata differ.  First one:" << endl;
-		md1.writeYaml(cerr);
-		if (md1.source->style() == Source::INLINE)
-		{
-			wibble::sys::Buffer buf = md1.getData();
-			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
-		}
-		cerr << "----- Second one:" << endl;
-		md2.writeYaml(cerr);
-		if (md2.source->style() == Source::INLINE)
-		{
-			wibble::sys::Buffer buf = md2.getData();
-			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
-		}
-		return false;
-	}
-	return true;
-}
-
-// Test metadata stream
-template<> template<>
-void to::test<5>()
-{
-	// Create test metadata
-	Metadata md1;
-	md1.create();
-	md1.source = source::Blob::create("grib", "fname", 1, 2);
-	fill(md1);
-
-	Metadata md2;
-	md2 = md1;
-	md2.set(origin::BUFR::create(1, 2));
-
-	md1.setInlineData("test", wibble::sys::Buffer("this is a test", 14));
-
-	// Encode everything in a buffer
-	stringstream str;
-	md1.write(str, "(memory)");
-	size_t end1 = str.tellp();
-	md2.write(str, "(memory)");
-	size_t end2 = str.tellp();
-
-	// Where we collect the decoded metadata
-	TestConsumer results;
-
-	// Stream for the decoding
-	MetadataStream mdstream(results, "test stream");
-
-	string input = str.str();
-	size_t cur = 0;
-
-	// Not a full metadata yet
-	mdstream.readData(input.data() + cur, end1 - 20);
-	cur += end1-20;
-	ensure_equals(results.size(), 0u);
-
-	// The full metadata but not the data
-	mdstream.readData(input.data() + cur, 10);
-	cur += 10;
-	ensure_equals(results.size(), 0u);
-
-	// The full metadata and the data and part of the next metadata
-	mdstream.readData(input.data() + cur, 40);
-	cur += 40;
-	ensure_equals(results.size(), 1u);
-
-	// All the rest
-	mdstream.readData(input.data() + cur, end2-cur);
-	cur = end2;
-
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
-
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
-	
-	results.clear();
-
-	// Try feeding all the data at the same time
-	mdstream.readData(input.data(), input.size());
-
-	// No bytes must be left to decode
-	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
-
-	// See that we've got what we expect
-	ensure_equals(results.size(), 2u);
-	ensure(cmpmd(md1, results[0]));
-	ensure(cmpmd(md2, results[1]));
-}
-
 // Ensure that serialisation to binary preserves the deleted flag
 template<> template<>
-void to::test<6>()
+void to::test<5>()
 {
 	// Skip: there is no deleted flag anymore
 }
 
 // Test Lua functions
 template<> template<>
-void to::test<7>()
+void to::test<6>()
 {
 #ifdef HAVE_LUA
 	md.source = source::Blob::create("grib", "fname", 1, 2);
@@ -388,7 +283,7 @@ void to::test<7>()
 
 // Serialise using unix file descriptors
 template<> template<>
-void to::test<8>()
+void to::test<7>()
 {
 	const char* tmpfile = "testmd.tmp";
 	fill(md);

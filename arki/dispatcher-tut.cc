@@ -23,6 +23,7 @@
 #include <arki/dataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/scan/grib.h>
@@ -71,15 +72,6 @@ struct arki_dispatcher_shar {
 };
 TESTGRP(arki_dispatcher);
 
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-
 static inline std::string dsname(const Metadata& md)
 {
 	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>()->name;
@@ -94,7 +86,7 @@ void to::test<1>()
 	plain_data_read_count.reset();
 
 	Metadata md;
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	scan::Grib scanner;
 	RealDispatcher dispatcher(config);
 	scanner.open("inbound/test.grib1");

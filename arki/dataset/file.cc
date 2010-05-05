@@ -1,7 +1,7 @@
 /*
  * dataset/file - Dataset on a single file
  *
- * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
  */
 
 #include <arki/dataset/file.h>
+#include <arki/metadata/consumer.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
@@ -163,70 +164,22 @@ IfstreamFile::~IfstreamFile()
 	}
 }
 
-/**
- * Inline the data into all metadata
- */
-struct DataInliner : public MetadataConsumer
-{
-	MetadataConsumer& next;
-	DataInliner(MetadataConsumer& next) : next(next) {}
-	bool operator()(Metadata& md)
-	{
-		// Read the data
-		wibble::sys::Buffer buf = md.getData();
-		// Change the source as inline
-		md.setInlineData(md.source->format, buf);
-		return next(md);
-	}
-};
-
-/**
- * Summarise all metadata
- */
-struct Summariser : public MetadataConsumer
-{
-	Summary& summary;
-
-	Summariser(Summary& s) : summary(s) {}
-
-	bool operator()(Metadata& md)
-	{
-		summary.add(md);
-		return true;
-	}
-};
-
-/**
- * Output the data from a metadata stream into an ostream
- */
-struct DataOnly : public MetadataConsumer
-{
-	std::ostream& out;
-	DataOnly(std::ostream& out) : out(out) {}
-	bool operator()(Metadata& md)
-	{
-		wibble::sys::Buffer buf = md.getData();
-		out.write((const char*)buf.data(), buf.size());
-		return true;
-	}
-};
-
-void File::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void File::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	scan(q, consumer);
 }
 
 void File::querySummary(const Matcher& matcher, Summary& summary)
 {
-	Summariser summariser(summary);
+	metadata::Summarise summariser(summary);
 	scan(DataQuery(matcher), summariser);
 }
 
 ArkimetFile::ArkimetFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 ArkimetFile::~ArkimetFile() {}
-void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
-	MetadataConsumer* c = &consumer;
+	metadata::Consumer* c = &consumer;
 	auto_ptr<ds::DataInliner> inliner;
 	auto_ptr<sort::Stream> sorter;
 
@@ -249,9 +202,9 @@ void ArkimetFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
 
 YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 YamlFile::~YamlFile() {}
-void YamlFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void YamlFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
-	MetadataConsumer* c = &consumer;
+	metadata::Consumer* c = &consumer;
 	auto_ptr<sort::Stream> sorter;
 	auto_ptr<ds::DataInliner> inliner;
 
@@ -282,9 +235,9 @@ RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
 
 RawFile::~RawFile() {}
 
-void RawFile::scan(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void RawFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
-	MetadataConsumer* c = &consumer;
+	metadata::Consumer* c = &consumer;
 	auto_ptr<ds::DataInliner> inliner;
 	auto_ptr<sort::Stream> sorter;
 

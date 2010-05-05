@@ -61,7 +61,7 @@ public:
 	 */
 	ReadonlyDataset* dataset(const std::string& name);
 
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 };
 

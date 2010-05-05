@@ -21,6 +21,7 @@
  */
 
 #include <arki/report.h>
+#include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/utils/lua.h>
 #include <wibble/regexp.h>

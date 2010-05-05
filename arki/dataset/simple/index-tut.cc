@@ -22,9 +22,10 @@
 #include <arki/dataset/simple/index.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
-#include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
@@ -214,7 +215,7 @@ void to::test<8>()
 	time_t mtime = files::timestamp("inbound/test.grib1");
 
 	// Generate their metadata and summary files
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	Summary s;
 	metadata::Summarise summarise(s);
 	scan::scan("inbound/test.grib1", mdc);

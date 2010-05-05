@@ -19,6 +19,7 @@
 #include <arki/tests/test-utils.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
 
@@ -63,22 +64,13 @@ struct arki_dataset_discard_shar {
 };
 TESTGRP(arki_dataset_discard);
 
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
-
 // Test acquiring the data
 template<> template<>
 void to::test<1>()
 {
 	// Import data into the datasets
 	Metadata md;
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	scan::Grib scanner;
 	RealDispatcher dispatcher(config);
 	scanner.open("inbound/test.grib1");

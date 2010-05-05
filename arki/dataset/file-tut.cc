@@ -21,7 +21,7 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/dataset/file.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 
 #include <sstream>
 #include <iostream>
@@ -81,7 +81,7 @@ void to::test<3>()
 	// Scan it to be sure it can be read
 	auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
 	dataset::DataQuery q(Matcher::parse(""), true);
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	ds->queryData(q, mdc);
 	ensure_equals(mdc.size(), 3u);
 }

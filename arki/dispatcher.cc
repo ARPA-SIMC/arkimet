@@ -26,6 +26,7 @@
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 #include <arki/configfile.h>
+#include <arki/metadata/consumer.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 
@@ -98,7 +99,7 @@ RealDispatcher::~RealDispatcher()
 	// a reference to the version inside the DatasetPool cache
 }
 
-Dispatcher::Outcome RealDispatcher::dispatch(Metadata& md, MetadataConsumer& mdc)
+Dispatcher::Outcome RealDispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
 {
 	try {
 		// Fetch the data into memory here, so that if problems arise we do not
@@ -212,7 +213,7 @@ TestDispatcher::TestDispatcher(const ConfigFile& cfg, std::ostream& out)
 }
 TestDispatcher::~TestDispatcher() {}
 
-Dispatcher::Outcome TestDispatcher::dispatch(Metadata& md, MetadataConsumer& mdc)
+Dispatcher::Outcome TestDispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
 {
 	// Increment the metadata counter, so that we can refer to metadata in the
 	// messages

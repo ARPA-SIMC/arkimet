@@ -22,6 +22,7 @@
 
 #include "postprocess.h"
 #include <arki/configfile.h>
+#include <arki/metadata.h>
 #include <wibble/string.h>
 #include <wibble/regexp.h>
 #include <wibble/operators.h>

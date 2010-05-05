@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk2/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,12 +28,12 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/scan/dir.h>
 #include <arki/scan/any.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/utils/metadata.h>
 #include <arki/utils/compress.h>
 #include <arki/summary.h>
 #include <arki/nag.h>
@@ -408,7 +408,7 @@ void FileCopier::flush()
 	fd_dst = -1;
 }
 
-struct Reindexer : public MetadataConsumer
+struct Reindexer : public metadata::Consumer
 {
 	WIndex& idx;
 	std::string relfile;
@@ -460,7 +460,7 @@ void Writer::rescanFile(const std::string& relpath)
 		tu.reset(new utils::compress::TempUnzip(pathname));
 
 	// Collect the scan results in a metadata::Collector
-	metadata::Collector mds;
+	metadata::Collection mds;
 	if (!scan::scan(pathname, mds))
 		throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
 	// cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
@@ -470,7 +470,7 @@ void Writer::rescanFile(const std::string& relpath)
 	index::IDMaker id_maker(m_idx.unique_codes());
 
 	map<string, Metadata*> finddupes;
-	for (metadata::Collector::iterator i = mds.begin(); i != mds.end(); ++i)
+	for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
 	{
 		string id = id_maker.id(*i);
 		if (id.empty())
@@ -561,7 +561,7 @@ void Writer::archiveFile(const std::string& relpath)
 	sys::fs::mkFilePath(arcabsname);
 
 	// Rebuild the metadata
-	metadata::Collector mds;
+	metadata::Collection mds;
 	m_idx.scan_file(relpath, mds);
 
 	// Remove from index

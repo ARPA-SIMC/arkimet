@@ -23,12 +23,12 @@
 #include <arki/runtime/config.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/summary.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <arki/utils/lua.h>
-#include <arki/utils/metadata.h>
 
 #include <sstream>
 #include <iostream>
@@ -114,7 +114,7 @@ void to::test<2>()
 	Querymacro qm(cfg, "noop", "testds");
 
 	dataset::DataQuery dq;
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 9u);
 	ensure(mdc[0].source.defined());
@@ -133,7 +133,7 @@ void to::test<3>()
 	Querymacro qm(cfg, "noopcopy", "testds");
 
 	dataset::DataQuery dq;
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 9u);
 	ensure(mdc[0].source.defined());
@@ -156,7 +156,7 @@ void to::test<4>()
 	);
 
 	dataset::DataQuery dq;
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 2u);
 	ensure(mdc[0].source.defined());
@@ -178,7 +178,7 @@ void to::test<5>()
 	);
 
 	dataset::DataQuery dq;
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 2u);
 	ensure(mdc[0].source.defined());
@@ -203,7 +203,7 @@ void to::test<6>()
 		);
 
 		dataset::DataQuery dq;
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		qm.queryData(dq, mdc);
 		ensure_equals(mdc.size(), 2u);
 		ensure(mdc[0].source.defined());
@@ -222,7 +222,7 @@ void to::test<6>()
 		);
 
 		dataset::DataQuery dq;
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		qm.queryData(dq, mdc);
 		ensure_equals(mdc.size(), 2u);
 		ensure(mdc[0].source.defined());

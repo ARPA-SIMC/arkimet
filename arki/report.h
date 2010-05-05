@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <string>
 #include <iosfwd>
 
@@ -31,7 +31,7 @@ namespace arki {
 struct Lua;
 struct Summary;
 
-class Report : public MetadataConsumer
+class Report : public metadata::Consumer
 {
 protected:
 	mutable Lua *L;

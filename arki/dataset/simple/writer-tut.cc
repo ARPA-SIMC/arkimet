@@ -25,9 +25,9 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/scan/grib.h>
-#include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 
@@ -49,7 +49,7 @@ void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_
 	inner_ensure_equals(c.remaining(), string());
 	inner_ensure(c.isClean());
 
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	inner_ensure_equals(mdc.size(), resultcount);
 }
@@ -352,7 +352,7 @@ void to::test<4>()
 	// Query is ok
 	{
 		dataset::simple::Reader reader(cfg);
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 	}
@@ -413,7 +413,7 @@ void to::test<4>()
 	// And repack should have changed nothing
 	{
 		dataset::simple::Reader reader(cfg);
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 	}
@@ -444,7 +444,7 @@ void to::test<5>()
 	// Query is ok
 	{
 		dataset::simple::Reader reader(cfg);
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 	}
@@ -505,7 +505,7 @@ void to::test<5>()
 	// And repack should have changed nothing
 	{
 		dataset::simple::Reader reader(cfg);
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 	}
@@ -523,7 +523,7 @@ void to::test<6>()
 		void operator() ()
 		{
 			// Compress one file
-			metadata::Collector mdc;
+			metadata::Collection mdc;
 			Metadata::readFile("testds/2007/07-08.grib1.metadata", mdc);
 			ensure_equals(mdc.size(), 1u);
 			mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1.metadata");
@@ -557,7 +557,7 @@ void to::test<6>()
 
 	// Cannot query anymore
 	{
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		Reader reader(cfg);
 		try {
 			reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
@@ -625,7 +625,7 @@ void to::test<6>()
 
 	// And repack should have changed nothing
 	{
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		Reader reader(cfg);
 		try {
 			reader.queryData(dataset::DataQuery(Matcher(), false), mdc);

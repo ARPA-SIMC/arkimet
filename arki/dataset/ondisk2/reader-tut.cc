@@ -20,12 +20,12 @@
 #include <arki/dataset/ondisk2.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/utils/metadata.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
 #include <wibble/grcal/grcal.h>
@@ -100,7 +100,7 @@ template<> template<>
 void to::test<1>()
 {
 	ondisk2::Reader testds(*config.section("testds"));
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 
 	ensure(testds.hasWorkingIndex());
 
@@ -136,7 +136,7 @@ void to::test<2>()
 	ensure(testds.hasWorkingIndex());
 
 	// If the last update looks incomplete, the data will be skipped
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 #endif
@@ -155,7 +155,7 @@ void to::test<3>()
 	ensure(!testds.hasWorkingIndex());
 
 	// However, we should still get good results
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
@@ -183,7 +183,7 @@ void to::test<4>()
 	ensure(!testds.hasWorkingIndex());
 
 	// However, we should still get good results
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
@@ -210,7 +210,7 @@ void to::test<5>()
 	ensure(!testds.hasWorkingIndex());
 
 	// If the last update looks inhomplete, the data will be skipped
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 #endif
@@ -255,7 +255,7 @@ template<> template<>
 void to::test<8>()
 {
 	ondisk2::Reader testds(*config.section("testds"));
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 
 	ensure(testds.hasWorkingIndex());
 
@@ -300,7 +300,7 @@ void to::test<9>()
 
 
 	ondisk2::Reader testds(*config.section("testds"));
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 
 	ensure(testds.hasWorkingIndex());
 
@@ -417,7 +417,7 @@ void to::test<11>()
 
 	ondisk2::Reader testds(*config.section("testds"));
 
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 	ensure(mdc.empty());
 

@@ -29,7 +29,6 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/metadatagrid.h>
-#include <arki/utils/metadata.h>
 #include <string>
 #include <vector>
 #include <set>
@@ -42,7 +41,6 @@ namespace arki {
 
 class ConfigFile;
 class Metadata;
-class MetadataConsumer;
 class Matcher;
 
 namespace dataset {

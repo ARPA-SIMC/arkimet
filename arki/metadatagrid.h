@@ -30,9 +30,7 @@
 #include <map>
 
 namespace arki {
-
 class Metadata;
-class MetadataConsumer;
 
 /**
  * Define a linear metadata space.

@@ -75,7 +75,7 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct MetadataCounter : public MetadataConsumer
+struct MetadataCounter : public metadata::Consumer
 {
 	size_t count;
 	off_t size;

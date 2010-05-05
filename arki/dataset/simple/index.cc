@@ -22,13 +22,13 @@
 
 #include <arki/dataset/simple/index.h>
 #include <arki/dataset/maintenance.h>
+#include <arki/metadata/collection.h>
 #include <arki/configfile.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
 #include <arki/scan/dir.h>
 #include <arki/utils/sqlite.h>
-#include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
@@ -84,14 +84,14 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 	}
 }
 
-void Manifest::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	vector<string> files;
 	fileList(q.matcher, files);
 
 	// TODO: does it make sense to check with the summary first?
 
-	MetadataConsumer* c = &consumer;
+	metadata::Consumer* c = &consumer;
 	auto_ptr<sort::Stream> sorter;
 	auto_ptr<ds::DataInliner> inliner;
 
@@ -177,14 +177,14 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 		sys::fs::deleteIfExists(pathname + ".metadata");
 
 	// Scan the file
-	utils::metadata::Collector mds;
+	metadata::Collection mds;
 	if (!scan::scan(pathname, mds))
 		throw wibble::exception::Consistency("rescanning " + pathname, "it does not look like a file we can scan");
 
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
 	Summary sum;
-	for (utils::metadata::Collector::const_iterator i = mds.begin();
+	for (metadata::Collection::const_iterator i = mds.begin();
 			i != mds.end(); ++i)
 	{
 		Item<source::Blob> s = i->source.upcast<source::Blob>();

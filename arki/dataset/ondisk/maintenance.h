@@ -26,7 +26,10 @@
 #include <iosfwd>
 
 namespace arki {
-class MetadataConsumer;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 namespace ondisk {

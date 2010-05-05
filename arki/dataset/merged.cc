@@ -110,7 +110,7 @@ public:
 class MetadataReader : public sys::Thread
 {
 protected:
-	struct Consumer : public MetadataConsumer
+	struct Consumer : public metadata::Consumer
 	{
 		SyncBuffer<Metadata>& buf;
 
@@ -197,7 +197,7 @@ void Merged::addDataset(ReadonlyDataset& ds)
 	datasets.push_back(&ds);
 }
 
-void Merged::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Merged::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	// Handle the trivial case of only one dataset
 	if (datasets.size() == 1)

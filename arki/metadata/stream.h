@@ -1,8 +1,8 @@
-#ifndef ARKI_DATASET_SIMLE_DATAFILE_H
-#define ARKI_DATASET_SIMLE_DATAFILE_H
+#ifndef ARKI_METADATA_STREAM_H
+#define ARKI_METADATA_STREAM_H
 
 /*
- * dataset/simple/datafile - Handle a data file plus its associated files
+ * metadata/stream - Read metadata incrementally from a data stream
  *
  * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -23,47 +23,47 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+
+#include <arki/metadata.h>
 #include <string>
-#include <arki/summary.h>
-#include <arki/metadata/collection.h>
 
 namespace arki {
-class Metadata;
-
-namespace dataset {
-namespace simple {
+namespace metadata {
+class Consumer;
 
 /**
- * Manage a data file in the Ondisk dataset, including all accessory files,
- * like metadata file and flagfiles
+ * Turn a stream of bytes into a stream of metadata
  */
-struct Datafile
+class Stream
 {
-	// Full path to the data file
-	std::string pathname;
-	std::string basename;
-	int fd;
-	metadata::Collection mds;
-	Summary sum;
+	Consumer& consumer;
+	Metadata md;
+	std::string streamname;
+	std::string buffer;
+	enum { METADATA, DATA } state;
+	size_t dataToGet;
 
-	Datafile(const std::string& pathname);
-	~Datafile();
+	void checkMetadata();
+	void checkData();
 
-	void lock();
-	void unlock();
-
-	void flush();
+public:
+	Stream(Consumer& consumer, const std::string& streamname)
+		: consumer(consumer), streamname(streamname), state(METADATA) {}
 
 	/**
-	 * Append the data to the datafile.
-	 *
-	 * Metadata updates will only be saved when the Datafile is flushed or
-	 * destroyed
+	 * Return the number of bytes that have not been processed yet
 	 */
-	void append(Metadata& md);
+	size_t countBytesUnprocessed() const { return buffer.size(); }
+
+	/**
+	 * Send some data to the stream.
+	 *
+	 * If the data completes one or more metadata and (when appropriate) the
+	 * attached inline data, then they will be sent to the consumer
+	 */
+	void readData(const void* buf, size_t size);
 };
 
-}
 }
 }
 

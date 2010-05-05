@@ -30,12 +30,10 @@
 namespace arki {
 class Summary;
 class Matcher;
-class MetadataConsumer;
 
-namespace utils {
-namespace metadata {
-class Collector;
-}
+namespace metadata{
+class Consumer;
+class Collection;
 }
 
 namespace dataset {
@@ -68,12 +66,12 @@ public:
 	void openRO();
 	void openRW();
 
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	void acquire(const std::string& relname);
-	void acquire(const std::string& relname, const utils::metadata::Collector& mds);
+	void acquire(const std::string& relname, const metadata::Collection& mds);
 	void remove(const std::string& relname);
 	void rescan(const std::string& relname);
 	void deindex(const std::string& relname);
@@ -130,12 +128,12 @@ public:
 
 	const std::string& path() const { return m_dir; }
 
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	void acquire(const std::string& relname);
-	void acquire(const std::string& relname, const utils::metadata::Collector& mds);
+	void acquire(const std::string& relname, const metadata::Collection& mds);
 	void remove(const std::string& relname);
 	void rescan(const std::string& relname);
 

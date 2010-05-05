@@ -1,0 +1,204 @@
+/*
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Author: Enrico Zini <enrico@enricozini.com>
+ */
+
+#include <arki/tests/test-utils.h>
+#include <arki/metadata/stream.h>
+#include <arki/metadata.h>
+#include <arki/metadata/collection.h>
+#include <arki/types/origin.h>
+#include <arki/types/product.h>
+#include <arki/types/level.h>
+#include <arki/types/timerange.h>
+#include <arki/types/reftime.h>
+#include <arki/types/area.h>
+#include <arki/types/ensemble.h>
+#include <arki/types/assigneddataset.h>
+
+namespace std {
+static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
+{
+    m.writeYaml(o);
+	return o;
+}
+}
+
+namespace tut {
+using namespace std;
+using namespace arki;
+using namespace arki::types;
+
+struct arki_metadata_stream_shar {
+	Metadata md;
+	ValueBag testValues;
+
+	arki_metadata_stream_shar()
+	{
+		md.create();
+
+		testValues.set("foo", Value::createInteger(5));
+		testValues.set("bar", Value::createInteger(5000));
+		testValues.set("baz", Value::createInteger(-200));
+		testValues.set("moo", Value::createInteger(0x5ffffff));
+		testValues.set("antani", Value::createInteger(-1));
+		testValues.set("blinda", Value::createInteger(0));
+		testValues.set("supercazzola", Value::createInteger(-1234567));
+		testValues.set("pippo", Value::createString("pippo"));
+		testValues.set("pluto", Value::createString("12"));
+		testValues.set("cippo", Value::createString(""));
+	}
+
+	void fill(Metadata& md)
+	{
+		md.set(origin::GRIB1::create(1, 2, 3));
+		md.set(product::GRIB1::create(1, 2, 3));
+		md.set(level::GRIB1::create(114, 12, 34));
+		md.set(timerange::GRIB1::create(1, 1, 2, 3));
+		md.set(area::GRIB::create(testValues));
+		md.set(ensemble::GRIB::create(testValues));
+		md.add_note(types::Note::create("test note"));
+		md.set(AssignedDataset::create("dsname", "dsid"));
+		// Test POSITION reference times
+		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
+	}
+
+#define ensure_matches_fill(x) impl_ensure_matches_fill(wibble::tests::Location(__FILE__, __LINE__, #x), (x))
+	void impl_ensure_matches_fill(const wibble::tests::Location& loc, Metadata& md1)
+	{
+		inner_ensure(md1.get(types::TYPE_ORIGIN).defined());
+		inner_ensure_equals(md1.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(1, 2, 3)));
+		inner_ensure(md1.get(types::TYPE_PRODUCT).defined());
+		inner_ensure_equals(md1.get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(1, 2, 3)));
+		inner_ensure(md1.get(types::TYPE_LEVEL).defined());
+		inner_ensure_equals(md1.get(types::TYPE_LEVEL), Item<>(level::GRIB1::create(114, 12, 34)));
+		inner_ensure(md1.get(types::TYPE_TIMERANGE).defined());
+		inner_ensure_equals(md1.get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(1, 1, 2, 3)));
+		inner_ensure(md1.get(types::TYPE_AREA).defined());
+		inner_ensure_equals(md1.get(types::TYPE_AREA), Item<>(area::GRIB::create(testValues)));
+		inner_ensure(md1.get(types::TYPE_ENSEMBLE).defined());
+		inner_ensure_equals(md1.get(types::TYPE_ENSEMBLE), Item<>(ensemble::GRIB::create(testValues)));
+		inner_ensure_equals(md1.notes().size(), 1u);
+		inner_ensure_equals((*md1.notes().begin())->content, "test note");
+		inner_ensure_equals(md1.get(types::TYPE_ASSIGNEDDATASET), Item<>(AssignedDataset::create("dsname", "dsid")));
+		inner_ensure(md1.get(types::TYPE_REFTIME).defined());
+		inner_ensure_equals(md1.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1))));
+	}
+};
+TESTGRP(arki_metadata_stream);
+
+
+inline bool cmpmd(const Metadata& md1, const Metadata& md2)
+{
+	if (md1 != md2)
+	{
+		cerr << "----- The two metadata differ.  First one:" << endl;
+		md1.writeYaml(cerr);
+		if (md1.source->style() == Source::INLINE)
+		{
+			wibble::sys::Buffer buf = md1.getData();
+			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
+		}
+		cerr << "----- Second one:" << endl;
+		md2.writeYaml(cerr);
+		if (md2.source->style() == Source::INLINE)
+		{
+			wibble::sys::Buffer buf = md2.getData();
+			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
+		}
+		return false;
+	}
+	return true;
+}
+
+// Test metadata stream
+template<> template<>
+void to::test<1>()
+{
+	// Create test metadata
+	Metadata md1;
+	md1.create();
+	md1.source = source::Blob::create("grib", "fname", 1, 2);
+	fill(md1);
+
+	Metadata md2;
+	md2 = md1;
+	md2.set(origin::BUFR::create(1, 2));
+
+	md1.setInlineData("test", wibble::sys::Buffer("this is a test", 14));
+
+	// Encode everything in a buffer
+	stringstream str;
+	md1.write(str, "(memory)");
+	size_t end1 = str.tellp();
+	md2.write(str, "(memory)");
+	size_t end2 = str.tellp();
+
+	// Where we collect the decoded metadata
+	metadata::Collection results;
+
+	// Stream for the decoding
+	metadata::Stream mdstream(results, "test stream");
+
+	string input = str.str();
+	size_t cur = 0;
+
+	// Not a full metadata yet
+	mdstream.readData(input.data() + cur, end1 - 20);
+	cur += end1-20;
+	ensure_equals(results.size(), 0u);
+
+	// The full metadata but not the data
+	mdstream.readData(input.data() + cur, 10);
+	cur += 10;
+	ensure_equals(results.size(), 0u);
+
+	// The full metadata and the data and part of the next metadata
+	mdstream.readData(input.data() + cur, 40);
+	cur += 40;
+	ensure_equals(results.size(), 1u);
+
+	// All the rest
+	mdstream.readData(input.data() + cur, end2-cur);
+	cur = end2;
+
+	// No bytes must be left to decode
+	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+
+	// See that we've got what we expect
+	ensure_equals(results.size(), 2u);
+	ensure(cmpmd(md1, results[0]));
+	ensure(cmpmd(md2, results[1]));
+	
+	results.clear();
+
+	// Try feeding all the data at the same time
+	mdstream.readData(input.data(), input.size());
+
+	// No bytes must be left to decode
+	ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+
+	// See that we've got what we expect
+	ensure_equals(results.size(), 2u);
+	ensure(cmpmd(md1, results[0]));
+	ensure(cmpmd(md2, results[1]));
+}
+
+}
+
+// vim:set ts=4 sw=4:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
@@ -31,15 +32,6 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
 
 struct arki_dataset_http_shar {
 	ConfigFile config;
@@ -79,7 +71,7 @@ struct arki_dataset_http_shar {
 
 		// Import data into the datasets
 		Metadata md;
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		scan::Grib scanner;
 		RealDispatcher dispatcher(config);
 		scanner.open("inbound/test.grib1");

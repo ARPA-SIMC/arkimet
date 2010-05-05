@@ -21,6 +21,7 @@
 #include <arki/matcher/test-utils.h>
 #include <arki/postprocess.h>
 #include <arki/configfile.h>
+#include <arki/metadata.h>
 #include <arki/scan/grib.h>
 
 #include <sstream>
@@ -49,7 +50,7 @@ struct arki_postprocess_shar {
 		config.parse(incfg, "(memory)");
     }
 
-	void produceGRIB(MetadataConsumer& c)
+	void produceGRIB(metadata::Consumer& c)
 	{
 		Metadata md;
 		scan::Grib scanner;

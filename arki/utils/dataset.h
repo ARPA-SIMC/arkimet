@@ -23,23 +23,26 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/metadata/consumer.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <iosfwd>
 #include <signal.h>
 
 namespace arki {
+struct Metadata;
+
 namespace utils {
 namespace ds {
 
 /**
  * Prepend a path to all metadata
  */
-struct PathPrepender : public MetadataConsumer
+struct PathPrepender : public metadata::Consumer
 {
 	std::string path;
-	MetadataConsumer& next;
-	PathPrepender(const std::string& path, MetadataConsumer& next) : path(path), next(next) {}
+	metadata::Consumer& next;
+	PathPrepender(const std::string& path, metadata::Consumer& next) : path(path), next(next) {}
 	bool operator()(Metadata& md)
 	{
 		md.prependPath(path);
@@ -47,11 +50,11 @@ struct PathPrepender : public MetadataConsumer
 	}
 };
 
-struct MatcherFilter : public MetadataConsumer
+struct MatcherFilter : public metadata::Consumer
 {
 	const Matcher& matcher;
-	MetadataConsumer& next;
-	MatcherFilter(const Matcher& matcher, MetadataConsumer& next)
+	metadata::Consumer& next;
+	MatcherFilter(const Matcher& matcher, metadata::Consumer& next)
 		: matcher(matcher), next(next) {}
 	bool operator()(Metadata& md)
 	{
@@ -64,10 +67,10 @@ struct MatcherFilter : public MetadataConsumer
 /**
  * Inline the data into all metadata
  */
-struct DataInliner : public MetadataConsumer
+struct DataInliner : public metadata::Consumer
 {
-	MetadataConsumer& next;
-	DataInliner(MetadataConsumer& next) : next(next) {}
+	metadata::Consumer& next;
+	DataInliner(metadata::Consumer& next) : next(next) {}
 	bool operator()(Metadata& md);
 };
 
@@ -75,17 +78,17 @@ struct DataInliner : public MetadataConsumer
  * Inline the data into all metadata, but after the next consumer has finished
  * it restores the previous source, deleting the cached data.
  */
-struct TemporaryDataInliner : public MetadataConsumer
+struct TemporaryDataInliner : public metadata::Consumer
 {
-	MetadataConsumer& next;
-	TemporaryDataInliner(MetadataConsumer& next) : next(next) {}
+	metadata::Consumer& next;
+	TemporaryDataInliner(metadata::Consumer& next) : next(next) {}
 	bool operator()(Metadata& md);
 };
 
 /**
  * Output the data from a metadata stream into an ostream
  */
-struct DataOnly : public MetadataConsumer
+struct DataOnly : public metadata::Consumer
 {
 	std::ostream& out;
 	sigset_t blocked;

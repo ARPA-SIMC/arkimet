@@ -27,7 +27,7 @@
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
@@ -88,7 +88,7 @@ void Archive::openRW()
 	m_mft->openRW();
 }
 
-void Archive::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Archive::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	m_mft->queryData(q, consumer);
 }
@@ -107,14 +107,14 @@ void Archive::acquire(const std::string& relname)
 {
 	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
 	// Scan file, reusing .metadata if still valid
-	utils::metadata::Collector mdc;
+	metadata::Collection mdc;
 	string pathname = str::joinpath(m_dir, relname);
 	if (!scan::scan(pathname, mdc))
 		throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
 	acquire(relname, mdc);
 }
 
-void Archive::acquire(const std::string& relname, const utils::metadata::Collector& mds)
+void Archive::acquire(const std::string& relname, const metadata::Collection& mds)
 {
 	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
 	string pathname = str::joinpath(m_dir, relname);
@@ -125,7 +125,7 @@ void Archive::acquire(const std::string& relname, const utils::metadata::Collect
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
 	Summary sum;
-	for (utils::metadata::Collector::const_iterator i = mds.begin();
+	for (metadata::Collection::const_iterator i = mds.begin();
 			i != mds.end(); ++i)
 	{
 		Item<source::Blob> s = i->source.upcast<source::Blob>();
@@ -306,7 +306,7 @@ Archive* Archives::lookup(const std::string& name)
 	return i->second;
 }
 
-void Archives::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Archives::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	for (map<string, Archive*>::iterator i = m_archives.begin();
 			i != m_archives.end(); ++i)
@@ -360,7 +360,7 @@ void Archives::acquire(const std::string& relname)
 				"archive " + name + " does not exist in " + m_dir);
 }
 
-void Archives::acquire(const std::string& relname, const utils::metadata::Collector& mds)
+void Archives::acquire(const std::string& relname, const metadata::Collection& mds)
 {
 	string path = relname;
 	string name = poppath(path);

@@ -34,7 +34,10 @@ namespace arki {
 class ConfigFile;
 class Metadata;
 class Summary;
-class MetadataConsumer;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace sort {
 class Compare;
@@ -156,7 +159,7 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer) = 0;
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer) = 0;
 
 	/**
 	 * Add to summary the summary of the data that would be extracted with the

@@ -170,7 +170,7 @@ struct Stats : public dataset::ondisk::Visitor
 };
 #endif
 
-struct Printer : public MetadataConsumer
+struct Printer : public metadata::Consumer
 {
 	ostream& out;
 	string outname;

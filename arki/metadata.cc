@@ -21,6 +21,7 @@
  */
 
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/formatter.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/datareader.h>
@@ -473,66 +474,7 @@ void Metadata::prependPath(const std::string& path)
 	source = source.upcast<types::source::Blob>()->prependPath(path);
 }
 
-void MetadataStream::checkMetadata()
-{
-	using namespace utils::codec;
-
-	if (buffer.size() < 8) return;
-
-	// Ensure first 2 bytes are MD
-	if (buffer[0] != 'M' || buffer[1] != 'D')
-		throw wibble::exception::Consistency("checking partial buffer", "buffer contains data that is not encoded metadata");
-
-	// Get version from next 2 bytes
-	unsigned int version = codec::decodeUInt((const unsigned char*)buffer.data()+2, 2);
-	// Get length from next 4 bytes
-	unsigned int len = codec::decodeUInt((const unsigned char*)buffer.data()+4, 4);
-
-	// Check if we have a full metadata, in that case read it, remove it
-	// from the beginning of the string, then consume it it
-	if (buffer.size() < 8 + len)
-		return;
-
-	md.read((const unsigned char*)buffer.data() + 8, len, version, streamname);
-
-	buffer = buffer.substr(len + 8);
-	if (md.source->style() == types::Source::INLINE)
-	{
-		Item<types::source::Inline> inl = md.source.upcast<types::source::Inline>();
-		dataToGet = inl->size;
-		state = DATA;
-		checkData();
-	} else {
-		consumer(md);
-	}
-}
-
-void MetadataStream::checkData()
-{
-	if (buffer.size() >= dataToGet)
-	{
-		wibble::sys::Buffer buf(buffer.data(), dataToGet);
-		buffer = buffer.substr(dataToGet);
-		dataToGet = 0;
-		state = METADATA;
-		md.setInlineData(md.source->format, buf);
-		consumer(md);
-		checkMetadata();
-	}
-}
-
-void MetadataStream::readData(const void* buf, size_t size)
-{
-	buffer.append((const char*)buf, size);
-
-	switch (state)
-	{
-		case METADATA: checkMetadata(); break;
-		case DATA: checkData(); break;
-	}
-}
-
-void Metadata::readFile(const std::string& fname, MetadataConsumer& mdc)
+void Metadata::readFile(const std::string& fname, metadata::Consumer& mdc)
 {
 	// Read all the metadata
 	std::ifstream in;
@@ -545,7 +487,7 @@ void Metadata::readFile(const std::string& fname, MetadataConsumer& mdc)
 	in.close();
 }
 
-void Metadata::readFile(std::istream& in, const std::string& fname, MetadataConsumer& mdc)
+void Metadata::readFile(std::istream& in, const std::string& fname, metadata::Consumer& mdc)
 {
 	bool canceled = false;
 	wibble::sys::Buffer buf;
@@ -776,48 +718,7 @@ Metadata* Metadata::lua_check(lua_State* L, int idx)
 	return ud->md;
 }
 
-LuaMetadataConsumer::LuaMetadataConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
-LuaMetadataConsumer::~LuaMetadataConsumer()
-{
-	// Unindex the function
-	luaL_unref(L, LUA_REGISTRYINDEX, funcid);
-}
-
-bool LuaMetadataConsumer::operator()(Metadata& md)
-{
-	// Get the function
-	lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
-
-	// Push the metadata
-	md.lua_push(L);
-
-	// Call the function
-	if (lua_pcall(L, 1, 1, 0))
-	{
-		string error = lua_tostring(L, -1);
-		lua_pop(L, 1);
-		throw wibble::exception::Consistency("running metadata consumer function", error);
-	}
-
-	int res = lua_toboolean(L, -1);
-	lua_pop(L, 1);
-	return res;
-}
-
-auto_ptr<LuaMetadataConsumer> LuaMetadataConsumer::lua_check(lua_State* L, int idx)
-{
-	luaL_checktype(L, idx, LUA_TFUNCTION);
-
-	// Ref the created function into the registry
-	lua_pushvalue(L, idx);
-	int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
-
-	// Create a consumer using the function
-	return auto_ptr<LuaMetadataConsumer>(new LuaMetadataConsumer(L, funcid));
-}
-
 #endif
-
 
 }
 

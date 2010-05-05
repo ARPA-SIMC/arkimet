@@ -43,14 +43,6 @@ namespace arki {
 namespace dataset {
 namespace index {
 
-bool FilteredMetadataConsumer::operator()(Metadata& m)
-{
-	if (matcher(m))
-		return chained(m);
-	else
-		return true;
-}
-
 std::set<types::Code> parseMetadataBitmask(const std::string& components)
 {
 	set<types::Code> res;

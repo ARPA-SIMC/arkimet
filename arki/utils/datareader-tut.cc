@@ -19,8 +19,8 @@
  */
 
 #include <arki/tests/test-utils.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils/datareader.h>
-#include <arki/utils/metadata.h>
 #include <arki/scan/any.h>
 #include <wibble/sys/buffer.h>
 #include <wibble/sys/fs.h>
@@ -89,7 +89,7 @@ void to::test<3>()
 	sys::fs::deleteIfExists("testcompr.grib1.gz");
 	ensure(system("cp inbound/test.grib1 testcompr.grib1") == 0);
 
-	utils::metadata::Collector mdc;
+	metadata::Collection mdc;
 	scan::scan("testcompr.grib1", mdc);
 	mdc.compressDataFile(2, "testcompr.grib1");
 	sys::fs::deleteIfExists("testcompr.grib1");

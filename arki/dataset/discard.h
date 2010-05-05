@@ -27,10 +27,8 @@
 #include <string>
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
-class MetadataConsumer;
 class Matcher;
 
 namespace dataset {

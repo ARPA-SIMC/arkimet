@@ -20,6 +20,7 @@
 #include <arki/dataset/gridquery.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -32,15 +33,6 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
 
 struct arki_dataset_gridquery_shar {
 	ConfigFile config;
@@ -72,7 +64,7 @@ struct arki_dataset_gridquery_shar {
 
 		// Import data into the datasets
 		Metadata md;
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		scan::Grib scanner;
 		RealDispatcher dispatcher(config);
 		scanner.open("inbound/test.grib1");

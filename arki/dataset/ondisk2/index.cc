@@ -24,6 +24,7 @@
 #include <arki/dataset/maintenance.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/matcher/reftime.h>
 #include <arki/dataset.h>
@@ -33,7 +34,6 @@
 #include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/utils/metadata.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
 #include <arki/runtime/io.h>
@@ -296,7 +296,7 @@ void Index::scan_file(const std::string& relname, maintenance::IndexFileVisitor&
 	}
 }
 
-void Index::scan_file(const std::string& relname, MetadataConsumer& consumer) const
+void Index::scan_file(const std::string& relname, metadata::Consumer& consumer) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
@@ -479,7 +479,7 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 	return true;
 }
 
-bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
+bool Index::query(const dataset::DataQuery& q, metadata::Consumer& consumer) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
@@ -501,7 +501,7 @@ bool Index::query(const dataset::DataQuery& q, MetadataConsumer& consumer) const
 
 	nag::verbose("Running query %s", query.c_str());
 
-	metadata::Collector mdbuf;
+	metadata::Collection mdbuf;
 	string last_fname;
 	auto_ptr<runtime::Tempfile> tmpfile;
 

@@ -28,11 +28,13 @@
 #include <string>
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
-class MetadataConsumer;
 class Matcher;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 
@@ -50,9 +52,9 @@ public:
 
 	const std::string& pathname() const { return m_pathname; }
 
-	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer) = 0;
+	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer) = 0;
 
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
@@ -82,7 +84,7 @@ public:
 	ArkimetFile(const ConfigFile& cfg);
 	virtual ~ArkimetFile();
 
-	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer);
 };
 
 class YamlFile : public IfstreamFile
@@ -92,7 +94,7 @@ public:
 	YamlFile(const ConfigFile& cfg);
 	virtual ~YamlFile();
 
-	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer);
 };
 
 class RawFile : public File
@@ -102,7 +104,7 @@ public:
 	RawFile(const ConfigFile& cfg);
 	virtual ~RawFile();
 
-	virtual void scan(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer);
 };
 
 }

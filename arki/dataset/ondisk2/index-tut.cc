@@ -22,6 +22,7 @@
 #include <arki/dataset.h>
 #include <arki/dataset/ondisk2/index.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/level.h>
@@ -30,7 +31,6 @@
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
 #include <arki/scan/any.h>
-#include <arki/utils/metadata.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
@@ -146,7 +146,7 @@ void to::test<1>()
 	ensure_equals(test->id(md1), 2);
 
 	// Query various kinds of metadata
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
 	ensure_equals(mdc.size(), 1u);
 	ensure_equals(mdc[0].notes().size(), 1u);
@@ -193,7 +193,7 @@ void to::test<2>()
 	int id1 = test->id(md1);
 
 	// Ensure that we have two items
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1")), mdc);
 	ensure_equals(mdc.size(), 2u);
 	mdc.clear();
@@ -233,7 +233,7 @@ void to::test<2>()
 }
 
 namespace {
-struct ReadHang : public sys::ChildProcess, public MetadataConsumer
+struct ReadHang : public sys::ChildProcess, public metadata::Consumer
 {
 	ConfigFile cfg;
 	int commfd;
@@ -351,7 +351,7 @@ void to::test<4>()
 	ensure(test.get() != 0);
 	Pending p;
 
-	metadata::Collector src;
+	metadata::Collection src;
 	scan::scan("inbound/test.grib1", src);
 	ensure_equals(src.size(), 3u);
 
@@ -370,7 +370,7 @@ void to::test<4>()
 	p.commit();
 
 	// Get the metadata corresponding to one file
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	test->scan_file("test-md", mdc);
 
 	ensure_equals(mdc.size(), 2u);
@@ -473,7 +473,7 @@ void to::test<6>()
 	test->index(md1, "test-md1", md1.source.upcast<source::Blob>()->offset);
 
 	// Query various kinds of metadata
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
 	Item<source::Blob> s = mdc[0].source.upcast<source::Blob>();

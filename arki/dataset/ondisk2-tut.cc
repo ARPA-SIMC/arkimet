@@ -21,13 +21,13 @@
 //#include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/time.h>
 #include <arki/scan/grib.h>
 #include <arki/utils/files.h>
-#include <arki/utils/metadata.h>
 #include <wibble/sys/fs.h>
 #include <wibble/sys/childprocess.h>
 
@@ -46,15 +46,6 @@ static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
 {
 	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
 }
-
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-	bool operator()(Metadata& md)
-	{
-		push_back(md);
-		return true;
-	}
-};
 
 struct arki_dataset_ondisk2_shar {
 	ConfigFile config;
@@ -219,7 +210,7 @@ void to::test<2>()
 {
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
@@ -248,7 +239,7 @@ void to::test<3>()
 {
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
@@ -276,7 +267,7 @@ void to::test<4>()
 {
 	acquireSamples();
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test98")));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
@@ -304,7 +295,7 @@ void to::test<5>()
 {
 	acquireSamples();
 
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
 
@@ -356,7 +347,7 @@ template<> template<>
 void to::test<6>()
 {
 	acquireSamples();
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	{
 		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
@@ -434,7 +425,7 @@ void to::test<7>()
 	{
 		Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
@@ -444,7 +435,7 @@ void to::test<7>()
 		dataset::ondisk2::Writer d200(*config.section("test200"));
 		// Run a full maintenance run
 		d200.invalidateAll();
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		stringstream log;
 		FullMaintenance fr(log, mdc);
 		//FullMaintenance fr(cerr, mdc);
@@ -455,7 +446,7 @@ void to::test<7>()
 	{
 		Reader reader(*config.section("test200"));
 		ensure(reader.hasWorkingIndex());
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 	}
@@ -543,7 +534,7 @@ void to::test<10>()
 	// Test querying the dataset
 	{
 		Reader reader(*config.section("test200"));
-		MetadataCollector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
@@ -578,7 +569,7 @@ void to::test<11>()
 	Item<types::Reftime> rt = summary.getReferenceTime();
 	ensure_equals(rt->style(), Reftime::PERIOD);
 	Item<reftime::Period> p = rt.upcast<reftime::Period>();
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin->toISO8601()), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
@@ -601,7 +592,7 @@ void to::test<12>()
 }
 
 namespace {
-struct ReadHang : public sys::ChildProcess, public MetadataConsumer
+struct ReadHang : public sys::ChildProcess, public metadata::Consumer
 {
 	const ConfigFile& cfg;
 	int commfd;
@@ -721,7 +712,7 @@ void to::test<14>()
 
 	// Compress what is imported so far
 	{
-		utils::metadata::Collector mdc;
+		metadata::Collection mdc;
 		Reader reader(*config.section("testall"));
 		reader.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 		ensure_equals(mdc.size(), 1u);

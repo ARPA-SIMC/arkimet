@@ -1,10 +1,10 @@
-#ifndef ARKI_UTILS_METADATA_H
-#define ARKI_UTILS_METADATA_H
+#ifndef ARKI_METADATA_COLLECTION_H
+#define ARKI_METADATA_COLLECTION_H
 
 /*
- * utils/metadata - Useful functions for working with metadata
+ * metadata/collection - In-memory collection of metadata
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
  */
 
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/dataset.h>
 #include <vector>
 #include <string>
@@ -32,13 +33,12 @@
 namespace arki {
 struct Summary;
 
-namespace utils {
 namespace metadata {
 
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Collector : public std::vector<Metadata>, public MetadataConsumer, public ReadonlyDataset
+struct Collection : public std::vector<Metadata>, public Consumer, public ReadonlyDataset
 {
 	bool operator()(Metadata& md)
 	{
@@ -47,7 +47,7 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 		return true;
 	}
 
-	virtual void queryData(const dataset::DataQuery& q, MetadataConsumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, Consumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	/**
@@ -68,7 +68,7 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 	/**
 	 * Send all metadata to a consumer
 	 */
-	bool sendTo(MetadataConsumer& out)
+	bool sendTo(Consumer& out)
 	{
 		for (std::vector<Metadata>::iterator i = begin();
 				i != end(); ++i)
@@ -92,38 +92,6 @@ struct Collector : public std::vector<Metadata>, public MetadataConsumer, public
 	void compressDataFile(size_t groupsize = 512, const std::string& source = std::string("metadata")) const;
 };
 
-/**
- * Write metadata to a file, atomically.
- *
- * The file will be created with a temporary name, and then renamed to its
- * final name.
- *
- * Note: the temporary file name will NOT be created securely.
- */
-struct AtomicWriter
-{
-	std::string fname;
-	std::string tmpfname;
-	std::ofstream* outmd;
-
-	AtomicWriter(const std::string& fname);
-	~AtomicWriter();
-
-	std::ofstream& out() { return *outmd; }
-
-	void commit();
-	void rollback();
-};
-
-struct Summarise : public MetadataConsumer
-{
-	Summary& s;
-	Summarise(Summary& s) : s(s) {}
-
-	bool operator()(Metadata& md);
-};
-
-}
 }
 }
 

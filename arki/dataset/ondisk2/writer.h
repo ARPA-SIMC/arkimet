@@ -30,9 +30,7 @@
 #include <memory>
 
 namespace arki {
-
 class Metadata;
-class MetadataConsumer;
 class Matcher;
 class Summary;
 

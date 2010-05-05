@@ -22,6 +22,7 @@
 
 #include <arki/targetfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
 #include <wibble/exception.h>
@@ -220,12 +221,12 @@ TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const
 }
 
 namespace {
-struct MetadataSpy : public MetadataConsumer
+struct MetadataSpy : public metadata::Consumer
 {
 	TargetfileSpy& tfs;
-	MetadataConsumer& next;
+	metadata::Consumer& next;
 
-	MetadataSpy(TargetfileSpy& tfs, MetadataConsumer& next) : tfs(tfs), next(next) {}
+	MetadataSpy(TargetfileSpy& tfs, metadata::Consumer& next) : tfs(tfs), next(next) {}
 
 	bool operator()(Metadata& md)
 	{
@@ -235,7 +236,7 @@ struct MetadataSpy : public MetadataConsumer
 };
 }
 
-void TargetfileSpy::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void TargetfileSpy::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	MetadataSpy spy(*this, consumer);
 	ds.queryData(q, spy);

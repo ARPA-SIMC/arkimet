@@ -21,6 +21,7 @@
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/scan/grib.h>
@@ -42,15 +43,6 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace wibble;
-
-struct MetadataCollector : public vector<Metadata>, public MetadataConsumer
-{
-    bool operator()(Metadata& md)
-    {
-        push_back(md);
-        return true;
-    }
-};
 
 struct arki_server_shar {
     ConfigFile config;
@@ -83,7 +75,7 @@ void to::test<2>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
     auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-    MetadataCollector mdc;
+    metadata::Collection mdc;
 
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
     ensure_equals(mdc.size(), 1u);
@@ -146,7 +138,7 @@ void to::test<5>()
     ensure(htd != 0);
 
     // Try it on metadata
-    MetadataCollector mdc;
+    metadata::Collection mdc;
     htd->produce_one_wrong_query();
     try {
         testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
@@ -199,7 +191,7 @@ void to::test<7>()
 	cfg.setValue("path", "http://localhost:7117");
 	cfg.setValue("qmacro", "test200");
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
-	MetadataCollector mdc;
+	metadata::Collection mdc;
 
 	testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 1u);

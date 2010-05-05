@@ -26,7 +26,7 @@
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
 #include <dballe++/init.h>
@@ -281,7 +281,7 @@ void to::test<3>()
 
 	close(fd);
 
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	scan::scan("inbound/test.bufr", mdc);
 	buf = mdc[0].getData();
 

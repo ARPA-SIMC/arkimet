@@ -25,10 +25,10 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/utils.h>
-#include <arki/utils/metadata.h>
 #include <arki/utils/files.h>
 #include <arki/scan/grib.h>
 #include <wibble/sys/fs.h>
@@ -117,7 +117,7 @@ template<> template<>
 void to::test<1>()
 {
 	simple::Reader testds(cfg);
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
@@ -154,7 +154,7 @@ void to::test<2>()
 	ensure(testds.hasWorkingIndex());
 
 	// If the last update looks incomplete, the data will be skipped
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 #endif
@@ -173,7 +173,7 @@ void to::test<3>()
 	ensure(!testds.hasWorkingIndex());
 
 	// However, we should still get good results
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
@@ -201,7 +201,7 @@ void to::test<4>()
 	ensure(!testds.hasWorkingIndex());
 
 	// However, we should still get good results
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
@@ -228,7 +228,7 @@ void to::test<5>()
 	ensure(!testds.hasWorkingIndex());
 
 	// If the last update looks inhomplete, the data will be skipped
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 #endif
@@ -271,7 +271,7 @@ template<> template<>
 void to::test<8>()
 {
 	simple::Reader testds(cfg);
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 
 	testds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
@@ -318,7 +318,7 @@ void to::test<9>()
 
 
 	simple::Reader testds(cfg);
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 
 	testds.queryData(dataset::DataQuery(Matcher::parse(""), true), mdc);
 	ensure_equals(mdc.size(), 3u);
@@ -403,7 +403,7 @@ void to::test<10>()
 
 	simple::Reader testds(cfg);
 
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 	ensure(mdc.empty());
 
@@ -435,7 +435,7 @@ void to::test<1>()
 	ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
 	ensure_equals(mdc.size(), 3u);
 	ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
@@ -446,7 +446,7 @@ void to::test<1>()
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show it's all ok
-	MaintenanceCollector c;
+	MaintenanceCollection c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	//c.dump(cerr);
@@ -466,12 +466,12 @@ void to::test<2>()
 	system("cp inbound/test.grib1 testds/.archive/last/");
 
 	// Query now is ok
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 0u);
 
 	// Maintenance should show one file to index
-	MaintenanceCollector c;
+	MaintenanceCollection c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_TO_INDEX), 1u);
@@ -531,12 +531,12 @@ void to::test<3>()
 	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	// Query now is ok
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show one file to rescan
-	MaintenanceCollector c;
+	MaintenanceCollection c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
@@ -594,12 +594,12 @@ void to::test<4>()
 	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
 
 	// Query now is ok
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show one file to rescan
-	MaintenanceCollector c;
+	MaintenanceCollection c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_TO_RESCAN), 1u);
@@ -664,7 +664,7 @@ void to::test<5>()
 
 	// Query now is ok
 	{
-		metadata::Collector mdc;
+		metadata::Collection mdc;
 		Archive arc("testds/.archive/last");
 		arc.openRO();
 		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
@@ -675,7 +675,7 @@ void to::test<5>()
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRW();
-		MaintenanceCollector c;
+		MaintenanceCollection c;
 		arc.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
@@ -687,7 +687,7 @@ void to::test<5>()
 	{
 		Writer writer(cfg);
 
-		MaintenanceCollector c;
+		MaintenanceCollection c;
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
@@ -723,7 +723,7 @@ void to::test<5>()
 	{
 		Archive arc("testds/.archive/last");
 		arc.openRW();
-		MaintenanceCollector c;
+		MaintenanceCollection c;
 		arc.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
 		ensure_equals(c.count(ARC_OK), 3u);
@@ -743,7 +743,7 @@ void to::test<6>()
 	arc.acquire("test.grib1");
 
 	// Compress it
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
 	ensure_equals(mdc.size(), 3u);
 	mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
@@ -762,7 +762,7 @@ void to::test<6>()
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show that everything is ok now
-	MaintenanceCollector c;
+	MaintenanceCollection c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_OK), 1u);
@@ -835,12 +835,12 @@ void to::test<7>()
 	Archives arc("testds/.archive");
 
 	// Query now is ok
-	metadata::Collector mdc;
+	metadata::Collection mdc;
 	arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
 	// Maintenance should show that everything is ok now
-	MaintenanceCollector c;
+	MaintenanceCollection c;
 	arc.maintenance(c);
 	ensure_equals(c.fileStates.size(), 1u);
 	ensure_equals(c.count(ARC_OK), 1u);
@@ -858,7 +858,7 @@ void to::test<8>()
 
 	simple::Reader testds(cfg);
 
-	MetadataCollector mdc;
+	MetadataCollection mdc;
 	testds.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 	ensure(mdc.empty());
 

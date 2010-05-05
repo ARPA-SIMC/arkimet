@@ -24,6 +24,7 @@
 
 #include <arki/scan/any.h>
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
@@ -41,13 +42,13 @@ using namespace wibble;
 namespace arki {
 namespace scan {
 
-static void scan_metadata(const std::string& file, MetadataConsumer& c)
+static void scan_metadata(const std::string& file, metadata::Consumer& c)
 {
 	//cerr << "Reading cached metadata from " << file << endl;
 	Metadata::readFile(file, c);
 }
 
-static bool scan_file(const std::string& file, const std::string& format, MetadataConsumer& c)
+static bool scan_file(const std::string& file, const std::string& format, metadata::Consumer& c)
 {
 	// Scan the file
 	if (!sys::fs::access(file, F_OK) && sys::fs::access(file + ".gz", F_OK))
@@ -77,7 +78,7 @@ static bool scan_file(const std::string& file, const std::string& format, Metada
 	return false;
 }
 
-static bool scan_file(const std::string& file, MetadataConsumer& c)
+static bool scan_file(const std::string& file, metadata::Consumer& c)
 {
 	// Get the file extension
 	size_t pos = file.rfind('.');
@@ -87,7 +88,7 @@ static bool scan_file(const std::string& file, MetadataConsumer& c)
 	return scan_file(file, str::tolower(file.substr(pos+1)), c);
 }
 
-bool scan(const std::string& file, MetadataConsumer& c)
+bool scan(const std::string& file, metadata::Consumer& c)
 {
 	string md_fname = file + ".metadata";
 	auto_ptr<struct stat> st_file = sys::fs::stat(file);
@@ -107,7 +108,7 @@ bool scan(const std::string& file, MetadataConsumer& c)
 	}
 }
 
-bool scan(const std::string& file, const std::string& format, MetadataConsumer& c)
+bool scan(const std::string& file, const std::string& format, metadata::Consumer& c)
 {
 	string md_fname = file + ".metadata";
 	auto_ptr<struct stat> st_file = sys::fs::stat(file);

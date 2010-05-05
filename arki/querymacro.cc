@@ -23,6 +23,7 @@
 #include <arki/querymacro.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/summary.h>
 #include <arki/dataset/gridquery.h>
 #include <arki/nag.h>
@@ -65,7 +66,7 @@ static int arkilua_metadataconsumer(lua_State *L)
 	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
 
 	int considx = lua_upvalueindex(1);
-	MetadataConsumer* cons = (MetadataConsumer*)lua_touserdata(L, considx);
+	metadata::Consumer* cons = (metadata::Consumer*)lua_touserdata(L, considx);
 
 	lua_pushboolean(L, (*cons)(*md));
 	return 1;
@@ -183,7 +184,7 @@ ReadonlyDataset* Querymacro::dataset(const std::string& name)
 	return i->second;
 }
 
-void Querymacro::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Querymacro::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	if (funcid_querydata == -1) return;
 

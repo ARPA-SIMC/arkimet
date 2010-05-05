@@ -25,14 +25,14 @@
 
 #include <string>
 #include <map>
-#include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 
 namespace arki {
 namespace postproc {
 class Subcommand;
 }
 
-class Postprocess : public MetadataConsumer
+class Postprocess : public metadata::Consumer
 {
 protected:
 	postproc::Subcommand* m_child;

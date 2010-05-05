@@ -20,11 +20,11 @@
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/reader.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/configfile.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/utils/metadata.h>
 #include <wibble/sys/fs.h>
 #include <wibble/grcal/grcal.h>
 
@@ -669,7 +669,7 @@ void to::test<10>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	utils::metadata::Collector mdc;
+	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -722,7 +722,7 @@ void to::test<11>()
 		// duplicate items
 		Reader reader(cfg);
 		ensure(reader.hasWorkingIndex());
-		utils::metadata::Collector mdc;
+		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
 		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -759,7 +759,7 @@ void to::test<11>()
 	// Test querying, and see that things have moved to the beginning
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	utils::metadata::Collector mdc;
+	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
@@ -891,7 +891,7 @@ void to::test<13>()
 	// Test querying
 	Reader reader(cfg);
 	ensure(reader.hasWorkingIndex());
-	utils::metadata::Collector mdc;
+	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
 	ensure_equals(mdc.size(), 3u);
 
@@ -1172,7 +1172,7 @@ void to::test<18>()
 
 	// Compress one data file
 	{
-		utils::metadata::Collector mdc;
+		metadata::Collection mdc;
 		Reader reader(cfg);
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);

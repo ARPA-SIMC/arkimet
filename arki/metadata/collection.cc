@@ -1,7 +1,7 @@
 /*
- * utils/metadata - Useful functions for working with metadata
+ * metadata/collection - In-memory collection of metadata
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/utils/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/codec.h>
@@ -44,10 +44,34 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
-namespace utils {
 namespace metadata {
+
+/**
+ * Write metadata to a file, atomically.
+ *
+ * The file will be created with a temporary name, and then renamed to its
+ * final name.
+ *
+ * Note: the temporary file name will NOT be created securely.
+ */
+struct AtomicWriter
+{
+	std::string fname;
+	std::string tmpfname;
+	std::ofstream* outmd;
+
+	AtomicWriter(const std::string& fname);
+	~AtomicWriter();
+
+	std::ofstream& out() { return *outmd; }
+
+	void commit();
+	void rollback();
+};
+
 
 static void compressAndWrite(const std::string& buf, std::ostream& out, const std::string& fname)
 {
@@ -68,7 +92,7 @@ static void compressAndWrite(const std::string& buf, std::ostream& out, const st
 		out.write(buf.data(), buf.size());
 }
 
-void Collector::writeTo(std::ostream& out, const std::string& fname) const
+void Collection::writeTo(std::ostream& out, const std::string& fname) const
 {
 	static const size_t blocksize = 256;
 
@@ -86,14 +110,14 @@ void Collector::writeTo(std::ostream& out, const std::string& fname) const
 		compressAndWrite(buf, out, fname);
 }
 
-void Collector::writeAtomically(const std::string& fname) const
+void Collection::writeAtomically(const std::string& fname) const
 {
 	AtomicWriter writer(fname);
 	writeTo(writer.out(), writer.tmpfname);
 	writer.commit();
 }
 
-void Collector::appendTo(const std::string& fname) const
+void Collection::appendTo(const std::string& fname) const
 {
 	std::ofstream outmd;
 	outmd.open(fname.c_str(), ios::out | ios::app);
@@ -103,7 +127,7 @@ void Collector::appendTo(const std::string& fname) const
 	outmd.close();
 }
 
-void Collector::queryData(const dataset::DataQuery& q, MetadataConsumer& consumer)
+void Collection::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	// First ask the index.  If it can do something useful, iterate with it
 	//
@@ -112,7 +136,7 @@ void Collector::queryData(const dataset::DataQuery& q, MetadataConsumer& consume
 	//
 	// For each directory try to match its summary first, and if it matches
 	// then produce all the contents.
-	MetadataConsumer* c = &consumer;
+	metadata::Consumer* c = &consumer;
 	auto_ptr<sort::Stream> sorter;
 	auto_ptr<ds::TemporaryDataInliner> inliner;
 
@@ -135,7 +159,7 @@ void Collector::queryData(const dataset::DataQuery& q, MetadataConsumer& consume
 				break;
 }
 
-void Collector::querySummary(const Matcher& matcher, Summary& summary)
+void Collection::querySummary(const Matcher& matcher, Summary& summary)
 {
 	using namespace wibble::str;
 
@@ -145,7 +169,7 @@ void Collector::querySummary(const Matcher& matcher, Summary& summary)
 			summary.add(*i);
 }
 
-std::string Collector::ensureContiguousData(const std::string& source) const
+std::string Collection::ensureContiguousData(const std::string& source) const
 {
 	// Check that the metadata completely cover the data file
 	if (empty()) return std::string();
@@ -178,7 +202,7 @@ std::string Collector::ensureContiguousData(const std::string& source) const
 	return fname;
 }
 
-void Collector::compressDataFile(size_t groupsize, const std::string& source) const
+void Collection::compressDataFile(size_t groupsize, const std::string& source) const
 {
 	string datafile = ensureContiguousData(source);
 
@@ -306,13 +330,6 @@ void AtomicWriter::rollback()
 	}
 }
 
-bool Summarise::operator()(Metadata& md)
-{
-	s.add(md);
-	return true;
-}
-
-}
 }
 }
 // vim:set ts=4 sw=4:

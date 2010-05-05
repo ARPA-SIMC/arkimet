@@ -27,8 +27,11 @@
 
 namespace arki {
 class Metadata;
-class MetadataConsumer;
 class Summary;
+
+namespace metadata {
+class Consumer;
+}
 
 namespace dataset {
 namespace ondisk {

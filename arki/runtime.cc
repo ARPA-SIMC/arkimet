@@ -245,7 +245,7 @@ bool CommandLine::parse(int argc, const char* argv[])
 	return false;
 }
 
-struct YamlProcessor : public DatasetProcessor, public MetadataConsumer
+struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
 {
         Formatter* formatter;
 	Output& output;
@@ -342,7 +342,7 @@ struct BinaryProcessor : public DatasetProcessor
 	}
 };
 
-struct DataProcessor : public DatasetProcessor, public MetadataConsumer
+struct DataProcessor : public DatasetProcessor, public metadata::Consumer
 {
 	Output& output;
 	Summary* summary;
