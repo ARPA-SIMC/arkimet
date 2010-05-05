@@ -25,6 +25,7 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/utils/metadata.h>
+#include <arki/utils/files.h>
 #include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
 
@@ -180,6 +181,89 @@ void to::test<6>()
 
 // Retest with sqlite
 template<> template<> void to::test<7>() { ForceSqlite fs; test<6>(); }
+
+namespace {
+struct IndexingCollector : public MaintenanceCollector
+{
+	Manifest& m;
+	const Summary& s;
+	time_t mtime;
+
+	IndexingCollector(Manifest& m, const Summary& s, time_t mtime) : m(m), s(s), mtime(mtime) {}
+
+	virtual void operator()(const std::string& file, State state)
+	{
+		MaintenanceCollector::operator()(file, state);
+		int n = atoi(file.c_str());
+		if (n > 10) m.acquire(str::fmtf("%02d.grib1", n - 10), mtime, s);
+		if (n < 50) m.acquire(str::fmtf("%02d.grib1", n + 10), mtime, s);
+	}
+};
+}
+
+// Test modifying index during maintenance
+template<> template<>
+void to::test<8>()
+{
+	// Start with 4 data files
+	system("cp -a inbound/test.grib1 testds/.archive/last/10.grib1");
+	system("cp -a inbound/test.grib1 testds/.archive/last/20.grib1");
+	system("cp -a inbound/test.grib1 testds/.archive/last/30.grib1");
+	system("cp -a inbound/test.grib1 testds/.archive/last/40.grib1");
+	system("cp -a inbound/test.grib1 testds/.archive/last/50.grib1");
+	time_t mtime = files::timestamp("inbound/test.grib1");
+
+	// Generate their metadata and summary files
+	metadata::Collector mdc;
+	Summary s;
+	metadata::Summarise summarise(s);
+	scan::scan("inbound/test.grib1", mdc);
+	mdc.sendTo(summarise);
+	for (int i = 10; i <= 50; i += 10)
+	{
+		mdc.writeAtomically(str::fmtf("testds/.archive/last/%02d.grib1.metadata", i));
+		s.writeAtomically(str::fmtf("testds/.archive/last/%02d.grib1.summary", i));
+	}
+
+	// Build index
+	{
+		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		m->openRW();
+		m->acquire("10.grib1", mtime, s);
+		//m->acquire("20.grib1", mtime, s);
+		m->acquire("30.grib1", mtime, s);
+		//m->acquire("40.grib1", mtime, s);
+		m->acquire("50.grib1", mtime, s);
+	}
+
+	// Check and messily fix
+	{
+		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		IndexingCollector c(*m, s, mtime);
+		m->openRW();
+		m->check(c);
+		ensure_equals(c.fileStates.size(), 5u);
+		ensure_equals(c.count(TO_INDEX), 2u);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
+
+	// Check again, everything should be fine
+	{
+		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		MaintenanceCollector c;
+		m->openRO();
+		m->check(c);
+		ensure_equals(c.fileStates.size(), 5u);
+		ensure_equals(c.count(OK), 5u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
+}
+
+// Retest with sqlite
+template<> template<> void to::test<9>() { ForceSqlite fs; test<8>(); }
 
 
 }
