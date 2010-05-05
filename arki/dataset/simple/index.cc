@@ -445,6 +445,7 @@ public:
 		std::vector<std::string> disk = scan::dir(m_path, true);
 		std::sort(disk.begin(), disk.end(), sorter);
 
+		vector<Info> info = this->info;
 		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
 		{
 			while (not disk.empty() and disk.back() < i->file)
