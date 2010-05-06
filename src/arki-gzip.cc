@@ -23,9 +23,7 @@
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
 #include <wibble/sys/fs.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/utils/compress.h>
+#include <arki/scan/any.h>
 #include <arki/runtime.h>
 
 #include <fstream>
@@ -49,25 +47,18 @@ namespace commandline {
 
 struct Options : public StandardParserWithManpage
 {
+	BoolOption* keep;
+
 	Options() : StandardParserWithManpage("arki-gzip", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
-		usage = "[options] [input,d [inputmd...]]";
-		description =
-			"Gzip the data file pointed by the given metadata files";
+		usage = "[options] [inputfile [inputfile...]]";
+		description = "Compress the given data files";
+
+		keep = add<BoolOption>("keep", 'k', "keep", "", "do not delete uncompressed file");
 	}
 };
 
 }
-}
-
-static void do_mdfile(const std::string& mdfile, size_t groupsize = 128)
-{
-	using namespace metadata;
-
-	Collection mdc;
-	Metadata::readFile(mdfile, mdc);
-
-	mdc.compressDataFile(groupsize, "metadata file " + mdfile);
 }
 
 int main(int argc, const char* argv[])
@@ -81,7 +72,10 @@ int main(int argc, const char* argv[])
 
 		while (opts.hasNext())
 		{
-			do_mdfile(opts.next());
+			string fname = opts.next();
+			scan::compress(fname);
+			if (!opts.keep->boolValue())
+				sys::fs::deleteIfExists(fname);
 		}
 
 		return 0;
