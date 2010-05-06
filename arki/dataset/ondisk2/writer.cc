@@ -289,58 +289,7 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	m_idx.scan_files(hf);
 	hf.end();
 	fm.end();
-	if (hasArchive())
-		archive().maintenance(v);
-}
-
-void Writer::repack(std::ostream& log, bool writable)
-{
-	using namespace writer;
-
-	if (files::hasDontpackFlagfile(m_path))
-	{
-		log << m_path << ": dataset needs checking first" << endl;
-		return;
-	}
-
-	auto_ptr<maintenance::Agent> repacker;
-
-	if (writable)
-		// No safeguard against a deleted index: we catch that in the
-		// constructor and create the don't pack flagfile
-		repacker.reset(new maintenance::RealRepacker(log, *this));
-	else
-		repacker.reset(new maintenance::MockRepacker(log, *this));
-	try {
-		maintenance(*repacker);
-		repacker->end();
-	} catch (...) {
-		files::createDontpackFlagfile(m_path);
-		throw;
-	}
-}
-
-void Writer::check(std::ostream& log, bool fix, bool quick)
-{
-	using namespace writer;
-
-	if (fix)
-	{
-		maintenance::RealFixer fixer(log, *this);
-		try {
-			maintenance(fixer, quick);
-			fixer.end();
-		} catch (...) {
-			files::createDontpackFlagfile(m_path);
-			throw;
-		}
-
-		files::removeDontpackFlagfile(m_path);
-	} else {
-		maintenance::MockFixer fixer(log, *this);
-		maintenance(fixer, quick);
-		fixer.end();
-	}
+	WritableLocal::maintenance(v, quick);
 }
 
 namespace {

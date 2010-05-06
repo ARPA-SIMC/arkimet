@@ -35,6 +35,10 @@ class Matcher;
 namespace dataset {
 struct Archives;
 
+namespace maintenance {
+class MaintFileVisitor;
+}
+
 /**
  * Base class for local datasets
  */
@@ -80,6 +84,38 @@ public:
 	const Archives& archive() const;
 
 	// Maintenance functions
+
+	/**
+	 * Perform dataset maintenance, sending information to \a v
+	 *
+	 * Subclassers should call WritableLocal's maintenance method at the
+	 * end of their own maintenance, as it takes care of performing
+	 * maintainance of archives, if present.
+	 *
+	 * @params v
+	 *   The visitor-style class that gets notified of the state of the
+	 *   various files in the dataset
+	 * @params quick
+	 *   If false, contents of the data files will also be checked for
+	 *   consistency
+	 */
+	virtual void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
+
+	/**
+	 * Repack the dataset, logging status to the given file.
+	 *
+	 * If writable is false, the process is simulated but no changes are
+	 * saved.
+	 */
+	virtual void repack(std::ostream& log, bool writable=false);
+
+	/**
+	 * Check the dataset for errors, logging status to the given file.
+	 *
+	 * If \a fix is false, the process is simulated but no changes are saved.
+	 * If \a fix is true, errors are fixed.
+	 */
+	virtual void check(std::ostream& log, bool fix, bool quick);
 
 	/**
 	 * Consider all existing metadata about a file as invalid and rebuild

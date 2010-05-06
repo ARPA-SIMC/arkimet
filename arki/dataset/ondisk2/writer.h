@@ -39,7 +39,6 @@ class TargetFile;
 
 namespace maintenance {
 class MaintFileVisitor;
-class Agent;
 }
 
 namespace ondisk2 {
@@ -95,26 +94,7 @@ public:
 
 	virtual void flush();
 
-	/**
-	 * Perform dataset maintenance, sending information to \a v
-	 */
-	void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
-
-	/**
-	 * Repack the dataset, logging status to the given file.
-	 *
-	 * If writable is false, the process is simulated but no changes are
-	 * saved.
-	 */
-	virtual void repack(std::ostream& log, bool writable=false);
-
-	/**
-	 * Check the dataset for errors, logging status to the given file.
-	 *
-	 * If \a fix is false, the process is simulated but no changes are saved.
-	 * If \a fix is true, errors are fixed.
-	 */
-	virtual void check(std::ostream& log, bool fix, bool quick);
+	virtual void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
 
 	virtual void rescanFile(const std::string& relpath);
 	virtual size_t repackFile(const std::string& relpath);

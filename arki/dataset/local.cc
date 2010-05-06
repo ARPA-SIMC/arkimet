@@ -22,6 +22,8 @@
 
 #include <arki/dataset/local.h>
 #include <arki/dataset/archive.h>
+#include <arki/dataset/maintenance.h>
+#include <arki/utils/files.h>
 #include <arki/configfile.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -32,6 +34,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -147,6 +150,58 @@ const Archives& WritableLocal::archive() const
 	if (!m_archive)
 		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
 	return *m_archive;
+}
+
+void WritableLocal::maintenance(maintenance::MaintFileVisitor& v, bool quick)
+{
+	if (hasArchive())
+		archive().maintenance(v);
+}
+
+void WritableLocal::repack(std::ostream& log, bool writable)
+{
+	if (files::hasDontpackFlagfile(m_path))
+	{
+		log << m_path << ": dataset needs checking first" << endl;
+		return;
+	}
+
+	auto_ptr<maintenance::Agent> repacker;
+
+	if (writable)
+		// No safeguard against a deleted index: we catch that in the
+		// constructor and create the don't pack flagfile
+		repacker.reset(new maintenance::RealRepacker(log, *this));
+	else
+		repacker.reset(new maintenance::MockRepacker(log, *this));
+	try {
+		maintenance(*repacker);
+		repacker->end();
+	} catch (...) {
+		files::createDontpackFlagfile(m_path);
+		throw;
+	}
+}
+
+void WritableLocal::check(std::ostream& log, bool fix, bool quick)
+{
+	if (fix)
+	{
+		maintenance::RealFixer fixer(log, *this);
+		try {
+			maintenance(fixer, quick);
+			fixer.end();
+		} catch (...) {
+			files::createDontpackFlagfile(m_path);
+			throw;
+		}
+
+		files::removeDontpackFlagfile(m_path);
+	} else {
+		maintenance::MockFixer fixer(log, *this);
+		maintenance(fixer, quick);
+		fixer.end();
+	}
 }
 
 

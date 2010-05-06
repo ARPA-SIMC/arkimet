@@ -73,7 +73,7 @@ Writer::Writer(const ConfigFile& cfg)
 
 	// If the index is missing, take note not to perform a repack until a
 	// check is made
-	if (!sys::fs::access(str::joinpath(m_path, "index.sqlite"), F_OK))
+	if (!simple::Manifest::exists(m_path))
 		files::createDontpackFlagfile(m_path);
 
 	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_path);
@@ -155,7 +155,11 @@ void Writer::remove(const std::string& id)
 
 void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
+	// TODO Detect if data is not in reftime order
+	// TODO Detect if files are to be moved to archive
+
 	m_mft->check(v, quick);
+	WritableLocal::maintenance(v, quick);
 }
 
 void Writer::flush()
@@ -168,39 +172,6 @@ void Writer::flush()
 	}
 	m_df_cache.clear();
 	m_mft->flush();
-}
-
-void Writer::repack(std::ostream& log, bool writable)
-{
-	// TODO Sort data in reftime order
-	// TODO Regenerate summary or metadata if timestamp show it's needed
-	// TODO Move files to archive
-	auto_ptr<maintenance::Agent> repacker;
-
-	if (writable)
-		// No safeguard against a deleted index: we catch that in the
-		// constructor and create the don't pack flagfile
-		repacker.reset(new maintenance::RealRepacker(log, *this));
-	else
-		repacker.reset(new maintenance::MockRepacker(log, *this));
-
-	maintenance(*repacker);
-	repacker->end();
-}
-
-void Writer::check(std::ostream& log, bool fix, bool quick)
-{
-	// TODO Regenerate summary or metadata if timestamp show it's needed
-	if (fix)
-	{
-		maintenance::RealFixer fixer(log, *this);
-		maintenance(fixer, quick);
-		fixer.end();
-	} else {
-		maintenance::MockFixer fixer(log, *this);
-		maintenance(fixer, quick);
-		fixer.end();
-	}
 }
 
 void Writer::rescanFile(const std::string& relpath)
