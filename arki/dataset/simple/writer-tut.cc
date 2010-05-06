@@ -195,6 +195,7 @@ void to::test<1>()
 	ensure(files::timestamp("testds/2007/07-08.grib1") <= files::timestamp("testds/2007/07-08.grib1.metadata"));
 	ensure(files::timestamp("testds/2007/07-08.grib1.metadata") <= files::timestamp("testds/2007/07-08.grib1.summary"));
 	ensure(files::timestamp("testds/2007/07-08.grib1.summary") <= files::timestamp("testds/" + idxfname()));
+	ensure(files::hasDontpackFlagfile("testds"));
 
 	
 	{
@@ -290,6 +291,7 @@ void to::test<3>()
 		ensure_equals(c.count(TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
+		ensure(files::hasDontpackFlagfile("testds"));
 	}
 
 	{
@@ -306,13 +308,17 @@ void to::test<3>()
 		s.str(std::string());
 		writer.repack(s, true);
 		ensure_equals(s.str(), string()); // Nothing should have happened
+		ensure(not files::hasDontpackFlagfile("testds"));
 	}
 
 	// Everything should be fine now
 	ensure_simpleds_clean(cfg, 1, 3);
 
-	// Restart again
-	setup();
+	// Remove the file from the index
+	{
+		dataset::simple::Writer writer(cfg);
+		writer.removeFile("2007/07-08.grib1", false);
+	}
 
 	// Repack should delete the files not in index
 	{
@@ -397,6 +403,7 @@ void to::test<4>()
 	// Restart again
 	clean_and_import();
 	setup();
+	files::removeDontpackFlagfile("testds");
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
 	// Repack here should act as if the dataset were empty
@@ -489,6 +496,7 @@ void to::test<5>()
 	// Restart again
 	clean_and_import();
 	setup();
+	files::removeDontpackFlagfile("testds");
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
 	// Repack here should act as if the dataset were empty
@@ -609,6 +617,7 @@ void to::test<6>()
 	// Restart again
 	clean_and_import();
 	setup();
+	files::removeDontpackFlagfile("testds");
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 	setup.removemd();
 
