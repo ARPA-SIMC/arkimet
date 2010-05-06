@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/metadata/consumer.h>
 #include <wibble/sys/buffer.h>
 #include <string>
 #include <vector>
@@ -141,6 +142,49 @@ struct SeekIndex
  *   Refers to the uncompressed file name (i.e. without the trailing .gz)
  */
 off_t filesize(const std::string& file);
+
+/**
+ * Create a file with a compressed version of the data described by the
+ * metadata that it receives.
+ *
+ * It also creates a compressed file index for faster seeking in the compressed
+ * file.
+ */
+class DataCompressor : public metadata::Consumer
+{
+protected:
+	// Output file name
+	std::string outfile;
+	// Number of data items in a compressed block
+	size_t groupsize;
+	// Compressed output
+	int outfd;
+	// Index output
+	int outidx;
+	// Compressor
+	ZlibCompressor compressor;
+	// Output buffer for the compressor
+	wibble::sys::Buffer outbuf;
+	// Offset of end of last uncompressed data read
+	off_t unc_ofs;
+	// Offset of end of last uncompressed block written
+	off_t last_unc_ofs;
+	// Offset of end of last compressed data written
+	off_t last_ofs;
+	// Number of data compressed so far
+	size_t count;
+
+	// End one compressed block
+	void endBlock(bool final=false);
+
+public:
+	DataCompressor(const std::string& outfile, size_t groupsize = 512);
+	~DataCompressor();
+
+	virtual bool operator()(Metadata& md);
+
+	void flush();
+};
 
 }
 }

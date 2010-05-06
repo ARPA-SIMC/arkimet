@@ -31,6 +31,7 @@
 #include <arki/types/run.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
+#include <arki/utils/compress.h>
 #include <wibble/sys/fs.h>
 
 #include "config.h"
@@ -315,6 +316,26 @@ void to::test<2>()
 	ensure_equals(mdc[2].get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
 	ensure_equals(mdc[2].get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
 #endif
+}
+
+// Test compression
+template<> template<>
+void to::test<3>()
+{
+	// Create a test file with 9 gribs inside
+	system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
+	system("cp a.grib1 b.grib1");
+
+	// Compress
+	scan::compress("b.grib1", 5);
+	sys::fs::deleteIfExists("b.grib1");
+
+	{
+		utils::compress::TempUnzip tu("b.grib1");
+		metadata::Counter c;
+		scan::scan("b.grib1", c);
+		ensure_equals(c.count, 9u);
+	}
 }
 
 }

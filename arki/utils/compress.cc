@@ -22,6 +22,7 @@
 
 #include <arki/utils/compress.h>
 #include <arki/utils.h>
+#include <arki/metadata.h>
 #include <wibble/exception.h>
 
 #include "config.h"
@@ -302,6 +303,101 @@ off_t filesize(const std::string& file)
 
 	// If everything fails, return 0
 	return 0;
+}
+
+
+DataCompressor::DataCompressor(const std::string& outfile, size_t groupsize)
+	: outfile(outfile), groupsize(groupsize), outfd(-1), outidx(-1), outbuf(4096*2),
+	  unc_ofs(0), last_unc_ofs(0), last_ofs(0), count(0)
+{
+	// Open output compressed file
+	string outfname = outfile + ".gz";
+	outfd = open(outfname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
+	if (outfd < 0)
+		throw wibble::exception::File(outfname, "creating file");
+
+	// Open output index
+	string idxfname = outfile + ".gz.idx";
+	outidx = open(idxfname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
+	if (outidx < 0)
+		throw wibble::exception::File(idxfname, "creating file");
+}
+
+DataCompressor::~DataCompressor()
+{
+	flush();
+}
+
+bool DataCompressor::operator()(Metadata& md)
+{
+	// Compress data
+	wibble::sys::Buffer buf = md.getData();
+	compressor.feedData(buf.data(), buf.size());
+	while (true)
+	{
+		size_t len = compressor.get(outbuf, false);
+		if (len > 0)
+		{
+			if (write(outfd, outbuf.data(), (size_t)len) != (ssize_t)len)
+				throw wibble::exception::File(outfile + ".gz", "writing data");
+		}
+		if (len < outbuf.size())
+			break;
+	}
+
+	Item<types::source::Blob> src = md.source.upcast<types::source::Blob>();
+	unc_ofs += src->size;
+
+	if (count > 0 && (count % groupsize) == 0)
+		endBlock();
+
+	++count;
+
+	return true;
+}
+
+void DataCompressor::endBlock(bool final)
+{
+	while (true)
+	{
+		size_t len = compressor.get(outbuf, true);
+		if (len > 0)
+		{
+			if (write(outfd, outbuf.data(), (size_t)len) != (ssize_t)len)
+				throw wibble::exception::File(outfile + ".gz", "writing data");
+		}
+		if (len < outbuf.size())
+			break;
+	}
+
+	// Write last block size to the index
+	off_t cur = lseek(outfd, 0, SEEK_CUR);
+	uint32_t ofs = htonl(unc_ofs - last_unc_ofs);
+	uint32_t last_size = htonl(cur - last_ofs);
+	::write(outidx, &ofs, sizeof(ofs));
+	::write(outidx, &last_size, sizeof(last_size));
+	last_ofs = cur;
+	last_unc_ofs = unc_ofs;
+
+	if (!final) compressor.restart();
+}
+
+void DataCompressor::flush()
+{
+	if (outfd != -1 && outidx != -1)
+		if (unc_ofs > 0 && last_unc_ofs != unc_ofs)
+			endBlock(true);
+
+	if (outfd != -1)
+	{
+		close(outfd);
+		outfd = -1;
+	}
+	if (outidx != -1)
+	{
+		close(outidx);
+		outidx = -1;
+	}
 }
 
 }

@@ -202,80 +202,21 @@ std::string Collection::ensureContiguousData(const std::string& source) const
 	return fname;
 }
 
-void Collection::compressDataFile(size_t groupsize, const std::string& source) const
+void Collection::compressDataFile(size_t groupsize, const std::string& source)
 {
 	string datafile = ensureContiguousData(source);
 
-	// Open output compressed file
-	string outfname = datafile + ".gz";
-	int outfd = open(outfname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
-	if (outfd < 0)
-		throw wibble::exception::File(outfname, "creating file");
-	utils::HandleWatch hwoutfd(outfname, outfd);
-
-	// Open output index
-	string idxfname = datafile + ".gz.idx";
-	int outidx = open(idxfname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
-	if (outidx < 0)
-		throw wibble::exception::File(idxfname, "creating file");
-	utils::HandleWatch hwoutidx(idxfname, outidx);
-
-	// Start compressor
-	utils::compress::ZlibCompressor compressor;
-
-	// Output buffer for the compressor
-	sys::Buffer outbuf(4096*2);
-
-	// Compress data
-	off_t last_unc_ofs = 0;
-	off_t last_ofs = 0;
-	for (size_t i = 0; i < size(); ++i)
-	{
-		wibble::sys::Buffer buf = (*this)[i].getData();
-		bool flush = (i == size() - 1) || (i > 0 && (i % groupsize) == 0);
-
-		compressor.feedData(buf.data(), buf.size());
-		while (true)
-		{
-			size_t len = compressor.get(outbuf, flush);
-			if (len > 0)
-			{
-				if (write(outfd, outbuf.data(), (size_t)len) != (ssize_t)len)
-					throw wibble::exception::File(outfname, "writing data");
-			}
-			if (len < outbuf.size())
-				break;
-		}
-
-		if (flush)
-		{
-			// Write last block size to the index
-			Item<types::source::Blob> src = (*this)[i].source.upcast<types::source::Blob>();
-			size_t unc_ofs = src->offset + src->size;
-
-			off_t cur = lseek(outfd, 0, SEEK_CUR);
-			uint32_t ofs = htonl(unc_ofs - last_unc_ofs);
-			uint32_t last_size = htonl(cur - last_ofs);
-			::write(outidx, &ofs, sizeof(ofs));
-			::write(outidx, &last_size, sizeof(last_size));
-			last_ofs = cur;
-			last_unc_ofs = unc_ofs;
-
-			if (i < size() - 1)
-				compressor.restart();
-		}
-	}
+	utils::compress::DataCompressor compressor(datafile, groupsize);
+	sendTo(compressor);
+	compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
 	std::auto_ptr<struct stat> st = sys::fs::stat(datafile);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;
-	utime(outfname.c_str(), &times);
-
-	hwoutfd.close();
-	hwoutidx.close();
-
+	utime((datafile + ".gz").c_str(), &times);
+	utime((datafile + ".gz.idx").c_str(), &times);
 	// TODO: delete uncompressed version
 }
 

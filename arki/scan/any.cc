@@ -26,9 +26,11 @@
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/utils/files.h>
+#include <arki/utils/compress.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
+#include <utime.h>
 
 #ifdef HAVE_GRIBAPI
 #include <arki/scan/grib.h>
@@ -166,6 +168,23 @@ time_t timestamp(const std::string& file)
 	time_t res = files::timestamp(file);
 	if (res != 0) return res;
 	return files::timestamp(file + ".gz");
+}
+
+void compress(const std::string& file, size_t groupsize)
+{
+	compress::DataCompressor compressor(file, groupsize);
+	scan(file, compressor);
+	compressor.flush();
+
+	// Set the same timestamp as the uncompressed file
+	std::auto_ptr<struct stat> st = sys::fs::stat(file);
+	struct utimbuf times;
+	times.actime = st->st_atime;
+	times.modtime = st->st_mtime;
+	utime((file + ".gz").c_str(), &times);
+	utime((file + ".gz.idx").c_str(), &times);
+
+	// TODO: delete uncompressed version
 }
 
 const Validator& Validator::by_encoding(const std::string& encoding)

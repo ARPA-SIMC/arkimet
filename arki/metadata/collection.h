@@ -89,7 +89,7 @@ struct Collection : public std::vector<Metadata>, public Consumer, public Readon
 	 * If all the metadata here entirely cover a single data file, replace
 	 * it with a compressed version
 	 */
-	void compressDataFile(size_t groupsize = 512, const std::string& source = std::string("metadata")) const;
+	void compressDataFile(size_t groupsize = 512, const std::string& source = std::string("metadata"));
 };
 
 }

@@ -81,6 +81,11 @@ bool isCompressed(const std::string& file);
 time_t timestamp(const std::string& file);
 
 /**
+ * Compress the given file
+ */
+void compress(const std::string& file, size_t groupsize = 512);
+
+/**
  * Validate data
  */
 struct Validator
