@@ -147,6 +147,13 @@ bool canScan(const std::string& file)
 	return false;
 }
 
+bool exists(const std::string& file)
+{
+	if (sys::fs::access(file, F_OK)) return true;
+	if (sys::fs::access(file + ".gz", F_OK)) return true;
+	return false;
+}
+
 const Validator& Validator::by_encoding(const std::string& encoding)
 {
 #ifdef HAVE_GRIBAPI

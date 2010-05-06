@@ -113,6 +113,7 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 	{
 		string fullpath = str::joinpath(absdir, *i);
+		if (!scan::exists(fullpath)) continue;
 		prepender.path = str::dirname(fullpath);
 		scan::scan(fullpath, filter);
 	}

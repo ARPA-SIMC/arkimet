@@ -651,6 +651,89 @@ void to::test<6>()
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 }
 
+// Test maintenance scan on dataset with a file indexed but missing
+template<> template<>
+void to::test<7>()
+{
+	struct Setup {
+		void operator() ()
+		{
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1.metadata");
+			sys::fs::deleteIfExists("testds/2007/07-08.grib1");
+		}
+	} setup;
+
+	clean_and_import();
+	setup();
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+	// Query is ok
+	{
+		dataset::simple::Reader reader(cfg);
+		metadata::Collection mdc;
+		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 2u);
+	}
+
+	// Maintenance should show one file to rescan
+	{
+		MaintenanceCollector c;
+		Writer writer(cfg);
+		writer.maintenance(c);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
+
+	// Fix the dataset
+	{
+		stringstream s;
+		Writer writer(cfg);
+
+		// Check should reindex the file
+		writer.check(s, true, true);
+		ensure_equals(s.str(),
+			"testds: deindexed 2007/07-08.grib1\n"
+			"testds: 1 file removed from index.\n");
+
+		// Repack should do nothing
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+
+	// Everything should be fine now
+	ensure_simpleds_clean(cfg, 2, 2);
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+
+	// Restart again
+	clean_and_import();
+	setup();
+	files::removeDontpackFlagfile("testds");
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+
+	// Repack here should act as if the dataset were empty
+	{
+		stringstream s;
+		Writer writer(cfg);
+
+		// Repack should tidy up the index
+		s.str(std::string());
+		writer.repack(s, true);
+		ensure_equals(s.str(),
+			"testds: deleted from index 2007/07-08.grib1\n"
+			"testds: 1 file removed from index.\n");
+	}
+
+	// And everything else should still be queriable
+	ensure_simpleds_clean(cfg, 2, 2);
+	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
+}
+
 #if 0
 // Test handling of empty archive dirs (such as last with everything moved away)
 template<> template<>
@@ -673,12 +756,13 @@ void to::test<7>()
 #endif
 
 // Retest with sqlite
-template<> template<> void to::test<7>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<8>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<9>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<6>(); }
+template<> template<> void to::test<8>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<9>() { ForceSqlite fs; test<2>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; test<3>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
 
 
 }

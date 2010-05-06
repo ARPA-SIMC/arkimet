@@ -1,8 +1,10 @@
 arkimet (0.42-1) UNRELEASED; urgency=low
 
   * Don't leave needs-check-do-not-pack files around in simple datasets
+  * Don't fail when querying simple datasets and archives after one data file
+    has been deleted but not deindexed
 
- -- Enrico Zini <enrico@debian.org>  Thu, 06 May 2010 16:23:36 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 06 May 2010 17:31:29 +0100
 
 arkimet (0.41-1) UNRELEASED; urgency=low
 

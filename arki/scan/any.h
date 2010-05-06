@@ -65,6 +65,11 @@ bool scan(const std::string& file, const std::string& format, metadata::Consumer
 bool canScan(const std::string& file);
 
 /**
+ * Return true if the file exists, either uncompressed or compressed
+ */
+bool exists(const std::string& file);
+
+/**
  * Validate data
  */
 struct Validator
