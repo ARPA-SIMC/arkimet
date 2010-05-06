@@ -31,6 +31,8 @@ case "$1" in
 
 		rm -f trace_all.info
 		lcov -a trace_arki.info -a trace_src1.info -a trace_src2.info -o trace_all.info
+		lcov --remove trace_all.info "*-tut.cc" -o trace_all1.info 
+		lcov --remove trace_all1.info "/usr/include/*" -o trace_all.info 
 
 		genhtml trace_all.info --output-directory lcov --title "Test coverage" --show-details --legend
 		echo "Please point browser to file://`pwd`/lcov/index.html"
