@@ -105,7 +105,7 @@ Datafile* Writer::file(const std::string& pathname)
 	if (pos != string::npos)
 		wibble::sys::fs::mkpath(pn.substr(0, pos));
 
-	if (!sys::fs::access(pn, F_OK) && sys::fs::access(pn + ".gz", F_OK))
+	if (scan::isCompressed(pn))
 		throw wibble::exception::Consistency("accessing data file " + pathname,
 				"cannot update compressed data files: please manually uncompress it first");
 

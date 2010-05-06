@@ -127,7 +127,7 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 
 			// If the data file is compressed, create a temporary uncompressed copy
 			auto_ptr<utils::compress::TempUnzip> tu;
-			if (!sys::fs::access(fname, F_OK) && sys::fs::access(fname + ".gz", F_OK))
+			if (scan::isCompressed(fname))
 				tu.reset(new utils::compress::TempUnzip(fname));
 			
 			validator = &scan::Validator::by_filename(fname.c_str());

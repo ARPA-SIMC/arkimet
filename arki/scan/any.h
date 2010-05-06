@@ -24,6 +24,7 @@
  */
 
 #include <string>
+#include <ctime>
 
 namespace arki {
 
@@ -68,6 +69,16 @@ bool canScan(const std::string& file);
  * Return true if the file exists, either uncompressed or compressed
  */
 bool exists(const std::string& file);
+
+/**
+ * Return true if the file exists, and is compressed
+ */
+bool isCompressed(const std::string& file);
+
+/**
+ * Return the file mtime, whether it is compressed or not
+ */
+time_t timestamp(const std::string& file);
 
 /**
  * Validate data

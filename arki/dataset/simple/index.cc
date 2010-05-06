@@ -161,7 +161,7 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 
 	// Temporarily uncompress the file for scanning
 	auto_ptr<utils::compress::TempUnzip> tu;
-	if (!sys::fs::access(pathname, F_OK) && sys::fs::access(pathname + ".gz", F_OK))
+	if (scan::isCompressed(pathname))
 		tu.reset(new utils::compress::TempUnzip(pathname));
 
 	// Read the timestamp
@@ -461,9 +461,7 @@ public:
 
 				string pathname = str::joinpath(m_path, i->file);
 
-				time_t ts_data = files::timestamp(pathname);
-				if (ts_data == 0)
-					ts_data = files::timestamp(pathname + ".gz");
+				time_t ts_data = scan::timestamp(pathname);
 				time_t ts_md = files::timestamp(pathname + ".metadata");
 				time_t ts_sum = files::timestamp(pathname + ".summary");
 				time_t ts_idx = i->mtime;
@@ -734,9 +732,7 @@ public:
 
 				string pathname = str::joinpath(m_path, i->first);
 
-				time_t ts_data = files::timestamp(pathname);
-				if (ts_data == 0)
-					ts_data = files::timestamp(pathname + ".gz");
+				time_t ts_data = scan::timestamp(pathname);
 				time_t ts_md = files::timestamp(pathname + ".metadata");
 				time_t ts_sum = files::timestamp(pathname + ".summary");
 				time_t ts_idx = i->second;

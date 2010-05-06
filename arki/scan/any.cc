@@ -25,6 +25,7 @@
 #include <arki/scan/any.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
+#include <arki/utils/files.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
@@ -38,6 +39,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -152,6 +154,18 @@ bool exists(const std::string& file)
 	if (sys::fs::access(file, F_OK)) return true;
 	if (sys::fs::access(file + ".gz", F_OK)) return true;
 	return false;
+}
+
+bool isCompressed(const std::string& file)
+{
+        return !sys::fs::access(file, F_OK) && sys::fs::access(file + ".gz", F_OK);
+}
+
+time_t timestamp(const std::string& file)
+{
+	time_t res = files::timestamp(file);
+	if (res != 0) return res;
+	return files::timestamp(file + ".gz");
 }
 
 const Validator& Validator::by_encoding(const std::string& encoding)
