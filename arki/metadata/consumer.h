@@ -88,6 +88,19 @@ struct Summarise : public Consumer
 	bool operator()(Metadata& md);
 };
 
+struct Counter : public Consumer
+{
+	size_t count;
+
+	Counter() : count(0) {}
+
+	bool operator()(Metadata& md)
+	{
+		++count;
+		return true;
+	}
+};
+
 }
 }
 

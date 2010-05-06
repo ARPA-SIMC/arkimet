@@ -30,17 +30,6 @@ namespace arki {
 struct Metadata;
 struct Dispatcher;
 
-struct MetadataCounter : public metadata::Consumer
-{
-	size_t count;
-	MetadataCounter() : count(0) {}
-	bool operator()(Metadata& md)
-	{
-		++count;
-		return true;
-	}
-};
-
 namespace tests{
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc);
