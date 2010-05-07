@@ -28,6 +28,7 @@
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
 #include <arki/scan/any.h>
+#include <arki/sort.h>
 #include <arki/nag.h>
 
 #include <wibble/sys/fs.h>
@@ -66,53 +67,58 @@ namespace maintenance {
 
 
 HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick)
-	: next(next), m_root(root), quick(quick), validator(0), validator_fd(-1),
+	: next(next), m_root(root), last_file_size(0), quick(quick), validator(0), validator_fd(-1),
 	  has_hole(false), is_corrupted(false)
 {
 }
 
 void HoleFinder::finaliseFile()
 {
-	if (!last_file.empty())
+	if (last_file.empty())
+		return;
+
+	if (validator_fd >= 0)
 	{
-		if (validator_fd >= 0)
-		{
-			close(validator_fd);
-			validator_fd = -1;
-		}
-
-		if (is_corrupted)
-		{
-			nag::verbose("HoleFinder: %s found corrupted", last_file.c_str());
-			next(last_file, MaintFileVisitor::TO_RESCAN);
-			return;
-		}
-
-		off_t size = compress::filesize(str::joinpath(m_root, last_file));
-		if (size < last_file_size)
-		{
-			nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", last_file.c_str(), size, last_file_size);
-			// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-			next(last_file, MaintFileVisitor::TO_RESCAN);
-			return;
-		}
-
-		// Check if last_file_size matches the file size
-		if (size > last_file_size)
-			has_hole = true;
-
-		// Take note of files with holes
-		if (has_hole)
-		{
-			nag::verbose("HoleFinder: %s contains deleted data", last_file.c_str());
-			next(last_file, MaintFileVisitor::TO_PACK);
-		} else {
-			next(last_file, MaintFileVisitor::OK);
-		}
-
-		// Don't finalise the same file twice
-		last_file.clear();
+		close(validator_fd);
+		validator_fd = -1;
 	}
+
+	if (is_corrupted)
+	{
+		nag::verbose("HoleFinder: %s found corrupted", last_file.c_str());
+		next(last_file, MaintFileVisitor::TO_RESCAN);
+		return;
+	}
+
+	off_t size = compress::filesize(str::joinpath(m_root, last_file));
+	if (size < last_file_size)
+	{
+		nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", last_file.c_str(), size, last_file_size);
+		// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
+		next(last_file, MaintFileVisitor::TO_RESCAN);
+		return;
+	}
+
+	// Check if last_file_size matches the file size
+	if (size > last_file_size)
+		has_hole = true;
+
+	// Take note of files with holes
+	if (has_hole)
+	{
+		nag::verbose("HoleFinder: %s contains deleted data", last_file.c_str());
+		next(last_file, MaintFileVisitor::TO_PACK);
+	} else {
+		next(last_file, MaintFileVisitor::OK);
+	}
+
+	// Reset counters
+	last_file_size = 0;
+	has_hole = false;
+	is_corrupted = false;
+
+	// Don't finalise the same file twice
+	last_file.clear();
 }
 
 void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_t size)
@@ -121,9 +127,6 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 	{
 		finaliseFile();
 		last_file = file;
-		last_file_size = 0;
-		has_hole = false;
-		is_corrupted = false;
 		if (!quick)
 		{
 			string fname = str::joinpath(m_root, file);
@@ -150,12 +153,6 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 		try {
 			validator->validate(validator_fd, offset, size, file);
 		} catch (wibble::exception::Generic& e) {
-			// FIXME: we do not have a better interface to report
-			// error strings, so we fall back to cerr. It will be
-			// useless if we are hidden behind a graphical
-			// interface, but in all other cases it's better than
-			// nothing. HOWEVER, printing to stderr creates noise
-			// during the unit tests.
 			string fname = str::joinpath(m_root, file);
 			nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, size, e.desc().c_str());
 			is_corrupted = true;
@@ -187,7 +184,16 @@ void HoleFinder::scan(const std::string& file)
 	} hfc(file, *this);
 
 	string fname = str::joinpath(m_root, file);
-	scan::scan(fname, hfc);
+
+	// If the data file is compressed, create a temporary uncompressed copy
+	auto_ptr<utils::compress::TempUnzip> tu;
+	if (!quick && scan::isCompressed(fname))
+		tu.reset(new utils::compress::TempUnzip(fname));
+
+	metadata::Collection mdc;
+	scan::scan(fname, mdc);
+	mdc.sort(""); // Sort by reftime, to find items out of order
+	mdc.sendTo(hfc);
 	finaliseFile();
 }
 
