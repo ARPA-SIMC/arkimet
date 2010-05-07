@@ -22,6 +22,7 @@
 #include <arki/metadata/collection.h>
 #include <arki/dispatcher.h>
 #include <wibble/string.h>
+#include <wibble/regexp.h>
 #include <fstream>
 #include <strings.h>
 
@@ -52,6 +53,63 @@ void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& disp
 	inner_ensure_equals(res, Dispatcher::DISP_OK);
 	for (vector<Metadata>::iterator i = c.begin(); i != c.end(); ++i)
 		mdc(*i);
+}
+
+OutputChecker::OutputChecker() : split(false) {}
+
+void OutputChecker::splitIfNeeded()
+{
+	if (split) return;
+	Splitter splitter("[\n\r]+", REG_EXTENDED);
+	for (Splitter::const_iterator i = splitter.begin(str()); i != splitter.end(); ++i)
+		lines.push_back(" " + *i);
+	split = true;
+}
+
+std::string OutputChecker::join() const
+{
+	return str::join(lines.begin(), lines.end(), "\n");
+}
+
+void OutputChecker::impl_ensure_line_contains(const wibble::tests::Location& loc, const std::string& needle)
+{
+	splitIfNeeded();
+
+	bool found = false;
+	for (vector<string>::iterator i = lines.begin();
+			!found && i != lines.end(); ++i)
+	{
+		if ((*i)[0] == '!') continue;
+
+		if (i->find(needle) != std::string::npos )
+		{
+			(*i)[0] = '!';
+			found = true;
+		}
+	}
+	
+	if (!found)
+	{
+		std::stringstream ss;
+		ss << "'" << join() << "' does not contain '" << needle << "'";
+		throw tut::failure(loc.msg(ss.str()));
+	}
+}
+
+void OutputChecker::impl_ensure_all_lines_seen(const wibble::tests::Location& loc)
+{
+	splitIfNeeded();
+
+	for (vector<string>::const_iterator i = lines.begin();
+			i != lines.end(); ++i)
+	{
+		if ((*i)[0] != '!')
+		{
+			std::stringstream ss;
+			ss << "'" << join() << "' still contains unchecked lines";
+			throw tut::failure(loc.msg(ss.str()));
+		}
+	}
 }
 
 }

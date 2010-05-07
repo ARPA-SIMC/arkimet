@@ -25,6 +25,8 @@
 #include <arki/metadata/consumer.h>
 #include <arki/dataset/maintenance.h>
 #include <vector>
+#include <string>
+#include <sstream>
 
 namespace arki {
 struct Metadata;
@@ -33,6 +35,29 @@ struct Dispatcher;
 namespace tests{
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc);
+
+struct OutputChecker : public std::stringstream
+{
+	std::vector<std::string> lines;
+	bool split;
+
+	// Split the output into lines if it has not been done yet
+	void splitIfNeeded();
+
+	// Join the split and marked lines
+	std::string join() const;
+	
+	OutputChecker();
+
+#define ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(__FILE__, __LINE__, "look for " #x), (x))
+#define inner_ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(loc, __FILE__, __LINE__, "look for " #x), (x))
+	void impl_ensure_line_contains(const wibble::tests::Location& loc, const std::string& needle);
+
+#define ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(__FILE__, __LINE__, "all lines seen"))
+#define inner_ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(loc, __FILE__, __LINE__, "all lines seen"))
+	void impl_ensure_all_lines_seen(const wibble::tests::Location& loc);
+};
+
 }
 
 struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
