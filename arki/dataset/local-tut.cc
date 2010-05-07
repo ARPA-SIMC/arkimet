@@ -22,6 +22,7 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
+#include <arki/summary.h>
 #include <arki/dataset/local.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/scan/any.h>
@@ -976,30 +977,241 @@ void to::test<11>()
 	}
 }
 
+// Test querying the datasets
+template<> template<>
+void to::test<12>()
+{
+	using namespace arki::types;
 
-template<> template<> void to::test<12>() { ForceSqlite fs; to::test<1>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; to::test<2>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; to::test<3>(); }
-template<> template<> void to::test<15>() { ForceSqlite fs; to::test<4>(); }
-template<> template<> void to::test<16>() { ForceSqlite fs; to::test<5>(); }
-template<> template<> void to::test<17>() { ForceSqlite fs; to::test<6>(); }
-template<> template<> void to::test<18>() { ForceSqlite fs; to::test<7>(); }
-template<> template<> void to::test<19>() { ForceSqlite fs; to::test<8>(); }
-template<> template<> void to::test<20>() { ForceSqlite fs; to::test<9>(); }
-template<> template<> void to::test<21>() { ForceSqlite fs; to::test<10>(); }
-template<> template<> void to::test<22>() { ForceSqlite fs; to::test<11>(); }
+	clean_and_import();
 
-template<> template<> void to::test<23>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
-template<> template<> void to::test<24>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
-template<> template<> void to::test<25>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
-template<> template<> void to::test<26>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
-template<> template<> void to::test<27>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
-template<> template<> void to::test<28>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
-template<> template<> void to::test<29>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
-template<> template<> void to::test<30>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<8>(); }
-template<> template<> void to::test<31>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<9>(); }
-template<> template<> void to::test<32>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
-template<> template<> void to::test<33>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
+	std::auto_ptr<Local> reader = makeReader(&cfg);
+
+	metadata::Collection mdc;
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	// Check that the source record that comes out is ok
+	UItem<Source> source = mdc[0].source;
+	ensure_equals(source->style(), Source::BLOB);
+	ensure_equals(source->format, "grib1");
+	UItem<source::Blob> blob = source.upcast<source::Blob>();
+	ensure_equals(blob->filename, sys::fs::abspath("testds/2007/07-08.grib1"));
+	ensure_equals(blob->offset, 0u);
+	ensure_equals(blob->size, 7218u);
+
+	mdc.clear();
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	mdc.clear();
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
+	ensure_equals(mdc.size(), 1u);
+}
+
+// Test querying with data only
+template<> template<>
+void to::test<13>()
+{
+	clean_and_import();
+	std::auto_ptr<Local> reader = makeReader();
+
+	std::stringstream os;
+	dataset::ByteQuery bq;
+	bq.setData(Matcher::parse("origin:GRIB1,200"));
+	reader->queryBytes(bq, os);
+
+	ensure_equals(os.str().substr(0, 4), "GRIB");
+}
+
+// Test querying with inline data
+template<> template<>
+void to::test<14>()
+{
+	using namespace arki::types;
+
+	clean_and_import();
+	std::auto_ptr<Local> reader = makeReader(&cfg);
+
+	metadata::Collection mdc;
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	// Check that the source record that comes out is ok
+	UItem<Source> source = mdc[0].source;
+	ensure_equals(source->style(), Source::INLINE);
+	ensure_equals(source->format, "grib1");
+	UItem<source::Inline> isource = source.upcast<source::Inline>();
+	ensure_equals(isource->size, 7218u);
+
+	wibble::sys::Buffer buf = mdc[0].getData();
+	ensure_equals(buf.size(), isource->size);
+
+	mdc.clear();
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	mdc.clear();
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+}
+
+// Test querying with archived data
+template<> template<>
+void to::test<15>()
+{
+	using namespace arki::types;
+
+	ConfigFile cfg = this->cfg;
+	cfg.setValue("archive age", days_since(2007, 9, 1));
+	clean_and_import(&cfg);
+	{
+		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		OutputChecker s;
+		writer->repack(s, true);
+		s.ensure_line_contains(": archived 2007/07-07.grib1");
+		s.ensure_line_contains(": archived 2007/07-08.grib1");
+		s.ignore_line_containing("archive cleaned up");
+		s.ensure_line_contains(": 2 files archived");
+		s.ensure_all_lines_seen();
+	}
+
+
+	std::auto_ptr<Local> reader = makeReader(&cfg);
+	metadata::Collection mdc;
+
+	reader->queryData(dataset::DataQuery(Matcher::parse(""), true), mdc);
+	ensure_equals(mdc.size(), 3u);
+	mdc.clear();
+
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	// Check that the source record that comes out is ok
+	UItem<Source> source = mdc[0].source;
+	ensure_equals(source->style(), Source::INLINE);
+	ensure_equals(source->format, "grib1");
+	UItem<source::Inline> isource = source.upcast<source::Inline>();
+	ensure_equals(isource->size, 7218u);
+
+	wibble::sys::Buffer buf = mdc[0].getData();
+	ensure_equals(buf.size(), isource->size);
+
+	mdc.clear();
+	reader->queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08"), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+	isource = mdc[0].source.upcast<source::Inline>();
+	ensure_equals(isource->size, 7218u);
+
+	mdc.clear();
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	mdc.clear();
+	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), true), mdc);
+	ensure_equals(mdc.size(), 1u);
+
+	// Query bytes
+	stringstream out;
+	dataset::ByteQuery bq;
+	bq.setData(Matcher::parse(""));
+	reader->queryBytes(bq, out);
+	ensure_equals(out.str().size(), 44412u);
+
+	out.str(string());
+	bq.matcher = Matcher::parse("origin:GRIB1,200");
+	reader->queryBytes(bq, out);
+	ensure_equals(out.str().size(), 7218u);
+
+	out.str(string());
+	bq.matcher = Matcher::parse("reftime:=2007-07-08");
+	reader->queryBytes(bq, out);
+	ensure_equals(out.str().size(), 7218u);
+
+	/* TODO
+		case BQ_POSTPROCESS: {
+		case BQ_REP_METADATA: {
+		case BQ_REP_SUMMARY: {
+	virtual void querySummary(const Matcher& matcher, Summary& summary);
+	*/
+
+	// Query summary
+	Summary s;
+	reader->querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 3u);
+	ensure_equals(s.size(), 44412u);
+
+	s.clear();
+	reader->querySummary(Matcher::parse("origin:GRIB1,200"), s);
+	ensure_equals(s.count(), 1u);
+	ensure_equals(s.size(), 7218u);
+
+	s.clear();
+	reader->querySummary(Matcher::parse("reftime:=2007-07-08"), s);
+	ensure_equals(s.count(), 1u);
+	ensure_equals(s.size(), 7218u);
+}
+
+// Tolerate empty dirs
+template<> template<>
+void to::test<16>()
+{
+	// Start with an empty dir
+	system("rm -rf testds");
+	system("mkdir testds");
+
+	std::auto_ptr<Local> reader = makeReader();
+
+	metadata::Collection mdc;
+	reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
+	ensure(mdc.empty());
+
+	Summary s;
+	reader->querySummary(Matcher::parse(""), s);
+	ensure_equals(s.count(), 0u);
+
+	std::stringstream os;
+	dataset::ByteQuery bq;
+	bq.setData(Matcher::parse(""));
+	reader->queryBytes(bq, os);
+	ensure(os.str().empty());
+}
+
+
+
+template<> template<> void to::test<17>() { ForceSqlite fs; to::test<1>(); }
+template<> template<> void to::test<18>() { ForceSqlite fs; to::test<2>(); }
+template<> template<> void to::test<19>() { ForceSqlite fs; to::test<3>(); }
+template<> template<> void to::test<20>() { ForceSqlite fs; to::test<4>(); }
+template<> template<> void to::test<21>() { ForceSqlite fs; to::test<5>(); }
+template<> template<> void to::test<22>() { ForceSqlite fs; to::test<6>(); }
+template<> template<> void to::test<23>() { ForceSqlite fs; to::test<7>(); }
+template<> template<> void to::test<24>() { ForceSqlite fs; to::test<8>(); }
+template<> template<> void to::test<25>() { ForceSqlite fs; to::test<9>(); }
+template<> template<> void to::test<26>() { ForceSqlite fs; to::test<10>(); }
+template<> template<> void to::test<27>() { ForceSqlite fs; to::test<11>(); }
+template<> template<> void to::test<28>() { ForceSqlite fs; to::test<12>(); }
+template<> template<> void to::test<29>() { ForceSqlite fs; to::test<13>(); }
+template<> template<> void to::test<30>() { ForceSqlite fs; to::test<14>(); }
+template<> template<> void to::test<31>() { ForceSqlite fs; to::test<15>(); }
+template<> template<> void to::test<32>() { ForceSqlite fs; to::test<16>(); }
+
+template<> template<> void to::test<33>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
+template<> template<> void to::test<34>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
+template<> template<> void to::test<35>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
+template<> template<> void to::test<36>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
+template<> template<> void to::test<37>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
+template<> template<> void to::test<38>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
+template<> template<> void to::test<39>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
+template<> template<> void to::test<40>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<8>(); }
+template<> template<> void to::test<41>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<9>(); }
+template<> template<> void to::test<42>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
+template<> template<> void to::test<43>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
+template<> template<> void to::test<44>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<12>(); }
+template<> template<> void to::test<45>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<13>(); }
+template<> template<> void to::test<46>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<14>(); }
+template<> template<> void to::test<47>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<15>(); }
+template<> template<> void to::test<48>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<16>(); }
 
 
 
