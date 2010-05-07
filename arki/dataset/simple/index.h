@@ -58,6 +58,7 @@ public:
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
+	virtual void fileTimespan(const std::string& relname, UItem<types::Time>& start_time, UItem<types::Time>& end_time) const = 0;
 	virtual void vacuum() = 0;
 	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
 	virtual void remove(const std::string& relname) = 0;

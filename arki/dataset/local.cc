@@ -121,8 +121,15 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
 }
 
 WritableLocal::WritableLocal(const ConfigFile& cfg)
-	: m_path(cfg.value("path")), m_archive(0)
+	: m_path(cfg.value("path")), m_archive(0),
+	  m_archive_age(-1), m_delete_age(-1)
 {
+	string tmp = cfg.value("archive age");
+	if (!tmp.empty())
+		m_archive_age = strtoul(tmp.c_str(), 0, 10);
+	tmp = cfg.value("delete age");
+	if (!tmp.empty())
+		m_delete_age = strtoul(tmp.c_str(), 0, 10);
 }
 
 WritableLocal::~WritableLocal()

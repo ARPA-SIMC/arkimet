@@ -62,8 +62,7 @@ namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
 	: WritableLocal(cfg), m_cfg(cfg),
-	  m_idx(cfg), m_tf(0), m_replace(false),
-	  m_archive_age(-1), m_delete_age(-1)
+	  m_idx(cfg), m_tf(0), m_replace(false)
 {
 	m_name = cfg.value("name");
 
@@ -78,14 +77,6 @@ Writer::Writer(const ConfigFile& cfg)
 	m_tf = TargetFile::create(cfg);
 	m_replace = ConfigFile::boolValue(cfg.value("replace"), false);
 	m_idx.open();
-
-	string tmp = cfg.value("archive age");
-	if (!tmp.empty())
-		m_archive_age = strtoul(tmp.c_str(), 0, 10);
-	tmp = cfg.value("delete age");
-	if (!tmp.empty())
-		m_delete_age = strtoul(tmp.c_str(), 0, 10);
-	
 }
 
 Writer::~Writer()

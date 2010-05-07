@@ -17,6 +17,7 @@
  */
 
 #include <arki/dataset/test-utils.h>
+#include <arki/dataset/simple/index.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
@@ -39,6 +40,19 @@ using namespace arki::dataset;
 using namespace wibble;
 
 namespace {
+struct ForceSqlite
+{
+	bool old;
+
+	ForceSqlite(bool val = true) : old(dataset::simple::Manifest::get_force_sqlite())
+	{
+		dataset::simple::Manifest::set_force_sqlite(val);
+	}
+	~ForceSqlite()
+	{
+		dataset::simple::Manifest::set_force_sqlite(old);
+	}
+};
 struct TempConfig
 {
 	ConfigFile& cfg;
@@ -218,11 +232,9 @@ void to::test<1>()
 	}
 }
 
-template<> template<> void to::test<2>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
-
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive
 template<> template<>
-void to::test<3>()
+void to::test<2>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("archive age", days_since(2007, 9, 1));
@@ -246,12 +258,13 @@ void to::test<3>()
 	// Perform packing and check that things are still ok afterwards
 	{
 		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
-		stringstream s;
+		OutputChecker s;
 		writer->repack(s, true);
-		ensure_contains(s.str(), ": archived 2007/07-07.grib1\n");
-		ensure_contains(s.str(), ": archived 2007/07-08.grib1\n");
-		ensure_not_contains(s.str(), ": archived 2007/10-10.grib1\n");
-		ensure_contains(s.str(), ": 2 files archived");
+		s.ensure_line_contains(": archived 2007/07-07.grib1");
+		s.ensure_line_contains(": archived 2007/07-08.grib1");
+		s.ensure_line_contains(": archive cleaned up");
+		s.ensure_line_contains(": 2 files archived");
+		s.ensure_all_lines_seen();
 	}
 
 	// Check that the files have been moved to the archive
@@ -302,12 +315,9 @@ void to::test<3>()
 	}
 }
 
-template<> template<> void to::test<4>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
-
-
 // Test moving into archive data that have been compressed
 template<> template<>
-void to::test<5>()
+void to::test<3>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("archive age", days_since(2007, 9, 1));
@@ -412,12 +422,10 @@ void to::test<5>()
 	}
 }
 
-template<> template<> void to::test<6>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
-
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
 template<> template<>
-void to::test<7>()
+void to::test<4>()
 {
 	// Data are from 07, 08, 10 2007
 	int treshold[6] = { 2007, 9, 1, 0, 0, 0 };
@@ -473,11 +481,10 @@ void to::test<7>()
 		ensure(c.isClean());
 	}
 }
-template<> template<> void to::test<8>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
 
 // Test accuracy of maintenance scan, on perfect dataset, with a truncated data file
 template<> template<>
-void to::test<9>()
+void to::test<5>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("step", "yearly");
@@ -553,11 +560,10 @@ void to::test<9>()
 		ensure(c.isClean());
 	}
 }
-template<> template<> void to::test<10>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<9>(); }
 
 // Test accuracy of maintenance scan, on a dataset with a corrupted data file
 template<> template<>
-void to::test<11>()
+void to::test<6>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("step", "monthly");
@@ -638,11 +644,10 @@ void to::test<11>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 }
-template<> template<> void to::test<12>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
 
 // Test accuracy of maintenance scan, on a dataset with a data file larger than 2**31
 template<> template<>
-void to::test<13>()
+void to::test<7>()
 {
 	if (cfg.value("type") == "simple") return; // TODO: we need to avoid the SLOOOOW rescan done by simple on the data file
 	clean();
@@ -709,7 +714,23 @@ cerr  << "ZAERBA 4" << endl;
 	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
 #endif
 }
-template<> template<> void to::test<14>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<13>(); }
+
+template<> template<> void to::test< 8>() { ForceSqlite fs; to::test<1>(); }
+template<> template<> void to::test< 9>() { ForceSqlite fs; to::test<2>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; to::test<3>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; to::test<4>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; to::test<5>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; to::test<6>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; to::test<7>(); }
+
+template<> template<> void to::test<15>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
+template<> template<> void to::test<16>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
+template<> template<> void to::test<17>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
+template<> template<> void to::test<18>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
+template<> template<> void to::test<19>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
+template<> template<> void to::test<20>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
+template<> template<> void to::test<21>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
+
 
 
 }

@@ -5,8 +5,9 @@ arkimet (0.42-1) UNRELEASED; urgency=low
     has been deleted but not deindexed
   * arki-gzip: operate directly on data files
   * Archive data files even if they are compressed
+  * Archive and delete data during maintenance of simple datasets
 
- -- Enrico Zini <enrico@debian.org>  Fri, 07 May 2010 13:45:16 +0100
+ -- Enrico Zini <enrico@debian.org>  Fri, 07 May 2010 14:29:50 +0100
 
 arkimet (0.41-1) UNRELEASED; urgency=low
 

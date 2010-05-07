@@ -71,6 +71,8 @@ class WritableLocal : public WritableDataset
 protected:
 	std::string m_path;
 	mutable Archives* m_archive;
+	int m_archive_age;
+	int m_delete_age;
 
 public:
 	WritableLocal(const ConfigFile& cfg);

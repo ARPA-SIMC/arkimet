@@ -153,12 +153,75 @@ void Writer::remove(const std::string& id)
 	// Nothing to do
 }
 
+namespace {
+struct CheckAge : public maintenance::MaintFileVisitor
+{
+	maintenance::MaintFileVisitor& next;
+	const Manifest& idx;
+	UItem<types::Time> archive_threshold;
+	UItem<types::Time> delete_threshold;
+
+	CheckAge(MaintFileVisitor& next, const Manifest& idx, int archive_age=-1, int delete_age=-1);
+
+	void operator()(const std::string& file, State state);
+};
+
+CheckAge::CheckAge(MaintFileVisitor& next, const Manifest& idx, int archive_age, int delete_age)
+	: next(next), idx(idx)
+{
+	time_t now = time(NULL);
+	struct tm t;
+
+	// Go to the beginning of the day
+	now -= (now % (3600*24));
+
+	if (archive_age != -1)
+	{
+		time_t arc_thr = now - archive_age * 3600 * 24;
+		gmtime_r(&arc_thr, &t);
+		archive_threshold = types::Time::create(t);
+	}
+	if (delete_age != -1)
+	{
+		time_t del_thr = now - delete_age * 3600 * 24;
+		gmtime_r(&del_thr, &t);
+		delete_threshold = types::Time::create(t);
+	}
+}
+
+void CheckAge::operator()(const std::string& file, State state)
+{
+	if (state != OK or (!archive_threshold.defined() and !delete_threshold.defined()))
+		next(file, state);
+	else
+	{
+		UItem<types::Time> start_time;
+		UItem<types::Time> end_time;
+		idx.fileTimespan(file, start_time, end_time);
+
+		//cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
+		if (delete_threshold > end_time)
+		{
+			nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
+			next(file, TO_DELETE);
+		}
+		else if (archive_threshold > end_time)
+		{
+			nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
+			next(file, TO_ARCHIVE);
+		}
+		else
+			next(file, state);
+	}
+}
+}
+
 void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
 	// TODO Detect if data is not in reftime order
-	// TODO Detect if files are to be moved to archive
 
-	m_mft->check(v, quick);
+	CheckAge ca(v, *m_mft, m_archive_age, m_delete_age);
+	m_mft->check(ca, quick);
 	WritableLocal::maintenance(v, quick);
 }
 
@@ -201,8 +264,11 @@ size_t Writer::removeFile(const std::string& relpath, bool withData)
 
 void Writer::archiveFile(const std::string& relpath)
 {
-	// TODO
-	throw wibble::exception::Consistency("archiving " + relpath, "function to be implemented");
+	// Remove from index
+	m_mft->remove(relpath);
+
+	// Delegate the rest to WritableLocal
+	WritableLocal::archiveFile(relpath);
 }
 
 size_t Writer::vacuum()

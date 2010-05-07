@@ -359,6 +359,23 @@ public:
 		}
 	}
 
+	void fileTimespan(const std::string& relname, UItem<types::Time>& start_time, UItem<types::Time>& end_time) const
+	{
+		// Lookup the file (FIXME: reimplement binary search so we
+		// don't need to create a temporary Info)
+		Info sample;
+		sample.file = relname;
+		vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
+		if (lb->file == relname)
+		{
+			start_time = lb->start_time;
+			end_time = lb->end_time;
+		} else {
+			start_time.clear();
+			end_time.clear();
+		}
+	}
+
 	void vacuum()
 	{
 	}
@@ -647,6 +664,21 @@ public:
 		q.compile(query);
 		while (q.step())
 			files.push_back(q.fetchString(0));
+	}
+
+	void fileTimespan(const std::string& relname, UItem<types::Time>& start_time, UItem<types::Time>& end_time) const
+	{
+		Query q("sel_file_ts", m_db);
+		q.compile("SELECT start_time, end_time FROM files WHERE file=?");
+		q.bind(1, relname);
+
+		start_time.clear();
+		end_time.clear();
+		while (q.step())
+		{
+			start_time = types::Time::createFromSQL(q.fetchString(0));
+			end_time = types::Time::createFromSQL(q.fetchString(1));
+		}
 	}
 
 	void vacuum()
