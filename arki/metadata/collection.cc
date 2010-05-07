@@ -220,6 +220,17 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
 	// TODO: delete uncompressed version
 }
 
+void Collection::sort(const sort::Compare& cmp)
+{
+	std::sort(begin(), end(), sort::STLCompare(cmp));
+}
+
+void Collection::sort(const std::string& cmp)
+{
+	std::auto_ptr<sort::Compare> c = sort::Compare::parse(cmp);
+	sort(*c);
+}
+
 AtomicWriter::AtomicWriter(const std::string& fname)
 	: fname(fname), tmpfname(fname + ".tmp"), outmd(0)
 {

@@ -33,6 +33,10 @@
 namespace arki {
 struct Summary;
 
+namespace sort {
+struct Compare;
+}
+
 namespace metadata {
 
 /**
@@ -90,6 +94,10 @@ struct Collection : public std::vector<Metadata>, public Consumer, public Readon
 	 * it with a compressed version
 	 */
 	void compressDataFile(size_t groupsize = 512, const std::string& source = std::string("metadata"));
+
+	/// Sort with the given order
+	void sort(const sort::Compare& cmp);
+	void sort(const std::string& cmp);
 };
 
 }
