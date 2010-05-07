@@ -99,6 +99,9 @@ void Reader::queryLocalData(const dataset::DataQuery& q, metadata::Consumer& con
 
 void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
+	// Query the archives first
+	Local::queryData(q, consumer);
+
 	if (!m_idx) return;
 
 	// First ask the index.  If it can do something useful, iterate with it
@@ -109,19 +112,15 @@ void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 	// For each directory try to match its summary first, and if it matches
 	// then produce all the contents.
 
-	// Query the archives first
-	if (hasArchive())
-		archive().queryData(q, consumer);
 	queryLocalData(q, consumer);
 }
 
 void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	if (!m_idx) return;
-
 	// Query the archives first
-	if (hasArchive())
-		archive().queryBytes(q, out);
+	Local::queryBytes(q, out);
+
+	if (!m_idx) return;
 
 	switch (q.type)
 	{
@@ -236,13 +235,12 @@ void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summa
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
+	// Query the archives first
+	Local::querySummary(matcher, summary);
+
 	if (!m_idx) return;
 
 	using namespace wibble::str;
-
-	// Query the archives first
-	if (hasArchive())
-		archive().querySummary(matcher, summary);
 
 	if (!m_idx || !m_idx->querySummary(matcher, summary))
 		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
