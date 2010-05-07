@@ -239,6 +239,11 @@ void Writer::flush()
 
 void Writer::rescanFile(const std::string& relpath)
 {
+	// Delete cached info to force a full rescan
+	string pathname = str::joinpath(m_path, relpath);
+	sys::fs::deleteIfExists(pathname + ".metadata");
+	sys::fs::deleteIfExists(pathname + ".summary");
+
 	m_mft->rescanFile(m_path, relpath);
 }
 
