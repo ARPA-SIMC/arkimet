@@ -35,22 +35,9 @@ using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::dataset::simple;
-
-struct ForceSqlite
-{
-	bool old;
-
-	ForceSqlite(bool val = true) : old(Manifest::get_force_sqlite())
-	{
-		Manifest::set_force_sqlite(val);
-	}
-	~ForceSqlite()
-	{
-		Manifest::set_force_sqlite(old);
-	}
-};
 
 struct arki_dataset_simple_index_shar : public dataset::maintenance::MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently

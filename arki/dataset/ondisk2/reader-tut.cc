@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include <arki/tests/test-utils.h>
+#include <arki/dataset/test-utils.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -28,7 +28,6 @@
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
-#include <wibble/grcal/grcal.h>
 
 #include <unistd.h>
 #include <sstream>
@@ -44,9 +43,7 @@ using namespace arki::dataset::ondisk2;
 using namespace arki::utils;
 using namespace arki::utils::files;
 
-struct arki_dataset_ondisk2_reader_shar {
-	ConfigFile config;
-
+struct arki_dataset_ondisk2_reader_shar : public arki::tests::DatasetTest {
 	arki_dataset_ondisk2_reader_shar()
 	{
 		// Cleanup the test datasets
@@ -63,14 +60,14 @@ struct arki_dataset_ondisk2_reader_shar {
 			"path = testds\n"
 			"postprocess = testcountbytes\n";
 		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+		cfg.parse(incfg, "(memory)");
 
 		// Import all data from test.grib1
 		Metadata md;
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk2::Writer testds(*config.section("testds"));
+		dataset::ondisk2::Writer testds(*cfg.section("testds"));
 		size_t count = 0;
 		while (scanner.next(md))
 		{
@@ -80,18 +77,6 @@ struct arki_dataset_ondisk2_reader_shar {
 		ensure_equals(count, 3u);
 		testds.flush();
 	}
-
-	std::string days_since(int year, int month, int day)
-	{
-		// Data are from 07, 08, 10 2007
-		int threshold[6] = { year, month, day, 0, 0, 0 };
-		int now[6];
-		grcal::date::now(now);
-		long long int duration = grcal::date::duration(threshold, now);
-
-		//cerr << str::fmt(duration/(3600*24)) + " days";
-		return str::fmt(duration/(3600*24));
-	}
 };
 TESTGRP(arki_dataset_ondisk2_reader);
 
@@ -99,7 +84,7 @@ TESTGRP(arki_dataset_ondisk2_reader);
 template<> template<>
 void to::test<1>()
 {
-	ondisk2::Reader testds(*config.section("testds"));
+	ondisk2::Reader testds(*cfg.section("testds"));
 	ensure(testds.hasWorkingIndex());
 
 	// Use dup() because PosixBuf will close its file descriptor at destruction
@@ -119,7 +104,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	ondisk2::Reader testds(*config.section("testds"));
+	ondisk2::Reader testds(*cfg.section("testds"));
 
 	Summary s;
 	testds.querySummary(Matcher::parse("reftime:=2007"), s);

@@ -20,7 +20,6 @@
 
 #include <arki/dataset/test-utils.h>
 #include <arki/dataset/simple/writer.h>
-#include <arki/dataset/simple/index.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
@@ -63,46 +62,21 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::dataset::simple;
 using namespace arki::types;
+using namespace arki::tests;
 using namespace arki::utils;
-
-struct ForceSqlite
-{
-	bool old;
-
-	ForceSqlite(bool val = true) : old(dataset::simple::Manifest::get_force_sqlite())
-	{
-		dataset::simple::Manifest::set_force_sqlite(val);
-	}
-	~ForceSqlite()
-	{
-		dataset::simple::Manifest::set_force_sqlite(old);
-	}
-};
 
 static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
 {
 	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
 }
 
-struct arki_dataset_simple_writer_shar : public dataset::maintenance::MaintFileVisitor {
-	// Little dirty hack: implement MaintFileVisitor so we can conveniently
-	// access State
-
-	ConfigFile cfg;
-
+struct arki_dataset_simple_writer_shar : public DatasetTest {
 	arki_dataset_simple_writer_shar()
 	{
 		cfg.setValue("path", "testds");
 		cfg.setValue("name", "testds");
 		cfg.setValue("type", "simple");
 		cfg.setValue("step", "daily");
-	}
-
-	virtual void operator()(const std::string& file, State state) {}
-
-	std::string idxfname() const
-	{
-		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 	}
 
 #define ensure_simpleds_clean(x, y, z) impl_ensure_simpleds_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))

@@ -20,9 +20,11 @@
 #include <arki/dataset/test-utils.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
+#include <arki/dataset/simple/index.h>
 #include <arki/dispatcher.h>
 #include <wibble/string.h>
 #include <wibble/regexp.h>
+#include <wibble/grcal/grcal.h>
 #include <fstream>
 #include <strings.h>
 
@@ -127,6 +129,36 @@ void OutputChecker::impl_ensure_all_lines_seen(const wibble::tests::Location& lo
 			throw tut::failure(loc.msg(ss.str()));
 		}
 	}
+}
+
+ForceSqlite::ForceSqlite(bool val) : old(dataset::simple::Manifest::get_force_sqlite())
+{
+	dataset::simple::Manifest::set_force_sqlite(val);
+}
+ForceSqlite::~ForceSqlite()
+{
+	dataset::simple::Manifest::set_force_sqlite(old);
+}
+
+std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
+{
+	if (!wcfg) wcfg = &cfg;
+	if (wcfg->value("type") == "ondisk2")
+		return "index.sqlite";
+	else
+		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+}
+
+int DatasetTest::days_since(int year, int month, int day)
+{
+	// Data are from 07, 08, 10 2007
+	int threshold[6] = { year, month, day, 0, 0, 0 };
+	int now[6];
+	grcal::date::now(now);
+	long long int duration = grcal::date::duration(threshold, now);
+
+	//cerr << str::fmt(duration/(3600*24)) + " days";
+	return duration/(3600*24);
 }
 
 }

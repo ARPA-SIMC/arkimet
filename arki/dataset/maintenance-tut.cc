@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include <arki/tests/test-utils.h>
+#include <arki/dataset/test-utils.h>
 #include <arki/dataset/maintenance.h>
 
 #include <cstdlib>
@@ -28,16 +28,11 @@ using namespace arki::dataset::maintenance;
 
 namespace tut {
 
-struct arki_dataset_maintenance_shar : public MaintFileVisitor {
-	// Little dirty hack: implement MaintFileVisitor so we can conveniently
-	// access State
-
+struct arki_dataset_maintenance_shar : public arki::tests::DatasetTest {
 	arki_dataset_maintenance_shar()
 	{
 		//system("rm -rf testdir");
 	}
-
-	virtual void operator()(const std::string& file, State state) {}
 };
 TESTGRP(arki_dataset_maintenance);
 

@@ -21,6 +21,7 @@
 #define ARKI_DATASET_TESTUTILS_H
 
 #include <arki/tests/test-utils.h>
+#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/dataset/maintenance.h>
@@ -58,6 +59,31 @@ struct OutputChecker : public std::stringstream
 #define ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(__FILE__, __LINE__, "all lines seen"))
 #define inner_ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(loc, __FILE__, __LINE__, "all lines seen"))
 	void impl_ensure_all_lines_seen(const wibble::tests::Location& loc);
+};
+
+struct ForceSqlite
+{
+	bool old;
+
+	ForceSqlite(bool val = true);
+	~ForceSqlite();
+};
+
+// Base class for dataset tests
+struct DatasetTest : public dataset::maintenance::MaintFileVisitor
+{
+	// Default dataset configuration (to be filled by subclasser)
+	ConfigFile cfg;
+
+	// Little dirty hack: implement MaintFileVisitor so we can conveniently
+        // access State constants
+	virtual void operator()(const std::string& file, State state) {}
+
+	// Return the file name of the index of the current dataset
+	std::string idxfname(const ConfigFile* wcfg = 0) const;
+	
+	// Return the number of days passed from the given date until today
+	int days_since(int year, int month, int day);
 };
 
 }

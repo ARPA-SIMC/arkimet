@@ -19,7 +19,6 @@
  */
 
 #include <arki/dataset/test-utils.h>
-#include <arki/dataset/simple/index.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/simple/writer.h>
 #include <arki/types/assigneddataset.h>
@@ -43,20 +42,6 @@ using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
 using namespace arki::dataset::simple;
-
-struct ForceSqlite
-{
-	bool old;
-
-	ForceSqlite(bool val = true) : old(Manifest::get_force_sqlite())
-	{
-		Manifest::set_force_sqlite(val);
-	}
-	~ForceSqlite()
-	{
-		Manifest::set_force_sqlite(old);
-	}
-};
 
 struct arki_dataset_simple_reader_shar : public dataset::maintenance::MaintFileVisitor {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
@@ -91,23 +76,6 @@ struct arki_dataset_simple_reader_shar : public dataset::maintenance::MaintFileV
 	}
 
 	virtual void operator()(const std::string& file, State state) {}
-
-	std::string idxfname() const
-	{
-		return Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-	}
-
-	std::string days_since(int year, int month, int day)
-	{
-		// Data are from 07, 08, 10 2007
-		int threshold[6] = { year, month, day, 0, 0, 0 };
-		int now[6];
-		grcal::date::now(now);
-		long long int duration = grcal::date::duration(threshold, now);
-
-		//cerr << str::fmt(duration/(3600*24)) + " days";
-		return str::fmt(duration/(3600*24));
-	}
 };
 TESTGRP(arki_dataset_simple_reader);
 

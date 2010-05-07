@@ -17,8 +17,6 @@
  */
 
 #include <arki/dataset/test-utils.h>
-#include <arki/dataset/simple/index.h>
-#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
@@ -42,19 +40,6 @@ using namespace arki::dataset;
 using namespace wibble;
 
 namespace {
-struct ForceSqlite
-{
-	bool old;
-
-	ForceSqlite(bool val = true) : old(dataset::simple::Manifest::get_force_sqlite())
-	{
-		dataset::simple::Manifest::set_force_sqlite(val);
-	}
-	~ForceSqlite()
-	{
-		dataset::simple::Manifest::set_force_sqlite(old);
-	}
-};
 struct TempConfig
 {
 	ConfigFile& cfg;
@@ -83,11 +68,7 @@ struct TempConfig
 };
 }
 
-struct arki_dataset_local_shar : public dataset::maintenance::MaintFileVisitor {
-	// Little dirty hack: implement MaintFileVisitor so we can conveniently
-	// access State
-	ConfigFile cfg;
-
+struct arki_dataset_local_shar : public DatasetTest {
 	arki_dataset_local_shar()
 	{
 		cfg.setValue("path", "testds");
@@ -154,19 +135,6 @@ struct arki_dataset_local_shar : public dataset::maintenance::MaintFileVisitor {
 		import(wcfg, testfile);
 	}
 
-	std::string days_since(int year, int month, int day)
-	{
-		// Data are from 07, 08, 10 2007
-		int threshold[6] = { year, month, day, 0, 0, 0 };
-		int now[6];
-		grcal::date::now(now);
-		long long int duration = grcal::date::duration(threshold, now);
-
-		//cerr << str::fmt(duration/(3600*24)) + " days";
-		return str::fmt(duration/(3600*24));
-	}
-
-	virtual void operator()(const std::string& file, State state) {}
 };
 TESTGRP(arki_dataset_local);
 
@@ -239,7 +207,7 @@ template<> template<>
 void to::test<2>()
 {
 	ConfigFile cfg = this->cfg;
-	cfg.setValue("archive age", days_since(2007, 9, 1));
+	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
 
 	clean_and_import(&cfg);
 
@@ -322,7 +290,7 @@ template<> template<>
 void to::test<3>()
 {
 	ConfigFile cfg = this->cfg;
-	cfg.setValue("archive age", days_since(2007, 9, 1));
+	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
 
 	// Import and compress all the files
 	clean_and_import(&cfg);
@@ -1063,7 +1031,7 @@ void to::test<15>()
 	using namespace arki::types;
 
 	ConfigFile cfg = this->cfg;
-	cfg.setValue("archive age", days_since(2007, 9, 1));
+	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
 	clean_and_import(&cfg);
 	{
 		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
