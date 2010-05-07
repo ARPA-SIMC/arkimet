@@ -98,6 +98,7 @@ struct Collection : public std::vector<Metadata>, public Consumer, public Readon
 	/// Sort with the given order
 	void sort(const sort::Compare& cmp);
 	void sort(const std::string& cmp);
+	void sort(); // Sort by reftime
 };
 
 }

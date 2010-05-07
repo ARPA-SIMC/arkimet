@@ -231,6 +231,11 @@ void Collection::sort(const std::string& cmp)
 	sort(*c);
 }
 
+void Collection::sort()
+{
+	sort("");
+}
+
 AtomicWriter::AtomicWriter(const std::string& fname)
 	: fname(fname), tmpfname(fname + ".tmp"), outmd(0)
 {

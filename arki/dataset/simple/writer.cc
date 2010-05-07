@@ -45,6 +45,11 @@
 #include <ctime>
 #include <cstdio>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include "config.h"
 
 #ifdef HAVE_LUA
@@ -247,10 +252,98 @@ void Writer::rescanFile(const std::string& relpath)
 	m_mft->rescanFile(m_path, relpath);
 }
 
+namespace {
+struct FileCopier : metadata::Consumer
+{
+	const scan::Validator& m_val;
+	std::string dst;
+	std::string finalname;
+	int fd_dst;
+	off_t w_off;
+
+	FileCopier(const scan::Validator& val, const std::string& dst, const std::string& finalname)
+		: m_val(val), dst(dst), finalname(finalname), fd_dst(-1), w_off(0)
+	{
+		fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		if (fd_dst < 0)
+			throw wibble::exception::File(dst, "opening file");
+	}
+	virtual ~FileCopier()
+	{
+		flush();
+	}
+
+	bool operator()(Metadata& md);
+	void flush();
+};
+
+bool FileCopier::operator()(Metadata& md)
+{
+	// Read the data
+	wibble::sys::Buffer buf = md.getData();
+
+	// Check it for corruption
+	m_val.validate(buf.data(), buf.size());
+
+	// Write it out
+	ssize_t res = write(fd_dst, buf.data(), buf.size());
+	if (res < 0 || (unsigned)res != buf.size())
+		throw wibble::exception::File(dst, "writing " + str::fmt(buf.size()) + " bytes");
+
+	// Update the Blob source using the new position
+	md.source = types::source::Blob::create(md.source->format, finalname, w_off, buf.size());
+
+	w_off += buf.size();
+
+	return true;
+}
+
+void FileCopier::flush()
+{
+	if (fd_dst != -1 and close(fd_dst) != 0)
+		throw wibble::exception::File(dst, "closing file");
+	fd_dst = -1;
+}
+}
+
 size_t Writer::repackFile(const std::string& relpath)
 {
-	// TODO
-	throw wibble::exception::Consistency("repacking " + relpath, "function to be implemented");
+	string pathname = str::joinpath(m_path, relpath);
+
+	// Read the metadata
+	metadata::Collection mdc;
+	scan::scan(pathname, mdc);
+
+	// Sort by reference time
+	mdc.sort();
+
+	// Write out the data with the new order
+	string pntmp = pathname + ".repack";
+	FileCopier copier(scan::Validator::by_filename(pathname), pntmp, str::basename(relpath));
+	mdc.sendTo(copier);
+	copier.flush();
+
+	// Remove existing cached metadata, since we scramble their order
+	sys::fs::deleteIfExists(pathname + ".metadata");
+
+	size_t size_pre = files::size(pathname);
+	size_t size_post = files::size(pntmp);
+	
+	// Rename the data file with to final name
+	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
+		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
+
+	// Write out the new metadata
+	mdc.writeAtomically(pathname + ".metadata");
+
+	// Regenerate the summary. It is unchanged, really, but its timestamp
+	// has become obsolete by now
+	Summary sum;
+	metadata::Summarise mds(sum);
+	mdc.sendTo(mds);
+	sum.writeAtomically(pathname + ".summary");
+
+	return size_pre - size_post;
 }
 
 size_t Writer::removeFile(const std::string& relpath, bool withData)
