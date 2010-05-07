@@ -190,7 +190,8 @@ void WritableLocal::archiveFile(const std::string& relpath)
 				arcabsname + " already exists");
 	string src = pathname;
 	string dst = arcabsname;
-	if (scan::isCompressed(pathname))
+	bool compressed = scan::isCompressed(pathname);
+	if (compressed)
 	{
 		src += ".gz";
 		dst += ".gz";
@@ -206,6 +207,8 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	// Move data to archive
 	if (rename(src.c_str(), dst.c_str()) < 0)
 		throw wibble::exception::System("moving " + src + " to " + dst);
+	if (compressed)
+		files::renameIfExists(pathname + ".gz.idx", arcabsname + ".gz.idx");
 
 	// Move metadata to archive
 	files::renameIfExists(pathname + ".metadata", arcabsname + ".metadata");

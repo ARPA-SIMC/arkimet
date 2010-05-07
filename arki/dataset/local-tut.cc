@@ -369,18 +369,22 @@ void to::test<3>()
 	// Check that the files have been moved to the archive
 	ensure(!sys::fs::access("testds/.archive/last/2007/07-07.grib1", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.gz", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.gz.idx", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.summary", F_OK));
 	ensure(!sys::fs::access("testds/.archive/last/2007/07-08.grib1", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.gz", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.gz.idx", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.summary", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-07.grib1", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-07.grib1.gz", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-07.grib1.gz.idx", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-07.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-07.grib1.summary", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.gz.idx", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
 	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
 
