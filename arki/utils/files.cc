@@ -25,6 +25,8 @@
 #include <wibble/string.h>
 
 #include <sys/stat.h>
+#include <cstdio>
+#include <cerrno>
 
 
 using namespace std;
@@ -122,6 +124,13 @@ ino_t inode(const std::string& file)
 {
 	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
 	return st.get() == NULL ? 0 : st->st_ino;
+}
+
+void renameIfExists(const std::string& src, const std::string& dst)
+{
+	int res = ::rename(src.c_str(), dst.c_str());
+	if (res < 0 && errno != ENOENT)
+		throw wibble::exception::System("moving " + src + " to " + dst);
 }
 
 }

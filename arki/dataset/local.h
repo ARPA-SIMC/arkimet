@@ -142,8 +142,12 @@ public:
 
 	/**
 	 * Move the file to archive
+	 *
+	 * The default implementation moves the file and its associated
+	 * metadata and summaries (if found) to the "last" archive, and adds it
+	 * to its manifest
 	 */
-	virtual void archiveFile(const std::string& relpath) = 0;
+	virtual void archiveFile(const std::string& relpath);
 
 	/**
 	 * Perform generic packing and optimisations

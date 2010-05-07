@@ -4,8 +4,9 @@ arkimet (0.42-1) UNRELEASED; urgency=low
   * Don't fail when querying simple datasets and archives after one data file
     has been deleted but not deindexed
   * arki-gzip: operate directly on data files
+  * Archive data files even if they are compressed
 
- -- Enrico Zini <enrico@debian.org>  Thu, 06 May 2010 19:24:19 +0100
+ -- Enrico Zini <enrico@debian.org>  Fri, 07 May 2010 13:45:16 +0100
 
 arkimet (0.41-1) UNRELEASED; urgency=low
 

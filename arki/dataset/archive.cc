@@ -118,7 +118,7 @@ void Archive::acquire(const std::string& relname, const metadata::Collection& md
 {
 	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
 	string pathname = str::joinpath(m_dir, relname);
-	time_t mtime = files::timestamp(pathname);
+	time_t mtime = scan::timestamp(pathname);
 	if (mtime == 0)
 		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
 

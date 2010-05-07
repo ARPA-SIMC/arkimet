@@ -98,6 +98,9 @@ off_t size(const std::string& file);
 /// File inode number
 ino_t inode(const std::string& file);
 
+/// Move src to dst, without raising exception if src does not exist
+void renameIfExists(const std::string& src, const std::string& dst);
+
 }
 }
 }

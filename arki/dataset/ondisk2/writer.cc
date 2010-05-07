@@ -505,26 +505,17 @@ void Writer::archiveFile(const std::string& relpath)
 {
 	// Create the target directory in the archive
 	string pathname = str::joinpath(m_path, relpath);
-	string arcrelname = str::joinpath("last", relpath);
-	string arcabsname = str::joinpath(m_path, str::joinpath(".archive", arcrelname));
-	sys::fs::mkFilePath(arcabsname);
 
 	// Rebuild the metadata
 	metadata::Collection mds;
 	m_idx.scan_file(relpath, mds);
+	mds.writeAtomically(pathname + ".metadata");
 
 	// Remove from index
 	m_idx.reset(relpath);
 
-	// Move to archive
-	if (sys::fs::access(arcabsname, F_OK))
-		throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
-				arcabsname + " already exists");
-	if (rename(pathname.c_str(), arcabsname.c_str()) < 0)
-		throw wibble::exception::System("moving " + pathname + " to " + arcabsname);
-
-	// Acquire in the achive
-	archive().acquire(arcrelname, mds);
+	// Delegate the rest to WritableLocal
+	WritableLocal::archiveFile(relpath);
 }
 
 size_t Writer::vacuum()

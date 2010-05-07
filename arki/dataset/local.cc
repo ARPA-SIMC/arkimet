@@ -25,6 +25,7 @@
 #include <arki/dataset/maintenance.h>
 #include <arki/utils/files.h>
 #include <arki/configfile.h>
+#include <arki/scan/any.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
@@ -150,6 +151,44 @@ const Archives& WritableLocal::archive() const
 	if (!m_archive)
 		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
 	return *m_archive;
+}
+
+void WritableLocal::archiveFile(const std::string& relpath)
+{
+	string pathname = str::joinpath(m_path, relpath);
+	string arcrelname = str::joinpath("last", relpath);
+	string arcabsname = str::joinpath(m_path, str::joinpath(".archive", arcrelname));
+	sys::fs::mkFilePath(arcabsname);
+	
+	// Sanity checks: avoid conflicts
+	if (sys::fs::access(arcabsname, F_OK))
+		throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
+				arcabsname + " already exists");
+	string src = pathname;
+	string dst = arcabsname;
+	if (scan::isCompressed(pathname))
+	{
+		src += ".gz";
+		dst += ".gz";
+		if (sys::fs::access(dst, F_OK))
+			throw wibble::exception::Consistency("archiving " + src + " to " + dst,
+					dst + " already exists");
+	}
+
+	// Remove stale metadata and summaries that may have been left around
+	sys::fs::deleteIfExists(arcabsname + ".metadata");
+	sys::fs::deleteIfExists(arcabsname + ".summary");
+
+	// Move data to archive
+	if (rename(src.c_str(), dst.c_str()) < 0)
+		throw wibble::exception::System("moving " + src + " to " + dst);
+
+	// Move metadata to archive
+	files::renameIfExists(pathname + ".metadata", arcabsname + ".metadata");
+	files::renameIfExists(pathname + ".summary", arcabsname + ".summary");
+
+	// Acquire in the achive
+	archive().acquire(arcrelname);
 }
 
 void WritableLocal::maintenance(maintenance::MaintFileVisitor& v, bool quick)

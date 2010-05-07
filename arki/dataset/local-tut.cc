@@ -347,24 +347,32 @@ void to::test<5>()
 	// Perform packing and check that things are still ok afterwards
 	{
 		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
-		stringstream s;
+		OutputChecker s;
 		writer->repack(s, true);
-		ensure_equals(s.str(),
-				"testdir: archived 2007/07-07.grib1\n"
-				"testdir: archived 2007/07-08.grib1\n"
-				"testdir: archive cleaned up\n"
-				"testdir: 2 files archived, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+		s.ensure_line_contains(": archived 2007/07-07.grib1");
+		s.ensure_line_contains(": archived 2007/07-08.grib1");
+		s.ensure_line_contains(": archive cleaned up");
+		s.ensure_line_contains(": 2 files archived");
+		s.ensure_all_lines_seen();
 	}
 
 	// Check that the files have been moved to the archive
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-07.grib1", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-07.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-07.grib1.summary", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-08.grib1", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-08.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-08.grib1.summary", F_OK));
-	ensure(!sys::fs::access("testdir/2007/07-07.grib1", F_OK));
-	ensure(!sys::fs::access("testdir/2007/07-08.grib1", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/2007/07-07.grib1", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.gz", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.summary", F_OK));
+	ensure(!sys::fs::access("testds/.archive/last/2007/07-08.grib1", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.gz", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.metadata", F_OK));
+	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.summary", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-07.grib1", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-07.grib1.gz", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-07.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-07.grib1.summary", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
+	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
 
 	// Maintenance should now show a normal situation
 	{
