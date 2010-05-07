@@ -20,6 +20,7 @@
 #include <arki/dataset/simple/index.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/dataset/local.h>
 #include <arki/dataset/maintenance.h>
@@ -186,7 +187,7 @@ void to::test<1>()
 		ensure(c.isClean());
 
 		// Check that maintenance does not accidentally create an archive
-		ensure(!sys::fs::access("testdir/.archive", F_OK));
+		ensure(!sys::fs::access("testds/.archive", F_OK));
 	}
 
 	// Ensure packing has nothing to report
@@ -719,21 +720,286 @@ cerr  << "ZAERBA 4" << endl;
 #endif
 }
 
-template<> template<> void to::test< 8>() { ForceSqlite fs; to::test<1>(); }
-template<> template<> void to::test< 9>() { ForceSqlite fs; to::test<2>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; to::test<3>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; to::test<4>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; to::test<5>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; to::test<6>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; to::test<7>(); }
+// Test accuracy of maintenance scan, on dataset with one file deleted,
+// performing repack
+template<> template<>
+void to::test<8>()
+{
+	clean_and_import();
+	system("rm testds/2007/07-07.grib1");
 
-template<> template<> void to::test<15>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
-template<> template<> void to::test<16>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
-template<> template<> void to::test<17>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
-template<> template<> void to::test<18>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
-template<> template<> void to::test<19>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
-template<> template<> void to::test<20>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
-template<> template<> void to::test<21>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
+	// Initial check finds the deleted file
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		MaintenanceCollector c;
+		writer->maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
+
+	// Packing has something to report
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+		writer->repack(s, false);
+		s.ensure_line_contains(": 2007/07-07.grib1 should be removed from the index");
+		s.ensure_line_contains(": 1 file should be removed from the index");
+		s.ensure_all_lines_seen();
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.remaining(), string());
+		ensure(not c.isClean());
+	}
+
+	// Perform packing and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+		writer->repack(s, true);
+		s.ensure_line_contains(": deleted from index 2007/07-07.grib1");
+		s.ensure_line_contains(": 1 file removed from index");
+		s.ensure_all_lines_seen();
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
+
+	// Perform full maintenance and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+		writer->check(s, true, true);
+		s.ensure_all_lines_seen(); // Nothing should have happened
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), string());
+		ensure(c.isClean());
+	}
+}
+
+// Test accuracy of maintenance scan, on dataset with one file deleted,
+// performing check
+template<> template<>
+void to::test<9>()
+{
+	clean_and_import();
+	system("rm testds/2007/07-07.grib1");
+
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		MaintenanceCollector c;
+		writer->maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.remaining(), "");
+		ensure(not c.isClean());
+	}
+
+	// Perform full maintenance and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+
+		writer->check(s, true, true);
+		s.ensure_line_contains(": deindexed 2007/07-07.grib1");
+		s.ensure_line_contains("1 file removed from index");
+		s.ensure_all_lines_seen();
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+
+	// Perform packing and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+		writer->repack(s, true);
+		s.ensure_all_lines_seen(); // Nothing should have happened
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.count(OK), 2u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+}
+
+// Test accuracy of maintenance scan, after deleting the index, with some
+// spurious extra files in the dataset
+template<> template<>
+void to::test<10>()
+{
+	clean_and_import();
+	sys::fs::deleteIfExists("testds/index.sqlite");
+	sys::fs::deleteIfExists("testds/MANIFEST");
+	system("echo 'GRIB garbage 7777' > testds/2007/07.grib1.tmp");
+
+	// See if the files to index are detected in the correct number
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		MaintenanceCollector c;
+		writer->maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(TO_INDEX), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(not c.isClean());
+	}
+
+	// Perform full maintenance and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+
+		writer->check(s, true, true);
+		s.ensure_line_contains("rescanned 2007/07-07.grib1");
+		s.ensure_line_contains("rescanned 2007/07-08.grib1");
+		s.ensure_line_contains("rescanned 2007/10-09.grib1");
+		s.ensure_line_contains("3 files rescanned");
+		s.ensure_all_lines_seen();
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+
+	// The spurious file should not have been touched
+	ensure(sys::fs::access("testds/2007/07.grib1.tmp", F_OK));
+
+	// Perform packing and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+		writer->repack(s, true);
+		s.ensure_all_lines_seen(); // Nothing should have happened
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+}
+
+// Test recreating a dataset from random datafiles
+template<> template<>
+void to::test<11>()
+{
+	system("rm -rf testds");
+	system("mkdir testds");
+	system("mkdir testds/foo");
+	system("mkdir testds/foo/bar");
+	system("cp inbound/test.grib1 testds/foo/bar/");
+	system("echo 'GRIB garbage 7777' > testds/foo/bar/test.grib1.tmp");
+
+	// See if the files to index are detected in the correct number
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		MaintenanceCollector c;
+		writer->maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(TO_INDEX), 1u);
+		ensure_equals(c.remaining(), "");
+		ensure(not c.isClean());
+	}
+
+	// Perform full maintenance and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+		writer->check(s, true, true);
+		s.ensure_line_contains(": rescanned foo/bar/test.grib1");
+		s.ensure_line_contains("1 file rescanned");
+		s.ensure_all_lines_seen();
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		// A repack is still needed because the data is not sorted by reftime
+		ensure_equals(c.fileStates.size(), 1u);
+		ensure_equals(c.count(TO_PACK), 1u);
+		ensure_equals(c.remaining(), "");
+		ensure(not c.isClean());
+	}
+
+	ensure(sys::fs::access("testds/foo/bar/test.grib1.tmp", F_OK));
+	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412);
+
+	// Perform packing and check that things are still ok afterwards
+	{
+		auto_ptr<WritableLocal> writer = makeWriter();
+		OutputChecker s;
+		writer->repack(s, true);
+		s.ensure_line_contains(": packed foo/bar/test.grib1");
+		s.ensure_line_contains(": 1 file packed");
+
+		MaintenanceCollector c;
+		writer->maintenance(c);
+		ensure_equals(c.count(OK), 1u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+
+	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412);
+
+	// Test querying
+	{
+		std::auto_ptr<Local> reader = makeReader(&cfg);
+
+		metadata::Collection mdc;
+		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+		ensure_equals(mdc.size(), 1u);
+		UItem<types::source::Blob> blob = mdc[0].source.upcast<types::source::Blob>();
+		ensure_equals(blob->format, "grib1"); 
+		ensure_equals(blob->filename, sys::fs::abspath("testds/foo/bar/test.grib1"));
+		ensure_equals(blob->offset, 34960u);
+	}
+}
+
+
+template<> template<> void to::test<12>() { ForceSqlite fs; to::test<1>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; to::test<2>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; to::test<3>(); }
+template<> template<> void to::test<15>() { ForceSqlite fs; to::test<4>(); }
+template<> template<> void to::test<16>() { ForceSqlite fs; to::test<5>(); }
+template<> template<> void to::test<17>() { ForceSqlite fs; to::test<6>(); }
+template<> template<> void to::test<18>() { ForceSqlite fs; to::test<7>(); }
+template<> template<> void to::test<19>() { ForceSqlite fs; to::test<8>(); }
+template<> template<> void to::test<20>() { ForceSqlite fs; to::test<9>(); }
+template<> template<> void to::test<21>() { ForceSqlite fs; to::test<10>(); }
+template<> template<> void to::test<22>() { ForceSqlite fs; to::test<11>(); }
+
+template<> template<> void to::test<23>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
+template<> template<> void to::test<24>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
+template<> template<> void to::test<25>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
+template<> template<> void to::test<26>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
+template<> template<> void to::test<27>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
+template<> template<> void to::test<28>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
+template<> template<> void to::test<29>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
+template<> template<> void to::test<30>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<8>(); }
+template<> template<> void to::test<31>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<9>(); }
+template<> template<> void to::test<32>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
+template<> template<> void to::test<33>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
 
 
 

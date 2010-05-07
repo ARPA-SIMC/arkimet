@@ -74,6 +74,8 @@ HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool qui
 
 void HoleFinder::finaliseFile()
 {
+	off_t size;
+
 	if (last_file.empty())
 		return;
 
@@ -87,16 +89,16 @@ void HoleFinder::finaliseFile()
 	{
 		nag::verbose("HoleFinder: %s found corrupted", last_file.c_str());
 		next(last_file, MaintFileVisitor::TO_RESCAN);
-		return;
+		goto cleanup;
 	}
 
-	off_t size = compress::filesize(str::joinpath(m_root, last_file));
+	size = compress::filesize(str::joinpath(m_root, last_file));
 	if (size < last_file_size)
 	{
 		nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", last_file.c_str(), size, last_file_size);
 		// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
 		next(last_file, MaintFileVisitor::TO_RESCAN);
-		return;
+		goto cleanup;
 	}
 
 	// Check if last_file_size matches the file size
@@ -112,6 +114,7 @@ void HoleFinder::finaliseFile()
 		next(last_file, MaintFileVisitor::OK);
 	}
 
+cleanup:
 	// Reset counters
 	last_file_size = 0;
 	has_hole = false;
