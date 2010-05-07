@@ -109,6 +109,9 @@ void HoleFinder::finaliseFile()
 		} else {
 			next(last_file, MaintFileVisitor::OK);
 		}
+
+		// Don't finalise the same file twice
+		last_file.clear();
 	}
 }
 
@@ -161,6 +164,31 @@ void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_
 	if (offset != last_file_size)
 		has_hole = true;
 	last_file_size += size;
+}
+
+void HoleFinder::scan(const std::string& file)
+{
+	struct HFConsumer : public metadata::Consumer
+	{
+		const std::string& file;
+		HoleFinder& hf;
+
+		HFConsumer(const std::string& file, HoleFinder& hf) : file(file), hf(hf) {}
+
+		bool operator()(Metadata& md)
+		{
+			if (md.source->style() != types::Source::BLOB)
+				throw wibble::exception::Consistency("reading metadata from " + file, "source is not Blob");
+
+			Item<types::source::Blob> s = md.source.upcast<types::source::Blob>();
+			hf(file, 0, s->offset, s->size);
+			return true;
+		}
+	} hfc(file, *this);
+
+	string fname = str::joinpath(m_root, file);
+	scan::scan(fname, hfc);
+	finaliseFile();
 }
 
 static bool sorter(const std::string& a, const std::string& b)

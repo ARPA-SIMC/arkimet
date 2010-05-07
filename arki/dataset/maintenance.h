@@ -94,6 +94,12 @@ struct HoleFinder : IndexFileVisitor
 
 	HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick=true);
 
+	/**
+	 * Scan the file using scan::scan, check for holes and (optionally)
+	 * corruption, then report the result to the chained visitor
+	 */
+	void scan(const std::string& file);
+
 	void finaliseFile();
 
 	void operator()(const std::string& file, int id, off_t offset, size_t size);

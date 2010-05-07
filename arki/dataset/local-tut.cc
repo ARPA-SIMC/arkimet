@@ -517,7 +517,7 @@ void to::test<5>()
 		OutputChecker s;
 
 		writer->repack(s, true);
-		s.ensure_line_contains("total bytes freed.");
+		s.ignore_line_containing("total bytes freed.");
 		s.ensure_all_lines_seen();
 
 		MaintenanceCollector c;

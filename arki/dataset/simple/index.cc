@@ -440,6 +440,7 @@ public:
 
 	virtual void check(MaintFileVisitor& v, bool quick=true)
 	{
+		HoleFinder hf(v, m_path, quick);
 #if 0
 	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 	// and delete the index if it fails
@@ -500,12 +501,10 @@ public:
 					v(i->file, MaintFileVisitor::TO_RESCAN);
 				}
 				else
-					v(i->file, MaintFileVisitor::OK);
-
-				// TODO: if requested, check for internal consistency
-				// TODO: it requires to have an infrastructure for quick
-				// TODO:   consistency checkers (like, "GRIB starts with GRIB
-				// TODO:   and ends with 7777")
+				{
+					hf.scan(i->file);
+					//v(i->file, MaintFileVisitor::OK);
+				}
 			}
 			else // if (disk.empty() or disk.back() > i->file)
 			{
@@ -736,6 +735,8 @@ public:
 
 	virtual void check(MaintFileVisitor& v, bool quick=true)
 	{
+		HoleFinder hf(v, m_path, quick);
+
 		// List of files existing on disk
 		std::vector<std::string> disk = scan::dir(m_path, true);
 		std::sort(disk.begin(), disk.end(), sorter);
@@ -786,12 +787,10 @@ public:
 					v(i->first, MaintFileVisitor::TO_RESCAN);
 				}
 				else
-					v(i->first, MaintFileVisitor::OK);
-
-				// TODO: if requested, check for internal consistency
-				// TODO: it requires to have an infrastructure for quick
-				// TODO:   consistency checkers (like, "GRIB starts with GRIB
-				// TODO:   and ends with 7777")
+				{
+					hf.scan(i->first);
+					// v(i->first, MaintFileVisitor::OK);
+				}
 			}
 			else // if (disk.empty() or disk.back() > i->first)
 			{
