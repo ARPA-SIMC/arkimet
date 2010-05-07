@@ -207,18 +207,18 @@ template<> template<>
 void to::test<8>()
 {
 	// Start with 4 data files
-	system("cp -a inbound/test.grib1 testds/.archive/last/10.grib1");
-	system("cp -a inbound/test.grib1 testds/.archive/last/20.grib1");
-	system("cp -a inbound/test.grib1 testds/.archive/last/30.grib1");
-	system("cp -a inbound/test.grib1 testds/.archive/last/40.grib1");
-	system("cp -a inbound/test.grib1 testds/.archive/last/50.grib1");
-	time_t mtime = files::timestamp("inbound/test.grib1");
+	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/10.grib1");
+	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/20.grib1");
+	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/30.grib1");
+	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/40.grib1");
+	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/50.grib1");
+	time_t mtime = files::timestamp("inbound/test-sorted.grib1");
 
 	// Generate their metadata and summary files
 	metadata::Collection mdc;
 	Summary s;
 	metadata::Summarise summarise(s);
-	scan::scan("inbound/test.grib1", mdc);
+	scan::scan("inbound/test-sorted.grib1", mdc);
 	mdc.sendTo(summarise);
 	for (int i = 10; i <= 50; i += 10)
 	{

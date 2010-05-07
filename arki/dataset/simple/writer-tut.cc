@@ -220,7 +220,7 @@ void to::test<2>()
 
 	Metadata md;
 	scan::Grib scanner;
-	scanner.open("inbound/test.grib1");
+	scanner.open("inbound/test-sorted.grib1");
 
 	// Import once in the empty dataset
 	{
@@ -231,7 +231,7 @@ void to::test<2>()
 		ensure_equals(res, WritableDataset::ACQ_OK);
 	}
 
-	// Import nother one, appending to the file
+	// Import another one, appending to the file
 	{
 		dataset::simple::Writer writer(cfg);
 		ensure(scanner.next(md));
@@ -247,8 +247,8 @@ void to::test<2>()
 		UItem<types::source::Blob> source = md.source.upcast<types::source::Blob>();
 		ensure(source.defined());
 		ensure_equals(source->filename, "2007.grib1");
-		ensure_equals(source->offset, 7218u);
-		ensure_equals(source->size, 34960u);
+		ensure_equals(source->offset, 34960u);
+		ensure_equals(source->size, 7218u);
 	}
 
 	ensure(wibble::sys::fs::access("testds/20/2007.grib1", F_OK));
@@ -273,7 +273,7 @@ void to::test<3>()
 			system("rm -rf testds");
 			system("mkdir testds");
 			system("mkdir testds/2007");
-			system("cp inbound/test.grib1 testds/2007/07-08.grib1");
+			system("cp inbound/test-sorted.grib1 testds/2007/07-08.grib1");
 		}
 	} setup;
 
