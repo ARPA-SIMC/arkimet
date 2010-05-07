@@ -26,6 +26,32 @@
 
 namespace arki {
 namespace tests {
+	
+#define ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(__FILE__, __LINE__, #x " == " #y), (x), (y))
+#define inner_ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(loc, __FILE__, __LINE__, #x " == " #y), (x), (y))
+
+static inline void impl_ensure_contains(const wibble::tests::Location& loc, const std::string& haystack, const std::string& needle)
+{
+	if( haystack.find(needle) == std::string::npos )
+	{
+		std::stringstream ss;
+		ss << "'" << haystack << "' does not contain '" << needle << "'";
+		throw tut::failure(loc.msg(ss.str()));
+	}
+}
+
+#define ensure_not_contains(x, y) arki::tests::impl_ensure_not_contains(wibble::tests::Location(__FILE__, __LINE__, #x " == " #y), (x), (y))
+#define inner_ensure_not_contains(x, y) arki::tests::impl_ensure_not_contains(wibble::tests::Location(loc, __FILE__, __LINE__, #x " == " #y), (x), (y))
+
+static inline void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::string& haystack, const std::string& needle)
+{
+	if( haystack.find(needle) != std::string::npos )
+	{
+		std::stringstream ss;
+		ss << "'" << haystack << "' must not contain '" << needle << "'";
+		throw tut::failure(loc.msg(ss.str()));
+	}
+}
 
 }
 }

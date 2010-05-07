@@ -26,7 +26,6 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
-#include <wibble/grcal/grcal.h>
 
 #include <sstream>
 #include <iostream>
@@ -72,90 +71,14 @@ struct arki_dataset_ondisk2_writer_shar : public dataset::maintenance::MaintFile
 		writer.flush();
 	}
 
-	std::string days_since(int year, int month, int day)
-	{
-		// Data are from 07, 08, 10 2007
-		int threshold[6] = { year, month, day, 0, 0, 0 };
-		int now[6];
-		grcal::date::now(now);
-		long long int duration = grcal::date::duration(threshold, now);
-
-		//cerr << str::fmt(duration/(3600*24)) + " days";
-		return str::fmt(duration/(3600*24));
-	}
-
 	virtual void operator()(const std::string& file, State state) {}
 };
 TESTGRP(arki_dataset_ondisk2_writer);
 
-// Test accuracy of maintenance scan, on perfect dataset
-template<> template<>
-void to::test<1>()
-{
-	acquireSamples();
-	removeDontpackFlagfile("testdir");
-
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-
-	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count(OK), 3u);
-	ensure_equals(c.remaining(), string());
-	ensure(c.isClean());
-
-	// Check that maintenance does not accidentally create an archive
-	ensure(!sys::fs::access("testdir/.archive", F_OK));
-
-	{
-		// Test packing has nothing to report
-		stringstream s;
-		writer.repack(s, false);
-		ensure_equals(s.str(), "");
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
-	}
-
-	{
-		// Perform packing and check that things are still ok afterwards
-		stringstream s;
-		writer.repack(s, true);
-		ensure_equals(s.str(),
-			"testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		stringstream s;
-		writer.check(s, true, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
-	}
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
-}
-
 // Test accuracy of maintenance scan, on dataset with one file deleted,
 // performing repack
 template<> template<>
-void to::test<2>()
+void to::test<1>()
 {
 	acquireSamples();
 	removeDontpackFlagfile("testdir");
@@ -225,7 +148,7 @@ void to::test<2>()
 // Test accuracy of maintenance scan, on dataset with one file deleted,
 // performing check
 template<> template<>
-void to::test<3>()
+void to::test<2>()
 {
 	acquireSamples();
 
@@ -276,7 +199,7 @@ void to::test<3>()
 // Test accuracy of maintenance scan, on dataset with one file to reclaim,
 // performing repack
 template<> template<>
-void to::test<4>()
+void to::test<3>()
 {
 	acquireSamples();
 	removeDontpackFlagfile("testdir");
@@ -351,7 +274,7 @@ void to::test<4>()
 // Test accuracy of maintenance scan, on dataset with one file to reclaim,
 // performing check
 template<> template<>
-void to::test<5>()
+void to::test<4>()
 {
 	acquireSamples();
 	{
@@ -404,7 +327,7 @@ void to::test<5>()
 // Test accuracy of maintenance scan, on dataset with one file to pack,
 // performing repack
 template<> template<>
-void to::test<6>()
+void to::test<5>()
 {
 	cfg.setValue("step", "monthly");
 	acquireSamples();
@@ -458,7 +381,7 @@ void to::test<6>()
 // Test accuracy of maintenance scan, on dataset with one file to pack,
 // performing check
 template<> template<>
-void to::test<7>()
+void to::test<6>()
 {
 	cfg.setValue("step", "monthly");
 	acquireSamples();
@@ -515,7 +438,7 @@ void to::test<7>()
 
 // Test accuracy of maintenance scan, after deleting the index
 template<> template<>
-void to::test<8>()
+void to::test<7>()
 {
 	acquireSamples();
 	system("rm testdir/index.sqlite");
@@ -565,7 +488,7 @@ void to::test<8>()
 // Test accuracy of maintenance scan, after deleting the index, with some
 // spurious extra files in the dataset
 template<> template<>
-void to::test<9>()
+void to::test<8>()
 {
 	acquireSamples();
 	system("rm testdir/index.sqlite");
@@ -616,7 +539,7 @@ void to::test<9>()
 
 // Test recreating a dataset from random datafiles
 template<> template<>
-void to::test<10>()
+void to::test<9>()
 {
 	system("mkdir testdir");
 	system("mkdir testdir/foo");
@@ -685,7 +608,7 @@ void to::test<10>()
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
 template<> template<>
-void to::test<11>()
+void to::test<10>()
 {
 	system("mkdir testdir");
 	system("mkdir testdir/foo");
@@ -789,7 +712,7 @@ void to::test<11>()
 // Test accuracy of maintenance scan, with index, on dataset with some
 // rebuild flagfiles, and duplicate items inside
 template<> template<>
-void to::test<12>()
+void to::test<11>()
 {
 	acquireSamples();
 	system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
@@ -831,342 +754,10 @@ void to::test<12>()
 	}
 }
 
-// Test accuracy of maintenance scan, on perfect dataset, with data to archive
-template<> template<>
-void to::test<13>()
-{
-	cfg.setValue("archive age", days_since(2007, 9, 1));
-
-	acquireSamples();
-	removeDontpackFlagfile("testdir");
-
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-
-	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(TO_ARCHIVE), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	stringstream s;
-
-	// Perform packing and check that things are still ok afterwards
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: archived 2007/07-07.grib1\n"
-		"testdir: archived 2007/07-08.grib1\n"
-		"testdir: archive cleaned up\n"
-		"testdir: 2 files archived, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
-
-	// Check that the files have been moved to the archive
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-07.grib1", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-07.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-07.grib1.summary", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-08.grib1", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-08.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testdir/.archive/last/2007/07-08.grib1.summary", F_OK));
-	ensure(!sys::fs::access("testdir/2007/07-07.grib1", F_OK));
-	ensure(!sys::fs::access("testdir/2007/07-08.grib1", F_OK));
-
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(ARC_OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	// Perform full maintenance and check that things are still ok afterwards
-	s.str(std::string());
-	writer.check(s, true, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(ARC_OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	// Test querying
-	Reader reader(cfg);
-	ensure(reader.hasWorkingIndex());
-	metadata::Collection mdc;
-	reader.queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
-	ensure_equals(mdc.size(), 3u);
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(!sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
-}
-
-// Test accuracy of maintenance scan, on perfect dataset, with data to delete
-template<> template<>
-void to::test<14>()
-{
-	// Data are from 07, 08, 10 2007
-	int treshold[6] = { 2007, 9, 1, 0, 0, 0 };
-	int now[6];
-	grcal::date::now(now);
-	long long int duration = grcal::date::duration(treshold, now);
-
-	//cerr << str::fmt(duration/(3600*24)) + " days";
-	cfg.setValue("delete age", str::fmt(duration/(3600*24)));
-
-	acquireSamples();
-	removeDontpackFlagfile("testdir");
-
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-
-	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(TO_DELETE), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	stringstream s;
-
-	// Perform packing and check that things are still ok afterwards
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
-		"testdir: deleted 2007/07-08.grib1 (7218 freed)\n"
-		"testdir: 2 files deleted, 2 files removed from index, 30448 bytes reclaimed on the index, 72626 total bytes freed.\n");
-
-
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	// Perform full maintenance and check that things are still ok afterwards
-	s.str(std::string());
-	writer.check(s, true, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(!sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
-}
-
-// Test accuracy of maintenance scan, on perfect dataset, with a truncated data file
-template<> template<>
-void to::test<15>()
-{
-	cfg.setValue("step", "yearly");
-	acquireSamples();
-	removeDontpackFlagfile("testdir");
-
-	// Truncate the last grib out of a file
-	if (truncate("testdir/20/2007.grib1", 42178) < 0)
-		throw wibble::exception::System("truncating testdir/20/2007.grib1");
-
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-
-	ensure_equals(c.fileStates.size(), 1u);
-	ensure_equals(c.count(OK), 0u);
-	ensure_equals(c.count(TO_RESCAN), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	stringstream s;
-
-	// Perform packing and check that things are still ok afterwards
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
-
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 0u);
-	ensure_equals(c.count(TO_RESCAN), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	// Perform full maintenance and check that things are still ok afterwards
-	s.str(std::string());
-	writer.check(s, true, true);
-	ensure_equals(s.str(), 
-		"testdir: rescanned 20/2007.grib1\n"
-		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 0u);
-	ensure_equals(c.count(TO_PACK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	// Perform packing after the file has been rescanned and check that
-	// things are still ok afterwards
-	s.str(std::string());
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: packed 20/2007.grib1 (0 saved)\n"
-		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 2576 total bytes freed.\n");
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(!sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
-}
-
-// Test accuracy of maintenance scan, on a dataset with a corrupted data file
-template<> template<>
-void to::test<16>()
-{
-	stringstream s;
-
-	cfg.setValue("step", "monthly");
-	acquireSamples();
-	system("rm testdir/needs-check-do-not-pack");
-	arki::dataset::ondisk2::Writer writer(cfg);
-	// Pack the dataset because 07.grib1 imported data out of order
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: packed 2007/07.grib1 (0 saved)\n"
-		"testdir: 1 file packed, 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
-	s.str(std::string());
-
-	// Corrupt the first grib in the file
-	system("dd if=/dev/zero of=testdir/2007/07.grib1 bs=1 count=2 conv=notrunc status=noxfer > /dev/null 2>&1");
-
-	MaintenanceCollector c;
-	writer.maintenance(c);
-	ensure_equals(c.fileStates.size(), 2u);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	c.clear();
-	writer.maintenance(c, false);
-	ensure_equals(c.fileStates.size(), 2u);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(TO_RESCAN), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true, false);
-	ensure_equals(s.str(),
-		"testdir: rescanned 2007/07.grib1\n"
-		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(TO_PACK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	// Perform packing and check that things are still ok afterwards
-	s.str(std::string());
-	writer.repack(s, true);
-	ensure_equals(s.str(), 
-		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
-	c.clear();
-
-	// Maintenance and pack are ok now
-	writer.maintenance(c, false);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-        s.str(std::string());
-        writer.repack(s, true);
-        ensure_equals(s.str(), string()); // Nothing should have happened
-        c.clear();
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
-}
-
-// Test accuracy of maintenance scan, on a dataset with a data file larger than 2**31
-template<> template<>
-void to::test<17>()
-{
-	stringstream s;
-
-	// Simulate 2007/07-07.grib1 to be 6G already
-	system("mkdir -p testdir/2007");
-	system("touch testdir/2007/07-07.grib1");
-	// Truncate the last grib out of a file
-	if (truncate("testdir/2007/07-07.grib1", 6000000000LLU) < 0)
-		throw wibble::exception::System("truncating testdir/2007/07-07.grib1");
-	acquireSamples();
-	system("rm testdir/needs-check-do-not-pack");
-	arki::dataset::ondisk2::Writer writer(cfg);
-
-	MaintenanceCollector c;
-	writer.maintenance(c, false);
-	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.count(TO_PACK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-#if 0
-// Rescanning a 6G+ file with grib_api is SLOW!
-
-	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true, false);
-	ensure_equals(s.str(),
-		"testdir: rescanned 2007/07.grib1\n"
-		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(TO_PACK), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-cerr  << "ZAERBA 4" << endl;
-
-	// Perform packing and check that things are still ok afterwards
-	s.str(std::string());
-	writer.repack(s, true);
-	ensure_equals(s.str(), 
-		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
-	c.clear();
-
-	// Maintenance and pack are ok now
-	writer.maintenance(c, false);
-	ensure_equals(c.count(OK), 2u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-        s.str(std::string());
-        writer.repack(s, true);
-        ensure_equals(s.str(), string()); // Nothing should have happened
-        c.clear();
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
-#endif
-}
-
 // Test accuracy of maintenance scan, with index, on dataset with some
 // rebuild flagfiles, and duplicate items inside
 template<> template<>
-void to::test<18>()
+void to::test<12>()
 {
 	acquireSamples();
 
