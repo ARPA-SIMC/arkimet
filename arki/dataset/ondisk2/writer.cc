@@ -467,6 +467,9 @@ size_t Writer::repackFile(const std::string& relpath)
 		if (unlink(mdpathname.c_str()) < 0)
 			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
 
+	// Prevent reading the still open old file using the new offsets
+	Metadata::flushDataReaders();
+
 	// Rename the file with to final name
 	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
 		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);

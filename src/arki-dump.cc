@@ -112,6 +112,10 @@ static void addToSummary(runtime::Input& in, Summary& s)
 			summary.read(buf, version, in.name());
 			s.add(summary);
 		}
+		else if (signature == "MG")
+		{
+			// TODO
+		}
 	}
 }
 

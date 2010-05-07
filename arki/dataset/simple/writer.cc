@@ -323,8 +323,12 @@ size_t Writer::repackFile(const std::string& relpath)
 	mdc.sendTo(copier);
 	copier.flush();
 
+	// Prevent reading the still open old file using the new offsets
+	Metadata::flushDataReaders();
+
 	// Remove existing cached metadata, since we scramble their order
 	sys::fs::deleteIfExists(pathname + ".metadata");
+	sys::fs::deleteIfExists(pathname + ".summary");
 
 	size_t size_pre = files::size(pathname);
 	size_t size_post = files::size(pntmp);
