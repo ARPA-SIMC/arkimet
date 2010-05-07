@@ -71,6 +71,23 @@ std::string OutputChecker::join() const
 	return str::join(lines.begin(), lines.end(), "\n");
 }
 
+void OutputChecker::ignore_line_containing(const std::string& needle)
+{
+	splitIfNeeded();
+
+	for (vector<string>::iterator i = lines.begin();
+			i != lines.end(); ++i)
+	{
+		if ((*i)[0] == '!') continue;
+
+		if (i->find(needle) != std::string::npos )
+		{
+			(*i)[0] = '!';
+			break;
+		}
+	}
+}
+
 void OutputChecker::impl_ensure_line_contains(const wibble::tests::Location& loc, const std::string& needle)
 {
 	splitIfNeeded();

@@ -49,6 +49,8 @@ struct OutputChecker : public std::stringstream
 	
 	OutputChecker();
 
+	void ignore_line_containing(const std::string& needle);
+
 #define ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(__FILE__, __LINE__, "look for " #x), (x))
 #define inner_ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(loc, __FILE__, __LINE__, "look for " #x), (x))
 	void impl_ensure_line_contains(const wibble::tests::Location& loc, const std::string& needle);
