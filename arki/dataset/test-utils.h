@@ -32,6 +32,23 @@
 namespace arki {
 struct Metadata;
 struct Dispatcher;
+struct ReadonlyDataset;
+struct WritableDataset;
+
+namespace dataset {
+struct Local;
+struct WritableLocal;
+
+namespace ondisk2 {
+struct Reader;
+struct Writer;
+}
+
+namespace simple {
+struct Reader;
+struct Writer;
+}
+}
 
 namespace tests{
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
@@ -81,9 +98,33 @@ struct DatasetTest : public dataset::maintenance::MaintFileVisitor
 
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
+
+	ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
+	WritableDataset* makeWriter(const ConfigFile* wcfg = 0);
+	dataset::Local* makeLocalReader(const ConfigFile* wcfg = 0);
+	dataset::WritableLocal* makeLocalWriter(const ConfigFile* wcfg = 0);
+	dataset::ondisk2::Reader* makeOndisk2Reader(const ConfigFile* wcfg = 0);
+	dataset::ondisk2::Writer* makeOndisk2Writer(const ConfigFile* wcfg = 0);
+	dataset::simple::Reader* makeSimpleReader(const ConfigFile* wcfg = 0);
+	dataset::simple::Writer* makeSimpleWriter(const ConfigFile* wcfg = 0);
 	
 	// Return the number of days passed from the given date until today
 	int days_since(int year, int month, int day);
+
+	// Clean the dataset directory
+	void clean(const ConfigFile* wcfg = 0);
+
+	// Import a file
+	void import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1");
+
+	// Recreate the dataset importing data into it
+	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1");
+
+#define ensure_maint_clean(...) impl_ensure_maint_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
+	void impl_ensure_maint_clean(const wibble::tests::Location& loc, size_t filecount, const ConfigFile* wcfg = 0);
+
+#define ensure_localds_clean(...) impl_ensure_localds_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
+	void impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
 };
 
 }

@@ -23,7 +23,6 @@
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
-#include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
@@ -46,36 +45,13 @@ using namespace arki::utils::files;
 struct arki_dataset_ondisk2_reader_shar : public arki::tests::DatasetTest {
 	arki_dataset_ondisk2_reader_shar()
 	{
-		// Cleanup the test datasets
-		system("rm -rf testds");
-		system("mkdir testds");
-
-		// In-memory dataset configuration
-		string conf =
-			"[testds]\n"
-			"type = ondisk2\n"
-			"step = daily\n"
-			"filter = origin: GRIB1,200\n"
-			"name = testds\n"
-			"path = testds\n"
-			"postprocess = testcountbytes\n";
-		stringstream incfg(conf);
-		cfg.parse(incfg, "(memory)");
-
-		// Import all data from test.grib1
-		Metadata md;
-		scan::Grib scanner;
-		scanner.open("inbound/test.grib1");
-
-		dataset::ondisk2::Writer testds(*cfg.section("testds"));
-		size_t count = 0;
-		while (scanner.next(md))
-		{
-			ensure(testds.acquire(md) == WritableDataset::ACQ_OK);
-			++count;
-		}
-		ensure_equals(count, 3u);
-		testds.flush();
+		cfg.setValue("path", "testds");
+		cfg.setValue("name", "testds");
+		cfg.setValue("type", "ondisk2");
+		cfg.setValue("step", "daily");
+		cfg.setValue("postprocess", "testcountbytes");
+		
+		clean_and_import();
 	}
 };
 TESTGRP(arki_dataset_ondisk2_reader);
@@ -84,8 +60,8 @@ TESTGRP(arki_dataset_ondisk2_reader);
 template<> template<>
 void to::test<1>()
 {
-	ondisk2::Reader testds(*cfg.section("testds"));
-	ensure(testds.hasWorkingIndex());
+	auto_ptr<ondisk2::Reader> reader(makeOndisk2Reader());
+	ensure(reader->hasWorkingIndex());
 
 	// Use dup() because PosixBuf will close its file descriptor at destruction
 	// time
@@ -93,7 +69,7 @@ void to::test<1>()
 	ostream os(&pb);
 	dataset::ByteQuery bq;
 	bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
-	testds.queryBytes(bq, os);
+	reader->queryBytes(bq, os);
 
 	string out = utils::readFile("testcountbytes.out");
 	ensure_equals(out, "7400\n");
@@ -104,10 +80,10 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	ondisk2::Reader testds(*cfg.section("testds"));
+	auto_ptr<ondisk2::Reader> reader(makeOndisk2Reader());
 
 	Summary s;
-	testds.querySummary(Matcher::parse("reftime:=2007"), s);
+	reader->querySummary(Matcher::parse("reftime:=2007"), s);
 	ensure_equals(s.count(), 3u);
 	ensure_equals(s.size(), 44412u);
 

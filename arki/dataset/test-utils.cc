@@ -20,11 +20,18 @@
 #include <arki/dataset/test-utils.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
+#include <arki/dataset/local.h>
+#include <arki/dataset/ondisk2.h>
+#include <arki/dataset/simple/reader.h>
+#include <arki/dataset/simple/writer.h>
 #include <arki/dataset/simple/index.h>
 #include <arki/dispatcher.h>
+#include <arki/scan/grib.h>
+#include <arki/utils/files.h>
 #include <wibble/string.h>
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
+#include <wibble/sys/fs.h>
 #include <fstream>
 #include <strings.h>
 
@@ -159,6 +166,134 @@ int DatasetTest::days_since(int year, int month, int day)
 
 	//cerr << str::fmt(duration/(3600*24)) + " days";
 	return duration/(3600*24);
+}
+
+ReadonlyDataset* DatasetTest::makeReader(const ConfigFile* wcfg)
+{
+	if (!wcfg) wcfg = &cfg;
+	ReadonlyDataset* ds = ReadonlyDataset::create(*wcfg);
+	ensure(ds);
+	return ds;
+}
+
+WritableDataset* DatasetTest::makeWriter(const ConfigFile* wcfg)
+{
+	if (!wcfg) wcfg = &cfg;
+	WritableDataset* ds = WritableDataset::create(*wcfg);
+	ensure(ds);
+	return ds;
+}
+
+dataset::Local* DatasetTest::makeLocalReader(const ConfigFile* wcfg)
+{
+	using namespace arki::dataset;
+	ReadonlyDataset* ds = makeReader(wcfg);
+	Local* wl = dynamic_cast<Local*>(ds);
+	ensure(wl);
+	return wl;
+}
+
+dataset::WritableLocal* DatasetTest::makeLocalWriter(const ConfigFile* wcfg)
+{
+	using namespace arki::dataset;
+	WritableDataset* ds = makeWriter(wcfg);
+	WritableLocal* wl = dynamic_cast<WritableLocal*>(ds);
+	ensure(wl);
+	return wl;
+}
+
+dataset::ondisk2::Reader* DatasetTest::makeOndisk2Reader(const ConfigFile* wcfg)
+{
+	ReadonlyDataset* ds = makeReader(wcfg);
+	dataset::ondisk2::Reader* wl = dynamic_cast<dataset::ondisk2::Reader*>(ds);
+	ensure(wl);
+	return wl;
+}
+
+dataset::ondisk2::Writer* DatasetTest::makeOndisk2Writer(const ConfigFile* wcfg)
+{
+	WritableDataset* ds = makeWriter(wcfg);
+	dataset::ondisk2::Writer* wl = dynamic_cast<dataset::ondisk2::Writer*>(ds);
+	ensure(wl);
+	return wl;
+}
+
+dataset::simple::Reader* DatasetTest::makeSimpleReader(const ConfigFile* wcfg)
+{
+	ReadonlyDataset* ds = makeReader(wcfg);
+	dataset::simple::Reader* wl = dynamic_cast<dataset::simple::Reader*>(ds);
+	ensure(wl);
+	return wl;
+}
+
+dataset::simple::Writer* DatasetTest::makeSimpleWriter(const ConfigFile* wcfg)
+{
+	WritableDataset* ds = makeWriter(wcfg);
+	dataset::simple::Writer* wl = dynamic_cast<dataset::simple::Writer*>(ds);
+	ensure(wl);
+	return wl;
+}
+
+void DatasetTest::clean(const ConfigFile* wcfg)
+{
+	if (!wcfg) wcfg = &cfg;
+
+	system(("rm -rf " + wcfg->value("path")).c_str());
+	system(("mkdir " + wcfg->value("path")).c_str());
+}
+
+void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
+{
+	if (!wcfg) wcfg = &cfg;
+
+	{
+		std::auto_ptr<WritableDataset> writer(makeWriter(wcfg));
+
+		scan::Grib scanner;
+		scanner.open(testfile);
+
+		Metadata md;
+		while (scanner.next(md))
+		{
+			WritableDataset::AcquireResult res = writer->acquire(md);
+			ensure_equals(res, WritableDataset::ACQ_OK);
+		}
+	}
+
+	utils::files::removeDontpackFlagfile(wcfg->value("path"));
+}
+
+void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& testfile)
+{
+	if (!wcfg) wcfg = &cfg;
+
+	clean(wcfg);
+	import(wcfg, testfile);
+}
+
+void DatasetTest::impl_ensure_maint_clean(const wibble::tests::Location& loc, size_t filecount, const ConfigFile* wcfg)
+{
+	auto_ptr<dataset::WritableLocal> writer(makeLocalWriter(wcfg));
+	MaintenanceCollector c;
+	writer->maintenance(c);
+	inner_ensure_equals(c.fileStates.size(), filecount);
+	inner_ensure_equals(c.count(OK), filecount);
+	inner_ensure_equals(c.remaining(), string());
+	inner_ensure(c.isClean());
+}
+
+
+void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg)
+{
+	impl_ensure_maint_clean(loc, filecount, wcfg);
+
+	auto_ptr<dataset::Local> reader(makeLocalReader(wcfg));
+	metadata::Collection mdc;
+	reader->queryData(dataset::DataQuery(Matcher(), false), mdc);
+	inner_ensure_equals(mdc.size(), resultcount);
+
+	if (filecount > 0)
+		inner_ensure(sys::fs::access(str::joinpath(reader->path(), idxfname()), F_OK));
 }
 
 }

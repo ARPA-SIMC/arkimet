@@ -30,32 +30,6 @@
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 
-namespace arki {
-namespace tests {
-
-#define ensure_dataset_clean(x, y, z) arki::tests::impl_ensure_dataset_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-template<typename DS>
-void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_t filecount, size_t resultcount)
-{
-	using namespace std;
-	using namespace arki;
-	using namespace arki::utils;
-
-	MaintenanceCollector c;
-	ds.maintenance(c);
-	inner_ensure_equals(c.fileStates.size(), filecount);
-	inner_ensure_equals(c.count(dataset::maintenance::MaintFileVisitor::OK), filecount);
-	inner_ensure_equals(c.remaining(), string());
-	inner_ensure(c.isClean());
-
-	metadata::Collection mdc;
-	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	inner_ensure_equals(mdc.size(), resultcount);
-}
-
-}
-}
-
 namespace tut {
 using namespace std;
 using namespace wibble;
@@ -79,38 +53,11 @@ struct arki_dataset_simple_writer_shar : public DatasetTest {
 		cfg.setValue("step", "daily");
 	}
 
-#define ensure_simpleds_clean(x, y, z) impl_ensure_simpleds_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-	void impl_ensure_simpleds_clean(const wibble::tests::Location& loc, const ConfigFile& cfg, size_t filecount, size_t resultcount)
-	{
-		dataset::simple::Reader reader(cfg);
-		arki::tests::impl_ensure_dataset_clean(loc, reader, filecount, resultcount);
-		if (filecount > 0)
-			inner_ensure(sys::fs::access(str::joinpath(reader.path(), idxfname()), F_OK));
-	}
-
 	// Recreate the dataset importing data into it
 	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1")
 	{
-		if (!wcfg) wcfg = &cfg;
-
-		system(("rm -rf " + wcfg->value("path")).c_str());
-		system(("mkdir " + wcfg->value("path")).c_str());
-
-		{
-			dataset::simple::Writer writer(*wcfg);
-
-			scan::Grib scanner;
-			scanner.open(testfile);
-
-			Metadata md;
-			while (scanner.next(md))
-			{
-				WritableDataset::AcquireResult res = writer.acquire(md);
-				ensure_equals(res, WritableDataset::ACQ_OK);
-			}
-		}
-
-		ensure_simpleds_clean(*wcfg, 3, 3);
+		DatasetTest::clean_and_import(wcfg, testfile);
+		ensure_localds_clean(3, 3, wcfg);
 	}
 };
 TESTGRP(arki_dataset_simple_writer);
@@ -127,7 +74,7 @@ void to::test<1>()
 	scan::Grib scanner;
 	scanner.open("inbound/test.grib1");
 
-	dataset::simple::Writer writer(cfg);
+	Writer writer(cfg);
 	ensure(scanner.next(md));
 
 	// Import once in the empty dataset
@@ -171,11 +118,7 @@ void to::test<1>()
 	ensure(files::timestamp("testds/2007/07-08.grib1.summary") <= files::timestamp("testds/" + idxfname()));
 	ensure(files::hasDontpackFlagfile("testds"));
 
-	
-	{
-		dataset::simple::Reader reader(cfg);
-		ensure_dataset_clean(reader, 1, 2);
-	}
+	ensure_localds_clean(1, 2);
 }
 
 // Test appending to existing files
@@ -234,7 +177,7 @@ void to::test<2>()
 	ensure(files::timestamp("testds/20/2007.grib1.summary") <= files::timestamp("testds/" + idxfname()));
 	
 	// Dataset is fine and clean
-	ensure_simpleds_clean(cfg, 1, 2);
+	ensure_localds_clean(1, 2, &cfg);
 }
 
 // Test maintenance scan on non-indexed files
@@ -254,7 +197,12 @@ void to::test<3>()
 	setup();
 
 	// Query now is ok, but empty
-	ensure_simpleds_clean(cfg, 0, 0);
+	{
+		auto_ptr<Reader> reader(makeSimpleReader());
+		metadata::Collection mdc;
+		reader->queryData(dataset::DataQuery(Matcher(), false), mdc);
+		ensure_equals(mdc.size(), 0u);
+	}
 
 	// Maintenance should show one file to index
 	{
@@ -286,7 +234,7 @@ void to::test<3>()
 	}
 
 	// Everything should be fine now
-	ensure_simpleds_clean(cfg, 1, 3);
+	ensure_localds_clean(1, 3);
 
 	// Remove the file from the index
 	{
@@ -307,7 +255,7 @@ void to::test<3>()
 	}
 
 	// Query is still ok, but empty
-	ensure_simpleds_clean(cfg, 0, 0);
+	ensure_localds_clean(0, 0);
 }
 
 // Test maintenance scan with missing metadata and summary
@@ -367,7 +315,7 @@ void to::test<4>()
 	}
 
 	// Everything should be fine now
-	ensure_simpleds_clean(cfg, 3, 3);
+	ensure_localds_clean(3, 3);
 	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
@@ -460,7 +408,7 @@ void to::test<5>()
 	}
 
 	// Everything should be fine now
-	ensure_simpleds_clean(cfg, 3, 3);
+	ensure_localds_clean(3, 3);
 	ensure(sys::fs::access("testds/2007/07-08.grib1", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
@@ -532,7 +480,7 @@ void to::test<6>()
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
 	// Query is ok
-	ensure_simpleds_clean(cfg, 3, 3);
+	ensure_localds_clean(3, 3);
 
 	// Try removing summary and metadata
 	setup.removemd();
@@ -579,7 +527,7 @@ void to::test<6>()
 	}
 
 	// Everything should be fine now
-	ensure_simpleds_clean(cfg, 3, 3);
+	ensure_localds_clean(3, 3);
 	ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
 	ensure(sys::fs::access("testds/2007/07-08.grib1.gz.idx", F_OK));
@@ -680,7 +628,7 @@ void to::test<7>()
 	}
 
 	// Everything should be fine now
-	ensure_simpleds_clean(cfg, 2, 2);
+	ensure_localds_clean(2, 2);
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 
 
@@ -704,7 +652,7 @@ void to::test<7>()
 	}
 
 	// And everything else should still be queriable
-	ensure_simpleds_clean(cfg, 2, 2);
+	ensure_localds_clean(2, 2);
 	ensure(sys::fs::access("testds/" + idxfname(), F_OK));
 }
 

@@ -29,7 +29,6 @@
 #include <arki/matcher.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/scan/grib.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
 #include <wibble/grcal/grcal.h>
@@ -43,36 +42,16 @@ using namespace arki::dataset;
 using namespace arki::utils;
 using namespace arki::dataset::simple;
 
-struct arki_dataset_simple_reader_shar : public dataset::maintenance::MaintFileVisitor {
-	// Little dirty hack: implement MaintFileVisitor so we can conveniently
-	// access State
-
-	ConfigFile cfg;
-
+struct arki_dataset_simple_reader_shar : public arki::tests::DatasetTest {
 	arki_dataset_simple_reader_shar()
 	{
-		system("rm -rf testds");
-		system("mkdir testds");
-
-		cfg.setValue("type", "simple");
-		cfg.setValue("step", "daily");
 		cfg.setValue("path", "testds");
 		cfg.setValue("name", "testds");
+		cfg.setValue("type", "simple");
+		cfg.setValue("step", "daily");
+		cfg.setValue("postprocess", "testcountbytes");
 
-		// Import all data from test.grib1
-		Metadata md;
-		scan::Grib scanner;
-		scanner.open("inbound/test.grib1");
-
-		dataset::simple::Writer testds(cfg);
-		size_t count = 0;
-		while (scanner.next(md))
-		{
-			ensure(testds.acquire(md) == WritableDataset::ACQ_OK);
-			++count;
-		}
-		ensure_equals(count, 3u);
-		testds.flush();
+		clean_and_import();
 	}
 
 	virtual void operator()(const std::string& file, State state) {}
@@ -84,7 +63,7 @@ TESTGRP(arki_dataset_simple_reader);
 template<> template<>
 void to::test<1>()
 {
-	simple::Reader testds(cfg);
+	auto_ptr<simple::Reader> reader(makeSimpleReader());
 
 	// Use dup() because PosixBuf will close its file descriptor at destruction
 	// time
@@ -92,7 +71,7 @@ void to::test<1>()
 	ostream os(&pb);
 	dataset::ByteQuery bq;
 	bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
-	testds.queryBytes(bq, os);
+	reader->queryBytes(bq, os);
 
 	string out = utils::readFile("testcountbytes.out");
 	ensure_equals(out, "7399\n");

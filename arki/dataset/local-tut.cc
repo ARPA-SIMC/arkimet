@@ -24,7 +24,6 @@
 #include <arki/dataset/local.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/scan/any.h>
-#include <arki/scan/grib.h>
 #include <arki/utils/files.h>
 #include <wibble/grcal/grcal.h>
 #include <wibble/sys/fs.h>
@@ -77,64 +76,6 @@ struct arki_dataset_local_shar : public DatasetTest {
 		cfg.setValue("step", "daily");
 	}
 
-	std::auto_ptr<Local> makeReader(const ConfigFile* wcfg = 0)
-	{
-		if (!wcfg) wcfg = &cfg;
-		ReadonlyDataset* ds = ReadonlyDataset::create(*wcfg);
-		Local* wl = dynamic_cast<Local*>(ds);
-		ensure(wl);
-		return auto_ptr<Local>(wl);
-	}
-
-	std::auto_ptr<WritableLocal> makeWriter(const ConfigFile* wcfg = 0)
-	{
-		if (!wcfg) wcfg = &cfg;
-		WritableDataset* ds = WritableDataset::create(*wcfg);
-		WritableLocal* wl = dynamic_cast<WritableLocal*>(ds);
-		ensure(wl);
-		return auto_ptr<WritableLocal>(wl);
-	}
-
-	// Clean the dataset directory
-	void clean(const ConfigFile* wcfg = 0)
-	{
-		if (!wcfg) wcfg = &cfg;
-
-		system(("rm -rf " + wcfg->value("path")).c_str());
-		system(("mkdir " + wcfg->value("path")).c_str());
-	}
-
-	// Import a file
-	void import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1")
-	{
-		if (!wcfg) wcfg = &cfg;
-
-		{
-			std::auto_ptr<WritableLocal> writer = makeWriter(wcfg);
-
-			scan::Grib scanner;
-			scanner.open(testfile);
-
-			Metadata md;
-			while (scanner.next(md))
-			{
-				WritableDataset::AcquireResult res = writer->acquire(md);
-				ensure_equals(res, WritableDataset::ACQ_OK);
-			}
-		}
-
-		utils::files::removeDontpackFlagfile(wcfg->value("path"));
-	}
-
-	// Recreate the dataset importing data into it
-	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1")
-	{
-		if (!wcfg) wcfg = &cfg;
-
-		clean(wcfg);
-		import(wcfg, testfile);
-	}
-
 };
 TESTGRP(arki_dataset_local);
 
@@ -146,14 +87,7 @@ void to::test<1>()
 
 	// Ensure the archive appears clean
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
-		MaintenanceCollector c;
-		writer->maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
+		ensure_maint_clean(3);
 
 		// Check that maintenance does not accidentally create an archive
 		ensure(!sys::fs::access("testds/.archive", F_OK));
@@ -161,44 +95,32 @@ void to::test<1>()
 
 	// Ensure packing has nothing to report
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		stringstream s;
 		writer->repack(s, false);
 		ensure_equals(s.str(), "");
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
+		ensure_maint_clean(3);
 	}
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		stringstream s;
 		writer->repack(s, true);
 		ensure_not_contains(s.str(), "2007/");
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
+		ensure_maint_clean(3);
 	}
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		stringstream s;
 		writer->check(s, true, true);
 		ensure_equals(s.str(), string()); // Nothing should have happened
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
+		ensure_maint_clean(3);
 	}
 }
 
@@ -213,7 +135,7 @@ void to::test<2>()
 
 	// Check if files to archive are detected
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 
 		MaintenanceCollector c;
 		writer->maintenance(c);
@@ -227,7 +149,7 @@ void to::test<2>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": archived 2007/07-07.grib1");
@@ -249,7 +171,7 @@ void to::test<2>()
 
 	// Maintenance should now show a normal situation
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c);
 		ensure_equals(c.count(OK), 1u);
@@ -260,7 +182,7 @@ void to::test<2>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		s.str(std::string());
 		writer->check(s, true, true);
@@ -277,7 +199,7 @@ void to::test<2>()
 
 	// Test that querying returns all items
 	{
-		std::auto_ptr<Local> reader = makeReader(&cfg);
+		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
 		metadata::Counter counter;
 		reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
@@ -303,7 +225,7 @@ void to::test<3>()
 
 	// Test that querying returns all items
 	{
-		std::auto_ptr<Local> reader = makeReader(&cfg);
+		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
 		metadata::Counter counter;
 		reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
@@ -312,7 +234,7 @@ void to::test<3>()
 
 	// Check if files to archive are detected
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 
 		MaintenanceCollector c;
 		writer->maintenance(c);
@@ -326,7 +248,7 @@ void to::test<3>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": archived 2007/07-07.grib1");
@@ -360,7 +282,7 @@ void to::test<3>()
 
 	// Maintenance should now show a normal situation
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c);
 		ensure_equals(c.count(OK), 1u);
@@ -371,7 +293,7 @@ void to::test<3>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		s.str(std::string());
 		writer->check(s, true, true);
@@ -388,7 +310,7 @@ void to::test<3>()
 
 	// Test that querying returns all items
 	{
-		std::auto_ptr<Local> reader = makeReader(&cfg);
+		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
 		metadata::Counter counter;
 		reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
@@ -413,7 +335,7 @@ void to::test<4>()
 
 	// Check that expired files are detected
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c);
 
@@ -426,7 +348,7 @@ void to::test<4>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 
 		OutputChecker s;
 		writer->repack(s, true);
@@ -434,25 +356,17 @@ void to::test<4>()
 		s.ensure_line_contains(": deleted 2007/07-08.grib1");
 		s.ensure_line_contains(": 2 files deleted, 2 files removed from index");
 		s.ensure_all_lines_seen();
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
 	}
+	ensure_maint_clean(1);
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		writer->check(s, true, true);
 		ensure_equals(s.str(), string()); // Nothing should have happened
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
+
+		ensure_maint_clean(1);
 	}
 }
 
@@ -470,7 +384,7 @@ void to::test<5>()
 
 	// See that the truncated file is detected
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c);
 
@@ -483,7 +397,7 @@ void to::test<5>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
 
 		writer->repack(s, true);
@@ -500,7 +414,7 @@ void to::test<5>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 
 		OutputChecker s;
 		writer->check(s, true, true);
@@ -519,7 +433,7 @@ void to::test<5>()
 	// Perform packing after the file has been rescanned and check that
 	// things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 
 		OutputChecker s;
 		writer->repack(s, true);
@@ -527,11 +441,7 @@ void to::test<5>()
 		s.ensure_line_contains(": 1 file packed");
 		s.ensure_all_lines_seen();
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
+		ensure_maint_clean(1);
 	}
 }
 
@@ -545,7 +455,7 @@ void to::test<6>()
 
 	// Pack the dataset because 07.grib1 imported data out of order
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		writer->repack(s, true);
 		ensure_contains(s.str(), ": packed 2007/07.grib1");
@@ -556,19 +466,11 @@ void to::test<6>()
 	system("dd if=/dev/zero of=testds/2007/07.grib1 bs=1 count=2 conv=notrunc status=noxfer > /dev/null 2>&1");
 
 	// A quick check has nothing to complain
-	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.fileStates.size(), 2u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
+	ensure_maint_clean(2);
 
 	// A thorough check should find the corruption
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c, false);
 		ensure_equals(c.fileStates.size(), 2u);
@@ -580,7 +482,7 @@ void to::test<6>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		writer->check(s, true, false);
 		ensure_contains(s.str(), ": rescanned 2007/07.grib1");
@@ -596,7 +498,7 @@ void to::test<6>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		writer->repack(s, true);
 		ensure_contains(s.str(), ": packed 2007/07.grib1");
@@ -604,15 +506,9 @@ void to::test<6>()
 	}
 
 	// Maintenance and pack are ok now
+	ensure_maint_clean(2);
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
-
-		MaintenanceCollector c;
-		writer->maintenance(c, false);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		writer->repack(s, true);
 		ensure_equals(s.str(), string()); // Nothing should have happened
@@ -636,7 +532,7 @@ void to::test<7>()
 	import();
 
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		MaintenanceCollector c;
 		writer->maintenance(c, false);
 		ensure_equals(c.fileStates.size(), 3u);
@@ -699,7 +595,7 @@ void to::test<8>()
 
 	// Initial check finds the deleted file
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		MaintenanceCollector c;
 		writer->maintenance(c);
 
@@ -712,7 +608,7 @@ void to::test<8>()
 
 	// Packing has something to report
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 		writer->repack(s, false);
 		s.ensure_line_contains(": 2007/07-07.grib1 should be removed from the index");
@@ -730,32 +626,23 @@ void to::test<8>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": deleted from index 2007/07-07.grib1");
 		s.ensure_line_contains(": 1 file removed from index");
 		s.ensure_all_lines_seen();
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
 	}
+	ensure_maint_clean(2);
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 		writer->check(s, true, true);
 		s.ensure_all_lines_seen(); // Nothing should have happened
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.remaining(), string());
-		ensure(c.isClean());
+		ensure_maint_clean(2);
 	}
 }
 
@@ -768,7 +655,7 @@ void to::test<9>()
 	system("rm testds/2007/07-07.grib1");
 
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		MaintenanceCollector c;
 		writer->maintenance(c);
 
@@ -781,33 +668,24 @@ void to::test<9>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 
 		writer->check(s, true, true);
 		s.ensure_line_contains(": deindexed 2007/07-07.grib1");
 		s.ensure_line_contains("1 file removed from index");
 		s.ensure_all_lines_seen();
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
 	}
+	ensure_maint_clean(2);
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_all_lines_seen(); // Nothing should have happened
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
+		ensure_maint_clean(2);
 	}
 }
 
@@ -823,7 +701,7 @@ void to::test<10>()
 
 	// See if the files to index are detected in the correct number
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		MaintenanceCollector c;
 		writer->maintenance(c);
 
@@ -835,7 +713,7 @@ void to::test<10>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 
 		writer->check(s, true, true);
@@ -844,29 +722,20 @@ void to::test<10>()
 		s.ensure_line_contains("rescanned 2007/10-09.grib1");
 		s.ensure_line_contains("3 files rescanned");
 		s.ensure_all_lines_seen();
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
 	}
+	ensure_maint_clean(3);
 
 	// The spurious file should not have been touched
 	ensure(sys::fs::access("testds/2007/07.grib1.tmp", F_OK));
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_all_lines_seen(); // Nothing should have happened
 
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
+		ensure_maint_clean(3);
 	}
 }
 
@@ -883,7 +752,7 @@ void to::test<11>()
 
 	// See if the files to index are detected in the correct number
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		MaintenanceCollector c;
 		writer->maintenance(c);
 
@@ -895,7 +764,7 @@ void to::test<11>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 		writer->check(s, true, true);
 		s.ensure_line_contains(": rescanned foo/bar/test.grib1");
@@ -916,24 +785,19 @@ void to::test<11>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer = makeWriter();
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": packed foo/bar/test.grib1");
 		s.ensure_line_contains(": 1 file packed");
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
 	}
+	ensure_maint_clean(1);
 
 	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412);
 
 	// Test querying
 	{
-		std::auto_ptr<Local> reader = makeReader(&cfg);
+		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
 		metadata::Collection mdc;
 		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
@@ -952,8 +816,7 @@ void to::test<12>()
 	using namespace arki::types;
 
 	clean_and_import();
-
-	std::auto_ptr<Local> reader = makeReader(&cfg);
+	std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
 	metadata::Collection mdc;
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
@@ -982,7 +845,7 @@ template<> template<>
 void to::test<13>()
 {
 	clean_and_import();
-	std::auto_ptr<Local> reader = makeReader();
+	std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
 	std::stringstream os;
 	dataset::ByteQuery bq;
@@ -999,7 +862,7 @@ void to::test<14>()
 	using namespace arki::types;
 
 	clean_and_import();
-	std::auto_ptr<Local> reader = makeReader(&cfg);
+	std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
 	metadata::Collection mdc;
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
@@ -1034,7 +897,7 @@ void to::test<15>()
 	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
 	clean_and_import(&cfg);
 	{
-		auto_ptr<WritableLocal> writer = makeWriter(&cfg);
+		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": archived 2007/07-07.grib1");
@@ -1044,8 +907,7 @@ void to::test<15>()
 		s.ensure_all_lines_seen();
 	}
 
-
-	std::auto_ptr<Local> reader = makeReader(&cfg);
+	std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 	metadata::Collection mdc;
 
 	reader->queryData(dataset::DataQuery(Matcher::parse(""), true), mdc);
@@ -1128,7 +990,7 @@ void to::test<16>()
 	system("rm -rf testds");
 	system("mkdir testds");
 
-	std::auto_ptr<Local> reader = makeReader();
+	std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
 	metadata::Collection mdc;
 	reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
