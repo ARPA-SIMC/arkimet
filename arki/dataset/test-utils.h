@@ -98,6 +98,8 @@ struct DatasetTest : public dataset::maintenance::MaintFileVisitor
 
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
+	// Return the file name of the archive index of the current dataset
+	std::string arcidxfname() const;
 
 	ReadonlyDataset* makeReader(const ConfigFile* wcfg = 0);
 	WritableDataset* makeWriter(const ConfigFile* wcfg = 0);
@@ -125,6 +127,33 @@ struct DatasetTest : public dataset::maintenance::MaintFileVisitor
 
 #define ensure_localds_clean(...) impl_ensure_localds_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
 	void impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
+};
+
+struct TempConfig
+{
+	ConfigFile& cfg;
+	ConfigFile backup;
+
+	TempConfig(ConfigFile& cfg)
+		: cfg(cfg), backup(cfg)
+	{
+	}
+
+	TempConfig(ConfigFile& cfg, const std::string& key, const std::string& val)
+		: cfg(cfg), backup(cfg)
+	{
+		override(key, val);
+	}
+
+	~TempConfig()
+	{
+		cfg = backup;
+	}
+
+	void override(const std::string& key, const std::string& val)
+	{
+		cfg.setValue(key, val);
+	}
 };
 
 }

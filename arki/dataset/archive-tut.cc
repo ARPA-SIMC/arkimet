@@ -63,12 +63,9 @@ using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
 
-struct arki_dataset_archive_shar : public dataset::maintenance::MaintFileVisitor {
+struct arki_dataset_archive_shar : public DatasetTest {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
 	// access State
-
-	ConfigFile cfg;
-
 	arki_dataset_archive_shar()
 	{
 		system("rm -rf testds");
@@ -83,20 +80,13 @@ struct arki_dataset_archive_shar : public dataset::maintenance::MaintFileVisitor
 		cfg.setValue("unique", "origin, reftime");
 	}
 
-	virtual void operator()(const std::string& file, State state) {}
-
-	std::string idxfname() const
-	{
-		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-	}
-
 #define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 	void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
 	{
 		Archive arc(dir);
 		arc.openRO();
 		arki::tests::impl_ensure_dataset_clean(loc, arc, filecount, resultcount);
-		inner_ensure(sys::fs::access(str::joinpath(dir, idxfname()), F_OK));
+		inner_ensure(sys::fs::access(str::joinpath(dir, arcidxfname()), F_OK));
 	}
 };
 TESTGRP(arki_dataset_archive);
@@ -117,7 +107,7 @@ void to::test<1>()
 		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
 
 		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
 		ensure_equals(mdc.size(), 3u);
@@ -199,7 +189,7 @@ void to::test<3>()
 		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 		ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
 	}
 
 	// Query now is ok
@@ -263,7 +253,7 @@ void to::test<4>()
 		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
 		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
 	}
 
 	// Query now is ok
@@ -330,7 +320,7 @@ void to::test<5>()
 		ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
 		ensure(!sys::fs::access("testds/.archive/last/2.grib1.metadata", F_OK));
 		ensure(sys::fs::access("testds/.archive/last/2.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
 	}
 
 	// Query now is ok
@@ -417,7 +407,7 @@ void to::test<6>()
 		ensure(sys::fs::access("testds/.archive/last/test.grib1.gz.idx", F_OK));
 		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
 		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
 	}
 
 	// Everything is still ok

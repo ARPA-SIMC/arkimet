@@ -156,6 +156,11 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
 		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
+std::string DatasetTest::arcidxfname() const
+{
+	return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+}
+
 int DatasetTest::days_since(int year, int month, int day)
 {
 	// Data are from 07, 08, 10 2007
