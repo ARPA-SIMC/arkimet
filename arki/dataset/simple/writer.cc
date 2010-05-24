@@ -352,6 +352,10 @@ size_t Writer::repackFile(const std::string& relpath)
 	mdc.sendTo(mds);
 	sum.writeAtomically(pathname + ".summary");
 
+	// Reindex with the new file information
+	time_t mtime = files::timestamp(pathname);
+	m_mft->acquire(relpath, mtime, sum);
+
 	return size_pre - size_post;
 }
 
