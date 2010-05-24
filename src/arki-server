@@ -29,12 +29,12 @@ class QueryProcess(object):
         "Cleanup everything after the session ends"
         res = self.proc.poll()
         if res == None:
-            log_access("seding SIGTERM to arki-query with pid %d", self.proc.pid);
+            log_access("seding SIGTERM to arki-query %s with pid %d", repr(self.args), self.proc.pid);
             os.kill(self.proc.pid, signal.SIGTERM)
             self.proc.wait()
             log_access("arki-query %d terminated.", self.proc.pid);
         else:
-            log_access("arki-query %d exited with code %d.", self.proc.pid, res);
+            log_access("arki-query %s with pid %d exited with code %d.", repr(self.args), self.proc.pid, res);
 
         if self.subdir:
             shutil.rmtree(self.subdir)
@@ -103,6 +103,8 @@ class QueryProcess(object):
                 else:
                     yield prefixes[idx], buf
         res = self.proc.wait()
+        if res != 0:
+            log_access("arki-query %s exited with error code %d", repr(self.args), res);
         yield "R", res
 
 
