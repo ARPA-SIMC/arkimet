@@ -2,8 +2,11 @@ arkimet (0.43-1) UNRELEASED; urgency=low
 
   * arki-server: log parameters of arki-query runs that end with errors
   * expa macro: applied patch by Emanuele Di Giacomo supporting @+/-n
+  * when repacking simple datasets, reindex repacked files with their new
+    timestamps
+  * arki-dump: dump compressed metadata
 
- -- Enrico Zini <enrico@debian.org>  Mon, 24 May 2010 12:29:13 +0100
+ -- Enrico Zini <enrico@debian.org>  Mon, 24 May 2010 18:33:16 +0100
 
 arkimet (0.42-1) UNRELEASED; urgency=low
 
