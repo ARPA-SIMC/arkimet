@@ -247,23 +247,31 @@ void FindMissing::end()
 	}
 }
 
-void MaintPrinter::operator()(const std::string& file, State state)
+void Dumper::operator()(const std::string& file, State state)
 {
 	switch (state)
 	{
-		case OK: cerr << file << " OK" << endl;
-		case TO_ARCHIVE: cerr << file << " TO ARCHIVE" << endl;
-		case TO_DELETE: cerr << file << " TO DELETE" << endl;
-		case TO_PACK: cerr << file << " TO PACK" << endl;
-		case TO_INDEX: cerr << file << " TO INDEX" << endl;
-		case TO_RESCAN: cerr << file << " TO RESCAN" << endl;
-		case DELETED: cerr << file << " DELETED" << endl;
-		case ARC_OK: cerr << file << " ARCHIVED OK" << endl;
-		case ARC_TO_INDEX: cerr << file << " TO INDEX IN ARCHIVE" << endl;
-		case ARC_TO_RESCAN: cerr << file << " TO RESCAN IN ARCHIVE" << endl;
-		case ARC_DELETED: cerr << " DELETED IN ARCHIVE" << endl;
-		default: cerr << " INVALID" << endl;
+		case OK: cerr << file << " OK" << endl; break;
+		case TO_ARCHIVE: cerr << file << " TO ARCHIVE" << endl; break;
+		case TO_DELETE: cerr << file << " TO DELETE" << endl; break;
+		case TO_PACK: cerr << file << " TO PACK" << endl; break;
+		case TO_INDEX: cerr << file << " TO INDEX" << endl; break;
+		case TO_RESCAN: cerr << file << " TO RESCAN" << endl; break;
+		case DELETED: cerr << file << " DELETED" << endl; break;
+		case ARC_OK: cerr << file << " ARCHIVED OK" << endl; break;
+		case ARC_TO_INDEX: cerr << file << " TO INDEX IN ARCHIVE" << endl; break;
+		case ARC_TO_RESCAN: cerr << file << " TO RESCAN IN ARCHIVE" << endl; break;
+		case ARC_DELETED: cerr << file << " DELETED IN ARCHIVE" << endl; break;
+		default: cerr << file << " INVALID" << endl; break;
 	}
+}
+
+Tee::Tee(MaintFileVisitor& one, MaintFileVisitor& two) : one(one), two(two) {}
+Tee::~Tee() {}
+void Tee::operator()(const std::string& file, State state)
+{
+	one(file, state);
+	two(file, state);
 }
 
 // Agent

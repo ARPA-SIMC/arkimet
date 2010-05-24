@@ -134,11 +134,20 @@ struct FindMissing : public MaintFileVisitor
 /**
  * Print out the maintenance state for each file
  */
-struct MaintPrinter : public MaintFileVisitor
+struct Dumper : public MaintFileVisitor
 {
 	void operator()(const std::string& file, State state);
 };
 
+struct Tee : public MaintFileVisitor
+{
+	MaintFileVisitor& one;
+	MaintFileVisitor& two;
+
+	Tee(MaintFileVisitor& one, MaintFileVisitor& two);
+	virtual ~Tee();
+	void operator()(const std::string& file, State state);
+};
 
 /// Base class for all repackers and rebuilders
 struct Agent : public maintenance::MaintFileVisitor
