@@ -171,9 +171,9 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	Querymacro qm(cfg, "expa 2009-08-07", 
+	Querymacro qm(cfg, "expa 2009-08-08", 
 			"ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-			"ds:testds. d:@. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+			"ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
 //			utils::readFile("misc/erse00.expa")
 	);
 

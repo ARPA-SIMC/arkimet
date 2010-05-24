@@ -65,13 +65,24 @@ function QueryChunk:init(dsname, d, t)
 	self["date"] = d
 	self["time"] = t
 	self["queries"] = {}
-
 	-- Parse date
 	if d:match("^%s*[Tt]%s*$") then
 		d = os.date("%Y-%m-%d")
-	elseif d:match("^%s*@%s*$") then
+	elseif d:match("^%s*@%s*[+-]?%s*%d*$") then
+		if args == nil then error("If using @, please invoke as --qmacro=\"expa YYYY-MM-DD\"") end
+		pm, val = d:match("^%s*@%s*([+-])%s*(%d+)%s*$")
 		d = args
-		if d == nil then error("If using @, please invoke as --qmacro=\"expa YYYY-MM-DD\"") end
+		if pm ~= nil then
+			rt = os.date("*t")
+			rt["year"], rt["month"], rt["day"] = d:match("^(%d%d%d%d)-(%d%d)-(%d%d)$")
+			if rt["year"] == nil then error("If using @, please invoke as --qmacro=\"expa YYYY-MM-DD\"") end
+			if pm == "+" then
+				ts = os.time(rt) + 3600 * 24 * val
+			else
+				ts = os.time(rt) - 3600 * 24 * val
+			end
+			d = os.date("%Y-%m-%d", ts)
+		end
 	elseif d:match("^%d+-%d+-%d+$") then
 		-- d is already as we want it
 	else
