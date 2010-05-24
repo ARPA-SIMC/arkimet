@@ -23,6 +23,7 @@
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
 #include <arki/metadata.h>
+#include <arki/metadata/consumer.h>
 #include <arki/matcher.h>
 #include <arki/dataset/http.h>
 #include <arki/summary.h>
@@ -114,10 +115,27 @@ static void addToSummary(runtime::Input& in, Summary& s)
 		}
 		else if (signature == "MG")
 		{
-			// TODO
+			metadata::Summarise sum(s);
+			Metadata::readGroup(buf, version, in.name(), sum);
 		}
 	}
 }
+
+struct YamlWriter : public metadata::Consumer
+{
+	runtime::Output& out;
+	Formatter* formatter;
+
+	YamlWriter(runtime::Output& out, Formatter* formatter) : out(out), formatter(formatter) {}
+
+	bool operator()(Metadata& md)
+	{
+		md.writeYaml(out.stream(), formatter);
+		out.stream() << endl;
+		return true;
+	}
+};
+
 
 int main(int argc, const char* argv[])
 {
@@ -264,6 +282,7 @@ int main(int argc, const char* argv[])
 			Formatter* formatter = 0;
 			if (opts.annotate->boolValue())
 				formatter = Formatter::create();
+			YamlWriter writer(out, formatter);
 
 			Metadata md;
 			Summary summary;
@@ -279,14 +298,17 @@ int main(int argc, const char* argv[])
 					md.read(buf, version, in.name());
 					if (md.source->style() == types::Source::INLINE)
 						md.readInlineData(in.stream(), in.name());
-					md.writeYaml(out.stream(), formatter);
-					out.stream() << endl;
+					writer(md);
 				}
 				else if (signature == "SU")
 				{
 					summary.read(buf, version, in.name());
 					summary.writeYaml(out.stream(), formatter);
 					out.stream() << endl;
+				}
+				else if (signature == "MG")
+				{
+					Metadata::readGroup(buf, version, in.name(), writer);
 				}
 			}
 // Uncomment as a quick hack to check memory usage at this point:

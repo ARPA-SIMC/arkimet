@@ -243,6 +243,11 @@ public:
 	static void readFile(const std::string& fname, metadata::Consumer& mdc);
 
 	/**
+	 * Read a metadata group into the given consumer
+	 */
+	static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, metadata::Consumer& mdc);
+
+	/**
 	 * Flush open data readers.
 	 *
 	 * Metadata uses a persistent data reader to read data, which keeps the

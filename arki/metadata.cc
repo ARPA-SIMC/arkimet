@@ -505,25 +505,7 @@ void Metadata::readFile(std::istream& in, const std::string& fname, metadata::Co
 		if (signature == "MG")
 		{
 			// Handle metadata group
-			if (version != 0)
-				throw wibble::exception::Consistency("parsing file " + fname, "can only decode metadata group version 0 (LZO compressed); found version: " + str::fmt(version));
-			
-			// Read uncompressed size
-			ensureSize(buf.size(), 4, "uncompressed item size");
-			uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
-
-			sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
-			const unsigned char* buf = (const unsigned char*)decomp.data();
-			size_t len = decomp.size(); 
-			const unsigned char* ibuf;
-			size_t ilen;
-			string isig;
-			unsigned iver;
-			while (!canceled && types::readBundle(buf, len, fname, ibuf, ilen, isig, iver))
-			{
-				md.read(ibuf, ilen, iver, fname);
-				canceled = !mdc(md);
-			}
+			Metadata::readGroup(buf, version, fname, mdc);
 		} else {
 			md.read(buf, version, fname);
 
@@ -532,6 +514,32 @@ void Metadata::readFile(std::istream& in, const std::string& fname, metadata::Co
 				md.readInlineData(in, fname);
 			canceled = !mdc(md);
 		}
+	}
+}
+
+void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const std::string& fname, metadata::Consumer& mdc)
+{
+	// Handle metadata group
+	if (version != 0)
+		throw wibble::exception::Consistency("parsing file " + fname, "can only decode metadata group version 0 (LZO compressed); found version: " + str::fmt(version));
+	
+	// Read uncompressed size
+	ensureSize(buf.size(), 4, "uncompressed item size");
+	uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
+
+	sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
+	const unsigned char* ubuf = (const unsigned char*)decomp.data();
+	size_t len = decomp.size(); 
+	const unsigned char* ibuf;
+	size_t ilen;
+	string isig;
+	unsigned iver;
+	bool canceled = false;
+	Metadata md;
+	while (!canceled && types::readBundle(ubuf, len, fname, ibuf, ilen, isig, iver))
+	{
+		md.read(ibuf, ilen, iver, fname);
+		canceled = !mdc(md);
 	}
 }
 
