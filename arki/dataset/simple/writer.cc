@@ -300,9 +300,14 @@ bool FileCopier::operator()(Metadata& md)
 
 void FileCopier::flush()
 {
-	if (fd_dst != -1 and close(fd_dst) != 0)
-		throw wibble::exception::File(dst, "closing file");
-	fd_dst = -1;
+	if (fd_dst != -1)
+	{
+		if (fdatasync(fd_dst) != 0)
+			throw wibble::exception::File(dst, "flushing data to file");
+		if (close(fd_dst) != 0)
+			throw wibble::exception::File(dst, "closing file");
+		fd_dst = -1;
+	}
 }
 }
 
