@@ -692,10 +692,11 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 		cerr.flush();
 	}
 
-	bool success = countSuccessful != 0 && !(
-		    countNotImported
-		 && (ignore_duplicates ? 0 : countDuplicates)
-		 && countInErrorDataset);
+	bool success = !(countNotImported || countInErrorDataset);
+	if (ignore_duplicates)
+		success = success && (countSuccessful || countDuplicates);
+	else
+		success = success && (countSuccessful && !countDuplicates);
 
 	flush();
 
