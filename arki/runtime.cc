@@ -85,6 +85,7 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	cfgfiles = 0; exprfile = 0; qmacro = 0;
 	files = 0; moveok = moveko = movework = 0;
 	restr = 0;
+	ignore_duplicates = 0;
 
 	outputOpts = createGroup("Options controlling output style");
 	merged = 0;
@@ -150,6 +151,9 @@ void CommandLine::addScanOptions()
 			"move input files here before opening them. This is useful to "
 			"catch the cases where arki-scan crashes without having a "
 			"chance to handle errors.");
+
+	ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
+			"do not consider the run unsuccessful in case of duplicates");
 }
 
 void CommandLine::addQueryOptions()
@@ -573,7 +577,11 @@ void CommandLine::setupProcessing()
 		}
 	}
 	if (dispatcher)
+	{
 		dispatcher->reportStatus = status->boolValue();
+		if (ignore_duplicates && ignore_duplicates->boolValue())
+			dispatcher->ignore_duplicates = true;
+	}
 }
 
 void CommandLine::doneProcessing()
@@ -640,7 +648,7 @@ void CommandLine::closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful
 }
 
 MetadataDispatch::MetadataDispatch(const ConfigFile& cfg, DatasetProcessor& next, bool test)
-	: cfg(cfg), dispatcher(0), next(next), reportStatus(false),
+	: cfg(cfg), dispatcher(0), next(next), ignore_duplicates(false), reportStatus(false),
 	  countSuccessful(0), countDuplicates(0), countInErrorDataset(0), countNotImported(0)
 {
 	timerclear(&startTime);
@@ -686,7 +694,7 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 
 	bool success = countSuccessful != 0 && !(
 		    countNotImported
-		 && countDuplicates
+		 && (ignore_duplicates ? 0 : countDuplicates)
 		 && countInErrorDataset);
 
 	flush();

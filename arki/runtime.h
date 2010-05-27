@@ -76,6 +76,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::BoolOption* dataOnly;
 	wibble::commandline::BoolOption* summary;
 	wibble::commandline::BoolOption* merged;
+	wibble::commandline::BoolOption* ignore_duplicates;
 	wibble::commandline::StringOption* restr;
 	wibble::commandline::StringOption* exprfile;
 	wibble::commandline::StringOption* qmacro;
@@ -160,6 +161,7 @@ struct MetadataDispatch : public metadata::Consumer
 	Dispatcher* dispatcher;
 	metadata::Collection results;
 	DatasetProcessor& next;
+	bool ignore_duplicates;
 	bool reportStatus;
 
 	// Used for timings. Read with gettimeofday at the beginning of a task,

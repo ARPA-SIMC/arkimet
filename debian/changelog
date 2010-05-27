@@ -5,8 +5,9 @@ arkimet (0.43-1) UNRELEASED; urgency=low
   * when repacking simple datasets, reindex repacked files with their new
     timestamps
   * arki-dump: dump compressed metadata
+  * arki-scan: added --ignore-duplicates
 
- -- Enrico Zini <enrico@debian.org>  Mon, 24 May 2010 18:33:16 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 27 May 2010 16:58:16 +0100
 
 arkimet (0.42-1) UNRELEASED; urgency=low
 
