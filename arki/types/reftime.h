@@ -84,6 +84,7 @@ struct Position : public Reftime
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Reftime& o) const;
 	virtual int compare(const Position& o) const;
@@ -113,6 +114,7 @@ struct Period : public Reftime
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Reftime& o) const;
 	virtual int compare(const Period& o) const;

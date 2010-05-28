@@ -54,6 +54,7 @@ struct Note : public types::Type
 	static Item<Note> decode(const unsigned char* buf, size_t len);
 	static Item<Note> decodeString(const std::string& val);
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual const char* lua_type_name() const;
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Note

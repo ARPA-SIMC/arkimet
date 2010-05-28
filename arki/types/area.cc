@@ -233,6 +233,7 @@ std::string GRIB::exactQuery() const
 {
     return "GRIB:" + m_values.toString();
 }
+const char* GRIB::lua_type_name() const { return "arki.types.area.grib"; }
 
 int GRIB::compare(const Area& o) const
 {

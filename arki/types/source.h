@@ -81,15 +81,23 @@ struct Blob : public Source
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Source& o) const;
 	virtual int compare(const Blob& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	/**
-	 * Return a new source identical to this one, but with the given path prepended to the file name.
+	 * Return a new source identical to this one, but with the given path
+	 * prepended to the file name.
 	 */
-	Item<Blob> prependPath(const std::string& path);
+	Item<Blob> prependPath(const std::string& path) const;
+
+	/**
+	 * Return a new source identical to this one, but with all the
+	 * directory components stripped from the file name.
+	 */
+	Item<Blob> fileOnly() const;
 
 	static Item<Blob> create(const std::string& format, const std::string& filename, size_t offset, size_t size);
 };
@@ -101,6 +109,7 @@ struct URL : public Source
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Source& o) const;
 	virtual int compare(const URL& o) const;
@@ -116,6 +125,7 @@ struct Inline : public Source
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Source& o) const;
 	virtual int compare(const Inline& o) const;

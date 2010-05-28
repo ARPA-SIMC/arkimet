@@ -263,6 +263,7 @@ std::string GRIB1::exactQuery() const
 {
     return str::fmtf("GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
 }
+const char* GRIB1::lua_type_name() const { return "arki.types.product.grib1"; }
 
 int GRIB1::compare(const Product& o) const
 {
@@ -336,6 +337,7 @@ std::string GRIB2::exactQuery() const
 {
     return str::fmtf("GRIB2,%d,%d,%d,%d", (int)m_centre, (int)m_discipline, (int)m_category, (int)m_number);
 }
+const char* GRIB2::lua_type_name() const { return "arki.types.product.grib2"; }
 int GRIB2::compare(const Product& o) const
 {
 	int res = Product::compare(o);
@@ -412,6 +414,8 @@ std::string BUFR::exactQuery() const
 {
     return str::fmtf("BUFR,%d,%d,%d", (int)m_type, (int)m_subtype, (int)m_localsubtype);
 }
+const char* BUFR::lua_type_name() const { return "arki.types.product.bufr"; }
+
 int BUFR::compare(const Product& o) const
 {
 	int res = Product::compare(o);

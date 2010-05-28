@@ -277,6 +277,8 @@ std::ostream& Blob::writeToOstream(std::ostream& o) const
 			 << format << "," << filename << ":" << offset << "+" << size
 			 << ")";
 }
+const char* Blob::lua_type_name() const { return "arki.types.source.blob"; }
+
 
 int Blob::compare(const Source& o) const
 {
@@ -317,9 +319,14 @@ Item<Blob> Blob::create(const std::string& format, const std::string& filename, 
 	return res;
 }
 
-Item<Blob> Blob::prependPath(const std::string& path)
+Item<Blob> Blob::prependPath(const std::string& path) const
 {
 	return Blob::create(format, wibble::str::joinpath(path, filename), offset, size);
+}
+
+Item<Blob> Blob::fileOnly() const
+{
+	return Blob::create(format, wibble::str::basename(filename), offset, size);
 }
 
 
@@ -338,6 +345,8 @@ std::ostream& URL::writeToOstream(std::ostream& o) const
 			 << format << "," << url
 			 << ")";
 }
+
+const char* URL::lua_type_name() const { return "arki.types.source.url"; }
 
 int URL::compare(const Source& o) const
 {
@@ -389,6 +398,8 @@ std::ostream& Inline::writeToOstream(std::ostream& o) const
 			 << format << "," << size
 			 << ")";
 }
+
+const char* Inline::lua_type_name() const { return "arki.types.source.inline"; }
 
 int Inline::compare(const Source& o) const
 {

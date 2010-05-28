@@ -101,6 +101,7 @@ std::ostream& Note::writeToOstream(std::ostream& o) const
 {
 	return o << "[" << time << "]" << content;
 }
+const char* Note::lua_type_name() const { return "arki.types.note"; }
 
 Item<Note> Note::decodeString(const std::string& val)
 {

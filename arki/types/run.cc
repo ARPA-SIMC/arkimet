@@ -229,6 +229,7 @@ std::string Minute::exactQuery() const
 	res << "MINUTE," << setfill('0') << setw(2) << (m_minute/60) << ":" << setw(2) << (m_minute % 60);
 	return res.str();
 }
+const char* Minute::lua_type_name() const { return "arki.types.run.minute"; }
 
 int Minute::compare(const Run& o) const
 {
@@ -259,9 +260,10 @@ bool Minute::operator==(const Type& o) const
 
 Item<Minute> Minute::create(unsigned int hour, unsigned int minute)
 {
-	Item<Minute> res(new Minute);
+	Minute* res;
+	Item<Minute> itemres = res = new Minute;
 	res->m_minute = hour * 60 + minute;
-	return cache_minute.intern(res);
+	return cache_minute.intern(itemres);
 }
 
 static void debug_interns()

@@ -129,13 +129,13 @@ Node::Node(const Metadata& m, size_t scanpos)
 		md.push_back(m.get(mso[i]));
 	stats = new Stats(1, m.dataSize(), m.get(types::TYPE_REFTIME).upcast<types::reftime::Position>());
 }
-Node::Node(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos)
+Node::Node(const Metadata& m, const refcounted::Pointer<Stats>& st, size_t scanpos)
 {
 	for (size_t i = scanpos; i < msoSize; ++i)
 		md.push_back(m.get(mso[i]));
 	stats = st;
 }
-Node::Node(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos)
+Node::Node(const std::vector< UItem<> >& m, const refcounted::Pointer<Stats>& st, size_t scanpos)
 {
 	if (scanpos == 0)
 		md = m;
@@ -150,7 +150,7 @@ Node::~Node()
 
 bool Node::visitStats(StatsVisitor& visitor) const
 {
-	if (stats.defined())
+	if (stats.ptr())
 	{
 		if (!visitor(stats))
 			return false;
@@ -190,7 +190,7 @@ bool Node::visit(Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanp
 		visitmd[scanpos + i] = md[i];
 	if (scanpos + md.size() == msoSize)
 	{
-		if (!visitor(visitmd, arki::Item<Stats>(stats)))
+		if (!visitor(visitmd, refcounted::Pointer<Stats>(stats)))
 			return false;
 	} else {
 		for (std::map< UItem<>, refcounted::Pointer<Node> >::const_iterator i = children.begin();
@@ -217,7 +217,7 @@ bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< 
 			if (!md[i].defined()) return true;
 			if (!j->second->matchItem(md[i])) return true;
 		}
-		if (stats.defined())
+		if (stats.ptr())
 		{
 			matcher::AND::const_iterator rm = mand.find(types::TYPE_REFTIME);
 			if (rm != mand.end() && !rm->second->matchItem(stats->reftimeMerger.makeReftime()))
@@ -229,7 +229,7 @@ bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< 
 		visitmd[scanpos + i] = md[i];
 	if (scanpos + md.size() == msoSize)
 	{
-		if (!visitor(visitmd, arki::Item<Stats>(stats)))
+		if (!visitor(visitmd, refcounted::Pointer<Stats>(stats)))
 			return false;
 	} else {
 		const matcher::Implementation* m = 0;
@@ -272,7 +272,7 @@ void Node::add(const Metadata& m, size_t scanpos)
 				child->md.push_back(md[j]);
 			child->children = children;
 			child->stats = stats;
-			stats.clear();
+			stats = 0;
 			children.clear();
 			children[md[i]] = child;
 			children[mditem] = new Node(m, scanpos + i + 1);
@@ -294,7 +294,7 @@ void Node::add(const Metadata& m, size_t scanpos)
 	}
 }
 
-void Node::add(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos)
+void Node::add(const Metadata& m, const refcounted::Pointer<Stats>& st, size_t scanpos)
 {
 	// Ensure that we can store it
 	for (size_t i = 0; i < md.size(); ++i)
@@ -308,7 +308,7 @@ void Node::add(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos)
 				child->md.push_back(md[j]);
 			child->children = children;
 			child->stats = stats;
-			stats.clear();
+			stats = 0;
 			children.clear();
 			children[md[i]] = child;
 			children[mditem] = new Node(m, st, scanpos + i + 1);
@@ -329,7 +329,7 @@ void Node::add(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos)
 			i->second->add(m, st, scanpos + md.size() + 1);
 	}
 }
-void Node::add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos)
+void Node::add(const std::vector< UItem<> >& m, const refcounted::Pointer<Stats>& st, size_t scanpos)
 {
 	// Ensure that we can store it
 	for (size_t i = 0; i < md.size(); ++i)
@@ -343,7 +343,7 @@ void Node::add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, siz
 				child->md.push_back(md[j]);
 			child->children = children;
 			child->stats = stats;
-			stats.clear();
+			stats = 0;
 			children.clear();
 			children[md[i]] = child;
 			children[mditem] = new Node(m, st, scanpos + i + 1);
@@ -354,7 +354,7 @@ void Node::add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, siz
 
 	if (scanpos + md.size() == msoSize)
 	{
-		if (!stats.defined())
+		if (!stats.ptr())
 			stats = st;
 		else
 			stats->merge(st);
@@ -402,7 +402,7 @@ void Node::encode(Encoder& enc, const UItem<>& lead, size_t scanpos) const
 	for (size_t i = 0; i < md.size(); ++i)
 		addEncodedItem(enc, md[i], scanpos + i);
 
-	if (stats.defined())
+	if (stats.ptr())
 	{
 		// If we have stats, we are a terminal node
 		enc.addUInt(0, 2);
@@ -485,7 +485,7 @@ static void decodeFollowing(Node& node, const unsigned char*& buf, size_t& len, 
 		buf += 2; len -= 2;
 		codeclog("Decoding stats in " << statlen << "b");
 		ensureSize(len, 2, "Summary statistics");
-		node.stats = decodeInner(types::TYPE_SUMMARYSTATS, buf, statlen).upcast<summary::Stats>();
+		node.stats = Stats::decode(buf, statlen);
 		buf += statlen; len -= statlen;
 	}
 }
@@ -532,7 +532,10 @@ int Node::compare(const Node& node) const
 		if (int res = a->second->compare(*b->second)) return res;
 	}
 
-	return stats.compare(node.stats);
+	if (stats.ptr() == node.stats.ptr()) return 0;
+	if (stats.ptr() == 0 && node.stats.ptr() != 0) return -1;
+	if (stats.ptr() != 0 && node.stats.ptr() == 0) return 1;
+	return stats->compare(*node.stats);
 }
 
 #if 0
@@ -692,7 +695,7 @@ bool Stats::operator==(const Stats& o) const
 	return count == o.count && size == o.size && reftimeMerger == o.reftimeMerger;
 }
 
-void Stats::merge(const arki::Item<Stats>& s)
+void Stats::merge(const refcounted::Pointer<Stats>& s)
 {
 	count += s->count;
 	size += s->size;
@@ -709,6 +712,8 @@ void Stats::merge(size_t ocount, unsigned long long osize, const types::Reftime*
 types::Code Stats::serialisationCode() const { return types::TYPE_SUMMARYSTATS; }
 size_t Stats::serialisationSizeLength() const { return 2; }
 std::string Stats::tag() const { return "summarystats"; }
+const char* Stats::lua_type_name() const { return "arki.types.summary.stats"; }
+
 
 void Stats::encodeWithoutEnvelope(Encoder& enc) const
 {
@@ -739,15 +744,15 @@ void Stats::toYaml(std::ostream& out, size_t indent) const
 	out << ind << "Reftime: " << reftime << endl;
 }
 
-arki::Item<Stats> Stats::decode(const unsigned char* buf, size_t len, const std::string& filename)
+refcounted::Pointer<Stats> Stats::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 
-	arki::Item<Stats> res(new Stats);
+	refcounted::Pointer<Stats> res(new Stats);
 
 	// First decode the count
 	if (len < 4)
-		throw wibble::exception::Consistency("parsing summary stats in file " + filename, "summary stats has size " + str::fmt(len) + " but at least 4 bytes are needed");
+		throw wibble::exception::Consistency("parsing summary stats", "summary stats has size " + str::fmt(len) + " but at least 4 bytes are needed");
 	res->count = decodeUInt(buf, 4);
 	buf += 4; len -= 4;
 
@@ -758,7 +763,7 @@ arki::Item<Stats> Stats::decode(const unsigned char* buf, size_t len, const std:
 	if (el_type == types::TYPE_REFTIME)
 		res->reftimeMerger.merge(types::Reftime::decode(el_start, el_len));
 	else
-		throw wibble::exception::Consistency("parsing summary stats in file " + filename, "cannot handle element " + str::fmt(el_type));
+		throw wibble::exception::Consistency("parsing summary stats", "cannot handle element " + str::fmt(el_type));
 	len -= el_start + el_len - buf;
 	buf = el_start + el_len;
 
@@ -774,11 +779,11 @@ arki::Item<Stats> Stats::decode(const unsigned char* buf, size_t len, const std:
 	return res;
 }
 
-arki::Item<Stats> Stats::decodeString(const std::string& str)
+refcounted::Pointer<Stats> Stats::decodeString(const std::string& str)
 {
 	using namespace str;
 
-	arki::Item<Stats> res(new Stats);
+	refcounted::Pointer<Stats> res(new Stats);
 	stringstream in(str, ios_base::in);
 	YamlStream yamlStream;
 	for (YamlStream::const_iterator i = yamlStream.begin(in);
@@ -899,7 +904,7 @@ struct LuaPusher: public summary::Visitor
 	int index;
 
 	LuaPusher(lua_State* L) : L(L), index(1) {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<summary::Stats>& stats)
+	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<summary::Stats>& stats)
 	{
 		// Table with the couple
 		lua_newtable(L);
@@ -1127,7 +1132,7 @@ struct StatsCount : public StatsVisitor
 {
 	size_t count;
 	StatsCount() : count(0) {}
-	virtual bool operator()(const arki::Item<Stats>& stats)
+	virtual bool operator()(const refcounted::Pointer<Stats>& stats)
 	{
 		count += stats->count;
 		return true;
@@ -1137,7 +1142,7 @@ struct StatsSize : public StatsVisitor
 {
 	unsigned long long size;
 	StatsSize() : size(0) {}
-	virtual bool operator()(const arki::Item<Stats>& stats)
+	virtual bool operator()(const refcounted::Pointer<Stats>& stats)
 	{
 		size += stats->size;
 		return true;
@@ -1147,7 +1152,7 @@ struct StatsReftime : public StatsVisitor
 {
 	types::reftime::Collector merger;
 
-	virtual bool operator()(const arki::Item<Stats>& stats)
+	virtual bool operator()(const refcounted::Pointer<Stats>& stats)
 	{
 		merger.merge(stats->reftimeMerger);
 		return true;
@@ -1236,7 +1241,7 @@ struct ResolveVisitor : public summary::Visitor
 			codes.push_back(i->first);
 	}
 	virtual ~ResolveVisitor() {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<summary::Stats>& stats)
+	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<summary::Stats>& stats)
 	{
 		ItemSet is;
 		for (std::vector<types::Code>::const_iterator i = codes.begin();
@@ -1452,7 +1457,7 @@ struct YamlPrinter : public Visitor
 	const Formatter* f;
 
 	YamlPrinter(ostream& out, size_t indent, const Formatter* f = 0) : out(out), indent(indent, ' '), f(f) {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<Stats>& stats)
+	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<Stats>& stats)
 	{
 		// Write the metadata items
 		out << "SummaryItem:" << endl;
@@ -1577,7 +1582,7 @@ void Summary::add(const Metadata& md)
 		root = new summary::Node(md);
 }
 
-void Summary::add(const Metadata& md, const arki::Item<summary::Stats>& s)
+void Summary::add(const Metadata& md, const refcounted::Pointer<summary::Stats>& s)
 {
 	if (root.ptr())
 		root->add(md, s);
@@ -1591,7 +1596,7 @@ struct SummaryMerger : public Visitor
 	refcounted::Pointer<summary::Node>& root;
 
 	SummaryMerger(refcounted::Pointer<summary::Node>& root) : root(root) {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<Stats>& stats)
+	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<Stats>& stats)
 	{
 		if (!root.ptr())
 			root = new Node(md, stats);
@@ -1617,7 +1622,7 @@ struct MatchVisitor : public Visitor
 {
 	bool res;
 	MatchVisitor() : res(false) {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<Stats>& stats)
+	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<Stats>& stats)
 	{
 		res = true;
 		// Stop iteration

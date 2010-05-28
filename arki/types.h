@@ -71,6 +71,9 @@ enum Code
 	TYPE_MAXCODE
 };
 
+// Parse name into a type code, returning TYPE_INVALID if it does not match
+Code checkCodeName(const std::string& name);
+// Parse name into a type code, throwing an exception if it does not match
 Code parseCodeName(const std::string& name);
 std::string formatCode(const Code& c);
 static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return o << formatCode(c); }
@@ -83,13 +86,13 @@ static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return 
  * All metadata items are immutable, and can only be assigned to.
  */
 template< typename TYPE = types::Type >
-struct UItem : public refcounted::Pointer<TYPE>
+struct UItem : public refcounted::Pointer<const TYPE>
 {
-	UItem() : refcounted::Pointer<TYPE>() {}
-	UItem(TYPE* ptr) : refcounted::Pointer<TYPE>(ptr) {}
-	UItem(const UItem<TYPE>& val) : refcounted::Pointer<TYPE>(val) {}
+	UItem() : refcounted::Pointer<const TYPE>() {}
+	UItem(const TYPE* ptr) : refcounted::Pointer<const TYPE>(ptr) {}
+	UItem(const UItem<TYPE>& val) : refcounted::Pointer<const TYPE>(val) {}
 	template<typename TYPE1>
-	UItem(const UItem<TYPE1>& val) : refcounted::Pointer<TYPE>(val) {}
+	UItem(const UItem<TYPE1>& val) : refcounted::Pointer<const TYPE>(val) {}
 	~UItem() {}
 
 	/// Check if we have a value or if we are undefined
@@ -161,7 +164,7 @@ std::ostream& operator<<(std::ostream& o, const UItem<T>& i)
 template< typename TYPE = types::Type >
 struct Item : public UItem<TYPE>
 {
-	Item(TYPE* ptr) : UItem<TYPE>(ptr) {}
+	Item(const TYPE* ptr) : UItem<TYPE>(ptr) {}
 	Item(const Item<TYPE>& val) : UItem<TYPE>(val) {}
 	Item(const UItem<TYPE>& val) : UItem<TYPE>(val) { this->ensureValid(); }
 	template<typename TYPE1>
@@ -232,7 +235,26 @@ struct Type : public refcounted::Base
 	virtual std::string exactQuery() const;
 
 	/// Push to the LUA stack a userdata to access this item
-	virtual void lua_push(lua_State* L) const = 0;
+	void lua_push(lua_State* L) const;
+
+	/**
+	 * Return the lua type name (i.e. arki.type.<something>)
+	 * used to register the metatable for this type
+	 */
+	virtual const char* lua_type_name() const = 0;
+
+	/**
+	 * Given a metatable on top of the stack, register methods for this
+	 * object on it
+	 */
+	virtual void lua_register_methods(lua_State* L) const;
+
+	/**
+         * Check that the element at \a idx is a Type userdata
+         *
+         * @return the Type element, or undefined if the check failed
+         */
+	static Item<> lua_check(lua_State* L, int idx, const char* prefix = "arki.types.");
 };
 
 /// Decode an item encoded in binary representation

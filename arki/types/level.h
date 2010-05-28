@@ -90,6 +90,7 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	/**
 	 * Get information on how l1 and l2 should be treated:
@@ -139,6 +140,7 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Level& o) const;
 	virtual int compare(const GRIB2S& o) const;
@@ -169,6 +171,7 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Level& o) const;
 	virtual int compare(const GRIB2D& o) const;

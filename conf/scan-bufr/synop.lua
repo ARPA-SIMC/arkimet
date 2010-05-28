@@ -1,0 +1,11 @@
+function scan(msg, md)
+	var = msg:find('block')
+	print("Block", var)
+	var = msg:find('station')
+	print("Station", var)
+	var = msg:find('latitude')
+	print("Latitude", var)
+	var = msg:find('longitude')
+	print("Longitude", var)
+	--print(md)
+end

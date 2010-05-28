@@ -98,6 +98,7 @@ struct INVALID : public BBox
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const BBox& o) const;
 	virtual int compare(const INVALID& o) const;

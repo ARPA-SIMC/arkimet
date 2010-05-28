@@ -57,6 +57,7 @@ struct AssignedDataset : public types::Type
 	static Item<AssignedDataset> decodeString(const std::string& val);
 	static types::Code typecode();
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual const char* lua_type_name() const;
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this AssignedDataset

@@ -128,13 +128,10 @@ void to::test<4>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style() ~= 'GRIB1' then return 'style is '..o.style()..' instead of GRIB1' end \n"
-		"  a, b, c = o.grib1() \n"
-		"  if a ~= 1 then return 'o.grib1() first item is '..a..' instead of 1' end \n"
-		"  if b ~= 2 then return 'o.grib1() first item is '..b..' instead of 2' end \n"
-		"  if c ~= 3 then return 'o.grib1() first item is '..c..' instead of 3' end \n"
-		"  if o.grib2() ~= nil then return 'o.grib2() gave '..o.grib2()..' instead of nil' end \n"
-		"  if o.bufr() ~= nil then return 'o.bufr() gave '..o.bufr()..' instead of nil' end \n"
+		"  if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end \n"
+		"  if o.centre ~= 1 then return 'o.centre first item is '..o.centre..' instead of 1' end \n"
+		"  if o.subcentre ~= 2 then return 'o.subcentre first item is '..o.subcentre..' instead of 2' end \n"
+		"  if o.process ~= 3 then return 'o.process first item is '..o.process..' instead of 3' end \n"
 		"  if tostring(o) ~= 'GRIB1(001, 002, 003)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(001, 002, 003)' end \n"
 		"end \n"
 	);

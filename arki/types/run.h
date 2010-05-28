@@ -84,6 +84,7 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Run& o) const;
 	virtual int compare(const Minute& o) const;

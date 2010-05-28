@@ -583,6 +583,9 @@ std::string GRIB1::exactQuery() const
 	return o.str();
 }
 
+const char* GRIB1::lua_type_name() const { return "arki.types.timerange.grib1"; }
+
+
 int GRIB1::compare(const Timerange& o) const
 {
 	int res = Timerange::compare(o);
@@ -737,6 +740,8 @@ std::string GRIB2::exactQuery() const
 	  << (int)m_p2;
 	return o.str();
 }
+
+const char* GRIB2::lua_type_name() const { return "arki.types.timerange.grib2"; }
 
 int GRIB2::compare(const Timerange& o) const
 {

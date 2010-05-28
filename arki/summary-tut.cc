@@ -314,7 +314,7 @@ void to::test<13>()
 	md3.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
 	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 
-	arki::Item<summary::Stats> st(new summary::Stats);
+	refcounted::Pointer<summary::Stats> st(new summary::Stats);
 	st->count = 5;
 	st->size = 123456;
 	st->reftimeMerger.mergeTime(Time::create(2008, 7, 6, 5, 4, 3), Time::create(2008, 9, 8, 7, 6, 5));

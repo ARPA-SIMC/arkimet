@@ -34,10 +34,7 @@
 #include <cstdlib>
 
 #ifdef HAVE_LUA
-extern "C" {
-#include <lauxlib.h>
-#include <lualib.h>
-}
+#include <arki/utils/lua.h>
 #endif
 
 using namespace std;
@@ -615,6 +612,25 @@ static int arkilua_copy(lua_State* L)
 	return 1;
 }
 
+// Make a copy of the metadata.
+// Memory management of the copy will be done by Lua
+static int arkilua_notes(lua_State* L)
+{
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+
+	// Return a table with all the notes in the metadata
+	std::vector< Item<types::Note> > notes = md->notes();
+	lua_createtable(L, notes.size(), 0);
+	// Set the array elements
+	for (size_t i = 0; i < notes.size(); ++i)
+	{
+		notes[i]->lua_push(L);
+		lua_rawseti(L, -2, i+1);
+	}
+	return 1;
+}
+
 static int arkilua_lookup(lua_State* L)
 {
 	Metadata* md = Metadata::lua_check(L, 1);
@@ -623,28 +639,34 @@ static int arkilua_lookup(lua_State* L)
 	luaL_argcheck(L, skey != NULL, 2, "`string' expected");
 	string key = skey;
 
-	if (key == "source")
+	// Get an arbitrary element by name
+	types::Code code = types::checkCodeName(key);
+	if (code == types::TYPE_INVALID)
 	{
+		// Delegate lookup to the metatable
+		lua_getmetatable(L, 1);
+		lua_pushlstring(L, key.data(), key.size());
+		lua_gettable(L, -2);
+		// utils::lua::dumpstack(L, "postlookup", cerr);
+		return 1;
+	} else if (code == types::TYPE_SOURCE) {
 		// Return the source element
 		if (md->source.defined())
 			md->source->lua_push(L);
 		else
 			lua_pushnil(L);
 		return 1;
-	}
-	else if (key == "notes")
-	{
-		// Return a table with all the notes in the metadata
-		std::vector< Item<types::Note> > notes = md->notes();
-		lua_createtable(L, notes.size(), 0);
-		// Set the array elements
-		for (size_t i = 0; i < notes.size(); ++i)
-		{
-			notes[i]->lua_push(L);
-			lua_rawseti(L, -2, i+1);
-		}
+	} else {
+		// Return the metadata item
+		UItem<> item = md->get(code);
+		if (item.defined())
+			item->lua_push(L);
+		else
+			lua_pushnil(L);
 		return 1;
 	}
+
+#if 0
 	else if (key == "iter")
 	{
 		// Iterate
@@ -672,23 +694,85 @@ static int arkilua_lookup(lua_State* L)
 		lua_pushcclosure(L, LuaIter::iterate, 1);
 		return 1;
 	}
-	else if (key == "copy")
+#endif
+}
+
+static int arkilua_newindex(lua_State* L)
+{
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+	const char* skey = lua_tostring(L, 2);
+	luaL_argcheck(L, skey != NULL, 2, "`string' expected");
+	string key = skey;
+	UItem<> item = types::Type::lua_check(L, 3);
+	luaL_argcheck(L, item.defined(), 3, "arki.type.* expected");
+
+	if (key == "source")
 	{
-		lua_pushcfunction(L, arkilua_copy);
+		luaL_argcheck(L, item->serialisationCode() == types::TYPE_SOURCE, 3, "arki.type.source expected");
+		md->source = item.upcast<types::Source>();
+	}
+	else if (key == "notes")
+	{
+		// TODO
+#if 0
+		//
+		// Return a table with all the notes in the metadata
+		std::vector< Item<types::Note> > notes = md->notes();
+		lua_createtable(L, notes.size(), 0);
+		// Set the array elements
+		for (size_t i = 0; i < notes.size(); ++i)
+		{
+			notes[i]->lua_push(L);
+			lua_rawseti(L, -2, i+1);
+		}
 		return 1;
+#endif
 	}
 	else
 	{
 		// Get an arbitrary element by name
 		types::Code code = types::parseCodeName(key);
-		UItem<> item = md->get(code);
-		if (item.defined())
-			item->lua_push(L);
-		else
-			lua_pushnil(L);
-		return 1;
+		if (item->serialisationCode() != code)
+		{
+			string msg = "arki.type." + types::tag(code) + " expected";
+			luaL_argcheck(L, false, 3, msg.c_str());
+		}
+		md->set(item);
 	}
+	return 0;
 }
+
+static int arkilua_set(lua_State* L)
+{
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+	UItem<> item = types::Type::lua_check(L, 2);
+	luaL_argcheck(L, item.defined(), 2, "arki.type.* expected");
+	md->set(item);
+	return 0;
+}
+
+static int arkilua_unset(lua_State* L)
+{
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+	const char* skey = lua_tostring(L, 2);
+	luaL_argcheck(L, skey != NULL, 2, "`string' expected");
+	types::Code code = types::parseCodeName(skey);
+	md->unset(code);
+	return 0;
+}
+
+/*
+static int arkilua_clear(lua_State* L)
+{
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+	md->clear();
+	return 0;
+}
+*/
 
 static int arkilua_gc (lua_State *L)
 {
@@ -699,10 +783,15 @@ static int arkilua_gc (lua_State *L)
 }
 
 static const struct luaL_reg metadatalib [] = {
-	{ "__index", arkilua_lookup },
+	{ "__newindex", arkilua_newindex },
 	{ "__gc", arkilua_gc },
+	{ "copy", arkilua_copy },
+	{ "set", arkilua_set },
+	{ "unset", arkilua_unset },
+	{ "notes", arkilua_notes },
+	// { "clear", arkilua_unset },
 	// { "__tostring", arkilua_tostring },
-	{NULL, NULL}
+	{ NULL, NULL }
 };
 
 
@@ -716,8 +805,8 @@ void Metadata::lua_push(lua_State* L)
 	{
 		// If the metatable wasn't previously created, create it now
 		lua_pushstring(L, "__index");
-		lua_pushvalue(L, -2);  /* pushes the metatable */
-		lua_settable(L, -3);  /* metatable.__index = metatable */
+		lua_pushcfunction(L, arkilua_lookup);
+		lua_settable(L, -3);  /* metatable.__index = arkilua_lookup */
 
 		// Load normal methods
 		luaL_register(L, NULL, metadatalib);

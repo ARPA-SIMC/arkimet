@@ -185,11 +185,11 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
 	Summary sum;
-	for (metadata::Collection::const_iterator i = mds.begin();
+	for (metadata::Collection::iterator i = mds.begin();
 			i != mds.end(); ++i)
 	{
 		Item<source::Blob> s = i->source.upcast<source::Blob>();
-		s->filename = str::basename(s->filename);
+		i->source = s->fileOnly();
 		sum.add(*i);
 	}
 

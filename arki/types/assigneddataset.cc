@@ -106,6 +106,8 @@ std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const
 	return o << name << " as " << id << " imported on " << changed;
 }
 
+const char* AssignedDataset::lua_type_name() const { return "arki.types.assigneddataset"; }
+
 Item<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
 {
 	size_t pos = val.find(" as ");

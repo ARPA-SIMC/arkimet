@@ -221,6 +221,9 @@ std::string Position::exactQuery() const
 	return "=" + time->toISO8601();
 }
 
+const char* Position::lua_type_name() const { return "arki.types.reftime.position"; }
+
+
 int Position::compare(const Reftime& o) const
 {
 	int res = Reftime::compare(o);
@@ -290,6 +293,8 @@ std::string Period::exactQuery() const
 {
 	return "=" + begin->toISO8601();
 }
+
+const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
 
 int Period::compare(const Reftime& o) const
 {

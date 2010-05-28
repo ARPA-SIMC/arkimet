@@ -169,6 +169,7 @@ std::ostream& Time::writeToOstream(std::ostream& o) const
 {
 	return o << toISO8601();
 }
+const char* Time::lua_type_name() const { return "arki.types.time"; }
 
 bool Time::operator==(const Type& o) const
 {
@@ -280,19 +281,21 @@ Item<Time> Time::create(const int (&vals)[6])
 
 Item<Time> Time::create(struct tm& t)
 {
-	Item<Time> res = new Time;
+	Time* res;
+	Item<Time> itemres = res = new Time;
 	res->vals[0] = t.tm_year + 1900;
 	res->vals[1] = t.tm_mon + 1;
 	res->vals[2] = t.tm_mday;
 	res->vals[3] = t.tm_hour;
 	res->vals[4] = t.tm_min;
 	res->vals[5] = t.tm_sec;
-	return res;
+	return itemres;
 }
 
 Item<Time> Time::createFromISO8601(const std::string& str)
 {
-	Item<Time> res = Time::create();
+	Time* res;
+	Item<Time> itemres = res = new Time;
 	int* v = res->vals;
 	int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
 	sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
@@ -300,19 +303,20 @@ Item<Time> Time::createFromISO8601(const std::string& str)
 		throw wibble::exception::Consistency(
 			"Invalid datetime specification: '"+str+"'",
 			"Parsing ISO-8601 string");
-	return res;
+	return itemres;
 }
 
 Item<Time> Time::createFromSQL(const std::string& str)
 {
-	Item<Time> res = Time::create();
+	Time* res;
+	Item<Time> itemres = res = new Time;
 	int* v = res->vals;
 	int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
 	if (count == 0)
 		throw wibble::exception::Consistency(
 			"Invalid datetime specification: '"+str+"'",
 			"Parsing SQL string");
-	return res;
+	return itemres;
 }
 
 Item<Time> Time::createNow()

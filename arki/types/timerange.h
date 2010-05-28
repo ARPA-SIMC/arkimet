@@ -97,6 +97,7 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Timerange& o) const;
 	virtual int compare(const GRIB1& o) const;
@@ -123,6 +124,7 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
 
 	virtual int compare(const Timerange& o) const;
 	virtual int compare(const GRIB2& o) const;

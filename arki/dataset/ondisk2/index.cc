@@ -646,7 +646,7 @@ void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
 	while (sq.step())
 	{
 		// Fill in the summary statistics
-		arki::Item<summary::Stats> st(new summary::Stats);
+		refcounted::Pointer<summary::Stats> st(new summary::Stats);
 		st->count = sq.fetch<size_t>(0);
 		st->size = sq.fetch<unsigned long long>(1);
 		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
@@ -790,7 +790,7 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 	while (sq.step())
 	{
 		// Fill in the summary statistics
-		arki::Item<summary::Stats> st(new summary::Stats);
+		refcounted::Pointer<summary::Stats> st(new summary::Stats);
 		st->count = sq.fetch<size_t>(0);
 		st->size = sq.fetch<unsigned long long>(1);
 		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
@@ -821,34 +821,52 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 	return true;
 }
 
-static inline void end_this_month(Item<types::Time>& t)
+static inline Item<types::Time> begin_of_month(const Item<types::Time>& orig)
 {
+	types::Time* t;
+	Item<types::Time> res = t = new types::Time;
 	// Advance to the end of this month
+	t->vals[0] = orig->vals[0];
+	t->vals[1] = orig->vals[1];
+	t->vals[2] = 1;
+	t->vals[3] = t->vals[4] = t->vals[5] = 0;
+	return res;
+}
+static inline Item<types::Time> begin_of_next_month(const Item<types::Time>& orig)
+{
+	types::Time* t;
+	Item<types::Time> res = t = new types::Time;
+	// Advance to the beginning of the next month
+	t->vals[0] = orig->vals[0] + orig->vals[1] / 12;
+	t->vals[1] = (orig->vals[1] % 12) + 1;
+	t->vals[2] = 1;
+	t->vals[3] = t->vals[4] = t->vals[5] = 0;
+	return res;
+}
+static inline Item<types::Time> end_of_month(const Item<types::Time>& orig)
+{
+	types::Time* t;
+	Item<types::Time> res = t = new types::Time;
+	// Advance to the end of this month
+	t->vals[0] = orig->vals[0];
+	t->vals[1] = orig->vals[1];
 	t->vals[2] = grcal::date::daysinmonth(t->vals[0], t->vals[1]);
 	t->vals[3] = 23;
 	t->vals[4] = 59;
 	t->vals[5] = 59;
+	return res;
 }
 static inline bool range_evelopes_full_month(const Item<types::Time>& begin, const Item<types::Time>& end)
 {
 	bool begins_at_beginning = begin->vals[2] == 1 &&
 		begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0;
 	if (begins_at_beginning)
-	{
-		Item<types::Time> t = types::Time::create(begin->vals);
-		end_this_month(t);
-		return end >= t;
-	}
+		return end >= end_of_month(begin);
 
 	bool ends_at_end = end->vals[2] == grcal::date::daysinmonth(end->vals[0], end->vals[1]) &&
 		end->vals[3] == 23 && end->vals[4] == 59 && end->vals[5] == 59;
 	if (ends_at_end)
-	{
-		Item<types::Time> t = types::Time::create(end->vals);
-		t->vals[2] = 1;
-		t->vals[3] = t->vals[4] = t->vals[5] = 0;
-		return begin <= t;
-	}
+		return begin <= begin_of_month(end);
 
 	return end->vals[0] == begin->vals[0] + begin->vals[1]/12 &&
 	       end->vals[1] == (begin->vals[1] % 12) + 1;
@@ -911,19 +929,13 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 	{
 		// Round down to month begin, so we reuse the cached summary if
 		// available
-		begin->vals[2] = 1;
-		begin->vals[3] = 0;
-		begin->vals[4] = 0;
-		begin->vals[5] = 0;
+		begin = begin_of_month(begin);
 	}
 	if (end_from_db)
 	{
 		// Round up to month end, so we reuse the cached summary if
 		// available
-		end->vals[2] = grcal::date::daysinmonth(end->vals[0], end->vals[1]);
-		end->vals[3] = 23;
-		end->vals[4] = 59;
-		end->vals[5] = 59;
+		end = end_of_month(end);
 	}
 
 	// If the selected interval does not envelope any whole month, query
@@ -935,8 +947,7 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 	// month at end. Query whole months at extremes if they are indeed whole
 	while (begin <= end)
 	{
-		Item<types::Time> endmonth = types::Time::create(begin->vals);
-		end_this_month(endmonth);
+		Item<types::Time> endmonth = end_of_month(begin);
 
 		bool starts_at_beginning = (begin->vals[2] == 1 &&
 				begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0);
@@ -957,10 +968,7 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 		}
 
 		// Advance to the beginning of the next month
-		begin->vals[0] += (begin->vals[1]/12);
-		begin->vals[1] = (begin->vals[1] % 12) + 1;
-		begin->vals[2] = 1;
-		begin->vals[3] = begin->vals[4] = begin->vals[5] = 0;
+		begin = begin_of_next_month(begin);
 	}
 
 	/*
@@ -1262,11 +1270,8 @@ void WIndex::reset(const std::string& file)
 		// to remove it
 		if (fmin.empty())
 			return;
-		tmin = types::Time::createFromSQL(fmin);
-		tmax = types::Time::createFromSQL(fmax);
-		tmin->vals[2] = tmax->vals[2] = 0;
-		for (int i = 3; i < 6; ++i)
-			tmin->vals[i] = tmax->vals[i] = 0;
+		tmin = begin_of_month(types::Time::createFromSQL(fmin));
+		tmax = begin_of_month(types::Time::createFromSQL(fmax));
 	}
 
 	// Clean the database
@@ -1281,12 +1286,7 @@ void WIndex::reset(const std::string& file)
 	{
 		if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", tmin->vals[0], tmin->vals[1]))))
 			deleted = true;
-		++(tmin->vals[1]);
-		if (tmin->vals[1] > 12)
-		{
-			++(tmin->vals[0]);
-			tmin->vals[1] = 1;
-		}
+		tmin = begin_of_next_month(tmin);
 	}
 	if (deleted)
 		sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));

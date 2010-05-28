@@ -68,10 +68,8 @@ struct Origin : public types::Type
 	static types::Code typecode();
 
 	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Origin LUA object
-	static int lua_lookup(lua_State* L);
+	virtual void lua_register_methods(lua_State* L) const;
+	virtual int lua_lookup(lua_State* L, const std::string& name) const = 0;
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -98,6 +96,8 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual int lua_lookup(lua_State* L, const std::string& name) const;
 
 	virtual int compare(const Origin& o) const;
 	virtual int compare(const GRIB1& o) const;
@@ -131,6 +131,8 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual int lua_lookup(lua_State* L, const std::string& name) const;
 
 	virtual int compare(const Origin& o) const;
 	virtual int compare(const GRIB2& o) const;
@@ -160,6 +162,8 @@ public:
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual int lua_lookup(lua_State* L, const std::string& name) const;
 
 	virtual int compare(const Origin& o) const;
 	virtual int compare(const BUFR& o) const;

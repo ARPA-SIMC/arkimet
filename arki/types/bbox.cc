@@ -255,6 +255,7 @@ std::ostream& INVALID::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "()";
 }
+const char* INVALID::lua_type_name() const { return "arki.types.bbox.invalid"; }
 
 int INVALID::compare(const BBox& o) const
 {

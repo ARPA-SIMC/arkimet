@@ -30,18 +30,22 @@
 
 #include <cstring>
 
+#include "config.h"
+
+#ifdef HAVE_LUA
+#include <arki/utils/lua.h>
+#endif
+
 using namespace std;
 using namespace wibble;
 
 namespace arki {
 namespace types {
 
-Code parseCodeName(const std::string& name)
+Code checkCodeName(const std::string& name)
 {
-	using namespace str;
-
 	// TODO: convert into something faster, like a hash lookup or a gperf lookup
-	string nname = trim(tolower(name));
+	string nname = str::trim(str::tolower(name));
 	if (nname == "origin") return TYPE_ORIGIN;
 	if (nname == "product") return TYPE_PRODUCT;
 	if (nname == "level") return TYPE_LEVEL;
@@ -56,7 +60,15 @@ Code parseCodeName(const std::string& name)
 	if (nname == "summarystats") return TYPE_SUMMARYSTATS;
 	if (nname == "bbox") return TYPE_BBOX;
 	if (nname == "run") return TYPE_RUN;
-	throw wibble::exception::Consistency("parsing yaml data", "unsupported field type: " + name);
+	return TYPE_INVALID;
+}
+
+Code parseCodeName(const std::string& name)
+{
+	Code res = checkCodeName(name);
+	if (res == TYPE_INVALID)
+		throw wibble::exception::Consistency("parsing yaml data", "unsupported field type: " + name);
+	return res;
 }
 
 std::string formatCode(const Code& c)
@@ -104,6 +116,90 @@ std::string Type::exactQuery() const
 {
 	throw wibble::exception::Consistency("creating a query to match " + tag(), "not implemented");
 }
+
+#ifdef HAVE_LUA
+static Item<>* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
+{
+	// Tweaked version of luaL_checkudata from lauxlib
+	void *p = lua_touserdata(L, idx);
+	// Value is a userdata?
+	if (p != NULL)
+	{
+		// Does it have a metatable?
+		if (lua_getmetatable(L, idx))
+		{
+			// Get the arkimet type tag
+			lua_pushstring(L, "__arki_type");
+			lua_gettable(L, -2);
+			const char* arkitype = lua_tostring(L, -1);
+
+			// Verify we are the right type base
+			if (arkitype != NULL && str::startsWith(arkitype, prefix))
+			{
+				// remove metatable and type name */
+				lua_pop(L, 2);
+				return (Item<>*)p;
+			}
+		}
+	}
+	luaL_typerror(L, idx, "arki.type.*"); // else error
+	return 0; // to avoid warnings
+}
+static int arkilua_tostring(lua_State* L)
+{
+	UItem<> item = Type::lua_check(L, 1);
+        lua_pushstring(L, wibble::str::fmt(item).c_str());
+        return 1;
+}
+
+static int arkilua_gc (lua_State *L)
+{
+	Item<>* ud = lua_check_arkitype(L, 1, "arki.types.");
+	ud->~Item<>();
+	return 0;
+}
+
+void Type::lua_register_methods(lua_State* L) const
+{
+	static const struct luaL_reg lib [] = {
+		{ "__tostring", arkilua_tostring },
+		{ "__gc", arkilua_gc },
+		{NULL, NULL}
+	};
+	luaL_register(L, NULL, lib);
+
+	// Set the type name in a special field in the metatable
+	lua_pushstring(L, "__arki_type");
+	lua_pushstring(L, lua_type_name());
+	lua_settable(L, -3);  /* metatable.__arki_type = <name> */
+}
+
+void Type::lua_push(lua_State* L) const
+{
+	// The userdata will be an Item<> created with placement new
+	// so that it will take care of reference counting
+	Item<>* s = (Item<>*)lua_newuserdata(L, sizeof(Item<>));
+	new(s) Item<>(this);
+
+	// Set the metatable for the userdata
+	if (luaL_newmetatable(L, lua_type_name()))
+	{
+		// If the metatable wasn't previously created, create it now
+                lua_pushstring(L, "__index");
+                lua_pushvalue(L, -2);  /* pushes the metatable */
+                lua_settable(L, -3);  /* metatable.__index = metatable */
+
+		lua_register_methods(L);
+	}
+
+	lua_setmetatable(L, -2);
+}
+
+Item<> Type::lua_check(lua_State* L, int idx, const char* prefix)
+{
+	return *lua_check_arkitype(L, idx, prefix);
+}
+#endif
 
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
 {

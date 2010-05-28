@@ -28,6 +28,7 @@
 #include "config.h"
 #include <iomanip>
 #include <sstream>
+#include <cstring>
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
@@ -129,7 +130,7 @@ Item<Origin> Origin::decode(const unsigned char* buf, size_t len)
 			throw wibble::exception::Consistency("parsing Origin", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
 	}
 }
-    
+
 Item<Origin> Origin::decodeString(const std::string& val)
 {
 	string inner;
@@ -155,84 +156,32 @@ Item<Origin> Origin::decodeString(const std::string& val)
 }
 
 #ifdef HAVE_LUA
-int Origin::lua_lookup(lua_State* L)
+static int arkilua_lookup(lua_State *L)
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Origin reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Origin& v = **(const Origin**)userdata;
+        // querySummary(self, matcher="", summary)
+        Item<Origin> item = Type::lua_check(L, 1, "arki.types.origin.").upcast<Origin>();
+	const char* sname = lua_tostring(L, 2);
+        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
 
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
+	if (strcmp(sname, "style") == 0)
 	{
-		string s = Origin::formatStyle(v.style());
+		string s = Origin::formatStyle(item->style());
 		lua_pushlstring(L, s.data(), s.size());
 		return 1;
 	}
-	else if (name == "grib1" && v.style() == Origin::GRIB1)
-	{
-		const origin::GRIB1* v1 = v.upcast<origin::GRIB1>();
-		lua_pushnumber(L, v1->centre());
-		lua_pushnumber(L, v1->subcentre());
-		lua_pushnumber(L, v1->process());
-		return 3;
-	}
-	else if (name == "grib2" && v.style() == Origin::GRIB2)
-	{
-		const origin::GRIB2* v1 = v.upcast<origin::GRIB2>();
-		lua_pushnumber(L, v1->centre());
-		lua_pushnumber(L, v1->subcentre());
-		lua_pushnumber(L, v1->processtype());
-		lua_pushnumber(L, v1->bgprocessid());
-		lua_pushnumber(L, v1->processid());
-		return 5;
-	}
-	else if (name == "bufr" && v.style() == Origin::BUFR)
-	{
-		const origin::GRIB2* v1 = v.upcast<origin::GRIB2>();
-		lua_pushnumber(L, v1->centre());
-		lua_pushnumber(L, v1->subcentre());
-		return 2;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_origin(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Origin::lua_lookup, 2);
-	return 1;
-}
-void Origin::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Origin** s = (const Origin**)lua_newuserdata(L, sizeof(const Origin*));
-	*s = this;
 
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_origin);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Origin>);
-		lua_settable(L, -3);
-	}
+	return item->lua_lookup(L, sname);
+}
 
-	lua_setmetatable(L, -2);
+void Origin::lua_register_methods(lua_State* L) const
+{
+	Type::lua_register_methods(L);
+
+	static const struct luaL_reg lib [] = {
+		{ "__index", arkilua_lookup },
+		{ NULL, NULL }
+	};
+	luaL_register(L, NULL, lib);
 }
 #endif
 
@@ -266,6 +215,20 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 std::string GRIB1::exactQuery() const
 {
     return str::fmtf("GRIB1,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_process);
+}
+const char* GRIB1::lua_type_name() const { return "arki.types.origin.grib1"; }
+
+int GRIB1::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "centre")
+		lua_pushnumber(L, centre());
+	else if (name == "subcentre")
+		lua_pushnumber(L, subcentre());
+	else if (name == "process")
+		lua_pushnumber(L, process());
+	else
+		lua_pushnil(L);
+	return 1;
 }
 
 int GRIB1::compare(const Origin& o) const
@@ -342,6 +305,24 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 std::string GRIB2::exactQuery() const
 {
     return str::fmtf("GRIB2,%d,%d,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_processtype, (int)m_bgprocessid, (int)m_processid);
+}
+const char* GRIB2::lua_type_name() const { return "arki.types.origin.grib2"; }
+
+int GRIB2::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "centre")
+		lua_pushnumber(L, centre());
+	else if (name == "subcentre")
+		lua_pushnumber(L, subcentre());
+	else if (name == "processtype")
+		lua_pushnumber(L, processtype());
+	else if (name == "bgprocessid")
+		lua_pushnumber(L, bgprocessid());
+	else if (name == "processid")
+		lua_pushnumber(L, processid());
+	else
+		lua_pushnil(L);
+	return 1;
 }
 
 int GRIB2::compare(const Origin& o) const
@@ -421,6 +402,18 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 std::string BUFR::exactQuery() const
 {
     return str::fmtf("BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
+}
+const char* BUFR::lua_type_name() const { return "arki.types.origin.bufr"; }
+
+int BUFR::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "centre")
+		lua_pushnumber(L, centre());
+	else if (name == "subcentre")
+		lua_pushnumber(L, subcentre());
+	else
+		lua_pushnil(L);
+	return 1;
 }
 
 int BUFR::compare(const Origin& o) const

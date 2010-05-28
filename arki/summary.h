@@ -79,19 +79,20 @@ struct Stats : public types::Type
 	bool operator!=(const Stats& i) const { return !operator==(i); }
 	bool operator<(const Stats& i) const { return compare(i) < 0; }
 
-	void merge(const arki::Item<Stats>& s);
+	void merge(const refcounted::Pointer<Stats>& s);
 	void merge(size_t count, unsigned long long size, const types::Reftime* reftime);
 
 	virtual std::string tag() const;
 	virtual types::Code serialisationCode() const;
 	virtual size_t serialisationSizeLength() const;
+	virtual const char* lua_type_name() const;
 
 	void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	std::ostream& writeToOstream(std::ostream& o) const;
 	std::string toYaml(size_t indent = 0) const;
 	void toYaml(std::ostream& out, size_t indent = 0) const;
-	static arki::Item<Stats> decode(const unsigned char* buf, size_t len, const std::string& filename);
-	static arki::Item<Stats> decodeString(const std::string& str);
+	static arki::refcounted::Pointer<Stats> decode(const unsigned char* buf, size_t len);
+	static arki::refcounted::Pointer<Stats> decodeString(const std::string& str);
 
 	virtual void lua_push(lua_State* L) const;
 	static int lua_lookup(lua_State* L);
@@ -100,7 +101,7 @@ struct Stats : public types::Type
 struct Visitor
 {
 	virtual ~Visitor() {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const arki::Item<Stats>& stats) = 0;
+	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<Stats>& stats) = 0;
 
 	/// Return the metadata code for a given md vector position
 	static types::Code codeForPos(size_t pos);
@@ -116,7 +117,7 @@ struct Visitor
 struct StatsVisitor
 {
 	virtual ~StatsVisitor() {}
-	virtual bool operator()(const arki::Item<Stats>& stats) = 0;
+	virtual bool operator()(const arki::refcounted::Pointer<Stats>& stats) = 0;
 };
 
 struct ItemVisitor
@@ -133,13 +134,13 @@ struct Node : public refcounted::Base
 	// TODO: replace with vector, insertionsort, binary search
 	std::map< UItem<>, refcounted::Pointer<Node> > children;
 	// Statistics about the metadata scanned so far
-	UItem<Stats> stats;
+	refcounted::Pointer<Stats> stats;
 
 	Node();
 	// New node initialized from the given metadata
 	Node(const Metadata& m, size_t scanpos = 0);
-	Node(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos = 0);
-	Node(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos = 0);
+	Node(const Metadata& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
+	Node(const std::vector< UItem<> >& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
 	virtual ~Node();
 
 	// Visit all the contents of this node, notifying visitor of all the full
@@ -159,8 +160,8 @@ struct Node : public refcounted::Base
 
 	// Add a metadata item
 	void add(const Metadata& m, size_t scanpos = 0);
-	void add(const Metadata& m, const arki::Item<Stats>& st, size_t scanpos = 0);
-	void add(const std::vector< UItem<> >& m, const arki::Item<Stats>& st, size_t scanpos = 0);
+	void add(const Metadata& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
+	void add(const std::vector< UItem<> >& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
 
 	// Return the total size of all the metadata described by this node.
 	unsigned long long size() const;
@@ -314,7 +315,7 @@ public:
 	 * summarisable metadata items are taken from 'md', and the statistics
 	 * from 'st'
 	 */
-	void add(const Metadata& md, const arki::Item<summary::Stats>& st);
+	void add(const Metadata& md, const refcounted::Pointer<summary::Stats>& st);
 
 	/**
 	 * Merge a summary into this summary

@@ -114,7 +114,7 @@ void Archive::acquire(const std::string& relname)
 	acquire(relname, mdc);
 }
 
-void Archive::acquire(const std::string& relname, const metadata::Collection& mds)
+void Archive::acquire(const std::string& relname, metadata::Collection& mds)
 {
 	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
 	string pathname = str::joinpath(m_dir, relname);
@@ -125,11 +125,11 @@ void Archive::acquire(const std::string& relname, const metadata::Collection& md
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
 	Summary sum;
-	for (metadata::Collection::const_iterator i = mds.begin();
+	for (metadata::Collection::iterator i = mds.begin();
 			i != mds.end(); ++i)
 	{
 		Item<source::Blob> s = i->source.upcast<source::Blob>();
-		s->filename = str::basename(s->filename);
+		i->source = s->fileOnly();
 		sum.add(*i);
 	}
 
@@ -360,7 +360,7 @@ void Archives::acquire(const std::string& relname)
 				"archive " + name + " does not exist in " + m_dir);
 }
 
-void Archives::acquire(const std::string& relname, const metadata::Collection& mds)
+void Archives::acquire(const std::string& relname, metadata::Collection& mds)
 {
 	string path = relname;
 	string name = poppath(path);

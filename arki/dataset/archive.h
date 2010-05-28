@@ -71,7 +71,7 @@ public:
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	void acquire(const std::string& relname);
-	void acquire(const std::string& relname, const metadata::Collection& mds);
+	void acquire(const std::string& relname, metadata::Collection& mds);
 	void remove(const std::string& relname);
 	void rescan(const std::string& relname);
 	void deindex(const std::string& relname);
@@ -133,7 +133,7 @@ public:
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	void acquire(const std::string& relname);
-	void acquire(const std::string& relname, const metadata::Collection& mds);
+	void acquire(const std::string& relname, metadata::Collection& mds);
 	void remove(const std::string& relname);
 	void rescan(const std::string& relname);
 

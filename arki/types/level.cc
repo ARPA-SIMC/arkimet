@@ -399,6 +399,7 @@ std::string GRIB1::exactQuery() const
 		default: return str::fmtf("GRIB1,%d,%d,%d", (int)m_type, (int)m_l1, (int)m_l2);
 	}
 }
+const char* GRIB1::lua_type_name() const { return "arki.types.level.grib1"; }
 
 int GRIB1::compare(const Level& o) const
 {
@@ -540,6 +541,7 @@ std::string GRIB2S::exactQuery() const
 {
 	return str::fmtf("GRIB2S,%d,%d,%d", (int)m_type, (int)m_scale, (int)m_value);
 }
+const char* GRIB2S::lua_type_name() const { return "arki.types.level.grib2s"; }
 
 int GRIB2S::compare(const Level& o) const
 {
@@ -608,6 +610,7 @@ std::string GRIB2D::exactQuery() const
 			(int)m_type1, (int)m_scale1, (int)m_value1,
 			(int)m_type2, (int)m_scale2, (int)m_value2);
 }
+const char* GRIB2D::lua_type_name() const { return "arki.types.level.grib2d"; }
 
 int GRIB2D::compare(const Level& o) const
 {

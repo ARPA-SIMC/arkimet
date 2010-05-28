@@ -206,6 +206,7 @@ std::string GRIB::exactQuery() const
 {
     return "GRIB:" + m_values.toString();
 }
+const char* GRIB::lua_type_name() const { return "arki.types.ensemble.grib"; }
 
 int GRIB::compare(const Ensemble& o) const
 {
