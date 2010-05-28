@@ -38,6 +38,7 @@ struct Validator;
 
 namespace bufr {
 const Validator& validator();
+struct BufrLua;
 }
 
 /**
@@ -51,6 +52,7 @@ class Bufr
 	dba_file file;
 	bool m_inline_data;
 	std::map<int, std::string> to_rep_memo;
+	bufr::BufrLua* extras;
 
 	void read_info_base(char* buf, ValueBag& area);
 	void read_info_fixed(char* buf, Metadata& md);

@@ -319,6 +319,10 @@ tests_arki_test_SOURCES += scan/bufr-tut.cc
 INCLUDES += $(LIBDBALLEPP_CFLAGS)
 libarkimet_la_LDFLAGS += $(LIBDBALLEPP_LIBS)
 tests_arki_test_LDADD += $(LIBDBALLEPP_LIBS)
+if LUA
+dist_noinst_HEADERS += scan/bufrlua.h
+libarkimet_la_SOURCES += scan/bufrlua.cc
+endif
 endif
 
 if CURL

@@ -20,9 +20,11 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "bufr.h"
+#include <arki/scan/bufr.h>
 #include <dballe++/error.h>
 #include <dballe/msg/repinfo.h>
+#include <dballe/msg/msgs.h>
+#include <dballe/msg/bufrex_codec.h>
 #include <dballe/core/csv.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
@@ -37,6 +39,12 @@
 #include <cstring>
 #include <stdint.h>
 #include <arpa/inet.h>
+
+#include "config.h"
+
+#ifdef HAVE_LUA
+#include <arki/scan/bufrlua.h>
+#endif
 
 using namespace std;
 using namespace wibble;
@@ -90,11 +98,14 @@ const Validator& validator() { return bufr_validator; }
 }
 
 
-Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData)
+Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData), extras(0)
 {
 	dballe::checked(dba_rawmsg_create(&rmsg));
 	dballe::checked(bufrex_msg_create(BUFREX_BUFR, &msg));
 	to_rep_memo = read_map_to_rep_memo();
+#ifdef HAVE_LUA
+	extras = new bufr::BufrLua;
+#endif
 }
 
 Bufr::~Bufr()
@@ -102,6 +113,9 @@ Bufr::~Bufr()
 	if (rmsg) dba_rawmsg_delete(rmsg);
 	if (msg) bufrex_msg_delete(msg);
 	if (file) dba_file_delete(file);
+#ifdef HAVE_LUA
+	if (extras) delete extras;
+#endif
 }
 
 void Bufr::open(const std::string& filename)
@@ -122,6 +136,7 @@ void Bufr::close()
 	}
 }
 
+#if 0
 void Bufr::read_info_base(char* buf, ValueBag& area)
 {
 	uint16_t rep_cod;
@@ -171,7 +186,7 @@ void Bufr::read_info_mobile(char* buf, Metadata& md)
 	area.set("ide", Value::createString(ident));
 	md.set(types::area::GRIB::create(area));
 }
-
+#endif
 
 bool Bufr::next(Metadata& md)
 {
@@ -183,6 +198,7 @@ bool Bufr::next(Metadata& md)
 
 	md.create();
 
+#if 0
 	// Detect optional section and handle it
 	switch (msg->opt.bufr.optional_section_length)
 	{
@@ -190,6 +206,7 @@ bool Bufr::next(Metadata& md)
 		case 11: read_info_mobile(msg->opt.bufr.optional_section, md); break;
 		default: break;
 	}
+#endif
 
 	// Set source
 	if (m_inline_data)
@@ -205,6 +222,7 @@ bool Bufr::next(Metadata& md)
 	// Set run
 	md.set(types::run::Minute::create(msg->rep_hour, msg->rep_minute));
 
+	// Set origin and product from the bufr header
 	switch (msg->edition)
 	{
 		case 2:
@@ -221,6 +239,34 @@ bool Bufr::next(Metadata& md)
 			throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
 		}
 	}
+
+#ifdef HAVE_LUA
+	// If we don't have extra scanning support, we are done
+	if (!extras) return true;
+
+	// If there is more than one subset, we are done
+	if (msg->opt.bufr.subsets != 1)
+		return true;
+
+	// Tru to decode the data; if we fail, we are done
+	if (bufr_decoder_decode(rmsg, msg) != DBA_OK)
+		return true;
+
+	// Try to parse as a dba_msg
+	dba_msgs msgs;
+	if (bufrex_msg_to_dba_msgs(msg, &msgs) != DBA_OK)
+		// If we cannot parse it as a dba_msg, we are done
+		return true;
+	
+	// We decoded a different number of subsets than declared by the BUFR.
+	// How could this happen? Treat it as an obscure BUFR and go no further
+	if (msgs->len != 1)
+		return true;
+
+	// DB-All.e managed to make sense of the message: hand it down to Lua
+	// to extract further metadata
+	extras->scan(msgs->msgs[0], md);
+#endif
 
 	return true;
 }
