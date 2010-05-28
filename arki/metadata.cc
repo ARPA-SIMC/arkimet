@@ -698,6 +698,14 @@ static int arkilua_gc (lua_State *L)
 	return 0;
 }
 
+static const struct luaL_reg metadatalib [] = {
+	{ "__index", arkilua_lookup },
+	{ "__gc", arkilua_gc },
+	// { "__tostring", arkilua_tostring },
+	{NULL, NULL}
+};
+
+
 void Metadata::lua_push(lua_State* L)
 {
 	// The 'grib' object is a userdata that holds a pointer to this Grib structure
@@ -708,12 +716,11 @@ void Metadata::lua_push(lua_State* L)
 	{
 		// If the metatable wasn't previously created, create it now
 		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup);
-		lua_settable(L, -3);  /* metatable.__index = arkilua_lookup */
+		lua_pushvalue(L, -2);  /* pushes the metatable */
+		lua_settable(L, -3);  /* metatable.__index = metatable */
 
-		lua_pushstring(L, "__gc");
-		lua_pushcfunction(L, arkilua_gc);
-		lua_settable(L, -3);  /* metatable.__gc = arkilua_gc */
+		// Load normal methods
+		luaL_register(L, NULL, metadatalib);
 	}
 
 	lua_setmetatable(L, -2);
