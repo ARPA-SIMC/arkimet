@@ -24,9 +24,8 @@
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <wibble/string.h>
+#include <wibble/sys/fs.h>
 #if 0
-#include "grib.h"
-#include <grib_api.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/level.h>
@@ -35,10 +34,7 @@
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
 #include <arki/types/run.h>
-#include <arki/runtime/config.h>
 #include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <cstring>
 #endif
 
 using namespace std;
@@ -68,6 +64,12 @@ int BufrLua::get_scan_func(dba_msg_type type)
         // Load the right bufr scan file
         string dirname = runtime::rcDirName("scan-bufr", "ARKI_SCAN_BUFR");
         string fname = str::joinpath(dirname, name + ".lua");
+
+	// If the fine does not exist, we are done
+	if (!sys::fs::access(fname, F_OK))
+		return scan_funcs[type] = -1;
+
+	// Compile the macro
         if (luaL_dofile(L, fname.c_str()))
         {
                 // Copy the error, so that it will exist after the pop
