@@ -5,28 +5,26 @@ targetfile["mars"] = function(pattern)
 	tags["DATE"] = function(md)
 		local rt = md.reftime
 		if rt == nil then return nil end
-		local t = rt.position()
+		local t = rt.time
 		if t == nil then return nil end
-		return string.format("%04d%02d%02d", t.year(), t.month(), t.day())
+		return string.format("%04d%02d%02d", t.year, t.month, t.day)
 	end
 	tags["TIME"] = function(md)
 		local rt = md.reftime
 		if rt == nil then return nil end
-		local t = rt.position()
+		local t = rt.time
 		if t == nil then return nil end
-		return string.format("%02d%02d", t.hour(), t.minute())
+		return string.format("%02d%02d", t.hour, t.minute)
 	end
 	tags["STEP"] = function(md)
 		local tr = md.timerange
 		if tr == nil then return nil end
-		if tr.style() == "GRIB1" then
-			pind, u, p1, p2 = tr.grib1()
-			if pind == nil then return nil end
-			return string.format("%02d", p1)
-		elseif tr.style() == "GRIB2" then
-			pind, u, p1, p2 = tr.grib2()
-			if pind == nil then return nil end
-			return string.format("%02d", p2)
+		if tr.style == "GRIB1" then
+			if tr.type == nil then return nil end
+			return string.format("%02d", tr.p1)
+		elseif tr.style == "GRIB2" then
+			if tr.type == nil then return nil end
+			return string.format("%02d", tr.p2)
 		else
 			return nil
 		end

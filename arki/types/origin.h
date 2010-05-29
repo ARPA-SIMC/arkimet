@@ -67,7 +67,7 @@ struct Origin : public types::Type
 	static Item<Origin> decodeString(const std::string& val);
 	static types::Code typecode();
 
-	// LUA functions
+	// Lua functions
 	virtual void lua_register_methods(lua_State* L) const;
 	virtual int lua_lookup(lua_State* L, const std::string& name) const = 0;
 

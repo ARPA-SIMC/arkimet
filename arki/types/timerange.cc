@@ -29,6 +29,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#include <cstring>
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
@@ -415,86 +416,32 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 }
 
 #ifdef HAVE_LUA
-int Timerange::lua_lookup(lua_State* L)
+static int arkilua_lookup(lua_State *L)
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Timerange reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Timerange& v = **(const Timerange**)userdata;
+        // querySummary(self, matcher="", summary)
+        Item<Timerange> item = Type::lua_check(L, 1, "arki.types.timerange.").upcast<Timerange>();
+	const char* sname = lua_tostring(L, 2);
+        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
 
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
+	if (strcmp(sname, "style") == 0)
 	{
-		string s = Timerange::formatStyle(v.style());
+		string s = Timerange::formatStyle(item->style());
 		lua_pushlstring(L, s.data(), s.size());
 		return 1;
 	}
-	else if (name == "grib1" && v.style() == Timerange::GRIB1)
-	{
-		const timerange::GRIB1* v1 = v.upcast<timerange::GRIB1>();
-		int type;
-		timerange::GRIB1::Unit unit;
-		int p1, p2;
-		v1->getNormalised(type, unit, p1, p2);
-		lua_pushnumber(L, type);
-		switch (unit)
-		{
-			case timerange::GRIB1::SECOND: lua_pushstring(L, "second"); break;
-			case timerange::GRIB1::MONTH: lua_pushstring(L, "month"); break;
-			default: lua_pushnil(L); break;
-		}
-		lua_pushnumber(L, p1);
-		lua_pushnumber(L, p2);
-		return 4;
-	}
-	else if (name == "grib2" && v.style() == Timerange::GRIB2)
-	{
-		const timerange::GRIB2* v1 = v.upcast<timerange::GRIB2>();
-		lua_pushnumber(L, v1->type());
-		lua_pushstring(L, formatTimeUnit((t_enum_GRIB_TIMEUNIT)v1->unit()).c_str());
-		lua_pushnumber(L, v1->p1());
-		lua_pushnumber(L, v1->p2());
-		return 4;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_timerange(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Timerange::lua_lookup, 2);
-	return 1;
-}
-void Timerange::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Timerange** s = (const Timerange**)lua_newuserdata(L, sizeof(const Timerange*));
-	*s = this;
 
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_timerange);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Timerange>);
-		lua_settable(L, -3);
-	}
+	return item->lua_lookup(L, sname);
+}
 
-	lua_setmetatable(L, -2);
+void Timerange::lua_register_methods(lua_State* L) const
+{
+	Type::lua_register_methods(L);
+
+	static const struct luaL_reg lib [] = {
+		{ "__index", arkilua_lookup },
+		{ NULL, NULL }
+	};
+	luaL_register(L, NULL, lib);
 }
 #endif
 
@@ -584,7 +531,30 @@ std::string GRIB1::exactQuery() const
 }
 
 const char* GRIB1::lua_type_name() const { return "arki.types.timerange.grib1"; }
+int GRIB1::lua_lookup(lua_State* L, const std::string& name) const
+{
+	int type;
+	timerange::GRIB1::Unit unit;
+	int p1, p2;
+	getNormalised(type, unit, p1, p2);
 
+	if (name == "type")
+		lua_pushnumber(L, type);
+	else if (name == "unit")
+		switch (unit)
+		{
+			case timerange::GRIB1::SECOND: lua_pushstring(L, "second"); break;
+			case timerange::GRIB1::MONTH: lua_pushstring(L, "month"); break;
+			default: lua_pushnil(L); break;
+		}
+	else if (name == "p1")
+		lua_pushnumber(L, p1);
+	else if (name == "p2")
+		lua_pushnumber(L, p2);
+	else
+		lua_pushnil(L);
+	return 1;
+}
 
 int GRIB1::compare(const Timerange& o) const
 {
@@ -742,6 +712,21 @@ std::string GRIB2::exactQuery() const
 }
 
 const char* GRIB2::lua_type_name() const { return "arki.types.timerange.grib2"; }
+
+int GRIB2::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "type")
+		lua_pushnumber(L, type());
+	else if (name == "unit")
+		lua_pushstring(L, formatTimeUnit((t_enum_GRIB_TIMEUNIT)unit()).c_str());
+	else if (name == "p1")
+		lua_pushnumber(L, p1());
+	else if (name == "p2")
+		lua_pushnumber(L, p2());
+	else
+		lua_pushnil(L);
+	return 1;
+}
 
 int GRIB2::compare(const Timerange& o) const
 {

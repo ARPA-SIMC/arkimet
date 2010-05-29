@@ -28,6 +28,7 @@
 #include "config.h"
 #include <sstream>
 #include <cmath>
+#include <cstring>
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
@@ -130,72 +131,31 @@ Item<Reftime> Reftime::decodeString(const std::string& val)
 }
 
 #ifdef HAVE_LUA
-int Reftime::lua_lookup(lua_State* L)
+static int arkilua_lookup(lua_State *L)
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Reftime reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Reftime& v = **(const Reftime**)userdata;
+        // querySummary(self, matcher="", summary)
+        Item<Reftime> item = Type::lua_check(L, 1, "arki.types.reftime.").upcast<Reftime>();
+	const char* sname = lua_tostring(L, 2);
+        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
 
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
+	if (strcmp(sname, "style") == 0)
 	{
-		string s = Reftime::formatStyle(v.style());
+		string s = Reftime::formatStyle(item->style());
 		lua_pushlstring(L, s.data(), s.size());
 		return 1;
 	}
-	else if (name == "position" && v.style() == Reftime::POSITION)
-	{
-		const reftime::Position* v1 = v.upcast<reftime::Position>();
-		v1->time->lua_push(L);
-		return 1;
-	}
-	else if (name == "period" && v.style() == Reftime::PERIOD)
-	{
-		const reftime::Period* v1 = v.upcast<reftime::Period>();
-		v1->begin->lua_push(L);
-		v1->end->lua_push(L);
-		return 2;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_reftime(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Reftime::lua_lookup, 2);
-	return 1;
-}
-void Reftime::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Reftime** s = (const Reftime**)lua_newuserdata(L, sizeof(const Reftime*));
-	*s = this;
 
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_reftime);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Reftime>);
-		lua_settable(L, -3);
-	}
+	return item->lua_lookup(L, sname);
+}
+void Reftime::lua_register_methods(lua_State* L) const
+{
+	Type::lua_register_methods(L);
 
-	lua_setmetatable(L, -2);
+	static const struct luaL_reg lib [] = {
+		{ "__index", arkilua_lookup },
+		{ NULL, NULL }
+	};
+	luaL_register(L, NULL, lib);
 }
 #endif
 
@@ -223,6 +183,14 @@ std::string Position::exactQuery() const
 
 const char* Position::lua_type_name() const { return "arki.types.reftime.position"; }
 
+int Position::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "time")
+		time->lua_push(L);
+	else
+		lua_pushnil(L);
+	return 1;
+}
 
 int Position::compare(const Reftime& o) const
 {
@@ -295,6 +263,17 @@ std::string Period::exactQuery() const
 }
 
 const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
+
+int Period::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "begin")
+		begin->lua_push(L);
+	else if (name == "end")
+		end->lua_push(L);
+	else
+		lua_pushnil(L);
+	return 1;
+}
 
 int Period::compare(const Reftime& o) const
 {

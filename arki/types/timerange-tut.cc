@@ -348,14 +348,11 @@ void to::test<11>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style() ~= 'GRIB1' then return 'style is '..o.style()..' instead of GRIB1' end \n"
-		"  a, b, c, d = o.grib1() \n"
-		"  if a ~= 2 then return 'o.grib1() first item is '..a..' instead of 2' end \n"
-		"  if b ~= 'second' then return 'o.grib1() second item is '..b..' instead of \\'second\\'' end \n"
-		"  if c ~= 2 then return 'o.grib1() third item is '..c..' instead of 2' end \n"
-		"  if d ~= 3 then return 'o.grib1() fourth item is '..d..' instead of 3' end \n"
-		"  if o.grib2() ~= nil then return 'o.grib2() gave '..o.grib2()..' instead of nil' end \n"
-		"  if o.bufr() ~= nil then return 'o.bufr() gave '..o.bufr()..' instead of nil' end \n"
+		"  if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end \n"
+		"  if o.type ~= 2 then return 'o.type is '..o.type..' instead of 2' end \n"
+		"  if o.unit ~= 'second' then return 'o.unit is '..o.unit..' instead of \\'second\\'' end \n"
+		"  if o.p1 ~= 2 then return 'o.p1 is '..o.p1..' instead of 2' end \n"
+		"  if o.p2 ~= 3 then return 'o.p2 is '..o.p2..' instead of 3' end \n"
 		"  if tostring(o) ~= 'GRIB1(002, 002s, 003s)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(002, 002s, 003s)' end \n"
 		"end \n"
 	);

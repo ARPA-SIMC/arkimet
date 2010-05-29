@@ -141,12 +141,12 @@ void to::test<4>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.year() ~= 1 then return 'o.year() is '..o.year()..' instead of 1' end \n"
-		"  if o.month() ~= 2 then return 'o.month() is '..o.month()..' instead of 2' end \n"
-		"  if o.day() ~= 3 then return 'o.day() is '..o.day()..' instead of 3' end \n"
-		"  if o.hour() ~= 4 then return 'o.hour() is '..o.hour()..' instead of 4' end \n"
-		"  if o.minute() ~= 5 then return 'o.minute() is '..o.minute()..' instead of 5' end \n"
-		"  if o.second() ~= 6 then return 'o.second() is '..o.second()..' instead of 6' end \n"
+		"  if o.year ~= 1 then return 'o.year is '..o.year..' instead of 1' end \n"
+		"  if o.month ~= 2 then return 'o.month is '..o.month..' instead of 2' end \n"
+		"  if o.day ~= 3 then return 'o.day is '..o.day..' instead of 3' end \n"
+		"  if o.hour ~= 4 then return 'o.hour is '..o.hour..' instead of 4' end \n"
+		"  if o.minute ~= 5 then return 'o.minute is '..o.minute..' instead of 5' end \n"
+		"  if o.second ~= 6 then return 'o.second is '..o.second..' instead of 6' end \n"
 		"  if tostring(o) ~= '0001-02-03T04:05:06Z' then return 'tostring gave '..tostring(o)..' instead of 0001-02-03T04:05:06Z' end \n"
 		"end \n"
 	);

@@ -184,83 +184,48 @@ bool Time::operator==(const Time& t) const
 }
 
 #ifdef HAVE_LUA
-int Time::lua_lookup(lua_State* L)
+static int arkilua_lookup(lua_State *L)
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Time reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Time& v = **(const Time**)userdata;
+        Item<Time> item = Type::lua_check(L, 1, "arki.types.time").upcast<Time>();
+	if (lua_type(L, 2) == LUA_TNUMBER) 
+	{
+		int idx = lua_tointeger(L, 2);
+		if (idx >= 0 && idx < 6)
+			lua_pushnumber(L, item->vals[idx]);
+		else
+			lua_pushnil(L);
+	} else {
+		const char* name = lua_tostring(L, 2);
+		luaL_argcheck(L, name != NULL, 2, "`string' expected");
 
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
+		if (strcmp(name, "year") == 0)
+			lua_pushnumber(L, item->vals[0]);
+		else if (strcmp(name, "month") == 0)
+			lua_pushnumber(L, item->vals[1]);
+		else if (strcmp(name, "day") == 0)
+			lua_pushnumber(L, item->vals[2]);
+		else if (strcmp(name, "hour") == 0)
+			lua_pushnumber(L, item->vals[3]);
+		else if (strcmp(name, "minute") == 0)
+			lua_pushnumber(L, item->vals[4]);
+		else if (strcmp(name, "second") == 0)
+			lua_pushnumber(L, item->vals[5]);
+		else
+			lua_pushnil(L);
+	}
 
-	if (name == "0" || name == "year")
-	{
-		lua_pushnumber(L, v.vals[0]);
-		return 1;
-	}
-	else if (name == "1" || name == "month")
-	{
-		lua_pushnumber(L, v.vals[1]);
-		return 1;
-	}
-	else if (name == "2" || name == "day")
-	{
-		lua_pushnumber(L, v.vals[2]);
-		return 1;
-	}
-	else if (name == "3" || name == "hour")
-	{
-		lua_pushnumber(L, v.vals[3]);
-		return 1;
-	}
-	else if (name == "4" || name == "minute")
-	{
-		lua_pushnumber(L, v.vals[4]);
-		return 1;
-	}
-	else if (name == "5" || name == "second")
-	{
-		lua_pushnumber(L, v.vals[5]);
-		return 1;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_time(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Time::lua_lookup, 2);
 	return 1;
 }
-void Time::lua_push(lua_State* L) const
+
+void Time::lua_register_methods(lua_State* L) const
 {
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Time** s = (const Time**)lua_newuserdata(L, sizeof(const Time*));
-	*s = this;
+	Type::lua_register_methods(L);
 
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_time);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Time>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
+	static const struct luaL_reg lib [] = {
+		{ "__index", arkilua_lookup },
+		{ NULL, NULL }
+	};
+	luaL_register(L, NULL, lib);
 }
 #endif
 
