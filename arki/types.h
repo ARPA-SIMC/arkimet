@@ -186,6 +186,9 @@ std::ostream& operator<<(std::ostream& o, const Item<T>& i)
 
 namespace types {
 
+template<typename T>
+class traits;
+
 /**
  * Base class for implementing arkimet metadata types
  */
@@ -196,8 +199,15 @@ struct Type : public refcounted::Base
 	/// Comparison (<0 if <, 0 if =, >0 if >)
 	virtual int compare(const Type& o) const;
 
+	bool operator<(const Type& o) const { return compare(o) < 0; }
+	bool operator<=(const Type& o) const { return compare(o) <= 0; }
+	bool operator>(const Type& o) const { return compare(o) > 0; }
+	bool operator>=(const Type& o) const { return compare(o) >= 0; }
+
 	/// Equality
 	virtual bool operator==(const Type& o) const = 0;
+
+	bool operator!=(const Type& o) const { return !operator==(o); }
 
 	/**
 	 * Tag to identify this metadata item.
@@ -238,6 +248,14 @@ struct Type : public refcounted::Base
 	void lua_push(lua_State* L) const;
 
 	/**
+	 * Lookup members by name and push them in the Lua stack
+	 *
+	 * @return true if name matched a member and an element was pushed on
+	 *         stack, else false
+	 */
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+	/**
 	 * Return the lua type name (i.e. arki.type.<something>)
 	 * used to register the metatable for this type
 	 */
@@ -254,8 +272,34 @@ struct Type : public refcounted::Base
          *
          * @return the Type element, or undefined if the check failed
          */
-	static Item<> lua_check(lua_State* L, int idx, const char* prefix = "arki.types.");
+	static Item<> lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
 };
+
+template<typename BASE>
+struct CoreType : public Type
+{
+	virtual types::Code serialisationCode() const { return traits<BASE>::type_code; }
+	virtual size_t serialisationSizeLength() const { return traits<BASE>::type_sersize_bytes; }
+	virtual std::string tag() const { return traits<BASE>::type_tag; }
+	virtual const char* lua_type_name() const { return traits<BASE>::type_lua_tag; }
+};
+
+template<typename BASE>
+struct StyledType : public CoreType<BASE>
+{
+	typedef typename traits<BASE>::Style Style;
+
+	// Get the element style
+	virtual Style style() const = 0;
+
+	// Default implementations of Type methods
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+	virtual int compare(const Type& o) const;
+	virtual int compare_local(const BASE& o) const = 0;
+
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+};
+
 
 /// Decode an item encoded in binary representation
 Item<> decode(const unsigned char* buf, size_t len);

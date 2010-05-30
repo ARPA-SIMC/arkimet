@@ -31,16 +31,27 @@ namespace arki {
 
 namespace types {
 
+struct Timerange;
+
+template<>
+struct traits<Timerange>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * The time span information of the data
  *
  * It can contain information such as accumulation time, or validity of
  * forecast.
  */
-struct Timerange : public types::Type
+struct Timerange : public types::StyledType<Timerange>
 {
-	typedef unsigned char Style;
-
 	/// Style values
 	static const Style GRIB1 = 1;
 	static const Style GRIB2 = 2;
@@ -49,25 +60,10 @@ struct Timerange : public types::Type
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
-	/// Timerange style
-	virtual Style style() const = 0;
-
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Timerange& o) const;
-
-	virtual std::string tag() const;
 
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Timerange> decode(const unsigned char* buf, size_t len);
 	static Item<Timerange> decodeString(const std::string& val);
-	static types::Code typecode();
-
-	// Lua functions
-	virtual void lua_register_methods(lua_State* L) const;
-	virtual int lua_lookup(lua_State* L, const std::string& name) const = 0;
 };
 
 namespace timerange {
@@ -96,10 +92,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
-	virtual int lua_lookup(lua_State* L, const std::string& name) const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Timerange& o) const;
-	virtual int compare(const GRIB1& o) const;
+	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	void getNormalised(int& type, Unit& unit, int& p1, int& p2) const;
@@ -124,10 +119,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
-	virtual int lua_lookup(lua_State* L, const std::string& name) const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Timerange& o) const;
-	virtual int compare(const GRIB2& o) const;
+	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB2> create(unsigned char type, unsigned char unit, unsigned long p1, unsigned long p2);

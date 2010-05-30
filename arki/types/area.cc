@@ -46,6 +46,11 @@ using namespace arki::utils::codec;
 namespace arki {
 namespace types {
 
+const char* traits<Area>::type_tag = TAG;
+const types::Code traits<Area>::type_code = CODE;
+const size_t traits<Area>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Area>::type_lua_tag = LUATAG_TYPES ".area";
+
 namespace area {
 // FIXME: move as a singleton to arki/bbox.cc?
 static __thread BBox* bbox = 0;

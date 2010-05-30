@@ -49,7 +49,7 @@ public:
 	template<typename T>
 	UItem<T> get() const
 	{
-		UItem<> i = get(T::typecode());
+		UItem<> i = get(types::traits<T>::type_code);
 		return i.upcast<T>();
 	};
 

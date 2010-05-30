@@ -45,6 +45,11 @@ using namespace wibble;
 namespace arki {
 namespace types {
 
+const char* traits<Product>::type_tag = TAG;
+const types::Code traits<Product>::type_code = CODE;
+const size_t traits<Product>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Product>::type_lua_tag = LUATAG_TYPES ".product";
+
 // Style constants
 //const unsigned char Product::NONE;
 const unsigned char Product::GRIB1;
@@ -74,36 +79,6 @@ std::string Product::formatStyle(Product::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
-}
-
-int Product::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Product* v = dynamic_cast<const Product*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Product, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int Product::compare(const Product& o) const
-{
-	return style() - o.style();
-}
-
-types::Code Product::serialisationCode() const { return CODE; }
-size_t Product::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Product::tag() const { return TAG; }
-types::Code Product::typecode() { return CODE; }
-
-void Product::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
 }
 
 Item<Product> Product::decode(const unsigned char* buf, size_t len)
@@ -151,89 +126,6 @@ Item<Product> Product::decodeString(const std::string& val)
 	}
 }
 
-#ifdef HAVE_LUA
-int Product::lua_lookup(lua_State* L)
-{
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Origin reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Product& v = **(const Product**)userdata;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
-	{
-		string s = Product::formatStyle(v.style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-	else if (name == "grib1" && v.style() == Product::GRIB1)
-	{
-		const product::GRIB1* v1 = v.upcast<product::GRIB1>();
-		lua_pushnumber(L, v1->origin());
-		lua_pushnumber(L, v1->table());
-		lua_pushnumber(L, v1->product());
-		return 3;
-	}
-	else if (name == "grib2" && v.style() == Product::GRIB2)
-	{
-		const product::GRIB2* v1 = v.upcast<product::GRIB2>();
-		lua_pushnumber(L, v1->centre());
-		lua_pushnumber(L, v1->discipline());
-		lua_pushnumber(L, v1->category());
-		lua_pushnumber(L, v1->number());
-		return 4;
-	}
-	else if (name == "bufr" && v.style() == Product::BUFR)
-	{
-		const product::BUFR* v1 = v.upcast<product::BUFR>();
-		lua_pushnumber(L, v1->type());
-		lua_pushnumber(L, v1->subtype());
-		lua_pushnumber(L, v1->localsubtype());
-		return 3;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_product(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Product::lua_lookup, 2);
-	return 1;
-}
-void Product::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Product** s = (const Product**)lua_newuserdata(L, sizeof(const Product*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_product);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Product>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
-}
-#endif
-
-
 namespace product {
 
 static TypeCache<GRIB1> cache_grib1;
@@ -265,11 +157,8 @@ std::string GRIB1::exactQuery() const
 }
 const char* GRIB1::lua_type_name() const { return "arki.types.product.grib1"; }
 
-int GRIB1::compare(const Product& o) const
+int GRIB1::compare_local(const Product& o) const
 {
-	int res = Product::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
@@ -277,14 +166,9 @@ int GRIB1::compare(const Product& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Product, but it is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-
-int GRIB1::compare(const GRIB1& o) const
-{
-	if (int res = m_origin - o.m_origin) return res;
-	if (int res = m_table - o.m_table) return res;
-	return m_product - o.m_product;
+	if (int res = m_origin - v->m_origin) return res;
+	if (int res = m_table - v->m_table) return res;
+	return m_product - v->m_product;
 }
 
 bool GRIB1::operator==(const Type& o) const
@@ -310,6 +194,19 @@ std::vector<int> GRIB1::toIntVector() const
 	res.push_back(m_table);
 	res.push_back(m_product);
 	return res;
+}
+
+bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "origin")
+		lua_pushnumber(L, origin());
+	else if (name == "table")
+		lua_pushnumber(L, table());
+	else if (name == "product")
+		lua_pushnumber(L, product());
+	else
+		return Product::lua_lookup(L, name);
+	return true;
 }
 
 
@@ -338,11 +235,9 @@ std::string GRIB2::exactQuery() const
     return str::fmtf("GRIB2,%d,%d,%d,%d", (int)m_centre, (int)m_discipline, (int)m_category, (int)m_number);
 }
 const char* GRIB2::lua_type_name() const { return "arki.types.product.grib2"; }
-int GRIB2::compare(const Product& o) const
-{
-	int res = Product::compare(o);
-	if (res != 0) return res;
 
+int GRIB2::compare_local(const Product& o) const
+{
 	// We should be the same kind, so upcast
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v)
@@ -350,15 +245,10 @@ int GRIB2::compare(const Product& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB2 Product, but it is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-
-int GRIB2::compare(const GRIB2& o) const
-{
-	if (int res = m_centre - o.m_centre) return res;
-	if (int res = m_discipline - o.m_discipline) return res;
-	if (int res = m_category - o.m_category) return res;
-	return m_number - o.m_number;
+	if (int res = m_centre - v->m_centre) return res;
+	if (int res = m_discipline - v->m_discipline) return res;
+	if (int res = m_category - v->m_category) return res;
+	return m_number - v->m_number;
 }
 
 bool GRIB2::operator==(const Type& o) const
@@ -390,6 +280,20 @@ std::vector<int> GRIB2::toIntVector() const
 	res.push_back(m_number);
 	return res;
 }
+bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "centre")
+		lua_pushnumber(L, centre());
+	else if (name == "discipline")
+		lua_pushnumber(L, discipline());
+	else if (name == "category")
+		lua_pushnumber(L, category());
+	else if (name == "number")
+		lua_pushnumber(L, number());
+	else
+		return Product::lua_lookup(L, name);
+	return true;
+}
 
 
 Product::Style BUFR::style() const { return Product::BUFR; }
@@ -416,11 +320,8 @@ std::string BUFR::exactQuery() const
 }
 const char* BUFR::lua_type_name() const { return "arki.types.product.bufr"; }
 
-int BUFR::compare(const Product& o) const
+int BUFR::compare_local(const Product& o) const
 {
-	int res = Product::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v)
@@ -428,13 +329,9 @@ int BUFR::compare(const Product& o) const
 			"comparing metadata types",
 			string("second element claims to be a BUFR Product, but it is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int BUFR::compare(const BUFR& o) const
-{
-	if (int res = m_type - o.m_type) return res;
-	if (int res = m_subtype - o.m_subtype) return res;
-	return m_localsubtype - o.m_localsubtype;
+	if (int res = m_type - v->m_type) return res;
+	if (int res = m_subtype - v->m_subtype) return res;
+	return m_localsubtype - v->m_localsubtype;
 }
 bool BUFR::operator==(const Type& o) const
 {
@@ -463,6 +360,19 @@ std::vector<int> BUFR::toIntVector() const
 	return res;
 }
 
+bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "type")
+		lua_pushnumber(L, type());
+	else if (name == "subtype")
+		lua_pushnumber(L, subtype());
+	else if (name == "localsubtype")
+		lua_pushnumber(L, localsubtype());
+	else
+		return Product::lua_lookup(L, name);
+	return true;
+}
+
 static void debug_interns()
 {
 	fprintf(stderr, "product GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
@@ -480,4 +390,5 @@ static MetadataType productType(
 
 }
 }
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:

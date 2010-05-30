@@ -30,12 +30,23 @@ struct lua_State;
 namespace arki {
 namespace types {
 
+struct Time;
+
+template<>
+struct traits<Time>
+{
+        static const char* type_tag;
+        static const types::Code type_code;
+        static const size_t type_sersize_bytes;
+        static const char* type_lua_tag;
+};
+
 /**
  * A point in time, in UTC.
  *
  * If all the time components are 0, it is to be interpreted as 'now'.
  */
-struct Time : public types::Type
+struct Time : public types::CoreType<Time>
 {
 	int vals[6];
 
@@ -48,18 +59,11 @@ struct Time : public types::Type
 
 	Time& operator=(const Time& t);
 
-	virtual int compare(const Type& o) const;
 	virtual int compare(const Time& o) const;
 
 	virtual bool operator==(const Type& o) const;
 	virtual bool operator==(const Time& o) const;
-	virtual bool operator!=(const Type& o) const { return !operator==(o); }
 	virtual bool operator!=(const Time& o) const { return !operator==(o); }
-
-	bool operator<(const Type& o) const { return compare(o) < 0; }
-	bool operator<=(const Type& o) const { return compare(o) <= 0; }
-	bool operator>(const Type& o) const { return compare(o) > 0; }
-	bool operator>=(const Type& o) const { return compare(o) >= 0; }
 
 	bool operator<(const Time& o) const { return compare(o) < 0; }
 	bool operator<=(const Time& o) const { return compare(o) <= 0; }
@@ -75,18 +79,13 @@ struct Time : public types::Type
 	/// Return the time formatted as a string in SQL format
 	std::string toSQL() const;
 
-	virtual std::string tag() const;
-
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Time> decode(const unsigned char* buf, size_t len);
 	static Item<Time> decodeString(const std::string& val);
 	std::ostream& writeToOstream(std::ostream& o) const;
 
 	// Lua functions
-	virtual const char* lua_type_name() const;
 	virtual void lua_register_methods(lua_State* L) const;
 
 	/// Construct a "now" time of (0, 0, 0, 0, 0, 0)

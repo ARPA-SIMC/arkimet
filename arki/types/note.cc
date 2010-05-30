@@ -44,6 +44,11 @@ using namespace arki::utils::codec;
 namespace arki {
 namespace types {
 
+const char* traits<Note>::type_tag = TAG;
+const types::Code traits<Note>::type_code = CODE;
+const size_t traits<Note>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Note>::type_lua_tag = LUATAG_TYPES ".note";
+
 int Note::compare(const Type& o) const
 {
 	int res = Type::compare(o);
@@ -74,10 +79,6 @@ bool Note::operator==(const Type& o) const
 	return time == v->time && content == v->content;
 }
 
-types::Code Note::serialisationCode() const { return CODE; }
-size_t Note::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Note::tag() const { return TAG; }
-
 void Note::encodeWithoutEnvelope(Encoder& enc) const
 {
 	time->encodeWithoutEnvelope(enc);
@@ -101,7 +102,6 @@ std::ostream& Note::writeToOstream(std::ostream& o) const
 {
 	return o << "[" << time << "]" << content;
 }
-const char* Note::lua_type_name() const { return "arki.types.note"; }
 
 Item<Note> Note::decodeString(const std::string& val)
 {
@@ -116,63 +116,15 @@ Item<Note> Note::decodeString(const std::string& val)
 }
 
 #ifdef HAVE_LUA
-int Note::lua_lookup(lua_State* L)
+bool Note::lua_lookup(lua_State* L, const std::string& name) const
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Note reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Note& v = **(const Note**)userdata;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
 	if (name == "time")
-	{
-		v.time->lua_push(L);
-		return 1;
-	}
+		time->lua_push(L);
 	else if (name == "content")
-	{
-		lua_pushlstring(L, v.content.data(), v.content.size());
-		return 1;
-	}
+		lua_pushlstring(L, content.data(), content.size());
 	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_note(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Note::lua_lookup, 2);
-	return 1;
-}
-void Note::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Note** s = (const Note**)lua_newuserdata(L, sizeof(const Note*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_note);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Note>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
+		return CoreType<Note>::lua_lookup(L, name);
+	return true;
 }
 #endif
 
@@ -193,4 +145,5 @@ static MetadataType noteType(
 
 }
 }
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:

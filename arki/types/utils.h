@@ -27,6 +27,14 @@
 #include <wibble/exception.h>
 #include <string>
 #include <set>
+#include <cstring>
+
+#include "config.h"
+#ifdef HAVE_LUA
+#include <arki/utils/lua.h>
+#endif
+
+#define LUATAG_TYPES "arki.types"
 
 namespace arki {
 namespace types {
@@ -194,7 +202,6 @@ struct FloatList
 				"found trailing characters at the end: \"" + str.substr(start - str.c_str()) + "\"");
 	}
 };
-
 
 }
 }

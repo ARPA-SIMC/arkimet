@@ -131,10 +131,14 @@ static Item<>* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
 			// Get the arkimet type tag
 			lua_pushstring(L, "__arki_type");
 			lua_gettable(L, -2);
-			const char* arkitype = lua_tostring(L, -1);
+			size_t len;
+			const char* arkitype = lua_tolstring(L, -1, &len);
 
 			// Verify we are the right type base
-			if (arkitype != NULL && str::startsWith(arkitype, prefix))
+			int pfxlen = strlen(prefix);
+			if (arkitype != NULL
+			 && strncmp(arkitype, prefix, pfxlen) == 0
+			 && (arkitype[pfxlen] == 0 || arkitype[pfxlen] == '.'))
 			{
 				// remove metatable and type name */
 				lua_pop(L, 2);
@@ -142,7 +146,7 @@ static Item<>* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
 			}
 		}
 	}
-	luaL_typerror(L, idx, "arki.type.*"); // else error
+	luaL_typerror(L, idx, "arki.types.*"); // else error
 	return 0; // to avoid warnings
 }
 static int arkilua_tostring(lua_State* L)
@@ -151,10 +155,29 @@ static int arkilua_tostring(lua_State* L)
         lua_pushstring(L, wibble::str::fmt(item).c_str());
         return 1;
 }
+static int arkilua_index(lua_State* L)
+{
+	using namespace arki;
+
+	Item<> item = types::Type::lua_check(L, 1);
+        const char* sname = lua_tostring(L, 2);
+        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
+	string key = sname;
+
+	if (!item->lua_lookup(L, key))
+	{
+		// Nothing found, delegate lookup to the metatable
+		lua_getmetatable(L, 1);
+		lua_pushlstring(L, key.data(), key.size());
+		lua_gettable(L, -2);
+	}
+	// utils::lua::dumpstack(L, "postlookup", cerr);
+	return 1;
+}
 
 static int arkilua_gc (lua_State *L)
 {
-	Item<>* ud = lua_check_arkitype(L, 1, "arki.types.");
+	Item<>* ud = lua_check_arkitype(L, 1, "arki.types");
 	ud->~Item<>();
 	return 0;
 }
@@ -162,6 +185,7 @@ static int arkilua_gc (lua_State *L)
 void Type::lua_register_methods(lua_State* L) const
 {
 	static const struct luaL_reg lib [] = {
+		{ "__index", arkilua_index },
 		{ "__tostring", arkilua_tostring },
 		{ "__gc", arkilua_gc },
 		{NULL, NULL}
@@ -172,6 +196,11 @@ void Type::lua_register_methods(lua_State* L) const
 	lua_pushstring(L, "__arki_type");
 	lua_pushstring(L, lua_type_name());
 	lua_settable(L, -3);  /* metatable.__arki_type = <name> */
+}
+
+bool Type::lua_lookup(lua_State* L, const std::string& name) const
+{
+	return false;
 }
 
 void Type::lua_push(lua_State* L) const

@@ -38,6 +38,9 @@
 #define CODE types::TYPE_TIMERANGE
 #define TAG "timerange"
 #define SERSIZELEN 1
+#define LUATAG_TIMERANGE LUATAG_TYPES ".timerange"
+#define LUATAG_GRIB1 LUATAG_TIMERANGE ".grib1"
+#define LUATAG_GRIB2 LUATAG_TIMERANGE ".grib2"
 
 using namespace std;
 using namespace wibble;
@@ -46,6 +49,11 @@ using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
+
+const char* traits<Timerange>::type_tag = TAG;
+const types::Code traits<Timerange>::type_code = CODE;
+const size_t traits<Timerange>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Timerange>::type_lua_tag = LUATAG_TIMERANGE;
 
 // Style constants
 const unsigned char Timerange::GRIB1;
@@ -156,36 +164,6 @@ std::string Timerange::formatStyle(Timerange::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
-}
-
-int Timerange::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Timerange* v = dynamic_cast<const Timerange*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Timerange, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int Timerange::compare(const Timerange& o) const
-{
-	return style() - o.style();
-}
-
-types::Code Timerange::serialisationCode() const { return CODE; }
-size_t Timerange::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Timerange::tag() const { return TAG; }
-types::Code Timerange::typecode() { return CODE; }
-
-void Timerange::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
 }
 
 Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
@@ -415,36 +393,6 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 	}
 }
 
-#ifdef HAVE_LUA
-static int arkilua_lookup(lua_State *L)
-{
-        // querySummary(self, matcher="", summary)
-        Item<Timerange> item = Type::lua_check(L, 1, "arki.types.timerange.").upcast<Timerange>();
-	const char* sname = lua_tostring(L, 2);
-        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
-
-	if (strcmp(sname, "style") == 0)
-	{
-		string s = Timerange::formatStyle(item->style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-
-	return item->lua_lookup(L, sname);
-}
-
-void Timerange::lua_register_methods(lua_State* L) const
-{
-	Type::lua_register_methods(L);
-
-	static const struct luaL_reg lib [] = {
-		{ "__index", arkilua_lookup },
-		{ NULL, NULL }
-	};
-	luaL_register(L, NULL, lib);
-}
-#endif
-
 namespace timerange {
 
 static TypeCache<GRIB1> cache_grib1;
@@ -531,7 +479,7 @@ std::string GRIB1::exactQuery() const
 }
 
 const char* GRIB1::lua_type_name() const { return "arki.types.timerange.grib1"; }
-int GRIB1::lua_lookup(lua_State* L, const std::string& name) const
+bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 {
 	int type;
 	timerange::GRIB1::Unit unit;
@@ -552,15 +500,12 @@ int GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 	else if (name == "p2")
 		lua_pushnumber(L, p2);
 	else
-		lua_pushnil(L);
-	return 1;
+		return Timerange::lua_lookup(L, name);
+	return true;
 }
 
-int GRIB1::compare(const Timerange& o) const
+int GRIB1::compare_local(const Timerange& o) const
 {
-	int res = Timerange::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
@@ -568,14 +513,10 @@ int GRIB1::compare(const Timerange& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Timerange, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB1::compare(const GRIB1& o) const
-{
 	int atype, ap1, ap2, btype, bp1, bp2;
 	Unit aunit, bunit;
 	getNormalised(atype, aunit, ap1, ap2);
-	o.getNormalised(btype, bunit, bp1, bp2);
+	v->getNormalised(btype, bunit, bp1, bp2);
 
 	if (int res = atype - btype) return res;
 	if (int res = aunit - bunit) return res;
@@ -713,7 +654,7 @@ std::string GRIB2::exactQuery() const
 
 const char* GRIB2::lua_type_name() const { return "arki.types.timerange.grib2"; }
 
-int GRIB2::lua_lookup(lua_State* L, const std::string& name) const
+bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "type")
 		lua_pushnumber(L, type());
@@ -724,15 +665,12 @@ int GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 	else if (name == "p2")
 		lua_pushnumber(L, p2());
 	else
-		lua_pushnil(L);
-	return 1;
+		return Timerange::lua_lookup(L, name);
+	return true;
 }
 
-int GRIB2::compare(const Timerange& o) const
+int GRIB2::compare_local(const Timerange& o) const
 {
-	int res = Timerange::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v)
@@ -740,15 +678,11 @@ int GRIB2::compare(const Timerange& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB2 Timerange, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB2::compare(const GRIB2& o) const
-{
 	// TODO: normalise the time units if needed
-	if (int res = m_type - o.m_type) return res;
-	if (int res = m_unit - o.m_unit) return res;
-	if (int res = m_p1 - o.m_p1) return res;
-	return m_p2 - o.m_p2;
+	if (int res = m_type - v->m_type) return res;
+	if (int res = m_unit - v->m_unit) return res;
+	if (int res = m_p1 - v->m_p1) return res;
+	return m_p2 - v->m_p2;
 }
 
 bool GRIB2::operator==(const Type& o) const
@@ -785,4 +719,7 @@ static MetadataType timerangeType(
 
 }
 }
+
+#include <arki/types.tcc>
+
 // vim:set ts=4 sw=4:

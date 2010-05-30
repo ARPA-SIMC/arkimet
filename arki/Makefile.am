@@ -60,6 +60,7 @@ dist_noinst_HEADERS = \
 		runtime/io.h \
 		runtime/config.h \
 		types.h \
+		types.tcc \
 		types/utils.h \
 		types/test-utils.h \
 		types/time.h \

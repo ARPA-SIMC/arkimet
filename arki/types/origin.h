@@ -31,16 +31,27 @@ namespace arki {
 
 namespace types {
 
+struct Origin;
+
+template<>
+struct traits<Origin>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * The origin of some data.
  *
  * It can contain information like centre, process, subcentre, subprocess and
  * other similar data.
  */
-struct Origin : public types::Type
+struct Origin : public types::StyledType<Origin>
 {
-	typedef unsigned char Style;
-
 	/// Style values
 	//static const Style NONE = 0;
 	static const Style GRIB1 = 1;
@@ -51,25 +62,10 @@ struct Origin : public types::Type
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
-	/// Origin style
-	virtual Style style() const = 0;
-
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Origin& o) const;
-
-	virtual std::string tag() const;
 
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Origin> decode(const unsigned char* buf, size_t len);
 	static Item<Origin> decodeString(const std::string& val);
-	static types::Code typecode();
-
-	// Lua functions
-	virtual void lua_register_methods(lua_State* L) const;
-	virtual int lua_lookup(lua_State* L, const std::string& name) const = 0;
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -97,10 +93,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
-	virtual int lua_lookup(lua_State* L, const std::string& name) const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Origin& o) const;
-	virtual int compare(const GRIB1& o) const;
+	virtual int compare_local(const Origin& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
@@ -132,10 +127,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
-	virtual int lua_lookup(lua_State* L, const std::string& name) const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Origin& o) const;
-	virtual int compare(const GRIB2& o) const;
+	virtual int compare_local(const Origin& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB2> create(
@@ -163,10 +157,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
-	virtual int lua_lookup(lua_State* L, const std::string& name) const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Origin& o) const;
-	virtual int compare(const BUFR& o) const;
+	virtual int compare_local(const Origin& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<BUFR> create(unsigned char centre, unsigned char subcentre);

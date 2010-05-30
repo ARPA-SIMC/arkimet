@@ -49,6 +49,11 @@ using namespace wibble;
 namespace arki {
 namespace types {
 
+const char* traits<Time>::type_tag = TAG;
+const types::Code traits<Time>::type_code = CODE;
+const size_t traits<Time>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Time>::type_lua_tag = LUATAG_TYPES ".time";
+
 Time::Time()
 {
 	memset(vals, 0, 6*sizeof(int));
@@ -84,21 +89,6 @@ bool Time::isNow() const
 	return true;
 }
 
-int Time::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Time* v = dynamic_cast<const Time*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Time, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
 int Time::compare(const Time& o) const
 {
 	// "Now" times sort bigger than everything else, so if at least one of the
@@ -127,10 +117,6 @@ std::string Time::toSQL() const
 			vals[0], vals[1], vals[2], vals[3], vals[4], vals[5]);
 	return buf;
 }
-
-types::Code Time::serialisationCode() const { return CODE; }
-size_t Time::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Time::tag() const { return TAG; }
 
 Item<Time> Time::decode(const unsigned char* buf, size_t len)
 {
@@ -169,7 +155,6 @@ std::ostream& Time::writeToOstream(std::ostream& o) const
 {
 	return o << toISO8601();
 }
-const char* Time::lua_type_name() const { return "arki.types.time"; }
 
 bool Time::operator==(const Type& o) const
 {
@@ -401,4 +386,7 @@ static MetadataType timeType(
 }
 }
 }
+
+#include <arki/types.tcc>
+
 // vim:set ts=4 sw=4:

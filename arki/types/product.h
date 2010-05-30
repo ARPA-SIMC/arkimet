@@ -30,14 +30,25 @@ struct lua_State;
 namespace arki {
 namespace types {
 
+struct Product;
+
+template<>
+struct traits<Product>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * Information on what product (variable measured, variable forecast, ...) is
  * contained in the data.
  */
-struct Product : public types::Type
+struct Product : public types::StyledType<Product>
 {
-	typedef unsigned char Style;
-
 	/// Style values
 	//static const unsigned char NONE = 0;
 	static const unsigned char GRIB1 = 1;
@@ -48,27 +59,10 @@ struct Product : public types::Type
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
-	/// Product style
-	virtual Style style() const = 0;
-
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Product& o) const;
-
-	virtual std::string tag() const;
 
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Product> decode(const unsigned char* buf, size_t len);
 	static Item<Product> decodeString(const std::string& val);
-	static types::Code typecode();
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Origin LUA object
-	static int lua_lookup(lua_State* L);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -96,9 +90,10 @@ public:
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 
-	virtual int compare(const Product& o) const;
-	virtual int compare(const GRIB1& o) const;
+	virtual int compare_local(const Product& o) const;
 	virtual bool operator==(const Type& o) const;
+
+	bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	static Item<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
 
@@ -126,9 +121,10 @@ public:
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 
-	virtual int compare(const Product& o) const;
-	virtual int compare(const GRIB2& o) const;
+	virtual int compare_local(const Product& o) const;
 	virtual bool operator==(const Type& o) const;
+
+	bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	static Item<GRIB2> create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number);
 
@@ -154,9 +150,10 @@ public:
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 
-	virtual int compare(const Product& o) const;
-	virtual int compare(const BUFR& o) const;
+	virtual int compare_local(const Product& o) const;
 	virtual bool operator==(const Type& o) const;
+
+	bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	static Item<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
 

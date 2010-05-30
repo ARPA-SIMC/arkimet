@@ -46,6 +46,11 @@ using namespace wibble;
 namespace arki {
 namespace types {
 
+const char* traits<Level>::type_tag = TAG;
+const types::Code traits<Level>::type_code = CODE;
+const size_t traits<Level>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Level>::type_lua_tag = LUATAG_TYPES ".level";
+
 // Style constants
 const unsigned char Level::GRIB1;
 const unsigned char Level::GRIB2S;
@@ -122,36 +127,6 @@ std::string Level::formatStyle(Level::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
-}
-
-int Level::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Level* v = dynamic_cast<const Level*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Level, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int Level::compare(const Level& o) const
-{
-	return style() - o.style();
-}
-
-types::Code Level::serialisationCode() const { return CODE; }
-size_t Level::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Level::tag() const { return TAG; }
-types::Code Level::typecode() { return CODE; }
-
-void Level::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
 }
 
 Item<Level> Level::decode(const unsigned char* buf, size_t len)
@@ -266,90 +241,6 @@ Item<Level> Level::decodeString(const std::string& val)
 	}
 }
 
-#ifdef HAVE_LUA
-int Level::lua_lookup(lua_State* L)
-{
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Level reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Level& v = **(const Level**)userdata;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
-	{
-		string s = Level::formatStyle(v.style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-	else if (name == "grib1" && v.style() == Level::GRIB1)
-	{
-		const level::GRIB1* v1 = v.upcast<level::GRIB1>();
-		lua_pushnumber(L, v1->type());
-		lua_pushnumber(L, v1->l1());
-		lua_pushnumber(L, v1->l2());
-		return 3;
-	}
-	else if (name == "grib2s" && v.style() == Level::GRIB2S)
-	{
-		const level::GRIB2S* v1 = v.upcast<level::GRIB2S>();
-		lua_pushnumber(L, v1->type());
-		lua_pushnumber(L, v1->scale());
-		lua_pushnumber(L, v1->value());
-		return 3;
-	}
-	else if (name == "grib2d" && v.style() == Level::GRIB2D)
-	{
-		const level::GRIB2D* v1 = v.upcast<level::GRIB2D>();
-		lua_pushnumber(L, v1->type1());
-		lua_pushnumber(L, v1->scale1());
-		lua_pushnumber(L, v1->value1());
-		lua_pushnumber(L, v1->type2());
-		lua_pushnumber(L, v1->scale2());
-		lua_pushnumber(L, v1->value2());
-		return 6;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_level(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Level::lua_lookup, 2);
-	return 1;
-}
-void Level::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Level** s = (const Level**)lua_newuserdata(L, sizeof(const Level*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_level);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Level>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
-}
-#endif
-
 namespace level {
 
 static TypeCache<GRIB1> cache_grib1;
@@ -401,11 +292,8 @@ std::string GRIB1::exactQuery() const
 }
 const char* GRIB1::lua_type_name() const { return "arki.types.level.grib1"; }
 
-int GRIB1::compare(const Level& o) const
+int GRIB1::compare_local(const Level& o) const
 {
-	int res = Level::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
@@ -413,13 +301,9 @@ int GRIB1::compare(const Level& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Level, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB1::compare(const GRIB1& o) const
-{
-	if (int res = m_type - o.m_type) return res;
-	if (int res = m_l1 - o.m_l1) return res;
-	return m_l2 - o.m_l2;
+	if (int res = m_type - v->m_type) return res;
+	if (int res = m_l1 - v->m_l1) return res;
+	return m_l2 - v->m_l2;
 }
 
 bool GRIB1::operator==(const Type& o) const
@@ -517,6 +401,19 @@ int GRIB1::getValType(unsigned char type)
 	}
 }
 
+bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "type")
+		lua_pushnumber(L, type());
+	else if (name == "l1")
+		lua_pushnumber(L, l1());
+	else if (name == "l2")
+		lua_pushnumber(L, l2());
+	else
+		return Level::lua_lookup(L, name);
+	return true;
+}
+
 
 Level::Style GRIB2S::style() const { return Level::GRIB2S; }
 
@@ -543,11 +440,8 @@ std::string GRIB2S::exactQuery() const
 }
 const char* GRIB2S::lua_type_name() const { return "arki.types.level.grib2s"; }
 
-int GRIB2S::compare(const Level& o) const
+int GRIB2S::compare_local(const Level& o) const
 {
-	int res = Level::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB2S* v = dynamic_cast<const GRIB2S*>(&o);
 	if (!v)
@@ -555,14 +449,10 @@ int GRIB2S::compare(const Level& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB2S Level, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB2S::compare(const GRIB2S& o) const
-{
 	// FIXME: here we can handle uniforming the scales if needed
-	if (int res = m_type - o.m_type) return res;
-	if (int res = m_scale - o.m_scale) return res;
-	return m_value - o.m_value;
+	if (int res = m_type - v->m_type) return res;
+	if (int res = m_scale - v->m_scale) return res;
+	return m_value - v->m_value;
 }
 
 bool GRIB2S::operator==(const Type& o) const
@@ -571,6 +461,19 @@ bool GRIB2S::operator==(const Type& o) const
 	if (!v) return false;
 	// FIXME: here we can handle uniforming the scales if needed
 	return m_type == v->m_type && m_scale == v->m_scale && m_value == v->m_value;
+}
+
+bool GRIB2S::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "type")
+		lua_pushnumber(L, type());
+	else if (name == "scale")
+		lua_pushnumber(L, scale());
+	else if (name == "value")
+		lua_pushnumber(L, value());
+	else
+		return Level::lua_lookup(L, name);
+	return true;
 }
 
 Item<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned long value)
@@ -612,11 +515,8 @@ std::string GRIB2D::exactQuery() const
 }
 const char* GRIB2D::lua_type_name() const { return "arki.types.level.grib2d"; }
 
-int GRIB2D::compare(const Level& o) const
+int GRIB2D::compare_local(const Level& o) const
 {
-	int res = Level::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB2D* v = dynamic_cast<const GRIB2D*>(&o);
 	if (!v)
@@ -624,17 +524,13 @@ int GRIB2D::compare(const Level& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB2D Level, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB2D::compare(const GRIB2D& o) const
-{
 	// FIXME: here we can handle uniforming the scales if needed
-	if (int res = m_type1 - o.m_type1) return res;
-	if (int res = m_scale1 - o.m_scale1) return res;
-	if (int res = m_value1 - o.m_value1) return res;
-	if (int res = m_type2 - o.m_type2) return res;
-	if (int res = m_scale2 - o.m_scale2) return res;
-	return m_value2 - o.m_value2;
+	if (int res = m_type1 - v->m_type1) return res;
+	if (int res = m_scale1 - v->m_scale1) return res;
+	if (int res = m_value1 - v->m_value1) return res;
+	if (int res = m_type2 - v->m_type2) return res;
+	if (int res = m_scale2 - v->m_scale2) return res;
+	return m_value2 - v->m_value2;
 }
 
 bool GRIB2D::operator==(const Type& o) const
@@ -645,6 +541,27 @@ bool GRIB2D::operator==(const Type& o) const
 	return m_type1 == v->m_type1 && m_scale1 == v->m_scale1 && m_value1 == v->m_value1
 	    && m_type2 == v->m_type2 && m_scale2 == v->m_scale2 && m_value2 == v->m_value2;
 }
+
+#ifdef HAVE_LUA
+bool GRIB2D::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "type1")
+		lua_pushnumber(L, type1());
+	else if (name == "scale1")
+		lua_pushnumber(L, scale1());
+	else if (name == "value1")
+		lua_pushnumber(L, value1());
+	else if (name == "type2")
+		lua_pushnumber(L, type2());
+	else if (name == "scale2")
+		lua_pushnumber(L, scale2());
+	else if (name == "value2")
+		lua_pushnumber(L, value2());
+	else
+		return Level::lua_lookup(L, name);
+	return true;
+}
+#endif
 
 Item<GRIB2D> GRIB2D::create(
 	unsigned char type1, unsigned char scale1, unsigned long value1,
@@ -677,4 +594,5 @@ static MetadataType levelType(
 
 }
 }
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:

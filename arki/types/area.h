@@ -32,6 +32,19 @@ struct lua_State;
 namespace arki {
 namespace types {
 
+struct Area;
+
+template<>
+struct traits<Area>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * The vertical area or layer of some data
  *

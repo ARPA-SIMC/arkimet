@@ -44,20 +44,10 @@ using namespace arki::utils::codec;
 namespace arki {
 namespace types {
 
-int AssignedDataset::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const AssignedDataset* v = dynamic_cast<const AssignedDataset*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a AssignedDataset, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
+const char* traits<AssignedDataset>::type_tag = TAG;
+const types::Code traits<AssignedDataset>::type_code = CODE;
+const size_t traits<AssignedDataset>::type_sersize_bytes = SERSIZELEN;
+const char* traits<AssignedDataset>::type_lua_tag = LUATAG_TYPES ".assigneddataset";
 
 int AssignedDataset::compare(const AssignedDataset& o) const
 {
@@ -74,11 +64,6 @@ bool AssignedDataset::operator==(const Type& o) const
 	if (!v) return false;
 	return name == v->name && id == v->id;
 }
-
-types::Code AssignedDataset::serialisationCode() const { return CODE; }
-size_t AssignedDataset::serialisationSizeLength() const { return SERSIZELEN; }
-std::string AssignedDataset::tag() const { return TAG; }
-types::Code AssignedDataset::typecode() { return CODE; }
 
 void AssignedDataset::encodeWithoutEnvelope(Encoder& enc) const
 {
@@ -106,8 +91,6 @@ std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const
 	return o << name << " as " << id << " imported on " << changed;
 }
 
-const char* AssignedDataset::lua_type_name() const { return "arki.types.assigneddataset"; }
-
 Item<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
 {
 	size_t pos = val.find(" as ");
@@ -128,68 +111,17 @@ Item<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
 }
 
 #ifdef HAVE_LUA
-int AssignedDataset::lua_lookup(lua_State* L)
+bool AssignedDataset::lua_lookup(lua_State* L, const std::string& name) const
 {
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the AssignedDataset reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const AssignedDataset& v = **(const AssignedDataset**)userdata;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
 	if (name == "changed")
-	{
-		v.changed->lua_push(L);
-		return 1;
-	}
+		changed->lua_push(L);
 	else if (name == "name")
-	{
-		lua_pushlstring(L, v.name.data(), v.name.size());
-		return 1;
-	}
+		lua_pushlstring(L, this->name.data(), this->name.size());
 	else if (name == "id")
-	{
-		lua_pushlstring(L, v.id.data(), v.id.size());
-		return 1;
-	}
+		lua_pushlstring(L, id.data(), id.size());
 	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_assigneddataset(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, AssignedDataset::lua_lookup, 2);
-	return 1;
-}
-void AssignedDataset::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const AssignedDataset** s = (const AssignedDataset**)lua_newuserdata(L, sizeof(const AssignedDataset*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_assigneddataset);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<AssignedDataset>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
+		return CoreType<AssignedDataset>::lua_lookup(L, name);
+	return true;
 }
 #endif
 
@@ -210,4 +142,6 @@ static MetadataType assigneddatasetType(
 
 }
 }
+
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:

@@ -85,14 +85,14 @@ void to::test<3>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.content() ~= 'test' then return 'content is '..o.content()..' instead of test' end \n"
-		"  t = o.time() \n"
-		"  if t.year() ~= 2007 then return 't.year() is '..t.year()..' instead of 2007' end \n"
-		"  if t.month() ~= 6 then return 't.month() is '..t.month()..' instead of 6' end \n"
-		"  if t.day() ~= 5 then return 't.day() is '..t.day()..' instead of 5' end \n"
-		"  if t.hour() ~= 4 then return 't.hour() is '..t.hour()..' instead of 4' end \n"
-		"  if t.minute() ~= 3 then return 't.minute() is '..t.minute()..' instead of 3' end \n"
-		"  if t.second() ~= 2 then return 't.second() is '..t.second()..' instead of 2' end \n"
+		"  if o.content ~= 'test' then return 'content is '..o.content..' instead of test' end \n"
+		"  t = o.time \n"
+		"  if t.year ~= 2007 then return 't.year is '..t.year..' instead of 2007' end \n"
+		"  if t.month ~= 6 then return 't.month is '..t.month..' instead of 6' end \n"
+		"  if t.day ~= 5 then return 't.day is '..t.day..' instead of 5' end \n"
+		"  if t.hour ~= 4 then return 't.hour is '..t.hour..' instead of 4' end \n"
+		"  if t.minute ~= 3 then return 't.minute is '..t.minute..' instead of 3' end \n"
+		"  if t.second ~= 2 then return 't.second is '..t.second..' instead of 2' end \n"
 		"  if tostring(o) ~= '[2007-06-05T04:03:02Z]test' then return 'tostring gave '..tostring(o)..' instead of [2007-06-05T04:03:02Z]test' end \n"
 		"end \n"
 	);

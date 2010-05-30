@@ -31,10 +31,24 @@ struct lua_State;
 namespace arki {
 namespace types {
 
+
+struct AssignedDataset;
+
+template<>
+struct traits<AssignedDataset>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * A metadata annotation
  */
-struct AssignedDataset : public types::Type
+struct AssignedDataset : public types::CoreType<AssignedDataset>
 {
 	Item<types::Time> changed;
 	std::string name;
@@ -43,27 +57,17 @@ struct AssignedDataset : public types::Type
 	AssignedDataset(const Item<types::Time>& changed, const std::string& name, const std::string& id)
 		: changed(changed), name(name), id(id) {}
 
-	virtual int compare(const Type& o) const;
 	virtual int compare(const AssignedDataset& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	virtual std::string tag() const;
-
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<AssignedDataset> decode(const unsigned char* buf, size_t len);
 	static Item<AssignedDataset> decodeString(const std::string& val);
-	static types::Code typecode();
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
-	virtual const char* lua_type_name() const;
 
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this AssignedDataset
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the AssignedDataset LUA object
-	static int lua_lookup(lua_State* L);
+	// Lua functions
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	/// Create a attributed dataset definition with the current time
 	static Item<AssignedDataset> create(const std::string& name, const std::string& id);

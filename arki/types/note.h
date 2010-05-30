@@ -31,10 +31,23 @@ struct lua_State;
 namespace arki {
 namespace types {
 
+struct Note;
+
+template<>
+struct traits<Note>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * A metadata annotation
  */
-struct Note : public types::Type
+struct Note : public CoreType<Note>
 {
 	Item<types::Time> time;
 	std::string content;
@@ -45,22 +58,12 @@ struct Note : public types::Type
 	virtual int compare(const Note& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	virtual std::string tag() const;
-
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Note> decode(const unsigned char* buf, size_t len);
 	static Item<Note> decodeString(const std::string& val);
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
-	virtual const char* lua_type_name() const;
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Note
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Note LUA object
-	static int lua_lookup(lua_State* L);
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	/// Create a note with the current time
 	static Item<Note> create(const std::string& content);

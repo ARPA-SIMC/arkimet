@@ -210,13 +210,10 @@ void to::test<7>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style() ~= 'GRIB1' then return 'style is '..o.style()..' instead of GRIB1' end \n"
-		"  a, b, c = o.grib1() \n"
-		"  if a ~= 104 then return 'o.grib1() first item is '..a..' instead of 104' end \n"
-		"  if b ~= 132 then return 'o.grib1() second item is '..b..' instead of 132' end \n"
-		"  if c ~= 231 then return 'o.grib1() third item is '..c..' instead of 231' end \n"
-		"  if o.grib2() ~= nil then return 'o.grib2() gave '..o.grib2()..' instead of nil' end \n"
-		"  if o.bufr() ~= nil then return 'o.bufr() gave '..o.bufr()..' instead of nil' end \n"
+		"  if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end \n"
+		"  if o.type ~= 104 then return 'o.type first item is '..o.type..' instead of 104' end \n"
+		"  if o.l1 ~= 132 then return 'o.l1 second item is '..o.l1..' instead of 132' end \n"
+		"  if o.l2 ~= 231 then return 'o.l2 third item is '..o.l2..' instead of 231' end \n"
 		"  if tostring(o) ~= 'GRIB1(104, 132, 231)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(104, 132, 231)' end \n"
 		"end \n"
 	);

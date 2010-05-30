@@ -31,15 +31,26 @@ namespace arki {
 
 namespace types {
 
+struct Level;
+
+template<>
+struct traits<Level>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * The vertical level or layer of some data
  *
  * It can contain information like leveltype and level value.
  */
-struct Level : public types::Type
+struct Level : public types::StyledType<Level>
 {
-	typedef unsigned char Style;
-
 	/// Style values
 	static const Style GRIB1 = 1;
 	static const Style GRIB2S = 2;
@@ -49,27 +60,10 @@ struct Level : public types::Type
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
-	/// Level style
-	virtual Style style() const = 0;
-
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Level& o) const;
-
-	virtual std::string tag() const;
 
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Level> decode(const unsigned char* buf, size_t len);
 	static Item<Level> decodeString(const std::string& val);
-	static types::Code typecode();
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Level
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Level LUA object
-	static int lua_lookup(lua_State* L);
 };
 
 namespace level {
@@ -91,6 +85,7 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	/**
 	 * Get information on how l1 and l2 should be treated:
@@ -101,8 +96,7 @@ public:
 	 */
 	int valType() const;
 
-	virtual int compare(const Level& o) const;
-	virtual int compare(const GRIB1& o) const;
+	virtual int compare_local(const Level& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB1> create(unsigned char type);
@@ -141,9 +135,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Level& o) const;
-	virtual int compare(const GRIB2S& o) const;
+	virtual int compare_local(const Level& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB2S> create(unsigned char type, unsigned char scale, unsigned long val);
@@ -172,9 +166,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Level& o) const;
-	virtual int compare(const GRIB2D& o) const;
+	virtual int compare_local(const Level& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB2D> create(unsigned char type1, unsigned char scale1, unsigned long val1,

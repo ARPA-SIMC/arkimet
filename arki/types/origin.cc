@@ -25,18 +25,17 @@
 #include <arki/types/origin.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
-#include "config.h"
 #include <iomanip>
 #include <sstream>
 #include <cstring>
 
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
-
 #define CODE types::TYPE_ORIGIN
 #define TAG "origin"
 #define SERSIZELEN 1
+#define LUATAG_ORIGIN LUATAG_TYPES ".origin"
+#define LUATAG_GRIB1 LUATAG_ORIGIN ".grib1"
+#define LUATAG_GRIB2 LUATAG_ORIGIN ".grib2"
+#define LUATAG_BUFR LUATAG_ORIGIN ".bufr"
 
 using namespace std;
 using namespace arki::utils;
@@ -45,6 +44,11 @@ using namespace wibble;
 
 namespace arki {
 namespace types {
+
+const char* traits<Origin>::type_tag = TAG;
+const types::Code traits<Origin>::type_code = CODE;
+const size_t traits<Origin>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Origin>::type_lua_tag = LUATAG_ORIGIN;
 
 // Style constants
 //const unsigned char Origin::NONE;
@@ -76,36 +80,6 @@ std::string Origin::formatStyle(Origin::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
-}
-
-int Origin::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Origin* v = dynamic_cast<const Origin*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be an Origin, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int Origin::compare(const Origin& o) const
-{
-	return style() - o.style();
-}
-
-types::Code Origin::serialisationCode() const { return CODE; }
-size_t Origin::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Origin::tag() const { return TAG; }
-types::Code Origin::typecode() { return CODE; }
-
-void Origin::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
 }
 
 Item<Origin> Origin::decode(const unsigned char* buf, size_t len)
@@ -155,36 +129,6 @@ Item<Origin> Origin::decodeString(const std::string& val)
 	}
 }
 
-#ifdef HAVE_LUA
-static int arkilua_lookup(lua_State *L)
-{
-        // querySummary(self, matcher="", summary)
-        Item<Origin> item = Type::lua_check(L, 1, "arki.types.origin.").upcast<Origin>();
-	const char* sname = lua_tostring(L, 2);
-        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
-
-	if (strcmp(sname, "style") == 0)
-	{
-		string s = Origin::formatStyle(item->style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-
-	return item->lua_lookup(L, sname);
-}
-
-void Origin::lua_register_methods(lua_State* L) const
-{
-	Type::lua_register_methods(L);
-
-	static const struct luaL_reg lib [] = {
-		{ "__index", arkilua_lookup },
-		{ NULL, NULL }
-	};
-	luaL_register(L, NULL, lib);
-}
-#endif
-
 namespace origin {
 
 static TypeCache<GRIB1> cache_grib1;
@@ -216,9 +160,9 @@ std::string GRIB1::exactQuery() const
 {
     return str::fmtf("GRIB1,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_process);
 }
-const char* GRIB1::lua_type_name() const { return "arki.types.origin.grib1"; }
+const char* GRIB1::lua_type_name() const { return LUATAG_GRIB1; }
 
-int GRIB1::lua_lookup(lua_State* L, const std::string& name) const
+bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "centre")
 		lua_pushnumber(L, centre());
@@ -227,15 +171,12 @@ int GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 	else if (name == "process")
 		lua_pushnumber(L, process());
 	else
-		lua_pushnil(L);
-	return 1;
+		return Origin::lua_lookup(L, name);
+	return true;
 }
 
-int GRIB1::compare(const Origin& o) const
+int GRIB1::compare_local(const Origin& o) const
 {
-	int res = Origin::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
@@ -243,13 +184,9 @@ int GRIB1::compare(const Origin& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Origin, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB1::compare(const GRIB1& o) const
-{
-	if (int res = m_centre - o.m_centre) return res;
-	if (int res = m_subcentre - o.m_subcentre) return res;
-	return m_process - o.m_process;
+	if (int res = m_centre - v->m_centre) return res;
+	if (int res = m_subcentre - v->m_subcentre) return res;
+	return m_process - v->m_process;
 }
 
 bool GRIB1::operator==(const Type& o) const
@@ -306,9 +243,9 @@ std::string GRIB2::exactQuery() const
 {
     return str::fmtf("GRIB2,%d,%d,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_processtype, (int)m_bgprocessid, (int)m_processid);
 }
-const char* GRIB2::lua_type_name() const { return "arki.types.origin.grib2"; }
+const char* GRIB2::lua_type_name() const { return LUATAG_GRIB2; }
 
-int GRIB2::lua_lookup(lua_State* L, const std::string& name) const
+bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "centre")
 		lua_pushnumber(L, centre());
@@ -321,15 +258,12 @@ int GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 	else if (name == "processid")
 		lua_pushnumber(L, processid());
 	else
-		lua_pushnil(L);
-	return 1;
+		return Origin::lua_lookup(L, name);
+	return true;
 }
 
-int GRIB2::compare(const Origin& o) const
+int GRIB2::compare_local(const Origin& o) const
 {
-	int res = Origin::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v)
@@ -337,15 +271,11 @@ int GRIB2::compare(const Origin& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB2 Origin, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB2::compare(const GRIB2& o) const
-{
-	if (int res = m_centre - o.m_centre) return res;
-	if (int res = m_subcentre - o.m_subcentre) return res;
-	if (int res = m_processtype - o.m_processtype) return res;
-	if (int res = m_bgprocessid - o.m_bgprocessid) return res;
-	return m_processid - o.m_processid;
+	if (int res = m_centre - v->m_centre) return res;
+	if (int res = m_subcentre - v->m_subcentre) return res;
+	if (int res = m_processtype - v->m_processtype) return res;
+	if (int res = m_bgprocessid - v->m_bgprocessid) return res;
+	return m_processid - v->m_processid;
 }
 bool GRIB2::operator==(const Type& o) const
 {
@@ -403,37 +333,32 @@ std::string BUFR::exactQuery() const
 {
     return str::fmtf("BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
 }
-const char* BUFR::lua_type_name() const { return "arki.types.origin.bufr"; }
+const char* BUFR::lua_type_name() const { return LUATAG_BUFR; }
 
-int BUFR::lua_lookup(lua_State* L, const std::string& name) const
+bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "centre")
 		lua_pushnumber(L, centre());
 	else if (name == "subcentre")
 		lua_pushnumber(L, subcentre());
 	else
-		lua_pushnil(L);
-	return 1;
+		return Origin::lua_lookup(L, name);
+	return true;
 }
 
-int BUFR::compare(const Origin& o) const
+int BUFR::compare_local(const Origin& o) const
 {
-	int res = Origin::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
+	// TODO: if upcast fails, we might still be ok as we support comparison
+	// between origins of different style: we do need a two-phase upcast
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v)
 		throw wibble::exception::Consistency(
 			"comparing metadata types",
 			string("second element claims to be a BUFR Origin, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int BUFR::compare(const BUFR& o) const
-{
-	if (int res = m_centre - o.m_centre) return res;
-	return m_subcentre - o.m_subcentre;
+	if (int res = m_centre - v->m_centre) return res;
+	return m_subcentre - v->m_subcentre;
 }
 bool BUFR::operator==(const Type& o) const
 {
@@ -475,4 +400,7 @@ static MetadataType originType(
 
 }
 }
+
+#include <arki/types.tcc>
+
 // vim:set ts=4 sw=4:

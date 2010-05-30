@@ -45,6 +45,11 @@ using namespace arki::utils::codec;
 
 namespace arki {
 namespace types {
+	
+const char* traits<Reftime>::type_tag = TAG;
+const types::Code traits<Reftime>::type_code = CODE;
+const size_t traits<Reftime>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Reftime>::type_lua_tag = LUATAG_TYPES ".reftime";
 
 // Style constants
 const unsigned char Reftime::POSITION;
@@ -68,36 +73,6 @@ std::string Reftime::formatStyle(Reftime::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
-}
-
-int Reftime::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Reftime* v = dynamic_cast<const Reftime*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Reftime, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int Reftime::compare(const Reftime& o) const
-{
-	return style() - o.style();
-}
-
-types::Code Reftime::serialisationCode() const { return CODE; }
-size_t Reftime::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Reftime::tag() const { return TAG; }
-types::Code Reftime::typecode() { return CODE; }
-
-void Reftime::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
 }
 
 Item<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
@@ -130,35 +105,6 @@ Item<Reftime> Reftime::decodeString(const std::string& val)
 			Time::decodeString(val.substr(pos + 4)));
 }
 
-#ifdef HAVE_LUA
-static int arkilua_lookup(lua_State *L)
-{
-        // querySummary(self, matcher="", summary)
-        Item<Reftime> item = Type::lua_check(L, 1, "arki.types.reftime.").upcast<Reftime>();
-	const char* sname = lua_tostring(L, 2);
-        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
-
-	if (strcmp(sname, "style") == 0)
-	{
-		string s = Reftime::formatStyle(item->style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-
-	return item->lua_lookup(L, sname);
-}
-void Reftime::lua_register_methods(lua_State* L) const
-{
-	Type::lua_register_methods(L);
-
-	static const struct luaL_reg lib [] = {
-		{ "__index", arkilua_lookup },
-		{ NULL, NULL }
-	};
-	luaL_register(L, NULL, lib);
-}
-#endif
-
 namespace reftime {
 
 Position::Position(const Item<types::Time>& time) : time(time) {}
@@ -183,20 +129,17 @@ std::string Position::exactQuery() const
 
 const char* Position::lua_type_name() const { return "arki.types.reftime.position"; }
 
-int Position::lua_lookup(lua_State* L, const std::string& name) const
+bool Position::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "time")
 		time->lua_push(L);
 	else
-		lua_pushnil(L);
-	return 1;
+		return Reftime::lua_lookup(L, name);
+	return true;
 }
 
-int Position::compare(const Reftime& o) const
+int Position::compare_local(const Reftime& o) const
 {
-	int res = Reftime::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const Position* v = dynamic_cast<const Position*>(&o);
 	if (!v)
@@ -204,11 +147,7 @@ int Position::compare(const Reftime& o) const
 			"comparing metadata types",
 			string("second element claims to be a Position Reftime, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int Position::compare(const Position& o) const
-{
-	return time->compare(*o.time);
+	return time->compare(*(v->time));
 }
 
 bool Position::operator==(const Type& o) const
@@ -264,22 +203,19 @@ std::string Period::exactQuery() const
 
 const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
 
-int Period::lua_lookup(lua_State* L, const std::string& name) const
+bool Period::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "begin")
 		begin->lua_push(L);
 	else if (name == "end")
 		end->lua_push(L);
 	else
-		lua_pushnil(L);
-	return 1;
+		return Reftime::lua_lookup(L, name);
+	return true;
 }
 
-int Period::compare(const Reftime& o) const
+int Period::compare_local(const Reftime& o) const
 {
-	int res = Reftime::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const Period* v = dynamic_cast<const Period*>(&o);
 	if (!v)
@@ -287,12 +223,8 @@ int Period::compare(const Reftime& o) const
 			"comparing metadata types",
 			string("second element claims to be a Period Reftime, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int Period::compare(const Period& o) const
-{
-	if (int res = begin->compare(*o.begin)) return res;
-	return end->compare(*o.end);
+	if (int res = begin->compare(*(v->begin))) return res;
+	return end->compare(*(v->end));
 }
 
 bool Period::operator==(const Type& o) const
@@ -419,4 +351,7 @@ static MetadataType reftimeType(
 
 }
 }
+
+#include <arki/types.tcc>
+
 // vim:set ts=4 sw=4:

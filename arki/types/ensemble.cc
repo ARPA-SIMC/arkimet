@@ -44,6 +44,11 @@ using namespace arki::utils::codec;
 namespace arki {
 namespace types {
 
+const char* traits<Ensemble>::type_tag = TAG;
+const types::Code traits<Ensemble>::type_code = CODE;
+const size_t traits<Ensemble>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Ensemble>::type_lua_tag = LUATAG_TYPES ".ensemble";
+
 // Style constants
 const unsigned char Ensemble::GRIB;
 
