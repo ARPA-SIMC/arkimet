@@ -25,6 +25,8 @@
 #include <wibble/grcal/grcal.h>
 
 #include <cstdlib>
+#include <sys/types.h>
+#include <utime.h>
 
 using namespace std;
 using namespace wibble;
@@ -663,27 +665,60 @@ void to::test<10>()
 	}
 }
 
-template<> template<> void to::test<11>() { ForceSqlite fs; to::test<1>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; to::test<2>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; to::test<3>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; to::test<4>(); }
-template<> template<> void to::test<15>() { ForceSqlite fs; to::test<5>(); }
-template<> template<> void to::test<16>() { ForceSqlite fs; to::test<6>(); }
-template<> template<> void to::test<17>() { ForceSqlite fs; to::test<7>(); }
-template<> template<> void to::test<18>() { ForceSqlite fs; to::test<8>(); }
-template<> template<> void to::test<19>() { ForceSqlite fs; to::test<9>(); }
-template<> template<> void to::test<20>() { ForceSqlite fs; to::test<10>(); }
+// Ensure that if repacking changes the data file timestamp, it reindexes it properly
+template<> template<>
+void to::test<11>()
+{
+	clean_and_import();
 
-template<> template<> void to::test<21>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
-template<> template<> void to::test<22>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
-template<> template<> void to::test<23>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
-template<> template<> void to::test<24>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
-template<> template<> void to::test<25>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
-template<> template<> void to::test<26>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
-template<> template<> void to::test<27>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
-template<> template<> void to::test<28>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<8>(); }
-template<> template<> void to::test<29>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<9>(); }
-template<> template<> void to::test<30>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
+	// Ensure the archive appears clean
+	ensure_maint_clean(3);
+
+	// Change timestamp and rescan the file
+	{
+		struct utimbuf oldts = { 199926000, 199926000 };
+		ensure(utime("testds/2007/07-08.grib1", &oldts) == 0);
+
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
+		writer->rescanFile("2007/07-08.grib1");
+	}
+
+	// Ensure that the archive is still clean
+	ensure_maint_clean(3);
+
+	// Repack the file
+	{
+		auto_ptr<WritableLocal> writer(makeLocalWriter());
+		ensure_equals(writer->repackFile("2007/07-08.grib1"), 0u);
+	}
+
+	// Ensure that the archive is still clean
+	ensure_maint_clean(3);
+}
+
+template<> template<> void to::test<12>() { ForceSqlite fs; to::test<1>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; to::test<2>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; to::test<3>(); }
+template<> template<> void to::test<15>() { ForceSqlite fs; to::test<4>(); }
+template<> template<> void to::test<16>() { ForceSqlite fs; to::test<5>(); }
+template<> template<> void to::test<17>() { ForceSqlite fs; to::test<6>(); }
+template<> template<> void to::test<18>() { ForceSqlite fs; to::test<7>(); }
+template<> template<> void to::test<19>() { ForceSqlite fs; to::test<8>(); }
+template<> template<> void to::test<20>() { ForceSqlite fs; to::test<9>(); }
+template<> template<> void to::test<21>() { ForceSqlite fs; to::test<10>(); }
+template<> template<> void to::test<22>() { ForceSqlite fs; to::test<11>(); }
+
+template<> template<> void to::test<23>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
+template<> template<> void to::test<24>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
+template<> template<> void to::test<25>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
+template<> template<> void to::test<26>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
+template<> template<> void to::test<27>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
+template<> template<> void to::test<28>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
+template<> template<> void to::test<29>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
+template<> template<> void to::test<30>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<8>(); }
+template<> template<> void to::test<31>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<9>(); }
+template<> template<> void to::test<32>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
+template<> template<> void to::test<33>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
 
 }
 
