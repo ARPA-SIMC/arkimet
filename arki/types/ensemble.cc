@@ -90,11 +90,6 @@ int Ensemble::compare(const Ensemble& o) const
 	return style() - o.style();
 }
 
-types::Code Ensemble::serialisationCode() const { return CODE; }
-size_t Ensemble::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Ensemble::tag() const { return TAG; }
-types::Code Ensemble::typecode() { return CODE; }
-
 void Ensemble::encodeWithoutEnvelope(Encoder& enc) const
 {
 	enc.addUInt(style(), 1);
@@ -252,14 +247,11 @@ static void debug_interns()
 
 }
 
-static MetadataType ensembleType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Ensemble::decode),
-	(MetadataType::string_decoder)(&Ensemble::decodeString),
-	ensemble::debug_interns);
+static MetadataType ensembleType = MetadataType::create<Ensemble>(ensemble::debug_interns);
 
 }
 }
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:
 
 

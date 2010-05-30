@@ -72,10 +72,9 @@ void to::test<2>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style() ~= 'MINUTE' then return 'style is '..o.style()..' instead of MINUTE' end \n"
-		"  h, m = o.minute() \n"
-		"  if h ~= 12 then return 'o.minute() first item is '..h..' instead of 12' end \n"
-		"  if m ~= 30 then return 'o.minute() second item is '..m..' instead of 30' end \n"
+		"  if o.style ~= 'MINUTE' then return 'style is '..o.style..' instead of MINUTE' end \n"
+		"  if o.hour ~= 12 then return 'o.hour is '..o.hour..' instead of 12' end \n"
+		"  if o.min ~= 30 then return 'o.min is '..o.min..' instead of 30' end \n"
 		"  if tostring(o) ~= 'MINUTE(12:30)' then return 'tostring gave '..tostring(o)..' instead of MINUTE(12:30)' end \n"
 		"end \n"
 	);

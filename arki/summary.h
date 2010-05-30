@@ -46,6 +46,10 @@ class Metadata;
 class Matcher;
 class Formatter;
 
+namespace summary {
+struct Stats;
+}
+
 namespace types {
 class Origin;
 class Product;
@@ -53,6 +57,18 @@ class Level;
 class Timerange;
 class Area;
 class Ensemble;
+
+template<>
+struct traits<summary::Stats>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 }
 
 namespace matcher {
@@ -62,7 +78,7 @@ class AND;
 namespace summary {
 class LuaIter;
 
-struct Stats : public types::Type
+struct Stats : public types::CoreType<Stats>
 {
 	size_t count;
 	unsigned long long size;
@@ -81,11 +97,6 @@ struct Stats : public types::Type
 
 	void merge(const refcounted::Pointer<Stats>& s);
 	void merge(size_t count, unsigned long long size, const types::Reftime* reftime);
-
-	virtual std::string tag() const;
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
-	virtual const char* lua_type_name() const;
 
 	void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	std::ostream& writeToOstream(std::ostream& o) const;

@@ -36,6 +36,8 @@
 
 #define LUATAG_TYPES "arki.types"
 
+struct lua_State;
+
 namespace arki {
 namespace types {
 
@@ -85,6 +87,7 @@ struct MetadataType
 {
 	typedef Item<Type> (*item_decoder)(const unsigned char* start, size_t len);
 	typedef Item<Type> (*string_decoder)(const std::string& val);
+	typedef void (*lua_libloader)(lua_State* L);
 	typedef void (*intern_stats)();
 
 	types::Code serialisationCode;
@@ -92,6 +95,7 @@ struct MetadataType
 	std::string tag;
 	item_decoder decode_func;
 	string_decoder string_decode_func;
+	lua_libloader lua_loadlib_func;
 	intern_stats intern_stats_func;
 	
 	MetadataType(
@@ -100,6 +104,7 @@ struct MetadataType
 		const std::string& tag,
 		item_decoder decode_func,
 		string_decoder string_decode_func,
+		lua_libloader lua_loadlib_func,
 		intern_stats intern_stats_func = 0
 		);
 	~MetadataType();
@@ -116,6 +121,7 @@ struct MetadataType
 			traits<T>::type_tag,
 			(MetadataType::item_decoder)T::decode,
 			(MetadataType::string_decoder)T::decodeString,
+			T::lua_loadlib,
 			intern_stats_func
 		);
 	}

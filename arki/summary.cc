@@ -66,6 +66,13 @@ using namespace arki::utils::codec;
 
 namespace arki {
 
+namespace types {
+const char* traits<summary::Stats>::type_tag = "summarystats";
+const types::Code traits<summary::Stats>::type_code = types::TYPE_SUMMARYSTATS;
+const size_t traits<summary::Stats>::type_sersize_bytes = 2;
+const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats";
+}
+
 namespace summary {
 
 // Metadata Scan Order
@@ -709,12 +716,6 @@ void Stats::merge(size_t ocount, unsigned long long osize, const types::Reftime*
 	reftimeMerger.merge(reftime);
 }
 
-types::Code Stats::serialisationCode() const { return types::TYPE_SUMMARYSTATS; }
-size_t Stats::serialisationSizeLength() const { return 2; }
-std::string Stats::tag() const { return "summarystats"; }
-const char* Stats::lua_type_name() const { return "arki.types.summary.stats"; }
-
-
 void Stats::encodeWithoutEnvelope(Encoder& enc) const
 {
 	arki::Item<types::Reftime> reftime(reftimeMerger.makeReftime());
@@ -858,10 +859,7 @@ void Stats::lua_push(lua_State* L) const
 }
 #endif
 
-static types::MetadataType summaryStatsType(
-	types::TYPE_SUMMARYSTATS, 2, "summarystats",
-	(types::MetadataType::item_decoder)(&summary::Stats::decode),
-	(types::MetadataType::string_decoder)(&summary::Stats::decodeString));
+static types::MetadataType summaryStatsType = types::MetadataType::create<summary::Stats>();
 
 }
 
@@ -1665,5 +1663,5 @@ std::ostream& operator<<(std::ostream& o, const Summary& s)
 
 
 }
-
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:

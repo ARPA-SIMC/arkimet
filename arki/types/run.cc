@@ -46,6 +46,11 @@ using namespace wibble;
 namespace arki {
 namespace types {
 
+const char* traits<Run>::type_tag = TAG;
+const types::Code traits<Run>::type_code = CODE;
+const size_t traits<Run>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Run>::type_lua_tag = LUATAG_TYPES ".run";
+
 // Style constants
 //const unsigned char Run::NONE;
 const unsigned char Run::MINUTE;
@@ -67,35 +72,6 @@ std::string Run::formatStyle(Run::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
-}
-
-int Run::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Run* v = dynamic_cast<const Run*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be an Run, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int Run::compare(const Run& o) const
-{
-	return style() - o.style();
-}
-
-types::Code Run::serialisationCode() const { return CODE; }
-size_t Run::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Run::tag() const { return TAG; }
-
-void Run::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
 }
 
 Item<Run> Run::decode(const unsigned char* buf, size_t len)
@@ -140,70 +116,6 @@ Item<Run> Run::decodeString(const std::string& val)
 	}
 }
 
-#ifdef HAVE_LUA
-int Run::lua_lookup(lua_State* L)
-{
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Run reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Run& v = **(const Run**)userdata;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
-	{
-		string s = Run::formatStyle(v.style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-	else if (name == "minute" && v.style() == Run::MINUTE)
-	{
-		const run::Minute* v1 = v.upcast<run::Minute>();
-		lua_pushnumber(L, v1->minute() / 60);
-		lua_pushnumber(L, v1->minute() % 60);
-		return 2;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_run(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Run::lua_lookup, 2);
-	return 1;
-}
-void Run::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Run** s = (const Run**)lua_newuserdata(L, sizeof(const Run*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_run);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Run>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
-}
-#endif
-
 namespace run {
 
 static TypeCache<Minute> cache_minute;
@@ -231,11 +143,22 @@ std::string Minute::exactQuery() const
 }
 const char* Minute::lua_type_name() const { return "arki.types.run.minute"; }
 
-int Minute::compare(const Run& o) const
+#ifdef HAVE_LUA
+bool Minute::lua_lookup(lua_State* L, const std::string& name) const
 {
-	int res = Run::compare(o);
-	if (res != 0) return res;
+	if (name == "hour")
+		lua_pushnumber(L, minute() / 60);
+	else if (name == "min")
+		lua_pushnumber(L, minute() % 60);
+	else
+		return Run::lua_lookup(L, name);
+	return true;
+}
+#endif
 
+
+int Minute::compare_local(const Run& o) const
+{
 	// We should be the same kind, so upcast
 	const Minute* v = dynamic_cast<const Minute*>(&o);
 	if (!v)
@@ -243,12 +166,7 @@ int Minute::compare(const Run& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Run, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-
-int Minute::compare(const Minute& o) const
-{
-	return m_minute - o.m_minute;
+	return m_minute - v->m_minute;
 }
 
 bool Minute::operator==(const Type& o) const
@@ -273,12 +191,9 @@ static void debug_interns()
 
 }
 
-static MetadataType runType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Run::decode),
-	(MetadataType::string_decoder)(&Run::decodeString),
-	run::debug_interns);
+static MetadataType runType = MetadataType::create<Run>(run::debug_interns);
 
 }
 }
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:

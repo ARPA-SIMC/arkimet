@@ -117,11 +117,6 @@ int Area::compare(const Area& o) const
 	return style() - o.style();
 }
 
-types::Code Area::serialisationCode() const { return CODE; }
-size_t Area::serialisationSizeLength() const { return SERSIZELEN; }
-std::string Area::tag() const { return TAG; }
-types::Code Area::typecode() { return CODE; }
-
 void Area::encodeWithoutEnvelope(Encoder& enc) const
 {
 	enc.addUInt(style(), 1);
@@ -238,6 +233,7 @@ std::string GRIB::exactQuery() const
 {
     return "GRIB:" + m_values.toString();
 }
+
 const char* GRIB::lua_type_name() const { return "arki.types.area.grib"; }
 
 int GRIB::compare(const Area& o) const
@@ -279,12 +275,9 @@ static void debug_interns()
 
 }
 
-static MetadataType areaType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Area::decode),
-	(MetadataType::string_decoder)(&Area::decodeString),
-	area::debug_interns);
+static MetadataType areaType = MetadataType::create<Area>(area::debug_interns);
 
 }
 }
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:

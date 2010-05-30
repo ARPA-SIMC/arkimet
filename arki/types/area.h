@@ -50,7 +50,7 @@ struct traits<Area>
  *
  * It can contain information like areatype and area value.
  */
-struct Area : public types::Type
+struct Area : public types::CoreType<Area>
 {
 	typedef unsigned char Style;
 
@@ -71,15 +71,10 @@ struct Area : public types::Type
 	virtual int compare(const Type& o) const;
 	virtual int compare(const Area& o) const;
 
-	virtual std::string tag() const;
-
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Area> decode(const unsigned char* buf, size_t len);
 	static Item<Area> decodeString(const std::string& val);
-	static types::Code typecode();
 
 	/// Return the geographical bounding box
 	const ARKI_GEOS_GEOMETRY* bbox() const;

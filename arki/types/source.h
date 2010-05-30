@@ -30,12 +30,24 @@ struct lua_State;
 namespace arki {
 namespace types {
 
+struct Source;
+
+template<>
+struct traits<Source>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
+
 /**
  * The place where the data is stored
  */
-struct Source : public types::Type
+struct Source : public types::StyledType<Source>
 {
-	typedef unsigned char Style;
 	std::string format;
 
 	/// Style values
@@ -48,26 +60,15 @@ struct Source : public types::Type
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
-	/// Source style
-	virtual Style style() const = 0;
 
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Source& o) const;
-
-	virtual std::string tag() const;
+	virtual int compare_local(const Source& o) const;
 
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Source> decode(const unsigned char* buf, size_t len);
 	static Item<Source> decodeString(const std::string& val);
 
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Source
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Source LUA object
-	static int lua_lookup(lua_State* L);
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 };
 
 namespace source {
@@ -82,9 +83,9 @@ struct Blob : public Source
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Source& o) const;
-	virtual int compare(const Blob& o) const;
+	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	/**
@@ -110,9 +111,9 @@ struct URL : public Source
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Source& o) const;
-	virtual int compare(const URL& o) const;
+	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<URL> create(const std::string& format, const std::string& url);
@@ -126,9 +127,9 @@ struct Inline : public Source
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Source& o) const;
-	virtual int compare(const Inline& o) const;
+	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<Inline> create(const std::string& format, size_t size);

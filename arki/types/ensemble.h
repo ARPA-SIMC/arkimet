@@ -49,7 +49,7 @@ struct traits<Ensemble>
  *
  * It can contain information like ensembletype and ensemble value.
  */
-struct Ensemble : public types::Type
+struct Ensemble : public types::CoreType<Ensemble>
 {
 	typedef unsigned char Style;
 
@@ -66,15 +66,10 @@ struct Ensemble : public types::Type
 	virtual int compare(const Type& o) const;
 	virtual int compare(const Ensemble& o) const;
 
-	virtual std::string tag() const;
-
 	/// CODEC functions
-	virtual types::Code serialisationCode() const;
-	virtual size_t serialisationSizeLength() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Ensemble> decode(const unsigned char* buf, size_t len);
 	static Item<Ensemble> decodeString(const std::string& val);
-	static types::Code typecode();
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Ensemble

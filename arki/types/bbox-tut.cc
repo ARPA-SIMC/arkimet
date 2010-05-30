@@ -63,11 +63,7 @@ void to::test<2>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style() ~= 'INVALID' then return 'style is '..o.style()..' instead of INVALID' end \n"
-		"  if o.invalid() ~= nil then return 'o.invalid() gave'..o.invalid()..' instead of nil' end \n"
-		"  if o.point() ~= nil then return 'o.point() gave '..o.point()..' instead of nil' end \n"
-		"  if o.box() ~= nil then return 'o.box() gave '..o.box()..' instead of nil' end \n"
-		"  if o.hull() ~= nil then return 'o.hull() gave '..o.hull()..' instead of nil' end \n"
+		"  if o.style ~= 'INVALID' then return 'style is '..o.style..' instead of INVALID' end \n"
 		"  if tostring(o) ~= 'INVALID()' then return 'tostring gave '..tostring(o)..' instead of INVALID()' end \n"
 		"end \n"
 	);

@@ -282,6 +282,7 @@ struct CoreType : public Type
 	virtual size_t serialisationSizeLength() const { return traits<BASE>::type_sersize_bytes; }
 	virtual std::string tag() const { return traits<BASE>::type_tag; }
 	virtual const char* lua_type_name() const { return traits<BASE>::type_lua_tag; }
+	static void lua_loadlib(lua_State* L);
 };
 
 template<typename BASE>

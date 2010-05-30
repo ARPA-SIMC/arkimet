@@ -66,6 +66,11 @@ using namespace wibble;
 namespace arki {
 namespace types {
 
+const char* traits<BBox>::type_tag = TAG;
+const types::Code traits<BBox>::type_code = CODE;
+const size_t traits<BBox>::type_sersize_bytes = SERSIZELEN;
+const char* traits<BBox>::type_lua_tag = LUATAG_TYPES ".bbox";
+
 // Style constants
 //const unsigned char BBox::NONE;
 const unsigned char BBox::INVALID;
@@ -96,35 +101,6 @@ std::string BBox::formatStyle(BBox::Style s)
 			str << "(unknown " << (int)s << ")";
 			return str.str();
 	}
-}
-
-int BBox::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const BBox* v = dynamic_cast<const BBox*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be an BBox, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int BBox::compare(const BBox& o) const
-{
-	return style() - o.style();
-}
-
-types::Code BBox::serialisationCode() const { return CODE; }
-size_t BBox::serialisationSizeLength() const { return SERSIZELEN; }
-std::string BBox::tag() const { return TAG; }
-
-void BBox::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
 }
 
 Item<BBox> BBox::decode(const unsigned char* buf, size_t len)
@@ -162,87 +138,6 @@ Item<BBox> BBox::decodeString(const std::string& val)
 	return bbox::INVALID::create();
 }
 
-#ifdef HAVE_LUA
-int BBox::lua_lookup(lua_State* L)
-{
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the BBox reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const BBox& v = **(const BBox**)userdata;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
-	{
-		string s = BBox::formatStyle(v.style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-	else if (name == "invalid" && v.style() == BBox::INVALID)
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-	else if (name == "point" && v.style() == BBox::POINT)
-	{
-		lua_pushnil(L);
-		lua_pushnil(L);
-		return 2;
-	}
-	else if (name == "box" && v.style() == BBox::BOX)
-	{
-		lua_pushnil(L);
-		lua_pushnil(L);
-		lua_pushnil(L);
-		lua_pushnil(L);
-		return 4;
-	}
-	else if (name == "hull" && v.style() == BBox::HULL)
-	{
-		lua_newtable(L);
-		return 1;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_bbox(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, BBox::lua_lookup, 2);
-	return 1;
-}
-void BBox::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const BBox** s = (const BBox**)lua_newuserdata(L, sizeof(const BBox*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_bbox);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<BBox>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
-}
-#endif
-
 namespace bbox {
 
 BBox::Style INVALID::style() const { return BBox::INVALID; }
@@ -257,11 +152,8 @@ std::ostream& INVALID::writeToOstream(std::ostream& o) const
 }
 const char* INVALID::lua_type_name() const { return "arki.types.bbox.invalid"; }
 
-int INVALID::compare(const BBox& o) const
+int INVALID::compare_local(const BBox& o) const
 {
-	int res = BBox::compare(o);
-	if (res != 0) return res;
-
 	// We should be the same kind, so upcast
 	const INVALID* v = dynamic_cast<const INVALID*>(&o);
 	if (!v)
@@ -269,10 +161,6 @@ int INVALID::compare(const BBox& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 BBox, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int INVALID::compare(const INVALID& o) const
-{
 	return 0;
 }
 
@@ -295,11 +183,9 @@ Item<INVALID> INVALID::create()
 
 }
 
-static MetadataType bboxType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&BBox::decode),
-	(MetadataType::string_decoder)(&BBox::decodeString));
+static MetadataType bboxType = MetadataType::create<BBox>();
 
 }
 }
+#include <arki/types.tcc>
 // vim:set ts=4 sw=4:
