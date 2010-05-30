@@ -342,10 +342,7 @@ Item<Reftime> Collector::makeReftime() const
 	return Period::create(begin, end);
 }
 
-static MetadataType reftimeType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Reftime::decode),
-	(MetadataType::string_decoder)(&Reftime::decodeString));
+static MetadataType reftimeType = MetadataType::create<Reftime>();
 
 }
 

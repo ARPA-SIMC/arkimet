@@ -135,10 +135,7 @@ Item<AssignedDataset> AssignedDataset::create(const Item<types::Time>& changed, 
 	return new AssignedDataset(changed, name, id);
 }
 
-static MetadataType assigneddatasetType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&AssignedDataset::decode),
-	(MetadataType::string_decoder)(&AssignedDataset::decodeString));
+static MetadataType assigneddatasetType = MetadataType::create<AssignedDataset>();
 
 }
 }

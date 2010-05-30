@@ -106,6 +106,19 @@ struct MetadataType
 
 	// Get information about the given metadata
 	static const MetadataType* get(types::Code);
+
+	template<typename T>
+	static MetadataType create(intern_stats intern_stats_func = 0)
+	{
+		return MetadataType(
+			traits<T>::type_code,
+			traits<T>::type_sersize_bytes,
+			traits<T>::type_tag,
+			(MetadataType::item_decoder)T::decode,
+			(MetadataType::string_decoder)T::decodeString,
+			intern_stats_func
+		);
+	}
 };
 
 void debug_intern_stats();

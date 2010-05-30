@@ -586,11 +586,7 @@ static void debug_interns()
 
 }
 
-static MetadataType levelType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Level::decode),
-	(MetadataType::string_decoder)(&Level::decodeString),
-	level::debug_interns);
+static MetadataType levelType = MetadataType::create<Level>(level::debug_interns);
 
 }
 }

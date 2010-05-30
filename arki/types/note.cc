@@ -138,10 +138,7 @@ Item<Note> Note::create(const Item<types::Time>& time, const std::string& conten
 	return new Note(time, content);
 }
 
-static MetadataType noteType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Note::decode),
-	(MetadataType::string_decoder)(&Note::decodeString));
+static MetadataType noteType = MetadataType::create<Note>();
 
 }
 }

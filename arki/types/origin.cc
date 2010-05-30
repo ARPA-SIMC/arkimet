@@ -392,11 +392,7 @@ static void debug_interns()
 
 }
 
-static MetadataType originType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Origin::decode),
-	(MetadataType::string_decoder)(&Origin::decodeString),
-	origin::debug_interns);
+static MetadataType originType = MetadataType::create<Origin>(origin::debug_interns);
 
 }
 }

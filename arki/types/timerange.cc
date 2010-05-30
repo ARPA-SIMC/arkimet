@@ -711,11 +711,7 @@ static void debug_interns()
 
 }
 
-static MetadataType timerangeType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Timerange::decode),
-	(MetadataType::string_decoder)(&Timerange::decodeString),
-	timerange::debug_interns);
+static MetadataType timerangeType = MetadataType::create<Timerange>(timerange::debug_interns);
 
 }
 }

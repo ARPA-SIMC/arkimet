@@ -378,10 +378,7 @@ std::vector< Item<Time> > Time::generate(
 
 namespace time {
 
-static MetadataType timeType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Time::decode),
-	(MetadataType::string_decoder)(&Time::decodeString));
+static MetadataType timeType = MetadataType::create<Time>();
 
 }
 }

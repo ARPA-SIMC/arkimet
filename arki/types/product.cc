@@ -382,11 +382,7 @@ static void debug_interns()
 
 }
 
-static MetadataType productType(
-	CODE, SERSIZELEN, TAG,
-	(MetadataType::item_decoder)(&Product::decode),
-	(MetadataType::string_decoder)(&Product::decodeString),
-	product::debug_interns);
+static MetadataType productType = MetadataType::create<Product>(product::debug_interns);
 
 }
 }
