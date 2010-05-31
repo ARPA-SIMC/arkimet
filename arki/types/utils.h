@@ -125,6 +125,8 @@ struct MetadataType
 			intern_stats_func
 		);
 	}
+
+	static void lua_loadlib(lua_State* L);
 };
 
 void debug_intern_stats();

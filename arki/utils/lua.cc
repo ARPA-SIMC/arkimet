@@ -21,6 +21,7 @@
  */
 
 #include <arki/utils/lua.h>
+#include <arki/types.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <ostream>
@@ -48,6 +49,8 @@ Lua::Lua() : L(0)
 	luaopen_debug(L);             /* debug library  */
 	lua_settop(L, 0);
 	#endif
+
+	types::Type::lua_loadlib(L);
 }
 
 Lua::~Lua()

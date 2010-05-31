@@ -90,6 +90,13 @@ void debug_intern_stats()
 			decoders[i]->intern_stats_func();
 }
 
+void MetadataType::lua_loadlib(lua_State* L)
+{
+	for (size_t i = 0; i < decoders_size; ++i)
+		if (decoders[i] != 0)
+			decoders[i]->lua_loadlib_func(L);
+}
+
 }
 }
 // vim:set ts=4 sw=4:

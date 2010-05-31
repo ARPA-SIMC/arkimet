@@ -129,6 +129,10 @@ Item<Origin> Origin::decodeString(const std::string& val)
 	}
 }
 
+void Origin::lua_loadlib(lua_State* L)
+{
+}
+
 namespace origin {
 
 static TypeCache<GRIB1> cache_grib1;

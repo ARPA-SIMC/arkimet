@@ -273,6 +273,8 @@ struct Type : public refcounted::Base
          * @return the Type element, or undefined if the check failed
          */
 	static Item<> lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
+
+	static void lua_loadlib(lua_State* L);
 };
 
 template<typename BASE>

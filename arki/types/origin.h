@@ -70,6 +70,8 @@ struct Origin : public types::StyledType<Origin>
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
 	static int getMaxIntCount();
+
+	static void lua_loadlib(lua_State* L);
 };
 
 namespace origin {

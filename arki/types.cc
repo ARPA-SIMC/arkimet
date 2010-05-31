@@ -228,6 +228,11 @@ Item<> Type::lua_check(lua_State* L, int idx, const char* prefix)
 {
 	return *lua_check_arkitype(L, idx, prefix);
 }
+
+void Type::lua_loadlib(lua_State* L)
+{
+	MetadataType::lua_loadlib(L);
+}
 #endif
 
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
