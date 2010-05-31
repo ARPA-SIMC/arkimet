@@ -41,10 +41,10 @@ then
     # Get the summary from all datasets
     runtest "curl -s $BASEURL/dataset/test200/summary | head -c 2 | grep -q ^SU"
     runtest "curl -s $BASEURL/dataset/test80/summary | arki-dump >tmpfile && grep -q SummaryItem tmpfile"
-    runtest "curl -s $BASEURL/dataset/error/summary | arki-dump >tmpfile && grep -q SummaryItem tmpfile"
+    runtest "curl -s $BASEURL/dataset/test98/summary | arki-dump >tmpfile && grep -q SummaryItem tmpfile"
 
     # Try a normal query
-    runtest "curl -s $BASEURL/dataset/error/query | arki-dump >tmpfile && grep -q ^Origin tmpfile"
+    runtest "curl -s $BASEURL/dataset/test98/query | arki-dump >tmpfile && grep -q ^Origin tmpfile"
     runtest "curl -d query=origin:GRIB1,200 -s $BASEURL/dataset/test200/query | arki-dump | testnonempty"
     runtest "curl -d query=origin:GRIB1,80 -s $BASEURL/dataset/test200/query | arki-dump | testempty"
     runtest "curl -d style=postprocess -d command='say ciao' -s $BASEURL/dataset/test200/query | testequals 'ciao'"
