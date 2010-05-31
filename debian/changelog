@@ -6,6 +6,7 @@ arkimet (0.43-1) UNRELEASED; urgency=low
     timestamps
   * arki-dump: dump compressed metadata
   * arki-scan: added --ignore-duplicates
+  * arki-scan: fixed incorrect success/error return code in some situations
 
  -- Enrico Zini <enrico@debian.org>  Thu, 27 May 2010 16:58:16 +0100
 
