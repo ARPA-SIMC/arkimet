@@ -16,7 +16,7 @@ server.log_to_screen = False
 server.log_file = "arki-server.log"
 EOF
 
-    arki-server -p 7117 --cpconfig=cpconfig --runtest="$BINDIR/$0 run" conf
+    arki-server -p 7117 --cpconfig=cpconfig --runtest="$BINDIR/`basename $0` run" conf
 
     endtest
 elif [ $1 == 'run' ]

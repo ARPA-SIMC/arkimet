@@ -8,8 +8,8 @@ cleanup() {
 
 # Setup the test environment and change into the test dir
 setup() {
-    TOP_SRCDIR=`pwd`/`dirname $0`/..
-    BINDIR=`pwd`/`dirname $0`/../src
+    TOP_SRCDIR=$(readlink -f $(pwd)/$(dirname $0)/..)
+    BINDIR=$TOP_SRCDIR/src
 
     export PATH="$BINDIR:$PATH"
 
@@ -19,6 +19,7 @@ setup() {
 
     export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
     export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
+    export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/
     export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
     export ARKI_REPORT=$TOP_SRCDIR/conf/report/
     export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
@@ -38,6 +39,7 @@ setup() {
     # Create test dataset directories
     mkdir test200
     mkdir test80
+    mkdir test98
     mkdir error
 
     trap cleanup EXIT
@@ -73,13 +75,19 @@ filter=origin:GRIB1,80
 indef=origin
 EOT
 
+    cat <<EOT > test98/config
+type=test
+step=daily
+filter=origin:GRIB1,98
+indef=origin
+EOT
+
     cat <<EOT > error/config
 type = error
 step = daily
 EOT
 
-    arki-mergeconf -o conf test200 test80 error
-
+    arki-mergeconf -o conf test200 test80 test98 error
     arki-scan --dispatch=conf inbound/test.grib1 > /dev/null 2>&1
 }
 
