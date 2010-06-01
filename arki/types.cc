@@ -155,6 +155,27 @@ static int arkilua_tostring(lua_State* L)
         lua_pushstring(L, wibble::str::fmt(item).c_str());
         return 1;
 }
+static int arkilua_eq(lua_State* L)
+{
+	UItem<> item1 = Type::lua_check(L, 1);
+	UItem<> item2 = Type::lua_check(L, 2);
+        lua_pushboolean(L, item1 == item2);
+        return 1;
+}
+static int arkilua_lt(lua_State* L)
+{
+	UItem<> item1 = Type::lua_check(L, 1);
+	UItem<> item2 = Type::lua_check(L, 2);
+        lua_pushboolean(L, item1 < item2);
+        return 1;
+}
+static int arkilua_le(lua_State* L)
+{
+	UItem<> item1 = Type::lua_check(L, 1);
+	UItem<> item2 = Type::lua_check(L, 2);
+        lua_pushboolean(L, item1 <= item2);
+        return 1;
+}
 static int arkilua_index(lua_State* L)
 {
 	using namespace arki;
@@ -188,7 +209,10 @@ void Type::lua_register_methods(lua_State* L) const
 		{ "__index", arkilua_index },
 		{ "__tostring", arkilua_tostring },
 		{ "__gc", arkilua_gc },
-		{NULL, NULL}
+		{ "__eq", arkilua_eq },
+		{ "__lt", arkilua_lt },
+		{ "__le", arkilua_le },
+		{ NULL, NULL }
 	};
 	luaL_register(L, NULL, lib);
 
