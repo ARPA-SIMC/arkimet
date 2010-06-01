@@ -129,8 +129,46 @@ Item<Origin> Origin::decodeString(const std::string& val)
 	}
 }
 
+static int arkilua_new_grib1(lua_State* L)
+{
+	int centre = luaL_checkint(L, 1);
+	int subcentre = luaL_checkint(L, 2);
+	int process = luaL_checkint(L, 3);
+	Item<> res = origin::GRIB1::create(centre, subcentre, process);
+	res->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_grib2(lua_State* L)
+{
+	int centre = luaL_checkint(L, 1);
+	int subcentre = luaL_checkint(L, 2);
+	int processtype = luaL_checkint(L, 3);
+	int bgprocessid = luaL_checkint(L, 4);
+	int processid = luaL_checkint(L, 5);
+	Item<> res = origin::GRIB2::create(centre, subcentre, processtype, bgprocessid, processid);
+	res->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_bufr(lua_State* L)
+{
+	int centre = luaL_checkint(L, 1);
+	int subcentre = luaL_checkint(L, 2);
+	Item<> res = origin::BUFR::create(centre, subcentre);
+	res->lua_push(L);
+	return 1;
+}
+
 void Origin::lua_loadlib(lua_State* L)
 {
+	static const struct luaL_reg lib [] = {
+		{ "grib1", arkilua_new_grib1 },
+		{ "grib2", arkilua_new_grib2 },
+		{ "bufr", arkilua_new_bufr },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_origin", lib, 0);
 }
 
 namespace origin {

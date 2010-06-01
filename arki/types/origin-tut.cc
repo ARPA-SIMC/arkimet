@@ -133,6 +133,8 @@ void to::test<4>()
 		"  if o.subcentre ~= 2 then return 'o.subcentre first item is '..o.subcentre..' instead of 2' end \n"
 		"  if o.process ~= 3 then return 'o.process first item is '..o.process..' instead of 3' end \n"
 		"  if tostring(o) ~= 'GRIB1(001, 002, 003)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(001, 002, 003)' end \n"
+		"  o1 = arki_origin.grib1(1, 2, 3)\n"
+		"  if o ~= o1 then return 'new origin is '..tostring(o1)..' instead of '..tostring(o) end\n"
 		"end \n"
 	);
 
