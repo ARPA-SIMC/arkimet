@@ -215,6 +215,8 @@ void to::test<7>()
 		"  if o.l1 ~= 132 then return 'o.l1 second item is '..o.l1..' instead of 132' end \n"
 		"  if o.l2 ~= 231 then return 'o.l2 third item is '..o.l2..' instead of 231' end \n"
 		"  if tostring(o) ~= 'GRIB1(104, 132, 231)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(104, 132, 231)' end \n"
+		"  o1 = arki_level.grib1(104, 132, 231)\n"
+		"  if o ~= o1 then return 'new level is '..tostring(o1)..' instead of '..tostring(o) end\n"
 		"end \n"
 	);
 

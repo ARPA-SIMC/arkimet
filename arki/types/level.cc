@@ -241,6 +241,53 @@ Item<Level> Level::decodeString(const std::string& val)
 	}
 }
 
+static int arkilua_new_grib1(lua_State* L)
+{
+	int type = luaL_checkint(L, 1);
+	switch (level::GRIB1::getValType(type))
+	{
+		case 0: level::GRIB1::create(type)->lua_push(L); break;
+		case 1: level::GRIB1::create(type, luaL_checkint(L, 2))->lua_push(L); break;
+		case 2: level::GRIB1::create(type, luaL_checkint(L, 2), luaL_checkint(L, 3))->lua_push(L); break;
+		default: lua_pushnil(L);
+	}
+	return 1;
+}
+
+static int arkilua_new_grib2s(lua_State* L)
+{
+	int type = luaL_checkint(L, 1);
+	int scale = luaL_checkint(L, 2);
+	int val = luaL_checkint(L, 3);
+	Item<> res = level::GRIB2S::create(type, scale, val);
+	res->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_grib2d(lua_State* L)
+{
+	int type1 = luaL_checkint(L, 1);
+	int scale1 = luaL_checkint(L, 2);
+	int val1 = luaL_checkint(L, 3);
+	int type2 = luaL_checkint(L, 4);
+	int scale2 = luaL_checkint(L, 5);
+	int val2 = luaL_checkint(L, 6);
+	Item<> res = level::GRIB2D::create(type1, scale1, val1, type2, scale2, val2);
+	res->lua_push(L);
+	return 1;
+}
+
+void Level::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "grib1", arkilua_new_grib1 },
+		{ "grib2s", arkilua_new_grib2s },
+		{ "grib2d", arkilua_new_grib2d },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_level", lib, 0);
+}
+
 namespace level {
 
 static TypeCache<GRIB1> cache_grib1;

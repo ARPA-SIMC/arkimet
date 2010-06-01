@@ -126,6 +126,48 @@ Item<Product> Product::decodeString(const std::string& val)
 	}
 }
 
+static int arkilua_new_grib1(lua_State* L)
+{
+	int origin = luaL_checkint(L, 1);
+	int table = luaL_checkint(L, 2);
+	int product = luaL_checkint(L, 3);
+	Item<> res = product::GRIB1::create(origin, table, product);
+	res->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_grib2(lua_State* L)
+{
+	int centre = luaL_checkint(L, 1);
+	int discipline = luaL_checkint(L, 2);
+	int category = luaL_checkint(L, 3);
+	int number = luaL_checkint(L, 4);
+	Item<> res = product::GRIB2::create(centre, discipline, category, number);
+	res->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_bufr(lua_State* L)
+{
+	int type = luaL_checkint(L, 1);
+	int subtype = luaL_checkint(L, 2);
+	int localsubtype = luaL_checkint(L, 3);
+	Item<> res = product::BUFR::create(type, subtype, localsubtype);
+	res->lua_push(L);
+	return 1;
+}
+
+void Product::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "grib1", arkilua_new_grib1 },
+		{ "grib2", arkilua_new_grib2 },
+		{ "bufr", arkilua_new_bufr },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_product", lib, 0);
+}
+
 namespace product {
 
 static TypeCache<GRIB1> cache_grib1;

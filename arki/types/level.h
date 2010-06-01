@@ -64,6 +64,8 @@ struct Level : public types::StyledType<Level>
 	/// CODEC functions
 	static Item<Level> decode(const unsigned char* buf, size_t len);
 	static Item<Level> decodeString(const std::string& val);
+
+	static void lua_loadlib(lua_State* L);
 };
 
 namespace level {

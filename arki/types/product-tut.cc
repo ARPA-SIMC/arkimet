@@ -133,6 +133,8 @@ void to::test<4>()
 		"  if o.table ~= 2 then return 'o.table first item is '..o.table..' instead of 2' end \n"
 		"  if o.product ~= 3 then return 'o.product first item is '..o.product..' instead of 3' end \n"
 		"  if tostring(o) ~= 'GRIB1(001, 002, 003)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(001, 002, 003)' end \n"
+		"  o1 = arki_product.grib1(1, 2, 3)\n"
+		"  if o ~= o1 then return 'new product is '..tostring(o1)..' instead of '..tostring(o) end\n"
 		"end \n"
 	);
 
