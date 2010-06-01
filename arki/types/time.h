@@ -124,6 +124,8 @@ struct Time : public types::CoreType<Time>
 	 */
 	static std::vector< Item<Time> > generate(
 			const types::Time& begin, const types::Time& end, int step);
+
+	static void lua_loadlib(lua_State* L);
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)

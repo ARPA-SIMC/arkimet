@@ -354,6 +354,8 @@ void to::test<11>()
 		"  if o.p1 ~= 2 then return 'o.p1 is '..o.p1..' instead of 2' end \n"
 		"  if o.p2 ~= 3 then return 'o.p2 is '..o.p2..' instead of 3' end \n"
 		"  if tostring(o) ~= 'GRIB1(002, 002s, 003s)' then return 'tostring gave '..tostring(o)..' instead of GRIB1(002, 002s, 003s)' end \n"
+		"  o1 = arki_timerange.grib1(2, 254, 2, 3)\n"
+		"  if o ~= o1 then return 'new timerange is '..tostring(o1)..' instead of '..tostring(o) end\n"
 		"end \n"
 	);
 

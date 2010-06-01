@@ -274,6 +274,12 @@ struct Type : public refcounted::Base
          */
 	static Item<> lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
 
+	template<typename T>
+	static Item<T> lua_check(lua_State* L, int idx)
+	{
+		return lua_check(L, idx, traits<T>::type_lua_tag).upcast<T>();
+	}
+
 	static void lua_loadlib(lua_State* L);
 };
 

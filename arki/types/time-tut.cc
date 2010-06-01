@@ -148,6 +148,14 @@ void to::test<4>()
 		"  if o.minute ~= 5 then return 'o.minute is '..o.minute..' instead of 5' end \n"
 		"  if o.second ~= 6 then return 'o.second is '..o.second..' instead of 6' end \n"
 		"  if tostring(o) ~= '0001-02-03T04:05:06Z' then return 'tostring gave '..tostring(o)..' instead of 0001-02-03T04:05:06Z' end \n"
+		"  o1 = arki_time.time(1, 2, 3, 4, 5, 6)\n"
+		"  if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end\n"
+		"  o1 = arki_time.iso8601('1-2-3T4:5:6Z')\n"
+		"  if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end\n"
+		"  o1 = arki_time.sql('1-2-3 4:5:6')\n"
+		"  if o ~= o1 then return 'new time is '..tostring(o1)..' instead of '..tostring(o) end\n"
+		"  o2 = arki_time.now()\n"
+		"  if o2 <= o1 then return 'time now is '..tostring(o2)..' which is not later than '..tostring(o1) end\n"
 		"end \n"
 	);
 

@@ -393,6 +393,38 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 	}
 }
 
+static int arkilua_new_grib1(lua_State* L)
+{
+	int type = luaL_checkint(L, 1);
+	int unit = luaL_checkint(L, 2);
+	int p1 = luaL_checkint(L, 3);
+	int p2 = luaL_checkint(L, 4);
+	Item<> res = timerange::GRIB1::create(type, unit, p1, p2);
+	res->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_grib2(lua_State* L)
+{
+	int type = luaL_checkint(L, 1);
+	int unit = luaL_checkint(L, 2);
+	int p1 = luaL_checkint(L, 3);
+	int p2 = luaL_checkint(L, 4);
+	Item<> res = timerange::GRIB2::create(type, unit, p1, p2);
+	res->lua_push(L);
+	return 1;
+}
+
+void Timerange::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "grib1", arkilua_new_grib1 },
+		{ "grib2", arkilua_new_grib2 },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_timerange", lib, 0);
+}
+
 namespace timerange {
 
 static TypeCache<GRIB1> cache_grib1;

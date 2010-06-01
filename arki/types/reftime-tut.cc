@@ -150,6 +150,8 @@ void to::test<4>()
 		"  if t.minute ~= 3 then return 't.minute is '..t.minute..' instead of 3' end \n"
 		"  if t.second ~= 2 then return 't.second is '..t.second..' instead of 2' end \n"
 		"  if tostring(o) ~= '2007-06-05T04:03:02Z' then return 'tostring gave '..tostring(o)..' instead of 2007-06-05T04:03:02Z' end \n"
+		"  o1 = arki_reftime.position(arki_time.time(2007, 6, 5, 4, 3, 2))\n"
+		"  if o ~= o1 then return 'new reftime is '..tostring(o1)..' instead of '..tostring(o) end\n"
 		"end \n"
 	);
 

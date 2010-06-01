@@ -212,6 +212,50 @@ void Time::lua_register_methods(lua_State* L) const
 	};
 	luaL_register(L, NULL, lib);
 }
+
+static int arkilua_new_time(lua_State* L)
+{
+	int ye = luaL_checkint(L, 1);
+	int mo = luaL_checkint(L, 2);
+	int da = luaL_checkint(L, 3);
+	int ho = luaL_checkint(L, 4);
+	int mi = luaL_checkint(L, 5);
+	int se = luaL_checkint(L, 6);
+	Time::create(ye, mo, da, ho, mi, se)->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_now(lua_State* L)
+{
+	Time::createNow()->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_iso8601(lua_State* L)
+{
+	const char* str = luaL_checkstring(L, 1);
+	Time::createFromISO8601(str)->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_sql(lua_State* L)
+{
+	const char* str = luaL_checkstring(L, 1);
+	Time::createFromSQL(str)->lua_push(L);
+	return 1;
+}
+
+void Time::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "time", arkilua_new_time },
+		{ "now", arkilua_new_now },
+		{ "iso8601", arkilua_new_iso8601 },
+		{ "sql", arkilua_new_sql },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_time", lib, 0);
+}
 #endif
 
 Item<Time> Time::create()

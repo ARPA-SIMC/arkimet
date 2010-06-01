@@ -71,6 +71,8 @@ struct Reftime : public StyledType<Reftime>
 	/// CODEC functions
 	static Item<Reftime> decode(const unsigned char* buf, size_t len);
 	static Item<Reftime> decodeString(const std::string& val);
+
+	static void lua_loadlib(lua_State* L);
 };
 
 namespace reftime {

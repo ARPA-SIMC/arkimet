@@ -105,6 +105,31 @@ Item<Reftime> Reftime::decodeString(const std::string& val)
 			Time::decodeString(val.substr(pos + 4)));
 }
 
+static int arkilua_new_position(lua_State* L)
+{
+	Item<types::Time> time = types::Type::lua_check<Time>(L, 1);
+	reftime::Position::create(time)->lua_push(L);
+	return 1;
+}
+
+static int arkilua_new_period(lua_State* L)
+{
+	Item<types::Time> beg = types::Type::lua_check<Time>(L, 1);
+	Item<types::Time> end = types::Type::lua_check<Time>(L, 2);
+	reftime::Period::create(beg, end)->lua_push(L);
+	return 1;
+}
+
+void Reftime::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "position", arkilua_new_position },
+		{ "period", arkilua_new_period },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_reftime", lib, 0);
+}
+
 namespace reftime {
 
 Position::Position(const Item<types::Time>& time) : time(time) {}
