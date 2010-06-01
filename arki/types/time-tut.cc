@@ -132,9 +132,19 @@ void to::test<3>()
 	ensure_equals(t, Item<Time>(Time::create(0, 0, 0, 0, 0, 0)));
 }
 
-// Test Lua functions
+// Check comparisons
 template<> template<>
 void to::test<4>()
+{
+	ensure_compares(
+		Time::create(2006, 5, 4, 3, 2, 1),
+		Time::create(2007, 6, 5, 4, 3, 2),
+		Time::create(2007, 6, 5, 4, 3, 2));
+}
+
+// Test Lua functions
+template<> template<>
+void to::test<5>()
 {
 #ifdef HAVE_LUA
 	Item<Time> o = Time::create(1, 2, 3, 4, 5, 6);
@@ -166,7 +176,7 @@ void to::test<4>()
 
 // Test Time::generate
 template<> template<>
-void to::test<5>()
+void to::test<6>()
 {
 	vector< Item<Time> > v = Time::generate(
 			*Time::create(2009, 1, 1, 0, 0, 0),

@@ -89,15 +89,26 @@ bool Time::isNow() const
 	return true;
 }
 
-int Time::compare(const Time& o) const
+int Time::compare(const Type& o) const
 {
+	int res = Type::compare(o);
+	if (res != 0) return res;
+
+	// We should be the same kind, so upcast
+	const Time* v = dynamic_cast<const Time*>(&o);
+	if (!v)
+		throw wibble::exception::Consistency(
+			"comparing metadata types",
+			str::fmtf("second element claims to be Type, but is `%s' instead",
+				typeid(&o).name()));
+
 	// "Now" times sort bigger than everything else, so if at least one of the
 	// dates is 'now', reverse the sorting
-	if (vals[0] == 0 || o.vals[0] == 0)
-		return o.vals[0] - vals[0];
+	if (vals[0] == 0 || v->vals[0] == 0)
+		return v->vals[0] - vals[0];
 
 	for (unsigned int i = 0; i < 6; ++i)
-		if (int res = vals[i] - o.vals[i]) return res;
+		if (int res = vals[i] - v->vals[i]) return res;
 
 	return 0;
 }
@@ -255,6 +266,7 @@ void Time::lua_loadlib(lua_State* L)
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_time", lib, 0);
+	lua_pop(L, 1);
 }
 #endif
 

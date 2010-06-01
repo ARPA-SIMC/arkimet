@@ -59,7 +59,7 @@ struct Time : public types::CoreType<Time>
 
 	Time& operator=(const Time& t);
 
-	virtual int compare(const Time& o) const;
+	virtual int compare(const Type& o) const;
 
 	virtual bool operator==(const Type& o) const;
 	virtual bool operator==(const Time& o) const;

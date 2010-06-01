@@ -143,6 +143,17 @@ void to::test<4>()
 }
 #endif
 
+// Check comparisons
+template<> template<>
+void to::test<5>()
+{
+	ensure_compares(
+		origin::GRIB1::create(1, 2, 3),
+		origin::GRIB1::create(2, 3, 4),
+		origin::GRIB1::create(2, 3, 4));
+}
+
+
 }
 
 // vim:set ts=4 sw=4:

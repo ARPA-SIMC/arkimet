@@ -61,6 +61,25 @@ static inline void impl_ensure_serialises(const wibble::tests::Location& loc, co
     inner_ensure_equals(arki::Item<T>(T::decodeString(wibble::str::fmt(o))), o);
 }
 
+#define ensure_compares(x, y, z) arki::tests::impl_ensure_compares(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))
+template<typename T>
+static inline void impl_ensure_compares(const wibble::tests::Location& loc, const arki::Item<T>& x, const arki::Item<T>& y, const arki::Item<T>& z)
+{
+    inner_ensure(x < y);
+    inner_ensure(x <= y);
+    inner_ensure(not (x == y));
+    inner_ensure(x != y);
+    inner_ensure(not (x >= y));
+    inner_ensure(not (x > y));
+
+    inner_ensure(not (y < z));
+    inner_ensure(y <= z);
+    inner_ensure(y == z);
+    inner_ensure(not (y != z));
+    inner_ensure(y >= z);
+    inner_ensure(not (y > z));
+}
+
 
 }
 }

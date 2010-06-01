@@ -128,6 +128,7 @@ void Reftime::lua_loadlib(lua_State* L)
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_reftime", lib, 0);
+	lua_pop(L, 1);
 }
 
 namespace reftime {
