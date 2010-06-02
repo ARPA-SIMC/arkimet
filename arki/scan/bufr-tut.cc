@@ -89,6 +89,8 @@ void to::test<1>()
 	Item<area::GRIB> area = md.get(types::TYPE_AREA).upcast<area::GRIB>();
 	ensure_equals(area->values().get("lat")->toString(), "4153000");
 	ensure_equals(area->values().get("lon")->toString(), "2070000");
+	ensure_equals(area->values().get("blo")->toString(), "13");
+	ensure_equals(area->values().get("sta")->toString(), "577");
 
 	// Check run
 	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
