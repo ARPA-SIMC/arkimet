@@ -50,10 +50,8 @@ struct traits<Area>
  *
  * It can contain information like areatype and area value.
  */
-struct Area : public types::CoreType<Area>
+struct Area : public types::StyledType<Area>
 {
-	typedef unsigned char Style;
-
 	mutable ARKI_GEOS_GEOMETRY* cached_bbox;
 
 	/// Style values
@@ -65,25 +63,13 @@ struct Area : public types::CoreType<Area>
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
-	/// Area style
-	virtual Style style() const = 0;
-
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Area& o) const;
 
 	/// CODEC functions
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Area> decode(const unsigned char* buf, size_t len);
 	static Item<Area> decodeString(const std::string& val);
 
 	/// Return the geographical bounding box
 	const ARKI_GEOS_GEOMETRY* bbox() const;
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Area
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Area LUA object
-	static int lua_lookup(lua_State* L);
 };
 
 namespace area {
@@ -103,9 +89,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Area& o) const;
-	virtual int compare(const GRIB& o) const;
+	virtual int compare_local(const Area& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB> create(const ValueBag& values);

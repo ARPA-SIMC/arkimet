@@ -49,10 +49,8 @@ struct traits<Ensemble>
  *
  * It can contain information like ensembletype and ensemble value.
  */
-struct Ensemble : public types::CoreType<Ensemble>
+struct Ensemble : public types::StyledType<Ensemble>
 {
-	typedef unsigned char Style;
-
 	/// Style values
 	static const Style GRIB = 1;
 
@@ -60,22 +58,10 @@ struct Ensemble : public types::CoreType<Ensemble>
 	static Style parseStyle(const std::string& str);
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
-	/// Ensemble style
-	virtual Style style() const = 0;
-
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Ensemble& o) const;
 
 	/// CODEC functions
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Ensemble> decode(const unsigned char* buf, size_t len);
 	static Item<Ensemble> decodeString(const std::string& val);
-
-	// LUA functions
-	/// Push to the LUA stack a userdata to access this Ensemble
-	virtual void lua_push(lua_State* L) const;
-	/// Callback used for the __index function of the Ensemble LUA object
-	static int lua_lookup(lua_State* L);
 };
 
 namespace ensemble {
@@ -95,9 +81,9 @@ public:
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare(const Ensemble& o) const;
-	virtual int compare(const GRIB& o) const;
+	virtual int compare_local(const Ensemble& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB> create(const ValueBag& values);

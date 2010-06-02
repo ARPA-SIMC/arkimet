@@ -63,11 +63,11 @@ void to::test<1>()
 	ensure(m(o));
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<2>()
 {
+#ifdef HAVE_LUA
 	Item<Run> o = run::Minute::create(12, 30);
 
 	tests::Lua test(
@@ -81,8 +81,18 @@ void to::test<2>()
 
 	test.pusharg(*o);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
+
+// Check comparisons
+template<> template<>
+void to::test<3>()
+{
+	ensure_compares(
+		run::Minute::create(12, 30),
+		run::Minute::create(13, 00),
+		run::Minute::create(13, 00));
+}
 
 }
 

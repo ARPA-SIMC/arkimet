@@ -70,31 +70,6 @@ std::string Ensemble::formatStyle(Ensemble::Style s)
 	}
 }
 
-int Ensemble::compare(const Type& o) const
-{
-	int res = Type::compare(o);
-	if (res != 0) return res;
-
-	// We should be the same kind, so upcast
-	const Ensemble* v = dynamic_cast<const Ensemble*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Ensemble, but it is a ") + typeid(&o).name() + " instead");
-
-	return compare(*v);
-}
-
-int Ensemble::compare(const Ensemble& o) const
-{
-	return style() - o.style();
-}
-
-void Ensemble::encodeWithoutEnvelope(Encoder& enc) const
-{
-	enc.addUInt(style(), 1);
-}
-
 Item<Ensemble> Ensemble::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
@@ -121,70 +96,6 @@ Item<Ensemble> Ensemble::decodeString(const std::string& val)
 	}
 }
 
-//////////////////////////////
-#ifdef HAVE_LUA
-int Ensemble::lua_lookup(lua_State* L)
-{
-	int udataidx = lua_upvalueindex(1);
-	int keyidx = lua_upvalueindex(2);
-	// Fetch the Ensemble reference from the userdata value
-	luaL_checkudata(L, udataidx, "arki_" TAG);
-	void* userdata = lua_touserdata(L, udataidx);
-	const Ensemble& v = **(const Ensemble**)userdata;
-
-	// Get the name to lookup from lua
-	// (we use 2 because 1 is the table, since we are a __index function)
-	luaL_checkstring(L, keyidx);
-	string name = lua_tostring(L, keyidx);
-
-	if (name == "style")
-	{
-		string s = Ensemble::formatStyle(v.style());
-		lua_pushlstring(L, s.data(), s.size());
-		return 1;
-	}
-	else if (name == "grib" && v.style() == Ensemble::GRIB)
-	{
-		const ensemble::GRIB* v1 = v.upcast<ensemble::GRIB>();
-		v1->values().lua_push(L);
-		return 1;
-	}
-	else
-	{
-		lua_pushnil(L);
-		return 1;
-	}
-}
-static int arkilua_lookup_ensemble(lua_State* L)
-{
-	// build a closure with the parameters passed, and return it
-	lua_pushcclosure(L, Ensemble::lua_lookup, 2);
-	return 1;
-}
-void Ensemble::lua_push(lua_State* L) const
-{
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	const Ensemble** s = (const Ensemble**)lua_newuserdata(L, sizeof(const Ensemble*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki_" TAG));
-	{
-		// If the metatable wasn't previously created, create it now
-		// Set the __index metamethod to the lookup function
-		lua_pushstring(L, "__index");
-		lua_pushcfunction(L, arkilua_lookup_ensemble);
-		lua_settable(L, -3);
-		/* set the __tostring metamethod */
-		lua_pushstring(L, "__tostring");
-		lua_pushcfunction(L, utils::lua::tostring_arkitype<Ensemble>);
-		lua_settable(L, -3);
-	}
-
-	lua_setmetatable(L, -2);
-}
-#endif
-
 namespace ensemble {
 
 static TypeCache<GRIB> cache_grib;
@@ -208,10 +119,19 @@ std::string GRIB::exactQuery() const
 }
 const char* GRIB::lua_type_name() const { return "arki.types.ensemble.grib"; }
 
-int GRIB::compare(const Ensemble& o) const
+#ifdef HAVE_LUA
+bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (int res = Ensemble::compare(o)) return res;
+	if (name == "val")
+		values().lua_push(L);
+	else
+		return Ensemble::lua_lookup(L, name);
+	return true;
+}
+#endif
 
+int GRIB::compare_local(const Ensemble& o) const
+{
 	// We should be the same kind, so upcast
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v)
@@ -219,11 +139,7 @@ int GRIB::compare(const Ensemble& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB Ensemble, but is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
-}
-int GRIB::compare(const GRIB& o) const
-{
-	return m_values.compare(o.m_values);
+	return m_values.compare(v->m_values);
 }
 
 bool GRIB::operator==(const Type& o) const

@@ -89,8 +89,8 @@ end
   --  arki.area.lonp = longitudeOfSouthernPoleInDegrees
   --end
 
-if area.style() == "GRIB" then
-  a = area.grib()
+if area.style == "GRIB" then
+  a = area.val
   if a.utm == 1 then
       latfirst = a.latfirst / 1000.0
       latlast = a.latlast / 1000.0

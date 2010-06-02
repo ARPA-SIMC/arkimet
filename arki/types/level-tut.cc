@@ -201,11 +201,11 @@ void to::test<6>()
 	ensure(m(o));
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<7>()
 {
+#ifdef HAVE_LUA
 	Item<Level> o = level::GRIB1::create(104, 132, 231);
 
 	tests::Lua test(
@@ -222,8 +222,18 @@ void to::test<7>()
 
 	test.pusharg(*o);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
+
+// Check comparisons
+template<> template<>
+void to::test<8>()
+{
+	ensure_compares(
+		level::GRIB1::create(104, 132, 231),
+		level::GRIB1::create(104, 132, 232),
+		level::GRIB1::create(104, 132, 232));
+}
 
 }
 

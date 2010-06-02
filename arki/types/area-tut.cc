@@ -75,11 +75,11 @@ void to::test<1>()
 	ensure(m(o));
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<2>()
 {
+#ifdef HAVE_LUA
 	ValueBag test1;
 	test1.set("uno", Value::createInteger(1));
 	test1.set("pippo", Value::createString("pippo"));
@@ -87,8 +87,8 @@ void to::test<2>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style() ~= 'GRIB' then return 'style is '..o.style()..' instead of GRIB1' end \n"
-		"  v = o.grib() \n"
+		"  if o.style ~= 'GRIB' then return 'style is '..o.style..' instead of GRIB1' end \n"
+		"  v = o.val \n"
 		"  if v['uno'] ~= 1 then return 'v[\\'uno\\'] is '..v['uno']..' instead of 1' end \n"
 		"  if v['pippo'] ~= 'pippo' then return 'v[\\'pippo\\'] is '..v['pippo']..' instead of \\'pippo\\'' end \n"
 		"  if tostring(o) ~= 'GRIB(pippo=pippo, uno=1)' then return 'tostring gave '..tostring(o)..' instead of GRIB(pippo=pippo, uno=1)' end \n"
@@ -97,8 +97,24 @@ void to::test<2>()
 
 	test.pusharg(*o);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
+
+// Check comparisons
+template<> template<>
+void to::test<3>()
+{
+	ValueBag test1;
+	test1.set("count", Value::createInteger(1));
+	test1.set("pippo", Value::createString("pippo"));
+	ValueBag test2;
+	test2.set("count", Value::createInteger(2));
+	test2.set("pippo", Value::createString("pippo"));
+	ensure_compares(
+		area::GRIB::create(test1),
+		area::GRIB::create(test2),
+		area::GRIB::create(test2));
+}
 
 }
 

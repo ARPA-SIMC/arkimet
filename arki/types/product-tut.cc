@@ -119,11 +119,11 @@ void to::test<3>()
 	ensure(m(o));
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<4>()
 {
+#ifdef HAVE_LUA
 	Item<Product> o = product::GRIB1::create(1, 2, 3);
 
 	tests::Lua test(
@@ -140,8 +140,18 @@ void to::test<4>()
 
 	test.pusharg(*o);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
+
+// Check comparisons
+template<> template<>
+void to::test<5>()
+{
+	ensure_compares(
+		product::GRIB1::create(1, 2, 3),
+		product::GRIB1::create(2, 3, 4),
+		product::GRIB1::create(2, 3, 4));
+}
 
 }
 

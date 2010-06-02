@@ -339,11 +339,11 @@ void to::test<10>()
 	ensure(o2 > o1);
 }
 
-#ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
 void to::test<11>()
 {
+#ifdef HAVE_LUA
 	Item<Timerange> o = timerange::GRIB1::create(2, 254, 2, 3);
 
 	tests::Lua test(
@@ -361,8 +361,18 @@ void to::test<11>()
 
 	test.pusharg(*o);
 	ensure_equals(test.run(), "");
-}
 #endif
+}
+
+// Check comparisons
+template<> template<>
+void to::test<12>()
+{
+	ensure_compares(
+		timerange::GRIB1::create(2, 254, 2, 3),
+		timerange::GRIB1::create(2, 254, 2, 4),
+		timerange::GRIB1::create(2, 254, 2, 4));
+}
 
 }
 
