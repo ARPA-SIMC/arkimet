@@ -24,6 +24,7 @@
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/reftime.h>
+#include <arki/types/area.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -83,6 +84,11 @@ void to::test<1>()
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2005, 12, 1, 18, 0, 0))));
+
+	// Check area
+	Item<area::GRIB> area = md.get(types::TYPE_AREA).upcast<area::GRIB>();
+	ensure_equals(area->values().get("lat")->toString(), "4153000");
+	ensure_equals(area->values().get("lon")->toString(), "2070000");
 
 	// Check run
 	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
