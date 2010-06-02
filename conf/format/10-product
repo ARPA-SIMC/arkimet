@@ -1,19 +1,19 @@
 -- Format a product: return a string, or nil to fall back to the default
 -- formatter
 function fmt_product(v)
-	if v.style() == "GRIB1" then
-		origin, table, product = v.grib1()
+	if v.style == "GRIB1" then
+		origin, product = v.origin, v.product
 		if origin == 200 or origin == 80 then
 			origin = 0
 		end
-		names = read_grib_table(1, string.format("2.%d.%d", origin, table))
+		names = read_grib_table(1, string.format("2.%d.%d", origin, v.table))
 		if names[product] then
 			return string.gsub(names:desc(product), '[*][*]', "^")
 		end
-	elseif v.style() == "GRIB2" then
-		centre, discipline, category, number = v.grib2()
-	elseif v.style() == "BUFR" then
-		type, subtype, localsubtype = v.bufr()
+	elseif v.style == "GRIB2" then
+		-- v.centre, v.discipline, v.category, v.number
+	elseif v.style == "BUFR" then
+		-- v.type, v.subtype, v.localsubtype
 	end
 	return nil
 end

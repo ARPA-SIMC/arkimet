@@ -1,13 +1,12 @@
 -- Format an origin: return a string, or nil to fall back to the default
 -- formatter
 function fmt_timerange(v)
-	if v.style() == "GRIB1" then
-		type, unit, p1, p2 = v.grib1()
+	if v.style == "GRIB1" then
 		timerange = read_grib_table(1, "5")
-		if timerange[type] == nil then
+		if timerange[v.type] == nil then
 			return nil
 		end
-		return timerange:desc(type).." - p1 "..p1..", p2 "..p2..", time unit "..unit
+		return timerange:desc(v.type).." - p1 "..v.p1..", p2 "..v.p2..", time unit "..v.unit
 	end
 	return nil
 end
