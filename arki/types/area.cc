@@ -123,6 +123,27 @@ Item<Area> Area::decodeString(const std::string& val)
 	}
 }
 
+#ifdef HAVE_LUA
+static int arkilua_new_grib(lua_State* L)
+{
+	luaL_checktype(L, 1, LUA_TTABLE);
+	ValueBag vals;
+	vals.load_lua_table(L);
+	area::GRIB::create(vals)->lua_push(L);
+	return 1;
+}
+
+void Area::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "grib", arkilua_new_grib },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_area", lib, 0);
+	lua_pop(L, 1);
+}
+#endif
+
 namespace area {
 
 static TypeCache<GRIB> cache_grib;

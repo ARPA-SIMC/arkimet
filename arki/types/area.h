@@ -70,6 +70,8 @@ struct Area : public types::StyledType<Area>
 
 	/// Return the geographical bounding box
 	const ARKI_GEOS_GEOMETRY* bbox() const;
+
+	static void lua_loadlib(lua_State* L);
 };
 
 namespace area {

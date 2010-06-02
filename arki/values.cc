@@ -734,6 +734,42 @@ void ValueBag::lua_push(lua_State* L) const
 	}
 	// Leave the table on the stack: we pushed it
 }
+
+void ValueBag::load_lua_table(lua_State* L)
+{
+	// Iterate the table
+	lua_pushnil(L);
+	while (lua_next(L, -2))
+	{
+		// Get key
+		string key;
+		switch (lua_type(L, -2))
+		{
+			case LUA_TNUMBER: key = str::fmt(lua_tointeger(L, -2)); break;
+			case LUA_TSTRING: key = lua_tostring(L, -2); break;
+			default:
+				throw wibble::exception::Consistency("reading Lua table",
+						str::fmtf("key has type %s but only ints and strings are supported",
+							lua_typename(L, lua_type(L, -2))));
+		}
+		// Get value
+		switch (lua_type(L, -1))
+		{
+			case LUA_TNUMBER: 
+				set(key, Value::createInteger(lua_tointeger(L, -1)));
+				break;
+			case LUA_TSTRING:
+				set(key, Value::createString(lua_tostring(L, -1)));
+				break;
+			default:
+				throw wibble::exception::Consistency("reading Lua table",
+						str::fmtf("value has type %s but only ints and strings are supported",
+							lua_typename(L, lua_type(L, -1))));
+		}
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+}
 #endif
 
 #if 0

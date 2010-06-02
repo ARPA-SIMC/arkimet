@@ -92,6 +92,8 @@ void to::test<2>()
 		"  if v['uno'] ~= 1 then return 'v[\\'uno\\'] is '..v['uno']..' instead of 1' end \n"
 		"  if v['pippo'] ~= 'pippo' then return 'v[\\'pippo\\'] is '..v['pippo']..' instead of \\'pippo\\'' end \n"
 		"  if tostring(o) ~= 'GRIB(pippo=pippo, uno=1)' then return 'tostring gave '..tostring(o)..' instead of GRIB(pippo=pippo, uno=1)' end \n"
+		"  o1 = arki_ensemble.grib{uno=1, pippo='pippo'}\n"
+		"  if o ~= o1 then return 'new ensemble is '..tostring(o1)..' instead of '..tostring(o) end\n"
 		"end \n"
 	);
 

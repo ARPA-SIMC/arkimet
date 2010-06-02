@@ -144,6 +144,9 @@ struct ValueBag : public std::map<std::string, Value*>
 	/// Push to the LUA stack a table with the data of this ValueBag
 	void lua_push(lua_State* L) const;
 
+	/// Fill in the ValueBag from the Lua table on top of the stack
+	void load_lua_table(lua_State* L);
+
 private:
 	// Disable modifying subscription, because it'd be hard to deallocate the
 	// old value
