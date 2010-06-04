@@ -4,7 +4,7 @@
 /*
  * matcher/product - Product matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,9 +68,7 @@ struct MatchProductGRIB2 : public MatchProduct
 struct MatchProductBUFR : public MatchProduct
 {
 	// These are -1 when they should be ignored in the match
-	int type;
-	int subtype;
-	int localsubtype;
+	std::string name;
 
 	MatchProductBUFR(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;

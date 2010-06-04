@@ -137,14 +137,10 @@ public:
 class BUFR : public Product
 {
 protected:
-	unsigned char m_type;
-	unsigned char m_subtype;
-	unsigned char m_localsubtype;
+	std::string m_name;
 
 public:
-	unsigned type() const { return m_type; }
-	unsigned subtype() const { return m_subtype; }
-	unsigned localsubtype() const { return m_localsubtype; }
+	const std::string& name() const { return m_name; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -157,7 +153,7 @@ public:
 
 	bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	static Item<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
+	static Item<BUFR> create(const std::string& name);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;

@@ -222,7 +222,7 @@ bool Bufr::next(Metadata& md)
 	// Set run
 	md.set(types::run::Minute::create(msg->rep_hour, msg->rep_minute));
 
-	// Set origin and product from the bufr header
+	// Set origin from the bufr header
 	switch (msg->edition)
 	{
 		case 2:
@@ -230,7 +230,6 @@ bool Bufr::next(Metadata& md)
 		case 4:
 			// No process?
 			md.set(types::origin::BUFR::create(msg->opt.bufr.centre, msg->opt.bufr.subcentre));
-			md.set(types::product::BUFR::create(msg->type, msg->subtype, msg->localsubtype));
 			break;
 		default:
 		{
@@ -239,6 +238,9 @@ bool Bufr::next(Metadata& md)
 			throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
 		}
 	}
+
+	// Default to a generic product unless we find more info later
+	md.set(types::product::BUFR::create("generic"));
 
 #ifdef HAVE_LUA
 	// If we don't have extra scanning support, we are done
@@ -262,6 +264,9 @@ bool Bufr::next(Metadata& md)
 	// How could this happen? Treat it as an obscure BUFR and go no further
 	if (msgs->len != 1)
 		return true;
+
+	// Set the product from the msg type
+        md.set(types::product::BUFR::create(dba_msg_type_name(msgs->msgs[0]->type)));
 
 	// DB-All.e managed to make sense of the message: hand it down to Lua
 	// to extract further metadata

@@ -211,8 +211,8 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	Item<> val(product::BUFR::create(1, 2, 3));
-	Item<> val1(product::BUFR::create(2, 3, 4));
+	Item<> val(product::BUFR::create("antani"));
+	Item<> val1(product::BUFR::create("blinda"));
 	ensure_stores(types::Product, md, val, val1);
 }
 

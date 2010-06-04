@@ -1,7 +1,7 @@
 /*
  * matcher/product - Product matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,31 +92,20 @@ std::string MatchProductGRIB2::toString() const
 }
 
 MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
+	: name(pattern)
 {
-	OptionalCommaList args(pattern);
-	type = args.getInt(0, -1);
-	subtype = args.getInt(1, -1);
-	localsubtype = args.getInt(2, -1);
 }
 
 bool MatchProductBUFR::matchItem(const Item<>& o) const
 {
 	const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(o.ptr());
 	if (!v) return false;
-	if (type != -1 && (unsigned)type != v->type()) return false;
-	if (subtype != -1 && (unsigned)subtype != v->subtype()) return false;
-	if (localsubtype != -1 && (unsigned)localsubtype != v->localsubtype()) return false;
-	return true;
+	return name.empty() or name == v->name();
 }
 
 std::string MatchProductBUFR::toString() const
 {
-	CommaJoiner res;
-	res.add("BUFR");
-	if (type != -1) res.add(type); else res.addUndef();
-	if (subtype != -1) res.add(subtype); else res.addUndef();
-	if (localsubtype != -1) res.add(localsubtype); else res.addUndef();
-	return res.join();
+	return "BUFR," + name;
 }
 
 

@@ -254,7 +254,7 @@ void to::test<2>()
 
 	// Check product
 	ensure(mdc[0].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[0].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1)));
+	ensure_equals(mdc[0].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create("synop")));
 
 	// Check reftime
 	ensure_equals(mdc[0].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -280,7 +280,7 @@ void to::test<2>()
 
 	// Check product
 	ensure(mdc[1].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[1].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1)));
+	ensure_equals(mdc[1].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create("synop")));
 
 	// Check reftime
 	ensure_equals(mdc[1].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -306,7 +306,7 @@ void to::test<2>()
 
 	// Check product
 	ensure(mdc[2].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[2].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3)));
+	ensure_equals(mdc[2].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create("synop")));
 
 	// Check reftime
 	ensure_equals(mdc[2].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);

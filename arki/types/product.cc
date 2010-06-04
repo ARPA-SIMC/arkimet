@@ -84,19 +84,27 @@ std::string Product::formatStyle(Product::Style s)
 Item<Product> Product::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
-	ensureSize(len, 1, "Product");
-	Style s = (Style)decodeUInt(buf, 1);
+	Decoder dec(buf, len);
+	Style s = (Style)dec.popUInt(1, "product");
 	switch (s)
 	{
-		case GRIB1:
-			ensureSize(len, 4, "Product");
-			return product::GRIB1::create(decodeUInt(buf+1, 1), decodeUInt(buf+2, 1), decodeUInt(buf+3, 1));
-		case GRIB2:
-			ensureSize(len, 6, "Product");
-			return product::GRIB2::create(decodeUInt(buf+1, 2), decodeUInt(buf+3, 1), decodeUInt(buf+4, 1), decodeUInt(buf+5, 1));
-		case BUFR:
-			ensureSize(len, 4, "Product");
-			return product::BUFR::create(decodeUInt(buf+1, 1), decodeUInt(buf+2, 1), decodeUInt(buf+3, 1));
+		case GRIB1: {
+			uint8_t origin  = dec.popUInt(1, "GRIB1 origin"),
+				table   = dec.popUInt(1, "GRIB1 table"),
+				product = dec.popUInt(1, "GRIB1 product");
+			return product::GRIB1::create(origin, table, product);
+		}
+		case GRIB2: {
+			uint16_t centre     = dec.popUInt(2, "GRIB2 centre");
+			uint8_t	 discipline = dec.popUInt(1, "GRIB2 discipline"),
+				 category   = dec.popUInt(1, "GRIB2 category"),
+				 number     = dec.popUInt(1, "GRIB2 number");
+			return product::GRIB2::create(centre, discipline, category, number);
+		}
+		case BUFR: {
+			uint16_t size = dec.popVarint<uint16_t>("BUFR product name length");
+			return product::BUFR::create(dec.popString(size, "BUFR product name"));
+		}
 		default:
 			throw wibble::exception::Consistency("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
 	}
@@ -118,8 +126,7 @@ Item<Product> Product::decodeString(const std::string& val)
 			return product::GRIB2::create(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3]);
 		}
 		case Product::BUFR: {
-			NumberList<3> nums(inner, "Product");
-			return product::BUFR::create(nums.vals[0], nums.vals[1], nums.vals[2]);
+			return product::BUFR::create(inner);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Product", "unknown Product style " + formatStyle(style));
@@ -149,11 +156,8 @@ static int arkilua_new_grib2(lua_State* L)
 
 static int arkilua_new_bufr(lua_State* L)
 {
-	int type = luaL_checkint(L, 1);
-	int subtype = luaL_checkint(L, 2);
-	int localsubtype = luaL_checkint(L, 3);
-	Item<> res = product::BUFR::create(type, subtype, localsubtype);
-	res->lua_push(L);
+	const char* name = luaL_checkstring(L, 1);
+	product::BUFR::create(name)->lua_push(L);
 	return 1;
 }
 
@@ -340,26 +344,20 @@ bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 
 
 Product::Style BUFR::style() const { return Product::BUFR; }
+
 void BUFR::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Product::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_type, 1);
-	enc.addUInt(m_subtype, 1);
-	enc.addUInt(m_localsubtype, 1);
+	enc.addVarint(m_name.size());
+	enc.addString(m_name);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {
-    return o << formatStyle(style()) << "("
-			 << setfill('0')
-			 << setw(3) << (int)m_type << ", "
-			 << setw(3) << (int)m_subtype << ", "
-			 << setw(3) << (int)m_localsubtype
-			 << setfill(' ')
-			 << ")";
+    return o << formatStyle(style()) << "(" << m_name << ")";
 }
 std::string BUFR::exactQuery() const
 {
-    return str::fmtf("BUFR,%d,%d,%d", (int)m_type, (int)m_subtype, (int)m_localsubtype);
+    return "BUFR," + m_name;
 }
 const char* BUFR::lua_type_name() const { return "arki.types.product.bufr"; }
 
@@ -372,45 +370,33 @@ int BUFR::compare_local(const Product& o) const
 			"comparing metadata types",
 			string("second element claims to be a BUFR Product, but it is a ") + typeid(&o).name() + " instead");
 
-	if (int res = m_type - v->m_type) return res;
-	if (int res = m_subtype - v->m_subtype) return res;
-	return m_localsubtype - v->m_localsubtype;
+	if (m_name < v->m_name) return -1;
+	if (m_name > v->m_name) return 1;
+	return 0;
 }
 bool BUFR::operator==(const Type& o) const
 {
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v) return false;
-	return m_type == v->m_type
-	    && m_subtype == v->m_subtype
-	    && m_localsubtype == v->m_localsubtype;
+	return m_name == v->m_name;
 }
 
-Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
+Item<BUFR> BUFR::create(const std::string& name)
 {
 	BUFR* res = new BUFR;
-	res->m_type = type;
-	res->m_subtype = subtype;
-	res->m_localsubtype = localsubtype;
+	res->m_name = name;
 	return cache_bufr.intern(res);
 }
 
 std::vector<int> BUFR::toIntVector() const
 {
-	vector<int> res;
-	res.push_back(m_type);
-	res.push_back(m_subtype);
-	res.push_back(m_localsubtype);
-	return res;
+	return vector<int>();
 }
 
 bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (name == "type")
-		lua_pushnumber(L, type());
-	else if (name == "subtype")
-		lua_pushnumber(L, subtype());
-	else if (name == "localsubtype")
-		lua_pushnumber(L, localsubtype());
+	if (name == "name")
+		lua_pushlstring(L, m_name.data(), m_name.size());
 	else
 		return Product::lua_lookup(L, name);
 	return true;
