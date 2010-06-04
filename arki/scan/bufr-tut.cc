@@ -93,8 +93,7 @@ void to::test<1>()
 	ensure_equals(area->values().get("sta")->toString(), "577");
 
 	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(18)));
+	ensure(not md.has(types::TYPE_RUN));
 
 
 	// Next bufr
@@ -122,8 +121,7 @@ void to::test<1>()
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
 
 	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
+	ensure(not md.has(types::TYPE_RUN));
 
 
 	// Last bufr
@@ -151,8 +149,7 @@ void to::test<1>()
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
 
 	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
+	ensure(not md.has(types::TYPE_RUN));
 	
 
 	// No more bufrs
@@ -196,8 +193,7 @@ void to::test<2>()
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2005, 12, 1, 18, 0, 0))));
 
 	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(18)));
+	ensure(not md.has(types::TYPE_RUN));
 
 
 	// Next bufr
@@ -225,8 +221,7 @@ void to::test<2>()
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
 
 	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
+	ensure(not md.has(types::TYPE_RUN));
 
 
 	// Last bufr
@@ -254,8 +249,7 @@ void to::test<2>()
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
 
 	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
+	ensure(not md.has(types::TYPE_RUN));
 	
 
 	// No more bufrs

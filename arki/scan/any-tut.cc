@@ -261,8 +261,7 @@ void to::test<2>()
 	ensure_equals(mdc[0].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2005, 12, 1, 18, 0, 0))));
 
 	// Check run
-	ensure_equals(mdc[0].get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(mdc[0].get(types::TYPE_RUN), Item<>(run::Minute::create(18)));
+	ensure(not mdc[0].has(types::TYPE_RUN));
 
 
 	// Check the source info
@@ -287,8 +286,7 @@ void to::test<2>()
 	ensure_equals(mdc[1].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
 
 	// Check run
-	ensure_equals(mdc[1].get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(mdc[1].get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
+	ensure(not mdc[1].has(types::TYPE_RUN));
 
 
 	// Check the source info
@@ -313,8 +311,7 @@ void to::test<2>()
 	ensure_equals(mdc[2].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
 
 	// Check run
-	ensure_equals(mdc[2].get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(mdc[2].get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
+	ensure(not mdc[2].has(types::TYPE_RUN));
 #endif
 }
 

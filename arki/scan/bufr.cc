@@ -219,9 +219,6 @@ bool Bufr::next(Metadata& md)
 	// Set reference time
 	md.set(types::reftime::Position::create(new types::Time(msg->rep_year, msg->rep_month, msg->rep_day, msg->rep_hour, msg->rep_minute, msg->rep_second)));
 
-	// Set run
-	md.set(types::run::Minute::create(msg->rep_hour, msg->rep_minute));
-
 	// Set origin from the bufr header
 	switch (msg->edition)
 	{

@@ -44,6 +44,8 @@ public:
 
         size_t size() const { return m_vals.size(); }
 
+	bool has(types::Code code) const { return m_vals.find(code) != m_vals.end(); }
+
 	UItem<> get(types::Code code) const;
 
 	template<typename T>
