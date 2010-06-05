@@ -9,6 +9,8 @@ local o = arki_ensemble.grib(t)
 -- The shortcut call-function-with-table Lua syntax obviously also works
 ensure_equals(o, arki_ensemble.grib{mt=1, nn=2})
 
+ensure_equals(o.style, "GRIB")
+
 -- Values are in o.val, which creates a table with all the values
 local vals = o.val
 ensure_equals(vals.mt, 1)

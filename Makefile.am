@@ -63,11 +63,13 @@ EXTRA_DIST = doc/MATCHER \
 	     doc/mhooks-xargs \
 	     doc/mhooks-bufr-prepare \
 	     doc/lua-examples/area.lua \
+	     doc/lua-examples/bbox.lua \
 	     doc/lua-examples/ensemble.lua \
 	     doc/lua-examples/origin.lua \
 	     doc/lua-examples/level.lua \
 	     doc/lua-examples/product.lua \
 	     doc/lua-examples/reftime.lua \
+	     doc/lua-examples/run.lua \
 	     doc/lua-examples/time.lua \
 	     doc/lua-examples/timerange.lua \
 	     test/data/test.bufr \
