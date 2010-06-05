@@ -75,6 +75,14 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
 
+	// Check notes
+	if (md.notes().size() != 1)
+	{
+		for (size_t i = 0; i < md.notes().size(); ++i)
+			cerr << md.notes()[i] << endl;
+		ensure_equals(md.notes().size(), 1u);
+	}
+
 	// Check origin
 	ensure(md.get(types::TYPE_ORIGIN).defined());
 	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(200, 0, 101)));

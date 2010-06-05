@@ -2,9 +2,9 @@
 #define ARKI_SCAN_GRIB_H
 
 /*
- * arki-scan-grib2 - Scan a GRIB 2 file for metadata.
+ * scan/grib - Scan a GRIB (version 1 or 2) file for metadata
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
  */
 
 #include <string>
+#include <vector>
 
 struct grib_context;
 struct grib_handle;
@@ -52,13 +53,18 @@ protected:
 	grib_handle* gh;
 	GribLua* L;
 	bool m_inline_data;
-	size_t grib1FuncCount;
-	size_t grib2FuncCount;
+	std::vector<int> grib1_funcs;
+	std::vector<int> grib2_funcs;
 
 	/**
 	 * Set the source information in the metadata
 	 */
 	virtual void setSource(Metadata& md);
+
+	/**
+	 * Run Lua scanning functions on \a md
+	 */
+	bool scanLua(std::vector<int> ids, Metadata& md);
 
 	/**
 	 * Read GRIB1 data from the currently open handle into md

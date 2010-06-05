@@ -88,7 +88,7 @@ step = daily
 EOT
 
     arki-mergeconf -o conf test200 test80 test98 error
-    arki-scan --dispatch=conf inbound/test.grib1 > /dev/null 2>&1
+    arki-scan --dispatch=conf inbound/test.grib1 > /dev/null
 }
 
 OKCOUNT=0

@@ -25,17 +25,6 @@
 #include <arki/runtime/config.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
-#if 0
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/ensemble.h>
-#include <arki/types/run.h>
-#include <wibble/exception.h>
-#endif
 
 using namespace std;
 using namespace wibble;

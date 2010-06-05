@@ -68,6 +68,8 @@ struct Lua
 	 * the functions following the one that failed are not executed.
 	 */
 	std::string runFunctionSequence(const std::string& prefix, size_t count);
+
+	static int backtrace_error_handler(lua_State *L);
 };
 
 

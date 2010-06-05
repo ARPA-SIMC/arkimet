@@ -7,8 +7,14 @@ arkimet (0.43-1) UNRELEASED; urgency=low
   * arki-dump: dump compressed metadata
   * arki-scan: added --ignore-duplicates
   * arki-scan: fixed incorrect success/error return code in some situations
+  * Lua GRIB scanning configuration changes:
+     - they now require a .lua extension
+     - scanning is now done inside a scan(md) function
+     - there is no intermediate `arki' object: scanned values are directly
+       stored inside metadata 
+  * lua-examples directory with documentation about Lua bindings
 
- -- Enrico Zini <enrico@debian.org>  Thu, 27 May 2010 16:58:16 +0100
+ -- Enrico Zini <enrico@debian.org>  Sat, 05 Jun 2010 16:48:35 +0100
 
 arkimet (0.42-1) UNRELEASED; urgency=low
 

@@ -26,6 +26,7 @@ mkdir inbound
 cp -a "$TOP_SRCDIR/test/data/"* inbound/
 cp -a "$TOP_SRCDIR/test/postproc" ./
 cp -a "$TOP_SRCDIR/test/misc" ./
+cp -a "$TOP_SRCDIR/doc/lua-examples" ./
 # Create test dataset directories
 mkdir test200
 mkdir test80

@@ -63,6 +63,8 @@ struct Run : public types::StyledType<Run>
 	/// CODEC functions
 	static Item<Run> decode(const unsigned char* buf, size_t len);
 	static Item<Run> decodeString(const std::string& val);
+
+	static void lua_loadlib(lua_State* L);
 };
 
 namespace run {

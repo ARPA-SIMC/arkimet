@@ -134,8 +134,7 @@ public:
 	virtual int compare_local(const Origin& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<GRIB2> create(
-				  unsigned short centre, unsigned short subcentre,
+	static Item<GRIB2> create(unsigned short centre, unsigned short subcentre,
 				  unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
 
 	// Deprecated functions

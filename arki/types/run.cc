@@ -116,6 +116,31 @@ Item<Run> Run::decodeString(const std::string& val)
 	}
 }
 
+static int arkilua_new_minute(lua_State* L)
+{
+	int nargs = lua_gettop(L);
+	int hour = luaL_checkint(L, 1);
+	if (nargs == 1)
+	{
+		run::Minute::create(hour, 0)->lua_push(L);
+	} else {
+		int minute = luaL_checkint(L, 2);
+		run::Minute::create(hour, minute)->lua_push(L);
+	}
+	return 1;
+}
+
+void Run::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "minute", arkilua_new_minute },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_run", lib, 0);
+	lua_pop(L, 1);
+}
+
+
 namespace run {
 
 static TypeCache<Minute> cache_minute;

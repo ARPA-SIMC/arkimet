@@ -32,8 +32,8 @@ qmconfdir = $(confdir)/qmacro
 tfconfdir = $(confdir)/targetfile
 
 dist_conf_DATA = conf/match-alias.conf
-dist_sg1conf_DATA = conf/scan-grib1/01-common
-dist_sg2conf_DATA = conf/scan-grib2/01-common
+dist_sg1conf_DATA = conf/scan-grib1/01-common.lua
+dist_sg2conf_DATA = conf/scan-grib2/01-common.lua
 dist_bboxconf_DATA = conf/bbox/01-common
 dist_fmtconf_DATA = \
 	conf/format/01-gribapi \
@@ -62,6 +62,7 @@ EXTRA_DIST = doc/MATCHER \
 	     doc/mhooks-mergeconf \
 	     doc/mhooks-xargs \
 	     doc/mhooks-bufr-prepare \
+	     doc/lua-examples/origin.lua \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
 	     test/data/padded.grib1 \
