@@ -62,6 +62,8 @@ EXTRA_DIST = doc/MATCHER \
 	     doc/mhooks-mergeconf \
 	     doc/mhooks-xargs \
 	     doc/mhooks-bufr-prepare \
+	     doc/lua-examples/area.lua \
+	     doc/lua-examples/ensemble.lua \
 	     doc/lua-examples/origin.lua \
 	     doc/lua-examples/level.lua \
 	     doc/lua-examples/product.lua \
