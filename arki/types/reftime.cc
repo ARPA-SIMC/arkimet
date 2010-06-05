@@ -231,9 +231,9 @@ const char* Period::lua_type_name() const { return "arki.types.reftime.period"; 
 
 bool Period::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (name == "begin")
+	if (name == "from")
 		begin->lua_push(L);
-	else if (name == "end")
+	else if (name == "to")
 		end->lua_push(L);
 	else
 		return Reftime::lua_lookup(L, name);
