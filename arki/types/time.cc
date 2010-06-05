@@ -1,7 +1,7 @@
 /*
  * types/time - Time
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -185,9 +185,10 @@ static int arkilua_lookup(lua_State *L)
         Item<Time> item = Type::lua_check(L, 1, "arki.types.time").upcast<Time>();
 	if (lua_type(L, 2) == LUA_TNUMBER) 
 	{
+		// Lua array indices start at 1
 		int idx = lua_tointeger(L, 2);
-		if (idx >= 0 && idx < 6)
-			lua_pushnumber(L, item->vals[idx]);
+		if (idx >= 1 && idx <= 6)
+			lua_pushnumber(L, item->vals[idx-1]);
 		else
 			lua_pushnil(L);
 	} else {
