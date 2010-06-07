@@ -13,6 +13,10 @@ DEB_DH_STRIP_ARGS := --dbg-package=arkimet-dbg
 install/arkimet::
 	install -m 0644 -o root -g root debian/arki-server-defaults debian/$(cdbs_curpkg)/etc/default/arki-server
 
+# From http://wiki.debian.org/DebianPython/NewPolicy
+binary-install/arkimet::
+	dh_pycentral -parkimet
+
 # Store build information
 common-binary-post-install-arch common-binary-post-install-indep::
 	dh_buildinfo
