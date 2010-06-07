@@ -101,6 +101,11 @@ class Script(object):
                 close_fds=True)
         def on_close():
             res = self.proc.wait()
+            if res is None:
+                # If the process is still running, kill it
+                log_access("%s is still running after sending the output: terminating it", repr(self.args));
+                os.kill(self.proc.pid, signal.SIGTERM)
+                res = self.proc.wait()
             if res != 0:
                 tmpstderr.seek(0)
                 stderr = tmpstderr.read()
