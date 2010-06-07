@@ -1,5 +1,10 @@
 ## Process this file with automake to produce Makefile.in
 
+arkipythondir = $(pythondir)/arkimet
+
+arkipython_PYTHON = arkimet/bottle.py \
+		    arkimet/__init__.py
+
 bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs
 
 dist_bin_SCRIPTS = arki-server

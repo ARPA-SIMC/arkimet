@@ -27,6 +27,7 @@ setup() {
     export ARKI_TARGETFILE=$TOP_SRCDIR/conf/targetfile/
     export ARKI_POSTPROC=$TOP_SRCDIR/test/postproc/
     export ARKI_ALIASES=$TOP_SRCDIR/conf/match-alias.conf
+    export PYTHONPATH="$PYTHONPATH:$TOP_SRCDIR/src"
     export http_proxy=
     ulimit -v 1048576
 

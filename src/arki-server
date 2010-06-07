@@ -5,6 +5,7 @@ VERSION="0.16"
 ARKI_QUERY="arki-query"
 ARKI_DUMP="arki-dump"
 
+from arkimet import bottle
 import bottle
 from bottle import route, post
 import subprocess

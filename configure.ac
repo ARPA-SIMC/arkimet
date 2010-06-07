@@ -200,6 +200,8 @@ else
 fi
 AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
 
+dnl Check for python
+AM_PATH_PYTHON
 
 LIBARKI_VERSION_INFO=`echo $VERSION | awk -F. '{ printf "%d:%d:%d", $1+$2, $3, $2 }'`
 AC_SUBST(LIBARKI_VERSION_INFO)
