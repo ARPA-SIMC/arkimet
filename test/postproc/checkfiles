@@ -1,12 +1,14 @@
 #!/bin/sh
 
+cat > /dev/null
+
 if [ z"$ARKI_POSTPROC_FILES" == z ]
 then
 	echo "No ARKI_POSTPROC_FILES set" >&2
 	exit 1
 fi
 
-echo "$ARKI_POSTPROC_FILES" | while read file
+echo "$ARKI_POSTPROC_FILES" | while read -d: file
 do
 	if [ ! -e "$file" ]
 	then

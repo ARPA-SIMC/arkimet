@@ -3,3 +3,4 @@ step = daily
 filter = origin: GRIB1,200
 index = origin, reftime
 restrict = pippo, pluto, paperino
+postprocess = checkfiles

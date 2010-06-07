@@ -49,6 +49,11 @@ then
     runtest "curl -d query=origin:GRIB1,80 -s $BASEURL/dataset/test200/query | arki-dump | testempty"
     runtest "curl -d style=postprocess -d command='say ciao' -s $BASEURL/dataset/test200/query | testequals 'ciao'"
 
+    # Check uploading files
+    runtest "arki-query --postproc=checkfiles --postproc-data=/dev/null '' $BASEURL/dataset/test200"
+    runtest "arki-query --postproc=checkfiles --postproc-data=/dev/null --postproc-data=/dev/null '' $BASEURL/dataset/test200"
+    runtest "if arki-query --postproc=error '' $BASEURL/dataset/test200 2>/dev/null; then /bin/false; fi"
+
     testtotals
 
     exit $BADCOUNT

@@ -30,6 +30,7 @@
 
 #include <wibble/string.h>
 
+#include <cstdlib>
 #include <sstream>
 
 using namespace std;
@@ -89,6 +90,37 @@ void CurlEasy::reset()
 	checked("setting user agent", curl_easy_setopt(m_curl, CURLOPT_USERAGENT, "arkimet"));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 }
+
+struct CurlForm
+{
+	curl_httppost* post;
+	curl_httppost* last;
+
+	CurlForm() : post(0), last(0) {}
+	~CurlForm()
+	{
+		if (post) curl_formfree(post);
+	}
+
+	void addstring(const std::string& key, const std::string& val)
+	{
+		curl_formadd(&post, &last,
+				CURLFORM_COPYNAME, key.c_str(),
+				CURLFORM_COPYCONTENTS, val.c_str(),
+				CURLFORM_END);
+	}
+
+	void addfile(const std::string& key, const std::string& pathname)
+	{
+		curl_formadd(&post, &last,
+				CURLFORM_COPYNAME, key.c_str(),
+				CURLFORM_FILE, pathname.c_str(),
+				CURLFORM_END);
+	}
+
+	curl_httppost* ptr() { return post; }
+};
+	
 
 }
 
@@ -272,46 +304,58 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 
 	m_curl.reset();
 
+	http::CurlForm form;
+	
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata;
 	if (m_qmacro.empty())
-		postdata = "query=" + urlencode(q.matcher.toStringExpanded());
-	else
-		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
-	if (q.sorter)
 	{
-		postdata += ";sort=" + urlencode(q.sorter->toString());
+		if (m_mischief)
+		{
+			form.addstring("query", q.matcher.toStringExpanded() + ";MISCHIEF");
+			m_mischief = false;
+		} else
+			form.addstring("query", q.matcher.toStringExpanded());
+	} else {
+		form.addstring("query", m_qmacro);
+		form.addstring("qmacro", m_name);
 	}
-	if (m_mischief)
+	if (q.sorter)
+		form.addstring("sort", q.sorter->toString());
+
+	const char* toupload = getenv("ARKI_POSTPROC_FILES");
+	if (toupload != NULL)
 	{
-		postdata += urlencode(";MISCHIEF");
-		m_mischief = false;
+		// Split by ':'
+		str::Split splitter(":", toupload);
+		for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+			form.addfile("postprocfile", *i);
 	}
 	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA:
-			postdata += "&style=data";
+			form.addstring("style", "data");
 			break;
 		case dataset::ByteQuery::BQ_POSTPROCESS:
-			postdata += "&style=postprocess&command=" + urlencode(q.param);
+			form.addstring("style", "postprocess");
+			form.addstring("command", q.param);
 			break;
 		case dataset::ByteQuery::BQ_REP_METADATA:
-			postdata += "&style=rep_metadata&command=" + urlencode(q.param);
+			form.addstring("style", "rep_metadata");
+			form.addstring("command", q.param);
 			break;
 		case dataset::ByteQuery::BQ_REP_SUMMARY:
-			postdata += "&style=rep_summary&command=" + urlencode(q.param);
+			form.addstring("style", "rep_summary");
+			form.addstring("command", q.param);
 			break;
 		default:
 			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type));
 	}
-	postdata += '\n';
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
-	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-	// Size of postfields argument if it's non text
-	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
+	// Set the form info 
+	curl_easy_setopt(m_curl, CURLOPT_HTTPPOST, form.ptr());
 	OstreamState s(m_curl, out);
 	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
 	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));

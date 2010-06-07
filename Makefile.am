@@ -80,6 +80,7 @@ EXTRA_DIST = doc/MATCHER \
 	     test/dataset1/config \
 	     test/misc/erse00.expa \
 	     test/postproc/checkfiles \
+	     test/postproc/error \
 	     test/postproc/say
 
 CLEANFILES = $(man_MANS)

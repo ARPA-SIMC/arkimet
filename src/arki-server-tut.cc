@@ -159,11 +159,12 @@ void to::test<5>()
     stringstream str;
     htd->produce_one_wrong_query();
     try {
-	dataset::ByteQuery bq;
-	bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
+        dataset::ByteQuery bq;
+        bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
         testds->queryBytes(bq, str);
         ensure(false);
     } catch (std::exception& e) {}
+    ensure_equals(str.str(), "");
     ensure_equals(str.str().size(), 0u);
 }
 

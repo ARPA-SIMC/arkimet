@@ -10,7 +10,7 @@ import bottle
 from bottle import route, post
 import subprocess
 import logging
-import os, os.path, signal, errno, sys, time
+import os, os.path, signal, errno, sys, time, select
 import tempfile, shutil
 import urllib, urlparse
 from cStringIO import StringIO
@@ -22,7 +22,7 @@ from cStringIO import StringIO
 server = None
 dsconfig = None
 
-#bottle.debug(True)
+# bottle.debug(True)
 
 #
 # Logging functions
@@ -31,6 +31,14 @@ dsconfig = None
 def log_access(fmt, *args):
     msg = fmt % args
     logging.log(logging.INFO, msg)
+
+class TextHTTPError(bottle.HTTPResponse):
+    """ Used to generate an error page """
+    def __init__(self, code=500, output='Unknown Error', header=None):
+        super(TextHTTPError, self).__init__(output, code, header)
+
+    def __repr__(self):
+        return output
 
 #
 # arki-* running infrastructure
@@ -92,15 +100,26 @@ class Script(object):
             bottle.response.headerlist.append(("Content-Disposition", "attachment; filename=%s.%s" % (self.fname, self.ext)))
         log_access("Running %s", repr(self.args));
         tmpstderr = tempfile.TemporaryFile()
-        # FIXME: if self.subdir, we can redirect stderr to a temporary file
-        # inside self.subdir. If we don't have self.subdir, we can still
-        # redirect stderr to a temporary file
         self.proc = subprocess.Popen(self.args, stdin=open("/dev/null", "r"),
                 stdout=subprocess.PIPE,
                 stderr=tmpstderr,
                 close_fds=True)
+
+        # Wait until data becomes available
+        p = select.poll()
+        p.register(self.proc.stdout.fileno())
+        events = p.poll()
+        for fd, val in events:
+            if fd != self.proc.stdout.fileno(): continue
+            # Did the command exit with error without producing any data on stdout?
+            if (val & select.POLLIN == 0 and val & select.POLLHUP != 0):
+                res = self.proc.wait()
+                tmpstderr.seek(0)
+                stderr = tmpstderr.read()
+                if res != 0: raise TextHTTPError(code=500, output=(stderr if stderr else "arki-query exited with code %d" % res))
+
         def on_close():
-            res = self.proc.wait()
+            res = self.proc.poll()
             if res is None:
                 # If the process is still running, kill it
                 log_access("%s is still running after sending the output: terminating it", repr(self.args));
@@ -161,6 +180,15 @@ class ArkiQuery(ArkiQueryBase):
             self.ext = "bin"
         elif style == "postprocess":
             self.args.append("--postproc=" + self.fields.get("command", ""))
+            for f in self.fields.getall("postprocfile"):
+                if not self.subdir: raise RuntimeError, "posprocess data have been provided but arki-query is not run in a subdir"
+                # Store the uploaded file in the temporary directory
+                dest = os.path.join(self.subdir, os.path.basename(f.filename))
+                destfd = open(dest, "w")
+                shutil.copyfileobj(f.file, destfd)
+                destfd.close()
+                # Pass it to arki-query
+                self.args.append("--postproc-data=" + dest)
             self.ext = "bin"
         elif style == "rep_metadata":
             self.args.append("--report=" + self.fields.get("command", ""))
@@ -206,8 +234,14 @@ class Args(object):
         return bottle.request.GET.get(key, bottle.request.POST.get(key))
     def get(self, key, default):
         return bottle.request.GET.get(key, bottle.request.POST.get(key, default))
+    def getall(self, key):
+        return bottle.request.GET.getall(key) + bottle.request.POST.getall(key)
     def has_key(self, key):
         return key in bottle.request.GET or key in bottle.request.POST
+    def keys(self):
+        res = set(bottle.request.GET.keys())
+        res.update(bottle.request.POST.keys())
+        return list(res)
 
 class Server(object):
     def __init__(self, configfile, opts = None):
