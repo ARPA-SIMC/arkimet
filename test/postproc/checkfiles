@@ -1,0 +1,18 @@
+#!/bin/sh
+
+if [ z"$ARKI_POSTPROC_FILES" == z ]
+then
+	echo "No ARKI_POSTPROC_FILES set" >&2
+	exit 1
+fi
+
+echo "$ARKI_POSTPROC_FILES" | while read file
+do
+	if [ ! -e "$file" ]
+	then
+		echo "File '$file' not found" >&2
+		exit 1
+	fi
+done
+
+exit 0

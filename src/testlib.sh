@@ -66,7 +66,7 @@ type=test
 step=daily
 filter=origin:GRIB1,200
 indef=origin
-postprocess=cat,echo,say
+postprocess=cat,echo,say,checkfiles
 EOT
 
     cat <<EOT > test80/config

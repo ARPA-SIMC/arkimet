@@ -68,7 +68,7 @@ arki_xargs_LDFLAGS = $(all_libs)
 arki_gzip_SOURCES = arki-gzip.cc
 arki_gzip_LDFLAGS = $(all_libs)
 
-TESTS = test-arki-server test-arki-scan run-test-src
+TESTS = test-arki-server test-arki-scan test-arki-query run-test-src
 check_PROGRAMS = test-src
 test_src_SOURCES = \
 		arki-server-tut.cc \

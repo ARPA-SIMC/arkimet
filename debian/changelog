@@ -15,8 +15,9 @@ arkimet (0.43-1) UNRELEASED; urgency=low
   * lua-examples directory with documentation about Lua bindings
   * arki-server: rebuilt based on a customised version of bottle that we ship,
     dropping the dependency on an old version of cherrypy
+  * arki-query: added --postproc-data to pass files to the postprocessor
 
- -- Enrico Zini <enrico@debian.org>  Mon, 07 Jun 2010 16:05:50 +0100
+ -- Enrico Zini <enrico@debian.org>  Mon, 07 Jun 2010 17:31:49 +0100
 
 arkimet (0.42-1) UNRELEASED; urgency=low
 

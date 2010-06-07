@@ -88,7 +88,7 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	ignore_duplicates = 0;
 
 	outputOpts = createGroup("Options controlling output style");
-	merged = 0;
+	merged = 0; postproc_data = 0;
 	yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",
 			"dump the metadata as human-readable Yaml records");
 	yaml->longNames.push_back("dump");
@@ -170,6 +170,9 @@ void CommandLine::addQueryOptions()
 		"run the given query macro instead of a plain query");
 	restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
+	postproc_data = inputOpts->add< VectorOption<ExistingFile> >("postproc-data", 0, "postproc-data", "file",
+		"when querying a remote server with postprocessing, upload a file"
+		" to be used by the postprocessor (can be given more than once)");
 }
 
 bool CommandLine::parse(int argc, const char* argv[])
@@ -245,6 +248,8 @@ bool CommandLine::parse(int argc, const char* argv[])
 		if (targetfile->boolValue())
 			throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
 	}
+	if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
+		throw wibble::exception::BadOption("--upload only makes sense with --postprocess");
 	
 	return false;
 }
@@ -582,6 +587,14 @@ void CommandLine::setupProcessing()
 		if (ignore_duplicates && ignore_duplicates->boolValue())
 			dispatcher->ignore_duplicates = true;
 	}
+
+	if (postproc_data && postproc_data->isSet())
+	{
+		// Pass files for the postprocessor in the environment
+		string val = str::join(postproc_data->values().begin(), postproc_data->values().end(), ":");
+		setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
+	} else
+		unsetenv("ARKI_POSTPROC_FILES");
 }
 
 void CommandLine::doneProcessing()

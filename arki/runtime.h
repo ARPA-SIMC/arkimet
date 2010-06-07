@@ -89,6 +89,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::StringOption* moveok;
 	wibble::commandline::StringOption* moveko;
 	wibble::commandline::StringOption* movework;
+	wibble::commandline::VectorOption<wibble::commandline::ExistingFile>* postproc_data;
 	wibble::commandline::VectorOption<wibble::commandline::String>* cfgfiles;
 	wibble::commandline::VectorOption<wibble::commandline::String>* dispatch;
 	wibble::commandline::VectorOption<wibble::commandline::String>* testdispatch;
