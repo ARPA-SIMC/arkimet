@@ -26,8 +26,7 @@ ARKI_QUERY="arki-query"
 ARKI_DUMP="arki-dump"
 
 from arkimet import bottle
-import bottle
-from bottle import route, post
+from arkimet.bottle import route, post
 import subprocess
 import logging
 import os, os.path, signal, errno, sys, time, select
