@@ -5,390 +5,207 @@ VERSION="0.16"
 ARKI_QUERY="arki-query"
 ARKI_DUMP="arki-dump"
 
-import cherrypy
+import bottle
+from bottle import route, post
 import subprocess
-from StringIO import StringIO
 import logging
-import fcntl, os, select, signal
-import tempfile, shutil, os.path
+import os, os.path, signal, errno, sys, time
+import tempfile, shutil
+import urllib, urlparse
+from cStringIO import StringIO
+
+#
+# Server configuration
+#
+
+server = None
+dsconfig = None
+
+#bottle.debug(True)
+
+#
+# Logging functions
+#
 
 def log_access(fmt, *args):
     msg = fmt % args
-    cherrypy.log(msg, context='arkiserver', severity=logging.INFO, traceback=False)
+    logging.log(logging.INFO, msg)
 
-class QueryProcess(object):
-    def __init__(self, owndir=False):
+#
+# arki-* running infrastructure
+#
+
+class ScriptFile(object):
+    def __init__(self, fd, closefunc=None):
+        self.__orig = fd
+        self.__closefunc = closefunc
+    def read(self, *args):
+        return self.__orig.read(*args)
+    def __iter__(self):
+        return self.__orig.__iter__()
+    def __next__(self):
+        return self.__orig.__next__()
+    def close(self):
+        if self.__closefunc: self.__closefunc()
+        self.__orig.close()
+
+class Script(object):
+    def __init__(self, owndir=False, fields=None):
         if owndir:
             self.subdir = tempfile.mkdtemp()
         else:
             self.subdir = None
         self.args = []
-        self.ext = "out"
+        self.fname = "arkimet"
+        self.ext = "bin"
+        self.content_type = "application/octet-stream"
+        self.proc = None
+        self.fields = fields if fields else {}
+        self.dsconf = None
 
-    def cleanup(self):
-        "Cleanup everything after the session ends"
-        res = self.proc.poll()
-        if res == None:
-            log_access("seding SIGTERM to arki-query %s with pid %d", repr(self.args), self.proc.pid);
-            os.kill(self.proc.pid, signal.SIGTERM)
-            self.proc.wait()
-            log_access("arki-query %d terminated.", self.proc.pid);
-        else:
-            log_access("arki-query %s with pid %d exited with code %d.", repr(self.args), self.proc.pid, res);
-
-        if self.subdir:
-            shutil.rmtree(self.subdir)
-
-    def add_query_args(self, kw):
-        "Add arguments from query parameters"
-        self.args = [ARKI_QUERY]
-        style = kw.get("style", "metadata").strip()
-        if style == "metadata":
-            pass
-        elif style == "yaml":
-            self.args.append("--yaml")
-        elif style == "inline":
-            self.args.append("--inline")
-        elif style == "data":
-            self.args.append("--data")
-        elif style == "postprocess":
-            self.args.append("--postproc="+kw.get("command", ""))
-        elif style == "rep_metadata":
-            self.args.append("--report="+kw.get("command", ""))
-        elif style == "rep_summary":
-            self.args.append("--summary")
-            self.args.append("--report="+kw.get("command", ""))
-        if "sort" in kw:
-            self.args.append("--sort=" + kw["sort"]);
-        self.ext = style
-
-    def add_summary_args(self, kw):
-        "Add arguments from summary query parameters"
-        self.args = [ARKI_QUERY, '--summary']
-        styles = dict(yaml = '--yaml')
-        req = kw.get("style", "summary")
-        if req in styles:
-            self.args.append(styles[req])
-        self.ext = req
-
-    def run_subprocess(self, **kw):
+    def read(self):
         """
-        Run a process, and generate its output and return value.
-        Every generation returns a couple (id, val).
-        id can be 'O' (stdout), 'E' (stderr) or 'R' (return value).
-        For 'O' and 'E', val is the data that came in from the pipe.
-        For 'R', val is the return value of the process.
+        Run the script and return a tuple (return code, stdout, stderr)
         """
         log_access("Running %s", repr(self.args));
         self.proc = subprocess.Popen(self.args, stdin=open("/dev/null", "r"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                close_fds=True,
-                **kw)
-        cherrypy.request.params["arkiserver:proc"] = self
-        fds = [self.proc.stdout, self.proc.stderr]
-        prefixes = ["O", "E"]
-        # Set both pipes as non-blocking
-        for fd in fds:
-            fcntl.fcntl(fd, fcntl.F_SETFL, os.O_NONBLOCK)
-        # Multiplex stdout and stderr with different prefixes
-        while len(fds) > 0:
-            s = select.select(fds, (), ())
-            for fd in s[0]:
-                idx = fds.index(fd)
-                buf = fd.read()
-                if len(buf) == 0:
-                    fds.pop(idx)
-                    prefixes.pop(idx)
-                else:
-                    yield prefixes[idx], buf
+                close_fds=True)
+        stdout, stderr = self.proc.communicate()
         res = self.proc.wait()
         if res != 0:
-            log_access("arki-query %s exited with error code %d", repr(self.args), res);
-        yield "R", res
+            log_access("%s exited with error code %d and stderr %s", repr(self.args), res, repr(stderr));
+        if self.subdir:
+            shutil.rmtree(self.subdir)
+        return res, stdout, stderr
 
+    def stream(self):
+        """
+        Run the script and return a file-like object that can be used to read
+        its standard output. The file-like object can, for example, be passed
+        to wsgi.file_wrapper.
+        """
+        bottle.response.content_type = self.content_type
+        if getattr(self, "dsconf", None) and not self.content_type.startswith("text/"):
+            bottle.response.headerlist.append(("Content-Disposition", "attachment; filename=%s.%s" % (self.fname, self.ext)))
+        log_access("Running %s", repr(self.args));
+        tmpstderr = tempfile.TemporaryFile()
+        # FIXME: if self.subdir, we can redirect stderr to a temporary file
+        # inside self.subdir. If we don't have self.subdir, we can still
+        # redirect stderr to a temporary file
+        self.proc = subprocess.Popen(self.args, stdin=open("/dev/null", "r"),
+                stdout=subprocess.PIPE,
+                stderr=tmpstderr,
+                close_fds=True)
+        def on_close():
+            res = self.proc.wait()
+            if res != 0:
+                tmpstderr.seek(0)
+                stderr = tmpstderr.read()
+                log_access("%s exited with error code %d and stderr %s", repr(self.args), res, repr(stderr));
 
-    def get_output(self, ctype="application/octet-stream", fname=None):
-        "Run the subprocess and stream its output"
-        # http://www.cherrypy.org/wiki/FileDownload
+            if self.subdir:
+                shutil.rmtree(self.subdir)
+        return ScriptFile(self.proc.stdout, on_close)
 
-        #import sys
-        #print >>sys.stderr, ", ".join(["%s->%s"%(a,b) for a,b in kw.iteritems()])
-        #print >>sys.stderr, kw.get("inline", "NOPE"), kw.get("query", "NOPE")
+class ArkiDump(Script):
+    def __init__(self, *args, **kw):
+        super(ArkiDump, self).__init__(**kw)
+        self.args = (ARKI_DUMP,) + args
+        self.content_type = "text/plain"
 
-        cherrypy.response.headerMap["Content-Type"] = ctype
-        if fname:
-            cherrypy.response.headerMap["Content-Disposition"] = "attachment; filename=%s" % fname
-        lines = self.run_subprocess(bufsize=-1)
-        errbuf = str()
-        for id, val in lines:
-            if id == 'E':
-                errbuf += val
-            elif id == 'R':
-                if val != 0:
-                    cherrypy.response.status = 400
-                    return errbuf
-                else:
-                    return str()
+class ArkiQueryBase(Script):
+    def __init__(self, dsconf=None, **kw):
+        super(ArkiQueryBase, self).__init__(**kw)
+        self.dsconf = dsconf
+        self.args = [ARKI_QUERY]
+        if self.dsconf:
+            self.fname = self.dsconf["name"]
+        self.do_qmacro = "qmacro" in self.fields
+        if self.do_qmacro:
+            self.args.append("--qmacro=" + self.fields["qmacro"].strip())
+            self.fname = self.fields["qmacro"]
+            qfname = os.path.join(self.subdir, "query")
+            fd = open(qfname, "w")
+            fd.write(self.fields.get("query", "").strip())
+            fd.flush()
+            fd.close()
+            self.args.append("--file=" + qfname)
+            if self.dsconf is None:
+                self.args.append("--config=" + server.configfile)
             else:
-                def stream(start, rest):
-                    yield start
-                    for id, val in rest:
-                        if id == 'O':
-                            yield val
-                return stream(val, lines)
+                self.args.append("--config=" + self.dsconf["path"])
 
-class CleanupFilter:
-    def on_end_request(self): 
-        # This runs after the request has been completely written out. 
-        if "arkiserver:proc" in cherrypy.request.params:
-            proc = cherrypy.request.params["arkiserver:proc"]
-            proc.cleanup()
+class ArkiQuery(ArkiQueryBase):
+    def __init__(self, **kw):
+        super(ArkiQuery, self).__init__(**kw)
+        style = self.fields.get("style", "metadata").strip()
+        if style == "metadata":
+            pass
+        elif style == "yaml":
+            self.args.append("--yaml")
+            self.content_type = "text/x-yaml"
+            self.ext = "yaml"
+        elif style == "inline":
+            self.args.append("--inline")
+            self.ext = "bin"
+        elif style == "data":
+            self.args.append("--data")
+            self.ext = "bin"
+        elif style == "postprocess":
+            self.args.append("--postproc=" + self.fields.get("command", ""))
+            self.ext = "bin"
+        elif style == "rep_metadata":
+            self.args.append("--report=" + self.fields.get("command", ""))
+            self.content_type = "text/plain"
+            self.ext = "txt"
+        elif style == "rep_summary":
+            self.args.append("--summary")
+            self.args.append("--report=" + self.fields.get("command", ""))
+            self.content_type = "text/plain"
+            self.ext = "txt"
+        if "sort" in self.fields:
+            self.args.append("--sort=" + self.fields["sort"]);
 
-class ArkiDataset:
-    _cp_filters = [ CleanupFilter() ]
+        if not self.do_qmacro:
+            self.args.append(self.fields.get("query", "").strip())
+            self.args.append(self.dsconf['path'])
 
-    def __init__(self, name, dsconf, baseurl):
-        self.name = name
-        self.dsconf = dsconf
-        self.baseurl = baseurl
-        cherrypy.config.update({('/dataset/%s/query'%name): {'streamResponse': True, 'stream_response': True}}) 
-
-    @cherrypy.expose
-    def config(self):
-        """
-        Return the configuration
-        """
-        c = self.dsconf.dict()
-        c['path'] = self.baseurl + "/dataset/" + self.name
-        c['type'] = 'remote'
-        c['server'] = self.baseurl
-        amended = ConfigObj(list_values = False)
-        amended[self.name] = {}
-        amended[self.name].update(c)
-        out = StringIO()
-        amended.write(out)
-        cherrypy.response.headerMap["Content-Type"] = "text/plain"
-        return out.getvalue()
-
-    @cherrypy.expose
-    def summary(self, *args, **kw):
-        """
-        Download the summary of a dataset
-        """
-        proc = QueryProcess()
-        proc.add_summary_args(kw)
-        proc.args.append(kw.get("query", ""))
-        proc.args.append(self.dsconf['path'])
-        return proc.get_output(fname="%s.%s" % (self.name, proc.ext))
-
-    @cherrypy.expose
-    def query(self, *args, **kw):
-        """
-        Download the results of a query
-        """
-        proc = QueryProcess()
-        proc.add_query_args(kw)
-        proc.args.append(kw.get("query", "").strip())
-        proc.args.append(self.dsconf['path'])
-        return proc.get_output(fname="%s.%s" % (self.name, proc.ext))
-    query._cp_config = { 'response.stream': True }
-
-    @cherrypy.expose
-    def pluginfo(self, *args, **kw):
-        pass
-
-    @cherrypy.expose
-    def index(self, **kw):
-        """
-        Show the summary of a dataset
-        """
-        proc = QueryProcess()
-        proc.args = [ARKI_QUERY, '--summary', '--yaml', '', self.dsconf['path']]
-
-        def result(output, name):
-            yield "<html><body>"
-            yield "<ul>"
-            yield "<li><a href='/'>All datasets</a></li>"
-            yield "<li><a href='queryform'>Query</a></li>"
-            yield "<li><a href='summary'>Download summary</a></li>"
-            yield "</ul>"
-            yield "Summary of dataset <b>%s</b>:<pre>" % name
-            for x in output: yield x
-            yield "</pre>"
-            yield "</body></html>"
-
-        return result(proc.get_output(ctype="text/html"), self.name)
-
-    @cherrypy.expose
-    def queryform(self, **kw):
-        """
-        Show a form to query the datasets
-        """
-        return """<html><body>
-        Please type or paste your query and press submit:
-        <form action="query" method="push">
-        <textarea name="query" cols="80" rows="15">
-        </textarea>
-        <br/>
-        <select name="style">
-        <option value="data">Data</option>
-        <option value="yaml">Human-readable metadata</option>
-        <option value="inline">Binary metadata and data</option>
-        <option value="md">Binary metadata</option>
-        </select>
-        <br/>
-        <input type="submit">
-        </form>
-        </body>
-        </html>
-        """
+class ArkiQuerySummary(ArkiQueryBase):
+    def __init__(self, **kw):
+        super(ArkiQuerySummary, self).__init__(**kw)
+        self.args.append('--summary')
+        style = self.fields.get("style", "summary").strip()
+        if style == "yaml":
+            self.args.append("--yaml")
+            self.content_type = "text/x-yaml"
+            self.ext = "yaml"
+        if not self.do_qmacro:
+            self.args.append(self.fields.get("query", "").strip())
+            self.args.append(self.dsconf['path'])
 
 
-class ArkiDatasets:
-    def __init__(self, dsconf, baseurl):
-        self.dsconf = dsconf
-        for s in self.dsconf.sections:
-            setattr(self, s, ArkiDataset(s, self.dsconf[s], baseurl))
+#
+# Server machinery
+#
 
-class ArkiDownload:
-    def __init__(self, dsconf):
-        self.dsconf = dsconf
+class Args(object):
+    """
+    Access parameters from GET or POST
+    """
+    def __contains__(self, key):
+        return key in bottle.request.GET or key in bottle.request.POST
+    def __getitem__(self, key):
+        return bottle.request.GET.get(key, bottle.request.POST.get(key))
+    def get(self, key, default):
+        return bottle.request.GET.get(key, bottle.request.POST.get(key, default))
+    def has_key(self, key):
+        return key in bottle.request.GET or key in bottle.request.POST
 
-
-class ArkiServer:
-    _cp_filters = [ CleanupFilter() ]
-
-    def __init__(self, info):
-        self.info = info
-        self.baseurl = info.url
-        self.dsconf = info.config
-        self.download = ArkiDownload(self.dsconf)
-        self.dataset = ArkiDatasets(self.dsconf, self.baseurl)
-
-    @cherrypy.expose
-    def config(self):
-        """
-        Return the configuration
-        """
-        c = self.dsconf.dict()
-        for s in self.dsconf.sections:
-            c[s]['path'] = self.baseurl + "/dataset/" + s
-            c[s]['type'] = 'remote'
-            c[s]['server'] = self.baseurl
-        amended = ConfigObj(list_values = False)
-        amended.update(c)
-        out = StringIO()
-        amended.write(out)
-        cherrypy.response.headerMap["Content-Type"] = "text/plain"
-        return out.getvalue()
-
-    @cherrypy.expose
-    def aliases(self):
-        """
-        Dump the alias database
-        """
-        proc = QueryProcess()
-        proc.args = [ARKI_DUMP, '--aliases']
-        return proc.get_output(ctype="text/plain")
-
-    @cherrypy.expose
-    def qexpand(self, query):
-        """
-        Expand a query
-        """
-        proc = QueryProcess()
-        proc.args = [ARKI_DUMP, '--query', query]
-        return proc.get_output(ctype="text/plain")
-
-    @cherrypy.expose
-    def index(self):
-        """
-        Show a list of all available datasets
-        """
-        res = """<html><body>
-        Available datasets:
-        <ul>
-        """
-        for dsname in self.dsconf.sections:
-            res += "<li><a href='/dataset/%s'>%s</a></li>\n" % (dsname, dsname)
-#        res += """</ul>
-#        <a href="/query">Perform a query</a>
-#        </body></html>
-#        """
-        return res
-
-    @cherrypy.expose
-    def query(self, *args, **kw):
-        """
-        Download the results of a query
-        """
-        qmacro = kw.get("qmacro", "").strip()
-        if qmacro is None:
-            raise RuntimeError, "Root-level query withouth qmacro argument"
-        proc = QueryProcess(owndir = True)
-        proc.add_query_args(kw)
-        proc.args.append("--qmacro=" + qmacro)
-        qfname = os.path.join(proc.subdir, "query")
-        fd = open(qfname, "w")
-        fd.write(kw.get("query", "").strip())
-        fd.flush()
-        fd.close()
-        proc.args.append("--file=" + qfname)
-        proc.args.append("--config=" + self.info.configfile)
-        return proc.get_output(fname="%s.%s" % (qmacro, proc.ext))
-    query._cp_config = { 'response.stream': True }
-
-    @cherrypy.expose
-    def summary(self, *args, **kw):
-        """
-        Download the summary of a dataset
-        """
-        qmacro = kw.get("qmacro", "").strip()
-        if qmacro is None:
-            raise RuntimeError, "Root-level query withouth qmacro argument"
-        proc = QueryProcess(owndir = True)
-        proc.add_summary_args(kw)
-        proc.args.append("--qmacro=" + qmacro)
-        qfname = os.path.join(proc.subdir, "query")
-        fd = open(qfname, "w")
-        fd.write(kw.get("query", "").strip())
-        fd.flush()
-        fd.close()
-        proc.args.append("--file=" + qfname)
-        proc.args.append("--config=" + self.info.configfile)
-        return proc.get_output(fname="%s.%s" % (qmacro, proc.ext))
-
-def start_server(info, options, blocking=True):
-    cherrypy.config.update({"server.socket_port": info.port})
-    cherrypy.config.update({"autoreload.on": False})
-    if options.cpconfig:
-        cherrypy.config.update(file=options.cpconfig)
-    if options.quiet:
-        cherrypy.config.update({"server.logToScreen": False,
-                                "server.log_to_screen": False,
-                                "log.screen": False})
-    if options.accesslog:
-        cherrypy.config.update({"server.logAccessFile": options.accesslog,
-                                "server.log_access_file": options.accesslog,
-                                "log.access_file": options.accesslog})
-    if options.errorlog:
-        cherrypy.config.update({"server.logFile": options.errorlog,
-                                "server.log_file": options.errorlog,
-                                "log.error_file": options.errorlog})
-    cherrypy.root = ArkiServer(info)
-    if not blocking:
-        cherrypy.server.start(init_only=True)
-        # Wait until HTTP is ready
-        #cherrypy.server.wait()
-    else:
-        cherrypy.server.start()
-
-class ServerInfo(object):
+class Server(object):
     def __init__(self, configfile, opts = None):
         self.configfile = configfile
-        self.config = ConfigObj(configfile, list_values = False)
-
         self.port = 80
         self.url = None
 
@@ -405,15 +222,262 @@ class ServerInfo(object):
                 if self.port != 80:
                     self.url += ":" + str(self.port)
 
+        # Get the interface name or extract it from the URL
+        if opts.host:
+            self.host = opts.host
+        else:
+            self.host = urlparse.urlparse(self.url).hostname
+
+        # Prepare the configuration amended with urls pointing to us
+        self.configdict = dsconfig.dict()
+        for s in dsconfig.sections:
+            self.configdict[s]['path'] = self.url + "/dataset/" + s
+            self.configdict[s]['type'] = 'remote'
+            self.configdict[s]['server'] = self.url
+        amended = ConfigObj(list_values = False)
+        amended.update(self.configdict)
+        out = StringIO()
+        amended.write(out)
+        self.configbuf = out.getvalue()
+
+
+
+
+@route("/")
+@post("/")
+def index():
+    """
+    Show a list of all available datasets
+    """
+    res = """<html><body>
+    Available datasets:
+    <ul>
+    """
+    for dsname in dsconfig.sections:
+        res += "<li><a href='/dataset/%s'>%s</a></li>\n" % (dsname, dsname)
+    res += """</ul>
+    <a href="/query">Perform a query</a>
+    </body></html>
+    """
+    return res
+
+@route("/config")
+@route("/config/")
+@post("/config")
+@post("/config/")
+def config():
+    """
+    Return the configuration
+    """
+    args = Args()
+    if "json" in args:
+        return server.configdict
+    else:
+        bottle.response.content_type = "text/plain"
+        return server.configbuf
+
+@route("/aliases")
+@route("/aliases/")
+@post("/aliases")
+@post("/aliases/")
+def aliases():
+    """
+    Dump the alias database
+    """
+    return ArkiDump("--aliases").stream()
+
+@route("/qexpand")
+@route("/qexpand/")
+@post("/qexpand")
+@post("/qexpand/")
+def qexpand():
+    """
+    Expand a query
+    """
+    args = Args()
+    query = args.get("query", "").strip()
+    return ArkiDump("--query", query).stream()
+
+@route("/query")
+@route("/query/")
+@post("/query")
+@post("/query/")
+def query():
+    """
+    Download the results of a query
+    """
+    args = Args()
+    if not "qmacro" in args:
+        raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
+    return ArkiQuery(owndir = True, fields=args).stream()
+
+@route("/summary")
+@route("/summary/")
+@post("/summary")
+@post("/summary/")
+def summary():
+    """
+    Download the summary of a dataset
+    """
+    args = Args()
+    if not "qmacro" in args:
+        raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
+    return ArkiQuerySummary(owndir = True, fields=args).stream()
+
+@route("/dataset/:name")
+@route("/dataset/:name/")
+@post("/dataset/:name")
+@post("/dataset/:name/")
+def dataset_index(name):
+    """
+    Show the summary of a dataset
+    """
+    conf = dsconfig.get(name, None)
+    if conf is None:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+    summary = ArkiQuerySummary(dsconf=conf, fields=dict(style="yaml")).read()
+    return """<html>
+<head><title>Dataset %s</title></head>
+<body>
+<ul>
+<li><a href='/'>All datasets</a></li>
+<li><a href='queryform'>Query</a></li>
+<li><a href='summary'>Download summary</a></li>
+</ul>
+Summary of dataset <b>%s</b>:
+<pre>
+%s
+</pre>
+</body>
+</html>""" % (name, name, summary)
+
+@route("/dataset/:name/queryform")
+@route("/dataset/:name/queryform/")
+@post("/dataset/:name/queryform")
+@post("/dataset/:name/queryform/")
+def dataset_queryform(name):
+    """
+    Show a form to query the datasets
+    """
+    if not name in dsconfig:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+    return """<html>
+<head><title>Query dataset %s</title></head>
+<body>
+  Please type or paste your query and press submit:
+  <form action="query" method="push">
+    <textarea name="query" cols="80" rows="15">
+    </textarea>
+    <br/>
+    <select name="style">
+      <option value="data">Data</option>
+      <option value="yaml">Human-readable metadata</option>
+      <option value="inline">Binary metadata and data</option>
+      <option value="md">Binary metadata</option>
+    </select>
+    <br/>
+    <input type="submit">
+  </form>
+</body>
+</html>
+""" % name
+
+@route("/dataset/:name/config")
+@route("/dataset/:name/config/")
+@post("/dataset/:name/config")
+@post("/dataset/:name/config/")
+def dataset_config(name):
+    """
+    Return the dataset configuration
+    """
+    conf = dsconfig.get(name, None)
+    if conf is None:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+
+    c = conf.dict()
+    c['path'] = server.url + "/dataset/" + name
+    c['type'] = 'remote'
+    c['server'] = server.url
+
+    args = Args()
+    if "json" in args:
+        return c
+    else:
+        amended = ConfigObj(list_values = False)
+        amended[name] = {}
+        amended[name].update(c)
+        out = StringIO()
+        amended.write(out)
+        bottle.response.content_type = "text/plain"
+        return out.getvalue()
+
+@route("/dataset/:name/summary")
+@route("/dataset/:name/summary/")
+@post("/dataset/:name/summary")
+@post("/dataset/:name/summary/")
+def dataset_summary(name):
+    """
+    Download the summary of a dataset
+    """
+    conf = dsconfig.get(name, None)
+    if conf is None:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+    return ArkiQuerySummary(dsconf=conf, fields=Args()).stream()
+
+@route("/dataset/:name/query")
+@route("/dataset/:name/query/")
+@post("/dataset/:name/query")
+@post("/dataset/:name/query/")
+def dataset_query(name):
+    """
+    Download the summary of a dataset
+    """
+    conf = dsconfig.get(name, None)
+    if conf is None:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+    return ArkiQuery(owndir = True, dsconf=conf, fields=Args()).stream()
+
+
+#
+# Application set up
+#
+
+class AccessLogFilter(logging.Filter):
+    def filter(self, rec):
+        if rec.levelno < logging.WARNING:
+            return 1
+        return 0
+
+def setup_logging(opts):
+    if opts.quiet:
+        logging.basicConfig(level=logging.ERROR)
+    else:
+        logging.basicConfig(level=logging.DEBUG)
+
+    if opts.accesslog:
+        accesslog = logging.handlers.TimedRotatingFileHandler(opts.accesslog, "D", 1, backupCount = 14)
+        accesslog.setLevel(logging.INFO)
+        accesslog.addFilter(AccessLogFilter())
+        logging.getLogger("").addHandler(accesslog)
+        logging.basicConfig(level=logging.DEBUG, filename=opts.accesslog, filemode="a")
+
+    if opts.errorlog:
+        errorlog = logging.handlers.TimedRotatingFileHandler(opts.errorlog, "D", 1, backupCount = 14)
+        errorlog.setLevel(logging.WARNING)
+        logging.getLogger("").addHandler(errorlog)
+
+def start_server(opts):
+    args = dict(host=server.host, port=server.port)
+    if opts.quiet: args["quiet"] = True
+    if opts.runtest: args["server"] = bottle.WSGIRefServer
+    bottle.run(**args)
+
+
 if __name__ == "__main__":
     from optparse import OptionParser
     import sys
 
-    # Parser for command line
     class Parser(OptionParser):
-        def __init__(self, *args, **kwargs):
-            OptionParser.__init__(self, *args, **kwargs)
-
         def error(self, msg):
             sys.stderr.write("%s: error: %s\n\n" % (self.get_prog_name(), msg))
             self.print_help(sys.stderr)
@@ -422,16 +486,18 @@ if __name__ == "__main__":
     parser = Parser(usage="usage: %prog configfile [options]",
                     version="%prog "+ VERSION,
                     description="Start the arkimet server, serving the datasets found in the configuration file")
+    parser.add_option("--host", type="str", help="interface to listen to.  Default: localhost")
     parser.add_option("-p", "--port", type="int", help="port to listen to.  Default: %default")
     parser.add_option("--url", type="str", help="url to use to reach the server")
-    parser.add_option("--cpconfig", type="str", help="read a cherrypy configuration file")
     parser.add_option("--runtest", type="str", help="start the server, run the given test command and return its exit status")
     parser.add_option("--accesslog", type="str", help="file where to log normal access information")
     parser.add_option("--errorlog", type="str", help="file where to log errors")
     parser.add_option("--quiet", action="store_true", help="do not log to standard output")
     parser.set_defaults(port = 8080)
 
-    (options, args) = parser.parse_args()
+    (opts, args) = parser.parse_args()
+
+    setup_logging(opts)
 
     # Read configuration
     from configobj import ConfigObj
@@ -439,14 +505,35 @@ if __name__ == "__main__":
         print >>sys.stderr, "Usage:", sys.argv[0], "config"
         parser.print_help(sys.stderr)
         sys.exit(1)
+    dsconfig = ConfigObj(args[0], list_values = False)
+    server = Server(args[0], opts)
 
-    serverinfo = ServerInfo(args[0], options)
-
-    if options.runtest:
-        start_server(serverinfo, options, blocking=False)
-        import subprocess
-        res = subprocess.call(options.runtest, shell=True)
-        cherrypy.server.stop()
+    if opts.runtest:
+        pid = os.fork()
+        if not pid:
+            # Child process, run server
+            start_server(opts)
+            sys.exit(0)
+        # Parent process
+        started = False
+        for i in xrange(20):
+            try:
+                o = urllib.urlopen(server.url)
+                o.close()
+                started = True
+                break
+            except:
+                rpid, rres = os.waitpid(pid, os.WNOHANG)
+                if rpid == pid:
+                    print >>sys.stderr, "Server stopped prematurely with exit code %d" % rres
+                    sys.exit(1)
+                time.sleep(0.2)
+        if not started:
+            print >>sys.stderr, "Server not started after 2 seconds"
+            sys.exit(1)
+        res = subprocess.call(opts.runtest, shell=True)
+        os.kill(pid, signal.SIGINT)
+        os.waitpid(pid, 0)
         sys.exit(res)
     else:
-        start_server(serverinfo, options)
+        start_server(opts)

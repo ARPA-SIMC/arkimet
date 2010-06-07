@@ -10,25 +10,25 @@ then
 
 	importtest
 
-    cat << EOF > cpconfig
-[global]
-server.log_to_screen = False
-server.log_file = "arki-server.log"
-EOF
+#    cat << EOF > cpconfig
+#[global]
+#server.log_to_screen = False
+#server.log_file = "arki-server.log"
+#EOF
 
 	if [ ! -z "$DO_SHELL" ]
 	then
 		echo "Running $CMD"
-		arki-server -p 7117 --cpconfig=cpconfig --runtest="/bin/bash" conf
+		arki-server -p 7117 --quiet --runtest="/bin/bash" conf
 	else
 		CMD=test-src
 		if [ ! -z "$DEBUGGER" ] && [ -x $BINDIR/.libs/lt-$CMD ]
 		then
 			echo "Running $DEBUGGER $BINDIR/.libs/lt-$CMD $ARGS"
-			arki-server -p 7117 --cpconfig=cpconfig --runtest="$DEBUGGER $BINDIR/.libs/lt-$CMD $ARGS" conf
+			arki-server -p 7117 --quiet --runtest="$DEBUGGER $BINDIR/.libs/lt-$CMD $ARGS" conf
 		else
 			echo "Running $DEBUGGER $CMD $ARGS"
-			arki-server -p 7117 --cpconfig=cpconfig --runtest="$DEBUGGER $BINDIR/$CMD $ARGS" conf
+			arki-server -p 7117 --quiet --runtest="$DEBUGGER $BINDIR/$CMD $ARGS" conf
 		fi
 	fi
 

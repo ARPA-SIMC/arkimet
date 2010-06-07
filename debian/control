@@ -1,14 +1,14 @@
 Source: arkimet
 Priority: optional
 Maintainer: Enrico Zini <enrico@debian.org>
-Build-Depends: cdbs (>= 0.4.43), debhelper (>= 5), dh-buildinfo, doxygen, libdballepp-dev (>= 4.0.18), liblua5.1-0-dev, libgrib-api-dev, libsqlite3-dev, libcurl4-openssl-dev | libcurl-ssl-dev, python-cherrypy, libgeos-dev, pkg-config, python-configobj, curl, liblzo2-dev, zlib1g-dev
+Build-Depends: cdbs (>= 0.4.43), debhelper (>= 5), dh-buildinfo, doxygen, libdballepp-dev (>= 4.0.18), liblua5.1-0-dev, libgrib-api-dev, libsqlite3-dev, libcurl4-openssl-dev | libcurl-ssl-dev, libgeos-dev, pkg-config, python, python-configobj, curl, liblzo2-dev, zlib1g-dev
 Standards-Version: 3.7.2.0
 XS-Vcs-Svn: https://svn.smr.arpa.emr.it/xgribarch
 
 Package: arkimet
 Section: misc
 Architecture: any
-Depends: python-cherrypy, python-configobj, ${shlibs:Depends}, ${misc:Depends}
+Depends: python, python-configobj, ${shlibs:Depends}, ${misc:Depends}
 Description: Archive for weather information
  Description to be written.
 
