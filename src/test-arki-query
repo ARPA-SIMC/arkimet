@@ -1,0 +1,18 @@
+#!/bin/sh -e
+
+BINDIR=`dirname $0`
+
+. $BINDIR/testlib.sh
+
+setup
+
+importtest
+
+echo -n "Testing arki-query"
+
+# Try passing files to the postprocessor
+runtest "arki-query --postproc=checkfiles '' test200 --postproc-data=/dev/null"
+
+testtotals
+
+exit $BADCOUNT

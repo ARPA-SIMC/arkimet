@@ -116,7 +116,10 @@ class Script(object):
                 res = self.proc.wait()
                 tmpstderr.seek(0)
                 stderr = tmpstderr.read()
-                if res != 0: raise TextHTTPError(code=500, output=(stderr if stderr else "arki-query exited with code %d" % res))
+                if res != 0:
+                    if self.subdir:
+                        shutil.rmtree(self.subdir)
+                    raise TextHTTPError(code=500, output=(stderr if stderr else "arki-query exited with code %d" % res))
 
         def on_close():
             res = self.proc.poll()

@@ -7,6 +7,7 @@ data/data
 *.gcno
 *.gcda
 *.gcov
+*.pyc
 .deps
 .libs
 .dirstamp
@@ -29,6 +30,7 @@ Makefile
 /libtool
 /ltmain.sh
 /missing
+/py-compile
 /stamp-h1
 /ylwrap
 /m4/libtool.m4
@@ -74,9 +76,10 @@ Makefile
 /arki/matcher/reftime/reftime-lex.cc
 /arki/matcher/reftime/reftime-parse.hh
 /arki/matcher/reftime/reftime-parse.cc
-/debian/arkimet.debhelper.log
-/debian/arkimet.*.debhelper
-/debian/arkimet.substvars
+/debian/arkimet*.debhelper*
+/debian/arkimet*.substvars
 /debian/arkimet/
+/debian/arkimet-dbg/
+/debian/tmp/
 /debian/files
 /debian/stamp-*
