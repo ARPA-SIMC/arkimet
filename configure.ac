@@ -60,7 +60,7 @@ PKG_PROG_PKG_CONFIG
 dnl Compulsory libraries
 AX_LIB_SQLITE3([3.6])
 if test x"$success" = x"no"; then
-	AC_MSG_ERROR([Cannot find an appropriate version of SQLite, using the embedded version])
+	AC_MSG_WARN([Cannot find an appropriate version of SQLite, using the embedded version])
 
 	SQLITE3_CFLAGS="-I`pwd`/embed/sqlite/"
         AC_SUBST(SQLITE3_CFLAGS)
