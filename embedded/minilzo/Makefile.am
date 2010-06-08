@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-dist_noinst_HEADERS = minilzo.h
+dist_noinst_HEADERS = minilzo.h lzoconf.h lzodefs.h
 
 noinst_PROGRAMS = testmini
 testmini_SOURCES = testmini.c
