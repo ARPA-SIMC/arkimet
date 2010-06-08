@@ -2,7 +2,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = wibble arki src .
+SUBDIRS = embedded wibble arki src .
 
 man_MANS = \
 	arki-config.1 \

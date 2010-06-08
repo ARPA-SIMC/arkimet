@@ -1,0 +1,5 @@
+Here we embed our own version of various libraries, in case they are not
+available in the target system.
+
+By default, configure tries to use the installed versions, and only default to
+use the embedded ones when the installed versions are not available.

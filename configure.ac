@@ -60,8 +60,17 @@ PKG_PROG_PKG_CONFIG
 dnl Compulsory libraries
 AX_LIB_SQLITE3([3.6])
 if test x"$success" = x"no"; then
-	AC_MSG_ERROR([Cannot find an appropriate version of SQLite])
+	AC_MSG_ERROR([Cannot find an appropriate version of SQLite, using the embedded version])
+
+	SQLITE3_CFLAGS="-I`pwd`/embed/sqlite/"
+        AC_SUBST(SQLITE3_CFLAGS)
+	SQLITE3_LDFLAGS="-L`pwd`/embded/sqlite/ -lsqlite3"
+        AC_SUBST(SQLITE3_LDFLAGS)
+	SQLITE3_VERSION="embedded"
+        AC_SUBST(SQLITE3_VERSION)
+        AC_DEFINE(HAVE_SQLITE3, [], [SQLite 3 is available])
 fi
+AM_CONDITIONAL([SQLITE_EMBEDDED], [test x"$SQLITE3_VERSION" = x"embedded"])
 
 dnl Wibble is embedded
 dnl LIBWIBBLE_DEFS
@@ -240,6 +249,8 @@ AM_CONDITIONAL([GCOV], [test x"$enable_gcov" = x"yes"])
 
 AC_CONFIG_FILES([
 Makefile
+embedded/Makefile
+embedded/sqlite/Makefile
 wibble/Makefile
 arki/Makefile
 src/Makefile
@@ -257,6 +268,7 @@ AS_HELP_STRING([LUA support:], [$have_lua])
 AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])
 AS_HELP_STRING([GNU readline support:], [$have_readline])
 AS_HELP_STRING([LZO compression:], [$have_lzo])
+AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB1 support via Meteosatlib's libgrib:], [$have_libgrib])
