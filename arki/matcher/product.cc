@@ -92,14 +92,21 @@ std::string MatchProductGRIB2::toString() const
 }
 
 MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
-	: name(pattern)
 {
+	OptionalCommaList args(pattern, true);
+	type = args.getInt(0, -1);
+	subtype = args.getInt(1, -1);
+	localsubtype = args.getInt(2, -1);
+	name = args.tail;
 }
 
 bool MatchProductBUFR::matchItem(const Item<>& o) const
 {
 	const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(o.ptr());
 	if (!v) return false;
+	if (type != -1 && (unsigned)type != v->type()) return false;
+	if (subtype != -1 && (unsigned)subtype != v->subtype()) return false;
+	if (localsubtype != -1 && (unsigned)localsubtype != v->localsubtype()) return false;
 	return name.empty() or name == v->name();
 }
 
@@ -112,14 +119,14 @@ std::string MatchProductBUFR::toString() const
 MatchProduct* MatchProduct::parse(const std::string& pattern)
 {
 	size_t beg = 0;
-	size_t pos = pattern.find(',', beg);
+	size_t pos = pattern.find_first_of(":,", beg);
 	string name;
 	string rest;
 	if (pos == string::npos)
 		name = str::trim(pattern.substr(beg));
 	else {
 		name = str::trim(pattern.substr(beg, pos-beg));
-		rest = pattern.substr(pos+1);
+		rest = pattern.substr(pos+(pattern[pos] == ',' ? 1 : 0));
 	}
 	switch (types::Product::parseStyle(name))
 	{

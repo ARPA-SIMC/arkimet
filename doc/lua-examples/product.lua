@@ -29,11 +29,24 @@ ensure_equals(tostring(o), "GRIB2(00098, 000, 001, 002)")
 
 -- BUFR product
 
--- Create with product name
-local o = arki_product.bufr("synop")
-
--- Accessors
+-- Create with type, subtype, localsubtype from section 1
+local o = arki_product.bufr(0, 255, 1)
 ensure_equals(o.style, "BUFR")
-ensure_equals(o.name, "synop")
-ensure_equals(tostring(o), "BUFR(synop)")
+ensure_equals(o.type, 0)
+ensure_equals(o.subtype, 255)
+ensure_equals(o.localsubtype, 1)
+ensure_equals(tostring(o), "BUFR(000, 255, 001)")
 
+-- It can also have a name attached
+local o = arki_product.bufr(0, 255, 1, "synop")
+ensure_equals(o.style, "BUFR")
+ensure_equals(o.type, 0)
+ensure_equals(o.subtype, 255)
+ensure_equals(o.localsubtype, 1)
+ensure_equals(o.name, "synop")
+ensure_equals(tostring(o), "BUFR(000, 255, 001, synop)")
+
+-- It is possible to create an amended version adding/changing the name
+local o1 = arki_product.bufr(0, 255, 1)
+o1 = o:addName("synop")
+ensure_equals(o, o1)

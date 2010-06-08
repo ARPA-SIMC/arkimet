@@ -28,9 +28,22 @@ using namespace wibble;
 namespace arki {
 namespace matcher {
 
-OptionalCommaList::OptionalCommaList(const std::string& pattern)
+OptionalCommaList::OptionalCommaList(const std::string& pattern, bool has_tail)
 {
-	str::Split split(",", pattern);
+	string p;
+	if (has_tail)
+	{
+		size_t pos = pattern.find(":");
+		if (pos == string::npos)
+			p = pattern;
+		else
+		{
+			p = str::trim(pattern.substr(0, pos));
+			tail = str::trim(pattern.substr(pos+1));
+		}
+	} else
+		p = pattern;
+	str::Split split(",", p);
 	for (str::Split::const_iterator i = split.begin(); i != split.end(); ++i)
 		push_back(*i);
 	while (!empty() && (*this)[size() - 1].empty())

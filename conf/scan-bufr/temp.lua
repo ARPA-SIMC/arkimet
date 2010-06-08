@@ -9,10 +9,13 @@ function scan(msg, md)
 	ptype, p1, p2 = 254, 0, 0
 	msg:foreach(function(ctx)
 		if ctx:pind() == 1 then
+			-- TODO: verify that all p1 are the same
+			-- if they differ, error()
 			ptype = ctx:pind()
 			p1 = ctx:p1()
 			p2 = ctx:p2()
 		end
 	end)
+	-- TODO: If p1 != 0 then reftime = reftime - p1
 	md:set(arki_timerange.grib1(ptype, 254, p1, p2))
 end

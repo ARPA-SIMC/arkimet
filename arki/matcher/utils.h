@@ -33,7 +33,9 @@ namespace matcher {
 
 struct OptionalCommaList : public std::vector<std::string>
 {
-	OptionalCommaList(const std::string& pattern);
+	std::string tail;
+
+	OptionalCommaList(const std::string& pattern, bool has_tail=false);
 
 	bool has(size_t pos) const;
 	int getInt(size_t pos, int def) const;

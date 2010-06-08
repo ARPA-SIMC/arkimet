@@ -220,6 +220,7 @@ bool Bufr::next(Metadata& md)
 	md.set(types::reftime::Position::create(new types::Time(msg->rep_year, msg->rep_month, msg->rep_day, msg->rep_hour, msg->rep_minute, msg->rep_second)));
 
 	// Set origin from the bufr header
+	UItem<types::product::BUFR> product;
 	switch (msg->edition)
 	{
 		case 2:
@@ -227,6 +228,7 @@ bool Bufr::next(Metadata& md)
 		case 4:
 			// No process?
 			md.set(types::origin::BUFR::create(msg->opt.bufr.centre, msg->opt.bufr.subcentre));
+			md.set(product = types::product::BUFR::create(msg->type, msg->subtype, msg->localsubtype));
 			break;
 		default:
 		{
@@ -237,7 +239,7 @@ bool Bufr::next(Metadata& md)
 	}
 
 	// Default to a generic product unless we find more info later
-	md.set(types::product::BUFR::create("generic"));
+	//md.set(types::product::BUFR::create("generic"));
 
 #ifdef HAVE_LUA
 	// If we don't have extra scanning support, we are done
@@ -263,7 +265,7 @@ bool Bufr::next(Metadata& md)
 		return true;
 
 	// Set the product from the msg type
-        md.set(types::product::BUFR::create(dba_msg_type_name(msgs->msgs[0]->type)));
+        md.set(product->addName(dba_msg_type_name(msgs->msgs[0]->type)));
 
 	// DB-All.e managed to make sense of the message: hand it down to Lua
 	// to extract further metadata

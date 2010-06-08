@@ -71,13 +71,18 @@ template<> template<>
 void to::test<2>()
 {
 	Matcher m;
-	md.set(product::BUFR::create("antani"));
+	md.set(product::BUFR::create(1, 2, 3, "antani"));
 
 	ensure_matches("product:BUFR", md);
-	ensure_matches("product:BUFR,antani", md);
-	ensure_not_matches("product:BUFR,blinda", md);
-	ensure_not_matches("product:BUFR,antan", md);
-	ensure_not_matches("product:BUFR,antani1", md);
+	ensure_matches("product:BUFR,1", md);
+	ensure_matches("product:BUFR,1,2", md);
+	ensure_matches("product:BUFR,1,2,3", md);
+	ensure_matches("product:BUFR,1,2,3:antani", md);
+	ensure_matches("product:BUFR,1:antani", md);
+	ensure_matches("product:BUFR:antani", md);
+	ensure_not_matches("product:BUFR,1,2,3:blinda", md);
+	ensure_not_matches("product:BUFR,1,2,3:antan", md);
+	ensure_not_matches("product:BUFR,1,2,3:antani1", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
 }
 

@@ -68,6 +68,9 @@ struct MatchProductGRIB2 : public MatchProduct
 struct MatchProductBUFR : public MatchProduct
 {
 	// These are -1 when they should be ignored in the match
+	int type;
+	int subtype;
+	int localsubtype;
 	std::string name;
 
 	MatchProductBUFR(const std::string& pattern);

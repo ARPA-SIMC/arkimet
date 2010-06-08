@@ -153,10 +153,11 @@ template<int SIZE>
 struct NumberList
 {
 	int vals[SIZE];
+	std::string tail;
 
 	unsigned size() const { return SIZE; }
 
-	NumberList(const std::string& str, const std::string& what)
+	NumberList(const std::string& str, const std::string& what, bool has_tail=false)
 	{
 		using namespace std;
 		using namespace wibble::str;
@@ -180,9 +181,16 @@ struct NumberList
 
 			start = endptr;
 		}
-		if (*start)
+		if (!has_tail && *start)
 			throw wibble::exception::Consistency(string("parsing ") + what,
 				"found trailing characters at the end: \"" + str.substr(start - str.c_str()) + "\"");
+		else if (has_tail && *start)
+		{
+			// Skip colons and spaces, if any
+			while (*start && (::isspace(*start) || *start == ','))
+				++start;
+			tail = start;
+		}
 	}
 };
 
