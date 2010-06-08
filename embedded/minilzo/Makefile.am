@@ -9,6 +9,4 @@ testmini_LDADD = libminilzo.la
 noinst_LTLIBRARIES = libminilzo.la
 libminilzo_la_SOURCES = minilzo.c
 
-testmini_SOURCES = testmini.c minilzo.c
-
 EXTRA_DIST = README.LZO README
