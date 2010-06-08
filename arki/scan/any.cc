@@ -172,7 +172,7 @@ time_t timestamp(const std::string& file)
 
 void compress(const std::string& file, size_t groupsize)
 {
-	compress::DataCompressor compressor(file, groupsize);
+	utils::compress::DataCompressor compressor(file, groupsize);
 	scan(file, compressor);
 	compressor.flush();
 
