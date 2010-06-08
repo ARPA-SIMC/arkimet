@@ -39,6 +39,9 @@
 #ifdef HAVE_LZO
 #include "lzo/lzoconf.h"
 #include "lzo/lzo1x.h"
+#elif HAVE_MINILZO
+#include "minilzo.h"
+#define HAVE_LZO
 #endif
 
 using namespace std;

@@ -62,9 +62,9 @@ AX_LIB_SQLITE3([3.6])
 if test x"$success" = x"no"; then
 	AC_MSG_WARN([Cannot find an appropriate version of SQLite, using the embedded version])
 
-	SQLITE3_CFLAGS="-I`pwd`/embed/sqlite/"
+	SQLITE3_CFLAGS="-I`pwd`/embedded/sqlite/"
         AC_SUBST(SQLITE3_CFLAGS)
-	SQLITE3_LDFLAGS="-L`pwd`/embded/sqlite/ -lsqlite3"
+	SQLITE3_LDFLAGS="-L`pwd`/embedded/sqlite/ -lsqlite3"
         AC_SUBST(SQLITE3_LDFLAGS)
 	SQLITE3_VERSION="embedded"
         AC_SUBST(SQLITE3_VERSION)
@@ -196,18 +196,25 @@ AM_CONDITIONAL([GEOS], [test x"$have_geos" = x"yes"])
 dnl Check for liblzo2
 have_lzo=yes
 AC_CHECK_LIB([lzo2], [__lzo_init_v2], [true], [have_lzo=no], [])
-AC_CHECK_HEADER([lzo/lzo1x.h], [true], [have_lzo=no])
+AC_CHECK_HEADER([lzo/lzoconf.h], [true], [have_lzo=no])
 if test $have_lzo = yes
 then
-	AC_DEFINE([HAVE_LZO], 1, [lzo functions are available])
 	LZO_CFLAGS=
 	LZO_LIBS="-llzo2"
-	AC_SUBST(LZO_CFLAGS)
-	AC_SUBST(LZO_LIBS)
+	LZO_VERSION=`sed -nre 's/#define LZO_VERSION_STRING[[:blank:]]+"(.+)"/\1/p' /usr/include/lzo/lzoconf.h`
+	AC_DEFINE([HAVE_LZO], 1, [lzo functions are available])
 else
-	AC_MSG_WARN([compiling without lzo])
+	AC_MSG_WARN([Cannot find an appropriate version of LZO, using the embedded version])
+	LZO_CFLAGS="-I`pwd`/embedded/minilzo/"
+	LZO_LIBS="-L`pwd`/embedded/minilzo/ -lminilzo"
+	LZO_VERSION="embedded"
+	AC_DEFINE([HAVE_MINILZO], 1, [minilzo functions are available])
 fi
+AC_SUBST(LZO_CFLAGS)
+AC_SUBST(LZO_LIBS)
+AC_SUBST(LZO_VERSION)
 AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
+AM_CONDITIONAL([LZO_EMBEDDED], [test x"$LZO_VERSION" = x"embedded"])
 
 dnl Check for python
 AM_PATH_PYTHON
@@ -267,7 +274,7 @@ AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([LUA support:], [$have_lua])
 AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])
 AS_HELP_STRING([GNU readline support:], [$have_readline])
-AS_HELP_STRING([LZO compression:], [$have_lzo])
+AS_HELP_STRING([LZO compression:], [$LZO_VERSION])
 AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
