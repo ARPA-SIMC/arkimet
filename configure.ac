@@ -258,6 +258,7 @@ AC_CONFIG_FILES([
 Makefile
 embedded/Makefile
 embedded/sqlite/Makefile
+embedded/minilzo/Makefile
 wibble/Makefile
 arki/Makefile
 src/Makefile
