@@ -239,7 +239,9 @@ AC_SUBST(tabledir)
 dnl def_tabledir=`echo "${sharedstatedir}/lib/$PACKAGE/tables"`
 dnl AC_DEFINE_UNQUOTED(TABLE_DIR, "$def_tabledir", "Default location for table files")
 
-CXXFLAGS="-Wall $CXXFLAGS"
+if test x"$GXX" = x"yes"; then
+	CXXFLAGS="-Wall $CXXFLAGS"
+fi
 LIBS="$LIBS -lm"
 
 if test x$enable_gcov = xyes
