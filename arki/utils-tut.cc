@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <arki/types/origin.h>
 #include <arki/types/run.h>
 #include <wibble/sys/fs.h>
@@ -67,9 +68,9 @@ void to::test<2>()
 
 	{
 		TempfileHandleWatch tfhw(tmpfname, fd);
-		ensure(sys::fs::access(tmpfname, F_OK));
+		ensure(files::exists(tmpfname, F_OK));
 	}
-	ensure(!sys::fs::access(tmpfname, F_OK));
+	ensure(!files::exists(tmpfname, F_OK));
 }
 
 }

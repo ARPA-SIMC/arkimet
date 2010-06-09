@@ -101,6 +101,9 @@ ino_t inode(const std::string& file);
 /// Move src to dst, without raising exception if src does not exist
 void renameIfExists(const std::string& src, const std::string& dst);
 
+/// Return true if the file exists
+bool exists(const std::string& file);
+
 }
 }
 }

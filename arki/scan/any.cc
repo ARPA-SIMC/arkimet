@@ -1,7 +1,7 @@
 /*
  * scan/any - Scan files autodetecting the format
  *
- * Copyright (C) 2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ static void scan_metadata(const std::string& file, metadata::Consumer& c)
 static bool scan_file(const std::string& file, const std::string& format, metadata::Consumer& c)
 {
 	// Scan the file
-	if (!sys::fs::access(file, F_OK) && sys::fs::access(file + ".gz", F_OK))
+	if (!files::exists(file) && files::exists(file + ".gz"))
 		throw wibble::exception::Consistency("scanning " + file + ".gz", "file needs to be manually decompressed before scanning");
 
 #ifdef HAVE_GRIBAPI
@@ -153,14 +153,14 @@ bool canScan(const std::string& file)
 
 bool exists(const std::string& file)
 {
-	if (sys::fs::access(file, F_OK)) return true;
-	if (sys::fs::access(file + ".gz", F_OK)) return true;
+	if (files::exists(file)) return true;
+	if (files::exists(file + ".gz")) return true;
 	return false;
 }
 
 bool isCompressed(const std::string& file)
 {
-        return !sys::fs::access(file, F_OK) && sys::fs::access(file + ".gz", F_OK);
+        return !files::exists(file) && files::exists(file + ".gz");
 }
 
 time_t timestamp(const std::string& file)

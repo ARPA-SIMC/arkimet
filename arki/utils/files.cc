@@ -133,6 +133,11 @@ void renameIfExists(const std::string& src, const std::string& dst)
 		throw wibble::exception::System("moving " + src + " to " + dst);
 }
 
+bool exists(const std::string& file)
+{
+	return sys::fs::access(file, F_OK);
+}
+
 }
 }
 }
