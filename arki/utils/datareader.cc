@@ -53,7 +53,11 @@ public:
 		: fname(fname)
 	{
 		// Open the new file
-		fd = ::open(fname.c_str(), O_RDONLY | O_CLOEXEC);
+		fd = ::open(fname.c_str(), O_RDONLY
+#ifdef O_CLOEXEC
+				| O_CLOEXEC
+#endif
+		);
 		if (fd == -1)
 			throw wibble::exception::File(fname, "opening file");
 	}
