@@ -29,6 +29,7 @@
 #include <wibble/sys/buffer.h>
 
 #include <cstring>
+#include <unistd.h>
 
 #include "config.h"
 
