@@ -53,6 +53,9 @@ dnl AM_ENABLE_STATIC
 dnl AM_DISABLE_SHARED
 AM_PROG_LIBTOOL
 
+dnl Check what libc features are available on this system
+gl_CHECK_TYPE_STRUCT_DIRENT_D_TYPE
+
 dnl Call in pkg-config explicitly, so we can safely put the first
 dnl PKG_CHECK_EXISTS inside an if
 PKG_PROG_PKG_CONFIG

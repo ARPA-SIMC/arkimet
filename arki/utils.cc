@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include "config.h"
 
 using namespace std;
 
@@ -38,17 +39,18 @@ namespace utils {
 
 bool isdir(const std::string& root, wibble::sys::fs::Directory::const_iterator& i)
 {
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
 	if (i->d_type == DT_DIR)
 		return true;
-	if (i->d_type == DT_UNKNOWN)
-	{
-		std::auto_ptr<struct stat> st = wibble::sys::fs::stat(wibble::str::joinpath(root, *i));
-		if (st.get() == 0)
-			return false;
-		if (S_ISDIR(st->st_mode))
-			return true;
-	}
-	return false;
+	if (i->d_type != DT_UNKNOWN)
+		return false;
+#endif
+	// No d_type, we'll need to stat
+	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(wibble::str::joinpath(root, *i));
+	if (st.get() == 0)
+		return false;
+	if (S_ISDIR(st->st_mode))
+		return true;
 }
 
 bool isdir(const std::string& pathname)
