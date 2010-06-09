@@ -225,7 +225,7 @@ void Archive::vacuum()
 {
 	if (!m_mft) throw wibble::exception::Consistency("vacuuming " + m_dir, "archive opened in read only mode");
 	// If archive dir is not writable, skip this section
-	if (!sys::fs::access(m_dir, W_OK)) return;
+	if (!files::exists(m_dir)) return;
 
 	m_mft->vacuum();
 

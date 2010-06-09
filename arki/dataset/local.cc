@@ -53,7 +53,7 @@ Local::~Local()
 bool Local::hasArchive() const
 {
 	string arcdir = str::joinpath(m_path, ".archive");
-	return sys::fs::access(arcdir, F_OK);
+	return files::exists(arcdir);
 }
 
 Archives& Local::archive()
@@ -157,7 +157,7 @@ WritableLocal::~WritableLocal()
 bool WritableLocal::hasArchive() const
 {
 	string arcdir = str::joinpath(m_path, ".archive");
-	return sys::fs::access(arcdir, F_OK);
+	return files::exists(arcdir);
 	//std::auto_ptr<struct stat> st = sys::fs::stat(arcdir);
 	//if (!st.get())
 		//return false;
@@ -185,7 +185,7 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	sys::fs::mkFilePath(arcabsname);
 	
 	// Sanity checks: avoid conflicts
-	if (sys::fs::access(arcabsname, F_OK))
+	if (files::exists(arcabsname))
 		throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
 				arcabsname + " already exists");
 	string src = pathname;
@@ -195,7 +195,7 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	{
 		src += ".gz";
 		dst += ".gz";
-		if (sys::fs::access(dst, F_OK))
+		if (files::exists(dst))
 			throw wibble::exception::Consistency("archiving " + src + " to " + dst,
 					dst + " already exists");
 	}
