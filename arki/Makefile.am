@@ -349,4 +349,6 @@ endif
 
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
-	     matcher/reftime/reftime-parse.yy
+	     matcher/reftime/reftime-parse.yy \
+	     matcher/reftime/reftime-lex.h \
+	     matcher/reftime/reftime-parse.hh
