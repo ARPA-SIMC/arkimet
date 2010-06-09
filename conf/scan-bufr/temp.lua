@@ -21,5 +21,13 @@ function scan(msg, md)
 	if forecast == nil then forecast = 0 end
 
 	-- TODO: If p1 != 0 then reftime = reftime - p1
-	md:set(arki_timerange.bufr(forecast))
+
+	if forecast == 0 then
+		md:set(arki_timerange.bufr(forecast))
+	elseif math.floor(forecast / 3600) * 3600 == forecast then
+		-- If it is a multiple of one hour, represent it in hours
+		md:set(arki_timerange.bufr(forecast / 3600, 1))
+	else
+		md:set(arki_timerange.bufr(forecast, 254))
+	end
 end
