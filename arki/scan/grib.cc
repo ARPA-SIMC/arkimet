@@ -38,6 +38,7 @@
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
 #include <cstring>
+#include <unistd.h>
 
 using namespace std;
 using namespace wibble;
