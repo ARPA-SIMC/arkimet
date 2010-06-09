@@ -35,6 +35,10 @@
 #include <unistd.h>
 #include <iostream>
 
+#if __xlC__
+typedef void (*sighandler_t)(int);
+#endif
+
 using namespace std;
 using namespace wibble;
 
