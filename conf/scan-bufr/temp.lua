@@ -3,7 +3,8 @@ function scan(msg, md)
 	sta = msg:find('station')
 	lat = msg:find('latitude')
 	lon = msg:find('longitude')
-	area = arki_area.grib{lat=lat:enqi(), lon=lon:enqi(), blo=blo:enqi(), sta=sta:enqi()}
+	ident = msg:find('ident')
+	area = arki_area.grib{lat=lat:enqi(), lon=lon:enqi(), blo=blo:enqi(), sta=sta:enqi(), id=ident}
 	md:set(area)
 
 	forecast = nil
