@@ -273,7 +273,7 @@ struct Decoder
 	template<typename STR>
 	uint32_t popUInt(unsigned int bytes, STR what)
 	{
-		ensureSize(len, bytes, what);
+		codec::ensureSize(len, bytes, what);
 		uint32_t val = decodeUInt(buf, bytes);
 		buf += bytes;
 		len -= bytes;
@@ -283,7 +283,7 @@ struct Decoder
 	template<typename STR>
 	uint64_t popULInt(unsigned int bytes, STR what)
 	{
-		ensureSize(len, bytes, what);
+		codec::ensureSize(len, bytes, what);
 		uint64_t val = decodeULInt(buf, bytes);
 		buf += bytes;
 		len -= bytes;
@@ -293,7 +293,7 @@ struct Decoder
 	template<typename STR>
 	int popSInt(unsigned int bytes, STR what)
 	{
-		ensureSize(len, bytes, what);
+		codec::ensureSize(len, bytes, what);
 		int val = decodeSInt(buf, bytes);
 		buf += bytes;
 		len -= bytes;
@@ -303,7 +303,7 @@ struct Decoder
 	template<typename STR>
 	unsigned int popIntLE(unsigned int bytes, STR what)
 	{
-		ensureSize(len, bytes, what);
+		codec::ensureSize(len, bytes, what);
 		unsigned int val = decodeIntLE(buf, bytes);
 		buf += bytes;
 		len -= bytes;
@@ -313,7 +313,7 @@ struct Decoder
 	template<typename STR>
 	float popFloat(STR what)
 	{
-		ensureSize(len, sizeof(float), what);
+		codec::ensureSize(len, sizeof(float), what);
 		float val = decodeFloat(buf);
 		buf += sizeof(float);
 		len -= sizeof(float);
@@ -323,7 +323,7 @@ struct Decoder
 	template<typename STR>
 	double popDouble(STR what)
 	{
-		ensureSize(len, sizeof(double), what);
+		codec::ensureSize(len, sizeof(double), what);
 		double val = decodeDouble(buf);
 		buf += sizeof(double);
 		len -= sizeof(double);
@@ -332,7 +332,7 @@ struct Decoder
 
 	std::string popString(size_t size, const char* what)
 	{
-		ensureSize(len, size, what);
+		codec::ensureSize(len, size, what);
 		std::string val((const char*)buf, size);
 		buf += size;
 		len -= size;
