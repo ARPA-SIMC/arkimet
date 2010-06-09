@@ -212,6 +212,7 @@ else
 	LZO_LIBS="-L`pwd`/embedded/minilzo/ -lminilzo"
 	LZO_VERSION="embedded"
 	AC_DEFINE([HAVE_MINILZO], 1, [minilzo functions are available])
+	have_lzo=yes
 fi
 AC_SUBST(LZO_CFLAGS)
 AC_SUBST(LZO_LIBS)
