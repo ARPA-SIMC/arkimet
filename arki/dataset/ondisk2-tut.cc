@@ -197,8 +197,8 @@ void to::test<1>()
 
 	// Flush the changes and check that everything is allright
 	d200.flush();
-	ensure(wibble::sys::fs::access("test200/2007/07-08.grib1", F_OK));
-	ensure(wibble::sys::fs::access("test200/index.sqlite", F_OK));
+	ensure(files::exists("test200/2007/07-08.grib1"));
+	ensure(files::exists("test200/index.sqlite"));
 	ensure(timestamp("test200/2007/07-08.grib1") <= timestamp("test200/index.sqlite"));
 //2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
 //2	ensure(!hasIndexFlagfile("test200"));
@@ -364,11 +364,11 @@ void to::test<6>()
 
 	{
 		auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test200")));
-		ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.needs-pack", F_OK));
+		ensure(!files::exists("test200/2007/07-08.grib1.needs-pack"));
 		// Remove it
 		testds->remove(mdc[0]);
 		testds->flush();
-		ensure(!wibble::sys::fs::access("test200/2007/07-08.grib1.needs-pack", F_OK));
+		ensure(!files::exists("test200/2007/07-08.grib1.needs-pack"));
 	}
 
 	// Check that it does not have a source and metadata element
@@ -708,7 +708,7 @@ void to::test<14>()
 		ensure(scanner.next(md));
 		ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
 	}
-	ensure(wibble::sys::fs::access("testall/20/2007.grib1", F_OK));
+	ensure(files::exists("testall/20/2007.grib1"));
 
 	// Compress what is imported so far
 	{
@@ -719,7 +719,7 @@ void to::test<14>()
 		mdc.compressDataFile(1024, "metadata file testall/20/2007.grib1");
 		sys::fs::deleteIfExists("testall/20/2007.grib1");
 	}
-	ensure(!wibble::sys::fs::access("testall/20/2007.grib1", F_OK));
+	ensure(!files::exists("testall/20/2007.grib1"));
 
 	// Import the last data
 	{
@@ -731,7 +731,7 @@ void to::test<14>()
 			ensure(string(e.what()).find("cannot update compressed data files") != string::npos);
 		}
 	}
-	ensure(!wibble::sys::fs::access("testall/20/2007.grib1", F_OK));
+	ensure(!files::exists("testall/20/2007.grib1"));
 }
 
 

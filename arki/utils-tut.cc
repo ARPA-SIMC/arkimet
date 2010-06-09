@@ -68,9 +68,9 @@ void to::test<2>()
 
 	{
 		TempfileHandleWatch tfhw(tmpfname, fd);
-		ensure(files::exists(tmpfname, F_OK));
+		ensure(files::exists(tmpfname));
 	}
-	ensure(!files::exists(tmpfname, F_OK));
+	ensure(!files::exists(tmpfname));
 }
 
 }

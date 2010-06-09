@@ -41,6 +41,7 @@
 #include <fstream>
 #include <ctime>
 #include <cstdio>
+#include <unistd.h>
 
 #include "config.h"
 

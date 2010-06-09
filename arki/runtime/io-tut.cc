@@ -20,7 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/runtime/io.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/files.h>
 
 namespace tut {
 using namespace std;
@@ -39,9 +39,9 @@ void to::test<1>()
 	{
 		Tempfile foo;
 		name = foo.name();
-		ensure(sys::fs::access(name, F_OK));
+		ensure(files::exists(name, F_OK));
 	}
-	ensure(!sys::fs::access(name, F_OK));
+	ensure(!files::exists(name, F_OK));
 }
 
 }

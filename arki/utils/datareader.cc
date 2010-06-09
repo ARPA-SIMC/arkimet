@@ -24,10 +24,10 @@
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
 #include <arki/utils/compress.h>
+#include <arki/utils/files.h>
 #include <arki/nag.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
-#include <wibble/sys/fs.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -254,11 +254,11 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
 		flush();
 
 		// Open the new file
-		if (sys::fs::access(fname, F_OK))
+		if (files::exists(fname))
 			last = new datareader::FileReader(fname);
-		else if (sys::fs::access(fname + ".gz.idx", F_OK))
+		else if (files::exists(fname + ".gz.idx"))
 			last = new datareader::IdxZlibFileReader(fname);
-		else if (sys::fs::access(fname + ".gz", F_OK))
+		else if (files::exists(fname + ".gz"))
 			last = new datareader::ZlibFileReader(fname);
 		else
 			throw wibble::exception::Consistency("accessing file " + fname, "file does not exist");
