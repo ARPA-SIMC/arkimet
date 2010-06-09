@@ -109,6 +109,10 @@ public:
 
 class MetadataReader : public sys::Thread
 {
+private:
+	MetadataReader(const MetadataReader&);
+	MetadataReader& operator=(const MetadataReader&);
+
 protected:
 	struct Consumer : public metadata::Consumer
 	{
@@ -197,6 +201,16 @@ void Merged::addDataset(ReadonlyDataset& ds)
 	datasets.push_back(&ds);
 }
 
+namespace {
+template<typename T>
+struct RAIIDeleter
+{
+	T* val;
+	RAIIDeleter(T* val) : val(val) {}
+	~RAIIDeleter() { delete[] val; }
+};
+}
+
 void Merged::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	// Handle the trivial case of only one dataset
@@ -206,7 +220,8 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 		return;
 	}
 
-	MetadataReader readers[datasets.size()];
+	MetadataReader* readers = new MetadataReader[datasets.size()];
+	RAIIDeleter<MetadataReader> cleanup(readers);
 
 	// Start all the readers
 	for (size_t i = 0; i < datasets.size(); ++i)
