@@ -281,7 +281,8 @@ void Merged::querySummary(const Matcher& matcher, Summary& summary)
 		return;
 	}
 
-	SummaryReader readers[datasets.size()];
+	SummaryReader* readers = new SummaryReader[datasets.size()];
+	RAIIDeleter<SummaryReader> cleanup(readers);
 
 	// Start all the readers
 	for (size_t i = 0; i < datasets.size(); ++i)
