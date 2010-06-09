@@ -54,7 +54,7 @@ public:
 	{
 		// Open the new file
 		fd = ::open(fname.c_str(), O_RDONLY
-#ifdef O_CLOEXEC
+#ifdef linux
 				| O_CLOEXEC
 #endif
 		);
