@@ -8,7 +8,7 @@ function scan(msg, md)
 
 	forecast = nil
 	msg:foreach(function(ctx)
-		if ctx:pind() == 1 then
+		if ctx:pind() == 254 then
 			-- TODO: verify that all p1 are the same
 			-- if they differ, error()
 			p1 = ctx:p1()
