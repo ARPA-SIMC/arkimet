@@ -131,7 +131,7 @@ else
 	else
 		dnl We don't always have the luxury of .pc files for lua, it seems
 		have_lua=yes
-		AC_CHECK_LIB([lua], [lua_gettop], [true], [have_lua=no])
+		AC_CHECK_LIB([lua], [lua_gettop], [true], [have_lua=no], [-lm])
 		AC_CHECK_HEADER([lua.h], [true], [have_lua=no])
 		LUA_CFLAGS=
 		LUA_LIBS="-llualib -llua"
@@ -145,7 +145,7 @@ AM_CONDITIONAL([LUA], [test x"$have_lua" = x"yes"])
 
 dnl Check for grib_api
 have_gribapi=yes
-AC_CHECK_LIB([grib_api], [grib_get_api_version], [true], [have_gribapi=no], [])
+AC_CHECK_LIB([grib_api], [grib_get_api_version], [true], [have_gribapi=no], [-lm -ljasper])
 AC_CHECK_HEADER([grib_api.h], [true], [have_gribapi=no])
 if test $have_gribapi = yes
 then
