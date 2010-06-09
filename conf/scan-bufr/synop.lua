@@ -1,8 +1,14 @@
 function scan(msg, md)
-	blo = msg:find('block')
-	sta = msg:find('station')
+	area = {}
 	lat = msg:find('latitude')
 	lon = msg:find('longitude')
-	area = arki_area.grib{lat=lat:enqi(), lon=lon:enqi(), blo=blo:enqi(), sta=sta:enqi()}
-	md:set(area)
+	blo = msg:find('block')
+	sta = msg:find('station')
+	id = msg:find('ident')
+	if lat then area.lat = sta:enqi() end
+	if lon then area.lon = sta:enqi() end
+	if blo then area.blo = blo:enqi() end
+	if sta then area.sta = sta:enqi() end
+	if id then area.id = id:enqc() end
+	md:set(arki_area.grib(area))
 end
