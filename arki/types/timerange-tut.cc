@@ -49,8 +49,8 @@ void to::test<1>()
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
 	ensure_equals(v->type(), 2u);
 	ensure_equals(v->unit(), 254u);
-	ensure_equals(v->p1(), 2u);
-	ensure_equals(v->p2(), 3u);
+	ensure_equals(v->p1(), 2);
+	ensure_equals(v->p2(), 3);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
@@ -149,33 +149,33 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Item<Timerange> o = timerange::GRIB1::create(250, 1, 240, 129);
+	Item<Timerange> o = timerange::GRIB1::create(250, 1, 124, 127);
 	ensure_equals(o->style(), Timerange::GRIB1);
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
 	ensure_equals(v->type(), 250u);
 	ensure_equals(v->unit(), 1u);
-	ensure_equals(v->p1(), 240u);
-	ensure_equals(v->p2(), 129u);
+	ensure_equals(v->p1(), 124);
+	ensure_equals(v->p2(), 127);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
 	v->getNormalised(t, u, p1, p2);
 	ensure_equals(t, 250);
 	ensure_equals(u, timerange::GRIB1::SECOND);
-	ensure_equals(p1, 240 * 3600);
-	ensure_equals(p2, 129 * 3600);
+	ensure_equals(p1, 124 * 3600);
+	ensure_equals(p2, 127 * 3600);
 
-	ensure_equals(o, Item<Timerange>(timerange::GRIB1::create(250, 1, 240, 129)));
+	ensure_equals(o, Item<Timerange>(timerange::GRIB1::create(250, 1, 124, 127)));
 
-	ensure(o != timerange::GRIB1::create(250, 1, 240, 128));
-	ensure(o != timerange::GRIB1::create(250, 4, 240, 129));
-	ensure(o != timerange::GRIB1::create(250, 254, 240, 129));
+	ensure(o != timerange::GRIB1::create(250, 1, 124, 126));
+	ensure(o != timerange::GRIB1::create(250, 4, 124, 127));
+	ensure(o != timerange::GRIB1::create(250, 254, 124, 127));
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
 
 	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB1, 250, 240h, 129h");
+	ensure_equals(o->exactQuery(), "GRIB1, 250, 124h, 127h");
 	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
 	ensure(m(o));
 }
@@ -343,21 +343,25 @@ void to::test<10>()
 template<> template<>
 void to::test<11>()
 {
-	Item<Timerange> o = timerange::BUFR::create(12345);
+	Item<Timerange> o = timerange::BUFR::create(6, 1);
 	ensure_equals(o->style(), Timerange::BUFR);
 	const timerange::BUFR* v = o->upcast<timerange::BUFR>();
-	ensure_equals(v->forecast(), 12345u);
+	ensure_equals(v->unit(), 1u);
+	ensure_equals(v->value(), 6u);
 
-	ensure_equals(o, Item<Timerange>(timerange::BUFR::create(12345)));
+	ensure_equals(o, Item<Timerange>(timerange::BUFR::create(6, 1)));
+	ensure_equals(o, Item<Timerange>(timerange::BUFR::create(6*60, 0)));
+	ensure_equals(o, Item<Timerange>(timerange::BUFR::create(6*3600, 254)));
 
 	ensure(o != timerange::GRIB1::create(2, 254, 3, 4));
-	ensure(o != timerange::BUFR::create(12346));
+	ensure(o != timerange::BUFR::create(5, 1));
+	ensure(o != timerange::BUFR::create(6, 0));
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_TIMERANGE);
 
 	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "BUFR,12345");
+	ensure_equals(o->exactQuery(), "BUFR,6h");
 	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
 	ensure(m(o));
 }

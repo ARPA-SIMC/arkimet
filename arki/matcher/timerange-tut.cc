@@ -93,13 +93,16 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	md.set(timerange::BUFR::create(12345));
+	md.set(timerange::BUFR::create(2, 1));
 
 	ensure_matches("timerange:BUFR", md);
-	ensure_matches("timerange:BUFR,12345", md);
+	ensure_matches("timerange:BUFR,2h", md);
+	ensure_matches("timerange:BUFR,120m", md);
+	ensure_matches("timerange:BUFR,7200s", md);
 	ensure_not_matches("timerange:GRIB1", md);
 	ensure_not_matches("timerange:GRIB2", md);
-	ensure_not_matches("timerange:BUFR,12346", md);
+	ensure_not_matches("timerange:BUFR,3h", md);
+	ensure_not_matches("timerange:BUFR,2m", md);
 }
 
 

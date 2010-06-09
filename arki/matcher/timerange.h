@@ -53,9 +53,6 @@ struct MatchTimerangeGRIB1 : public MatchTimerange
 	MatchTimerangeGRIB1(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
-
-private:
-	int parseInterval(const std::string& str, types::timerange::GRIB1::Unit& u);
 };
 
 struct MatchTimerangeGRIB2 : public MatchTimerange
@@ -73,7 +70,8 @@ struct MatchTimerangeGRIB2 : public MatchTimerange
 struct MatchTimerangeBUFR : public MatchTimerange
 {
 	bool has_forecast;
-	unsigned int forecast;
+	bool is_seconds;
+	unsigned int value;
 
 	MatchTimerangeBUFR(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;

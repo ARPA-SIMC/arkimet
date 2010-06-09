@@ -77,13 +77,13 @@ protected:
 	std::ostream& writeNumbers(std::ostream& o) const;
 
 	unsigned char m_type, m_unit;
-	unsigned char m_p1, m_p2;
+	signed char m_p1, m_p2;
 
 public:
 	unsigned type() const { return m_type; }
 	unsigned unit() const { return m_unit; }
-	unsigned p1() const { return m_p1; }
-	unsigned p2() const { return m_p2; }
+	signed p1() const { return m_p1; }
+	signed p2() const { return m_p2; }
 
 	enum Unit {
 		SECOND = 0,
@@ -102,20 +102,20 @@ public:
 
 	void getNormalised(int& type, Unit& unit, int& p1, int& p2) const;
 
-	static Item<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+	static Item<GRIB1> create(unsigned char type, unsigned char unit, signed char p1, signed char p2);
 };
 
 class GRIB2 : public Timerange
 {
 protected:
 	unsigned char m_type, m_unit;
-	unsigned long m_p1, m_p2;
+	signed long m_p1, m_p2;
 
 public:
 	unsigned type() const { return m_type; }
 	unsigned unit() const { return m_unit; }
-	unsigned p1() const { return m_p1; }
-	unsigned p2() const { return m_p2; }
+	signed p1() const { return m_p1; }
+	signed p2() const { return m_p2; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -127,16 +127,22 @@ public:
 	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<GRIB2> create(unsigned char type, unsigned char unit, unsigned long p1, unsigned long p2);
+	static Item<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
 };
 
 class BUFR : public Timerange
 {
 protected:
-	unsigned m_forecast;
+	unsigned char m_unit;
+	unsigned m_value;
 
 public:
-	unsigned forecast() const { return m_forecast; }
+	unsigned unit() const { return m_unit; }
+	unsigned value() const { return m_value; }
+
+	bool is_seconds() const;
+	unsigned seconds() const;
+	unsigned months() const;
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -148,7 +154,7 @@ public:
 	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<BUFR> create(unsigned forecast = 0);
+	static Item<BUFR> create(unsigned value = 0, unsigned char unit = 254);
 };
 
 }

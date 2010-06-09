@@ -30,6 +30,51 @@ using namespace wibble;
 namespace arki {
 namespace matcher {
 
+static int parseValueWithUnit(const std::string& str, types::timerange::GRIB1::Unit& u)
+{
+	const char* s = str.c_str();
+	char* e = NULL;
+	long int value = strtol(s, &e, 10);
+	if (value == 0)
+		return 0;
+	string unit = str.substr(e-s);
+	if (unit == "s")
+	{
+		u = types::timerange::GRIB1::SECOND;
+		return value;
+	}
+	else if (unit == "m")
+	{
+		u = types::timerange::GRIB1::SECOND;
+		return value * 60;
+	}
+	else if (unit == "h")
+	{
+		u = types::timerange::GRIB1::SECOND;
+		return value * 3600;
+	}
+	else if (unit == "d")
+	{
+		u = types::timerange::GRIB1::SECOND;
+		return value * 3600 * 24;
+	}
+	else if (unit == "mo")
+	{
+		u = types::timerange::GRIB1::MONTH;
+		return value;
+	}
+	else if (unit == "y")
+	{
+		u = types::timerange::GRIB1::MONTH;
+		return value * 12;
+	} else {
+		throw wibble::exception::Consistency(
+				"parsing 'timerange' match expression '" + str + "'",
+				"unknown time suffix '" + unit + "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'");
+	}
+}
+
+
 std::string MatchTimerange::name() const { return "timerange"; }
 
 MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
@@ -47,7 +92,7 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 		if (args.size() == 1)
 			return;
 		matchBody = true;
-		p1 = parseInterval(args[1], first);
+		p1 = parseValueWithUnit(args[1], first);
 		if (args.size() == 2)
 		{
 			if (first == missingUnit)
@@ -56,7 +101,7 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 				unit = first;
 			return;
 		}
-		p2 = parseInterval(args[2], second);
+		p2 = parseValueWithUnit(args[2], second);
 
 		// If first or second units haven't been set, use the other as default
 		if (first == missingUnit)
@@ -118,51 +163,6 @@ std::string MatchTimerangeGRIB1::toString() const
 	return res;
 }
 
-int MatchTimerangeGRIB1::parseInterval(const std::string& str, types::timerange::GRIB1::Unit& u)
-{
-	const char* s = str.c_str();
-	char* e = NULL;
-	long int value = strtol(s, &e, 10);
-	if (value == 0)
-		return 0;
-	string unit = str.substr(e-s);
-	if (unit == "s")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value;
-	}
-	else if (unit == "m")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value * 60;
-	}
-	else if (unit == "h")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value * 3600;
-	}
-	else if (unit == "d")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value * 3600 * 24;
-	}
-	else if (unit == "mo")
-	{
-		u = types::timerange::GRIB1::MONTH;
-		return value;
-	}
-	else if (unit == "y")
-	{
-		u = types::timerange::GRIB1::MONTH;
-		return value * 12;
-	} else {
-		throw wibble::exception::Consistency(
-				"parsing 'timerange' match expression '" + str + "'",
-				"unknown time suffix '" + unit + "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'");
-	}
-}
-
-
 MatchTimerangeGRIB2::MatchTimerangeGRIB2(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
@@ -199,22 +199,33 @@ MatchTimerangeBUFR::MatchTimerangeBUFR(const std::string& pattern)
 {
 	OptionalCommaList args(pattern);
 	has_forecast = !args.empty();
-	forecast = args.getUnsigned(0, 0);
+	if (has_forecast)
+	{
+		types::timerange::GRIB1::Unit unit;
+		value = parseValueWithUnit(args[0], unit);
+		is_seconds = unit == types::timerange::GRIB1::SECOND;
+	} else {
+		value = 0;
+		is_seconds = true;
+	}
 }
 
 bool MatchTimerangeBUFR::matchItem(const Item<>& o) const
 {
 	const types::timerange::BUFR* v = dynamic_cast<const types::timerange::BUFR*>(o.ptr());
 	if (!v) return false;
-	return !has_forecast || forecast == v->forecast();
+	if (!has_forecast) return true;
+	if (is_seconds != v->is_seconds() && value != 0) return false;
+	if (is_seconds)
+		return value == v->seconds();
+	else
+		return value == v->months();
 }
 
 std::string MatchTimerangeBUFR::toString() const
 {
-	if (has_forecast)
-		return str::fmtf("BUFR,%u", forecast);
-	else
-		return "BUFR";
+	if (!has_forecast) return "BUFR";
+	return str::fmtf("BUFR,%u%s", value, is_seconds ? "s" : "mo");
 }
 
 

@@ -172,25 +172,29 @@ std::string Timerange::formatStyle(Timerange::Style s)
 Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
-	ensureSize(len, 1, "Timerange");
-	Style s = (Style)decodeUInt(buf, 1);
+	Decoder dec(buf, len);
+	Style s = (Style)dec.popUInt(1, "timerange");
 	switch (s)
 	{
-		case GRIB1:
-			ensureSize(len, 5, "Timerange");
-			return timerange::GRIB1::create(decodeUInt(buf+1, 1),
-										   decodeUInt(buf+2, 1),
-										   decodeSInt(buf+3, 1),
-										   decodeSInt(buf+4, 1));
-		case GRIB2:
-			ensureSize(len, 11, "Timerange");
-			return timerange::GRIB2::create(decodeUInt(buf+1, 1),
-										   decodeUInt(buf+2, 1),
-										   decodeSInt(buf+3, 4),
-										   decodeSInt(buf+7, 4));
-		case BUFR:
-			ensureSize(len, 5, "Timerange");
-			return timerange::BUFR::create(decodeUInt(buf+1, 4));
+		case GRIB1: {
+			uint8_t type = dec.popUInt(1, "GRIB1 type"),
+				unit = dec.popUInt(1, "GRIB1 unit");
+			int8_t  p1   = dec.popSInt(1, "GRIB1 p1"),
+			        p2   = dec.popSInt(1, "GRIB1 p2");
+			return timerange::GRIB1::create(type, unit, p1, p2);
+	        }
+		case GRIB2: {
+			uint8_t type = dec.popUInt(1, "GRIB2 type"),
+				unit = dec.popUInt(1, "GRIB2 unit");
+			int32_t p1   = dec.popSInt(4, "GRIB2 p1"),
+			        p2   = dec.popSInt(4, "GRIB2 p2");
+			return timerange::GRIB2::create(type, unit, p1, p2);
+		}
+		case BUFR: {
+			uint8_t unit   = dec.popUInt(1, "BUFR unit");
+			unsigned value = dec.popVarint<unsigned>("BUFR value");
+			return timerange::BUFR::create(value, unit);
+		}
 		default:
 			throw wibble::exception::Consistency("parsing Timerange", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
 	}
@@ -396,8 +400,9 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 		}
 		case Timerange::BUFR: {
 			const char* start = inner.c_str();
-			int forecast = getNumber(start, "forecast seconds");
-			return timerange::BUFR::create(forecast);
+			unsigned value = getNumber(start, "forecast seconds");
+			unsigned unit = parseTimeUnit(start);
+			return timerange::BUFR::create(value, unit);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Timerange", "unknown Timerange style " + str::fmt(style));
@@ -428,8 +433,11 @@ static int arkilua_new_grib2(lua_State* L)
 
 static int arkilua_new_bufr(lua_State* L)
 {
-	int forecast = luaL_checkint(L, 1);
-	timerange::BUFR::create(forecast)->lua_push(L);
+	int value = luaL_checkint(L, 1);
+	int unit = 254;
+	if (lua_gettop(L) > 1)
+		unit = luaL_checkint(L, 2);
+	timerange::BUFR::create(value, unit)->lua_push(L);
 	return 1;
 }
 
@@ -590,7 +598,7 @@ bool GRIB1::operator==(const Type& o) const
 	return atype == btype && aunit == bunit && ap1 == bp1 && ap2 == bp2;
 }
 
-Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
+Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, signed char p1, signed char p2)
 {
 	GRIB1* res = new GRIB1;
 	res->m_type = type;
@@ -746,7 +754,7 @@ bool GRIB2::operator==(const Type& o) const
 	return m_type == v->m_type && m_unit == v->m_unit && m_p1 == v->m_p1 && m_p2 == v->m_p2;
 }
 
-Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, unsigned long p1, unsigned long p2)
+Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed long p1, signed long p2)
 {
 	GRIB2* res = new GRIB2;
 	res->m_type = type;
@@ -756,29 +764,88 @@ Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, unsigned long 
 	return cache_grib2.intern(res);
 }
 
+bool BUFR::is_seconds() const
+{
+	switch ((t_enum_GRIB_TIMEUNIT)m_unit)
+	{
+		case GRIB_TIMEUNIT_UNKNOWN:
+			throw wibble::exception::Consistency("normalising TimeRange", "time unit is UNKNOWN (-1)");
+		case GRIB_TIMEUNIT_MINUTE:
+		case GRIB_TIMEUNIT_HOUR:
+		case GRIB_TIMEUNIT_DAY:
+		case GRIB_TIMEUNIT_HOURS3:
+		case GRIB_TIMEUNIT_HOURS6:
+		case GRIB_TIMEUNIT_HOURS12:
+		case GRIB_TIMEUNIT_SECOND:
+			return true;
+		case GRIB_TIMEUNIT_MONTH:
+		case GRIB_TIMEUNIT_YEAR:
+		case GRIB_TIMEUNIT_DECADE:
+		case GRIB_TIMEUNIT_NORMAL:
+		case GRIB_TIMEUNIT_CENTURY:
+			return false;
+		default:
+			throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(m_unit)+")");
+	}
+}
+
+unsigned BUFR::seconds() const
+{
+	switch ((t_enum_GRIB_TIMEUNIT)m_unit)
+	{
+		case GRIB_TIMEUNIT_UNKNOWN:
+			throw wibble::exception::Consistency("normalising TimeRange", "time unit is UNKNOWN (-1)");
+		case GRIB_TIMEUNIT_MINUTE: return m_value * 60;
+		case GRIB_TIMEUNIT_HOUR: return m_value * 3600;
+		case GRIB_TIMEUNIT_DAY: return m_value * 3600*24;
+		case GRIB_TIMEUNIT_HOURS3: return m_value * 3600*3;
+		case GRIB_TIMEUNIT_HOURS6: return m_value * 3600*6;
+		case GRIB_TIMEUNIT_HOURS12: return m_value * 3600*12;
+		case GRIB_TIMEUNIT_SECOND: return m_value * 1;
+		default:
+			throw wibble::exception::Consistency("normalising TimeRange", "time unit ("+str::fmt(m_unit)+") does not convert to seconds");
+	}
+}
+
+unsigned BUFR::months() const
+{
+	switch ((t_enum_GRIB_TIMEUNIT)m_unit)
+	{
+		case GRIB_TIMEUNIT_UNKNOWN:
+			throw wibble::exception::Consistency("normalising TimeRange", "time unit is UNKNOWN (-1)");
+		case GRIB_TIMEUNIT_MONTH: return m_value * 1;
+		case GRIB_TIMEUNIT_YEAR: return m_value * 12;
+		case GRIB_TIMEUNIT_DECADE: return m_value * 120;
+		case GRIB_TIMEUNIT_NORMAL: return m_value * 12*30;
+		case GRIB_TIMEUNIT_CENTURY: return m_value * 12*100;
+		default:
+			throw wibble::exception::Consistency("normalising TimeRange", "time unit ("+str::fmt(m_unit)+") does not convert to months");
+	}
+}
 
 Timerange::Style BUFR::style() const { return Timerange::BUFR; }
 
 void BUFR::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Timerange::encodeWithoutEnvelope(enc);
-	enc.addUInt(m_forecast, 4);
+	enc.addUInt(m_unit, 1);
+	enc.addVarint(m_value);
 }
 
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {
 	utils::SaveIOState sios(o);
-	return o
-	  << formatStyle(style()) << "("
-	  << setfill('0') << internal
-	  << setw(10) << (int)m_forecast
-	  << ")";
+	string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+	o << formatStyle(style()) << "(";
+	if (m_value != 0) o << m_value << suffix;
+	return o << ")";
 }
 
 std::string BUFR::exactQuery() const
 {
 	stringstream o;
-	o << formatStyle(style()) << "," << m_forecast;
+	string suffix = formatTimeUnit((t_enum_GRIB_TIMEUNIT)m_unit);
+	o << formatStyle(style()) << "," << m_value << suffix;
 	return o.str();
 }
 
@@ -786,8 +853,22 @@ const char* BUFR::lua_type_name() const { return "arki.types.timerange.bufr"; }
 
 bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (name == "forecast")
-		lua_pushnumber(L, forecast());
+	if (name == "value")
+		lua_pushnumber(L, value());
+	else if (name == "unit")
+		lua_pushnumber(L, unit());
+	else if (name == "is_seconds")
+		lua_pushboolean(L, is_seconds());
+	else if (name == "seconds")
+		if (is_seconds())
+			lua_pushnumber(L, seconds());
+		else
+			lua_pushnil(L);
+	else if (name == "months")
+		if (is_seconds())
+			lua_pushnil(L);
+		else
+			lua_pushnumber(L, months());
 	else
 		return Timerange::lua_lookup(L, name);
 	return true;
@@ -801,20 +882,29 @@ int BUFR::compare_local(const Timerange& o) const
 		throw wibble::exception::Consistency(
 			"comparing metadata types",
 			string("second element claims to be a BUFR Timerange, but is a ") + typeid(&o).name() + " instead");
-	return m_forecast - v->m_forecast;
+	if (int res = (is_seconds() ? 0 : 1) - (v->is_seconds() ? 0 : 1)) return res;
+	if (is_seconds())
+		return seconds() - v->seconds();
+	else
+		return months() - v->months();
 }
 
 bool BUFR::operator==(const Type& o) const
 {
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v) return false;
-	return m_forecast == v->m_forecast;
+	if (is_seconds() != v->is_seconds()) return false;
+	if (is_seconds())
+		return seconds() == v->seconds();
+	else
+		return months() == v->months();
 }
 
-Item<BUFR> BUFR::create(unsigned forecast)
+Item<BUFR> BUFR::create(unsigned value, unsigned char unit)
 {
 	BUFR* res = new BUFR;
-	res->m_forecast = forecast;
+	res->m_value = value;
+	res->m_unit = unit;
 	return cache_bufr.intern(res);
 }
 
