@@ -63,6 +63,12 @@ int OptionalCommaList::getInt(size_t pos, int def) const
 	return strtoul((*this)[pos].c_str(), 0, 10);
 }
 
+unsigned OptionalCommaList::getUnsigned(size_t pos, unsigned def) const
+{
+	if (!has(pos)) return def;
+	return strtoul((*this)[pos].c_str(), 0, 10);
+}
+
 double OptionalCommaList::getDouble(size_t pos) const
 {
 	return strtod((*this)[pos].c_str(), 0);

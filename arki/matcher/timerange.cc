@@ -195,6 +195,29 @@ std::string MatchTimerangeGRIB2::toString() const
 }
 
 
+MatchTimerangeBUFR::MatchTimerangeBUFR(const std::string& pattern)
+{
+	OptionalCommaList args(pattern);
+	has_forecast = !args.empty();
+	forecast = args.getUnsigned(0, 0);
+}
+
+bool MatchTimerangeBUFR::matchItem(const Item<>& o) const
+{
+	const types::timerange::BUFR* v = dynamic_cast<const types::timerange::BUFR*>(o.ptr());
+	if (!v) return false;
+	return !has_forecast || forecast == v->forecast();
+}
+
+std::string MatchTimerangeBUFR::toString() const
+{
+	if (has_forecast)
+		return str::fmtf("BUFR,%u", forecast);
+	else
+		return "BUFR";
+}
+
+
 MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 {
 	size_t beg = 0;
@@ -211,6 +234,7 @@ MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 	{
 		case types::Timerange::GRIB1: return new MatchTimerangeGRIB1(rest);
 		case types::Timerange::GRIB2: return new MatchTimerangeGRIB2(rest);
+		case types::Timerange::BUFR: return new MatchTimerangeBUFR(rest);
 		default:
 			throw wibble::exception::Consistency("parsing type of timerange to match", "unsupported timerange style: " + name);
 	}

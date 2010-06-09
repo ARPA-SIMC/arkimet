@@ -55,6 +55,7 @@ struct Timerange : public types::StyledType<Timerange>
 	/// Style values
 	static const Style GRIB1 = 1;
 	static const Style GRIB2 = 2;
+	static const Style BUFR = 3;
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -127,6 +128,27 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB2> create(unsigned char type, unsigned char unit, unsigned long p1, unsigned long p2);
+};
+
+class BUFR : public Timerange
+{
+protected:
+	unsigned m_forecast;
+
+public:
+	unsigned forecast() const { return m_forecast; }
+
+	virtual Style style() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+	virtual int compare_local(const Timerange& o) const;
+	virtual bool operator==(const Type& o) const;
+
+	static Item<BUFR> create(unsigned forecast = 0);
 };
 
 }

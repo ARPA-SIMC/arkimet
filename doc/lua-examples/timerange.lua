@@ -27,3 +27,14 @@ ensure_equals(o.p1, 6)
 ensure_equals(o.p2, 0)
 ensure_equals(tostring(o), "GRIB2(000, 001, 0000000006h, 0000000000h)")
 
+
+-- BUFR timerange (only with forecast time)
+
+-- Create with type, unit, p1, p2
+local o = arki_timerange.bufr(6*3600) -- 6-hours forecast
+
+-- Accessors
+ensure_equals(o.style, "BUFR")
+ensure_equals(o.forecast, 6*3600)
+ensure_equals(tostring(o), "BUFR(0000021600)")
+

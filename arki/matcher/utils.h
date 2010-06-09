@@ -39,6 +39,7 @@ struct OptionalCommaList : public std::vector<std::string>
 
 	bool has(size_t pos) const;
 	int getInt(size_t pos, int def) const;
+	unsigned getUnsigned(size_t pos, unsigned def) const;
 	double getDouble(size_t pos) const;
 
 #if 0

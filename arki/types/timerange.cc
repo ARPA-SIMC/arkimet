@@ -58,6 +58,7 @@ const char* traits<Timerange>::type_lua_tag = LUATAG_TIMERANGE;
 // Style constants
 const unsigned char Timerange::GRIB1;
 const unsigned char Timerange::GRIB2;
+const unsigned char Timerange::BUFR;
 
 // Constants from meteosatlib's libgrib
 /// Time ranges
@@ -150,7 +151,8 @@ Timerange::Style Timerange::parseStyle(const std::string& str)
 {
 	if (str == "GRIB1") return GRIB1;
 	if (str == "GRIB2") return GRIB2;
-	throw wibble::exception::Consistency("parsing Timerange style", "cannot parse Timerange style '"+str+"': only GRIB1 and GRIB2 are supported");
+	if (str == "BUFR") return BUFR;
+	throw wibble::exception::Consistency("parsing Timerange style", "cannot parse Timerange style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
 
 std::string Timerange::formatStyle(Timerange::Style s)
@@ -159,6 +161,7 @@ std::string Timerange::formatStyle(Timerange::Style s)
 	{
 		case Timerange::GRIB1: return "GRIB1";
 		case Timerange::GRIB2: return "GRIB2";
+		case Timerange::BUFR: return "BUFR";
 		default:
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -185,8 +188,11 @@ Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 										   decodeUInt(buf+2, 1),
 										   decodeSInt(buf+3, 4),
 										   decodeSInt(buf+7, 4));
+		case BUFR:
+			ensureSize(len, 5, "Timerange");
+			return timerange::BUFR::create(decodeUInt(buf+1, 4));
 		default:
-			throw wibble::exception::Consistency("parsing Timerange", "style is " + formatStyle(s) + " but we can only decode GRIB1 and GRIB2");
+			throw wibble::exception::Consistency("parsing Timerange", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
 	}
 }
 
@@ -388,8 +394,13 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 			skipSuffix(start);
 			return timerange::GRIB2::create(type, unit, p1, p2);
 		}
+		case Timerange::BUFR: {
+			const char* start = inner.c_str();
+			int forecast = getNumber(start, "forecast seconds");
+			return timerange::BUFR::create(forecast);
+		}
 		default:
-			throw wibble::exception::Consistency("parsing Level", "unknown Level style " + str::fmt(style));
+			throw wibble::exception::Consistency("parsing Timerange", "unknown Timerange style " + str::fmt(style));
 	}
 }
 
@@ -415,11 +426,19 @@ static int arkilua_new_grib2(lua_State* L)
 	return 1;
 }
 
+static int arkilua_new_bufr(lua_State* L)
+{
+	int forecast = luaL_checkint(L, 1);
+	timerange::BUFR::create(forecast)->lua_push(L);
+	return 1;
+}
+
 void Timerange::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
+		{ "bufr", arkilua_new_bufr },
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_timerange", lib, 0);
@@ -430,6 +449,7 @@ namespace timerange {
 
 static TypeCache<GRIB1> cache_grib1;
 static TypeCache<GRIB2> cache_grib2;
+static TypeCache<BUFR> cache_bufr;
 
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
@@ -736,10 +756,74 @@ Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, unsigned long 
 	return cache_grib2.intern(res);
 }
 
+
+Timerange::Style BUFR::style() const { return Timerange::BUFR; }
+
+void BUFR::encodeWithoutEnvelope(Encoder& enc) const
+{
+	Timerange::encodeWithoutEnvelope(enc);
+	enc.addUInt(m_forecast, 4);
+}
+
+std::ostream& BUFR::writeToOstream(std::ostream& o) const
+{
+	utils::SaveIOState sios(o);
+	return o
+	  << formatStyle(style()) << "("
+	  << setfill('0') << internal
+	  << setw(10) << (int)m_forecast
+	  << ")";
+}
+
+std::string BUFR::exactQuery() const
+{
+	stringstream o;
+	o << formatStyle(style()) << "," << m_forecast;
+	return o.str();
+}
+
+const char* BUFR::lua_type_name() const { return "arki.types.timerange.bufr"; }
+
+bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "forecast")
+		lua_pushnumber(L, forecast());
+	else
+		return Timerange::lua_lookup(L, name);
+	return true;
+}
+
+int BUFR::compare_local(const Timerange& o) const
+{
+	// We should be the same kind, so upcast
+	const BUFR* v = dynamic_cast<const BUFR*>(&o);
+	if (!v)
+		throw wibble::exception::Consistency(
+			"comparing metadata types",
+			string("second element claims to be a BUFR Timerange, but is a ") + typeid(&o).name() + " instead");
+	return m_forecast - v->m_forecast;
+}
+
+bool BUFR::operator==(const Type& o) const
+{
+	const BUFR* v = dynamic_cast<const BUFR*>(&o);
+	if (!v) return false;
+	return m_forecast == v->m_forecast;
+}
+
+Item<BUFR> BUFR::create(unsigned forecast)
+{
+	BUFR* res = new BUFR;
+	res->m_forecast = forecast;
+	return cache_bufr.intern(res);
+}
+
+
 static void debug_interns()
 {
 	fprintf(stderr, "timerange GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
 	fprintf(stderr, "timerange GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
+	fprintf(stderr, "timerange BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
 }
 
 }

@@ -89,9 +89,23 @@ void to::test<2>()
 }
 
 
-// Try some cases that have been buggy
+// Try matching BUFR timerange
 template<> template<>
 void to::test<3>()
+{
+	md.set(timerange::BUFR::create(12345));
+
+	ensure_matches("timerange:BUFR", md);
+	ensure_matches("timerange:BUFR,12345", md);
+	ensure_not_matches("timerange:GRIB1", md);
+	ensure_not_matches("timerange:GRIB2", md);
+	ensure_not_matches("timerange:BUFR,12346", md);
+}
+
+
+// Try some cases that have been buggy
+template<> template<>
+void to::test<4>()
 {
 	Metadata md;
 

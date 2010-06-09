@@ -70,6 +70,16 @@ struct MatchTimerangeGRIB2 : public MatchTimerange
 	std::string toString() const;
 };
 
+struct MatchTimerangeBUFR : public MatchTimerange
+{
+	bool has_forecast;
+	unsigned int forecast;
+
+	MatchTimerangeBUFR(const std::string& pattern);
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+};
+
 }
 }
 

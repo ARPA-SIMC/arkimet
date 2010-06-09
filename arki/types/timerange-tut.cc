@@ -339,9 +339,33 @@ void to::test<10>()
 	ensure(o2 > o1);
 }
 
-// Test Lua functions
+// Check BUFR
 template<> template<>
 void to::test<11>()
+{
+	Item<Timerange> o = timerange::BUFR::create(12345);
+	ensure_equals(o->style(), Timerange::BUFR);
+	const timerange::BUFR* v = o->upcast<timerange::BUFR>();
+	ensure_equals(v->forecast(), 12345u);
+
+	ensure_equals(o, Item<Timerange>(timerange::BUFR::create(12345)));
+
+	ensure(o != timerange::GRIB1::create(2, 254, 3, 4));
+	ensure(o != timerange::BUFR::create(12346));
+
+	// Test encoding/decoding
+	ensure_serialises(o, types::TYPE_TIMERANGE);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "BUFR,12345");
+	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
+	ensure(m(o));
+}
+
+
+// Test Lua functions
+template<> template<>
+void to::test<12>()
 {
 #ifdef HAVE_LUA
 	Item<Timerange> o = timerange::GRIB1::create(2, 254, 2, 3);
@@ -366,7 +390,7 @@ void to::test<11>()
 
 // Check comparisons
 template<> template<>
-void to::test<12>()
+void to::test<13>()
 {
 	ensure_compares(
 		timerange::GRIB1::create(2, 254, 2, 3),
