@@ -40,6 +40,7 @@
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 
+#include <unistd.h>
 #include <fstream>
 #include <ctime>
 

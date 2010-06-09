@@ -40,6 +40,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -48,7 +49,7 @@ namespace simple {
 Datafile::Datafile(const std::string& pathname)
 	: pathname(pathname), basename(str::basename(pathname)), fd(-1)
 {
-	if (sys::fs::access(pathname, F_OK))
+	if (files::exists(pathname))
 	{
 		// Read the metadata
 		scan::scan(pathname, mds);

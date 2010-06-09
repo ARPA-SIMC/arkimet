@@ -28,6 +28,7 @@
 #include <arki/postprocess.h>
 #include <arki/sort.h>
 #include <arki/utils/dataset.h>
+#include <arki/utils/files.h>
 #include <arki/scan/any.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -85,7 +86,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
 		section.setValue("format", fname.substr(0, fname.size()-2));
 	} else {
 		section.setValue("type", "file");
-		if (sys::fs::access(fname, F_OK))
+		if (files::exists(fname))
 		{
 			section.setValue("path", sys::fs::abspath(fname));
 
@@ -106,7 +107,7 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
 			section.setValue("format", normaliseFormat(fname.substr(0, fpos)));
 
 			string fname1 = fname.substr(fpos+1);
-			if (!sys::fs::access(fname1, F_OK))
+			if (!files::exists(fname1))
 				throw wibble::exception::Consistency("examining file " + fname1, "file does not exist");
 			section.setValue("path", sys::fs::abspath(fname1));
 			section.setValue("name", str::basename(fname1));

@@ -27,6 +27,7 @@ using namespace std;
 using namespace arki;
 using namespace wibble;
 using namespace arki::runtime;
+using namespace arki::utils;
 
 struct arki_runtime_io_shar {
 };
@@ -39,9 +40,9 @@ void to::test<1>()
 	{
 		Tempfile foo;
 		name = foo.name();
-		ensure(files::exists(name, F_OK));
+		ensure(files::exists(name));
 	}
-	ensure(!files::exists(name, F_OK));
+	ensure(!files::exists(name));
 }
 
 }

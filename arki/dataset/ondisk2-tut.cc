@@ -40,7 +40,7 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk2;
-using namespace arki::utils::files;
+using namespace arki::utils;
 
 static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
 {
@@ -199,7 +199,7 @@ void to::test<1>()
 	d200.flush();
 	ensure(files::exists("test200/2007/07-08.grib1"));
 	ensure(files::exists("test200/index.sqlite"));
-	ensure(timestamp("test200/2007/07-08.grib1") <= timestamp("test200/index.sqlite"));
+	ensure(files::timestamp("test200/2007/07-08.grib1") <= files::timestamp("test200/index.sqlite"));
 //2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
 //2	ensure(!hasIndexFlagfile("test200"));
 }
