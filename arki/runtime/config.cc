@@ -29,6 +29,7 @@
 #include <wibble/string.h>
 #include <fstream>
 #include <memory>
+#include "config.h"
 
 using namespace std;
 using namespace wibble;
@@ -238,12 +239,16 @@ std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::st
 		// Skip backup files
 		if (file[file.size() - 1] == '~') continue;
 		// Skip non-files
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
 		if (i->d_type == DT_UNKNOWN)
 		{
+#endif
 			std::auto_ptr<struct stat> st = wibble::sys::fs::stat(dirname + "/" + file);
 			if (!S_ISREG(st->st_mode)) continue;
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
 		} else if (i->d_type != DT_REG)
 			continue;
+#endif
 		files.push_back(wibble::str::joinpath(dirname, *i));
 	}
 
