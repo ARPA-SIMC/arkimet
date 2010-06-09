@@ -247,7 +247,7 @@ if test x"$GXX" = x"yes"; then
 	CXXFLAGS="-Wall $CXXFLAGS"
 fi
 if test x"$CXX" = x"xlc"; then
-	CXXFLAGS="-qrtti=all $CXXFLAGS"
+	CXXFLAGS="-qrtti=all -qthreaded $CXXFLAGS"
 fi
 LIBS="$LIBS -lm"
 
