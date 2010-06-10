@@ -45,10 +45,13 @@ struct arki_sort_shar {
     arki_sort_shar()
     {
     }
+
+
 };
 TESTGRP(arki_sort);
 
-static void produce(int hour, int minute, int run, metadata::Consumer& c)
+namespace {
+void produce(int hour, int minute, int run, metadata::Consumer& c)
 {
 	Metadata md;
 	md.set(types::reftime::Position::create(types::Time::create(2008, 7, 6, hour, minute, 0)));
@@ -56,7 +59,7 @@ static void produce(int hour, int minute, int run, metadata::Consumer& c)
 	c(md);
 }
 
-static vector<int> mdvals(const Metadata& md)
+vector<int> mdvals(const Metadata& md)
 {
 	UItem<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
 	UItem<types::run::Minute> run = md.get(types::TYPE_RUN).upcast<types::run::Minute>();
@@ -67,13 +70,14 @@ static vector<int> mdvals(const Metadata& md)
 	return res;
 }
 
-static vector<int> mdvals(int h, int m, int r)
+vector<int> mdvals(int h, int m, int r)
 {
 	vector<int> res;
 	res.push_back(h);
 	res.push_back(m);
 	res.push_back(r);
 	return res;
+}
 }
 
 // Test a simple case
