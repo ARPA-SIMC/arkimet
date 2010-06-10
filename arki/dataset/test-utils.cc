@@ -39,6 +39,7 @@ using namespace std;
 using namespace arki;
 using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace tests {
@@ -298,7 +299,7 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 	inner_ensure_equals(mdc.size(), resultcount);
 
 	if (filecount > 0)
-		inner_ensure(sys::fs::access(str::joinpath(reader->path(), idxfname()), F_OK));
+		inner_ensure(files::exists(str::joinpath(reader->path(), idxfname())));
 }
 
 }

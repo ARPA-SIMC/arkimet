@@ -26,6 +26,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <stdio.h>
 
 namespace tut {
 using namespace std;
