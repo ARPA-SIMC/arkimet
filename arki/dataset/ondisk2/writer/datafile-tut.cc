@@ -20,6 +20,7 @@
 #include <arki/dataset/ondisk2/writer/datafile.h>
 #include <arki/metadata.h>
 #include <arki/scan/grib.h>
+#include <arki/utils/files.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 
@@ -32,17 +33,16 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
 using namespace wibble::sys;
 
-static inline size_t filesize(const std::string& fname)
-{
-	return fs::stat(fname)->st_size;
-}
-static inline size_t datasize(const Metadata& md)
+namespace {
+inline size_t datasize(const Metadata& md)
 {
 	return md.source.upcast<types::source::Blob>()->size;
+}
 }
 
 struct arki_dataset_ondisk2_writer_datafile_shar {
@@ -93,8 +93,8 @@ void to::test<1>()
 	Datafile df(fname);
 
 	// It should exist but be empty
-	ensure(fs::access(fname, F_OK));
-	ensure_equals(filesize(fname), 0u);
+	ensure(files::exists(fname));
+	ensure_equals(files::size(fname), 0u);
 
 	// Get a metadata
 	ensure(scanner.next(md));
@@ -105,12 +105,12 @@ void to::test<1>()
 		// Start the append transaction, nothing happens until commit
 		Pending p = df.append(md, &ofs);
 		ensure_equals(ofs, 0u);
-		ensure_equals(filesize(fname), 0u);
+		ensure_equals(files::size(fname), 0u);
 		ensure_equals(md.source, origSource);
 
 		// After commit, data is appended
 		p.commit();
-		ensure_equals(filesize(fname), size);
+		ensure_equals(files::size(fname), size);
 		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, 0, size)));
 	}
 
@@ -125,12 +125,12 @@ void to::test<1>()
 		// Start the append transaction, nothing happens until commit
 		Pending p = df.append(md, &ofs);
 		ensure_equals(ofs, (off_t)totsize);
-		ensure_equals(filesize(fname), totsize);
+		ensure_equals(files::size(fname), totsize);
 		ensure_equals(md.source, origSource);
 
 		// After rollback, nothing has changed
 		p.rollback();
-		ensure_equals(filesize(fname), totsize);
+		ensure_equals(files::size(fname), totsize);
 		ensure_equals(md.source, origSource);
 	}
 
@@ -143,17 +143,17 @@ void to::test<1>()
 		// Start the append transaction, nothing happens until commit
 		Pending p = df.append(md, &ofs);
 		ensure_equals(ofs, totsize);
-		ensure_equals(filesize(fname), totsize);
+		ensure_equals(files::size(fname), totsize);
 		ensure_equals(md.source, origSource);
 
 		// After commit, data is appended
 		p.commit();
-		ensure_equals(filesize(fname), totsize + size);
+		ensure_equals(files::size(fname), totsize + size);
 		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
 	}
 
 	// When pending is out of scope, everything is normal
-	ensure_equals(filesize(fname), totsize + size);
+	ensure_equals(files::size(fname), totsize + size);
 	ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
 }
 
@@ -172,7 +172,7 @@ void to::test<2>()
 	ensure(!hasRebuildFlagfile("testdatafile/testfile.grib1"));
 	ensure(!hasPackFlagfile("testdatafile/testfile.grib1"));
 
-	size_t origsize = filesize("testdatafile/testfile.grib1");
+	size_t origsize = files::size("testdatafile/testfile.grib1");
 
 	// Get the second grib
 	scan::Grib scanner;
@@ -206,7 +206,7 @@ void to::test<2>()
 	ensure(hasPackFlagfile("testdatafile/testfile.grib1"));
 
 	// The file must have grown with the new data
-	ensure_equals(filesize("testdatafile/testfile.grib1"), origsize + size);
+	ensure_equals(files::size("testdatafile/testfile.grib1"), origsize + size);
 
 	// Check what is in the metadata file
 	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");
@@ -238,7 +238,7 @@ void to::test<3>()
 	ensure(!hasRebuildFlagfile("testdatafile/testfile.grib1"));
 	ensure(!hasPackFlagfile("testdatafile/testfile.grib1"));
 
-	size_t origsize = filesize("testdatafile/testfile.grib1");
+	size_t origsize = files::size("testdatafile/testfile.grib1");
 	scan::Grib scanner;
 	scanner.open("inbound/test.grib1");
 	Metadata md;
@@ -266,7 +266,7 @@ void to::test<3>()
 	ensure(hasPackFlagfile("testdatafile/testfile.grib1"));
 
 	// The file size must be the same
-	ensure_equals(filesize("testdatafile/testfile.grib1"), origsize);
+	ensure_equals(files::size("testdatafile/testfile.grib1"), origsize);
 
 	// Check what is in the metadata file
 	vector<Metadata> allmd = Metadata::readFile("testdatafile/testfile.grib1.metadata");

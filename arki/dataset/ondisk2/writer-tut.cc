@@ -37,7 +37,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
-using namespace arki::utils::files;
+using namespace arki::utils;
 
 namespace tut {
 
@@ -81,7 +81,7 @@ template<> template<>
 void to::test<1>()
 {
 	acquireSamples();
-	removeDontpackFlagfile("testdir");
+	files::removeDontpackFlagfile("testdir");
 	{
 		// Remove one element
 		arki::dataset::ondisk2::Writer writer(cfg);
@@ -210,7 +210,7 @@ void to::test<3>()
 {
 	cfg.setValue("step", "monthly");
 	acquireSamples();
-	removeDontpackFlagfile("testdir");
+	files::removeDontpackFlagfile("testdir");
 	{
 		// Remove one element
 		arki::dataset::ondisk2::Writer writer(cfg);
