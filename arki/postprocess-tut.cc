@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,10 @@
 #include <sstream>
 #include <iostream>
 #include <stdio.h>
+
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
+#endif
 
 namespace tut {
 using namespace std;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,9 +72,11 @@ struct arki_dispatcher_shar {
 };
 TESTGRP(arki_dispatcher);
 
-static inline std::string dsname(const Metadata& md)
+namespace {
+inline std::string dsname(const Metadata& md)
 {
 	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>()->name;
+}
 }
 
 // Test simple dispatching
