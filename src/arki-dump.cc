@@ -161,7 +161,7 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--query conflicts with --from-yaml-summary");
 		if (opts.query->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--query conflicts with --annotate");
-		if (opts.query->boolValue() && bbox && opts.bbox->isSet())
+		if (opts.query->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--query conflicts with --bbox");
 
 		if (opts.config->boolValue() && opts.aliases->boolValue())
@@ -172,7 +172,7 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--config conflicts with --from-yaml-summary");
 		if (opts.config->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--config conflicts with --annotate");
-		if (opts.config->boolValue() && bbox && opts.bbox->isSet())
+		if (opts.config->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--config conflicts with --bbox");
 
 		if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
@@ -181,7 +181,7 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-summary");
 		if (opts.aliases->boolValue() && opts.annotate->boolValue())
 			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
-		if (opts.aliases->boolValue() && bbox && opts.bbox->isSet())
+		if (opts.aliases->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--aliases conflicts with --bbox");
 
 		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
@@ -190,7 +190,7 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-data");
 		if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && bbox && opts.bbox->isSet())
+		if (opts.annotate->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--annotate conflicts with --bbox");
 
 		if (opts.query->boolValue())

@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <sys/types.h>
 #include <utime.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace wibble;

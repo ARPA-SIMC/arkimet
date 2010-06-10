@@ -117,11 +117,11 @@ template<> template<>
 void to::test<4>()
 {
 	// Opening a missing manifest read-write creates a new one
-	ensure(!sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+	ensure(!files::exists("testds/.archive/last/" + idxfname()));
 	std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRW();
 	m->flush();
-	ensure(sys::fs::access("testds/.archive/last/" + idxfname(), F_OK));
+	ensure(files::exists("testds/.archive/last/" + idxfname()));
 	
 	MaintenanceCollector c;
 	m->check(c);

@@ -33,6 +33,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace arki::dataset::simple;
 using namespace wibble;
 
@@ -77,7 +78,7 @@ void to::test<1>()
 		Datafile df("./" + fname);
 
 		// It should exist but be empty
-		ensure(sys::fs::access(fname, F_OK));
+		ensure(files::exists(fname));
 		ensure_equals(filesize(fname), 0u);
 
 		// Get a metadata
@@ -91,8 +92,8 @@ void to::test<1>()
 		ensure_equals(filesize(fname), size);
 		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, 0, size)));
 		// Metadata and summaries don't get touched
-		ensure(!sys::fs::access(mdfname, F_OK));
-		ensure(!sys::fs::access(sumfname, F_OK));
+		ensure(!files::exists(mdfname));
+		ensure(!files::exists(sumfname));
 
 		totsize += size;
 
@@ -106,15 +107,15 @@ void to::test<1>()
 		ensure_equals(filesize(fname), totsize + size);
 		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
 		// Metadata and summaries don't get touched
-		ensure(!sys::fs::access(mdfname, F_OK));
-		ensure(!sys::fs::access(sumfname, F_OK));
+		ensure(!files::exists(mdfname));
+		ensure(!files::exists(sumfname));
 
 		totsize += size;
 
 		df.flush();
 		// Metadata and summaries are now there
-		ensure(sys::fs::access(mdfname, F_OK));
-		ensure(sys::fs::access(sumfname, F_OK));
+		ensure(files::exists(mdfname));
+		ensure(files::exists(sumfname));
 		inomd = utils::files::inode(mdfname);
 		inosum = utils::files::inode(sumfname);
 

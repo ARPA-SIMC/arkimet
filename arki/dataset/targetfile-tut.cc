@@ -65,9 +65,11 @@ struct arki_dataset_targetfile_shar {
 };
 TESTGRP(arki_dataset_targetfile);
 
-static inline const matcher::Implementation& mimpl(const Matcher& m)
+namespace {
+inline const matcher::Implementation& mimpl(const Matcher& m)
 {
 	return *m.m_impl->get(TYPE_REFTIME);
+}
 }
 
 template<> template<>
