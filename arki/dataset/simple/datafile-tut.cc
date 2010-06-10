@@ -37,13 +37,15 @@ using namespace arki::utils;
 using namespace arki::dataset::simple;
 using namespace wibble;
 
-static inline size_t filesize(const std::string& fname)
+namespace {
+inline size_t filesize(const std::string& fname)
 {
 	return sys::fs::stat(fname)->st_size;
 }
-static inline size_t datasize(const Metadata& md)
+inline size_t datasize(const Metadata& md)
 {
 	return md.source.upcast<types::source::Blob>()->size;
+}
 }
 
 struct arki_dataset_simple_datafile_shar {

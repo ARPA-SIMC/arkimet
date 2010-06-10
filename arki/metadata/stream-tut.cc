@@ -134,7 +134,7 @@ void to::test<1>()
 	Metadata md1;
 	md1.create();
 	md1.source = source::Blob::create("grib", "fname", 1, 2);
-	fill(md1);
+	this->fill(md1);
 
 	Metadata md2;
 	md2 = md1;
