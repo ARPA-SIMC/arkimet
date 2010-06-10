@@ -30,6 +30,7 @@
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 #include <wibble/sys/childprocess.h>
+#include <unistd.h>
 
 #include <sstream>
 #include <iostream>
@@ -42,9 +43,11 @@ using namespace arki::types;
 using namespace arki::dataset::ondisk2;
 using namespace arki::utils;
 
-static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
+namespace {
+inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
 {
 	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+}
 }
 
 struct arki_dataset_ondisk2_shar {

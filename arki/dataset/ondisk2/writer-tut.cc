@@ -145,9 +145,9 @@ void to::test<1>()
 	}
 
 	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+	ensure(files::exists("testdir/.summaries/all.summary"));
+	ensure(files::exists("testdir/.summaries/2007-07.summary"));
+	ensure(files::exists("testdir/.summaries/2007-10.summary"));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to reclaim,
@@ -198,9 +198,9 @@ void to::test<2>()
 	ensure(c.isClean());
 
 	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+	ensure(files::exists("testdir/.summaries/all.summary"));
+	ensure(files::exists("testdir/.summaries/2007-07.summary"));
+	ensure(files::exists("testdir/.summaries/2007-10.summary"));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to pack,
@@ -252,9 +252,9 @@ void to::test<3>()
 	ensure(c.isClean());
 
 	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+	ensure(files::exists("testdir/.summaries/all.summary"));
+	ensure(files::exists("testdir/.summaries/2007-07.summary"));
+	ensure(files::exists("testdir/.summaries/2007-10.summary"));
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to pack,
@@ -310,9 +310,9 @@ void to::test<4>()
 	ensure(c.isClean());
 
 	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+	ensure(files::exists("testdir/.summaries/all.summary"));
+	ensure(files::exists("testdir/.summaries/2007-07.summary"));
+	ensure(files::exists("testdir/.summaries/2007-10.summary"));
 }
 
 // Test accuracy of maintenance scan, after deleting the index
@@ -359,9 +359,9 @@ void to::test<5>()
 	ensure(c.isClean());
 
 	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+	ensure(files::exists("testdir/.summaries/all.summary"));
+	ensure(files::exists("testdir/.summaries/2007-07.summary"));
+	ensure(files::exists("testdir/.summaries/2007-10.summary"));
 }
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile
@@ -462,9 +462,9 @@ void to::test<6>()
 	ensure_equals(blob->size, 7218u);
 
 	// Ensure that we have the summary cache
-	ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-	ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+	ensure(files::exists("testdir/.summaries/all.summary"));
+	ensure(files::exists("testdir/.summaries/2007-07.summary"));
+	ensure(files::exists("testdir/.summaries/2007-10.summary"));
 }
 
 // Test accuracy of maintenance scan, with index, on dataset with some
@@ -595,9 +595,9 @@ void to::test<8>()
 		ensure(c.isClean());
 
 		// Ensure that we have the summary cache
-		ensure(sys::fs::access("testdir/.summaries/all.summary", F_OK));
-		ensure(sys::fs::access("testdir/.summaries/2007-07.summary", F_OK));
-		ensure(sys::fs::access("testdir/.summaries/2007-10.summary", F_OK));
+		ensure(files::exists("testdir/.summaries/all.summary"));
+		ensure(files::exists("testdir/.summaries/2007-07.summary"));
+		ensure(files::exists("testdir/.summaries/2007-10.summary"));
 	}
 }
 
