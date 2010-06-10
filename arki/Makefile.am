@@ -195,7 +195,7 @@ libarkimet_la_SOURCES = \
 		runtime/io.cc \
 		runtime/config.cc \
 		runtime.cc
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS)
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
 if GCOV
 export ARKI_HAS_GCOV=yes
@@ -291,7 +291,7 @@ tests_arki_test_SOURCES = \
 		runtime/config-tut.cc \
 		runtime-tut.cc \
 		tests/tut-main.cpp
-tests_arki_test_LDADD = -dlpreopen libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS)
+tests_arki_test_LDADD = -dlpreopen libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
 
