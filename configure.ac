@@ -246,7 +246,7 @@ dnl AC_DEFINE_UNQUOTED(TABLE_DIR, "$def_tabledir", "Default location for table f
 if test x"$GXX" = x"yes"; then
 	CXXFLAGS="-Wall $CXXFLAGS"
 fi
-if test x"$CXX" = x"xlc"; then
+if test x"$CXX" = x"xlc" -o x"$CXX" = x"xlC"; then
 	CXXFLAGS="-qrtti=all -qtls=initial-exec $CXXFLAGS"
 fi
 LIBS="$LIBS -lm"
