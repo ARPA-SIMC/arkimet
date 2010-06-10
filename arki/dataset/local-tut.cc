@@ -35,6 +35,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::dataset;
+using namespace arki::utils;
 using namespace wibble;
 
 struct arki_dataset_local_shar : public DatasetTest {
@@ -101,26 +102,26 @@ void to::test<1>()
 	}
 
 	// Check that the files have been moved to the archive
-	ensure(!sys::fs::access("testds/.archive/last/2007/07-07.grib1", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.gz", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.gz.idx", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-07.grib1.summary", F_OK));
-	ensure(!sys::fs::access("testds/.archive/last/2007/07-08.grib1", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.gz", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.gz.idx", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.metadata", F_OK));
-	ensure(sys::fs::access("testds/.archive/last/2007/07-08.grib1.summary", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-07.grib1", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-07.grib1.gz", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-07.grib1.gz.idx", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-07.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-07.grib1.summary", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-08.grib1", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-08.grib1.gz", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-08.grib1.gz.idx", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-08.grib1.metadata", F_OK));
-	ensure(!sys::fs::access("testds/2007/07-08.grib1.summary", F_OK));
+	ensure(!files::exists("testds/.archive/last/2007/07-07.grib1"));
+	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.gz"));
+	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.gz.idx"));
+	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
+	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.summary"));
+	ensure(!files::exists("testds/.archive/last/2007/07-08.grib1"));
+	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.gz"));
+	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.gz.idx"));
+	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
+	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.summary"));
+	ensure(!files::exists("testds/2007/07-07.grib1"));
+	ensure(!files::exists("testds/2007/07-07.grib1.gz"));
+	ensure(!files::exists("testds/2007/07-07.grib1.gz.idx"));
+	ensure(!files::exists("testds/2007/07-07.grib1.metadata"));
+	ensure(!files::exists("testds/2007/07-07.grib1.summary"));
+	ensure(!files::exists("testds/2007/07-08.grib1"));
+	ensure(!files::exists("testds/2007/07-08.grib1.gz"));
+	ensure(!files::exists("testds/2007/07-08.grib1.gz.idx"));
+	ensure(!files::exists("testds/2007/07-08.grib1.metadata"));
+	ensure(!files::exists("testds/2007/07-08.grib1.summary"));
 
 	// Maintenance should now show a normal situation
 	{

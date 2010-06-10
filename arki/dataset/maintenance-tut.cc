@@ -33,6 +33,7 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::dataset;
+using namespace arki::utils;
 
 namespace tut {
 

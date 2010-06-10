@@ -26,6 +26,7 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
+#include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 
 namespace arki {
@@ -86,7 +87,7 @@ struct arki_dataset_archive_shar : public DatasetTest {
 		Archive arc(dir);
 		arc.openRO();
 		arki::tests::impl_ensure_dataset_clean(loc, arc, filecount, resultcount);
-		inner_ensure(sys::fs::access(str::joinpath(dir, arcidxfname()), F_OK));
+		inner_ensure(files::exists(str::joinpath(dir, arcidxfname())));
 	}
 };
 TESTGRP(arki_dataset_archive);
@@ -104,10 +105,10 @@ void to::test<1>()
 		system("cp inbound/test.grib1 testds/.archive/last/");
 		arc.acquire("test.grib1");
 		arc.flush();
-		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
+		ensure(files::exists("testds/.archive/last/test.grib1"));
+		ensure(files::exists("testds/.archive/last/test.grib1.metadata"));
+		ensure(files::exists("testds/.archive/last/test.grib1.summary"));
+		ensure(files::exists("testds/.archive/last/" + arcidxfname()));
 
 		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
 		ensure_equals(mdc.size(), 3u);
@@ -186,10 +187,10 @@ void to::test<3>()
 		arc.flush();
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
+		ensure(files::exists("testds/.archive/last/test.grib1"));
+		ensure(!files::exists("testds/.archive/last/test.grib1.metadata"));
+		ensure(!files::exists("testds/.archive/last/test.grib1.summary"));
+		ensure(files::exists("testds/.archive/last/" + arcidxfname()));
 	}
 
 	// Query now is ok
@@ -250,10 +251,10 @@ void to::test<4>()
 		arc.acquire("test.grib1");
 		arc.flush();
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-		ensure(sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
+		ensure(files::exists("testds/.archive/last/test.grib1"));
+		ensure(files::exists("testds/.archive/last/test.grib1.metadata"));
+		ensure(!files::exists("testds/.archive/last/test.grib1.summary"));
+		ensure(files::exists("testds/.archive/last/" + arcidxfname()));
 	}
 
 	// Query now is ok
@@ -317,10 +318,10 @@ void to::test<5>()
 		arc.flush();
 
 		sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
-		ensure(sys::fs::access("testds/.archive/last/2.grib1", F_OK));
-		ensure(!sys::fs::access("testds/.archive/last/2.grib1.metadata", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/2.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
+		ensure(files::exists("testds/.archive/last/2.grib1"));
+		ensure(!files::exists("testds/.archive/last/2.grib1.metadata"));
+		ensure(files::exists("testds/.archive/last/2.grib1.summary"));
+		ensure(files::exists("testds/.archive/last/" + arcidxfname()));
 	}
 
 	// Query now is ok
@@ -402,12 +403,12 @@ void to::test<6>()
 		mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1");
 
-		ensure(!sys::fs::access("testds/.archive/last/test.grib1", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.gz", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.gz.idx", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.metadata", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/test.grib1.summary", F_OK));
-		ensure(sys::fs::access("testds/.archive/last/" + arcidxfname(), F_OK));
+		ensure(!files::exists("testds/.archive/last/test.grib1"));
+		ensure(files::exists("testds/.archive/last/test.grib1.gz"));
+		ensure(files::exists("testds/.archive/last/test.grib1.gz.idx"));
+		ensure(files::exists("testds/.archive/last/test.grib1.metadata"));
+		ensure(files::exists("testds/.archive/last/test.grib1.summary"));
+		ensure(files::exists("testds/.archive/last/" + arcidxfname()));
 	}
 
 	// Everything is still ok
