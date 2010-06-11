@@ -5,6 +5,7 @@ BINDIR=`dirname $0`
 . $BINDIR/testlib.sh
 
 setup
+trap cleanup EXIT
 
 importtest
 

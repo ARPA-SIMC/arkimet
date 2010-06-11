@@ -3,7 +3,7 @@
 ## Clean up the test environment at exit unless asked otherwise
 cleanup() {
     test -z "$PAUSE" || sh
-    test -z "$PRESERVE" && rm -rf "$TESTDIR"
+    test -z "$PRESERVE" && cd "$ORIGDIR" && rm -rf "$TESTDIR"
 }
 
 # Setup the test environment and change into the test dir
@@ -29,9 +29,16 @@ setup() {
     export ARKI_ALIASES=$TOP_SRCDIR/conf/match-alias.conf
     export PYTHONPATH="$PYTHONPATH:$TOP_SRCDIR/src"
     export http_proxy=
-    ulimit -v 1048576
+    ulimit -v 1048576 || true
 
-    TESTDIR="`mktemp -d`"
+    ORIGDIR=`pwd`
+    if which mktemp > /dev/null
+    then
+        TESTDIR="`mktemp -d`"
+    else
+        TESTDIR="/tmp/arkitest.$$"
+        mkdir $TESTDIR
+    fi
     cd "$TESTDIR"
 
     mkdir inbound
@@ -42,8 +49,6 @@ setup() {
     mkdir test80
     mkdir test98
     mkdir error
-
-    trap cleanup EXIT
 }
 
 ## Call at end of the test script
