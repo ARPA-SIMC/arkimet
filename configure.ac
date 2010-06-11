@@ -80,8 +80,8 @@ dnl LIBWIBBLE_DEFS
 AM_CONDITIONAL([WIBBLE_STANDALONE], [false])
 
 dnl Optional readline
-AC_LIB_READLINE
-if test "$ac_cv_lib_readline" != "no"; then
+VL_LIB_READLINE
+if test "$vl_cv_lib_readline" != "no"; then
 	have_readline=yes
 else
 	have_readline=no
