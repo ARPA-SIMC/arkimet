@@ -31,6 +31,7 @@
 #include <arki/nag.h>
 #include <arki/runtime.h>
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -55,7 +56,15 @@ struct Options : public arki::runtime::CommandLine
 
 }
 }
-	
+
+template<typename T>
+struct RAIIArrayDeleter
+{
+	T*& a;
+	RAIIArrayDeleter(T*& a) : a(a) {}
+	~RAIIArrayDeleter() { if (a) delete[] a; }
+};
+
 int main(int argc, const char* argv[])
 {
 	wibble::commandline::Options opts;
@@ -74,7 +83,10 @@ int main(int argc, const char* argv[])
 			size_t dscount = opts.inputInfo.sectionSize();
 			
 			// Create an auto_ptr array to take care of memory management
-			auto_ptr<ReadonlyDataset> datasets[dscount];
+			// It used to be just: auto_ptr<ReadonlyDataset> datasets[dscount];
+			// but xlC does not seem to like it
+			auto_ptr<ReadonlyDataset>* datasets = new auto_ptr<ReadonlyDataset>[dscount];
+			RAIIArrayDeleter< auto_ptr<ReadonlyDataset> > datasets_mman(datasets);
 
 			// Instantiate the datasets and add them to the merger
 			int idx = 0;
