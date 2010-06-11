@@ -43,6 +43,8 @@
  #else /* !defined(HAVE_READLINE_H) */
   extern char *readline (const char* prompt);
   extern int rl_insert_text (const char *text);
+  typedef int rl_hook_func_t ((void));
+  extern rl_hook_func_t * rl_startup_hook;
  #endif /* !defined(HAVE_READLINE_H) */
  char *cmdline = NULL;
 #else /* !defined(HAVE_READLINE_READLINE_H) */
