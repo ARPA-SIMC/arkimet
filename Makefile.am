@@ -26,6 +26,7 @@ arki-%.1: src/arki-% doc/mhooks-%
 bboxconfdir = $(confdir)/bbox
 sg1confdir = $(confdir)/scan-grib1
 sg2confdir = $(confdir)/scan-grib2
+sbconfdir = $(confdir)/scan-bufr
 fmtconfdir = $(confdir)/format
 reportconfdir = $(confdir)/report
 qmconfdir = $(confdir)/qmacro
@@ -34,6 +35,17 @@ tfconfdir = $(confdir)/targetfile
 dist_conf_DATA = conf/match-alias.conf
 dist_sg1conf_DATA = conf/scan-grib1/01-common.lua
 dist_sg2conf_DATA = conf/scan-grib2/01-common.lua
+dist_sbconf_DATA = \
+	conf/scan-bufr/acars.lua \
+	conf/scan-bufr/airep.lua \
+	conf/scan-bufr/amdar.lua \
+	conf/scan-bufr/buoy.lua \
+	conf/scan-bufr/metar.lua \
+	conf/scan-bufr/pilot.lua \
+	conf/scan-bufr/ship.lua \
+	conf/scan-bufr/synop.lua \
+	conf/scan-bufr/temp.lua \
+	conf/scan-bufr/temp_ship.lua
 dist_bboxconf_DATA = conf/bbox/01-common
 dist_fmtconf_DATA = \
 	conf/format/01-gribapi \
@@ -44,7 +56,7 @@ dist_fmtconf_DATA = \
 	conf/format/10-origin \
 	conf/format/10-product \
 	conf/format/10-timerange
-dist_reportconf_DATA = conf/report/mdstats
+dist_reportconf_DATA = conf/report/count conf/report/datasets conf/report/mdstats
 dist_qmconf_DATA = conf/qmacro/noop.lua conf/qmacro/expa.lua conf/qmacro/gridspace.lua
 dist_tfconf_DATA = conf/targetfile/mars
 
@@ -72,15 +84,20 @@ EXTRA_DIST = doc/MATCHER \
 	     doc/lua-examples/run.lua \
 	     doc/lua-examples/time.lua \
 	     doc/lua-examples/timerange.lua \
+	     test/data/layer.grib1 \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
+	     test/data/test-sorted.grib1 \
 	     test/data/padded.grib1 \
 	     test/data/padded.bufr \
 	     test/error/config \
 	     test/dataset1/config \
 	     test/misc/erse00.expa \
+	     test/misc/rec-ts-alias.conf \
 	     test/postproc/checkfiles \
 	     test/postproc/error \
-	     test/postproc/say
+	     test/postproc/null \
+	     test/postproc/say \
+	     test/postproc/testcountbytes
 
 CLEANFILES = $(man_MANS)

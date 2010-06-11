@@ -75,4 +75,4 @@ test_src_SOURCES = \
 		../arki/tests/tut-main.cpp
 test_src_LDADD = $(all_libs)
 
-EXTRA_DIST=testlib.sh test-arki-server run-test-src
+EXTRA_DIST=testlib.sh test-arki-query test-arki-scan test-arki-server run-test-src
