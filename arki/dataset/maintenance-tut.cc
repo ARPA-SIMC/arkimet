@@ -321,7 +321,10 @@ void to::test<5>()
 	}
 
 	// Corrupt the first grib in the file
-	system("dd if=/dev/zero of=testds/2007/07.grib1 bs=1 count=2 conv=notrunc status=noxfer > /dev/null 2>&1");
+        system("touch savets -r testds/2007/07.grib1 &&"
+               "dd if=/dev/zero of=testds/2007/07.grib1 bs=1 count=2 conv=notrunc > /dev/null 2>&1 &&"
+               "touch testds/2007/07.grib1 -r savets &&"
+               "rm savets");
 
 	// A quick check has nothing to complain
 	ensure_maint_clean(2);
