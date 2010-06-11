@@ -41,7 +41,8 @@
  #elif defined(HAVE_READLINE_H)
   #include <readline.h>
  #else /* !defined(HAVE_READLINE_H) */
-  extern char *readline ();
+  extern char *readline (const char* prompt);
+  extern int rl_insert_text (const char *text);
  #endif /* !defined(HAVE_READLINE_H) */
  char *cmdline = NULL;
 #else /* !defined(HAVE_READLINE_READLINE_H) */
