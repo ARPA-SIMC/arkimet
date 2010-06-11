@@ -248,6 +248,7 @@ if test x"$GXX" = x"yes"; then
 fi
 if test x"$CXX" = x"xlc" -o x"$CXX" = x"xlC"; then
 	CXXFLAGS="-qrtti=all -qtls=initial-exec $CXXFLAGS"
+	LDFLAGS="-qrtti=all -qtls=initial-exec $LDFLAGS"
 fi
 LIBS="$LIBS -lm"
 
