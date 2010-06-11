@@ -26,6 +26,7 @@
 #include <arki/runtime/io.h>
 #include <wibble/sys/fs.h>
 #include <cstring>
+#include <config.h>
 
 #include <sstream>
 #include <iostream>
@@ -118,6 +119,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
+#ifdef HAVE_DBALLE
 	using namespace utils;
 
 	static const int repeats = 1024;
@@ -195,6 +197,7 @@ void to::test<4>()
 	ensure_equals(acct::gzip_data_read_count.val(), (size_t)repeats / 2);
 	ensure_equals(acct::gzip_forward_seek_bytes.val(), 194u * 511u);
 	ensure_equals(acct::gzip_idx_reposition_count.val(), 1u);
+#endif
 }
 
 // Test compression when the data don't compress
@@ -203,6 +206,7 @@ void to::test<5>()
 {
 	using namespace utils;
 
+#ifdef HAVE_DBALLE
 	// Create a collector with only one small metadata inside
 	c.clear();
 	scan::scan("inbound/test.bufr", c);
@@ -217,6 +221,7 @@ void to::test<5>()
 	Metadata::readFile("test.md", c1);
 	ensure_equals(c.size(), 1u);
 	ensure(c[0] ==  c1[0]);
+#endif
 }
 
 
