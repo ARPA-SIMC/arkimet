@@ -152,7 +152,10 @@ void HandleWatch::close()
 TempfileHandleWatch::~TempfileHandleWatch()
 {
 	if (fd > 0)
+	{
+		close();
 		::unlink(fname.c_str());
+	}
 }
 
 
