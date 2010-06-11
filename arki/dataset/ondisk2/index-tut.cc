@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010 ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -136,13 +136,15 @@ void to::test<1>()
 	// Index a metadata
 	int id = test->id(md);
 	ensure_equals(id, -1);
-	test->index(md, "test-md", 0);
+	test->index(md, "test-md", 0, &id);
+	ensure_equals(id, 1);
 	ensure_equals(test->id(md), 1);
 
 	// Index a second one
 	id = test->id(md1);
 	ensure_equals(id, -1);
-	test->index(md1, "test-md1", 0);
+	test->index(md1, "test-md1", 0, &id);
+	ensure_equals(id, 2);
 	ensure_equals(test->id(md1), 2);
 
 	// Query various kinds of metadata
