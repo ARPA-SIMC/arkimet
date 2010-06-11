@@ -1,7 +1,7 @@
 /*
  * dataset/index - Dataset index infrastructure
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -173,7 +173,8 @@ int Index::id(const Metadata& md) const
 	if (!urt.defined()) return -1;
 	Item<types::Reftime> rt(urt.upcast<types::Reftime>());
 	if (rt->style() != types::Reftime::POSITION) return -1;
-	m_get_id.bind(++idx, rt.upcast<types::reftime::Position>()->time->toSQL());
+	string sqltime = rt.upcast<types::reftime::Position>()->time->toSQL();
+	m_get_id.bind(++idx, sqltime);
 
 	if (m_uniques)
 	{
