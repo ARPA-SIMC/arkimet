@@ -111,7 +111,7 @@ void hexdump(const char* name, const unsigned char* str, int len);
  */
 struct HandleWatch
 {
-	const std::string& fname;
+	std::string fname;
 	int fd;
 	HandleWatch(const std::string& fname, int fd) : fname(fname), fd(fd) {}
 	~HandleWatch() { close(); }
