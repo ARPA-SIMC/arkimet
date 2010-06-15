@@ -60,7 +60,9 @@ dist_reportconf_DATA = conf/report/count conf/report/datasets conf/report/mdstat
 dist_qmconf_DATA = conf/qmacro/noop.lua conf/qmacro/expa.lua conf/qmacro/gridspace.lua
 dist_tfconf_DATA = conf/targetfile/mars
 
-EXTRA_DIST = doc/MATCHER \
+EXTRA_DIST = README \
+	     README.Cineca \
+	     doc/MATCHER \
 	     doc/DATASET \
 	     doc/adding-formats.txt \
 	     conf/qmacro/test0.lua \
