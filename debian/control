@@ -11,7 +11,7 @@ Build-Depends: cdbs (>= 0.4.43), debhelper (>= 5), python-central (>= 0.5.6), dh
   libgrib-api-dev,
   python, python-configobj, curl
 Standards-Version: 3.7.2.0
-XS-Python-Version: >= 2.3
+XS-Python-Version: >= 2.5
 XS-Vcs-Svn: https://svn.smr.arpa.emr.it/xgribarch
 
 Package: arkimet
