@@ -103,6 +103,16 @@ void to::test<3>()
 	ensure_not_matches("timerange:GRIB2", md);
 	ensure_not_matches("timerange:BUFR,3h", md);
 	ensure_not_matches("timerange:BUFR,2m", md);
+
+	md.set(timerange::BUFR::create());
+
+	ensure_matches("timerange:BUFR", md);
+	ensure_matches("timerange:BUFR,0", md);
+	ensure_matches("timerange:BUFR,0h", md);
+	ensure_not_matches("timerange:GRIB1", md);
+	ensure_not_matches("timerange:GRIB2", md);
+	ensure_not_matches("timerange:BUFR,3h", md);
+	ensure_not_matches("timerange:BUFR,2m", md);
 }
 
 

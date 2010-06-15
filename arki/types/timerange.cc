@@ -791,6 +791,8 @@ bool BUFR::is_seconds() const
 
 unsigned BUFR::seconds() const
 {
+	if (m_value == 0) return 0;
+
 	switch ((t_enum_GRIB_TIMEUNIT)m_unit)
 	{
 		case GRIB_TIMEUNIT_UNKNOWN:
@@ -809,6 +811,8 @@ unsigned BUFR::seconds() const
 
 unsigned BUFR::months() const
 {
+	if (m_value == 0) return 0;
+
 	switch ((t_enum_GRIB_TIMEUNIT)m_unit)
 	{
 		case GRIB_TIMEUNIT_UNKNOWN:
