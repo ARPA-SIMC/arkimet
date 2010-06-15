@@ -29,6 +29,7 @@ from arkimet import bottle
 from arkimet.bottle import route, post
 import subprocess
 import logging
+import logging.handlers
 import os, os.path, signal, errno, sys, time, select
 import tempfile, shutil
 import urllib, urlparse
