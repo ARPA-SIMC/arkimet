@@ -17,7 +17,8 @@ then
 #server.log_file = "arki-server.log"
 #EOF
 
-    arki-server -p 7117 --quiet --runtest="$BINDIR/`basename $0` run" conf
+    rm -f as-access.log as-error.log
+    arki-server -p 7117 --accesslog="as-access.log" --errorlog="as-error.log" --quiet --runtest="$BINDIR/`basename $0` run" conf
 
     endtest
 elif [ $1 == 'run' ]
@@ -54,6 +55,10 @@ then
     runtest "arki-query --postproc=checkfiles --postproc-data=/dev/null '' $BASEURL/dataset/test200"
     runtest "arki-query --postproc=checkfiles --postproc-data=/dev/null --postproc-data=/dev/null '' $BASEURL/dataset/test200"
     runtest "if arki-query --postproc=error '' $BASEURL/dataset/test200 2>/dev/null; then /bin/false; fi"
+
+    # Check that something gets logged
+    runtest "test -s as-access.log"
+    runtest "test -s as-error.log"
 
     testtotals
 
