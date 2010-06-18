@@ -1216,8 +1216,8 @@ class GunicornServer(ServerAdapter):
 
 class AutoServer(ServerAdapter):
     """ Untested. """
-    adapters = [FapwsServer, CherryPyServer, PasteServer,
-                TwistedServer, GunicornServer, WSGIRefServer]
+    adapters = [FapwsServer, PasteServer,
+                TwistedServer, GunicornServer, CherryPyServer, WSGIRefServer]
     def run(self, handler):
         for sa in self.adapters:
             try:
