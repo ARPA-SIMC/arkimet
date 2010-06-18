@@ -1,8 +1,8 @@
 arkimet (0.44-1) UNRELEASED; urgency=low
 
-  * 
+  * Fixed logging configuration in arki-server
 
- -- Enrico Zini <enrico@debian.org>  Fri, 18 Jun 2010 11:34:30 +0200
+ -- Enrico Zini <enrico@debian.org>  Fri, 18 Jun 2010 12:24:24 +0200
 
 arkimet (0.43-1) UNRELEASED; urgency=low
 

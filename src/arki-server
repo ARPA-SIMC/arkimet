@@ -49,8 +49,9 @@ dsconfig = None
 #
 
 def log_access(fmt, *args):
-    msg = fmt % args
-    logging.log(logging.INFO, msg)
+    logging.info(fmt, *args)
+def log_error(fmt, *args):
+    logging.warning(fmt, *args)
 
 class TextHTTPError(bottle.HTTPResponse):
     """ Used to generate an error page """
@@ -104,7 +105,7 @@ class Script(object):
         stdout, stderr = self.proc.communicate()
         res = self.proc.wait()
         if res != 0:
-            log_access("%s exited with error code %d and stderr %s", repr(self.args), res, repr(stderr));
+            log_error("%s exited with error code %d and stderr %s", repr(self.args), res, repr(stderr));
         if self.subdir:
             shutil.rmtree(self.subdir)
         return res, stdout, stderr
@@ -145,13 +146,13 @@ class Script(object):
             res = self.proc.poll()
             if res is None:
                 # If the process is still running, kill it
-                log_access("%s is still running after sending the output: terminating it", repr(self.args));
+                log_error("%s is still running after sending the output: terminating it", repr(self.args));
                 os.kill(self.proc.pid, signal.SIGTERM)
                 res = self.proc.wait()
             if res != 0:
                 tmpstderr.seek(0)
                 stderr = tmpstderr.read()
-                log_access("%s exited with error code %d and stderr %s", repr(self.args), res, repr(stderr));
+                log_error("%s exited with error code %d and stderr %s", repr(self.args), res, repr(stderr));
 
             if self.subdir:
                 shutil.rmtree(self.subdir)
@@ -512,17 +513,22 @@ class AccessLogFilter(logging.Filter):
         return 0
 
 def setup_logging(opts):
-    if opts.quiet:
-        logging.basicConfig(level=logging.ERROR)
-    else:
-        logging.basicConfig(level=logging.DEBUG)
+    minlevel = logging.ERROR
+    if opts.errorlog:
+        minlevel = logging.WARNING
+    if opts.accesslog:
+        minlevel = logging.INFO
+    if not opts.errorlog and not opts.accesslog and not opts.quiet:
+        minlevel = logging.DEBUG
+        logging.getLogger("").addHandler(logging.handlers.StreamHandler())
+
+    logging.getLogger("").setLevel(minlevel)
 
     if opts.accesslog:
         accesslog = logging.handlers.TimedRotatingFileHandler(opts.accesslog, "D", 1, backupCount = 14)
         accesslog.setLevel(logging.INFO)
         accesslog.addFilter(AccessLogFilter())
         logging.getLogger("").addHandler(accesslog)
-        logging.basicConfig(level=logging.DEBUG, filename=opts.accesslog, filemode="a")
 
     if opts.errorlog:
         errorlog = logging.handlers.TimedRotatingFileHandler(opts.errorlog, "D", 1, backupCount = 14)
