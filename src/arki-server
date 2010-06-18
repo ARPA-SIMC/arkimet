@@ -520,7 +520,7 @@ def setup_logging(opts):
         minlevel = logging.INFO
     if not opts.errorlog and not opts.accesslog and not opts.quiet:
         minlevel = logging.DEBUG
-        logging.getLogger("").addHandler(logging.handlers.StreamHandler())
+        logging.getLogger("").addHandler(logging.StreamHandler())
 
     logging.getLogger("").setLevel(minlevel)
 
