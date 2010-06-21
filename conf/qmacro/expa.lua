@@ -222,7 +222,7 @@ for line in query:gmatch("[^\r\n]+") do
 		-- print("ADD", name, q)
 		info:addquery(q)
 	else
-		error("line not parsed:", line)
+		error("line not parsed: " .. line)
 	end
 end
 
