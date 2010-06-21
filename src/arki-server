@@ -399,7 +399,7 @@ def dataset_index(name):
     conf = dsconfig.get(name, None)
     if conf is None:
         raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
-    summary = ArkiQuerySummary(dsconf=conf, fields=dict(style="yaml")).read()
+    res, summary, stderr = ArkiQuerySummary(dsconf=conf, fields=dict(style="yaml")).read()
     return """<html>
 <head><title>Dataset %s</title></head>
 <body>
