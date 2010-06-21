@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:cc="http://creativecommons.org/ns#"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
@@ -12,12 +13,19 @@
    height="1052.3622047"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.45.1"
-   sodipodi:docbase="/home/enrico/lavori/arpa/arkimet/doc"
+   inkscape:version="0.47 r22583"
    sodipodi:docname="general.svg"
-   inkscape:output_extension="org.inkscape.output.svg.inkscape">
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   version="1.1">
   <defs
      id="defs4">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective152" />
     <marker
        inkscape:stockid="Arrow1Lend"
        orient="auto"
@@ -39,9 +47,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.72644608"
-     inkscape:cx="489.1611"
-     inkscape:cy="629.59333"
+     inkscape:zoom="1.4528922"
+     inkscape:cx="270.83218"
+     inkscape:cy="847.09055"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      inkscape:window-width="938"
@@ -51,7 +59,9 @@
      showguides="true"
      inkscape:guide-bbox="true"
      inkscape:guide-points="true"
-     guidetolerance="1.4" />
+     guidetolerance="1.4"
+     showgrid="false"
+     inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -87,27 +97,6 @@
          id="tspan3263"
          x="42.545063"
          y="141.58926">GRIB data sources</tspan></text>
-    <g
-       id="g6342"
-       transform="translate(0.9670778,20.760695)">
-      <rect
-         y="160.04442"
-         x="42.626698"
-         height="46.131191"
-         width="124.78425"
-         id="rect6304"
-         style="fill:none;stroke:#000000;stroke-width:0.74976099;stroke-opacity:1" />
-      <text
-         id="text6306"
-         y="173.87425"
-         x="46.922813"
-         style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-         xml:space="preserve"><tspan
-           y="173.87425"
-           x="46.922813"
-           id="tspan6308"
-           sodipodi:role="line">arki-scan-grib</tspan></text>
-    </g>
     <text
        xml:space="preserve"
        style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
@@ -137,14 +126,8 @@
            y="237.1386"
            x="175.98209"
            id="tspan6314"
-           sodipodi:role="line">arki-scan-bufr</tspan></text>
+           sodipodi:role="line">arki-scan</tspan></text>
     </g>
-    <path
-       inkscape:connector-type="polyline"
-       id="path6322"
-       d="M 119.02353,227.31119 L 176.52688,330.69698"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Lend);stroke-opacity:1;display:inline"
-       inkscape:connection-start="#g6342" />
     <path
        inkscape:connector-type="polyline"
        id="path6326"
@@ -152,17 +135,10 @@
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Lend);stroke-opacity:1;display:inline"
        inkscape:connection-start="#g6347" />
     <path
-       inkscape:connector-type="polyline"
-       id="path6328"
-       d="M 369.11559,226.93631 L 308.10722,330.69698"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Lend);stroke-opacity:1;display:inline"
-       inkscape:connection-start="#g11511" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Lend);stroke-opacity:1;display:inline"
-       d="M 105.88823,147.836 L 105.94504,180.43023"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend);display:inline"
+       d="M 105.88823,147.836 241.5871,178.93191"
        id="path7623"
-       inkscape:connector-type="polyline"
-       inkscape:connection-end="#g6342" />
+       inkscape:connector-type="polyline" />
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Lend);stroke-opacity:1;display:inline"
        d="M 244.8988,147.77516 L 244.86105,180.05536"
@@ -170,32 +146,10 @@
        inkscape:connector-type="polyline"
        inkscape:connection-end="#g6347" />
     <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Lend);stroke-opacity:1;display:inline"
-       d="M 382.65458,147.836 L 382.79545,180.05536"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend);display:inline"
+       d="M 382.65458,147.836 242.96366,179.62019"
        id="path7627"
-       inkscape:connector-type="polyline"
-       inkscape:connection-end="#g11511" />
-    <g
-       id="g11511"
-       transform="translate(148.81983,-42.878525)">
-      <rect
-         y="223.30876"
-         x="171.68597"
-         height="46.131191"
-         width="124.78425"
-         id="rect11513"
-         style="fill:none;stroke:#000000;stroke-width:0.74976099;stroke-opacity:1" />
-      <text
-         id="text11515"
-         y="237.1386"
-         x="175.98209"
-         style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-         xml:space="preserve"><tspan
-           y="237.1386"
-           x="175.98209"
-           id="tspan11517"
-           sodipodi:role="line">arki-scan-*</tspan></text>
-    </g>
+       inkscape:connector-type="polyline" />
     <g
        id="g2234"
        transform="translate(25.584537,117.52088)">
@@ -443,42 +397,6 @@
        inkscape:connector-type="polyline"
        inkscape:connection-start="#g2234"
        inkscape:connection-end="#g2293" />
-    <text
-       xml:space="preserve"
-       style="font-size:12px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="117.94898"
-       y="262.57578"
-       id="text5278"><tspan
-         sodipodi:role="line"
-         id="tspan5280"
-         x="117.94898"
-         y="262.57578">Data</tspan><tspan
-         sodipodi:role="line"
-         x="117.94898"
-         y="277.57578"
-         id="tspan5282">and</tspan><tspan
-         sodipodi:role="line"
-         x="117.94898"
-         y="292.57578"
-         id="tspan5284">metadata</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:12px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="370.16336"
-       y="262.57578"
-       id="text5288"><tspan
-         sodipodi:role="line"
-         id="tspan5290"
-         x="370.16336"
-         y="262.57578">Data</tspan><tspan
-         sodipodi:role="line"
-         x="370.16336"
-         y="277.57578"
-         id="tspan5292">and</tspan><tspan
-         sodipodi:role="line"
-         x="370.16336"
-         y="292.57578"
-         id="tspan5294">metadata</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:12px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
