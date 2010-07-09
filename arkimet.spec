@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.27
-Release: 1418
+Version: 0.44
+Release: 2066%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/dettaglio_documento.asp?id=1172&idlivello=64
@@ -22,14 +22,6 @@ Requires: lib%{name}0 = %{?epoch:%epoch:}%{version}-%{release}
 %description -n arkimet-devel
  Description to be written.
 
-
-%package  -n libarkimet0
-Summary:  Archive for weather information (runtime library)
-Group:    Applications/Meteo
-
-%description -n libarkimet0
- Description to be written.
-
 %prep
 %setup -q
 
@@ -48,25 +40,19 @@ make
 %files
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/arkimet
+%dir /usr/lib/python*/site-packages/arkimet
 %{_sysconfdir}/arkimet/*
 %{_bindir}/*
+/usr/lib/python*/site-packages/arkimet/*
 %doc %{_mandir}/man1/*
 %doc README
-%doc MATCHER
-%doc DATASET
+%doc doc/MATCHER
+%doc doc/DATASET
 
 %files -n arkimet-devel
 %defattr(-,root,root,-)
-%{_includedir}/arki/*
 %{_libdir}/libarkimet*.a
 %{_libdir}/libarkimet*.la
-%{_libdir}/libarkimet*.so
-#/usr/lib/pkgconfig/libarkimet*
-#/usr/share/aclocal/libarkimet*.m4
-
-%files -n libarkimet0
-%defattr(-,root,root,-)
-%{_libdir}/libarkimet*.so.*
 
 %post
 /sbin/ldconfig
@@ -75,6 +61,9 @@ make
 /sbin/ldconfig
 
 %changelog
+* Thu Jul  8 2010 Daniele Branchini <dbranchini@carenza.metarpa> - 0.44-2066%{dist}
+- Rebuild to reflect upstream changes, removed libarkimet0
+
 * Thu Sep 17 2009 root <root@localhost.localdomain> - 0.27-1418
 - Rebuild to reflect upstream changes.
 
