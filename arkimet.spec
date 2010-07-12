@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 0.44
-Release: 2066%{dist}
+Release: 2067%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/dettaglio_documento.asp?id=1172&idlivello=64
@@ -9,7 +9,7 @@ Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildRequires: doxygen, libdballe-devel >= 4.0.0, lua-devel >= 5.1, grib_api, sqlite-devel >= 3.0, curl-devel, geos-devel, pkgconfig, python-cherrypy, readline-devel
 Requires: python-cherrypy
-
+Obsoletes: libarkimet0
  
 %description
  Description to be written.
@@ -17,7 +17,6 @@ Requires: python-cherrypy
 %package  -n arkimet-devel
 Summary:  Archive for weather information (development library)
 Group:    Applications/Meteo
-Requires: lib%{name}0 = %{?epoch:%epoch:}%{version}-%{release}
 
 %description -n arkimet-devel
  Description to be written.
@@ -61,6 +60,9 @@ make
 /sbin/ldconfig
 
 %changelog
+* Mon Jul 12 2010 Daniele Branchini <dbranchini@linus> - 0.44-2067%{dist}
+- Corretta dipendenza da libarkimet0 (obsoleto)
+
 * Thu Jul  8 2010 Daniele Branchini <dbranchini@carenza.metarpa> - 0.44-2066%{dist}
 - Rebuild to reflect upstream changes, removed libarkimet0
 
