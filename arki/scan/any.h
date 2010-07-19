@@ -105,14 +105,6 @@ struct Validator
 	 *   a pointer to a static object, which should not be deallocated.
 	 */
 	static const Validator& by_filename(const std::string& filename);
-
-	/**
-	 * Get the validator for a given encoding
-	 *
-	 * @returns
-	 *   a pointer to a static object, which should not be deallocated.
-	 */
-	static const Validator& by_encoding(const std::string& encoding);
 };
 
 }

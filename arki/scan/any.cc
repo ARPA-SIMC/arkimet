@@ -187,21 +187,6 @@ void compress(const std::string& file, size_t groupsize)
 	// TODO: delete uncompressed version
 }
 
-const Validator& Validator::by_encoding(const std::string& encoding)
-{
-#ifdef HAVE_GRIBAPI
-	if (str::tolower(encoding) == "grib")
-		return grib::validator();
-	else
-#endif
-#ifdef HAVE_DBALLE
-	if (str::tolower(encoding) == "bufr")
-		return bufr::validator();
-	else
-#endif
-		throw wibble::exception::Consistency("looking for " + encoding + " validator", "no validator available");
-}
-
 const Validator& Validator::by_filename(const std::string& filename)
 {
 	// Get the file extension
