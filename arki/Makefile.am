@@ -153,8 +153,8 @@ libarkimet_la_SOURCES = \
 		matcher/level.cc \
 		matcher/timerange.cc \
 		matcher/reftime.cc \
-		$(top_builddir)/arki/matcher/reftime/reftime-lex.cc \
-		$(top_builddir)/arki/matcher/reftime/reftime-parse.cc \
+		matcher/reftime/reftime-lex.cc \
+		matcher/reftime/reftime-parse.cc \
 		matcher/area.cc \
 		matcher/ensemble.cc \
 		matcher/run.cc \
