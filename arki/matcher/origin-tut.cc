@@ -78,9 +78,6 @@ void to::test<2>()
 	ensure_not_matches("origin:BUFR,,1", md);
 	ensure_not_matches("origin:BUFR,2,3", md);
 
-	// If we have more than one origin, we match any of them
-	md.set(origin::BUFR::create(2, 3));
-	m = Matcher::parse("origin:BUFR,2");
 	ensure(m(md));
 }
 
