@@ -65,6 +65,10 @@ static inline void impl_ensure_serialises(const wibble::tests::Location& loc, co
 template<typename T>
 static inline void impl_ensure_compares(const wibble::tests::Location& loc, const arki::Item<T>& x, const arki::Item<T>& y, const arki::Item<T>& z)
 {
+    inner_ensure(x == x);
+    inner_ensure(y == y);
+    inner_ensure(z == z);
+
     inner_ensure(x < y);
     inner_ensure(x <= y);
     inner_ensure(not (x == y));
