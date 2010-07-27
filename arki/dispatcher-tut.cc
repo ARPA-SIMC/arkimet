@@ -116,7 +116,7 @@ void to::test<2>()
 	// In-memory dataset configuration
 	string conf =
 		"[lami_temp]\n"
-		"filter = origin:BUFR,200; product:BUFR,temp\n"
+		"filter = origin:BUFR,200; product:BUFR:temp\n"
 		"name = lami_temp\n"
 		"type = discard\n"
 		"\n"
@@ -130,7 +130,7 @@ void to::test<2>()
 	scan::scan("inbound/tempforecast.bufr", source);
 	ensure_equals(source.size(), 1u);
 
-	Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR,temp");
+	Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:temp");
 	ensure(matcher(source[0]));
 
 	metadata::Collection mdc;
