@@ -1,0 +1,50 @@
+--- Matching products
+
+local sample = arki.metadata.new()
+
+-- GRIB1
+-- Syntax: product:GRIB1,origin,table,product
+-- Any of origin, table, product can be omitted; if omitted, any value
+-- will match
+
+sample:set(arki_product.grib1(98, 0, 12))
+
+ensure_matches(sample, "product:GRIB1")
+ensure_matches(sample, "product:GRIB1,98")
+ensure_matches(sample, "product:GRIB1,98,,12")
+
+ensure_not_matches(sample, "product:GRIB2")
+ensure_not_matches(sample, "product:GRIB1,200")
+ensure_not_matches(sample, "product:GRIB1,98,0,11")
+
+-- GRIB2
+-- Syntax: product:GRIB2,centre,discipline,category,number
+-- Any of centre, discipline, category or number can be omitted; if omitted,
+-- any value will match
+
+sample:set(arki_product.grib2(98, 0, 1, 2))
+
+ensure_matches(sample, "product:GRIB2")
+ensure_matches(sample, "product:GRIB2,98")
+ensure_matches(sample, "product:GRIB2,98,,,2")
+
+ensure_not_matches(sample, "product:GRIB1")
+ensure_not_matches(sample, "product:GRIB2,200")
+ensure_not_matches(sample, "product:GRIB2,98,1,,2")
+
+-- BUFR
+-- Syntax: product:BUFR,type,subtype,localsubtype:rep_memo
+-- Any of centre, discipline, category, number or rep_memo can be omitted; if
+-- omitted, any value will match
+
+-- Create with type, subtype, localsubtype from section 1
+sample:set(arki_product.bufr(0, 255, 1, "synop"))
+
+ensure_matches(sample, "product:BUFR")
+ensure_matches(sample, "product:BUFR,0,,1")
+ensure_matches(sample, "product:BUFR,0,,1:synop")
+ensure_matches(sample, "product:BUFR:synop")
+
+ensure_not_matches(sample, "product:GRIB1")
+ensure_not_matches(sample, "product:BUFR:temp")
+ensure_not_matches(sample, "product:BUFR:0,,2")

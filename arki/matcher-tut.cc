@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,9 @@
 #include <arki/matcher.h>
 #include <arki/metadata.h>
 #include <arki/configfile.h>
+#include <arki/utils/lua.h>
+
+#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
@@ -29,6 +32,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 
@@ -208,6 +212,49 @@ void to::test<8>()
 	//cerr << m << endl;
 	ensure(true);
 }
+
+// Run matcher/*.txt files, doctest style
+template<> template<>
+void to::test<9>()
+{
+	Lua L;
+
+	// Define 'ensure' function
+	string lua_ensure = "function ensure_matches(val, expr)\n"
+			"  local matcher = arki.matcher.new(expr)\n"
+			"  if (not matcher:match(val)) then error('assertion failed:\\n' .. debug.traceback()) end\n"
+			"end\n"
+			"function ensure_not_matches(val, expr)\n"
+			"  local matcher = arki.matcher.new(expr)\n"
+			"  if (matcher:match(val)) then error('assertion failed:\\n' .. debug.traceback()) end\n"
+			"end\n";
+	if (luaL_dostring(L, lua_ensure.c_str()))
+        {
+                // Copy the error, so that it will exist after the pop
+                string error = lua_tostring(L, -1);
+                // Pop the error from the stack
+                lua_pop(L, 1);
+		ensure_equals(error, "");
+        }
+	
+	// Run the various lua examples
+	string path = "matcher";
+	sys::fs::Directory dir(path);
+	for (sys::fs::Directory::const_iterator d = dir.begin(); d != dir.end(); ++d)
+	{
+		if (!str::endsWith(*d, ".txt")) continue;
+		string fname = str::joinpath(path, *d);
+		if (luaL_dofile(L, fname.c_str()))
+		{
+			// Copy the error, so that it will exist after the pop
+			string error = lua_tostring(L, -1);
+			// Pop the error from the stack
+			lua_pop(L, 1);
+			ensure_equals(error, "");
+		}
+	}
+}
+
 
 }
 
