@@ -595,6 +595,8 @@ MetadataUD* MetadataUD::create(lua_State* L, Metadata* md, bool collected)
 
 }
 
+static void arkilua_metadatametatable(lua_State* L);
+
 // Make a copy of the metadata.
 // Memory management of the copy will be done by Lua
 static int arkilua_copy(lua_State* L)
@@ -607,7 +609,7 @@ static int arkilua_copy(lua_State* L)
 	*(ud->md) = *md;
 
 	// Set the metatable for the userdata
-	luaL_getmetatable(L, "arki.metadata");
+	arkilua_metadatametatable(L);
 	lua_setmetatable(L, -2);
 
 	return 1;
@@ -795,13 +797,9 @@ static const struct luaL_reg metadatalib [] = {
 	{ NULL, NULL }
 };
 
-
-void Metadata::lua_push(lua_State* L)
+// Push the arki.metadata metatable on the stack, creating it if needed
+static void arkilua_metadatametatable(lua_State* L)
 {
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	MetadataUD::create(L, this, false);
-
-	// Set the metatable for the userdata
 	if (luaL_newmetatable(L, "arki.metadata"));
 	{
 		// If the metatable wasn't previously created, create it now
@@ -812,6 +810,15 @@ void Metadata::lua_push(lua_State* L)
 		// Load normal methods
 		luaL_register(L, NULL, metadatalib);
 	}
+}
+
+void Metadata::lua_push(lua_State* L)
+{
+	// The 'metadata' object is a userdata that holds a pointer to this Grib structure
+	MetadataUD::create(L, this, false);
+
+	// Set the metatable for the userdata
+	arkilua_metadatametatable(L);
 
 	lua_setmetatable(L, -2);
 }
@@ -822,6 +829,29 @@ Metadata* Metadata::lua_check(lua_State* L, int idx)
 	if (ud == NULL) return NULL;
 	return ud->md;
 }
+
+static int arkilua_new(lua_State* L)
+{
+	// Create a medatata which is memory managed by Lua
+	MetadataUD::create(L, new Metadata, true);
+
+	// Set the metatable for the userdata
+	arkilua_metadatametatable(L);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+static const struct luaL_reg classlib [] = {
+	{ "new", arkilua_new },
+	{ NULL, NULL }
+};
+
+void Metadata::lua_openlib(lua_State* L)
+{
+	luaL_register(L, "arki.metadata", classlib);
+}
+
 
 #endif
 

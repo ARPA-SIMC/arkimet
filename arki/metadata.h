@@ -275,6 +275,11 @@ public:
 	 * @return the Metadata element, or 0 if the check failed
 	 */
 	static Metadata* lua_check(lua_State* L, int idx);
+
+	/**
+	 * Load metadata functions into a lua VM
+	 */
+	static void lua_openlib(lua_State* L);
 };
 
 }
