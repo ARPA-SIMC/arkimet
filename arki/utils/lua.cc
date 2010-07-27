@@ -22,6 +22,8 @@
 
 #include <arki/utils/lua.h>
 #include <arki/types.h>
+#include <arki/metadata.h>
+#include <arki/matcher.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <ostream>
@@ -51,6 +53,8 @@ Lua::Lua() : L(0)
 	#endif
 
 	types::Type::lua_loadlib(L);
+	Metadata::lua_openlib(L);
+	Matcher::lua_openlib(L);
 }
 
 Lua::~Lua()
