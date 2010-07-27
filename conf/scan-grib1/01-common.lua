@@ -17,7 +17,7 @@ function scan(md)
 	local ltype = gribl.indicatorOfTypeOfLevel
 	if grib.levels == nil
 	then
-		md:set(arki_level.grib1(ltype, grib.level))
+		md:set(arki_level.grib1(ltype, grib.level, 0))
 	else
 		md:set(arki_level.grib1(ltype, grib.topLevel, grib.bottomLevel))
 	end
