@@ -27,6 +27,7 @@
 #include <arki/matcher.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/scan/grib.h>
+#include <arki/scan/any.h>
 #include <arki/utils/accounting.h>
 
 namespace tut {
@@ -106,6 +107,38 @@ void to::test<1>()
 	dispatcher.flush();
 
 	ensure_equals(plain_data_read_count.val(), 0u);
+}
+
+// Test a case where dispatch is known to fail
+template<> template<>
+void to::test<2>()
+{
+	// In-memory dataset configuration
+	string conf =
+		"[lami_temp]\n"
+		"filter = origin:BUFR,200; product:BUFR,temp\n"
+		"name = lami_temp\n"
+		"type = discard\n"
+		"\n"
+		"[error]\n"
+		"type = discard\n"
+		"name = error\n";
+	stringstream incfg(conf);
+	config.parse(incfg, "(memory)");
+
+	metadata::Collection source;
+	scan::scan("inbound/tempforecast.bufr", source);
+	ensure_equals(source.size(), 1u);
+
+	Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR,temp");
+	ensure(matcher(source[0]));
+
+	metadata::Collection mdc;
+	RealDispatcher dispatcher(config);
+	ensure_equals(dispatcher.dispatch(source[0], mdc), Dispatcher::DISP_OK);
+	ensure_equals(dsname(mdc.back()), "lami_temp");
+
+	dispatcher.flush();
 }
 
 }
