@@ -1,7 +1,7 @@
 /*
  * arki-config - Configuration wizard
  *
- * Copyright (C) 2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -264,10 +264,14 @@ struct Wizard
 				out << "Ok, nothing to do, then." << endl;
 				finished = true;
 			} else {
+				// TODO: set that we should create the directory if the directory does not exist
 				// Generate a basic config
 				cfg.setValue("step", "daily");
-				cfg.setValue("type", "local");
-				if (datasetName != "error" and datasetName != "duplicates")
+				if (datasetName == "error")
+					cfg.setValue("type", "error");
+				else if (datasetName == "duplicates")
+					cfg.setValue("type", "duplicates");
+				else
 				{
 					cfg.setValue("type", "ondisk2");
 					cfg.setValue("unique", "reftime, timerange, product, level, area");
