@@ -62,7 +62,6 @@ dist_tfconf_DATA = conf/targetfile/mars
 
 EXTRA_DIST = README \
 	     README.Cineca \
-	     doc/MATCHER \
 	     doc/DATASET \
 	     doc/adding-formats.txt \
 	     conf/qmacro/test0.lua \
@@ -95,6 +94,7 @@ EXTRA_DIST = README \
 	     doc/matcher/ensemble.txt \
 	     doc/matcher/run.txt \
 	     doc/matcher/aliases.txt \
+	     doc/matcher/expression.txt \
 	     test/data/layer.grib1 \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
