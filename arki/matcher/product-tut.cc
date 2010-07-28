@@ -84,9 +84,12 @@ void to::test<2>()
 	ensure_not_matches("product:BUFR,1,2,3:antan", md);
 	ensure_not_matches("product:BUFR,1,2,3:antani1", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
-	// TODO: ensure this fails to parse
-	ensure(false);
-	ensure_matches("product:BUFR,antani", md);
+	try {
+		ensure_matches("product:BUFR,antani", md);
+		ensure(false);
+	} catch (wibble::exception::Consistency& e) {
+		ensure(string(e.what()).find("is not a number") != string::npos);
+	}
 }
 
 }

@@ -1,7 +1,7 @@
 /*
  * matcher/utils - Support code to implement matchers
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,12 @@ bool OptionalCommaList::has(size_t pos) const
 int OptionalCommaList::getInt(size_t pos, int def) const
 {
 	if (!has(pos)) return def;
-	return strtoul((*this)[pos].c_str(), 0, 10);
+	const char* beg = (*this)[pos].c_str();
+	char* end;
+	unsigned long res = strtoul(beg, &end, 10);
+	if ((end-beg) < (*this)[pos].size())
+		throw wibble::exception::Consistency("parsing matcher", "'"+(*this)[pos]+"' is not a number");
+	return res;
 }
 
 unsigned OptionalCommaList::getUnsigned(size_t pos, unsigned def) const
