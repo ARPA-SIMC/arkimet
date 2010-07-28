@@ -1,0 +1,95 @@
+--- Matching areas
+
+local sample = arki.metadata.new()
+
+--[[ Matching GRIB areas
+
+Syntax: area:GRIB,key1=val1,key2=val2,...
+
+Matches any GRIB area that has at least all the given keys, with the
+given values.
+
+There is no exaustive list of possible keys, as they can be anything that
+gets set by the GRIB scanning configuration.
+
+]]
+
+sample:set(arki_area.grib{lat=45000, lon=12000})
+
+ensure_matches(sample, "area:GRIB,lat=45000")
+ensure_matches(sample, "area:GRIB,lat=45000,lon=12000")
+ensure_not_matches(sample, "area:GRIB,lat=45,lon=12")
+ensure_not_matches(sample, "area:GRIB,answer=42")
+
+
+--[[ Matching area bounding boxes
+
+Syntax: area:bbox {verb} {value}
+
+Matches the area bounding box against a sample value. The sample value is
+represented by a WKT geometry.
+
+Available verbs:
+
+  equals: the bounding box to match must be the same as the sample value
+  covers: the bounding box to match must contain the sample value
+  coveredby: the bounding box to match must be contained inside the sample value
+  intersects: the bounding box to match must intersect the sample value
+
+See: http://www.cs.montana.edu/courses/535/resources/Understanding%20spatial%20relations.htm
+
+]]
+
+sample:set(arki_area.grib{Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0})
+
+-- equals
+ensure_matches(sample, "area: bbox equals POLYGON((10 43, 12 43, 12 45, 10 45, 10 43))")
+ensure_not_matches(sample, "area: bbox equals POINT EMPTY")
+ensure_not_matches(sample, "area: bbox equals POINT(11 44)")
+ensure_not_matches(sample, "area: bbox equals POLYGON((12 43, 10 44, 12 45, 12 43))")
+
+-- covers
+ensure_matches(sample, "area: bbox covers POINT(11 44)")
+ensure_matches(sample, "area: bbox covers POINT(12 43)")
+ensure_matches(sample, "area: bbox covers LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)")
+ensure_matches(sample, "area: bbox covers POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))")
+ensure_matches(sample, "area: bbox covers POLYGON((10.5 43.5, 10.5 44.5, 11.5 44.5, 11.5 43.5, 10.5 43.5))")
+ensure_matches(sample, "area: bbox covers POLYGON((12 43, 10 44, 12 45, 12 43))")
+ensure_not_matches(sample, "area: bbox covers POINT(11 40)")
+ensure_not_matches(sample, "area: bbox covers POINT(13 44)")
+ensure_not_matches(sample, "area: bbox covers POINT( 5 40)")
+ensure_not_matches(sample, "area: bbox covers LINESTRING(10 43, 10 45, 13 45, 13 43, 10 43)")
+ensure_not_matches(sample, "area: bbox covers POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))")
+ensure_not_matches(sample, "area: bbox covers POLYGON((12 42, 10 44, 12 45, 12 42))")
+
+-- intersects
+ensure_matches(sample, "area: bbox intersects POINT(11 44)")
+ensure_matches(sample, "area: bbox intersects POINT(12 43)")
+ensure_matches(sample, "area: bbox intersects LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)")
+ensure_matches(sample, "area: bbox intersects POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))")
+ensure_matches(sample, "area: bbox intersects POLYGON((10.5 43.5, 10.5 44.5, 11.5 44.5, 11.5 43.5, 10.5 43.5))")
+ensure_matches(sample, "area: bbox intersects POLYGON((12 43, 10 44, 12 45, 12 43))")
+ensure_matches(sample, "area: bbox intersects POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))")
+ensure_matches(sample, "area: bbox intersects POLYGON((12 42, 10 44, 12 45, 12 42))")
+ensure_matches(sample, "area: bbox intersects POLYGON((9 40, 10 43, 10 40, 9 40))") -- Touches one vertex
+ensure_not_matches(sample, "area: bbox intersects POINT(11 40)") -- Outside
+ensure_not_matches(sample, "area: bbox intersects POINT(13 44)") -- Outside
+ensure_not_matches(sample, "area: bbox intersects POINT( 5 40)") -- Outside
+ensure_not_matches(sample, "area: bbox intersects LINESTRING(9 40, 10 42, 10 40, 9 40)") -- Disjoint
+ensure_not_matches(sample, "area: bbox intersects POLYGON((9 40, 10 42, 10 40, 9 40))") -- Disjoint
+
+-- coveredby
+ensure_matches(sample, "area: bbox coveredby POLYGON((10 43, 10 45, 12 45, 12 43, 10 43))") -- Same shape
+ensure_matches(sample, "area: bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))") -- Trapezoid containing area
+ensure_not_matches(sample, "area: bbox coveredby POINT(11 44)") -- Intersection exists but area is 0
+ensure_not_matches(sample, "area: bbox coveredby POINT(12 43)") -- Intersection exists but area is 0
+ensure_not_matches(sample, "area: bbox coveredby POINT(11 40)") -- Outside
+ensure_not_matches(sample, "area: bbox coveredby POINT(13 44)") -- Outside
+ensure_not_matches(sample, "area: bbox coveredby POINT( 5 40)") -- Outside
+ensure_not_matches(sample, "area: bbox coveredby POLYGON((12 42, 10 44, 12 45, 12 42))")
+ensure_not_matches(sample, "area: bbox coveredby POLYGON((12 43, 10 44, 12 45, 12 43))") -- Triangle contained inside, touching borders (?)
+ensure_not_matches(sample, "area: bbox coveredby POLYGON((10.5 43.5, 10.5 44.5, 11.5 44.5, 11.5 43.5, 10.5 43.5))") -- Fully inside
+ensure_not_matches(sample, "area: bbox coveredby LINESTRING(10 43, 10 45, 12 45, 12 43, 10 43)") -- Same shape, but intersection area is 0
+ensure_not_matches(sample, "area: bbox coveredby POLYGON((9 40, 10 43, 10 40, 9 40))")  -- Touches one vertex
+ensure_not_matches(sample, "area: bbox coveredby LINESTRING(9 40, 10 42, 10 40, 9 40)") -- Disjoint
+ensure_not_matches(sample, "area: bbox coveredby POLYGON((9 40, 10 42, 10 40, 9 40))")  -- Disjoint
