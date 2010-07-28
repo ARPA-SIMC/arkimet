@@ -7,8 +7,7 @@ local sample = arki.metadata.new()
 -- Any of leveltype, l1 or l2 can be omitted; if omitted, any value
 -- will match
 
--- Surface level, with no parameters
-sample:set(arki_level.grib1(1))
+sample:set(arki_level.grib1(1)) -- Surface level, with no parameters
 
 ensure_matches(sample, "level:GRIB1")
 ensure_matches(sample, "level:GRIB1,1")
@@ -16,8 +15,7 @@ ensure_matches(sample, "level:GRIB1,1")
 ensure_not_matches(sample, "level:GRIB1,2")
 ensure_not_matches(sample, "level:GRIB1,1,0")
 
--- Simple level (altitude above MSL)
-sample:set(arki_level.grib1(103, 1000))
+sample:set(arki_level.grib1(103, 1000)) -- Simple level (altitude above MSL)
 
 ensure_matches(sample, "level:GRIB1")
 ensure_matches(sample, "level:GRIB1,103")
@@ -27,8 +25,7 @@ ensure_not_matches(sample, "level:GRIB1,1")
 ensure_not_matches(sample, "level:GRIB1,103,1001")
 ensure_not_matches(sample, "level:GRIB1,103,1000,1000")
 
--- Layer between two altitudes above MSL
-sample:set(arki_level.grib1(104, 123, 223))
+sample:set(arki_level.grib1(104, 123, 223)) -- Layer between two altitudes
 
 ensure_matches(sample, "level:GRIB1")
 ensure_matches(sample, "level:GRIB1,104")

@@ -1,0 +1,60 @@
+--- Matching time ranges
+
+local sample = arki.metadata.new()
+
+-- GRIB1
+-- Syntax: timerange:GRIB1,type,p1,p2
+-- Any of type, p1 or p2 can be omitted; if omitted, any value will match
+-- p1 and p2 must have a time unit suffix (any of s,m,h,d,mo,y) unless
+-- they are 0
+
+sample:set(arki_timerange.grib1(0, 1, 6, 0)) -- 6-hours forecast
+
+ensure_matches(sample, "timerange:GRIB1,0")
+ensure_matches(sample, "timerange:GRIB1,0,6h")
+ensure_matches(sample, "timerange:GRIB1,0,360m")
+ensure_matches(sample, "timerange:GRIB1,0,21600s")
+
+ensure_not_matches(sample, "timerange:GRIB1,1")
+ensure_not_matches(sample, "timerange:GRIB1,0,6m")
+
+-- valid between reftime+6h and reftime+12h
+sample:set(arki_timerange.grib1(2, 1, 6, 12))
+
+ensure_matches(sample, "timerange:GRIB1,2")
+ensure_matches(sample, "timerange:GRIB1,2,6h,12h")
+
+ensure_not_matches(sample, "timerange:GRIB1,1")
+ensure_not_matches(sample, "timerange:GRIB1,2,6h")
+ensure_not_matches(sample, "timerange:GRIB1,2,6m,12m")
+
+-- GRIB2
+-- Syntax: timerange:GRIB1,type,unit,p1,p2
+-- Any of type, unit, p1 or p2 can be omitted; if omitted, any value will match
+-- Unit is given explicitly and p1,p2 do not use suffixes
+
+sample:set(arki_timerange.grib2(0, 1, 6, 0)) -- 6-hours forecast
+
+ensure_matches(sample, "timerange:GRIB2,0")
+ensure_matches(sample, "timerange:GRIB2,0,1,6")
+ensure_matches(sample, "timerange:GRIB2,0,1,6,0")
+
+ensure_not_matches(sample, "timerange:GRIB2,1")
+ensure_not_matches(sample, "timerange:GRIB2,0,1,5")
+ensure_not_matches(sample, "timerange:GRIB2,0,2,6")
+ensure_not_matches(sample, "timerange:GRIB2,0,0,360")
+
+-- BUFR
+-- Syntax: timerange:BUFR,val
+-- val can be omitted; if omitted, any value will match
+-- val must have a time unit suffix (any of s,m,h,d,mo,y) unless it is 0
+
+sample:set(arki_timerange.bufr(6, 1)) -- 6-hours forecast
+
+ensure_matches(sample, "timerange:BUFR")
+ensure_matches(sample, "timerange:BUFR,6h")
+ensure_matches(sample, "timerange:BUFR,360m")
+ensure_matches(sample, "timerange:BUFR,21600s")
+
+ensure_not_matches(sample, "timerange:BUFR,0")
+ensure_not_matches(sample, "timerange:BUFR,6m")

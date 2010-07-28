@@ -215,7 +215,8 @@ bool MatchTimerangeBUFR::matchItem(const Item<>& o) const
 	const types::timerange::BUFR* v = dynamic_cast<const types::timerange::BUFR*>(o.ptr());
 	if (!v) return false;
 	if (!has_forecast) return true;
-	if (is_seconds != v->is_seconds() && value != 0) return false;
+	if (value == 0) return v->value() == 0;
+	if (is_seconds != v->is_seconds()) return false;
 	if (is_seconds)
 		return value == v->seconds();
 	else

@@ -89,6 +89,7 @@ EXTRA_DIST = README \
 	     doc/matcher/origin.txt \
 	     doc/matcher/product.txt \
 	     doc/matcher/level.txt \
+	     doc/matcher/timerange.txt \
 	     test/data/layer.grib1 \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \

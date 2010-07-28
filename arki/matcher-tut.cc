@@ -222,11 +222,11 @@ void to::test<9>()
 	// Define 'ensure' function
 	string lua_ensure = "function ensure_matches(val, expr)\n"
 			"  local matcher = arki.matcher.new(expr)\n"
-			"  if (not matcher:match(val)) then error('assertion failed:\\n' .. debug.traceback()) end\n"
+			"  if (not matcher:match(val)) then error(expr .. ' did not match ' .. tostring(val) .. ':\\n' .. debug.traceback()) end\n"
 			"end\n"
 			"function ensure_not_matches(val, expr)\n"
 			"  local matcher = arki.matcher.new(expr)\n"
-			"  if (matcher:match(val)) then error('assertion failed:\\n' .. debug.traceback()) end\n"
+			"  if (matcher:match(val)) then error(expr .. ' should not have matched ' .. tostring(val) .. ':\\n' .. debug.traceback()) end\n"
 			"end\n";
 	if (luaL_dostring(L, lua_ensure.c_str()))
         {
