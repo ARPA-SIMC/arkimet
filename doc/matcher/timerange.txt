@@ -2,6 +2,25 @@
 
 local sample = arki.metadata.new()
 
+--[[
+Some time range matchers use time unit suffixes. Here is a table with their
+meaning:
+
+ s  seconds
+ m  minutes
+ h  hours
+ d  days
+ mo months
+ y  years
+
+When unit suffixes are used, all time values are normalised to either
+seconds or months, according to what is appropriate. This means it is
+possible to use seconds to match a time range expressed in hours, or to use
+years to match a time range expressed in months, but it is not possible to
+use months to match a time range expressed in days, because months have a
+variable number of days.
+]]
+
 -- GRIB1
 -- Syntax: timerange:GRIB1,type,p1,p2
 -- Any of type, p1 or p2 can be omitted; if omitted, any value will match

@@ -1,6 +1,6 @@
 --- Examples on how to use reftime objects from Lua
 
--- GRIB1 reftime
+-- Reftime
 
 -- Create an instant in time, from one arki_time object
 local o = arki_reftime.position(arki_time.sql("2010-09-08 07:06:05"))

@@ -9,7 +9,8 @@ local sample = arki.metadata.new()
 
 sample:set(arki_origin.grib1(98, 0, 12))
 
-ensure_matches(sample, "origin:GRIB1")
+ensure_matches(sample, "origin:GRIB1") -- You can omit trailing commas
+ensure_matches(sample, "origin:GRIB1,,,")
 ensure_matches(sample, "origin:GRIB1,98")
 ensure_matches(sample, "origin:GRIB1,98,,12")
 
