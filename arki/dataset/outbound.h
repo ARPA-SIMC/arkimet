@@ -4,7 +4,7 @@
 /*
  * dataset/outbound - Local, non queryable, on disk dataset
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +44,6 @@ class TargetFile;
 class Outbound : public WritableDataset
 {
 protected:
-	std::string m_name;
 	std::string m_path;
 	TargetFile* m_tf;
 

@@ -1,7 +1,7 @@
 /*
- * dataset - Handle xgribarch datasets
+ * dataset/discard - Dataset that just discards all data
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 #include <arki/dataset/discard.h>
 #include <arki/metadata.h>
+#include <arki/configfile.h>
+#include <arki/types/assigneddataset.h>
 
 using namespace std;
 
@@ -30,6 +32,7 @@ namespace dataset {
 
 Discard::Discard(const ConfigFile& cfg)
 {
+	m_name = cfg.value("name");
 }
 
 Discard::~Discard()
@@ -38,15 +41,13 @@ Discard::~Discard()
 
 WritableDataset::AcquireResult Discard::acquire(Metadata& md)
 {
-	// Just clear assigned dataset to show that the data ended up nowhere
-	md.unset(types::TYPE_ASSIGNEDDATASET);
+	md.set(types::AssignedDataset::create(m_name, ""));
 	return ACQ_OK;
 }
 
 bool Discard::replace(Metadata& md)
 {
-	// Just clear assigned dataset to show that the data ended up nowhere
-	md.unset(types::TYPE_ASSIGNEDDATASET);
+	md.set(types::AssignedDataset::create(m_name, ""));
 	return true;
 }
 
