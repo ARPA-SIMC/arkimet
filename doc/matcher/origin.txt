@@ -18,7 +18,7 @@ ensure_not_matches(sample, "origin:GRIB1,200")
 ensure_not_matches(sample, "origin:GRIB1,98,0,11")
 
 -- GRIB2
--- Syntax: product:GRIB2,centre,subcentre,processtype,bgprocessid,processid
+-- Syntax: origin:GRIB2,centre,subcentre,processtype,bgprocessid,processid
 -- Any of centre, subcentre, processtype, bgprocessid, processid can be
 -- omitted; if omitted, any value will match
 

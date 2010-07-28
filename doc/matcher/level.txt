@@ -1,0 +1,74 @@
+--- Matching levels
+
+local sample = arki.metadata.new()
+
+-- GRIB1
+-- Syntax: level:GRIB1,leveltype,l1,l2
+-- Any of leveltype, l1 or l2 can be omitted; if omitted, any value
+-- will match
+
+-- Surface level, with no parameters
+sample:set(arki_level.grib1(1))
+
+ensure_matches(sample, "level:GRIB1")
+ensure_matches(sample, "level:GRIB1,1")
+
+ensure_not_matches(sample, "level:GRIB1,2")
+ensure_not_matches(sample, "level:GRIB1,1,0")
+
+-- Simple level (altitude above MSL)
+sample:set(arki_level.grib1(103, 1000))
+
+ensure_matches(sample, "level:GRIB1")
+ensure_matches(sample, "level:GRIB1,103")
+ensure_matches(sample, "level:GRIB1,103,1000")
+
+ensure_not_matches(sample, "level:GRIB1,1")
+ensure_not_matches(sample, "level:GRIB1,103,1001")
+ensure_not_matches(sample, "level:GRIB1,103,1000,1000")
+
+-- Layer between two altitudes above MSL
+sample:set(arki_level.grib1(104, 123, 223))
+
+ensure_matches(sample, "level:GRIB1")
+ensure_matches(sample, "level:GRIB1,104")
+ensure_matches(sample, "level:GRIB1,104,,223")
+ensure_matches(sample, "level:GRIB1,104,123")
+ensure_matches(sample, "level:GRIB1,104,123,223")
+
+ensure_not_matches(sample, "level:GRIB1,103,123")
+ensure_not_matches(sample, "level:GRIB1,104,123,222")
+
+-- GRIB2 single level
+-- Syntax: level:GRIB2S,type,scale,value
+-- Any of type, scale or value can be omitted; if omitted, any value will match
+
+-- Create with type, scale and value
+sample:set(arki_level.grib2s(103, 0, 1000))
+
+ensure_matches(sample, "level:GRIB2S")
+ensure_matches(sample, "level:GRIB2S,103")
+ensure_matches(sample, "level:GRIB2S,103,0,1000")
+ensure_matches(sample, "level:GRIB2S,103,0")
+ensure_matches(sample, "level:GRIB2S,103,,1000")
+
+ensure_not_matches(sample, "level:GRIB2S,103,1,1000")
+ensure_not_matches(sample, "level:GRIB2S,103,0,1001")
+
+-- GRIB2 layer
+-- Syntax: level:GRIB2D,type1,scale1,value1,type2,scale2,value2
+-- Any of the parameters can be omitted; if omitted, any value will match
+
+sample:set(arki_level.grib2d(103, 0, 1000, 103, 0, 1100))
+
+ensure_matches(sample, "level:GRIB2D")
+ensure_matches(sample, "level:GRIB2D,103")
+ensure_matches(sample, "level:GRIB2D,103,0,1000")
+ensure_matches(sample, "level:GRIB2D,103,0")
+ensure_matches(sample, "level:GRIB2D,103,,1000")
+ensure_matches(sample, "level:GRIB2D,103,,,103,,")
+ensure_matches(sample, "level:GRIB2D,103,0,1000,103,0,1100")
+
+ensure_not_matches(sample, "level:GRIB2S,103,0,1000")
+ensure_not_matches(sample, "level:GRIB2D,102")
+ensure_not_matches(sample, "level:GRIB2D,103,1,1000,103,1,1100")
