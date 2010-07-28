@@ -86,6 +86,8 @@ EXTRA_DIST = README \
 	     doc/lua-examples/run.lua \
 	     doc/lua-examples/time.lua \
 	     doc/lua-examples/timerange.lua \
+	     doc/matcher/origin.txt \
+	     doc/matcher/product.txt \
 	     test/data/layer.grib1 \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \

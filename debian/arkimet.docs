@@ -2,3 +2,5 @@ README
 doc/MATCHER
 doc/DATASET
 doc/adding-formats.txt
+doc/lua-examples/
+doc/matcher/
