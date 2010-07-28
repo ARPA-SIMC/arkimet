@@ -12,30 +12,6 @@ oppure:
   origin:GRIB1,200 or GRIB1,98 ; reftime:>=2007,<=2008 or 2003
 
 
-Sottoespressioni
-================
-
- See: http://www.cs.montana.edu/courses/535/resources/Understanding%20spatial%20relations.htm
-
-
-Ensemble
---------
-
- * ensemble:stile:expr1[,expr2...]
-
- Le sottoespressioni separate dalla virgola sono in AND.
-
- Stile è per ora solo GRIB.
-
- Le sottoespressioni sono della forma key=val.  Fanno match quando il valore
- della chiave 'key' vale esattamente 'val'.  Non esiste una lista completa
- delle 'key' disponibili: qualsiasi cosa venga settato in fase di estrazione
- dei metadati può essere usato in fase di match.
-
-ensemble:GRIB:value=1
-ensemble:GRIB:value=1,hour=12
-
-
 Alias
 -----
 
