@@ -4,7 +4,7 @@ local sample = arki.metadata.new()
 
 --[[ Matching GRIB areas
 
-Syntax: area:GRIB,key1=val1,key2=val2,...
+Syntax: area:GRIB:key1=val1,key2=val2,...
 
 Matches any GRIB area that has at least all the given keys, with the
 given values.
@@ -16,10 +16,10 @@ gets set by the GRIB scanning configuration.
 
 sample:set(arki_area.grib{lat=45000, lon=12000})
 
-ensure_matches(sample, "area:GRIB,lat=45000")
-ensure_matches(sample, "area:GRIB,lat=45000,lon=12000")
-ensure_not_matches(sample, "area:GRIB,lat=45,lon=12")
-ensure_not_matches(sample, "area:GRIB,answer=42")
+ensure_matches(sample, "area:GRIB:lat=45000")
+ensure_matches(sample, "area:GRIB:lat=45000,lon=12000")
+ensure_not_matches(sample, "area:GRIB:lat=45,lon=12")
+ensure_not_matches(sample, "area:GRIB:answer=42")
 
 
 --[[ Matching area bounding boxes
