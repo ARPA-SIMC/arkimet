@@ -23,6 +23,7 @@
 #include <arki/metadata.h>
 #include <arki/configfile.h>
 #include <arki/utils/lua.h>
+#include <arki/runtime/config.h>
 
 #include <wibble/sys/fs.h>
 
@@ -217,6 +218,7 @@ void to::test<8>()
 template<> template<>
 void to::test<9>()
 {
+	runtime::readMatcherAliasDatabase();
 	Lua L;
 
 	// Define 'ensure' function
