@@ -1232,8 +1232,9 @@ struct ResolveVisitor : public summary::Visitor
 {
 	std::vector<ItemSet>& result;
 	std::vector<types::Code> codes;
+	size_t added;
 
-	ResolveVisitor(std::vector<ItemSet>& result, const Matcher& m) : result(result)
+	ResolveVisitor(std::vector<ItemSet>& result, const Matcher& m) : result(result), added(0)
 	{
 		for (matcher::AND::const_iterator i = m.m_impl->begin(); i != m.m_impl->end(); ++i)
 			codes.push_back(i->first);
@@ -1249,6 +1250,7 @@ struct ResolveVisitor : public summary::Visitor
 			if (!md[pos].defined()) return true;
 			is.set(md[pos]);
 		}
+		++added;
 		// Insertion sort, as we expect to have lots of duplicates
 		std::vector<ItemSet>::iterator i = std::lower_bound(result.begin(), result.end(), is);
 		if (i == result.end())
@@ -1272,12 +1274,13 @@ std::vector<ItemSet> Summary::resolveMatcher(const Matcher& matcher) const
 	return result;
 }
 
-void Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const
+size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const
 {
-	if (matcher.empty()) return;
+	if (matcher.empty()) return 0;
 
 	ResolveVisitor visitor(res, matcher);
 	visitFiltered(matcher, visitor);
+	return visitor.added;
 }
 
 std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const

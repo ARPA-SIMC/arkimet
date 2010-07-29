@@ -54,7 +54,8 @@ GridQuery::GridQuery(ReadonlyDataset& ds) : ds(ds)
 
 void GridQuery::add(const Matcher& m)
 {
-	summary.resolveMatcher(m, items);
+	if (summary.resolveMatcher(m, items) == 0)
+		throw wibble::exception::Consistency("resolving " + m.toString(), "there are no data which correspond to the matcher");
 }
 
 void GridQuery::addTime(const Item<types::Time>& rt)

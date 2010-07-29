@@ -376,8 +376,10 @@ public:
 	 * by the matcher in this summary.
 	 *
 	 * Metadata are added to res, sorted and avoiding duplicated.
+	 *
+	 * Return the number of matching items found (0 if nothing matched)
 	 */
-	void resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const;
+	size_t resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res) const;
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin
