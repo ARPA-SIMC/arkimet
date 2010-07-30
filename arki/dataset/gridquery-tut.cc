@@ -26,6 +26,7 @@
 #include <arki/types/product.h>
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
+#include <arki/runtime/config.h>
 
 #include <sstream>
 #include <iostream>
@@ -112,6 +113,48 @@ void to::test<1>()
 	ensure(gq.checkAndMark(is));
 	ensure(not gq.checkAndMark(is));
 	ensure(gq.satisfied());
+}
+
+// Test adding an entry which does not expand to anything
+template<> template<>
+void to::test<2>()
+{
+	runtime::readMatcherAliasDatabase();
+
+	// Build a test dataset
+	stringstream md_yaml(
+		"Source: BLOB(grib1,/dev/null:0+186196)\n"
+		"Origin: GRIB1(200, 255, 047)\n"
+		"Product: GRIB1(200, 002, 061)\n"
+		"Level: GRIB1(001)\n"
+		"Timerange: GRIB1(004, 000h, 012h)\n"
+		"Reftime: 2010-05-03T00:00:00Z\n"
+		"Area: GRIB(Ni=297, Nj=313, latfirst=-25000000, latlast=-5500000, latp=-32500000, lonfirst=-8500000, lonlast=10000000, lonp=10000000, rot=0, type=10)\n"
+		"Run: MINUTE(00:00)\n"
+	);
+	Metadata md;
+	md.readYaml(md_yaml, "(memory)");
+
+	metadata::Collection ds;
+	ds(md);
+
+	// Build the grid query
+	dataset::GridQuery gq(ds);
+
+	try {
+		gq.add(Matcher::parse("timerange:c012; level:g00; product:u"));
+		ensure(false);
+	} catch (wibble::exception::Consistency c) {
+		ensure(string(c.what()).find("no data which correspond to the matcher") != string::npos);
+	}
+	gq.add(Matcher::parse("timerange:c012; level:g00; product:tp"));
+
+	Item<types::Time> t = types::Time::create(2010, 05, 03, 0, 0, 0);
+	gq.addTime(t);
+
+	gq.consolidate();
+
+	ensure_equals(gq.expectedItems(), 1u);
 }
 
 }
