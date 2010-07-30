@@ -201,6 +201,17 @@ void Writer::flush()
 	m_df_cache.clear();
 }
 
+void Writer::sanityChecks(std::ostream& log, bool writable)
+{
+	WritableLocal::sanityChecks(log, writable);
+
+	if (!m_idx.checkSummaryCache(log) && writable)
+	{
+		log << name() << ": rebuilding summary cache." << endl;
+		m_idx.rebuildSummaryCache();
+	}
+}
+
 namespace {
 struct CheckAge : public maintenance::MaintFileVisitor
 {

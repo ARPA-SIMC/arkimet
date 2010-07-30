@@ -31,6 +31,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include <sys/stat.h>
+
 using namespace std;
 using namespace wibble;
 using namespace arki;
@@ -601,6 +603,72 @@ void to::test<8>()
 	}
 }
 
+
+// Test sanity checks on summary cache
+template<> template<>
+void to::test<9>()
+{
+	acquireSamples();
+	files::removeDontpackFlagfile("testdir");
+
+	arki::dataset::ondisk2::Writer writer(cfg);
+
+	// Dataset is ok
+	{
+		MaintenanceCollector c;
+		writer.maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 3u);
+		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+
+	// Perform packing to regenerate the summary cache
+	{
+		stringstream s;
+		writer.repack(s, true);
+		ensure_equals(s.str(), "testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+	}
+
+	// Ensure that we have the summary cache
+	ensure(files::exists("testdir/.summaries/all.summary"));
+	ensure(files::exists("testdir/.summaries/2007-07.summary"));
+	ensure(files::exists("testdir/.summaries/2007-10.summary"));
+
+	// Make one summary cache file not writable
+	chmod("testdir/.summaries/all.summary", 0400);
+
+	// Perform check and see that we detect it
+	{
+		stringstream s;
+		writer.check(s, false, true);
+		ensure_equals(s.str(), "testdir: testdir/.summaries/all.summary is not writable.\n");
+	}
+
+	// Fix it
+	{
+		stringstream s;
+		writer.check(s, true, true);
+		ensure_equals(s.str(),
+			"testdir: testdir/.summaries/all.summary is not writable.\n"
+			"testdir: rebuilding summary cache.\n");
+	}
+
+	// Check again and see that everything is fine
+	{
+		stringstream s;
+		writer.check(s, false, true);
+		ensure_equals(s.str(), string()); // Nothing should have happened
+	}
+#if 0
+
+	// Perform packing and check that things are still ok afterwards
+
+	// Perform full maintenance and check that things are still ok afterwards
+#endif
+
+}
 
 }
 

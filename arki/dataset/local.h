@@ -4,7 +4,7 @@
 /*
  * dataset/local - Base class for local datasets
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -107,6 +107,13 @@ public:
 	 *   consistency
 	 */
 	virtual void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
+
+	/**
+	 * Perform general sanity checks on the dataset, reporting to \a log.
+	 *
+	 * If \a writable is true, try to fix issues.
+	 */
+	virtual void sanityChecks(std::ostream& log, bool writable=false);
 
 	/**
 	 * Repack the dataset, logging status to the given file.

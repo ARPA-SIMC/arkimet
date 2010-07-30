@@ -195,6 +195,16 @@ public:
 	void querySummaryFromDB(const std::string& where, Summary& summary) const;
 
 	/**
+	 * Run a consistency check on the summary cache, reporting issues
+	 * to \a log
+	 *
+	 * @return
+	 *   true if the summary cache looks ok
+	 *   false if problems have been found
+	 */
+	bool checkSummaryCache(std::ostream& log) const;
+
+	/**
 	 * Invalidate and rebuild the entire summary cache
 	 */
 	void rebuildSummaryCache();

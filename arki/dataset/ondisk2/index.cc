@@ -614,6 +614,27 @@ void Index::invalidateSummaryCache(const Metadata& md)
 	invalidateSummaryCache(rt->time->vals[0], rt->time->vals[1]);
 }
 
+bool Index::checkSummaryCache(std::ostream& log) const
+{
+	bool res = true;
+
+	// Visit all .summary files in the cache directory
+	sys::fs::Directory dir(m_scache_root);
+	for (sys::fs::Directory::const_iterator i = dir.begin();
+			i != dir.end(); ++i)
+	{
+		if (!str::endsWith(*i, ".summary")) continue;
+
+		string pathname = str::joinpath(m_scache_root, *i);
+		if (!sys::fs::access(pathname, W_OK))
+		{
+			log << m_name << ": " << pathname << " is not writable." << endl;
+			res = false;
+		}
+	}
+	return res;
+}
+
 void Index::rebuildSummaryCache()
 {
 	invalidateSummaryCache();
