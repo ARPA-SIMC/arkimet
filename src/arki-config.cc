@@ -315,6 +315,7 @@ struct Wizard
 
 	void save()
 	{
+		sys::fs::mkFilePath(configFile);
 		runtime::Output output(configFile);
 		cfg.output(output.stream(), output.name());
 		out << "Configuration saved in " << configFile << "." << endl;
