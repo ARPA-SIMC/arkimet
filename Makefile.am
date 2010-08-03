@@ -94,7 +94,7 @@ EXTRA_DIST = README \
 	     doc/matcher/ensemble.txt \
 	     doc/matcher/run.txt \
 	     doc/matcher/aliases.txt \
-	     doc/matcher/expression.txt \
+	     doc/matcher/expressions.txt \
 	     test/data/layer.grib1 \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
