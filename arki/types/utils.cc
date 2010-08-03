@@ -62,7 +62,7 @@ MetadataType::MetadataType(
 	if (!decoders)
 	{
 		decoders = new const MetadataType*[decoders_size];
-		memset(decoders, 0, decoders_size * sizeof(int));
+		memset(decoders, 0, decoders_size * sizeof(const MetadataType*));
 	}
 
 	decoders[serialisationCode] = this;
