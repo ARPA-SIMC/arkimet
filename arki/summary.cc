@@ -1606,6 +1606,33 @@ struct SummaryMerger : public Visitor
 		return true;
 	}
 };
+struct PruningSummaryMerger : public Visitor
+{
+	const set<types::Code> keep_only;
+	refcounted::Pointer<summary::Node>& root;
+
+	PruningSummaryMerger(const set<types::Code> keep_only, refcounted::Pointer<summary::Node>& root)
+		: keep_only(keep_only), root(root) {}
+
+	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<Stats>& stats)
+	{
+		std::vector< UItem<> > md1;
+		md1.resize(md.size());
+		for (set<types::Code>::const_iterator i = keep_only.begin();
+				i != keep_only.end(); ++i)
+		{
+			int pos = posForCode(*i);
+			if (pos == -1) continue;
+			md1[pos] = md[pos];
+		}
+
+		if (!root.ptr())
+			root = new Node(md1, stats);
+		else
+			root->add(md1, stats);
+		return true;
+	}
+};
 }
 
 void Summary::add(const Summary& s)
@@ -1613,6 +1640,17 @@ void Summary::add(const Summary& s)
 	if (s.root.ptr())
 	{
 		summary::SummaryMerger merger(root);
+		vector< UItem<> > visitmd(summary::msoSize, UItem<>());
+		s.root->visit(merger, visitmd);
+	}
+}
+
+void Summary::add(const Summary& s, const std::set<types::Code>& keep_only)
+{
+	if (s.root.ptr())
+	{
+		summary::buildItemMsoMap();
+		summary::PruningSummaryMerger merger(keep_only, root);
 		vector< UItem<> > visitmd(summary::msoSize, UItem<>());
 		s.root->visit(merger, visitmd);
 	}

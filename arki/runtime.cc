@@ -33,6 +33,7 @@
 #include <arki/dataset.h>
 #include <arki/dataset/file.h>
 #include <arki/dataset/http.h>
+#include <arki/dataset/index/base.h>
 #include <arki/dispatcher.h>
 #include <arki/targetfile.h>
 #include <arki/formatter.h>
@@ -125,6 +126,8 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" to be written. See /etc/arkimet/targetfile for details.");
 	summary = outputOpts->add<BoolOption>("summary", 0, "summary", "",
 			"output only the summary of the data");
+	summary_restrict = outputOpts->add<StringOption>("summary-restrict", 0, "summary-restrict", "types.",
+			"summarise using only the given metadata types (comma-separated list)");
 	sort = outputOpts->add<StringOption>("sort", 0, "sort", "period:order",
 			"sort order.  Period can be year, month, day, hour or minute."
 			" Order can be a list of one or more metadata"
@@ -263,6 +266,9 @@ bool CommandLine::parse(int argc, const char* argv[])
 	}
 	if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
 		throw wibble::exception::BadOption("--upload only makes sense with --postprocess");
+
+	if (summary_restrict->isSet() && !summary->isSet())
+		throw wibble::exception::BadOption("--summary-restrict only makes sense with --summary");
 	
 	return false;
 }
@@ -274,6 +280,7 @@ struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
 	Summary* summary;
 	sort::Compare* sorter;
 	dataset::DataQuery query;
+	string summary_restrict;
 
 	YamlProcessor(const CommandLine& opts)
 		: formatter(0), output(*opts.output), summary(0), sorter(0),
@@ -283,7 +290,11 @@ struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
 			formatter = Formatter::create();
 
 		if (opts.summary->boolValue())
+		{
 			summary = new Summary();
+			if (opts.summary_restrict->isSet())
+				summary_restrict = opts.summary_restrict->stringValue();
+		}
 		else if (opts.sort->boolValue())
 		{
 			sorter = sort::Compare::parse(opts.sort->stringValue()).release();
@@ -317,7 +328,13 @@ struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
 	{
 		if (summary)
 		{
-			summary->writeYaml(output.stream(), formatter);
+			if (!summary_restrict.empty())
+			{
+				Summary s;
+				s.add(*summary, dataset::index::parseMetadataBitmask(summary_restrict));
+				s.writeYaml(output.stream(), formatter);
+			} else
+				summary->writeYaml(output.stream(), formatter);
 			output.stream() << endl;
 		}
 	}
@@ -370,13 +387,18 @@ struct DataProcessor : public DatasetProcessor, public metadata::Consumer
 	Summary* summary;
 	sort::Compare* sorter;
 	dataset::DataQuery query;
+	string summary_restrict;
 
 	DataProcessor(const CommandLine& opts)
 		: output(*opts.output), summary(0), sorter(0),
 		  query(opts.query, false)
 	{
 		if (opts.summary->boolValue())
+		{
 			summary = new Summary();
+			if (opts.summary_restrict->isSet())
+				summary_restrict = opts.summary_restrict->stringValue();
+		}
 		else
 		{
 			query.withData = opts.dataInline->boolValue();
@@ -413,7 +435,13 @@ struct DataProcessor : public DatasetProcessor, public metadata::Consumer
 	{
 		if (summary)
 		{
-			summary->write(output.stream(), output.name());
+			if (!summary_restrict.empty())
+			{
+				Summary s;
+				s.add(*summary, dataset::index::parseMetadataBitmask(summary_restrict));
+				s.write(output.stream(), output.name());
+			} else
+				summary->write(output.stream(), output.name());
 		}
 	}
 };

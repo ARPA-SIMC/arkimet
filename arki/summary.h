@@ -334,6 +334,12 @@ public:
 	void add(const Summary& s);
 
 	/**
+	 * Merge a summary into this summary, keeping only the given metadata
+	 * items
+	 */
+	void add(const Summary& s, const std::set<types::Code>& keep_only);
+
+	/**
 	 * Visit all the contents of this summary
 	 *
 	 * Returns true if the visit was completed, false if the visitor
