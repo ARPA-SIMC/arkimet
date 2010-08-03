@@ -21,6 +21,11 @@ ensure_matches(sample, "area:GRIB:lat=45000,lon=12000")
 ensure_not_matches(sample, "area:GRIB:lat=45,lon=12")
 ensure_not_matches(sample, "area:GRIB:answer=42")
 
+sample:set(arki_area.grib{blo=10, lat=5480000, lon=895000, sta=22})
+
+ensure_matches(sample, "area:GRIB:sta=22")
+ensure_not_matches(sample, "area:GRIB:sta=88")
+
 
 --[[ Matching area bounding boxes
 

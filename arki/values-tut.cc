@@ -186,6 +186,24 @@ void to::test<3>()
 	ensure_equals(v2, v1);
 }
 
+// Check a case where ValueBag seemed to fail (but it actually didn't, the
+// problem was elsewhere)
+template<> template<>
+void to::test<4>()
+{
+	ValueBag v1;
+	ValueBag v2;
+
+	v1.set("blo", Value::createInteger(10));
+	v1.set("lat", Value::createInteger(5480000));
+	v1.set("lon", Value::createInteger(895000));
+	v1.set("sta", Value::createInteger(22));
+
+	v2.set("sta", Value::createInteger(88));
+
+	ensure(!v1.contains(v2));
+}
+
 }
 
 // vim:set ts=4 sw=4:
