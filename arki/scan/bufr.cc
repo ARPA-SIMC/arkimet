@@ -251,7 +251,18 @@ bool Bufr::next(Metadata& md)
 
 	// Tru to decode the data; if we fail, we are done
 	if (bufr_decoder_decode(rmsg, msg) != DBA_OK)
-		return true;
+	{
+		// We can still try to handle partially decoded files
+
+		// Not if the error was not a parse error
+		if (dba_error_get_code() != DBA_ERR_PARSE) return true;
+
+		// Not if we didn't decode just one subset
+		if (msg->subsets_count != 1) return true;
+
+		// Not if the subset is empty
+		if (msg->subsets[0]->vars_count == 0) return true;
+	}
 
 	// Try to parse as a dba_msg
 	dba_msgs msgs;

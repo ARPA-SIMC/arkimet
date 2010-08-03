@@ -292,6 +292,52 @@ void to::test<3>()
 	ensure_throws(v.validate(buf.data(), buf.size()-1));
 }
 
+// Test scanning a BUFR file that can only be decoded partially
+template<> template<>
+void to::test<4>()
+{
+	Metadata md;
+	scan::Bufr scanner;
+	types::Time reftime;
+	wibble::sys::Buffer buf;
+
+	scanner.open("inbound/C23000.bufr");
+
+	// See how we scan the first BUFR
+	ensure(scanner.next(md));
+
+	// Check the source info
+	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/C23000.bufr"), 0, 2206)));
+
+	// Check that the source can be read properly
+	buf = md.getData();
+	ensure_equals(buf.size(), 2206u);
+	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
+	ensure_equals(string((const char*)buf.data() + 2202, 4), "7777");
+
+	// Check origin
+	ensure(md.get(types::TYPE_ORIGIN).defined());
+	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
+
+	// Check product
+	ensure(md.get(types::TYPE_PRODUCT).defined());
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(2, 255, 101, "temp")));
+
+	// Check reftime
+	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
+	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2010, 7, 21, 23, 0, 0))));
+
+	// Check area
+	ensure(md.has(types::TYPE_AREA));
+
+	// Check run
+	ensure(not md.has(types::TYPE_RUN));
+
+
+	// No more bufrs
+	ensure(not scanner.next(md));
+}
+
 }
 
 // vim:set ts=4 sw=4:
