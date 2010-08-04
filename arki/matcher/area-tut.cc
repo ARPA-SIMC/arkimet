@@ -215,6 +215,9 @@ void to::test<5>()
 	ensure_not_matches("area: bbox coveredby POLYGON((9 40, 10 43, 10 40, 9 40))", md);  // Touches one vertex
 	ensure_not_matches("area: bbox coveredby LINESTRING(9 40, 10 42, 10 40, 9 40)", md); // Disjoint
 	ensure_not_matches("area: bbox coveredby POLYGON((9 40, 10 42, 10 40, 9 40))", md);  // Disjoint
+
+	md.set(types::Area::decodeString("GRIB(blo=0, lat=4502770, lon=966670, sta=101)"));
+	ensure_matches("area:bbox coveredby POLYGON((9 45, 10 45, 10 46, 9 46, 9 45))", md); // Point contained
 #endif
 }
 
