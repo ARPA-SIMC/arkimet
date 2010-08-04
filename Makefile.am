@@ -70,6 +70,7 @@ EXTRA_DIST = README \
              arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dump \
+	     doc/mhooks-gzip \
 	     doc/mhooks-query \
 	     doc/mhooks-scan \
 	     doc/mhooks-check \
