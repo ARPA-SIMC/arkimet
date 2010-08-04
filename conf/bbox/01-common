@@ -194,5 +194,8 @@ if area.style == "GRIB" then
     --  r2ll(arki.lonmax, arki.latmax),
     --  r2ll(arki.lonmin, arki.latmax)
     -- }
+  elseif a.lat ~= nil and a.lon ~= nil then
+      bbox = {}
+      bbox[1] = { a.lat / 10000, a.lon / 10000 }
   end
 end
