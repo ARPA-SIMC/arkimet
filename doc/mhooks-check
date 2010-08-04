@@ -1,24 +1,23 @@
 DESCRIPTION end
-|\fBarki-update-summaries\fP updates the contents of the summaries in one or
-|more arkimet datasets, that can be specified either by name or read from a
-|configuration file.
+|\fBarki-check\fP performs checks and maintenance on datasets.
+|Datasets can be specified by name or read from a configuration file.
 
 OPTIONS end
 |.SH EXAMPLES
-|Here are some example invocations of \fBarki-update-summaries\fP:
+|Here are some example invocations of \fBarki-check\fP:
 |.P
 |.nf
-|  # Merge the configuration of various datasets in a single file
-|  arki-mergeconf /srv/archives/datasets/* > dispatch.conf
-|  # Scan all inbound files and dispatch their contents
-|  arki-scan-grib *.grib | arki-dispatch dispatch.conf > /dev/null
-|  arki-scan-bufr *.bufr | arki-dispatch dispatch.conf > /dev/null
-|  # Update the summaries in the datasets after the import
-|  arki-update-summaries dispatch.conf
-|  # Delete some old data from one or more datasets
-|  arki-query "reftime:<=2 years ago" datasets/* > /tmp/to-delete
-|  arki-check --remove=/tmp/to-delete datasets/*
+|  # Check a dataset, reporting what it finds
+|  arki-check datasetdir
+|  # Check all datasets listed in a configuration file
+|  arki-check -C file.conf
+|  # Check a dataset, reporting what it finds and fixing problems
+|  arki-check -f datasetdir
+|  # Show what a repack would do
+|  arki-check -r datasetdir
+|  # Repack a dataset
+|  arki-check -r -f datasetdir
 |.fi
 |
 |.SH SEE ALSO
-|.BR arki-dispatch (1)
+|.BR arki-gzip (1)
