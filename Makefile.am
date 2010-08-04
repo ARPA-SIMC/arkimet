@@ -7,6 +7,7 @@ SUBDIRS = embedded wibble arki src .
 man_MANS = \
 	arki-config.1 \
 	arki-dump.1 \
+	arki-gzip.1 \
 	arki-query.1 \
 	arki-check.1 \
 	arki-mergeconf.1 \
