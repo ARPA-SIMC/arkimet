@@ -1,6 +1,5 @@
 /*
- * arki-bufr-scan - Scan BUFR messages and encode summary information in their
- *                  optional section
+ * arki-bufr-prepare - Prepare BUFR messages for importing into arkimet
  *
  * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -63,13 +62,13 @@ struct Options : public StandardParserWithManpage
 	StringOption* outfile;
 	BoolOption* annotate;
 
-	Options() : StandardParserWithManpage("arki-bufr-scan", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
+	Options() : StandardParserWithManpage("arki-bufr-prepare", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
 		usage = "[options] file1 file2...";
 		description =
 			"Read BUFR messages, encode each subsection in a "
 			"separate message and add an optional section with "
-			"information useful for arki-scan";
+			"information useful for arki-prepare";
 
 		debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
 		verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
