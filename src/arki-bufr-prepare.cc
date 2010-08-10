@@ -60,7 +60,6 @@ struct Options : public StandardParserWithManpage
 	BoolOption* verbose;
 	BoolOption* debug;
 	StringOption* outfile;
-	BoolOption* annotate;
 
 	Options() : StandardParserWithManpage("arki-bufr-prepare", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -74,14 +73,11 @@ struct Options : public StandardParserWithManpage
 		verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
 		outfile = add<StringOption>("output", 'o', "output", "file",
 				"write the output to the given file instead of standard output");
-		annotate = add<BoolOption>("annotate", 0, "annotate", "", "add optional section with extra information from BUFR contents");
 	}
 };
 
 }
 }
-
-static bool do_optional_section = false;
 
 static std::map<std::string, int> to_rep_cod;
 
@@ -164,96 +160,6 @@ static int extract_rep_cod(dba_msg m)
 		return rc->second;
 }
 
-static void add_info_fixed(bufrex_msg newmsg, dba_msg m)
-{
-	uint16_t rep_cod;
-	uint32_t lat;
-	uint32_t lon;
-	uint8_t block;
-	uint16_t station;
-	int ival;
-	dba_var var;
-
-	// rep_cod
-	rep_cod = htons(extract_rep_cod(m));
-
-	// Latitude
-	var = dba_msg_get_latitude_var(m);
-	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "latitude not found");
-	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
-	lat = htonl(ival);
-
-	// Longitude
-	var = dba_msg_get_longitude_var(m);
-	if (var == NULL) throw wibble::exception::Consistency("creating fixed station info structure", "longitude not found");
-	dballe::checked(dba_var_enqi(var, &ival));  // Get it unscaled
-	lon = htonl(ival);
-
-	// Block number
-	var = dba_msg_get_block_var(m);
-	if (var == NULL)
-		block = 0;
-	else {
-		dballe::checked(dba_var_enqi(var, &ival));
-		block = ival;
-	}
-
-	// Station number
-	var = dba_msg_get_station_var(m);
-	if (var == NULL)
-		station = 0;
-	else {
-		dballe::checked(dba_var_enqi(var, &ival));
-		station = htons(ival);
-	}
-
-	char *buf = (char*)malloc(13);
-	if (buf == NULL) throw wibble::exception::Consistency("creating buffer with metadata info", "allocation failed");
-	memcpy(buf +  0, &rep_cod, 2);
-	memcpy(buf +  2, &lat, 4);
-	memcpy(buf +  6, &lon, 4);
-	memcpy(buf + 10, &block, 1);
-	memcpy(buf + 11, &station, 2);
-	newmsg->opt.bufr.optional_section_length = 13;
-	newmsg->opt.bufr.optional_section = buf;
-}
-
-static void add_info_mobile(bufrex_msg newmsg, dba_msg m)
-{
-//        - lat, lon, ident                  (per aerei)
-// inline static dba_var dba_msg_get_latitude_var(dba_msg msg)
-// inline static dba_var dba_msg_get_longitude_var(dba_msg msg)
-// if (dba_msg_get_ident_var(m) != NULL)
-// 
-	uint16_t rep_cod;
-	int ival;
-	dba_var var;
-
-	// rep_cod
-	rep_cod = htons(extract_rep_cod(m));
-
-	char *buf = (char*)calloc(1, 11);
-	if (buf == NULL) throw wibble::exception::Consistency("creating buffer with metadata info", "allocation failed");
-	memcpy(buf + 0, &rep_cod, 2);
-
-	// Ident
-	var = dba_msg_get_ident_var(m);
-	if (var != NULL)
-		strncpy(buf + 2, dba_var_value(var), 9);
-
-	newmsg->opt.bufr.optional_section_length = 11;
-	newmsg->opt.bufr.optional_section = buf;
-}
-
-static void add_info_generic(bufrex_msg newmsg, dba_msg m)
-{
-	// Check if there is "ident" and dispatch to fixed or mobile
-	if (dba_msg_get_ident_var(m) != NULL)
-		add_info_mobile(newmsg, m);
-	else
-		add_info_fixed(newmsg, m);
-}
-
 static void process(const std::string& filename, dba_file outfile)
 {
 	dba_rawmsg rmsg;
@@ -296,33 +202,6 @@ static void process(const std::string& filename, dba_file outfile)
 			if (dba_var var = dba_msg_get_minute_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_minute));
 			if (dba_var var = dba_msg_get_second_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_second));
 
-			if (do_optional_section)
-			{
-				// Extract info and add optional section
-				switch (m->type)
-				{
-					case MSG_GENERIC:
-						add_info_generic(newmsg, m);
-						break;
-					case MSG_SYNOP:
-					case MSG_PILOT:
-					case MSG_TEMP:
-					case MSG_BUOY:
-					case MSG_METAR:
-					case MSG_POLLUTION:
-						add_info_fixed(newmsg, m);
-						break;
-					case MSG_TEMP_SHIP:
-					case MSG_AIREP:
-					case MSG_AMDAR:
-					case MSG_ACARS:
-					case MSG_SHIP:
-					case MSG_SAT:
-						add_info_mobile(newmsg, m);
-						break;
-				}
-			}
-
 			// Write out the message
 			dba_rawmsg newrmsg;
 			dballe::checked(bufrex_msg_encode(newmsg, &newrmsg));
@@ -343,8 +222,6 @@ int main(int argc, const char* argv[])
 			return 0;
 
 		nag::init(opts.verbose->isSet(), opts.debug->isSet());
-
-		do_optional_section = opts.annotate->boolValue();
 
 		runtime::init();
 
