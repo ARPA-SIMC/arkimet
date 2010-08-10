@@ -191,16 +191,18 @@ static void process(const std::string& filename, dba_file outfile)
 
 			// Parse into dba_msg
 			dba_msgs msgs;
-			dballe::checked(bufrex_msg_to_dba_msgs(newmsg, &msgs));
-			dba_msg m = msgs->msgs[0];
+			if (bufrex_msg_to_dba_msgs(newmsg, &msgs) == DBA_OK)
+			{
+				dba_msg m = msgs->msgs[0];
 
-			// Update reference time
-			if (dba_var var = dba_msg_get_year_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_year));
-			if (dba_var var = dba_msg_get_month_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_month));
-			if (dba_var var = dba_msg_get_day_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_day));
-			if (dba_var var = dba_msg_get_hour_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_hour));
-			if (dba_var var = dba_msg_get_minute_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_minute));
-			if (dba_var var = dba_msg_get_second_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_second));
+				// Update reference time
+				if (dba_var var = dba_msg_get_year_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_year));
+				if (dba_var var = dba_msg_get_month_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_month));
+				if (dba_var var = dba_msg_get_day_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_day));
+				if (dba_var var = dba_msg_get_hour_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_hour));
+				if (dba_var var = dba_msg_get_minute_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_minute));
+				if (dba_var var = dba_msg_get_second_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_second));
+			}
 
 			// Write out the message
 			dba_rawmsg newrmsg;
