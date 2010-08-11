@@ -344,6 +344,54 @@ void to::test<4>()
 	ensure(not scanner.next(md));
 }
 
+// Test scanning a pollution BUFR file
+template<> template<>
+void to::test<5>()
+{
+	Metadata md;
+	scan::Bufr scanner;
+	types::Time reftime;
+	wibble::sys::Buffer buf;
+
+	scanner.open("inbound/pollution.bufr");
+
+	// See how we scan the first BUFR
+	ensure(scanner.next(md));
+
+	// Check the source info
+	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/pollution.bufr"), 0, 178)));
+
+	// Check that the source can be read properly
+	buf = md.getData();
+	ensure_equals(buf.size(), 178u);
+	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
+	ensure_equals(string((const char*)buf.data() + 174, 4), "7777");
+
+	// Check origin
+	ensure(md.get(types::TYPE_ORIGIN).defined());
+	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
+
+	// Check product
+	ValueBag vb;
+	vb.set("t", Value::createString("pollution"));
+	ensure(md.get(types::TYPE_PRODUCT).defined());
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(8, 255, 171, vb)));
+
+	// Check reftime
+	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
+	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2010, 8, 8, 23, 0, 0))));
+
+	// Check area
+	ensure(md.has(types::TYPE_AREA));
+
+	// Check run
+	ensure(not md.has(types::TYPE_RUN));
+
+
+	// No more bufrs
+	ensure(not scanner.next(md));
+}
+
 }
 
 // vim:set ts=4 sw=4:
