@@ -37,16 +37,16 @@ ensure_equals(o.subtype, 255)
 ensure_equals(o.localsubtype, 1)
 ensure_equals(tostring(o), "BUFR(000, 255, 001)")
 
--- It can also have a name attached
-local o = arki_product.bufr(0, 255, 1, "synop")
+-- It can also have key=value pairs attached
+local o = arki_product.bufr(0, 255, 1, {t="synop"})
 ensure_equals(o.style, "BUFR")
 ensure_equals(o.type, 0)
 ensure_equals(o.subtype, 255)
 ensure_equals(o.localsubtype, 1)
-ensure_equals(o.name, "synop")
-ensure_equals(tostring(o), "BUFR(000, 255, 001, synop)")
+ensure_equals(o.val.t, "synop")
+ensure_equals(tostring(o), "BUFR(000, 255, 001, t=synop)")
 
--- It is possible to create an amended version adding/changing the name
+-- It is possible to add/replace key=value pairs
 local o1 = arki_product.bufr(0, 255, 1)
-o1 = o:addName("synop")
+o1 = o:addValues{t="synop"}
 ensure_equals(o, o1)

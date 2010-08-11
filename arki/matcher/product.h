@@ -71,7 +71,7 @@ struct MatchProductBUFR : public MatchProduct
 	int type;
 	int subtype;
 	int localsubtype;
-	std::string name;
+	ValueBag values;
 
 	MatchProductBUFR(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;

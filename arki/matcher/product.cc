@@ -97,7 +97,7 @@ MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
 	type = args.getInt(0, -1);
 	subtype = args.getInt(1, -1);
 	localsubtype = args.getInt(2, -1);
-	name = args.tail;
+	values = ValueBag::parse(args.tail);
 }
 
 bool MatchProductBUFR::matchItem(const Item<>& o) const
@@ -107,12 +107,27 @@ bool MatchProductBUFR::matchItem(const Item<>& o) const
 	if (type != -1 && (unsigned)type != v->type()) return false;
 	if (subtype != -1 && (unsigned)subtype != v->subtype()) return false;
 	if (localsubtype != -1 && (unsigned)localsubtype != v->localsubtype()) return false;
-	return name.empty() or name == v->name();
+	return v->values().contains(values);
 }
 
 std::string MatchProductBUFR::toString() const
 {
-	return "BUFR," + name;
+	stringstream res;
+	res << "BUFR";
+	if (type != -1 || subtype != -1 || localsubtype != -1)
+	{
+		res << ",";
+		if (type != -1) res << type;
+		if (subtype != -1 || localsubtype != -1)
+		{
+			res << ",";
+			if (subtype != -1) res << subtype;
+			if (localsubtype != -1) res << "," << localsubtype;
+		}
+	}
+	if (!values.empty())
+		res << ":" << values.toString();
+	return res.str();
 }
 
 

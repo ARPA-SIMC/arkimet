@@ -602,6 +602,13 @@ void ValueBag::set(const std::string& key, Value* val)
 	}
 }
 
+void ValueBag::update(const ValueBag& vb)
+{
+	for (ValueBag::const_iterator i = vb.begin();
+			i != vb.end(); ++i)
+		set(i->first, i->second->clone());
+}
+
 void ValueBag::encode(Encoder& enc) const
 {
 	for (const_iterator i = begin(); i != end(); ++i)
@@ -735,11 +742,14 @@ void ValueBag::lua_push(lua_State* L) const
 	// Leave the table on the stack: we pushed it
 }
 
-void ValueBag::load_lua_table(lua_State* L)
+void ValueBag::load_lua_table(lua_State* L, int idx)
 {
+	// Make the table index absolute
+	if (idx < 0) idx = lua_gettop(L) + idx + 1;
+
 	// Iterate the table
 	lua_pushnil(L);
-	while (lua_next(L, -2))
+	while (lua_next(L, idx))
 	{
 		// Get key
 		string key;

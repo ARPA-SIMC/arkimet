@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,25 +70,34 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
+	ValueBag vb;
+	vb.set("name", Value::createString("antani"));
 	Matcher m;
-	md.set(product::BUFR::create(1, 2, 3, "antani"));
+	md.set(product::BUFR::create(1, 2, 3, vb));
 
 	ensure_matches("product:BUFR", md);
 	ensure_matches("product:BUFR,1", md);
 	ensure_matches("product:BUFR,1,2", md);
 	ensure_matches("product:BUFR,1,2,3", md);
-	ensure_matches("product:BUFR,1,2,3:antani", md);
-	ensure_matches("product:BUFR,1:antani", md);
-	ensure_matches("product:BUFR:antani", md);
-	ensure_not_matches("product:BUFR,1,2,3:blinda", md);
-	ensure_not_matches("product:BUFR,1,2,3:antan", md);
-	ensure_not_matches("product:BUFR,1,2,3:antani1", md);
+	ensure_matches("product:BUFR,1,2,3:name=antani", md);
+	ensure_matches("product:BUFR,1:name=antani", md);
+	ensure_matches("product:BUFR:name=antani", md);
+	ensure_not_matches("product:BUFR,1,2,3:name=blinda", md);
+	ensure_not_matches("product:BUFR,1,2,3:name=antan", md);
+	ensure_not_matches("product:BUFR,1,2,3:name=antani1", md);
+	ensure_not_matches("product:BUFR,1,2,3:enam=antani", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
 	try {
-		ensure_matches("product:BUFR,antani", md);
+		ensure_matches("product:BUFR,name=antani", md);
 		ensure(false);
 	} catch (wibble::exception::Consistency& e) {
 		ensure(string(e.what()).find("is not a number") != string::npos);
+	}
+	try {
+		ensure_matches("product:BUFR:0,,2", md);
+		ensure(false);
+	} catch (wibble::exception::Consistency& e) {
+		ensure(string(e.what()).find("key=value") != string::npos);
 	}
 }
 

@@ -105,8 +105,8 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
 			uint8_t type         = dec.popUInt(1, "GRIB1 type"),
 				subtype      = dec.popUInt(1, "GRIB1 subtype"),
 				localsubtype = dec.popUInt(1, "GRIB1 localsubtype");
-			uint16_t size = dec.popVarint<uint16_t>("BUFR product name length");
-			return product::BUFR::create(type, subtype, localsubtype, dec.popString(size, "BUFR product name"));
+			ValueBag values = ValueBag::decode(dec.buf, dec.len);
+			return product::BUFR::create(type, subtype, localsubtype, values);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
@@ -133,7 +133,7 @@ Item<Product> Product::decodeString(const std::string& val)
 			inner = str::trim(nums.tail);
 			if (!inner.empty() && inner[0] == ',')
 				inner = str::trim(nums.tail.substr(1));
-			return product::BUFR::create(nums.vals[0], nums.vals[1], nums.vals[2], inner);
+			return product::BUFR::create(nums.vals[0], nums.vals[1], nums.vals[2], ValueBag::parse(inner));
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Product", "unknown Product style " + formatStyle(style));
@@ -167,7 +167,12 @@ static int arkilua_new_bufr(lua_State* L)
 	int subtype = luaL_checkint(L, 2);
 	int localsubtype = luaL_checkint(L, 3);
 	if (lua_gettop(L) > 3)
-		product::BUFR::create(type, subtype, localsubtype, luaL_checkstring(L, 4))->lua_push(L);
+	{
+		luaL_checktype(L, 4, LUA_TTABLE);
+		ValueBag values;
+		values.load_lua_table(L, 4);
+		product::BUFR::create(type, subtype, localsubtype, values)->lua_push(L);
+	}
 	else
 		product::BUFR::create(type, subtype, localsubtype)->lua_push(L);
 	return 1;
@@ -363,8 +368,7 @@ void BUFR::encodeWithoutEnvelope(Encoder& enc) const
 	enc.addUInt(m_type, 1);
 	enc.addUInt(m_subtype, 1);
 	enc.addUInt(m_localsubtype, 1);
-	enc.addVarint(m_name.size());
-	enc.addString(m_name);
+	m_values.encode(enc);
 }
 std::ostream& BUFR::writeToOstream(std::ostream& o) const
 {
@@ -374,17 +378,17 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 	  << setw(3) << (int)m_subtype << ", "
 	  << setw(3) << (int)m_localsubtype
 	  << setfill(' ');
-	if (m_name.empty())
+	if (m_values.empty())
 		o << ")";
 	else
-		o << ", " << m_name << ")";
+		o << ", " << m_values << ")";
 	return o;
 }
 std::string BUFR::exactQuery() const
 {
     string res = str::fmtf("BUFR,%u,%u,%u", type(), subtype(), localsubtype());
-    if (!m_name.empty())
-	    res += ":" + m_name;
+    if (!m_values.empty())
+	    res += ":" + m_values.toString();
     return res;
 }
 const char* BUFR::lua_type_name() const { return "arki.types.product.bufr"; }
@@ -401,9 +405,7 @@ int BUFR::compare_local(const Product& o) const
 	if (int res = m_type - v->m_type) return res;
 	if (int res = m_subtype - v->m_subtype) return res;
 	if (int res = m_localsubtype - v->m_localsubtype) return res;
-	if (m_name < v->m_name) return -1;
-	if (m_name > v->m_name) return 1;
-	return 0;
+	return m_values.compare(v->m_values);
 }
 bool BUFR::operator==(const Type& o) const
 {
@@ -412,7 +414,7 @@ bool BUFR::operator==(const Type& o) const
 	return m_type == v->m_type
 	    && m_subtype == v->m_subtype
 	    && m_localsubtype == v->m_localsubtype
-	    && m_name == v->m_name;
+	    && m_values == v->m_values;
 }
 
 Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
@@ -424,23 +426,24 @@ Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char
 	return cache_bufr.intern(res);
 }
 
-Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const std::string& name)
+Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& values)
 {
 	BUFR* res = new BUFR;
 	res->m_type = type;
 	res->m_subtype = subtype;
 	res->m_localsubtype = localsubtype;
-	res->m_name = name;
+	res->m_values = values;
 	return cache_bufr.intern(res);
 }
 
-Item<BUFR> BUFR::addName(const std::string& name) const
+Item<BUFR> BUFR::addValues(const ValueBag& newvalues) const
 {
 	BUFR* res = new BUFR;
 	res->m_type = m_type;
 	res->m_subtype = m_subtype;
 	res->m_localsubtype = m_localsubtype;
-	res->m_name = name;
+	res->m_values = newvalues;
+	res->m_values.update(newvalues);
 	return cache_bufr.intern(res);
 }
 
@@ -457,17 +460,22 @@ bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 		lua_pushnumber(L, subtype());
 	else if (name == "localsubtype")
 		lua_pushnumber(L, localsubtype());
-	else if (name == "name")
-		lua_pushlstring(L, m_name.data(), m_name.size());
+	else if (name == "val")
+		m_values.lua_push(L);
 	else
 		return Product::lua_lookup(L, name);
 	return true;
 }
 
-static int arkilua_addname(lua_State* L)
+static int arkilua_addvalues(lua_State* L)
 {
 	Item<BUFR> b = Type::lua_check<Product>(L, 1).upcast<BUFR>();
-	b->addName(luaL_checkstring(L, 2))->lua_push(L);
+	luaL_checktype(L, 2, LUA_TTABLE);
+
+	ValueBag values;
+	values.load_lua_table(L, 2);
+
+	b->addValues(values)->lua_push(L);
         return 1;
 }
 
@@ -476,7 +484,7 @@ void BUFR::lua_register_methods(lua_State* L) const
 	Product::lua_register_methods(L);
 
 	static const struct luaL_reg lib [] = {
-		{ "addName", arkilua_addname },
+		{ "addValues", arkilua_addvalues },
 		{ NULL, NULL }
 	};
 	luaL_register(L, NULL, lib);

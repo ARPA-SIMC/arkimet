@@ -56,7 +56,9 @@ void to::test<1>()
 	ensure(o != product::GRIB1::create(2, 3, 4));
 	ensure(o != product::GRIB2::create(1, 2, 3, 4));
 	ensure(o != product::BUFR::create(1, 2, 3));
-	ensure(o != product::BUFR::create(1, 2, 3, "antani"));
+	ValueBag vb;
+	vb.set("name", Value::createString("antani"));
+	ensure(o != product::BUFR::create(1, 2, 3, vb));
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_PRODUCT);
@@ -84,7 +86,9 @@ void to::test<2>()
 	ensure(o != product::GRIB1::create(1, 2, 3));
 	ensure(o != product::GRIB2::create(2, 3, 4, 5));
 	ensure(o != product::BUFR::create(1, 2, 3));
-	ensure(o != product::BUFR::create(1, 2, 3, "antani"));
+	ValueBag vb;
+	vb.set("name", Value::createString("antani"));
+	ensure(o != product::BUFR::create(1, 2, 3, vb));
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_PRODUCT);
@@ -99,23 +103,28 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	Item<Product> o = product::BUFR::create(1, 2, 3, "antani");
+	ValueBag vb;
+	vb.set("name", Value::createString("antani"));
+	ValueBag vb1;
+	vb1.set("name", Value::createString("antani1"));
+
+	Item<Product> o = product::BUFR::create(1, 2, 3, vb);
 	ensure_equals(o->style(), Product::BUFR);
 	const product::BUFR* v = o->upcast<product::BUFR>();
-	ensure_equals(v->name(), "antani");
+	ensure_equals(v->values(), vb);
 
-	ensure_equals(o, Item<Product>(product::BUFR::create(1, 2, 3, "antani")));
+	ensure_equals(o, Item<Product>(product::BUFR::create(1, 2, 3, vb)));
 
 	ensure(o != product::GRIB1::create(1, 2, 3));
 	ensure(o != product::GRIB2::create(1, 2, 3, 4));
 	ensure(o != product::BUFR::create(1, 2, 3));
-	ensure(o != product::BUFR::create(1, 2, 3, "antani1"));
+	ensure(o != product::BUFR::create(1, 2, 3, vb1));
 
 	// Test encoding/decoding
 	ensure_serialises(o, types::TYPE_PRODUCT);
 
 	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "BUFR,1,2,3:antani");
+	ensure_equals(o->exactQuery(), "BUFR,1,2,3:name=antani");
 	Matcher m = Matcher::parse("product:" + o->exactQuery());
 	ensure(m(o));
 }
@@ -148,6 +157,11 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
+	ValueBag vb;
+	vb.set("name", Value::createString("antani"));
+	ValueBag vb1;
+	vb1.set("name", Value::createString("blinda"));
+
 	ensure_compares(
 		product::GRIB1::create(1, 2, 3),
 		product::GRIB1::create(2, 3, 4),
@@ -161,9 +175,9 @@ void to::test<5>()
 		product::BUFR::create(1, 2, 4),
 		product::BUFR::create(1, 2, 4));
 	ensure_compares(
-		product::BUFR::create(1, 2, 3, "antani"),
-		product::BUFR::create(1, 2, 3, "blinda"),
-		product::BUFR::create(1, 2, 3, "blinda"));
+		product::BUFR::create(1, 2, 3, vb),
+		product::BUFR::create(1, 2, 3, vb1),
+		product::BUFR::create(1, 2, 3, vb1));
 }
 
 }

@@ -276,7 +276,9 @@ bool Bufr::next(Metadata& md)
 		return true;
 
 	// Set the product from the msg type
-        md.set(product->addName(dba_msg_type_name(msgs->msgs[0]->type)));
+	ValueBag newvals;
+	newvals.set("t", Value::createString(dba_msg_type_name(msgs->msgs[0]->type)));
+        md.set(product->addValues(newvals));
 
 	// DB-All.e managed to make sense of the message: hand it down to Lua
 	// to extract further metadata

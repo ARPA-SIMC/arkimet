@@ -37,13 +37,12 @@ ensure_not_matches(sample, "product:GRIB2,98,1,,2")
 -- Any of centre, discipline, category, number or rep_memo can be omitted; if
 -- omitted, any value will match
 
-sample:set(arki_product.bufr(0, 255, 1, "synop"))
+sample:set(arki_product.bufr(0, 255, 1, {t="synop"}))
 
 ensure_matches(sample, "product:BUFR")
 ensure_matches(sample, "product:BUFR,0,,1")
-ensure_matches(sample, "product:BUFR,0,,1:synop")
-ensure_matches(sample, "product:BUFR:synop")
+ensure_matches(sample, "product:BUFR,0,,1:t=synop")
+ensure_matches(sample, "product:BUFR:t=synop")
 
 ensure_not_matches(sample, "product:GRIB1")
-ensure_not_matches(sample, "product:BUFR:temp")
-ensure_not_matches(sample, "product:BUFR:0,,2")
+ensure_not_matches(sample, "product:BUFR:t=temp")

@@ -200,7 +200,7 @@ void dumpstack(lua_State* L, const std::string& title, std::ostream& out)
 	for (int i = lua_gettop(L); i; --i)
 	{
 		int t = lua_type(L, i);
-		out << " " << t << ": ";
+		out << i << ": " << t << ": ";
 		switch (t)
 		{
 			case LUA_TNIL:

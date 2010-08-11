@@ -78,8 +78,10 @@ void to::test<1>()
 	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
 
 	// Check product
+	ValueBag vb;
+	vb.set("t", Value::createString("synop"));
 	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, "synop")));
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -114,7 +116,7 @@ void to::test<1>()
 
 	// Check product
 	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, "synop")));
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -142,7 +144,7 @@ void to::test<1>()
 
 	// Check product
 	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3, "synop")));
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3, vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -185,8 +187,10 @@ void to::test<2>()
 	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
 
 	// Check product
+	ValueBag vb;
+	vb.set("t", Value::createString("synop"));
 	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, "synop")));
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -214,7 +218,7 @@ void to::test<2>()
 
 	// Check product
 	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, "synop")));
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -242,7 +246,7 @@ void to::test<2>()
 
 	// Check product
 	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3, "synop")));
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3, vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -320,8 +324,10 @@ void to::test<4>()
 	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
 
 	// Check product
+	ValueBag vb;
+	vb.set("t", Value::createString("temp"));
 	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(2, 255, 101, "temp")));
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(2, 255, 101, vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);

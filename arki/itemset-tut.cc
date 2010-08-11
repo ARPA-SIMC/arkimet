@@ -211,8 +211,12 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	Item<> val(product::BUFR::create(1, 2, 3, "antani"));
-	Item<> val1(product::BUFR::create(1, 2, 3, "blinda"));
+	ValueBag vb;
+	vb.set("name", Value::createString("antani"));
+	ValueBag vb1;
+	vb1.set("name", Value::createString("blinda"));
+	Item<> val(product::BUFR::create(1, 2, 3, vb));
+	Item<> val1(product::BUFR::create(1, 2, 3, vb1));
 	ensure_stores(types::Product, md, val, val1);
 }
 

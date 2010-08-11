@@ -105,6 +105,8 @@ struct ValueBag : public std::map<std::string, Value*>
 
 	bool contains(const ValueBag& vb) const;
 
+	void update(const ValueBag& vb);
+
 	void clear();
 
 	/**
@@ -145,7 +147,7 @@ struct ValueBag : public std::map<std::string, Value*>
 	void lua_push(lua_State* L) const;
 
 	/// Fill in the ValueBag from the Lua table on top of the stack
-	void load_lua_table(lua_State* L);
+	void load_lua_table(lua_State* L, int idx = -1);
 
 private:
 	// Disable modifying subscription, because it'd be hard to deallocate the
