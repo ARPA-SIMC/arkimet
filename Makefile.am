@@ -43,6 +43,7 @@ dist_sbconf_DATA = \
 	conf/scan-bufr/buoy.lua \
 	conf/scan-bufr/metar.lua \
 	conf/scan-bufr/pilot.lua \
+	conf/scan-bufr/pollution.lua \
 	conf/scan-bufr/ship.lua \
 	conf/scan-bufr/synop.lua \
 	conf/scan-bufr/temp.lua \
