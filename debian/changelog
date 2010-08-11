@@ -1,3 +1,18 @@
+arkimet (0.45-1) UNRELEASED; urgency=low
+
+  * Lua bindings for metadata
+  * Doctests for types and matchers
+  * Trap invalid expa lines that expand to no data at all
+  * arki-check checks that summary cache files are writable
+  * arki-query on files actually filters messages
+  * Implemented --summary-restrict to arki-query and arki-scan
+  * Scan partially decoded BUFR files
+  * Bounding boxes for BUFR areas
+  * No more BUFR annotation
+  * BUFR products use key=value pairs instead of a single name
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 11 Aug 2010 10:22:48 +0100
+
 arkimet (0.44-1) UNRELEASED; urgency=low
 
   * Fixed logging configuration in arki-server
