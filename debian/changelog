@@ -10,8 +10,9 @@ arkimet (0.45-1) UNRELEASED; urgency=low
   * Bounding boxes for BUFR areas
   * No more BUFR annotation
   * BUFR products use key=value pairs instead of a single name
+  * Scan pollutant as additional BUFR product info
 
- -- Enrico Zini <enrico@debian.org>  Wed, 11 Aug 2010 10:22:48 +0100
+ -- Enrico Zini <enrico@debian.org>  Wed, 11 Aug 2010 11:52:20 +0100
 
 arkimet (0.44-1) UNRELEASED; urgency=low
 

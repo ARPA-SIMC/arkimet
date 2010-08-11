@@ -442,7 +442,7 @@ Item<BUFR> BUFR::addValues(const ValueBag& newvalues) const
 	res->m_type = m_type;
 	res->m_subtype = m_subtype;
 	res->m_localsubtype = m_localsubtype;
-	res->m_values = newvalues;
+	res->m_values = m_values;
 	res->m_values.update(newvalues);
 	return cache_bufr.intern(res);
 }

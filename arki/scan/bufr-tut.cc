@@ -374,6 +374,7 @@ void to::test<5>()
 	// Check product
 	ValueBag vb;
 	vb.set("t", Value::createString("pollution"));
+	vb.set("p", Value::createString("NO2"));
 	ensure(md.get(types::TYPE_PRODUCT).defined());
 	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(8, 255, 171, vb)));
 
@@ -383,6 +384,7 @@ void to::test<5>()
 
 	// Check area
 	ensure(md.has(types::TYPE_AREA));
+	ensure_equals(md.get<Area>(), Area::decodeString("GRIB(gems=IT0002, lat=4601194, lon=826889, name=NO_3118_PIEVEVERGONTE)"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));

@@ -21,6 +21,7 @@
 #include <arki/types/test-utils.h>
 #include <arki/types/product.h>
 #include <arki/matcher.h>
+#include <wibble/string.h>
 
 #include <sstream>
 #include <iostream>
@@ -35,6 +36,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace wibble;
 
 struct arki_types_product_shar {
 };
@@ -47,9 +49,9 @@ void to::test<1>()
 	Item<Product> o = product::GRIB1::create(1, 2, 3);
 	ensure_equals(o->style(), Product::GRIB1);
 	const product::GRIB1* v = o->upcast<product::GRIB1>();
-	ensure_equals(v->origin(), 1);
-	ensure_equals(v->table(), 2);
-	ensure_equals(v->product(), 3);
+	ensure_equals(v->origin(), 1u);
+	ensure_equals(v->table(), 2u);
+	ensure_equals(v->product(), 3u);
 
 	ensure_equals(o, Item<Product>(product::GRIB1::create(1, 2, 3)));
 
@@ -76,10 +78,10 @@ void to::test<2>()
 	Item<Product> o = product::GRIB2::create(1, 2, 3, 4);
 	ensure_equals(o->style(), Product::GRIB2);
 	const product::GRIB2* v = o->upcast<product::GRIB2>();
-	ensure_equals(v->centre(), 1);
-	ensure_equals(v->discipline(), 2);
-	ensure_equals(v->category(), 3);
-	ensure_equals(v->number(), 4);
+	ensure_equals(v->centre(), 1u);
+	ensure_equals(v->discipline(), 2u);
+	ensure_equals(v->category(), 3u);
+	ensure_equals(v->number(), 4u);
 
 	ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4)));
 
@@ -127,6 +129,11 @@ void to::test<3>()
 	ensure_equals(o->exactQuery(), "BUFR,1,2,3:name=antani");
 	Matcher m = Matcher::parse("product:" + o->exactQuery());
 	ensure(m(o));
+
+	ValueBag vb2;
+	vb2.set("val", Value::createString("blinda"));
+	o = v->addValues(vb2);
+	ensure_equals(str::fmt(o), "BUFR(001, 002, 003, name=antani, val=blinda)");
 }
 
 // Test Lua functions
@@ -136,7 +143,7 @@ void to::test<4>()
 #ifdef HAVE_LUA
 	Item<Product> o = product::GRIB1::create(1, 2, 3);
 
-	tests::Lua test(
+	arki::tests::Lua test(
 		"function test(o) \n"
 		"  if o.style ~= 'GRIB1' then return 'style is '..o.style..' instead of GRIB1' end \n"
 		"  if o.origin ~= 1 then return 'o.origin first item is '..o.origin..' instead of 1' end \n"
