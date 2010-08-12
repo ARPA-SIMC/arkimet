@@ -73,16 +73,16 @@ function scan(md)
 	-- Ensemble
 	local ensemble = {}
 	if grib.localDefinitionNumber then
-		ensemble.ld = grib.localDefinitionNumber
-		ensemble.mt = grib.marsType
+		ensemble.ld = gribl.localDefinitionNumber
+		ensemble.mt = gribl.marsType
 		if grib.clusterNumber then
-			ensemble.nn = grib.clusterNumber
+			ensemble.nn = gribl.clusterNumber
 		end
 		if grib.forecastProbabilityNumber then
-			ensemble.nn = grib.forecastProbabilityNumber
+			ensemble.nn = gribl.forecastProbabilityNumber
 		end
 		if grib.perturbationNumber then
-			ensemble.nn = grib.perturbationNumber
+			ensemble.nn = gribl.perturbationNumber
 		end
 		md:set(arki_ensemble.grib(ensemble))
 	end

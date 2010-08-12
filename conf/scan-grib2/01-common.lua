@@ -83,7 +83,7 @@ function scan(md)
 	if grib.typeOfProcessedData >= 3 and grib.typeOfProcessedData <= 5 then
 		local ensemble = {}
 		ensemble.mc = grib.marsClass
-		ensemble.mt = grib.marsType
+		ensemble.mt = gribl.marsType
 		ensemble.ty = grib.typeOfEnsembleForecast
 		ensemble.pf = grib.perturbationNumber
 		ensemble.tf = grib.numberOfForecastsInEnsemble
