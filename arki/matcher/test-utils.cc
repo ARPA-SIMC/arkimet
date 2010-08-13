@@ -10,6 +10,8 @@
 #include <arki/types/ensemble.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/run.h>
+#include <arki/types/task.h>
+#include <arki/types/quantity.h>
 
 using namespace std;
 using namespace arki;
@@ -43,6 +45,10 @@ void fill(Metadata& md)
 	md.set(AssignedDataset::create("dsname", "dsid"));
 	md.set(run::Minute::create(12));
 	md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
+
+	/* metadati specifici di odimh5 */
+	md.set(Task::create("task1"));
+	md.set(Quantity::create("a,b,c"));
 }
 
 void impl_ensure_matches(const wibble::tests::Location& loc, const std::string& expr, const Metadata& md, bool shouldMatch)

@@ -50,6 +50,15 @@ struct MatchAreaGRIB : public MatchArea
 	std::string toString() const;
 };
 
+struct MatchAreaODIMH5 : public MatchArea
+{
+	ValueBag expr;
+
+	MatchAreaODIMH5(const std::string& pattern);
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+};
+
 #ifdef HAVE_GEOS
 /**
  * Match BBoxs

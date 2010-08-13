@@ -119,6 +119,37 @@ std::string MatchOriginBUFR::toString() const
 	return res.join();
 }
 
+MatchOriginODIMH5::MatchOriginODIMH5(const std::string& pattern)
+{
+	OptionalCommaList args(pattern);
+	WMO = args.getString(0, "");
+	RAD = args.getString(1, "");
+	PLC = args.getString(2, "");
+}
+
+bool MatchOriginODIMH5::matchItem(const Item<>& o) const
+{
+	const types::origin::ODIMH5* v = dynamic_cast<const types::origin::ODIMH5*>(o.ptr());
+	if (!v) return false;
+	if (WMO.size() && (WMO != v->getWMO())) return false;
+	if (RAD.size() && (RAD != v->getRAD())) return false;
+	if (PLC.size() && (PLC != v->getPLC())) return false;
+	return true;
+}
+
+std::string MatchOriginODIMH5::toString() const
+{
+	CommaJoiner res;
+	res.add("ODIMH5");
+	if (WMO.size()) res.add(WMO); else res.addUndef();
+	if (RAD.size()) res.add(RAD); else res.addUndef();
+	if (PLC.size()) res.add(PLC); else res.addUndef();
+	return res.join();
+}
+
+/*============================================================================*/
+
+
 MatchOrigin* MatchOrigin::parse(const std::string& pattern)
 {
 	size_t beg = 0;
@@ -136,6 +167,7 @@ MatchOrigin* MatchOrigin::parse(const std::string& pattern)
 		case types::Origin::GRIB1: return new MatchOriginGRIB1(rest);
 		case types::Origin::GRIB2: return new MatchOriginGRIB2(rest);
 		case types::Origin::BUFR: return new MatchOriginBUFR(rest);
+		case types::Origin::ODIMH5: 	return new MatchOriginODIMH5(rest);
 		default:
 			throw wibble::exception::Consistency("parsing type of origin to match", "unsupported origin style: " + name);
 	}

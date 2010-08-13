@@ -52,12 +52,34 @@ std::string MatchAreaGRIB::toString() const
 	return "GRIB:" + expr.toString();
 }
 
+MatchAreaODIMH5::MatchAreaODIMH5(const std::string& pattern)
+{
+	expr = ValueBag::parse(pattern);
+}
+
+bool MatchAreaODIMH5::matchItem(const Item<>& o) const
+{
+	const types::area::ODIMH5* v = dynamic_cast<const types::area::ODIMH5*>(o.ptr());
+	if (!v) return false;
+	return v->values().contains(expr);
+}
+
+std::string MatchAreaODIMH5::toString() const
+{
+	return "ODIMH5:" + expr.toString();
+}
+
+
 MatchArea* MatchArea::parse(const std::string& pattern)
 {
 	string p = str::trim(pattern);
 	if (strncasecmp(p.c_str(), "grib:", 5) == 0)
 	{
 		return new MatchAreaGRIB(str::trim(p.substr(5)));
+	} 
+	else if (strncasecmp(p.c_str(), "odimh5:", 7) == 0)
+	{
+		return new MatchAreaODIMH5(str::trim(p.substr(7)));
 #ifdef HAVE_GEOS
 	} else if (strncasecmp(p.c_str(), "bbox ", 5) == 0) {
 		return MatchAreaBBox::parse(str::trim(p.substr(5)));

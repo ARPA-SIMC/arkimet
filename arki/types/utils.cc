@@ -97,6 +97,30 @@ void MetadataType::lua_loadlib(lua_State* L)
 			decoders[i]->lua_loadlib_func(L);
 }
 
+void split(const std::string& str, std::set<std::string>& result, const std::string& delimiters)
+{
+	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);	// Skip delimiters at beginning.
+	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);	// Find first "non-delimiter".
+	while (std::string::npos != pos || std::string::npos != lastPos)
+	{
+		result.insert(str.substr(lastPos, pos - lastPos));
+		lastPos = str.find_first_not_of(delimiters, pos);	// Skip delimiters.  Note the "not_of"
+		pos = str.find_first_of(delimiters, lastPos);		// Find next "non-delimiter"
+	}
+}
+
+void split(const std::string& str, std::vector<std::string>& result, const std::string& delimiters)
+{
+	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);	// Skip delimiters at beginning.
+	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);	// Find first "non-delimiter".
+	while (std::string::npos != pos || std::string::npos != lastPos)
+	{
+		result.push_back(str.substr(lastPos, pos - lastPos));
+		lastPos = str.find_first_not_of(delimiters, pos);	// Skip delimiters.  Note the "not_of"
+		pos = str.find_first_of(delimiters, lastPos);		// Find next "non-delimiter"
+	}
+}
+
 }
 }
 // vim:set ts=4 sw=4:

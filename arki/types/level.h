@@ -55,6 +55,7 @@ struct Level : public types::StyledType<Level>
 	static const Style GRIB1 = 1;
 	static const Style GRIB2S = 2;
 	static const Style GRIB2D = 3;
+	static const Style ODIMH5 = 4;
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -175,6 +176,30 @@ public:
 
 	static Item<GRIB2D> create(unsigned char type1, unsigned char scale1, unsigned long val1,
                                unsigned char type2, unsigned char scale2, unsigned long val2);
+};
+
+class ODIMH5 : public Level
+{
+protected:
+	double m_max;
+	double m_min;
+
+public:
+	double max() const { return m_max; }
+	double min() const { return m_min; }
+
+	virtual Style style() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+	virtual int compare_local(const Level& o) const;
+	virtual bool operator==(const Type& o) const;
+
+	static Item<ODIMH5> create(double value);
+	static Item<ODIMH5> create(double min, double max);
 };
 
 }

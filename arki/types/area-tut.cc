@@ -118,6 +118,43 @@ void to::test<3>()
 		area::GRIB::create(test2));
 }
 
+// Check ODIMH5
+template<> template<>
+void to::test<4>()
+{
+	ValueBag test1;
+	test1.set("uno", Value::createInteger(1));
+	test1.set("due", Value::createInteger(2));
+	test1.set("tre", Value::createInteger(-3));
+	test1.set("supercazzola", Value::createInteger(-1234567));
+	test1.set("pippo", Value::createString("pippo"));
+	test1.set("pluto", Value::createString("12"));
+	test1.set("cippo", Value::createString(""));
+	ValueBag test2;
+	test2.set("dieci", Value::createInteger(10));
+	test2.set("undici", Value::createInteger(11));
+	test2.set("dodici", Value::createInteger(-12));
+
+	Item<Area> o = area::ODIMH5::create(test1);
+	ensure_equals(o->style(), Area::ODIMH5);
+	const area::ODIMH5* v = o->upcast<area::ODIMH5>();
+	ensure_equals(v->values().size(), 7u);
+	ensure_equals(v->values(), test1);
+
+	ensure_equals(o, Item<Area>(area::ODIMH5::create(test1)));
+	ensure(o != area::ODIMH5::create(test2));
+
+	// Test encoding/decoding
+	ensure_serialises(o, types::TYPE_AREA);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "ODIMH5:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
+	Matcher m = Matcher::parse("area:" + o->exactQuery());
+	ensure(m(o));
+}
+
+
+
 }
 
 // vim:set ts=4 sw=4:

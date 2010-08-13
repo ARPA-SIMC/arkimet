@@ -37,14 +37,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_DBALLE
-#include <arki/scan/bufr.h>
-#endif
-
-#ifdef HAVE_GRIBAPI
-#include <arki/scan/grib.h>
-#endif
-
 #ifdef HAVE_LUA
 #include <arki/report.h>
 #endif
@@ -62,6 +54,12 @@ string normaliseFormat(const std::string& format)
 	if (f == "metadata") return "arkimet";
 	if (f == "grib1") return "grib";
 	if (f == "grib2") return "grib";
+#ifdef HAVE_ODIMH5
+	if (f == "h5") 		return "odimh5";
+	if (f == "hdf5") 	return "odimh5";
+	if (f == "odim") 	return "odimh5";
+	if (f == "odimh5") 	return "odimh5";
+#endif
 	return f;
 }
 
@@ -134,7 +132,10 @@ File* File::create(const ConfigFile& cfg)
 	if (format == "bufr")
 		return new RawFile(cfg);
 #endif
-
+#ifdef HAVE_ODIMH5
+	if (format == "odimh5")
+		return new RawFile(cfg);
+#endif
 	throw wibble::exception::Consistency("creating a file dataset", "unknown file format \""+format+"\"");
 }
 

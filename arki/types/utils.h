@@ -232,6 +232,49 @@ struct FloatList
 	}
 };
 
+
+// Parse a list of floats of the given size
+template<int SIZE> struct DoubleList
+{
+	double vals[SIZE];
+
+	unsigned size() const { return SIZE; }
+
+	DoubleList(const std::string& str, const std::string& what)
+	{
+		using namespace std;
+		using namespace wibble::str;
+
+		const char* start = str.c_str();
+		for (unsigned i = 0; i < SIZE; ++i)
+		{
+			// Skip colons and spaces, if any
+			while (*start && (::isspace(*start) || *start == ','))
+				++start;
+			if (!*start)
+				throw wibble::exception::Consistency(string("parsing ") + what,
+					"found " + fmt(i) + " values instead of " + fmt(SIZE));
+
+			// Parse the number
+			char* endptr;
+			vals[i] = strtof(start, &endptr);
+			if (endptr == start)
+				throw wibble::exception::Consistency(string("parsing ") + what,
+					"expected a number, but found \"" + str.substr(start - str.c_str()) + "\"");
+
+			start = endptr;
+		}
+		if (*start)
+			throw wibble::exception::Consistency(string("parsing ") + what,
+				"found trailing characters at the end: \"" + str.substr(start - str.c_str()) + "\"");
+	}
+};
+
+/* functions to split strings */
+void split(const std::string& str, std::set<std::string>& result, const std::string& delimiters = ",");
+void split(const std::string& str, std::vector<std::string>& result, const std::string& delimiters = ",");
+
+
 }
 }
 

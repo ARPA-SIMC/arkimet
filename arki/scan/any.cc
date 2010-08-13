@@ -38,6 +38,9 @@
 #ifdef HAVE_DBALLE
 #include <arki/scan/bufr.h>
 #endif
+#ifdef HAVE_ODIMH5
+#include <arki/scan/odimh5.h>
+#endif
 
 using namespace std;
 using namespace wibble;
@@ -72,6 +75,16 @@ static bool scan_file(const std::string& file, const std::string& format, metada
 #ifdef HAVE_DBALLE
 	if (format == "bufr") {
 		scan::Bufr scanner;
+		scanner.open(file);
+		Metadata md;
+		while (scanner.next(md))
+			c(md);
+		return true;
+	}
+#endif
+#ifdef HAVE_ODIMH5
+	if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
+		scan::OdimH5 scanner;
 		scanner.open(file);
 		Metadata md;
 		while (scanner.next(md))
@@ -148,6 +161,10 @@ bool canScan(const std::string& file)
 	if (ext == "bufr")
 		return true;
 #endif
+#ifdef HAVE_ODIMH5
+	if ((ext == "h5") || (ext == ".odimh5") || (ext == ".odim"))
+		return true;
+#endif
 	return false;
 }
 
@@ -203,6 +220,10 @@ const Validator& Validator::by_filename(const std::string& filename)
 #ifdef HAVE_DBALLE
 	if (ext == "bufr")
 		return bufr::validator();
+#endif
+#ifdef HAVE_ODIMH5
+	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
+		return odimh5::validator();
 #endif
 	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
 }

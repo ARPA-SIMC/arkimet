@@ -58,11 +58,13 @@ static __thread BBox* bbox = 0;
 
 // Style constants
 const unsigned char Area::GRIB;
+const unsigned char Area::ODIMH5;
 
 Area::Style Area::parseStyle(const std::string& str)
 {
 	if (str == "GRIB") return GRIB;
-	throw wibble::exception::Consistency("parsing Area style", "cannot parse Area style '"+str+"': only GRIB is supported");
+	if (str == "ODIMH5") return ODIMH5;
+	throw wibble::exception::Consistency("parsing Area style", "cannot parse Area style '"+str+"': only GRIB,ODIMH5 is supported");
 }
 
 std::string Area::formatStyle(Area::Style s)
@@ -70,6 +72,7 @@ std::string Area::formatStyle(Area::Style s)
 	switch (s)
 	{
 		case Area::GRIB: return "GRIB";
+		case Area::ODIMH5: return "ODIMH5";
 		default:
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -106,6 +109,8 @@ Item<Area> Area::decode(const unsigned char* buf, size_t len)
 	{
 		case GRIB:
 			return area::GRIB::create(ValueBag::decode(buf+1, len-1));
+		case ODIMH5:
+			return area::ODIMH5::create(ValueBag::decode(buf+1, len-1));
 		default:
 			throw wibble::exception::Consistency("parsing Area", "style is " + formatStyle(s) + " but we can only decode GRIB");
 	}
@@ -118,6 +123,7 @@ Item<Area> Area::decodeString(const std::string& val)
 	switch (style)
 	{
 		case Area::GRIB: return area::GRIB::create(ValueBag::parse(inner)); 
+		case Area::ODIMH5: return area::ODIMH5::create(ValueBag::parse(inner)); 
 		default:
 			throw wibble::exception::Consistency("parsing Area", "unknown Area style " + formatStyle(style));
 	}
@@ -133,10 +139,20 @@ static int arkilua_new_grib(lua_State* L)
 	return 1;
 }
 
+static int arkilua_new_odimh5(lua_State* L)
+{
+	luaL_checktype(L, 1, LUA_TTABLE);
+	ValueBag vals;
+	vals.load_lua_table(L);
+	area::ODIMH5::create(vals)->lua_push(L);
+	return 1;
+}
+
 void Area::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
 		{ "grib", arkilua_new_grib },
+		{ "odimh5", arkilua_new_odimh5 },
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_area", lib, 0);
@@ -147,6 +163,7 @@ void Area::lua_loadlib(lua_State* L)
 namespace area {
 
 static TypeCache<GRIB> cache_grib;
+static TypeCache<ODIMH5> cache_odimh5;
 
 GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
@@ -205,9 +222,67 @@ Item<GRIB> GRIB::create(const ValueBag& values)
 	return cache_grib.intern(res);
 }
 
+ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
+
+Area::Style ODIMH5::style() const { return Area::ODIMH5; }
+
+void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+{
+	Area::encodeWithoutEnvelope(enc);
+	m_values.encode(enc);
+}
+std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
+{
+    return o << formatStyle(style()) << "(" << m_values.toString() << ")";
+}
+std::string ODIMH5::exactQuery() const
+{
+    return "ODIMH5:" + m_values.toString();
+}
+
+const char* ODIMH5::lua_type_name() const { return "arki.types.area.odimh5"; }
+
+#ifdef HAVE_LUA
+bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "val")
+		values().lua_push(L);
+	else
+		return Area::lua_lookup(L, name);
+	return true;
+}
+#endif
+
+int ODIMH5::compare_local(const Area& o) const
+{
+	// We should be the same kind, so upcast
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v)
+		throw wibble::exception::Consistency(
+			"comparing metadata types",
+			string("second element claims to be a ODIMH5 Area, but is a ") + typeid(&o).name() + " instead");
+
+	return m_values.compare(v->m_values);
+}
+
+bool ODIMH5::operator==(const Type& o) const
+{
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v) return false;
+	return m_values == v->m_values;
+}
+
+Item<ODIMH5> ODIMH5::create(const ValueBag& values)
+{
+	ODIMH5* res = new ODIMH5;
+	res->m_values = values;
+	return cache_odimh5.intern(res);
+}
+
 static void debug_interns()
 {
 	fprintf(stderr, "Area GRIB: sz %zd reused %zd\n", cache_grib.size(), cache_grib.reused());
+	fprintf(stderr, "Area ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
 }
 
 }

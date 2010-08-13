@@ -22,6 +22,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
+#include <arki/utils/pcounter.h>
 
 #include <memory>
 #include <sstream>
@@ -54,7 +55,11 @@ struct arki_dataset_targetfile_shar {
 			"step = weekly\n"
 			"\n"
 			"[daily]\n"
-			"step = daily\n";
+			"step = daily\n"
+			"\n"
+			"[singlefile]\n"
+			"step = singlefile\n"
+			;
 
 		stringstream incfg(conf);
 		config.parse(incfg, "(memory)");
@@ -115,6 +120,15 @@ void to::test<5>()
 
 	ensure_equals((*tf)(md), "2007/06-05");
 }
+
+template<> template<>
+void to::test<6>()
+{
+	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("singlefile")));
+
+	ensure_equals((*tf)(md), "2007/06/05/04/1");
+}
+
 
 }
 

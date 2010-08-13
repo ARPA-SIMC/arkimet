@@ -55,6 +55,7 @@ const char* traits<Level>::type_lua_tag = LUATAG_TYPES ".level";
 const unsigned char Level::GRIB1;
 const unsigned char Level::GRIB2S;
 const unsigned char Level::GRIB2D;
+const unsigned char Level::ODIMH5;
 
 // Constants from meteosatlib's libgrib
 /// Level codes
@@ -112,7 +113,8 @@ Level::Style Level::parseStyle(const std::string& str)
 	if (str == "GRIB1") return GRIB1;
 	if (str == "GRIB2S") return GRIB2S;
 	if (str == "GRIB2D") return GRIB2D;
-	throw wibble::exception::Consistency("parsing Level style", "cannot parse Level style '"+str+"': only GRIB1, GRIB2S and GRIB2D are supported");
+	if (str == "ODIMH5") return ODIMH5;
+	throw wibble::exception::Consistency("parsing Level style", "cannot parse Level style '"+str+"': only GRIB1, GRIB2S, GRIB2D, ODIMH5 are supported");
 }
 
 std::string Level::formatStyle(Level::Style s)
@@ -122,6 +124,7 @@ std::string Level::formatStyle(Level::Style s)
 		case Level::GRIB1: return "GRIB1";
 		case Level::GRIB2S: return "GRIB2S";
 		case Level::GRIB2D: return "GRIB2D";
+		case Level::ODIMH5: return "ODIMH5";
 		default:
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -168,6 +171,11 @@ Item<Level> Level::decode(const unsigned char* buf, size_t len)
 			unsigned long value2 = dec.popVarint<unsigned long>("GRIB2D value2");
 			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
 		}
+		case ODIMH5: {
+			double min = dec.popDouble("ODIMH5 min");
+			double max = dec.popDouble("ODIMH5 max");
+			return level::ODIMH5::create(min, max);
+		}
 		default:
 			throw wibble::exception::Consistency("parsing Level", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2S and GRIB2D");
 	}
@@ -181,6 +189,26 @@ static int getNumber(const char * & start, const char* what)
 		throw wibble::exception::Consistency("parsing Level", string("no ") + what + " after level type");
 
 	int res = strtol(start, &endptr, 10);
+	if (endptr == start)
+		throw wibble::exception::Consistency("parsing Level",
+				string("expected ") + what + ", but found \"" + start + "\"");
+	start = endptr;
+
+	// Skip colons and spaces, if any
+	while (*start && (::isspace(*start) || *start == ','))
+		++start;
+
+	return res;
+}
+
+static double getDouble(const char * & start, const char* what)
+{
+	char* endptr;
+
+	if (!*start)
+		throw wibble::exception::Consistency("parsing Level", string("no ") + what + " after level type");
+
+	double res = strtold(start, &endptr);
 	if (endptr == start)
 		throw wibble::exception::Consistency("parsing Level",
 				string("expected ") + what + ", but found \"" + start + "\"");
@@ -236,6 +264,13 @@ Item<Level> Level::decodeString(const std::string& val)
 			int value2 = getNumber(start, "value of second level");
 			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
 		}
+		case Level::ODIMH5: {
+			const char* start = inner.c_str();
+
+			double min = getDouble(start, "ODIMH5 min level");
+			double max = getDouble(start, "ODIMH5 max level");
+			return level::ODIMH5::create(min, max);
+		}
 		default:
 			throw wibble::exception::Consistency("parsing Level", "unknown Level style " + formatStyle(style));
 	}
@@ -277,12 +312,23 @@ static int arkilua_new_grib2d(lua_State* L)
 	return 1;
 }
 
+static int arkilua_new_odimh5(lua_State* L)
+{
+	double min = 0; //TODO luaL_checkint(L, 1); manca?
+	double max = 0; //TODO luaL_checkint(L, 2);	
+	Item<> res = level::ODIMH5::create(min, max);
+	res->lua_push(L);
+	return 1;
+}
+
+
 void Level::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2s", arkilua_new_grib2s },
 		{ "grib2d", arkilua_new_grib2d },
+		{ "odimh5", arkilua_new_odimh5 },
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_level", lib, 0);
@@ -294,6 +340,7 @@ namespace level {
 static TypeCache<GRIB1> cache_grib1;
 static TypeCache<GRIB2S> cache_grib2s;
 static TypeCache<GRIB2D> cache_grib2d;
+static TypeCache<ODIMH5> cache_odimh5;
 
 Level::Style GRIB1::style() const { return Level::GRIB1; }
 
@@ -625,11 +672,89 @@ Item<GRIB2D> GRIB2D::create(
 	return cache_grib2d.intern(res);
 }
 
+Level::Style ODIMH5::style() const { return Level::ODIMH5; }
+
+void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+{
+	Level::encodeWithoutEnvelope(enc);
+	enc.addDouble(m_min);
+	enc.addDouble(m_max);
+}
+std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
+{
+	utils::SaveIOState sios(o);
+    return o
+		<< formatStyle(style()) << "("
+		<< std::setprecision(5) << m_min
+		<< ", "
+		<< std::setprecision(5) << m_max
+		<< ")"
+		;
+}
+std::string ODIMH5::exactQuery() const
+{
+	std::ostringstream ss;
+	ss  << "ODIMH5,range " 
+		<< std::setprecision(5) << m_min
+		<< " "
+		<< std::setprecision(5) << m_max
+		;
+	return ss.str();
+	//return str::fmtf("ODIMH5,%lf,%lf", m_min, m_max);
+}
+const char* ODIMH5::lua_type_name() const { return "arki.types.level.odimh5"; }
+
+int ODIMH5::compare_local(const Level& o) const
+{
+	// We should be the same kind, so upcast
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v)
+		throw wibble::exception::Consistency(
+			"comparing metadata types",
+			string("second element claims to be a ODIMH5 Level, but is a ") + typeid(&o).name() + " instead");
+
+	return (m_max - m_min) - (v->m_max - v->m_min);
+}
+
+bool ODIMH5::operator==(const Type& o) const
+{
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v) return false;
+	// FIXME: here we can handle uniforming the scales if needed
+	return m_max == v->m_max && m_min == v->m_min;
+}
+
+bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "max")
+		lua_pushnumber(L, max());
+	else if (name == "min")
+		lua_pushnumber(L, min());
+	else
+		return Level::lua_lookup(L, name);
+	return true;
+}
+
+Item<ODIMH5> ODIMH5::create(double val)
+{
+	return ODIMH5::create(val, val);
+}
+
+Item<ODIMH5> ODIMH5::create(double min, double max)
+{
+	ODIMH5* res = new ODIMH5;
+	res->m_max = max;
+	res->m_min = min;
+	return cache_odimh5.intern(res);
+}
+
+
 static void debug_interns()
 {
 	fprintf(stderr, "level GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
 	fprintf(stderr, "level GRIB2S: sz %zd reused %zd\n", cache_grib2s.size(), cache_grib2s.reused());
 	fprintf(stderr, "level GRIB2D: sz %zd reused %zd\n", cache_grib2d.size(), cache_grib2d.reused());
+	fprintf(stderr, "level ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
 }
 
 }

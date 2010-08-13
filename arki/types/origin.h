@@ -57,6 +57,7 @@ struct Origin : public types::StyledType<Origin>
 	static const Style GRIB1 = 1;
 	static const Style GRIB2 = 2;
 	static const Style BUFR = 3;
+	static const Style ODIMH5 = 4;
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -164,6 +165,36 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<BUFR> create(unsigned char centre, unsigned char subcentre);
+
+	// Deprecated functions
+	virtual std::vector<int> toIntVector() const;
+};
+
+class ODIMH5 : public Origin
+{
+protected:
+	std::string m_WMO;
+	std::string m_RAD;
+	std::string m_PLC;
+
+public:
+	virtual ~ODIMH5();
+
+	const std::string& getWMO() const { return m_WMO; }
+	const std::string& getRAD() const { return m_RAD; }
+	const std::string& getPLC() const { return m_PLC; }
+
+	virtual Style style() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+	virtual int compare_local(const Origin& o) const;
+	virtual bool operator==(const Type& o) const;
+
+	static Item<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;

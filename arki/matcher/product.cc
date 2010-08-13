@@ -23,6 +23,7 @@
 #include <arki/matcher/product.h>
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>
+#include <limits>
 
 using namespace std;
 using namespace wibble;
@@ -130,6 +131,38 @@ std::string MatchProductBUFR::toString() const
 	return res.str();
 }
 
+static const double DOUBLENAN = std::numeric_limits<double>::quiet_NaN();
+
+MatchProductODIMH5::MatchProductODIMH5(const std::string& pattern)
+{
+	OptionalCommaList args(pattern, true);
+	obj		= args.getString(0, "");
+	prod		= args.getString(1, "");
+	/*REMOVED:prodpar1	= args.getDouble(2, DOUBLENAN); */
+	/*REMOVED:prodpar2	= args.getDouble(3, DOUBLENAN); */
+}
+
+bool MatchProductODIMH5::matchItem(const Item<>& o) const
+{
+	const types::product::ODIMH5* v = dynamic_cast<const types::product::ODIMH5*>(o.ptr());
+	if (!v) return false;
+	if (obj.size() && 		obj != v->obj()) 	return false;
+	if (prod.size() && 		prod != v->prod()) 	return false;
+	/*REMOVED:if (!isnan(prodpar1) && 	prodpar1 != v->prodpar1()) 	return false; */
+	/*REMOVED:if (!isnan(prodpar2) && 	prodpar2 != v->prodpar2()) 	return false; */
+	return true;
+}
+
+std::string MatchProductODIMH5::toString() const
+{
+	CommaJoiner res;
+	res.add("ODIMH5");
+	if (obj.size()) 	res.add(obj); 		else res.addUndef();
+	if (prod.size()) 	res.add(prod); 		else res.addUndef();
+	/*REMOVED:if (!isnan(prodpar1)) 	res.add(prodpar1); 	else res.addUndef();*/
+	/*REMOVED:if (!isnan(prodpar2)) 	res.add(prodpar2); 	else res.addUndef();*/
+	return res.join();
+}
 
 MatchProduct* MatchProduct::parse(const std::string& pattern)
 {
@@ -148,6 +181,7 @@ MatchProduct* MatchProduct::parse(const std::string& pattern)
 		case types::Product::GRIB1: return new MatchProductGRIB1(rest);
 		case types::Product::GRIB2: return new MatchProductGRIB2(rest);
 		case types::Product::BUFR: return new MatchProductBUFR(rest);
+		case types::Product::ODIMH5: return new MatchProductODIMH5(rest);
 		default:
 			throw wibble::exception::Consistency("parsing type of product to match", "unsupported product style: " + name);
 	}

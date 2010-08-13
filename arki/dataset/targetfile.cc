@@ -26,11 +26,13 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/types/reftime.h>
+#include <arki/utils/pcounter.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/grcal/grcal.h>
 
+#include <stdint.h>
 #include <sstream>
 #include <cstdio>
 
@@ -205,6 +207,57 @@ struct Daily : public BaseTargetFile
 	}
 };
 
+struct SingleFile : public BaseTargetFile
+{
+	/* produce un nome di percorso di file nel formato <YYYYY>/<MM>/<DD>/<hh>/<progressivo> */
+	/* in base al metadato "reftime". */
+	/* l'uso del progressivo permette di evitare collisioni nel caso di reftime uguali */
+	/* il progressivo e' calcolato a livello di dataset e non di singola directory */
+	/* (questo permette eventualmente di tenere traccia dell'ordine di archiviazione) */
+
+	static const char* name() { return "singlefile"; }
+
+	arki::utils::PersistentCounter<uint64_t> m_counter;
+
+	SingleFile(const ConfigFile& cfg)
+	:m_counter()
+	{
+		std::string path = cfg.value("path");
+		if (path.empty()) path = ".";
+		path += "/targetfile.singlefile.dat";
+		m_counter.bind(path);
+	}
+
+	virtual ~SingleFile()
+	{
+	}
+
+	UItem<types::Reftime> reftimeForPath(const std::string& path) const
+	{
+		int base[6] = { -1, -1, -1, -1, -1, -1 };
+		int min[6];
+		int max[6];
+		uint64_t counter;	   
+								
+		if (sscanf(path.c_str(), "%04d/%02d/%02d/%02d/%Lu",	&base[0], &base[1], &base[2], &base[3], &counter) == 0)
+			return UItem<types::Reftime>();
+
+		gd::lowerbound(base, min);
+		gd::upperbound(base, max);
+		return rt::Period::create(types::Time::create(min), types::Time::create(max));
+	}
+
+	std::string operator()(const Metadata& md)
+	{
+		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
+		uint64_t num = m_counter.inc();
+		char buf[50];
+		snprintf(buf, 50, "%04d/%02d/%02d/%02d/%Lu", (*tt)[0], (*tt)[1], (*tt)[2], (*tt)[3], num);
+		return buf;
+	}
+
+};
+
 TargetFile* TargetFile::create(const ConfigFile& cfg)
 {
     string step = wibble::str::tolower(cfg.value("step"));
@@ -219,6 +272,8 @@ TargetFile* TargetFile::create(const ConfigFile& cfg)
 		return new Monthly;
 	else if (step == Yearly::name())
 		return new Yearly;
+	else if (step == SingleFile::name())
+		return new SingleFile(cfg);
 	else
 		throw wibble::exception::Consistency(
 			"step '"+step+"' is not supported.  Valid values are daily, weekly, biweekly, monthly and yearly.",
@@ -233,6 +288,7 @@ std::vector<std::string> TargetFile::stepList()
 	res.push_back(Biweekly::name());
 	res.push_back(Monthly::name());
 	res.push_back(Yearly::name());
+	res.push_back(SingleFile::name());
 	return res;
 }
 

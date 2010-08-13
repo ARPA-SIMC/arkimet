@@ -24,6 +24,12 @@
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>
 
+#include <set>
+#include <stdexcept>
+#include <sstream>
+#include <vector>
+#include <string>
+
 using namespace std;
 using namespace wibble;
 
@@ -134,7 +140,138 @@ std::string MatchLevelGRIB2D::toString() const
 	return res.join();
 }
 
+static void split(const std::string& str, std::vector<std::string>& result)
+{
+	const std::string& delimiters = " ,";
 
+	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);	// Skip delimiters at beginning.
+	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);	// Find first "non-delimiter".
+	while (std::string::npos != pos || std::string::npos != lastPos)
+	{
+		std::string val = str.substr(lastPos, pos - lastPos);
+		if (!val.empty())
+			result.push_back(val);
+		lastPos = str.find_first_not_of(delimiters, pos);	// Skip delimiters.  Note the "not_of"
+		pos = str.find_first_of(delimiters, lastPos);		// Find next "non-delimiter"
+	}
+}
+
+static void order(double& a, double& b)
+{
+	if (a > b)
+	{
+		double t = a;
+		a = b;
+		b = t;
+	}
+}
+
+static bool outside(double minA, double maxA, double minB, double maxB)
+{
+	if (minA > maxB) return true;
+	if (maxA < minB) return true;
+	return false;
+}
+
+static double parsedouble(const std::string& val)
+{
+	double result;
+	std::istringstream ss(val);
+	ss >> result;
+	if (ss.fail())
+		throw std::logic_error(val + "is not a double value");
+	return result;
+}
+
+
+MatchLevelODIMH5::MatchLevelODIMH5(const std::string& pattern)
+{
+	vals.clear();
+	vals_offset 	= 0;
+	range_min 	= -360.;
+	range_max 	= 360.;
+
+	std::vector<std::string> tokens;
+
+	split(pattern, tokens);
+
+	if (tokens.empty())
+		return;
+
+	if (tokens[0] == "range")
+	{
+		if (tokens.size() != 3)
+			throw std::logic_error("'" + pattern + "' is not a valid pattern");
+		range_min = parsedouble(tokens[1]);
+		range_max = parsedouble(tokens[2]);
+
+		order(range_min, range_max);
+	}
+	else
+	{
+		for (size_t i=0; i<tokens.size(); i++)
+		{
+			if (tokens[i] == "offset")
+			{
+				i++;
+				if (i < tokens.size())
+					vals_offset = parsedouble(tokens[i]);
+			}
+			else
+			{
+				vals.push_back(parsedouble(tokens[i]));
+			}
+		}
+	}
+}
+
+bool MatchLevelODIMH5::matchItem(const Item<>& o) const
+{
+	const types::level::ODIMH5* v = dynamic_cast<const types::level::ODIMH5*>(o.ptr());
+	if (!v) return false;
+
+	if (vals.size())
+	{
+		for (size_t i=0; i<vals.size(); i++)
+		{
+			double min = vals[i] - vals_offset;
+			double max = vals[i] + vals_offset;
+			order(min, max);
+			if (!outside(v->min(), v->max(), min, max))
+				return true;
+		}
+	}
+	else
+	{
+		if (!outside(v->min(), v->max(), range_min, range_max))
+			return true;
+	}
+
+	return false;
+}
+
+std::string MatchLevelODIMH5::toString() const
+{
+	std::ostringstream ss;
+
+	if (vals.size())
+	{
+		ss << "ODIMH5,";
+		for (size_t i=0; i<vals.size(); i++)
+		{
+			if (i) ss << " ";
+			ss << vals[i];
+		}
+		if (vals_offset)
+			ss << " offset " << vals_offset;
+	}
+	else
+	{
+		ss << "ODIMH5,range " << range_min << " " << range_max;
+	}
+
+	return ss.str();
+}
 
 MatchLevel* MatchLevel::parse(const std::string& pattern)
 {
@@ -153,6 +290,7 @@ MatchLevel* MatchLevel::parse(const std::string& pattern)
 		case types::Level::GRIB1: return new MatchLevelGRIB1(rest);
 		case types::Level::GRIB2S: return new MatchLevelGRIB2S(rest);
 		case types::Level::GRIB2D: return new MatchLevelGRIB2D(rest);
+		case types::Level::ODIMH5: return new MatchLevelODIMH5(rest);
 		default:
 			throw wibble::exception::Consistency("parsing type of level to match", "unsupported level style: " + name);
 	}

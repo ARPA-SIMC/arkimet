@@ -27,6 +27,9 @@
 #include <arki/utils/codec.h>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
+#include <stdexcept>
+
 #include "config.h"
 
 #ifdef HAVE_LUA
@@ -55,6 +58,7 @@ const char* traits<Product>::type_lua_tag = LUATAG_TYPES ".product";
 const unsigned char Product::GRIB1;
 const unsigned char Product::GRIB2;
 const unsigned char Product::BUFR;
+const unsigned char Product::ODIMH5;
 
 // Deprecated
 int Product::getMaxIntCount() { return 4; }
@@ -64,6 +68,7 @@ Product::Style Product::parseStyle(const std::string& str)
 	if (str == "GRIB1") return GRIB1;
 	if (str == "GRIB2") return GRIB2;
 	if (str == "BUFR") return BUFR;
+	if (str == "ODIMH5") 	return ODIMH5;
 	throw wibble::exception::Consistency("parsing Product style", "cannot parse Product style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
 
@@ -74,6 +79,7 @@ std::string Product::formatStyle(Product::Style s)
 		case Product::GRIB1: return "GRIB1";
 		case Product::GRIB2: return "GRIB2";
 		case Product::BUFR: return "BUFR";
+		case Product::ODIMH5: return "ODIMH5";
 		default: 
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -108,9 +114,33 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
 			ValueBag values = ValueBag::decode(dec.buf, dec.len);
 			return product::BUFR::create(type, subtype, localsubtype, values);
 		}
+		case ODIMH5: {
+			size_t 			len;
+			std::string 	o;
+			std::string 	p;
+			/*REMOVED: double 		p1; */
+			/*REMOVED: double 		p2; */
+
+			len 	= dec.popVarint<size_t>("ODIMH5 obj len");
+			o	= dec.popString(len, "ODIMH5 obj");
+			len 	= dec.popVarint<size_t>("ODIMH5 product len");
+			p	= dec.popString(len, "ODIMH5 product ");
+			/*REMOVED: p1 	= dec.popDouble("ODIMH5 prodpar1"); */
+			/*REMOVED: p2	= dec.popDouble("ODIMH5 prodpar2"); */
+
+			return product::ODIMH5::create(o, p);
+		}
 		default:
 			throw wibble::exception::Consistency("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
 	}
+}
+
+static double parseDouble(const std::string& val)
+{
+	double result;
+	std::istringstream ss(val);
+	ss >> result;
+	return result;
 }
 
 Item<Product> Product::decodeString(const std::string& val)
@@ -134,6 +164,22 @@ Item<Product> Product::decodeString(const std::string& val)
 			if (!inner.empty() && inner[0] == ',')
 				inner = str::trim(nums.tail.substr(1));
 			return product::BUFR::create(nums.vals[0], nums.vals[1], nums.vals[2], ValueBag::parse(inner));
+		}
+		case Product::ODIMH5: {
+
+			std::vector<std::string> values;
+
+			split(inner, values, ",");
+
+			if (values.size() != 2)
+				throw std::logic_error("OdimH5 product has not enogh values");
+
+			std::string	o	= wibble::str::trim(values[0]);
+			std::string	p	= wibble::str::trim(values[1]);
+			/*REMOVED: double 		p1	= parseDouble(values[2]); */
+			/*REMOVED: double 		p2	= parseDouble(values[3]); */
+
+			return product::ODIMH5::create(o, p);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Product", "unknown Product style " + formatStyle(style));
@@ -195,7 +241,7 @@ namespace product {
 static TypeCache<GRIB1> cache_grib1;
 static TypeCache<GRIB2> cache_grib2;
 static TypeCache<BUFR> cache_bufr;
-
+static TypeCache<ODIMH5>	cache_odimh5;
 
 Product::Style GRIB1::style() const { return Product::GRIB1; }
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
@@ -489,11 +535,121 @@ void BUFR::lua_register_methods(lua_State* L) const
 	};
 	luaL_register(L, NULL, lib);
 }
+
+Product::Style ODIMH5::style() const
+{
+	return Product::ODIMH5;
+}
+
+void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+{
+	Product::encodeWithoutEnvelope(enc);
+	enc.addVarint(m_obj.size());
+	enc.addString(m_obj);
+	enc.addVarint(m_prod.size());
+	enc.addString(m_prod);
+	/*REMOVED: enc.addDouble(m_prodpar1); */
+	/*REMOVED: enc.addDouble(m_prodpar2); */
+}
+
+std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
+{
+	return o << formatStyle(style()) << "("
+		<< m_obj << ","
+		<< m_prod 
+		/* REMOVED: << "," << std::fixed << std::setprecision(5) << m_prodpar1 << "," << std::fixed << std::setprecision(5) << m_prodpar2 << ")" */
+		;
+}
+
+std::string ODIMH5::exactQuery() const
+{
+	std::ostringstream ss;
+	ss 	<< formatStyle(style()) << ","
+		<< m_obj << ","
+		<< m_prod 
+		/*REMOVED: << "," << std::fixed << std::setprecision(5) << m_prodpar1 << "," << std::fixed << std::setprecision(5) << m_prodpar2 */
+		;
+	return ss.str();
+}
+
+const char* ODIMH5::lua_type_name() const
+{
+	return "arki.types.product.odimh5";
+}
+
+int ODIMH5::compare_local(const Product& o) const
+{
+	// We should be the same kind, so upcast
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v)
+		throw wibble::exception::Consistency(
+		        "comparing metadata types",
+		        string("second element claims to be a ODIMH5 Product, but it is a ") + typeid(&o).name() + " instead");
+
+	if (int resi = m_obj.compare(v->m_obj)) 	return resi;
+	if (int resi = m_prod.compare(v->m_prod)) 	return resi;
+	/*REMOVED: if (double resd = m_prodpar1 - v->m_prodpar1) 	return resd > 0 ? 1 : -1; */
+	/*REMOVED: if (double resd = m_prodpar2 - v->m_prodpar2) 	return resd > 0 ? 1 : -1; */
+	return 0;
+}
+
+bool ODIMH5::operator==(const Type& o) const
+{
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v) return false;
+	return (m_obj == v->m_obj) && (m_prod == v->m_prod) 
+		/*REMOVED: && (m_prodpar1 == v->m_prodpar1) && (m_prodpar2 == v->m_prodpar2) */
+		;
+}
+
+Item<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& prod
+	/*PRODPAR: , double prodpar1, double prodpar2 */
+)
+{
+	ODIMH5* res 	= new ODIMH5;
+	res->m_obj 	= obj;
+	res->m_prod 	= prod;
+	/*REMOVED: res->m_prodpar1 = prodpar1; */
+	/*REMOVED: res->m_prodpar2	= prodpar2; */
+	return cache_odimh5.intern(res);
+}
+
+std::vector<int> ODIMH5::toIntVector() const
+{
+	return vector<int>();
+}
+
+bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
+{
+	if (name == "obj")
+		lua_pushlstring(L, m_obj.data(), m_obj.size());
+	else if (name == "prod")
+		lua_pushlstring(L, m_prod.data(), m_prod.size());
+	/*REMOVED: else if (name == "prodpar1") */
+	/*REMOVED: 	lua_pushnumber(L, m_prodpar1); */
+	/*REMOVED: else if (name == "prodpar2") */
+	/*REMOVED: 	lua_pushnumber(L, m_prodpar2); */
+	else
+		return Product::lua_lookup(L, name);
+	return true;
+}
+
+void ODIMH5::lua_register_methods(lua_State* L) const
+{
+	Product::lua_register_methods(L);
+
+//	static const struct luaL_reg lib [] = {
+//		{ "addName", arkilua_addname },
+//		{ NULL, NULL }
+//	};
+//	luaL_register(L, NULL, lib);
+}
 static void debug_interns()
 {
 	fprintf(stderr, "product GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
 	fprintf(stderr, "product GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
 	fprintf(stderr, "product BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
+	fprintf(stderr, "product ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
 }
 
 }

@@ -78,6 +78,18 @@ struct MatchProductBUFR : public MatchProduct
 	std::string toString() const;
 };
 
+struct MatchProductODIMH5 : public MatchProduct
+{
+	std::string 	obj;		// '' when should be ignored in the match
+	std::string 	prod;		// '' when should be ignored in the match
+	/*REMOVED:double		prodpar1;	// NAN when should be ignored in the match */
+	/*REMOVED:double		prodpar2;	// NAN when should be ignored in the match */
+
+	MatchProductODIMH5(const std::string& pattern);
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+};
+
 }
 }
 

@@ -21,6 +21,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Enrico Zini <enrico@enricozini.com>
+ * Author: Guido Billi <guidobilli@gmail.com>
  */
 
 #include <wibble/exception.h>
@@ -68,6 +69,8 @@ enum Code
 	TYPE_TIME = 13,
 	TYPE_BBOX = 14,
 	TYPE_RUN = 15,
+	TYPE_TASK 		= 16,	/* utilizzato per OdimH5 /how.task */
+	TYPE_QUANTITY 	= 17,	/* utilizzato per OdimH5 /what.quantity */
 	TYPE_MAXCODE
 };
 

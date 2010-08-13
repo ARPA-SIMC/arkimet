@@ -198,4 +198,104 @@ if area.style == "GRIB" then
       bbox = {}
       bbox[1] = { a.lat / 100000, a.lon / 100000 }
   end
+elseif area.style == "ODIMH5" then
+	a = area.val
+
+	-- print("Calculating bbox for odimh5 area...");
+
+	if a.radius then
+
+		-- estraggo i valori in gradi in notazione decimale
+		local LON0		= a.lon / 1000000
+		local LAT0		= a.lat / 1000000
+		local RADIUS		= a.radius / 1000
+
+		-- print("Calculating bbox for polar area...");
+		-- print("LON: " , LON0, " degree");
+		-- print("LAT: " , LAT0, " degree");
+		-- print("RAD: " , RADIUS, " km");
+
+		-- se e' indicato il raggio allora e' un area polare
+		-- quindi creiamo un ottagono che circoscrive la circonfernza 
+		-- calcoli sono approssimati, bisognerebbe tenere conto della curvatura terrestre, della differenza nel raggio della terra ecc
+
+		function torad(degree)
+			return degree * math.pi / 180 --_PI_180
+		end
+		function todegree(rad)			
+			return rad * 180 / math.pi -- _180_PI
+		end
+		function moveto(p, km, angle)
+			local  lon1 		= torad(p[1])
+			local  lat1 		= torad(p[2])
+			local  EARTH_RADIUS	= 6372.795477598
+			local  d_R		= km / EARTH_RADIUS
+			local  sin_d_R		= math.sin(d_R)
+			local  cos_d_R		= math.cos(d_R)
+			local  sin_lat1		= math.sin(lat1)
+			local  cos_lat1		= math.cos(lat1)	
+			local  sin_angle 	= math.sin(angle)
+			local  cos_angle 	= math.cos(angle)
+			local  lat2		=        math.asin (sin_lat1   * cos_d_R + cos_lat1 * sin_d_R * cos_angle)
+			local  lon2		= lon1 + math.atan2(sin_angle  * sin_d_R * cos_lat1, cos_d_R - sin_lat1 * sin_lat1)
+			return { todegree(lon2) , todegree(lat2) }
+		end
+
+		local DIST 	= RADIUS
+		local O 	= {0, 0}
+		local N 	= moveto(O, DIST,	0)		
+		local E 	= moveto(O, DIST,	math.pi / 2)		
+
+		-- print("N:", N[1], ",", N[2])
+		-- print("E:", E[1], ",", E[2])
+		
+		local LATO2  	= 2 / (1 + math.sqrt(2)) / 2		-- meta' del lato di un ottagono		
+		local c1	= moveto(N, LATO2 * DIST, math.pi / 2)	-- 0 radianti punta in NORD		
+		local c2	= moveto(E, LATO2 * DIST, 0)		-- PI/2 radianti punta a EST
+		local c3	= {  c2[1], -c2[2] }
+		local c4	= {  c1[1], -c1[2] }
+		local c5	= { -c4[1],  c4[2] }
+		local c6	= { -c3[1],  c3[2] }
+		local c7	= { -c2[1],  c2[2] }
+		local c8	= { -c1[1],  c1[2] }
+
+		-- traslo le coordinate rispeto all'origine 
+		function add(p1,p2)
+			return { p1[1] + p2[1], p1[2] + p2[2] }
+		end
+		O 		= {LON0, LAT0}
+		c1 		= add(c1, O)
+		c2 		= add(c2, O)
+		c3 		= add(c3, O)
+		c4 		= add(c4, O)
+		c5 		= add(c5, O)
+		c6 		= add(c6, O)
+		c7 		= add(c7, O)
+		c8 		= add(c8, O)
+		
+		-- creiamo la boundig box chiusa NOTA: bbox vuole coordinate in LAT,LON!!!
+		bbox = {}
+		bbox[1] = {c1[2], c1[1]}
+		bbox[2] = {c2[2], c2[1]}
+		bbox[3] = {c3[2], c3[1]}
+		bbox[4] = {c4[2], c4[1]}
+		bbox[5] = {c5[2], c5[1]}
+		bbox[6] = {c6[2], c6[1]}
+		bbox[7] = {c7[2], c7[1]}
+		bbox[8] = {c8[2], c8[1]}
+		bbox[9] = {c1[2], c1[1]}
+
+		-- function printbbox(val)		
+		-- 	print(val[2],",",val[1])
+		-- end
+		-- printbbox(bbox[1])
+		-- printbbox(bbox[2])
+		-- printbbox(bbox[3])
+		-- printbbox(bbox[4])
+		-- printbbox(bbox[5])
+		-- printbbox(bbox[6])
+		-- printbbox(bbox[7])
+		-- printbbox(bbox[8])
+
+	end
 end

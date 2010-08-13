@@ -55,6 +55,7 @@ struct Product : public types::StyledType<Product>
 	static const unsigned char GRIB1 = 1;
 	static const unsigned char GRIB2 = 2;
 	static const unsigned char BUFR = 3;
+	static const unsigned char ODIMH5 	= 4;
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -166,6 +167,43 @@ public:
 
 	static Item<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
 	static Item<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
+
+	// Deprecated functions
+	virtual std::vector<int> toIntVector() const;
+};
+
+class ODIMH5 : public Product
+{
+protected:
+	std::string 	m_obj;		/* attribute /what.object */
+	std::string 	m_prod;		/* attribute /dataset/what.product */
+
+	/* NOTE: sometimes /dataset/product requires /dataset/prodpar, but we store prodpar values into other metadata */
+	/* REMOVED: double 		m_prodpar1;	 attribute /dataset/what.prodpar */
+	/* REMOVED: double 		m_prodpar2;	 attribute /dataset/what.prodpar BIS */
+
+public:
+	inline std::string obj() 	const { return m_obj; }
+	inline std::string prod() 	const { return m_prod; }
+
+	/* REMOVED: inline double prodpar1() 	const { return m_prodpar1; } */
+	/* REMOVED: inline double prodpar2() 	const { return m_prodpar2; } */
+
+	virtual Style style() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+
+	virtual int compare_local(const Product& o) const;
+	virtual bool operator==(const Type& o) const;
+
+	virtual void lua_register_methods(lua_State* L) const;
+	bool lua_lookup(lua_State* L, const std::string& name) const;
+
+	static Item<ODIMH5> create(const std::string& obj, const std::string& prod
+		/*REMOVED:, double prodpar1, double prodpar2*/
+		);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;

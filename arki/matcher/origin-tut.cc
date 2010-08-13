@@ -81,6 +81,36 @@ void to::test<2>()
 	ensure(m(md));
 }
 
+// Try matching ODIMH5 origin
+template<> template<> void to::test<3>()
+{
+	Matcher m;
+	md.set(origin::ODIMH5::create("wmo", "rad", "plc"));
+
+	ensure_matches("origin:ODIMH5", md);
+	ensure_matches("origin:ODIMH5,,,", md);
+	ensure_matches("origin:ODIMH5,wmo,,", md);
+	ensure_matches("origin:ODIMH5,,rad,", md);
+	ensure_matches("origin:ODIMH5,,,plc", md);
+	ensure_matches("origin:ODIMH5,wmo,rad,", md);
+	ensure_matches("origin:ODIMH5,wmo,,plc", md);
+	ensure_matches("origin:ODIMH5,wmo,rad,plc", md);
+}
+
+// Try matching ODIMH5 origin
+template<> template<> void to::test<4>()
+{
+	Matcher m;
+	md.set(origin::ODIMH5::create("wmo", "rad", "plc"));
+
+	ensure_not_matches("origin:ODIMH5,x,,", md);
+	ensure_not_matches("origin:ODIMH5,,x,", md);
+	ensure_not_matches("origin:ODIMH5,,,x", md);
+	ensure_not_matches("origin:ODIMH5,wmo,x,", md);
+	ensure_not_matches("origin:ODIMH5,wmo,,x", md);
+	ensure_not_matches("origin:ODIMH5,wmo,x,x", md);
+}
+
 }
 
 // vim:set ts=4 sw=4:

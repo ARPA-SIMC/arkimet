@@ -79,6 +79,20 @@ struct MatchLevelGRIB2D : public MatchLevel
 	std::string toString() const;
 };
 
+struct MatchLevelODIMH5 : public MatchLevel
+{
+	std::vector<double> vals;
+	double vals_offset;
+
+	double range_min;
+	double range_max;
+
+	MatchLevelODIMH5(const std::string& pattern);
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+};
+
+
 }
 }
 

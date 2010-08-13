@@ -21,6 +21,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Enrico Zini <enrico@enricozini.com>
+ * Author: Guido Billi <enrico@enricozini.com>
  */
 
 #include <arki/matcher.h>
@@ -73,6 +74,18 @@ struct MatchOriginBUFR : public MatchOrigin
 	int subcentre;
 
 	MatchOriginBUFR(const std::string& pattern);
+	bool matchItem(const Item<>& o) const;
+	std::string toString() const;
+};
+
+struct MatchOriginODIMH5 : public MatchOrigin
+{
+	// These are -1 when they should be ignored in the match
+	std::string WMO;
+	std::string RAD;
+	std::string PLC;
+
+	MatchOriginODIMH5(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
 };

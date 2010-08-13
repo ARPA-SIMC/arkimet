@@ -74,10 +74,18 @@ unsigned OptionalCommaList::getUnsigned(size_t pos, unsigned def) const
 	return strtoul((*this)[pos].c_str(), 0, 10);
 }
 
-double OptionalCommaList::getDouble(size_t pos) const
+double OptionalCommaList::getDouble(size_t pos, double def) const
 {
+	if (!has(pos)) return def;
 	return strtod((*this)[pos].c_str(), 0);
 }
+
+const std::string& OptionalCommaList::getString(size_t pos, const std::string& def) const
+{
+	if (!has(pos)) return def;
+	return (*this)[pos];
+}
+
 
 #if 0
 	bool matchInt(size_t pos, int val) const

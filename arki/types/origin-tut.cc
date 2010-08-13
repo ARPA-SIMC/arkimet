@@ -153,6 +153,38 @@ void to::test<5>()
 		origin::GRIB1::create(2, 3, 4));
 }
 
+// Check ODIMH5
+template<> template<>
+void to::test<6>()
+{
+	Item<Origin> o = origin::ODIMH5::create("1", "2", "3");
+
+	ensure_equals(o->style(), Origin::ODIMH5);
+
+	const origin::ODIMH5* v = o->upcast<origin::ODIMH5>();
+
+	ensure_equals(v->getWMO(), "1");
+	ensure_equals(v->getRAD(), "2");
+	ensure_equals(v->getPLC(), "3");
+
+	ensure_equals(o, Item<Origin>(origin::ODIMH5::create("1", "2", "3")));
+
+	ensure(o != origin::BUFR::create(2, 3));
+	ensure(o != origin::GRIB1::create(1, 2, 3));
+	ensure(o != origin::GRIB2::create(1, 2, 3, 4, 5));
+	ensure(o != origin::ODIMH5::create("1a", "2", "3"));
+	ensure(o != origin::ODIMH5::create("1", "2a", "3"));
+	ensure(o != origin::ODIMH5::create("1", "2", "3a"));
+	ensure(o != origin::ODIMH5::create("1a", "2a", "3a"));
+
+	// Test encoding/decoding
+	ensure_serialises(o, types::TYPE_ORIGIN);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "ODIMH5,1,2,3");
+	Matcher m = Matcher::parse("origin:" + o->exactQuery());
+	ensure(m(o));
+}
 
 }
 

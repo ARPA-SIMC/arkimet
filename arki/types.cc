@@ -18,6 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Enrico Zini <enrico@enricozini.com>
+ * Author: Guido Billi <guidobilli@gmail.com>
  */
 
 #include <arki/types.h>
@@ -61,6 +62,8 @@ Code checkCodeName(const std::string& name)
 	if (nname == "summarystats") return TYPE_SUMMARYSTATS;
 	if (nname == "bbox") return TYPE_BBOX;
 	if (nname == "run") return TYPE_RUN;
+	if (nname == "task") 		return TYPE_TASK;
+	if (nname == "quantity") 	return TYPE_QUANTITY;
 	return TYPE_INVALID;
 }
 
@@ -90,6 +93,8 @@ std::string formatCode(const Code& c)
 		case TYPE_SUMMARYSTATS: return "SUMMARYSTATS";
 		case TYPE_BBOX: return "BBOX";
 		case TYPE_RUN: return "RUN";
+		case TYPE_TASK:	return "TASK";
+		case TYPE_QUANTITY:	return "QUANTITY";
 		default: return "unknown(" + wibble::str::fmt((int)c) + ")";
 	}
 }

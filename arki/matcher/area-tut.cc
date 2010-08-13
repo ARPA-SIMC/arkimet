@@ -222,6 +222,113 @@ void to::test<5>()
 }
 
 
+// Try matching Area with ODIMH5
+template<> template<>
+void to::test<6>()
+{
+	ValueBag testArea2;
+	testArea2.set("foo", Value::createInteger(15));
+	testArea2.set("bar", Value::createInteger(15000));
+	testArea2.set("baz", Value::createInteger(-1200));
+	testArea2.set("moo", Value::createInteger(0x1ffffff));
+	testArea2.set("antani", Value::createInteger(0));
+	testArea2.set("blinda", Value::createInteger(-1));
+	testArea2.set("supercazzola", Value::createInteger(-7654321));
+
+	//Matcher m;
+
+	Metadata md;
+	md.create();
+	md.set(types::Area::decodeString("ODIMH5(foo=5,bar=5000,baz=-200,blinda=0,pippo=\"pippo\",pluto=\"12\",aaa=0,zzz=1)"));
+
+	ensure_matches("area:ODIMH5:foo=5", md);
+	ensure_matches("area:ODIMH5:bar=5000", md);
+	ensure_matches("area:ODIMH5:foo=5,bar=5000", md);
+	ensure_matches("area:ODIMH5:baz=-200", md);
+	ensure_matches("area:ODIMH5:blinda=0", md);
+	ensure_matches("area:ODIMH5:pippo=pippo", md);
+	ensure_matches("area:ODIMH5:pippo=\"pippo\"", md);
+	ensure_matches("area:ODIMH5:pluto=\"12\"", md);
+	ensure_not_matches("area:ODIMH5:pluto=12", md);
+	// Check that we match the first item
+	ensure_matches("area:ODIMH5:aaa=0", md);
+	// Check that we match the last item
+	ensure_matches("area:ODIMH5:zzz=1", md);
+
+	ensure_not_matches("area:ODIMH5:foo=50", md);
+	ensure_not_matches("area:ODIMH5:foo=-5", md);
+	ensure_not_matches("area:ODIMH5:foo=5,miao=0", md);
+	// Check matching a missing item at the beginning of the list
+	ensure_not_matches("area:ODIMH5:a=1", md);
+	// Check matching a missing item at the end of the list
+	ensure_not_matches("area:ODIMH5:zzzz=1", md);
+
+	md.set(area::ODIMH5::create(testArea2));
+
+	ensure_not_matches("area:ODIMH5:foo=5", md);
+	ensure_matches("area:ODIMH5:foo=15", md);
+}
+
+// Try matching Area with ODIMH5
+template<> template<>
+void to::test<7>()
+{
+	//Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
+	Metadata md1;
+	md1.create();
+	md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+
+	//il valori devono corrispondere
+	ensure_matches("area:ODIMH5:lon=11623600", md1);
+	ensure_matches("area:ODIMH5:lat=44456700", md1);
+	ensure_matches("area:ODIMH5:radius=100000", md1);
+}
+
+// Try matching Area with ODIMH5
+template<> template<>
+void to::test<8>()
+{
+#ifdef HAVE_GEOS	
+	//Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
+	Metadata md1;
+	md1.create();
+	md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+
+	//il centro deve starci per forza
+	ensure_matches("area: bbox covers POINT(11.6236 44.4567)", md1);   
+
+	//i punti estremi del blobo non ci devono stare
+	ensure_not_matches("area: bbox covers POINT(0     0)", md1);	   
+	ensure_not_matches("area: bbox covers POINT(90    0)", md1);	   
+	ensure_not_matches("area: bbox covers POINT(-90   0)", md1);	   
+	ensure_not_matches("area: bbox covers POINT(0   180)", md1);	   
+	ensure_not_matches("area: bbox covers POINT(0  -180)", md1);	   
+#endif
+}
+
+// Try matching Area with ODIMH5
+template<> template<>
+void to::test<9>()
+{
+#ifdef HAVE_GEOS	
+	//Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
+	Metadata md1;
+	md1.create();
+	md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+
+	//aggiungere controlli altri punti appena dentro 
+	//TODO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+	//TODO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+	//TODO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+	//aggiungere controlli altri punti appena fuori
+	//TODO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+	//TODO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+#endif
+
+}
+
 
 }
 

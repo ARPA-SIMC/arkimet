@@ -26,10 +26,6 @@
 #include <arki/utils/codec.h>
 #include <arki/formatter.h>
 #include <arki/types/utils.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
 #include <arki/types/area.h>
 #include <arki/utils/geosdef.h>
 #include <arki/utils/compress.h>
@@ -84,7 +80,11 @@ static const types::Code mso[] = {
   		types::TYPE_AREA,
 		types::TYPE_ENSEMBLE,
 		types::TYPE_BBOX,
-		types::TYPE_RUN };
+		types::TYPE_RUN,
+		types::TYPE_QUANTITY,
+		types::TYPE_TASK
+
+};
 static const size_t msoSize = sizeof(mso) / sizeof(types::Code);
 static int* msoSerLen = 0;
 

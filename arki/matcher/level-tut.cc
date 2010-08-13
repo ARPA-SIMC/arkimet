@@ -115,6 +115,39 @@ void to::test<3>()
 	//ensure(not m(md));
 }
 
+// Try matching ODIMH5 level
+template<> template<>
+void to::test<4>()
+{
+	Matcher m;
+	md.set(level::ODIMH5::create(10.123, 20.123));
+
+	ensure_matches("level:ODIMH5", md);
+	ensure_matches("level:ODIMH5,", md);
+
+	ensure_matches("level:ODIMH5,11 12 13 14 15", md);
+	ensure_matches("level:ODIMH5,11 12 13 14 15 offset 0.5", md);
+	ensure_matches("level:ODIMH5,10 offset 0.5", md);
+	ensure_matches("level:ODIMH5,20.5 offset 0.5", md);
+
+	ensure_matches("level:ODIMH5,range 0, 30", md);
+	ensure_matches("level:ODIMH5,range 0, 15", md);
+	ensure_matches("level:ODIMH5,range 15, 30", md);
+	ensure_matches("level:ODIMH5,range 12, 17", md);
+
+	ensure_not_matches("level:ODIMH5,30", md);
+	ensure_not_matches("level:ODIMH5,30 offset 5", md);
+	ensure_not_matches("level:ODIMH5,0 offset 5", md);
+	ensure_not_matches("level:ODIMH5,range 0 5", md);
+	ensure_not_matches("level:ODIMH5,range 21 30", md);
+
+	ensure_not_matches("level:GRIB2D,12", md);
+	ensure_not_matches("level:GRIB2D,,13", md);
+	ensure_not_matches("level:GRIB2D,,,11", md);
+	ensure_not_matches("level:GRIB2D,,,,115", md);
+
+}
+
 }
 
 // vim:set ts=4 sw=4:

@@ -235,6 +235,41 @@ void to::test<8>()
 		level::GRIB1::create(104, 132, 232));
 }
 
+// Check ODIMH5
+template<> template<>
+void to::test<9>()
+{
+	Item<Level> o = level::ODIMH5::create(10.123, 20.123);
+	ensure_equals(o->style(), Level::ODIMH5);
+	const level::ODIMH5* v = o->upcast<level::ODIMH5>();
+	ensure(v->max() == 20.123);
+	ensure(v->min() == 10.123);
+
+	ensure_equals(v->max(), 20.123);
+	ensure_equals(v->min(), 10.123);
+
+	ensure_equals(o, Item<Level>(level::ODIMH5::create(10.123, 20.123)));
+	ensure(o != level::GRIB1::create(100));
+	ensure(o != level::GRIB2S::create(100, 100, 500));
+
+	// Test encoding/decoding
+	ensure_serialises(o, types::TYPE_LEVEL);
+}
+
+// Check ODIMH5
+template<> template<>
+void to::test<10>()
+{
+	Item<Level> o = level::ODIMH5::create(10.123, 20.123);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "ODIMH5,range 10.123 20.123");
+	Matcher m = Matcher::parse("level:" + o->exactQuery());
+	ensure(m(o));
+}
+
+
+
 }
 
 // vim:set ts=4 sw=4:

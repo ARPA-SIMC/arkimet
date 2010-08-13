@@ -80,6 +80,8 @@ struct IndexGlobalData
 		all_components.insert(types::TYPE_ENSEMBLE);
 		all_components.insert(types::TYPE_RUN);
 		//all_components.insert(types::TYPE_REFTIME);
+		all_components.insert(types::TYPE_QUANTITY);
+		all_components.insert(types::TYPE_TASK);
 	}
 };
 static IndexGlobalData igd;

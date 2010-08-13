@@ -171,6 +171,30 @@ else
 fi
 AM_CONDITIONAL([GRIBAPI], [test x"$have_gribapi" = x"yes"])
 
+dnl Check for radarlib
+have_odimh5=yes
+AC_CHECK_LIB([radar], [radarlib_get_version])
+AC_CHECK_HEADER([radarlib/radar.hpp], [true], [have_odimh5=no])
+if test $have_odimh5 = yes
+then
+	AC_DEFINE([HAVE_ODIMH5], 1, [radar/odimh5 functions are available])
+	ODIMH5_CFLAGS=
+	ODIMH5_LIBS="-lradar -lhdf5 -lhdf5_cpp"
+	AC_SUBST(ODIMH5_CFLAGS)
+	AC_SUBST(ODIMH5_LIBS)
+
+	#if test x$have_lua = xno
+	#then
+	#	AC_MSG_WARN([Cannot find lua: grib scanning will be disabled])
+	#	have_gribapi=no
+	#fi
+	#AC_SUBST(LUA_CFLAGS)
+	#AC_SUBST(LUA_LIBS)
+else
+	AC_MSG_WARN([compiling without radar/odimh5])
+fi
+AM_CONDITIONAL([ODIMH5], [test x"$have_odimh5" = x"yes"])
+
 dnl Check for Curl
 LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
@@ -281,6 +305,7 @@ $PACKAGE_NAME-$PACKAGE_VERSION configuration:
 AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
+AS_HELP_STRING([ODIMH5 via radarlib:], [$have_odimh5])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])
 AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])

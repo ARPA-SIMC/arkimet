@@ -55,10 +55,6 @@ void to::test<1>()
 	ensure_equals(l.getInt(5, 100), 3);
 	ensure_equals(l.getInt(6, 100), 100);
 	ensure_equals(l.getInt(100, 100), 100);
-
-	ensure_equals(l.getDouble(2), 1.0);
-	ensure_equals(l.getDouble(3), 2.0);
-	ensure_equals(l.getDouble(5), 3.0);
 }
 
 // Check CommaJoiner
@@ -74,6 +70,19 @@ void to::test<2>()
 	j.addUndef();
 
 	ensure_equals(j.join(), "ciao,,3,3.14");
+}
+
+template<> template<> 
+void to::test<3>()
+{
+	OptionalCommaList l("CIAO,,1,2,,3");
+	ensure_equals(l.getDouble(1,100), 	100.0);
+	ensure_equals(l.getDouble(2,100), 	1.0);
+	ensure_equals(l.getDouble(3,100), 	2.0);
+	ensure_equals(l.getDouble(4,100), 	100.0);
+	ensure_equals(l.getDouble(5,100), 	3.0);
+	ensure_equals(l.getDouble(6,100), 	100.0);
+	ensure_equals(l.getDouble(100,100), 	100.0);
 }
 
 }

@@ -18,6 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Enrico Zini <enrico@enricozini.com>
+ * Author: Guido Billi <guidobilli@gmail.com>
  */
 
 #include <wibble/exception.h>
@@ -28,6 +29,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cstring>
+#include <stdexcept>
 
 #define CODE types::TYPE_ORIGIN
 #define TAG "origin"
@@ -36,6 +38,7 @@
 #define LUATAG_GRIB1 LUATAG_ORIGIN ".grib1"
 #define LUATAG_GRIB2 LUATAG_ORIGIN ".grib2"
 #define LUATAG_BUFR LUATAG_ORIGIN ".bufr"
+#define LUATAG_ODIMH5 LUATAG_ORIGIN ".odimh5"
 
 using namespace std;
 using namespace arki::utils;
@@ -55,6 +58,7 @@ const char* traits<Origin>::type_lua_tag = LUATAG_ORIGIN;
 const unsigned char Origin::GRIB1;
 const unsigned char Origin::GRIB2;
 const unsigned char Origin::BUFR;
+const unsigned char Origin::ODIMH5;
 
 // Deprecated
 int Origin::getMaxIntCount() { return 5; }
@@ -64,6 +68,7 @@ Origin::Style Origin::parseStyle(const std::string& str)
 	if (str == "GRIB1") return GRIB1;
 	if (str == "GRIB2") return GRIB2;
 	if (str == "BUFR") return BUFR;
+	if (str == "ODIMH5") 	return ODIMH5;
 	throw wibble::exception::Consistency("parsing Origin style", "cannot parse Origin style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
 
@@ -75,6 +80,7 @@ std::string Origin::formatStyle(Origin::Style s)
 		case Origin::GRIB1: return "GRIB1";
 		case Origin::GRIB2: return "GRIB2";
 		case Origin::BUFR: return "BUFR";
+		case Origin::ODIMH5: 	return "ODIMH5";
 		default:
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -100,6 +106,24 @@ Item<Origin> Origin::decode(const unsigned char* buf, size_t len)
 		case BUFR:
 			ensureSize(len, 3, "Origin");
 			return origin::BUFR::create(decodeUInt(buf+1, 1), decodeUInt(buf+2, 1));
+		case ODIMH5:
+			{
+			ensureSize(len, 4, "Origin");
+			Decoder dec(buf, len);
+
+			Style s2 = (Style)dec.popUInt(1, "product"); //saltiamo il primo byte
+
+			uint16_t 	wmosize = dec.popVarint<uint16_t>("ODIMH5 wmo length");
+			std::string 	wmo 	= dec.popString(wmosize, "ODIMH5 wmo");
+
+			uint16_t 	radsize = dec.popVarint<uint16_t>("ODIMH5 rad length");
+			std::string 	rad 	= dec.popString(radsize, "ODIMH5 rad");
+
+			uint16_t 	plcsize = dec.popVarint<uint16_t>("ODIMH5 plc length");
+			std::string 	plc 	= dec.popString(plcsize, "ODIMH5 plc");
+
+			return origin::ODIMH5::create(wmo, rad, plc);
+			}
 		default:
 			throw wibble::exception::Consistency("parsing Origin", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
 	}
@@ -123,6 +147,21 @@ Item<Origin> Origin::decodeString(const std::string& val)
 		case Origin::BUFR: {
 			NumberList<2> nums(inner, "Origin");
 			return origin::BUFR::create(nums.vals[0], nums.vals[1]);
+		}
+		case Origin::ODIMH5: {
+
+			std::vector<std::string> values;
+
+			arki::types::split(inner, values, ",");
+
+			if (values.size()!=3)
+				throw std::logic_error("OdimH5 origin has not enogh values");
+
+			values[0] = wibble::str::trim(values[0]);
+			values[1] = wibble::str::trim(values[1]);
+			values[2] = wibble::str::trim(values[2]);
+
+			return origin::ODIMH5::create(values[0], values[1], values[2]);
 		}
 		default:
 			throw wibble::exception::Consistency("parsing Origin", "unknown Origin style " + formatStyle(style));
@@ -177,6 +216,7 @@ namespace origin {
 static TypeCache<GRIB1> cache_grib1;
 static TypeCache<GRIB2> cache_grib2;
 static TypeCache<BUFR> cache_bufr;
+static TypeCache<ODIMH5>	cache_odimh5;
 
 GRIB1::~GRIB1() { /* cache_grib1.uncache(this); */ }
 
@@ -426,11 +466,103 @@ std::vector<int> BUFR::toIntVector() const
 	return res;
 }
 
+ODIMH5::~ODIMH5() { /* cache_grib1.uncache(this); */ }
+
+Origin::Style ODIMH5::style() const { return Origin::ODIMH5; }
+
+void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
+{
+	Origin::encodeWithoutEnvelope(enc);
+	enc.addVarint(m_WMO.size());
+	enc.addString(m_WMO);
+	enc.addVarint(m_RAD.size());
+	enc.addString(m_RAD);
+	enc.addVarint(m_PLC.size());
+	enc.addString(m_PLC);
+}
+std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
+{
+    return o << formatStyle(style()) << "("
+	         << m_WMO << ", "
+		 << m_RAD << ", "
+		 << m_PLC << ")";
+}
+std::string ODIMH5::exactQuery() const
+{
+    return str::fmtf("ODIMH5,%s,%s,%s", m_WMO.c_str(), m_RAD.c_str(), m_PLC.c_str());
+}
+const char* ODIMH5::lua_type_name() const { return LUATAG_ODIMH5; }
+
+bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
+{
+//	if (name == "centre")
+//		lua_pushnumber(L, centre());
+//	else if (name == "subcentre")
+//		lua_pushnumber(L, subcentre());
+//	else if (name == "process")
+//		lua_pushnumber(L, process());
+//	else
+//		return Origin::lua_lookup(L, name);
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+
+
+	return false;
+}
+
+int ODIMH5::compare_local(const Origin& o) const
+{
+	// We should be the same kind, so upcast
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v)
+		throw wibble::exception::Consistency(
+			"comparing metadata types",
+			string("second element claims to be a GRIB1 Origin, but is a ") + typeid(&o).name() + " instead");
+
+	if (int res = m_WMO.compare(v->m_WMO)) return res;
+	if (int res = m_RAD.compare(v->m_RAD)) return res;
+	return m_PLC.compare(v->m_PLC);
+}
+
+bool ODIMH5::operator==(const Type& o) const
+{
+	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
+	if (!v) return false;
+	return m_WMO == v->m_WMO && m_RAD == v->m_RAD && m_PLC == v->m_PLC;
+}
+
+Item<ODIMH5> ODIMH5::create(const std::string& wmo, const std::string& rad, const std::string& plc)
+{
+	ODIMH5* res = new ODIMH5;
+	res->m_WMO = wmo;
+	res->m_RAD = rad;
+	res->m_PLC = plc;
+	return cache_odimh5.intern(res);
+}
+
+std::vector<int> ODIMH5::toIntVector() const
+{
+	vector<int> res;
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+
+	//res.push_back(m_centre);
+	//res.push_back(m_subcentre);
+	//res.push_back(m_process);
+	return res;
+}
+
+
 static void debug_interns()
 {
 	fprintf(stderr, "origin GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
 	fprintf(stderr, "origin GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
 	fprintf(stderr, "origin BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
+	fprintf(stderr, "origin ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
 }
 
 }

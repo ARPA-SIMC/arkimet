@@ -47,6 +47,8 @@ dist_noinst_HEADERS = \
 		matcher/area.h \
 		matcher/ensemble.h \
 		matcher/run.h \
+		matcher/task.h \
+		matcher/quantity.h \
 		itemset.h \
 		metadata.h \
 		metadata/consumer.h \
@@ -77,6 +79,8 @@ dist_noinst_HEADERS = \
 		types/assigneddataset.h \
 		types/bbox.h \
 		types/run.h \
+		types/task.h \
+		types/quantity.h \
 		utils/geosfwd.h \
 		utils/geosdef.h \
 		utils/accounting.h \
@@ -86,6 +90,7 @@ dist_noinst_HEADERS = \
 		utils/sqlite.h \
 		utils/files.h \
 		utils/dataset.h \
+		utils/pcounter.h \
 		metadatagrid.h \
 		sort.h \
 		formatter.h \
@@ -122,6 +127,7 @@ libarkimet_la_SOURCES = \
 		utils/sqlite.cc \
 		utils/files.cc \
 		utils/dataset.cc \
+		utils/pcounter.cc \
 		configfile.cc \
 		transaction.cc \
 		values.cc \
@@ -140,6 +146,8 @@ libarkimet_la_SOURCES = \
 		types/assigneddataset.cc \
 		types/bbox.cc \
 		types/run.cc \
+		types/task.cc \
+		types/quantity.cc \
 		itemset.cc \
 		metadata.cc \
 		metadata/consumer.cc \
@@ -158,6 +166,8 @@ libarkimet_la_SOURCES = \
 		matcher/area.cc \
 		matcher/ensemble.cc \
 		matcher/run.cc \
+		matcher/task.cc \
+		matcher/quantity.cc \
 		sort.cc \
 		formatter.cc \
 		bbox.cc \
@@ -214,6 +224,7 @@ tests_arki_test_SOURCES = \
 		utils/sqlite-tut.cc \
 		utils/files-tut.cc \
 		utils/dataset-tut.cc \
+		utils/pcounter-tut.cc \
 		refcounted-tut.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
@@ -233,6 +244,8 @@ tests_arki_test_SOURCES = \
 		types/assigneddataset-tut.cc \
 		types/bbox-tut.cc \
 		types/run-tut.cc \
+		types/task-tut.cc \
+		types/quantity-tut.cc \
 		itemset-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
@@ -255,6 +268,8 @@ tests_arki_test_SOURCES = \
 		matcher/area-tut.cc \
 		matcher/ensemble-tut.cc \
 		matcher/run-tut.cc \
+		matcher/task-tut.cc \
+		matcher/quantity-tut.cc \
 		scan/any-tut.cc \
 		scan/dir-tut.cc \
 		dataset/maintenance-tut.cc \
@@ -333,6 +348,15 @@ tests_arki_test_SOURCES += dataset/http-tut.cc
 INCLUDES += @LIBCURL_CPPFLAGS@
 libarkimet_la_LDFLAGS += @LIBCURL@
 tests_arki_test_LDADD += @LIBCURL@
+endif
+
+if ODIMH5
+dist_noinst_HEADERS += scan/odimh5.h
+libarkimet_la_SOURCES += scan/odimh5.cc
+tests_arki_test_SOURCES += scan/odimh5-tut.cc
+INCLUDES += $(ODIMH5_CFLAGS)
+libarkimet_la_LDFLAGS += $(ODIMH5_LIBS)
+tests_arki_test_LDADD += $(ODIMH5_LIBS)
 endif
 
 if GEOS

@@ -56,6 +56,7 @@ struct Area : public types::StyledType<Area>
 
 	/// Style values
 	static const Style GRIB = 1;
+	static const Style ODIMH5 = 2;
 
 	Area();
 
@@ -98,6 +99,30 @@ public:
 
 	static Item<GRIB> create(const ValueBag& values);
 };
+
+class ODIMH5 : public Area
+{
+protected:
+	ValueBag m_values;
+
+public:
+	virtual ~ODIMH5();
+
+	const ValueBag& values() const { return m_values; }
+
+	virtual Style style() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+	virtual std::ostream& writeToOstream(std::ostream& o) const;
+	virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+	virtual int compare_local(const Area& o) const;
+	virtual bool operator==(const Type& o) const;
+
+	static Item<ODIMH5> create(const ValueBag& values);
+};
+
 
 }
 
