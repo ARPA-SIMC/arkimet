@@ -1,0 +1,301 @@
+
+-----------------------------------------------------------------------------
+INTRODUCTION
+-----------------------------------------------------------------------------
+
+Arkimet can handle OdimH5 files.
+
+OdimH5 files are HDF5 files with a fixed structure defined by OPERA organization
+in this document: http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1a_InformationModel_UML_2.0.pdf
+
+Further information about OPERA organization can be found here:
+http://www.knmi.nl/opera/index.html
+
+To do so it requires the "Radar" Library, a C++ library based on HDF5 library.
+HDF5 library is developed by HDF Group and further information can be found
+here: http://www.hdfgroup.org/HDF5/
+
+-----------------------------------------------------------------------------
+ODIMH5 FILE SUPPORT
+-----------------------------------------------------------------------------
+
+OdimH5 specification defines many kind of "file types" defined as OdimH5 "objects", 
+all based on HDF5 file format. Read OdimH5 specications for more details.
+
+Arkimet extension supports the following OdimH5 objects:
+ - PVOL objects with SCAN datasets
+ 
+
+-----------------------------------------------------------------------------
+METADATA EXTRACTED FROM PVOL OBJECTS WITH SCAN DATASETS
+-----------------------------------------------------------------------------
+
+Looking at mandatory informations required for OdimH5 PVOL/SCAN objects,
+Arkimet can extract the following metadata:
+ 1. object type informations
+ 2. date & time informations
+ 3. source informations
+ 4. scan elevation angles
+ 5. quantity names 
+ 6. task information
+ 7. geography information
+
+The values for theese metadata are extracted from OdimH5 attributes.
+Look at OdimH5 specification for further information about attributes.
+
+
+1. object type informations
+---------------------------
+
+For a OdimH5 PVOL/SCAN file Arkimet creates a "product" metadata with the following values:
+	product:ODIMH5,PVOL,SCAN
+
+2. date & time informations
+---------------------------
+
+Arkimet creates a "reftime" metadata using "/what.date" and "/what.time"
+
+3. source informations
+----------------------
+
+Arkimet creates a "origin" metatadata defined as described below:
+
+	origin:ODIMH5,<WMO>,<RAD>,<PLC>
+
+<WMO>,<RAD> and <PLC> are values taken from "/what.source" attribute subparts
+
+4. scan elevation angles
+------------------------
+
+OdimH5 PVOL object with SCAN datasets can store different radar scan
+at different elevation angles.
+
+Look at all datasets Arkimet extract the lowest and the highest elevation and creates
+a "level" metadata defined as follow:
+
+	level:ODIMH5,<min>,<max>
+
+
+5. quantity names 
+-----------------
+
+OdimH5 PVOL object with SCAN datasets can store different radar scan and
+each scan can store different kind of quantity informations (wind speed, rain rate, etc).
+
+Look at all datasets Arkimet extract the names of all the quantity stored in the PVOL
+and create a "quantity" metadata defined as follow:
+
+	quantity:<name1>,<name2>,...
+
+
+6. task information
+-------------------
+
+OdimH5 PVOL object can use the optional attribute "/how.task" in order to give
+some additional information about the process that crated the file.
+
+Arkimet extracts that string and create an attribute called "task" defined as follow:
+
+	task:<value>
+
+
+7. Geography information
+------------------------
+
+For PVOL objects Arkimet extract geography values from "where" group and
+create a "area" metadata defined as follows:
+
+	area:ODIMH5,lat=<LATITUDE>,lon=<LONGITUDE>,radius=<RADIUS>
+
+LATITUDE is taken from "/where.lat" attribute
+LONGITUDE is taken from "/where.lon" attribute
+RADIUS is calculated using the maximum "/how.radhoriz" attribute value among the scans
+
+
+
+
+-----------------------------------------------------------------------------
+QUERY SYNTAX FOR ODIMH5 ATTRIBUTES
+-----------------------------------------------------------------------------
+
+The syntax for the extracted metadata is defined in the following paragraphs.
+
+PRODUCT
+-------
+
+Syntax:
+	product:ODIMH5				-> matches all ODIMH5 data
+	product:ODIMH5,				-> matches all ODIMH5 data
+	product:ODIMH5,,			-> matches all ODIMH5 data
+	product:ODIMH5,<OBJ value>,<PROD value>	-> matches all ODIMH5 data with that OBJ and PROD values
+	product:ODIMH5,<OBJ value>		-> matches all ODIMH5 data with that OBJ value
+	product:ODIMH5,,<PROD value>		-> matches all ODIMH5 data with that PROD value
+
+Examples:
+	product:ODIMH5
+	product:ODIMH5,PVOL
+
+NOTE: The match is case SENSITIVE
+
+
+ORIGIN
+------
+	
+Syntax:
+	origin:ODIMH5
+	origin:ODIMH5,<WMO>
+	origin:ODIMH5,<WMO>,,
+	origin:ODIMH5,,<RAD>,
+	origin:ODIMH5,,,<PLC>
+	origin:ODIMH5,<WMO>,<RAD>,<PLC>
+
+NOTES: 
+	WMO must be a block station number, see OdimH5 specification for further details
+	RAD must be a site as indexed in the OPERA database, see OdimH5 specification for further details
+	PLC must be a place name build according to OdimH5 specification
+
+Example:
+	origin:ODIMH5
+	origin:ODIMH5,02954		-> matches ODIMH5 data from 02954 WMO station
+	origin:ODIMH5,,FI44		-> matches ODIMH5 data from FI44 radar
+	origin:ODIMH5,,,Anjalankoski	-> matches ODIMH5 data from Anjalankoski
+
+NOTE: The match is case SENSITIVE
+
+
+REFTIME
+-------
+
+Reftime metadata rules are the same for the other format supported by Arkimet
+
+
+TASK
+----
+
+Syntax:
+	task:				-> matches ODIMH5 data with a task
+	task:<value>			-> matches ODIMH5 data with a given task
+
+Examples:
+	task:first scan of the day
+
+NOTE: the match is case INSENSITIVE
+
+
+QUANTITY
+--------
+
+Syntax:
+	quantity:<name1>,<name2,....	-> matches ODIMH5 containing any of the given quantities
+
+Examples:
+	quantity:DBZH			-> matches ODIMH5 data containing DBZH quantity
+	quantity:VRAD,WRAD,DBZH		-> matches ODIMH5 data containing any of the given quantities
+
+NOTE: the match is case SENSITIVE
+
+
+LEVEL
+-----
+
+Syntax:
+	level:ODIMH5, <VAL> <VAL> ...			-> matches ODIMH5 data containing scans at given elevation angles (in degree from -180 to 180)
+	level:ODIMH5, <VAL> ... offset <OFFSET>		-> matches ODIMH5 data containing scans at given elevation angles allowing a gap of OFFSET degrees
+	level:ODIMH5, range <MIN> <MAX>			-> matches ODIMH5 data containing scans between MIN and MAX elevation angles
+
+Examples:
+	level:ODIMH5, 0.5 
+	level:ODIMH5, 0.5 5.5 10.5 offset 0.5 
+	level:ODIMH5, range 0.5 10.5
+
+
+AREA
+----
+
+In order to query ODIMH5 data using area informations, users can use
+either single values directly or bbox.
+
+Syntax:
+	area:ODIMH5,lat=<val>,lon=<val>,radius=<val>
+	area: bbox ...
+
+Latitude and longitude are degrees in decimal notation mutiplied by 1000000
+For example 12.345 degrees becomes "12345000" 
+
+Radius is a value expressed in meters
+
+bbox for ODIMH5 PVOL files are calculated building an octagon that contains
+a circle centered at latitude and longitude with the given radius.
+
+The octagon has some extra areas that exceed the original circle so
+so particular attention must be paid by user.
+
+
+-----------------------------------------------------------------------------
+ARIMET FILTER REQUIRED FOR ODIMH5 DATA
+-----------------------------------------------------------------------------
+
+Arkimet queries on ODIMH5 datasets requires a particular post processing filter
+called "odimh5postproc" .
+
+Because OdimH5 files can be very big, even if user wants only some 
+informations inside them, the fillter allows the user to remove some
+informations from the files selected by the query.
+
+The user tells the filter what informations must be kept using
+specific parameters, defined below:
+
+ --e <val> ...             Elevations degree to keep in the selected files
+ --erange <min> <max>      Elevation range to keep in the selected files
+ --eoffset <val>           Elevations tollerance 
+ --attribute <val> ...     Attributes to keep in the selected files
+ --quantity <val> ...      Quantities to keep in the selected files
+ --std                     Keep only OdimH5 standard informations
+
+Examples:
+	--postproc="odimh5postproc"		
+		-> use the odimh5postproc filter
+
+	--postproc="odimh5postproc --e 0 --quantity WRAD"
+		-> keep only elevation scan at 0 degree and WRAD quantity informations
+
+	--postproc="odimh5postproc --erange 0.5 10.5"
+		-> keep only elevation scan between 0.5 and 10.5 degree
+
+-----------------------------------------------------------------------------
+ARIMET RESULT
+-----------------------------------------------------------------------------
+
+Arkimet query result is a single file of binary data. All OdimH5 files
+selected (and filtered) by the user query are concatenated into a single file.
+
+In order to split them user must use "odimh5result" program that splits
+the file to separated files accoring to the given parameter.
+
+Parameters:
+ --in <path>               Input file path, STDIN=use standard input
+ --outdir <path>           Output directory
+ --prefix <val>            Prefix for output files
+
+Examples: 
+	./odimh5result --in STDIN 		->  Split data from standard input:
+	./odimh5result --in pvol.h5 		-> Split data from a given file:
+	./odimh5result --outdir /tmp		-> Create extracted files inside /tmp:
+	./odimh5result --prefix result		-> Extract data using a given prefix for the file names:
+	./odimh5result --debug 			-> Print debug messages on stderr:
+
+The name of the create files is generated as follows:
+
+	[prefix]YYYY-MM-DD-HH-MM-SS.WMO.RAD.PLC.OBJ.NUMBER.h5
+
+Date and time information are taken from "/what.date" and "/what.time" attributes.		
+WMO, RAD and PLC values are taken from "/what.source" attribute.
+OBJ is taken from "/what.object" attribute.
+NUMBER is a internal counter used to avoid duplicates.
+
+
+
+
+
+
+
