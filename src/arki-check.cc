@@ -57,6 +57,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* accurate;
 	BoolOption* repack;
 	BoolOption* invalidate;
+	BoolOption* remove_all;
 	BoolOption* stats;
 	StringOption* op_remove;
 	StringOption* restr;
@@ -79,8 +80,10 @@ struct Options : public StandardParserWithManpage
 			"Also verify the consistency of the contents of the data files (slow)");
 		repack = add<BoolOption>("repack", 'r', "repack", "",
 			"Perform a repack instead of a check");
+		remove_all = add<BoolOption>("remove-all", 0, "remove-all", "",
+			"Completely empty the dataset, removing all data and metadata");
 		invalidate = add<BoolOption>("invalidate", 0, "invalidate", "",
-			"Create flagfiles to invalidate all metadata in a dataset.  Warning, this will work without requiring -f, and should always be invoked after a repack.");
+			"Create flagfiles to invalidate all metadata in a dataset.  Warning, this will work without requiring -f, and should be invoked only after a repack.");
 		stats = add<BoolOption>("stats", 0, "stats", "",
 			"Compute statistics about the various datasets.");
 		op_remove = add<StringOption>("remove", 0, "remove", "file",
@@ -231,6 +234,23 @@ struct Repacker : public Worker
 	}
 };
 
+struct RemoveAller : public Worker
+{
+	bool fix;
+
+	RemoveAller(bool fix) : fix(fix) {}
+
+	virtual void operator()(WritableDataset& w)
+	{
+		w.removeAll(cout, fix);
+		w.flush();
+	}
+
+	virtual void done()
+	{
+	}
+};
+
 #if 0
 struct Invalidator : public Worker
 {
@@ -290,9 +310,10 @@ int main(int argc, const char* argv[])
 		if (opts.stats->boolValue()) ++actionCount;
 		if (opts.invalidate->boolValue()) ++actionCount;
 		if (opts.repack->boolValue()) ++actionCount;
+		if (opts.remove_all->boolValue()) ++actionCount;
 		if (opts.op_remove->boolValue()) ++actionCount;
 		if (actionCount > 1)
-			throw wibble::exception::BadOption("only one of --stats, --invalidate, --repack and --remove can be given in one invocation");
+			throw wibble::exception::BadOption("only one of --stats, --invalidate, --repack, --remove and --remove-all can be given in one invocation");
 
 		// Read the config file(s)
 		ConfigFile cfg;
@@ -350,6 +371,8 @@ int main(int argc, const char* argv[])
 			else if (opts.invalidate->boolValue())
 				// worker.reset(new Invalidator);
 				throw wibble::exception::Consistency("running --invalidate", "invalidate code needs to be reimplemented");
+			else if (opts.remove_all->boolValue())
+				worker.reset(new RemoveAller(opts.fix->boolValue()));
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
 			else

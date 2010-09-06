@@ -255,6 +255,11 @@ public:
 	virtual void remove(Metadata& md);
 
 	/**
+	 * Reset this dataset, removing all data, indices and caches
+	 */
+	virtual void removeAll(std::ostream& log, bool writable=false);
+
+	/**
 	 * Flush pending changes to disk
 	 */
 	virtual void flush();
