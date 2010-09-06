@@ -606,8 +606,8 @@ void Index::invalidateSummaryCache()
 
 void Index::invalidateSummaryCache(int year, int month)
 {
-	if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month))))
-		sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
+	sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month)));
+	sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
 }
 
 void Index::invalidateSummaryCache(const Metadata& md)
