@@ -25,6 +25,7 @@
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/summary.h>
 #include <wibble/sys/fs.h>
 
 #include <sstream>
@@ -668,6 +669,43 @@ void to::test<9>()
 	// Perform full maintenance and check that things are still ok afterwards
 #endif
 
+}
+
+// Test that the summary cache is properly invalidated on import
+template<> template<>
+void to::test<10>()
+{
+	// Perform maintenance on empty dir, creating an empty summary cache
+	{
+		arki::dataset::ondisk2::Writer writer(cfg);
+		MaintenanceCollector c;
+		writer.maintenance(c);
+
+		ensure_equals(c.fileStates.size(), 0u);
+		ensure_equals(c.remaining(), "");
+		ensure(c.isClean());
+	}
+
+	// Query the summary, there should be no data
+	{
+		Reader reader(cfg);
+		ensure(reader.hasWorkingIndex());
+		Summary s;
+		reader.querySummary(Matcher(), s);
+		ensure_equals(s.count(), 0u);
+	}
+
+	// Acquire files
+	acquireSamples();
+
+	// Query the summary again, there should be data
+	{
+		Reader reader(cfg);
+		ensure(reader.hasWorkingIndex());
+		Summary s;
+		reader.querySummary(Matcher(), s);
+		ensure_equals(s.count(), 3u);
+	}
 }
 
 }
