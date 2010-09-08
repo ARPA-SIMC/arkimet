@@ -21,10 +21,10 @@ targetfile["mars"] = function(pattern)
 		if tr == nil then return nil end
 		if tr.style == "GRIB1" then
 			if tr.type == nil then return nil end
-			return string.format("%02d", tr.p1)
+			return string.format("%02d", tr.p1 / 3600)
 		elseif tr.style == "GRIB2" then
 			if tr.type == nil then return nil end
-			return string.format("%02d", tr.p2)
+			return string.format("%02d", tr.p2 / 3600)
 		else
 			return nil
 		end
