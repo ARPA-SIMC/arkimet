@@ -194,6 +194,48 @@ void to::test<4>()
 #endif
 }
 
+// Test that latlon areas are reported with the right amount of significant digits
+template<> template<>
+void to::test<5>()
+{
+#ifdef HAVE_GEOS
+	BBox bbox;
+	ValueBag vb;
+	vb.set("Ni", Value::createInteger(135));
+	vb.set("Nj", Value::createInteger(98));
+	vb.set("latfirst", Value::createInteger(49200000));
+	vb.set("latlast", Value::createInteger(34650000));
+	vb.set("lonfirst", Value::createInteger(2400000));
+	vb.set("lonlast", Value::createInteger(22500000));
+	vb.set("type", Value::createInteger(0));
+
+	Item<types::Area> area(types::area::GRIB::create(vb));
+	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
+	//cerr <<" AREA " << area << endl;
+
+	ensure(g.get() != 0);
+	ensure_equals(g->getNumPoints(), 5u);
+	ensure_equals(g->getGeometryType(), "Polygon");
+	//ensure_equals(g->getNumGeometries(), 1u);
+	//ensure(g->isRectangle());
+	ensure_equals(g->getDimension(), 2);
+
+	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+	ensure_equals(cs->getAt(0).x,  2.40000);
+	ensure_equals(cs->getAt(0).y, 49.20000);
+	ensure_equals(cs->getAt(1).x,  2.40000);
+	ensure_equals(cs->getAt(1).y, 34.65000);
+	ensure_equals(cs->getAt(2).x, 22.50000);
+	ensure_equals(cs->getAt(2).y, 34.65000);
+	ensure_equals(cs->getAt(3).x, 22.50000);
+	ensure_equals(cs->getAt(3).y, 49.20000);
+	ensure_equals(cs->getAt(4).x,  2.40000);
+	ensure_equals(cs->getAt(4).y, 49.20000);
+
+	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+#endif
+}
+
 }
 
 // vim:set ts=4 sw=4:

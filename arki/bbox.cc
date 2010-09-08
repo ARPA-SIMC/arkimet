@@ -108,7 +108,7 @@ BBox::~BBox()
 	if (gf) delete gf;
 }
 
-static vector< pair<float, float> > bbox(lua_State* L)
+static vector< pair<double, double> > bbox(lua_State* L)
 {
 	lua_getglobal(L, "bbox");
 	int type = lua_type(L, -1);
@@ -118,7 +118,7 @@ static vector< pair<float, float> > bbox(lua_State* L)
 			lua_pop(L, 1);
 			throw wibble::exception::Consistency("reading bounding box", "global variable 'bbox' has not been set");
 		case LUA_TTABLE: {
-			vector< pair<float, float> > res;
+			vector< pair<double, double> > res;
 			size_t asize = lua_objlen(L, -1);
 			for (size_t i = 1; i <= asize; ++i)
 			{
@@ -130,7 +130,7 @@ static vector< pair<float, float> > bbox(lua_State* L)
 					throw wibble::exception::Consistency("reading bounding box",
 						"value bbox[" + str::fmt(i) + "] contains a " + lua_typename(L, inner_type) + " instead of a table");
 				}
-				float vals[2];
+				double vals[2];
 				for (int j = 0; j < 2; ++j)
 				{
 					lua_rawgeti(L, -1, j+1);
@@ -174,7 +174,7 @@ std::auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 		throw wibble::exception::Consistency("computing bounding box via Lua", error);
 	} else {
 		//arkilua_dumpstack(L, "Afterscan", stderr);
-		vector< pair<float, float> > points = bbox(*L);
+		vector< pair<double, double> > points = bbox(*L);
 		switch (points.size())
 		{
 			case 0:

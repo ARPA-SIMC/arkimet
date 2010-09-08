@@ -107,12 +107,12 @@ if area.style == "GRIB" then
       bbox[4] = utm2ll(lonfirst, latlast)
       bbox[5] = bbox[1]
   elseif (a.type == 0 or a.tn == 0) and a.latfirst ~= nil then
+      -- Normal latlon
       latfirst = a.latfirst / 1000000.0
       latlast = a.latlast / 1000000.0
       lonfirst = norm_lon(a.lonfirst / 1000000.0)
       lonlast = norm_lon(a.lonlast / 1000000.0)
 
-      -- print ("NORMLATLON")
       bbox = {}
       bbox[1] = { latfirst, lonfirst }
       bbox[2] = { latlast,  lonfirst }
