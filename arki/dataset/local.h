@@ -115,6 +115,9 @@ public:
 	 */
 	virtual void sanityChecks(std::ostream& log, bool writable=false);
 
+	/// Remove all data from the dataset
+	void removeAll(std::ostream& log, bool writable);
+
 	/**
 	 * Repack the dataset, logging status to the given file.
 	 *

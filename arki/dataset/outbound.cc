@@ -119,6 +119,11 @@ bool Outbound::replace(Metadata& md)
 
 void Outbound::remove(const std::string&) {}
 
+void Outbound::removeAll(std::ostream& log, bool writable)
+{
+	log << m_name << ": cleaning dataset not implemented" << endl;
+}
+
 WritableDataset::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
 	auto_ptr<TargetFile> tf(TargetFile::create(cfg));

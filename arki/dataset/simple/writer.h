@@ -94,6 +94,7 @@ public:
 	virtual void flush();
 
 	virtual void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
+	virtual void removeAll(std::ostream& log, bool writable);
 
 	virtual void rescanFile(const std::string& relpath);
 	virtual size_t repackFile(const std::string& relpath);

@@ -159,6 +159,25 @@ void Writer::remove(const std::string& id)
 }
 
 namespace {
+struct Deleter : public maintenance::MaintFileVisitor
+{
+	std::string name;
+	std::ostream& log;
+	bool writable;
+
+	Deleter(const std::string& name, std::ostream& log, bool writable)
+		: name(name), log(log), writable(writable) {}
+	void operator()(const std::string& file, State state)
+	{
+		if (writable)
+		{
+			log << name << ": deleting file " << file << endl;
+			sys::fs::deleteIfExists(file);
+		} else
+			log << name << ": would delete file " << file << endl;
+	}
+};
+
 struct CheckAge : public maintenance::MaintFileVisitor
 {
 	maintenance::MaintFileVisitor& next;
@@ -228,6 +247,14 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	CheckAge ca(v, *m_mft, m_archive_age, m_delete_age);
 	m_mft->check(ca, quick);
 	WritableLocal::maintenance(v, quick);
+}
+
+void Writer::removeAll(std::ostream& log, bool writable)
+{
+	Deleter deleter(m_name, log, writable);
+	m_mft->check(deleter, true);
+	// TODO: empty manifest
+	WritableLocal::removeAll(log, writable);
 }
 
 void Writer::flush()

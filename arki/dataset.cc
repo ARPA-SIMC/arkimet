@@ -74,11 +74,6 @@ void WritableDataset::remove(Metadata& md)
 	md.unset(types::TYPE_ASSIGNEDDATASET);
 }
 
-void WritableDataset::removeAll(std::ostream& log, bool writable)
-{
-	log << m_name << ": function not implemented for this dataset" << endl;
-}
-
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	using namespace arki::utils;

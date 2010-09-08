@@ -224,6 +224,13 @@ void WritableLocal::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 		archive().maintenance(v);
 }
 
+void WritableLocal::removeAll(std::ostream& log, bool writable)
+{
+	// TODO: decide if we're removing archives at all
+	// TODO: if (hasArchive())
+	// TODO: 	archive().removeAll(log, writable);
+}
+
 void WritableLocal::sanityChecks(std::ostream& log, bool writable)
 {
 }

@@ -213,6 +213,29 @@ void Writer::sanityChecks(std::ostream& log, bool writable)
 }
 
 namespace {
+struct Deleter : public maintenance::IndexFileVisitor
+{
+	std::string name;
+	std::ostream& log;
+	bool writable;
+	string last_fname;
+
+	Deleter(const std::string& name, std::ostream& log, bool writable)
+		: name(name), log(log), writable(writable) {}
+
+	void operator()(const std::string& file, int id, off_t offset, size_t size)
+	{
+		if (last_fname == file) return;
+		if (writable)
+		{
+			log << name << ": deleting file " << file << endl;
+			sys::fs::deleteIfExists(file);
+		} else
+			log << name << ": would delete file " << file << endl;
+		last_fname = file;
+	}
+};
+
 struct CheckAge : public maintenance::MaintFileVisitor
 {
 	maintenance::MaintFileVisitor& next;
@@ -293,6 +316,23 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	fm.end();
 	WritableLocal::maintenance(v, quick);
 }
+
+void Writer::removeAll(std::ostream& log, bool writable)
+{
+	if (writable)
+	{
+		log << m_name << ": clearing summary cache" << endl;
+		m_idx.invalidateSummaryCache();
+	} else
+		log << m_name << ": would clear summary cache" << endl;
+
+	Deleter deleter(m_name, log, writable);
+	m_idx.scan_files(deleter);
+
+	// TODO: empty the index
+	WritableLocal::removeAll(log, writable);
+}
+
 
 namespace {
 struct FileCopier : maintenance::IndexFileVisitor

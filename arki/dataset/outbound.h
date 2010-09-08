@@ -72,6 +72,7 @@ public:
 
 	virtual bool replace(Metadata& md);
 	virtual void remove(const std::string& id);
+	virtual void removeAll(std::ostream& log, bool writable=false);
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };

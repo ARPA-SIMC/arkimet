@@ -257,7 +257,7 @@ public:
 	/**
 	 * Reset this dataset, removing all data, indices and caches
 	 */
-	virtual void removeAll(std::ostream& log, bool writable=false);
+	virtual void removeAll(std::ostream& log, bool writable=false) = 0;
 
 	/**
 	 * Flush pending changes to disk

@@ -70,6 +70,11 @@ public:
 		// in the dataset
 	}
 
+	virtual void removeAll(std::ostream& log, bool writable=false)
+	{
+		// Nothing to remove: we're always clean
+	}
+
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
