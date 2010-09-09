@@ -29,6 +29,7 @@
 #include <arki/scan/grib.h>
 #include <arki/scan/any.h>
 #include <arki/utils/accounting.h>
+#include "config.h"
 
 namespace tut {
 using namespace std;
@@ -113,6 +114,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
+#ifdef HAVE_DBALLE
 	// In-memory dataset configuration
 	string conf =
 		"[lami_temp]\n"
@@ -139,6 +141,7 @@ void to::test<2>()
 	ensure_equals(dsname(mdc.back()), "lami_temp");
 
 	dispatcher.flush();
+#endif
 }
 
 }
