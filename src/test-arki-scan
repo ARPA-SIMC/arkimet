@@ -15,7 +15,10 @@ echo -n "Testing arki-scan"
 runtest "arki-scan --yaml inbound/test.grib1 | grep -q ^Origin"
 
 # Try scanning a BUFR file
-runtest "arki-scan --yaml inbound/test.bufr | grep -q ^Origin"
+if grep -q "HAVE_DBALLE 1" $TOP_SRCDIR/config.h
+then
+	runtest "arki-scan --yaml inbound/test.bufr | grep -q ^Origin"
+fi
 
 testtotals
 
