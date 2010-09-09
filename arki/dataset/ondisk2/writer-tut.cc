@@ -609,6 +609,11 @@ void to::test<8>()
 template<> template<>
 void to::test<9>()
 {
+	// If we are root we can always write the summary cache, so the tests
+	// will fail
+	if (getuid() == 0)
+		return;
+
 	acquireSamples();
 	files::removeDontpackFlagfile("testdir");
 
