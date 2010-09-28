@@ -23,11 +23,17 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <dballe/core/rawmsg.h>
-#include <dballe/core/file.h>
-#include <dballe/bufrex/msg.h>
 #include <string>
 #include <map>
+
+namespace dballe {
+struct File;
+
+namespace msg {
+struct Importer;
+}
+
+}
 
 namespace arki {
 class Metadata;
@@ -47,9 +53,8 @@ struct BufrLua;
 class Bufr
 {
 	std::string filename;
-	dba_rawmsg rmsg;
-	bufrex_msg msg;
-	dba_file file;
+	dballe::File* file;
+	dballe::msg::Importer* importer;
 	bool m_inline_data;
 	std::map<int, std::string> to_rep_memo;
 	bufr::BufrLua* extras;

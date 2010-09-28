@@ -21,11 +21,12 @@
  */
 
 #include <arki/scan/bufr.h>
-#include <dballe++/error.h>
 #include <dballe/msg/repinfo.h>
 #include <dballe/msg/msgs.h>
-#include <dballe/msg/bufrex_codec.h>
+#include <dballe/msg/codec.h>
 #include <dballe/core/csv.h>
+#include <dballe/core/file.h>
+#include <wreport/bulletin.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -48,6 +49,8 @@
 
 using namespace std;
 using namespace wibble;
+using namespace wreport;
+using namespace dballe;
 
 namespace arki {
 namespace scan {
@@ -98,10 +101,12 @@ const Validator& validator() { return bufr_validator; }
 }
 
 
-Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData), extras(0)
+Bufr::Bufr(bool inlineData) : file(0), importer(0), m_inline_data(inlineData), extras(0)
 {
-	dballe::checked(dba_rawmsg_create(&rmsg));
-	dballe::checked(bufrex_msg_create(BUFREX_BUFR, &msg));
+	msg::Importer::Options opts;
+	opts.simplified = true;
+	importer = msg::Importer::create(BUFR, opts).release();
+
 	to_rep_memo = read_map_to_rep_memo();
 #ifdef HAVE_LUA
 	extras = new bufr::BufrLua;
@@ -110,9 +115,8 @@ Bufr::Bufr(bool inlineData) : rmsg(0), msg(0), file(0), m_inline_data(inlineData
 
 Bufr::~Bufr()
 {
-	if (rmsg) dba_rawmsg_delete(rmsg);
-	if (msg) bufrex_msg_delete(msg);
-	if (file) dba_file_delete(file);
+	if (importer) delete importer;
+	if (file) delete file;
 #ifdef HAVE_LUA
 	if (extras) delete extras;
 #endif
@@ -123,7 +127,7 @@ void Bufr::open(const std::string& filename)
 	// Close the previous file if needed
 	close();
 	this->filename = sys::fs::abspath(filename);
-	dballe::checked(dba_file_create(BUFR, filename.c_str(), "r", &file));
+	file = File::create(BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
@@ -131,7 +135,7 @@ void Bufr::close()
 	filename.clear();
 	if (file)
 	{
-		dba_file_delete(file);
+		delete file;
 		file = 0;
 	}
 }
@@ -190,11 +194,12 @@ void Bufr::read_info_mobile(char* buf, Metadata& md)
 
 bool Bufr::next(Metadata& md)
 {
-	int found;
-	dballe::checked(dba_file_read(file, rmsg, &found));
-	if (!found) return false;
+	Rawmsg rmsg;
+	if (!file->read(rmsg))
+		return false;
 
-	dballe::checked(bufr_decoder_decode_header(rmsg, msg));
+	BufrBulletin bulletin;
+	bulletin.decode_header(rmsg, rmsg.filename().c_str(), rmsg.offset);
 
 	md.create();
 
@@ -210,30 +215,32 @@ bool Bufr::next(Metadata& md)
 
 	// Set source
 	if (m_inline_data)
-		md.setInlineData("bufr", wibble::sys::Buffer(rmsg->buf, rmsg->len, false));
+		md.setInlineData("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	else {
-		md.source = types::source::Blob::create("bufr", filename, rmsg->offset, rmsg->len);
-		md.setCachedData(wibble::sys::Buffer(rmsg->buf, rmsg->len, false));
+		md.source = types::source::Blob::create("bufr", filename, rmsg.offset, rmsg.size());
+		md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	}
 
 	// Set reference time
-	md.set(types::reftime::Position::create(new types::Time(msg->rep_year, msg->rep_month, msg->rep_day, msg->rep_hour, msg->rep_minute, msg->rep_second)));
+	md.set(types::reftime::Position::create(new types::Time(
+			bulletin.rep_year, bulletin.rep_month, bulletin.rep_day,
+			bulletin.rep_hour, bulletin.rep_minute, bulletin.rep_second)));
 
 	// Set origin from the bufr header
 	UItem<types::product::BUFR> product;
-	switch (msg->edition)
+	switch (bulletin.edition)
 	{
 		case 2:
 		case 3:
 		case 4:
 			// No process?
-			md.set(types::origin::BUFR::create(msg->opt.bufr.centre, msg->opt.bufr.subcentre));
-			md.set(product = types::product::BUFR::create(msg->type, msg->subtype, msg->localsubtype));
+			md.set(types::origin::BUFR::create(bulletin.centre, bulletin.subcentre));
+			md.set(product = types::product::BUFR::create(bulletin.type, bulletin.subtype, bulletin.localsubtype));
 			break;
 		default:
 		{
 			std::stringstream str;
-			str << "edition is " << msg->edition << " but I can only handle 3 and 4";
+			str << "edition is " << bulletin.edition << " but I can only handle 3 and 4";
 			throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
 		}
 	}
@@ -246,43 +253,49 @@ bool Bufr::next(Metadata& md)
 	if (!extras) return true;
 
 	// If there is more than one subset, we are done
-	if (msg->opt.bufr.subsets != 1)
+	if (bulletin.subsets.size() != 1)
 		return true;
 
 	// Tru to decode the data; if we fail, we are done
-	if (bufr_decoder_decode(rmsg, msg) != DBA_OK)
-	{
+	try {
+		bulletin.decode(rmsg);
+	} catch (wreport::error& e) {
 		// We can still try to handle partially decoded files
 
 		// Not if the error was not a parse error
-		if (dba_error_get_code() != DBA_ERR_PARSE) return true;
+		if (e.code() != WR_ERR_PARSE) return true;
 
 		// Not if we didn't decode just one subset
-		if (msg->subsets_count != 1) return true;
+		if (bulletin.subsets.size() != 1) return true;
 
 		// Not if the subset is empty
-		if (msg->subsets[0]->vars_count == 0) return true;
+		if (bulletin.subsets[0].empty()) return true;
+	} catch (std::exception& e) {
+		return true;
 	}
 
 	// Try to parse as a dba_msg
-	dba_msgs msgs;
-	if (bufrex_msg_to_dba_msgs(msg, &msgs) != DBA_OK)
-		// If we cannot parse it as a dba_msg, we are done
+	Msgs msgs;
+	try {
+		importer->from_bulletin(bulletin, msgs);
+	} catch (std::exception& e) {
+		// If we cannot import it as a Msgs, we are done
 		return true;
+	}
 	
 	// We decoded a different number of subsets than declared by the BUFR.
 	// How could this happen? Treat it as an obscure BUFR and go no further
-	if (msgs->len != 1)
+	if (msgs.size() != 1)
 		return true;
 
 	// Set the product from the msg type
 	ValueBag newvals;
-	newvals.set("t", Value::createString(dba_msg_type_name(msgs->msgs[0]->type)));
+	newvals.set("t", Value::createString(msg_type_name(msgs[0]->type)));
         md.set(product->addValues(newvals));
 
 	// DB-All.e managed to make sense of the message: hand it down to Lua
 	// to extract further metadata
-	extras->scan(msgs->msgs[0], md);
+	extras->scan(*msgs[0], md);
 #endif
 
 	return true;
@@ -302,75 +315,66 @@ namespace {
 	{
 		std::map<std::string, int>& dest;
 		fill_to_repcod(std::map<std::string, int>& dest) : dest(dest) {}
-		void operator()(int cod, const char* memo)
+		void operator()(int cod, const std::string& memo)
 		{
 			dest.insert(make_pair(memo, cod));
 		}
 	};
 }
 
-static inline void inplace_tolower(char* buf)
+static inline void inplace_tolower(std::string& buf)
 {
-	for ( ; *buf; ++buf)
-		*buf = tolower(*buf);
+	for (std::string::iterator i = buf.begin(); i != buf.end(); ++i)
+		*i = tolower(*i);
 }
 
 template<typename T>
-static dba_err read_repinfo(const std::string& fname, T& consumer)
+static void read_repinfo(const std::string& fname, T& consumer)
 {
-	dba_err err = DBA_OK;
 	FILE* in;
 	const char* name;
 
 	if (fname.empty())
-		DBA_RUN_OR_RETURN(dba_repinfo_default_filename(&name));
+		name = repinfo_default_filename();
 	else
 		name = fname.c_str();
 
 
-	/* Open the input CSV file */
+	// Open the input CSV file
 	in = fopen(name, "r");
 	if (in == NULL)
-		return dba_error_system("opening file %s", name);
+		throw wibble::exception::File(name, "opening file");
 
-	/* Read the CSV file */
+	// Close it on exit
+	struct HandleCloser {
+		FILE* fd;
+		HandleCloser(FILE* fd) : fd(fd) {}
+		~HandleCloser() { fclose(fd); }
+	} closer(in);
+
+	// Read the CSV file
+	vector<string> columns;
+	for (int line = 0; csv_read_next(in, columns); ++line)
 	{
-		char* columns[7];
-		int line;
-		int i;
+		int id;
 
-		for (line = 0; (i = dba_csv_read_next(in, columns, 7)) != 0; line++)
-		{
-			int id;
+		if (columns.size() != 6)
+			error_parse::throwf(name, line, "Expected 6 columns, got %zd", columns.size());
 
-			if (i != 6)
-			{
-				err = dba_error_parse(name, line, "Expected 6 columns, got %d", i);
-				goto cleanup;
-			}
+		// Lowercase all rep_memos
+		inplace_tolower(columns[1]);
+		id = strtol(columns[0].c_str(), 0, 10);
 
-			// Lowercase all rep_memos
-			inplace_tolower(columns[1]);
-			id = strtol(columns[0], 0, 10);
-
-			// Hand it to consumer
-			consumer(id, columns[1]);
-
-			for (int j = 0; j < 6; ++j)
-				free(columns[j]);
-		}
+		// Hand it to consumer
+		consumer(id, columns[1]);
 	}
-
-cleanup:
-	fclose(in);
-	return err == DBA_OK ? dba_error_ok() : err;
 }
 
 std::map<std::string, int> Bufr::read_map_to_rep_cod(const std::string& fname)
 {
 	std::map<std::string, int> res;
 	fill_to_repcod consumer(res);
-	dballe::checked(read_repinfo(fname, consumer));
+	read_repinfo(fname, consumer);
 	return res;
 }
 
@@ -378,7 +382,7 @@ std::map<int, std::string> Bufr::read_map_to_rep_memo(const std::string& fname)
 {
 	std::map<int, std::string> res;
 	fill_to_repmemo consumer(res);
-	dballe::checked(read_repinfo(fname, consumer));
+	read_repinfo(fname, consumer);
 	return res;
 }
 

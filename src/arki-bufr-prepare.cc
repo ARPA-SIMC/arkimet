@@ -34,10 +34,9 @@
 
 #include <dballe/core/rawmsg.h>
 #include <dballe/core/file.h>
-#include <dballe/bufrex/msg.h>
+#include <wreport/bulletin.h>
 #include <dballe/msg/msgs.h>
-#include <dballe/msg/bufrex_codec.h>
-#include <dballe++/error.h>
+#include <dballe/msg/codec.h>
 
 #include <arpa/inet.h>
 #include <cstring>
@@ -51,6 +50,8 @@
 using namespace std;
 using namespace arki;
 using namespace wibble;
+using namespace wreport;
+using namespace dballe;
 
 namespace wibble {
 namespace commandline {
@@ -81,76 +82,40 @@ struct Options : public StandardParserWithManpage
 
 static std::map<std::string, int> to_rep_cod;
 
-static dba_err copy_base_msg(bufrex_msg orig, bufrex_msg* newmsg)
+static void copy_base_msg(BufrBulletin& dst, const BufrBulletin& src)
 {
-	dba_err err = DBA_OK;
-	bufrex_msg msg = NULL;
-
-	DBA_RUN_OR_RETURN(bufrex_msg_create(BUFREX_BUFR, &msg));
-
 	// Copy message attributes
-	msg->type = orig->type;
-	msg->subtype = orig->subtype;
-	msg->localsubtype = orig->localsubtype;
-	msg->edition = orig->edition;
-	msg->rep_year = orig->rep_year;
-	msg->rep_month = orig->rep_month;
-	msg->rep_day = orig->rep_day;
-	msg->rep_hour = orig->rep_hour;
-	msg->rep_minute = orig->rep_minute;
-	msg->rep_second = orig->rep_second;
-	msg->opt.bufr.centre = orig->opt.bufr.centre;
-	msg->opt.bufr.subcentre = orig->opt.bufr.subcentre;
-	msg->opt.bufr.master_table = orig->opt.bufr.master_table;
-	msg->opt.bufr.local_table = orig->opt.bufr.local_table;
+	dst.type = src.type;
+	dst.subtype = src.subtype;
+	dst.localsubtype = src.localsubtype;
+	dst.edition = src.edition;
+	dst.rep_year = src.rep_year;
+	dst.rep_month = src.rep_month;
+	dst.rep_day = src.rep_day;
+	dst.rep_hour = src.rep_hour;
+	dst.rep_minute = src.rep_minute;
+	dst.rep_second = src.rep_second;
+	dst.centre = src.centre;
+	dst.subcentre = src.subcentre;
+	dst.master_table = src.master_table;
+	dst.local_table = src.local_table;
 	// Do not compress, since it only makes sense for multisubset messages
-	msg->opt.bufr.compression = 0;
+	dst.compression = 0;
 
 	// Copy data descriptor section
-	for (bufrex_opcode i = orig->datadesc; i != NULL; i = i->next)
-		DBA_RUN_OR_GOTO(cleanup, bufrex_msg_append_datadesc(msg, i->val));
+	dst.datadesc = src.datadesc;
 
 	// Load encoding tables
-	DBA_RUN_OR_GOTO(cleanup, bufrex_msg_load_tables(msg));
-
-	// Pass new message ownership to caller
-	*newmsg = msg;
-	msg = NULL;
-
-cleanup:
-	if (msg != NULL) bufrex_msg_delete(msg);
-	return err == DBA_OK ? dba_error_ok() : err;
+	dst.load_tables();
 }
 
-static dba_err subset_to_msg(bufrex_msg dest, bufrex_msg orig, size_t subset_no)
+static int extract_rep_cod(const Msg& msg)
 {
-	bufrex_subset sorig = orig->subsets[subset_no];
-	bufrex_subset s;
-
-	// Remove existing subsets
-	bufrex_msg_reset_sections(dest);
-
-	// Copy subset
-	DBA_RUN_OR_RETURN(bufrex_msg_get_subset(dest, 0, &s));
-
-	// Copy variables
-	for (size_t i = 0; i < sorig->vars_count; ++i)
-	{
-		dba_var vorig = sorig->vars[i];
-		DBA_RUN_OR_RETURN(bufrex_subset_store_variable_var(s, dba_var_code(vorig), vorig));
-	}
-
-	return dba_error_ok();
-}
-
-static int extract_rep_cod(dba_msg m)
-{
-	dba_var var;
 	const char* rep_memo = NULL;
-	if ((var = dba_msg_get_rep_memo_var(m)) != NULL)
-		rep_memo = dba_var_value(var);
+	if (const Var* var = msg.get_rep_memo_var())
+		rep_memo = var->value();
 	else
-		rep_memo = dba_msg_repmemo_from_type(m->type);
+		rep_memo = Msg::repmemo_from_type(msg.type);
 
 	// Convert rep_memo to rep_cod
 	std::map<std::string, int>::const_iterator rc = to_rep_cod.find(rep_memo);
@@ -160,60 +125,57 @@ static int extract_rep_cod(dba_msg m)
 		return rc->second;
 }
 
-static void process(const std::string& filename, dba_file outfile)
+static void process(const std::string& filename, File& outfile)
 {
-	dba_rawmsg rmsg;
-	bufrex_msg msg;
-	dba_file file;
-	dballe::checked(dba_rawmsg_create(&rmsg));
-	dballe::checked(bufrex_msg_create(BUFREX_BUFR, &msg));
-	dballe::checked(dba_file_create(BUFR, filename.c_str(), "r", &file));
+	auto_ptr<File> file = File::create(BUFR, filename.c_str(), "r");
+	auto_ptr<msg::Importer> importer = msg::Importer::create(BUFR);
 
-	while (true)
+	Rawmsg rmsg;
+	while (file->read(rmsg))
 	{
-		bufrex_msg newmsg = NULL;
-
-		int found;
-		dballe::checked(dba_file_read(file, rmsg, &found));
-		if (!found) break;
-
 		// Decode message
-		dballe::checked(bufrex_msg_decode(msg, rmsg));
+		BufrBulletin msg;
+		msg.decode(rmsg, rmsg.filename().c_str(), rmsg.offset);
 
 		// Create new message with the same info as the old one
-		dballe::checked(copy_base_msg(msg, &newmsg));
+		BufrBulletin newmsg;
+		copy_base_msg(newmsg, msg);
 
 		// Loop over subsets
-		for (size_t i = 0; i < msg->subsets_count; ++i)
+		for (size_t i = 0; i < msg.subsets.size(); ++i)
 		{
 			// Create a bufrex_msg with the subset contents
-			dballe::checked(subset_to_msg(newmsg, msg, i));
+
+			// Remove existing subsets
+			newmsg.subsets.clear();
+
+			// Copy subset
+			newmsg.subsets.push_back(msg.subsets[i]);
 
 			// Parse into dba_msg
-			dba_msgs msgs;
-			if (bufrex_msg_to_dba_msgs(newmsg, &msgs) == DBA_OK)
-			{
-				dba_msg m = msgs->msgs[0];
+			try {
+				Msgs msgs;
+				importer->from_bulletin(newmsg, msgs);
+				const Msg& m = *msgs[0];
 
 				// Update reference time
-				if (dba_var var = dba_msg_get_year_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_year));
-				if (dba_var var = dba_msg_get_month_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_month));
-				if (dba_var var = dba_msg_get_day_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_day));
-				if (dba_var var = dba_msg_get_hour_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_hour));
-				if (dba_var var = dba_msg_get_minute_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_minute));
-				if (dba_var var = dba_msg_get_second_var(m)) dballe::checked(dba_var_enqi(var, &newmsg->rep_second));
+				if (const Var* var = m.get_year_var()) newmsg.rep_year = var->enqi();
+				if (const Var* var = m.get_month_var()) newmsg.rep_month = var->enqi();
+				if (const Var* var = m.get_day_var()) newmsg.rep_day = var->enqi();
+				if (const Var* var = m.get_hour_var()) newmsg.rep_hour = var->enqi();
+				if (const Var* var = m.get_minute_var()) newmsg.rep_minute = var->enqi();
+				if (const Var* var = m.get_second_var()) newmsg.rep_second = var->enqi();
+			} catch (wreport::error& e) {
+				// Don't bother with updating reference time if
+				// we cannot understand the layout of this BUFR
 			}
 
 			// Write out the message
-			dba_rawmsg newrmsg;
-			dballe::checked(bufrex_msg_encode(newmsg, &newrmsg));
-			dballe::checked(dba_file_write(outfile, newrmsg));
-			dba_rawmsg_delete(newrmsg);
+			Rawmsg newrmsg;
+			newmsg.encode(newrmsg);
+			outfile.write(newrmsg);
 		}
-		bufrex_msg_delete(newmsg);
 	}
-
-	dba_file_delete(file);
 }
 
 int main(int argc, const char* argv[])
@@ -229,23 +191,21 @@ int main(int argc, const char* argv[])
 
 		to_rep_cod = scan::Bufr::read_map_to_rep_cod();
 
-		dba_file outfile;
+		auto_ptr<File> outfile;
 		if (opts.outfile->isSet())
-			dballe::checked(dba_file_create(BUFR, opts.outfile->stringValue().c_str(), "w", &outfile));
+			outfile = File::create(BUFR, opts.outfile->stringValue().c_str(), "wb");
 		else
-			dballe::checked(dba_file_create(BUFR, "(stdout)", "w", &outfile));
+			outfile = File::create(BUFR, "(stdout)", "wb");
 
 		if (!opts.hasNext())
 		{
-			process("(stdin)", outfile);
+			process("(stdin)", *outfile);
 		} else {
 			while (opts.hasNext())
 			{
-				process(opts.next().c_str(), outfile);
+				process(opts.next().c_str(), *outfile);
 			}
 		}
-
-		dba_file_delete(outfile);
 
 		return 0;
 	} catch (wibble::exception::BadOption& e) {

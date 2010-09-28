@@ -28,6 +28,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace dballe;
 
 namespace arki {
 namespace scan {
@@ -41,14 +42,14 @@ BufrLua::~BufrLua()
 {
 }
 
-int BufrLua::get_scan_func(dba_msg_type type)
+int BufrLua::get_scan_func(MsgType type)
 {
 	// First look up in cache
-	std::map<dba_msg_type, int>::iterator i = scan_funcs.find(type);
+	std::map<MsgType, int>::iterator i = scan_funcs.find(type);
 	if (i != scan_funcs.end()) return i->second;
 
 	// Else try to load it
-	string name = str::tolower(dba_msg_type_name(type));
+	string name = str::tolower(msg_type_name(type));
 
         // Load the right bufr scan file
         string dirname = runtime::rcDirName("scan-bufr", "ARKI_SCAN_BUFR");
@@ -78,9 +79,9 @@ int BufrLua::get_scan_func(dba_msg_type type)
 	return scan_funcs[type] = id;
 }
 
-void BufrLua::scan(dba_msg msg, Metadata& md)
+void BufrLua::scan(Msg& msg, Metadata& md)
 {
-	int funcid = get_scan_func(msg->type);
+	int funcid = get_scan_func(msg.type);
 
 	// If we do not have a scan function for this message type, we are done
 	if (funcid == -1) return;
@@ -89,7 +90,7 @@ void BufrLua::scan(dba_msg msg, Metadata& md)
         lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
 
         // Pass msg
-	dba_msg_lua_push(msg, L);
+	msg.lua_push(L);
 
 	// Pass md
 	md.lua_push(L);

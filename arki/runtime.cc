@@ -47,10 +47,6 @@
 #include <cstdlib>
 #include "config.h"
 
-#if HAVE_DBALLE
-#include <dballe++/init.h>
-#endif
-
 #ifdef HAVE_LUA
 #include <arki/report.h>
 #endif
@@ -71,10 +67,6 @@
 using namespace std;
 using namespace wibble;
 using namespace wibble::commandline;
-
-#if HAVE_DBALLE
-dballe::DballeInit dballeInit;
-#endif
 
 namespace arki {
 namespace runtime {

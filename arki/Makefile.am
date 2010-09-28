@@ -332,9 +332,9 @@ if DBALLE
 dist_noinst_HEADERS += scan/bufr.h
 libarkimet_la_SOURCES += scan/bufr.cc
 tests_arki_test_SOURCES += scan/bufr-tut.cc
-INCLUDES += $(LIBDBALLEPP_CFLAGS)
-libarkimet_la_LDFLAGS += $(LIBDBALLEPP_LIBS)
-tests_arki_test_LDADD += $(LIBDBALLEPP_LIBS)
+INCLUDES += $(DBALLE_CFLAGS)
+libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
+tests_arki_test_LDADD += $(DBALLE_LIBS)
 if LUA
 dist_noinst_HEADERS += scan/bufrlua.h
 libarkimet_la_SOURCES += scan/bufrlua.cc

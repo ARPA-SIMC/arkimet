@@ -36,13 +36,13 @@ namespace bufr {
 
 class BufrLua : protected Lua
 {
-	std::map<dba_msg_type, int> scan_funcs;
+	std::map<dballe::MsgType, int> scan_funcs;
 
 	/**
 	 * Get (loading it if needed) the scan function ID for the given
 	 * message type
 	 */
-	int get_scan_func(dba_msg_type type);
+	int get_scan_func(dballe::MsgType type);
 
 public:
 	BufrLua();
@@ -55,7 +55,7 @@ public:
 	 * (for example there is no scanning function, or something odd is
 	 * found in the message), scanning stops.
 	 */
-	void scan(dba_msg msg, Metadata& md);
+	void scan(dballe::Msg& msg, Metadata& md);
 };
 
 }
