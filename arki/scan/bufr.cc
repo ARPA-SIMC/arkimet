@@ -252,10 +252,6 @@ bool Bufr::next(Metadata& md)
 	// If we don't have extra scanning support, we are done
 	if (!extras) return true;
 
-	// If there is more than one subset, we are done
-	if (bulletin.subsets.size() != 1)
-		return true;
-
 	// Tru to decode the data; if we fail, we are done
 	try {
 		bulletin.decode(rmsg);
@@ -273,6 +269,10 @@ bool Bufr::next(Metadata& md)
 	} catch (std::exception& e) {
 		return true;
 	}
+
+	// If there is more than one subset, we are done
+	if (bulletin.subsets.size() != 1)
+		return true;
 
 	// Try to parse as a dba_msg
 	Msgs msgs;

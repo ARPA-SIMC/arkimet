@@ -30,7 +30,6 @@
 #include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
-#include <dballe++/init.h>
 
 #include <sstream>
 #include <iostream>
@@ -46,7 +45,6 @@ using namespace arki::types;
 using namespace arki::utils;
 
 struct arki_scan_bufr_shar {
-	dballe::DballeInit dballeInit;
 };
 TESTGRP(arki_scan_bufr);
 

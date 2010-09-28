@@ -36,10 +36,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_DBALLE
-#include <dballe++/init.h>
-#endif
-
 #include <sstream>
 #include <iostream>
 
@@ -50,9 +46,6 @@ using namespace arki;
 using namespace arki::types;
 
 struct arki_scan_any_shar {
-#ifdef HAVE_DBALLE
-	dballe::DballeInit dballeInit;
-#endif
 };
 TESTGRP(arki_scan_any);
 
