@@ -15,8 +15,8 @@ function scan(msg, md)
 	blo = msg:find('block')
 	sta = msg:find('station')
 	id = msg:find('ident')
-	gems = msg:find('B01214', 257, 0, 0, 0, 0, 0, 0)
-	name = msg:find('B01019', 257, 0, 0, 0, 0, 0, 0)
+	gems = msg:find('B01214', 257, nil, nil, nil, nil, nil, nil)
+	name = msg:find('B01019', 257, nil, nil, nil, nil, nil, nil)
 
 	-- Look for pollutant type
 	polltype = nil
