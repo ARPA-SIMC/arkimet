@@ -93,8 +93,9 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 	// TODO: does it make sense to check with the summary first?
 
 	metadata::Consumer* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
+	// Order matters here, as delete will happen in reverse order
 	auto_ptr<ds::DataInliner> inliner;
+	auto_ptr<sort::Stream> sorter;
 
 	if (q.withData)
 	{
@@ -118,6 +119,8 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 		prepender.path = str::dirname(fullpath);
 		scan::scan(fullpath, filter);
 	}
+
+	if (sorter.get()) sorter->flush();
 }
 
 void Manifest::querySummary(const Matcher& matcher, Summary& summary)

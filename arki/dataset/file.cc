@@ -182,6 +182,7 @@ ArkimetFile::~ArkimetFile() {}
 void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	metadata::Consumer* c = &consumer;
+	// Order matters here, as delete will happen in reverse order
 	auto_ptr<ds::DataInliner> inliner;
 	auto_ptr<sort::Stream> sorter;
 
@@ -200,6 +201,8 @@ void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer
 
 	ds::MatcherFilter mf(q.matcher, *c);
 	Metadata::readFile(*m_file, m_pathname, mf);
+
+	if (sorter.get()) sorter->flush();
 }
 
 YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
@@ -207,8 +210,9 @@ YamlFile::~YamlFile() {}
 void YamlFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	metadata::Consumer* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
+	// Order matters here, as delete will happen in reverse order
 	auto_ptr<ds::DataInliner> inliner;
+	auto_ptr<sort::Stream> sorter;
 
 	if (q.withData)
 	{
@@ -229,6 +233,8 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
 			continue;
 		(*c)(md);
 	}
+
+	if (sorter.get()) sorter->flush();
 }
 
 RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
