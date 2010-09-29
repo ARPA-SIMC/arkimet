@@ -199,7 +199,7 @@ bool Bufr::next(Metadata& md)
 		return false;
 
 	BufrBulletin bulletin;
-	bulletin.decode_header(rmsg, rmsg.filename().c_str(), rmsg.offset);
+	bulletin.decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
 
 	md.create();
 

@@ -135,7 +135,7 @@ static void process(const std::string& filename, File& outfile)
 	{
 		// Decode message
 		BufrBulletin msg;
-		msg.decode(rmsg, rmsg.filename().c_str(), rmsg.offset);
+		msg.decode(rmsg, rmsg.file.c_str(), rmsg.offset);
 
 		// Create new message with the same info as the old one
 		BufrBulletin newmsg;
