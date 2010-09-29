@@ -104,6 +104,11 @@ protected:
 	 */
 	bool addJoinsAndConstraints(const Matcher& m, std::string& query) const;
 
+	/// Get a list of all other attribute tables available in the database
+	std::set<types::Code> available_other_tables() const;
+
+	/// Get a list of all other attribute tables that can be created in the database
+	std::set<types::Code> all_other_tables() const;
 
 	Index(const ConfigFile& cfg);
 public:

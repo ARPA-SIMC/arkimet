@@ -111,14 +111,8 @@ Index::Index(const ConfigFile& cfg)
 	if (not unique_members.empty())
 		m_uniques = new Aggregate(m_db, "mduniq", unique_members);
 
-	// What metadata components do not count for uniqueness
-	std::set<types::Code> other_members;
-	for (std::set<types::Code>::const_iterator i = igd.all_components.begin();
-		i != igd.all_components.end(); ++i)
-		if (unique_members.find(*i) == unique_members.end())
-			other_members.insert(*i);
-	if (not other_members.empty())
-		m_others = new Aggregate(m_db, "mdother", other_members);
+	// Instantiate m_others at initQueries time, so we can scan the
+	// database to see if some attributes are not available
 }
 
 Index::~Index()
@@ -127,8 +121,60 @@ Index::~Index()
 	if (m_others) delete m_others;
 }
 
+std::set<types::Code> Index::available_other_tables() const
+{
+	// See what metadata types are already handled by m_uniques,
+	// if any
+	std::set<types::Code> unique_members;
+	if (m_uniques)
+		unique_members = m_uniques->members();
+
+	// See what columns are available in the database
+	std::set<types::Code> available_columns;
+	Query q("gettables", m_db);
+	q.compile("SELECT name FROM sqlite_master WHERE type='table'");
+	while (q.step())
+	{
+		string name = q.fetchString(0);
+		if (!str::startsWith(name, "sub_"))
+			continue;
+		types::Code code = types::checkCodeName(name.substr(4));
+		if (code != TYPE_INVALID
+		 && unique_members.find(code) == unique_members.end()
+		 && igd.all_components.find(code) != igd.all_components.end())
+			available_columns.insert(code);
+	}
+
+	return available_columns;
+}
+
+std::set<types::Code> Index::all_other_tables() const
+{
+	std::set<types::Code> res;
+
+	// See what metadata types are already handled by m_uniques,
+	// if any
+	std::set<types::Code> unique_members;
+	if (m_uniques)
+		unique_members = m_uniques->members();
+
+	// Handle all the rest
+	for (std::set<types::Code>::const_iterator i = igd.all_components.begin();
+			i != igd.all_components.end(); ++i)
+		if (unique_members.find(*i) == unique_members.end())
+			res.insert(*i);
+	return res;
+}
+
 void Index::initQueries()
 {
+	if (!m_others)
+	{
+		std::set<types::Code> other_members = available_other_tables();
+		if (not other_members.empty())
+			m_others = new Aggregate(m_db, "mdother", other_members);
+	}
+
 	if (m_uniques) m_uniques->initQueries();
 	if (m_others) m_others->initQueries();
 
@@ -1093,7 +1139,15 @@ bool WIndex::open()
 	setupPragmas();
 	
 	if (need_create)
+	{
+		if (!m_others)
+		{
+			std::set<types::Code> other_members = all_other_tables();
+			if (not other_members.empty())
+				m_others = new Aggregate(m_db, "mdother", other_members);
+		}
 		initDB();
+	}
 
 	initQueries();
 
