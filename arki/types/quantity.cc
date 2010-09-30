@@ -41,6 +41,7 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
+using namespace wibble;
 
 namespace arki { namespace types {
 
@@ -131,14 +132,7 @@ Item<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
 
 std::ostream& Quantity::writeToOstream(std::ostream& o) const
 {
-	int c=0;
-	for (std::set<std::string>::iterator i=values.begin(); i!=values.end(); i++, c++)
-	{
-		if (c)
-			o << ",";
-		o << (*i);
-	}
-	return o;
+	return o << str::join(values.begin(), values.end(), ", ");
 }
 
 Item<Quantity> Quantity::decodeString(const std::string& val)
@@ -162,6 +156,41 @@ bool Quantity::lua_lookup(lua_State* L, const std::string& name) const
 	else
 		return CoreType<Quantity>::lua_lookup(L, name);
 	return true;
+}
+
+static int arkilua_new_quantity(lua_State* L)
+{
+	set<string> values;
+	if (lua_gettop(L) == 1 && lua_istable(L, 1))
+	{
+		// Iterate the table building the values vector
+
+		lua_pushnil(L); // first key
+		while (lua_next(L, 1) != 0) {
+			// Ignore index at -2
+			const char* val = lua_tostring(L, -1);
+			values.insert(val);
+			// removes 'value'; keeps 'key' for next iteration
+			lua_pop(L, 1);
+		}
+	} else {
+		unsigned count = lua_gettop(L);
+		for (unsigned i = 0; i != count; ++i)
+			values.insert(lua_tostring(L, i + 1));
+	}
+	
+	Quantity::create(values)->lua_push(L);
+	return 1;
+}
+
+void Quantity::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "new", arkilua_new_quantity },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_quantity", lib, 0);
+	lua_pop(L, 1);
 }
 #endif
 

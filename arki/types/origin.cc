@@ -199,12 +199,23 @@ static int arkilua_new_bufr(lua_State* L)
 	return 1;
 }
 
+static int arkilua_new_odimh5(lua_State* L)
+{
+	const char* wmo = luaL_checkstring(L, 1);
+	const char* rad = luaL_checkstring(L, 2);
+	const char* plc = luaL_checkstring(L, 3);
+	Item<> res = origin::ODIMH5::create(wmo, rad, plc);
+	res->lua_push(L);
+	return 1;
+}
+
 void Origin::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
 		{ "bufr", arkilua_new_bufr },
+		{ "odimh5", arkilua_new_odimh5 },
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_origin", lib, 0);
@@ -495,21 +506,15 @@ const char* ODIMH5::lua_type_name() const { return LUATAG_ODIMH5; }
 
 bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 {
-//	if (name == "centre")
-//		lua_pushnumber(L, centre());
-//	else if (name == "subcentre")
-//		lua_pushnumber(L, subcentre());
-//	else if (name == "process")
-//		lua_pushnumber(L, process());
-//	else
-//		return Origin::lua_lookup(L, name);
-
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
-
-
-	return false;
+	if (name == "wmo")
+		lua_pushlstring(L, m_WMO.data(), m_WMO.size());
+	else if (name == "rad")                
+		lua_pushlstring(L, m_RAD.data(), m_RAD.size());
+	else if (name == "plc")                
+		lua_pushlstring(L, m_PLC.data(), m_PLC.size());
+	else
+		return Origin::lua_lookup(L, name);
+	return true;
 }
 
 int ODIMH5::compare_local(const Origin& o) const

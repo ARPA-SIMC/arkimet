@@ -52,22 +52,11 @@ o1 = o:addValues{t="synop"}
 ensure_equals(o, o1)
 
 
-
-
 -- ODIMH5 product
 
--- Create with type, subtype, localsubtype from section 1
+-- Create with object and product
 local o = arki_product.odimh5("PVOL", "SCAN")
 ensure_equals(o.object, "PVOL")
 ensure_equals(o.product, "SCAN")
-ensure_equals(tostring(o), "ODIMh5(PVOL, SCAN)")
-
-
-
-
-
-
-
-
-
+ensure_equals(tostring(o), "ODIMH5(PVOL, SCAN)")
 

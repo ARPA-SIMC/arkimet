@@ -40,6 +40,7 @@ a circle centered at latitude and longitude with the given radius.
 
 The octagon has some extra areas that exceed the original circle so
 so particular attention must be paid by user.
+]]
 
 sample:set(arki_area.odimh5{lat=45000000, lon=30000000, radius=1000})
 
@@ -63,7 +64,6 @@ Available verbs:
   intersects: the bounding box to match must intersect the sample value
 
 See: http://www.cs.montana.edu/courses/535/resources/Understanding%20spatial%20relations.htm
-
 ]]
 
 sample:set(arki_area.grib{Ni=441, Nj=181, latfirst=45000000, latlast=43000000, lonfirst=10000000, lonlast=12000000, type=0})

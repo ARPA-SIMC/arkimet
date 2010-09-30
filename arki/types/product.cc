@@ -224,12 +224,21 @@ static int arkilua_new_bufr(lua_State* L)
 	return 1;
 }
 
+static int arkilua_new_odimh5(lua_State* L)
+{
+	const char* obj = luaL_checkstring(L, 1);
+	const char* prod = luaL_checkstring(L, 2);
+	product::ODIMH5::create(obj, prod)->lua_push(L);
+	return 1;
+}
+
 void Product::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
 		{ "bufr", arkilua_new_bufr },
+		{ "odimh5", arkilua_new_odimh5 },
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_product", lib, 0);
@@ -555,9 +564,10 @@ void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {
 	return o << formatStyle(style()) << "("
-		<< m_obj << ","
+		<< m_obj << ", "
 		<< m_prod 
 		/* REMOVED: << "," << std::fixed << std::setprecision(5) << m_prodpar1 << "," << std::fixed << std::setprecision(5) << m_prodpar2 << ")" */
+		<< ")"
 		;
 }
 
@@ -621,9 +631,9 @@ std::vector<int> ODIMH5::toIntVector() const
 
 bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (name == "obj")
+	if (name == "object")
 		lua_pushlstring(L, m_obj.data(), m_obj.size());
-	else if (name == "prod")
+	else if (name == "product")
 		lua_pushlstring(L, m_prod.data(), m_prod.size());
 	/*REMOVED: else if (name == "prodpar1") */
 	/*REMOVED: 	lua_pushnumber(L, m_prodpar1); */

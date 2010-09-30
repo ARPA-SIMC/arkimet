@@ -74,6 +74,7 @@ struct Quantity : public CoreType<Quantity>
 	static Item<Quantity> create(const std::string& values);
 	static Item<Quantity> create(const std::set<std::string>& values);
 
+	static void lua_loadlib(lua_State* L);
 };
 
 /*============================================================================*/

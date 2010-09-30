@@ -1,6 +1,6 @@
-
 #ifndef ARKI_TYPES_TASK_H
 #define ARKI_TYPES_TASK_H
+
 /*
  * types/task - Metadata task (used for OdimH5 /how.task)
  *
@@ -68,6 +68,8 @@ struct Task : public CoreType<Task>
 
 	/// Create a task
 	static Item<Task> create(const std::string& value);
+
+	static void lua_loadlib(lua_State* L);
 };
 
 /*============================================================================*/

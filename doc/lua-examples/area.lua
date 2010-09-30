@@ -20,7 +20,7 @@ ensure_equals(tostring(o), "GRIB(lat=45000, lon=12000)")
 -- ODIMH5 area
 
 -- Create from a table
-local t = { lat=45000, lon=12000, raiuds=1000 }
+local t = { lat=45000, lon=12000, radius=1000 }
 local o = arki_area.odimh5(t)
 
 -- The shortcut call-function-with-table Lua syntax obviously also works
@@ -32,4 +32,4 @@ ensure_equals(o.style, "ODIMH5")
 local vals = o.val
 ensure_equals(vals.lat, 45000)
 ensure_equals(vals.lon, 12000)
-ensure_equals(tostring(o), "ODIMh5(lat=45000, lon=12000, radius=1000)")
+ensure_equals(tostring(o), "ODIMH5(lat=45000, lon=12000, radius=1000)")

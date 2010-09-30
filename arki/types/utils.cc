@@ -103,7 +103,7 @@ void split(const std::string& str, std::set<std::string>& result, const std::str
 	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);	// Find first "non-delimiter".
 	while (std::string::npos != pos || std::string::npos != lastPos)
 	{
-		result.insert(str.substr(lastPos, pos - lastPos));
+		result.insert(str::trim(str.substr(lastPos, pos - lastPos)));
 		lastPos = str.find_first_not_of(delimiters, pos);	// Skip delimiters.  Note the "not_of"
 		pos = str.find_first_of(delimiters, lastPos);		// Find next "non-delimiter"
 	}
@@ -115,7 +115,7 @@ void split(const std::string& str, std::vector<std::string>& result, const std::
 	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);	// Find first "non-delimiter".
 	while (std::string::npos != pos || std::string::npos != lastPos)
 	{
-		result.push_back(str.substr(lastPos, pos - lastPos));
+		result.push_back(str::trim(str.substr(lastPos, pos - lastPos)));
 		lastPos = str.find_first_not_of(delimiters, pos);	// Skip delimiters.  Note the "not_of"
 		pos = str.find_first_of(delimiters, lastPos);		// Find next "non-delimiter"
 	}

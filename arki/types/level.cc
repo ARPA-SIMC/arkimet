@@ -314,10 +314,13 @@ static int arkilua_new_grib2d(lua_State* L)
 
 static int arkilua_new_odimh5(lua_State* L)
 {
-	double min = 0; //TODO luaL_checkint(L, 1); manca?
-	double max = 0; //TODO luaL_checkint(L, 2);	
-	Item<> res = level::ODIMH5::create(min, max);
-	res->lua_push(L);
+	double value = luaL_checknumber(L, 1);
+	if (lua_gettop(L) > 1)
+	{
+		double max = luaL_checknumber(L, 2);	
+		level::ODIMH5::create(value, max)->lua_push(L);
+	} else
+		level::ODIMH5::create(value)->lua_push(L);
 	return 1;
 }
 

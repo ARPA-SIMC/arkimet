@@ -46,12 +46,8 @@ ensure_equals(tostring(o), "BUFR(098, 000)")
 local o = arki_origin.odimh5(1, 2, 3)
 
 -- Accessors
-ensure_equals(o.wmo, 1)
-ensure_equals(o.rad, 2)
-ensure_equals(o.plc, 3)
+ensure_equals(o.wmo, "1")
+ensure_equals(o.rad, "2")
+ensure_equals(o.plc, "3")
 ensure_equals(tostring(o), "ODIMH5(1, 2, 3)")
-
-
-
-
 

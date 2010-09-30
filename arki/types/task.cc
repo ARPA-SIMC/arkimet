@@ -124,6 +124,23 @@ bool Task::lua_lookup(lua_State* L, const std::string& name) const
 		return CoreType<Task>::lua_lookup(L, name);
 	return true;
 }
+
+static int arkilua_new_task(lua_State* L)
+{
+	const char* value = luaL_checkstring(L, 1);
+	Task::create(value)->lua_push(L);
+	return 1;
+}
+
+void Task::lua_loadlib(lua_State* L)
+{
+	static const struct luaL_reg lib [] = {
+		{ "new", arkilua_new_task },
+		{ NULL, NULL }
+	};
+	luaL_openlib(L, "arki_task", lib, 0);
+	lua_pop(L, 1);
+}
 #endif
 
 Item<Task> Task::create(const std::string& val)

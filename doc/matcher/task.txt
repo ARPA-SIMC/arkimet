@@ -7,7 +7,7 @@ local sample = arki.metadata.new()
 -- Matches if values is found inside the metadata
 -- if value is empty, any data with task attribute is matched
 
-sample:set(arki_task.task("prova 123"))
+sample:set(arki_task.new("prova 123"))
 
 ensure_matches(sample, "task:")
 ensure_matches(sample, "task:prova")

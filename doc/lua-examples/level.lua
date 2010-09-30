@@ -58,9 +58,20 @@ ensure_equals(tostring(o), "GRIB2D(103, 000, 0000001000, 103, 000, 0000001100)")
 
 -- ODIMH5 level
 
--- Create with type, scale and value
+-- Create with a single value
+local o = arki_level.odimh5(0.5)
+
+-- Accessors
+ensure_equals(o.min, 0.5)
+ensure_equals(o.max, 0.5)
+ensure_equals(tostring(o), "ODIMH5(0.5, 0.5)")
+
+
+-- Create with a range
 local o = arki_level.odimh5(0.5, 5.5, 10.5)
 
 -- Accessors
-ensure_equals(tostring(o), "ODIMH5(0.5, 5.5, 10.5)")
+ensure_equals(o.min, 0.5)
+ensure_equals(o.max, 5.5)
+ensure_equals(tostring(o), "ODIMH5(0.5, 5.5)")
 
