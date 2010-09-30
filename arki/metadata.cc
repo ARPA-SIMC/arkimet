@@ -776,6 +776,17 @@ static int arkilua_clear(lua_State* L)
 	return 0;
 }
 */
+static int arkilua_tostring(lua_State* L)
+{
+	Metadata* md = Metadata::lua_check(L, 1);
+	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+	vector<string> bits;
+	for (Metadata::const_iterator i = md->begin(); i != md->end(); ++i)
+		bits.push_back(str::tolower(str::fmt(i->first)) + ": " + str::fmt(i->second));
+	string merged = "{" + str::join(bits.begin(), bits.end(), ", ") + "}";
+	lua_pushlstring(L, merged.data(), merged.size());
+	return 1;
+}
 
 static int arkilua_gc (lua_State *L)
 {
@@ -793,7 +804,7 @@ static const struct luaL_reg metadatalib [] = {
 	{ "unset", arkilua_unset },
 	{ "notes", arkilua_notes },
 	// { "clear", arkilua_unset },
-	// { "__tostring", arkilua_tostring },
+	{ "__tostring", arkilua_tostring },
 	{ NULL, NULL }
 };
 
