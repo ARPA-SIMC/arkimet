@@ -55,3 +55,12 @@ ensure_equals(o.scale2, 0)
 ensure_equals(o.value2, 1100)
 ensure_equals(tostring(o), "GRIB2D(103, 000, 0000001000, 103, 000, 0000001100)")
 
+
+-- ODIMH5 level
+
+-- Create with type, scale and value
+local o = arki_level.odimh5(0.5, 5.5, 10.5)
+
+-- Accessors
+ensure_equals(tostring(o), "ODIMH5(0.5, 5.5, 10.5)")
+

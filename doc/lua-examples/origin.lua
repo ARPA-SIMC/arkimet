@@ -39,3 +39,19 @@ ensure_equals(o.centre, 98)
 ensure_equals(o.subcentre, 0)
 ensure_equals(tostring(o), "BUFR(098, 000)")
 
+
+-- ODIMH5 origin
+
+-- Create with wmo, rad and plc values
+local o = arki_origin.odimh5(1, 2, 3)
+
+-- Accessors
+ensure_equals(o.wmo, 1)
+ensure_equals(o.rad, 2)
+ensure_equals(o.plc, 3)
+ensure_equals(tostring(o), "ODIMH5(1, 2, 3)")
+
+
+
+
+

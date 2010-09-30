@@ -50,3 +50,24 @@ ensure_equals(tostring(o), "BUFR(000, 255, 001, t=synop)")
 local o1 = arki_product.bufr(0, 255, 1)
 o1 = o:addValues{t="synop"}
 ensure_equals(o, o1)
+
+
+
+
+-- ODIMH5 product
+
+-- Create with type, subtype, localsubtype from section 1
+local o = arki_product.odimh5("PVOL", "SCAN")
+ensure_equals(o.object, "PVOL")
+ensure_equals(o.product, "SCAN")
+ensure_equals(tostring(o), "ODIMh5(PVOL, SCAN)")
+
+
+
+
+
+
+
+
+
+

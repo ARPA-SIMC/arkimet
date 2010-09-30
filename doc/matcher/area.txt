@@ -26,6 +26,27 @@ sample:set(arki_area.grib{blo=10, lat=5480000, lon=895000, sta=22})
 ensure_matches(sample, "area:GRIB:sta=22")
 ensure_not_matches(sample, "area:GRIB:sta=88")
 
+--[[ Matching ODIMH5 areas
+
+Syntax: area:ODIMH5:lat=value,lon=value,radius=value
+
+Latitude and longitude are degrees in decimal notation mutiplied by 1000000
+For example 12.345 degrees becomes "12345000" 
+
+Radius is a value expressed in meters
+
+bbox for ODIMH5 PVOL files are calculated building an octagon that contains
+a circle centered at latitude and longitude with the given radius.
+
+The octagon has some extra areas that exceed the original circle so
+so particular attention must be paid by user.
+
+sample:set(arki_area.odimh5{lat=45000000, lon=30000000, radius=1000})
+
+ensure_matches(sample, "area:ODIMH5:lat=45000000,lon=30000000,radius=1000")
+
+ensure_not_matches(sample, "area:GRIB:sta=88")
+
 
 --[[ Matching area bounding boxes
 

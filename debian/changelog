@@ -1,3 +1,10 @@
+arkimet (0.46-1) UNRELEASED; urgency=low
+
+  * Ported to DB-All.e 5.0
+  * Fixed two bugs when using --sort
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 30 Sep 2010 11:12:33 +0100
+
 arkimet (0.45-1) UNRELEASED; urgency=low
 
   * Lua bindings for metadata

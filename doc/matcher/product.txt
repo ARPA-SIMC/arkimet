@@ -46,3 +46,17 @@ ensure_matches(sample, "product:BUFR:t=synop")
 
 ensure_not_matches(sample, "product:GRIB1")
 ensure_not_matches(sample, "product:BUFR:t=temp")
+
+-- ODIMH5
+-- Syntax: product:ODIMH5,<OBJ value>,<PROD value>
+-- OdimH5 product, identified by object and product values
+-- object and product values can be omitted
+
+sample:set(arki_product.odimh5("PVOL","SCAN"))
+
+ensure_matches(sample, "product:ODIMH5")
+ensure_matches(sample, "product:ODIMH5,PVOL")
+ensure_matches(sample, "product:ODIMH5,,SCAN")
+
+ensure_not_matches(sample, "product:GRIB1")
+ensure_not_matches(sample, "product:BUFR:t=temp")

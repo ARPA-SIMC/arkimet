@@ -69,3 +69,41 @@ ensure_matches(sample, "level:GRIB2D,103,0,1000,103,0,1100")
 ensure_not_matches(sample, "level:GRIB2S,103,0,1000")
 ensure_not_matches(sample, "level:GRIB2D,102")
 ensure_not_matches(sample, "level:GRIB2D,103,1,1000,103,1,1100")
+
+-- ODIMH5 layer
+-- Syntax: level:ODIMH5,val1 val2 val3 .... [offset value]
+-- Match any elevation angle equal to given values, offset value is the maximum allowed tollerance
+-- Syntax: level:ODIMH5,range minval maxval
+-- Match any elevation between the given min and max values
+
+sample:set(arki_level.odimh5(0.5, 5.5, 10.5))
+
+ensure_matches(sample, "level:ODIMH5, 0.5")
+ensure_matches(sample, "level:ODIMH5, 0.5 5.5 10.5 offset 0.5")
+ensure_matches(sample, "level:ODIMH5, range 5 20")
+
+ensure_not_matches(sample, "level:GRIB2S,103,0,1000")
+ensure_not_matches(sample, "level:GRIB2D,102")
+ensure_not_matches(sample, "level:GRIB2D,103,1,1000,103,1,1100")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -23,3 +23,7 @@ files are extremely diverse. Using Lua is however a choice of the GRIB scanner:
 it is not required that all scanners use Lua. The idea is that, while it would
 be good to try to maintain some consistency if possible, every scanner is free
 to do whatever works best for the data format that needs to be scanned.
+
+arki/scan/odimh5 files allow to scan OdimH5 Polar volumes (object=PVOL)
+with SCAN datasets (product=SCAN). Support for new type of products can be
+added.
