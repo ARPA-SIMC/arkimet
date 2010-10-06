@@ -162,7 +162,7 @@ bool canScan(const std::string& file)
 		return true;
 #endif
 #ifdef HAVE_ODIMH5
-	if ((ext == "h5") || (ext == ".odimh5") || (ext == ".odim"))
+	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
 		return true;
 #endif
 	return false;
