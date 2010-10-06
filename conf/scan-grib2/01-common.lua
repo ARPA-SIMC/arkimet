@@ -80,7 +80,7 @@ function scan(md)
 	md:set(arki_area.grib(area))
 
 	-- Ensemble
-	if grib.typeOfProcessedData >= 3 and grib.typeOfProcessedData <= 5 then
+	if gribl.typeOfProcessedData >= 3 and gribl.typeOfProcessedData <= 5 then
 		local ensemble = {}
 		ensemble.mc = grib.marsClass
 		ensemble.mt = gribl.marsType

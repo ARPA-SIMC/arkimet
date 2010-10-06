@@ -635,6 +635,82 @@ void to::test<6>()
 	ensure(not scanner.next(md));
 }
 
+// Scan a know item for which grib_api changed behaviour
+template<> template<>
+void to::test<7>()
+{
+	Metadata md;
+	scan::Grib scanner;
+	ValueBag vb;
+	types::Time reftime;
+	wibble::sys::Buffer buf;
+
+	scanner.open("inbound/cleps_grib2.grib2");
+
+	// See how we scan the first BUFR
+	ensure(scanner.next(md));
+
+	// Check the source info
+	ensure_equals(md.source, Item<Source>(source::Blob::create("grib2", sys::fs::abspath("inbound/cleps_grib2.grib2"), 0, 415)));
+
+	// Check that the source can be read properly
+	buf = md.getData();
+	ensure_equals(buf.size(), 415u);
+	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
+	ensure_equals(string((const char*)buf.data() + 411, 4), "7777");
+
+	// Check origin
+	ensure(md.get(types::TYPE_ORIGIN).defined());
+	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::GRIB2::create(250, 98, 4, 255, 131)));
+
+	// Check product
+	ensure(md.get(types::TYPE_PRODUCT).defined());
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::GRIB2::create(250, 0, 2, 22)));
+
+	// Check level
+	ensure(md.get(types::TYPE_LEVEL).defined());
+	ensure_equals(md.get(types::TYPE_LEVEL), Item<>(level::GRIB2S::create(103, 0, 10)));
+
+	// Check timerange
+	ensure(md.get(types::TYPE_TIMERANGE).defined());
+	ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB2::create(11, 1, 3, 3)));
+
+	// Check area
+	vb.clear();
+	vb.set("Ni", Value::createInteger(511));
+	vb.set("Nj", Value::createInteger(415));
+	vb.set("latfirst", Value::createInteger(-16125000));
+	vb.set("latlast", Value::createInteger(9750000));
+	vb.set("lonfirst", Value::createInteger(344250000));
+	vb.set("lonlast", Value::createInteger(16125000));
+	vb.set("latp", Value::createInteger(-40000000));
+	vb.set("lonp", Value::createInteger(10000000));
+	vb.set("rot", Value::createInteger(0));
+	vb.set("tn", Value::createInteger(1));
+	ensure(md.get(types::TYPE_AREA).defined());
+	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
+
+	// Check ensemble
+	vb.clear();
+	vb.set("mc", Value::createString("ti"));
+	vb.set("mt", Value::createInteger(0));
+	vb.set("pf", Value::createInteger(1));
+	vb.set("tf", Value::createInteger(16));
+	vb.set("ty", Value::createInteger(3));
+	ensure_equals(md.get(types::TYPE_ENSEMBLE), Item<>(ensemble::GRIB::create(vb)));
+
+	// Check reftime
+	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
+	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2010, 5, 24, 12, 0, 0))));
+
+	// Check run
+	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
+	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
+
+	// No more gribs
+	ensure(not scanner.next(md));
+}
+
 }
 
 // vim:set ts=4 sw=4:
