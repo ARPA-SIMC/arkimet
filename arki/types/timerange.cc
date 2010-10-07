@@ -598,7 +598,7 @@ bool GRIB1::operator==(const Type& o) const
 	return atype == btype && aunit == bunit && ap1 == bp1 && ap2 == bp2;
 }
 
-Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, signed char p1, signed char p2)
+Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
 {
 	GRIB1* res = new GRIB1;
 	res->m_type = type;

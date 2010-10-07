@@ -77,13 +77,13 @@ protected:
 	std::ostream& writeNumbers(std::ostream& o) const;
 
 	unsigned char m_type, m_unit;
-	signed char m_p1, m_p2;
+	unsigned char m_p1, m_p2;
 
 public:
 	unsigned type() const { return m_type; }
 	unsigned unit() const { return m_unit; }
-	signed p1() const { return m_p1; }
-	signed p2() const { return m_p2; }
+	unsigned p1() const { return m_p1; }
+	unsigned p2() const { return m_p2; }
 
 	enum Unit {
 		SECOND = 0,
@@ -102,7 +102,7 @@ public:
 
 	void getNormalised(int& type, Unit& unit, int& p1, int& p2) const;
 
-	static Item<GRIB1> create(unsigned char type, unsigned char unit, signed char p1, signed char p2);
+	static Item<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
 };
 
 class GRIB2 : public Timerange
