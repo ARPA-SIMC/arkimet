@@ -25,6 +25,7 @@
 #include <wibble/regexp.h>
 #include <wibble/string.h>
 #include <wibble/sys/childprocess.h>
+#include <wibble/sys/fs.h>
 #include <arki/configfile.h>
 #if 0
 #include <arki/metadata.h>
@@ -42,6 +43,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <cctype>
@@ -100,39 +102,62 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct Handler : public sys::ChildProcess
+void do_cgi(utils::http::Request& req)
 {
-	int sock;
-	std::string peer_hostname;
-	std::string peer_hostaddr;
-	std::string peer_port;
-	std::string server_name;
-	std::string server_port;
+	// Setup CGI environment
+
+	req.set_cgi_env();
+
+	// Connect stdin and stdout to the socket
+	if (dup2(req.sock, 0) < 0)
+		throw wibble::exception::System("redirecting input socket to stdin");
+	if (dup2(req.sock, 1) < 0)
+		throw wibble::exception::System("redirecting input socket to stdout");
+
+	system("set");
+
+	close(0);
+	close(1);
+}
+
+void do_404(utils::http::Request& req)
+{
+	stringstream body;
+	body << "<html>" << endl;
+	body << "<head>" << endl;
+	body << "  <title>Not found</title>" << endl;
+	body << "</head>" << endl;
+	body << "<body>" << endl;
+	body << "<p>Resource " << req.script_name << " not found.</p>" << endl;
+	body << "</body>" << endl;
+	body << "</html>" << endl;
+
+	req.send_status_line(404, "Not found");
+	req.send_date_header();
+	req.send_server_header();
+	req.send("Content-Type: text/html; charset=utf-8\r\n");
+	req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
+	req.send("\r\n");
+	req.send(body.str());
+}
+
+struct ChildServer : public sys::ChildProcess
+{
+	utils::http::Request& req;
+
+	ChildServer(utils::http::Request& req) : req(req) {}
 
 	// Executed in child thread
 	virtual int main()
 	{
 		try {
-			// Set CGI server-specific variables
+			// Directory where we find our CGI scripts
+			string scriptdir = SERVER_DIR;
+			const char* dir = getenv("ARKI_SERVER");
+			if (dir != NULL)
+				scriptdir = dir;
 
-			// SERVER_SOFTWARE — name/version of HTTP server.
-			setenv("SERVER_SOFTWARE", "arki-server/" PACKAGE_VERSION, 1);
-			// SERVER_NAME — host name of the server, may be dot-decimal IP address.
-			setenv("SERVER_NAME", server_name.c_str(), 1);
-			// GATEWAY_INTERFACE — CGI/version.
-			setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
-
-			// Set some request-specific variables
-
-			// SERVER_PORT — TCP port (decimal).
-			setenv("SERVER_PORT", server_port.c_str(), 1);
-			// REMOTE_HOST — host name of the client, unset if server did not perform such lookup.
-			setenv("REMOTE_HOST", peer_hostname.c_str(), 1);
-			// REMOTE_ADDR — IP address of the client (dot-decimal).
-			setenv("REMOTE_ADDR", peer_hostaddr.c_str(), 1);
-
-			utils::http::Request req;
-			while (req.read_request(sock))
+			while (req.read_request(req.sock))
 			{
 				// Request line and headers have been read
 				// sock now points to the optional message body
@@ -146,30 +171,49 @@ struct Handler : public sys::ChildProcess
 						i != req.headers.end(); ++i)
 					cout << " " << i->first <<  ": " << i->second << endl;
 
-				req.set_cgi_env();
 
-				// TODO: still need to set:
-				// SCRIPT_NAME — relative path to the program, like /cgi-bin/script.cgi.
-				// PATH_INFO — path suffix, if appended to URL after program name and a slash.
-				unsetenv("PATH_INFO");
-				// PATH_TRANSLATED — corresponding full path as supposed by server, if PATH_INFO is present.
-				unsetenv("PATH_TRANSLATED");
+				// Handle request
 
-				if (dup2(sock, 0) < 0)
-					throw wibble::exception::System("redirecting input socket to stdin");
-				if (dup2(sock, 1) < 0)
-					throw wibble::exception::System("redirecting input socket to stdout");
+				// Get the path
+				size_t pos = req.url.find('?');
+				string path;
+				if (pos == string::npos)
+					path = req.url;
+				else
+					path = req.url.substr(0, pos);
 
-				system("set");
+				// Strip leading /
+				pos = path.find_first_not_of('/');
+				if (pos == string::npos)
+					req.script_name = "index";
+				else
+				{
+					path = path.substr(pos);
+					pos = path.find("/");
+					if (pos == string::npos)
+						req.script_name = path;
+					else
+					{
+						req.script_name = path.substr(0, pos);
+						req.path_info = path.substr(pos);
+					}
+				}
 
-				close(0);
-				close(1);
+				string scriptpath = str::joinpath(scriptdir, req.script_name);
+				if (!sys::fs::access(scriptpath, R_OK))
+				{
+					// Generate a 404
+					do_404(req);
+				} else {
+					// Run the CGI
+					do_cgi(req);
+				}
 
 				// Here there can be some keep-alive bit
 				break;
 			}
 
-			close(sock);
+			close(req.sock);
 
 			return 0;
 		} catch (std::exception& e) {
@@ -182,7 +226,7 @@ struct Handler : public sys::ChildProcess
 struct HTTP : public utils::net::TCPServer
 {
 	string server_name;
-	map<pid_t, Handler*> children;
+	map<pid_t, ChildServer*> children;
 
 	void set_server_name(const std::string& server_name)
 	{
@@ -213,13 +257,15 @@ struct HTTP : public utils::net::TCPServer
 		if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval)) < 0)
 			throw wibble::exception::System("setting SO_SNDTIMEO on socket");
 
-		auto_ptr<Handler> handler(new Handler);
-		handler->sock = sock;
-		handler->peer_hostname = peer_hostname;
-		handler->peer_hostaddr = peer_hostaddr;
-		handler->peer_port = peer_port;
-		handler->server_name = server_name;
-		handler->server_port = port;
+		utils::http::Request req;
+		req.sock = sock;
+		req.peer_hostname = peer_hostname;
+		req.peer_hostaddr = peer_hostaddr;
+		req.peer_port = peer_port;
+		req.server_name = server_name;
+		req.server_port = port;
+
+		auto_ptr<ChildServer> handler(new ChildServer(req));
 		pid_t pid = handler->fork();
 		children[pid] = handler.release();
 
@@ -252,7 +298,7 @@ struct HTTP : public utils::net::TCPServer
 					}
 					cout << "Child " << pid << " ended" << endl;
 
-					map<pid_t, Handler*>::iterator i = children.find(pid);
+					map<pid_t, ChildServer*>::iterator i = children.find(pid);
 					if (i != children.end())
 					{
 						delete i->second;

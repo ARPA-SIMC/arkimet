@@ -262,6 +262,9 @@ AC_SUBST(confdir)
 postprocdir='$(libdir)'"/$PACKAGE"
 AC_SUBST(postprocdir)
 
+serverdir='$(prefix)'"/share/$PACKAGE/server"
+AC_SUBST(serverdir)
+
 tabledir='$(pkgdatadir)'
 AC_SUBST(tabledir)
 dnl def_tabledir=`echo "${sharedstatedir}/lib/$PACKAGE/tables"`

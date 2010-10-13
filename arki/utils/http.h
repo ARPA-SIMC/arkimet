@@ -33,6 +33,17 @@ namespace http {
 
 struct Request
 {
+    // Request does not take ownership of the socket: it is up to the caller to
+    // close it
+    int sock;
+    std::string peer_hostname;
+    std::string peer_hostaddr;
+    std::string peer_port;
+    std::string server_name;
+    std::string server_port;
+    std::string script_name;
+    std::string path_info;
+
     std::string method;
 	std::string url;
 	std::string version;
@@ -81,6 +92,18 @@ struct Request
 	// Set the CGI environment variables for the current process using this
 	// request
 	void set_cgi_env();
+
+    // Send the content of buf, verbatim, to the client
+    void send(const std::string& buf);
+
+    // Send the HTTP status line
+    void send_status_line(int code, const std::string& msg, const std::string& version = "HTTP/1.0");
+
+    // Send the HTTP server header
+    void send_server_header();
+
+    // Send the HTTP date header
+    void send_date_header();
 };
 
 }

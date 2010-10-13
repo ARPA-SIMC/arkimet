@@ -23,8 +23,12 @@
 #include <arki/utils/http.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
+#include <sstream>
+#include <ctime>
 
 #include "config.h"
+
+#define SERVER_SOFTWARE PACKAGE_NAME "/" PACKAGE_VERSION
 
 using namespace std;
 using namespace wibble;
@@ -195,6 +199,30 @@ bool Request::read_headers(int sock)
 // request
 void Request::set_cgi_env()
 {
+    // Set CGI server-specific variables
+
+    // SERVER_SOFTWARE — name/version of HTTP server.
+    setenv("SERVER_SOFTWARE", SERVER_SOFTWARE, 1);
+    // SERVER_NAME — host name of the server, may be dot-decimal IP address.
+    setenv("SERVER_NAME", server_name.c_str(), 1);
+    // GATEWAY_INTERFACE — CGI/version.
+    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+
+    // Set request-specific variables
+
+    // SCRIPT_NAME — relative path to the program, like /cgi-bin/script.cgi.
+    setenv("SCRIPT_NAME", script_name.c_str(), 1);
+    // PATH_INFO — path suffix, if appended to URL after program name and a slash.
+    setenv("PATH_INFO", path_info.c_str(), 1);
+    // TODO: is it really needed?
+    // PATH_TRANSLATED — corresponding full path as supposed by server, if PATH_INFO is present.
+    unsetenv("PATH_TRANSLATED");
+    // SERVER_PORT — TCP port (decimal).
+    setenv("SERVER_PORT", server_port.c_str(), 1);
+    // REMOTE_HOST — host name of the client, unset if server did not perform such lookup.
+    setenv("REMOTE_HOST", peer_hostname.c_str(), 1);
+    // REMOTE_ADDR — IP address of the client (dot-decimal).
+    setenv("REMOTE_ADDR", peer_hostaddr.c_str(), 1);
     // SERVER_PROTOCOL — HTTP/version.
     setenv("SERVER_PROTOCOL", version.c_str(), 1);
     // REQUEST_METHOD — name of HTTP method (see above).
@@ -240,6 +268,47 @@ void Request::set_cgi_env()
                 name.append(1, '_');
         setenv(name.c_str(), i->second.c_str(), 1);
     }
+}
+
+void Request::send(const std::string& buf)
+{
+    size_t pos = 0;
+    while (pos < buf.size())
+    {
+        ssize_t sent = write(sock, buf.data() + pos, buf.size() - pos);
+        if (sent < 0)
+            throw wibble::exception::System("writing data to client");
+        pos += sent;
+    }
+}
+
+void Request::send_status_line(int code, const std::string& msg, const std::string& version)
+{
+    stringstream buf;
+    buf << version << " " << code << " " << msg << "\r\n";
+	send(buf.str());
+}
+
+void Request::send_server_header()
+{
+    stringstream buf;
+    buf << "Server: " << SERVER_SOFTWARE << "\r\n";
+	send(buf.str());
+}
+
+void Request::send_date_header()
+{
+    time_t now = time(NULL);
+    struct tm t;
+    gmtime_r(&now, &t);
+    char tbuf[256];
+    size_t size = strftime(tbuf, 256, "%a, %d %b %Y %H:%M:%S GMT", &t);
+    if (size == 0)
+        throw wibble::exception::Consistency("internal buffer too small to store date header");
+
+    stringstream buf;
+    buf << "Date: " << tbuf << "\r\n";
+    send(buf.str());
 }
 
 }
