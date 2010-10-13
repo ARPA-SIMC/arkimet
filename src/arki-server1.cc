@@ -35,23 +35,16 @@
 #include <arki/utils/geosdef.h>
 #endif
 #include <arki/runtime.h>
+#include <arki/utils/server.h>
 
 #include <string>
 #include <vector>
 #include <map>
 #include <fstream>
 #include <iostream>
-#include <cstring>
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <signal.h>
 
 #include "config.h"
 
@@ -106,204 +99,6 @@ struct Options : public StandardParserWithManpage
 
 }
 }
-
-/**
- * Generic bind/listen/accept internet server
- */
-struct Server
-{
-	// Human readable server hostname
-	std::string host;
-	// Human readable server port
-	std::string port;
-	// Server socket
-	int sock;
-	// Signals used to stop the server's accept loop
-	std::vector<int> stop_signals;
-
-	// Saved signal handlers before accept
-	struct sigaction *old_signal_actions;
-	// Signal handlers in use during accept
-	struct sigaction *signal_actions;
-
-	Server() : sock(-1), old_signal_actions(0), signal_actions(0)
-	{
-		// By default, stop on sigterm and sigint
-		stop_signals.push_back(SIGTERM);
-		stop_signals.push_back(SIGINT);
-	}
-
-	virtual ~Server()
-	{
-		if (sock >= 0) close(sock);
-		if (old_signal_actions) delete[] old_signal_actions;
-		if (signal_actions) delete[] signal_actions;
-	}
-
-	// Bind to a given port (and optionally interface hostname)
-	void bind(const char* port, const char* host=NULL)
-	{
-		struct addrinfo hints;
-		memset(&hints, 0, sizeof(addrinfo));
-		hints.ai_family = AF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_protocol = 0;
-		hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | AI_PASSIVE;
-
-		struct addrinfo* res;
-		int gaires = getaddrinfo(host, port, &hints, &res);
-		if (gaires != 0)
-			throw wibble::exception::Consistency(
-					str::fmtf("resolving hostname %s:%s", host, port),
-					gai_strerror(gaires));
-
-		for (addrinfo* rp = res; rp != NULL; rp = rp->ai_next)
-		{
-			int sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-			if (sfd == -1)
-				continue;
-
-			// Set SO_REUSEADDR 
-			int flag = 1;
-			if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(int)) < 0)
-				throw wibble::exception::System("setting SO_REUSEADDR on socket");
-
-			if (::bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
-			{
-				// Success
-				sock = sfd;
-
-				// Resolve what we found back to human readable
-				// form, to use for logging and error reporting
-				char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
-				if (getnameinfo(rp->ai_addr, rp->ai_addrlen,
-							hbuf, sizeof(hbuf),
-							sbuf, sizeof(sbuf),
-							NI_NUMERICHOST | NI_NUMERICSERV) == 0)
-				{
-					this->host = hbuf;
-					this->port = sbuf;
-				} else {
-					this->host = "(unknown)";
-					this->port = "(unknown)";
-				}
-
-				break;
-			}
-
-			close(sfd);
-		}
-
-		freeaddrinfo(res);
-
-		if (sock == -1)
-			// No address succeeded
-			throw wibble::exception::Consistency(
-					str::fmtf("binding to %s:%s", host, port),
-					"could not bind to any of the resolved addresses");
-
-		// Set close-on-exec on master socket
-		if (fcntl(sock, F_SETFD, FD_CLOEXEC) < 0)
-			throw wibble::exception::System("setting FD_CLOEXEC on server socket");
-	}
-
-	// Set socket to listen, with given backlog
-	void listen(int backlog = 32)
-	{
-		if (::listen(sock, backlog) < 0)
-			throw wibble::exception::System("listening on port " + port);
-	}
-
-	static void noop_signal_handler(int sig) {}
-
-	// Initialize signal handling structures
-	void signal_setup()
-	{
-		if (old_signal_actions) delete[] old_signal_actions;
-		if (signal_actions) delete[] signal_actions;
-		old_signal_actions = new struct sigaction[stop_signals.size()];
-		signal_actions = new struct sigaction[stop_signals.size()];
-		for (size_t i = 0; i < stop_signals.size(); ++i)
-		{
-			signal_actions[i].sa_handler = noop_signal_handler;
-			sigemptyset(&(signal_actions[i].sa_mask));
-			signal_actions[i].sa_flags = 0;
-		}
-	}
-
-	void signal_install()
-	{
-		for (size_t i = 0; i < stop_signals.size(); ++i)
-			if (sigaction(stop_signals[i], &signal_actions[i], &old_signal_actions[i]) < 0)
-				throw wibble::exception::System("installing handler for signal " + str::fmt(stop_signals[i]));
-	}
-
-	void signal_uninstall()
-	{
-		for (size_t i = 0; i < stop_signals.size(); ++i)
-			if (sigaction(stop_signals[i], &old_signal_actions[i], NULL) < 0)
-				throw wibble::exception::System("restoring handler for signal " + str::fmt(stop_signals[i]));
-	}
-
-	// Loop accepting connections on the socket, until interrupted by a
-	// signal in stop_signals
-	void accept_loop()
-	{
-		struct SignalInstaller {
-			Server& s;
-			SignalInstaller(Server& s) : s(s) { s.signal_install(); }
-			~SignalInstaller() { s.signal_uninstall(); }
-		};
-
-		signal_setup();
-
-		while (true)
-		{
-			struct sockaddr_storage peer_addr;
-			socklen_t peer_addr_len = sizeof(struct sockaddr_storage);
-			int fd = -1;
-			{
-				SignalInstaller sigs(*this);
-				fd = accept(sock, (sockaddr*)&peer_addr, (socklen_t*)&peer_addr_len);
-				if (fd == -1)
-				{
-					if (errno == EINTR)
-						return;
-					throw wibble::exception::System("listening on " + host + ":" + port);
-				}
-			}
-
-			// Resolve the peer
-			char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
-			int gaires = getnameinfo((struct sockaddr *)&peer_addr,
-					peer_addr_len,
-					hbuf, NI_MAXHOST,
-					sbuf, NI_MAXSERV,
-					NI_NUMERICSERV);
-			if (gaires == 0)
-			{
-				string hostname = hbuf;
-				gaires = getnameinfo((struct sockaddr *)&peer_addr,
-						peer_addr_len,
-						hbuf, NI_MAXHOST,
-						sbuf, NI_MAXSERV,
-						NI_NUMERICHOST | NI_NUMERICSERV);
-				if (gaires == 0)
-					handle_client(fd, hostname, hbuf, sbuf);
-				else
-					throw wibble::exception::Consistency(
-							"resolving peer name numerically",
-							gai_strerror(gaires));
-			}
-			else
-				throw wibble::exception::Consistency(
-						"resolving peer name",
-						gai_strerror(gaires));
-		}
-	}
-
-	virtual void handle_client(int sock, const std::string& peer_hostname, const std::string& peer_hostaddr, const std::string& peer_port) = 0;
-};
 
 struct HTTPRequest
 {
@@ -480,19 +275,38 @@ struct HTTPRequest
 		setenv("SERVER_PROTOCOL", version.c_str(), 1);
 		// REQUEST_METHOD — name of HTTP method (see above).
 		setenv("REQUEST_METHOD", method.c_str(), 1);
-		// PATH_INFO — path suffix, if appended to URL after program name and a slash.
-		// PATH_TRANSLATED — corresponding full path as supposed by server, if PATH_INFO is present.
-		// SCRIPT_NAME — relative path to the program, like /cgi-bin/script.cgi.
 		// QUERY_STRING — the part of URL after ? character. Must be composed of name=value pairs separated with ampersands (such as var1=val1&var2=val2…) and used when form data are transferred via GET method.
+		size_t pos = url.find('?');
+		if (pos == string::npos)
+			setenv("QUERY_STRING", "", 1);
+		else
+			setenv("QUERY_STRING", url.substr(pos+1).c_str(), 1);
 		// AUTH_TYPE — identification type, if applicable.
+		unsetenv("AUTH_TYPE");
 		// REMOTE_USER used for certain AUTH_TYPEs.
+		unsetenv("REMOTE_USER");
 		// REMOTE_IDENT — see ident, only if server performed such lookup.
+		unsetenv("REMOTE_IDENT");
 		// CONTENT_TYPE — MIME type of input data if PUT or POST method are used, as provided via HTTP header.
-		// CONTENT_LENGTH — similarly, size of input data (decimal, in octets) if provided via HTTP header.
+		map<string, string>::const_iterator i = headers.find("content-type");
+		if (i != headers.end())
+			setenv("CONTENT_TYPE", i->second.c_str(), 1);
+		else
+			unsetenv("CONTENT_TYPE");
+		// CONTENT_LENGTH — size of input data (decimal, in octets) if provided via HTTP header.
+		i = headers.find("content-length");
+		if (i != headers.end())
+			setenv("CONTENT_LENGTH", i->second.c_str(), 1);
+		else
+			unsetenv("CONTENT_LENGTH");
+
 		// Variables passed by user agent (HTTP_ACCEPT, HTTP_ACCEPT_LANGUAGE, HTTP_USER_AGENT, HTTP_COOKIE and possibly others) contain values of corresponding HTTP headers and therefore have the same sense.
 		for (map<string, string>::const_iterator i = headers.begin();
 				i != headers.end(); ++i)
 		{
+			if (i->first == "content-type" or i->first == "content-length")
+				continue;
+
 			string name = "HTTP_";
 			for (string::const_iterator j = i->first.begin();
 					j != i->first.end(); ++j)
@@ -505,24 +319,26 @@ struct HTTPRequest
 	}
 };
 
-struct HTTP : public Server
+struct HTTP : public utils::net::TCPServer
 {
+	HTTP(const std::string& server_name)
+	{
+		// Set CGI server-specific variables
+
+		// SERVER_SOFTWARE — name/version of HTTP server.
+		setenv("SERVER_SOFTWARE", "arki-server/" PACKAGE_VERSION, 1);
+		// SERVER_NAME — host name of the server, may be dot-decimal IP address.
+		setenv("SERVER_NAME", server_name.c_str(), 1);
+		// GATEWAY_INTERFACE — CGI/version.
+		setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+	}
+
 	virtual void handle_client(int sock,
 			const std::string& peer_hostname,
 			const std::string& peer_hostaddr,
 			const std::string& peer_port)
 	{
 		cout << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
-
-		// Set CGI server-specific variables
-
-		// SERVER_SOFTWARE — name/version of HTTP server.
-		setenv("SERVER_SOFTWARE", "arki-server/" PACKAGE_VERSION, 1);
-		// SERVER_NAME — host name of the server, may be dot-decimal IP address.
-		setenv("SERVER_NAME", host.c_str(), 1);
-		// GATEWAY_INTERFACE — CGI/version.
-		setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
-
 		// Set some request-specific variables
 
 		// SERVER_PORT — TCP port (decimal).
@@ -549,22 +365,19 @@ struct HTTP : public Server
 
 			req.set_cgi_env();
 
+			// TODO: still need to set:
+			// SCRIPT_NAME — relative path to the program, like /cgi-bin/script.cgi.
+			// PATH_INFO — path suffix, if appended to URL after program name and a slash.
+			unsetenv("PATH_INFO");
+			// PATH_TRANSLATED — corresponding full path as supposed by server, if PATH_INFO is present.
+			unsetenv("PATH_TRANSLATED");
+
+			if (dup2(sock, 0) < 0)
+				throw wibble::exception::System("redirecting input socket to stdin");
+
 			system("set");
 
-			/*
-			local res
-			repeat
-				req.params = nil
-				parse_url (req)
-				res = make_response (req)
-			until handle_request (req, res) ~= "reparse"
-			send_response (req, res)
-
-			req.socket:flush ()
-			if not res.keep_alive then
-				break
-			end
-			*/
+			// Here there can be some keep-alive bit
 			break;
 		}
 
@@ -581,7 +394,7 @@ int main(int argc, const char* argv[])
 
 		runtime::init();
 
-		HTTP http;
+		HTTP http("http://localhost:12345");
 		http.bind("12345");
 		cout << "Listening on " << http.host << ":" << http.port << endl;
 		http.listen();
