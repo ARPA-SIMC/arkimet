@@ -44,6 +44,7 @@
 #include <cstring>
 #include <cctype>
 #include <cerrno>
+#include <cstdlib>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -280,7 +281,20 @@ struct Server
 					sbuf, NI_MAXSERV,
 					NI_NUMERICSERV);
 			if (gaires == 0)
-				handle_client(fd, hbuf, sbuf);
+			{
+				string hostname = hbuf;
+				gaires = getnameinfo((struct sockaddr *)&peer_addr,
+						peer_addr_len,
+						hbuf, NI_MAXHOST,
+						sbuf, NI_MAXSERV,
+						NI_NUMERICHOST | NI_NUMERICSERV);
+				if (gaires == 0)
+					handle_client(fd, hostname, hbuf, sbuf);
+				else
+					throw wibble::exception::Consistency(
+							"resolving peer name numerically",
+							gai_strerror(gaires));
+			}
 			else
 				throw wibble::exception::Consistency(
 						"resolving peer name",
@@ -288,7 +302,7 @@ struct Server
 		}
 	}
 
-	virtual void handle_client(int sock, const std::string& peer_host, const std::string& peer_port) = 0;
+	virtual void handle_client(int sock, const std::string& peer_hostname, const std::string& peer_hostaddr, const std::string& peer_port) = 0;
 };
 
 struct HTTPRequest
@@ -457,13 +471,66 @@ struct HTTPRequest
 		}
 		return false;
 	}
+
+	// Set the CGI environment variables for the current process using this
+	// request
+	void set_cgi_env()
+	{
+		// SERVER_PROTOCOL — HTTP/version.
+		setenv("SERVER_PROTOCOL", version.c_str(), 1);
+		// REQUEST_METHOD — name of HTTP method (see above).
+		setenv("REQUEST_METHOD", method.c_str(), 1);
+		// PATH_INFO — path suffix, if appended to URL after program name and a slash.
+		// PATH_TRANSLATED — corresponding full path as supposed by server, if PATH_INFO is present.
+		// SCRIPT_NAME — relative path to the program, like /cgi-bin/script.cgi.
+		// QUERY_STRING — the part of URL after ? character. Must be composed of name=value pairs separated with ampersands (such as var1=val1&var2=val2…) and used when form data are transferred via GET method.
+		// AUTH_TYPE — identification type, if applicable.
+		// REMOTE_USER used for certain AUTH_TYPEs.
+		// REMOTE_IDENT — see ident, only if server performed such lookup.
+		// CONTENT_TYPE — MIME type of input data if PUT or POST method are used, as provided via HTTP header.
+		// CONTENT_LENGTH — similarly, size of input data (decimal, in octets) if provided via HTTP header.
+		// Variables passed by user agent (HTTP_ACCEPT, HTTP_ACCEPT_LANGUAGE, HTTP_USER_AGENT, HTTP_COOKIE and possibly others) contain values of corresponding HTTP headers and therefore have the same sense.
+		for (map<string, string>::const_iterator i = headers.begin();
+				i != headers.end(); ++i)
+		{
+			string name = "HTTP_";
+			for (string::const_iterator j = i->first.begin();
+					j != i->first.end(); ++j)
+				if (isalnum(*j))
+					name.append(1, toupper(*j));
+				else
+					name.append(1, '_');
+			setenv(name.c_str(), i->second.c_str(), 1);
+		}
+	}
 };
 
 struct HTTP : public Server
 {
-	virtual void handle_client(int sock, const std::string& peer_host, const std::string& peer_port)
+	virtual void handle_client(int sock,
+			const std::string& peer_hostname,
+			const std::string& peer_hostaddr,
+			const std::string& peer_port)
 	{
-		cout << "Connection from " << peer_host << ":" << peer_port << endl;
+		cout << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
+
+		// Set CGI server-specific variables
+
+		// SERVER_SOFTWARE — name/version of HTTP server.
+		setenv("SERVER_SOFTWARE", "arki-server/" PACKAGE_VERSION, 1);
+		// SERVER_NAME — host name of the server, may be dot-decimal IP address.
+		setenv("SERVER_NAME", host.c_str(), 1);
+		// GATEWAY_INTERFACE — CGI/version.
+		setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+
+		// Set some request-specific variables
+
+		// SERVER_PORT — TCP port (decimal).
+		setenv("SERVER_PORT", port.c_str(), 1);
+		// REMOTE_HOST — host name of the client, unset if server did not perform such lookup.
+		setenv("REMOTE_HOST", peer_hostname.c_str(), 1);
+		// REMOTE_ADDR — IP address of the client (dot-decimal).
+		setenv("REMOTE_ADDR", peer_hostaddr.c_str(), 1);
 
 		HTTPRequest req;
 		while (req.read_request(sock))
@@ -479,6 +546,10 @@ struct HTTP : public Server
 			for (map<string, string>::const_iterator i = req.headers.begin();
 					i != req.headers.end(); ++i)
 				cout << " " << i->first <<  ": " << i->second << endl;
+
+			req.set_cgi_env();
+
+			system("set");
 
 			/*
 			local res
