@@ -58,43 +58,36 @@ namespace commandline {
 
 struct Options : public StandardParserWithManpage
 {
-#if 0
-	BoolOption* reverse_data;
-	BoolOption* reverse_summary;
-	BoolOption* annotate;
-	BoolOption* query;
-	BoolOption* config;
-	BoolOption* aliases;
-	BoolOption* bbox;
-	StringOption* outfile;
-#endif
+	StringOption* host;
+	StringOption* port;
+	StringOption* url;
+	StringOption* runtest;
+	StringOption* accesslog;
+	StringOption* errorlog;
+	BoolOption* quiet;
+
 	Options() : StandardParserWithManpage("arki-server", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
-#if 0
-		usage = "[options] [input]";
+		usage = "[options] configfile";
 		description =
-			"Read data from the given input file (or stdin), and dump them"
-			" in human readable format on stdout.";
+			"Start the arkimet server, serving the datasets found"
+			" in the configuration file";
 
-		outfile = add<StringOption>("output", 'o', "output", "file",
-				"write the output to the given file instead of standard output");
-		annotate = add<BoolOption>("annotate", 0, "annotate", "",
-				"annotate the human-readable Yaml output with field descriptions");
-
-		reverse_data = add<BoolOption>("from-yaml-data", 0, "from-yaml-data", "",
-			"read a Yaml data dump and write binary metadata");
-
-		reverse_summary = add<BoolOption>("from-yaml-summary", 0, "from-yaml-summary", "",
-			"read a Yaml summary dump and write a binary summary");
-
-		query = add<BoolOption>("query", 0, "query", "",
-			"print a query (specified on the command line) with the aliases expanded");
-
-		config = add<BoolOption>("config", 0, "config", "",
-			"print the arkimet configuration used to access the given file or dataset or URL");
-
-		aliases = add<BoolOption>("aliases", 0, "aliases", "", "dump the alias database (to dump the aliases of a remote server, put the server URL on the command line)");
-#endif
+		host = add<StringOption>("host", 0, "host", "hostname",
+				"interface to listen to. Default: all interfaces");
+		port = add<StringOption>("port", 'p', "port", "port",
+				"port to listen not. Default: 8080");
+		url = add<StringOption>("url", 0, "url", "url",
+				"url to use to reach the server");
+		runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
+				"start the server, run the given test command"
+				" and return its exit status");
+		accesslog = add<StringOption>("accesslog", 0, "accesslog", "file",
+				"file where to log normal access information");
+		errorlog = add<StringOption>("errorlog", 0, "errorlog", "file",
+				"file where to log errors");
+		quiet = add<BoolOption>("quiet", 0, "quiet", "",
+			"do not log to standard output");
 	}
 };
 
@@ -103,8 +96,12 @@ struct Options : public StandardParserWithManpage
 
 struct HTTP : public utils::net::TCPServer
 {
-	HTTP(const std::string& server_name)
+	string server_name;
+
+	void set_server_name(const std::string& server_name)
 	{
+		this->server_name = server_name;
+
 		// Set CGI server-specific variables
 
 		// SERVER_SOFTWARE — name/version of HTTP server.
@@ -176,187 +173,41 @@ int main(int argc, const char* argv[])
 
 		runtime::init();
 
-		HTTP http("http://localhost:12345");
-		http.bind("12345");
-		cout << "Listening on " << http.host << ":" << http.port << endl;
+		/*
+		url = add<StringOption>("url", 0, "url", "url",
+				"url to use to reach the server");
+		runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
+				"start the server, run the given test command"
+				" and return its exit status");
+		accesslog = add<StringOption>("accesslog", 0, "accesslog", "file",
+				"file where to log normal access information");
+		errorlog = add<StringOption>("errorlog", 0, "errorlog", "file",
+				"file where to log errors");
+		quiet = add<BoolOption>("quiet", 0, "quiet", "",
+			"do not log to standard output");
+		*/
+
+		HTTP http;
+
+		const char* host = NULL;
+		if (opts.host->isSet())
+			host = opts.host->stringValue().c_str();
+		const char* port = "8080";
+		if (opts.port->isSet())
+			port = opts.port->stringValue().c_str();
+
+		http.bind(port, host);
+
+		if (opts.url->isSet())
+			http.set_server_name(opts.url->stringValue());
+		else
+			http.set_server_name("http://" + http.host + ":" + http.port);
+
+		cout << "Listening on " << http.host << ":" << http.port << " for " << http.server_name << endl;
 		http.listen();
 		http.accept_loop();
 		cout << "Done." << endl;
 
-#if 0
-		// Validate command line options
-		if (opts.query->boolValue() && opts.aliases->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --aliases");
-		if (opts.query->boolValue() && opts.config->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --config");
-		if (opts.query->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --from-yaml-data");
-		if (opts.query->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --from-yaml-summary");
-		if (opts.query->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --annotate");
-		if (opts.query->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--query conflicts with --bbox");
-
-		if (opts.config->boolValue() && opts.aliases->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --aliases");
-		if (opts.config->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --from-yaml-data");
-		if (opts.config->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --from-yaml-summary");
-		if (opts.config->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --annotate");
-		if (opts.config->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--config conflicts with --bbox");
-
-		if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-data");
-		if (opts.aliases->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-summary");
-		if (opts.aliases->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
-		if (opts.aliases->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--aliases conflicts with --bbox");
-
-		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-data");
-		if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --bbox");
-
-		if (opts.query->boolValue())
-		{
-			if (!opts.hasNext())
-				throw wibble::exception::BadOption("--query wants the query on the command line");
-			Matcher m = Matcher::parse(opts.next());
-			cout << m.toStringExpanded() << endl;
-			return 0;
-		}
-		
-		if (opts.aliases->boolValue())
-		{
-			ConfigFile cfg;
-			if (opts.hasNext())
-			{
-				dataset::HTTP::getAliasDatabase(opts.next(), cfg);
-			} else {
-				MatcherAliasDatabase::serialise(cfg);
-			}
-			
-			// Open the output file
-			runtime::Output out(*opts.outfile);
-
-			// Output the merged configuration
-			cfg.output(out.stream(), out.name());
-
-			return 0;
-		}
-
-		if (opts.config->boolValue())
-		{
-			ConfigFile cfg;
-			while (opts.hasNext())
-			{
-				ReadonlyDataset::readConfig(opts.next(), cfg);
-			}
-			
-			// Open the output file
-			runtime::Output out(*opts.outfile);
-
-			// Output the merged configuration
-			cfg.output(out.stream(), out.name());
-
-			return 0;
-		}
-
-#ifdef HAVE_GEOS
-		if (opts.bbox->boolValue())
-		{
-			// Open the input file
-			runtime::Input in(opts);
-
-			// Read everything into a single summary
-			Summary summary;
-			addToSummary(in, summary);
-
-			// Get the bounding box
-			ARKI_GEOS_GEOMETRYFACTORY gf;
-			std::auto_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
-
-			// Open the output file
-			runtime::Output out(*opts.outfile);
-
-			// Print it out
-			if (hull.get())
-				out.stream() << hull->toString() << endl;
-			else
-				out.stream() << "no bounding box could be computed." << endl;
-
-			return 0;
-		}
-#endif
-
-		// Open the input file
-		runtime::Input in(opts);
-
-		// Open the output channel
-		runtime::Output out(*opts.outfile);
-
-		if (opts.reverse_data->boolValue())
-		{
-			Metadata md;
-			while (md.readYaml(in.stream(), in.name()))
-				md.write(out.stream(), out.name());
-		}
-		else if (opts.reverse_summary->boolValue())
-		{
-			Summary summary;
-			while (summary.readYaml(in.stream(), in.name()))
-				summary.write(out.stream(), out.name());
-		}
-		else
-		{
-			Formatter* formatter = 0;
-			if (opts.annotate->boolValue())
-				formatter = Formatter::create();
-			YamlWriter writer(out, formatter);
-
-			Metadata md;
-			Summary summary;
-
-			wibble::sys::Buffer buf;
-			string signature;
-			unsigned version;
-
-			while (types::readBundle(in.stream(), in.name(), buf, signature, version))
-			{
-				if (signature == "MD" || signature == "!D")
-				{
-					md.read(buf, version, in.name());
-					if (md.source->style() == types::Source::INLINE)
-						md.readInlineData(in.stream(), in.name());
-					writer(md);
-				}
-				else if (signature == "SU")
-				{
-					summary.read(buf, version, in.name());
-					summary.writeYaml(out.stream(), formatter);
-					out.stream() << endl;
-				}
-				else if (signature == "MG")
-				{
-					Metadata::readGroup(buf, version, in.name(), writer);
-				}
-			}
-// Uncomment as a quick hack to check memory usage at this point:
-//system(str::fmtf("ps u %d >&2", getpid()).c_str());
-//types::debug_intern_stats();
-
-		}
-#endif
 		return 0;
 	} catch (wibble::exception::BadOption& e) {
 		cerr << e.desc() << endl;
