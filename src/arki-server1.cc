@@ -194,7 +194,14 @@ struct HTTP : public utils::net::TCPServer
 			const std::string& peer_hostaddr,
 			const std::string& peer_port)
 	{
-		cout << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
+		cerr << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
+
+		if (children.size() > 256)
+		{
+			cerr << "Maximum number of connections reached" << endl;
+			close(sock);
+			return;
+		}
 
 		// Set some timeout on this socket to avoid getting stuck if
 		// clients are stuck
