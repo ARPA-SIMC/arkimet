@@ -22,6 +22,8 @@
 
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
+#include <wibble/regexp.h>
+#include <wibble/string.h>
 #include <arki/configfile.h>
 #if 0
 #include <arki/metadata.h>
@@ -34,15 +36,21 @@
 #endif
 #include <arki/runtime.h>
 
+#include <string>
+#include <vector>
+#include <map>
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include <cctype>
+#include <cerrno>
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "config.h"
 
@@ -109,14 +117,26 @@ struct Server
 	std::string port;
 	// Server socket
 	int sock;
+	// Signals used to stop the server's accept loop
+	std::vector<int> stop_signals;
 
-	Server() : sock(-1)
+	// Saved signal handlers before accept
+	struct sigaction *old_signal_actions;
+	// Signal handlers in use during accept
+	struct sigaction *signal_actions;
+
+	Server() : sock(-1), old_signal_actions(0), signal_actions(0)
 	{
+		// By default, stop on sigterm and sigint
+		stop_signals.push_back(SIGTERM);
+		stop_signals.push_back(SIGINT);
 	}
 
 	virtual ~Server()
 	{
 		if (sock >= 0) close(sock);
+		if (old_signal_actions) delete[] old_signal_actions;
+		if (signal_actions) delete[] signal_actions;
 	}
 
 	// Bind to a given port (and optionally interface hostname)
@@ -141,6 +161,11 @@ struct Server
 			int sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 			if (sfd == -1)
 				continue;
+
+			// Set SO_REUSEADDR 
+			int flag = 1;
+			if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(int)) < 0)
+				throw wibble::exception::System("setting SO_REUSEADDR on socket");
 
 			if (::bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
 			{
@@ -176,7 +201,7 @@ struct Server
 					str::fmtf("binding to %s:%s", host, port),
 					"could not bind to any of the resolved addresses");
 
-		// Set close-on-exec on socket
+		// Set close-on-exec on master socket
 		if (fcntl(sock, F_SETFD, FD_CLOEXEC) < 0)
 			throw wibble::exception::System("setting FD_CLOEXEC on server socket");
 	}
@@ -188,16 +213,64 @@ struct Server
 			throw wibble::exception::System("listening on port " + port);
 	}
 
-	// Loop forever accepting connections on the socket
+	static void noop_signal_handler(int sig) {}
+
+	// Initialize signal handling structures
+	void signal_setup()
+	{
+		if (old_signal_actions) delete[] old_signal_actions;
+		if (signal_actions) delete[] signal_actions;
+		old_signal_actions = new struct sigaction[stop_signals.size()];
+		signal_actions = new struct sigaction[stop_signals.size()];
+		for (size_t i = 0; i < stop_signals.size(); ++i)
+		{
+			signal_actions[i].sa_handler = noop_signal_handler;
+			sigemptyset(&(signal_actions[i].sa_mask));
+			signal_actions[i].sa_flags = 0;
+		}
+	}
+
+	void signal_install()
+	{
+		for (size_t i = 0; i < stop_signals.size(); ++i)
+			if (sigaction(stop_signals[i], &signal_actions[i], &old_signal_actions[i]) < 0)
+				throw wibble::exception::System("installing handler for signal " + str::fmt(stop_signals[i]));
+	}
+
+	void signal_uninstall()
+	{
+		for (size_t i = 0; i < stop_signals.size(); ++i)
+			if (sigaction(stop_signals[i], &old_signal_actions[i], NULL) < 0)
+				throw wibble::exception::System("restoring handler for signal " + str::fmt(stop_signals[i]));
+	}
+
+	// Loop accepting connections on the socket, until interrupted by a
+	// signal in stop_signals
 	void accept_loop()
 	{
+		struct SignalInstaller {
+			Server& s;
+			SignalInstaller(Server& s) : s(s) { s.signal_install(); }
+			~SignalInstaller() { s.signal_uninstall(); }
+		};
+
+		signal_setup();
+
 		while (true)
 		{
 			struct sockaddr_storage peer_addr;
 			socklen_t peer_addr_len = sizeof(struct sockaddr_storage);
-			int fd = accept(sock, (sockaddr*)&peer_addr, (socklen_t*)&peer_addr_len);
-			if (fd == -1)
-				throw wibble::exception::System("listening on " + host + ":" + port);
+			int fd = -1;
+			{
+				SignalInstaller sigs(*this);
+				fd = accept(sock, (sockaddr*)&peer_addr, (socklen_t*)&peer_addr_len);
+				if (fd == -1)
+				{
+					if (errno == EINTR)
+						return;
+					throw wibble::exception::System("listening on " + host + ":" + port);
+				}
+			}
 
 			// Resolve the peer
 			char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
@@ -218,11 +291,212 @@ struct Server
 	virtual void handle_client(int sock, const std::string& peer_host, const std::string& peer_port) = 0;
 };
 
-struct Echo : public Server
+struct HTTPRequest
+{
+	string method;
+	string url;
+	string version;
+	map<string, string> headers;
+	Splitter space_splitter;
+	ERegexp header_splitter;
+
+	HTTPRequest()
+		: space_splitter("[[:blank:]]+", REG_EXTENDED),
+		  header_splitter("^([^:[:blank:]]+)[[:blank:]]*:[[:blank:]]*(.+)", 3)
+	{
+	}
+
+	bool read_request(int sock)
+	{
+		// Set all structures to default values
+		method = "GET";
+		url = "/";
+		version = "HTTP/1.0";
+		headers.clear();
+
+		// Read request line
+		if (!read_method(sock))
+			return false;
+
+		// Read request headers
+		read_headers(sock);
+
+		// Message body is not read here
+		return true;
+	}
+
+	/**
+	 * Read a line from the file descriptor.
+	 *
+	 * The line is terminated by <CR><LF>. The line terminator is not
+	 * included in the resulting string.
+	 *
+	 * @returns true if a line was read, false if EOF
+	 *
+	 * Note that if EOF is returned, res can still be filled with a partial
+	 * line. This may happen if the connection ends after some data has
+	 * been sent but before <CR><LF> is sent.
+	 */
+	bool read_line(int sock, string& res)
+	{
+		bool has_cr = false;
+		res.clear();
+		while (true)
+		{
+			char c;
+			ssize_t count = read(sock, &c, 1);
+			if (count == 0) return false;
+			switch (c)
+			{
+				case '\r':
+					if (has_cr)
+						res.append(1, '\r');
+					has_cr = true;
+					break;
+				case '\n':
+					if (has_cr)
+						return true;
+					else
+						res.append(1, '\n');
+					break;
+				default:
+					res.append(1, c);
+					break;
+			}
+		}
+	}
+
+	// Read HTTP method and its following empty line
+	bool read_method(int sock)
+	{
+		// Request line, such as GET /images/logo.png HTTP/1.1, which
+		// requests a resource called /images/logo.png from server
+		string cmdline;
+		if (!read_line(sock, cmdline)) return false;
+
+		// If we cannot fill some of method, url or version we just let
+		// them be, as they have previously been filled with defaults
+		// by read_request()
+		Splitter::const_iterator i = space_splitter.begin(cmdline);
+		if (i != space_splitter.end())
+		{
+			method = str::toupper(*i);
+			++i;
+			if (i != space_splitter.end())
+			{
+				url = *i;
+				++i;
+				if (i != space_splitter.end())
+					version = *i;
+			}
+		}
+
+		// An empty line
+		return read_line(sock, cmdline);
+	}
+
+	/**
+	 * Read HTTP headers
+	 *
+	 * @return true if there still data to read and headers are terminated
+	 * by an empty line, false if headers are terminated by EOF
+	 */
+	bool read_headers(int sock)
+	{
+		string line;
+		map<string, string>::iterator last_inserted = headers.end();
+		while (read_line(sock, line))
+		{
+			// Headers are terminated by an empty line
+			if (line.empty())
+				return true;
+
+			if (isblank(line[0]))
+			{
+				// Append continuation of previous header body
+				if (last_inserted != headers.end())
+				{
+					last_inserted->second.append(" ");
+					last_inserted->second.append(str::trim(line));
+				}
+			} else {
+				if (header_splitter.match(line))
+				{
+					// rfc2616, 4.2 Message Headers:
+					// Multiple message-header fields with
+					// the same field-name MAY be present
+					// in a message if and only if the
+					// entire field-value for that header
+					// field is defined as a
+					// comma-separated list [i.e.,
+					// #(values)].  It MUST be possible to
+					// combine the multiple header fields
+					// into one "field-name: field-value"
+					// pair, without changing the semantics
+					// of the message, by appending each
+					// subsequent field-value to the first,
+					// each separated by a comma.
+					string key = str::tolower(header_splitter[1]);
+					string val = str::trim(header_splitter[2]);
+					map<string, string>::iterator old = headers.find(key);
+					if (old == headers.end())
+					{
+						// Insert new
+						pair< map<string, string>::iterator, bool > res =
+							headers.insert(make_pair(key, val));
+						last_inserted = res.first;
+					} else {
+						// Append comma-separated
+						old->second.append(",");
+						old->second.append(val);
+						last_inserted = old;
+					}
+				} else
+					last_inserted = headers.end();
+			}
+		}
+		return false;
+	}
+};
+
+struct HTTP : public Server
 {
 	virtual void handle_client(int sock, const std::string& peer_host, const std::string& peer_port)
 	{
 		cout << "Connection from " << peer_host << ":" << peer_port << endl;
+
+		HTTPRequest req;
+		while (req.read_request(sock))
+		{
+			// Request line and headers have been read
+			// sock now points to the optional message body
+
+			// Dump request
+			cout << "Method: " << req.method << endl;
+			cout << "URL: " << req.url << endl;
+			cout << "Version: " << req.version << endl;
+			cout << "Headers:" << endl;
+			for (map<string, string>::const_iterator i = req.headers.begin();
+					i != req.headers.end(); ++i)
+				cout << " " << i->first <<  ": " << i->second << endl;
+
+			/*
+			local res
+			repeat
+				req.params = nil
+				parse_url (req)
+				res = make_response (req)
+			until handle_request (req, res) ~= "reparse"
+			send_response (req, res)
+
+			req.socket:flush ()
+			if not res.keep_alive then
+				break
+			end
+			*/
+			break;
+		}
+
 		close(sock);
 	}
 };
@@ -236,10 +510,12 @@ int main(int argc, const char* argv[])
 
 		runtime::init();
 
-		Echo echo;
-		echo.bind("12345");
-		echo.listen();
-		echo.accept_loop();
+		HTTP http;
+		http.bind("12345");
+		cout << "Listening on " << http.host << ":" << http.port << endl;
+		http.listen();
+		http.accept_loop();
+		cout << "Done." << endl;
 
 #if 0
 		// Validate command line options
