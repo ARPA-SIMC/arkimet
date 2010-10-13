@@ -44,8 +44,6 @@ struct Server
 	int socktype;
 	// Server socket
 	int sock;
-	// Signals used to stop the server's accept loop
-	std::vector<int> stop_signals;
 
 	// Saved signal handlers before accept
 	struct sigaction *old_signal_actions;
@@ -64,16 +62,24 @@ struct Server
 
 struct TCPServer : public Server
 {
+	// Signals used to stop the server's accept loop
+	std::vector<int> stop_signals;
+
+    TCPServer();
 	virtual ~TCPServer();
 
-	// Loop accepting connections on the socket, until interrupted by a
-	// signal in stop_signals
-	void accept_loop();
+	/** Loop accepting connections on the socket, until interrupted by a
+	 * signal in stop_signals
+     *
+     * @returns the signal number that stopped the loop
+     */
+	int accept_loop();
 
 	virtual void handle_client(int sock, const std::string& peer_hostname, const std::string& peer_hostaddr, const std::string& peer_port) = 0;
 
 protected:
-	static void noop_signal_handler(int sig);
+	static void signal_handler(int sig);
+    static int last_signal;
 
 	// Initialize signal handling structures
 	void signal_setup();

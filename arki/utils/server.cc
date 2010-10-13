@@ -45,9 +45,6 @@ namespace net {
 
 Server::Server() : socktype(SOCK_STREAM), sock(-1), old_signal_actions(0), signal_actions(0)
 {
-    // By default, stop on sigterm and sigint
-    stop_signals.push_back(SIGTERM);
-    stop_signals.push_back(SIGINT);
 }
 
 Server::~Server()
@@ -131,9 +128,16 @@ void Server::listen(int backlog)
 }
 
 
+TCPServer::TCPServer()
+{
+    // By default, stop on sigterm and sigint
+    stop_signals.push_back(SIGTERM);
+    stop_signals.push_back(SIGINT);
+}
 TCPServer::~TCPServer() {}
 
-void TCPServer::noop_signal_handler(int sig) {}
+void TCPServer::signal_handler(int sig) { last_signal = sig; }
+int TCPServer::last_signal = -1;
 
 void TCPServer::signal_setup()
 {
@@ -143,7 +147,7 @@ void TCPServer::signal_setup()
     signal_actions = new struct sigaction[stop_signals.size()];
     for (size_t i = 0; i < stop_signals.size(); ++i)
     {
-        signal_actions[i].sa_handler = noop_signal_handler;
+        signal_actions[i].sa_handler = signal_handler;
         sigemptyset(&(signal_actions[i].sa_mask));
         signal_actions[i].sa_flags = 0;
     }
@@ -154,6 +158,7 @@ void TCPServer::signal_install()
     for (size_t i = 0; i < stop_signals.size(); ++i)
         if (sigaction(stop_signals[i], &signal_actions[i], &old_signal_actions[i]) < 0)
             throw wibble::exception::System("installing handler for signal " + str::fmt(stop_signals[i]));
+    TCPServer::last_signal = -1;
 }
 
 void TCPServer::signal_uninstall()
@@ -165,7 +170,7 @@ void TCPServer::signal_uninstall()
 
 // Loop accepting connections on the socket, until interrupted by a
 // signal in stop_signals
-void TCPServer::accept_loop()
+int TCPServer::accept_loop()
 {
     struct SignalInstaller {
         TCPServer& s;
@@ -186,7 +191,7 @@ void TCPServer::accept_loop()
             if (fd == -1)
             {
                 if (errno == EINTR)
-                    return;
+                    return TCPServer::last_signal;
                 throw wibble::exception::System("listening on " + host + ":" + port);
             }
         }
