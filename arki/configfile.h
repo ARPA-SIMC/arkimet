@@ -194,7 +194,7 @@ public:
 	/**
 	 * Output this configuration to the given output stream
 	 */
-	void output(std::ostream& out, const std::string& fileName, const std::string& secName = std::string());
+	void output(std::ostream& out, const std::string& fileName, const std::string& secName = std::string()) const;
 
 	/**
 	 * Convenient function to parse a boolean

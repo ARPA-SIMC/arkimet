@@ -230,7 +230,7 @@ void ConfigFile::deleteSection(const std::string& key)
 	}
 }
 
-void ConfigFile::output(std::ostream& out, const std::string& fileName, const std::string& secName)
+void ConfigFile::output(std::ostream& out, const std::string& fileName, const std::string& secName) const
 {
 	// First, the values
 	for (const_iterator i = begin(); i != end(); ++i)

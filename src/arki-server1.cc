@@ -27,12 +27,12 @@
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/fs.h>
 #include <arki/configfile.h>
+#include <arki/dataset.h>
+#include <arki/summary.h>
+#include <arki/matcher.h>
 #if 0
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
-#include <arki/matcher.h>
-#include <arki/dataset/http.h>
-#include <arki/summary.h>
 #include <arki/formatter.h>
 #include <arki/utils/geosdef.h>
 #endif
@@ -106,6 +106,7 @@ struct Options : public StandardParserWithManpage
 struct Request : public utils::http::Request
 {
 	ConfigFile arki_conf;
+	ConfigFile arki_conf_remote;
 };
 
 /// Base interface for GET or POST parameters
@@ -165,6 +166,14 @@ struct Params : public std::map<std::string, Param*>
 	{
 		for (iterator i = begin(); i != end(); ++i)
 			delete i->second;
+	}
+
+	template<typename TYPE>
+	TYPE* add(const std::string& name)
+	{
+		TYPE* res = new TYPE;
+		add(name, res);
+		return res;
 	}
 
 	void add(const std::string& name, Param* param)
@@ -264,6 +273,38 @@ struct Params : public std::map<std::string, Param*>
 		}
 		else
 			throw wibble::exception::Consistency("unsupported Content-Type: " + i->second);
+	}
+};
+
+struct error404
+{
+	std::string msg;
+
+	error404() {}
+	error404(const std::string& msg) : msg(msg) {}
+
+	void send(Request& req)
+	{
+		stringstream body;
+		body << "<html>" << endl;
+		body << "<head>" << endl;
+		body << "  <title>Not found</title>" << endl;
+		body << "</head>" << endl;
+		body << "<body>" << endl;
+		if (msg.empty())
+			body << "<p>Resource " << req.script_name << " not found.</p>" << endl;
+		else
+			body << "<p>" + msg + "</p>" << endl;
+		body << "</body>" << endl;
+		body << "</html>" << endl;
+
+		req.send_status_line(404, "Not found");
+		req.send_date_header();
+		req.send_server_header();
+		req.send("Content-Type: text/html; charset=utf-8\r\n");
+		req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
+		req.send("\r\n");
+		req.send(body.str());
 	}
 };
 
@@ -396,7 +437,7 @@ struct ConfigHandler : public LocalHandler
 		// if "json" in args:
 		//	return server.configdict
 		stringstream out;
-		req.arki_conf.output(out, "(memory)");
+		req.arki_conf_remote.output(out, "(memory)");
 		req.send_result(out.str(), "text/plain");
 	}
 };
@@ -422,8 +463,7 @@ struct QexpandHandler : public LocalHandler
 	virtual void operator()(Request& req)
 	{
 		Params params;
-		ParamSingle* query;
-		params.add("query", query = new ParamSingle);
+		ParamSingle* query = params.add<ParamSingle>("query");
 		params.parse_get_or_post(req);
 		Matcher m = Matcher::parse(*query);
 		string out = m.toStringExpanded();
@@ -431,26 +471,178 @@ struct QexpandHandler : public LocalHandler
 	}
 };
 
-void do_404(Request& req)
-{
-	stringstream body;
-	body << "<html>" << endl;
-	body << "<head>" << endl;
-	body << "  <title>Not found</title>" << endl;
-	body << "</head>" << endl;
-	body << "<body>" << endl;
-	body << "<p>Resource " << req.script_name << " not found.</p>" << endl;
-	body << "</body>" << endl;
-	body << "</html>" << endl;
+#if 0
+// Download the summary of a dataset
+@route("/summary")
+@route("/summary/")
+@post("/summary")
+@post("/summary/")
+def summary():
+    args = Args()
+    if not "qmacro" in args:
+        raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
+    return ArkiQuerySummary(owndir = True, fields=args).stream()
+#endif
 
-	req.send_status_line(404, "Not found");
-	req.send_date_header();
-	req.send_server_header();
-	req.send("Content-Type: text/html; charset=utf-8\r\n");
-	req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
-	req.send("\r\n");
-	req.send(body.str());
-}
+// Dispatch dataset-specific actions
+struct DatasetHandler : public LocalHandler
+{
+	wibble::ERegexp pop_first_path;
+
+	DatasetHandler()
+		: pop_first_path("^/*([^/]+)(/+(.+))?", 4)
+	{
+	}
+
+	const ConfigFile& get_config_remote(Request& req, const std::string& dsname)
+	{
+		const ConfigFile* cfg = req.arki_conf_remote.section(dsname);
+		if (cfg == NULL)
+			throw error404();
+		return *cfg;
+	}
+
+	const ConfigFile& get_config(Request& req, const std::string& dsname)
+	{
+		const ConfigFile* cfg = req.arki_conf.section(dsname);
+		if (cfg == NULL)
+			throw error404();
+		return *cfg;
+	}
+
+	auto_ptr<ReadonlyDataset> get_dataset(Request& req, const std::string& dsname)
+	{
+		return get_dataset(get_config(req, dsname));
+	}
+
+	auto_ptr<ReadonlyDataset> get_dataset(const ConfigFile& cfg)
+	{
+		return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(cfg));
+	}
+
+	// Show the summary of a dataset
+	void do_index(Request& req, const std::string& dsname)
+	{
+		auto_ptr<ReadonlyDataset> ds = get_dataset(req, dsname);
+
+		// Query the summary
+		Summary sum;
+		ds->querySummary(Matcher(), sum);
+
+		// Create the output page
+		stringstream res;
+		res << "<html>" << endl;
+		res << "<head><title>Dataset " << dsname << "</title></head>" << endl;
+		res << "<body>" << endl;
+		res << "<ul>" << endl;
+		res << "<li><a href='/'>All datasets</a></li>" << endl;
+		res << "<li><a href='/dataset/" << dsname << "/queryform'>Query</a></li>" << endl;
+		res << "<li><a href='/dataset/" << dsname << "/summary'>Download summary</a></li>" << endl;
+		res << "</ul>" << endl;
+		res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
+		res << "<pre>" << endl;
+		sum.writeYaml(res);
+		res << "</pre>" << endl;
+		res << "</body>" << endl;
+		res << "</html>" << endl;
+
+		req.send_result(res.str());
+	}
+
+	// Show a form to query the dataset
+	void do_queryform(Request& req, const std::string& dsname)
+	{
+		stringstream res;
+		res << "<html>" << endl;
+		res << "<head><title>Query dataset " << dsname << "</title></head>" << endl;
+		res << "<body>" << endl;
+		res << "  Please type or paste your query and press submit:" << endl;
+		res << "  <form action='/dataset/" << dsname << "/query' method='push'>" << endl;
+		res << "    <textarea name='query' cols='80' rows='15'>" << endl;
+		res << "    </textarea>" << endl;
+		res << "    <br/>" << endl;
+		res << "    <select name='style'>" << endl;
+		res << "      <option value='data'>Data</option>" << endl;
+		res << "      <option value='yaml'>Human-readable metadata</option>" << endl;
+		res << "      <option value='inline'>Binary metadata and data</option>" << endl;
+		res << "      <option value='md'>Binary metadata</option>" << endl;
+		res << "    </select>" << endl;
+		res << "    <br/>" << endl;
+		res << "    <input type='submit'>" << endl;
+		res << "  </form>" << endl;
+		res << "</body>" << endl;
+		res << "</html>" << endl;
+		req.send_result(res.str());
+	}
+
+	// Return the dataset configuration
+	void do_config(Request& req, const std::string& dsname)
+	{
+		// args = Args()
+		// if "json" in args:
+		//    return c
+
+		stringstream res;
+		get_config_remote(req, dsname).output(res, "(memory)");
+		req.send_result(res.str(), "text/plain");
+	}
+
+	virtual void operator()(Request& req)
+	{
+		string dsname;
+		if (!pop_first_path.match(req.path_info))
+			throw error404();
+
+		dsname = pop_first_path[1];
+		string rest = pop_first_path[3];
+
+		string action;
+		if (!pop_first_path.match(rest))
+			action = "index";
+		else
+			action = pop_first_path[1];
+
+		if (action == "index")
+			do_index(req, dsname);
+		else if (action == "queryform")
+			do_queryform(req, dsname);
+		else if (action == "config")
+			do_config(req, dsname);
+		else
+			throw wibble::exception::Consistency("Unknown dataset action: \"" + action + "\"");
+	}
+};
+
+/*
+""" % name
+
+
+@route("/dataset/:name/summary")
+@route("/dataset/:name/summary/")
+@post("/dataset/:name/summary")
+@post("/dataset/:name/summary/")
+def dataset_summary(name):
+    """
+    Download the summary of a dataset
+    """
+    conf = dsconfig.get(name, None)
+    if conf is None:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+    return ArkiQuerySummary(dsconf=conf, fields=Args()).stream()
+
+@route("/dataset/:name/query")
+@route("/dataset/:name/query/")
+@post("/dataset/:name/query")
+@post("/dataset/:name/query/")
+def dataset_query(name):
+    """
+    Download the summary of a dataset
+    """
+    conf = dsconfig.get(name, None)
+    if conf is None:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+    return ArkiQuery(owndir = True, dsconf=conf, fields=Args()).stream()
+*/
 
 struct ChildServer : public sys::ChildProcess
 {
@@ -504,9 +696,14 @@ struct ChildServer : public sys::ChildProcess
 					}
 				}
 
-				if (!local_handlers.try_do(req))
-					if (!script_handlers.try_do(req))
-						do_404(req);
+				// Run the handler for this request
+				try {
+					if (!local_handlers.try_do(req))
+						if (!script_handlers.try_do(req))
+							throw error404();
+				} catch (error404& e) {
+					e.send(req);
+				}
 
 				// Here there can be some keep-alive bit
 				break;
@@ -559,7 +756,21 @@ struct HTTP : public utils::net::TCPServer
 			throw wibble::exception::System("setting SO_SNDTIMEO on socket");
 
 		Request req;
+
+		// Parse local config file
 		runtime::parseConfigFile(req.arki_conf, arki_config);
+
+		// Create an amended configuration with links to remote dataset
+		req.arki_conf_remote.merge(req.arki_conf);
+		for (ConfigFile::section_iterator i = req.arki_conf_remote.sectionBegin();
+				i != req.arki_conf_remote.sectionEnd(); ++i)
+		{
+			i->second->setValue("path", server_name + "/dataset/" + i->first);
+			i->second->setValue("type", "remote");
+			i->second->setValue("server", server_name);
+		}
+
+		// Fill in the rest of the request parameters
 		req.sock = sock;
 		req.peer_hostname = peer_hostname;
 		req.peer_hostaddr = peer_hostaddr;
@@ -631,6 +842,7 @@ int main(int argc, const char* argv[])
 		local_handlers.add("config", new ConfigHandler);
 		local_handlers.add("aliases", new AliasesHandler);
 		local_handlers.add("qexpand", new QexpandHandler);
+		local_handlers.add("dataset", new DatasetHandler);
 
 		/*
 		runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
