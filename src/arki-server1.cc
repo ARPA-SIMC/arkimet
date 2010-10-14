@@ -686,6 +686,33 @@ struct DatasetHandler : public LocalHandler
 		req.send_result(res.str(), "text/plain");
 	}
 
+	// Generate a dataset summary
+	void do_summary(Request& req, const std::string& dsname)
+	{
+		Params params;
+		ParamSingle* style = params.add<ParamSingle>("style");
+		ParamSingle* query = params.add<ParamSingle>("query");
+		params.parse_get_or_post(req);
+
+		auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
+
+		// Query the summary
+		Summary sum;
+		ds->querySummary(Matcher::parse(*query), sum);
+
+		if (*style == "yaml")
+		{
+			stringstream res;
+			sum.writeYaml(res);
+			req.send_result(res.str(), "text/x-yaml", dsname + "-summary.yaml");
+		}
+		else
+		{
+			string res = sum.encode(true);
+			req.send_result(res, "application/octet-stream", dsname + "-summary.bin");
+		}
+	}
+
 	virtual void operator()(Request& req)
 	{
 		string dsname;
@@ -707,25 +734,14 @@ struct DatasetHandler : public LocalHandler
 			do_queryform(req, dsname);
 		else if (action == "config")
 			do_config(req, dsname);
+		else if (action == "summary")
+			do_summary(req, dsname);
 		else
 			throw wibble::exception::Consistency("Unknown dataset action: \"" + action + "\"");
 	}
 };
 
 /*
-@route("/dataset/:name/summary")
-@route("/dataset/:name/summary/")
-@post("/dataset/:name/summary")
-@post("/dataset/:name/summary/")
-def dataset_summary(name):
-    """
-    Download the summary of a dataset
-    """
-    conf = dsconfig.get(name, None)
-    if conf is None:
-        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
-    return ArkiQuerySummary(dsconf=conf, fields=Args()).stream()
-
 @route("/dataset/:name/query")
 @route("/dataset/:name/query/")
 @post("/dataset/:name/query")

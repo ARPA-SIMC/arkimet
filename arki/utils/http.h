@@ -114,7 +114,7 @@ struct Request
     void send_date_header();
 
     // Send a string as result
-    void send_result(const std::string& content, const std::string& content_type="text/html; charset=utf-8");
+    void send_result(const std::string& content, const std::string& content_type="text/html; charset=utf-8", const std::string& filename=std::string());
 
     // Discard all input from the socket
     void discard_input();
