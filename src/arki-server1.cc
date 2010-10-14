@@ -103,11 +103,75 @@ struct Options : public StandardParserWithManpage
 }
 }
 
+struct Request;
+
+struct error404
+{
+	std::string msg;
+
+	error404() {}
+	error404(const std::string& msg) : msg(msg) {}
+
+	void send(Request& req);
+};
+
+
 struct Request : public utils::http::Request
 {
 	ConfigFile arki_conf;
 	ConfigFile arki_conf_remote;
+
+	const ConfigFile& get_config_remote(const std::string& dsname)
+	{
+		const ConfigFile* cfg = arki_conf_remote.section(dsname);
+		if (cfg == NULL)
+			throw error404();
+		return *cfg;
+	}
+
+	const ConfigFile& get_config(const std::string& dsname)
+	{
+		const ConfigFile* cfg = arki_conf.section(dsname);
+		if (cfg == NULL)
+			throw error404();
+		return *cfg;
+	}
+
+	auto_ptr<ReadonlyDataset> get_dataset(const std::string& dsname)
+	{
+		return get_dataset(get_config(dsname));
+	}
+
+	auto_ptr<ReadonlyDataset> get_dataset(const ConfigFile& cfg)
+	{
+		return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(cfg));
+	}
+
 };
+
+void error404::send(Request& req)
+{
+	stringstream body;
+	body << "<html>" << endl;
+	body << "<head>" << endl;
+	body << "  <title>Not found</title>" << endl;
+	body << "</head>" << endl;
+	body << "<body>" << endl;
+	if (msg.empty())
+		body << "<p>Resource " << req.script_name << " not found.</p>" << endl;
+	else
+		body << "<p>" + msg + "</p>" << endl;
+	body << "</body>" << endl;
+	body << "</html>" << endl;
+
+	req.send_status_line(404, "Not found");
+	req.send_date_header();
+	req.send_server_header();
+	req.send("Content-Type: text/html; charset=utf-8\r\n");
+	req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
+	req.send("\r\n");
+	req.send(body.str());
+}
 
 /// Base interface for GET or POST parameters
 struct Param
@@ -276,38 +340,6 @@ struct Params : public std::map<std::string, Param*>
 	}
 };
 
-struct error404
-{
-	std::string msg;
-
-	error404() {}
-	error404(const std::string& msg) : msg(msg) {}
-
-	void send(Request& req)
-	{
-		stringstream body;
-		body << "<html>" << endl;
-		body << "<head>" << endl;
-		body << "  <title>Not found</title>" << endl;
-		body << "</head>" << endl;
-		body << "<body>" << endl;
-		if (msg.empty())
-			body << "<p>Resource " << req.script_name << " not found.</p>" << endl;
-		else
-			body << "<p>" + msg + "</p>" << endl;
-		body << "</body>" << endl;
-		body << "</html>" << endl;
-
-		req.send_status_line(404, "Not found");
-		req.send_date_header();
-		req.send_server_header();
-		req.send("Content-Type: text/html; charset=utf-8\r\n");
-		req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
-		req.send("\r\n");
-		req.send(body.str());
-	}
-};
-
 // Interface for local request handlers
 struct LocalHandler
 {
@@ -471,7 +503,100 @@ struct QexpandHandler : public LocalHandler
 	}
 };
 
-#if 0
+/*
+class ArkiQueryBase(Script):
+    def __init__(self, dsconf=None, **kw):
+        super(ArkiQueryBase, self).__init__(**kw)
+        self.dsconf = dsconf
+        self.args = [ARKI_QUERY]
+        if self.dsconf:
+            self.fname = self.dsconf["name"]
+        self.do_qmacro = "qmacro" in self.fields
+        if self.do_qmacro:
+            self.args.append("--qmacro=" + self.fields["qmacro"].strip())
+            self.fname = self.fields["qmacro"]
+            qfname = os.path.join(self.subdir, "query")
+            fd = open(qfname, "w")
+            fd.write(self.fields.get("query", "").strip())
+            fd.flush()
+            fd.close()
+            self.args.append("--file=" + qfname)
+            if self.dsconf is None:
+                self.args.append("--config=" + server.configfile)
+            else:
+                self.args.append("--config=" + self.dsconf["path"])
+
+class ArkiQuery(ArkiQueryBase):
+    def __init__(self, **kw):
+        super(ArkiQuery, self).__init__(**kw)
+        style = self.fields.get("style", "metadata").strip()
+        if style == "metadata":
+            pass
+        elif style == "yaml":
+            self.args.append("--yaml")
+            self.content_type = "text/x-yaml"
+            self.ext = "yaml"
+        elif style == "inline":
+            self.args.append("--inline")
+            self.ext = "bin"
+        elif style == "data":
+            self.args.append("--data")
+            self.ext = "bin"
+        elif style == "postprocess":
+            self.args.append("--postproc=" + self.fields.get("command", ""))
+            for f in self.fields.getall("postprocfile"):
+                if not self.subdir: raise RuntimeError, "posprocess data have been provided but arki-query is not run in a subdir"
+                # Store the uploaded file in the temporary directory
+                dest = os.path.join(self.subdir, os.path.basename(f.filename))
+                destfd = open(dest, "w")
+                shutil.copyfileobj(f.file, destfd)
+                destfd.close()
+                # Pass it to arki-query
+                self.args.append("--postproc-data=" + dest)
+            self.ext = "bin"
+        elif style == "rep_metadata":
+            self.args.append("--report=" + self.fields.get("command", ""))
+            self.content_type = "text/plain"
+            self.ext = "txt"
+        elif style == "rep_summary":
+            self.args.append("--summary")
+            self.args.append("--report=" + self.fields.get("command", ""))
+            self.content_type = "text/plain"
+            self.ext = "txt"
+        if "sort" in self.fields:
+            self.args.append("--sort=" + self.fields["sort"]);
+
+        if not self.do_qmacro:
+            self.args.append(self.fields.get("query", "").strip())
+            self.args.append(self.dsconf['path'])
+
+class ArkiQuerySummary(ArkiQueryBase):
+    def __init__(self, **kw):
+        super(ArkiQuerySummary, self).__init__(**kw)
+        self.args.append('--summary')
+        style = self.fields.get("style", "summary").strip()
+        if style == "yaml":
+            self.args.append("--yaml")
+            self.content_type = "text/x-yaml"
+            self.ext = "yaml"
+        if not self.do_qmacro:
+            self.args.append(self.fields.get("query", "").strip())
+            self.args.append(self.dsconf['path'])
+
+
+@route("/query")
+@route("/query/")
+@post("/query")
+@post("/query/")
+def query():
+    """
+    Download the results of a query
+    """
+    args = Args()
+    if not "qmacro" in args:
+        raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
+    return ArkiQuery(owndir = True, fields=args).stream()
+
 // Download the summary of a dataset
 @route("/summary")
 @route("/summary/")
@@ -482,7 +607,7 @@ def summary():
     if not "qmacro" in args:
         raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
     return ArkiQuerySummary(owndir = True, fields=args).stream()
-#endif
+*/
 
 // Dispatch dataset-specific actions
 struct DatasetHandler : public LocalHandler
@@ -494,36 +619,10 @@ struct DatasetHandler : public LocalHandler
 	{
 	}
 
-	const ConfigFile& get_config_remote(Request& req, const std::string& dsname)
-	{
-		const ConfigFile* cfg = req.arki_conf_remote.section(dsname);
-		if (cfg == NULL)
-			throw error404();
-		return *cfg;
-	}
-
-	const ConfigFile& get_config(Request& req, const std::string& dsname)
-	{
-		const ConfigFile* cfg = req.arki_conf.section(dsname);
-		if (cfg == NULL)
-			throw error404();
-		return *cfg;
-	}
-
-	auto_ptr<ReadonlyDataset> get_dataset(Request& req, const std::string& dsname)
-	{
-		return get_dataset(get_config(req, dsname));
-	}
-
-	auto_ptr<ReadonlyDataset> get_dataset(const ConfigFile& cfg)
-	{
-		return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(cfg));
-	}
-
 	// Show the summary of a dataset
 	void do_index(Request& req, const std::string& dsname)
 	{
-		auto_ptr<ReadonlyDataset> ds = get_dataset(req, dsname);
+		auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
 
 		// Query the summary
 		Summary sum;
@@ -583,7 +682,7 @@ struct DatasetHandler : public LocalHandler
 		//    return c
 
 		stringstream res;
-		get_config_remote(req, dsname).output(res, "(memory)");
+		req.get_config_remote(dsname).output(res, "(memory)");
 		req.send_result(res.str(), "text/plain");
 	}
 
@@ -614,9 +713,6 @@ struct DatasetHandler : public LocalHandler
 };
 
 /*
-""" % name
-
-
 @route("/dataset/:name/summary")
 @route("/dataset/:name/summary/")
 @post("/dataset/:name/summary")
