@@ -138,6 +138,10 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	testdispatch = dispatchOpts->add< VectorOption<String> >("testdispatch", 0, "testdispatch", "conffile",
 			"simulate dispatching the files right after scanning, using the given configuration file "
 			"or dataset directory (can be specified multiple times)");
+
+	postproc_data = inputOpts->add< VectorOption<ExistingFile> >("postproc-data", 0, "postproc-data", "file",
+		"when querying a remote server with postprocessing, upload a file"
+		" to be used by the postprocessor (can be given more than once)");
 }
 
 CommandLine::~CommandLine()
@@ -178,9 +182,6 @@ void CommandLine::addQueryOptions()
 		"run the given query macro instead of a plain query");
 	restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
-	postproc_data = inputOpts->add< VectorOption<ExistingFile> >("postproc-data", 0, "postproc-data", "file",
-		"when querying a remote server with postprocessing, upload a file"
-		" to be used by the postprocessor (can be given more than once)");
 }
 
 bool CommandLine::parse(int argc, const char* argv[])
@@ -195,102 +196,55 @@ bool CommandLine::parse(int argc, const char* argv[])
 
 	nag::init(verbose->isSet(), debug->isSet());
 
-	// Check conflicts among options
-#ifdef HAVE_LUA
-	if (report->isSet())
-	{
-		if (yaml->boolValue())
-			throw wibble::exception::BadOption("--dump/--yaml conflicts with --report");
-		if (annotate->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --report");
-		//if (summary->boolValue())
-		//	throw wibble::exception::BadOption("--summary conflicts with --report");
-		if (dataInline->boolValue())
-			throw wibble::exception::BadOption("--inline conflicts with --report");
-		if (postprocess->isSet())
-			throw wibble::exception::BadOption("--postprocess conflicts with --report");
-		if (sort->isSet())
-			throw wibble::exception::BadOption("--sort conflicts with --report");
-	}
-#endif
-	if (yaml->boolValue())
-	{
-		if (dataInline->boolValue())
-			throw wibble::exception::BadOption("--dump/--yaml conflicts with --inline");
-		if (dataOnly->boolValue() || postprocess->isSet())
-			throw wibble::exception::BadOption("--dump/--yaml conflicts with --data or --postprocess");
-		if (postprocess->isSet())
-			throw wibble::exception::BadOption("--dump/--yaml conflicts with --postprocess");
-	}
-	if (annotate->boolValue())
-	{
-		if (dataInline->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --inline");
-		if (dataOnly->boolValue() || postprocess->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --data or --postprocess");
-		if (postprocess->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --postprocess");
-	}
-	if (summary->boolValue())
-	{
-		if (dataInline->boolValue())
-			throw wibble::exception::BadOption("--summary conflicts with --inline");
-		if (dataOnly->boolValue() || postprocess->isSet())
-			throw wibble::exception::BadOption("--summary conflicts with --data or --postprocess");
-		if (postprocess->isSet())
-			throw wibble::exception::BadOption("--summary conflicts with --postprocess");
-		if (sort->isSet())
-			throw wibble::exception::BadOption("--summary conflicts with --sort");
-	}
-	if (dataInline->boolValue())
-	{
-		if (dataOnly->boolValue() || postprocess->isSet())
-			throw wibble::exception::BadOption("--inline conflicts with --data or --postprocess");
-		if (postprocess->isSet())
-			throw wibble::exception::BadOption("--inline conflicts with --postprocess");
-	}
-	if (postprocess->isSet())
-	{
-		if (dataOnly->boolValue())
-			throw wibble::exception::BadOption("--postprocess conflicts with --data");
-		if (targetfile->boolValue())
-			throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
-	}
+	if (postprocess->isSet() && targetfile->isSet())
+        throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
 	if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
 		throw wibble::exception::BadOption("--upload only makes sense with --postprocess");
 
-	if (summary_restrict->isSet() && !summary->isSet())
-		throw wibble::exception::BadOption("--summary-restrict only makes sense with --summary");
+	// Initialize the processor maker
+    pmaker.summary = summary->boolValue();
+    pmaker.yaml = yaml->boolValue();
+    pmaker.annotate = annotate->boolValue();
+    pmaker.data_only = dataOnly->boolValue();
+    pmaker.data_inline = dataInline->boolValue();
+    pmaker.postprocess = postprocess->stringValue();
+    pmaker.report = report->stringValue();
+    pmaker.summary_restrict = summary_restrict->stringValue();
+    pmaker.sort = sort->stringValue();
+
+    // Run here a consistency check on the processor maker configuration
+    std::string errors = pmaker.verify_option_consistency();
+    if (!errors.empty())
+        throw wibble::exception::BadOption(errors);
 	
 	return false;
 }
 
 struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
 {
-        Formatter* formatter;
+    Formatter* formatter;
 	Output& output;
 	Summary* summary;
 	sort::Compare* sorter;
 	dataset::DataQuery query;
 	string summary_restrict;
 
-	YamlProcessor(const CommandLine& opts)
-		: formatter(0), output(*opts.output), summary(0), sorter(0),
-		  query(opts.query, false)
+	YamlProcessor(ProcessorMaker& maker, Matcher& query, Output& out)
+		: formatter(0), output(out), summary(0), sorter(0),
+		  query(query, false)
 	{
-		if (opts.annotate->boolValue())
+		if (maker.annotate)
 			formatter = Formatter::create();
 
-		if (opts.summary->boolValue())
+		if (maker.summary)
 		{
 			summary = new Summary();
-			if (opts.summary_restrict->isSet())
-				summary_restrict = opts.summary_restrict->stringValue();
+            summary_restrict = maker.summary_restrict;
 		}
-		else if (opts.sort->boolValue())
+		else if (!maker.sort.empty())
 		{
-			sorter = sort::Compare::parse(opts.sort->stringValue()).release();
-			query.sorter = sorter;
+			sorter = sort::Compare::parse(maker.sort).release();
+			this->query.sorter = sorter;
 		}
 	}
 
@@ -338,25 +292,25 @@ struct BinaryProcessor : public DatasetProcessor
 	sort::Compare* sorter;
 	dataset::ByteQuery query;
 
-	BinaryProcessor(const CommandLine& opts)
-		: out(*opts.output), sorter(0)
+	BinaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
+		: out(out), sorter(0)
 	{
-		if (opts.postprocess->isSet())
+		if (!maker.postprocess.empty())
 		{
-			query.setPostprocess(opts.query, opts.postprocess->stringValue());
+			query.setPostprocess(q, maker.postprocess);
 #ifdef HAVE_LUA
-		} else if (opts.report->isSet()) {
-			if (opts.summary->boolValue())
-				query.setRepSummary(opts.query, opts.report->stringValue());
+		} else if (!maker.report.empty()) {
+			if (maker.summary)
+				query.setRepSummary(q, maker.report);
 			else
-				query.setRepMetadata(opts.query, opts.report->stringValue());
+				query.setRepMetadata(q, maker.report);
 #endif
 		} else
-			query.setData(opts.query);
+			query.setData(q);
 		
-		if (opts.sort->isSet())
+		if (!maker.sort.empty())
 		{
-			sorter = sort::Compare::parse(opts.sort->stringValue()).release();
+			sorter = sort::Compare::parse(maker.sort).release();
 			query.sorter = sorter;
 		}
 	}
@@ -381,23 +335,22 @@ struct DataProcessor : public DatasetProcessor, public metadata::Consumer
 	dataset::DataQuery query;
 	string summary_restrict;
 
-	DataProcessor(const CommandLine& opts)
-		: output(*opts.output), summary(0), sorter(0),
-		  query(opts.query, false)
+	DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
+		: output(out), summary(0), sorter(0),
+		  query(q, false)
 	{
-		if (opts.summary->boolValue())
+		if (maker.summary)
 		{
 			summary = new Summary();
-			if (opts.summary_restrict->isSet())
-				summary_restrict = opts.summary_restrict->stringValue();
+            summary_restrict = maker.summary_restrict;
 		}
 		else
 		{
-			query.withData = opts.dataInline->boolValue();
+			query.withData = maker.data_inline;
 
-			if (opts.sort->boolValue())
+			if (!maker.sort.empty())
 			{
-				sorter = sort::Compare::parse(opts.sort->stringValue()).release();
+				sorter = sort::Compare::parse(maker.sort).release();
 				query.sorter = sorter;
 			}
 		}
@@ -437,6 +390,110 @@ struct DataProcessor : public DatasetProcessor, public metadata::Consumer
 		}
 	}
 };
+
+struct TargetFileProcessor : public DatasetProcessor
+{
+    DatasetProcessor* next;
+    std::string pattern;
+    Output& output;
+
+    TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, Output& output)
+        : next(next), pattern(pattern), output(output)
+    {
+    }
+
+	virtual ~TargetFileProcessor()
+    {
+        if (next) delete next;
+    }
+
+	virtual void process(ReadonlyDataset& ds, const std::string& name)
+    {
+        TargetfileSpy spy(ds, output, pattern);
+        next->process(spy, name);
+    }
+
+	virtual void end() { next->end(); }
+};
+
+std::auto_ptr<DatasetProcessor> ProcessorMaker::make(Matcher& query, Output& out)
+{
+    if (yaml || annotate)
+        return auto_ptr<DatasetProcessor>(new YamlProcessor(*this, query, out));
+    else if (data_only || !postprocess.empty()
+#ifdef HAVE_LUA
+        || !report.empty()
+#endif
+        )
+        return auto_ptr<DatasetProcessor>(new BinaryProcessor(*this, query, out));
+    else
+        return auto_ptr<DatasetProcessor>(new DataProcessor(*this, query, out));
+}
+
+std::string ProcessorMaker::verify_option_consistency()
+{
+	// Check conflicts among options
+#ifdef HAVE_LUA
+	if (!report.empty())
+	{
+		if (yaml)
+			return "--dump/--yaml conflicts with --report";
+		if (annotate)
+			return "--annotate conflicts with --report";
+		//if (summary->boolValue())
+		//	return "--summary conflicts with --report";
+		if (data_inline)
+			return "--inline conflicts with --report";
+		if (!postprocess.empty())
+			return "--postprocess conflicts with --report";
+		if (!sort.empty())
+			return "--sort conflicts with --report";
+	}
+#endif
+	if (yaml)
+	{
+		if (data_inline)
+			return "--dump/--yaml conflicts with --inline";
+		if (data_only)
+			return "--dump/--yaml conflicts with --data";
+		if (!postprocess.empty())
+			return "--dump/--yaml conflicts with --postprocess";
+	}
+	if (annotate)
+	{
+		if (data_inline)
+			return "--annotate conflicts with --inline";
+		if (data_only)
+			return "--annotate conflicts with --data";
+		if (!postprocess.empty())
+			return "--annotate conflicts with --postprocess";
+	}
+	if (summary)
+	{
+		if (data_inline)
+			return "--summary conflicts with --inline";
+		if (data_only)
+			return "--summary conflicts with --data";
+		if (!postprocess.empty())
+			return "--summary conflicts with --postprocess";
+		if (!sort.empty())
+			return "--summary conflicts with --sort";
+	} else if (!summary_restrict.empty())
+		return "--summary-restrict only makes sense with --summary";
+	if (data_inline)
+	{
+		if (data_only)
+			return "--inline conflicts with --data";
+		if (!postprocess.empty())
+			return "--inline conflicts with --postprocess";
+	}
+	if (!postprocess.empty())
+	{
+		if (data_only)
+			return "--postprocess conflicts with --data";
+	}
+    return std::string();
+}
 
 void CommandLine::setupProcessing()
 {
@@ -580,19 +637,13 @@ void CommandLine::setupProcessing()
 	if (!output)
 		output = new Output(*outfile);
 
-	// Create the appropriate processor
+    // Create the core processor
+    auto_ptr<DatasetProcessor> p = pmaker.make(query, *output);
+    processor = p.release();
 
-	if (yaml->boolValue() || annotate->isSet())
-		processor = new YamlProcessor(*this);
-	else if (dataOnly->boolValue() || postprocess->isSet()
-#ifdef HAVE_LUA
-		|| report->isSet()
-#endif
-		)
-		processor = new BinaryProcessor(*this);
-	else
-		processor = new DataProcessor(*this);
-
+    // If targetfile is requested, wrap with the targetfile processor
+    if (targetfile->isSet())
+        processor = new TargetFileProcessor(processor, targetfile->stringValue(), *output);
 
 	// Create the dispatcher if needed
 
@@ -664,17 +715,7 @@ bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
 {
 	if (dispatcher)
 		return dispatcher->process(ds, name);
-
-	ReadonlyDataset* this_source = &ds;
-	auto_ptr<TargetfileSpy> tf;
-
-	if (targetfile->isSet())
-	{
-		tf.reset(new TargetfileSpy(*this_source, *output, targetfile->stringValue()));
-		this_source = tf.get();
-	}
-
-	processor->process(*this_source, name);
+	processor->process(ds, name);
 	return true;
 }
 

@@ -24,6 +24,7 @@
 #include <wibble/commandline/parser.h>
 #include <wibble/regexp.h>
 #include <wibble/string.h>
+#include <wibble/sys/process.h>
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/fs.h>
 #include <arki/configfile.h>
@@ -50,6 +51,7 @@
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -102,6 +104,56 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+
+/// Delete the directory \a dir and all its content
+void rmtree(const std::string& dir)
+{
+	sys::fs::Directory d(dir);
+	for (sys::fs::Directory::const_iterator i = d.begin();
+			i != d.end(); ++i)
+	{
+		string pathname = str::joinpath(dir, *i);
+		if (i->d_type == DT_DIR ||
+		    (i->d_type == DT_UNKNOWN && sys::fs::isDirectory(pathname)))
+		{
+			rmtree(pathname);
+		} else {
+			if (unlink(pathname.c_str()) < 0)
+				throw wibble::exception::System("cannot delete " + pathname);
+		}
+	}
+	if (rmdir(dir.c_str()) < 0)
+		throw wibble::exception::System("cannot delete directory " + dir);
+}
+
+/**
+ * RAII-style class changing into a newly created temporary directory during
+ * the lifetime of the object.
+ *
+ * The temporary directory is created at constructor time and deleted at
+ * destructor time.
+ */
+struct MoveToTempDir
+{
+	string old_dir;
+	string tmp_dir;
+
+	MoveToTempDir(const std::string& prefix = "/tmp/tmpdir.XXXXXX")
+	{
+		old_dir = sys::process::getcwd();
+		char buf[prefix.size() + 1];
+		memcpy(buf, prefix.c_str(), prefix.size() + 1);
+		if (mkdtemp(buf) == NULL)
+			throw wibble::exception::System("cannot create temporary directory");
+		tmp_dir = buf;
+		sys::process::chdir(tmp_dir);
+	}
+	~MoveToTempDir()
+	{
+		sys::process::chdir(old_dir);
+		rmtree(tmp_dir);
+	}
+};
 
 struct Request;
 
@@ -607,7 +659,21 @@ def summary():
     if not "qmacro" in args:
         raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
     return ArkiQuerySummary(owndir = True, fields=args).stream()
+
+@route("/dataset/:name/query")
+@route("/dataset/:name/query/")
+@post("/dataset/:name/query")
+@post("/dataset/:name/query/")
+def dataset_query(name):
+    """
+    Download the summary of a dataset
+    """
+    conf = dsconfig.get(name, None)
+    if conf is None:
+        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
+    return ArkiQuery(owndir = True, dsconf=conf, fields=Args()).stream()
 */
+
 
 // Dispatch dataset-specific actions
 struct DatasetHandler : public LocalHandler
@@ -740,21 +806,6 @@ struct DatasetHandler : public LocalHandler
 			throw wibble::exception::Consistency("Unknown dataset action: \"" + action + "\"");
 	}
 };
-
-/*
-@route("/dataset/:name/query")
-@route("/dataset/:name/query/")
-@post("/dataset/:name/query")
-@post("/dataset/:name/query/")
-def dataset_query(name):
-    """
-    Download the summary of a dataset
-    """
-    conf = dsconfig.get(name, None)
-    if conf is None:
-        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
-    return ArkiQuery(owndir = True, dsconf=conf, fields=Args()).stream()
-*/
 
 struct ChildServer : public sys::ChildProcess
 {

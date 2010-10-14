@@ -59,6 +59,34 @@ struct DatasetProcessor
 	virtual void end() {}
 };
 
+struct ProcessorMaker
+{
+    bool summary;
+    bool yaml;
+    bool annotate;
+    bool data_only;
+    bool data_inline;
+    std::string postprocess;
+    std::string report;
+
+    std::string summary_restrict;
+    std::string sort;
+
+    ProcessorMaker()
+        : summary(false), yaml(false), annotate(false), data_only(false), data_inline(false)
+    {
+    }
+
+    /// Create the processor maker for this configuration
+    std::auto_ptr<DatasetProcessor> make(Matcher& query, Output& out);
+
+    /**
+     * Consistency check on the maker configuration.
+     *
+     * @returns the empty string if all is ok, else an error message
+     */
+    std::string verify_option_consistency();
+};
 
 struct CommandLine : public wibble::commandline::StandardParserWithManpage
 {
@@ -102,6 +130,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	Output* output;
 	DatasetProcessor* processor;
 	MetadataDispatch* dispatcher;
+    ProcessorMaker pmaker;
 
 	CommandLine(const std::string& name, int mansection = 1);
 	~CommandLine();
