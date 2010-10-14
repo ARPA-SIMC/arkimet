@@ -39,6 +39,7 @@
 #include <arki/runtime.h>
 #include <arki/utils/server.h>
 #include <arki/utils/http.h>
+#include <arki/utils/lua.h>
 
 #include <string>
 #include <vector>
@@ -102,25 +103,133 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-void do_cgi(utils::http::Request& req)
+struct Request : public utils::http::Request
 {
-	// Setup CGI environment
+	ConfigFile arki_conf;
+};
 
-	req.set_cgi_env();
+// Interface for local request handlers
+struct LocalHandler
+{
+	virtual ~LocalHandler() {}
+	virtual void operator()(Request& req) = 0;
+};
 
-	// Connect stdin and stdout to the socket
-	if (dup2(req.sock, 0) < 0)
-		throw wibble::exception::System("redirecting input socket to stdin");
-	if (dup2(req.sock, 1) < 0)
-		throw wibble::exception::System("redirecting input socket to stdout");
+// Repository of local request handlers
+struct LocalHandlers
+{
+	std::map<string, LocalHandler*> handlers;
 
-	system("set");
+	~LocalHandlers()
+	{
+		for (std::map<string, LocalHandler*>::iterator i = handlers.begin();
+				i != handlers.end(); ++i)
+			delete i->second;
+	}
 
-	close(0);
-	close(1);
-}
+	void add(const std::string& name, LocalHandler* handler)
+	{
+		add(name, auto_ptr<LocalHandler>(handler));
+	}
 
-void do_404(utils::http::Request& req)
+	// Add a local handler for the given script name
+	void add(const std::string& name, std::auto_ptr<LocalHandler> handler)
+	{
+		std::map<string, LocalHandler*>::iterator i = handlers.find(name);
+		if (i == handlers.end())
+			handlers[name] = handler.release();
+		else
+		{
+			delete i->second;
+			i->second = handler.release();
+		}
+	}
+
+	// Return true if it handled it, else false
+	bool try_do(Request& req)
+	{
+		std::map<string, LocalHandler*>::iterator i = handlers.find(req.script_name);
+		if (i == handlers.end())
+			return false;
+		(*(i->second))(req);
+		return true;
+	}
+};
+
+struct ScriptHandlers
+{
+	string scriptdir;
+
+	ScriptHandlers()
+	{
+		// Directory where we find our CGI scripts
+		scriptdir = SERVER_DIR;
+		const char* dir = getenv("ARKI_SERVER");
+		if (dir != NULL)
+			scriptdir = dir;
+	}
+
+	bool try_do(Request& req)
+	{
+		string scriptpath = str::joinpath(scriptdir, req.script_name) + ".lua";
+		if (!sys::fs::access(scriptpath, R_OK))
+			return false;
+
+		// Run the CGI
+
+		// Setup CGI environment
+		req.set_cgi_env();
+
+		// Connect stdin and stdout to the socket
+		if (dup2(req.sock, 0) < 0)
+			throw wibble::exception::System("redirecting input socket to stdin");
+		if (dup2(req.sock, 1) < 0)
+			throw wibble::exception::System("redirecting input socket to stdout");
+
+		// Create and populate the Lua VM
+		Lua L;
+		types::Type::lua_loadlib(L);
+
+		// Run the script
+		if (luaL_dofile(L, scriptpath.c_str()))
+		{
+			string error = lua_tostring(L, -1);
+			cerr << error << endl;
+		}
+
+		close(0);
+		close(1);
+
+		return true;
+	}
+};
+
+LocalHandlers local_handlers;
+ScriptHandlers script_handlers;
+
+/// Show a list of all available datasets
+struct IndexHandler : public LocalHandler
+{
+	virtual void operator()(Request& req)
+	{
+		stringstream res;
+		res << "<html><body>" << endl;
+		res << "Available datasets:" << endl;
+		res << "<ul>" << endl;
+		for (ConfigFile::const_section_iterator i = req.arki_conf.sectionBegin();
+				i != req.arki_conf.sectionEnd(); ++i)
+		{
+			res << "<li><a href='/dataset/" << i->first << "'>";
+			res << i->first << "</a></li>" << endl;
+		}
+		res << "</ul>" << endl;
+		res << "<a href='/query'>Perform a query</a>" << endl;
+		res << "</body></html>" << endl;
+		req.send_result(res.str());
+	}
+};
+
+void do_404(Request& req)
 {
 	stringstream body;
 	body << "<html>" << endl;
@@ -143,20 +252,14 @@ void do_404(utils::http::Request& req)
 
 struct ChildServer : public sys::ChildProcess
 {
-	utils::http::Request& req;
+	Request& req;
 
-	ChildServer(utils::http::Request& req) : req(req) {}
+	ChildServer(Request& req) : req(req) {}
 
 	// Executed in child thread
 	virtual int main()
 	{
 		try {
-			// Directory where we find our CGI scripts
-			string scriptdir = SERVER_DIR;
-			const char* dir = getenv("ARKI_SERVER");
-			if (dir != NULL)
-				scriptdir = dir;
-
 			while (req.read_request(req.sock))
 			{
 				// Request line and headers have been read
@@ -199,15 +302,9 @@ struct ChildServer : public sys::ChildProcess
 					}
 				}
 
-				string scriptpath = str::joinpath(scriptdir, req.script_name);
-				if (!sys::fs::access(scriptpath, R_OK))
-				{
-					// Generate a 404
-					do_404(req);
-				} else {
-					// Run the CGI
-					do_cgi(req);
-				}
+				if (!local_handlers.try_do(req))
+					if (!script_handlers.try_do(req))
+						do_404(req);
 
 				// Here there can be some keep-alive bit
 				break;
@@ -227,6 +324,8 @@ struct HTTP : public utils::net::TCPServer
 {
 	string server_name;
 	map<pid_t, ChildServer*> children;
+
+	string arki_config;
 
 	void set_server_name(const std::string& server_name)
 	{
@@ -257,7 +356,8 @@ struct HTTP : public utils::net::TCPServer
 		if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval)) < 0)
 			throw wibble::exception::System("setting SO_SNDTIMEO on socket");
 
-		utils::http::Request req;
+		Request req;
+		runtime::parseConfigFile(req.arki_conf, arki_config);
 		req.sock = sock;
 		req.peer_hostname = peer_hostname;
 		req.peer_hostaddr = peer_hostaddr;
@@ -320,7 +420,12 @@ int main(int argc, const char* argv[])
 		if (opts.parse(argc, argv))
 			return 0;
 
+		if (!opts.hasNext())
+			throw wibble::exception::BadOption("please specify a configuration file");
+
 		runtime::init();
+
+		local_handlers.add("index", new IndexHandler);
 
 		/*
 		runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
@@ -335,6 +440,7 @@ int main(int argc, const char* argv[])
 		*/
 
 		HTTP http;
+		http.arki_config = opts.next();
 
 		const char* host = NULL;
 		if (opts.host->isSet())

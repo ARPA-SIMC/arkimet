@@ -311,6 +311,17 @@ void Request::send_date_header()
     send(buf.str());
 }
 
+void Request::send_result(const std::string& content, const std::string& content_type)
+{
+	send_status_line(200, "OK");
+	send_date_header();
+	send_server_header();
+	send("Content-Type: " + content_type + "\r\n");
+	send(str::fmtf("Content-Length: %d\r\n", content.size()));
+	send("\r\n");
+	send(content);
+}
+
 }
 }
 }
