@@ -64,6 +64,14 @@ struct Request
      */
 	bool read_request(int sock);
 
+    /**
+     * Read a fixed amount of data from the file descriptor
+     *
+     * @returns true if all the data were read, false if EOF was encountered
+     * before the end of the buffer
+     */
+    bool read_buf(int sock, std::string& res, size_t size);
+
 	/**
 	 * Read a line from the file descriptor.
 	 *
@@ -107,6 +115,9 @@ struct Request
 
     // Send a string as result
     void send_result(const std::string& content, const std::string& content_type="text/html; charset=utf-8");
+
+    // Discard all input from the socket
+    void discard_input();
 };
 
 }

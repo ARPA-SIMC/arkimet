@@ -108,6 +108,165 @@ struct Request : public utils::http::Request
 	ConfigFile arki_conf;
 };
 
+/// Base interface for GET or POST parameters
+struct Param
+{
+	virtual ~Param() {}
+
+	// This can be called more than once, if the value is found multiple
+	// times, nor never, if the value is never found
+	virtual void parse(const std::string& str) = 0;
+};
+
+/// Single-valued parameter
+struct ParamSingle : public std::string, public Param
+{
+	virtual void parse(const std::string& str)
+	{
+		assign(str);
+	}
+};
+
+/// Multi-valued parameter
+struct ParamMulti : public std::vector<std::string>, public Param
+{
+	virtual void parse(const std::string& str)
+	{
+		push_back(str);
+	}
+};
+
+/**
+ * Parse and store HTTP query parameters
+ *
+ * It can be preconfigured witn 
+ */
+struct Params : public std::map<std::string, Param*> 
+{
+	/// Maximum size of POST input data
+	size_t conf_max_input_size;
+
+	/**
+	 * Whether to accept unknown fields.
+	 *
+	 * If true, unkown fields are stored as MultiParam or FileParam as
+	 * appropriate.
+	 *
+	 * If false, unknown fields are ignored.
+	 */
+	bool conf_accept_unknown_fields;
+
+	Params()
+	{
+		conf_max_input_size = 20 * 1024 * 1024;
+		conf_accept_unknown_fields = false;
+	}
+	~Params()
+	{
+		for (iterator i = begin(); i != end(); ++i)
+			delete i->second;
+	}
+
+	void add(const std::string& name, Param* param)
+	{
+		iterator i = find(name);
+		if (i != end())
+		{
+			delete i->second;
+			i->second = param;
+		} else
+			insert(make_pair(name, param));
+	}
+
+	Param* obtain_field(const std::string& name)
+	{
+		iterator i = find(name);
+		if (i != end())
+			return i->second;
+		if (!conf_accept_unknown_fields)
+			return NULL;
+		pair<iterator, bool> res = insert(make_pair(name, new ParamMulti));
+		return res.first->second;
+	}
+
+	void parse_get_or_post(utils::http::Request& req)
+	{
+		if (req.method == "GET")
+		{
+			size_t pos = req.url.find('?');
+			if (pos != string::npos)
+				parse_urlencoded(req.url.substr(pos + 1));
+		}
+		else if (req.method == "POST")
+			parse_post(req);
+		else
+			throw wibble::exception::Consistency("cannot parse parameters from \"" + req.method + "\" request");
+	}
+
+	void parse_urlencoded(const std::string& qstring)
+	{
+		// Split on &
+		str::Split splitter("&", qstring);
+		for (str::Split::const_iterator i = splitter.begin();
+				i != splitter.end(); ++i)
+		{
+			if (i->empty()) continue;
+
+			// Split on =
+			size_t pos = i->find('=');
+			if (pos == string::npos)
+			{
+				// foo=
+				Param* p = obtain_field(str::urldecode(*i));
+				if (p != NULL)
+					p->parse(string());
+			}
+			else
+			{
+				// foo=bar
+				Param* p = obtain_field(str::urldecode(i->substr(0, pos)));
+				if (p != NULL)
+					p->parse(str::urldecode(i->substr(pos+1)));
+			}
+		}
+	}
+
+	void parse_post(utils::http::Request& req)
+	{
+		// Get the supposed size of incoming data
+		map<string, string>::const_iterator i = req.headers.find("content-length");
+		if (i == req.headers.end())
+			throw wibble::exception::Consistency("no Content-Length: found in request header");
+		// Validate the post size
+		size_t inputsize = strtoul(i->second.c_str(), 0, 10);
+		if (inputsize > conf_max_input_size)
+		{
+			// Discard all input
+			req.discard_input();
+			throw wibble::exception::Consistency(str::fmtf(
+				"Total size of incoming data (%zdb) exceeds configured maximum (%zdb)",
+				inputsize, conf_max_input_size));
+		}
+
+		// Get the content type
+		i = req.headers.find("content-type");
+		if (i == req.headers.end())
+			throw wibble::exception::Consistency("no Content-Type: found in request header");
+		if (i->second.find("x-www-form-urlencoded") != string::npos)
+		{
+			string line;
+			req.read_buf(req.sock, line, inputsize);
+			parse_urlencoded(line);
+		}
+		else if (i->second.find("multipart/form-data") != string::npos)
+		{
+			; // Main (inputsize, defs.args)
+		}
+		else
+			throw wibble::exception::Consistency("unsupported Content-Type: " + i->second);
+	}
+};
+
 // Interface for local request handlers
 struct LocalHandler
 {
@@ -226,6 +385,49 @@ struct IndexHandler : public LocalHandler
 		res << "<a href='/query'>Perform a query</a>" << endl;
 		res << "</body></html>" << endl;
 		req.send_result(res.str());
+	}
+};
+
+/// Return the configuration
+struct ConfigHandler : public LocalHandler
+{
+	virtual void operator()(Request& req)
+	{
+		// if "json" in args:
+		//	return server.configdict
+		stringstream out;
+		req.arki_conf.output(out, "(memory)");
+		req.send_result(out.str(), "text/plain");
+	}
+};
+
+/// Dump the alias database
+struct AliasesHandler : public LocalHandler
+{
+	virtual void operator()(Request& req)
+	{
+		ConfigFile cfg;
+		MatcherAliasDatabase::serialise(cfg);
+
+		stringstream out;
+		cfg.output(out, "(memory)");
+
+		req.send_result(out.str(), "text/plain");
+	}
+};
+
+// Expand a query
+struct QexpandHandler : public LocalHandler
+{
+	virtual void operator()(Request& req)
+	{
+		Params params;
+		ParamSingle* query;
+		params.add("query", query = new ParamSingle);
+		params.parse_get_or_post(req);
+		Matcher m = Matcher::parse(*query);
+		string out = m.toStringExpanded();
+		req.send_result(out, "text/plain");
 	}
 };
 
@@ -426,6 +628,9 @@ int main(int argc, const char* argv[])
 		runtime::init();
 
 		local_handlers.add("index", new IndexHandler);
+		local_handlers.add("config", new ConfigHandler);
+		local_handlers.add("aliases", new AliasesHandler);
+		local_handlers.add("qexpand", new QexpandHandler);
 
 		/*
 		runtest = add<StringOption>("runtest", 0, "runtest", "cmd",

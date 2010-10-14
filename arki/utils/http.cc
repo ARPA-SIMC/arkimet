@@ -25,6 +25,7 @@
 #include <wibble/string.h>
 #include <sstream>
 #include <ctime>
+#include <cerrno>
 
 #include "config.h"
 
@@ -62,6 +63,28 @@ bool Request::read_request(int sock)
     return true;
 }
 
+bool Request::read_buf(int sock, std::string& res, size_t size)
+{
+    res.clear();
+    res.resize(size);
+    size_t pos = 0;
+    while (true)
+    {
+        ssize_t r = read(sock, (void*)((char*)res.data() + pos), size - pos);
+        if (r < 0)
+            throw wibble::exception::System("reading data from socket");
+        if ((size_t)r == size - pos)
+            break;
+        else if (r == 0)
+        {
+            res.resize(pos);
+            return false;
+        }
+        pos += r;
+    }
+    return true;
+}
+
 /**
  * Read a line from the file descriptor.
  *
@@ -83,6 +106,8 @@ bool Request::read_line(int sock, string& res)
         char c;
         ssize_t count = read(sock, &c, 1);
         if (count == 0) return false;
+        if (count < 0)
+            throw wibble::exception::System("reading from socket");
         switch (c)
         {
             case '\r':
@@ -320,6 +345,23 @@ void Request::send_result(const std::string& content, const std::string& content
 	send(str::fmtf("Content-Length: %d\r\n", content.size()));
 	send("\r\n");
 	send(content);
+}
+
+void Request::discard_input()
+{
+    // First try seeking at end
+    int res = lseek(sock, 0, SEEK_END);
+    if (res == -1 && errno == ESPIPE)
+    {
+        // If it fails, we'll have to read our way
+        char buf[4096];
+        while (true)
+        {
+            int res = read(sock, buf, 4096);
+            if (res < 0) throw wibble::exception::System("reading data from input socket");
+            if (res == 0) break;
+        }
+    }
 }
 
 }
