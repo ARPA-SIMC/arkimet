@@ -65,10 +65,14 @@ class Output
 	std::ostream *m_out;
 	std::string m_name;
 	void closeCurrent();
+	bool own_stream;
 
 public:
 	Output();
+	// Output directed to a file
 	Output(const std::string& fileName);
+	// Output directed to an open file descriptor
+	Output(int fd, const std::string& fname);
 	Output(wibble::commandline::Parser& opts);
 	Output(wibble::commandline::StringOption& opt);
 	~Output();

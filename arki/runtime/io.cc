@@ -1,7 +1,7 @@
 /*
  * runtime - Common code used in most xgribarch executables
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,17 +67,24 @@ Input::Input(const std::string& file)
 	}
 }
 
-Output::Output() : m_out(0)
+Output::Output() : m_out(0), own_stream(true)
 {
 	openStdout();
 }
 
-Output::Output(const std::string& fileName) : m_out(0)
+Output::Output(int fd, const std::string& fname) : m_out(0), own_stream(false)
+{
+	m_name = fname;
+	posixBuf.attach(fd);
+	m_out = new ostream(&posixBuf);
+}
+
+Output::Output(const std::string& fileName) : m_out(0), own_stream(true)
 {
 	openFile(fileName);
 }
 
-Output::Output(wibble::commandline::Parser& opts) : m_out(0)
+Output::Output(wibble::commandline::Parser& opts) : m_out(0), own_stream(true)
 {
 	if (opts.hasNext())
 	{
@@ -89,7 +96,7 @@ Output::Output(wibble::commandline::Parser& opts) : m_out(0)
 		openStdout();
 }
 
-Output::Output(wibble::commandline::StringOption& opt) : m_out(0)
+Output::Output(wibble::commandline::StringOption& opt) : m_out(0), own_stream(true)
 {
 	if (opt.isSet())
 	{
@@ -103,6 +110,8 @@ Output::Output(wibble::commandline::StringOption& opt) : m_out(0)
 
 Output::~Output()
 {
+	if (!own_stream)
+		posixBuf.detach();
 	if (m_out) delete m_out;
 }
 
@@ -110,7 +119,7 @@ void Output::closeCurrent()
 {
 	if (!m_out) return;
 	int fd = posixBuf.detach();
-	if (fd != 1) ::close(fd);
+	if (fd != 1 && !own_stream) ::close(fd);
 }
 
 void Output::openStdout()

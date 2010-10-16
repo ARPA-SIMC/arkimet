@@ -112,6 +112,7 @@ void rmtree(const std::string& dir)
 	for (sys::fs::Directory::const_iterator i = d.begin();
 			i != d.end(); ++i)
 	{
+		if (*i == "." || *i == "..") continue;
 		string pathname = str::joinpath(dir, *i);
 		if (i->d_type == DT_DIR ||
 		    (i->d_type == DT_UNKNOWN && sys::fs::isDirectory(pathname)))
@@ -157,14 +158,33 @@ struct MoveToTempDir
 
 struct Request;
 
-struct error404
+struct httperror
 {
+	int code;
+	std::string desc;
 	std::string msg;
 
-	error404() {}
-	error404(const std::string& msg) : msg(msg) {}
+	httperror(int code, const std::string& desc)
+		: code(code), desc(desc) {}
+	httperror(int code, const std::string& desc, const std::string& msg)
+		: code(code), desc(desc), msg(msg) {}
 
-	void send(Request& req);
+	virtual void send(Request& req);
+
+};
+
+struct httperror400 : public httperror
+{
+	httperror400() : httperror(400, "Bad request") {}
+	httperror400(const std::string& msg) : httperror(400, "Bad request", msg) {}
+};
+
+struct httperror404 : public httperror
+{
+	httperror404() : httperror(404, "Not found") {}
+	httperror404(const std::string& msg) : httperror(404, "Not found", msg) {}
+
+	virtual void send(Request& req);
 };
 
 
@@ -177,7 +197,7 @@ struct Request : public utils::http::Request
 	{
 		const ConfigFile* cfg = arki_conf_remote.section(dsname);
 		if (cfg == NULL)
-			throw error404();
+			throw httperror404();
 		return *cfg;
 	}
 
@@ -185,7 +205,7 @@ struct Request : public utils::http::Request
 	{
 		const ConfigFile* cfg = arki_conf.section(dsname);
 		if (cfg == NULL)
-			throw error404();
+			throw httperror404();
 		return *cfg;
 	}
 
@@ -201,28 +221,35 @@ struct Request : public utils::http::Request
 
 };
 
-void error404::send(Request& req)
+void httperror::send(Request& req)
 {
 	stringstream body;
 	body << "<html>" << endl;
 	body << "<head>" << endl;
-	body << "  <title>Not found</title>" << endl;
+	body << "  <title>" << desc << "</title>" << endl;
 	body << "</head>" << endl;
 	body << "<body>" << endl;
 	if (msg.empty())
-		body << "<p>Resource " << req.script_name << " not found.</p>" << endl;
+		body << "<p>" + desc + "</p>" << endl;
 	else
 		body << "<p>" + msg + "</p>" << endl;
 	body << "</body>" << endl;
 	body << "</html>" << endl;
 
-	req.send_status_line(404, "Not found");
+	req.send_status_line(code, desc);
 	req.send_date_header();
 	req.send_server_header();
 	req.send("Content-Type: text/html; charset=utf-8\r\n");
 	req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
 	req.send("\r\n");
 	req.send(body.str());
+}
+
+void httperror404::send(Request& req)
+{
+	if (msg.empty())
+		msg = "Resource " + req.script_name + " not found.";
+	httperror::send(req);
 }
 
 /// Base interface for GET or POST parameters
@@ -659,21 +686,7 @@ def summary():
     if not "qmacro" in args:
         raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
     return ArkiQuerySummary(owndir = True, fields=args).stream()
-
-@route("/dataset/:name/query")
-@route("/dataset/:name/query/")
-@post("/dataset/:name/query")
-@post("/dataset/:name/query/")
-def dataset_query(name):
-    """
-    Download the summary of a dataset
-    """
-    conf = dsconfig.get(name, None)
-    if conf is None:
-        raise bottle.HTTPError(code=404, output='dataset %s not found' % name)
-    return ArkiQuery(owndir = True, dsconf=conf, fields=Args()).stream()
 */
-
 
 // Dispatch dataset-specific actions
 struct DatasetHandler : public LocalHandler
@@ -779,11 +792,105 @@ struct DatasetHandler : public LocalHandler
 		}
 	}
 
+	// Download the results of querying a dataset
+	void do_query(Request& req, const std::string& dsname)
+	{
+		// Work in a temporary directory
+		MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
+
+		Params params;
+		ParamSingle* query = params.add<ParamSingle>("query");
+		ParamSingle* style = params.add<ParamSingle>("style");
+		ParamSingle* command = params.add<ParamSingle>("command");
+		ParamMulti* postprocfile = params.add<ParamMulti>("postprocfile");
+		ParamSingle* sort = params.add<ParamSingle>("sort");
+		params.parse_get_or_post(req);
+
+		string content_type = "application/octet-stream";
+		string ext = "bin";
+
+		// Configure a ProcessorMaker with the request
+		runtime::ProcessorMaker pmaker;
+
+		if (style->empty() || *style == "metadata") {
+			;
+		} else if (*style == "yaml") {
+			content_type = "text/x-yaml";
+			ext = "yaml";
+			pmaker.yaml = true;
+		} else if (*style == "inline") {
+			pmaker.data_inline = true;
+		} else if (*style == "data") {
+			pmaker.data_only = true;
+		} else if (*style == "postprocess") {
+			pmaker.postprocess = *command;
+			/*
+			TODO: reimplement after we have file uploads
+			for f in self.fields.getall("postprocfile"):
+				if not self.subdir: raise RuntimeError, "posprocess data have been provided but arki-query is not run in a subdir"
+				# Store the uploaded file in the temporary directory
+				dest = os.path.join(self.subdir, os.path.basename(f.filename))
+				destfd = open(dest, "w")
+				shutil.copyfileobj(f.file, destfd)
+				destfd.close()
+				# Pass it to arki-query
+				self.args.append("--postproc-data=" + dest)
+			*/
+		} else if (*style == "rep_metadata") {
+			pmaker.report = *command;
+			content_type = "text/plain";
+			ext = "txt";
+		} else if (*style == "rep_summary") {
+			pmaker.summary = true;
+			pmaker.report = *command;
+			content_type = "text/plain";
+			ext = "txt";
+		}
+
+		if (!sort->empty())
+			pmaker.sort = *sort;
+
+		// Validate request
+		string errors = pmaker.verify_option_consistency();
+		if (!errors.empty())
+			throw httperror400(errors);
+
+		// Validate query
+		Matcher matcher;
+		try {
+			matcher = Matcher::parse(*query);
+		} catch (std::exception& e) {
+			throw httperror400(e.what());
+		}
+
+		// Create Output directed to req.sock
+		runtime::Output sockoutput(req.sock, "socket");
+
+		// Create the dataset processor for this query
+		auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+
+		// Send headers for streaming
+		req.send_status_line(200, "OK");
+		req.send_date_header();
+		req.send_server_header();
+		req.send("Content-Type: " + content_type + "\r\n");
+		req.send("Content-Disposition: attachment; filename=" + dsname + "." + ext + "\r\n");
+		req.send("\r\n");
+
+		// Process the dataset producing the output
+		auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
+		p->process(*ds, dsname);
+		p->end();
+
+		// End of streaming
+	}
+
+
 	virtual void operator()(Request& req)
 	{
 		string dsname;
 		if (!pop_first_path.match(req.path_info))
-			throw error404();
+			throw httperror404();
 
 		dsname = pop_first_path[1];
 		string rest = pop_first_path[3];
@@ -802,6 +909,8 @@ struct DatasetHandler : public LocalHandler
 			do_config(req, dsname);
 		else if (action == "summary")
 			do_summary(req, dsname);
+		else if (action == "query")
+			do_query(req, dsname);
 		else
 			throw wibble::exception::Consistency("Unknown dataset action: \"" + action + "\"");
 	}
@@ -863,8 +972,8 @@ struct ChildServer : public sys::ChildProcess
 				try {
 					if (!local_handlers.try_do(req))
 						if (!script_handlers.try_do(req))
-							throw error404();
-				} catch (error404& e) {
+							throw httperror404();
+				} catch (httperror404& e) {
 					e.send(req);
 				}
 

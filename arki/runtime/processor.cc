@@ -30,32 +30,6 @@
 #include <arki/summary.h>
 #include <arki/sort.h>
 
-#if 0
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/signal.h>
-#include <wibble/string.h>
-#include <arki/configfile.h>
-#include <arki/summary.h>
-#include <arki/matcher.h>
-#include <arki/utils.h>
-#include <arki/dataset/file.h>
-#include <arki/dataset/http.h>
-#include <arki/dispatcher.h>
-#include <arki/postprocess.h>
-#include <arki/nag.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <iostream>
-#include <cstdlib>
-#include "config.h"
-
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
-#endif
-
 using namespace std;
 
 namespace arki {

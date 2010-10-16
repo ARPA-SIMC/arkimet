@@ -23,15 +23,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#if 0
-#include <arki/runtime/io.h>
-#include <arki/runtime/config.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/configfile.h>
-#include <sys/time.h>
-#endif
 #include <string>
 #include <memory>
 
@@ -39,13 +30,6 @@ namespace arki {
 
 class ReadonlyDataset;
 class Matcher;
-#if 0
-class Dataset;
-class Summary;
-class Dispatcher;
-class Formatter;
-class Targetfile;
-#endif
 
 namespace runtime {
 class Output;
