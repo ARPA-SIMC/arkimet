@@ -26,6 +26,7 @@
 #include <wibble/commandline/parser.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
+#include <arki/runtime/processor.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/matcher.h>
@@ -50,43 +51,6 @@ class MetadataDispatch;
  * Initialise the libraries that we use and parse the matcher alias database.
  */
 void init();
-
-struct DatasetProcessor
-{
-	virtual ~DatasetProcessor() {}
-
-	virtual void process(ReadonlyDataset& ds, const std::string& name) = 0;
-	virtual void end() {}
-};
-
-struct ProcessorMaker
-{
-    bool summary;
-    bool yaml;
-    bool annotate;
-    bool data_only;
-    bool data_inline;
-    std::string postprocess;
-    std::string report;
-
-    std::string summary_restrict;
-    std::string sort;
-
-    ProcessorMaker()
-        : summary(false), yaml(false), annotate(false), data_only(false), data_inline(false)
-    {
-    }
-
-    /// Create the processor maker for this configuration
-    std::auto_ptr<DatasetProcessor> make(Matcher& query, Output& out);
-
-    /**
-     * Consistency check on the maker configuration.
-     *
-     * @returns the empty string if all is ok, else an error message
-     */
-    std::string verify_option_consistency();
-};
 
 struct CommandLine : public wibble::commandline::StandardParserWithManpage
 {
