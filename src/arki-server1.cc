@@ -62,6 +62,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace wibble;
 
 namespace wibble {
@@ -156,39 +157,7 @@ struct MoveToTempDir
 	}
 };
 
-struct Request;
-
-struct httperror
-{
-	int code;
-	std::string desc;
-	std::string msg;
-
-	httperror(int code, const std::string& desc)
-		: code(code), desc(desc) {}
-	httperror(int code, const std::string& desc, const std::string& msg)
-		: code(code), desc(desc), msg(msg) {}
-
-	virtual void send(Request& req);
-
-};
-
-struct httperror400 : public httperror
-{
-	httperror400() : httperror(400, "Bad request") {}
-	httperror400(const std::string& msg) : httperror(400, "Bad request", msg) {}
-};
-
-struct httperror404 : public httperror
-{
-	httperror404() : httperror(404, "Not found") {}
-	httperror404(const std::string& msg) : httperror(404, "Not found", msg) {}
-
-	virtual void send(Request& req);
-};
-
-
-struct Request : public utils::http::Request
+struct Request : public http::Request
 {
 	ConfigFile arki_conf;
 	ConfigFile arki_conf_remote;
@@ -197,7 +166,7 @@ struct Request : public utils::http::Request
 	{
 		const ConfigFile* cfg = arki_conf_remote.section(dsname);
 		if (cfg == NULL)
-			throw httperror404();
+			throw http::error404();
 		return *cfg;
 	}
 
@@ -205,7 +174,7 @@ struct Request : public utils::http::Request
 	{
 		const ConfigFile* cfg = arki_conf.section(dsname);
 		if (cfg == NULL)
-			throw httperror404();
+			throw http::error404();
 		return *cfg;
 	}
 
@@ -221,36 +190,6 @@ struct Request : public utils::http::Request
 
 };
 
-void httperror::send(Request& req)
-{
-	stringstream body;
-	body << "<html>" << endl;
-	body << "<head>" << endl;
-	body << "  <title>" << desc << "</title>" << endl;
-	body << "</head>" << endl;
-	body << "<body>" << endl;
-	if (msg.empty())
-		body << "<p>" + desc + "</p>" << endl;
-	else
-		body << "<p>" + msg + "</p>" << endl;
-	body << "</body>" << endl;
-	body << "</html>" << endl;
-
-	req.send_status_line(code, desc);
-	req.send_date_header();
-	req.send_server_header();
-	req.send("Content-Type: text/html; charset=utf-8\r\n");
-	req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
-	req.send("\r\n");
-	req.send(body.str());
-}
-
-void httperror404::send(Request& req)
-{
-	if (msg.empty())
-		msg = "Resource " + req.script_name + " not found.";
-	httperror::send(req);
-}
 
 /// Base interface for GET or POST parameters
 struct Param
@@ -290,6 +229,9 @@ struct Params : public std::map<std::string, Param*>
 	/// Maximum size of POST input data
 	size_t conf_max_input_size;
 
+	/// Maximum size of field data for one non-file field
+	size_t conf_max_field_size;
+
 	/**
 	 * Whether to accept unknown fields.
 	 *
@@ -303,6 +245,7 @@ struct Params : public std::map<std::string, Param*>
 	Params()
 	{
 		conf_max_input_size = 20 * 1024 * 1024;
+		conf_max_field_size = 1024 * 1024;
 		conf_accept_unknown_fields = false;
 	}
 	~Params()
@@ -341,7 +284,7 @@ struct Params : public std::map<std::string, Param*>
 		return res.first->second;
 	}
 
-	void parse_get_or_post(utils::http::Request& req)
+	void parse_get_or_post(http::Request& req)
 	{
 		if (req.method == "GET")
 		{
@@ -383,7 +326,84 @@ struct Params : public std::map<std::string, Param*>
 		}
 	}
 
-	void parse_post(utils::http::Request& req)
+	void parse_multipart(http::Request& req, size_t inputsize, const std::string& content_type)
+	{
+		mime::Reader mime_reader;
+
+		// Get the mime boundary
+		size_t pos = content_type.find("boundary=");
+		if (pos == string::npos)
+			throw http::error400("no boundary in content-type");
+		// TODO: strip boundary of leading and trailing "
+		string boundary = "--" + content_type.substr(pos + 9);
+
+		// Read until first boundary, discarding data
+		mime_reader.discard_until_boundary(req.sock, boundary);
+
+		boundary = "\r\n" + boundary;
+
+		// Content-Disposition: form-data; name="submit-name"
+		//wibble::ERegexp re_disposition(";%s*([^%s=]+)=\"(.-)\"", 2);
+		wibble::Splitter cd_splitter("[[:blank:]]*;[[:blank:]]*", REG_EXTENDED);
+		wibble::ERegexp cd_parm("([^=]+)=\"([^\"]+)\"", 3);
+
+		bool has_part = true;
+		while (has_part)
+		{
+			// Read mime headers for this part
+			map<string, string> headers;
+			if (!mime_reader.read_headers(req.sock, headers))
+				throw http::error400("request truncated at MIME headers");
+
+			// Get name and (optional) filename from content-disposition
+			map<string, string>::const_iterator i = headers.find("content-disposition");
+			if (i == headers.end())
+				throw http::error400("no Content-disposition in MIME headers");
+			wibble::Splitter::const_iterator j = cd_splitter.begin(i->second);
+			if (j == cd_splitter.end())
+				throw http::error400("incomplete content-disposition header");
+			if (*j != "form-data")
+				throw http::error400("Content-disposition is not \"form-data\"");
+			string name;
+			string filename;
+			for (++j; j != cd_splitter.end(); ++j)
+			{
+				if (!cd_parm.match(*j)) continue;
+				string key = cd_parm[1];
+				if (key == "name")
+				{
+					name = cd_parm[2];
+				} else if (key == "filename") {
+					filename = cd_parm[2];
+				}
+			}
+
+			if (!filename.empty())
+			{
+				// TODO: read until boundary, sending data to temp file
+				// local filehandle, filesize = fileupload(filename)
+				// value = filevalue(filehandle, filename, filesize, headers)
+
+				/*
+				// Store the file field value
+				Param* p = obtain_field(str::urldecode(i->substr(0, pos)));
+				if (p != NULL)
+					p->parse(str::urldecode(i->substr(pos+1)));
+				*/
+			} else {
+				// Read until boundary, storing data in string
+				stringstream value;
+				has_part = mime_reader.read_until_boundary(req.sock, boundary, value, conf_max_field_size);
+
+				// Store the field value
+				Param* p = obtain_field(name);
+				if (p != NULL)
+					p->parse(value.str());
+			}
+		}
+	}
+
+	void parse_post(http::Request& req)
 	{
 		// Get the supposed size of incoming data
 		map<string, string>::const_iterator i = req.headers.find("content-length");
@@ -412,7 +432,7 @@ struct Params : public std::map<std::string, Param*>
 		}
 		else if (i->second.find("multipart/form-data") != string::npos)
 		{
-			; // Main (inputsize, defs.args)
+			parse_multipart(req, inputsize, i->second);
 		}
 		else
 			throw wibble::exception::Consistency("unsupported Content-Type: " + i->second);
@@ -854,14 +874,14 @@ struct DatasetHandler : public LocalHandler
 		// Validate request
 		string errors = pmaker.verify_option_consistency();
 		if (!errors.empty())
-			throw httperror400(errors);
+			throw http::error400(errors);
 
 		// Validate query
 		Matcher matcher;
 		try {
 			matcher = Matcher::parse(*query);
 		} catch (std::exception& e) {
-			throw httperror400(e.what());
+			throw http::error400(e.what());
 		}
 
 		// Create Output directed to req.sock
@@ -891,7 +911,7 @@ struct DatasetHandler : public LocalHandler
 	{
 		string dsname;
 		if (!pop_first_path.match(req.path_info))
-			throw httperror404();
+			throw http::error404();
 
 		dsname = pop_first_path[1];
 		string rest = pop_first_path[3];
@@ -973,8 +993,8 @@ struct ChildServer : public sys::ChildProcess
 				try {
 					if (!local_handlers.try_do(req))
 						if (!script_handlers.try_do(req))
-							throw httperror404();
-				} catch (httperror404& e) {
+							throw http::error404();
+				} catch (http::error& e) {
 					e.send(req);
 				}
 
@@ -992,7 +1012,7 @@ struct ChildServer : public sys::ChildProcess
 	}
 };
 
-struct HTTP : public utils::net::TCPServer
+struct HTTP : public net::TCPServer
 {
 	string server_name;
 	map<pid_t, ChildServer*> children;

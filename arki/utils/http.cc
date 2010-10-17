@@ -36,68 +36,15 @@ using namespace wibble;
 
 namespace arki {
 namespace utils {
-namespace http {
 
-Request::Request()
-    : space_splitter("[[:blank:]]+", REG_EXTENDED),
-      header_splitter("^([^:[:blank:]]+)[[:blank:]]*:[[:blank:]]*(.+)", 3)
+namespace mime {
+
+Reader::Reader() 
+      : header_splitter("^([^:[:blank:]]+)[[:blank:]]*:[[:blank:]]*(.+)", 3)
 {
 }
 
-bool Request::read_request(int sock)
-{
-    // Set all structures to default values
-    method = "GET";
-    url = "/";
-    version = "HTTP/1.0";
-    headers.clear();
-
-    // Read request line
-    if (!read_method(sock))
-        return false;
-
-    // Read request headers
-    read_headers(sock);
-
-    // Message body is not read here
-    return true;
-}
-
-bool Request::read_buf(int sock, std::string& res, size_t size)
-{
-    res.clear();
-    res.resize(size);
-    size_t pos = 0;
-    while (true)
-    {
-        ssize_t r = read(sock, (void*)((char*)res.data() + pos), size - pos);
-        if (r < 0)
-            throw wibble::exception::System("reading data from socket");
-        if ((size_t)r == size - pos)
-            break;
-        else if (r == 0)
-        {
-            res.resize(pos);
-            return false;
-        }
-        pos += r;
-    }
-    return true;
-}
-
-/**
- * Read a line from the file descriptor.
- *
- * The line is terminated by <CR><LF>. The line terminator is not
- * included in the resulting string.
- *
- * @returns true if a line was read, false if EOF
- *
- * Note that if EOF is returned, res can still be filled with a partial
- * line. This may happen if the connection ends after some data has
- * been sent but before <CR><LF> is sent.
- */
-bool Request::read_line(int sock, string& res)
+bool Reader::read_line(int sock, string& res)
 {
     bool has_cr = false;
     res.clear();
@@ -127,43 +74,8 @@ bool Request::read_line(int sock, string& res)
         }
     }
 }
-
-// Read HTTP method and its following empty line
-bool Request::read_method(int sock)
-{
-    // Request line, such as GET /images/logo.png HTTP/1.1, which
-    // requests a resource called /images/logo.png from server
-    string cmdline;
-    if (!read_line(sock, cmdline)) return false;
-
-    // If we cannot fill some of method, url or version we just let
-    // them be, as they have previously been filled with defaults
-    // by read_request()
-    Splitter::const_iterator i = space_splitter.begin(cmdline);
-    if (i != space_splitter.end())
-    {
-        method = str::toupper(*i);
-        ++i;
-        if (i != space_splitter.end())
-        {
-            url = *i;
-            ++i;
-            if (i != space_splitter.end())
-                version = *i;
-        }
-    }
-
-    // An empty line
-    return read_line(sock, cmdline);
-}
-
-/**
- * Read HTTP headers
- *
- * @return true if there still data to read and headers are terminated
- * by an empty line, false if headers are terminated by EOF
- */
-bool Request::read_headers(int sock)
+	
+bool Reader::read_headers(int sock, std::map<std::string, std::string>& headers)
 {
     string line;
     map<string, string>::iterator last_inserted = headers.end();
@@ -218,6 +130,214 @@ bool Request::read_headers(int sock)
         }
     }
     return false;
+}
+
+bool Reader::readboundarytail(int sock)
+{
+	// [\-\s]*\r\n
+    bool has_cr = false;
+	bool has_dash = false;
+    while (true)
+    {
+        char c;
+        ssize_t count = read(sock, &c, 1);
+		if (count == 0) throw http::error400("data ends before MIME boundary");
+        if (count < 0) throw wibble::exception::System("reading from socket");
+        switch (c)
+        {
+            case '\r':
+                has_cr = true;
+                break;
+            case '\n':
+                if (has_cr) return !has_dash;
+                break;
+			case '\t':
+			case ' ':
+				has_cr = false;
+				break;
+			case '-':
+				has_dash = true;
+				has_cr = false;
+				break;
+            default:
+				throw http::error400("line ends with non-whitespace");
+                break;
+        }
+    }
+}
+
+bool Reader::read_until_boundary(int sock, const std::string& boundary, std::ostream& out, size_t max)
+{
+	size_t read_so_far = 0;
+	unsigned got = 0;
+
+	while (got < boundary.size())
+	{
+        char c;
+        ssize_t count = read(sock, &c, 1);
+        if (count == 0) throw http::error400("data ends before MIME boundary");
+        if (count < 0) throw wibble::exception::System("reading from socket");
+
+		if (c == boundary[got])
+			++got;
+		else
+		{
+			if (max == 0 || read_so_far < max)
+			{
+				if (got > 0)
+				{
+					out.write(boundary.data(), got);
+					read_so_far += got;
+				}
+				out.put(c);
+				++read_so_far;
+			}
+			got = 0;
+		}
+	}
+
+	return readboundarytail(sock);
+}
+
+bool Reader::discard_until_boundary(int sock, const std::string& boundary)
+{
+	unsigned got = 0;
+
+	while (got < boundary.size())
+	{
+        char c;
+        ssize_t count = read(sock, &c, 1);
+        if (count == 0) throw http::error400("data ends before MIME boundary");
+        if (count < 0) throw wibble::exception::System("reading from socket");
+		if (c == boundary[got])
+			++got;
+		else
+			got = 0;
+	}
+
+	return readboundarytail(sock);
+}
+
+}
+
+namespace http {
+
+void error::send(Request& req)
+{
+	stringstream body;
+	body << "<html>" << endl;
+	body << "<head>" << endl;
+	body << "  <title>" << desc << "</title>" << endl;
+	body << "</head>" << endl;
+	body << "<body>" << endl;
+	if (msg.empty())
+		body << "<p>" + desc + "</p>" << endl;
+	else
+		body << "<p>" + msg + "</p>" << endl;
+	body << "</body>" << endl;
+	body << "</html>" << endl;
+
+	req.send_status_line(code, desc);
+	req.send_date_header();
+	req.send_server_header();
+	req.send("Content-Type: text/html; charset=utf-8\r\n");
+	req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
+	req.send("\r\n");
+	req.send(body.str());
+}
+
+void error404::send(Request& req)
+{
+	if (msg.empty())
+		msg = "Resource " + req.script_name + " not found.";
+	error::send(req);
+}
+
+Request::Request()
+    : space_splitter("[[:blank:]]+", REG_EXTENDED)
+{
+}
+
+bool Request::read_request(int sock)
+{
+    // Set all structures to default values
+    method = "GET";
+    url = "/";
+    version = "HTTP/1.0";
+    headers.clear();
+
+    // Read request line
+    if (!read_method(sock))
+        return false;
+
+    // Read request headers
+    read_headers(sock);
+
+    // Message body is not read here
+    return true;
+}
+
+bool Request::read_buf(int sock, std::string& res, size_t size)
+{
+    res.clear();
+    res.resize(size);
+    size_t pos = 0;
+    while (true)
+    {
+        ssize_t r = read(sock, (void*)((char*)res.data() + pos), size - pos);
+        if (r < 0)
+            throw wibble::exception::System("reading data from socket");
+        if ((size_t)r == size - pos)
+            break;
+        else if (r == 0)
+        {
+            res.resize(pos);
+            return false;
+        }
+        pos += r;
+    }
+    return true;
+}
+
+
+// Read HTTP method and its following empty line
+bool Request::read_method(int sock)
+{
+    // Request line, such as GET /images/logo.png HTTP/1.1, which
+    // requests a resource called /images/logo.png from server
+    string cmdline;
+    if (!mime_reader.read_line(sock, cmdline)) return false;
+
+    // If we cannot fill some of method, url or version we just let
+    // them be, as they have previously been filled with defaults
+    // by read_request()
+    Splitter::const_iterator i = space_splitter.begin(cmdline);
+    if (i != space_splitter.end())
+    {
+        method = str::toupper(*i);
+        ++i;
+        if (i != space_splitter.end())
+        {
+            url = *i;
+            ++i;
+            if (i != space_splitter.end())
+                version = *i;
+        }
+    }
+
+    // An empty line
+    return mime_reader.read_line(sock, cmdline);
+}
+
+/**
+ * Read HTTP headers
+ *
+ * @return true if there still data to read and headers are terminated
+ * by an empty line, false if headers are terminated by EOF
+ */
+bool Request::read_headers(int sock)
+{
+	return mime_reader.read_headers(sock, headers);
 }
 
 // Set the CGI environment variables for the current process using this
