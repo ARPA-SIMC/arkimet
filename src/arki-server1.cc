@@ -761,6 +761,7 @@ struct DatasetHandler : public LocalHandler
 		//    return c
 
 		stringstream res;
+		res << "[" << dsname << "]" << endl;
 		req.get_config_remote(dsname).output(res, "(memory)");
 		req.send_result(res.str(), "text/plain");
 	}
