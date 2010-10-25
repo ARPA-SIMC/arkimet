@@ -54,9 +54,11 @@
 #include <cstring>
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <fcntl.h>
 
 #include "config.h"
 
@@ -221,11 +223,126 @@ struct ParamMulti : public std::vector<std::string>, public Param
 
 struct FileParam
 {
+	struct FileInfo
+	{
+		std::string fname;
+		std::string client_fname;
+
+		bool read(mime::Reader& mime_reader,
+			  map<string, string> headers,
+			  const std::string& outdir,
+			  const std::string& fname_blacklist,
+			  const std::string& client_fname,
+			  int sock,
+			  const std::string& boundary,
+			  size_t inputsize);
+	};
+
 	virtual ~FileParam() {}
 
-	// TODO: go from client provided filename to local filename and stream to which to write
-	// TODO: ack that the file is ready
-	//virtual void parse(const std::string& str) = 0;
+	virtual bool read(
+			mime::Reader& mime_reader,
+			map<string, string> headers,
+			const std::string& outdir,
+			const std::string& fname_blacklist,
+			const std::string& client_fname,
+			int sock,
+			const std::string& boundary,
+			size_t inputsize) = 0;
+};
+
+bool FileParam::FileInfo::read(
+		mime::Reader& mime_reader,
+		map<string, string> headers,
+		const std::string& outdir,
+		const std::string& fname_blacklist,
+		const std::string& client_fname,
+		int sock,
+		const std::string& boundary,
+		size_t inputsize)
+{
+	int openflags = O_CREAT | O_WRONLY;
+
+	// Store the client provided pathname
+	this->client_fname = client_fname;
+
+	// Generate the output file name
+	if (fname.empty())
+	{
+		fname = client_fname;
+		openflags |= O_EXCL;
+	}
+	string preferred_fname = str::joinpath(outdir, str::basename(fname));
+	fname = preferred_fname;
+
+	// Create the file
+	int outfd;
+	for (unsigned i = 1; ; ++i)
+	{
+		outfd = open(fname.c_str(), openflags, 0600);
+		if (outfd >= 0) break;
+		if (errno != EEXIST)
+			throw wibble::exception::File(fname, "creating file");
+		// Alter the file name and try again
+		fname = preferred_fname + str::fmtf(".%u", i);
+	}
+
+	// Wrap output FD into a stream, which will take care of
+	// closing it
+	wibble::stream::PosixBuf posixBuf(outfd);
+	ostream out(&posixBuf);
+
+	// Read until boundary, sending data to temp file
+
+	bool has_part = mime_reader.read_until_boundary(sock, boundary, out, inputsize);
+
+	return has_part;
+}
+
+struct FileParamSingle : public FileParam
+{
+	FileInfo info;
+
+	/**
+	 * If a file name is given, use its base name for storing the file;
+	 * else, use the file name given by the client, without path
+	 */
+	FileParamSingle(const std::string& fname=std::string())
+	{
+		info.fname = fname;
+	}
+
+	virtual bool read(
+			mime::Reader& mime_reader,
+			map<string, string> headers,
+			const std::string& outdir,
+			const std::string& fname_blacklist,
+			const std::string& client_fname,
+			int sock,
+			const std::string& boundary,
+			size_t inputsize)
+	{
+		return info.read(mime_reader, headers, outdir, fname_blacklist, client_fname, sock, boundary, inputsize);
+	}
+};
+
+struct FileParamMulti : public FileParam
+{
+	std::vector<FileInfo> files;
+
+	virtual bool read(
+			mime::Reader& mime_reader,
+			map<string, string> headers,
+			const std::string& outdir,
+			const std::string& fname_blacklist,
+			const std::string& client_fname,
+			int sock,
+			const std::string& boundary,
+			size_t inputsize)
+	{
+		files.push_back(FileInfo());
+		return files.back().read(mime_reader, headers, outdir, fname_blacklist, client_fname, sock, boundary, inputsize);
+	}
 };
 
 /**
@@ -235,6 +352,9 @@ struct FileParam
  */
 struct Params : public std::map<std::string, Param*> 
 {
+	/// File parameters
+	std::map<std::string, FileParam*> files;
+
 	/// Maximum size of POST input data
 	size_t conf_max_input_size;
 
@@ -244,22 +364,50 @@ struct Params : public std::map<std::string, Param*>
 	/**
 	 * Whether to accept unknown fields.
 	 *
-	 * If true, unkown fields are stored as MultiParam or FileParam as
-	 * appropriate.
+	 * If true, unkown fields are stored as ParamMulti
 	 *
 	 * If false, unknown fields are ignored.
 	 */
 	bool conf_accept_unknown_fields;
+
+	/**
+	 * Whether to accept unknown file upload fields.
+	 *
+	 * If true, unkown fields are stored as FileParamMulti
+	 *
+	 * If false, unknown file upload fields are ignored.
+	 */
+	bool conf_accept_unknown_file_fields;
+
+	/**
+	 * Directory where we write uploaded files
+	 *
+	 * @warning: if it is not set to anything, it ignores all file uploads
+	 */
+	std::string conf_outdir;
+
+	/**
+	 * String containing blacklist characters that are replaced with "_" in
+	 * the file name. If empty, nothing is replaced.
+	 *
+	 * This only applies to the basename: the pathname is ignored when
+	 * building the local file name.
+	 */
+	std::string conf_fname_blacklist;
+
 
 	Params()
 	{
 		conf_max_input_size = 20 * 1024 * 1024;
 		conf_max_field_size = 1024 * 1024;
 		conf_accept_unknown_fields = false;
+		conf_accept_unknown_file_fields = false;
 	}
 	~Params()
 	{
 		for (iterator i = begin(); i != end(); ++i)
+			delete i->second;
+		for (std::map<std::string, FileParam*>::iterator i = files.begin(); i != files.end(); ++i)
 			delete i->second;
 	}
 
@@ -282,6 +430,17 @@ struct Params : public std::map<std::string, Param*>
 			insert(make_pair(name, param));
 	}
 
+	void add(const std::string& name, FileParam* param)
+	{
+		std::map<std::string, FileParam*>::iterator i = files.find(name);
+		if (i != files.end())
+		{
+			delete i->second;
+			i->second = param;
+		} else
+			files.insert(make_pair(name, param));
+	}
+
 	Param* obtain_field(const std::string& name)
 	{
 		iterator i = find(name);
@@ -290,6 +449,18 @@ struct Params : public std::map<std::string, Param*>
 		if (!conf_accept_unknown_fields)
 			return NULL;
 		pair<iterator, bool> res = insert(make_pair(name, new ParamMulti));
+		return res.first->second;
+	}
+
+	FileParam* obtain_file_field(const std::string& name)
+	{
+		std::map<std::string, FileParam*>::iterator i = files.find(name);
+		if (i != files.end())
+			return i->second;
+		if (!conf_accept_unknown_file_fields)
+			return NULL;
+		pair<std::map<std::string, FileParam*>::iterator, bool> res =
+			files.insert(make_pair(name, new FileParamMulti));
 		return res.first->second;
 	}
 
@@ -389,20 +560,12 @@ struct Params : public std::map<std::string, Param*>
 
 			if (!filename.empty())
 			{
-				// Read until boundary, sending data to temp file
-				// FIXME: ostream tempfile;
-//				has_part = mime_reader.read_until_boundary(req.sock, boundary, tempfile, inputsize);
-
-				// local filehandle, filesize = fileupload(filename)
-				// value = filevalue(filehandle, filename, filesize, headers)
-
-				/*
-				// Store the file field value
-				// TODO: implement ParamFile
-				Param* p = obtain_field(str::urldecode(i->substr(0, pos)));
+				// Get a file param
+				FileParam* p = conf_outdir.empty() ? NULL : obtain_file_field(name);
 				if (p != NULL)
-					p->parse(str::urldecode(i->substr(pos+1)));
-				*/
+					has_part = p->read(mime_reader, headers, conf_outdir, filename, req.sock, boundary, inputsize);
+				else
+					has_part = mime_reader.discard_until_boundary(req.sock, boundary);
 			} else {
 				// Read until boundary, storing data in string
 				stringstream value;
@@ -833,10 +996,11 @@ struct DatasetHandler : public LocalHandler
 		MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
 
 		Params params;
+		params.conf_outdir = tempdir.tmp_dir;
 		ParamSingle* query = params.add<ParamSingle>("query");
 		ParamSingle* style = params.add<ParamSingle>("style");
 		ParamSingle* command = params.add<ParamSingle>("command");
-		ParamMulti* postprocfile = params.add<ParamMulti>("postprocfile");
+		FileParamMulti* postprocfile = params.add<FileParamMulti>("postprocfile");
 		ParamSingle* sort = params.add<ParamSingle>("sort");
 		params.parse_get_or_post(req);
 
@@ -858,18 +1022,19 @@ struct DatasetHandler : public LocalHandler
 			pmaker.data_only = true;
 		} else if (*style == "postprocess") {
 			pmaker.postprocess = *command;
-			/*
-			TODO: reimplement after we have file uploads
-			for f in self.fields.getall("postprocfile"):
-				if not self.subdir: raise RuntimeError, "posprocess data have been provided but arki-query is not run in a subdir"
-				# Store the uploaded file in the temporary directory
-				dest = os.path.join(self.subdir, os.path.basename(f.filename))
-				destfd = open(dest, "w")
-				shutil.copyfileobj(f.file, destfd)
-				destfd.close()
-				# Pass it to arki-query
-				self.args.append("--postproc-data=" + dest)
-			*/
+
+			vector<string> postproc_files;
+			for (map<string, FileParam::FileInfo>::const_iterator i = postprocfile.begin();
+					i != postprocfile.end(); ++i)
+				postproc_files.push_back(i->second.fname);
+
+			if (!postproc_files.empty())
+			{
+				// Pass files for the postprocessor in the environment
+				string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
+				setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
+			} else
+				unsetenv("ARKI_POSTPROC_FILES");
 		} else if (*style == "rep_metadata") {
 			pmaker.report = *command;
 			content_type = "text/plain";
