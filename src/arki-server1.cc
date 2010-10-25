@@ -272,7 +272,16 @@ bool FileParam::FileInfo::read(
 		fname = client_fname;
 		openflags |= O_EXCL;
 	}
-	string preferred_fname = str::joinpath(outdir, str::basename(fname));
+	string preferred_fname = str::basename(fname);
+
+	// Replace blacklisted chars
+	if (!fname_blacklist.empty())
+		for (string::iterator i = preferred_fname.begin(); i != preferred_fname.end(); ++i)
+			if (fname_blacklist.find(*i) != string::npos)
+				*i = '_';
+
+	preferred_fname = str::joinpath(outdir, preferred_fname);
+
 	fname = preferred_fname;
 
 	// Create the file
@@ -563,7 +572,7 @@ struct Params : public std::map<std::string, Param*>
 				// Get a file param
 				FileParam* p = conf_outdir.empty() ? NULL : obtain_file_field(name);
 				if (p != NULL)
-					has_part = p->read(mime_reader, headers, conf_outdir, filename, req.sock, boundary, inputsize);
+					has_part = p->read(mime_reader, headers, conf_outdir, conf_fname_blacklist, filename, req.sock, boundary, inputsize);
 				else
 					has_part = mime_reader.discard_until_boundary(req.sock, boundary);
 			} else {
@@ -997,6 +1006,7 @@ struct DatasetHandler : public LocalHandler
 
 		Params params;
 		params.conf_outdir = tempdir.tmp_dir;
+		params.conf_fname_blacklist = ":";
 		ParamSingle* query = params.add<ParamSingle>("query");
 		ParamSingle* style = params.add<ParamSingle>("style");
 		ParamSingle* command = params.add<ParamSingle>("command");
@@ -1024,9 +1034,9 @@ struct DatasetHandler : public LocalHandler
 			pmaker.postprocess = *command;
 
 			vector<string> postproc_files;
-			for (map<string, FileParam::FileInfo>::const_iterator i = postprocfile.begin();
-					i != postprocfile.end(); ++i)
-				postproc_files.push_back(i->second.fname);
+			for (vector<FileParam::FileInfo>::const_iterator i = postprocfile->files.begin();
+					i != postprocfile->files.end(); ++i)
+				postproc_files.push_back(i->fname);
 
 			if (!postproc_files.empty())
 			{
