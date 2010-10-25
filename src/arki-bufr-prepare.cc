@@ -24,14 +24,6 @@
 #include <arki/nag.h>
 #include <arki/scan/bufr.h>
 
-#if 0
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/exec.h>
-#endif
-
 #include <dballe/core/rawmsg.h>
 #include <dballe/core/file.h>
 #include <wreport/bulletin.h>
@@ -40,10 +32,6 @@
 
 #include <arpa/inet.h>
 #include <cstring>
-#if 0
-#include <cstdlib>
-#include <unistd.h>
-#endif
 
 #include "config.h"
 
@@ -125,6 +113,48 @@ static int extract_rep_cod(const Msg& msg)
 		return rc->second;
 }
 
+static void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
+{
+	// Create new message with the same info as the old one
+	BufrBulletin newmsg;
+	copy_base_msg(newmsg, msg);
+
+	// Loop over subsets
+	for (size_t i = 0; i < msg.subsets.size(); ++i)
+	{
+		// Create a bufrex_msg with the subset contents
+
+		// Remove existing subsets
+		newmsg.subsets.clear();
+
+		// Copy subset
+		newmsg.subsets.push_back(msg.subsets[i]);
+
+		// Parse into dba_msg
+		try {
+			Msgs msgs;
+			importer.from_bulletin(newmsg, msgs);
+			const Msg& m = *msgs[0];
+
+			// Update reference time
+			if (const Var* var = m.get_year_var()) newmsg.rep_year = var->enqi();
+			if (const Var* var = m.get_month_var()) newmsg.rep_month = var->enqi();
+			if (const Var* var = m.get_day_var()) newmsg.rep_day = var->enqi();
+			if (const Var* var = m.get_hour_var()) newmsg.rep_hour = var->enqi();
+			if (const Var* var = m.get_minute_var()) newmsg.rep_minute = var->enqi();
+			if (const Var* var = m.get_second_var()) newmsg.rep_second = var->enqi();
+		} catch (wreport::error& e) {
+			// Don't bother with updating reference time if
+			// we cannot understand the layout of this BUFR
+		}
+
+		// Write out the message
+		Rawmsg newrmsg;
+		newmsg.encode(newrmsg);
+		outfile.write(newrmsg);
+	}
+}
+
 static void process(const std::string& filename, File& outfile)
 {
 	auto_ptr<File> file = File::create(BUFR, filename.c_str(), "r");
@@ -137,44 +167,10 @@ static void process(const std::string& filename, File& outfile)
 		BufrBulletin msg;
 		msg.decode(rmsg, rmsg.file.c_str(), rmsg.offset);
 
-		// Create new message with the same info as the old one
-		BufrBulletin newmsg;
-		copy_base_msg(newmsg, msg);
-
-		// Loop over subsets
-		for (size_t i = 0; i < msg.subsets.size(); ++i)
-		{
-			// Create a bufrex_msg with the subset contents
-
-			// Remove existing subsets
-			newmsg.subsets.clear();
-
-			// Copy subset
-			newmsg.subsets.push_back(msg.subsets[i]);
-
-			// Parse into dba_msg
-			try {
-				Msgs msgs;
-				importer->from_bulletin(newmsg, msgs);
-				const Msg& m = *msgs[0];
-
-				// Update reference time
-				if (const Var* var = m.get_year_var()) newmsg.rep_year = var->enqi();
-				if (const Var* var = m.get_month_var()) newmsg.rep_month = var->enqi();
-				if (const Var* var = m.get_day_var()) newmsg.rep_day = var->enqi();
-				if (const Var* var = m.get_hour_var()) newmsg.rep_hour = var->enqi();
-				if (const Var* var = m.get_minute_var()) newmsg.rep_minute = var->enqi();
-				if (const Var* var = m.get_second_var()) newmsg.rep_second = var->enqi();
-			} catch (wreport::error& e) {
-				// Don't bother with updating reference time if
-				// we cannot understand the layout of this BUFR
-			}
-
-			// Write out the message
-			Rawmsg newrmsg;
-			newmsg.encode(newrmsg);
-			outfile.write(newrmsg);
-		}
+		if (msg.subsets.size() == 1u)
+			outfile.write(rmsg);
+		else
+			splitmsg(rmsg, msg, *importer, outfile);
 	}
 }
 
