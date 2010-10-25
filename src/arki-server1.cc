@@ -219,6 +219,15 @@ struct ParamMulti : public std::vector<std::string>, public Param
 	}
 };
 
+struct FileParam
+{
+	virtual ~FileParam() {}
+
+	// TODO: go from client provided filename to local filename and stream to which to write
+	// TODO: ack that the file is ready
+	//virtual void parse(const std::string& str) = 0;
+};
+
 /**
  * Parse and store HTTP query parameters
  *
@@ -380,12 +389,16 @@ struct Params : public std::map<std::string, Param*>
 
 			if (!filename.empty())
 			{
-				// TODO: read until boundary, sending data to temp file
+				// Read until boundary, sending data to temp file
+				// FIXME: ostream tempfile;
+//				has_part = mime_reader.read_until_boundary(req.sock, boundary, tempfile, inputsize);
+
 				// local filehandle, filesize = fileupload(filename)
 				// value = filevalue(filehandle, filename, filesize, headers)
 
 				/*
 				// Store the file field value
+				// TODO: implement ParamFile
 				Param* p = obtain_field(str::urldecode(i->substr(0, pos)));
 				if (p != NULL)
 					p->parse(str::urldecode(i->substr(pos+1)));
