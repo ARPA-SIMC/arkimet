@@ -37,6 +37,7 @@
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
+#include <arki/runtime/config.h>
 #include <arki/utils/server.h>
 #include <arki/utils/http.h>
 #include <arki/utils/lua.h>
@@ -1430,6 +1431,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("please specify a configuration file");
 
 		runtime::init();
+
+		runtime::readMatcherAliasDatabase();
 
 		local_handlers.add("index", new IndexHandler);
 		local_handlers.add("config", new ConfigHandler);
