@@ -165,9 +165,17 @@ static void process(const std::string& filename, File& outfile)
 	{
 		// Decode message
 		BufrBulletin msg;
-		msg.decode(rmsg, rmsg.file.c_str(), rmsg.offset);
+		bool decoded;
+		try {
+			msg.decode(rmsg, rmsg.file.c_str(), rmsg.offset);
+			decoded = true;
+		} catch (std::exception& e) {
+			nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",
+				rmsg.file.c_str(), rmsg.offset, rmsg.index, e.what());
+			decoded = false;
+		}
 
-		if (msg.subsets.size() == 1u)
+		if (!decoded || msg.subsets.size() == 1u)
 			outfile.write(rmsg);
 		else
 			splitmsg(rmsg, msg, *importer, outfile);
