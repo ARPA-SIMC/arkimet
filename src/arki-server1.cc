@@ -1066,6 +1066,10 @@ struct DatasetHandler : public LocalHandler
 			throw http::error400(e.what());
 		}
 
+		// Get the dataset here so in case of error we generate a
+		// proper error reply before we send the good headers
+		auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
+
 		// Create Output directed to req.sock
 		runtime::Output sockoutput(req.sock, "socket");
 
@@ -1081,7 +1085,6 @@ struct DatasetHandler : public LocalHandler
 		req.send("\r\n");
 
 		// Process the dataset producing the output
-		auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
 		p->process(*ds, dsname);
 		p->end();
 
