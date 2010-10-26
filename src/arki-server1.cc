@@ -34,6 +34,7 @@
 #include <wibble/log/filters.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
+#include <arki/dataset/http.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
@@ -476,6 +477,22 @@ struct Params : public std::map<std::string, Param*>
 		return res.first->second;
 	}
 
+	Param* field(const std::string& name)
+	{
+		iterator i = find(name);
+		if (i != end())
+			return i->second;
+		return NULL;
+	}
+
+	FileParam* file_field(const std::string& name)
+	{
+		std::map<std::string, FileParam*>::iterator i = files.find(name);
+		if (i != files.end())
+			return i->second;
+		return NULL;
+	}
+
 	void parse_get_or_post(http::Request& req)
 	{
 		if (req.method == "GET")
@@ -790,6 +807,91 @@ struct QexpandHandler : public LocalHandler
 	}
 };
 
+// Common code for handling queries
+struct QueryHelper
+{
+	Params params;
+	string content_type;
+	string ext;
+	runtime::ProcessorMaker pmaker;
+
+	ParamSingle* query;
+	ParamSingle* style;
+	ParamSingle* command;
+	FileParamMulti* postprocfile;
+	ParamSingle* sort;
+
+	QueryHelper()
+		: content_type("application/octet-stream"), ext("bin")
+	{
+		params.conf_fname_blacklist = ":";
+		query = params.add<ParamSingle>("query");
+		style = params.add<ParamSingle>("style");
+		command = params.add<ParamSingle>("command");
+		postprocfile = params.add<FileParamMulti>("postprocfile");
+		sort = params.add<ParamSingle>("sort");
+	}
+
+	void parse_request(Request& req)
+	{
+		params.parse_get_or_post(req);
+
+		// Configure the ProcessorMaker with the request
+		if (style->empty() || *style == "metadata") {
+			;
+		} else if (*style == "yaml") {
+			content_type = "text/x-yaml";
+			ext = "yaml";
+			pmaker.yaml = true;
+		} else if (*style == "inline") {
+			pmaker.data_inline = true;
+		} else if (*style == "data") {
+			pmaker.data_only = true;
+		} else if (*style == "postprocess") {
+			pmaker.postprocess = *command;
+
+			vector<string> postproc_files;
+			for (vector<FileParam::FileInfo>::const_iterator i = postprocfile->files.begin();
+					i != postprocfile->files.end(); ++i)
+				postproc_files.push_back(i->fname);
+
+			if (!postproc_files.empty())
+			{
+				// Pass files for the postprocessor in the environment
+				string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
+				setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
+			} else
+				unsetenv("ARKI_POSTPROC_FILES");
+		} else if (*style == "rep_metadata") {
+			pmaker.report = *command;
+			content_type = "text/plain";
+			ext = "txt";
+		} else if (*style == "rep_summary") {
+			pmaker.summary = true;
+			pmaker.report = *command;
+			content_type = "text/plain";
+			ext = "txt";
+		}
+
+		if (!sort->empty())
+			pmaker.sort = *sort;
+
+		// Validate request
+		string errors = pmaker.verify_option_consistency();
+		if (!errors.empty())
+			throw http::error400(errors);
+	}
+
+	void send_headers(Request& req, const std::string& fname)
+	{
+		req.send_status_line(200, "OK");
+		req.send_date_header();
+		req.send_server_header();
+		req.send("Content-Type: " + content_type + "\r\n");
+		req.send("Content-Disposition: attachment; filename=" + fname + "." + ext + "\r\n");
+		req.send("\r\n");
+	}
+};
 /*
 class ArkiQueryBase(Script):
     def __init__(self, dsconf=None, **kw):
@@ -870,20 +972,6 @@ class ArkiQuerySummary(ArkiQueryBase):
             self.args.append(self.fields.get("query", "").strip())
             self.args.append(self.dsconf['path'])
 
-
-@route("/query")
-@route("/query/")
-@post("/query")
-@post("/query/")
-def query():
-    """
-    Download the results of a query
-    """
-    args = Args()
-    if not "qmacro" in args:
-        raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
-    return ArkiQuery(owndir = True, fields=args).stream()
-
 // Download the summary of a dataset
 @route("/summary")
 @route("/summary/")
@@ -895,6 +983,43 @@ def summary():
         raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
     return ArkiQuerySummary(owndir = True, fields=args).stream()
 */
+
+struct RootQueryHandler : public LocalHandler
+{
+	virtual void operator()(Request& req)
+	{
+		// Work in a temporary directory
+		MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
+
+		QueryHelper qhelper;
+		qhelper.params.conf_outdir = tempdir.tmp_dir;
+		ParamSingle* qmacro = qhelper.params.add<ParamSingle>("qmacro");
+		qhelper.parse_request(req);
+
+		if (qmacro->empty())
+			throw http::error400("root-level query without qmacro parameter");
+
+		// Create qmacro dataset
+		auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+				req.arki_conf, *qmacro, *qhelper.query);
+
+		// Create Output directed to req.sock
+		runtime::Output sockoutput(req.sock, "socket");
+
+		// Create the dataset processor for this query
+		Matcher emptyMatcher;
+		auto_ptr<runtime::DatasetProcessor> p = qhelper.pmaker.make(emptyMatcher, sockoutput);
+
+		// Send headers for streaming
+		qhelper.send_headers(req, *qmacro);
+
+		// Process the virtual qmacro dataset producing the output
+		p->process(*ds, *qmacro);
+		p->end();
+
+		// End of streaming
+	}
+};
 
 // Dispatch dataset-specific actions
 struct DatasetHandler : public LocalHandler
@@ -1007,70 +1132,14 @@ struct DatasetHandler : public LocalHandler
 		// Work in a temporary directory
 		MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
 
-		Params params;
-		params.conf_outdir = tempdir.tmp_dir;
-		params.conf_fname_blacklist = ":";
-		ParamSingle* query = params.add<ParamSingle>("query");
-		ParamSingle* style = params.add<ParamSingle>("style");
-		ParamSingle* command = params.add<ParamSingle>("command");
-		FileParamMulti* postprocfile = params.add<FileParamMulti>("postprocfile");
-		ParamSingle* sort = params.add<ParamSingle>("sort");
-		params.parse_get_or_post(req);
-
-		string content_type = "application/octet-stream";
-		string ext = "bin";
-
-		// Configure a ProcessorMaker with the request
-		runtime::ProcessorMaker pmaker;
-
-		if (style->empty() || *style == "metadata") {
-			;
-		} else if (*style == "yaml") {
-			content_type = "text/x-yaml";
-			ext = "yaml";
-			pmaker.yaml = true;
-		} else if (*style == "inline") {
-			pmaker.data_inline = true;
-		} else if (*style == "data") {
-			pmaker.data_only = true;
-		} else if (*style == "postprocess") {
-			pmaker.postprocess = *command;
-
-			vector<string> postproc_files;
-			for (vector<FileParam::FileInfo>::const_iterator i = postprocfile->files.begin();
-					i != postprocfile->files.end(); ++i)
-				postproc_files.push_back(i->fname);
-
-			if (!postproc_files.empty())
-			{
-				// Pass files for the postprocessor in the environment
-				string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
-				setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
-			} else
-				unsetenv("ARKI_POSTPROC_FILES");
-		} else if (*style == "rep_metadata") {
-			pmaker.report = *command;
-			content_type = "text/plain";
-			ext = "txt";
-		} else if (*style == "rep_summary") {
-			pmaker.summary = true;
-			pmaker.report = *command;
-			content_type = "text/plain";
-			ext = "txt";
-		}
-
-		if (!sort->empty())
-			pmaker.sort = *sort;
-
-		// Validate request
-		string errors = pmaker.verify_option_consistency();
-		if (!errors.empty())
-			throw http::error400(errors);
+		QueryHelper qhelper;
+		qhelper.params.conf_outdir = tempdir.tmp_dir;
+		qhelper.parse_request(req);
 
 		// Validate query
 		Matcher matcher;
 		try {
-			matcher = Matcher::parse(*query);
+			matcher = Matcher::parse(*qhelper.query);
 		} catch (std::exception& e) {
 			throw http::error400(e.what());
 		}
@@ -1083,15 +1152,10 @@ struct DatasetHandler : public LocalHandler
 		runtime::Output sockoutput(req.sock, "socket");
 
 		// Create the dataset processor for this query
-		auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+		auto_ptr<runtime::DatasetProcessor> p = qhelper.pmaker.make(matcher, sockoutput);
 
 		// Send headers for streaming
-		req.send_status_line(200, "OK");
-		req.send_date_header();
-		req.send_server_header();
-		req.send("Content-Type: " + content_type + "\r\n");
-		req.send("Content-Disposition: attachment; filename=" + dsname + "." + ext + "\r\n");
-		req.send("\r\n");
+		qhelper.send_headers(req, dsname);
 
 		// Process the dataset producing the output
 		p->process(*ds, dsname);
@@ -1442,6 +1506,8 @@ int main(int argc, const char* argv[])
 		local_handlers.add("aliases", new AliasesHandler);
 		local_handlers.add("qexpand", new QexpandHandler);
 		local_handlers.add("dataset", new DatasetHandler);
+		local_handlers.add("query", new RootQueryHandler);
+		//local_handlers.add("summary", new RootSummaryHandler);
 
 		// Configure the server and start listening
 		ServerProcess srv(opts);
