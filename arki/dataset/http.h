@@ -135,7 +135,7 @@ public:
 	 * @return the common server URL, or the empty string if some datasets
 	 * are local or from different servers
 	 */
-	static std::string allSameRemoteServer(ConfigFile& cfg);
+	static std::string allSameRemoteServer(const ConfigFile& cfg);
 };
 
 }

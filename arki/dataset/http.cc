@@ -465,10 +465,10 @@ static string geturlprefix(const std::string& s)
 	return s.substr(0, pos);
 }
 
-std::string HTTP::allSameRemoteServer(ConfigFile& cfg)
+std::string HTTP::allSameRemoteServer(const ConfigFile& cfg)
 {
 	string base;
-	for (ConfigFile::section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+	for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
 	{
 		string type = wibble::str::tolower(i->second->value("type"));
 		if (type != "remote") return string();
