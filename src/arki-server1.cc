@@ -27,6 +27,7 @@
 #include <wibble/sys/process.h>
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/fs.h>
+#include <wibble/log/stream.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/summary.h>
@@ -1138,6 +1139,7 @@ struct ChildServer : public sys::ChildProcess
 				// sock now points to the optional message body
 
 				// Dump request
+				/*
 				cerr << "Method: " << req.method << endl;
 				cerr << "URL: " << req.url << endl;
 				cerr << "Version: " << req.version << endl;
@@ -1145,7 +1147,7 @@ struct ChildServer : public sys::ChildProcess
 				for (map<string, string>::const_iterator i = req.headers.begin();
 						i != req.headers.end(); ++i)
 					cout << " " << i->first <<  ": " << i->second << endl;
-
+				*/
 
 				// Handle request
 
@@ -1199,10 +1201,13 @@ struct ChildServer : public sys::ChildProcess
 
 struct HTTP : public net::TCPServer
 {
+	ostream& log;
 	string server_name;
 	map<pid_t, ChildServer*> children;
 
 	string arki_config;
+
+	HTTP(ostream& log) : log(log) {}
 
 	void set_server_name(const std::string& server_name)
 	{
@@ -1214,11 +1219,11 @@ struct HTTP : public net::TCPServer
 			const std::string& peer_hostaddr,
 			const std::string& peer_port)
 	{
-		cerr << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
+		log << log::INFO << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
 
 		if (children.size() > 256)
 		{
-			cerr << "Maximum number of connections reached" << endl;
+			log << log::WARN << "Maximum number of connections reached: connection refused" << endl;
 			close(sock);
 			return;
 		}
@@ -1286,7 +1291,7 @@ struct HTTP : public net::TCPServer
 						else
 							throw wibble::exception::System("checking for childred that exited");
 					}
-					cout << "Child " << pid << " ended" << endl;
+					log << log::INFO << "Child " << pid << " ended" << endl;
 
 					map<pid_t, ChildServer*>::iterator i = children.find(pid);
 					if (i != children.end())
@@ -1294,7 +1299,7 @@ struct HTTP : public net::TCPServer
 						delete i->second;
 						children.erase(i);
 					}
-					cout << children.size() << " running child processes left." << endl;
+					log << log::DEBUG << children.size() << " running child processes left." << endl;
 				}
 			} else {
 				break;
@@ -1306,9 +1311,10 @@ struct HTTP : public net::TCPServer
 struct ServerProcess : public sys::ChildProcess
 {
 	commandline::Options& opts;
+	ostream log;
 	HTTP http;
 
-	ServerProcess(commandline::Options& opts) : opts(opts)
+	ServerProcess(commandline::Options& opts) : opts(opts), log(cerr.rdbuf()), http(log)
 	{
 		http.arki_config = sys::fs::abspath(opts.next());
 
@@ -1373,7 +1379,7 @@ int main(int argc, const char* argv[])
 
 		// Configure the server and start listening
 		ServerProcess srv(opts);
-		cout << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
+		srv.log << log::INFO << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
 
 		if (opts.runtest->isSet())
 		{
