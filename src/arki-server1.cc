@@ -28,6 +28,10 @@
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/fs.h>
 #include <wibble/log/stream.h>
+#include <wibble/log/syslog.h>
+#include <wibble/log/file.h>
+#include <wibble/log/ostream.h>
+#include <wibble/log/filters.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/summary.h>
@@ -73,6 +77,7 @@ struct Options : public StandardParserWithManpage
 	StringOption* runtest;
 	StringOption* accesslog;
 	StringOption* errorlog;
+	BoolOption* syslog;
 	BoolOption* quiet;
 
 	Options() : StandardParserWithManpage("arki-server", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -95,6 +100,8 @@ struct Options : public StandardParserWithManpage
 				"file where to log normal access information");
 		errorlog = add<StringOption>("errorlog", 0, "errorlog", "file",
 				"file where to log errors");
+		syslog = add<BoolOption>("syslog", 0, "syslog", "",
+			"log to system log");
 		quiet = add<BoolOption>("quiet", 0, "quiet", "",
 			"do not log to standard output");
 	}
@@ -1125,9 +1132,10 @@ struct DatasetHandler : public LocalHandler
 
 struct ChildServer : public sys::ChildProcess
 {
+	ostream& log;
 	Request& req;
 
-	ChildServer(Request& req) : req(req) {}
+	ChildServer(ostream& log, Request& req) : log(log), req(req) {}
 
 	// Executed in child thread
 	virtual int main()
@@ -1193,7 +1201,7 @@ struct ChildServer : public sys::ChildProcess
 
 			return 0;
 		} catch (std::exception& e) {
-			cerr << e.what() << endl;
+			log << log::ERR << str::replace(e.what(), '\n', ' ') << endl;
 			return 1;
 		}
 	}
@@ -1261,7 +1269,7 @@ struct HTTP : public net::TCPServer
 		req.server_name = server_name;
 		req.server_port = port;
 
-		auto_ptr<ChildServer> handler(new ChildServer(req));
+		auto_ptr<ChildServer> handler(new ChildServer(log, req));
 		pid_t pid = handler->fork();
 		children[pid] = handler.release();
 
@@ -1308,15 +1316,72 @@ struct HTTP : public net::TCPServer
 	}
 };
 
+struct LogFilter : public log::Sender
+{
+	log::Level minLevel;
+	log::Sender* access;
+	log::Sender* error;
+
+	LogFilter() : minLevel(log::INFO), access(0), error(0) {}
+
+	virtual void send(log::Level level, const std::string& msg)
+	{
+		if (level < minLevel) return;
+		if (level >= log::ERR)
+		{
+			if (error) error->send(level, msg);
+		} else {
+			if (access) access->send(level, msg);
+		}
+	}
+};
+
 struct ServerProcess : public sys::ChildProcess
 {
 	commandline::Options& opts;
 	ostream log;
 	HTTP http;
+	log::Streambuf logstream;
+	LogFilter filter;
+	vector<log::Sender*> log_components;
 
-	ServerProcess(commandline::Options& opts) : opts(opts), log(cerr.rdbuf()), http(log)
+	ServerProcess(commandline::Options& opts)
+		: opts(opts), log(cerr.rdbuf()), http(log)
 	{
 		http.arki_config = sys::fs::abspath(opts.next());
+
+		log::Sender* console = new log::OstreamSender(cerr);
+		log_components.push_back(console);
+		filter.access = console;
+		filter.error = console;
+
+		if (opts.quiet->boolValue())
+			filter.minLevel = log::WARN;
+		if (opts.syslog->boolValue())
+		{
+			log::Sender* syslog = new log::SyslogSender("arki-server", LOG_PID, LOG_DAEMON);
+			log_components.push_back(syslog);
+			filter.access = syslog;
+			filter.error = syslog;
+		}
+		if (opts.accesslog->isSet())
+		{
+			log::Sender* accesslog = new log::FileSender(opts.accesslog->stringValue());
+			log_components.push_back(accesslog);
+			log::Sender* ts = new log::Timestamper(accesslog);
+			log_components.push_back(ts);
+			filter.access = ts;
+		}
+		if (opts.errorlog->isSet())
+		{
+			log::Sender* errorlog = new log::FileSender(opts.errorlog->stringValue());
+			log_components.push_back(errorlog);
+			log::Sender* ts = new log::Timestamper(errorlog);
+			log_components.push_back(ts);
+			filter.error = ts;
+		}
+		logstream.setSender(&filter);
+		log.rdbuf(&logstream);
 
 		const char* host = NULL;
 		if (opts.host->isSet())
@@ -1333,6 +1398,13 @@ struct ServerProcess : public sys::ChildProcess
 			http.set_server_name("http://" + http.host + ":" + http.port);
 
 		http.listen();
+	}
+
+	~ServerProcess()
+	{
+		for (vector<log::Sender*>::iterator i = log_components.begin();
+				i != log_components.end(); ++i)
+			delete *i;
 	}
 
 	virtual int main()
@@ -1364,18 +1436,6 @@ int main(int argc, const char* argv[])
 		local_handlers.add("aliases", new AliasesHandler);
 		local_handlers.add("qexpand", new QexpandHandler);
 		local_handlers.add("dataset", new DatasetHandler);
-
-		/*
-		runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
-				"start the server, run the given test command"
-				" and return its exit status");
-		accesslog = add<StringOption>("accesslog", 0, "accesslog", "file",
-				"file where to log normal access information");
-		errorlog = add<StringOption>("errorlog", 0, "errorlog", "file",
-				"file where to log errors");
-		quiet = add<BoolOption>("quiet", 0, "quiet", "",
-			"do not log to standard output");
-		*/
 
 		// Configure the server and start listening
 		ServerProcess srv(opts);
