@@ -1310,7 +1310,7 @@ struct ServerProcess : public sys::ChildProcess
 
 	ServerProcess(commandline::Options& opts) : opts(opts)
 	{
-		http.arki_config = opts.next();
+		http.arki_config = sys::fs::abspath(opts.next());
 
 		const char* host = NULL;
 		if (opts.host->isSet())
