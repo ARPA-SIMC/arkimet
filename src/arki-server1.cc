@@ -1192,6 +1192,9 @@ struct ChildServer : public sys::ChildProcess
 							throw http::error404();
 				} catch (http::error& e) {
 					e.send(req);
+				} catch (std::exception& e) {
+					http::error httpe(500, "Server error", e.what());
+					httpe.send(req);
 				}
 
 				// Here there can be some keep-alive bit
