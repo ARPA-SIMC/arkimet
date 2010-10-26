@@ -892,97 +892,26 @@ struct QueryHelper
 		req.send("\r\n");
 	}
 };
-/*
-class ArkiQueryBase(Script):
-    def __init__(self, dsconf=None, **kw):
-        super(ArkiQueryBase, self).__init__(**kw)
-        self.dsconf = dsconf
-        self.args = [ARKI_QUERY]
-        if self.dsconf:
-            self.fname = self.dsconf["name"]
-        self.do_qmacro = "qmacro" in self.fields
-        if self.do_qmacro:
-            self.args.append("--qmacro=" + self.fields["qmacro"].strip())
-            self.fname = self.fields["qmacro"]
-            qfname = os.path.join(self.subdir, "query")
-            fd = open(qfname, "w")
-            fd.write(self.fields.get("query", "").strip())
-            fd.flush()
-            fd.close()
-            self.args.append("--file=" + qfname)
-            if self.dsconf is None:
-                self.args.append("--config=" + server.configfile)
-            else:
-                self.args.append("--config=" + self.dsconf["path"])
 
-class ArkiQuery(ArkiQueryBase):
-    def __init__(self, **kw):
-        super(ArkiQuery, self).__init__(**kw)
-        style = self.fields.get("style", "metadata").strip()
-        if style == "metadata":
-            pass
-        elif style == "yaml":
-            self.args.append("--yaml")
-            self.content_type = "text/x-yaml"
-            self.ext = "yaml"
-        elif style == "inline":
-            self.args.append("--inline")
-            self.ext = "bin"
-        elif style == "data":
-            self.args.append("--data")
-            self.ext = "bin"
-        elif style == "postprocess":
-            self.args.append("--postproc=" + self.fields.get("command", ""))
-            for f in self.fields.getall("postprocfile"):
-                if not self.subdir: raise RuntimeError, "posprocess data have been provided but arki-query is not run in a subdir"
-                # Store the uploaded file in the temporary directory
-                dest = os.path.join(self.subdir, os.path.basename(f.filename))
-                destfd = open(dest, "w")
-                shutil.copyfileobj(f.file, destfd)
-                destfd.close()
-                # Pass it to arki-query
-                self.args.append("--postproc-data=" + dest)
-            self.ext = "bin"
-        elif style == "rep_metadata":
-            self.args.append("--report=" + self.fields.get("command", ""))
-            self.content_type = "text/plain"
-            self.ext = "txt"
-        elif style == "rep_summary":
-            self.args.append("--summary")
-            self.args.append("--report=" + self.fields.get("command", ""))
-            self.content_type = "text/plain"
-            self.ext = "txt"
-        if "sort" in self.fields:
-            self.args.append("--sort=" + self.fields["sort"]);
+struct StreamHeaders : public runtime::PosixBufWithHooks::PreWriteHook
+{
+	QueryHelper& qhelper;
+	Request& req;
+	std::string fname;
 
-        if not self.do_qmacro:
-            self.args.append(self.fields.get("query", "").strip())
-            self.args.append(self.dsconf['path'])
+	StreamHeaders(QueryHelper& qhelper, Request& req, const std::string& fname)
+		: qhelper(qhelper), req(req)
+	{
+	}
 
-class ArkiQuerySummary(ArkiQueryBase):
-    def __init__(self, **kw):
-        super(ArkiQuerySummary, self).__init__(**kw)
-        self.args.append('--summary')
-        style = self.fields.get("style", "summary").strip()
-        if style == "yaml":
-            self.args.append("--yaml")
-            self.content_type = "text/x-yaml"
-            self.ext = "yaml"
-        if not self.do_qmacro:
-            self.args.append(self.fields.get("query", "").strip())
-            self.args.append(self.dsconf['path'])
-
-// Download the summary of a dataset
-@route("/summary")
-@route("/summary/")
-@post("/summary")
-@post("/summary/")
-def summary():
-    args = Args()
-    if not "qmacro" in args:
-        raise bottle.HTTPError(400, "Root-level query withouth qmacro argument")
-    return ArkiQuerySummary(owndir = True, fields=args).stream()
-*/
+	virtual bool operator()()
+	{
+		// Send headers for streaming
+		qhelper.send_headers(req, fname);
+		// Fire only once
+		return false;
+	}
+};
 
 struct RootQueryHandler : public LocalHandler
 {
@@ -1008,12 +937,13 @@ struct RootQueryHandler : public LocalHandler
 		// Create Output directed to req.sock
 		runtime::Output sockoutput(req.sock, "socket");
 
+		// Send headers when data starts flowing
+		StreamHeaders headers_hook(qhelper, req, macroname);
+		sockoutput.set_hook(headers_hook);
+
 		// Create the dataset processor for this query
 		Matcher emptyMatcher;
 		auto_ptr<runtime::DatasetProcessor> p = qhelper.pmaker.make(emptyMatcher, sockoutput);
-
-		// Send headers for streaming
-		qhelper.send_headers(req, macroname);
 
 		// Process the virtual qmacro dataset producing the output
 		p->process(*ds, macroname);

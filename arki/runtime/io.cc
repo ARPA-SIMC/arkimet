@@ -67,6 +67,19 @@ Input::Input(const std::string& file)
 	}
 }
 
+PosixBufWithHooks::PosixBufWithHooks()
+    : pwhook(0)
+{
+}
+
+int PosixBufWithHooks::sync()
+{
+    if (pwhook && !(*pwhook)())
+        pwhook = 0;
+        
+    return PosixBuf::sync();
+}
+
 Output::Output() : m_out(0), own_stream(true)
 {
 	openStdout();
@@ -147,6 +160,10 @@ void Output::openFile(const std::string& fname, bool append)
 	if (!m_out) m_out = new ostream(&posixBuf);
 }
 
+void Output::set_hook(PosixBufWithHooks::PreWriteHook& hook)
+{
+    posixBuf.pwhook = &hook;
+}
 
 Tempfile::Tempfile(const std::string& dirname, bool dirname_is_pathname) : m_out(0), m_unlink_on_exit(true)
 {

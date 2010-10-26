@@ -51,6 +51,26 @@ public:
 	const std::string& name() const { return m_name; }
 };
 
+struct PosixBufWithHooks : public wibble::stream::PosixBuf
+{
+    struct PreWriteHook
+    {
+        /**
+         * Called when the PosixBuf is about to write data
+         *
+         * @return true if it should still be called, false if there is no need
+         * anymore
+         */
+        virtual bool operator()() = 0;
+    };
+    PreWriteHook* pwhook; 
+
+    PosixBufWithHooks();
+
+protected:
+    virtual int sync();
+};
+
 /**
  * Open an output file.
  *
@@ -61,7 +81,7 @@ public:
  */
 class Output
 {
-	wibble::stream::PosixBuf posixBuf;
+	PosixBufWithHooks posixBuf;
 	std::ostream *m_out;
 	std::string m_name;
 	void closeCurrent();
@@ -77,9 +97,16 @@ public:
 	Output(wibble::commandline::StringOption& opt);
 	~Output();
 
-	// Close existing file (if any) and 
+	// Close existing file (if any) and open a new one
 	void openFile(const std::string& fname, bool append = false);
 	void openStdout();
+
+    /**
+     * Set a hook for the posixBuf, valid until it returns false.
+     *
+     * This replaces an existinf buf, if present.
+     */
+    void set_hook(PosixBufWithHooks::PreWriteHook& hook);
 
 	std::ostream& stream() { return *m_out; }
 	const std::string& name() const { return m_name; }
