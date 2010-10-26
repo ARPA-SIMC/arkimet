@@ -38,6 +38,7 @@
 #include <arki/targetfile.h>
 #include <arki/formatter.h>
 #include <arki/postprocess.h>
+#include <arki/querymacro.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
 #include <sys/types.h>
@@ -74,6 +75,28 @@ namespace runtime {
 void init()
 {
 	runtime::readMatcherAliasDatabase();
+}
+
+std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query)
+{
+    auto_ptr<ReadonlyDataset> ds;
+    string baseurl = dataset::HTTP::allSameRemoteServer(cfg);
+    if (baseurl.empty())
+    {
+        // Create the local query macro
+        nag::verbose("Running query macro %s on local datasets", qmacroname.c_str());
+        ds.reset(new Querymacro(cfg, qmacroname, query));
+    } else {
+        // Create the remote query macro
+        nag::verbose("Running query macro %s on %s", qmacroname.c_str(), baseurl.c_str());
+        ConfigFile cfg;
+        cfg.setValue("name", qmacroname);
+        cfg.setValue("type", "remote");
+        cfg.setValue("path", baseurl);
+        cfg.setValue("qmacro", query);
+        ds.reset(ReadonlyDataset::create(cfg));
+    }
+    return ds;
 }
 
 CommandLine::CommandLine(const std::string& name, int mansection)

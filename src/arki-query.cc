@@ -26,7 +26,6 @@
 #include <arki/dataset.h>
 #include <arki/dataset/merged.h>
 #include <arki/dataset/http.h>
-#include <arki/querymacro.h>
 #include <arki/utils.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
@@ -108,23 +107,11 @@ int main(int argc, const char* argv[])
 			for (size_t i = 0; i < dscount; ++i)
 				opts.closeSource(datasets[i], all_successful);
 		} else if (opts.qmacro->isSet()) {
-			auto_ptr<ReadonlyDataset> ds;
-			string baseurl = dataset::HTTP::allSameRemoteServer(opts.inputInfo);
-			if (baseurl.empty())
-			{
-				// Create the local query macro
-				nag::verbose("Running query macro %s on local datasets", opts.qmacro->stringValue().c_str());
-				ds.reset(new Querymacro(opts.inputInfo, opts.qmacro->stringValue(), opts.strquery));
-			} else {
-				// Create the remote query macro
-				nag::verbose("Running query macro %s on %s", opts.qmacro->stringValue().c_str(), baseurl.c_str());
-				ConfigFile cfg;
-				cfg.setValue("name", opts.qmacro->stringValue());
-				cfg.setValue("type", "remote");
-				cfg.setValue("path", baseurl);
-				cfg.setValue("qmacro", opts.strquery);
-				ds.reset(ReadonlyDataset::create(cfg));
-			}
+            // Create the virtual qmacro dataset
+			auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+                    opts.inputInfo, 
+                    opts.qmacro->stringValue(),
+                    opts.strquery);
 
 			// Perform the query
 			all_successful = opts.processSource(*ds, opts.qmacro->stringValue());

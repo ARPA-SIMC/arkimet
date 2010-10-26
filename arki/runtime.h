@@ -52,6 +52,8 @@ class MetadataDispatch;
  */
 void init();
 
+std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query);
+
 struct CommandLine : public wibble::commandline::StandardParserWithManpage
 {
 	wibble::commandline::OptionGroup* infoOpts;
