@@ -996,12 +996,14 @@ struct RootQueryHandler : public LocalHandler
 		ParamSingle* qmacro = qhelper.params.add<ParamSingle>("qmacro");
 		qhelper.parse_request(req);
 
-		if (qmacro->empty())
+		string macroname = str::trim(*qmacro);
+
+		if (macroname.empty())
 			throw http::error400("root-level query without qmacro parameter");
 
 		// Create qmacro dataset
 		auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
-				req.arki_conf, *qmacro, *qhelper.query);
+				req.arki_conf, macroname, *qhelper.query);
 
 		// Create Output directed to req.sock
 		runtime::Output sockoutput(req.sock, "socket");
@@ -1011,13 +1013,50 @@ struct RootQueryHandler : public LocalHandler
 		auto_ptr<runtime::DatasetProcessor> p = qhelper.pmaker.make(emptyMatcher, sockoutput);
 
 		// Send headers for streaming
-		qhelper.send_headers(req, *qmacro);
+		qhelper.send_headers(req, macroname);
 
 		// Process the virtual qmacro dataset producing the output
-		p->process(*ds, *qmacro);
+		p->process(*ds, macroname);
 		p->end();
 
 		// End of streaming
+	}
+};
+
+struct RootSummaryHandler : public LocalHandler
+{
+	virtual void operator()(Request& req)
+	{
+		Params params;
+		ParamSingle* style = params.add<ParamSingle>("style");
+		ParamSingle* query = params.add<ParamSingle>("query");
+		ParamSingle* qmacro = params.add<ParamSingle>("qmacro");
+		params.parse_get_or_post(req);
+
+		string macroname = str::trim(*qmacro);
+
+		if (macroname.empty())
+			throw http::error400("root-level query without qmacro parameter");
+
+		// Create qmacro dataset
+		auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+				req.arki_conf, macroname, *query);
+
+		// Query the summary
+		Summary sum;
+		ds->querySummary(Matcher(), sum);
+
+		if (*style == "yaml")
+		{
+			stringstream res;
+			sum.writeYaml(res);
+			req.send_result(res.str(), "text/x-yaml", macroname + "-summary.yaml");
+		}
+		else
+		{
+			string res = sum.encode(true);
+			req.send_result(res, "application/octet-stream", macroname + "-summary.bin");
+		}
 	}
 };
 
@@ -1507,7 +1546,7 @@ int main(int argc, const char* argv[])
 		local_handlers.add("qexpand", new QexpandHandler);
 		local_handlers.add("dataset", new DatasetHandler);
 		local_handlers.add("query", new RootQueryHandler);
-		//local_handlers.add("summary", new RootSummaryHandler);
+		local_handlers.add("summary", new RootSummaryHandler);
 
 		// Configure the server and start listening
 		ServerProcess srv(opts);
