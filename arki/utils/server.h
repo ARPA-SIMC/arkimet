@@ -58,6 +58,10 @@ struct Server
 
 	// Set socket to listen, with given backlog
 	void listen(int backlog = 16);
+
+    // Set FD_CLOEXEC option on master socket, so it does not propagate to
+    // children. The master socket is not FD_CLOEXEC by default.
+    void set_sock_cloexec();
 };
 
 struct TCPServer : public Server

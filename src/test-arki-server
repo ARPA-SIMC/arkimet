@@ -18,7 +18,7 @@ then
 #EOF
 
     rm -f as-access.log as-error.log
-    arki-server -p 7117 --accesslog="as-access.log" --errorlog="as-error.log" --quiet --runtest="$BINDIR/`basename $0` run" conf
+    arki-server1 -p 7117 --accesslog="as-access.log" --errorlog="as-error.log" --quiet --runtest="$BINDIR/`basename $0` run" conf
 
     endtest
 elif [ $1 == 'run' ]

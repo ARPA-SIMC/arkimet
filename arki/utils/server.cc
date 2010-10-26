@@ -114,10 +114,6 @@ void Server::bind(const char* port, const char* host)
         throw wibble::exception::Consistency(
                 str::fmtf("binding to %s:%s", host, port),
                 "could not bind to any of the resolved addresses");
-
-    // Set close-on-exec on master socket
-    if (fcntl(sock, F_SETFD, FD_CLOEXEC) < 0)
-        throw wibble::exception::System("setting FD_CLOEXEC on server socket");
 }
 
 // Set socket to listen, with given backlog
@@ -125,6 +121,13 @@ void Server::listen(int backlog)
 {
     if (::listen(sock, backlog) < 0)
         throw wibble::exception::System("listening on port " + port);
+}
+
+void Server::set_sock_cloexec()
+{
+    // Set close-on-exec on master socket
+    if (fcntl(sock, F_SETFD, FD_CLOEXEC) < 0)
+        throw wibble::exception::System("setting FD_CLOEXEC on server socket");
 }
 
 

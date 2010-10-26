@@ -31,12 +31,6 @@
 #include <arki/dataset.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
-#if 0
-#include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
-#include <arki/formatter.h>
-#include <arki/utils/geosdef.h>
-#endif
 #include <arki/runtime.h>
 #include <arki/utils/server.h>
 #include <arki/utils/http.h>
@@ -1268,7 +1262,6 @@ struct HTTP : public net::TCPServer
 
 	void run_server()
 	{
-		listen();
 		stop_signals.push_back(SIGCHLD);
 
 		while (true)
@@ -1307,6 +1300,44 @@ struct HTTP : public net::TCPServer
 	}
 };
 
+struct ServerProcess : public sys::ChildProcess
+{
+	commandline::Options& opts;
+	HTTP http;
+
+	ServerProcess(commandline::Options& opts) : opts(opts)
+	{
+		http.arki_config = opts.next();
+
+		const char* host = NULL;
+		if (opts.host->isSet())
+			host = opts.host->stringValue().c_str();
+		const char* port = "8080";
+		if (opts.port->isSet())
+			port = opts.port->stringValue().c_str();
+
+		http.bind(port, host);
+
+		if (opts.url->isSet())
+			http.set_server_name(opts.url->stringValue());
+		else
+			http.set_server_name("http://" + http.host + ":" + http.port);
+
+		http.listen();
+	}
+
+	virtual int main()
+	{
+		// Set FD_CLOEXEC so server workers don't get the master socket
+		http.set_sock_cloexec();
+
+		// Server main loop
+		http.run_server();
+
+		return 0;
+	}
+};
+
 int main(int argc, const char* argv[])
 {
 	wibble::commandline::Options opts;
@@ -1337,30 +1368,25 @@ int main(int argc, const char* argv[])
 			"do not log to standard output");
 		*/
 
-		HTTP http;
-		http.arki_config = opts.next();
+		// Configure the server and start listening
+		ServerProcess srv(opts);
+		cout << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
 
-		const char* host = NULL;
-		if (opts.host->isSet())
-			host = opts.host->stringValue().c_str();
-		const char* port = "8080";
-		if (opts.port->isSet())
-			port = opts.port->stringValue().c_str();
+		if (opts.runtest->isSet())
+		{
+			// Fork and start the server
+			srv.fork();
 
-		http.bind(port, host);
+			// No need to poll the server until ready, as the
+			// socket was already listening since before forking
+			int res = system(opts.runtest->stringValue().c_str());
 
-		if (opts.url->isSet())
-			http.set_server_name(opts.url->stringValue());
-		else
-			http.set_server_name("http://" + http.host + ":" + http.port);
-
-		cout << "Listening on " << http.host << ":" << http.port << " for " << http.server_name << endl;
-
-		http.run_server();
-
-		cout << "Done." << endl;
-
-		return 0;
+			srv.kill(SIGINT);
+			srv.wait();
+			return res;
+		} else {
+			return srv.main();
+		}
 	} catch (wibble::exception::BadOption& e) {
 		cerr << e.desc() << endl;
 		opts.outputHelp(cerr);
