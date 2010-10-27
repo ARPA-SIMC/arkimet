@@ -37,32 +37,32 @@ using namespace std;
 using namespace arki;
 
 struct arki_postprocess_shar {
-	ConfigFile config;
+    ConfigFile config;
 
     arki_postprocess_shar()
     {
-		// In-memory dataset configuration
-		string conf =
-			"[testall]\n"
-			"type = test\n"
-			"step = daily\n"
-			"filter = origin: GRIB1\n"
-			"index = origin, reftime\n"
-			"postprocess = null\n"
-			"name = testall\n"
-			"path = testall\n";
-		stringstream incfg(conf);
-		config.parse(incfg, "(memory)");
+        // In-memory dataset configuration
+        string conf =
+            "[testall]\n"
+            "type = test\n"
+            "step = daily\n"
+            "filter = origin: GRIB1\n"
+            "index = origin, reftime\n"
+            "postprocess = null\n"
+            "name = testall\n"
+            "path = testall\n";
+        stringstream incfg(conf);
+        config.parse(incfg, "(memory)");
     }
 
-	void produceGRIB(metadata::Consumer& c)
-	{
-		Metadata md;
-		scan::Grib scanner;
-		scanner.open("inbound/test.grib1");
-		while (scanner.next(md))
-			c(md);
-	}
+    void produceGRIB(metadata::Consumer& c)
+    {
+        Metadata md;
+        scan::Grib scanner;
+        scanner.open("inbound/test.grib1");
+        while (scanner.next(md))
+            c(md);
+    }
 };
 TESTGRP(arki_postprocess);
 
@@ -70,22 +70,22 @@ TESTGRP(arki_postprocess);
 template<> template<>
 void to::test<1>()
 {
-	Postprocess p("null", STDERR_FILENO, config.section("testall")->values());
+    Postprocess p("null", STDERR_FILENO, config.section("testall")->values());
 
-	produceGRIB(p);
+    produceGRIB(p);
 
-	p.flush();
+    p.flush();
 }
 
 // Check that it works without validation, too
 template<> template<>
 void to::test<2>()
 {
-	Postprocess p("null", STDERR_FILENO);
+    Postprocess p("null", STDERR_FILENO);
 
-	produceGRIB(p);
+    produceGRIB(p);
 
-	p.flush();
+    p.flush();
 }
 
 }
