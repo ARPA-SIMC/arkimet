@@ -244,9 +244,6 @@ AC_SUBST(LZO_VERSION)
 AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
 AM_CONDITIONAL([LZO_EMBEDDED], [test x"$LZO_VERSION" = x"embedded"])
 
-dnl Check for python
-AM_PATH_PYTHON
-
 LIBARKI_VERSION_INFO=`echo $VERSION | awk -F. '{ printf "%d:%d:%d", $1+$2, $3, $2 }'`
 AC_SUBST(LIBARKI_VERSION_INFO)
 
