@@ -1378,9 +1378,15 @@ struct LogFilter : public log::Sender
 	log::Level minLevel;
 	log::Sender* access;
 	log::Sender* error;
+	vector<log::Sender*> log_components;
 
 	LogFilter() : minLevel(log::INFO), access(0), error(0) {}
-
+    ~LogFilter()
+    {
+        for (vector<log::Sender*>::iterator i = log_components.begin();
+                i != log_components.end(); ++i)
+            delete *i;
+    }
 	virtual void send(log::Level level, const std::string& msg)
 	{
 		if (level < minLevel) return;
@@ -1398,9 +1404,8 @@ struct ServerProcess : public sys::ChildProcess
 	commandline::Options& opts;
 	ostream log;
 	HTTP http;
-	log::Streambuf logstream;
 	LogFilter filter;
-	vector<log::Sender*> log_components;
+	log::Streambuf logstream;
 
 	ServerProcess(commandline::Options& opts)
 		: opts(opts), log(cerr.rdbuf()), http(log)
@@ -1408,7 +1413,7 @@ struct ServerProcess : public sys::ChildProcess
 		http.arki_config = sys::fs::abspath(opts.next());
 
 		log::Sender* console = new log::OstreamSender(cerr);
-		log_components.push_back(console);
+		filter.log_components.push_back(console);
 		filter.access = console;
 		filter.error = console;
 
@@ -1417,24 +1422,24 @@ struct ServerProcess : public sys::ChildProcess
 		if (opts.syslog->boolValue())
 		{
 			log::Sender* syslog = new log::SyslogSender("arki-server", LOG_PID, LOG_DAEMON);
-			log_components.push_back(syslog);
+			filter.log_components.push_back(syslog);
 			filter.access = syslog;
 			filter.error = syslog;
 		}
 		if (opts.accesslog->isSet())
 		{
 			log::Sender* accesslog = new log::FileSender(opts.accesslog->stringValue());
-			log_components.push_back(accesslog);
+			filter.log_components.push_back(accesslog);
 			log::Sender* ts = new log::Timestamper(accesslog);
-			log_components.push_back(ts);
+			filter.log_components.push_back(ts);
 			filter.access = ts;
 		}
 		if (opts.errorlog->isSet())
 		{
 			log::Sender* errorlog = new log::FileSender(opts.errorlog->stringValue());
-			log_components.push_back(errorlog);
+			filter.log_components.push_back(errorlog);
 			log::Sender* ts = new log::Timestamper(errorlog);
-			log_components.push_back(ts);
+			filter.log_components.push_back(ts);
 			filter.error = ts;
 		}
 		logstream.setSender(&filter);
@@ -1459,9 +1464,6 @@ struct ServerProcess : public sys::ChildProcess
 
 	~ServerProcess()
 	{
-		for (vector<log::Sender*>::iterator i = log_components.begin();
-				i != log_components.end(); ++i)
-			delete *i;
 	}
 
 	virtual int main()
