@@ -74,8 +74,11 @@ PosixBufWithHooks::PosixBufWithHooks()
 
 int PosixBufWithHooks::sync()
 {
-    if (pwhook && !(*pwhook)())
-        pwhook = 0;
+    if (pptr() > pbase())
+    {
+        if (pwhook && !(*pwhook)())
+            pwhook = 0;
+    }
         
     return PosixBuf::sync();
 }

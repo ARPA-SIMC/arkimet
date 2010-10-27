@@ -1123,8 +1123,9 @@ struct DatasetHandler : public LocalHandler
 		// Create the dataset processor for this query
 		auto_ptr<runtime::DatasetProcessor> p = qhelper.pmaker.make(matcher, sockoutput);
 
-		// Send headers for streaming
-		qhelper.send_headers(req, dsname);
+		// Send headers when data starts flowing
+		StreamHeaders headers_hook(qhelper, req, dsname);
+		sockoutput.set_hook(headers_hook);
 
 		// Process the dataset producing the output
 		p->process(*ds, dsname);
