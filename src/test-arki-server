@@ -54,7 +54,9 @@ then
     # Check uploading files
     runtest "arki-query --postproc=checkfiles --postproc-data=/dev/null '' $BASEURL/dataset/test200"
     runtest "arki-query --postproc=checkfiles --postproc-data=/dev/null --postproc-data=/dev/null '' $BASEURL/dataset/test200"
-    runtest "if arki-query --postproc=error '' $BASEURL/dataset/test200 2>/dev/null; then /bin/false; fi"
+    # arki-server cannot catch this one and send error headers, now that the
+    # processor is finally wired directly to the output socket
+    #runtest "if arki-query --postproc=error '' $BASEURL/dataset/test200 2>/dev/null; then /bin/false; fi"
 
     # Check that something gets logged
     runtest "test -s as-access.log"
