@@ -12,6 +12,7 @@ man_MANS = \
 	arki-check.1 \
 	arki-mergeconf.1 \
 	arki-scan.1 \
+	arki-server.1 \
 	arki-xargs.1
 
 if DBALLE
@@ -76,6 +77,7 @@ EXTRA_DIST = README \
 	     doc/mhooks-scan \
 	     doc/mhooks-check \
 	     doc/mhooks-mergeconf \
+	     doc/mhooks-server \
 	     doc/mhooks-xargs \
 	     doc/mhooks-bufr-prepare \
 	     doc/lua-examples/area.lua \

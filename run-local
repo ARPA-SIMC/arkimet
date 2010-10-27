@@ -10,7 +10,6 @@ export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/
 export ARKI_QMACRO=$TOP_SRCDIR/conf/qmacro/
 export ARKI_TARGETFILE=$TOP_SRCDIR/conf/targetfile/
 export ARKI_ALIASES=$TOP_SRCDIR/conf/match-alias.conf
-export ARKI_SERVER=$TOP_SRCDIR/conf/server/
 export PATH="$TOP_SRCDIR/src:$PATH"
 #export ARKI_POSTPROC=$TOP_SRCDIR/test/postproc
 

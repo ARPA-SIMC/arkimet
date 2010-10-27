@@ -5,9 +5,7 @@ arkipythondir = $(pythondir)/arkimet
 arkipython_PYTHON = arkimet/bottle.py \
 		    arkimet/__init__.py
 
-bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs arki-server1
-
-dist_bin_SCRIPTS = arki-server
+bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs arki-server
 
 dist_noinst_HEADERS = bench/benchmark.h
 
@@ -68,8 +66,8 @@ arki_xargs_LDFLAGS = $(all_libs)
 arki_gzip_SOURCES = arki-gzip.cc
 arki_gzip_LDFLAGS = $(all_libs)
 
-arki_server1_SOURCES = arki-server1.cc
-arki_server1_LDFLAGS = $(all_libs)
+arki_server_SOURCES = arki-server.cc
+arki_server_LDFLAGS = $(all_libs)
 
 TESTS = test-arki-server test-arki-scan test-arki-query run-test-src
 check_PROGRAMS = test-src

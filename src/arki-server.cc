@@ -41,7 +41,7 @@
 #include <arki/runtime/config.h>
 #include <arki/utils/server.h>
 #include <arki/utils/http.h>
-#include <arki/utils/lua.h>
+//#include <arki/utils/lua.h>
 
 #include <string>
 #include <vector>
@@ -692,6 +692,7 @@ struct LocalHandlers
 	}
 };
 
+/*
 struct ScriptHandlers
 {
 	string scriptdir;
@@ -739,9 +740,10 @@ struct ScriptHandlers
 		return true;
 	}
 };
+*/
 
 LocalHandlers local_handlers;
-ScriptHandlers script_handlers;
+//ScriptHandlers script_handlers;
 
 /// Show a list of all available datasets
 struct IndexHandler : public LocalHandler
@@ -1241,8 +1243,8 @@ struct ChildServer : public sys::ChildProcess
 				// Run the handler for this request
 				try {
 					if (!local_handlers.try_do(req))
-						if (!script_handlers.try_do(req))
-							throw http::error404();
+						// if (!script_handlers.try_do(req))
+						throw http::error404();
 				} catch (http::error& e) {
 					e.send(req);
 				} catch (std::exception& e) {
