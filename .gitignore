@@ -48,6 +48,8 @@ Makefile
 /arki-scan.1
 /arki-xargs.1
 /arki-bufr-prepare.1
+/arki-gzip.1
+/arki-server.1
 /_darcs
 /wibble
 /src/arki-benchmark
@@ -60,6 +62,7 @@ Makefile
 /src/arki-xargs
 /src/arki-bufr-prepare
 /src/arki-gzip
+/src/arki-server
 /src/test-src
 /arki/tests/arki-test
 /data/*.GRIB
