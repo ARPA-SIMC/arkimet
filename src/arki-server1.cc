@@ -891,6 +891,8 @@ struct QueryHelper
 		req.send("Content-Disposition: attachment; filename=" + fname + "." + ext + "\r\n");
 		req.send("\r\n");
 	}
+
+	void do_processing(ReadonlyDataset& ds, Request& req, Matcher& matcher, const std::string& fname);
 };
 
 struct StreamHeaders : public runtime::PosixBufWithHooks::PreWriteHook
@@ -898,9 +900,10 @@ struct StreamHeaders : public runtime::PosixBufWithHooks::PreWriteHook
 	QueryHelper& qhelper;
 	Request& req;
 	std::string fname;
+	bool fired;
 
 	StreamHeaders(QueryHelper& qhelper, Request& req, const std::string& fname)
-		: qhelper(qhelper), req(req)
+		: qhelper(qhelper), req(req), fname(fname), fired(false)
 	{
 	}
 
@@ -908,10 +911,49 @@ struct StreamHeaders : public runtime::PosixBufWithHooks::PreWriteHook
 	{
 		// Send headers for streaming
 		qhelper.send_headers(req, fname);
+		fired = true;
 		// Fire only once
 		return false;
 	}
+
+	void sendIfNotFired()
+	{
+		if (!fired) operator()();
+	}
 };
+
+void QueryHelper::do_processing(ReadonlyDataset& ds, Request& req, Matcher& matcher, const std::string& fname)
+{
+	StreamHeaders headers_hook(*this, req, fname);
+
+	// If we are postprocessing, we cannot monitor the postprocessor
+	// output to hook sending headers: the postprocessor is
+	// connected directly to the output socket.
+	//
+	// Therefore we need to send the headers in advance.
+
+	{
+		// Create Output directed to req.sock
+		runtime::Output sockoutput(req.sock, "socket");
+
+		if (pmaker.postprocess.empty())
+			// Send headers when data starts flowing
+			sockoutput.set_hook(headers_hook);
+		else
+			// If we postprocess, we need to send headers right away
+			headers_hook.sendIfNotFired();
+
+		// Create the dataset processor for this query
+		auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+
+		// Process the virtual qmacro dataset producing the output
+		p->process(ds, fname);
+		p->end();
+	}
+
+	// If we had empty output, headers were not sent: catch up
+	headers_hook.sendIfNotFired();
+}
 
 struct RootQueryHandler : public LocalHandler
 {
@@ -934,20 +976,9 @@ struct RootQueryHandler : public LocalHandler
 		auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
 				req.arki_conf, macroname, *qhelper.query);
 
-		// Create Output directed to req.sock
-		runtime::Output sockoutput(req.sock, "socket");
-
-		// Send headers when data starts flowing
-		StreamHeaders headers_hook(qhelper, req, macroname);
-		sockoutput.set_hook(headers_hook);
-
-		// Create the dataset processor for this query
+		// Stream out data
 		Matcher emptyMatcher;
-		auto_ptr<runtime::DatasetProcessor> p = qhelper.pmaker.make(emptyMatcher, sockoutput);
-
-		// Process the virtual qmacro dataset producing the output
-		p->process(*ds, macroname);
-		p->end();
+		qhelper.do_processing(*ds, req, emptyMatcher, macroname);
 
 		// End of streaming
 	}
@@ -1117,19 +1148,7 @@ struct DatasetHandler : public LocalHandler
 		// proper error reply before we send the good headers
 		auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
 
-		// Create Output directed to req.sock
-		runtime::Output sockoutput(req.sock, "socket");
-
-		// Create the dataset processor for this query
-		auto_ptr<runtime::DatasetProcessor> p = qhelper.pmaker.make(matcher, sockoutput);
-
-		// Send headers when data starts flowing
-		StreamHeaders headers_hook(qhelper, req, dsname);
-		sockoutput.set_hook(headers_hook);
-
-		// Process the dataset producing the output
-		p->process(*ds, dsname);
-		p->end();
+		qhelper.do_processing(*ds, req, matcher, dsname);
 
 		// End of streaming
 	}
