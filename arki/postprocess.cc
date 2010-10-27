@@ -225,6 +225,9 @@ bool Postprocess::operator()(Metadata& md)
 	if (m_infd == -1)
 		return false;
 	md.makeInline();
+	// Ignore sigpipe when writing to child, so we can raise an exception
+	// instead of dying with the signal
+	// TODO: handle instead of ignoring, otherwise write will just wait and hang
 	Sigignore sigignore(SIGPIPE);
 	md.write(m_infd, "postprocessing filter");
 	return true;
