@@ -105,11 +105,15 @@ struct FilterHandler
     int infd;
     /// Pipe used to get data back from the subprocess
     int outfd;
+    /// Pipe used to capture the stderr of the subprocess
+    int errfd;
     /// Wait timeout: { 0, 0 } for wait forever
     struct timespec timeout;
+    /// Stream to which we send stderror
+    std::ostream* errstream;
 
     FilterHandler(wibble::sys::ChildProcess* subproc)
-        : subproc(subproc), infd(-1), outfd(-1)
+        : subproc(subproc), infd(-1), outfd(-1), errfd(-1), errstream(0)
     {
         timeout.tv_sec = 0;
         timeout.tv_nsec = 0;
@@ -119,12 +123,13 @@ struct FilterHandler
     {
         if (infd != -1) close(infd);
         if (outfd != -1) close(outfd);
+        if (errfd != -1) close(errfd);
     }
 
     /// Start the child process, setting up pipes as needed
     void start()
     {
-        subproc->forkAndRedirect(&infd, &outfd);
+        subproc->forkAndRedirect(&infd, &outfd, &errfd);
     }
 
     /// Close pipe to child process, to signal we're done sending data
@@ -136,6 +141,30 @@ struct FilterHandler
             if (close(infd) < 0)
                 throw wibble::exception::System("closing output to filter child process");
             infd = -1;
+        }
+    }
+
+    /// Read stderr and pass it on to the error stream
+    void read_stderr()
+    {
+        // Read data from child
+        char buf[4096*2];
+        ssize_t res = read(errfd, buf, 4096*2);
+        if (res < 0)
+            throw wibble::exception::System("reading from child stderr");
+        if (res == 0)
+        {
+            close(errfd);
+            errfd = -1;
+            return;
+        }
+
+        // Pass it on
+        if (errstream != NULL)
+        {
+            errstream->write(buf, res);
+            if (errstream->bad())
+                throw wibble::exception::System("writing to destination error stream");
         }
     }
 
@@ -164,7 +193,13 @@ struct FilterHandler
             FD_SET(infd, &infds);
             FD_ZERO(&outfds);
             FD_SET(outfd, &outfds);
-            int nfds = max(infd, outfd) + 1;
+            int nfds = max(infd, outfd);
+            if (errfd != -1)
+            {
+                FD_SET(errfd, &outfds);
+                nfds = max(nfds, errfd);
+            }
+            ++nfds;
 
             int res = pselect(nfds, &outfds, &infds, NULL, timeout_param, NULL);
             if (res < 0)
@@ -180,6 +215,9 @@ struct FilterHandler
                 buf = (const char*)buf + res;
                 size -= res;
             }
+
+            if (errfd != -1 && FD_ISSET(errfd, &outfds))
+                read_stderr();
 
             if (FD_ISSET(outfd, &outfds))
                 return true;
@@ -199,13 +237,21 @@ struct FilterHandler
             fd_set outfds;
             FD_ZERO(&outfds);
             FD_SET(outfd, &outfds);
-            int nfds = outfd + 1;
+            FD_SET(errfd, &outfds);
+            int nfds = outfd;
+            if (errfd != -1)
+                nfds = max(nfds, errfd);
+            ++nfds;
 
             int res = pselect(nfds, &outfds, NULL, NULL, timeout_param, NULL);
             if (res < 0)
                 throw wibble::exception::System("waiting for activity on filter child process");
             if (res == 0)
                 throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
+
+            if (errfd != -1 && FD_ISSET(errfd, &outfds))
+                read_stderr();
+
             if (FD_ISSET(outfd, &outfds))
                 return;
         }
@@ -234,96 +280,14 @@ struct Sigignore
 
 }
 
-void Postprocess::init()
+Postprocess::Postprocess(const std::string& command)
+    : m_child(0), m_handler(0), m_command(command), m_nextfd(-1), m_out(NULL), m_err(&m_errors), data_start_hook(NULL)
 {
-    // This could have been handled using a default argument, but it fails
-    // to compile on at least fc8
-    map<string, string> cfg;
-    init(cfg);
-}
-
-void Postprocess::init(const map<string, string>& cfg)
-{
-    using namespace wibble::operators;
     Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
-    // Build the set of allowed postprocessors
-    set<string> allowed;
-    map<string, string>::const_iterator i = cfg.find("postprocess");
-    if (i != cfg.end())
-    {
-        string pp = i->second;
-        for (Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
-            allowed.insert(*j);
-    }
-
     // Parse command into its components
-    vector<string> args;
     for (Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
-        args.push_back(*j);
+        m_args.push_back(*j);
     //cerr << "Split \"" << m_command << "\" into: " << str::join(args.begin(), args.end(), ", ") << endl;
-
-    // Validate the command
-    if (args.empty())
-        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command is empty");
-    if (!cfg.empty() && allowed.find(args[0]) == allowed.end())
-    {
-        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command " + m_command + " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(allowed.begin(), allowed.end()) + ")");
-    }
-
-    // Expand args[0] to the full pathname and check that the program exists
-
-    // Build a list of argv0 candidates
-    vector<string> cand_argv0;
-    char* env_ppdir = getenv("ARKI_POSTPROC");
-    if (env_ppdir)
-        cand_argv0.push_back(str::joinpath(env_ppdir, args[0]));
-    cand_argv0.push_back(str::joinpath(POSTPROC_DIR, args[0]));
-
-    // Get the first good one from the list
-    string argv0;
-    for (vector<string>::const_iterator i = cand_argv0.begin();
-            i != cand_argv0.end(); ++i)
-        if (sys::fs::access(*i, X_OK))
-            argv0 = *i;
-
-    if (argv0.empty())
-        throw wibble::exception::Consistency("running postprocessing filter", "postprocess command \"" + m_command + "\" does not exists or it is not executable; tried: " + str::join(cand_argv0.begin(), cand_argv0.end()));
-    args[0] = argv0;
-
-    // Spawn the command
-    m_child = new postproc::Subcommand(args);
-    m_handler = new postproc::FilterHandler(m_child);
-    m_handler->start();
-}
-
-Postprocess::Postprocess(const std::string& command, int outfd)
-    : m_child(0), m_handler(0), m_command(command), m_nextfd(outfd), m_out(NULL), data_start_hook(NULL)
-{
-    init();
-}
-
-Postprocess::Postprocess(const std::string& command, int outfd, const map<string, string>& cfg)
-    : m_child(0), m_handler(0), m_command(command), m_nextfd(outfd), m_out(NULL), data_start_hook(NULL)
-{
-    init(cfg);
-}
-
-Postprocess::Postprocess(const std::string& command, std::ostream& out)
-    : m_child(0), m_handler(0), m_command(command), m_nextfd(-1), m_out(&out), data_start_hook(NULL)
-{
-    if (stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf()))
-        m_nextfd = ps->fd();
-
-    init();
-}
-
-Postprocess::Postprocess(const std::string& command, std::ostream& out, const map<string, string>& cfg)
-    : m_child(0), m_handler(0), m_command(command), m_nextfd(-1), m_out(&out), data_start_hook(NULL)
-{
-    if (stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf()))
-        m_nextfd = ps->fd();
-
-    init(cfg);
 }
 
 Postprocess::~Postprocess()
@@ -340,6 +304,78 @@ Postprocess::~Postprocess()
     if (m_handler)
         delete m_handler;
 }
+
+void Postprocess::set_output(int outfd)
+{
+    m_nextfd = outfd;
+}
+
+void Postprocess::set_output(std::ostream& out)
+{
+    m_out = &out;
+    if (stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf()))
+        m_nextfd = ps->fd();
+}
+
+void Postprocess::set_error(std::ostream& err)
+{
+    m_err = &err;
+}
+
+void Postprocess::validate(const map<string, string>& cfg)
+{
+    using namespace wibble::operators;
+    // Build the set of allowed postprocessors
+    set<string> allowed;
+    map<string, string>::const_iterator i = cfg.find("postprocess");
+    if (i != cfg.end())
+    {
+        Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
+        string pp = i->second;
+        for (Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
+            allowed.insert(*j);
+    }
+
+    // Validate the command
+    if (m_args.empty())
+        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command is empty");
+    if (!cfg.empty() && allowed.find(m_args[0]) == allowed.end())
+    {
+        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command " + m_command + " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(allowed.begin(), allowed.end()) + ")");
+    }
+
+}
+
+void Postprocess::start()
+{
+    // Expand args[0] to the full pathname and check that the program exists
+
+    // Build a list of argv0 candidates
+    vector<string> cand_argv0;
+    // TODO: colon-separated $PATH-like semantics
+    char* env_ppdir = getenv("ARKI_POSTPROC");
+    if (env_ppdir)
+        cand_argv0.push_back(str::joinpath(env_ppdir, m_args[0]));
+    cand_argv0.push_back(str::joinpath(POSTPROC_DIR, m_args[0]));
+
+    // Get the first good one from the list
+    string argv0;
+    for (vector<string>::const_iterator i = cand_argv0.begin();
+            i != cand_argv0.end(); ++i)
+        if (sys::fs::access(*i, X_OK))
+            argv0 = *i;
+
+    if (argv0.empty())
+        throw wibble::exception::Consistency("running postprocessing filter", "postprocess command \"" + m_command + "\" does not exists or it is not executable; tried: " + str::join(cand_argv0.begin(), cand_argv0.end()));
+    m_args[0] = argv0;
+
+    // Spawn the command
+    m_child = new postproc::Subcommand(m_args);
+    m_handler = new postproc::FilterHandler(m_child);
+    m_handler->errstream = m_err;
+    m_handler->start();
+}
+
 
 void Postprocess::set_data_start_hook(metadata::Hook* hook)
 {
@@ -458,7 +494,12 @@ void Postprocess::flush()
         delete m_child;
         m_child = 0;
         if (res)
-            throw wibble::exception::Consistency("running postprocessing filter", "postprocess command \"" + m_command + "\" " + sys::process::formatStatus(res));
+        {
+            string msg = "postprocess command \"" + m_command + "\" " + sys::process::formatStatus(res);
+            if (!m_errors.str().empty())
+                msg += "; stderr: " + str::trim(m_errors.str());
+            throw wibble::exception::Consistency("running postprocessing filter", msg);
+        }
     }
 }
 

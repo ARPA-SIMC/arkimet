@@ -25,6 +25,8 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <sstream>
 #include <arki/metadata/consumer.h>
 
 namespace arki {
@@ -42,6 +44,8 @@ protected:
     postproc::FilterHandler* m_handler;
     /// Command line run in the subprocess
     std::string m_command;
+    /// Command line split in arguments
+    std::vector<std::string> m_args;
     /**
      * Pipe used to send data from the subprocess to the output stream. It can
      * be -1 if the output stream does not provide a file descriptor to write
@@ -55,17 +59,12 @@ protected:
      * to.
      */
     std::ostream* m_out;
+    /// Stream where child stderr is sent
+    std::ostream* m_err;
+    /// By default, collect child stderr here
+    std::stringstream m_errors;
     /// Non-null if we should notify the hook as soon as some data arrives from the processor
     metadata::Hook* data_start_hook;
-
-    /// Same as init with an empty config
-    void init();
-
-    /**
-     * Validate this postprocessor against the given configuration and then
-     * fork the child process setting up the various pipes
-     */
-    void init(const std::map<std::string, std::string>& cfg);
 
     /**
      * Write the given buffer to the child, pumping out the child output in the meantime
@@ -94,16 +93,42 @@ public:
      * The configuration \a cfg is used to validate if command is allowed or
      * not.
      */
-    Postprocess(const std::string& command, int outfd);
+    Postprocess(const std::string& command);
+    /*
     Postprocess(const std::string& command, int outfd, const std::map<std::string, std::string>& cfg);
-    // When using an ostream, it tries to get a file descriptor out of it with
-    // any known method (so far it's only by checking if the underlying
-    // streambuf is a wibble::stream::PosixBuf).  Otherwise, it throws
-    // exception::Consistency
     Postprocess(const std::string& command, std::ostream& out);
     Postprocess(const std::string& command, std::ostream& out, const std::map<std::string, std::string>& cfg);
+    */
     virtual ~Postprocess();
 
+    /**
+     * Validate this postprocessor against the given configuration
+     */
+    void validate(const std::map<std::string, std::string>& cfg);
+
+    /// Fork the child process setting up the various pipes
+    void start();
+
+    /// Set the output file descriptor where we send data coming from the postprocessor
+    void set_output(int outfd);
+
+    /**
+     * Set the output stream where we send data coming from the postprocessor
+     *
+     * It tries to get a file descriptor out of the stream with any known
+     * method (so far it's only by checking if the underlying streambuf is a
+     * wibble::stream::PosixBuf). If it can, and the spice(2) syscall is
+     * available, it copies the data more efficiently
+     */
+    void set_output(std::ostream& out);
+
+    /// Set the output stream where we send the postprocessor stderr
+    void set_error(std::ostream& err);
+
+    /**
+     * Set hook to be called when the child process has produced its first
+     * data, just before the data is sent to the next consumer
+     */
     void set_data_start_hook(metadata::Hook* hook);
 
     // Process one metadata

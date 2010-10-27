@@ -133,8 +133,11 @@ void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			break;
 		}
 		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param, out, cfg);
+			Postprocess postproc(q.param);
+            postproc.set_output(out);
+            postproc.validate(cfg);
 			postproc.set_data_start_hook(q.data_start_hook);
+            postproc.start();
 			Local::queryData(q, postproc);
 			queryLocalData(q, postproc);
 			postproc.flush();

@@ -54,7 +54,6 @@ public:
 	virtual ~Reader();
 
 	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	void maintenance(maintenance::MaintFileVisitor& v);

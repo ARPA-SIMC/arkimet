@@ -76,12 +76,6 @@ void Local::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 		archive().queryData(q, consumer);
 }
 
-void Local::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
-{
-	if (hasArchive())
-		archive().queryBytes(q, out);
-}
-
 void Local::querySummary(const Matcher& matcher, Summary& summary)
 {
 	if (hasArchive())

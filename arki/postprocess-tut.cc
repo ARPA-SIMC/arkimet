@@ -70,7 +70,10 @@ TESTGRP(arki_postprocess);
 template<> template<>
 void to::test<1>()
 {
-    Postprocess p("null", STDERR_FILENO, config.section("testall")->values());
+    Postprocess p("null");
+    p.set_output(STDERR_FILENO);
+    p.validate(config.section("testall")->values());
+    p.start();
 
     produceGRIB(p);
 
@@ -81,7 +84,9 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    Postprocess p("null", STDERR_FILENO);
+    Postprocess p("null");
+    p.set_output(STDERR_FILENO);
+    p.start();
 
     produceGRIB(p);
 
@@ -93,7 +98,9 @@ template<> template<>
 void to::test<3>()
 {
     stringstream str;
-    Postprocess p("countbytes", str);
+    Postprocess p("countbytes");
+    p.set_output(str);
+    p.start();
 
     produceGRIB(p);
     p.flush();

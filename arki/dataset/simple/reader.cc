@@ -91,13 +91,6 @@ void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 	m_mft->queryData(q, consumer);
 }
 
-void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
-{
-	Local::queryBytes(q, out);
-	if (!m_mft) return;
-	m_mft->queryBytes(q, out);
-}
-
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
 	Local::querySummary(matcher, summary);
