@@ -39,7 +39,7 @@
 #include <arki/matcher.h>
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
-#include <arki/utils/server.h>
+#include <wibble/net/server.h>
 #include <arki/utils/http.h>
 //#include <arki/utils/lua.h>
 
@@ -232,7 +232,7 @@ struct FileParam
 		std::string fname;
 		std::string client_fname;
 
-		bool read(mime::Reader& mime_reader,
+		bool read(net::mime::Reader& mime_reader,
 			  map<string, string> headers,
 			  const std::string& outdir,
 			  const std::string& fname_blacklist,
@@ -245,7 +245,7 @@ struct FileParam
 	virtual ~FileParam() {}
 
 	virtual bool read(
-			mime::Reader& mime_reader,
+			net::mime::Reader& mime_reader,
 			map<string, string> headers,
 			const std::string& outdir,
 			const std::string& fname_blacklist,
@@ -256,7 +256,7 @@ struct FileParam
 };
 
 bool FileParam::FileInfo::read(
-		mime::Reader& mime_reader,
+		net::mime::Reader& mime_reader,
 		map<string, string> headers,
 		const std::string& outdir,
 		const std::string& fname_blacklist,
@@ -326,7 +326,7 @@ struct FileParamSingle : public FileParam
 	}
 
 	virtual bool read(
-			mime::Reader& mime_reader,
+			net::mime::Reader& mime_reader,
 			map<string, string> headers,
 			const std::string& outdir,
 			const std::string& fname_blacklist,
@@ -344,7 +344,7 @@ struct FileParamMulti : public FileParam
 	std::vector<FileInfo> files;
 
 	virtual bool read(
-			mime::Reader& mime_reader,
+			net::mime::Reader& mime_reader,
 			map<string, string> headers,
 			const std::string& outdir,
 			const std::string& fname_blacklist,
@@ -537,7 +537,7 @@ struct Params : public std::map<std::string, Param*>
 
 	void parse_multipart(http::Request& req, size_t inputsize, const std::string& content_type)
 	{
-		mime::Reader mime_reader;
+        net::mime::Reader mime_reader;
 
 		// Get the mime boundary
 		size_t pos = content_type.find("boundary=");
