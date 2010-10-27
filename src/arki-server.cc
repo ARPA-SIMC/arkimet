@@ -897,7 +897,7 @@ struct QueryHelper
 	void do_processing(ReadonlyDataset& ds, Request& req, Matcher& matcher, const std::string& fname);
 };
 
-struct StreamHeaders : public runtime::PosixBufWithHooks::PreWriteHook
+struct StreamHeaders : public metadata::Hook
 {
 	QueryHelper& qhelper;
 	Request& req;
@@ -909,13 +909,11 @@ struct StreamHeaders : public runtime::PosixBufWithHooks::PreWriteHook
 	{
 	}
 
-	virtual bool operator()()
+	virtual void operator()()
 	{
 		// Send headers for streaming
 		qhelper.send_headers(req, fname);
 		fired = true;
-		// Fire only once
-		return false;
 	}
 
 	void sendIfNotFired()
@@ -942,8 +940,8 @@ void QueryHelper::do_processing(ReadonlyDataset& ds, Request& req, Matcher& matc
 			// Send headers when data starts flowing
 			sockoutput.set_hook(headers_hook);
 		else
-			// If we postprocess, we need to send headers right away
-			headers_hook.sendIfNotFired();
+			// Hook sending headers to when the subprocess start sending
+            pmaker.data_start_hook = &headers_hook;
 
 		// Create the dataset processor for this query
 		auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);

@@ -113,6 +113,7 @@ struct BinaryProcessor : public DatasetProcessor
 		if (!maker.postprocess.empty())
 		{
 			query.setPostprocess(q, maker.postprocess);
+			query.data_start_hook = maker.data_start_hook;
 #ifdef HAVE_LUA
 		} else if (!maker.report.empty()) {
 			if (maker.summary)

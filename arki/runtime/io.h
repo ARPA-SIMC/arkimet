@@ -29,6 +29,9 @@
 #include <string>
 
 namespace arki {
+namespace metadata {
+struct Hook;
+}
 namespace runtime {
 
 /**
@@ -53,17 +56,13 @@ public:
 
 struct PosixBufWithHooks : public wibble::stream::PosixBuf
 {
-    struct PreWriteHook
-    {
-        /**
-         * Called when the PosixBuf is about to write data
-         *
-         * @return true if it should still be called, false if there is no need
-         * anymore
-         */
-        virtual bool operator()() = 0;
-    };
-    PreWriteHook* pwhook; 
+    /**
+     * Called when the PosixBuf is about to write data
+     *
+     * @return true if it should still be called, false if there is no need
+     * anymore
+     */
+    metadata::Hook* pwhook;
 
     PosixBufWithHooks();
 
@@ -106,7 +105,7 @@ public:
      *
      * This replaces an existinf buf, if present.
      */
-    void set_hook(PosixBufWithHooks::PreWriteHook& hook);
+    void set_hook(metadata::Hook& hook);
 
 	std::ostream& stream() { return *m_out; }
 	const std::string& name() const { return m_name; }

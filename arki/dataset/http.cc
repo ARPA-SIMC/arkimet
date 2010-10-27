@@ -181,13 +181,19 @@ struct SStreamState : public ReqState
 struct OstreamState : public ReqState
 {
 	ostream& os;
+    metadata::Hook* data_start_hook;
 
-	OstreamState(http::CurlEasy& curl, ostream& os)
-		: ReqState(curl), os(os) {}
+	OstreamState(http::CurlEasy& curl, ostream& os, metadata::Hook* data_start_hook = 0)
+		: ReqState(curl), os(os), data_start_hook(data_start_hook) {}
 
 	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
 	{
 		OstreamState& s = *(OstreamState*)stream;
+        if (s.data_start_hook && size > 0)
+        {
+            (*s.data_start_hook)();
+            s.data_start_hook = 0;
+        }
 		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
 		s.os.write((const char*)ptr, size * nmemb);
 		return size * nmemb;
@@ -356,7 +362,7 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	// Set the form info 
 	curl_easy_setopt(m_curl, CURLOPT_HTTPPOST, form.ptr());
-	OstreamState s(m_curl, out);
+	OstreamState s(m_curl, out, q.data_start_hook);
 	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
 	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?

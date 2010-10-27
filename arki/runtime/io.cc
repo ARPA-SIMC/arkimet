@@ -21,6 +21,7 @@
  */
 
 #include <arki/runtime/io.h>
+#include <arki/metadata/consumer.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -76,10 +77,13 @@ int PosixBufWithHooks::sync()
 {
     if (pptr() > pbase())
     {
-        if (pwhook && !(*pwhook)())
+        if (pwhook)
+        {
+            (*pwhook)();
             pwhook = 0;
+        }
     }
-        
+
     return PosixBuf::sync();
 }
 
@@ -163,7 +167,7 @@ void Output::openFile(const std::string& fname, bool append)
 	if (!m_out) m_out = new ostream(&posixBuf);
 }
 
-void Output::set_hook(PosixBufWithHooks::PreWriteHook& hook)
+void Output::set_hook(metadata::Hook& hook)
 {
     posixBuf.pwhook = &hook;
 }

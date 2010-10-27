@@ -31,6 +31,10 @@ namespace arki {
 class ReadonlyDataset;
 class Matcher;
 
+namespace metadata {
+struct Hook;
+}
+
 namespace runtime {
 class Output;
 
@@ -69,8 +73,10 @@ struct ProcessorMaker
     std::string summary_restrict;
     std::string sort;
 
+    metadata::Hook* data_start_hook;
+
     ProcessorMaker()
-        : summary(false), yaml(false), annotate(false), data_only(false), data_inline(false)
+        : summary(false), yaml(false), annotate(false), data_only(false), data_inline(false), data_start_hook(0)
     {
     }
 

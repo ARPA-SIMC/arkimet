@@ -37,6 +37,7 @@ class Summary;
 
 namespace metadata {
 class Consumer;
+class Hook;
 }
 
 namespace sort {
@@ -110,8 +111,9 @@ struct ByteQuery : public DataQuery
 
 	std::string param;
 	Type type;
+	metadata::Hook* data_start_hook;
 
-	ByteQuery() : type(BQ_DATA) {}
+	ByteQuery() : type(BQ_DATA), data_start_hook(0) {}
 
 	void setData(const Matcher& m)
 	{

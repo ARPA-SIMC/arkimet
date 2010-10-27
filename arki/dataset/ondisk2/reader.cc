@@ -117,20 +117,25 @@ void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 
 void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	// Query the archives first
-	Local::queryBytes(q, out);
-
-	if (!m_idx) return;
+	if (!m_idx)
+	{
+		// Query the archives first
+		Local::queryBytes(q, out);
+		return;
+	}
 
 	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA: {
 			ds::DataOnly dataonly(out);
+			Local::queryData(q, dataonly);
 			queryLocalData(q, dataonly);
 			break;
 		}
 		case dataset::ByteQuery::BQ_POSTPROCESS: {
 			Postprocess postproc(q.param, out, cfg);
+			postproc.set_data_start_hook(q.data_start_hook);
+			Local::queryData(q, postproc);
 			queryLocalData(q, postproc);
 			postproc.flush();
 			break;
@@ -140,6 +145,7 @@ void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			Report rep;
 			rep.captureOutput(out);
 			rep.load(q.param);
+			Local::queryData(q, rep);
 			queryLocalData(q, rep);
 			rep.report();
 #endif
@@ -151,6 +157,7 @@ void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			rep.captureOutput(out);
 			rep.load(q.param);
 			Summary s;
+			Local::querySummary(q.matcher, s);
 			querySummary(q.matcher, s);
 			rep(s);
 			rep.report();

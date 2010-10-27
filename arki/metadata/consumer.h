@@ -101,6 +101,14 @@ struct Counter : public Consumer
 	}
 };
 
+// Generic simple hook interface
+struct Hook
+{
+    virtual ~Hook() {}
+
+    virtual void operator()() = 0;
+};
+
 }
 }
 

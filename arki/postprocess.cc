@@ -30,10 +30,17 @@
 #include <wibble/sys/process.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "config.h"
 #include <signal.h>
 #include <unistd.h>
+#include <cerrno>
 #include <iostream>
+
 
 #if __xlC__
 typedef void (*sighandler_t)(int);
@@ -48,18 +55,10 @@ namespace postproc {
 class Subcommand : public wibble::sys::ChildProcess
 {
     vector<string> args;
-    int outfd;
 
     virtual int main()
     {
         try {
-            // Redirect stdout to outfd
-            if (dup2(outfd, STDOUT_FILENO) < 0)
-            {
-                //cerr << "OUTFD " << outfd << endl;
-                throw wibble::exception::System("redirecting output of postprocessing filter");
-            }
-
             //cerr << "RUN args: " << str::join(args.begin(), args.end()) << endl;
 
             // Build the argument list
@@ -86,11 +85,152 @@ class Subcommand : public wibble::sys::ChildProcess
     }
 
 public:
-    Subcommand(const vector<string>& args, int outfd)
-        : args(args), outfd(outfd)
+    Subcommand(const vector<string>& args)
+        : args(args)
+    {
+    }
+    ~Subcommand()
     {
     }
 };
+
+/**
+ * Manage a child process as a filter
+ */
+struct FilterHandler
+{
+    /// Subprocess that does the filtering
+    wibble::sys::ChildProcess* subproc;
+    /// Pipe used to send data to the subprocess
+    int infd;
+    /// Pipe used to get data back from the subprocess
+    int outfd;
+    /// Wait timeout: { 0, 0 } for wait forever
+    struct timespec timeout;
+
+    FilterHandler(wibble::sys::ChildProcess* subproc)
+        : subproc(subproc), infd(-1), outfd(-1)
+    {
+        timeout.tv_sec = 0;
+        timeout.tv_nsec = 0;
+    }
+
+    ~FilterHandler()
+    {
+        if (infd != -1) close(infd);
+        if (outfd != -1) close(outfd);
+    }
+
+    /// Start the child process, setting up pipes as needed
+    void start()
+    {
+        subproc->forkAndRedirect(&infd, &outfd);
+    }
+
+    /// Close pipe to child process, to signal we're done sending data
+    void done_with_input()
+    {
+        if (infd != -1)
+        {
+            //cerr << "Closing pipe" << endl;
+            if (close(infd) < 0)
+                throw wibble::exception::System("closing output to filter child process");
+            infd = -1;
+        }
+    }
+
+    /**
+     * Wait until the child has data to be read, feeding it data in the
+     * meantime.
+     *
+     * \a buf and \a size will be updated to point to the unwritten bytes.
+     * After the function returns, \a size will contain the amount of data
+     * still to be written (or 0).
+     *
+     * @return true if there is data to be read, false if there is no data but
+     * all the buffer has been written
+     */
+    bool wait_for_child_data_while_sending(const void*& buf, size_t& size)
+    {
+        struct timespec* timeout_param = NULL;
+        if (timeout.tv_sec != 0 || timeout.tv_nsec != 0)
+            timeout_param = &timeout;
+
+        while (size > 0)
+        {
+            fd_set infds;
+            fd_set outfds;
+            FD_ZERO(&infds);
+            FD_SET(infd, &infds);
+            FD_ZERO(&outfds);
+            FD_SET(outfd, &outfds);
+            int nfds = max(infd, outfd) + 1;
+
+            int res = pselect(nfds, &outfds, &infds, NULL, timeout_param, NULL);
+            if (res < 0)
+                throw wibble::exception::System("waiting for activity on filter child process");
+            if (res == 0)
+                throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
+
+            if (FD_ISSET(infd, &infds))
+            {
+                ssize_t res = write(infd, buf, size);
+                if (res < 0)
+                    throw wibble::exception::System("writing to child process");
+                buf = (const char*)buf + res;
+                size -= res;
+            }
+
+            if (FD_ISSET(outfd, &outfds))
+                return true;
+        }
+        return false;
+    }
+
+    /// Wait until the child has data to read
+    void wait_for_child_data()
+    {
+        struct timespec* timeout_param = NULL;
+        if (timeout.tv_sec != 0 || timeout.tv_nsec != 0)
+            timeout_param = &timeout;
+
+        while (true)
+        {
+            fd_set outfds;
+            FD_ZERO(&outfds);
+            FD_SET(outfd, &outfds);
+            int nfds = outfd + 1;
+
+            int res = pselect(nfds, &outfds, NULL, NULL, timeout_param, NULL);
+            if (res < 0)
+                throw wibble::exception::System("waiting for activity on filter child process");
+            if (res == 0)
+                throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
+            if (FD_ISSET(outfd, &outfds))
+                return;
+        }
+    }
+};
+
+/*
+ * One can ignore SIGPIPE (using, for example, the signal system call). In this case, all system calls that would cause SIGPIPE to be sent will return -1 and set errno to EPIPE.
+ */
+/*
+struct Sigignore
+{
+    int signum;
+    sighandler_t oldsig;
+
+    Sigignore(int signum) : signum(signum)
+    {
+        oldsig = signal(signum, SIG_IGN);
+    }
+    ~Sigignore()
+    {
+        signal(signum, oldsig);
+    }
+};
+*/
 
 }
 
@@ -151,49 +291,43 @@ void Postprocess::init(const map<string, string>& cfg)
     args[0] = argv0;
 
     // Spawn the command
-    m_child = new postproc::Subcommand(args, m_outfd);
-    m_child->forkAndRedirect(&m_infd);
+    m_child = new postproc::Subcommand(args);
+    m_handler = new postproc::FilterHandler(m_child);
+    m_handler->start();
 }
 
 Postprocess::Postprocess(const std::string& command, int outfd)
-    : m_child(0), m_command(command), m_infd(-1), m_outfd(outfd)
+    : m_child(0), m_handler(0), m_command(command), m_nextfd(outfd), m_out(NULL), data_start_hook(NULL)
 {
     init();
 }
 
 Postprocess::Postprocess(const std::string& command, int outfd, const map<string, string>& cfg)
-    : m_child(0), m_command(command), m_infd(-1), m_outfd(outfd)
+    : m_child(0), m_handler(0), m_command(command), m_nextfd(outfd), m_out(NULL), data_start_hook(NULL)
 {
     init(cfg);
 }
 
 Postprocess::Postprocess(const std::string& command, std::ostream& out)
-    : m_child(0), m_command(command), m_infd(1), m_outfd(-1)
+    : m_child(0), m_handler(0), m_command(command), m_nextfd(-1), m_out(&out), data_start_hook(NULL)
 {
-    stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf());
-    if (!ps)
-        throw wibble::exception::Consistency("starting postprocessor", "cannot get a posix file descriptor out of an ostream.  This is a programming error");
-    m_outfd = ps->fd();
+    if (stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf()))
+        m_nextfd = ps->fd();
 
     init();
 }
 
 Postprocess::Postprocess(const std::string& command, std::ostream& out, const map<string, string>& cfg)
-    : m_child(0), m_command(command), m_infd(-1), m_outfd(-1)
+    : m_child(0), m_handler(0), m_command(command), m_nextfd(-1), m_out(&out), data_start_hook(NULL)
 {
-    stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf());
-    if (!ps)
-        throw wibble::exception::Consistency("starting postprocessor", "cannot get a posix file descriptor out of an ostream.  This is a programming error");
-    m_outfd = ps->fd();
+    if (stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf()))
+        m_nextfd = ps->fd();
 
     init(cfg);
 }
 
 Postprocess::~Postprocess()
 {
-    if (m_infd != 0)
-        close(m_infd);
-
     // If the child still exists, it means that we have not flushed: be
     // aggressive here to cleanup after whatever error condition has happened
     // in the caller
@@ -203,55 +337,119 @@ Postprocess::~Postprocess()
         m_child->wait();
         delete m_child;
     }
+    if (m_handler)
+        delete m_handler;
 }
 
-struct Sigignore
+void Postprocess::set_data_start_hook(metadata::Hook* hook)
 {
-    int signum;
-    sighandler_t oldsig;
+    data_start_hook = hook;
+}
 
-    Sigignore(int signum) : signum(signum)
+bool Postprocess::read_and_pass_on()
+{
+    // After we've seen some data, we can leave it up to splice
+    if (!data_start_hook)
     {
-        oldsig = signal(signum, SIG_IGN);
+        if (m_nextfd != -1)
+        {
+            // Try splice
+            ssize_t res = splice(m_handler->outfd, NULL, m_nextfd, NULL, 4096*2, SPLICE_F_MORE);
+            if (res >= 0)
+                return res > 0;
+            if (errno != EINVAL)
+                throw wibble::exception::System("splicing data from child postprocessor to destination");
+            // Else pass it on to the traditional method
+        }
     }
-    ~Sigignore()
+    // Else read and write
+
+    // Read data from child
+    char buf[4096*2];
+    ssize_t res = read(m_handler->outfd, buf, 4096*2);
+    if (res < 0)
+        throw wibble::exception::System("reading from child postprocessor");
+    if (res == 0)
+        return false;
+
+    if (data_start_hook)
     {
-        signal(signum, oldsig);
+        // Fire hook
+        (*data_start_hook)();
+        // Only once
+        data_start_hook = 0;
     }
-};
+
+    // Pass it on
+    if (m_out == NULL)
+    {
+        size_t pos = 0;
+        while (pos < (size_t)res)
+        {
+            ssize_t wres = write(m_nextfd, buf+pos, res-pos);
+            if (wres < 0)
+                throw wibble::exception::System("writing to destination file descriptor");
+            pos += wres;
+        }
+    } else {
+        m_out->write(buf, res);
+        if (m_out->bad())
+            throw wibble::exception::System("writing to destination stream");
+    }
+
+    // There is still data to read
+    return true;
+}
 
 /// Write the given buffer to the child, pumping out the child output in the meantime
-void PostProcess::pump(void* buf, size_t size)
+bool Postprocess::pump(const void* buf, size_t size)
 {
+    while (size > 0)
+    {
+        if (m_handler->wait_for_child_data_while_sending(buf, size))
+        {
+            if (!read_and_pass_on())
+                return false;
+        }
+    }
+    return true;
 }
 
 /// Just pump the child output out
-void PostProcess::pump()
+void Postprocess::pump()
 {
+    while (true)
+    {
+        m_handler->wait_for_child_data();
+        if (!read_and_pass_on())
+            return;
+    }
 }
 
 bool Postprocess::operator()(Metadata& md)
 {
-    if (m_infd == -1)
+    if (m_handler->infd == -1)
         return false;
-    md.makeInline();
+
     // Ignore sigpipe when writing to child, so we can raise an exception
     // instead of dying with the signal
     // TODO: handle instead of ignoring, otherwise write will just wait and hang
-    Sigignore sigignore(SIGPIPE);
-    md.write(m_infd, "postprocessing filter");
+    // Sigignore sigignore(SIGPIPE);
+
+    string encoded = md.encode();
+    pump(encoded.data(), encoded.size());
+
+    wibble::sys::Buffer data = md.getData();
+    pump(data.data(), data.size());
+
     return true;
 }
 
 void Postprocess::flush()
 {
-    if (m_infd != -1)
-    {
-        //cerr << "Closing pipe" << endl;
-        if (close(m_infd) < 0)
-            throw wibble::exception::System("closing output to postprocessing filter");
-        m_infd = -1;
-    }
+    m_handler->done_with_input();
+    pump();
+
     if (m_child)
     {
         //cerr << "Waiting for child" << endl;

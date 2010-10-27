@@ -88,6 +88,19 @@ void to::test<2>()
     p.flush();
 }
 
+// Test actually sending some data
+template<> template<>
+void to::test<3>()
+{
+    stringstream str;
+    Postprocess p("countbytes", str);
+
+    produceGRIB(p);
+    p.flush();
+
+    ensure_equals(str.str(), "45039\n");
+}
+
 }
 
 // vim:set ts=4 sw=4:
