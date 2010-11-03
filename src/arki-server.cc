@@ -35,6 +35,7 @@
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
+#include <arki/dataset/merged.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
@@ -557,11 +558,13 @@ struct RootSummaryHandler : public LocalHandler
 
         string macroname = str::trim(*qmacro);
 
+        auto_ptr<ReadonlyDataset> ds;
         if (macroname.empty())
-            throw net::http::error400("root-level query without qmacro parameter");
-
-        // Create qmacro dataset
-        auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+            // Create a merge dataset with all we have
+            ds.reset(new dataset::AutoMerged(req.arki_conf));
+        else
+            // Create qmacro dataset
+            ds = runtime::make_qmacro_dataset(
                 req.arki_conf, macroname, *query);
 
         // Query the summary

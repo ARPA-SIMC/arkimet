@@ -21,6 +21,7 @@
  */
 
 #include <arki/dataset/merged.h>
+#include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
@@ -321,6 +322,20 @@ void Merged::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
 			i != datasets.end(); ++i)
 		(*i)->queryBytes(q, out);
+}
+
+AutoMerged::AutoMerged() {}
+AutoMerged::AutoMerged(const ConfigFile& cfg)
+{
+    for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
+            i != cfg.sectionEnd(); ++i)
+        datasets.push_back(ReadonlyDataset::create(*(i->second)));
+}
+AutoMerged::~AutoMerged()
+{
+    for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
+            i != datasets.end(); ++i)
+        delete *i;
 }
 
 }

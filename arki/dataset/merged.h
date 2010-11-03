@@ -47,7 +47,6 @@ protected:
 	std::vector<ReadonlyDataset*> datasets;
 
 public:
-	// Initialise the dataset with the information from the configurationa in 'cfg'
 	Merged();
 	virtual ~Merged();
 
@@ -61,6 +60,19 @@ public:
 	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+};
+
+/**
+ * Same as Merged, but take care of instantiating and managing the child datasets
+ */
+class AutoMerged : public Merged
+{
+	void addDataset(ReadonlyDataset& ds);
+
+public:
+	AutoMerged();
+	AutoMerged(const ConfigFile& cfg);
+	virtual ~AutoMerged();
 };
 
 }
