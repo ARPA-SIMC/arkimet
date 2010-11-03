@@ -30,60 +30,20 @@
 #include <arki/metadata/consumer.h>
 
 namespace arki {
-namespace utils {
-class Subcommand;
-class FilterHandler;
+
+namespace postproc {
+class Child;
 }
 
 class Postprocess : public metadata::Consumer
 {
 protected:
     /// Subprocess that filters our data
-    utils::Subcommand* m_child;
-    /// Filter handler that takes care of data transfer coordination
-    utils::FilterHandler* m_handler;
+    postproc::Child* m_child;
     /// Command line run in the subprocess
     std::string m_command;
-    /// Command line split in arguments
-    std::vector<std::string> m_args;
-    /**
-     * Pipe used to send data from the subprocess to the output stream. It can
-     * be -1 if the output stream does not provide a file descriptor to write
-     * to
-     */
-    int m_nextfd;
-    /**
-     * Output stream we eventually send data to.
-     *
-     * It can be NULL if we have only been given a file descriptor to send data
-     * to.
-     */
-    std::ostream* m_out;
-    /// Stream where child stderr is sent
-    std::ostream* m_err;
-    /// By default, collect child stderr here
+    /// Captured stderr from the child (unless sent elsewhere)
     std::stringstream m_errors;
-    /// Non-null if we should notify the hook as soon as some data arrives from the processor
-    metadata::Hook* data_start_hook;
-
-    /**
-     * Write the given buffer to the child, pumping out the child output in the meantime
-     *
-     * @returns true if there is still data to read from the child, false if
-     * the child closed its output pipe.
-     */
-    bool pump(const void* buf, size_t size);
-
-    /// Just pump all the remaining child output out
-    void pump();
-
-    /**
-     * Pass on data from the child postprocessor to the destination
-     *
-     * @return true if there are still data to read, false on EOF from child
-     * process
-     */
-    bool read_and_pass_on();
 
 public:
     /**

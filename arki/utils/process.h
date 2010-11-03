@@ -50,16 +50,18 @@ struct Subcommand : public wibble::sys::ChildProcess
 };
 
 /**
- * Manage a child process as a filter
+ * Dispatch input and output to and from a child process.
+ *
+ * This is an abstract base class to use to implement simple select loops. The
+ * loop manages only one process, but allows to deal with stdin, stdout and
+ * stderr at the same time, without deadlocks.
  */
-struct FilterHandler
+struct IODispatcher
 {
     /// Subprocess that does the filtering
     wibble::sys::ChildProcess& subproc;
     /// Wait timeout: use { 0, 0 } to wait forever (default: { 0, 0 })
     struct timespec conf_timeout;
-    /// Stream to which we send stderr (default: NULL to ignore stderr)
-    std::ostream* conf_errstream;
     /// Pipe used to send data to the subprocess
     int infd;
     /// Pipe used to get data back from the subprocess
@@ -67,34 +69,74 @@ struct FilterHandler
     /// Pipe used to capture the stderr of the subprocess
     int errfd;
 
-    FilterHandler(wibble::sys::ChildProcess& subproc);
-    ~FilterHandler();
+    IODispatcher(wibble::sys::ChildProcess& subproc);
+    virtual ~IODispatcher();
 
     /// Start the child process, setting up pipes as needed
-    void start();
+    void start(bool do_stdin=true, bool do_stdout=true, bool do_stderr=true);
 
     /// Close pipe to child process, to signal we're done sending data
-    void done_with_input();
+    void close_infd();
 
-    /// Read stderr and pass it on to the error stream
-    void read_stderr();
+    /// Close stdout pipe from child process
+    void close_outfd();
+
+    /// Close stderr pipe from child process
+    void close_errfd();
+
+    /// Called when there is data to read on stdout
+    virtual void read_stdout() = 0;
+
+    /// Called when there is data to read on stderr
+    virtual void read_stderr() = 0;
 
     /**
-     * Wait until the child has data to be read, feeding it data in the
-     * meantime.
+     * Send data to the child process
      *
-     * \a buf and \a size will be updated to point to the unwritten bytes.
-     * After the function returns, \a size will contain the amount of data
-     * still to be written (or 0).
+     * This runs a select() loop until all data has been sent. The select loop
+     * will call read_stdout() and read_stderr() if data becomes available on
+     * the child stdout or stderr.
      *
-     * @return true if there is data to be read, false if there is no data but
-     * all the buffer has been written. If it returns false, then size is
-     * always 0.
+     * @returns the amount of data that has been sent. This is the same as
+     * \a size if all went well, and can be less only if the child process
+     * died or closed stdin before all data has been sent.
      */
-    bool wait_for_child_data_while_sending(const void*& buf, size_t& size);
+    size_t send(const void* buf, size_t size);
 
-    /// Wait until the child has data to read
-    void wait_for_child_data();
+    /// Shortcut to send a string
+    size_t send(const std::string& data)
+    {
+        return send(data.data(), data.size());
+    }
+
+    /**
+     * Keep running a select() loop on the child stdout and stderr for as long
+     * as they stay open.
+     *
+     * Please use close_outfd() and close_errfd() to close them when reading
+     * from them gives EOF.
+     */
+    void flush();
+
+    /**
+     * Copy data from an input file descriptor to a stream.
+     *
+     * It performs only one read(), to make sure that this function does not
+     * block if it is called after select detected incoming data.
+     *
+     * @returns false on end of file (EOF), else true
+     */
+    static bool fd_to_stream(int in, std::ostream& out);
+
+    /**
+     * Discard data from an input file descriptor
+     *
+     * It performs only one read(), to make sure that this function does not
+     * block if it is called after select detected incoming data.
+     *
+     * @returns false on end of file (EOF), else true
+     */
+    static bool discard_fd(int in);
 };
 
 }

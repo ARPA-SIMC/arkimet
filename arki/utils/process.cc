@@ -41,6 +41,30 @@ typedef void (*sighandler_t)(int);
 using namespace std;
 using namespace wibble;
 
+namespace {
+
+/*
+ * One can ignore SIGPIPE (using, for example, the signal system call). In this
+ * case, all system calls that would cause SIGPIPE to be sent will return -1
+ * and set errno to EPIPE.
+ */
+struct Sigignore
+{
+    int signum;
+    sighandler_t oldsig;
+
+    Sigignore(int signum) : signum(signum)
+    {
+        oldsig = signal(signum, SIG_IGN);
+    }
+    ~Sigignore()
+    {
+        signal(signum, oldsig);
+    }
+};
+
+}
+
 namespace arki {
 namespace utils {
 
@@ -88,26 +112,29 @@ int Subcommand::main()
 }
 
 
-FilterHandler::FilterHandler(wibble::sys::ChildProcess& subproc)
-    : subproc(subproc), conf_errstream(0), infd(-1), outfd(-1), errfd(-1)
+IODispatcher::IODispatcher(wibble::sys::ChildProcess& subproc)
+    : subproc(subproc), infd(-1), outfd(-1), errfd(-1)
 {
     conf_timeout.tv_sec = 0;
     conf_timeout.tv_nsec = 0;
 }
 
-FilterHandler::~FilterHandler()
+IODispatcher::~IODispatcher()
 {
     if (infd != -1) close(infd);
     if (outfd != -1) close(outfd);
     if (errfd != -1) close(errfd);
 }
 
-void FilterHandler::start()
+void IODispatcher::start(bool do_stdin, bool do_stdout, bool do_stderr)
 {
-    subproc.forkAndRedirect(&infd, &outfd, &errfd);
+    subproc.forkAndRedirect(
+            do_stdin ? &infd : NULL,
+            do_stdout ? &outfd : NULL,
+            do_stderr ? &errfd : NULL);
 }
 
-void FilterHandler::done_with_input()
+void IODispatcher::close_infd()
 {
     if (infd != -1)
     {
@@ -118,77 +145,132 @@ void FilterHandler::done_with_input()
     }
 }
 
-void FilterHandler::read_stderr()
+void IODispatcher::close_outfd()
 {
-    // Read data from child
-    char buf[4096*2];
-    ssize_t res = read(errfd, buf, 4096*2);
-    if (res < 0)
-        throw wibble::exception::System("reading from child stderr");
-    if (res == 0)
+    if (outfd != -1)
     {
-        close(errfd);
-        errfd = -1;
-        return;
-    }
-
-    // Pass it on
-    if (conf_errstream != NULL)
-    {
-        conf_errstream->write(buf, res);
-        if (conf_errstream->bad())
-            throw wibble::exception::System("writing to destination error stream");
+        //cerr << "Closing pipe" << endl;
+        if (close(outfd) < 0)
+            throw wibble::exception::System("closing input from child standard output");
+        outfd = -1;
     }
 }
 
-bool FilterHandler::wait_for_child_data_while_sending(const void*& buf, size_t& size)
+void IODispatcher::close_errfd()
+{
+    if (errfd != -1)
+    {
+        //cerr << "Closing pipe" << endl;
+        if (close(errfd) < 0)
+            throw wibble::exception::System("closing input from child standard error");
+        errfd = -1;
+    }
+}
+
+bool IODispatcher::fd_to_stream(int in, std::ostream& out)
+{
+    // Read data from child
+    char buf[4096*2];
+    ssize_t res = read(in, buf, 4096*2);
+    if (res < 0)
+        throw wibble::exception::System("reading from child stderr");
+    if (res == 0)
+        return false;
+
+    // Pass it on
+    out.write(buf, res);
+    if (out.bad())
+        throw wibble::exception::System("writing to destination stream");
+    return true;
+}
+
+bool IODispatcher::discard_fd(int in)
+{
+    // Read data from child
+    char buf[4096*2];
+    ssize_t res = read(in, buf, 4096*2);
+    if (res < 0)
+        throw wibble::exception::System("reading from child stderr");
+    if (res == 0)
+        return false;
+    return true;
+}
+
+size_t IODispatcher::send(const void* buf, size_t size)
 {
     struct timespec* timeout_param = NULL;
     if (conf_timeout.tv_sec != 0 || conf_timeout.tv_nsec != 0)
         timeout_param = &conf_timeout;
 
-    while (size > 0)
+    size_t written = 0;
+    while (written < size && infd != -1)
     {
+        int nfds = infd;
+
         fd_set infds;
-        fd_set outfds;
         FD_ZERO(&infds);
         FD_SET(infd, &infds);
+
+        fd_set outfds;
         FD_ZERO(&outfds);
-        FD_SET(outfd, &outfds);
-        int nfds = max(infd, outfd);
-        if (errfd != -1)
+
+        fd_set* poutfds;
+        if (outfd != -1 || errfd != -1)
         {
-            FD_SET(errfd, &outfds);
-            nfds = max(nfds, errfd);
-        }
+            if (outfd != -1)
+            {
+                FD_SET(outfd, &outfds);
+                nfds = max(nfds, outfd);
+            }
+            if (errfd != -1)
+            {
+                FD_SET(errfd, &outfds);
+                nfds = max(nfds, errfd);
+            }
+            poutfds = &outfds;
+        } else
+            poutfds = NULL;
+
         ++nfds;
 
-        int res = pselect(nfds, &outfds, &infds, NULL, timeout_param, NULL);
+        int res = pselect(nfds, poutfds, &infds, NULL, timeout_param, NULL);
         if (res < 0)
             throw wibble::exception::System("waiting for activity on filter child process");
         if (res == 0)
             throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
 
-        if (FD_ISSET(infd, &infds))
+        if (infd != -1 && FD_ISSET(infd, &infds))
         {
-            ssize_t res = write(infd, buf, size);
+            // Ignore SIGPIPE so we get EPIPE
+            Sigignore ignpipe(SIGPIPE);
+            ssize_t res = write(infd, buf + written, size - written);
             if (res < 0)
-                throw wibble::exception::System("writing to child process");
-            buf = (const char*)buf + res;
-            size -= res;
+            {
+                if (errno == EPIPE)
+                {
+                    close_infd();
+                }
+                else
+                    throw wibble::exception::System("writing to child process");
+            } else {
+                written += res;
+            }
         }
+
+        if (outfd != -1 && FD_ISSET(outfd, &outfds))
+            read_stdout();
 
         if (errfd != -1 && FD_ISSET(errfd, &outfds))
             read_stderr();
-
-        if (FD_ISSET(outfd, &outfds))
-            return true;
     }
-    return false;
+    return written;
 }
 
-void FilterHandler::wait_for_child_data()
+void IODispatcher::flush()
 {
+    if (infd != -1)
+        close_infd();
+
     struct timespec* timeout_param = NULL;
     if (conf_timeout.tv_sec != 0 || conf_timeout.tv_nsec != 0)
         timeout_param = &conf_timeout;
@@ -197,11 +279,21 @@ void FilterHandler::wait_for_child_data()
     {
         fd_set outfds;
         FD_ZERO(&outfds);
-        FD_SET(outfd, &outfds);
-        FD_SET(errfd, &outfds);
-        int nfds = outfd;
+        int nfds = 0;
+
+        if (outfd != -1)
+        {
+            FD_SET(outfd, &outfds);
+            nfds = max(nfds, outfd);
+        }
         if (errfd != -1)
+        {
+            FD_SET(errfd, &outfds);
             nfds = max(nfds, errfd);
+        }
+
+        if (nfds == 0) break;
+
         ++nfds;
 
         int res = pselect(nfds, &outfds, NULL, NULL, timeout_param, NULL);
@@ -210,35 +302,13 @@ void FilterHandler::wait_for_child_data()
         if (res == 0)
             throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
 
+        if (outfd != -1 && FD_ISSET(outfd, &outfds))
+            read_stdout();
+
         if (errfd != -1 && FD_ISSET(errfd, &outfds))
             read_stderr();
-
-        if (FD_ISSET(outfd, &outfds))
-            return;
     }
 }
-
-/*
- * One can ignore SIGPIPE (using, for example, the signal system call). In this
- * case, all system calls that would cause SIGPIPE to be sent will return -1
- * and set errno to EPIPE.
- */
-/*
-struct Sigignore
-{
-    int signum;
-    sighandler_t oldsig;
-
-    Sigignore(int signum) : signum(signum)
-    {
-        oldsig = signal(signum, SIG_IGN);
-    }
-    ~Sigignore()
-    {
-        signal(signum, oldsig);
-    }
-};
-*/
 
 }
 }
