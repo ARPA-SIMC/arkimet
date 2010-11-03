@@ -806,10 +806,16 @@ struct ChildServer : public sys::ChildProcess
                         // if (!script_handlers.try_do(req))
                         throw net::http::error404();
                 } catch (net::http::error& e) {
-                    e.send(req);
+                    // TODO: log e
+                    if (!req.response_started)
+                        e.send(req);
                 } catch (std::exception& e) {
-                    net::http::error httpe(500, "Server error", e.what());
-                    httpe.send(req);
+                    // TODO: log e
+                    if (!req.response_started)
+                    {
+                        net::http::error httpe(500, "Server error", e.what());
+                        httpe.send(req);
+                    }
                 }
 
                 // Here there can be some keep-alive bit

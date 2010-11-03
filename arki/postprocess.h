@@ -4,7 +4,7 @@
 /*
  * postprocess - postprocessing of result data
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include <arki/metadata/consumer.h>
 
 namespace arki {
-namespace postproc {
+namespace utils {
 class Subcommand;
 class FilterHandler;
 }
@@ -39,9 +39,9 @@ class Postprocess : public metadata::Consumer
 {
 protected:
     /// Subprocess that filters our data
-    postproc::Subcommand* m_child;
+    utils::Subcommand* m_child;
     /// Filter handler that takes care of data transfer coordination
-    postproc::FilterHandler* m_handler;
+    utils::FilterHandler* m_handler;
     /// Command line run in the subprocess
     std::string m_command;
     /// Command line split in arguments

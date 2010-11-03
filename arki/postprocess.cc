@@ -1,7 +1,7 @@
 /*
  * postprocess - postprocessing of result data
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "postprocess.h"
 #include <arki/configfile.h>
 #include <arki/metadata.h>
+#include <arki/utils/process.h>
 #include <wibble/string.h>
 #include <wibble/regexp.h>
 #include <wibble/operators.h>
@@ -52,212 +53,6 @@ using namespace wibble;
 namespace arki {
 
 namespace postproc {
-class Subcommand : public wibble::sys::ChildProcess
-{
-    vector<string> args;
-
-    virtual int main()
-    {
-        try {
-            //cerr << "RUN args: " << str::join(args.begin(), args.end()) << endl;
-
-            // Build the argument list
-            string basename = str::basename(args[0]);
-            const char *argv[args.size()+1];
-            for (size_t i = 0; i < args.size(); ++i)
-            {
-                if (i == 0)
-                    argv[i] = basename.c_str();
-                else
-                    argv[i] = args[i].c_str();
-            }
-            argv[args.size()] = 0;
-
-            // Exec the filter
-            //cerr << "RUN " << args[0] << " args: " << str::join(&argv[0], &argv[args.size()]) << endl;
-            execv(args[0].c_str(), (char* const*)argv);
-            throw wibble::exception::System("running postprocessing filter");
-        } catch (std::exception& e) {
-            cerr << e.what() << endl;
-            return 1;
-        }
-        return 2;
-    }
-
-public:
-    Subcommand(const vector<string>& args)
-        : args(args)
-    {
-    }
-    ~Subcommand()
-    {
-    }
-};
-
-/**
- * Manage a child process as a filter
- */
-struct FilterHandler
-{
-    /// Subprocess that does the filtering
-    wibble::sys::ChildProcess* subproc;
-    /// Pipe used to send data to the subprocess
-    int infd;
-    /// Pipe used to get data back from the subprocess
-    int outfd;
-    /// Pipe used to capture the stderr of the subprocess
-    int errfd;
-    /// Wait timeout: { 0, 0 } for wait forever
-    struct timespec timeout;
-    /// Stream to which we send stderror
-    std::ostream* errstream;
-
-    FilterHandler(wibble::sys::ChildProcess* subproc)
-        : subproc(subproc), infd(-1), outfd(-1), errfd(-1), errstream(0)
-    {
-        timeout.tv_sec = 0;
-        timeout.tv_nsec = 0;
-    }
-
-    ~FilterHandler()
-    {
-        if (infd != -1) close(infd);
-        if (outfd != -1) close(outfd);
-        if (errfd != -1) close(errfd);
-    }
-
-    /// Start the child process, setting up pipes as needed
-    void start()
-    {
-        subproc->forkAndRedirect(&infd, &outfd, &errfd);
-    }
-
-    /// Close pipe to child process, to signal we're done sending data
-    void done_with_input()
-    {
-        if (infd != -1)
-        {
-            //cerr << "Closing pipe" << endl;
-            if (close(infd) < 0)
-                throw wibble::exception::System("closing output to filter child process");
-            infd = -1;
-        }
-    }
-
-    /// Read stderr and pass it on to the error stream
-    void read_stderr()
-    {
-        // Read data from child
-        char buf[4096*2];
-        ssize_t res = read(errfd, buf, 4096*2);
-        if (res < 0)
-            throw wibble::exception::System("reading from child stderr");
-        if (res == 0)
-        {
-            close(errfd);
-            errfd = -1;
-            return;
-        }
-
-        // Pass it on
-        if (errstream != NULL)
-        {
-            errstream->write(buf, res);
-            if (errstream->bad())
-                throw wibble::exception::System("writing to destination error stream");
-        }
-    }
-
-    /**
-     * Wait until the child has data to be read, feeding it data in the
-     * meantime.
-     *
-     * \a buf and \a size will be updated to point to the unwritten bytes.
-     * After the function returns, \a size will contain the amount of data
-     * still to be written (or 0).
-     *
-     * @return true if there is data to be read, false if there is no data but
-     * all the buffer has been written
-     */
-    bool wait_for_child_data_while_sending(const void*& buf, size_t& size)
-    {
-        struct timespec* timeout_param = NULL;
-        if (timeout.tv_sec != 0 || timeout.tv_nsec != 0)
-            timeout_param = &timeout;
-
-        while (size > 0)
-        {
-            fd_set infds;
-            fd_set outfds;
-            FD_ZERO(&infds);
-            FD_SET(infd, &infds);
-            FD_ZERO(&outfds);
-            FD_SET(outfd, &outfds);
-            int nfds = max(infd, outfd);
-            if (errfd != -1)
-            {
-                FD_SET(errfd, &outfds);
-                nfds = max(nfds, errfd);
-            }
-            ++nfds;
-
-            int res = pselect(nfds, &outfds, &infds, NULL, timeout_param, NULL);
-            if (res < 0)
-                throw wibble::exception::System("waiting for activity on filter child process");
-            if (res == 0)
-                throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
-
-            if (FD_ISSET(infd, &infds))
-            {
-                ssize_t res = write(infd, buf, size);
-                if (res < 0)
-                    throw wibble::exception::System("writing to child process");
-                buf = (const char*)buf + res;
-                size -= res;
-            }
-
-            if (errfd != -1 && FD_ISSET(errfd, &outfds))
-                read_stderr();
-
-            if (FD_ISSET(outfd, &outfds))
-                return true;
-        }
-        return false;
-    }
-
-    /// Wait until the child has data to read
-    void wait_for_child_data()
-    {
-        struct timespec* timeout_param = NULL;
-        if (timeout.tv_sec != 0 || timeout.tv_nsec != 0)
-            timeout_param = &timeout;
-
-        while (true)
-        {
-            fd_set outfds;
-            FD_ZERO(&outfds);
-            FD_SET(outfd, &outfds);
-            FD_SET(errfd, &outfds);
-            int nfds = outfd;
-            if (errfd != -1)
-                nfds = max(nfds, errfd);
-            ++nfds;
-
-            int res = pselect(nfds, &outfds, NULL, NULL, timeout_param, NULL);
-            if (res < 0)
-                throw wibble::exception::System("waiting for activity on filter child process");
-            if (res == 0)
-                throw wibble::exception::Consistency("timeout waiting for activity on filter child process");
-
-            if (errfd != -1 && FD_ISSET(errfd, &outfds))
-                read_stderr();
-
-            if (FD_ISSET(outfd, &outfds))
-                return;
-        }
-    }
-};
-
 /*
  * One can ignore SIGPIPE (using, for example, the signal system call). In this case, all system calls that would cause SIGPIPE to be sent will return -1 and set errno to EPIPE.
  */
@@ -277,7 +72,6 @@ struct Sigignore
     }
 };
 */
-
 }
 
 Postprocess::Postprocess(const std::string& command)
@@ -370,9 +164,9 @@ void Postprocess::start()
     m_args[0] = argv0;
 
     // Spawn the command
-    m_child = new postproc::Subcommand(m_args);
-    m_handler = new postproc::FilterHandler(m_child);
-    m_handler->errstream = m_err;
+    m_child = new utils::Subcommand(m_args);
+    m_handler = new utils::FilterHandler(*m_child);
+    m_handler->conf_errstream = m_err;
     m_handler->start();
 }
 
