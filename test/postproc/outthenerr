@@ -1,0 +1,5 @@
+#!/bin/sh
+cat > /dev/null
+echo "So far, so good"
+echo "Argh, no, it's all on fire!" >&2
+exit 1

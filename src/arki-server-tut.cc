@@ -222,6 +222,27 @@ void to::test<8>()
 	ensure_equals(summary.count(), 1u);
 }
 
+// Test a postprocessor that outputs data and then exits with error
+template<> template<>
+void to::test<9>()
+{
+    ConfigFile cfg;
+    dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
+    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("test200")));
+
+    // Querying it should get the partial output and no error
+    stringstream str;
+    dataset::ByteQuery bq;
+    bq.setPostprocess(Matcher::parse(""), "outthenerr");
+    testds->queryBytes(bq, str);
+    ensure_contains(str.str(), "So far, so good");
+
+    // The postprocessor stderr should not appear
+    ensure_not_contains(str.str(), "Argh");
+
+    // And we should not get a server error after the normal stream has started
+    ensure_not_contains(str.str(), "500 Server error");
+}
 
 }
 
