@@ -40,7 +40,7 @@
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
 #include <wibble/net/server.h>
-#include <arki/utils/http.h>
+#include <wibble/net/http.h>
 //#include <arki/utils/lua.h>
 
 #include <string>
@@ -63,10 +63,13 @@
 
 #include "config.h"
 
+#define SERVER_SOFTWARE PACKAGE_NAME "/" PACKAGE_VERSION
+
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace wibble;
+using namespace wibble::net;
 
 namespace wibble {
 namespace commandline {
@@ -163,7 +166,7 @@ struct MoveToTempDir
 	}
 };
 
-struct Request : public http::Request
+struct Request : public net::http::Request
 {
 	ConfigFile arki_conf;
 	ConfigFile arki_conf_remote;
@@ -172,7 +175,7 @@ struct Request : public http::Request
 	{
 		const ConfigFile* cfg = arki_conf_remote.section(dsname);
 		if (cfg == NULL)
-			throw http::error404();
+			throw net::http::error404();
 		return *cfg;
 	}
 
@@ -180,7 +183,7 @@ struct Request : public http::Request
 	{
 		const ConfigFile* cfg = arki_conf.section(dsname);
 		if (cfg == NULL)
-			throw http::error404();
+			throw net::http::error404();
 		return *cfg;
 	}
 
@@ -196,453 +199,6 @@ struct Request : public http::Request
 
 };
 
-
-/// Base interface for GET or POST parameters
-struct Param
-{
-	virtual ~Param() {}
-
-	// This can be called more than once, if the value is found multiple
-	// times, nor never, if the value is never found
-	virtual void parse(const std::string& str) = 0;
-};
-
-/// Single-valued parameter
-struct ParamSingle : public std::string, public Param
-{
-	virtual void parse(const std::string& str)
-	{
-		assign(str);
-	}
-};
-
-/// Multi-valued parameter
-struct ParamMulti : public std::vector<std::string>, public Param
-{
-	virtual void parse(const std::string& str)
-	{
-		push_back(str);
-	}
-};
-
-struct FileParam
-{
-	struct FileInfo
-	{
-		std::string fname;
-		std::string client_fname;
-
-		bool read(net::mime::Reader& mime_reader,
-			  map<string, string> headers,
-			  const std::string& outdir,
-			  const std::string& fname_blacklist,
-			  const std::string& client_fname,
-			  int sock,
-			  const std::string& boundary,
-			  size_t inputsize);
-	};
-
-	virtual ~FileParam() {}
-
-	virtual bool read(
-			net::mime::Reader& mime_reader,
-			map<string, string> headers,
-			const std::string& outdir,
-			const std::string& fname_blacklist,
-			const std::string& client_fname,
-			int sock,
-			const std::string& boundary,
-			size_t inputsize) = 0;
-};
-
-bool FileParam::FileInfo::read(
-		net::mime::Reader& mime_reader,
-		map<string, string> headers,
-		const std::string& outdir,
-		const std::string& fname_blacklist,
-		const std::string& client_fname,
-		int sock,
-		const std::string& boundary,
-		size_t inputsize)
-{
-	int openflags = O_CREAT | O_WRONLY;
-
-	// Store the client provided pathname
-	this->client_fname = client_fname;
-
-	// Generate the output file name
-	if (fname.empty())
-	{
-		fname = client_fname;
-		openflags |= O_EXCL;
-	}
-	string preferred_fname = str::basename(fname);
-
-	// Replace blacklisted chars
-	if (!fname_blacklist.empty())
-		for (string::iterator i = preferred_fname.begin(); i != preferred_fname.end(); ++i)
-			if (fname_blacklist.find(*i) != string::npos)
-				*i = '_';
-
-	preferred_fname = str::joinpath(outdir, preferred_fname);
-
-	fname = preferred_fname;
-
-	// Create the file
-	int outfd;
-	for (unsigned i = 1; ; ++i)
-	{
-		outfd = open(fname.c_str(), openflags, 0600);
-		if (outfd >= 0) break;
-		if (errno != EEXIST)
-			throw wibble::exception::File(fname, "creating file");
-		// Alter the file name and try again
-		fname = preferred_fname + str::fmtf(".%u", i);
-	}
-
-	// Wrap output FD into a stream, which will take care of
-	// closing it
-	wibble::stream::PosixBuf posixBuf(outfd);
-	ostream out(&posixBuf);
-
-	// Read until boundary, sending data to temp file
-
-	bool has_part = mime_reader.read_until_boundary(sock, boundary, out, inputsize);
-
-	return has_part;
-}
-
-struct FileParamSingle : public FileParam
-{
-	FileInfo info;
-
-	/**
-	 * If a file name is given, use its base name for storing the file;
-	 * else, use the file name given by the client, without path
-	 */
-	FileParamSingle(const std::string& fname=std::string())
-	{
-		info.fname = fname;
-	}
-
-	virtual bool read(
-			net::mime::Reader& mime_reader,
-			map<string, string> headers,
-			const std::string& outdir,
-			const std::string& fname_blacklist,
-			const std::string& client_fname,
-			int sock,
-			const std::string& boundary,
-			size_t inputsize)
-	{
-		return info.read(mime_reader, headers, outdir, fname_blacklist, client_fname, sock, boundary, inputsize);
-	}
-};
-
-struct FileParamMulti : public FileParam
-{
-	std::vector<FileInfo> files;
-
-	virtual bool read(
-			net::mime::Reader& mime_reader,
-			map<string, string> headers,
-			const std::string& outdir,
-			const std::string& fname_blacklist,
-			const std::string& client_fname,
-			int sock,
-			const std::string& boundary,
-			size_t inputsize)
-	{
-		files.push_back(FileInfo());
-		return files.back().read(mime_reader, headers, outdir, fname_blacklist, client_fname, sock, boundary, inputsize);
-	}
-};
-
-/**
- * Parse and store HTTP query parameters
- *
- * It can be preconfigured witn 
- */
-struct Params : public std::map<std::string, Param*> 
-{
-	/// File parameters
-	std::map<std::string, FileParam*> files;
-
-	/// Maximum size of POST input data
-	size_t conf_max_input_size;
-
-	/// Maximum size of field data for one non-file field
-	size_t conf_max_field_size;
-
-	/**
-	 * Whether to accept unknown fields.
-	 *
-	 * If true, unkown fields are stored as ParamMulti
-	 *
-	 * If false, unknown fields are ignored.
-	 */
-	bool conf_accept_unknown_fields;
-
-	/**
-	 * Whether to accept unknown file upload fields.
-	 *
-	 * If true, unkown fields are stored as FileParamMulti
-	 *
-	 * If false, unknown file upload fields are ignored.
-	 */
-	bool conf_accept_unknown_file_fields;
-
-	/**
-	 * Directory where we write uploaded files
-	 *
-	 * @warning: if it is not set to anything, it ignores all file uploads
-	 */
-	std::string conf_outdir;
-
-	/**
-	 * String containing blacklist characters that are replaced with "_" in
-	 * the file name. If empty, nothing is replaced.
-	 *
-	 * This only applies to the basename: the pathname is ignored when
-	 * building the local file name.
-	 */
-	std::string conf_fname_blacklist;
-
-
-	Params()
-	{
-		conf_max_input_size = 20 * 1024 * 1024;
-		conf_max_field_size = 1024 * 1024;
-		conf_accept_unknown_fields = false;
-		conf_accept_unknown_file_fields = false;
-	}
-	~Params()
-	{
-		for (iterator i = begin(); i != end(); ++i)
-			delete i->second;
-		for (std::map<std::string, FileParam*>::iterator i = files.begin(); i != files.end(); ++i)
-			delete i->second;
-	}
-
-	template<typename TYPE>
-	TYPE* add(const std::string& name)
-	{
-		TYPE* res = new TYPE;
-		add(name, res);
-		return res;
-	}
-
-	void add(const std::string& name, Param* param)
-	{
-		iterator i = find(name);
-		if (i != end())
-		{
-			delete i->second;
-			i->second = param;
-		} else
-			insert(make_pair(name, param));
-	}
-
-	void add(const std::string& name, FileParam* param)
-	{
-		std::map<std::string, FileParam*>::iterator i = files.find(name);
-		if (i != files.end())
-		{
-			delete i->second;
-			i->second = param;
-		} else
-			files.insert(make_pair(name, param));
-	}
-
-	Param* obtain_field(const std::string& name)
-	{
-		iterator i = find(name);
-		if (i != end())
-			return i->second;
-		if (!conf_accept_unknown_fields)
-			return NULL;
-		pair<iterator, bool> res = insert(make_pair(name, new ParamMulti));
-		return res.first->second;
-	}
-
-	FileParam* obtain_file_field(const std::string& name)
-	{
-		std::map<std::string, FileParam*>::iterator i = files.find(name);
-		if (i != files.end())
-			return i->second;
-		if (!conf_accept_unknown_file_fields)
-			return NULL;
-		pair<std::map<std::string, FileParam*>::iterator, bool> res =
-			files.insert(make_pair(name, new FileParamMulti));
-		return res.first->second;
-	}
-
-	Param* field(const std::string& name)
-	{
-		iterator i = find(name);
-		if (i != end())
-			return i->second;
-		return NULL;
-	}
-
-	FileParam* file_field(const std::string& name)
-	{
-		std::map<std::string, FileParam*>::iterator i = files.find(name);
-		if (i != files.end())
-			return i->second;
-		return NULL;
-	}
-
-	void parse_get_or_post(http::Request& req)
-	{
-		if (req.method == "GET")
-		{
-			size_t pos = req.url.find('?');
-			if (pos != string::npos)
-				parse_urlencoded(req.url.substr(pos + 1));
-		}
-		else if (req.method == "POST")
-			parse_post(req);
-		else
-			throw wibble::exception::Consistency("cannot parse parameters from \"" + req.method + "\" request");
-	}
-
-	void parse_urlencoded(const std::string& qstring)
-	{
-		// Split on &
-		str::Split splitter("&", qstring);
-		for (str::Split::const_iterator i = splitter.begin();
-				i != splitter.end(); ++i)
-		{
-			if (i->empty()) continue;
-
-			// Split on =
-			size_t pos = i->find('=');
-			if (pos == string::npos)
-			{
-				// foo=
-				Param* p = obtain_field(str::urldecode(*i));
-				if (p != NULL)
-					p->parse(string());
-			}
-			else
-			{
-				// foo=bar
-				Param* p = obtain_field(str::urldecode(i->substr(0, pos)));
-				if (p != NULL)
-					p->parse(str::urldecode(i->substr(pos+1)));
-			}
-		}
-	}
-
-	void parse_multipart(http::Request& req, size_t inputsize, const std::string& content_type)
-	{
-        net::mime::Reader mime_reader;
-
-		// Get the mime boundary
-		size_t pos = content_type.find("boundary=");
-		if (pos == string::npos)
-			throw http::error400("no boundary in content-type");
-		// TODO: strip boundary of leading and trailing "
-		string boundary = "--" + content_type.substr(pos + 9);
-
-		// Read until first boundary, discarding data
-		mime_reader.discard_until_boundary(req.sock, boundary);
-
-		boundary = "\r\n" + boundary;
-
-		// Content-Disposition: form-data; name="submit-name"
-		//wibble::ERegexp re_disposition(";%s*([^%s=]+)=\"(.-)\"", 2);
-		wibble::Splitter cd_splitter("[[:blank:]]*;[[:blank:]]*", REG_EXTENDED);
-		wibble::ERegexp cd_parm("([^=]+)=\"([^\"]+)\"", 3);
-
-		bool has_part = true;
-		while (has_part)
-		{
-			// Read mime headers for this part
-			map<string, string> headers;
-			if (!mime_reader.read_headers(req.sock, headers))
-				throw http::error400("request truncated at MIME headers");
-
-			// Get name and (optional) filename from content-disposition
-			map<string, string>::const_iterator i = headers.find("content-disposition");
-			if (i == headers.end())
-				throw http::error400("no Content-disposition in MIME headers");
-			wibble::Splitter::const_iterator j = cd_splitter.begin(i->second);
-			if (j == cd_splitter.end())
-				throw http::error400("incomplete content-disposition header");
-			if (*j != "form-data")
-				throw http::error400("Content-disposition is not \"form-data\"");
-			string name;
-			string filename;
-			for (++j; j != cd_splitter.end(); ++j)
-			{
-				if (!cd_parm.match(*j)) continue;
-				string key = cd_parm[1];
-				if (key == "name")
-				{
-					name = cd_parm[2];
-				} else if (key == "filename") {
-					filename = cd_parm[2];
-				}
-			}
-
-			if (!filename.empty())
-			{
-				// Get a file param
-				FileParam* p = conf_outdir.empty() ? NULL : obtain_file_field(name);
-				if (p != NULL)
-					has_part = p->read(mime_reader, headers, conf_outdir, conf_fname_blacklist, filename, req.sock, boundary, inputsize);
-				else
-					has_part = mime_reader.discard_until_boundary(req.sock, boundary);
-			} else {
-				// Read until boundary, storing data in string
-				stringstream value;
-				has_part = mime_reader.read_until_boundary(req.sock, boundary, value, conf_max_field_size);
-
-				// Store the field value
-				Param* p = obtain_field(name);
-				if (p != NULL)
-					p->parse(value.str());
-			}
-		}
-	}
-
-	void parse_post(http::Request& req)
-	{
-		// Get the supposed size of incoming data
-		map<string, string>::const_iterator i = req.headers.find("content-length");
-		if (i == req.headers.end())
-			throw wibble::exception::Consistency("no Content-Length: found in request header");
-		// Validate the post size
-		size_t inputsize = strtoul(i->second.c_str(), 0, 10);
-		if (inputsize > conf_max_input_size)
-		{
-			// Discard all input
-			req.discard_input();
-			throw wibble::exception::Consistency(str::fmtf(
-				"Total size of incoming data (%zdb) exceeds configured maximum (%zdb)",
-				inputsize, conf_max_input_size));
-		}
-
-		// Get the content type
-		i = req.headers.find("content-type");
-		if (i == req.headers.end())
-			throw wibble::exception::Consistency("no Content-Type: found in request header");
-		if (i->second.find("x-www-form-urlencoded") != string::npos)
-		{
-			string line;
-			req.read_buf(req.sock, line, inputsize);
-			parse_urlencoded(line);
-		}
-		else if (i->second.find("multipart/form-data") != string::npos)
-		{
-			parse_multipart(req, inputsize, i->second);
-		}
-		else
-			throw wibble::exception::Consistency("unsupported Content-Type: " + i->second);
-	}
-};
 
 // Interface for local request handlers
 struct LocalHandler
@@ -800,6 +356,7 @@ struct QexpandHandler : public LocalHandler
 {
 	virtual void operator()(Request& req)
 	{
+        using namespace wibble::net::http;
 		Params params;
 		ParamSingle* query = params.add<ParamSingle>("query");
 		params.parse_get_or_post(req);
@@ -812,20 +369,21 @@ struct QexpandHandler : public LocalHandler
 // Common code for handling queries
 struct QueryHelper
 {
-	Params params;
+    http::Params params;
 	string content_type;
 	string ext;
 	runtime::ProcessorMaker pmaker;
 
-	ParamSingle* query;
-	ParamSingle* style;
-	ParamSingle* command;
-	FileParamMulti* postprocfile;
-	ParamSingle* sort;
+    http::ParamSingle* query;
+    http::ParamSingle* style;
+    http::ParamSingle* command;
+    http::FileParamMulti* postprocfile;
+    http::ParamSingle* sort;
 
 	QueryHelper()
 		: content_type("application/octet-stream"), ext("bin")
 	{
+        using namespace wibble::net::http;
 		params.conf_fname_blacklist = ":";
 		query = params.add<ParamSingle>("query");
 		style = params.add<ParamSingle>("style");
@@ -836,6 +394,7 @@ struct QueryHelper
 
 	void parse_request(Request& req)
 	{
+        using namespace wibble::net::http;
 		params.parse_get_or_post(req);
 
 		// Configure the ProcessorMaker with the request
@@ -881,7 +440,7 @@ struct QueryHelper
 		// Validate request
 		string errors = pmaker.verify_option_consistency();
 		if (!errors.empty())
-			throw http::error400(errors);
+			throw net::http::error400(errors);
 	}
 
 	void send_headers(Request& req, const std::string& fname)
@@ -959,6 +518,7 @@ struct RootQueryHandler : public LocalHandler
 {
 	virtual void operator()(Request& req)
 	{
+        using namespace wibble::net::http;
 		// Work in a temporary directory
 		MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
 
@@ -970,7 +530,7 @@ struct RootQueryHandler : public LocalHandler
 		string macroname = str::trim(*qmacro);
 
 		if (macroname.empty())
-			throw http::error400("root-level query without qmacro parameter");
+			throw net::http::error400("root-level query without qmacro parameter");
 
 		// Create qmacro dataset
 		auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
@@ -988,6 +548,7 @@ struct RootSummaryHandler : public LocalHandler
 {
 	virtual void operator()(Request& req)
 	{
+        using namespace wibble::net::http;
 		Params params;
 		ParamSingle* style = params.add<ParamSingle>("style");
 		ParamSingle* query = params.add<ParamSingle>("query");
@@ -997,7 +558,7 @@ struct RootSummaryHandler : public LocalHandler
 		string macroname = str::trim(*qmacro);
 
 		if (macroname.empty())
-			throw http::error400("root-level query without qmacro parameter");
+			throw net::http::error400("root-level query without qmacro parameter");
 
 		// Create qmacro dataset
 		auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
@@ -1102,6 +663,7 @@ struct DatasetHandler : public LocalHandler
 	// Generate a dataset summary
 	void do_summary(Request& req, const std::string& dsname)
 	{
+        using namespace wibble::net::http;
 		Params params;
 		ParamSingle* style = params.add<ParamSingle>("style");
 		ParamSingle* query = params.add<ParamSingle>("query");
@@ -1141,7 +703,7 @@ struct DatasetHandler : public LocalHandler
 		try {
 			matcher = Matcher::parse(*qhelper.query);
 		} catch (std::exception& e) {
-			throw http::error400(e.what());
+			throw net::http::error400(e.what());
 		}
 
 		// Get the dataset here so in case of error we generate a
@@ -1158,7 +720,7 @@ struct DatasetHandler : public LocalHandler
 	{
 		string dsname;
 		if (!pop_first_path.match(req.path_info))
-			throw http::error404();
+			throw net::http::error404();
 
 		dsname = pop_first_path[1];
 		string rest = pop_first_path[3];
@@ -1195,7 +757,7 @@ struct ChildServer : public sys::ChildProcess
 	virtual int main()
 	{
 		try {
-			while (req.read_request(req.sock))
+			while (req.read_request())
 			{
 				// Request line and headers have been read
 				// sock now points to the optional message body
@@ -1242,11 +804,11 @@ struct ChildServer : public sys::ChildProcess
 				try {
 					if (!local_handlers.try_do(req))
 						// if (!script_handlers.try_do(req))
-						throw http::error404();
-				} catch (http::error& e) {
+						throw net::http::error404();
+				} catch (net::http::error& e) {
 					e.send(req);
 				} catch (std::exception& e) {
-					http::error httpe(500, "Server error", e.what());
+                    net::http::error httpe(500, "Server error", e.what());
 					httpe.send(req);
 				}
 
@@ -1304,6 +866,7 @@ struct HTTP : public net::TCPServer
 			throw wibble::exception::System("setting SO_SNDTIMEO on socket");
 
 		Request req;
+        req.server_software = SERVER_SOFTWARE;
 
 		// Parse local config file
 		runtime::parseConfigFile(req.arki_conf, arki_config);

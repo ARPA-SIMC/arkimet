@@ -92,7 +92,6 @@ dist_noinst_HEADERS = \
 		utils/files.h \
 		utils/dataset.h \
 		utils/pcounter.h \
-		utils/http.h \
 		metadatagrid.h \
 		sort.h \
 		formatter.h \
@@ -130,7 +129,6 @@ libarkimet_la_SOURCES = \
 		utils/files.cc \
 		utils/dataset.cc \
 		utils/pcounter.cc \
-		utils/http.cc \
 		configfile.cc \
 		transaction.cc \
 		values.cc \
@@ -229,7 +227,6 @@ tests_arki_test_SOURCES = \
 		utils/files-tut.cc \
 		utils/dataset-tut.cc \
 		utils/pcounter-tut.cc \
-		utils/http-tut.cc \
 		refcounted-tut.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
