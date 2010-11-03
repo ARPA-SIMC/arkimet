@@ -186,40 +186,40 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-	ConfigFile cfg;
-	cfg.setValue("name", "noop");
-	cfg.setValue("type", "remote");
-	cfg.setValue("path", "http://localhost:7117");
-	cfg.setValue("qmacro", "test200");
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
-	metadata::Collection mdc;
+    ConfigFile cfg;
+    cfg.setValue("name", "noop");
+    cfg.setValue("type", "remote");
+    cfg.setValue("path", "http://localhost:7117");
+    cfg.setValue("qmacro", "test200");
+    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
+    metadata::Collection mdc;
 
-	testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-	// Check that the source record that comes out is ok
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	UItem<source::Blob> blob = source.upcast<source::Blob>();
-	ensure(str::endsWith(blob->filename, "test200/2007/07-08.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 7218u);
+    testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
+    ensure_equals(mdc.size(), 1u);
+    // Check that the source record that comes out is ok
+    UItem<Source> source = mdc[0].source;
+    ensure_equals(source->style(), Source::BLOB);
+    ensure_equals(source->format, "grib1");
+    UItem<source::Blob> blob = source.upcast<source::Blob>();
+    ensure(str::endsWith(blob->filename, "test200/2007/07-08.grib1"));
+    ensure_equals(blob->offset, 0u);
+    ensure_equals(blob->size, 7218u);
 }
 
 // Test querying the summary
 template<> template<>
 void to::test<8>()
 {
-	ConfigFile cfg;
-	cfg.setValue("name", "noop");
-	cfg.setValue("type", "remote");
-	cfg.setValue("path", "http://localhost:7117");
-	cfg.setValue("qmacro", "test200");
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
+    ConfigFile cfg;
+    cfg.setValue("name", "noop");
+    cfg.setValue("type", "remote");
+    cfg.setValue("path", "http://localhost:7117");
+    cfg.setValue("qmacro", "test200");
+    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
 
-	Summary summary;
-	testds->querySummary(Matcher(), summary);
-	ensure_equals(summary.count(), 1u);
+    Summary summary;
+    testds->querySummary(Matcher(), summary);
+    ensure_equals(summary.count(), 1u);
 }
 
 // Test a postprocessor that outputs data and then exits with error
