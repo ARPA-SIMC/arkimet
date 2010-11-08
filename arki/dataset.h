@@ -244,14 +244,9 @@ public:
 	virtual bool replace(Metadata& md) = 0;
 
 	/**
-	 * Remove the metadata with the given ID from the database.
-	 */
-	virtual void remove(const std::string& id) = 0;
-
-	/**
 	 * Remove the given metadata from the database.
 	 */
-	virtual void remove(Metadata& md);
+	virtual void remove(Metadata& md) = 0;
 
 	/**
 	 * Reset this dataset, removing all data, indices and caches

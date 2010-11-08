@@ -148,9 +148,10 @@ bool Writer::replace(Metadata& md)
 	return acquire(md) == ACQ_OK;
 }
 
-void Writer::remove(const std::string& id)
+void Writer::remove(Metadata& id)
 {
 	// Nothing to do
+    throw wibble::exception::Consistency("removing data from simple dataset", "dataset does not support removing items");
 }
 
 namespace {

@@ -66,7 +66,7 @@ struct Options : public StandardParserWithManpage
 	{
 		usage = "[options] [configfile or directory...]";
 		description =
-		    "Given one or more dataset root directories (either specified directly or"
+			"Given one or more dataset root directories (either specified directly or"
 			" read from config files), perform a maintenance run on them."
 			" Corrupted metadata files will be rebuilt, data files with deleted data"
 			" will be packed, outdated summaries and indices will be regenerated.";
@@ -83,7 +83,7 @@ struct Options : public StandardParserWithManpage
 		remove_all = add<BoolOption>("remove-all", 0, "remove-all", "",
 			"Completely empty the dataset, removing all data and metadata");
 		invalidate = add<BoolOption>("invalidate", 0, "invalidate", "",
-			"Create flagfiles to invalidate all metadata in a dataset.  Warning, this will work without requiring -f, and should be invoked only after a repack.");
+			"Create flagfiles to invalidate all metadata in a dataset.	Warning, this will work without requiring -f, and should be invoked only after a repack.");
 		stats = add<BoolOption>("stats", 0, "stats", "",
 			"Compute statistics about the various datasets.");
 		op_remove = add<StringOption>("remove", 0, "remove", "file",
@@ -336,30 +336,32 @@ int main(int argc, const char* argv[])
 			WritableDatasetPool pool(cfg);
 			// Read all metadata from the file specified in --remove
 			runtime::Input input(opts.op_remove->stringValue());
+			// Collect metadata to delete
+			metadata::Collection todolist;
 			Metadata md;
-			vector< Item<types::AssignedDataset> > todolist;
 			for (size_t count = 1; md.read(input.stream(), input.name()); ++count)
 			{
-				// Collect dataset name and ID of items to delete
-				todolist.push_back(md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>());
-				if (!todolist.back().defined())
+				UItem<types::AssignedDataset> ad = md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+				if (!ad.defined())
 					throw wibble::exception::Consistency(
 							"reading information on data to remove",
-						   	"the metadata #" + str::fmt(count) + " is not assigned to any dataset");
+							"the metadata #" + str::fmt(count) + " is not assigned to any dataset");
+				todolist(md);
 			}
 			// Perform removals
 			size_t count = 1;
-			for (vector< Item<types::AssignedDataset> >::const_iterator i = todolist.begin();
+			for (metadata::Collection::iterator i = todolist.begin();
 					i != todolist.end(); ++i, ++count)
 			{
-				WritableDataset* ds = pool.get((*i)->name);
+				UItem<types::AssignedDataset> ad = i->get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+				WritableDataset* ds = pool.get(ad->name);
 				if (!ds)
 				{
 					cerr << "Message #" << count << " is not in any dataset: skipped" << endl;
 					continue;
 				}
 				try {
-					ds->remove((*i)->id);
+					ds->remove(*i);
 				} catch (std::exception& e) {
 					cerr << "Message #" << count << ": " << e.what() << endl;
 				}

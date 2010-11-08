@@ -58,7 +58,7 @@ public:
 
 	virtual bool replace(Metadata& md);
 
-	virtual void remove(const std::string&)
+	virtual void remove(Metadata&)
 	{
 		// Of course, after this method is called, the metadata cannot be found
 		// in the dataset

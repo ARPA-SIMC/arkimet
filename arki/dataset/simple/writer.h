@@ -81,7 +81,7 @@ public:
 	 * This dataset stores duplicates, so it cannot unambiguously locale
 	 * single data items. This functions does nothing.
 	 */
-	void remove(const std::string& id);
+	void remove(Metadata& id);
 
 	virtual void flush();
 

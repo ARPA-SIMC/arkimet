@@ -117,7 +117,10 @@ bool Outbound::replace(Metadata& md)
 	return acquire(md) == ACQ_OK;
 }
 
-void Outbound::remove(const std::string&) {}
+void Outbound::remove(Metadata&)
+{
+    throw wibble::exception::Consistency("removing data from outbound dataset", "dataset does not support removing items");
+}
 
 void Outbound::removeAll(std::ostream& log, bool writable)
 {

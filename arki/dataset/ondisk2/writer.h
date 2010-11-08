@@ -85,7 +85,8 @@ public:
 
 	virtual bool replace(Metadata& md);
 
-	virtual void remove(const std::string& id);
+	void remove(const std::string& id);
+    virtual void remove(Metadata& md);
 
 	virtual void flush();
 

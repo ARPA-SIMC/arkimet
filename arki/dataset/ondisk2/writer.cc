@@ -167,6 +167,19 @@ bool Writer::replace(Metadata& md)
 	}
 }
 
+void Writer::remove(Metadata& md)
+{
+	Item<types::AssignedDataset> ds = md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+	if (!ds.defined())
+		throw wibble::exception::Consistency("removing metadata from dataset", "the metadata is not assigned to this dataset");
+
+	remove(ds->id);
+
+	// reset source and dataset in the metadata
+	md.source.clear();
+	md.unset(types::TYPE_ASSIGNEDDATASET);
+}
+
 void Writer::remove(const std::string& str_id)
 {
 	// TODO: refuse if md is in the archive
