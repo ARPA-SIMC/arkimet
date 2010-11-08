@@ -267,19 +267,6 @@ public:
 	virtual void flush();
 
 	/**
-	 * Repack the dataset
-	 */
-	virtual void repack(std::ostream& log, bool writable=false);
-
-	/**
-	 * Check the dataset for errors, logging status to the given file.
-	 *
-	 * If \a fix is false, the process is simulated but no changes are saved.
-	 * If \a fix is true, errors are fixed.
-	 */
-	virtual void check(std::ostream& log, bool fix, bool quick);
-
-	/**
 	 * Instantiate an appropriate Dataset for the given configuration
 	 */
 	static WritableDataset* create(const ConfigFile& cfg);

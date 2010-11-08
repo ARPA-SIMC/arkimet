@@ -21,6 +21,8 @@
  */
 
 #include <arki/dataset/local.h>
+#include <arki/dataset/ondisk2.h>
+#include <arki/dataset/simple/writer.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/utils/files.h>
@@ -275,6 +277,34 @@ void WritableLocal::check(std::ostream& log, bool fix, bool quick)
 	}
 
 	sanityChecks(log, fix);
+}
+
+WritableLocal* WritableLocal::create(const ConfigFile& cfg)
+{
+	string type = wibble::str::tolower(cfg.value("type"));
+	if (type.empty())
+		type = "local";
+	
+	if (type == "ondisk2" || type == "test")
+		return new dataset::ondisk2::Writer(cfg);
+	if (type == "simple" || type == "error" || type == "duplicates")
+		return new dataset::simple::Writer(cfg);
+
+	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
+}
+
+WritableLocal::AcquireResult WritableLocal::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
+{
+	string type = wibble::str::tolower(cfg.value("type"));
+	if (type.empty())
+		type = "local";
+	
+	if (type == "ondisk2" || type == "test")
+		return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
+	if (type == "simple" || type == "error" || type == "duplicates")
+		return dataset::simple::Writer::testAcquire(cfg, md, out);
+
+	throw wibble::exception::Consistency("simulating dataset acquisition", "unknown dataset type \""+type+"\"");
 }
 
 

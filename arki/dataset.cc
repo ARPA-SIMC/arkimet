@@ -26,7 +26,6 @@
 #include <arki/dataset/file.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/simple/reader.h>
-#include <arki/dataset/simple/writer.h>
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
@@ -57,9 +56,6 @@ using namespace wibble;
 namespace arki {
 
 void WritableDataset::flush() {}
-
-void WritableDataset::repack(std::ostream& log, bool writable) {}
-void WritableDataset::check(std::ostream& log, bool fix, bool quick) {}
 
 void WritableDataset::remove(Metadata& md)
 {
@@ -296,33 +292,21 @@ void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
 WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 {
 	string type = wibble::str::tolower(cfg.value("type"));
-	if (type.empty())
-		type = "local";
-	
-	if (type == "ondisk2" || type == "test")
-		return new dataset::ondisk2::Writer(cfg);
-	if (type == "simple" || type == "error" || type == "duplicates")
-		return new dataset::simple::Writer(cfg);
 	if (type == "remote")
 		throw wibble::exception::Consistency("creating a dataset", "remote datasets are not writable");
 	if (type == "outbound")
 		return new dataset::Outbound(cfg);
 	if (type == "discard")
 		return new dataset::Discard(cfg);
-
-	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
+    /*
+    // TODO: create remote ones once implemented
+    */
+    return dataset::WritableLocal::create(cfg);
 }
 
 WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
 	string type = wibble::str::tolower(cfg.value("type"));
-	if (type.empty())
-		type = "local";
-	
-	if (type == "ondisk2" || type == "test")
-		return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
-	if (type == "simple" || type == "error" || type == "duplicates")
-		return dataset::simple::Writer::testAcquire(cfg, md, out);
 	if (type == "remote")
 		throw wibble::exception::Consistency("simulating dataset acquisition", "remote datasets are not writable");
 	if (type == "outbound")
@@ -330,7 +314,7 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
 	if (type == "discard")
 		return dataset::Discard::testAcquire(cfg, md, out);
 
-	throw wibble::exception::Consistency("simulating dataset acquisition", "unknown dataset type \""+type+"\"");
+    return dataset::WritableLocal::testAcquire(cfg, md, out);
 }
 
 }

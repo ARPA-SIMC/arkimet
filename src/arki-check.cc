@@ -26,7 +26,7 @@
 #include <wibble/string.h>
 #include <arki/configfile.h>
 #include <arki/datasetpool.h>
-#include <arki/dataset.h>
+#include <arki/dataset/local.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
@@ -194,7 +194,7 @@ struct Printer : public metadata::Consumer
 struct Worker
 {
 	~Worker() {}
-	virtual void operator()(WritableDataset& w) = 0;
+	virtual void operator()(dataset::WritableLocal& w) = 0;
 	virtual void done() = 0;
 };
 
@@ -207,7 +207,7 @@ struct Maintainer : public Worker
 	{
 	}
 
-	virtual void operator()(WritableDataset& w)
+	virtual void operator()(dataset::WritableLocal& w)
 	{
 		w.check(cerr, fix, quick);
 	}
@@ -223,7 +223,7 @@ struct Repacker : public Worker
 
 	Repacker(bool fix) : fix(fix) {}
 
-	virtual void operator()(WritableDataset& w)
+	virtual void operator()(dataset::WritableLocal& w)
 	{
 		w.repack(cout, fix);
 		w.flush();
@@ -240,7 +240,7 @@ struct RemoveAller : public Worker
 
 	RemoveAller(bool fix) : fix(fix) {}
 
-	virtual void operator()(WritableDataset& w)
+	virtual void operator()(dataset::WritableLocal& w)
 	{
 		w.removeAll(cout, fix);
 		w.flush();
@@ -254,7 +254,7 @@ struct RemoveAller : public Worker
 #if 0
 struct Invalidator : public Worker
 {
-	virtual void operator()(WritableDataset& w)
+	virtual void operator()(dataset::WritableLocal& w)
 	{
 		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
 		if (ow == 0)
@@ -274,7 +274,7 @@ struct Statistician : public Worker
 {
 	Stats st;
 
-	virtual void operator()(WritableDataset& w)
+	virtual void operator()(dataset::WritableLocal& w)
 	{
 		dataset::ondisk::Writer* ow = dynamic_cast<dataset::ondisk::Writer*>(&w);
 		if (ow == 0)
@@ -383,9 +383,9 @@ int main(int argc, const char* argv[])
 			for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
 					i != cfg.sectionEnd(); ++i)
 			{
-				auto_ptr<WritableDataset> ds;
+				auto_ptr<dataset::WritableLocal> ds;
 				try {
-					ds.reset(WritableDataset::create(*i->second));
+					ds.reset(dataset::WritableLocal::create(*i->second));
 				} catch (std::exception& e) {
 					cerr << "Skipping dataset " << i->first << ": " << e.what() << endl;
 					continue;

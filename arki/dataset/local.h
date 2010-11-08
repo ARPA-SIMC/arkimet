@@ -171,6 +171,23 @@ public:
 	 * @returns The number of bytes freed on disk with this operation
 	 */
 	virtual size_t vacuum() = 0;
+
+	/**
+	 * Instantiate an appropriate Dataset for the given configuration
+	 */
+	static WritableLocal* create(const ConfigFile& cfg);
+
+	/**
+	 * Simulate acquiring the given metadata item (and related data) in this
+	 * dataset.
+	 *
+	 * No change of any kind happens to the dataset.  Information such as the
+	 * dataset name and the id of the data in the dataset are added to the
+	 * Metadata object.
+	 *
+	 * @return The outcome of the operation.
+	 */
+	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 
 }
