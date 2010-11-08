@@ -221,9 +221,6 @@ public:
 	// Return the dataset name
 	const std::string& name() const { return m_name; }
 
-	// Compute the unique ID of a metadata in this dataset
-	virtual std::string id(const Metadata& md) const = 0;
-
 	/**
 	 * Acquire the given metadata item (and related data) in this dataset.
 	 *

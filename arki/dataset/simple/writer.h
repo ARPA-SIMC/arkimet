@@ -59,14 +59,6 @@ public:
 	virtual ~Writer();
 
 	/**
-	 * Compute the unique ID of a metadata in this dataset
-	 *
-	 * This dataset does not detect duplicates, so it always returns the
-	 * empty string
-	 */
-	virtual std::string id(const Metadata& md) const;
-
-	/**
 	 * Acquire the given metadata item (and related data) in this dataset.
 	 *
 	 * After acquiring the data successfully, the data can be retrieved from

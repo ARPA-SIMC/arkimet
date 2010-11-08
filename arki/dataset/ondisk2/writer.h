@@ -70,9 +70,6 @@ public:
 
 	virtual ~Writer();
 
-	// Compute the unique ID of a metadata in this dataset
-	virtual std::string id(const Metadata& md) const;
-
 	/**
 	 * Acquire the given metadata item (and related data) in this dataset.
 	 *

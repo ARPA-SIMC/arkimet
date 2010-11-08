@@ -47,12 +47,6 @@ public:
 
 	virtual ~Discard();
 
-	virtual std::string id(const Metadata& md) const
-	{
-		// ID is useless here
-		return std::string();
-	}
-
     /**
 	 * Acquire the given metadata item (and related data) in this dataset.
 	 *

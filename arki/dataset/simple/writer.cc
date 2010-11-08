@@ -93,11 +93,6 @@ Writer::~Writer()
 	if (m_mft) delete m_mft;
 }
 
-std::string Writer::id(const Metadata& md) const
-{
-	return std::string();
-}
-
 Datafile* Writer::file(const std::string& pathname)
 {
 	std::map<std::string, Datafile*>::iterator i = m_df_cache.find(pathname);
