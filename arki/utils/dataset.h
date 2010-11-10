@@ -85,6 +85,25 @@ struct TemporaryDataInliner : public metadata::Consumer
 	bool operator()(Metadata& md);
 };
 
+struct DataStartHookRunner : public metadata::Consumer
+{
+    metadata::Consumer& next;
+    metadata::Hook* data_start_hook;
+
+    DataStartHookRunner(metadata::Consumer& next, metadata::Hook* data_start_hook=0)
+        : next(next), data_start_hook(data_start_hook) {}
+
+    bool operator()(Metadata& md)
+    {
+        if (data_start_hook)
+        {
+            (*data_start_hook)();
+            data_start_hook = 0;
+        }
+        return next(md);
+    }
+};
+
 /**
  * Output the data from a metadata stream into an ostream
  */

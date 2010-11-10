@@ -54,6 +54,24 @@ LegacyQueryParams::LegacyQueryParams(const std::string& tmpdir)
     sort = add<ParamSingle>("sort");
 }
 
+static void postprocfiles_to_env(net::http::FileParamMulti& postprocfile)
+{
+    using namespace wibble::net::http;
+
+    vector<string> postproc_files;
+    for (vector<FileParam::FileInfo>::const_iterator i = postprocfile.files.begin();
+            i != postprocfile.files.end(); ++i)
+        postproc_files.push_back(i->fname);
+
+    if (!postproc_files.empty())
+    {
+        // Pass files for the postprocessor in the environment
+        string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
+        setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
+    } else
+        unsetenv("ARKI_POSTPROC_FILES");
+}
+
 void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
 {
     using namespace wibble::net::http;
@@ -69,19 +87,7 @@ void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
         pmaker.data_only = true;
     } else if (*style == "postprocess") {
         pmaker.postprocess = *command;
-
-        vector<string> postproc_files;
-        for (vector<FileParam::FileInfo>::const_iterator i = postprocfile->files.begin();
-                i != postprocfile->files.end(); ++i)
-            postproc_files.push_back(i->fname);
-
-        if (!postproc_files.empty())
-        {
-            // Pass files for the postprocessor in the environment
-            string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
-            setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
-        } else
-            unsetenv("ARKI_POSTPROC_FILES");
+        postprocfiles_to_env(*postprocfile);
     } else if (*style == "rep_metadata") {
         pmaker.report = *command;
     } else if (*style == "rep_summary") {
@@ -98,11 +104,17 @@ void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
         throw net::http::error400(errors);
 }
 
-QueryDataParams::QueryDataParams()
+QuerySummaryParams::QuerySummaryParams()
 {
     using namespace wibble::net::http;
 
     matcher = add<ParamSingle>("matcher");
+}
+
+QueryDataParams::QueryDataParams()
+{
+    using namespace wibble::net::http;
+
     withdata = add<ParamSingle>("withdata");
     sorter = add<ParamSingle>("sorter");
 }
@@ -113,6 +125,35 @@ void QueryDataParams::set_into(DataQuery& dq) const
     dq.withData = *withdata == "true";
     if (!sorter->empty())
         dq.sorter = sort::Compare::parse(*sorter);
+}
+
+QueryBytesParams::QueryBytesParams(const std::string& tmpdir)
+{
+    using namespace wibble::net::http;
+
+    conf_fname_blacklist = ":";
+    conf_outdir = tmpdir;
+
+    type = add<ParamSingle>("type");
+    param = add<ParamSingle>("param");
+    postprocfile = add<FileParamMulti>("postprocfile");
+}
+
+void QueryBytesParams::set_into(ByteQuery& dq) const
+{
+    QueryDataParams::set_into(dq);
+    dq.param = *param;
+    if (*type == "data")
+        dq.type = ByteQuery::BQ_DATA;
+    else if (*type == "postprocess")
+        dq.type = ByteQuery::BQ_POSTPROCESS;
+    else if (*type == "rep_metadata")
+        dq.type = ByteQuery::BQ_REP_METADATA;
+    else if (*type == "rep_summary")
+        dq.type = ByteQuery::BQ_REP_SUMMARY;
+    else
+        dq.type = ByteQuery::BQ_DATA;
+    postprocfiles_to_env(*postprocfile);
 }
 
 namespace {
@@ -142,9 +183,28 @@ struct StreamHeaders : public metadata::Hook
         fired = true;
     }
 
+    void send_result(const std::string& res)
+    {
+        req.send_result(res, content_type, fname + "." + ext);
+    }
+
     void sendIfNotFired()
     {
         if (!fired) operator()();
+    }
+};
+
+struct MetadataStreamer : public metadata::Consumer
+{
+    StreamHeaders& sh;
+
+    MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
+
+    virtual bool operator()(Metadata& md)
+    {
+        sh.sendIfNotFired();
+        md.write(sh.req.sock, "socket");
+        return true;
     }
 };
 
@@ -245,21 +305,51 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
 
 void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, wibble::net::http::Request& req)
 {
-#if 0
+    // Response header generator
+    StreamHeaders headers(req, dsname);
+    headers.ext = "arkimet";
+    MetadataStreamer cons(headers);
     DataQuery dq;
     parms.set_into(dq);
-    ds.queryData(dq, metadata::Consumer& consumer);
-#endif
+    ds.queryData(dq, cons);
 }
 
-void ReadonlyDatasetServer::do_querySummary(wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, wibble::net::http::Request& req)
 {
-//virtual void querySummary(const Matcher& matcher, Summary& summary) = 0;
+    StreamHeaders headers(req, dsname);
+    headers.ext = "summary";
+    Summary s;
+    ds.querySummary(Matcher::parse(*parms.matcher), s);
+    headers.send_result(s.encode());
 }
 
-void ReadonlyDatasetServer::do_queryBytes(wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, wibble::net::http::Request& req)
 {
-//virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    // Response header generator
+    StreamHeaders headers(req, dsname);
+
+    ByteQuery bq;
+    parms.set_into(bq);
+    // Send headers when data starts flowing
+    bq.data_start_hook = &headers;
+
+    // Pick a nice extension
+    switch (bq.type)
+    {
+        case ByteQuery::BQ_DATA: headers.ext = "bin";
+        case ByteQuery::BQ_POSTPROCESS: headers.ext = "bin";
+        case ByteQuery::BQ_REP_METADATA: headers.ext = "txt";
+        case ByteQuery::BQ_REP_SUMMARY: headers.ext = "txt";
+    }
+
+    // Create Output directed to req.sock
+    runtime::Output sockoutput(req.sock, "socket");
+
+    // Produce the results
+    ds.queryBytes(bq, sockoutput.stream());
+
+    // If we had empty output, headers were not sent: catch up
+    headers.sendIfNotFired();
 }
 
 }

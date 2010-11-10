@@ -71,11 +71,19 @@ struct LegacyQueryParams : public LegacySummaryParams
     void set_into(runtime::ProcessorMaker& pmaker) const;
 };
 
-/// Parameters used by the /querydata/ interface
-struct QueryDataParams : public wibble::net::http::Params
+/// Parameters used by the /querysummary/ interface
+struct QuerySummaryParams : public wibble::net::http::Params
 {
     // DataQuery params
     wibble::net::http::ParamSingle* matcher;
+
+    QuerySummaryParams();
+};
+
+/// Parameters used by the /querydata/ interface
+struct QueryDataParams : public QuerySummaryParams
+{
+    // DataQuery params
     wibble::net::http::ParamSingle* withdata;
     wibble::net::http::ParamSingle* sorter;
 
@@ -83,6 +91,18 @@ struct QueryDataParams : public wibble::net::http::Params
 
     /// Initialise a DataQuery with the parsed query params
     void set_into(DataQuery& dq) const;
+};
+
+struct QueryBytesParams : public QueryDataParams
+{
+    wibble::net::http::ParamSingle* type;
+    wibble::net::http::ParamSingle* param;
+    wibble::net::http::FileParamMulti* postprocfile;
+
+    QueryBytesParams(const std::string& tmpdir);
+
+    /// Initialise a ByteQuery with the parsed query params
+    void set_into(ByteQuery& dq) const;
 };
 
 /**
@@ -113,10 +133,10 @@ struct ReadonlyDatasetServer
     void do_queryData(const QueryDataParams& parms, wibble::net::http::Request& req);
 
     /// Server side implementation of querySummary
-    void do_querySummary(wibble::net::http::Request& req);
+    void do_querySummary(const QuerySummaryParams& parms, wibble::net::http::Request& req);
 
     /// Server side implementation of queryBytes
-    void do_queryBytes(wibble::net::http::Request& req);
+    void do_queryBytes(const QueryBytesParams& parms, wibble::net::http::Request& req);
 };
 
 }

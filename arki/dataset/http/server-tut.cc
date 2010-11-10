@@ -77,10 +77,46 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
 
         r.read_response();
     }
+
+    // Run the fake request through a server-side summary handler
+    void do_queryData(arki::tests::FakeRequest& r)
+    {
+        net::http::Request req;
+        r.setup_request(req);
+
+        // Handle the request, server side
+        auto_ptr<ReadonlyDataset> ds(makeReader());
+
+        dataset::http::QueryDataParams params;
+        params.parse_get_or_post(req);
+
+        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        srv.do_queryData(params, req);
+
+        r.read_response();
+    }
+
+    // Run the fake request through a server-side summary handler
+    void do_queryBytes(arki::tests::FakeRequest& r)
+    {
+        net::http::Request req;
+        r.setup_request(req);
+
+        // Handle the request, server side
+        auto_ptr<ReadonlyDataset> ds(makeReader());
+
+        dataset::http::QueryBytesParams params(".");
+        params.parse_get_or_post(req);
+
+        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        srv.do_queryBytes(params, req);
+
+        r.read_response();
+    }
 };
 TESTGRP(arki_dataset_http_server);
 
-// Test summary query
+// Test /summary/
 template<> template<>
 void to::test<1>()
 {
@@ -102,7 +138,7 @@ void to::test<1>()
     ensure_equals(s.count(), 3u);
 }
 
-// Test normal query
+// Test /query/
 template<> template<>
 void to::test<2>()
 {
@@ -124,6 +160,50 @@ void to::test<2>()
 
     ensure_equals(mdc.size(), 3u);
 }
+
+// Test /querydata/
+template<> template<>
+void to::test<3>()
+{
+    // Make the request
+    arki::tests::FakeRequest r;
+    r.write_get("/foo");
+
+    // Handle the request, server side
+    do_queryData(r);
+
+    // Handle the response, client side
+    ensure_equals(r.response_method, "HTTP/1.0 200 OK");
+    ensure_equals(r.response_headers["content-type"], "application/octet-stream");
+    ensure_equals(r.response_headers["content-disposition"], "attachment; filename=testds.arkimet");
+
+    stringstream sstream(r.response_body);
+    metadata::Collection mdc;
+    Metadata::readFile(sstream, "response body", mdc);
+
+    ensure_equals(mdc.size(), 3u);
+}
+
+// Test /querybytes/
+template<> template<>
+void to::test<4>()
+{
+    // Make the request
+    arki::tests::FakeRequest r;
+    r.write_get("/foo");
+
+    // Handle the request, server side
+    do_queryBytes(r);
+
+    // Handle the response, client side
+    ensure_equals(r.response_method, "HTTP/1.0 200 OK");
+    ensure_equals(r.response_headers["content-type"], "application/octet-stream");
+    ensure_equals(r.response_headers["content-disposition"], "attachment; filename=testds.txt");
+
+    ensure_equals(r.response_body.size(), 44412);
+    ensure_equals(r.response_body.substr(0, 4), "GRIB");
+}
+
 
 }
 

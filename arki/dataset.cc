@@ -73,7 +73,8 @@ void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	{
 		case dataset::ByteQuery::BQ_DATA: {
 			ds::DataOnly dataonly(out);
-			queryData(q, dataonly);
+            ds::DataStartHookRunner dshr(dataonly, q.data_start_hook);
+			queryData(q, dshr);
 			break;
 		}
 		case dataset::ByteQuery::BQ_POSTPROCESS: {
