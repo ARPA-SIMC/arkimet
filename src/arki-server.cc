@@ -35,9 +35,11 @@
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
+#include <arki/dataset/http/server.h>
 #include <arki/dataset/merged.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
+#include <arki/utils.h>
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
 #include <wibble/net/server.h>
@@ -115,57 +117,6 @@ struct Options : public StandardParserWithManpage
 
 }
 }
-
-/// Delete the directory \a dir and all its content
-void rmtree(const std::string& dir)
-{
-    sys::fs::Directory d(dir);
-    for (sys::fs::Directory::const_iterator i = d.begin();
-            i != d.end(); ++i)
-    {
-        if (*i == "." || *i == "..") continue;
-        string pathname = str::joinpath(dir, *i);
-        if (i->d_type == DT_DIR ||
-            (i->d_type == DT_UNKNOWN && sys::fs::isDirectory(pathname)))
-        {
-            rmtree(pathname);
-        } else {
-            if (unlink(pathname.c_str()) < 0)
-                throw wibble::exception::System("cannot delete " + pathname);
-        }
-    }
-    if (rmdir(dir.c_str()) < 0)
-        throw wibble::exception::System("cannot delete directory " + dir);
-}
-
-/**
- * RAII-style class changing into a newly created temporary directory during
- * the lifetime of the object.
- *
- * The temporary directory is created at constructor time and deleted at
- * destructor time.
- */
-struct MoveToTempDir
-{
-    string old_dir;
-    string tmp_dir;
-
-    MoveToTempDir(const std::string& prefix = "/tmp/tmpdir.XXXXXX")
-    {
-        old_dir = sys::process::getcwd();
-        char buf[prefix.size() + 1];
-        memcpy(buf, prefix.c_str(), prefix.size() + 1);
-        if (mkdtemp(buf) == NULL)
-            throw wibble::exception::System("cannot create temporary directory");
-        tmp_dir = buf;
-        sys::process::chdir(tmp_dir);
-    }
-    ~MoveToTempDir()
-    {
-        sys::process::chdir(old_dir);
-        rmtree(tmp_dir);
-    }
-};
 
 struct Request : public net::http::Request
 {
@@ -367,181 +318,38 @@ struct QexpandHandler : public LocalHandler
     }
 };
 
-// Common code for handling queries
-struct QueryHelper
-{
-    http::Params params;
-    string content_type;
-    string ext;
-    runtime::ProcessorMaker pmaker;
-
-    http::ParamSingle* query;
-    http::ParamSingle* style;
-    http::ParamSingle* command;
-    http::FileParamMulti* postprocfile;
-    http::ParamSingle* sort;
-
-    QueryHelper()
-        : content_type("application/octet-stream"), ext("bin")
-    {
-        using namespace wibble::net::http;
-        params.conf_fname_blacklist = ":";
-        query = params.add<ParamSingle>("query");
-        style = params.add<ParamSingle>("style");
-        command = params.add<ParamSingle>("command");
-        postprocfile = params.add<FileParamMulti>("postprocfile");
-        sort = params.add<ParamSingle>("sort");
-    }
-
-    void parse_request(Request& req)
-    {
-        using namespace wibble::net::http;
-        params.parse_get_or_post(req);
-
-        // Configure the ProcessorMaker with the request
-        if (style->empty() || *style == "metadata") {
-            ;
-        } else if (*style == "yaml") {
-            content_type = "text/x-yaml";
-            ext = "yaml";
-            pmaker.yaml = true;
-        } else if (*style == "inline") {
-            pmaker.data_inline = true;
-        } else if (*style == "data") {
-            pmaker.data_only = true;
-        } else if (*style == "postprocess") {
-            pmaker.postprocess = *command;
-
-            vector<string> postproc_files;
-            for (vector<FileParam::FileInfo>::const_iterator i = postprocfile->files.begin();
-                    i != postprocfile->files.end(); ++i)
-                postproc_files.push_back(i->fname);
-
-            if (!postproc_files.empty())
-            {
-                // Pass files for the postprocessor in the environment
-                string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
-                setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
-            } else
-                unsetenv("ARKI_POSTPROC_FILES");
-        } else if (*style == "rep_metadata") {
-            pmaker.report = *command;
-            content_type = "text/plain";
-            ext = "txt";
-        } else if (*style == "rep_summary") {
-            pmaker.summary = true;
-            pmaker.report = *command;
-            content_type = "text/plain";
-            ext = "txt";
-        }
-
-        if (!sort->empty())
-            pmaker.sort = *sort;
-
-        // Validate request
-        string errors = pmaker.verify_option_consistency();
-        if (!errors.empty())
-            throw net::http::error400(errors);
-    }
-
-    void send_headers(Request& req, const std::string& fname)
-    {
-        req.send_status_line(200, "OK");
-        req.send_date_header();
-        req.send_server_header();
-        req.send("Content-Type: " + content_type + "\r\n");
-        req.send("Content-Disposition: attachment; filename=" + fname + "." + ext + "\r\n");
-        req.send("\r\n");
-    }
-
-    void do_processing(ReadonlyDataset& ds, Request& req, Matcher& matcher, const std::string& fname);
-};
-
-struct StreamHeaders : public metadata::Hook
-{
-    QueryHelper& qhelper;
-    Request& req;
-    std::string fname;
-    bool fired;
-
-    StreamHeaders(QueryHelper& qhelper, Request& req, const std::string& fname)
-        : qhelper(qhelper), req(req), fname(fname), fired(false)
-    {
-    }
-
-    virtual void operator()()
-    {
-        // Send headers for streaming
-        qhelper.send_headers(req, fname);
-        fired = true;
-    }
-
-    void sendIfNotFired()
-    {
-        if (!fired) operator()();
-    }
-};
-
-void QueryHelper::do_processing(ReadonlyDataset& ds, Request& req, Matcher& matcher, const std::string& fname)
-{
-    StreamHeaders headers_hook(*this, req, fname);
-
-    // If we are postprocessing, we cannot monitor the postprocessor
-    // output to hook sending headers: the postprocessor is
-    // connected directly to the output socket.
-    //
-    // Therefore we need to send the headers in advance.
-
-    {
-        // Create Output directed to req.sock
-        runtime::Output sockoutput(req.sock, "socket");
-
-        if (pmaker.postprocess.empty())
-            // Send headers when data starts flowing
-            sockoutput.set_hook(headers_hook);
-        else
-            // Hook sending headers to when the subprocess start sending
-            pmaker.data_start_hook = &headers_hook;
-
-        // Create the dataset processor for this query
-        auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
-
-        // Process the virtual qmacro dataset producing the output
-        p->process(ds, fname);
-        p->end();
-    }
-
-    // If we had empty output, headers were not sent: catch up
-    headers_hook.sendIfNotFired();
-}
-
 struct RootQueryHandler : public LocalHandler
 {
     virtual void operator()(Request& req)
     {
         using namespace wibble::net::http;
+
         // Work in a temporary directory
-        MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
+        utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
 
-        QueryHelper qhelper;
-        qhelper.params.conf_outdir = tempdir.tmp_dir;
-        ParamSingle* qmacro = qhelper.params.add<ParamSingle>("qmacro");
-        qhelper.parse_request(req);
+        // Query parameters
+        dataset::http::LegacyQueryParams params(tempdir.tmp_dir);
 
+        // Plus a qmacro parameter
+        ParamSingle* qmacro;
+        qmacro = params.add<ParamSingle>("qmacro");
+        // Parse the parameters
+        params.parse_get_or_post(req);
+
+        // Build the qmacro dataset
         string macroname = str::trim(*qmacro);
-
         if (macroname.empty())
-            throw net::http::error400("root-level query without qmacro parameter");
-
-        // Create qmacro dataset
+            throw error400("root-level query without qmacro parameter");
         auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
-                req.arki_conf, macroname, *qhelper.query);
+                req.arki_conf, macroname, *params.query);
 
-        // Stream out data
-        Matcher emptyMatcher;
-        qhelper.do_processing(*ds, req, emptyMatcher, macroname);
+        // params.query contains the qmacro query body; we need to clear the
+        // query so do_query gets an empty match expression
+        params.query->clear();
 
-        // End of streaming
+        // Serve the result
+        dataset::http::ReadonlyDatasetServer srv(*ds, macroname);
+        srv.do_query(params, req);
     }
 };
 
@@ -596,13 +404,11 @@ struct DatasetHandler : public LocalHandler
     }
 
     // Show the summary of a dataset
-    void do_index(Request& req, const std::string& dsname)
+    void do_index(ReadonlyDataset& ds, const std::string& dsname, Request& req)
     {
-        auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
-
         // Query the summary
         Summary sum;
-        ds->querySummary(Matcher(), sum);
+        ds.querySummary(Matcher(), sum);
 
         // Create the output page
         stringstream res;
@@ -625,7 +431,7 @@ struct DatasetHandler : public LocalHandler
     }
 
     // Show a form to query the dataset
-    void do_queryform(Request& req, const std::string& dsname)
+    void do_queryform(const std::string& dsname, Request& req)
     {
         stringstream res;
         res << "<html>" << endl;
@@ -650,75 +456,6 @@ struct DatasetHandler : public LocalHandler
         req.send_result(res.str());
     }
 
-    // Return the dataset configuration
-    void do_config(Request& req, const std::string& dsname)
-    {
-        // args = Args()
-        // if "json" in args:
-        //    return c
-
-        stringstream res;
-        res << "[" << dsname << "]" << endl;
-        req.get_config_remote(dsname).output(res, "(memory)");
-        req.send_result(res.str(), "text/plain");
-    }
-
-    // Generate a dataset summary
-    void do_summary(Request& req, const std::string& dsname)
-    {
-        using namespace wibble::net::http;
-        Params params;
-        ParamSingle* style = params.add<ParamSingle>("style");
-        ParamSingle* query = params.add<ParamSingle>("query");
-        params.parse_get_or_post(req);
-
-        auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
-
-        // Query the summary
-        Summary sum;
-        ds->querySummary(Matcher::parse(*query), sum);
-
-        if (*style == "yaml")
-        {
-            stringstream res;
-            sum.writeYaml(res);
-            req.send_result(res.str(), "text/x-yaml", dsname + "-summary.yaml");
-        }
-        else
-        {
-            string res = sum.encode(true);
-            req.send_result(res, "application/octet-stream", dsname + "-summary.bin");
-        }
-    }
-
-    // Download the results of querying a dataset
-    void do_query(Request& req, const std::string& dsname)
-    {
-        // Work in a temporary directory
-        MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
-
-        QueryHelper qhelper;
-        qhelper.params.conf_outdir = tempdir.tmp_dir;
-        qhelper.parse_request(req);
-
-        // Validate query
-        Matcher matcher;
-        try {
-            matcher = Matcher::parse(*qhelper.query);
-        } catch (std::exception& e) {
-            throw net::http::error400(e.what());
-        }
-
-        // Get the dataset here so in case of error we generate a
-        // proper error reply before we send the good headers
-        auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
-
-        qhelper.do_processing(*ds, req, matcher, dsname);
-
-        // End of streaming
-    }
-
-
     virtual void operator()(Request& req)
     {
         string dsname;
@@ -734,16 +471,39 @@ struct DatasetHandler : public LocalHandler
         else
             action = pop_first_path[1];
 
+        auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
+
         if (action == "index")
-            do_index(req, dsname);
+            do_index(*ds, dsname, req);
         else if (action == "queryform")
-            do_queryform(req, dsname);
+            do_queryform(dsname, req);
         else if (action == "config")
-            do_config(req, dsname);
+        {
+            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            srv.do_config(req.get_config_remote(dsname), req);
+        }
         else if (action == "summary")
-            do_summary(req, dsname);
+        {
+            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::LegacySummaryParams params;
+            params.parse_get_or_post(req);
+            srv.do_summary(params, req);
+        }
         else if (action == "query")
-            do_query(req, dsname);
+        {
+            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
+            dataset::http::LegacyQueryParams params(tempdir.tmp_dir);
+            params.parse_get_or_post(req);
+            srv.do_query(params, req);
+        }
+        else if (action == "querydata")
+        {
+            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::QueryDataParams params;
+            params.parse_get_or_post(req);
+            srv.do_queryData(params, req);
+        }
         else
             throw wibble::exception::Consistency("Unknown dataset action: \"" + action + "\"");
     }

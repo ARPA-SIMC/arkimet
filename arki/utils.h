@@ -147,6 +147,26 @@ private:
 	TempfileHandleWatch& operator=(const HandleWatch&);
 };
 
+/// Delete the directory \a dir and all its content
+void rmtree(const std::string& dir);
+
+/**
+ * RAII-style class changing into a newly created temporary directory during
+ * the lifetime of the object.
+ *
+ * The temporary directory is created at constructor time and deleted at
+ * destructor time.
+ */
+struct MoveToTempDir
+{
+    std::string old_dir;
+    std::string tmp_dir;
+
+    MoveToTempDir(const std::string& pattern = "/tmp/tmpdir.XXXXXX");
+    ~MoveToTempDir();
+};
+
+
 }
 }
 

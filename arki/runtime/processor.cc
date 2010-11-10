@@ -40,13 +40,11 @@ struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
     Formatter* formatter;
 	Output& output;
 	Summary* summary;
-	sort::Compare* sorter;
 	dataset::DataQuery query;
 	string summary_restrict;
 
 	YamlProcessor(ProcessorMaker& maker, Matcher& query, Output& out)
-		: formatter(0), output(out), summary(0), sorter(0),
-		  query(query, false)
+		: formatter(0), output(out), summary(0), query(query, false)
 	{
 		if (maker.annotate)
 			formatter = Formatter::create();
@@ -58,14 +56,12 @@ struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
 		}
 		else if (!maker.sort.empty())
 		{
-			sorter = sort::Compare::parse(maker.sort).release();
-			this->query.sorter = sorter;
+			this->query.sorter = sort::Compare::parse(maker.sort);
 		}
 	}
 
 	virtual ~YamlProcessor()
 	{
-		if (sorter) delete sorter;
 		if (summary) delete summary;
 		if (formatter) delete formatter;
 	}
@@ -104,11 +100,10 @@ struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
 struct BinaryProcessor : public DatasetProcessor
 {
 	Output& out;
-	sort::Compare* sorter;
 	dataset::ByteQuery query;
 
 	BinaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
-		: out(out), sorter(0)
+		: out(out)
 	{
 		if (!maker.postprocess.empty())
 		{
@@ -126,14 +121,12 @@ struct BinaryProcessor : public DatasetProcessor
 		
 		if (!maker.sort.empty())
 		{
-			sorter = sort::Compare::parse(maker.sort).release();
-			query.sorter = sorter;
+			query.sorter = sort::Compare::parse(maker.sort);
 		}
 	}
 
 	virtual ~BinaryProcessor()
 	{
-		if (sorter) delete sorter;
 	}
 
 	virtual void process(ReadonlyDataset& ds, const std::string& name)
@@ -147,13 +140,11 @@ struct DataProcessor : public DatasetProcessor, public metadata::Consumer
 {
 	Output& output;
 	Summary* summary;
-	sort::Compare* sorter;
 	dataset::DataQuery query;
 	string summary_restrict;
 
 	DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
-		: output(out), summary(0), sorter(0),
-		  query(q, false)
+		: output(out), summary(0), query(q, false)
 	{
 		if (maker.summary)
 		{
@@ -166,15 +157,13 @@ struct DataProcessor : public DatasetProcessor, public metadata::Consumer
 
 			if (!maker.sort.empty())
 			{
-				sorter = sort::Compare::parse(maker.sort).release();
-				query.sorter = sorter;
+				query.sorter = sort::Compare::parse(maker.sort);
 			}
 		}
 	}
 
 	virtual ~DataProcessor()
 	{
-		if (sorter) delete sorter;
 		if (summary) delete summary;
 	}
 

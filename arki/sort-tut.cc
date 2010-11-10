@@ -85,7 +85,7 @@ template<> template<>
 void to::test<1>()
 {
 	metadata::Collection mdc;
-	auto_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
+	refcounted::Pointer<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
 	sort::Stream sorter(*cmp, mdc);
 
 	produce(0, 0, 10, sorter);
@@ -112,7 +112,7 @@ template<> template<>
 void to::test<2>()
 {
 	metadata::Collection mdc;
-	auto_ptr<sort::Compare> cmp = sort::Compare::parse("");
+	refcounted::Pointer<sort::Compare> cmp = sort::Compare::parse("");
 	sort::Stream sorter(*cmp, mdc);
 
 	produce(1, 0, 8, sorter);

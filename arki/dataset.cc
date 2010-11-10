@@ -55,6 +55,14 @@ using namespace wibble;
 
 namespace arki {
 
+namespace dataset {
+
+DataQuery::DataQuery() : matcher(0), withData(false) {}
+DataQuery::DataQuery(const Matcher& matcher, bool withData) : matcher(matcher), withData(withData), sorter(0) {}
+DataQuery::~DataQuery() {}
+
+}
+
 void WritableDataset::flush() {}
 
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
@@ -112,7 +120,7 @@ ReadonlyDataset* ReadonlyDataset::lua_check(lua_State* L, int idx)
 }
 
 namespace dataset {
-auto_ptr<sort::Compare> DataQuery::lua_from_table(lua_State* L, int idx)
+void DataQuery::lua_from_table(lua_State* L, int idx)
 {
 	lua_pushstring(L, "matcher");
 	lua_gettable(L, 2);
@@ -128,13 +136,10 @@ auto_ptr<sort::Compare> DataQuery::lua_from_table(lua_State* L, int idx)
 	lua_gettable(L, 2);
 	const char* str_sorter = lua_tostring(L, -1);
 	lua_pop(L, 1);
-	auto_ptr<sort::Compare> compare;
 	if (str_sorter)
-	{
-		compare = sort::Compare::parse(str_sorter);
-		sorter = compare.get();
-	}
-	return compare;
+		sorter = sort::Compare::parse(str_sorter);
+	else
+		sorter = 0;
 }
 
 void DataQuery::lua_push_table(lua_State* L, int idx) const
@@ -180,7 +185,7 @@ static int arkilua_queryData(lua_State *L)
 
 	// Create a DataQuery with data from the table
 	dataset::DataQuery dq;
-	auto_ptr<sort::Compare> compare = dq.lua_from_table(L, 2);
+	dq.lua_from_table(L, 2);
 
 	// Create metadata consumer proxy
 	std::auto_ptr<metadata::LuaConsumer> mdc = metadata::LuaConsumer::lua_check(L, 3);

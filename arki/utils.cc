@@ -22,9 +22,11 @@
 
 #include <arki/utils.h>
 #include <wibble/sys/fs.h>
+#include <wibble/sys/process.h>
 
 #include <fstream>
 #include <cctype>
+#include <cstring>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -33,6 +35,7 @@
 #include "config.h"
 
 using namespace std;
+using namespace wibble;
 
 namespace arki {
 namespace utils {
@@ -51,6 +54,7 @@ bool isdir(const std::string& root, wibble::sys::fs::Directory::const_iterator& 
 		return false;
 	if (S_ISDIR(st->st_mode))
 		return true;
+    return false;
 }
 
 bool isdir(const std::string& pathname)
@@ -158,6 +162,43 @@ TempfileHandleWatch::~TempfileHandleWatch()
 	}
 }
 
+void rmtree(const std::string& dir)
+{
+    sys::fs::Directory d(dir);
+    for (sys::fs::Directory::const_iterator i = d.begin();
+            i != d.end(); ++i)
+    {
+        if (*i == "." || *i == "..") continue;
+        string pathname = str::joinpath(dir, *i);
+        if (i->d_type == DT_DIR ||
+            (i->d_type == DT_UNKNOWN && sys::fs::isDirectory(pathname)))
+        {
+            rmtree(pathname);
+        } else {
+            if (unlink(pathname.c_str()) < 0)
+                throw wibble::exception::System("cannot delete " + pathname);
+        }
+    }
+    if (rmdir(dir.c_str()) < 0)
+        throw wibble::exception::System("cannot delete directory " + dir);
+}
+
+MoveToTempDir::MoveToTempDir(const std::string& pattern)
+{
+    old_dir = sys::process::getcwd();
+    char buf[pattern.size() + 1];
+    memcpy(buf, pattern.c_str(), pattern.size() + 1);
+    if (mkdtemp(buf) == NULL)
+        throw wibble::exception::System("cannot create temporary directory");
+    tmp_dir = buf;
+    sys::process::chdir(tmp_dir);
+}
+
+MoveToTempDir::~MoveToTempDir()
+{
+    sys::process::chdir(old_dir);
+    rmtree(tmp_dir);
+}
 
 }
 }

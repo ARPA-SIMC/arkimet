@@ -91,12 +91,13 @@ namespace dataset {
 struct DataQuery {
 	Matcher matcher;
 	bool withData;
-	const sort::Compare* sorter;
+	refcounted::Pointer<sort::Compare> sorter;
 
-	DataQuery() : matcher(0), withData(false), sorter(0) {}
-	DataQuery(const Matcher& matcher, bool withData=false) : matcher(matcher), withData(withData), sorter(0) {}
+	DataQuery();
+	DataQuery(const Matcher& matcher, bool withData=false);
+	~DataQuery();
 
-	std::auto_ptr<sort::Compare> lua_from_table(lua_State* L, int idx);
+	void lua_from_table(lua_State* L, int idx);
 	void lua_push_table(lua_State* L, int idx) const;
 };
 

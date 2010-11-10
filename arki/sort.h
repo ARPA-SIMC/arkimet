@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/refcounted.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/types/reftime.h>
@@ -49,7 +50,7 @@ namespace sort {
  * If an interval is specified, data is grouped in the given time intervals,
  * then every group is sorted independently from the others.
  */
-struct Compare
+struct Compare : public refcounted::Base
 {
 	/// Allowed types of sort intervals
 	enum Interval {
@@ -73,7 +74,7 @@ struct Compare
 	virtual std::string toString() const = 0;
 
 	/// Parse a string representation into a sorter
-	static std::auto_ptr<Compare> parse(const std::string& expr);
+	static refcounted::Pointer<Compare> parse(const std::string& expr);
 };
 
 /// Adaptor to use compare in STL sort functions

@@ -25,11 +25,99 @@
 
 #include <arki/dataset.h>
 #include <wibble/exception.h>
+#include <wibble/net/http.h>
 #include <string>
 
+namespace wibble {
+namespace net {
+namespace http {
+struct Request;
+}
+}
+}
+
+
 namespace arki {
+struct ConfigFile;
+
+namespace runtime {
+struct ProcessorMaker;
+}
+
 namespace dataset {
 namespace http {
+
+/// Parameters used by the legacy /summary/ interface
+struct LegacySummaryParams : public wibble::net::http::Params
+{
+    LegacySummaryParams();
+
+    // Legacy params
+    wibble::net::http::ParamSingle* query;
+    wibble::net::http::ParamSingle* style;
+};
+
+/// Parameters used by the legacy /query/ interface
+struct LegacyQueryParams : public LegacySummaryParams
+{
+    LegacyQueryParams(const std::string& tmpdir);
+
+    // Legacy params
+    wibble::net::http::ParamSingle* command;
+    wibble::net::http::FileParamMulti* postprocfile;
+    wibble::net::http::ParamSingle* sort;
+
+    /// Initialise a ProcessorMaker with the parsed query params
+    void set_into(runtime::ProcessorMaker& pmaker) const;
+};
+
+/// Parameters used by the /querydata/ interface
+struct QueryDataParams : public wibble::net::http::Params
+{
+    // DataQuery params
+    wibble::net::http::ParamSingle* matcher;
+    wibble::net::http::ParamSingle* withdata;
+    wibble::net::http::ParamSingle* sorter;
+
+    QueryDataParams();
+
+    /// Initialise a DataQuery with the parsed query params
+    void set_into(DataQuery& dq) const;
+};
+
+/**
+ * Server-side endpoint of the ReadonlyDataset interface exported via HTTP
+ */
+struct ReadonlyDatasetServer
+{
+    ReadonlyDataset& ds;
+    std::string dsname;
+
+    ReadonlyDatasetServer(
+            arki::ReadonlyDataset& ds,
+            const std::string& dsname)
+        : ds(ds), dsname(dsname)
+    {
+    }
+
+    // Return the dataset configuration
+    void do_config(const ConfigFile& remote_config, wibble::net::http::Request& req);
+
+    // Generate a dataset summary
+    void do_summary(const LegacySummaryParams& parms, wibble::net::http::Request& req);
+
+    // Download the results of querying a dataset
+    void do_query(const LegacyQueryParams& parms, wibble::net::http::Request& req);
+
+    /// Server side implementation of queryData
+    void do_queryData(const QueryDataParams& parms, wibble::net::http::Request& req);
+
+    /// Server side implementation of querySummary
+    void do_querySummary(wibble::net::http::Request& req);
+
+    /// Server side implementation of queryBytes
+    void do_queryBytes(wibble::net::http::Request& req);
+};
 
 }
 }

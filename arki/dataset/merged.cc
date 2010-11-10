@@ -234,13 +234,10 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 	// Output items in time-sorted order or in the order asked by q
 	// Note: we assume that every dataset will give us data sorted as q
 	// asks, so here we just merge sorted data
-	auto_ptr<sort::Compare> cmp;
-	const sort::Compare* sorter = q.sorter;
+	refcounted::Pointer<sort::Compare> sorter = q.sorter;
 	if (!sorter)
-	{
-		cmp = sort::Compare::parse("");
-		sorter = cmp.get();
-	}
+		sorter = sort::Compare::parse("");
+
 	while (true)
 	{
 		Metadata* minmd = 0;

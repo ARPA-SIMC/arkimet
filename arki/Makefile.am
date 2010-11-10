@@ -26,6 +26,7 @@ dist_noinst_HEADERS = \
 		dataset/simple/reader.h \
 		dataset/simple/writer.h \
 		dataset/http/server.h \
+		dataset/http/test-utils.h \
 		dataset/outbound.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -298,6 +299,7 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk2/writer-tut.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/http/server-tut.cc \
+		dataset/http/test-utils.cc \
 		dataset/test-utils.cc \
 		dataset/outbound-tut.cc \
 		dataset/discard-tut.cc \

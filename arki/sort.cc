@@ -156,16 +156,16 @@ static Compare::Interval parseInterval(const std::string& name)
 	throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + name + ".  Valid intervals are minute, hour, day, month and year");
 }
 
-std::auto_ptr<Compare> Compare::parse(const std::string& expr)
+refcounted::Pointer<Compare> Compare::parse(const std::string& expr)
 {
 	size_t pos = expr.find(':');
 	if (pos == string::npos)
 	{
 //cerr << "creating intervalless: " << expr << endl;		
-		return auto_ptr<Compare>(new sort::Items(expr));
+		return refcounted::Pointer<Compare>(new sort::Items(expr));
 	} else {
 //cerr << "creating with interval " << expr.substr(0, pos) << ": " << expr.substr(pos+1) << endl;
-		return auto_ptr<Compare>(new sort::IntervalCompare(sort::parseInterval(expr.substr(0, pos)), expr.substr(pos+1)));
+		return refcounted::Pointer<Compare>(new sort::IntervalCompare(sort::parseInterval(expr.substr(0, pos)), expr.substr(pos+1)));
 	}
 }
 
