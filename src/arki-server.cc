@@ -504,6 +504,21 @@ struct DatasetHandler : public LocalHandler
             params.parse_get_or_post(req);
             srv.do_queryData(params, req);
         }
+        else if (action == "querysummary")
+        {
+            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            dataset::http::QuerySummaryParams params;
+            params.parse_get_or_post(req);
+            srv.do_querySummary(params, req);
+        }
+        else if (action == "querybytes")
+        {
+            dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+            utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
+            dataset::http::QueryBytesParams params(tempdir.tmp_dir);
+            params.parse_get_or_post(req);
+            srv.do_queryBytes(params, req);
+        }
         else
             throw wibble::exception::Consistency("Unknown dataset action: \"" + action + "\"");
     }

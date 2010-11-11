@@ -312,6 +312,9 @@ void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, wibble::n
     DataQuery dq;
     parms.set_into(dq);
     ds.queryData(dq, cons);
+
+    // If we had empty output, headers were not sent: catch up
+    headers.sendIfNotFired();
 }
 
 void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, wibble::net::http::Request& req)

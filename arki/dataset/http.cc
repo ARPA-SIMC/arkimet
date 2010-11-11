@@ -39,6 +39,8 @@ using namespace wibble;
 namespace arki {
 namespace dataset {
 
+#define LEGACY_PROTOCOL
+
 #define checked(context, stmt) do {\
 		CURLcode errcode = stmt; \
 		if (errcode != CURLE_OK) \
@@ -223,6 +225,7 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 
 	m_curl.reset();
 
+#ifdef LEGACY_PROTOCOL
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
@@ -243,6 +246,29 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 	if (q.withData)
 		postdata += "&style=inline";
 	postdata += '\n';
+#else
+	string url = joinpath(m_baseurl, "querydata");
+	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    // FIXME: qmacro on new protocol is still not well defined
+	string postdata;
+	if (m_qmacro.empty())
+		postdata = "matcher=" + urlencode(q.matcher.toStringExpanded());
+	else
+		postdata = "matcher=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
+	if (q.sorter)
+	{
+		postdata += ";sorter=" + urlencode(q.sorter->toString());
+	}
+	if (m_mischief)
+	{
+		postdata += urlencode(";MISCHIEF");
+		m_mischief = false;
+	}
+	if (q.withData)
+		postdata += "&withdata=true";
+	postdata += '\n';
+#endif
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
@@ -268,6 +294,7 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 
 	m_curl.reset();
 
+#ifdef LEGACY_PROTOCOL
 	string url = joinpath(m_baseurl, "summary");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
@@ -282,6 +309,22 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 		m_mischief = false;
 	}
 	postdata += '\n';
+#else
+	string url = joinpath(m_baseurl, "querysummary");
+	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+	string postdata;
+	if (m_qmacro.empty())
+		postdata = "matcher=" + urlencode(matcher.toStringExpanded());
+	else
+		postdata = "matcher=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
+	if (m_mischief)
+	{
+		postdata += urlencode(";MISCHIEF");
+		m_mischief = false;
+	}
+	postdata += '\n';
+#endif
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
@@ -312,6 +355,7 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 
 	http::CurlForm form;
 	
+#ifdef LEGACY_PROTOCOL
 	string url = joinpath(m_baseurl, "query");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
@@ -358,6 +402,52 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 		default:
 			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type));
 	}
+#else
+	string url = joinpath(m_baseurl, "querybytes");
+	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+	if (m_qmacro.empty())
+	{
+		if (m_mischief)
+		{
+			form.addstring("matcher", q.matcher.toStringExpanded() + ";MISCHIEF");
+			m_mischief = false;
+		} else
+			form.addstring("matcher", q.matcher.toStringExpanded());
+	} else {
+		form.addstring("matcher", m_qmacro);
+		form.addstring("qmacro", m_name);
+	}
+	if (q.sorter)
+		form.addstring("sorter", q.sorter->toString());
+
+	const char* toupload = getenv("ARKI_POSTPROC_FILES");
+	if (toupload != NULL)
+	{
+		// Split by ':'
+		str::Split splitter(":", toupload);
+		for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+			form.addfile("postprocfile", *i);
+	}
+	switch (q.type)
+	{
+		case dataset::ByteQuery::BQ_DATA:
+			form.addstring("type", "data");
+			break;
+		case dataset::ByteQuery::BQ_POSTPROCESS:
+			form.addstring("type", "postprocess");
+			break;
+		case dataset::ByteQuery::BQ_REP_METADATA:
+			form.addstring("type", "rep_metadata");
+			break;
+		case dataset::ByteQuery::BQ_REP_SUMMARY:
+			form.addstring("type", "rep_summary");
+			break;
+		default:
+			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type));
+	}
+    form.addstring("param", q.param);
+#endif
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	// Set the form info 
