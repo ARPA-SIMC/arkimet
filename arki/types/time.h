@@ -28,6 +28,13 @@
 struct lua_State;
 
 namespace arki {
+
+namespace emitter {
+namespace memory {
+struct List;
+}
+}
+
 namespace types {
 
 struct Time;
@@ -83,7 +90,11 @@ struct Time : public types::CoreType<Time>
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Time> decode(const unsigned char* buf, size_t len);
 	static Item<Time> decodeString(const std::string& val);
+	static Item<Time> decodeMapping(const emitter::memory::Mapping& val);
+	static Item<Time> decodeList(const emitter::memory::List& val);
 	std::ostream& writeToOstream(std::ostream& o) const;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+    void serialiseList(Emitter& e) const;
 
 	// Lua functions
 	virtual void lua_register_methods(lua_State* L) const;

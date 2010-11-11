@@ -25,6 +25,8 @@
 #include <arki/types/timerange.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <iomanip>
@@ -198,6 +200,20 @@ Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 		default:
 			throw wibble::exception::Consistency("parsing Timerange", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
 	}
+}
+
+Item<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Timerange::GRIB1: return timerange::GRIB1::decodeMapping(val);
+        case Timerange::GRIB2: return timerange::GRIB2::decodeMapping(val);
+        case Timerange::BUFR: return timerange::BUFR::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Timerange", "unknown Timerange style " + val.get_string());
+    }
 }
 
 static int getNumber(const char * & start, const char* what)
@@ -531,6 +547,24 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	return o << ")";
 }
 
+void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Timerange::serialiseLocal(e, f);
+    e.add("ty", (int)m_type);
+    e.add("un", (int)m_unit);
+    e.add("p1", (int)m_p1);
+    e.add("p2", (int)m_p2);
+}
+Item<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    return GRIB1::create(
+            val["ty"].want_int("parsing GRIB1 timerange ty"),
+            val["un"].want_int("parsing GRIB1 timerange un"),
+            val["p1"].want_int("parsing GRIB1 timerange p1"),
+            val["p2"].want_int("parsing GRIB1 timerange p2"));
+}
+
 std::string GRIB1::exactQuery() const
 {
 	stringstream o;
@@ -702,6 +736,24 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 	  << ")";
 }
 
+void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Timerange::serialiseLocal(e, f);
+    e.add("ty", (int)m_type);
+    e.add("un", (int)m_unit);
+    e.add("p1", (int)m_p1);
+    e.add("p2", (int)m_p2);
+}
+Item<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    return GRIB2::create(
+            val["ty"].want_int("parsing GRIB2 timerange ty"),
+            val["un"].want_int("parsing GRIB2 timerange un"),
+            val["p1"].want_int("parsing GRIB2 timerange p1"),
+            val["p2"].want_int("parsing GRIB2 timerange p2"));
+}
+
 std::string GRIB2::exactQuery() const
 {
 	stringstream o;
@@ -843,6 +895,20 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 	o << formatStyle(style()) << "(";
 	if (m_value != 0) o << m_value << suffix;
 	return o << ")";
+}
+
+void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Timerange::serialiseLocal(e, f);
+    e.add("un", (int)m_unit);
+    e.add("va", (int)m_value);
+}
+Item<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    return BUFR::create(
+            val["va"].want_int("parsing BUFR timerange value"),
+            val["un"].want_int("parsing BUFR timerange un"));
 }
 
 std::string BUFR::exactQuery() const

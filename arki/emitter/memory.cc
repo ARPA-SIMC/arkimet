@@ -112,7 +112,7 @@ void Memory::add_bool(bool val)
     add_val(new memory::Bool(val));
 }
 
-void Memory::add_int(int val)
+void Memory::add_int(long long int val)
 {
     add_val(new memory::Int(val));
 }

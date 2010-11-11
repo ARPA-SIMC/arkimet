@@ -25,6 +25,8 @@
 #include <arki/types/reftime.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -58,7 +60,7 @@ const unsigned char Reftime::PERIOD;
 Reftime::Style Reftime::parseStyle(const std::string& str)
 {
 	if (str == "POSITION") return POSITION;
-	if (str == "GRIB1") return PERIOD;
+	if (str == "PERIOD") return PERIOD;
 	throw wibble::exception::Consistency("parsing Reftime style", "cannot parse Reftime style '"+str+"': only POSITION and PERIOD are supported");
 }
 
@@ -93,6 +95,18 @@ Item<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
 	}
 }
 
+Item<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case POSITION: return reftime::Position::decodeMapping(val);
+        case PERIOD: return reftime::Period::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Reftime", "unknown Reftime style " + val.get_string());
+    }
+}
 
 Item<Reftime> Reftime::decodeString(const std::string& val)
 {
@@ -146,6 +160,19 @@ void Position::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& Position::writeToOstream(std::ostream& o) const
 {
 	return time->writeToOstream(o);
+}
+
+void Position::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Reftime::serialiseLocal(e, f);
+    e.add("ti");
+    time->serialiseList(e);
+}
+
+Item<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
+{
+    Item<Time> time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
+    return Position::create(time);
 }
 
 std::string Position::exactQuery() const
@@ -220,6 +247,20 @@ std::ostream& Period::writeToOstream(std::ostream& o) const
 	begin->writeToOstream(o);
 	o << " to ";
 	return end->writeToOstream(o);
+}
+
+void Period::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Reftime::serialiseLocal(e, f);
+    e.add("b"); begin->serialiseList(e);
+    e.add("e"); end->serialiseList(e);
+}
+
+Item<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
+{
+    Item<Time> beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
+    Item<Time> end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
+    return Period::create(beg, end);
 }
 
 std::string Period::exactQuery() const

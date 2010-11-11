@@ -63,6 +63,7 @@ struct Note : public CoreType<Note>
 	static Item<Note> decode(const unsigned char* buf, size_t len);
 	static Item<Note> decodeString(const std::string& val);
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	/// Create a note with the current time
@@ -70,6 +71,7 @@ struct Note : public CoreType<Note>
 
 	/// Create a note with the given time and content
 	static Item<Note> create(const Item<types::Time>& time, const std::string& content);
+	static Item<Note> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

@@ -64,10 +64,12 @@ struct Task : public CoreType<Task>
 	static Item<Task> decode(const unsigned char* buf, size_t len);
 	static Item<Task> decodeString(const std::string& val);
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	/// Create a task
 	static Item<Task> create(const std::string& value);
+	static Item<Task> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 };

@@ -26,6 +26,8 @@
 #include <arki/types/bbox.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <iomanip>
 #include <sstream>
@@ -134,6 +136,11 @@ Item<BBox> BBox::decode(const unsigned char* buf, size_t len)
 }
     
 Item<BBox> BBox::decodeString(const std::string& val)
+{
+	return bbox::INVALID::create();
+}
+
+Item<BBox> BBox::decodeMapping(const emitter::memory::Mapping& val)
 {
 	return bbox::INVALID::create();
 }

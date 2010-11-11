@@ -58,7 +58,7 @@ struct Node
         if (!is_bool()) throw wibble::exception::Consistency(context, "item is not bool");
         return get_bool();
     }
-    const int& want_int(const char* context) const
+    const long long int& want_int(const char* context) const
     {
         if (!is_int()) throw wibble::exception::Consistency(context, "item is not int");
         return get_int();
@@ -88,12 +88,12 @@ struct Node
 
     virtual void add_val(const Node*);
 
-    const bool&        get_bool() const;
-    const int&         get_int() const;
-    const double&      get_double() const;
-    const std::string& get_string() const;
-    const List&        get_list() const;
-    const Mapping&     get_mapping() const;
+    const bool&          get_bool() const;
+    const long long int& get_int() const;
+    const double&        get_double() const;
+    const std::string&   get_string() const;
+    const List&          get_list() const;
+    const Mapping&       get_mapping() const;
 };
 
 struct Null : public Node
@@ -112,8 +112,8 @@ struct Bool : public Node
 
 struct Int : public Node
 {
-    int val;
-    Int(int val) { this->val = val; }
+    long long int val;
+    Int(long long int val) { this->val = val; }
     virtual bool is_int() const { return true; }
     virtual const char* tag() const { return "int"; }
 };
@@ -174,7 +174,7 @@ struct Mapping : public Node
 };
 
 inline const bool& Node::get_bool() const { return dynamic_cast<const Bool*>(this)->val; }
-inline const int& Node::get_int() const { return dynamic_cast<const Int*>(this)->val; }
+inline const long long int& Node::get_int() const { return dynamic_cast<const Int*>(this)->val; }
 inline const double& Node::get_double() const { return dynamic_cast<const Double*>(this)->val; }
 inline const std::string& Node::get_string() const { return dynamic_cast<const String*>(this)->val; }
 inline const List& Node::get_list() const { return *dynamic_cast<const List*>(this); }
@@ -205,7 +205,7 @@ public:
 
     virtual void add_null();
     virtual void add_bool(bool val);
-    virtual void add_int(int val);
+    virtual void add_int(long long int val);
     virtual void add_double(double val);
     virtual void add_string(const std::string& val);
 

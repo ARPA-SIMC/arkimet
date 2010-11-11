@@ -24,6 +24,8 @@
 #include <arki/types.h>
 #include <arki/utils/codec.h>
 #include <wibble/string.h>
+#include <arki/emitter/json.h>
+#include <arki/emitter/memory.h>
 
 namespace arki {
 namespace tests {
@@ -38,7 +40,7 @@ static inline void impl_ensure_serialises(const wibble::tests::Location& loc, co
     o->encodeWithoutEnvelope(e);
     inner_ensure_equals(arki::Item<T>(T::decode((const unsigned char*)enc.data(), enc.size())), o);
 
-	// Binary encoding, with envelope
+    // Binary encoding, with envelope
     enc = o->encodeWithEnvelope();
 //  Rewritten in the next two lines due to, it seems, a bug in old gccs
 //  inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), o);
@@ -50,15 +52,28 @@ static inline void impl_ensure_serialises(const wibble::tests::Location& loc, co
     size_t len = enc.size();
     inner_ensure_equals(types::decodeEnvelope(buf, len), code);
     {
-	    std::string oenc;
-	    utils::codec::Encoder oe(oenc);
-	    o->encodeWithoutEnvelope(oe);
-	    inner_ensure_equals(oenc.size(), len);
+        std::string oenc;
+        utils::codec::Encoder oe(oenc);
+        o->encodeWithoutEnvelope(oe);
+        inner_ensure_equals(oenc.size(), len);
     }
     inner_ensure_equals(arki::Item<T>(T::decode(buf, len)), o);
 
-	// String encoding
+    // String encoding
     inner_ensure_equals(arki::Item<T>(T::decodeString(wibble::str::fmt(o))), o);
+
+    // JSON encoding
+    {
+        std::stringstream jbuf;
+        emitter::JSON json(jbuf);
+        o->serialise(json);
+        jbuf.seekg(0);
+        emitter::Memory parsed;
+        emitter::JSON::parse(jbuf, parsed);
+        inner_ensure(parsed.root().is_mapping());
+        arki::Item<> iparsed = types::decodeMapping(parsed.root().get_mapping());
+        inner_ensure_equals(o, iparsed);
+    }
 }
 
 #define ensure_compares(x, y, z) arki::tests::impl_ensure_compares(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))

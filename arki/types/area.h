@@ -68,6 +68,7 @@ struct Area : public types::StyledType<Area>
 	/// CODEC functions
 	static Item<Area> decode(const unsigned char* buf, size_t len);
 	static Item<Area> decodeString(const std::string& val);
+	static Item<Area> decodeMapping(const emitter::memory::Mapping& val);
 
 	/// Return the geographical bounding box
 	const ARKI_GEOS_GEOMETRY* bbox() const;
@@ -90,6 +91,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -98,6 +100,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB> create(const ValueBag& values);
+	static Item<GRIB> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class ODIMH5 : public Area
@@ -113,6 +116,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -121,6 +125,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<ODIMH5> create(const ValueBag& values);
+	static Item<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 

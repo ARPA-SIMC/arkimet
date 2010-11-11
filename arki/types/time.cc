@@ -25,6 +25,9 @@
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
+#include <arki/formatter.h>
 #include <wibble/grcal/grcal.h>
 #include "config.h"
 #include <sstream>
@@ -149,6 +152,29 @@ Item<Time> Time::decodeString(const std::string& val)
 	return Time::createFromISO8601(val);
 }
 
+Item<Time> Time::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    return decodeList(val["v"].want_list("decoding Time value"));
+}
+
+Item<Time> Time::decodeList(const emitter::memory::List& val)
+{
+    using namespace emitter::memory;
+
+    if (val.size() < 6)
+        throw wibble::exception::Consistency(
+                "decoding item",
+                str::fmtf("list has %zd elements instead of 6", val.size()));
+
+    Time* res;
+    Item<Time> itemres = res = new Time;
+    for (unsigned i = 0; i < 6; ++i)
+        res->vals[i] = val[i].want_int("decoding component of time value");
+    return itemres;
+}
+
 void Time::encodeWithoutEnvelope(Encoder& enc) const
 {
 	uint32_t a = ((vals[0] & 0x3fff) << 18)
@@ -165,6 +191,20 @@ void Time::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& Time::writeToOstream(std::ostream& o) const
 {
 	return o << toISO8601();
+}
+
+void Time::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    e.add("v");
+    serialiseList(e);
+}
+
+void Time::serialiseList(Emitter& e) const
+{
+    e.start_list();
+    for (unsigned i = 0; i < 6; ++i)
+        e.add(vals[i]);
+    e.end_list();
 }
 
 bool Time::operator==(const Type& o) const

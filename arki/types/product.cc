@@ -25,6 +25,8 @@
 #include <arki/types/product.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include <sstream>
 #include <iomanip>
 #include <iostream>
@@ -186,6 +188,21 @@ Item<Product> Product::decodeString(const std::string& val)
 	}
 }
 
+Item<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Product::GRIB1: return product::GRIB1::decodeMapping(val);
+        case Product::GRIB2: return product::GRIB2::decodeMapping(val);
+        case Product::BUFR: return product::BUFR::decodeMapping(val);
+        case Product::ODIMH5: return product::ODIMH5::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Product", "unknown Product style " + val.get_string());
+    }
+}
+
 static int arkilua_new_grib1(lua_State* L)
 {
 	int origin = luaL_checkint(L, 1);
@@ -270,6 +287,20 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	     << setfill(' ')
 	     << ")";
 }
+void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Product::serialiseLocal(e, f);
+    e.add("or", m_origin);
+    e.add("ta", m_table);
+    e.add("pr", m_product);
+}
+Item<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return GRIB1::create(
+            val["or"].want_int("parsing GRIB1 origin origin"),
+            val["ta"].want_int("parsing GRIB1 origin table"),
+            val["pr"].want_int("parsing GRIB1 origin product"));
+}
 std::string GRIB1::exactQuery() const
 {
     return str::fmtf("GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
@@ -348,6 +379,22 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 	     << setw(3) << (int)m_number
 	     << setfill(' ')
 	     << ")";
+}
+void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Product::serialiseLocal(e, f);
+    e.add("ce", m_centre);
+    e.add("di", m_discipline);
+    e.add("ca", m_category);
+    e.add("no", m_number);
+}
+Item<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return GRIB2::create(
+            val["ce"].want_int("parsing GRIB1 origin centre"),
+            val["di"].want_int("parsing GRIB1 origin discipline"),
+            val["ca"].want_int("parsing GRIB1 origin category"),
+            val["no"].want_int("parsing GRIB1 origin number"));
 }
 std::string GRIB2::exactQuery() const
 {
@@ -438,6 +485,34 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 	else
 		o << ", " << m_values << ")";
 	return o;
+}
+void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Product::serialiseLocal(e, f);
+    e.add("ty", m_type);
+    e.add("st", m_subtype);
+    e.add("ls", m_localsubtype);
+    if (!m_values.empty())
+    {
+        e.add("va");
+        m_values.serialise(e);
+    }
+}
+Item<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    const Node& va = val["va"];
+    if (va.is_mapping())
+        return BUFR::create(
+                val["ty"].want_int("parsing BUFR product type"),
+                val["st"].want_int("parsing BUFR product subtype"),
+                val["ls"].want_int("parsing BUFR product localsubtype"),
+                ValueBag::parse(va.get_mapping()));
+    else
+        return BUFR::create(
+                val["ty"].want_int("parsing BUFR product type"),
+                val["st"].want_int("parsing BUFR product subtype"),
+                val["ls"].want_int("parsing BUFR product localsubtype"));
 }
 std::string BUFR::exactQuery() const
 {
@@ -569,6 +644,21 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		/* REMOVED: << "," << std::fixed << std::setprecision(5) << m_prodpar1 << "," << std::fixed << std::setprecision(5) << m_prodpar2 << ")" */
 		<< ")"
 		;
+}
+
+void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Product::serialiseLocal(e, f);
+    e.add("ob", m_obj);
+    e.add("pr", m_prod);
+}
+
+Item<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    return ODIMH5::create(
+            val["ob"].want_string("parsing ODIMH5 product object"),
+            val["pr"].want_string("parsing ODIMH5 product name"));
 }
 
 std::string ODIMH5::exactQuery() const

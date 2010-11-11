@@ -25,6 +25,8 @@
 #include <arki/types/level.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <iomanip>
@@ -276,6 +278,21 @@ Item<Level> Level::decodeString(const std::string& val)
 	}
 }
 
+Item<Level> Level::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Level::GRIB1: return level::GRIB1::decodeMapping(val);
+        case Level::GRIB2S: return level::GRIB2S::decodeMapping(val);
+        case Level::GRIB2D: return level::GRIB2D::decodeMapping(val);
+        case Level::ODIMH5: return level::ODIMH5::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Level", "unknown Level style " + val.get_string());
+    }
+}
+
 static int arkilua_new_grib1(lua_State* L)
 {
 	int type = luaL_checkint(L, 1);
@@ -378,6 +395,37 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 	}
 	o << setfill(' ');
 	return o << ")";
+}
+void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Level::serialiseLocal(e, f);
+    e.add("lt", (int)m_type);
+    switch (valType())
+    {
+        case 0: break;
+        case 1:
+            e.add("l1", (int)m_l1);
+            break;
+        case 2:
+            e.add("l1", (int)m_l1);
+            e.add("l2", (int)m_l2);
+            break;
+    }
+}
+Item<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    int lt = val["lt"].want_int("parsing GRIB1 level type");
+    const Node& l1 = val["l1"];
+    const Node& l2 = val["l2"];
+    if (!l2.is_null())
+        return GRIB1::create(lt,
+                l1.want_int("parsing GRIB1 level l1"),
+                l2.want_int("parsing GRIB1 level l2"));
+    if (!l1.is_null())
+        return GRIB1::create(lt,
+                l1.want_int("parsing GRIB1 level l1"));
+    return GRIB1::create(lt);
 }
 std::string GRIB1::exactQuery() const
 {
@@ -532,6 +580,21 @@ std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 	  << setw(3) << (int)m_scale << ", "
 	  << setw(10) << (int)m_value << ")";
 }
+void GRIB2S::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Level::serialiseLocal(e, f);
+    e.add("lt", (int)m_type);
+    e.add("sc", (int)m_scale);
+    e.add("va", (int)m_value);
+}
+Item<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    return GRIB2S::create(
+            val["lt"].want_int("parsing GRIB2S level type"),
+            val["sc"].want_int("parsing GRIB2S level scale"),
+            val["va"].want_int("parsing GRIB2S level value"));
+}
 std::string GRIB2S::exactQuery() const
 {
 	return str::fmtf("GRIB2S,%d,%d,%d", (int)m_type, (int)m_scale, (int)m_value);
@@ -604,6 +667,27 @@ std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 	  << setw(3) << (int)m_type2 << ", "
 	  << setw(3) << (int)m_scale2 << ", "
 	  << setw(10) << (int)m_value2 << ")";
+}
+void GRIB2D::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Level::serialiseLocal(e, f);
+    e.add("l1", (int)m_type1);
+    e.add("s1", (int)m_scale1);
+    e.add("v1", (int)m_value1);
+    e.add("l2", (int)m_type2);
+    e.add("s2", (int)m_scale2);
+    e.add("v2", (int)m_value2);
+}
+Item<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    return GRIB2D::create(
+            val["l1"].want_int("parsing GRIB2D level type1"),
+            val["s1"].want_int("parsing GRIB2D level scale1"),
+            val["v1"].want_int("parsing GRIB2D level value1"),
+            val["l2"].want_int("parsing GRIB2D level type2"),
+            val["s2"].want_int("parsing GRIB2D level scale2"),
+            val["v2"].want_int("parsing GRIB2D level value2"));
 }
 std::string GRIB2D::exactQuery() const
 {
@@ -693,6 +777,19 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 		<< std::setprecision(5) << m_max
 		<< ")"
 		;
+}
+void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Level::serialiseLocal(e, f);
+    e.add("mi", m_min);
+    e.add("ma", m_max);
+}
+Item<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    return ODIMH5::create(
+            val["mi"].want_double("parsing ODIMH5 level min"),
+            val["ma"].want_double("parsing ODIMH5 level max"));
 }
 std::string ODIMH5::exactQuery() const
 {

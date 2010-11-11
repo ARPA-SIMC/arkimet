@@ -65,6 +65,7 @@ struct AssignedDataset : public types::CoreType<AssignedDataset>
 	static Item<AssignedDataset> decode(const unsigned char* buf, size_t len);
 	static Item<AssignedDataset> decodeString(const std::string& val);
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 
 	// Lua functions
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -74,6 +75,8 @@ struct AssignedDataset : public types::CoreType<AssignedDataset>
 
 	/// Create a attributed dataset definition with the givem time
 	static Item<AssignedDataset> create(const Item<types::Time>& time, const std::string& name, const std::string& id);
+
+	static Item<AssignedDataset> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

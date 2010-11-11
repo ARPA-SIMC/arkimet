@@ -41,6 +41,15 @@ struct Buffer;
 }
 
 namespace arki {
+struct Emitter;
+struct Formatter;
+
+namespace emitter {
+namespace memory {
+struct Mapping;
+}
+}
+
 namespace utils {
 namespace codec {
 struct Encoder;
@@ -241,6 +250,10 @@ struct Type : public refcounted::Base
 	/// Write as a string to an output stream
 	virtual std::ostream& writeToOstream(std::ostream& o) const = 0;
 
+    /// Serialise using an emitter
+    virtual void serialise(Emitter& e, const Formatter* f=0) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const = 0;
+
 	/**
 	 * Return a matcher query (without the metadata type prefix) that
 	 * exactly matches this metadata item
@@ -271,10 +284,10 @@ struct Type : public refcounted::Base
 	virtual void lua_register_methods(lua_State* L) const;
 
 	/**
-         * Check that the element at \a idx is a Type userdata
-         *
-         * @return the Type element, or undefined if the check failed
-         */
+     * Check that the element at \a idx is a Type userdata
+     *
+     * @return the Type element, or undefined if the check failed
+     */
 	static Item<> lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
 
 	template<typename T>
@@ -309,7 +322,11 @@ struct StyledType : public CoreType<BASE>
 	virtual int compare(const Type& o) const;
 	virtual int compare_local(const BASE& o) const = 0;
 
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+    static Style style_from_mapping(const emitter::memory::Mapping& m);
 };
 
 
@@ -325,6 +342,7 @@ Item<> decode(const unsigned char* buf, size_t len);
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len);
 Item<> decodeInner(types::Code, const unsigned char* buf, size_t len);
 Item<> decodeString(types::Code, const std::string& val);
+Item<> decodeMapping(const emitter::memory::Mapping& m);
 std::string tag(types::Code);
 
 /**

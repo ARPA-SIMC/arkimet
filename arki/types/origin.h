@@ -67,6 +67,7 @@ struct Origin : public types::StyledType<Origin>
 	/// CODEC functions
 	static Item<Origin> decode(const unsigned char* buf, size_t len);
 	static Item<Origin> decodeString(const std::string& val);
+	static Item<Origin> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -94,6 +95,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -102,6 +104,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
+	static Item<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;
@@ -128,6 +131,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -137,6 +141,7 @@ public:
 
 	static Item<GRIB2> create(unsigned short centre, unsigned short subcentre,
 				  unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
+	static Item<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;
@@ -157,6 +162,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -165,6 +171,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<BUFR> create(unsigned char centre, unsigned char subcentre);
+	static Item<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;
@@ -187,6 +194,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -195,6 +203,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
+	static Item<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;

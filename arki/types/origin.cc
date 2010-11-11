@@ -26,6 +26,8 @@
 #include <arki/types/origin.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include <iomanip>
 #include <sstream>
 #include <cstring>
@@ -168,6 +170,21 @@ Item<Origin> Origin::decodeString(const std::string& val)
 	}
 }
 
+Item<Origin> Origin::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Origin::GRIB1: return origin::GRIB1::decodeMapping(val);
+        case Origin::GRIB2: return origin::GRIB2::decodeMapping(val);
+        case Origin::BUFR: return origin::BUFR::decodeMapping(val);
+        case Origin::ODIMH5: return origin::ODIMH5::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Origin", "unknown Origin style " + val.get_string());
+    }
+}
+
 static int arkilua_new_grib1(lua_State* L)
 {
 	int centre = luaL_checkint(L, 1);
@@ -249,6 +266,20 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 		 << setw(3) << (int)m_process
 		 << setfill(' ')
 		 << ")";
+}
+void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Origin::serialiseLocal(e, f);
+    e.add("ce", m_centre);
+    e.add("sc", m_subcentre);
+    e.add("pr", m_process);
+}
+Item<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return GRIB1::create(
+            val["ce"].want_int("parsing GRIB1 origin centre"),
+            val["sc"].want_int("parsing GRIB1 origin subcentre"),
+            val["pr"].want_int("parsing GRIB1 origin process"));
 }
 std::string GRIB1::exactQuery() const
 {
@@ -332,6 +363,24 @@ std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 		 << setw(3) << (int)m_processid
 		 << setfill(' ')
 		 << ")";
+}
+void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Origin::serialiseLocal(e, f);
+    e.add("ce", m_centre);
+    e.add("sc", m_subcentre);
+    e.add("pt", m_processtype);
+    e.add("bi", m_bgprocessid);
+    e.add("pi", m_processid);
+}
+Item<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return GRIB2::create(
+            val["ce"].want_int("parsing GRIB1 origin centre"),
+            val["sc"].want_int("parsing GRIB1 origin subcentre"),
+            val["pt"].want_int("parsing GRIB1 origin process type"),
+            val["bi"].want_int("parsing GRIB1 origin bg process id"),
+            val["pi"].want_int("parsing GRIB1 origin process id"));
 }
 std::string GRIB2::exactQuery() const
 {
@@ -423,6 +472,18 @@ std::ostream& BUFR::writeToOstream(std::ostream& o) const
 		 << setfill(' ')
 		 << ")";
 }
+void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Origin::serialiseLocal(e, f);
+    e.add("ce", m_centre);
+    e.add("sc", m_subcentre);
+}
+Item<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return BUFR::create(
+            val["ce"].want_int("parsing BUFR origin centre"),
+            val["sc"].want_int("parsing BUFR origin subcentre"));
+}
 std::string BUFR::exactQuery() const
 {
     return str::fmtf("BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
@@ -497,6 +558,20 @@ std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 	         << m_WMO << ", "
 		 << m_RAD << ", "
 		 << m_PLC << ")";
+}
+void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Origin::serialiseLocal(e, f);
+    e.add("wmo", m_WMO);
+    e.add("rad", m_RAD);
+    e.add("plc", m_PLC);
+}
+Item<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return ODIMH5::create(
+            val["wmo"].want_string("parsing ODIMH5 origin WMO"),
+            val["rad"].want_string("parsing ODIMH5 origin RAD"),
+            val["plc"].want_string("parsing ODIMH5 origin PLC"));
 }
 std::string ODIMH5::exactQuery() const
 {

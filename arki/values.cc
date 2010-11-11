@@ -23,6 +23,8 @@
 #include <wibble/exception.h>
 #include <arki/values.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include <cstdlib>
 #include <cctype>
 #include <cstdio>
@@ -288,6 +290,11 @@ struct Integer : public Common<int>
 
 	static Integer* parse(const std::string& str);
 
+    virtual void serialise(Emitter& e) const
+    {
+        e.add_int(m_val);
+    }
+
 	Value* clone() const { return new Integer(m_val); }
 };
 
@@ -342,6 +349,11 @@ struct String : public Common<std::string>
 			return m_val;
 		}
 	}
+
+    virtual void serialise(Emitter& e) const
+    {
+        e.add_string(m_val);
+    }
 
 	Value* clone() const { return new String(m_val); }
 };
@@ -443,6 +455,16 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 
 	// Else return the string
 	return new value::String(res);
+}
+
+Value* Value::parse(const emitter::memory::Node& m)
+{
+    if (m.is_int())
+        return createInteger(m.get_int());
+    else if (m.is_string())
+        return createString(m.get_string());
+    else
+        throw wibble::exception::Consistency("decoding value", "value is neither integer nor string");
 }
 
 Value* Value::createInteger(int val)
@@ -636,6 +658,17 @@ std::string ValueBag::toString() const
 	return res;
 }
 
+void ValueBag::serialise(Emitter& e) const
+{
+    e.start_mapping();
+    for (const_iterator i = begin(); i != end(); ++i)
+    {
+        e.add(i->first);
+        i->second->serialise(e);
+    }
+    e.end_mapping();
+}
+
 /**
  * Decode from compact binary representation
  */
@@ -716,6 +749,17 @@ ValueBag ValueBag::parse(const std::string& str)
 	}
 
 	return res;
+}
+
+ValueBag ValueBag::parse(const emitter::memory::Mapping& m)
+{
+    using namespace emitter::memory;
+
+    ValueBag res;
+    for (std::map<std::string, const Node*>::const_iterator i = m.val.begin();
+            i != m.val.end(); ++i)
+        res.set(i->first, Value::parse(*i->second));
+    return res;
 }
 
 #ifdef HAVE_LUA

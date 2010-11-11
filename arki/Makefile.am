@@ -37,6 +37,9 @@ dist_noinst_HEADERS = \
 		dataset/test-utils.h \
 		datasetpool.h \
 		dispatcher.h \
+		emitter.h \
+		emitter/memory.h \
+		emitter/json.h \
 		matcher.h \
 		matcher/test-utils.h \
 		matcher/utils.h \
@@ -135,6 +138,8 @@ libarkimet_la_SOURCES = \
 		utils/process.cc \
 		configfile.cc \
 		transaction.cc \
+		emitter/memory.cc \
+		emitter/json.cc \
 		values.cc \
 		types.cc \
 		types/utils.cc \
@@ -236,6 +241,8 @@ tests_arki_test_SOURCES = \
 		refcounted-tut.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
+		emitter/memory-tut.cc \
+		emitter/json-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
 		types/utils-tut.cc \

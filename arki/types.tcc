@@ -23,6 +23,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 
@@ -65,6 +67,18 @@ int StyledType<BASE>::compare(const Type& o) const
 	res = this->style() - v->style();
 	if (res != 0) return res;
 	return this->compare_local(*v);
+}
+
+template<typename BASE>
+void StyledType<BASE>::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    e.add("s", BASE::formatStyle(style()));
+}
+
+template<typename BASE>
+typename StyledType<BASE>::Style StyledType<BASE>::style_from_mapping(const emitter::memory::Mapping& m)
+{
+    return BASE::parseStyle(m["s"].want_string("decoding Source style"));
 }
 
 #ifdef HAVE_LUA

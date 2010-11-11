@@ -26,6 +26,8 @@
 #include <arki/types/run.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <iomanip>
 #include <sstream>
@@ -116,6 +118,18 @@ Item<Run> Run::decodeString(const std::string& val)
 	}
 }
 
+Item<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Run::MINUTE: return run::Minute::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Run", "unknown Run style " + val.get_string());
+    }
+}
+
 static int arkilua_new_minute(lua_State* L)
 {
 	int nargs = lua_gettop(L);
@@ -159,6 +173,16 @@ std::ostream& Minute::writeToOstream(std::ostream& o) const
 			 << setfill('0') << fixed
 			 << setw(2) << (m_minute / 60) << ":"
 			 << setw(2) << (m_minute % 60) << ")";
+}
+void Minute::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Run::serialiseLocal(e, f);
+    e.add("va", (int)m_minute);
+}
+Item<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
+{
+    unsigned int m = val["va"].want_int("parsing Minute run value");
+    return run::Minute::create(m / 60, m % 60);
 }
 std::string Minute::exactQuery() const
 {

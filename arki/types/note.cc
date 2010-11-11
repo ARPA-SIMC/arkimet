@@ -25,6 +25,8 @@
 #include <arki/types/note.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -101,6 +103,19 @@ Item<Note> Note::decode(const unsigned char* buf, size_t len)
 std::ostream& Note::writeToOstream(std::ostream& o) const
 {
 	return o << "[" << time << "]" << content;
+}
+
+void Note::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    e.add("ti"); time->serialiseList(e);
+    e.add("va", content);
+}
+
+Item<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return Note::create(
+            Time::decodeList(val["ti"].want_list("parsing Note time")),
+            val["va"].want_string("parsing Note content"));
 }
 
 Item<Note> Note::decodeString(const std::string& val)

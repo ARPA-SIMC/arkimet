@@ -25,6 +25,8 @@
 #include <arki/types/ensemble.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -96,6 +98,18 @@ Item<Ensemble> Ensemble::decodeString(const std::string& val)
 	}
 }
 
+Item<Ensemble> Ensemble::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Ensemble::GRIB: return ensemble::GRIB::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Ensemble", "unknown Ensemble style " + val.get_string());
+    }
+}
+
 #ifdef HAVE_LUA
 static int arkilua_new_grib(lua_State* L)
 {
@@ -133,6 +147,16 @@ void GRIB::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
+}
+void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Ensemble::serialiseLocal(e, f);
+    e.add("va");
+    m_values.serialise(e);
+}
+Item<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
 std::string GRIB::exactQuery() const
 {

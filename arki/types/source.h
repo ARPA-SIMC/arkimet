@@ -67,6 +67,8 @@ struct Source : public types::StyledType<Source>
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	static Item<Source> decode(const unsigned char* buf, size_t len);
 	static Item<Source> decodeString(const std::string& val);
+	static Item<Source> decodeMapping(const emitter::memory::Mapping& val);
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 };
@@ -82,6 +84,7 @@ struct Blob : public Source
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
@@ -101,6 +104,7 @@ struct Blob : public Source
 	Item<Blob> fileOnly() const;
 
 	static Item<Blob> create(const std::string& format, const std::string& filename, size_t offset, size_t size);
+	static Item<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 struct URL : public Source
@@ -110,6 +114,7 @@ struct URL : public Source
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
@@ -117,6 +122,7 @@ struct URL : public Source
 	virtual bool operator==(const Type& o) const;
 
 	static Item<URL> create(const std::string& format, const std::string& url);
+	static Item<URL> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 struct Inline : public Source
@@ -126,6 +132,7 @@ struct Inline : public Source
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
@@ -133,6 +140,7 @@ struct Inline : public Source
 	virtual bool operator==(const Type& o) const;
 
 	static Item<Inline> create(const std::string& format, size_t size);
+	static Item<Inline> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

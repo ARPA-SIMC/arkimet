@@ -46,6 +46,7 @@ struct TestImpl : public types::Type
 	virtual size_t serialisationSizeLength() const { return 1; }
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder&) const {}
 	virtual std::ostream& writeToOstream(std::ostream& o) const { return o; }
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const {}
 	virtual const char* lua_type_name() const { return "arki.types.testimpl"; }
 	virtual void lua_push(lua_State* L) const {}
 };

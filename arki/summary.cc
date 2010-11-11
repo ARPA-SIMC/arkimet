@@ -27,8 +27,11 @@
 #include <arki/formatter.h>
 #include <arki/types/utils.h>
 #include <arki/types/area.h>
+#include <arki/types/time.h>
 #include <arki/utils/geosdef.h>
 #include <arki/utils/compress.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 // #include <arki/utils/lua.h>
 
 #include <wibble/exception.h>
@@ -727,6 +730,26 @@ void Stats::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& Stats::writeToOstream(std::ostream& o) const
 {
 	return o << toYaml(0);
+}
+
+void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    e.add("b"); reftimeMerger.begin->serialiseList(e);
+    e.add("e"); reftimeMerger.end->serialiseList(e);
+    e.add("c", (int)count);
+    e.add("s", (int)size);
+}
+
+arki::refcounted::Pointer<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    Item<types::Time> begin = types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
+    Item<types::Time> end = types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+    refcounted::Pointer<Stats> res(new Stats);
+    res->count = val["c"].want_int("parsing summary stats count");
+    res->size = val["s"].want_int("parsing summary stats size");
+    res->reftimeMerger.mergeTime(begin, end);
+    return res;
 }
 
 std::string Stats::toYaml(size_t indent) const

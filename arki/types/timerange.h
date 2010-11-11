@@ -65,6 +65,7 @@ struct Timerange : public types::StyledType<Timerange>
 	/// CODEC functions
 	static Item<Timerange> decode(const unsigned char* buf, size_t len);
 	static Item<Timerange> decodeString(const std::string& val);
+	static Item<Timerange> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 };
@@ -93,6 +94,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -103,6 +105,7 @@ public:
 	void getNormalised(int& type, Unit& unit, int& p1, int& p2) const;
 
 	static Item<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+	static Item<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class GRIB2 : public Timerange
@@ -120,6 +123,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -128,6 +132,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
+	static Item<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class BUFR : public Timerange
@@ -147,6 +152,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -155,6 +161,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<BUFR> create(unsigned value = 0, unsigned char unit = 254);
+	static Item<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

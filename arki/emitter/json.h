@@ -60,7 +60,7 @@ public:
 
     virtual void add_null();
     virtual void add_bool(bool val);
-    virtual void add_int(int val);
+    virtual void add_int(long long int val);
     virtual void add_double(double val);
     virtual void add_string(const std::string& val);
 

@@ -74,6 +74,7 @@ struct BBox : public types::StyledType<BBox>
 	/// CODEC functions
 	static Item<BBox> decode(const unsigned char* buf, size_t len);
 	static Item<BBox> decodeString(const std::string& val);
+	static Item<BBox> decodeMapping(const emitter::memory::Mapping& val);
 
 	// GEOS functions
 	/**

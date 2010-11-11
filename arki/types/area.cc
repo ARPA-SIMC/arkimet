@@ -26,6 +26,8 @@
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/geosdef.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include <arki/bbox.h>
 #include "config.h"
 #include <sstream>
@@ -129,6 +131,19 @@ Item<Area> Area::decodeString(const std::string& val)
 	}
 }
 
+Item<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Area::GRIB: return area::GRIB::decodeMapping(val);
+        case Area::ODIMH5: return area::ODIMH5::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Area", "unknown Area style " + val.get_string());
+    }
+}
+
 #ifdef HAVE_LUA
 static int arkilua_new_grib(lua_State* L)
 {
@@ -177,6 +192,16 @@ void GRIB::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
+}
+void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Area::serialiseLocal(e, f);
+    e.add("va");
+    m_values.serialise(e);
+}
+Item<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
 std::string GRIB::exactQuery() const
 {
@@ -234,6 +259,16 @@ void ODIMH5::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& ODIMH5::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "(" << m_values.toString() << ")";
+}
+void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Area::serialiseLocal(e, f);
+    e.add("va");
+    m_values.serialise(e);
+}
+Item<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return ODIMH5::create(ValueBag::parse(val["va"].get_mapping()));
 }
 std::string ODIMH5::exactQuery() const
 {

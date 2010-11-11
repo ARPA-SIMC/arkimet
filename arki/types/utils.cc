@@ -48,6 +48,7 @@ MetadataType::MetadataType(
 		const std::string& tag,
 		item_decoder decode_func,
 		string_decoder string_decode_func,
+		mapping_decoder mapping_decode_func,
 		lua_libloader lua_loadlib_func,
 		intern_stats intern_stats_func)
     : serialisationCode(serialisationCode),
@@ -55,6 +56,7 @@ MetadataType::MetadataType(
 	  tag(tag),
 	  decode_func(decode_func),
 	  string_decode_func(string_decode_func),
+	  mapping_decode_func(mapping_decode_func),
 	  lua_loadlib_func(lua_loadlib_func),
 	  intern_stats_func(intern_stats_func ? intern_stats_func : default_intern_stats_func)
 {

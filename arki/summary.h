@@ -100,10 +100,12 @@ struct Stats : public types::CoreType<Stats>
 
 	void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	std::string toYaml(size_t indent = 0) const;
 	void toYaml(std::ostream& out, size_t indent = 0) const;
 	static arki::refcounted::Pointer<Stats> decode(const unsigned char* buf, size_t len);
 	static arki::refcounted::Pointer<Stats> decodeString(const std::string& str);
+	static arki::refcounted::Pointer<Stats> decodeMapping(const emitter::memory::Mapping& val);
 
 	virtual void lua_push(lua_State* L) const;
 	static int lua_lookup(lua_State* L);

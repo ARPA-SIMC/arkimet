@@ -63,7 +63,7 @@ void JSON::add_bool(bool val)
         out << "false";
 }
 
-void JSON::add_int(int val)
+void JSON::add_int(long long int val)
 {
     val_head();
     out << val;
@@ -197,7 +197,7 @@ static void parse_number(std::istream& in, Emitter& e)
     {
         e.add_double(strtod(num.c_str(), NULL));
     } else {
-        e.add_int(strtol(num.c_str(), NULL, 10));
+        e.add_int(strtoll(num.c_str(), NULL, 10));
     }
 
     parse_spaces(in);

@@ -26,6 +26,8 @@
 #include <arki/types/task.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -100,6 +102,16 @@ Item<Task> Task::decode(const unsigned char* buf, size_t len)
 std::ostream& Task::writeToOstream(std::ostream& o) const
 {
 	return o << task;
+}
+
+void Task::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    e.add("va", task);
+}
+
+Item<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return Task::create(val["va"].want_string("parsing Task value"));
 }
 
 Item<Task> Task::decodeString(const std::string& val)

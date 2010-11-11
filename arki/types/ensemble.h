@@ -62,6 +62,7 @@ struct Ensemble : public types::StyledType<Ensemble>
 	/// CODEC functions
 	static Item<Ensemble> decode(const unsigned char* buf, size_t len);
 	static Item<Ensemble> decodeString(const std::string& val);
+	static Item<Ensemble> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 };
@@ -81,6 +82,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -89,6 +91,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB> create(const ValueBag& values);
+	static Item<GRIB> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

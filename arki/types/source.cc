@@ -25,6 +25,8 @@
 #include <arki/types/source.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 
@@ -95,6 +97,12 @@ void Source::encodeWithoutEnvelope(Encoder& enc) const
 	enc.addString(format);
 }
 
+void Source::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    types::StyledType<Source>::serialiseLocal(e, f);
+    e.add("f"); e.add(format);
+}
+
 Item<Source> Source::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
@@ -162,6 +170,20 @@ Item<Source> Source::decodeString(const std::string& val)
 	}
 }
 
+Item<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    switch (style_from_mapping(val))
+    {
+        case Source::BLOB: return source::Blob::decodeMapping(val);
+        case Source::URL: return source::URL::decodeMapping(val);
+        case Source::INLINE: return source::Inline::decodeMapping(val);
+        default:
+            throw wibble::exception::Consistency("parsing Source", "unknown Source style " + val.get_string());
+    }
+}
+
 #ifdef HAVE_LUA
 bool Source::lua_lookup(lua_State* L, const std::string& name) const
 {
@@ -192,6 +214,21 @@ std::ostream& Blob::writeToOstream(std::ostream& o) const
     return o << formatStyle(style()) << "("
 			 << format << "," << filename << ":" << offset << "+" << size
 			 << ")";
+}
+void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Source::serialiseLocal(e, f);
+    e.add("file", filename);
+    e.add("ofs", offset);
+    e.add("sz", size);
+}
+Item<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return Blob::create(
+            val["f"].want_string("parsing blob source format"),
+            val["file"].want_string("parsing blob source filename"),
+            val["ofs"].want_int("parsing blob source offset"),
+            val["sz"].want_int("parsing blob source size"));
 }
 const char* Blob::lua_type_name() const { return "arki.types.source.blob"; }
 
@@ -268,6 +305,17 @@ std::ostream& URL::writeToOstream(std::ostream& o) const
 			 << format << "," << url
 			 << ")";
 }
+void URL::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Source::serialiseLocal(e, f);
+    e.add("url"); e.add(url);
+}
+Item<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return URL::create(
+            val["f"].want_string("parsing url source format"),
+            val["url"].want_string("parsing url source url"));
+}
 
 const char* URL::lua_type_name() const { return "arki.types.source.url"; }
 
@@ -324,6 +372,17 @@ std::ostream& Inline::writeToOstream(std::ostream& o) const
     return o << formatStyle(style()) << "("
 			 << format << "," << size
 			 << ")";
+}
+void Inline::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Source::serialiseLocal(e, f);
+    e.add("sz", size);
+}
+Item<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return Inline::create(
+            val["f"].want_string("parsing inline source format"),
+            val["sz"].want_int("parsing inline source size"));
 }
 
 const char* Inline::lua_type_name() const { return "arki.types.source.inline"; }

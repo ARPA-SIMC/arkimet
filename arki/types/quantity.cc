@@ -1,7 +1,7 @@
 /*
  * types/quantity - Metadata quantity
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 #include <arki/types/quantity.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -133,6 +135,27 @@ Item<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
 std::ostream& Quantity::writeToOstream(std::ostream& o) const
 {
 	return o << str::join(values.begin(), values.end(), ", ");
+}
+
+void Quantity::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    e.add("va");
+    e.start_list();
+    for (set<string>::const_iterator i = values.begin();
+            i != values.end(); ++i)
+        e.add(*i);
+    e.end_list();
+}
+
+Item<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+    const List& l = val["va"].want_list("parsing Quantity values");
+    set<string> vals;
+    for (vector<const Node*>::const_iterator i = l.val.begin();
+            i != l.val.end(); ++i)
+        vals.insert((*i)->want_string("parsing a Quantity value"));
+    return Quantity::create(vals);
 }
 
 Item<Quantity> Quantity::decodeString(const std::string& val)

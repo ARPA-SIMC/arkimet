@@ -24,6 +24,9 @@
 #include <arki/types.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
+#include <arki/formatter.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -48,6 +51,7 @@ Code checkCodeName(const std::string& name)
 {
 	// TODO: convert into something faster, like a hash lookup or a gperf lookup
 	string nname = str::trim(str::tolower(name));
+	if (nname == "time") return TYPE_TIME;
 	if (nname == "origin") return TYPE_ORIGIN;
 	if (nname == "product") return TYPE_PRODUCT;
 	if (nname == "level") return TYPE_LEVEL;
@@ -116,6 +120,15 @@ std::string Type::encodeWithEnvelope() const
 	enc.addVarint(contents.size());
 	enc.addString(contents);
 	return res;
+}
+
+void Type::serialise(Emitter& e, const Formatter* f) const
+{
+    e.start_mapping();
+    e.add("t", tag());
+    if (f) e.add("desc", (*f)(this));
+    serialiseLocal(e, f);
+    e.end_mapping();
 }
 
 std::string Type::exactQuery() const
@@ -298,6 +311,13 @@ Item<> decodeInner(types::Code code, const unsigned char* buf, size_t len)
 Item<> decodeString(types::Code code, const std::string& val)
 {
 	return types::MetadataType::get(code)->string_decode_func(val);
+}
+
+Item<> decodeMapping(const emitter::memory::Mapping& m)
+{
+    using namespace emitter::memory;
+    const std::string& type = m["t"].want_string("decoding item type");
+    return types::MetadataType::get(parseCodeName(type))->mapping_decode_func(m);
 }
 
 std::string tag(types::Code code)

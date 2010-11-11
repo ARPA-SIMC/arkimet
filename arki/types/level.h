@@ -65,6 +65,7 @@ struct Level : public types::StyledType<Level>
 	/// CODEC functions
 	static Item<Level> decode(const unsigned char* buf, size_t len);
 	static Item<Level> decodeString(const std::string& val);
+	static Item<Level> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 };
@@ -86,6 +87,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -105,6 +107,7 @@ public:
 	static Item<GRIB1> create(unsigned char type);
 	static Item<GRIB1> create(unsigned char type, unsigned short l1);
 	static Item<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
+	static Item<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
 	static int getValType(unsigned char type);
 };
@@ -136,6 +139,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -144,6 +148,7 @@ public:
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB2S> create(unsigned char type, unsigned char scale, unsigned long val);
+	static Item<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class GRIB2D : public GRIB2
@@ -167,6 +172,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -176,6 +182,7 @@ public:
 
 	static Item<GRIB2D> create(unsigned char type1, unsigned char scale1, unsigned long val1,
                                unsigned char type2, unsigned char scale2, unsigned long val2);
+	static Item<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class ODIMH5 : public Level
@@ -191,6 +198,7 @@ public:
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
@@ -200,6 +208,7 @@ public:
 
 	static Item<ODIMH5> create(double value);
 	static Item<ODIMH5> create(double min, double max);
+	static Item<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

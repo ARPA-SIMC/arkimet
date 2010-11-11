@@ -25,6 +25,8 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>
@@ -90,6 +92,22 @@ std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const
 {
 	return o << name << " as " << id << " imported on " << changed;
 }
+
+void AssignedDataset::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    e.add("ti"); changed->serialiseList(e);
+    e.add("na", name);
+    e.add("id", id);
+}
+
+Item<AssignedDataset> AssignedDataset::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return AssignedDataset::create(
+            Time::decodeList(val["ti"].want_list("parsing AssignedDataset time")),
+            val["na"].want_string("parsing AssignedDataset name"),
+            val["id"].want_string("parsing AssignedDataset id"));
+}
+
 
 Item<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
 {

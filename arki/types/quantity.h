@@ -1,10 +1,9 @@
-
 #ifndef ARKI_TYPES_QUANTITY_H
 #define ARKI_TYPES_QUANTITY_H
 /*
  * types/task - Metadata quantity (used for OdimH5 /what.quantity)
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,11 +67,13 @@ struct Quantity : public CoreType<Quantity>
 	static Item<Quantity> decode(const unsigned char* buf, size_t len);
 	static Item<Quantity> decodeString(const std::string& val);
 	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
 	/// Create a task
 	static Item<Quantity> create(const std::string& values);
 	static Item<Quantity> create(const std::set<std::string>& values);
+	static Item<Quantity> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 };
