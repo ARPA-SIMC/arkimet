@@ -259,6 +259,9 @@ public:
 	 */
 	void read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
 
+    /// Decode from structured data
+	void read(const emitter::memory::Mapping& val);
+
 	/**
 	 * Read data from the given file
 	 */
@@ -296,6 +299,9 @@ public:
 	 * Write the summary as YAML text to the given output stream.
 	 */
 	void writeYaml(std::ostream& out, const Formatter* f = 0) const;
+
+    /// Serialise using an emitter
+    void serialise(Emitter& e, const Formatter* f=0) const;
 	
 	/**
 	 * Encode to a string

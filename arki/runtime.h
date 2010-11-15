@@ -65,6 +65,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::BoolOption* debug;
 	wibble::commandline::BoolOption* status;
 	wibble::commandline::BoolOption* yaml;
+	wibble::commandline::BoolOption* json;
 	wibble::commandline::BoolOption* annotate;
 	wibble::commandline::BoolOption* dataInline;
 	wibble::commandline::BoolOption* dataOnly;

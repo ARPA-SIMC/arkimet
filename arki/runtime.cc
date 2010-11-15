@@ -121,6 +121,8 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	yaml = outputOpts->add<BoolOption>("yaml", 0, "yaml", "",
 			"dump the metadata as human-readable Yaml records");
 	yaml->longNames.push_back("dump");
+	json = outputOpts->add<BoolOption>("json", 0, "json", "",
+			"dump the metadata in JSON format");
 	annotate = outputOpts->add<BoolOption>("annotate", 0, "annotate", "",
 			"annotate the human-readable Yaml output with field descriptions");
 	dataInline = outputOpts->add<BoolOption>("inline", 0, "inline", "",
@@ -227,6 +229,7 @@ bool CommandLine::parse(int argc, const char* argv[])
 	// Initialize the processor maker
     pmaker.summary = summary->boolValue();
     pmaker.yaml = yaml->boolValue();
+    pmaker.json = json->boolValue();
     pmaker.annotate = annotate->boolValue();
     pmaker.data_only = dataOnly->boolValue();
     pmaker.data_inline = dataInline->boolValue();

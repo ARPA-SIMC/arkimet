@@ -26,6 +26,8 @@
 #include <arki/utils/codec.h>
 #include <arki/utils/datareader.h>
 #include <arki/utils/compress.h>
+#include <arki/emitter.h>
+#include <arki/emitter/memory.h>
 #include "config.h"
 
 #include <wibble/exception.h>
@@ -369,6 +371,51 @@ void Metadata::writeYaml(std::ostream& out, const Formatter* formatter) const
 	}
 
 	writeYamlList(out, "Note", notes());
+}
+
+void Metadata::serialise(Emitter& e, const Formatter* f) const
+{
+    e.start_mapping();
+    e.add("i");
+    e.start_list();
+    if (source.defined())
+        source->serialise(e, f);
+    for (const_iterator i = begin(); i != end(); ++i)
+        i->second->serialise(e, f);
+    e.end_list();
+    e.add("n");
+    e.start_list();
+    std::vector< Item<types::Note> > n = notes();
+    for (std::vector< Item<types::Note> >::const_iterator i = n.begin();
+            i != n.end(); ++i)
+        (*i)->serialise(e, f);
+    e.end_list();
+    e.end_mapping();
+}
+
+void Metadata::read(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    // Parse items
+    const List& items = val["i"].want_list("parsing metadata item list");
+    for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
+    {
+        Item<> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        if (item->serialisationCode() == types::TYPE_SOURCE)
+            source = item.upcast<types::Source>();
+        else
+            set(item);
+    }
+
+    // Parse notes
+    const List& notes = val["n"].want_list("parsing metadata notes list");
+    for (std::vector<const Node*>::const_iterator i = notes.val.begin(); i != notes.val.end(); ++i)
+    {
+        Item<> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        if (item->serialisationCode() == types::TYPE_NOTE)
+            add_note(item.upcast<types::Note>());
+    }
 }
 
 string Metadata::encode() const

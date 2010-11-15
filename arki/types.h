@@ -343,6 +343,8 @@ types::Code decodeEnvelope(const unsigned char*& buf, size_t& len);
 Item<> decodeInner(types::Code, const unsigned char* buf, size_t len);
 Item<> decodeString(types::Code, const std::string& val);
 Item<> decodeMapping(const emitter::memory::Mapping& m);
+/// Same as decodeMapping, but does not look for the item type in the mapping
+Item<> decodeMapping(types::Code, const emitter::memory::Mapping& m);
 std::string tag(types::Code);
 
 /**

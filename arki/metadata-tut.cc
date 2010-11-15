@@ -28,6 +28,8 @@
 #include <arki/types/area.h>
 #include <arki/types/ensemble.h>
 #include <arki/types/assigneddataset.h>
+#include <arki/emitter/json.h>
+#include <arki/emitter/memory.h>
 
 #include <sstream>
 #include <iostream>
@@ -214,9 +216,59 @@ void to::test<3>()
 			types::Time::create(2008, 7, 6, 5, 4, 3))));
 }
 
-// Test encoding and decoding with inline data
+// Test JSON encoding and decoding
 template<> template<>
 void to::test<4>()
+{
+    md.source = source::Blob::create("grib", "fname", 1, 2);
+    fill(md);
+
+    // Serialise to JSON;
+    stringstream output;
+    emitter::JSON json(output);
+    md.serialise(json);
+
+    // Parse back
+    stringstream stream(output.str(), ios_base::in);
+    emitter::Memory parsed;
+    emitter::JSON::parse(stream, parsed);
+
+    Metadata md1;
+    md1.read(parsed.root().want_mapping("parsing metadata"));
+
+    ensure_equals(md1.source, Item<Source>(source::Blob::create("grib", "fname", 1, 2)));
+    ensure_equals(md1.source->format, "grib");
+    ensure_matches_fill(md1);
+
+
+    // Test PERIOD reference times
+    md.set(reftime::Period::create(
+                types::Time::create(2007, 6, 5, 4, 3, 2),
+                types::Time::create(2008, 7, 6, 5, 4, 3)));
+
+    // Serialise to JSON
+    stringstream output1;
+    emitter::JSON json1(output1);
+    md.serialise(json1);
+
+    // Parse back
+    stringstream stream1(output1.str(), ios_base::in);
+    emitter::Memory parsed1;
+    emitter::JSON::parse(stream1, parsed1);
+
+    Metadata md2;
+    md2.read(parsed1.root().want_mapping("parsing metadata"));
+
+    ensure(md2.get(types::TYPE_REFTIME).defined());
+    ensure_equals(md2.get(types::TYPE_REFTIME),
+            Item<>(reftime::Period::create(
+                    types::Time::create(2007, 6, 5, 4, 3, 2),
+                    types::Time::create(2008, 7, 6, 5, 4, 3))));
+}
+
+// Test encoding and decoding with inline data
+template<> template<>
+void to::test<5>()
 {
 	// Here is some data
 	wibble::sys::Buffer buf(4);
@@ -241,14 +293,14 @@ void to::test<4>()
 
 // Ensure that serialisation to binary preserves the deleted flag
 template<> template<>
-void to::test<5>()
+void to::test<6>()
 {
 	// Skip: there is no deleted flag anymore
 }
 
 // Test Lua functions
 template<> template<>
-void to::test<6>()
+void to::test<7>()
 {
 #ifdef HAVE_LUA
 	md.source = source::Blob::create("grib", "fname", 1, 2);
@@ -283,7 +335,7 @@ void to::test<6>()
 
 // Serialise using unix file descriptors
 template<> template<>
-void to::test<7>()
+void to::test<8>()
 {
 	const char* tmpfile = "testmd.tmp";
 	fill(md);

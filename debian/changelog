@@ -1,3 +1,10 @@
+arkimet (0.47-1) UNRELEASED; urgency=low
+
+  * arki-server: rewritten in C++, faster, no more python dependencies
+  * Implemented --json
+
+ -- Enrico Zini <enrico@debian.org>  Mon, 15 Nov 2010 22:57:14 +0000
+
 arkimet (0.46-1) UNRELEASED; urgency=low
 
   * Ported to DB-All.e 5.0

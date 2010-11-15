@@ -27,6 +27,8 @@
 #include <arki/types/reftime.h>
 #include <arki/types/source.h>
 #include <arki/types/run.h>
+#include <arki/emitter/json.h>
+#include <arki/emitter/memory.h>
 #include <arki/matcher.h>
 #include <arki/utils.h>
 
@@ -171,9 +173,28 @@ void to::test<7>()
 	ensure_equals(s2, s);
 }
 
-// Test merging summaries
+// Test serialisation to JSON
 template<> template<>
 void to::test<8>()
+{
+    // Serialise to JSON;
+    stringstream stream1;
+    emitter::JSON json(stream1);
+    s.serialise(json);
+
+    // Parse back
+    stringstream stream2(stream1.str(), ios_base::in);
+    emitter::Memory parsed;
+    emitter::JSON::parse(stream2, parsed);
+
+    Summary s2;
+    s2.read(parsed.root().want_mapping("parsing summary"));
+    ensure_equals(s2, s);
+}
+
+// Test merging summaries
+template<> template<>
+void to::test<9>()
 {
 	Summary s1;
 	s1.add(s);
@@ -182,7 +203,7 @@ void to::test<8>()
 
 // Test serialisation of empty summary
 template<> template<>
-void to::test<9>()
+void to::test<10>()
 {
 	s = Summary();
 	string encoded = s.encode();
@@ -194,7 +215,7 @@ void to::test<9>()
 
 // Test a case of metadata wrongly considered the same
 template<> template<>
-void to::test<10>()
+void to::test<11>()
 {
 	Metadata tmd1;
 	Metadata tmd2;
@@ -230,7 +251,7 @@ void to::test<10>()
 
 // Test Lua functions
 template<> template<>
-void to::test<11>()
+void to::test<12>()
 {
 #ifdef HAVE_LUA
 	s.add(md2);
@@ -270,7 +291,7 @@ void to::test<11>()
 
 // Summarise the test gribs
 template<> template<>
-void to::test<12>()
+void to::test<13>()
 {
 #ifdef HAVE_GRIBAPI
 	Summary s1;
@@ -305,7 +326,7 @@ void to::test<12>()
 
 // Test adding a metadata plus stats
 template<> template<>
-void to::test<13>()
+void to::test<14>()
 {
 	Metadata md3;
 	md3.create();
@@ -328,7 +349,7 @@ void to::test<13>()
 
 // Test resolveMatcher
 template<> template<>
-void to::test<14>()
+void to::test<15>()
 {
 	std::vector<ItemSet> res = s.resolveMatcher(Matcher::parse("origin:GRIB1,1,2,3; product:GRIB1,1,2,3 or GRIB1,2,3,4"));
 

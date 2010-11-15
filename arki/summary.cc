@@ -754,12 +754,18 @@ void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
 arki::refcounted::Pointer<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
-    Item<types::Time> begin = types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-    Item<types::Time> end = types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
     refcounted::Pointer<Stats> res(new Stats);
     res->count = val["c"].want_int("parsing summary stats count");
     res->size = val["s"].want_int("parsing summary stats size");
-    res->reftimeMerger.mergeTime(begin, end);
+    if (!val["b"].is_null())
+    {
+        Item<types::Time> begin = types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
+        Item<types::Time> end = types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+        if (begin == end)
+            res->reftimeMerger.mergeTime(begin);
+        else
+            res->reftimeMerger.mergeTime(begin, end);
+    }
     return res;
 }
 
@@ -1541,6 +1547,74 @@ void Summary::writeYaml(std::ostream& out, const Formatter* f) const
 
 	summary::YamlPrinter printer(out, 2, f);
 	visit(printer);
+}
+
+void Summary::serialise(Emitter& e, const Formatter* f) const
+{
+    e.start_mapping();
+    e.add("items");
+    e.start_list();
+    if (root.ptr())
+    {
+        struct Serialiser : public summary::Visitor
+        {
+            Emitter& e;
+            const Formatter* f;
+
+            Serialiser(Emitter& e, const Formatter* f) : e(e), f(f) {}
+
+            virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<summary::Stats>& stats)
+            {
+                e.start_mapping();
+                for (std::vector< UItem<> >::const_iterator i = md.begin();
+                        i != md.end(); ++i)
+                {
+                    if (!i->defined()) continue;
+                    e.add((*i)->tag());
+                    e.start_mapping();
+                    (*i)->serialiseLocal(e, f);
+                    e.end_mapping();
+                }
+                e.add(stats->tag());
+                e.start_mapping();
+                stats->serialiseLocal(e, f);
+                e.end_mapping();
+                e.end_mapping();
+                return true;
+            }
+        } visitor(e, f);
+
+        visit(visitor);
+    }
+    e.end_list();
+    e.end_mapping();
+}
+
+void Summary::read(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    const List& items = val["items"].want_list("parsing summary item list");
+    for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
+    {
+        const Mapping& m = (*i)->want_mapping("parsing summary item");
+        std::vector< UItem<> > md;
+        for (size_t id = 0; id < summary::msoSize; ++id)
+        {
+            const Node& n = m[types::tag(summary::mso[id])];
+            if (n.is_mapping())
+                md.push_back(types::decodeMapping(summary::mso[id], n.get_mapping()));
+            else
+                md.push_back(UItem<>());
+        }
+
+        arki::refcounted::Pointer<summary::Stats> stats = summary::Stats::decodeMapping(
+                m["summarystats"].want_mapping("parsing summary item stats"));
+        if (root.ptr())
+            root->add(md, stats);
+        else
+            root = new summary::Node(md, stats);
+    }
 }
 
 static vector< UItem<> > decodeItem(const std::string& str)

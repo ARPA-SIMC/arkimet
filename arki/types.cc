@@ -317,7 +317,13 @@ Item<> decodeMapping(const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
     const std::string& type = m["t"].want_string("decoding item type");
-    return types::MetadataType::get(parseCodeName(type))->mapping_decode_func(m);
+    return decodeMapping(parseCodeName(type), m);
+}
+
+Item<> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
+{
+    using namespace emitter::memory;
+    return types::MetadataType::get(code)->mapping_decode_func(m);
 }
 
 std::string tag(types::Code code)

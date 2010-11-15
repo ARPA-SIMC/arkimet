@@ -24,6 +24,7 @@
 #include <arki/runtime/io.h>
 #include <arki/metadata/consumer.h>
 #include <arki/formatter.h>
+#include <arki/emitter/json.h>
 #include <arki/dataset.h>
 #include <arki/dataset/index/base.h>
 #include <arki/targetfile.h>
@@ -73,6 +74,36 @@ struct YamlPrinter : public Printer
     }
 };
 
+struct JSONPrinter : public Printer
+{
+    Output& out;
+    Formatter* formatter;
+    emitter::JSON json;
+
+    JSONPrinter(Output& out, bool formatted=false)
+        : out(out), formatter(0), json(out.stream())
+    {
+        if (formatted)
+            formatter = Formatter::create();
+    }
+    ~JSONPrinter()
+    {
+        if (formatter) delete formatter;
+    }
+
+    virtual bool operator()(Metadata& md)
+    {
+        md.serialise(json, formatter);
+        return true;
+    }
+
+    virtual bool operator()(const Summary& s)
+    {
+        s.serialise(json, formatter);
+        return true;
+    }
+};
+
 struct BinaryPrinter : public Printer
 {
     Output& out;
@@ -100,7 +131,9 @@ struct BinaryPrinter : public Printer
 
 Printer* Printer::create(ProcessorMaker& maker, Output& out)
 {
-    if (maker.yaml || maker.annotate)
+    if (maker.json)
+        return new JSONPrinter(out, maker.annotate);
+    else if (maker.yaml || maker.annotate)
         return new YamlPrinter(out, maker.annotate);
     else
         return new BinaryPrinter(out);
@@ -259,6 +292,8 @@ std::string ProcessorMaker::verify_option_consistency()
 	{
 		if (yaml)
 			return "--dump/--yaml conflicts with --report";
+		if (json)
+			return "--json conflicts with --report";
 		if (annotate)
 			return "--annotate conflicts with --report";
 		//if (summary->boolValue())
@@ -273,6 +308,8 @@ std::string ProcessorMaker::verify_option_consistency()
 #endif
 	if (yaml)
 	{
+		if (json)
+			return "--dump/--yaml conflicts with --json";
 		if (data_inline)
 			return "--dump/--yaml conflicts with --inline";
 		if (data_only)
