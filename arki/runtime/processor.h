@@ -64,6 +64,7 @@ struct ProcessorMaker
 {
     bool summary;
     bool yaml;
+    bool json;
     bool annotate;
     bool data_only;
     bool data_inline;
@@ -76,7 +77,7 @@ struct ProcessorMaker
     metadata::Hook* data_start_hook;
 
     ProcessorMaker()
-        : summary(false), yaml(false), annotate(false), data_only(false), data_inline(false), data_start_hook(0)
+        : summary(false), yaml(false), json(false), annotate(false), data_only(false), data_inline(false), data_start_hook(0)
     {
     }
 

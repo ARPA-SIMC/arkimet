@@ -35,67 +35,148 @@ using namespace std;
 namespace arki {
 namespace runtime {
 
-struct YamlProcessor : public DatasetProcessor, public metadata::Consumer
+struct Printer : public metadata::Consumer
 {
-    Formatter* formatter;
-	Output& output;
-	Summary* summary;
-	dataset::DataQuery query;
-	string summary_restrict;
+    virtual bool operator()(const Summary& s) = 0;
 
-	YamlProcessor(ProcessorMaker& maker, Matcher& query, Output& out)
-		: formatter(0), output(out), summary(0), query(query, false)
-	{
-		if (maker.annotate)
-			formatter = Formatter::create();
-
-		if (maker.summary)
-		{
-			summary = new Summary();
-            summary_restrict = maker.summary_restrict;
-		}
-		else if (!maker.sort.empty())
-		{
-			this->query.sorter = sort::Compare::parse(maker.sort);
-		}
-	}
-
-	virtual ~YamlProcessor()
-	{
-		if (summary) delete summary;
-		if (formatter) delete formatter;
-	}
-
-	virtual void process(ReadonlyDataset& ds, const std::string& name)
-	{
-		if (summary)
-			ds.querySummary(query.matcher, *summary);
-		else
-			ds.queryData(query, *this);
-	}
-
-	virtual bool operator()(Metadata& md)
-	{
-		md.writeYaml(output.stream(), formatter);
-		output.stream() << endl;
-		return true;
-	}
-
-	virtual void end()
-	{
-		if (summary)
-		{
-			if (!summary_restrict.empty())
-			{
-				Summary s;
-				s.add(*summary, dataset::index::parseMetadataBitmask(summary_restrict));
-				s.writeYaml(output.stream(), formatter);
-			} else
-				summary->writeYaml(output.stream(), formatter);
-			output.stream() << endl;
-		}
-	}
+    static Printer* create(ProcessorMaker& maker, Output& out);
 };
+
+struct YamlPrinter : public Printer
+{
+    Output& out;
+    Formatter* formatter;
+
+    YamlPrinter(Output& out, bool formatted=false)
+        : out(out), formatter(0)
+    {
+        if (formatted)
+            formatter = Formatter::create();
+    }
+    ~YamlPrinter()
+    {
+        if (formatter) delete formatter;
+    }
+
+    virtual bool operator()(Metadata& md)
+    {
+        md.writeYaml(out.stream(), formatter);
+        out.stream() << endl;
+        return true;
+    }
+
+    virtual bool operator()(const Summary& s)
+    {
+        s.writeYaml(out.stream(), formatter);
+        out.stream() << endl;
+        return true;
+    }
+};
+
+struct BinaryPrinter : public Printer
+{
+    Output& out;
+
+    BinaryPrinter(Output& out)
+        : out(out)
+    {
+    }
+    ~BinaryPrinter()
+    {
+    }
+
+    virtual bool operator()(Metadata& md)
+    {
+        md.write(out.stream(), out.name());
+        return true;
+    }
+
+    virtual bool operator()(const Summary& s)
+    {
+        s.write(out.stream(), out.name());
+        return true;
+    }
+};
+
+Printer* Printer::create(ProcessorMaker& maker, Output& out)
+{
+    if (maker.yaml || maker.annotate)
+        return new YamlPrinter(out, maker.annotate);
+    else
+        return new BinaryPrinter(out);
+}
+
+struct DataProcessor : public DatasetProcessor
+{
+    Output& output;
+    Printer* printer;
+    dataset::DataQuery query;
+
+    DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
+        : output(out), printer(Printer::create(maker, out)), query(q, false)
+    {
+        query.withData = maker.data_inline;
+
+        if (!maker.sort.empty())
+            query.sorter = sort::Compare::parse(maker.sort);
+    }
+
+    virtual ~DataProcessor()
+    {
+        if (printer) delete printer;
+    }
+
+    virtual void process(ReadonlyDataset& ds, const std::string& name)
+    {
+        ds.queryData(query, *printer);
+    }
+
+    virtual void end()
+    {
+    }
+};
+
+struct SummaryProcessor : public DatasetProcessor
+{
+    Output& output;
+    Matcher matcher;
+    Printer* printer;
+    string summary_restrict;
+    Summary summary;
+
+    SummaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
+        : output(out), matcher(q), printer(Printer::create(maker, out))
+    {
+        summary_restrict = maker.summary_restrict;
+    }
+
+    virtual ~SummaryProcessor()
+    {
+        if (printer) delete printer;
+    }
+
+    virtual void process(ReadonlyDataset& ds, const std::string& name)
+    {
+        ds.querySummary(matcher, summary);
+    }
+
+    virtual void end()
+    {
+        if (!summary_restrict.empty())
+        {
+            Summary s;
+            s.add(summary, dataset::index::parseMetadataBitmask(summary_restrict));
+            do_output(s);
+        } else
+            do_output(summary);
+    }
+
+    void do_output(const Summary& s)
+    {
+        (*printer)(s);
+    }
+};
+
 
 struct BinaryProcessor : public DatasetProcessor
 {
@@ -136,66 +217,6 @@ struct BinaryProcessor : public DatasetProcessor
 	}
 };
 
-struct DataProcessor : public DatasetProcessor, public metadata::Consumer
-{
-	Output& output;
-	Summary* summary;
-	dataset::DataQuery query;
-	string summary_restrict;
-
-	DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
-		: output(out), summary(0), query(q, false)
-	{
-		if (maker.summary)
-		{
-			summary = new Summary();
-            summary_restrict = maker.summary_restrict;
-		}
-		else
-		{
-			query.withData = maker.data_inline;
-
-			if (!maker.sort.empty())
-			{
-				query.sorter = sort::Compare::parse(maker.sort);
-			}
-		}
-	}
-
-	virtual ~DataProcessor()
-	{
-		if (summary) delete summary;
-	}
-
-	virtual void process(ReadonlyDataset& ds, const std::string& name)
-	{
-		if (summary)
-			ds.querySummary(query.matcher, *summary);
-		else
-			ds.queryData(query, *this);
-	}
-
-	virtual bool operator()(Metadata& md)
-	{
-		md.write(output.stream(), output.name());
-		return true;
-	}
-
-	virtual void end()
-	{
-		if (summary)
-		{
-			if (!summary_restrict.empty())
-			{
-				Summary s;
-				s.add(*summary, dataset::index::parseMetadataBitmask(summary_restrict));
-				s.write(output.stream(), output.name());
-			} else
-				summary->write(output.stream(), output.name());
-		}
-	}
-};
-
 
 TargetFileProcessor::TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, Output& output)
 		: next(next), pattern(pattern), output(output)
@@ -218,8 +239,8 @@ void TargetFileProcessor::end() { next->end(); }
 
 std::auto_ptr<DatasetProcessor> ProcessorMaker::make(Matcher& query, Output& out)
 {
-    if (yaml || annotate)
-        return auto_ptr<DatasetProcessor>(new YamlProcessor(*this, query, out));
+    if (summary)
+        return auto_ptr<DatasetProcessor>(new SummaryProcessor(*this, query, out));
     else if (data_only || !postprocess.empty()
 #ifdef HAVE_LUA
         || !report.empty()
