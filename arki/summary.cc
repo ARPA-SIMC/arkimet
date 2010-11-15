@@ -734,8 +734,19 @@ std::ostream& Stats::writeToOstream(std::ostream& o) const
 
 void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
 {
-    e.add("b"); reftimeMerger.begin->serialiseList(e);
-    e.add("e"); reftimeMerger.end->serialiseList(e);
+    if (reftimeMerger.begin)
+    {
+        if (reftimeMerger.end)
+        {
+            // Period: begin--end
+            e.add("b"); reftimeMerger.begin->serialiseList(e);
+            e.add("e"); reftimeMerger.end->serialiseList(e);
+        } else {
+            // Instant: begin--begin
+            e.add("b"); reftimeMerger.begin->serialiseList(e);
+            e.add("e"); reftimeMerger.begin->serialiseList(e);
+        }
+    }
     e.add("c", (int)count);
     e.add("s", (int)size);
 }

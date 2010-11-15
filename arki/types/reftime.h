@@ -133,7 +133,15 @@ struct Period : public Reftime
 
 struct Collector
 {
+    /**
+     * Start of period if we are a period;
+     * Instant if we are an instant;
+     * undefined if we are empty
+     */
 	UItem<types::Time> begin;
+    /**
+     * End of period if we are a period; else empty
+     */
 	UItem<types::Time> end;
 
 	void clear();
