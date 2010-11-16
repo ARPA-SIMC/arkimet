@@ -107,6 +107,7 @@ EXTRA_DIST = README \
 	     test/data/padded.grib1 \
 	     test/data/padded.bufr \
 	     test/data/pollution.bufr \
+	     test/data/odim1.arkimet \
 	     test/error/config \
 	     test/dataset1/config \
 	     test/misc/erse00.expa \

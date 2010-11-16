@@ -86,6 +86,27 @@ void to::test<3>()
 	ensure_equals(mdc.size(), 3u);
 }
 
+template<> template<>
+void to::test<4>()
+{
+    ConfigFile cfg;
+    dataset::File::readConfig("inbound/odim1.arkimet", cfg);
+
+    ConfigFile* s = cfg.section("odim1.arkimet");
+    ensure(s);
+
+    ensure_equals(s->value("name"), "odim1.arkimet");
+    ensure_equals(s->value("type"), "file");
+    ensure_equals(s->value("format"), "arkimet");
+
+    // Scan it to be sure it can be read
+    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
+    dataset::DataQuery q(Matcher::parse(""), true);
+    metadata::Collection mdc;
+    ds->queryData(q, mdc);
+    ensure_equals(mdc.size(), 1u);
+}
+
 }
 
 // vim:set ts=4 sw=4:

@@ -152,7 +152,7 @@ IfstreamFile::IfstreamFile(const ConfigFile& cfg) : File(cfg), m_file(0), m_clos
 		m_file = &std::cin;
 	} else {
 		m_file = new std::ifstream(m_pathname.c_str(), ios::in);
-		if (!/*m_file->is_open() ||*/ m_file->fail())
+		if (/*!m_file->is_open() ||*/ m_file->fail())
 			throw wibble::exception::File(m_pathname, "opening file for reading");
 		m_close = true;
 	}
