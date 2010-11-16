@@ -3,8 +3,10 @@ arkimet (0.47-1) UNRELEASED; urgency=low
   * arki-server: rewritten in C++, faster, no more python dependencies
   * Implemented --json
   * Fixed ODIM origin deserialisation from Yaml when it contains empty strings
+  * Documented and improved Metadata LUA API
+  * Fixed mdstats for metadata queries
 
- -- Enrico Zini <enrico@debian.org>  Tue, 16 Nov 2010 11:57:44 +0000
+ -- Enrico Zini <enrico@debian.org>  Tue, 16 Nov 2010 14:15:04 +0000
 
 arkimet (0.46-1) UNRELEASED; urgency=low
 

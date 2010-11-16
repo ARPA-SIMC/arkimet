@@ -18,7 +18,7 @@ Report = {
 
     -- Process a metadata item
     readMetadata = function (self, md)
-        for name, val in md.iter do
+        for name, val in pairs(md:data()) do
             o = self.hash(self, name, val)
             if o ~= nil then
                 count = self.items[o] or 0

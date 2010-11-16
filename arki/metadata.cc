@@ -814,6 +814,43 @@ static int arkilua_unset(lua_State* L)
 	return 0;
 }
 
+static int arkilua_data(lua_State* L)
+{
+    Metadata* md = Metadata::lua_check(L, 1);
+    luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+    // Return a big table with a dump of the metadata inside
+    lua_newtable(L);
+
+    // Add notes, as a table
+    lua_pushstring(L, "notes");
+    lua_newtable(L);
+    std::vector< Item<types::Note> > n = md->notes();
+    for (size_t i = 0; i < n.size(); ++i)
+    {
+        n[i]->lua_push(L);
+        lua_rawseti(L, -2, i+1);
+    }
+    luaL_setn(L, -1, n.size());
+    lua_rawset(L, -3);
+
+    // Add source
+    if (md->source.defined())
+    {
+        lua_pushstring(L, "source");
+        md->source->lua_push(L);
+        lua_rawset(L, -3);
+    }
+
+    // Add the other items
+    for (Metadata::const_iterator i = md->begin(); i != md->end(); ++i)
+    {
+        lua_pushstring(L, i->second->tag().c_str());
+        i->second->lua_push(L);
+        lua_rawset(L, -3);
+    }
+    return 1;
+}
+
 /*
 static int arkilua_clear(lua_State* L)
 {
@@ -835,6 +872,17 @@ static int arkilua_tostring(lua_State* L)
 	return 1;
 }
 
+static int arkilua_eq(lua_State* L)
+{
+    Metadata* md1 = Metadata::lua_check(L, 1);
+    luaL_argcheck(L, md1 != NULL, 1, "`arki.metadata' expected");
+    Metadata* md2 = Metadata::lua_check(L, 2);
+    luaL_argcheck(L, md2 != NULL, 2, "`arki.metadata' expected");
+
+    lua_pushboolean(L, *md1 == *md2);
+    return 1;
+}
+
 static int arkilua_gc (lua_State *L)
 {
 	MetadataUD* ud = (MetadataUD*)luaL_checkudata(L, 1, "arki.metadata");
@@ -846,10 +894,12 @@ static int arkilua_gc (lua_State *L)
 static const struct luaL_reg metadatalib [] = {
 	{ "__newindex", arkilua_newindex },
 	{ "__gc", arkilua_gc },
+    { "__eq", arkilua_eq },
 	{ "copy", arkilua_copy },
 	{ "set", arkilua_set },
 	{ "unset", arkilua_unset },
 	{ "notes", arkilua_notes },
+	{ "data", arkilua_data },
 	// { "clear", arkilua_unset },
 	{ "__tostring", arkilua_tostring },
 	{ NULL, NULL }

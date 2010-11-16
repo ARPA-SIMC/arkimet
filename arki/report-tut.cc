@@ -23,6 +23,9 @@
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/types.h>
+#include <arki/configfile.h>
+#include <arki/dataset.h>
+#include <arki/dataset/file.h>
 
 #include <sstream>
 #include <iostream>
@@ -78,6 +81,28 @@ void to::test<1>()
 	rep(s);
 	rep.report();
 	ensure_equals(res.str(), "1\t1\n");
+}
+
+// Test a case of mdreport that used to fail
+template<> template<>
+void to::test<2>()
+{
+    ConfigFile cfg;
+    dataset::File::readConfig("inbound/test.grib1", cfg);
+    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.section("test.grib1")));
+
+    // Scan it to be sure it can be read
+    dataset::ByteQuery q;
+    q.matcher = Matcher::parse("");
+    q.type = dataset::ByteQuery::BQ_REP_METADATA;
+    q.param = "mdstats";
+
+    stringstream out;
+    ds->queryBytes(q, out);
+
+    ensure_contains(out.str(), "origin: GRIB1(080, 255, 100)");
+    ensure_contains(out.str(), "origin: GRIB1(098, 000, 129)");
+    ensure_contains(out.str(), "origin: GRIB1(200, 000, 101)");
 }
 
 }
