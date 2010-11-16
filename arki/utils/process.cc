@@ -243,7 +243,7 @@ size_t IODispatcher::send(const void* buf, size_t size)
         {
             // Ignore SIGPIPE so we get EPIPE
             Sigignore ignpipe(SIGPIPE);
-            ssize_t res = write(infd, buf + written, size - written);
+            ssize_t res = write(infd, (unsigned char*)buf + written, size - written);
             if (res < 0)
             {
                 if (errno == EPIPE)
