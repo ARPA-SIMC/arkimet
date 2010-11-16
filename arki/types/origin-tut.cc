@@ -186,6 +186,31 @@ void to::test<6>()
 	ensure(m(o));
 }
 
+// Check ODIMH5 with empty strings
+template<> template<>
+void to::test<7>()
+{
+    Item<Origin> o = origin::ODIMH5::create("", "2", "3");
+    ensure_equals(o->style(), Origin::ODIMH5);
+
+    const origin::ODIMH5* v = o->upcast<origin::ODIMH5>();
+    ensure_equals(v->getWMO(), "");
+    ensure_equals(v->getRAD(), "2");
+    ensure_equals(v->getPLC(), "3");
+
+    ensure_equals(o, Item<Origin>(origin::ODIMH5::create("", "2", "3")));
+
+    ensure(o != origin::ODIMH5::create("1", "2", "3"));
+
+    // Test encoding/decoding
+    ensure_serialises(o, types::TYPE_ORIGIN);
+
+    // Test generating a matcher expression
+    ensure_equals(o->exactQuery(), "ODIMH5,,2,3");
+    Matcher m = Matcher::parse("origin:" + o->exactQuery());
+    ensure(m(o));
+}
+
 }
 
 // vim:set ts=4 sw=4:

@@ -151,13 +151,13 @@ Item<Origin> Origin::decodeString(const std::string& val)
 			return origin::BUFR::create(nums.vals[0], nums.vals[1]);
 		}
 		case Origin::ODIMH5: {
-
 			std::vector<std::string> values;
-
-			arki::types::split(inner, values, ",");
+            str::Split split(",", inner);
+            for (str::Split::const_iterator i = split.begin(); i != split.end(); ++i)
+                values.push_back(*i);
 
 			if (values.size()!=3)
-				throw std::logic_error("OdimH5 origin has not enogh values");
+				throw std::logic_error("OdimH5 origin has not enough values");
 
 			values[0] = wibble::str::trim(values[0]);
 			values[1] = wibble::str::trim(values[1]);
