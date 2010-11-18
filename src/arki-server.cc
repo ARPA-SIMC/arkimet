@@ -22,7 +22,6 @@
 
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
-#include <wibble/regexp.h>
 #include <wibble/string.h>
 #include <wibble/sys/process.h>
 #include <wibble/sys/childprocess.h>
@@ -85,6 +84,7 @@ struct Options : public StandardParserWithManpage
     StringOption* runtest;
     StringOption* accesslog;
     StringOption* errorlog;
+    StringOption* inbound;
     BoolOption* syslog;
     BoolOption* quiet;
 
@@ -104,6 +104,11 @@ struct Options : public StandardParserWithManpage
         runtest = add<StringOption>("runtest", 0, "runtest", "cmd",
                 "start the server, run the given test command"
                 " and return its exit status");
+        inbound = add<StringOption>("inbound", 0, "inbound", "dir",
+                "directory where files to import are found."
+                " If specified, it enables a way of triggering uploads"
+                " remotely: files found in the inbound directory can be"
+                " remotely scanned or imported");
         accesslog = add<StringOption>("accesslog", 0, "accesslog", "file",
                 "file where to log normal access information");
         errorlog = add<StringOption>("errorlog", 0, "errorlog", "file",
@@ -159,12 +164,12 @@ struct LocalHandler
     virtual void operator()(Request& req) = 0;
 };
 
-// Repository of local request handlers
-struct LocalHandlers
+// Map a path component to handlers
+struct HandlerMap : public LocalHandler
 {
     std::map<string, LocalHandler*> handlers;
 
-    ~LocalHandlers()
+    virtual ~HandlerMap()
     {
         for (std::map<string, LocalHandler*>::iterator i = handlers.begin();
                 i != handlers.end(); ++i)
@@ -192,11 +197,23 @@ struct LocalHandlers
     // Return true if it handled it, else false
     bool try_do(Request& req)
     {
-        std::map<string, LocalHandler*>::iterator i = handlers.find(req.script_name);
+        string head = req.path_info_head();
+        std::map<string, LocalHandler*>::iterator i = handlers.find(head);
         if (i == handlers.end())
             return false;
+        req.pop_path_info();
         (*(i->second))(req);
         return true;
+    }
+
+    // Dispatch the request or throw error404 if not found
+    void operator()(Request& req)
+    {
+        string head = req.pop_path_info();
+        std::map<string, LocalHandler*>::iterator i = handlers.find(head);
+        if (i == handlers.end())
+            throw net::http::error404();
+        (*(i->second))(req);
     }
 };
 
@@ -250,7 +267,7 @@ struct ScriptHandlers
 };
 */
 
-LocalHandlers local_handlers;
+HandlerMap local_handlers;
 //ScriptHandlers script_handlers;
 
 /// Show a list of all available datasets
@@ -396,10 +413,7 @@ struct RootSummaryHandler : public LocalHandler
 // Dispatch dataset-specific actions
 struct DatasetHandler : public LocalHandler
 {
-    wibble::ERegexp pop_first_path;
-
     DatasetHandler()
-        : pop_first_path("^/*([^/]+)(/+(.+))?", 4)
     {
     }
 
@@ -458,18 +472,13 @@ struct DatasetHandler : public LocalHandler
 
     virtual void operator()(Request& req)
     {
-        string dsname;
-        if (!pop_first_path.match(req.path_info))
+        string dsname = req.pop_path_info();
+        if (dsname.empty())
             throw net::http::error404();
 
-        dsname = pop_first_path[1];
-        string rest = pop_first_path[3];
-
-        string action;
-        if (!pop_first_path.match(rest))
+        string action = req.pop_path_info();
+        if (action.empty())
             action = "index";
-        else
-            action = pop_first_path[1];
 
         auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
 
@@ -524,6 +533,68 @@ struct DatasetHandler : public LocalHandler
     }
 };
 
+void list_files(const std::string& root, const std::string& path, vector<string>& files)
+{
+    string absdir = str::joinpath(root, path);
+    sys::fs::Directory dir(absdir);
+    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if ((*i)[0] == '.') continue;
+
+        if (sys::fs::isDirectory(str::joinpath(absdir, *i)))
+            
+            list_files(root, str::joinpath(path, *i), files);
+        else
+            files.push_back(str::joinpath(path, *i));
+    }
+}
+
+/// Inbound directory management
+struct InboundHandler : public LocalHandler
+{
+    string dir;
+
+    InboundHandler(const std::string& dir)
+        : dir(dir)
+    {
+    }
+    virtual void operator()(Request& req)
+    {
+        string action = req.pop_path_info();
+        if (action.empty())
+        {
+            vector<string> files;
+            list_files(dir, "", files);
+            stringstream res;
+            res << "<html><body>" << endl;
+            res << "Files in inbound directory:" << endl;
+            res << "<ul>" << endl;
+            for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+            {
+                res << "<li><a href='/dataset/" << *i << "'>";
+                res << *i << "</a></li>" << endl;
+            }
+            res << "</ul>" << endl;
+            res << "</body></html>" << endl;
+            req.send_result(res.str());
+        }
+        else if (action == "scan")
+        {
+            // TODO: scan file and output binary metadata
+        }
+        else if (action == "testdispatch")
+        {
+            // TODO: run testdispatch and output comments
+        }
+        else if (action == "dispatch")
+        {
+            // TODO: dispatch and output annotated metadata
+        }
+        else
+            throw net::http::error404();
+    }
+};
+
 struct ChildServer : public sys::ChildProcess
 {
     ostream& log;
@@ -552,31 +623,6 @@ struct ChildServer : public sys::ChildProcess
                 */
 
                 // Handle request
-
-                // Get the path
-                size_t pos = req.url.find('?');
-                string path;
-                if (pos == string::npos)
-                    path = req.url;
-                else
-                    path = req.url.substr(0, pos);
-
-                // Strip leading /
-                pos = path.find_first_not_of('/');
-                if (pos == string::npos)
-                    req.script_name = "index";
-                else
-                {
-                    path = path.substr(pos);
-                    pos = path.find("/");
-                    if (pos == string::npos)
-                        req.script_name = path;
-                    else
-                    {
-                        req.script_name = path.substr(0, pos);
-                        req.path_info = path.substr(pos);
-                    }
-                }
 
                 // Run the handler for this request
                 try {
@@ -839,13 +885,15 @@ int main(int argc, const char* argv[])
 
         runtime::readMatcherAliasDatabase();
 
-        local_handlers.add("index", new IndexHandler);
+        local_handlers.add("", new IndexHandler);
         local_handlers.add("config", new ConfigHandler);
         local_handlers.add("aliases", new AliasesHandler);
         local_handlers.add("qexpand", new QexpandHandler);
         local_handlers.add("dataset", new DatasetHandler);
         local_handlers.add("query", new RootQueryHandler);
         local_handlers.add("summary", new RootSummaryHandler);
+        if (opts.inbound->isSet())
+            local_handlers.add("inbound", new InboundHandler(opts.inbound->stringValue()));
 
         // Configure the server and start listening
         ServerProcess srv(opts);
