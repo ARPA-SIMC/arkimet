@@ -36,8 +36,11 @@
 #include <arki/dataset/http.h>
 #include <arki/dataset/http/server.h>
 #include <arki/dataset/merged.h>
+#include <arki/dataset/file.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
+#include <arki/formatter.h>
+#include <arki/dispatcher.h>
 #include <arki/utils.h>
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
@@ -542,7 +545,6 @@ void list_files(const std::string& root, const std::string& path, vector<string>
         if ((*i)[0] == '.') continue;
 
         if (sys::fs::isDirectory(str::joinpath(absdir, *i)))
-            
             list_files(root, str::joinpath(path, *i), files);
         else
             files.push_back(str::joinpath(path, *i));
@@ -558,6 +560,42 @@ struct InboundHandler : public LocalHandler
         : dir(dir)
     {
     }
+
+    bool can_import(const Request& req, const ConfigFile& cfg)
+    {
+        // Need "remote import = yes"
+        if (!ConfigFile::boolValue(cfg.value("remote import")))
+            return false;
+
+        // TODO: check that "restrict import" matches
+        return true;
+    }
+
+    // Fill \a dst with those datasets that permit remote importing
+    void make_config(const Request& req, ConfigFile& dst)
+    {
+        // Check that the 'error' dataset is importable
+        bool has_error = false;
+        for (ConfigFile::const_section_iterator i = req.arki_conf.sectionBegin();
+                i != req.arki_conf.sectionEnd(); ++i)
+        {
+            if (i->first == "error")
+            {
+                has_error = can_import(req, *i->second);
+                break;
+            }
+        }
+
+        // If no 'error' is importable, give up now without touching dst
+        if (!has_error) return;
+
+        // Copy all importable datasets to dst
+        for (ConfigFile::const_section_iterator i = req.arki_conf.sectionBegin();
+                i != req.arki_conf.sectionEnd(); ++i)
+            if (can_import(req, *i->second))
+                dst.mergeInto(i->first, *i->second);
+    }
+
     virtual void operator()(Request& req)
     {
         string action = req.pop_path_info();
@@ -567,14 +605,158 @@ struct InboundHandler : public LocalHandler
             list_files(dir, "", files);
             stringstream res;
             res << "<html><body>" << endl;
+            ConfigFile importcfg;
+            make_config(req, importcfg);
+            bool can_import = importcfg.sectionSize() > 0;
+            res << "<p>Remote import is ";
+            if (!can_import)
+            {
+                res << "<b>not allowed</b></p>";
+            } else {
+                res << "allowed in:";
+                for (ConfigFile::const_section_iterator i = importcfg.sectionBegin();
+                        i != importcfg.sectionEnd(); ++i)
+                {
+                    if (i != importcfg.sectionBegin()) res << ", ";
+                    res << "<b>" << i->first << "</b>";
+                }
+                res << ".</p>";
+            }
             res << "Files in inbound directory:" << endl;
-            res << "<ul>" << endl;
+            res << "<table>" << endl;
+            res << "<tr><th>Name</th><th>Format</th><th>Actions</th></tr>" << endl;
             for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
             {
-                res << "<li><a href='/dataset/" << *i << "'>";
-                res << *i << "</a></li>" << endl;
+                // Detect file type
+                ConfigFile cfg;
+                dataset::File::readConfig(str::joinpath(dir, *i), cfg);
+                const ConfigFile *info = cfg.sectionBegin()->second;
+                string format = info->value("format");
+                // Show file info and actions
+                res << "<tr>";
+                res << "<td>" << *i << "</td>";
+                if (format == "arkimet")
+                {
+                    res << "<td colspan='2'>(undetected)</td>";
+                } else {
+                    res << "<td>" << format << "</td>";
+                    res << "<td>";
+                    string escaped = str::urlencode(*i);
+                    res << "<a href='/inbound/show?file=" << escaped << "'>[show]</a>";
+                    if (can_import)
+                        res << " <a href='/inbound/simulate?file=" << escaped << "'>[simulate import]</a>";
+                    res << "</td>";
+                }
+                res << "</tr>";
             }
-            res << "</ul>" << endl;
+            res << "</table>" << endl;
+            res << "</body></html>" << endl;
+            req.send_result(res.str());
+        }
+        else if (action == "show")
+        {
+            using namespace wibble::net::http;
+
+            // Get the file argument
+            Params params;
+            ParamSingle* file = params.add<ParamSingle>("file");
+            params.parse_get_or_post(req);
+
+            // Open it as a dataset
+            ConfigFile cfg;
+            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
+            const ConfigFile *info = cfg.sectionBegin()->second;
+            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+
+            stringstream res;
+            res << "<html><body>" << endl;
+            res << "Contents of " << *file << ":" << endl;
+            res << "<pre>" << endl;
+
+            struct Printer : public metadata::Consumer
+            {
+                ostream& str;
+                Formatter* f;
+
+                Printer(ostream& str) : str(str), f(Formatter::create()) { }
+                ~Printer() { delete f; }
+
+                virtual bool operator()(Metadata& md)
+                {
+                    md.writeYaml(str, f);
+                    str << endl;
+                    return true;
+                }
+            } printer(res);
+            ds->queryData(dataset::DataQuery(Matcher::parse("")), printer);
+
+            res << "</pre>" << endl;
+            res << "</body></html>" << endl;
+            req.send_result(res.str());
+        }
+        else if (action == "simulate")
+        {
+            // Filter configuration to only keep those that have remote import = yes
+            // and whose "restrict import" matches
+            using namespace wibble::net::http;
+
+            ConfigFile importcfg;
+            make_config(req, importcfg);
+            bool can_import = importcfg.sectionSize() > 0;
+            if (!can_import)
+                throw error400("import is not allowed");
+
+            // Get the file argument
+            Params params;
+            ParamSingle* file = params.add<ParamSingle>("file");
+            params.parse_get_or_post(req);
+
+            // Open it as a dataset
+            ConfigFile cfg;
+            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
+            const ConfigFile *info = cfg.sectionBegin()->second;
+            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+
+            stringstream res;
+
+            struct Simulator : public metadata::Consumer
+            {
+                TestDispatcher td;
+                ostream& str;
+                Formatter* f;
+
+                Simulator(const ConfigFile& cfg, ostream& str)
+                    : td(cfg, str), str(str), f(Formatter::create()) { }
+                ~Simulator() { delete f; }
+
+                virtual bool operator()(Metadata& md)
+                {
+                    str << "<dt><pre>" << endl;
+                    md.writeYaml(str, f);
+                    str << "</pre></dt><dd><pre>" << endl;
+                    metadata::Collection mdc;
+                    Dispatcher::Outcome res = td.dispatch(md, mdc);
+                    str << "</pre>" << endl;
+                    switch (res)
+                    {
+                        case Dispatcher::DISP_OK: str << "<b>Imported ok</b>"; break;
+                        case Dispatcher::DISP_DUPLICATE_ERROR: str << "<b>Imported as duplicate</b>"; break;
+                        case Dispatcher::DISP_ERROR: str << "<b>Imported as error</b>"; break;
+                        case Dispatcher::DISP_NOTWRITTEN: str << "<b>Not imported anywhere: do not delete the original</b>"; break;
+                        default: str << "<b>Unknown outcome</b>"; break;
+                    }
+                    str << "</dd>" << endl;
+                    return true;
+                }
+            } simulator(importcfg, res);
+
+            res << "<html><body>" << endl;
+            res << "Simulation of import of " << *file << ":" << endl;
+            res << "<dl>" << endl;
+
+            ds->queryData(dataset::DataQuery(Matcher::parse("")), simulator);
+
+            res << "</dl>" << endl;
             res << "</body></html>" << endl;
             req.send_result(res.str());
         }
