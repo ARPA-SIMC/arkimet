@@ -762,15 +762,144 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "scan")
         {
-            // TODO: scan file and output binary metadata
+            // Scan file and output binary metadata
+
+            // Filter configuration to only keep those that have remote import = yes
+            // and whose "restrict import" matches
+            using namespace wibble::net::http;
+
+            // Get the file argument
+            Params params;
+            ParamSingle* file = params.add<ParamSingle>("file");
+            params.parse_get_or_post(req);
+
+            // Open it as a dataset
+            ConfigFile cfg;
+            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
+            const ConfigFile *info = cfg.sectionBegin()->second;
+            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+
+            stringstream res;
+            struct Printer : public metadata::Consumer
+            {
+                ostream& str;
+
+                Printer(ostream& str) : str(str) { }
+
+                virtual bool operator()(Metadata& md)
+                {
+                    str << md.encode();
+                    return true;
+                }
+            } printer(res);
+            ds->queryData(dataset::DataQuery(Matcher::parse("")), printer);
+            req.send_result(res.str(), "application/octet-stream");
         }
         else if (action == "testdispatch")
         {
-            // TODO: run testdispatch and output comments
+            // Run testdispatch and output comments
+
+            // Filter configuration to only keep those that have remote import = yes
+            // and whose "restrict import" matches
+            using namespace wibble::net::http;
+
+            ConfigFile importcfg;
+            make_config(req, importcfg);
+            bool can_import = importcfg.sectionSize() > 0;
+            if (!can_import)
+                throw error400("import is not allowed");
+
+            // Get the file argument
+            Params params;
+            ParamSingle* file = params.add<ParamSingle>("file");
+            params.parse_get_or_post(req);
+
+            // Open it as a dataset
+            ConfigFile cfg;
+            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
+            const ConfigFile *info = cfg.sectionBegin()->second;
+            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+
+            stringstream res;
+
+            struct Simulator : public metadata::Consumer
+            {
+                TestDispatcher td;
+
+                Simulator(const ConfigFile& cfg, ostream& str)
+                    : td(cfg, str) { }
+
+                virtual bool operator()(Metadata& md)
+                {
+                    metadata::Collection mdc;
+                    td.dispatch(md, mdc);
+                    return true;
+                }
+            } simulator(importcfg, res);
+
+            ds->queryData(dataset::DataQuery(Matcher::parse("")), simulator);
+
+            req.send_result(res.str(), "text/plain");
         }
         else if (action == "dispatch")
         {
-            // TODO: dispatch and output annotated metadata
+            // Dispatch and output annotated metadata
+
+            // Filter configuration to only keep those that have remote import = yes
+            // and whose "restrict import" matches
+            using namespace wibble::net::http;
+
+            ConfigFile importcfg;
+            make_config(req, importcfg);
+            bool can_import = importcfg.sectionSize() > 0;
+            if (!can_import)
+                throw error400("import is not allowed");
+
+            // Get the file argument
+            Params params;
+            ParamSingle* file = params.add<ParamSingle>("file");
+            params.parse_get_or_post(req);
+
+            // Open it as a dataset
+            ConfigFile cfg;
+            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
+            const ConfigFile *info = cfg.sectionBegin()->second;
+            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+
+            stringstream res;
+
+            struct Worker : public metadata::Consumer
+            {
+                struct Printer : public metadata::Consumer
+                {
+                    ostream& str;
+
+                    Printer(ostream& str) : str(str) { }
+
+                    virtual bool operator()(Metadata& md)
+                    {
+                        str << md.encode();
+                        return true;
+                    }
+                };
+
+                RealDispatcher d;
+                Printer printer;
+
+                Worker(const ConfigFile& cfg, ostream& out)
+                    : d(cfg), printer(out) { }
+
+                virtual bool operator()(Metadata& md)
+                {
+                    d.dispatch(md, printer);
+                    // TODO: check outcome to decide if we should delete the file
+                    return true;
+                }
+            } worker(importcfg, res);
+
+            ds->queryData(dataset::DataQuery(Matcher::parse("")), worker);
+
+            req.send_result(res.str(), "application/octet-stream");
         }
         else
             throw net::http::error404();
