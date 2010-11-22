@@ -29,6 +29,7 @@
 #include <arki/metadata/collection.h>
 #include <arki/configfile.h>
 #include <arki/utils/fd.h>
+#include <arki/utils/files.h>
 
 using namespace std;
 using namespace wibble;
@@ -135,6 +136,68 @@ void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::htt
 
 void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::Request& req)
 {
+    using namespace wibble::net::http;
+
+    bool can_import = import_config.sectionSize() > 0;
+    if (!can_import)
+        throw error400("import is not allowed");
+
+    // Build the full file name
+    string fname = str::joinpath(root, *parms.file);
+
+    // Build a dataset configuration for it
+    ConfigFile cfg;
+    dataset::File::readConfig(fname, cfg);
+    ConfigFile *info = cfg.sectionBegin()->second;
+
+    // Override format if requested
+    if (!parms.format->empty())
+        info->setValue("format", *parms.format);
+
+    // Build a dataset to scan the file
+    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+
+    // Response header generator
+    StreamHeaders headers(req, str::basename(*parms.file));
+    headers.ext = "arkimet";
+
+    MetadataStreamer cons(headers);
+
+    struct Worker : public metadata::Consumer
+    {
+        RealDispatcher d;
+        metadata::Consumer& cons;
+        bool all_ok;
+
+        Worker(const ConfigFile& cfg, metadata::Consumer& cons)
+            : d(cfg), cons(cons), all_ok(true) { }
+
+        virtual bool operator()(Metadata& md)
+        {
+            Dispatcher::Outcome res = d.dispatch(md, cons);
+            switch (res)
+            {
+                case Dispatcher::DISP_OK:
+                case Dispatcher::DISP_DUPLICATE_ERROR:
+                    break;
+                case Dispatcher::DISP_ERROR:
+                case Dispatcher::DISP_NOTWRITTEN:
+                default:
+                    all_ok = false;
+                    break;
+            }
+            return true;
+        }
+    } worker(import_config, cons);
+
+    ds->queryData(dataset::DataQuery(Matcher::parse("")), worker);
+
+    // Delete fname if all was ok
+    if (worker.all_ok)
+        utils::files::unlink(fname);
+
+    // If we had empty output, headers were not sent: catch up
+    headers.sendIfNotFired();
 }
 
 static bool can_import(const net::http::Request& req, const ConfigFile& cfg)

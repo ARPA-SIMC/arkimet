@@ -139,6 +139,12 @@ bool exists(const std::string& file)
 	return sys::fs::access(file, F_OK);
 }
 
+void unlink(const std::string& fname)
+{
+    if (::unlink(fname.c_str()) < 0)
+        throw wibble::exception::File(fname, "cannot delete file");
+}
+
 }
 }
 }

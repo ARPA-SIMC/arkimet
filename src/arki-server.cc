@@ -739,49 +739,15 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "testdispatch")
         {
-            // Run testdispatch and output comments
-
-            // Filter configuration to only keep those that have remote import = yes
-            // and whose "restrict import" matches
-            using namespace wibble::net::http;
-
-            ConfigFile importcfg;
-            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
-            bool can_import = importcfg.sectionSize() > 0;
-            if (!can_import)
-                throw error400("import is not allowed");
-
-            // Get the file argument
-            Params params;
-            ParamSingle* file = params.add<ParamSingle>("file");
+            // Scan file and output binary metadata
+            dataset::http::InboundParams params;
             params.parse_get_or_post(req);
 
-            // Open it as a dataset
-            ConfigFile cfg;
-            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
-            const ConfigFile *info = cfg.sectionBegin()->second;
-            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
-
-            stringstream res;
-
-            struct Simulator : public metadata::Consumer
-            {
-                TestDispatcher td;
-
-                Simulator(const ConfigFile& cfg, ostream& str)
-                    : td(cfg, str) { }
-
-                virtual bool operator()(Metadata& md)
-                {
-                    metadata::Collection mdc;
-                    td.dispatch(md, mdc);
-                    return true;
-                }
-            } simulator(importcfg, res);
-
-            ds->queryData(dataset::DataQuery(Matcher::parse("")), simulator);
-
-            req.send_result(res.str(), "text/plain");
+            // Empty import config file, as it is not used in do_scan
+            ConfigFile import_config;
+            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
+            dataset::http::InboundServer srv(import_config, dir);
+            srv.do_testdispatch(params, req);
         }
         else if (action == "dispatch")
         {
