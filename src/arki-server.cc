@@ -35,6 +35,7 @@
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
 #include <arki/dataset/http/server.h>
+#include <arki/dataset/http/inbound.h>
 #include <arki/dataset/merged.h>
 #include <arki/dataset/file.h>
 #include <arki/summary.h>
@@ -561,41 +562,6 @@ struct InboundHandler : public LocalHandler
     {
     }
 
-    bool can_import(const Request& req, const ConfigFile& cfg)
-    {
-        // Need "remote import = yes"
-        if (!ConfigFile::boolValue(cfg.value("remote import")))
-            return false;
-
-        // TODO: check that "restrict import" matches
-        return true;
-    }
-
-    // Fill \a dst with those datasets that permit remote importing
-    void make_config(const Request& req, ConfigFile& dst)
-    {
-        // Check that the 'error' dataset is importable
-        bool has_error = false;
-        for (ConfigFile::const_section_iterator i = req.arki_conf.sectionBegin();
-                i != req.arki_conf.sectionEnd(); ++i)
-        {
-            if (i->first == "error")
-            {
-                has_error = can_import(req, *i->second);
-                break;
-            }
-        }
-
-        // If no 'error' is importable, give up now without touching dst
-        if (!has_error) return;
-
-        // Copy all importable datasets to dst
-        for (ConfigFile::const_section_iterator i = req.arki_conf.sectionBegin();
-                i != req.arki_conf.sectionEnd(); ++i)
-            if (can_import(req, *i->second))
-                dst.mergeInto(i->first, *i->second);
-    }
-
     virtual void operator()(Request& req)
     {
         string action = req.pop_path_info();
@@ -606,7 +572,7 @@ struct InboundHandler : public LocalHandler
             stringstream res;
             res << "<html><body>" << endl;
             ConfigFile importcfg;
-            make_config(req, importcfg);
+            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
             bool can_import = importcfg.sectionSize() > 0;
             res << "<p>Remote import is ";
             if (!can_import)
@@ -701,7 +667,7 @@ struct InboundHandler : public LocalHandler
             using namespace wibble::net::http;
 
             ConfigFile importcfg;
-            make_config(req, importcfg);
+            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
             bool can_import = importcfg.sectionSize() > 0;
             if (!can_import)
                 throw error400("import is not allowed");
@@ -763,37 +729,13 @@ struct InboundHandler : public LocalHandler
         else if (action == "scan")
         {
             // Scan file and output binary metadata
-
-            // Filter configuration to only keep those that have remote import = yes
-            // and whose "restrict import" matches
-            using namespace wibble::net::http;
-
-            // Get the file argument
-            Params params;
-            ParamSingle* file = params.add<ParamSingle>("file");
+            dataset::http::InboundParams params;
             params.parse_get_or_post(req);
 
-            // Open it as a dataset
-            ConfigFile cfg;
-            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
-            const ConfigFile *info = cfg.sectionBegin()->second;
-            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
-
-            stringstream res;
-            struct Printer : public metadata::Consumer
-            {
-                ostream& str;
-
-                Printer(ostream& str) : str(str) { }
-
-                virtual bool operator()(Metadata& md)
-                {
-                    str << md.encode();
-                    return true;
-                }
-            } printer(res);
-            ds->queryData(dataset::DataQuery(Matcher::parse("")), printer);
-            req.send_result(res.str(), "application/octet-stream");
+            // Empty import config file, as it is not used in do_scan
+            ConfigFile import_config;
+            dataset::http::InboundServer srv(import_config, dir);
+            srv.do_scan(params, req);
         }
         else if (action == "testdispatch")
         {
@@ -804,7 +746,7 @@ struct InboundHandler : public LocalHandler
             using namespace wibble::net::http;
 
             ConfigFile importcfg;
-            make_config(req, importcfg);
+            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
             bool can_import = importcfg.sectionSize() > 0;
             if (!can_import)
                 throw error400("import is not allowed");
@@ -850,7 +792,7 @@ struct InboundHandler : public LocalHandler
             using namespace wibble::net::http;
 
             ConfigFile importcfg;
-            make_config(req, importcfg);
+            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
             bool can_import = importcfg.sectionSize() > 0;
             if (!can_import)
                 throw error400("import is not allowed");

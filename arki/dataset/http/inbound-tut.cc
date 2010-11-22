@@ -29,15 +29,27 @@ using namespace arki;
 using namespace wibble;
 
 struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
+    ConfigFile import_config;
+
     arki_dataset_http_inbound_shar()
     {
-        /*
-        cfg.setValue("path", "testds");
-        cfg.setValue("name", dsname);
-        cfg.setValue("type", "simple");
-        cfg.setValue("step", "daily");
-        cfg.setValue("postprocess", "testcountbytes");
-        */
+        stringstream incfg;
+        incfg << "[testds]" << endl;
+        incfg << "path = testds" << endl;
+        incfg << "name = testds" << endl;
+        incfg << "type = simple" << endl;
+        incfg << "step = daily" << endl;
+        incfg << "filter = origin:GRIB1" << endl;
+        incfg << "remote import = yes" << endl;
+        incfg << endl;
+        incfg << "[error]" << endl;
+        incfg << "path = error" << endl;
+        incfg << "name = error" << endl;
+        incfg << "type = simple" << endl;
+        incfg << "step = daily" << endl;
+        incfg << "remote import = yes" << endl;
+        incfg.seekg(0);
+        import_config.parse(incfg, "memory");
     }
 
     // Run the fake request through the server-side handler
@@ -49,9 +61,23 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
         dataset::http::InboundParams params;
         params.parse_get_or_post(req);
 
-        ConfigFile import_config;
         dataset::http::InboundServer srv(import_config, "inbound");
         srv.do_scan(params, req);
+
+        r.read_response();
+    }
+
+    // Run the fake request through the server-side handler
+    void do_testdispatch(arki::tests::FakeRequest& r)
+    {
+        net::http::Request req;
+        r.setup_request(req);
+
+        dataset::http::InboundParams params;
+        params.parse_get_or_post(req);
+
+        dataset::http::InboundServer srv(import_config, "inbound");
+        srv.do_testdispatch(params, req);
 
         r.read_response();
     }
@@ -80,6 +106,26 @@ void to::test<1>()
     ensure_equals(mdc.size(), 3u);
 }
 
+// Test /inbound/testdispatch/
+template<> template<>
+void to::test<2>()
+{
+    // Make the request
+    arki::tests::FakeRequest r;
+    r.write_get("/inbound/testdispatch?file=test.grib1");
+
+    // Handle the request, server side
+    do_testdispatch(r);
+
+    // Handle the response, client side
+    ensure_equals(r.response_method, "HTTP/1.0 200 OK");
+    ensure_equals(r.response_headers["content-type"], "text/plain");
+    ensure_equals(r.response_headers["content-disposition"], "attachment; filename=test.grib1.log");
+
+    ensure_contains(r.response_body, "test.grib1:0+7218): acquire to testds dataset");
+    ensure_contains(r.response_body, "test.grib1:7218+34960): acquire to testds dataset");
+    ensure_contains(r.response_body, "test.grib1:42178+2234): acquire to testds dataset");
+}
 
 }
 

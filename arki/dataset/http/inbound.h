@@ -75,6 +75,9 @@ struct InboundServer
 
     /// Server side implementation of dispatch of preuploaded file
     void do_dispatch(const InboundParams& parms, wibble::net::http::Request& req);
+
+    /// Fill \a dst with those datasets from \a src that permit remote importing
+    static void make_import_config(const wibble::net::http::Request& req, const ConfigFile& src, ConfigFile& dst);
 };
 
 }

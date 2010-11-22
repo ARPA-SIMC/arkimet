@@ -23,8 +23,10 @@
 #include <arki/dataset/http/inbound.h>
 #include <arki/dataset/http/server.h>
 #include <arki/dataset/file.h>
+#include <arki/dispatcher.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
+#include <arki/metadata/collection.h>
 #include <arki/configfile.h>
 #include <arki/utils/fd.h>
 
@@ -79,10 +81,94 @@ void InboundServer::do_scan(const InboundParams& parms, wibble::net::http::Reque
 
 void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::http::Request& req)
 {
+    using namespace wibble::net::http;
+
+    bool can_import = import_config.sectionSize() > 0;
+    if (!can_import)
+        throw error400("import is not allowed");
+
+    // Build the full file name
+    string fname = str::joinpath(root, *parms.file);
+
+    // Build a dataset configuration for it
+    ConfigFile cfg;
+    dataset::File::readConfig(fname, cfg);
+    ConfigFile *info = cfg.sectionBegin()->second;
+
+    // Override format if requested
+    if (!parms.format->empty())
+        info->setValue("format", *parms.format);
+
+    // Build a dataset to scan the file
+    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+
+    struct Simulator : public metadata::Consumer
+    {
+        TestDispatcher td;
+        stringstream str;
+
+        Simulator(const ConfigFile& cfg)
+            : td(cfg, str) {}
+
+        virtual bool operator()(Metadata& md)
+        {
+            metadata::Collection mdc;
+            /*Dispatcher::Outcome res =*/ td.dispatch(md, mdc);
+            /*
+            switch (res)
+            {
+                case Dispatcher::DISP_OK: str << "<b>Imported ok</b>"; break;
+                case Dispatcher::DISP_DUPLICATE_ERROR: str << "<b>Imported as duplicate</b>"; break;
+                case Dispatcher::DISP_ERROR: str << "<b>Imported as error</b>"; break;
+                case Dispatcher::DISP_NOTWRITTEN: str << "<b>Not imported anywhere: do not delete the original</b>"; break;
+                default: str << "<b>Unknown outcome</b>"; break;
+            }
+            */
+            return true;
+        }
+    } simulator(import_config);
+
+    ds->queryData(dataset::DataQuery(Matcher::parse("")), simulator);
+
+    req.send_result(simulator.str.str(), "text/plain", str::basename(*parms.file) + ".log");
 }
 
 void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::Request& req)
 {
+}
+
+static bool can_import(const net::http::Request& req, const ConfigFile& cfg)
+{
+    // Need "remote import = yes"
+    if (!ConfigFile::boolValue(cfg.value("remote import")))
+        return false;
+
+    // TODO: check that "restrict import" matches
+    return true;
+}
+
+void InboundServer::make_import_config(const wibble::net::http::Request& req, const ConfigFile& src, ConfigFile& dst)
+{
+    // Check that the 'error' dataset is importable
+    bool has_error = false;
+    for (ConfigFile::const_section_iterator i = src.sectionBegin();
+            i != src.sectionEnd(); ++i)
+    {
+        if (i->first == "error")
+        {
+            has_error = can_import(req, *i->second);
+            break;
+        }
+    }
+
+    // If no 'error' is importable, give up now without touching dst
+    if (!has_error) return;
+
+    // Copy all importable datasets to dst
+    for (ConfigFile::const_section_iterator i = src.sectionBegin();
+            i != src.sectionEnd(); ++i)
+        if (can_import(req, *i->second))
+            dst.mergeInto(i->first, *i->second);
 }
 
 }
