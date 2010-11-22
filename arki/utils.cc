@@ -1,7 +1,7 @@
 /*
  * utils - General utility functions
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -141,25 +141,6 @@ void hexdump(const char* name, const unsigned char* str, int len)
 		fprintf(stderr, "%02x ", str[i]);
 	}
 	fprintf(stderr, "\n");
-}
-
-void HandleWatch::close()
-{
-	if (fd > 0)
-	{
-		if (::close(fd) < 0)
-			throw wibble::exception::File(fname, "closing file");
-		fd = -1;
-	}
-}
-
-TempfileHandleWatch::~TempfileHandleWatch()
-{
-	if (fd > 0)
-	{
-		close();
-		::unlink(fname.c_str());
-	}
 }
 
 void rmtree(const std::string& dir)

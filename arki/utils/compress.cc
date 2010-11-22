@@ -21,9 +21,10 @@
  */
 
 #include <arki/utils/compress.h>
-#include <arki/utils.h>
+#include <arki/utils/fd.h>
 #include <arki/metadata.h>
 #include <wibble/exception.h>
+#include <wibble/sys/fs.h>
 
 #include "config.h"
 
@@ -211,10 +212,10 @@ TempUnzip::TempUnzip(const std::string& fname)
 	// zcat gzfname > fname
 	string gzfname = fname + ".gz";
 	int rdfd = open(gzfname.c_str(), O_RDONLY);
-	utils::HandleWatch hwrd(gzfname, rdfd);
+	utils::fd::HandleWatch hwrd(gzfname, rdfd);
 
 	int wrfd = open(fname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
-	utils::HandleWatch hwwr(fname, wrfd);
+	utils::fd::HandleWatch hwwr(fname, wrfd);
 
 	gunzip(rdfd, gzfname, wrfd, fname);
 
@@ -247,7 +248,7 @@ bool SeekIndex::read(const std::string& fname)
 		else
 			throw wibble::exception::File(fname, "opening file");
 	}
-	utils::HandleWatch hw(fname, fd);
+	utils::fd::HandleWatch hw(fname, fd);
 
 	read(fd, fname);
 

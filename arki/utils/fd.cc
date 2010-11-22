@@ -1,4 +1,6 @@
 /*
+ * utils/fd - utility functions to work with file descriptors
+ *
  * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,44 +20,52 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/tests/test-utils.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/types/origin.h>
-#include <arki/types/run.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/fd.h>
+#include <wibble/exception.h>
 
-#include <sstream>
-#include <iostream>
-
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <unistd.h>
 
-namespace tut {
+
 using namespace std;
-using namespace arki;
 using namespace wibble;
 
-struct arki_utils_shar {
-};
-TESTGRP(arki_utils);
+namespace arki {
+namespace utils {
+namespace fd {
 
-// Check compareMaps
-template<> template<>
-void to::test<1>()
+void HandleWatch::close()
 {
-	using namespace utils;
-	map<string, UItem<> > a;
-	map<string, UItem<> > b;
+    if (fd > 0)
+    {
+        if (::close(fd) < 0)
+            throw wibble::exception::File(fname, "closing file");
+        fd = -1;
+    }
+}
 
-	a["antani"] = b["antani"] = types::origin::GRIB1::create(1, 2, 3);
-	a["pippo"] = types::run::Minute::create(12);
+TempfileHandleWatch::~TempfileHandleWatch()
+{
+    if (fd > 0)
+    {
+        close();
+        ::unlink(fname.c_str());
+    }
+}
 
-	ensure_equals(compareMaps(a, b), 1);
-	ensure_equals(compareMaps(b, a), -1);
+void write_all(int fd, const void* buf, size_t len)
+{
+    size_t done = 0;
+    while (done < len)
+    {
+        ssize_t res = write(fd, (const unsigned char*)buf+done, len-done);
+        if (res < 0)
+            throw wibble::exception::System("writing to file descriptor");
+        done += res;
+    }
 }
 
 }
-
+}
+}
 // vim:set ts=4 sw=4:

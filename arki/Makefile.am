@@ -94,6 +94,7 @@ dist_noinst_HEADERS = \
 		utils/compress.h \
 		utils/datareader.h \
 		utils/sqlite.h \
+		utils/fd.h \
 		utils/files.h \
 		utils/dataset.h \
 		utils/pcounter.h \
@@ -132,6 +133,7 @@ libarkimet_la_SOURCES = \
 		utils/compress.cc \
 		utils/datareader.cc \
 		utils/sqlite.cc \
+		utils/fd.cc \
 		utils/files.cc \
 		utils/dataset.cc \
 		utils/pcounter.cc \
@@ -234,6 +236,7 @@ tests_arki_test_SOURCES = \
 		utils/compress-tut.cc \
 		utils/datareader-tut.cc \
 		utils/sqlite-tut.cc \
+		utils/fd-tut.cc \
 		utils/files-tut.cc \
 		utils/dataset-tut.cc \
 		utils/pcounter-tut.cc \

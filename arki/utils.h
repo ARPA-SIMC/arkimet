@@ -4,7 +4,7 @@
 /*
  * utils - General utility functions
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -105,47 +105,6 @@ void hexdump(const char* name, const std::string& str);
 
 // Dump the string, in hex, to stderr, prefixed with name
 void hexdump(const char* name, const unsigned char* str, int len);
-
-/**
- * Ensure that a posix file handle is closed when this object goes out of scope
- */
-struct HandleWatch
-{
-	std::string fname;
-	int fd;
-	HandleWatch(const std::string& fname, int fd) : fname(fname), fd(fd) {}
-	~HandleWatch() { close(); }
-
-	int release()
-	{
-		int res = fd;
-		fd = -1;
-		return res;
-	}
-
-	void close();
-
-private:
-	// Disallow copy
-	HandleWatch(const HandleWatch&);
-	HandleWatch& operator=(const HandleWatch&);
-};
-
-/**
- * Ensure that a posix file handle is closed when this object goes out of scope.
- *
- * unlink the file at destructor time
- */
-struct TempfileHandleWatch : public HandleWatch
-{
-	TempfileHandleWatch(const std::string& fname, int fd) : HandleWatch(fname, fd) {}
-	~TempfileHandleWatch();
-
-private:
-	// Disallow copy
-	TempfileHandleWatch(const HandleWatch&);
-	TempfileHandleWatch& operator=(const HandleWatch&);
-};
 
 /// Delete the directory \a dir and all its content
 void rmtree(const std::string& dir);

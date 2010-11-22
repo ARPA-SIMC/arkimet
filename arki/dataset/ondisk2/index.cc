@@ -32,7 +32,7 @@
 #include <arki/types/source.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
-#include <arki/utils.h>
+#include <arki/utils/fd.h>
 #include <arki/utils/files.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
@@ -758,7 +758,7 @@ Summary Index::summaryForMonth(int year, int month) const
 		else
 			throw wibble::exception::System("opening file " + sum_file);
 	}
-	utils::HandleWatch hw(sum_file, fd);
+	utils::fd::HandleWatch hw(sum_file, fd);
 
 	if (has_cache)
 		s.read(fd, sum_file);
@@ -792,7 +792,7 @@ Summary Index::summaryForAll() const
 		else
 			throw wibble::exception::System("opening file " + sum_file);
 	}
-	utils::HandleWatch hw(sum_file, fd);
+	utils::fd::HandleWatch hw(sum_file, fd);
 
 	if (has_cache)
 		s.read(fd, sum_file);
