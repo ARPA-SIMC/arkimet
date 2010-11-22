@@ -200,10 +200,9 @@ void to::test<4>()
     ensure_equals(r.response_headers["content-type"], "application/octet-stream");
     ensure_equals(r.response_headers["content-disposition"], "attachment; filename=testds.txt");
 
-    ensure_equals(r.response_body.size(), 44412);
+    ensure_equals(r.response_body.size(), 44412u);
     ensure_equals(r.response_body.substr(0, 4), "GRIB");
 }
-
 
 }
 

@@ -26,6 +26,7 @@
 #include <arki/utils/codec.h>
 #include <arki/utils/datareader.h>
 #include <arki/utils/compress.h>
+#include <arki/utils/fd.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -302,25 +303,15 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
 
 void Metadata::write(int outfd, const std::string& filename) const
 {
-	// Prepare the encoded data
-	string encoded = encode();
+    // Prepare the encoded data
+    string encoded = encode();
 
-	// Write out
-	ssize_t res = ::write(outfd, encoded.data(), encoded.size());
-	if (res < 0)
-		throw wibble::exception::System("writing metadata to " + filename);
-	if ((size_t)res != encoded.size())
-		throw wibble::exception::Consistency("writing metadata to " + filename, "written only " + str::fmt(res) + " bytes out of " + str::fmt(encoded.size()));
+    // Write out
+    utils::fd::write_all(outfd, encoded);
 
-	// If the source is inline, then the data follows the metadata
-	if (source->style() == types::Source::INLINE)
-	{
-		ssize_t res = ::write(outfd, m_inline_buf.data(), m_inline_buf.size());
-		if (res < 0)
-			throw wibble::exception::System("writing data to " + filename);
-		if ((size_t)res != m_inline_buf.size())
-			throw wibble::exception::Consistency("writing data to " + filename, "written only " + str::fmt(res) + " bytes out of " + str::fmt(m_inline_buf.size()));
-	}
+    // If the source is inline, then the data follows the metadata
+    if (source->style() == types::Source::INLINE)
+        utils::fd::write_all(outfd, m_inline_buf.data(), m_inline_buf.size());
 }
 
 template<typename LIST>

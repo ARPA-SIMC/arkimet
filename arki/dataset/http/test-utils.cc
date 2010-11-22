@@ -83,12 +83,11 @@ void FakeRequest::write(const std::string& str)
 
 void FakeRequest::write_get(const std::string& query)
 {
-    arki::tests::FakeRequest r;
-    r.write("GET " + query + " HTTP/1.1\r\n");
-    r.write("User-Agent: arkimet-fakequery\r\n");
-    r.write("Host: localhost:0\r\n");
-    r.write("Accept: */*\r\n");
-    r.write("\r\n");
+    write("GET " + query + " HTTP/1.1\r\n");
+    write("User-Agent: arkimet-fakequery\r\n");
+    write("Host: localhost:0\r\n");
+    write("Accept: */*\r\n");
+    write("\r\n");
 }
 
 void FakeRequest::reset()

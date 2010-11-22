@@ -578,6 +578,58 @@ std::string HTTP::allSameRemoteServer(const ConfigFile& cfg)
 	return base;
 }
 
+HTTPPreuploadedImport::HTTPPreuploadedImport(const std::string& baseurl)
+    : m_baseurl(baseurl)
+{
+}
+
+HTTPPreuploadedImport::~HTTPPreuploadedImport()
+{
+}
+
+void HTTPPreuploadedImport::remote_scan(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
+{
+    using namespace wibble::str;
+
+    m_curl.reset();
+
+    string url = joinpath(m_baseurl, "inbound/scan");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata;
+    if (format.empty())
+        postdata = "file=" + urlencode(fname);
+    else
+        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+    postdata += '\n';
+
+    //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
+    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
+    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
+    // Size of postfields argument if it's non text
+    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
+
+    MDStreamState s(m_curl, consumer, m_baseurl);
+    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
+    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+
+    CURLcode code = curl_easy_perform(m_curl);
+    if (code != CURLE_OK)
+        throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
+
+    if (s.response_code >= 400)
+        s.throwError("querying summary from " + url);
+}
+
+void HTTPPreuploadedImport::remote_testdispatch(const std::string& fname, const std::string& format, std::ostream& out)
+{
+}
+
+void HTTPPreuploadedImport::do_dispatch(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
+{
+}
+
 }
 }
 // vim:set ts=4 sw=4:

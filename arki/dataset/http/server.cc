@@ -34,6 +34,43 @@ namespace arki {
 namespace dataset {
 namespace http {
 
+StreamHeaders::StreamHeaders(net::http::Request& req, const std::string& fname)
+    : content_type("application/octet-stream"), ext("bin"), fname(fname),
+      req(req), fired(false)
+{
+}
+
+void StreamHeaders::operator()()
+{
+    req.send_status_line(200, "OK");
+    req.send_date_header();
+    req.send_server_header();
+    req.send("Content-Type: " + content_type + "\r\n");
+    req.send("Content-Disposition: attachment; filename=" + fname + "." + ext + "\r\n");
+    req.send("\r\n");
+    fired = true;
+}
+
+void StreamHeaders::send_result(const std::string& res)
+{
+    req.send_result(res, content_type, fname + "." + ext);
+}
+
+void StreamHeaders::sendIfNotFired()
+{
+    if (!fired) operator()();
+}
+
+MetadataStreamer::MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
+
+bool MetadataStreamer::operator()(Metadata& md)
+{
+    sh.sendIfNotFired();
+    md.write(sh.req.sock, "socket");
+    return true;
+}
+
+
 LegacySummaryParams::LegacySummaryParams()
 {
     using namespace wibble::net::http;
@@ -155,61 +192,6 @@ void QueryBytesParams::set_into(ByteQuery& dq) const
         dq.type = ByteQuery::BQ_DATA;
     postprocfiles_to_env(*postprocfile);
 }
-
-namespace {
-
-struct StreamHeaders : public metadata::Hook
-{
-    string content_type;
-    string ext;
-    std::string fname;
-    net::http::Request& req;
-    bool fired;
-
-    StreamHeaders(net::http::Request& req, const std::string& fname)
-        : content_type("application/octet-stream"), ext("bin"), fname(fname),
-          req(req), fired(false)
-    {
-    }
-
-    virtual void operator()()
-    {
-        req.send_status_line(200, "OK");
-        req.send_date_header();
-        req.send_server_header();
-        req.send("Content-Type: " + content_type + "\r\n");
-        req.send("Content-Disposition: attachment; filename=" + fname + "." + ext + "\r\n");
-        req.send("\r\n");
-        fired = true;
-    }
-
-    void send_result(const std::string& res)
-    {
-        req.send_result(res, content_type, fname + "." + ext);
-    }
-
-    void sendIfNotFired()
-    {
-        if (!fired) operator()();
-    }
-};
-
-struct MetadataStreamer : public metadata::Consumer
-{
-    StreamHeaders& sh;
-
-    MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
-
-    virtual bool operator()(Metadata& md)
-    {
-        sh.sendIfNotFired();
-        md.write(sh.req.sock, "socket");
-        return true;
-    }
-};
-
-}
-
 
 
 void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http::Request& req)

@@ -138,6 +138,25 @@ public:
 	static std::string allSameRemoteServer(const ConfigFile& cfg);
 };
 
+class HTTPPreuploadedImport
+{
+    std::string m_baseurl;
+    mutable http::CurlEasy m_curl;
+
+public:
+    HTTPPreuploadedImport(const std::string& baseurl);
+    ~HTTPPreuploadedImport();
+
+    /// Scan a previously uploaded file
+    void remote_scan(const std::string& fname, const std::string& format, metadata::Consumer& consumer);
+
+    /// Run a testdispatch on a previously uploaded file
+    void remote_testdispatch(const std::string& fname, const std::string& format, std::ostream& out);
+
+    /// Run a dispatch on a previously uploaded file
+    void do_dispatch(const std::string& fname, const std::string& format, metadata::Consumer& consumer);
+};
+
 }
 }
 

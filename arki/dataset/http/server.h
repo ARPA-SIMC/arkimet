@@ -24,6 +24,7 @@
  */
 
 #include <arki/dataset.h>
+#include <arki/metadata/consumer.h>
 #include <wibble/exception.h>
 #include <wibble/net/http.h>
 #include <string>
@@ -46,6 +47,32 @@ struct ProcessorMaker;
 
 namespace dataset {
 namespace http {
+
+struct StreamHeaders : public metadata::Hook
+{
+    std::string content_type;
+    std::string ext;
+    std::string fname;
+    wibble::net::http::Request& req;
+    bool fired;
+
+    StreamHeaders(wibble::net::http::Request& req, const std::string& fname);
+
+    virtual void operator()();
+
+    void send_result(const std::string& res);
+    void sendIfNotFired();
+};
+
+struct MetadataStreamer : public metadata::Consumer
+{
+    StreamHeaders& sh;
+
+    MetadataStreamer(StreamHeaders& sh);
+
+    virtual bool operator()(Metadata& md);
+};
+
 
 /// Parameters used by the legacy /summary/ interface
 struct LegacySummaryParams : public wibble::net::http::Params
