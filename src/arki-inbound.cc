@@ -121,46 +121,45 @@ int main(int argc, const char* argv[])
 
             while (opts.hasNext())
             {
+                string format;
                 string fname = opts.next();
                 size_t pos = fname.find(":");
                 if (pos != string::npos)
-                    inbound.scan(fname.substr(pos+1), fname.substr(0, pos), *printer);
-                else
-                    inbound.scan(fname, "", *printer);
+                {
+                    format = fname.substr(0, pos);
+                    fname = fname.substr(pos+1);
+                }
+                inbound.scan(fname, format, *printer);
+            }
+        } else if (opts.do_test->isSet()) {
+            while (opts.hasNext())
+            {
+                string format;
+                string fname = opts.next();
+                size_t pos = fname.find(":");
+                if (pos != string::npos)
+                {
+                    format = fname.substr(0, pos);
+                    fname = fname.substr(pos+1);
+                }
+                inbound.testdispatch(fname, format, cout);
+            }
+        } else if (opts.do_import->isSet()) {
+            auto_ptr<Printer> printer = Printer::create(opts);
+
+            while (opts.hasNext())
+            {
+                string format;
+                string fname = opts.next();
+                size_t pos = fname.find(":");
+                if (pos != string::npos)
+                {
+                    format = fname.substr(0, pos);
+                    fname = fname.substr(pos+1);
+                }
+                inbound.dispatch(fname, format, *printer);
             }
         } else {
-            /*
-            opts.setupProcessing();
-
-            bool all_successful = true;
-            for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
-                    i != opts.inputInfo.sectionEnd(); ++i)
-            {
-                auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
-
-                bool success = true;
-                try {
-                    success = opts.processSource(*ds, i->second->value("path"));
-                } catch (std::exception& e) {
-                    // FIXME: this is a quick experiment: a better message can
-                    // print some of the stats to document partial imports
-                    cerr << i->second->value("path") << " failed: " << e.what() << endl;
-                    success = false;
-                }
-
-                opts.closeSource(ds, success);
-
-                // Take note if something went wrong
-                if (!success) all_successful = false;
-            }
-
-            opts.doneProcessing();
-
-            if (all_successful)
-                return 0;
-            else
-                return 2;
-            */
             throw wibble::exception::BadOption("please specify an action with --list, --scan, --test or --import");
         }
         return 0;

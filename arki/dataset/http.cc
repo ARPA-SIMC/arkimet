@@ -647,10 +647,70 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
 
 void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, std::ostream& out)
 {
+    using namespace wibble::str;
+
+    m_curl.reset();
+
+    string url = joinpath(m_baseurl, "inbound/testdispatch");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata;
+    if (format.empty())
+        postdata = "file=" + urlencode(fname);
+    else
+        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+
+    //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
+    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
+    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
+    // Size of postfields argument if it's non text
+    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
+
+    OstreamState s(m_curl, out);
+    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
+    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+
+    CURLcode code = curl_easy_perform(m_curl);
+    if (code != CURLE_OK)
+        throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
+
+    if (s.response_code >= 400)
+        s.throwError("querying inbound/scan from " + url);
 }
 
 void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
 {
+    using namespace wibble::str;
+
+    m_curl.reset();
+
+    string url = joinpath(m_baseurl, "inbound/dispatch");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata;
+    if (format.empty())
+        postdata = "file=" + urlencode(fname);
+    else
+        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+
+    //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
+    //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
+    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
+    // Size of postfields argument if it's non text
+    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
+
+    MDStreamState s(m_curl, consumer, m_baseurl);
+    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
+    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+
+    CURLcode code = curl_easy_perform(m_curl);
+    if (code != CURLE_OK)
+        throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
+
+    if (s.response_code >= 400)
+        s.throwError("querying inbound/scan from " + url);
 }
 
 }
