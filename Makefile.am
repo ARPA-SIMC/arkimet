@@ -10,6 +10,7 @@ man_MANS = \
 	arki-gzip.1 \
 	arki-query.1 \
 	arki-check.1 \
+	arki-inbound.1 \
 	arki-mergeconf.1 \
 	arki-scan.1 \
 	arki-server.1 \
@@ -76,6 +77,7 @@ EXTRA_DIST = README \
 	     doc/mhooks-query \
 	     doc/mhooks-scan \
 	     doc/mhooks-check \
+	     doc/mhooks-inbound \
 	     doc/mhooks-mergeconf \
 	     doc/mhooks-server \
 	     doc/mhooks-xargs \

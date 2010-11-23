@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs arki-server
+bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs arki-server arki-inbound
 
 dist_noinst_HEADERS = bench/benchmark.h
 
@@ -39,6 +39,9 @@ endif
 
 arki_scan_SOURCES = arki-scan.cc
 arki_scan_LDFLAGS = $(all_libs)
+
+arki_inbound_SOURCES = arki-inbound.cc
+arki_inbound_LDFLAGS = $(all_libs)
 
 arki_benchmark_SOURCES = arki-benchmark.cc bench/benchmark.cc
 arki_benchmark_LDFLAGS = $(all_libs)

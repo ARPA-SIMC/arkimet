@@ -245,7 +245,6 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 	}
 	if (q.withData)
 		postdata += "&style=inline";
-	postdata += '\n';
 #else
 	string url = joinpath(m_baseurl, "querydata");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
@@ -267,7 +266,6 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 	}
 	if (q.withData)
 		postdata += "&withdata=true";
-	postdata += '\n';
 #endif
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -308,7 +306,6 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 		postdata += urlencode(";MISCHIEF");
 		m_mischief = false;
 	}
-	postdata += '\n';
 #else
 	string url = joinpath(m_baseurl, "querysummary");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
@@ -323,7 +320,6 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 		postdata += urlencode(";MISCHIEF");
 		m_mischief = false;
 	}
-	postdata += '\n';
 #endif
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -578,16 +574,44 @@ std::string HTTP::allSameRemoteServer(const ConfigFile& cfg)
 	return base;
 }
 
-HTTPPreuploadedImport::HTTPPreuploadedImport(const std::string& baseurl)
+HTTPInbound::HTTPInbound(const std::string& baseurl)
     : m_baseurl(baseurl)
 {
 }
 
-HTTPPreuploadedImport::~HTTPPreuploadedImport()
+HTTPInbound::~HTTPInbound()
 {
 }
 
-void HTTPPreuploadedImport::remote_scan(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
+void HTTPInbound::list(std::vector<std::string>& files)
+{
+    using namespace wibble::str;
+
+    m_curl.reset();
+
+    string url = joinpath(m_baseurl, "inbound/list");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting GET method", curl_easy_setopt(m_curl, CURLOPT_HTTPGET, 1));
+
+    // Store the results in memory
+    SStreamState s(m_curl);
+    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
+    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
+
+    CURLcode code = curl_easy_perform(m_curl);
+    if (code != CURLE_OK)
+        throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
+
+    if (s.response_code >= 400)
+        s.throwError("querying inbound/list from " + url);
+
+    // Parse the results
+    str::Split splitter("\n", s.buf.str());
+    for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+        files.push_back(*i);
+}
+
+void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
 {
     using namespace wibble::str;
 
@@ -601,7 +625,6 @@ void HTTPPreuploadedImport::remote_scan(const std::string& fname, const std::str
         postdata = "file=" + urlencode(fname);
     else
         postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
-    postdata += '\n';
 
     //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
     //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -619,14 +642,14 @@ void HTTPPreuploadedImport::remote_scan(const std::string& fname, const std::str
         throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
 
     if (s.response_code >= 400)
-        s.throwError("querying summary from " + url);
+        s.throwError("querying inbound/scan from " + url);
 }
 
-void HTTPPreuploadedImport::remote_testdispatch(const std::string& fname, const std::string& format, std::ostream& out)
+void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, std::ostream& out)
 {
 }
 
-void HTTPPreuploadedImport::do_dispatch(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
+void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
 {
 }
 

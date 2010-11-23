@@ -726,6 +726,18 @@ struct InboundHandler : public LocalHandler
             res << "</body></html>" << endl;
             req.send_result(res.str());
         }
+        else if (action == "list")
+        {
+            vector<string> files;
+            list_files(dir, "", files);
+
+            stringstream out;
+            for (vector<string>::const_iterator i = files.begin();
+                    i != files.end(); ++i)
+                out << *i << endl;
+
+            req.send_result(out.str(), "text/plain", "list.txt");
+        }
         else if (action == "scan")
         {
             // Scan file and output binary metadata
@@ -745,69 +757,21 @@ struct InboundHandler : public LocalHandler
 
             // Empty import config file, as it is not used in do_scan
             ConfigFile import_config;
-            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
+            dataset::http::InboundServer::make_import_config(req, req.arki_conf, import_config);
             dataset::http::InboundServer srv(import_config, dir);
             srv.do_testdispatch(params, req);
         }
         else if (action == "dispatch")
         {
-            // Dispatch and output annotated metadata
-
-            // Filter configuration to only keep those that have remote import = yes
-            // and whose "restrict import" matches
-            using namespace wibble::net::http;
-
-            ConfigFile importcfg;
-            dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
-            bool can_import = importcfg.sectionSize() > 0;
-            if (!can_import)
-                throw error400("import is not allowed");
-
-            // Get the file argument
-            Params params;
-            ParamSingle* file = params.add<ParamSingle>("file");
+            // Scan file and output binary metadata
+            dataset::http::InboundParams params;
             params.parse_get_or_post(req);
 
-            // Open it as a dataset
-            ConfigFile cfg;
-            dataset::File::readConfig(str::joinpath(dir, *file), cfg);
-            const ConfigFile *info = cfg.sectionBegin()->second;
-            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
-
-            stringstream res;
-
-            struct Worker : public metadata::Consumer
-            {
-                struct Printer : public metadata::Consumer
-                {
-                    ostream& str;
-
-                    Printer(ostream& str) : str(str) { }
-
-                    virtual bool operator()(Metadata& md)
-                    {
-                        str << md.encode();
-                        return true;
-                    }
-                };
-
-                RealDispatcher d;
-                Printer printer;
-
-                Worker(const ConfigFile& cfg, ostream& out)
-                    : d(cfg), printer(out) { }
-
-                virtual bool operator()(Metadata& md)
-                {
-                    d.dispatch(md, printer);
-                    // TODO: check outcome to decide if we should delete the file
-                    return true;
-                }
-            } worker(importcfg, res);
-
-            ds->queryData(dataset::DataQuery(Matcher::parse("")), worker);
-
-            req.send_result(res.str(), "application/octet-stream");
+            // Empty import config file, as it is not used in do_scan
+            ConfigFile import_config;
+            dataset::http::InboundServer::make_import_config(req, req.arki_conf, import_config);
+            dataset::http::InboundServer srv(import_config, dir);
+            srv.do_dispatch(params, req);
         }
         else
             throw net::http::error404();
