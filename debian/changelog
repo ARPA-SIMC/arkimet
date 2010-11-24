@@ -1,3 +1,9 @@
+arkimet (0.48-1) UNRELEASED; urgency=low
+
+  * Don't kill -TERM -1 arkimet for obscure reasons in arki-server
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 24 Nov 2010 11:39:37 +0000
+
 arkimet (0.47-1) UNRELEASED; urgency=low
 
   * arki-server: rewritten in C++, faster, no more python dependencies
