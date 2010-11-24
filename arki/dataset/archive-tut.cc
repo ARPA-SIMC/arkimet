@@ -486,15 +486,40 @@ void to::test<7>()
 	ensure_dataset_clean(arc, 1, 3);
 }
 
+template<> template<>
+void to::test<8>()
+{
+    metadata::Collection mdc;
+    {
+        Archive arc("testds/.archive/last");
+        arc.openRW();
+
+        // Acquire
+        system("cp inbound/test.grib1 testds/.archive/last/");
+        arc.acquire("test.grib1");
+        arc.flush();
+        ensure(files::exists("testds/.archive/last/test.grib1"));
+        ensure(files::exists("testds/.archive/last/test.grib1.metadata"));
+        ensure(files::exists("testds/.archive/last/test.grib1.summary"));
+        ensure(files::exists("testds/.archive/last/" + arcidxfname()));
+
+        Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+        ensure_equals(mdc.size(), 3u);
+        ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
+    }
+
+    ensure_archive_clean("testds/.archive/last", 1, 3);
+}
 
 // Retest with sqlite
-template<> template<> void to::test<8>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<9>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
+template<> template<> void to::test<9>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; test<2>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; test<3>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; test<4>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; test<5>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; test<6>(); }
+template<> template<> void to::test<15>() { ForceSqlite fs; test<7>(); }
+template<> template<> void to::test<16>() { ForceSqlite fs; test<8>(); }
 
 
 }

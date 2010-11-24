@@ -60,6 +60,7 @@ dist_noinst_HEADERS = \
 		metadata/consumer.h \
 		metadata/collection.h \
 		metadata/stream.h \
+		metadata/test-generator.h \
 		scan/any.h \
 		scan/dir.h \
 		summary.h \
@@ -166,6 +167,7 @@ libarkimet_la_SOURCES = \
 		metadata/consumer.cc \
 		metadata/collection.cc \
 		metadata/stream.cc \
+		metadata/test-generator.cc \
 		summary.cc \
 		matcher.cc \
 		matcher/utils.cc \
@@ -275,6 +277,7 @@ tests_arki_test_SOURCES = \
 		metadata/consumer-tut.cc \
 		metadata/collection-tut.cc \
 		metadata/stream-tut.cc \
+		metadata/test-generator-tut.cc \
 		summary-tut.cc \
 		matcher-tut.cc \
 		matcher/test-utils.cc \

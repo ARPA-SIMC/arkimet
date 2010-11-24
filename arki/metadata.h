@@ -217,7 +217,7 @@ public:
 	/**
 	 * Set the inline data for the metadata
 	 */
-	void setInlineData(const std::string& format, const wibble::sys::Buffer& buf);
+	void setInlineData(const std::string& format, wibble::sys::Buffer buf);
 
 	/**
 	 * Remove the cached data from the metadata

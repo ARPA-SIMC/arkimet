@@ -488,7 +488,7 @@ size_t Metadata::dataSize() const
 	}
 }
 
-void Metadata::setInlineData(const std::string& format, const wibble::sys::Buffer& buf)
+void Metadata::setInlineData(const std::string& format, wibble::sys::Buffer buf)
 {
 	source = types::source::Inline::create(format, buf.size());
 	m_inline_buf = buf;
