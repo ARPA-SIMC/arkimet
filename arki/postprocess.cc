@@ -197,8 +197,11 @@ struct Child : public utils::IODispatcher
 
     void terminate()
     {
-        cmd.kill(SIGTERM);
-        cmd.wait();
+        if (cmd.pid() != -1)
+        {
+            cmd.kill(SIGTERM);
+            cmd.wait();
+        }
     }
 };
 
