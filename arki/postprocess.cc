@@ -140,7 +140,6 @@ struct Child : public utils::IODispatcher
             close_outfd();
             return;
         }
-
         if (data_start_hook)
         {
             // Fire hook
@@ -150,15 +149,7 @@ struct Child : public utils::IODispatcher
         }
 
         // Pass it on
-        if (m_out != NULL)
-        {
-            m_out->write(buf, res);
-            if (m_out->bad())
-                throw wibble::exception::System("writing to destination stream");
-            if (m_out->eof())
-                m_out = NULL;
-        }
-        else if (m_nextfd != -1)
+        if (m_nextfd != -1)
         {
             Sigignore ignpipe(SIGPIPE);
             size_t pos = 0;
@@ -176,6 +167,14 @@ struct Child : public utils::IODispatcher
                 }
                 pos += wres;
             }
+        }
+        else if (m_out != NULL)
+        {
+            m_out->write(buf, res);
+            if (m_out->bad())
+                throw wibble::exception::System("writing to destination stream");
+            if (m_out->eof())
+                m_out = NULL;
         }
     }
 

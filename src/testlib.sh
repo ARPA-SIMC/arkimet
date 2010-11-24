@@ -79,6 +79,7 @@ type=test
 step=daily
 filter=origin:GRIB1,80
 indef=origin
+postprocess=cat
 EOT
 
     cat <<EOT > test98/config

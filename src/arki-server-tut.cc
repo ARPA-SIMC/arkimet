@@ -244,6 +244,110 @@ void to::test<9>()
     ensure_not_contains(str.str(), "500 Server error");
 }
 
+// Test data integrity of postprocessed queries through a server (used to fail
+// after offset 0xc00)
+template<> template<>
+void to::test<10>()
+{
+    using namespace arki::dataset;
+
+    // Get the normal data
+    string plain;
+    {
+        ConfigFile cfg;
+        cfg.setValue("type", "test");
+        cfg.setValue("path", "test80");
+        cfg.setValue("name", "test80");
+        cfg.setValue("step", "daily");
+        cfg.setValue("filter", "origin:GRIB1,80");
+        cfg.setValue("postprocess", "cat,echo,say,checkfiles,error,outthenerr");
+        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+
+        struct Writer : public metadata::Consumer
+        {
+            string& out;
+            Writer(string& out) : out(out) {}
+            bool operator()(Metadata& md)
+            {
+                out += md.encode();
+                wibble::sys::Buffer data = md.getData();
+                out.append((const char*)data.data(), data.size());
+                return true;
+            }
+        } writer(plain);
+
+        DataQuery dq(Matcher::parse(""), true);
+        ds->queryData(dq, writer);
+    }
+
+    // Capture the data after going through the postprocessor
+    stringstream postprocessed;
+    {
+        dataset::HTTP::readConfig("http://localhost:7117", config);
+        auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+        ensure(dynamic_cast<dataset::HTTP*>(testds.get()) != 0);
+
+        dataset::ByteQuery bq;
+        bq.setPostprocess(Matcher::parse("origin:GRIB1,80"), "cat");
+        testds->queryBytes(bq, postprocessed);
+    }
+
+    ensure_equals(plain.size(), postprocessed.str().size());
+
+    /*
+    size_t diffs = 0;
+    for (size_t i = 0; i < plain.size(); ++i)
+    {
+        if (plain[i] != postprocessed.str()[i])
+        {
+            fprintf(stderr, "Difference at offset %d %x %u!=%u\n", (int)i, (int)i, (int)plain[i], (int)postprocessed.str()[i]);
+            if (++diffs > 20)
+                break;
+        }
+    }
+
+    ensure(plain == postprocessed.str());
+    */
+
+    metadata::Collection mdc1, mdc2;
+    {
+        stringstream s(plain);
+        Metadata::readFile(s, "plain", mdc1);
+    }
+    {
+        stringstream s(postprocessed.str());
+        Metadata::readFile(s, "postprocessed", mdc2);
+    }
+
+    // Remove those metadata that contain test-dependent timestamps
+    std::vector< Item<types::Note> > nonotes;
+    mdc1[0].unset(types::TYPE_ASSIGNEDDATASET);
+    mdc2[0].unset(types::TYPE_ASSIGNEDDATASET);
+    mdc1[0].set_notes(nonotes);
+    mdc2[0].set_notes(nonotes);
+
+    // Compare YAML versions so we get readable output
+    string yaml1, yaml2;
+    {
+        stringstream s1;
+        mdc1[0].writeYaml(s1);
+        yaml1 = s1.str();
+    }
+    {
+        stringstream s1;
+        mdc2[0].writeYaml(s1);
+        yaml2 = s1.str();
+    }
+    ensure_equals(yaml1, yaml2);
+
+    // Compare data
+    wibble::sys::Buffer d1 = mdc1[0].getData();
+    wibble::sys::Buffer d2 = mdc2[0].getData();
+
+    ensure(d1 == d2);
+}
+
+
 }
 
 // vim:set ts=4 sw=4:

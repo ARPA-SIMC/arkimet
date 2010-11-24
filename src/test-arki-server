@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+test -z "$ARGS" || exit 0
+
 BINDIR=`dirname $0`
 
 . $BINDIR/testlib.sh
