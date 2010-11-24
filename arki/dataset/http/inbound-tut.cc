@@ -52,6 +52,9 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
         incfg << "remote import = yes" << endl;
         incfg.seekg(0);
         import_config.parse(incfg, "memory");
+        for (ConfigFile::const_section_iterator i = import_config.sectionBegin();
+                i != import_config.sectionEnd(); ++i)
+            clean(i->second);
     }
 
     // Run the fake request through the server-side handler
