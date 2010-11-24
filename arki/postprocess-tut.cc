@@ -108,6 +108,51 @@ void to::test<3>()
     ensure_equals(str.str(), "45039\n");
 }
 
+// Test actually sending some data
+template<> template<>
+void to::test<4>()
+{
+    // Get the normal data
+    string plain;
+    {
+        struct Writer : public metadata::Consumer
+        {
+            string& out;
+            Writer(string& out) : out(out) {}
+            bool operator()(Metadata& md)
+            {
+                out += md.encode();
+                wibble::sys::Buffer data = md.getData();
+                out.append((const char*)data.data(), data.size());
+                return true;
+            }
+        } writer(plain);
+
+        Metadata md;
+        scan::Grib scanner;
+        scanner.open("inbound/test.grib1");
+        while (scanner.next(md))
+            writer(md);
+    }
+
+    // Get the postprocessed data
+    stringstream postprocessed;
+    Postprocess p("cat");
+    p.set_output(postprocessed);
+    p.start();
+
+    {
+        Metadata md;
+        scan::Grib scanner;
+        scanner.open("inbound/test.grib1");
+        while (scanner.next(md))
+            p(md);
+        p.flush();
+    }
+
+    ensure(plain == postprocessed.str());
+}
+
 }
 
 // vim:set ts=4 sw=4:
