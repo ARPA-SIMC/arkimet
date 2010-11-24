@@ -4,7 +4,7 @@
 /*
  * dataset/ondisk2/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,6 +109,20 @@ public:
 
 	friend class writer::RealRepacker;
 	friend class writer::RealFixer;
+};
+
+/**
+ * Temporarily override the current date used to check data age.
+ *
+ * This is used to be able to write unit tests that run the same independently
+ * of when they are run.
+ */
+struct TestOverrideCurrentDateForMaintenance
+{
+    time_t old_ts;
+
+    TestOverrideCurrentDateForMaintenance(time_t ts);
+    ~TestOverrideCurrentDateForMaintenance();
 };
 
 }

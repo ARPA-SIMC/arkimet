@@ -25,7 +25,9 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
+#include <arki/metadata/test-generator.h>
 #include <arki/matcher.h>
+#include <arki/summary.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 
@@ -79,6 +81,7 @@ struct arki_dataset_archive_shar : public DatasetTest {
 		cfg.setValue("type", "ondisk2");
 		cfg.setValue("step", "daily");
 		cfg.setValue("unique", "origin, reftime");
+		cfg.setValue("archive age", "7");
 	}
 
 #define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
@@ -489,26 +492,56 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-    metadata::Collection mdc;
+    // Generate a dataset with archived data
     {
-        Archive arc("testds/.archive/last");
-        arc.openRW();
+        // Override current date for maintenance to 2010-09-15
+        dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(1284505200);
 
-        // Acquire
-        system("cp inbound/test.grib1 testds/.archive/last/");
-        arc.acquire("test.grib1");
-        arc.flush();
-        ensure(files::exists("testds/.archive/last/test.grib1"));
-        ensure(files::exists("testds/.archive/last/test.grib1.metadata"));
-        ensure(files::exists("testds/.archive/last/test.grib1.summary"));
-        ensure(files::exists("testds/.archive/last/" + arcidxfname()));
+        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
 
-        Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
-        ensure_equals(mdc.size(), 3u);
-        ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
+        // Import several metadata items
+        metadata::test::Generator gen("grib1");
+        for (int i = 0; i < 30; ++i)
+            gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT07:00:00Z", i + 1));
+        struct Importer : public metadata::Consumer
+        {
+            WritableLocal& ds;
+
+            Importer(WritableLocal& ds) : ds(ds) {}
+            bool operator()(Metadata& md)
+            {
+                WritableDataset::AcquireResult r = ds.acquire(md);
+                ensure(r == WritableDataset::ACQ_OK);
+                return true;
+            }
+        } importer(*ds);
+        gen.generate(importer);
+
+        // Check to remove new dataset marker
+        stringstream checklog;
+        ds->check(checklog, true, true);
+        ensure_contains(checklog.str(), "testds: 30448 bytes reclaimed");
+
+        // Archive old files
+        stringstream packlog;
+        ds->repack(packlog, true);
+        ensure_contains(packlog.str(), "6 files archived");
     }
 
-    ensure_archive_clean("testds/.archive/last", 1, 3);
+    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+
+    // Query summary
+    Summary s1;
+    ds->querySummary(Matcher::parse(""), s1);
+
+    // Query data and summarise the results
+    Summary s2;
+    {
+        metadata::Summarise sum(s2);
+        ds->queryData(dataset::DataQuery(Matcher::parse("")), sum);
+    }
+
+    ensure(s1 == s2);
 }
 
 // Retest with sqlite

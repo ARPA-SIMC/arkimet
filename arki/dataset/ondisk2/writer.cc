@@ -218,6 +218,18 @@ void Writer::sanityChecks(std::ostream& log, bool writable)
 	}
 }
 
+static time_t override_now = 0;
+
+TestOverrideCurrentDateForMaintenance::TestOverrideCurrentDateForMaintenance(time_t ts)
+{
+    old_ts = override_now;
+    override_now = ts;
+}
+TestOverrideCurrentDateForMaintenance::~TestOverrideCurrentDateForMaintenance()
+{
+    override_now = old_ts;
+}
+
 namespace {
 struct Deleter : public maintenance::IndexFileVisitor
 {
@@ -255,13 +267,13 @@ struct CheckAge : public maintenance::MaintFileVisitor
 };
 
 CheckAge::CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age, int delete_age)
-	: next(next), idx(idx)
+    : next(next), idx(idx)
 {
-	time_t now = time(NULL);
-	struct tm t;
+    time_t now = override_now ? override_now : time(NULL);
+    struct tm t;
 
-	// Go to the beginning of the day
-	now -= (now % (3600*24));
+    // Go to the beginning of the day
+    now -= (now % (3600*24));
 
 	if (archive_age != -1)
 	{
