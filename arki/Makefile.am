@@ -222,7 +222,8 @@ libarkimet_la_SOURCES = \
 		runtime/io.cc \
 		runtime/config.cc \
 		runtime/processor.cc \
-		runtime.cc
+		runtime.cc \
+		tests/test-utils.cc
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
 if GCOV
