@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ struct Writer;
 }
 }
 
-namespace tests{
+namespace tests {
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc);
 
@@ -154,6 +154,38 @@ struct TempConfig
 	{
 		cfg.setValue(key, val);
 	}
+};
+
+/**
+ * One global dataset scenario
+ *
+ * This creates a dataset in a directory, initialised using the scenario
+ * build() method.
+ *
+ * Scenarios are built once and then reused, to avoid an expensive rebuild at
+ * every test; this means that they are only supposed to be used for testing
+ * ReadonlyDataset.
+ */
+struct Scenario
+{
+    ConfigFile cfg;
+    bool built;
+
+    Scenario();
+    virtual ~Scenario();
+    virtual std::string name() const = 0;
+    virtual std::string description() const = 0;
+
+    /**
+     * Build the scenarion.
+     *
+     * The base class implementation takes care of cleaning the directory and doing base config initialisation based on name();
+     */
+    virtual void build();
+
+    // Get the scenario with the given name, building it if necessary, or
+    // reusing the already built one
+    static const Scenario& get(const std::string& name);
 };
 
 }

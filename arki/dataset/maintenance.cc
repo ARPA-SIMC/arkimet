@@ -551,7 +551,7 @@ void RealRepacker::end()
 		logAdd() << nfiles(m_count_rescanned) << " rescanned";
 	if (size_vacuum)
 	{
-		logAdd() << size_vacuum << " bytes reclaimed on the index";
+		//logAdd() << size_vacuum << " bytes reclaimed on the index";
 		m_count_freed += size_vacuum;
 	}
 	if (m_count_freed > 0)
@@ -639,8 +639,8 @@ void RealFixer::end()
 		logAdd() << nfiles(m_count_rescanned) << " rescanned";
 	if (m_count_deindexed)
 		logAdd() << nfiles(m_count_deindexed) << " removed from index";
-	if (size_vacuum)
-		logAdd() << size_vacuum << " bytes reclaimed cleaning the index";
+	//if (size_vacuum)
+		//logAdd() << size_vacuum << " bytes reclaimed cleaning the index";
 	logEnd();
 }
 

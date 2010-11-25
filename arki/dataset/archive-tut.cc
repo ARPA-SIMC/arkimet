@@ -25,11 +25,13 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <arki/metadata/test-generator.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
+#include <wibble/string.h>
+
+using namespace wibble;
 
 namespace arki {
 namespace tests {
@@ -165,7 +167,7 @@ void to::test<2>()
 		ensure_equals(s.str(), 
 				"testds: rescanned in archive last/test.grib1\n"
 				"testds: archive cleaned up\n"
-				"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+				"testds: 1 file rescanned.\n");
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -230,7 +232,7 @@ void to::test<3>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+			"testds: 1 file rescanned.\n");
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -293,7 +295,7 @@ void to::test<4>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+			"testds: 1 file rescanned.\n");
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -367,7 +369,7 @@ void to::test<5>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/2.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+			"testds: 1 file rescanned.\n");
 
 		c.clear();
 		writer.maintenance(c);
@@ -459,7 +461,7 @@ void to::test<6>()
 		ensure_equals(s.str(),
 			"testds: rescanned in archive last/test.grib1\n"
 			"testds: archive cleaned up\n"
-			"testds: 1 file rescanned, 3616 bytes reclaimed cleaning the index.\n");
+			"testds: 1 file rescanned.\n");
 
 		// Repack should do nothing
 		s.str(std::string());
@@ -489,46 +491,22 @@ void to::test<7>()
 	ensure_dataset_clean(arc, 1, 3);
 }
 
+// Retest with sqlite
+template<> template<> void to::test<8>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<9>() { ForceSqlite fs; test<2>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; test<3>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
+template<> template<> void to::test<15>() { ForceSqlite fs; test<8>(); }
+
 template<> template<>
-void to::test<8>()
+void to::test<16>()
 {
-    // Generate a dataset with archived data
-    {
-        // Override current date for maintenance to 2010-09-15
-        dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(1284505200);
+    const Scenario& scen = Scenario::get("ondisk2-archived");
 
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
-
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 0; i < 30; ++i)
-            gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT07:00:00Z", i + 1));
-        struct Importer : public metadata::Consumer
-        {
-            WritableLocal& ds;
-
-            Importer(WritableLocal& ds) : ds(ds) {}
-            bool operator()(Metadata& md)
-            {
-                WritableDataset::AcquireResult r = ds.acquire(md);
-                ensure(r == WritableDataset::ACQ_OK);
-                return true;
-            }
-        } importer(*ds);
-        gen.generate(importer);
-
-        // Check to remove new dataset marker
-        stringstream checklog;
-        ds->check(checklog, true, true);
-        ensure_contains(checklog.str(), "testds: 30448 bytes reclaimed");
-
-        // Archive old files
-        stringstream packlog;
-        ds->repack(packlog, true);
-        ensure_contains(packlog.str(), "6 files archived");
-    }
-
-    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
 
     // Query summary
     Summary s1;
@@ -541,18 +519,14 @@ void to::test<8>()
         ds->queryData(dataset::DataQuery(Matcher::parse("")), sum);
     }
 
+    // Verify that the time range of the first summary is what we expect
+    Item<types::Reftime> rt = s1.getReferenceTime();
+    Item<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
+    ensure_equals(p->begin, types::Time::create(2010, 9, 1, 0, 0, 0));
+    ensure_equals(p->end, types::Time::create(2010, 9, 30, 0, 0, 0));
+
     ensure(s1 == s2);
 }
-
-// Retest with sqlite
-template<> template<> void to::test<9>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; test<6>(); }
-template<> template<> void to::test<15>() { ForceSqlite fs; test<7>(); }
-template<> template<> void to::test<16>() { ForceSqlite fs; test<8>(); }
 
 
 }

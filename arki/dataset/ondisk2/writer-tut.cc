@@ -125,7 +125,7 @@ void to::test<1>()
 		writer.repack(s, true);
 		ensure_equals(s.str(),
 			"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
-			"testdir: 1 file deleted, 30448 bytes reclaimed on the index, 65408 total bytes freed.\n");
+			"testdir: 1 file deleted, 65408 total bytes freed.\n");
 
 		c.clear();
 
@@ -182,7 +182,7 @@ void to::test<2>()
 	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned 2007/07-07.grib1\n"
-		"testdir: 1 file rescanned, 30448 bytes reclaimed cleaning the index.\n");
+		"testdir: 1 file rescanned.\n");
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count(OK), 3u);
@@ -236,7 +236,7 @@ void to::test<3>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 30448 bytes reclaimed on the index, 65408 total bytes freed.\n");
+		"testdir: 1 file packed, 65408 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -289,8 +289,7 @@ void to::test<4>()
 	// Perform full maintenance and check that things are still ok afterwards
 	// No packing occurs here: check does not mangle data files
 	writer.check(s, true, true);
-	ensure_equals(s.str(),
-		"testdir: 30448 bytes reclaimed cleaning the index.\n");
+	ensure_equals(s.str(), "");
 
 	c.clear();
 	writer.maintenance(c);
@@ -304,7 +303,7 @@ void to::test<4>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 37536 total bytes freed.\n");
+		"testdir: 1 file packed, 37536 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -343,7 +342,7 @@ void to::test<5>()
 		"testdir: rescanned 2007/07-07.grib1\n"
 		"testdir: rescanned 2007/07-08.grib1\n"
 		"testdir: rescanned 2007/10-09.grib1\n"
-		"testdir: 3 files rescanned, 30448 bytes reclaimed cleaning the index.\n");
+		"testdir: 3 files rescanned.\n");
 	c.clear();
 	writer.maintenance(c);
 	ensure_equals(c.count(OK), 3u);
@@ -391,7 +390,7 @@ void to::test<6>()
 	writer.check(s, true, true);
 	ensure_equals(s.str(),
 		"testdir: rescanned foo/bar/test.grib1\n"
-		"testdir: 1 file rescanned, 30448 bytes reclaimed cleaning the index.\n");
+		"testdir: 1 file rescanned.\n");
 
 	c.clear();
 	writer.maintenance(c);
@@ -430,7 +429,7 @@ void to::test<6>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed foo/bar/test.grib1 (44412 saved)\n"
-		"testdir: 1 file packed, 2576 bytes reclaimed on the index, 46988 total bytes freed.\n");
+		"testdir: 1 file packed, 46988 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -579,7 +578,7 @@ void to::test<8>()
 			"testdir: rescanned 2007/07-07.grib1\n"
 			"testdir: rescanned 2007/07-08.grib1\n"
 			"testdir: rescanned 2007/10-09.grib1\n"
-			"testdir: 3 files rescanned, 30448 bytes reclaimed cleaning the index.\n");
+			"testdir: 3 files rescanned.\n");
 		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.count(OK), 3u);
@@ -634,7 +633,7 @@ void to::test<9>()
 	{
 		stringstream s;
 		writer.repack(s, true);
-		ensure_equals(s.str(), "testdir: 30448 bytes reclaimed on the index, 30448 total bytes freed.\n");
+		ensure_equals(s.str(), "testdir: 30448 total bytes freed.\n");
 	}
 
 	// Ensure that we have the summary cache
