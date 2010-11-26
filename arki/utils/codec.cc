@@ -43,7 +43,13 @@ uint64_t decodeULInt(const unsigned char* val, unsigned int bytes)
 
 Encoder& Encoder::addBuffer(const wibble::sys::Buffer& buf)
 {
-	this->buf.append((const char*)buf.data(), buf.size());
+    this->buf.append((const char*)buf.data(), buf.size());
+    return *this;
+}
+
+Decoder::Decoder(const wibble::sys::Buffer& buf, size_t offset)
+    : buf((const unsigned char*)buf.data() + offset), len(buf.size() - offset)
+{
 }
 
 }

@@ -64,6 +64,8 @@ dist_noinst_HEADERS = \
 		scan/any.h \
 		scan/dir.h \
 		summary.h \
+		summary/node.h \
+		summary/stats.h \
 		refcounted.h \
 		runtime.h \
 		runtime/io.h \
@@ -169,6 +171,8 @@ libarkimet_la_SOURCES = \
 		metadata/stream.cc \
 		metadata/test-generator.cc \
 		summary.cc \
+		summary/node.cc \
+		summary/stats.cc \
 		matcher.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
@@ -280,6 +284,8 @@ tests_arki_test_SOURCES = \
 		metadata/stream-tut.cc \
 		metadata/test-generator-tut.cc \
 		summary-tut.cc \
+		summary/node-tut.cc \
+		summary/stats-tut.cc \
 		matcher-tut.cc \
 		matcher/test-utils.cc \
 		matcher/utils-tut.cc \

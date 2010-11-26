@@ -53,6 +53,7 @@ struct Mapping;
 namespace utils {
 namespace codec {
 struct Encoder;
+struct Decoder;
 }
 }
 
@@ -242,8 +243,7 @@ struct Type : public refcounted::Base
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const = 0;
 
 	/**
-	 * Encode to compact binary representation, without identification
-	 * envelope
+     * Encode to compact binary representation, with identification envelope
 	 */
 	virtual std::string encodeWithEnvelope() const;
 
@@ -332,6 +332,12 @@ struct StyledType : public CoreType<BASE>
 
 /// Decode an item encoded in binary representation
 Item<> decode(const unsigned char* buf, size_t len);
+
+/**
+ * Decode an item encoded in binary representation with envelope, from a
+ * decoder
+ */
+Item<> decode(utils::codec::Decoder& dec);
 /**
  * Decode the item envelope in buf:len
  *

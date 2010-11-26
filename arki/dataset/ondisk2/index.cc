@@ -32,6 +32,7 @@
 #include <arki/types/source.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
+#include <arki/summary/stats.h>
 #include <arki/utils/fd.h>
 #include <arki/utils/files.h>
 #include <arki/sort.h>
@@ -716,7 +717,7 @@ void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
 	while (sq.step())
 	{
 		// Fill in the summary statistics
-		refcounted::Pointer<summary::Stats> st(new summary::Stats);
+		auto_ptr<summary::Stats> st(new summary::Stats);
 		st->count = sq.fetch<size_t>(0);
 		st->size = sq.fetch<unsigned long long>(1);
 		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
@@ -741,7 +742,7 @@ void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
 		}
 
 		// Feed the results to the summary
-		summary.add(md, st);
+		summary.add(md, st.release());
 	}
 }
 
@@ -860,7 +861,7 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 	while (sq.step())
 	{
 		// Fill in the summary statistics
-		refcounted::Pointer<summary::Stats> st(new summary::Stats);
+		auto_ptr<summary::Stats> st(new summary::Stats);
 		st->count = sq.fetch<size_t>(0);
 		st->size = sq.fetch<unsigned long long>(1);
 		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
@@ -885,7 +886,7 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 		}
 
 		// Feed the results to the summary
-		summary.add(md, st);
+		summary.add(md, st.release());
 	}
 
 	return true;

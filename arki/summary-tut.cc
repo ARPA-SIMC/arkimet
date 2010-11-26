@@ -20,6 +20,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/summary.h>
+#include <arki/summary/stats.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -335,12 +336,12 @@ void to::test<14>()
 	md3.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
 	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 
-	refcounted::Pointer<summary::Stats> st(new summary::Stats);
+	auto_ptr<summary::Stats> st(new summary::Stats);
 	st->count = 5;
 	st->size = 123456;
 	st->reftimeMerger.mergeTime(Time::create(2008, 7, 6, 5, 4, 3), Time::create(2008, 9, 8, 7, 6, 5));
 
-	s.add(md3, st);
+	s.add(md3, st.release());
 
 	// Check that it contains 2 metadata
 	ensure_equals(s.count(), 7u);
@@ -359,6 +360,75 @@ void to::test<15>()
 	ensure_equals(is.size(), 2u);
 	ensure_equals(is.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(1, 2, 3)));
 	ensure_equals(is.get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(1, 2, 3)));
+}
+
+// Test loading an old summary
+template<> template<>
+void to::test<16>()
+{
+    Summary s;
+    s.readFile("inbound/old.summary");
+    ensure(s.count() > 0);
+
+    // Compare with a summary with different msoSerLen
+    {
+        Summary s1;
+        s1.add(s);
+        ensure(s == s1);
+    }
+
+    // Ensure we can recode it
+    // There was a bug where we could not really visit it, because the visitor
+    // would only emit a stats when the visit depth reached msoSerLen, which is
+    // not the case with summaries generated with lower msoSerLens
+
+    // Serialisation to binary
+    {
+        string encoded = s.encode();
+        stringstream stream(encoded, ios_base::in);
+        Summary s2;
+        ensure(s2.read(stream, "(test memory buffer)"));
+        ensure(s == s2);
+    }
+
+    // Serialisation to Yaml
+    {
+        stringstream stream;
+        s.writeYaml(stream);
+        stream.seekg(0);
+        Summary s2;
+        s2.readYaml(stream, "(test memory buffer)");
+        ensure(s == s2);
+    }
+}
+
+// Test a case where adding a metadata twice duplicated some nodes
+template<> template<>
+void to::test<17>()
+{
+    s.add(md2);
+    struct Counter : public summary::Visitor
+    {
+        size_t count;
+        Counter() : count(0) {}
+        virtual bool operator()(const std::vector< UItem<> >&, const UItem<summary::Stats>&)
+        {
+            ++count;
+            return true;
+        }
+    } counter;
+    s.visit(counter);
+
+    ensure_equals(counter.count, 2u);
+}
+
+// Test loading an old summary
+template<> template<>
+void to::test<18>()
+{
+    Summary s;
+    s.readFile("inbound/all.summary");
+    ensure(s.count() > 0);
 }
 
 }

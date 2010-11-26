@@ -12,5 +12,6 @@ export ARKI_TARGETFILE=$TOP_SRCDIR/conf/targetfile/
 export ARKI_ALIASES=$TOP_SRCDIR/conf/match-alias.conf
 export PATH="$TOP_SRCDIR/src:$PATH"
 export ARKI_POSTPROC=$TOP_SRCDIR/test/postproc
+export LD_LIBRARY_PATH="$TOP_SRCDIR/arki:$LD_LIBRARY_PATH"
 
 exec "$@"

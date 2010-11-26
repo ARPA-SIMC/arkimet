@@ -256,7 +256,9 @@ struct Decoder
 	const unsigned char* buf;
 	size_t len;
 
+	Decoder(const std::string& str) : buf((const unsigned char*)str.data()), len(str.size()) {}
 	Decoder(const unsigned char* buf, size_t len) : buf(buf), len(len) {}
+	Decoder(const wibble::sys::Buffer& buf, size_t offset=0);
 
 	template<typename T, typename STR>
 	T popVarint(STR what)

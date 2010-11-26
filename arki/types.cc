@@ -303,6 +303,23 @@ Item<> decode(const unsigned char* buf, size_t len)
 	return types::MetadataType::get(code)->decode_func(buf, len);
 }
 
+Item<> decode(utils::codec::Decoder& dec)
+{
+    using namespace utils::codec;
+
+    // Decode the element type
+    Code code = (Code)dec.popVarint<unsigned>("element code");
+    // Decode the element size
+    size_t size = dec.popVarint<size_t>("element size");
+
+    // Finally decode the element body
+    ensureSize(dec.len, size, "element body");
+    Item<> res = decodeInner(code, dec.buf, size);
+    dec.buf += size;
+    dec.len -= size;
+    return res;
+}
+
 Item<> decodeInner(types::Code code, const unsigned char* buf, size_t len)
 {
 	return types::MetadataType::get(code)->decode_func(buf, len);
@@ -359,7 +376,7 @@ bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, s
 
 	// Get the version in next 2 bytes
 	version = decodeUInt(hdr+2, 2);
-	
+
 	// Get length from next 4 bytes
 	unsigned int len = decodeUInt(hdr+4, 4);
 
@@ -407,7 +424,7 @@ bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buff
 
 	// Get the version in next 2 bytes
 	version = decodeUInt(hdr+2, 2);
-	
+
 	// Get length from next 4 bytes
 	unsigned int len = decodeUInt(hdr+4, 4);
 

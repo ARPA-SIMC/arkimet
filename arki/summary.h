@@ -47,28 +47,8 @@ class Matcher;
 class Formatter;
 
 namespace summary {
+struct RootNode;
 struct Stats;
-}
-
-namespace types {
-class Origin;
-class Product;
-class Level;
-class Timerange;
-class Area;
-class Ensemble;
-
-template<>
-struct traits<summary::Stats>
-{
-	static const char* type_tag;
-	static const types::Code type_code;
-	static const size_t type_sersize_bytes;
-	static const char* type_lua_tag;
-
-	typedef unsigned char Style;
-};
-
 }
 
 namespace matcher {
@@ -78,43 +58,10 @@ class AND;
 namespace summary {
 class LuaIter;
 
-struct Stats : public types::CoreType<Stats>
-{
-	size_t count;
-	unsigned long long size;
-	types::reftime::Collector reftimeMerger;
-
-	Stats() : count(0), size(0) {}
-	Stats(size_t count, unsigned long long size, const types::Reftime* reftime);
-
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Stats& o) const;
-	virtual bool operator==(const Type& o) const;
-	virtual bool operator==(const Stats& o) const;
-
-	bool operator!=(const Stats& i) const { return !operator==(i); }
-	bool operator<(const Stats& i) const { return compare(i) < 0; }
-
-	void merge(const refcounted::Pointer<Stats>& s);
-	void merge(size_t count, unsigned long long size, const types::Reftime* reftime);
-
-	void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	std::string toYaml(size_t indent = 0) const;
-	void toYaml(std::ostream& out, size_t indent = 0) const;
-	static arki::refcounted::Pointer<Stats> decode(const unsigned char* buf, size_t len);
-	static arki::refcounted::Pointer<Stats> decodeString(const std::string& str);
-	static arki::refcounted::Pointer<Stats> decodeMapping(const emitter::memory::Mapping& val);
-
-	virtual void lua_push(lua_State* L) const;
-	static int lua_lookup(lua_State* L);
-};
-
 struct Visitor
 {
 	virtual ~Visitor() {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const refcounted::Pointer<Stats>& stats) = 0;
+	virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats) = 0;
 
 	/// Return the metadata code for a given md vector position
 	static types::Code codeForPos(size_t pos);
@@ -130,67 +77,13 @@ struct Visitor
 struct StatsVisitor
 {
 	virtual ~StatsVisitor() {}
-	virtual bool operator()(const arki::refcounted::Pointer<Stats>& stats) = 0;
+	virtual bool operator()(const Stats& stats) = 0;
 };
 
 struct ItemVisitor
 {
 	virtual ~ItemVisitor() {}
 	virtual bool operator()(const arki::UItem<>& item) = 0;
-};
-
-struct Node : public refcounted::Base
-{
-	// Metadata represented here
-	std::vector< UItem<> > md;
-	// Children representing the rest of the metadata
-	// TODO: replace with vector, insertionsort, binary search
-	std::map< UItem<>, refcounted::Pointer<Node> > children;
-	// Statistics about the metadata scanned so far
-	refcounted::Pointer<Stats> stats;
-
-	Node();
-	// New node initialized from the given metadata
-	Node(const Metadata& m, size_t scanpos = 0);
-	Node(const Metadata& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
-	Node(const std::vector< UItem<> >& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
-	virtual ~Node();
-
-	// Visit all the contents of this node, notifying visitor of all the full
-	// nodes found
-	bool visit(Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanpos = 0) const;
-
-	// Visit all the stats contained in this node and all subnotes
-	bool visitStats(StatsVisitor& visitor) const;
-
-	// Notifies the visitor of all the values of the given metadata item.
-	// Due to the internal structure, the same item can be notified more than once.
-	bool visitItem(size_t msoidx, ItemVisitor& visitor) const;
-
-	// Visit all the contents of this node, notifying visitor of all the full
-	// nodes found that match the matcher
-	bool visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanpos = 0) const;
-
-	// Add a metadata item
-	void add(const Metadata& m, size_t scanpos = 0);
-	void add(const Metadata& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
-	void add(const std::vector< UItem<> >& m, const refcounted::Pointer<Stats>& st, size_t scanpos = 0);
-
-	// Return the total size of all the metadata described by this node.
-	unsigned long long size() const;
-
-	/**
-	 * Get the reference time interval covered by the metadata bundle.
-	 *
-	 * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
-	 */
-	Item<types::Reftime> getReferenceTime() const;
-
-	virtual void encode(utils::codec::Encoder& enc, const UItem<>& lead = UItem<>(), size_t scanpos = 0) const;
-
-	int compare(const Node& node) const;
-
-	static refcounted::Pointer<Node> decode(const unsigned char* buf, size_t len, size_t scanpos = 0);
 };
 
 }
@@ -201,13 +94,14 @@ struct Node : public refcounted::Base
 class Summary
 {
 protected:
-	std::string m_filename;
-
-	refcounted::Pointer<summary::Node> root;
+    summary::RootNode* root;
 
 public:
-	Summary() {}
-	~Summary() {}
+    Summary();
+    Summary(const Summary& s);
+    ~Summary();
+
+    Summary& operator=(const Summary& s);
 
 	/**
 	 * Check that two Summary contain the same information
@@ -233,6 +127,9 @@ public:
 	 * Return the total size of all the metadata described by this summary.
 	 */
 	unsigned long long size() const;
+
+    /// Dump the internal structure of this summary for debugging purposes
+    void dump(std::ostream& out) const;
 
 	/**
 	 * Read a summary from a POSIX file descriptor.
@@ -334,7 +231,7 @@ public:
 	 * summarisable metadata items are taken from 'md', and the statistics
 	 * from 'st'
 	 */
-	void add(const Metadata& md, const refcounted::Pointer<summary::Stats>& st);
+	void add(const Metadata& md, const UItem<summary::Stats>& st);
 
 	/**
 	 * Merge a summary into this summary
