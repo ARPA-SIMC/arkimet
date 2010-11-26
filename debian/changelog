@@ -2,8 +2,10 @@ arkimet (0.49-1) UNRELEASED; urgency=low
 
   * New upstream version
      - fixed data corruption when using arki-server and postprocessors
+     - summary code reorganised, and added backwards-compatible handling of
+       summaries 
 
- -- Enrico Zini <enrico@debian.org>  Wed, 24 Nov 2010 17:04:23 +0000
+ -- Enrico Zini <enrico@debian.org>  Fri, 26 Nov 2010 21:21:56 +0000
 
 arkimet (0.48-1) UNRELEASED; urgency=low
 
