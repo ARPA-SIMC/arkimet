@@ -35,11 +35,11 @@ using namespace arki::utils;
 namespace arki {
 namespace metadata {
 
-void Stream::checkMetadata()
+bool Stream::checkMetadata()
 {
 	using namespace utils::codec;
 
-	if (buffer.size() < 8) return;
+	if (buffer.size() < 8) return false;
 
 	// Ensure first 2 bytes are MD
 	if (buffer[0] != 'M' || buffer[1] != 'D')
@@ -53,7 +53,7 @@ void Stream::checkMetadata()
 	// Check if we have a full metadata, in that case read it, remove it
 	// from the beginning of the string, then consume it it
 	if (buffer.size() < 8 + len)
-		return;
+		return false;
 
 	md.read((const unsigned char*)buffer.data() + 8, len, version, streamname);
 
@@ -63,35 +63,44 @@ void Stream::checkMetadata()
 		Item<types::source::Inline> inl = md.source.upcast<types::source::Inline>();
 		dataToGet = inl->size;
 		state = DATA;
-		checkData();
+		return true;
 	} else {
 		consumer(md);
+        return true;
 	}
 }
 
-void Stream::checkData()
+bool Stream::checkData()
 {
-	if (buffer.size() >= dataToGet)
-	{
-		wibble::sys::Buffer buf(buffer.data(), dataToGet);
-		buffer = buffer.substr(dataToGet);
-		dataToGet = 0;
-		state = METADATA;
-		md.setInlineData(md.source->format, buf);
-		consumer(md);
-		checkMetadata();
-	}
+    if (buffer.size() < dataToGet)
+        return false;
+
+    wibble::sys::Buffer buf(buffer.data(), dataToGet);
+    buffer = buffer.substr(dataToGet);
+    dataToGet = 0;
+    state = METADATA;
+    md.setInlineData(md.source->format, buf);
+    consumer(md);
+    return true;
+}
+
+bool Stream::check()
+{
+    switch (state)
+    {
+        case METADATA: return checkMetadata(); break;
+        case DATA: return checkData(); break;
+        default:
+            throw wibble::exception::Consistency("checking inbound data", "metadata stream state is in invalid state");
+    }
 }
 
 void Stream::readData(const void* buf, size_t size)
 {
-	buffer.append((const char*)buf, size);
+    buffer.append((const char*)buf, size);
 
-	switch (state)
-	{
-		case METADATA: checkMetadata(); break;
-		case DATA: checkData(); break;
-	}
+    while (check())
+        ;
 }
 
 }

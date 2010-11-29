@@ -4,8 +4,10 @@ arkimet (0.49-1) UNRELEASED; urgency=low
      - fixed data corruption when using arki-server and postprocessors
      - summary code reorganised, and added backwards-compatible handling of
        summaries 
+     - metadata::Stream: do not skip decoding metadata if more than one
+       metadata is transmitted in the same chunk
 
- -- Enrico Zini <enrico@debian.org>  Fri, 26 Nov 2010 21:21:56 +0000
+ -- Enrico Zini <enrico@debian.org>  Mon, 29 Nov 2010 23:07:26 +0000
 
 arkimet (0.48-1) UNRELEASED; urgency=low
 

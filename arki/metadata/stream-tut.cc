@@ -199,6 +199,42 @@ void to::test<1>()
 	ensure(cmpmd(md2, results[1]));
 }
 
+// Send data split in less chunks than we have metadata
+template<> template<>
+void to::test<2>()
+{
+    // Create test metadata
+    Metadata md;
+    md.source = source::Blob::create("grib", "fname", 1, 2);
+    this->fill(md);
+
+    // Encode it in a buffer 3 times
+    stringstream str;
+    md.write(str, "(memory)");
+    md.write(str, "(memory)");
+    md.write(str, "(memory)");
+
+    // Where we collect the decoded metadata
+    metadata::Collection results;
+
+    // Stream for the decoding
+    metadata::Stream mdstream(results, "test stream");
+
+    // Send the data in two halves
+    mdstream.readData(str.str().data(), str.str().size() / 2);
+    ensure_equals(results.size(), 1u);
+    mdstream.readData(str.str().data() + str.str().size() / 2, str.str().size() - (str.str().size() / 2));
+
+    // No bytes must be left to decode
+    ensure_equals(mdstream.countBytesUnprocessed(), 0u);
+
+    // See that we've got what we expect
+    ensure_equals(results.size(), 3u);
+    ensure(cmpmd(md, results[0]));
+    ensure(cmpmd(md, results[1]));
+    ensure(cmpmd(md, results[2]));
+}
+
 }
 
 // vim:set ts=4 sw=4:

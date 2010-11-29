@@ -274,7 +274,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
         // Create the dataset processor for this query
         auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
 
-        // Process the virtual qmacro dataset producing the output
+        // Process the dataset producing the output
         p->process(ds, dsname);
         p->end();
     }

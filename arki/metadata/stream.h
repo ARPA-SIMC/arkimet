@@ -43,8 +43,9 @@ class Stream
 	enum { METADATA, DATA } state;
 	size_t dataToGet;
 
-	void checkMetadata();
-	void checkData();
+	bool checkMetadata();
+	bool checkData();
+    bool check();
 
 public:
 	Stream(Consumer& consumer, const std::string& streamname)

@@ -166,6 +166,7 @@ struct DataProcessor : public DatasetProcessor
 
     virtual void end()
     {
+        output.stream().flush();
     }
 };
 
@@ -207,6 +208,7 @@ struct SummaryProcessor : public DatasetProcessor
     void do_output(const Summary& s)
     {
         (*printer)(s);
+        output.stream().flush();
     }
 };
 
@@ -248,6 +250,11 @@ struct BinaryProcessor : public DatasetProcessor
 		// TODO: validate query's postprocessor with ds' config
 		ds.queryBytes(query, out.stream());
 	}
+
+    virtual void end()
+    {
+        out.stream().flush();
+    }
 };
 
 
