@@ -632,7 +632,9 @@ struct Format3Decoder
             {
                 types::Code code = (types::Code)dec.popVarint<unsigned>("typecode");
                 int pos = Visitor::posForCode(code);
-                if (pos < 0) throw wibble::exception::Consistency("parsing summary", "unsupported typecode found");
+                if (pos < 0)
+                    throw wibble::exception::Consistency("parsing summary",
+                            str::fmtf("unsupported typecode found: %d", (int)code));
                 if (mdvec.size() > (unsigned)pos)
                     mdvec[pos] = 0;
             }
@@ -643,7 +645,9 @@ struct Format3Decoder
             {
                 Item<> item = types::decode(dec);
                 int pos = Visitor::posForCode(item->serialisationCode());
-                if (pos < 0) throw wibble::exception::Consistency("parsing summary", "unsupported typecode found");
+                if (pos < 0)
+                    throw wibble::exception::Consistency("parsing summary",
+                            str::fmtf("unsupported typecode found: %d", (int)item->serialisationCode()));
                 if (mdvec.size() <= (unsigned)pos)
                     mdvec.resize(pos + 1);
                 mdvec[pos] = item;

@@ -43,6 +43,7 @@
 #include <arki/formatter.h>
 #include <arki/dispatcher.h>
 #include <arki/utils.h>
+#include <arki/nag.h>
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
 #include <wibble/net/server.h>
@@ -91,6 +92,8 @@ struct Options : public StandardParserWithManpage
     StringOption* inbound;
     BoolOption* syslog;
     BoolOption* quiet;
+    BoolOption* verbose;
+    BoolOption* debug;
 
     Options() : StandardParserWithManpage("arki-server", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
     {
@@ -121,6 +124,8 @@ struct Options : public StandardParserWithManpage
             "log to system log");
         quiet = add<BoolOption>("quiet", 0, "quiet", "",
             "do not log to standard output");
+        verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
+        debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
     }
 };
 
@@ -1060,6 +1065,8 @@ int main(int argc, const char* argv[])
     try {
         if (opts.parse(argc, argv))
             return 0;
+
+        nag::init(opts.verbose->isSet(), opts.debug->isSet());
 
         if (!opts.hasNext())
             throw wibble::exception::BadOption("please specify a configuration file");
