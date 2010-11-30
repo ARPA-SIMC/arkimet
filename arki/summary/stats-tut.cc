@@ -87,9 +87,23 @@ void to::test<2>()
     ensure_serialises(st, types::TYPE_SUMMARYSTATS);
 }
 
-// Test Lua functions
+// Basic encode/decode tests with large numbers
 template<> template<>
 void to::test<3>()
+{
+    using namespace arki::summary;
+
+    Stats* s;
+    Item<Stats> st(s = new Stats);
+    s->merge(md);
+    s->count = 0x7FFFffffUL;
+    s->size = 0x7FFFffffFFFFffffUL;
+    ensure_serialises(st, types::TYPE_SUMMARYSTATS);
+}
+
+// Test Lua functions
+template<> template<>
+void to::test<4>()
 {
 #ifdef HAVE_LUA
     /*
