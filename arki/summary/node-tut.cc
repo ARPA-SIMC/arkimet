@@ -106,7 +106,8 @@ void to::test<2>()
 
     // Decode it
     Decoder dec(encoded);
-    auto_ptr<RootNode> root1(RootNode::decode3(dec));
+    auto_ptr<RootNode> root1(new RootNode);
+    root1->decode3(dec);
 
     ensure_equals(root.compare(*root1), 0);
 }
