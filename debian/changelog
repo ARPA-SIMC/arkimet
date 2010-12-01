@@ -1,3 +1,11 @@
+arkimet (0.51-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Fixed: summary of N remote datasets in a single arki-query run gives
+       only the summary of the last dataset
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 01 Dec 2010 16:29:58 +0000
+
 arkimet (0.50-1) UNRELEASED; urgency=low
 
   * New upstream version
