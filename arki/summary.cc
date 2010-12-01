@@ -542,9 +542,14 @@ void Summary::read(const wibble::sys::Buffer& buf, unsigned version, const std::
 {
     using namespace summary;
 
-    clear();
-
-    root = RootNode::decode(buf, version, filename);
+    if (root)
+        root->decode(buf, version, filename);
+    else
+    {
+        auto_ptr<RootNode> res(new RootNode);
+        if (res->decode(buf, version, filename) > 0)
+            root = res.release();
+    }
 }
 
 std::string Summary::encode(bool compressed) const

@@ -220,12 +220,12 @@ struct RootNode : public Node
     /// Encode the whole trie to the given encoder
     void encode(utils::codec::Encoder& enc) const;
 
-    // Decode formats 1 and 2
-    static RootNode* decode1(utils::codec::Decoder& dec);
-    // Decode format 3
-    static RootNode* decode3(utils::codec::Decoder& dec);
+    // Decode formats 1 and 2, return the number of nodes decoded
+    size_t decode1(utils::codec::Decoder& dec);
+    // Decode format 3, return the number of nodes decoded
+    size_t decode3(utils::codec::Decoder& dec);
 
-    static RootNode* decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
+    size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
 };
 
 }

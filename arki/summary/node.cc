@@ -683,7 +683,7 @@ struct NodeAdder : public Visitor
 
 }
 
-RootNode* RootNode::decode1(utils::codec::Decoder& dec)
+size_t RootNode::decode1(utils::codec::Decoder& dec)
 {
     // Stripe size
     // either: child count + children
@@ -694,18 +694,14 @@ RootNode* RootNode::decode1(utils::codec::Decoder& dec)
 
     Node::buildMsoSerLen();
 
-    auto_ptr<RootNode> res(new RootNode);
-    NodeAdder adder(*res);
+    NodeAdder adder(*this);
     Format1Decoder decoder(adder);
     decoder.decode(dec.buf, dec.len);
 
-    if (adder.count > 0)
-        return res.release();
-    else
-        return 0;
+    return adder.count;
 }
 
-RootNode* RootNode::decode3(utils::codec::Decoder& dec)
+size_t RootNode::decode3(utils::codec::Decoder& dec)
 {
     // Stripe size
     // stats size + stats
@@ -713,19 +709,14 @@ RootNode* RootNode::decode3(utils::codec::Decoder& dec)
     // item length encoded using varints
     if (dec.len == 0) return 0;
 
-    auto_ptr<RootNode> res(new RootNode);
-    NodeAdder adder(*res);
+    NodeAdder adder(*this);
     Format3Decoder decoder(adder);
     decoder.decode(dec);
 
-    if (adder.count > 0)
-        return res.release();
-    else
-        return 0;
-    return 0;
+    return adder.count;
 }
 
-RootNode* RootNode::decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename)
+size_t RootNode::decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename)
 {
     using namespace utils::codec;
 
