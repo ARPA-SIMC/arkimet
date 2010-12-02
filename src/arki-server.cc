@@ -824,6 +824,7 @@ struct ChildServer : public sys::ChildProcess
                     // TODO: log e
                     if (!req.response_started)
                     {
+                        req.extra_response_headers["Arkimet-Exception"] = e.what();
                         net::http::error httpe(500, "Server error", e.what());
                         httpe.send(req);
                     }

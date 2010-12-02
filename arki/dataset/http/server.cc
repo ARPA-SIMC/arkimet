@@ -234,6 +234,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
     try {
         matcher = Matcher::parse(*parms.query);
     } catch (std::exception& e) {
+        req.extra_response_headers["Arkimet-Exception"] = e.what();
         throw net::http::error400(e.what());
     }
 
