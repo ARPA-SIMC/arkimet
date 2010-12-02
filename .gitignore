@@ -65,6 +65,7 @@ Makefile
 /src/arki-gzip
 /src/arki-server
 /src/arki-inbound
+/src/arki-test
 /src/test-src
 /arki/tests/arki-test
 /data/*.GRIB

@@ -20,7 +20,6 @@
 #include <arki/dataset/test-utils.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <arki/metadata/test-generator.h>
 #include <arki/dataset/local.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/simple/reader.h>
@@ -33,7 +32,6 @@
 #include <wibble/string.h>
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
-#include <wibble/sys/fs.h>
 #include <fstream>
 #include <strings.h>
 
@@ -302,127 +300,6 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 
 	if (filecount > 0)
 		inner_ensure(files::exists(str::joinpath(reader->path(), idxfname())));
-}
-
-Scenario::Scenario() : built(false) {}
-Scenario::~Scenario() {}
-
-void Scenario::build()
-{
-    built = true;
-    sys::fs::mkdirIfMissing("scenarios", 0777);
-    string path = sys::fs::abspath(str::joinpath("scenarios", name()));
-    if (utils::files::exists(path))
-        utils::rmtree(path);
-    cfg.setValue("path", path);
-    cfg.setValue("name", name());
-}
-
-struct Ondisk2Archived : public Scenario
-{
-    std::string name() const { return "ondisk2-archived"; }
-    std::string description() const
-    {
-        return "Ondisk2 dataset containing one grib1 per day for all the month 2010-09."
-               " Data from day 1 to 7 is archived in .archive/older; data from day 8 to 15"
-               " is archived in .archive/last. Data from 16 to 30 is live."
-               " The only changing metadata item is the reference time";
-    }
-    void build()
-    {
-        using namespace arki::dataset;
-
-        Scenario::build();
-        cfg.setValue("type", "ondisk2");
-        cfg.setValue("step", "daily");
-        cfg.setValue("unique", "reftime");
-        cfg.setValue("archive age", "7");
-
-        // Generate a dataset with archived data
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
-
-        // Import several metadata items
-        metadata::test::Generator gen("grib1");
-        for (int i = 0; i < 30; ++i)
-            gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT00:00:00Z", i + 1));
-        struct Importer : public metadata::Consumer
-        {
-            WritableLocal& ds;
-
-            Importer(WritableLocal& ds) : ds(ds) {}
-            bool operator()(Metadata& md)
-            {
-                WritableDataset::AcquireResult r = ds.acquire(md);
-                ensure(r == WritableDataset::ACQ_OK);
-                return true;
-            }
-        } importer(*ds);
-        gen.generate(importer);
-
-        // Check to remove new dataset marker
-        stringstream checklog;
-        ds->check(checklog, true, true);
-        ensure_equals(checklog.str(), "");
-
-        // Pack
-        {
-            // Override current date for maintenance to 2010-09-15
-            dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(1284505200);
-
-            // Archive old files
-            stringstream packlog;
-            ds->repack(packlog, true);
-            ensure_contains(packlog.str(), "6 files archived");
-        }
-
-        // Move some archived files to a separate archive dir
-        string path = cfg.value("path");
-        string last = str::joinpath(path, ".archive/last");
-        string older = str::joinpath(path, ".archive/older");
-        if (rename(last.c_str(), older.c_str()) < 0)
-            throw wibble::exception::System("cannot rename " + last + " to " + older);
-
-        // Pack again
-        {
-            // Override current date for maintenance to 2010-09-30
-            dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(1285801200);
-
-            // Archive old files
-            stringstream packlog;
-            ds->repack(packlog, true);
-            ensure_contains(packlog.str(), "15 files archived");
-        }
-    }
-};
-
-namespace {
-struct ScenarioDB : public map<string, Scenario*>
-{
-    ScenarioDB()
-    {
-        // Build scenario archive
-        add(new Ondisk2Archived);
-    }
-    void add(Scenario* s)
-    {
-        insert(make_pair(s->name(), s));
-    }
-};
-}
-
-const Scenario& Scenario::get(const std::string& name)
-{
-    static ScenarioDB *scenarios = 0;
-    if (!scenarios)
-        scenarios = new ScenarioDB;
-    // Get the scenario
-    ScenarioDB::iterator i = scenarios->find(name);
-    if (i == scenarios->end())
-        throw tut::failure("asked for dataset test scenario \"" + name + "\" which does not exist");
-    // Build it if needed
-    if (!i->second->built)
-        i->second->build();
-    return *i->second;
 }
 
 }

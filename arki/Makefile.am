@@ -36,6 +36,7 @@ dist_noinst_HEADERS = \
 		dataset/index/base.h \
 		dataset/index/attr.h \
 		dataset/test-utils.h \
+		dataset/test-scenario.h \
 		datasetpool.h \
 		dispatcher.h \
 		emitter.h \
@@ -218,6 +219,7 @@ libarkimet_la_SOURCES = \
 		dataset/empty.cc \
 		dataset/merged.cc \
 		dataset/gridquery.cc \
+		dataset/test-scenario.cc \
 		datasetpool.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
@@ -329,6 +331,7 @@ tests_arki_test_SOURCES = \
 		dataset/empty-tut.cc \
 		dataset/merged-tut.cc \
 		dataset/gridquery-tut.cc \
+		dataset/test-scenario-tut.cc \
 		dataset-tut.cc \
 		metadatagrid-tut.cc \
 		postprocess-tut.cc \

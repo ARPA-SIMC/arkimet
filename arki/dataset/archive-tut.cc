@@ -22,6 +22,7 @@
 #include <arki/dataset/archive.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/simple/index.h>
+#include <arki/dataset/test-scenario.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -504,7 +505,9 @@ template<> template<> void to::test<15>() { ForceSqlite fs; test<8>(); }
 template<> template<>
 void to::test<16>()
 {
-    const Scenario& scen = Scenario::get("ondisk2-archived");
+    using namespace arki::dataset;
+
+    const test::Scenario& scen = test::Scenario::get("ondisk2-archived");
 
     auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
 
