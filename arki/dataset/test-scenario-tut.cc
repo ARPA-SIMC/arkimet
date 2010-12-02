@@ -20,10 +20,12 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/dataset/test-scenario.h>
+#include <wibble/sys/fs.h>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 struct arki_dataset_test_scenario_shar {
     arki_dataset_test_scenario_shar()
@@ -44,7 +46,10 @@ template<> template<>
 void to::test<2>()
 {
     using namespace dataset;
-    /* const test::Scenario& scen = */ test::Scenario::get("ondisk2-manyarchivestates");
+    const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");
+    ensure(sys::fs::exists(str::joinpath(scen.path, ".archive/offline.summary")));
+    ensure(sys::fs::exists(str::joinpath(scen.path, ".archive/wrongro.summary")));
+    ensure(sys::fs::exists(str::joinpath(scen.path, ".archive/ro.summary")));
 }
 
 }
