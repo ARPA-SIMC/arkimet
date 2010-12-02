@@ -48,6 +48,7 @@ void to::test<2>()
     using namespace dataset;
     const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");
     ensure(sys::fs::exists(str::joinpath(scen.path, ".archive/offline.summary")));
+    ensure(!sys::fs::exists(str::joinpath(scen.path, ".archive/offline")));
     ensure(sys::fs::exists(str::joinpath(scen.path, ".archive/wrongro.summary")));
     ensure(sys::fs::exists(str::joinpath(scen.path, ".archive/ro.summary")));
 }

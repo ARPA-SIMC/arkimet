@@ -210,18 +210,28 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         // Pack and build 'offline' archive
         run_repack(6, 3);
         mvlast("offline");
-        // TODO " - offline: same as ro, but only the toplevel summary is present\n"
+        // same as ro, but only the toplevel summary is present
+        string ofsum = sys::fs::readFile(str::joinpath(path, ".archive/offline/summary"));
+        sys::fs::writeFile(
+                str::joinpath(path, ".archive/offline.summary"),
+                ofsum);
+        sys::fs::rmtree(str::joinpath(path, ".archive/offline"));
 
         // Pack and build 'wrongro' archive
         run_repack(9, 3);
         mvlast("wrongro");
-        // TODO " - wrongro: same as ro, but toplevel summary does not match the data\n"
+        // same as ro, but toplevel summary does not match the data
+        sys::fs::writeFile(
+                str::joinpath(path, ".archive/wrongro.summary"),
+                ofsum);
 
         // Pack and build 'ro' archive
         run_repack(12, 3);
         mvlast("ro");
-        // TODO " - ro: normal archive dir archived to mounted readonly media\n"
-        // TODO "   with dir.summary at the top\n"
+        // normal archive dir archived to mounted readonly media with dir.summary at the top
+        sys::fs::writeFile(
+                str::joinpath(path, ".archive/ro.summary"),
+                sys::fs::readFile(str::joinpath(path, ".archive/ro/summary")));
 
         // Pack and build 'old' archive
         run_repack(15, 3);
