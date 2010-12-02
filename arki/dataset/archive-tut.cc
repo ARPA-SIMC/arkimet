@@ -527,7 +527,9 @@ void to::test<17>()
     // If dir.summary exists, don't complain if dir is missing
     {
         auto_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
-        // TODO a.maintenance(maintenance::MaintFileVisitor& v);
+        MaintenanceCollector c;
+        a->maintenance(c);
+        ensure(c.isClean());
     }
 
     // Querying dir uses dir.summary if dir is missing

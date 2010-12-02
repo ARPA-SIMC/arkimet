@@ -141,9 +141,52 @@ HTTP::~HTTP()
 
 struct ReqState
 {
-	http::CurlEasy& m_curl;
-	long response_code;
-	std::stringstream response_error;
+    http::CurlEasy& m_curl;
+    long response_code;
+    std::stringstream response_error;
+    std::string exception_message;
+
+    ReqState(http::CurlEasy& curl) : m_curl(curl), response_code(-1)
+    {
+        // TODO: register header function
+        checked("setting header function", curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, &ReqState::headerfunc));
+        checked("setting header function data", curl_easy_setopt(m_curl, CURLOPT_WRITEHEADER, this));
+    }
+
+    static size_t headerfunc(void *ptr, size_t size, size_t nmemb, void *stream)
+    {
+        // From curl_easy_setopt(3):
+        /*
+         * The header callback  will  be  called  once for each header and only
+         * complete header lines are passed on to the callback.  Parsing
+         * headers should be easy enough using this. The size of the data
+         * pointed to by ptr  is  size  multiplied with nmemb. Do not assume
+         * that the header line is zero terminated!
+         *
+         * It's  important to note that the callback will be invoked for the
+         * headers of all responses received after initiating a request and
+         * not just the final response. This includes all responses which occur
+         * during  authentication negotiation. If you need to operate on only
+         * the headers from the final response, you will need to collect
+         * headers in the callback yourself and use HTTP status lines, for
+         * example, to delimit response boundaries.
+         *
+         * Since 7.14.1: When a server sends a chunked encoded transfer, it may
+         * contain a trailer. That trailer is  identical  to  a HTTP header and
+         * if such a trailer is received it is passed to the application using
+         * this callback as well. There are several ways to detect it being a
+         * trailer and not an ordinary header: 1) it comes after the
+         * response-body. 2) it comes after the final header line (CR LF) 3) a
+         * Trailer: header among the response-headers mention what header to
+         * expect in the trailer.
+         */
+        ReqState& s = *(ReqState*)stream;
+        string header((const char*)ptr, size*nmemb);
+        // Look for special headers to get raw exception messages
+        if (str::startsWith(header, "Arkimet-Exception: "))
+            s.exception_message = header.substr(19);
+        return size * nmemb;
+    }
 
 	size_t check_error(void* ptr, size_t size, size_t nmemb)
 	{
@@ -158,18 +201,26 @@ struct ReqState
 		return size * nmemb;
 	}
 
-	void throwError(const std::string& context)
-	{
-		throw wibble::exception::Consistency(context, "Server gave status " + str::fmt(response_code) + ": " + response_error.str());
-	}
-	ReqState(http::CurlEasy& curl) : m_curl(curl), response_code(-1) {}
+    void throwError(const std::string& context)
+    {
+        string msg = str::fmtf("Server gave status %d: ", response_code);
+        if (!exception_message.empty())
+            msg += exception_message;
+        else
+            msg += response_error.str();
+        throw wibble::exception::Consistency(context, msg);
+    }
 };
 
 struct SStreamState : public ReqState
 {
 	std::stringstream buf;
 
-	SStreamState(http::CurlEasy& curl) : ReqState(curl) {}
+    SStreamState(http::CurlEasy& curl) : ReqState(curl)
+    {
+        checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
+        checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
+    }
 
 	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
 	{
@@ -185,8 +236,12 @@ struct OstreamState : public ReqState
 	ostream& os;
     metadata::Hook* data_start_hook;
 
-	OstreamState(http::CurlEasy& curl, ostream& os, metadata::Hook* data_start_hook = 0)
-		: ReqState(curl), os(os), data_start_hook(data_start_hook) {}
+    OstreamState(http::CurlEasy& curl, ostream& os, metadata::Hook* data_start_hook = 0)
+        : ReqState(curl), os(os), data_start_hook(data_start_hook)
+    {
+        checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
+        checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
+    }
 
 	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
 	{
@@ -206,8 +261,12 @@ struct MDStreamState : public ReqState
 {
 	metadata::Stream mdc;
 
-	MDStreamState(http::CurlEasy& curl, metadata::Consumer& consumer, const std::string& baseurl)
-		: ReqState(curl), mdc(consumer, "HTTP download from " + baseurl) {}
+    MDStreamState(http::CurlEasy& curl, metadata::Consumer& consumer, const std::string& baseurl)
+        : ReqState(curl), mdc(consumer, "HTTP download from " + baseurl)
+    {
+        checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
+        checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
+    }
 
 	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
 	{
@@ -274,8 +333,6 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
 	MDStreamState s(m_curl, consumer, m_baseurl);
-	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
-	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -328,8 +385,6 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
 	SStreamState s(m_curl);
-	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
-	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -449,8 +504,6 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	// Set the form info 
 	curl_easy_setopt(m_curl, CURLOPT_HTTPPOST, form.ptr());
 	OstreamState s(m_curl, out, q.data_start_hook);
-	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
-	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -472,8 +525,6 @@ void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 	string url = joinpath(path, "config");
 	SStreamState content(m_curl);
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
-	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &content));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 	
 	CURLcode code = curl_easy_perform(m_curl);
@@ -507,8 +558,6 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
 	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 	SStreamState content(m_curl);
-	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
-	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &content));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -533,8 +582,6 @@ void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 	string url = joinpath(server, "aliases");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
 	SStreamState content(m_curl);
-	checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
-	checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &content));
 	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
@@ -595,8 +642,6 @@ void HTTPInbound::list(std::vector<std::string>& files)
 
     // Store the results in memory
     SStreamState s(m_curl);
-    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &SStreamState::writefunc));
-    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
 
     CURLcode code = curl_easy_perform(m_curl);
     if (code != CURLE_OK)
@@ -633,8 +678,6 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
     MDStreamState s(m_curl, consumer, m_baseurl);
-    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
-    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
     CURLcode code = curl_easy_perform(m_curl);
@@ -667,8 +710,6 @@ void HTTPInbound::testdispatch(const std::string& fname, const std::string& form
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
     OstreamState s(m_curl, out);
-    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
-    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
     CURLcode code = curl_easy_perform(m_curl);
@@ -701,8 +742,6 @@ void HTTPInbound::dispatch(const std::string& fname, const std::string& format, 
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
     MDStreamState s(m_curl, consumer, m_baseurl);
-    checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
-    checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &s));
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
     CURLcode code = curl_easy_perform(m_curl);

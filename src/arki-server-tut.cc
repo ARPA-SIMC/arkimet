@@ -143,7 +143,10 @@ void to::test<5>()
     try {
         testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
         ensure(false);
-    } catch (std::exception& e) {}
+    } catch (std::exception& e) {
+        ensure_not_contains(e.what(), "<html>");
+        ensure_contains(e.what(), "subexpression 'MISCHIEF' does not contain a colon");
+    }
     ensure_equals(mdc.size(), 0u);
 
     // Try it on summaries
