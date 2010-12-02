@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/dataset.h>
 #include <string>
 #include <map>
 #include <iosfwd>
@@ -49,7 +50,7 @@ class Manifest;
 class Reader;
 }
 
-class Archive
+class Archive : public ReadonlyDataset
 {
 protected:
 	std::string m_dir;
@@ -110,7 +111,7 @@ public:
  * When querying, all archives are queried, following the archive order:
  * alphabetical order except the archive named "last" is queried last.
  */
-class Archives
+class Archives : public ReadonlyDataset
 {
 protected:
 	std::string m_dir;
