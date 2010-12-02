@@ -4,6 +4,7 @@ AC_INIT(arkimet, 0.51, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER(wibble/config.h)
 AM_CONFIG_HEADER(arki/config.h)
 
 AC_CONFIG_MACRO_DIR([m4])
