@@ -80,7 +80,7 @@ void to::test<1>()
 		Datafile df("./" + fname);
 
 		// It should exist but be empty
-		ensure(files::exists(fname));
+		ensure(sys::fs::exists(fname));
 		ensure_equals(filesize(fname), 0u);
 
 		// Get a metadata
@@ -94,8 +94,8 @@ void to::test<1>()
 		ensure_equals(filesize(fname), size);
 		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, 0, size)));
 		// Metadata and summaries don't get touched
-		ensure(!files::exists(mdfname));
-		ensure(!files::exists(sumfname));
+		ensure(!sys::fs::exists(mdfname));
+		ensure(!sys::fs::exists(sumfname));
 
 		totsize += size;
 
@@ -109,15 +109,15 @@ void to::test<1>()
 		ensure_equals(filesize(fname), totsize + size);
 		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
 		// Metadata and summaries don't get touched
-		ensure(!files::exists(mdfname));
-		ensure(!files::exists(sumfname));
+		ensure(!sys::fs::exists(mdfname));
+		ensure(!sys::fs::exists(sumfname));
 
 		totsize += size;
 
 		df.flush();
 		// Metadata and summaries are now there
-		ensure(files::exists(mdfname));
-		ensure(files::exists(sumfname));
+		ensure(sys::fs::exists(mdfname));
+		ensure(sys::fs::exists(sumfname));
 		inomd = utils::files::inode(mdfname);
 		inosum = utils::files::inode(sumfname);
 

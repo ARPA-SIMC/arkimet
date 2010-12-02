@@ -71,7 +71,7 @@ Writer::Writer(const ConfigFile& cfg)
 
 	// If the index is missing, take note not to perform a repack until a
 	// check is made
-	if (!files::exists(str::joinpath(m_path, "index.sqlite")))
+	if (!sys::fs::exists(str::joinpath(m_path, "index.sqlite")))
 		files::createDontpackFlagfile(m_path);
 
 	m_tf = TargetFile::create(cfg);
@@ -536,7 +536,7 @@ size_t Writer::repackFile(const std::string& relpath)
 	// Remove the .metadata file if present, because we are shuffling the
 	// data file and it will not be valid anymore
 	string mdpathname = pathname + ".metadata";
-	if (files::exists(mdpathname))
+	if (sys::fs::exists(mdpathname))
 		if (unlink(mdpathname.c_str()) < 0)
 			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
 
@@ -598,7 +598,7 @@ size_t Writer::vacuum()
 	}
 
 	// Rebuild the cached summaries, if needed
-	if (!files::exists(str::joinpath(m_path, ".summaries/all.summary")))
+	if (!sys::fs::exists(str::joinpath(m_path, ".summaries/all.summary")))
 		m_idx.summaryForAll();
 
 	return size_pre > size_post ? size_pre - size_post : 0;

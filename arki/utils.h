@@ -43,14 +43,6 @@ template<int x> struct static_assert_test{};
 	typedef ::arki::utils::static_assert_test<\
 		sizeof(::arki::utils::STATIC_ASSERTION_FAILURE<(bool)(B)>)> arki_utils_static_assert_typedef_ ## __LINE__
 
-
-bool isdir(const std::string& root, wibble::sys::fs::Directory::const_iterator& i);
-
-bool isdir(const std::string& pathname);
-
-/// Read the entire contents of a file into a string
-std::string readFile(const std::string& filename);
-
 /// Read the entire contents of a file into a string
 std::string readFile(std::istream& file, const std::string& filename);
 
@@ -59,12 +51,6 @@ void createFlagfile(const std::string& pathname);
 
 /// Create an empty file, failing if it already exists
 void createNewFlagfile(const std::string& pathname);
-
-/// Remove a file, succeeding if it does not exists
-void removeFlagfile(const std::string& pathname);
-
-/// Check if a file exists
-bool hasFlagfile(const std::string& pathname);
 
 template<typename A, typename B>
 int compareMaps(const A& m1, const B& m2)
@@ -105,9 +91,6 @@ void hexdump(const char* name, const std::string& str);
 
 // Dump the string, in hex, to stderr, prefixed with name
 void hexdump(const char* name, const unsigned char* str, int len);
-
-/// Delete the directory \a dir and all its content
-void rmtree(const std::string& dir);
 
 /**
  * RAII-style class changing into a newly created temporary directory during

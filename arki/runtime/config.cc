@@ -266,7 +266,7 @@ std::string readRcDir(const std::string& nameInConfdir, const std::string& nameI
 	string res;
 	for (vector<string>::const_iterator i = files.begin();
 			i != files.end(); ++i)
-		res += utils::readFile(*i);
+		res += sys::fs::readFile(*i);
 	return res;
 }
 
@@ -279,7 +279,7 @@ SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::stri
 	for (vector<string>::const_iterator i = files.begin();
 			i != files.end(); ++i)
 	{
-		string tmp = utils::readFile(*i);
+		string tmp = sys::fs::readFile(*i);
 		res.push_back(FileInfo(*i, tmp.size()));
 		res.code += tmp;
 	}

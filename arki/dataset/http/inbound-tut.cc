@@ -20,7 +20,7 @@
 #include <arki/dataset/http/inbound.h>
 #include <arki/metadata/collection.h>
 #include <arki/types/assigneddataset.h>
-#include <arki/utils/files.h>
+#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
@@ -173,7 +173,7 @@ void to::test<3>()
     ensure_equals(mdc[1].get<types::AssignedDataset>()->name, "testds");
     ensure_equals(mdc[2].get<types::AssignedDataset>()->name, "testds");
 
-    ensure(!utils::files::exists("inbound/copy.grib1"));
+    ensure(!sys::fs::exists("inbound/copy.grib1"));
 }
 
 

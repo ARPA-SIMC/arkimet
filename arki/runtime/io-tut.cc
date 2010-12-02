@@ -20,14 +20,13 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/runtime/io.h>
-#include <arki/utils/files.h>
+#include <wibble/sys/fs.h>
 
 namespace tut {
 using namespace std;
 using namespace arki;
 using namespace wibble;
 using namespace arki::runtime;
-using namespace arki::utils;
 
 struct arki_runtime_io_shar {
 };
@@ -40,9 +39,9 @@ void to::test<1>()
 	{
 		Tempfile foo;
 		name = foo.name();
-		ensure(files::exists(name));
+		ensure(sys::fs::exists(name));
 	}
-	ensure(!files::exists(name));
+	ensure(!sys::fs::exists(name));
 }
 
 }

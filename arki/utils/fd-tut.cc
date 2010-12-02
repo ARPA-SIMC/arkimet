@@ -18,7 +18,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/utils/fd.h>
-#include <arki/utils/files.h>
+#include <wibble/sys/fs.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -30,6 +30,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils::fd;
+using namespace wibble;
 
 struct arki_utils_fd_shar {
     arki_utils_fd_shar()
@@ -50,9 +51,9 @@ void to::test<1>()
 
     {
         TempfileHandleWatch tfhw(tmpfname, fd);
-        ensure(files::exists(tmpfname));
+        ensure(sys::fs::exists(tmpfname));
     }
-    ensure(!files::exists(tmpfname));
+    ensure(!sys::fs::exists(tmpfname));
 }
 
 }

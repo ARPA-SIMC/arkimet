@@ -29,7 +29,7 @@
 #include <arki/metadata/collection.h>
 #include <arki/configfile.h>
 #include <arki/utils/fd.h>
-#include <arki/utils/files.h>
+#include <wibble/sys/fs.h>
 
 using namespace std;
 using namespace wibble;
@@ -194,7 +194,7 @@ void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::R
 
     // Delete fname if all was ok
     if (worker.all_ok)
-        utils::files::unlink(fname);
+        sys::fs::unlink(fname);
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();

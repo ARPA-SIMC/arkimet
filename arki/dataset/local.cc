@@ -55,7 +55,7 @@ Local::~Local()
 bool Local::hasArchive() const
 {
 	string arcdir = str::joinpath(m_path, ".archive");
-	return files::exists(arcdir);
+	return sys::fs::exists(arcdir);
 }
 
 Archives& Local::archive()
@@ -153,7 +153,7 @@ WritableLocal::~WritableLocal()
 bool WritableLocal::hasArchive() const
 {
 	string arcdir = str::joinpath(m_path, ".archive");
-	return files::exists(arcdir);
+	return sys::fs::exists(arcdir);
 	//std::auto_ptr<struct stat> st = sys::fs::stat(arcdir);
 	//if (!st.get())
 		//return false;
@@ -181,7 +181,7 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	sys::fs::mkFilePath(arcabsname);
 	
 	// Sanity checks: avoid conflicts
-	if (files::exists(arcabsname))
+	if (sys::fs::exists(arcabsname))
 		throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
 				arcabsname + " already exists");
 	string src = pathname;
@@ -191,7 +191,7 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	{
 		src += ".gz";
 		dst += ".gz";
-		if (files::exists(dst))
+		if (sys::fs::exists(dst))
 			throw wibble::exception::Consistency("archiving " + src + " to " + dst,
 					dst + " already exists");
 	}
@@ -204,11 +204,11 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	if (rename(src.c_str(), dst.c_str()) < 0)
 		throw wibble::exception::System("moving " + src + " to " + dst);
 	if (compressed)
-		files::renameIfExists(pathname + ".gz.idx", arcabsname + ".gz.idx");
+		sys::fs::renameIfExists(pathname + ".gz.idx", arcabsname + ".gz.idx");
 
 	// Move metadata to archive
-	files::renameIfExists(pathname + ".metadata", arcabsname + ".metadata");
-	files::renameIfExists(pathname + ".summary", arcabsname + ".summary");
+    sys::fs::renameIfExists(pathname + ".metadata", arcabsname + ".metadata");
+    sys::fs::renameIfExists(pathname + ".summary", arcabsname + ".summary");
 
 	// Acquire in the achive
 	archive().acquire(arcrelname);

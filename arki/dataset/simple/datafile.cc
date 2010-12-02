@@ -49,7 +49,7 @@ namespace simple {
 Datafile::Datafile(const std::string& pathname)
 	: pathname(pathname), basename(str::basename(pathname)), fd(-1)
 {
-	if (files::exists(pathname))
+	if (sys::fs::exists(pathname))
 	{
 		// Read the metadata
 		scan::scan(pathname, mds);

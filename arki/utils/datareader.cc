@@ -254,11 +254,11 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
 		flush();
 
 		// Open the new file
-		if (files::exists(fname))
+		if (sys::fs::exists(fname))
 			last = new datareader::FileReader(fname);
-		else if (files::exists(fname + ".gz.idx"))
+		else if (sys::fs::exists(fname + ".gz.idx"))
 			last = new datareader::IdxZlibFileReader(fname);
-		else if (files::exists(fname + ".gz"))
+		else if (sys::fs::exists(fname + ".gz"))
 			last = new datareader::ZlibFileReader(fname);
 		else
 			throw wibble::exception::Consistency("accessing file " + fname, "file does not exist");

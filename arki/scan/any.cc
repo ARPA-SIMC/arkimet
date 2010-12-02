@@ -57,9 +57,9 @@ static void scan_metadata(const std::string& file, metadata::Consumer& c)
 
 static bool scan_file(const std::string& file, const std::string& format, metadata::Consumer& c)
 {
-	// Scan the file
-	if (!files::exists(file) && files::exists(file + ".gz"))
-		throw wibble::exception::Consistency("scanning " + file + ".gz", "file needs to be manually decompressed before scanning");
+    // Scan the file
+    if (isCompressed(file))
+        throw wibble::exception::Consistency("scanning " + file + ".gz", "file needs to be manually decompressed before scanning");
 
 #ifdef HAVE_GRIBAPI
 	if (format == "grib" || format == "grib1" || format == "grib2")
@@ -170,14 +170,14 @@ bool canScan(const std::string& file)
 
 bool exists(const std::string& file)
 {
-	if (files::exists(file)) return true;
-	if (files::exists(file + ".gz")) return true;
+	if (sys::fs::exists(file)) return true;
+	if (sys::fs::exists(file + ".gz")) return true;
 	return false;
 }
 
 bool isCompressed(const std::string& file)
 {
-        return !files::exists(file) && files::exists(file + ".gz");
+    return !sys::fs::exists(file) && sys::fs::exists(file + ".gz");
 }
 
 time_t timestamp(const std::string& file)

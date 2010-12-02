@@ -89,23 +89,14 @@ void removeDontpackFlagfile(const std::string& dir);
 bool hasDontpackFlagfile(const std::string& dir);
 
 
-/// File mtime
+/// File mtime (or 0 if the file does not exist)
 time_t timestamp(const std::string& file);
 
-/// File size
-off_t size(const std::string& file);
+/// File size (or 0 if the file does not exist)
+size_t size(const std::string& file);
 
-/// File inode number
+/// File inode number (or 0 if the file does not exist)
 ino_t inode(const std::string& file);
-
-/// Move src to dst, without raising exception if src does not exist
-void renameIfExists(const std::string& src, const std::string& dst);
-
-/// Return true if the file exists
-bool exists(const std::string& file);
-
-/// Delete the file
-void unlink(const std::string& fname);
 
 }
 }

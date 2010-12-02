@@ -25,7 +25,6 @@
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata/consumer.h>
 #include <arki/utils.h>
-#include <arki/utils/files.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
@@ -51,8 +50,8 @@ void Scenario::build()
 {
     built = true;
     sys::fs::mkdirIfMissing("scenarios", 0777);
-    if (utils::files::exists(path))
-        utils::rmtree(path);
+    if (sys::fs::exists(path))
+        sys::fs::rmtree(path);
     // TODO: create config file
 }
 

@@ -276,7 +276,7 @@ void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
 		return dataset::HTTP::readConfig(path, cfg);
 	} else
 #endif
-	if (utils::isdir(path))
+	if (sys::fs::isdir(path))
 		return dataset::Local::readConfig(path, cfg);
 	else
 		return dataset::File::readConfig(path, cfg);

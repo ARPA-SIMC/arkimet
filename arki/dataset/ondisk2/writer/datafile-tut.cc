@@ -36,7 +36,7 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
-using namespace wibble::sys;
+using namespace wibble;
 
 namespace {
 inline size_t datasize(const Metadata& md)
@@ -93,7 +93,7 @@ void to::test<1>()
 	Datafile df(fname);
 
 	// It should exist but be empty
-	ensure(files::exists(fname));
+	ensure(sys::fs::exists(fname));
 	ensure_equals(files::size(fname), 0u);
 
 	// Get a metadata

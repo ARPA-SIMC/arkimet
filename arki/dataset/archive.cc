@@ -225,7 +225,7 @@ void Archive::vacuum()
 {
 	if (!m_mft) throw wibble::exception::Consistency("vacuuming " + m_dir, "archive opened in read only mode");
 	// If archive dir is not writable, skip this section
-	if (!files::exists(m_dir)) return;
+	if (!sys::fs::exists(m_dir)) return;
 
 	m_mft->vacuum();
 
@@ -246,11 +246,9 @@ Archives::Archives(const std::string& dir, bool read_only)
 			i != d.end(); ++i)
 	{
 		// Skip '.', '..' and hidden files
-		if ((*i)[0] == '.')
-			continue;
+		if ((*i)[0] == '.') continue;
+		if (!d.isdir(i)) continue;
 		string pathname = str::joinpath(m_dir, *i);
-		if (!sys::fs::isDirectory(pathname))
-			continue;
 		if (read_only && !Archive::is_archive(pathname))
 			continue;
 

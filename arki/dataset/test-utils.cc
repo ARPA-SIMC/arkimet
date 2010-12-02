@@ -30,6 +30,7 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <wibble/string.h>
+#include <wibble/sys/fs.h>
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
 #include <fstream>
@@ -299,7 +300,7 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 	inner_ensure_equals(mdc.size(), resultcount);
 
 	if (filecount > 0)
-		inner_ensure(files::exists(str::joinpath(reader->path(), idxfname())));
+		inner_ensure(sys::fs::exists(str::joinpath(reader->path(), idxfname())));
 }
 
 }

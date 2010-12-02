@@ -73,7 +73,7 @@ void to::test<1>()
 	bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
 	reader->queryBytes(bq, os);
 
-	string out = utils::readFile("testcountbytes.out");
+	string out = sys::fs::readFile("testcountbytes.out");
 	ensure_equals(out, "7399\n");
 }
 

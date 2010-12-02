@@ -254,7 +254,7 @@ void CommandLine::setupProcessing()
 		if (exprfile->isSet())
 		{
 			// Read the entire file into memory and parse it as an expression
-			strquery = utils::readFile(exprfile->stringValue());
+			strquery = sys::fs::readFile(exprfile->stringValue());
 		} else {
 			// Read from the first commandline argument
 			if (!hasNext())

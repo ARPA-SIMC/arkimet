@@ -60,7 +60,7 @@ void to::test<1>()
 		ensure_maint_clean(3);
 
 		// Check that maintenance does not accidentally create an archive
-		ensure(!files::exists("testds/.archive"));
+		ensure(!sys::fs::exists("testds/.archive"));
 	}
 
 	// Ensure packing has nothing to report
@@ -130,14 +130,14 @@ void to::test<2>()
 	}
 
 	// Check that the files have been moved to the archive
-	ensure(files::exists("testds/.archive/last/2007/07-07.grib1"));
-	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
-	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.summary"));
-	ensure(files::exists("testds/.archive/last/2007/07-08.grib1"));
-	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
-	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.summary"));
-	ensure(!files::exists("testds/2007/07-07.grib1"));
-	ensure(!files::exists("testds/2007/07-08.grib1"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.summary"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.summary"));
+	ensure(!sys::fs::exists("testds/2007/07-07.grib1"));
+	ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
 
 	// Maintenance should now show a normal situation
 	{
@@ -587,7 +587,7 @@ void to::test<9>()
 	ensure_maint_clean(3);
 
 	// The spurious file should not have been touched
-	ensure(files::exists("testds/2007/07.grib1.tmp"));
+	ensure(sys::fs::exists("testds/2007/07.grib1.tmp"));
 
 	// Perform packing and check that things are still ok afterwards
 	{
@@ -641,8 +641,8 @@ void to::test<10>()
 		ensure(not c.isClean());
 	}
 
-	ensure(files::exists("testds/foo/bar/test.grib1.tmp"));
-	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412);
+	ensure(sys::fs::exists("testds/foo/bar/test.grib1.tmp"));
+	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412u);
 
 	// Perform packing and check that things are still ok afterwards
 	{
@@ -654,7 +654,7 @@ void to::test<10>()
 	}
 	ensure_maint_clean(1);
 
-	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412);
+	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412u);
 
 	// Test querying
 	{

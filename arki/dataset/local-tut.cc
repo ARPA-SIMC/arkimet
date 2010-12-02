@@ -102,26 +102,26 @@ void to::test<1>()
 	}
 
 	// Check that the files have been moved to the archive
-	ensure(!files::exists("testds/.archive/last/2007/07-07.grib1"));
-	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.gz"));
-	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.gz.idx"));
-	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
-	ensure(files::exists("testds/.archive/last/2007/07-07.grib1.summary"));
-	ensure(!files::exists("testds/.archive/last/2007/07-08.grib1"));
-	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.gz"));
-	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.gz.idx"));
-	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
-	ensure(files::exists("testds/.archive/last/2007/07-08.grib1.summary"));
-	ensure(!files::exists("testds/2007/07-07.grib1"));
-	ensure(!files::exists("testds/2007/07-07.grib1.gz"));
-	ensure(!files::exists("testds/2007/07-07.grib1.gz.idx"));
-	ensure(!files::exists("testds/2007/07-07.grib1.metadata"));
-	ensure(!files::exists("testds/2007/07-07.grib1.summary"));
-	ensure(!files::exists("testds/2007/07-08.grib1"));
-	ensure(!files::exists("testds/2007/07-08.grib1.gz"));
-	ensure(!files::exists("testds/2007/07-08.grib1.gz.idx"));
-	ensure(!files::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(!files::exists("testds/2007/07-08.grib1.summary"));
+	ensure(!sys::fs::exists("testds/.archive/last/2007/07-07.grib1"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.gz"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.gz.idx"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.summary"));
+	ensure(!sys::fs::exists("testds/.archive/last/2007/07-08.grib1"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.gz"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.gz.idx"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
+	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.summary"));
+	ensure(!sys::fs::exists("testds/2007/07-07.grib1"));
+	ensure(!sys::fs::exists("testds/2007/07-07.grib1.gz"));
+	ensure(!sys::fs::exists("testds/2007/07-07.grib1.gz.idx"));
+	ensure(!sys::fs::exists("testds/2007/07-07.grib1.metadata"));
+	ensure(!sys::fs::exists("testds/2007/07-07.grib1.summary"));
+	ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
+	ensure(!sys::fs::exists("testds/2007/07-08.grib1.gz"));
+	ensure(!sys::fs::exists("testds/2007/07-08.grib1.gz.idx"));
+	ensure(!sys::fs::exists("testds/2007/07-08.grib1.metadata"));
+	ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
 
 	// Maintenance should now show a normal situation
 	{

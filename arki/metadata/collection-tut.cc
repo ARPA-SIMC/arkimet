@@ -125,7 +125,7 @@ void to::test<4>()
 	static const int repeats = 1024;
 
 	// Create a test file with `repeats` BUFR entries
-	std::string bufr = utils::readFile("inbound/test.bufr");
+	std::string bufr = sys::fs::readFile("inbound/test.bufr");
 	ensure(bufr.size() > 0);
 	bufr = bufr.substr(0, 194);
 

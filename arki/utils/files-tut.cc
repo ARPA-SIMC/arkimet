@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,12 +19,14 @@
 #include <arki/tests/test-utils.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
+using namespace wibble;
 using namespace arki;
 using namespace arki::utils::files;
 
@@ -128,7 +130,7 @@ void to::test<5>()
 	ensure_equals(timestamp("commontest/a"), 0);
 	utils::createFlagfile("commontest/a");
 	ensure(timestamp("commontest/a") != 0);
-	utils::removeFlagfile("commontest/a");
+    sys::fs::unlink("commontest/a");
 	ensure_equals(timestamp("commontest/a"), 0);
 }
 

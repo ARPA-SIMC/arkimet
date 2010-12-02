@@ -40,44 +40,6 @@ using namespace wibble;
 namespace arki {
 namespace utils {
 
-bool isdir(const std::string& root, wibble::sys::fs::Directory::const_iterator& i)
-{
-#ifdef HAVE_STRUCT_DIRENT_D_TYPE
-	if (i->d_type == DT_DIR)
-		return true;
-	if (i->d_type != DT_UNKNOWN)
-		return false;
-#endif
-	// No d_type, we'll need to stat
-	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(wibble::str::joinpath(root, *i));
-	if (st.get() == 0)
-		return false;
-	if (S_ISDIR(st->st_mode))
-		return true;
-    return false;
-}
-
-bool isdir(const std::string& pathname)
-{
-	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(pathname);
-	if (st.get() == 0)
-		return false;
-	return S_ISDIR(st->st_mode);
-}
-
-std::string readFile(const std::string& filename)
-{
-	if (filename == "-")
-		return readFile(cin, filename);
-	else
-	{
-		ifstream input(filename.c_str(), ios::in);
-		if (!input.is_open() || input.fail())
-			throw wibble::exception::File(filename, "opening file for reading");
-		return readFile(input, filename);
-	}
-}
-
 std::string readFile(std::istream& input, const std::string& filename)
 {
 	static const size_t bufsize = 4096;
@@ -111,18 +73,6 @@ void createNewFlagfile(const std::string& pathname)
 	::close(fd);
 }
 
-void removeFlagfile(const std::string& pathname)
-{
-	if (unlink(pathname.c_str()) != 0)
-		if (errno != ENOENT)
-			throw wibble::exception::File(pathname, "removing file");
-}
-
-bool hasFlagfile(const std::string& pathname)
-{
-	return wibble::sys::fs::access(pathname, F_OK);
-}
-
 void hexdump(const char* name, const std::string& str)
 {
 	fprintf(stderr, "%s ", name);
@@ -143,26 +93,6 @@ void hexdump(const char* name, const unsigned char* str, int len)
 	fprintf(stderr, "\n");
 }
 
-void rmtree(const std::string& dir)
-{
-    sys::fs::Directory d(dir);
-    for (sys::fs::Directory::const_iterator i = d.begin();
-            i != d.end(); ++i)
-    {
-        if (*i == "." || *i == "..") continue;
-        string pathname = str::joinpath(dir, *i);
-        if (i->d_type == DT_DIR ||
-            (i->d_type == DT_UNKNOWN && sys::fs::isDirectory(pathname)))
-        {
-            rmtree(pathname);
-        } else {
-            if (unlink(pathname.c_str()) < 0)
-                throw wibble::exception::System("cannot delete " + pathname);
-        }
-    }
-    if (rmdir(dir.c_str()) < 0)
-        throw wibble::exception::System("cannot delete directory " + dir);
-}
 
 MoveToTempDir::MoveToTempDir(const std::string& pattern)
 {
@@ -178,7 +108,7 @@ MoveToTempDir::MoveToTempDir(const std::string& pattern)
 MoveToTempDir::~MoveToTempDir()
 {
     sys::process::chdir(old_dir);
-    rmtree(tmp_dir);
+    sys::fs::rmtree(tmp_dir);
 }
 
 }

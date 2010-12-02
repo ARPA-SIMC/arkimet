@@ -47,11 +47,11 @@ void createNewRebuildFlagfile(const std::string& pathname)
 }
 void removeRebuildFlagfile(const std::string& pathname)
 {
-	utils::removeFlagfile(pathname + FLAGFILE_REBUILD);
+    sys::fs::deleteIfExists(pathname + FLAGFILE_REBUILD);
 }
 bool hasRebuildFlagfile(const std::string& pathname)
 {
-	return utils::hasFlagfile(pathname + FLAGFILE_REBUILD);
+    return sys::fs::exists(pathname + FLAGFILE_REBUILD);
 }
 
 
@@ -65,11 +65,11 @@ void createNewPackFlagfile(const std::string& pathname)
 }
 void removePackFlagfile(const std::string& pathname)
 {
-	utils::removeFlagfile(pathname + FLAGFILE_PACK);
+    sys::fs::deleteIfExists(pathname + FLAGFILE_PACK);
 }
 bool hasPackFlagfile(const std::string& pathname)
 {
-	return utils::hasFlagfile(pathname + FLAGFILE_PACK);
+    return sys::fs::exists(pathname + FLAGFILE_PACK);
 }
 
 
@@ -83,11 +83,11 @@ void createNewIndexFlagfile(const std::string& dir)
 }
 void removeIndexFlagfile(const std::string& dir)
 {
-	utils::removeFlagfile(str::joinpath(dir, FLAGFILE_INDEX));
+    sys::fs::deleteIfExists(str::joinpath(dir, FLAGFILE_INDEX));
 }
 bool hasIndexFlagfile(const std::string& dir)
 {
-	return utils::hasFlagfile(str::joinpath(dir, FLAGFILE_INDEX));
+    return sys::fs::exists(str::joinpath(dir, FLAGFILE_INDEX));
 }
 
 
@@ -101,48 +101,30 @@ void createNewDontpackFlagfile(const std::string& dir)
 }
 void removeDontpackFlagfile(const std::string& dir)
 {
-	utils::removeFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+    sys::fs::deleteIfExists(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
 bool hasDontpackFlagfile(const std::string& dir)
 {
-	return utils::hasFlagfile(str::joinpath(dir, FLAGFILE_DONTPACK));
+    return sys::fs::exists(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
 
 
 time_t timestamp(const std::string& file)
 {
-	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
-	return st.get() == NULL ? 0 : st->st_mtime;
+    std::auto_ptr<struct stat> st = sys::fs::stat(file);
+    return st.get() == NULL ? 0 : st->st_mtime;
 }
 
-off_t size(const std::string& file)
+size_t size(const std::string& file)
 {
-	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
-	return st.get() == NULL ? 0 : st->st_size;
+    std::auto_ptr<struct stat> st = sys::fs::stat(file);
+    return st.get() == NULL ? 0 : (size_t)st->st_size;
 }
 
 ino_t inode(const std::string& file)
 {
-	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
-	return st.get() == NULL ? 0 : st->st_ino;
-}
-
-void renameIfExists(const std::string& src, const std::string& dst)
-{
-	int res = ::rename(src.c_str(), dst.c_str());
-	if (res < 0 && errno != ENOENT)
-		throw wibble::exception::System("moving " + src + " to " + dst);
-}
-
-bool exists(const std::string& file)
-{
-	return sys::fs::access(file, F_OK);
-}
-
-void unlink(const std::string& fname)
-{
-    if (::unlink(fname.c_str()) < 0)
-        throw wibble::exception::File(fname, "cannot delete file");
+    std::auto_ptr<struct stat> st = sys::fs::stat(file);
+    return st.get() == NULL ? 0 : st->st_ino;
 }
 
 }

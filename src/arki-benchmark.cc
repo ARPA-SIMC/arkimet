@@ -48,6 +48,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 namespace wibble {
 namespace commandline {
@@ -359,7 +360,7 @@ int main(int argc, const char* argv[])
 			else if (ext == "bufr")
 				info.bufrs.push_back(*i);
 			else if (ext == "query")
-				info.queries.push_back(make_pair(*i, Matcher::parse(utils::readFile(*i))));
+				info.queries.push_back(make_pair(*i, Matcher::parse(sys::fs::readFile(*i))));
 			else
 				continue;
 		}
