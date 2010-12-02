@@ -5,8 +5,11 @@ arkimet (0.51-1) UNRELEASED; urgency=low
        only the summary of the last dataset
      - Implemented offline archives, where an archive directory is replaced by
        a .summary file
+     - arki-server sends exception messages on Arkimet-Exception response
+       headers, to allow arki-query to produce proper error messages without
+       needing to parse HTML
 
- -- Enrico Zini <enrico@debian.org>  Thu, 02 Dec 2010 15:29:20 +0000
+ -- Enrico Zini <enrico@debian.org>  Thu, 02 Dec 2010 17:41:11 +0000
 
 arkimet (0.50-1) UNRELEASED; urgency=low
 
