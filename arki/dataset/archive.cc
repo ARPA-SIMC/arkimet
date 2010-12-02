@@ -58,53 +58,80 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-Archive::Archive(const std::string& dir)
-	: m_dir(dir), m_mft(0)
-{
-	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_dir);
-}
-
-Archive::~Archive()
-{
-	if (m_mft) delete m_mft;
-}
+Archive::~Archive() {}
 
 bool Archive::is_archive(const std::string& dir)
 {
-	return simple::Manifest::exists(dir);
+    return simple::Manifest::exists(dir);
 }
 
-void Archive::openRO()
+Archive* Archive::create(const std::string& dir, bool writable)
+{
+    if (sys::fs::exists(dir + ".summary"))
+    {
+        // Writable is not allowed on archives that have been archived offline
+        if (writable) return 0;
+
+        if (simple::Manifest::exists(dir))
+        {
+            auto_ptr<OnlineArchive> res(new OnlineArchive(dir));
+            res->openRO();
+            return res.release();
+        } else
+            return new OfflineArchive(dir + ".summary");
+    } else {
+        auto_ptr<OnlineArchive> res(new OnlineArchive(dir));
+        if (writable)
+            res->openRW();
+        else
+            res->openRO();
+        return res.release();
+    }
+}
+
+
+OnlineArchive::OnlineArchive(const std::string& dir)
+: m_dir(dir), m_mft(0)
+{
+    // Create the directory if it does not exist
+    wibble::sys::fs::mkpath(m_dir);
+}
+
+OnlineArchive::~OnlineArchive()
+{
+    if (m_mft) delete m_mft;
+}
+
+void OnlineArchive::openRO()
 {
 	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_dir);
 	m_mft = mft.release();
 	m_mft->openRO();
 }
 
-void Archive::openRW()
+void OnlineArchive::openRW()
 {
 	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_dir);
 	m_mft = mft.release();
 	m_mft->openRW();
 }
 
-void Archive::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void OnlineArchive::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	m_mft->queryData(q, consumer);
 }
 
-void Archive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void OnlineArchive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	m_mft->queryBytes(q, out);
 }
 
-void Archive::querySummary(const Matcher& matcher, Summary& summary)
+void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
 {
 	m_mft->querySummary(matcher, summary);
 }
 
-void Archive::acquire(const std::string& relname)
+void OnlineArchive::acquire(const std::string& relname)
 {
 	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
 	// Scan file, reusing .metadata if still valid
@@ -115,7 +142,7 @@ void Archive::acquire(const std::string& relname)
 	acquire(relname, mdc);
 }
 
-void Archive::acquire(const std::string& relname, metadata::Collection& mds)
+void OnlineArchive::acquire(const std::string& relname, metadata::Collection& mds)
 {
 	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
 	string pathname = str::joinpath(m_dir, relname);
@@ -144,7 +171,7 @@ void Archive::acquire(const std::string& relname, metadata::Collection& mds)
 	m_mft->acquire(relname, mtime, sum);
 }
 
-void Archive::flush()
+void OnlineArchive::flush()
 {
 	if (m_mft) m_mft->flush();
 }
@@ -178,7 +205,7 @@ struct ToArchiveState : public maintenance::MaintFileVisitor
 };
 }
 
-void Archive::maintenance(maintenance::MaintFileVisitor& v)
+void OnlineArchive::maintenance(maintenance::MaintFileVisitor& v)
 {
 	ToArchiveState tas(v);
 	m_mft->check(tas);
@@ -195,7 +222,7 @@ void Archive::check(std::ostream& log)
 }
 */
 
-void Archive::remove(const std::string& relname)
+void OnlineArchive::remove(const std::string& relname)
 {
 	if (!m_mft) throw wibble::exception::Consistency("removing file from " + m_dir, "archive opened in read only mode");
 	// Remove from index and from file system, including attached .metadata
@@ -209,19 +236,19 @@ void Archive::remove(const std::string& relname)
 	deindex(relname);
 }
 
-void Archive::deindex(const std::string& relname)
+void OnlineArchive::deindex(const std::string& relname)
 {
 	if (!m_mft) throw wibble::exception::Consistency("deindexing file from " + m_dir, "archive opened in read only mode");
 	m_mft->remove(relname);
 }
 
-void Archive::rescan(const std::string& relname)
+void OnlineArchive::rescan(const std::string& relname)
 {
 	if (!m_mft) throw wibble::exception::Consistency("rescanning file in " + m_dir, "archive opened in read only mode");
 	m_mft->rescanFile(m_dir, relname);
 }
 
-void Archive::vacuum()
+void OnlineArchive::vacuum()
 {
 	if (!m_mft) throw wibble::exception::Consistency("vacuuming " + m_dir, "archive opened in read only mode");
 	// If archive dir is not writable, skip this section
@@ -234,46 +261,115 @@ void Archive::vacuum()
 	m_mft->querySummary(Matcher(), s);
 }
 
-Archives::Archives(const std::string& dir, bool read_only)
-	: m_dir(dir), m_read_only(read_only), m_last(0)
+
+OfflineArchive::OfflineArchive(const std::string& fname)
+    : fname(fname)
 {
-	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_dir);
+    sum.readFile(fname);
+}
 
-	// Look for subdirectories: they are archives
-	sys::fs::Directory d(m_dir);
-	for (sys::fs::Directory::const_iterator i = d.begin();
-			i != d.end(); ++i)
-	{
-		// Skip '.', '..' and hidden files
-		if ((*i)[0] == '.') continue;
-		if (!d.isdir(i)) continue;
-		string pathname = str::joinpath(m_dir, *i);
-		if (read_only && !Archive::is_archive(pathname))
-			continue;
+OfflineArchive::~OfflineArchive()
+{
+}
 
-		Archive* a = 0;
-		if (*i == "last")
-			m_last = a = new Archive(pathname);
-		else
-			m_archives.insert(make_pair(*i, a = new Archive(pathname)));
+void OfflineArchive::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+{
+    // If the matcher would match the summary, output some kind of note about it
+}
 
-		if (a)
-		{
-			if (read_only)
-				a->openRO();
-			else
-				a->openRW();
-		}
-	}
+void OfflineArchive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+{
+    // We can't do anything here, as we cannot post a note to a raw stream
+}
 
-	// Instantiate the 'last' archive even if the directory does not exist,
-	// if not read only
-	if (!read_only && !m_last)
-	{
-		m_last = new Archive(str::joinpath(m_dir, "last"));
-		m_last->openRW();
-	}
+void OfflineArchive::querySummary(const Matcher& matcher, Summary& summary)
+{
+    sum.filter(matcher, summary);
+}
+
+void OfflineArchive::acquire(const std::string& relname)
+{
+    throw wibble::exception::Consistency("running acquire on offline archive", "operation does not make sense");
+}
+void OfflineArchive::acquire(const std::string& relname, metadata::Collection& mds)
+{
+    throw wibble::exception::Consistency("running acquire on offline archive", "operation does not make sense");
+}
+void OfflineArchive::remove(const std::string& relname)
+{
+    throw wibble::exception::Consistency("running remove on offline archive", "operation does not make sense");
+}
+void OfflineArchive::rescan(const std::string& relname)
+{
+    throw wibble::exception::Consistency("running rescan on offline archive", "operation does not make sense");
+}
+void OfflineArchive::deindex(const std::string& relname)
+{
+    throw wibble::exception::Consistency("running deindex on offline archive", "operation does not make sense");
+}
+void OfflineArchive::flush()
+{
+    // Nothing to flush
+}
+void OfflineArchive::maintenance(maintenance::MaintFileVisitor& v)
+{
+    // No files, nothing to do
+}
+void OfflineArchive::vacuum()
+{
+    // Nothing to vacuum
+}
+
+
+Archives::Archives(const std::string& dir, bool read_only)
+    : m_dir(dir), m_read_only(read_only), m_last(0)
+{
+    // Create the directory if it does not exist
+    wibble::sys::fs::mkpath(m_dir);
+
+    // Look for subdirectories: they are archives
+    sys::fs::Directory d(m_dir);
+    set<string> names;
+    for (sys::fs::Directory::const_iterator i = d.begin();
+            i != d.end(); ++i)
+    {
+        // Skip '.', '..' and hidden files
+        if ((*i)[0] == '.') continue;
+        if (!d.isdir(i))
+        {
+            // Add .summary files
+            string name = *i;
+            if (str::endsWith(name, ".summary"))
+                names.insert(name.substr(0, name.size() - 8));
+        } else {
+            // Add directory with a manifest inside
+            string pathname = str::joinpath(m_dir, *i);
+            if (!read_only || Archive::is_archive(pathname))
+                names.insert(*i);
+        }
+    }
+
+    for (set<string>::const_iterator i = names.begin();
+            i != names.end(); ++i)
+    {
+        auto_ptr<Archive> a(Archive::create(str::joinpath(m_dir, *i), !read_only));
+        if (a.get())
+        {
+            if (*i == "last")
+                m_last = a.release();
+            else
+                m_archives.insert(make_pair(*i, a.release()));
+        }
+    }
+
+    // Instantiate the 'last' archive even if the directory does not exist,
+    // if not read only
+    if (!read_only && !m_last)
+    {
+        OnlineArchive* o;
+        m_last = o = new OnlineArchive(str::joinpath(m_dir, "last"));
+        o->openRW();
+    }
 }
 
 Archives::~Archives()
@@ -325,11 +421,13 @@ void Archives::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 
 void Archives::querySummary(const Matcher& matcher, Summary& summary)
 {
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		i->second->querySummary(matcher, summary);
-	if (m_last)
-		m_last->querySummary(matcher, summary);
+    for (map<string, Archive*>::iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
+    {
+        i->second->querySummary(matcher, summary);
+    }
+    if (m_last)
+        m_last->querySummary(matcher, summary);
 }
 
 static std::string poppath(std::string& path)

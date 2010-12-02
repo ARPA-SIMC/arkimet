@@ -90,9 +90,8 @@ struct arki_dataset_archive_shar : public DatasetTest {
 #define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 	void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
 	{
-		Archive arc(dir);
-		arc.openRO();
-		arki::tests::impl_ensure_dataset_clean(loc, arc, filecount, resultcount);
+		auto_ptr<Archive> arc(Archive::create(dir));
+		arki::tests::impl_ensure_dataset_clean(loc, *arc, filecount, resultcount);
 		inner_ensure(sys::fs::exists(str::joinpath(dir, arcidxfname())));
 	}
 };
@@ -104,13 +103,12 @@ void to::test<1>()
 {
 	metadata::Collection mdc;
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 
 		// Acquire
 		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
-		arc.flush();
+		arc->acquire("test.grib1");
+		arc->flush();
 		ensure(sys::fs::exists("testds/.archive/last/test.grib1"));
 		ensure(sys::fs::exists("testds/.archive/last/test.grib1.metadata"));
 		ensure(sys::fs::exists("testds/.archive/last/test.grib1.summary"));
@@ -130,21 +128,19 @@ void to::test<2>()
 {
 	MaintenanceCollector c;
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
 	}
 
 	// Query now is ok
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 		metadata::Collection mdc;
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 0u);
 
 		// Maintenance should show one file to index
-		arc.maintenance(c);
+		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(ARC_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
@@ -186,11 +182,10 @@ void to::test<3>()
 {
 	MaintenanceCollector c;
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
-		arc.flush();
+		arc->acquire("test.grib1");
+		arc->flush();
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
 		ensure(sys::fs::exists("testds/.archive/last/test.grib1"));
@@ -201,14 +196,13 @@ void to::test<3>()
 
 	// Query now is ok
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 		metadata::Collection mdc;
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
 		// Maintenance should show one file to rescan
-		arc.maintenance(c);
+		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
@@ -251,11 +245,10 @@ void to::test<4>()
 {
 	MaintenanceCollector c;
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
-		arc.flush();
+		arc->acquire("test.grib1");
+		arc->flush();
 		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
 		ensure(sys::fs::exists("testds/.archive/last/test.grib1"));
 		ensure(sys::fs::exists("testds/.archive/last/test.grib1.metadata"));
@@ -265,14 +258,13 @@ void to::test<4>()
 
 	// Query now is ok
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 		metadata::Collection mdc;
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
 		// Maintenance should show one file to rescan
-		arc.maintenance(c);
+		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
@@ -313,15 +305,14 @@ template<> template<>
 void to::test<5>()
 {
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/1.grib1");
 		system("cp inbound/test.grib1 testds/.archive/last/2.grib1");
 		system("cp inbound/test.grib1 testds/.archive/last/3.grib1");
-		arc.acquire("1.grib1");
-		arc.acquire("2.grib1");
-		arc.acquire("3.grib1");
-		arc.flush();
+		arc->acquire("1.grib1");
+		arc->acquire("2.grib1");
+		arc->acquire("3.grib1");
+		arc->flush();
 
 		sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
 		ensure(sys::fs::exists("testds/.archive/last/2.grib1"));
@@ -333,18 +324,16 @@ void to::test<5>()
 	// Query now is ok
 	{
 		metadata::Collection mdc;
-		Archive arc("testds/.archive/last");
-		arc.openRO();
-		arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 9u);
 	}
 
 	// Maintenance should show one file to rescan
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		MaintenanceCollector c;
-		arc.maintenance(c);
+		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 		ensure_equals(c.count(ARC_OK), 2u);
@@ -396,11 +385,10 @@ void to::test<6>()
 	MaintenanceCollector c;
 	{
 		// Import a file
-		Archive arc("testds/.archive/last");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc.acquire("test.grib1");
-		arc.flush();
+		arc->acquire("test.grib1");
+		arc->flush();
 
 		// Compress it
 		metadata::Collection mdc;
@@ -426,11 +414,10 @@ void to::test<6>()
 
 	// Cannot query anymore
 	{
-		Archive arc("testds/.archive/last");
-		arc.openRO();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 		metadata::Collection mdc;
 		try {
-			arc.queryData(dataset::DataQuery(Matcher(), false), mdc);
+			arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
 			ensure(false);
 		} catch (std::exception& e) {
 			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
@@ -438,7 +425,7 @@ void to::test<6>()
 
 		// Maintenance should show one file to rescan
 		c.clear();
-		arc.maintenance(c);
+		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
 		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
@@ -481,10 +468,9 @@ void to::test<7>()
 	// Import a file in a secondary archive
 	{
 		system("mkdir testds/.archive/foo");
-		Archive arc("testds/.archive/foo");
-		arc.openRW();
+		auto_ptr<Archive> arc(Archive::create("testds/.archive/foo", true));
 		system("cp inbound/test.grib1 testds/.archive/foo/");
-		arc.acquire("test.grib1");
+		arc->acquire("test.grib1");
 	}
 
 	// Everything should be fine now
@@ -531,5 +517,48 @@ void to::test<16>()
     ensure(s1 == s2);
 }
 
+template<> template<>
+void to::test<17>()
+{
+    using namespace arki::dataset;
+
+    const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");
+
+    // If dir.summary exists, don't complain if dir is missing
+    {
+        auto_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
+        // TODO a.maintenance(maintenance::MaintFileVisitor& v);
+    }
+
+    // Querying dir uses dir.summary if dir is missing
+    {
+        auto_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
+        Summary s;
+        a->querySummary(Matcher::parse(""), s);
+        ensure(s.count() > 0);
+    }
+
+    // Query the summary of the whole dataset and ensure it also spans .archive/offline
+    {
+        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
+        Summary s;
+        ds->querySummary(Matcher::parse(""), s);
+
+        Item<types::Reftime> rt = s.getReferenceTime();
+        Item<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
+        ensure_equals(p->begin, types::Time::create(2010, 9, 1, 0, 0, 0));
+        ensure_equals(p->end, types::Time::create(2010, 9, 18, 0, 0, 0));
+    }
+
+    // TODO If dir.summary and dir is not missing, check dir contents but don't repair them
+    // TODO If dir.summary and dir is not missing, also check that dir/summary matches dir.summary
+
+    // If dir.summary exists, don't complain if dir is missing or if there are
+    // problems inside dir
+    {
+        auto_ptr<WritableDataset> ds(WritableDataset::create(scen.cfg));
+        // TODO: maintenance
+    }
+}
 
 }

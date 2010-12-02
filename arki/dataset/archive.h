@@ -24,6 +24,7 @@
  */
 
 #include <arki/dataset.h>
+#include <arki/summary.h>
 #include <string>
 #include <map>
 #include <iosfwd>
@@ -52,42 +53,84 @@ class Reader;
 
 class Archive : public ReadonlyDataset
 {
-protected:
-	std::string m_dir;
-	simple::Manifest* m_mft;
+public:
+    virtual ~Archive();
 
-	void querySummaries(const Matcher& matcher, Summary& summary);
+    virtual void acquire(const std::string& relname) = 0;
+    virtual void acquire(const std::string& relname, metadata::Collection& mds) = 0;
+    virtual void remove(const std::string& relname) = 0;
+    virtual void rescan(const std::string& relname) = 0;
+    virtual void deindex(const std::string& relname) = 0;
+    virtual void flush() = 0;
+    virtual void maintenance(maintenance::MaintFileVisitor& v) = 0;
+    virtual void vacuum() = 0;
+
+    static bool is_archive(const std::string& dir);
+    static Archive* create(const std::string& dir, bool writable=false);
+};
+
+class OnlineArchive : public Archive
+{
+protected:
+    std::string m_dir;
+    simple::Manifest* m_mft;
+
+    void querySummaries(const Matcher& matcher, Summary& summary);
 
 public:
-	Archive(const std::string& dir);
-	virtual ~Archive();
+    OnlineArchive(const std::string& dir);
+    ~OnlineArchive();
 
-	const std::string& path() const { return m_dir; }
+    const std::string& path() const { return m_dir; }
 
-	void openRO();
-	void openRW();
+    void openRO();
+    void openRW();
 
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+    virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    virtual void querySummary(const Matcher& matcher, Summary& summary);
 
-	void acquire(const std::string& relname);
-	void acquire(const std::string& relname, metadata::Collection& mds);
-	void remove(const std::string& relname);
-	void rescan(const std::string& relname);
-	void deindex(const std::string& relname);
+    virtual void acquire(const std::string& relname);
+    virtual void acquire(const std::string& relname, metadata::Collection& mds);
+    virtual void remove(const std::string& relname);
+    virtual void rescan(const std::string& relname);
+    virtual void deindex(const std::string& relname);
 
-	void flush();
+    virtual void flush();
 
-	void maintenance(maintenance::MaintFileVisitor& v);
-	/*
-	void repack(std::ostream& log, bool writable=false);
-	void check(std::ostream& log);
-	*/
+    virtual void maintenance(maintenance::MaintFileVisitor& v);
 
-	void vacuum();
+    virtual void vacuum();
 
-	static bool is_archive(const std::string& dir);
+    /*
+       void repack(std::ostream& log, bool writable=false);
+       void check(std::ostream& log);
+       */
+};
+
+/**
+ * Archive that has been put offline (only a summary file is left)
+ */
+struct OfflineArchive : public Archive
+{
+    std::string fname;
+    Summary sum;
+
+    OfflineArchive(const std::string& fname);
+    ~OfflineArchive();
+
+    virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+    virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    virtual void querySummary(const Matcher& matcher, Summary& summary);
+
+    virtual void acquire(const std::string& relname);
+    virtual void acquire(const std::string& relname, metadata::Collection& mds);
+    virtual void remove(const std::string& relname);
+    virtual void rescan(const std::string& relname);
+    virtual void deindex(const std::string& relname);
+    virtual void flush();
+    virtual void maintenance(maintenance::MaintFileVisitor& v);
+    virtual void vacuum();
 };
 
 /**
