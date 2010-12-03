@@ -134,8 +134,11 @@ struct Options : public StandardParserWithManpage
 
 struct Request : public net::http::Request
 {
+    ostream& log;
     ConfigFile arki_conf;
     ConfigFile arki_conf_remote;
+
+    Request(ostream& log) : log(log) {}
 
     const ConfigFile& get_config_remote(const std::string& dsname)
     {
@@ -163,6 +166,11 @@ struct Request : public net::http::Request
         return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(cfg));
     }
 
+    void log_action(const std::string& action)
+    {
+        sys::process::setproctitle("arki-server worker process: " + action);
+        log << log::INFO << action << endl;
+    }
 };
 
 
@@ -284,6 +292,8 @@ struct IndexHandler : public LocalHandler
 {
     virtual void operator()(Request& req)
     {
+        req.log_action("main index page");
+
         stringstream res;
         res << "<html><body>" << endl;
         res << "Available datasets:" << endl;
@@ -306,6 +316,8 @@ struct ConfigHandler : public LocalHandler
 {
     virtual void operator()(Request& req)
     {
+        req.log_action("global configuration");
+
         // if "json" in args:
         //  return server.configdict
         stringstream out;
@@ -319,6 +331,8 @@ struct AliasesHandler : public LocalHandler
 {
     virtual void operator()(Request& req)
     {
+        req.log_action("alias file contents");
+
         ConfigFile cfg;
         MatcherAliasDatabase::serialise(cfg);
 
@@ -334,6 +348,8 @@ struct QexpandHandler : public LocalHandler
 {
     virtual void operator()(Request& req)
     {
+        req.log_action("expand aliases in query");
+
         using namespace wibble::net::http;
         Params params;
         ParamSingle* query = params.add<ParamSingle>("query");
@@ -348,6 +364,8 @@ struct RootQueryHandler : public LocalHandler
 {
     virtual void operator()(Request& req)
     {
+        req.log_action("root-level query");
+
         using namespace wibble::net::http;
 
         // Work in a temporary directory
@@ -383,6 +401,8 @@ struct RootSummaryHandler : public LocalHandler
 {
     virtual void operator()(Request& req)
     {
+        req.log_action("root-level summary");
+
         using namespace wibble::net::http;
         Params params;
         ParamSingle* style = params.add<ParamSingle>("style");
@@ -429,6 +449,8 @@ struct DatasetHandler : public LocalHandler
     // Show the summary of a dataset
     void do_index(ReadonlyDataset& ds, const std::string& dsname, Request& req)
     {
+        req.log_action("index of dataset " + dsname);
+
         // Query the summary
         Summary sum;
         ds.querySummary(Matcher(), sum);
@@ -456,6 +478,8 @@ struct DatasetHandler : public LocalHandler
     // Show a form to query the dataset
     void do_queryform(const std::string& dsname, Request& req)
     {
+        req.log_action("query form for dataset " + dsname);
+
         stringstream res;
         res << "<html>" << endl;
         res << "<head><title>Query dataset " << dsname << "</title></head>" << endl;
@@ -497,11 +521,13 @@ struct DatasetHandler : public LocalHandler
             do_queryform(dsname, req);
         else if (action == "config")
         {
+            req.log_action("configuration for dataset " + dsname);
             dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
             srv.do_config(req.get_config_remote(dsname), req);
         }
         else if (action == "summary")
         {
+            req.log_action("summary for dataset " + dsname);
             dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
             dataset::http::LegacySummaryParams params;
             params.parse_get_or_post(req);
@@ -509,6 +535,7 @@ struct DatasetHandler : public LocalHandler
         }
         else if (action == "query")
         {
+            req.log_action("query dataset " + dsname);
             dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
             utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
             dataset::http::LegacyQueryParams params(tempdir.tmp_dir);
@@ -517,6 +544,7 @@ struct DatasetHandler : public LocalHandler
         }
         else if (action == "querydata")
         {
+            req.log_action("querydata in dataset " + dsname);
             dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
             dataset::http::QueryDataParams params;
             params.parse_get_or_post(req);
@@ -524,6 +552,7 @@ struct DatasetHandler : public LocalHandler
         }
         else if (action == "querysummary")
         {
+            req.log_action("querysummary in dataset " + dsname);
             dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
             dataset::http::QuerySummaryParams params;
             params.parse_get_or_post(req);
@@ -531,6 +560,7 @@ struct DatasetHandler : public LocalHandler
         }
         else if (action == "querybytes")
         {
+            req.log_action("querybytes in dataset " + dsname);
             dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
             utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
             dataset::http::QueryBytesParams params(tempdir.tmp_dir);
@@ -571,6 +601,7 @@ struct InboundHandler : public LocalHandler
         string action = req.pop_path_info();
         if (action.empty())
         {
+            req.log_action("inbound index");
             vector<string> files;
             list_files(dir, "", files);
             stringstream res;
@@ -625,6 +656,7 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "show")
         {
+            req.log_action("show contents of file from inbound");
             using namespace wibble::net::http;
 
             // Get the file argument
@@ -666,6 +698,7 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "simulate")
         {
+            req.log_action("simulate import from inbound");
             // Filter configuration to only keep those that have remote import = yes
             // and whose "restrict import" matches
             using namespace wibble::net::http;
@@ -732,6 +765,7 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "list")
         {
+            req.log_action("list files in inbound");
             vector<string> files;
             list_files(dir, "", files);
 
@@ -744,6 +778,7 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "scan")
         {
+            req.log_action("scan file in inbound");
             // Scan file and output binary metadata
             dataset::http::InboundParams params;
             params.parse_get_or_post(req);
@@ -755,6 +790,7 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "testdispatch")
         {
+            req.log_action("test dispatch from inbound");
             // Scan file and output binary metadata
             dataset::http::InboundParams params;
             params.parse_get_or_post(req);
@@ -767,6 +803,7 @@ struct InboundHandler : public LocalHandler
         }
         else if (action == "dispatch")
         {
+            req.log_action("dispatch from inbound");
             // Scan file and output binary metadata
             dataset::http::InboundParams params;
             params.parse_get_or_post(req);
@@ -792,6 +829,7 @@ struct ChildServer : public sys::ChildProcess
     // Executed in child thread
     virtual int main()
     {
+        sys::process::setproctitle("arki-server worker process: parsing request");
         try {
             while (req.read_request())
             {
@@ -883,7 +921,7 @@ struct HTTP : public net::TCPServer
         if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval)) < 0)
             throw wibble::exception::System("setting SO_SNDTIMEO on socket");
 
-        Request req;
+        Request req(log);
         req.server_software = SERVER_SOFTWARE;
 
         // Parse local config file
@@ -1062,6 +1100,8 @@ struct ServerProcess : public sys::ChildProcess
 
 int main(int argc, const char* argv[])
 {
+    sys::process::initproctitle(argc, (char**)argv);
+
     wibble::commandline::Options opts;
     try {
         if (opts.parse(argc, argv))

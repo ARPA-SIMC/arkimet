@@ -8,8 +8,10 @@ arkimet (0.51-1) UNRELEASED; urgency=low
      - arki-server sends exception messages on Arkimet-Exception response
        headers, to allow arki-query to produce proper error messages without
        needing to parse HTML
+     - arki-server: log action performed in the child process and also show it
+       in the child process title
 
- -- Enrico Zini <enrico@debian.org>  Thu, 02 Dec 2010 17:41:11 +0000
+ -- Enrico Zini <enrico@debian.org>  Fri, 03 Dec 2010 16:41:44 +0000
 
 arkimet (0.50-1) UNRELEASED; urgency=low
 
