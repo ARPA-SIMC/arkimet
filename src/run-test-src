@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
 BINDIR=`dirname $0`
+SERVER_OPTS="-p 7117 --url=http://localhost:7117 --quiet --accesslog=access.log --errorlog=error.log"
 
 . $BINDIR/testlib.sh
 
@@ -20,16 +21,16 @@ then
 	if [ ! -z "$DO_SHELL" ]
 	then
 		echo "Running $CMD"
-		arki-server -p 7117 --url="http://localhost:7117" --quiet --runtest="/bin/bash" conf
+		arki-server $SERVER_OPTS --runtest="/bin/bash" conf
 	else
 		CMD=test-src
 		if [ ! -z "$DEBUGGER" ] && [ -x $BINDIR/.libs/lt-$CMD ]
 		then
 			echo "Running $DEBUGGER $BINDIR/.libs/lt-$CMD $ARGS"
-			arki-server -p 7117 --url="http://localhost:7117" --quiet --runtest="$DEBUGGER $BINDIR/.libs/lt-$CMD $ARGS" conf
+			arki-server $SERVER_OPTS --runtest="$DEBUGGER $BINDIR/.libs/lt-$CMD $ARGS" conf
 		else
 			echo "Running $DEBUGGER $CMD $ARGS"
-			arki-server -p 7117 --url="http://localhost:7117" --quiet --runtest="$DEBUGGER $BINDIR/$CMD $ARGS" conf
+			arki-server $SERVER_OPTS --runtest="$DEBUGGER $BINDIR/$CMD $ARGS" conf
 		fi
 	fi
 

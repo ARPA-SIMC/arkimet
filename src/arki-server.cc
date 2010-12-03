@@ -817,11 +817,11 @@ struct ChildServer : public sys::ChildProcess
                         // if (!script_handlers.try_do(req))
                         throw net::http::error404();
                 } catch (net::http::error& e) {
-                    // TODO: log e
+                    log << log::WARN << e.what() << endl;
                     if (!req.response_started)
                         e.send(req);
                 } catch (std::exception& e) {
-                    // TODO: log e
+                    log << log::WARN << e.what() << endl;
                     if (!req.response_started)
                     {
                         req.extra_response_headers["Arkimet-Exception"] = e.what();
@@ -959,6 +959,7 @@ struct LogFilter : public log::Sender
     log::Level minLevel;
     log::Sender* access;
     log::Sender* error;
+    // Track components purely for memory management purpose
     vector<log::Sender*> log_components;
 
     LogFilter() : minLevel(log::INFO), access(0), error(0) {}
@@ -971,7 +972,7 @@ struct LogFilter : public log::Sender
     virtual void send(log::Level level, const std::string& msg)
     {
         if (level < minLevel) return;
-        if (level >= log::ERR)
+        if (level >= log::WARN)
         {
             if (error) error->send(level, msg);
         } else {
