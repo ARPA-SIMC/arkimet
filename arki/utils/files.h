@@ -98,6 +98,13 @@ size_t size(const std::string& file);
 /// File inode number (or 0 if the file does not exist)
 ino_t inode(const std::string& file);
 
+/**
+ * Same as wibble::sys::fs::readFile, but if \a file is "-" then reads all from
+ * stdin
+ */
+std::string readFile(const std::string &file);
+
+
 }
 }
 }

@@ -30,6 +30,7 @@
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <arki/dataset.h>
 #include <arki/dataset/file.h>
 #include <arki/dataset/http.h>
@@ -68,6 +69,7 @@
 using namespace std;
 using namespace wibble;
 using namespace wibble::commandline;
+using namespace arki::utils;
 
 namespace arki {
 namespace runtime {
@@ -254,7 +256,7 @@ void CommandLine::setupProcessing()
 		if (exprfile->isSet())
 		{
 			// Read the entire file into memory and parse it as an expression
-			strquery = sys::fs::readFile(exprfile->stringValue());
+			strquery = files::readFile(exprfile->stringValue());
 		} else {
 			// Read from the first commandline argument
 			if (!hasNext())

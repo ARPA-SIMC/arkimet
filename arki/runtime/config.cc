@@ -23,6 +23,7 @@
 #include <arki/runtime/config.h>
 #include <arki/dataset.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
 #include <arki/matcher.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -34,6 +35,7 @@
 using namespace std;
 using namespace wibble;
 using namespace wibble::commandline;
+using namespace arki::utils;
 
 namespace arki {
 namespace runtime {
@@ -266,7 +268,7 @@ std::string readRcDir(const std::string& nameInConfdir, const std::string& nameI
 	string res;
 	for (vector<string>::const_iterator i = files.begin();
 			i != files.end(); ++i)
-		res += sys::fs::readFile(*i);
+		res += files::readFile(*i);
 	return res;
 }
 
@@ -279,7 +281,7 @@ SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::stri
 	for (vector<string>::const_iterator i = files.begin();
 			i != files.end(); ++i)
 	{
-		string tmp = sys::fs::readFile(*i);
+		string tmp = files::readFile(*i);
 		res.push_back(FileInfo(*i, tmp.size()));
 		res.code += tmp;
 	}

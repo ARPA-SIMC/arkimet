@@ -127,6 +127,20 @@ ino_t inode(const std::string& file)
     return st.get() == NULL ? 0 : st->st_ino;
 }
 
+std::string readFile(const std::string &file)
+{
+    if (file == "-")
+    {
+        string res;
+        int c;
+        while ((c = getc(stdin)) != EOF)
+            res.append(1, c);
+        return res;
+    }
+    else
+        return sys::fs::readFile(file);
+}
+
 }
 }
 }
