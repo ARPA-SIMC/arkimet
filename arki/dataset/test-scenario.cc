@@ -24,6 +24,7 @@
 #include <arki/dataset/ondisk2.h>
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata/consumer.h>
+#include <arki/scan/any.h>
 #include <arki/utils.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -53,6 +54,34 @@ void Scenario::build()
     if (sys::fs::exists(path))
         sys::fs::rmtree(path);
     // TODO: create config file
+}
+
+ConfigFile Scenario::clone(const std::string& newpath) const
+{
+    if (path.find("'") != string::npos)
+        throw wibble::exception::Consistency(
+                "cloning scenario " + name + " from " + path,
+                "cannot currently clone scenario if the old path contains \"'\"");
+    if (newpath.find("'") != string::npos)
+        throw wibble::exception::Consistency(
+                "cloning scenario " + name + " to " + newpath,
+                "cannot currently clone scenario if the new path contains \"'\"");
+
+    if (sys::fs::exists(newpath))
+        sys::fs::rmtree(newpath);
+
+    // TODO: replace "cp -a" with something that doesn't require system
+    string cmd = str::fmtf("cp -a '%s' '%s'", path.c_str(), newpath.c_str());
+    int sres = system(cmd.c_str());
+    if (sres == -1)
+        throw wibble::exception::System("Running command " + cmd);
+    if (sres != 0)
+        throw wibble::exception::Consistency("Running command " + cmd, str::fmtf("Command returned %d", sres));
+
+    ConfigFile res;
+    res.merge(cfg);
+    res.setValue("path", newpath);
+    return res;
 }
 
 namespace {
@@ -118,6 +147,38 @@ struct Ondisk2Scenario : public Scenario
         Scenario::build();
     }
     */
+};
+
+struct Ondisk2TestGrib1 : public Ondisk2Scenario
+{
+    Ondisk2TestGrib1()
+        : Ondisk2Scenario("ondisk2-testgrib1")
+    {
+        desc = "Ondisk2 dataset which contains all the contents of test.grib1 from the "
+               " test data (scanned from ./inbound/test.grib1)."
+               " Allowed postprocessor: testcountbytes.";
+        cfg.setValue("step", "daily");
+        cfg.setValue("unique", "reftime");
+        cfg.setValue("postprocess", "testcountbytes");
+    }
+    void build()
+    {
+        using namespace arki::dataset;
+
+        Ondisk2Scenario::build();
+
+        // Generate a dataset with archived data
+        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+
+        Importer importer(*ds);
+        scan::scan("inbound/test.grib1", importer);
+
+        // Run a check to remove new dataset marker
+        stringstream checklog;
+        ds->check(checklog, true, true);
+        if (checklog.str() != "")
+            throw wibble::exception::Consistency("running check on correct dataset", "log is not empty: " + checklog.str());
+    }
 };
 
 struct Ondisk2Archived : public Ondisk2Scenario
@@ -247,6 +308,7 @@ struct ScenarioDB : public map<string, Scenario*>
     ScenarioDB()
     {
         // Build scenario archive
+        add(new Ondisk2TestGrib1);
         add(new Ondisk2Archived);
         add(new Ondisk2ManyArchiveStates);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2010  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,7 @@
 
 #include <arki/dataset/test-utils.h>
 #include <arki/dataset/ondisk2.h>
+#include <arki/dataset/test-scenario.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -36,23 +37,12 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::types;
 using namespace arki::dataset;
-using namespace arki::dataset::ondisk2;
-using namespace arki::utils;
-using namespace arki::utils::files;
 
-struct arki_dataset_ondisk2_reader_shar : public arki::tests::DatasetTest {
-	arki_dataset_ondisk2_reader_shar()
-	{
-		cfg.setValue("path", "testds");
-		cfg.setValue("name", "testds");
-		cfg.setValue("type", "ondisk2");
-		cfg.setValue("step", "daily");
-		cfg.setValue("postprocess", "testcountbytes");
-		
-		clean_and_import();
-	}
+struct arki_dataset_ondisk2_reader_shar {
+    arki_dataset_ondisk2_reader_shar()
+    {
+    }
 };
 TESTGRP(arki_dataset_ondisk2_reader);
 
@@ -60,8 +50,9 @@ TESTGRP(arki_dataset_ondisk2_reader);
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<ondisk2::Reader> reader(makeOndisk2Reader());
-	ensure(reader->hasWorkingIndex());
+    const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
+    auto_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
+    ensure(reader->hasWorkingIndex());
 
 	// Use dup() because PosixBuf will close its file descriptor at destruction
 	// time
@@ -72,7 +63,7 @@ void to::test<1>()
 	reader->queryBytes(bq, os);
 
 	string out = sys::fs::readFile("testcountbytes.out");
-	ensure_equals(out, "7400\n");
+	ensure_equals(out, "7411\n");
 }
 
 // Test that summary files are not created for all the extent of the query, but
@@ -80,7 +71,12 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	auto_ptr<ondisk2::Reader> reader(makeOndisk2Reader());
+    const test::Scenario& scen = test::Scenario::get("ondisk2-testgrib1");
+    ConfigFile cfg = scen.clone("testds");
+    // Empty the summary cache
+    system("rm testds/.summaries/*");
+
+    auto_ptr<ondisk2::Reader> reader(new ondisk2::Reader(cfg));
 
 	Summary s;
 	reader->querySummary(Matcher::parse("reftime:=2007"), s);

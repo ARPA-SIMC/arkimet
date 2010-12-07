@@ -58,6 +58,13 @@ struct Scenario
      */
     virtual void build();
 
+    /**
+     * Make a full copy of this scenario in the given directory.
+     *
+     * Return a new ConfigFile with the path pointing to the copy
+     */
+    ConfigFile clone(const std::string& newpath) const;
+
     // Get the scenario with the given name, building it if necessary, or
     // reusing the already built one
     static const Scenario& get(const std::string& name);
