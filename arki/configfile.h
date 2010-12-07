@@ -4,7 +4,7 @@
 /*
  * configfile - Read ini-style config files
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,7 +101,10 @@ private:
 
 public:
 	ConfigFile();
+	ConfigFile(const ConfigFile& cfg);
 	~ConfigFile();
+
+    ConfigFile& operator=(const ConfigFile& cfg);
 
 	//typedef std::map<std::string, std::string>::iterator iterator;
 	typedef std::map<std::string, std::string>::const_iterator const_iterator;
@@ -116,6 +119,9 @@ public:
 	section_iterator sectionEnd() { return sections.end(); }
 	const_section_iterator sectionBegin() const { return sections.begin(); }
 	const_section_iterator sectionEnd() const { return sections.end(); }
+
+    /// Remove all contents of this ConfigFile
+    void clear();
 
 	/// Number of sections at this level (does not include subsections of sections)
 	size_t sectionSize() const { return sections.size(); }

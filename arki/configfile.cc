@@ -49,11 +49,36 @@ ConfigFile::ConfigFile()
 {
 }
 
+ConfigFile::ConfigFile(const ConfigFile& cfg)
+{
+    merge(cfg);
+}
+
 ConfigFile::~ConfigFile()
 {
 	for (std::map<string, ConfigFile*>::iterator i = sections.begin();
 			i != sections.end(); ++i)
 		delete i->second;
+}
+
+ConfigFile& ConfigFile::operator=(const ConfigFile& cfg)
+{
+    // Handle self assignment
+    if (&cfg == this)
+        return *this;
+
+    clear();
+    merge(cfg);
+    return *this;
+}
+
+void ConfigFile::clear()
+{
+    m_values.clear();
+    values_pos.clear();
+    for (std::map<string, ConfigFile*>::iterator i = sections.begin();
+            i != sections.end(); ++i)
+        delete i->second;
 }
 
 struct ConfigFileParserHelper
