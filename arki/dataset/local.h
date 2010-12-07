@@ -72,6 +72,20 @@ public:
      */
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
+    /**
+     * For each file in the archive, rescan the \a idx data in it and and check
+     * if the result still fits with the dataset matcher.
+     *
+     * Send all the mismatching metadata to \a cons
+     *
+     * The base implementation only runs the scan_test in the archives if they
+     * exist
+     *
+     * @return the number of data scanned at this idx, or 0 if no files in the
+     * dataset have at least \a idx elements inside
+     */
+    size_t scan_test(metadata::Consumer& cons, size_t idx=0);
+
 	bool hasArchive() const;
 	Archives& archive();
 	const Archives& archive() const;

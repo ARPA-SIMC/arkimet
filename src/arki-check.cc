@@ -1,7 +1,7 @@
 /*
  * arki-check - Update dataset summaries
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <arki/configfile.h>
 #include <arki/datasetpool.h>
 #include <arki/dataset/local.h>
+#include <arki/metadata/consumer.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
@@ -59,6 +60,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* invalidate;
 	BoolOption* remove_all;
 	BoolOption* stats;
+	BoolOption* scantest;
 	StringOption* op_remove;
 	StringOption* restr;
 
@@ -90,7 +92,9 @@ struct Options : public StandardParserWithManpage
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
 		restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
-	}
+        scantest = add<BoolOption>("scantest", 0, "scantest", "",
+            "Output metadata for data in the datasets that cannot be scanned or does not match the dataset filter");
+    }
 };
 
 }
@@ -173,6 +177,17 @@ struct Stats : public dataset::ondisk::Visitor
 };
 #endif
 
+struct SkipDataset : public std::exception
+{
+    string msg;
+
+    SkipDataset(const std::string& msg)
+        : msg(msg) {}
+    virtual ~SkipDataset() throw () {}
+
+    virtual const char* what() const throw() { return msg.c_str(); }
+};
+
 struct Printer : public metadata::Consumer
 {
 	ostream& out;
@@ -194,11 +209,26 @@ struct Printer : public metadata::Consumer
 struct Worker
 {
 	~Worker() {}
-	virtual void operator()(dataset::WritableLocal& w) = 0;
+	virtual void process(const ConfigFile& cfg) = 0;
 	virtual void done() = 0;
 };
 
-struct Maintainer : public Worker
+struct WorkerOnWritable : public Worker
+{
+    virtual void process(const ConfigFile& cfg)
+    {
+        auto_ptr<dataset::WritableLocal> ds;
+        try {
+            ds.reset(dataset::WritableLocal::create(cfg));
+        } catch (std::exception& e) {
+            throw SkipDataset(e.what());
+        }
+        operator()(*ds);
+    }
+    virtual void operator()(dataset::WritableLocal& w) = 0;
+};
+
+struct Maintainer : public WorkerOnWritable
 {
 	bool fix;
 	bool quick;
@@ -217,7 +247,7 @@ struct Maintainer : public Worker
 	}
 };
 
-struct Repacker : public Worker
+struct Repacker : public WorkerOnWritable
 {
 	bool fix;
 
@@ -234,7 +264,7 @@ struct Repacker : public Worker
 	}
 };
 
-struct RemoveAller : public Worker
+struct RemoveAller : public WorkerOnWritable
 {
 	bool fix;
 
@@ -250,6 +280,30 @@ struct RemoveAller : public Worker
 	{
 	}
 };
+
+struct ScanTest : public Worker
+{
+    metadata::BinaryPrinter printer;
+    size_t idx;
+
+    ScanTest(size_t idx=0) : printer(cout), idx(idx) {}
+
+    virtual void process(const ConfigFile& cfg)
+    {
+        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+        if (dataset::Local* ld = dynamic_cast<dataset::Local*>(ds.get()))
+        {
+            ld->scan_test(printer, idx);
+        } else {
+            throw SkipDataset("dataset is not a local dataset");
+        }
+    }
+
+    virtual void done()
+    {
+    }
+};
+
 
 #if 0
 struct Invalidator : public Worker
@@ -312,8 +366,9 @@ int main(int argc, const char* argv[])
 		if (opts.repack->boolValue()) ++actionCount;
 		if (opts.remove_all->boolValue()) ++actionCount;
 		if (opts.op_remove->boolValue()) ++actionCount;
-		if (actionCount > 1)
-			throw wibble::exception::BadOption("only one of --stats, --invalidate, --repack, --remove and --remove-all can be given in one invocation");
+        if (opts.scantest->boolValue()) ++actionCount;
+        if (actionCount > 1)
+            throw wibble::exception::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all or --scantest can be given in one invocation");
 
 		// Read the config file(s)
 		ConfigFile cfg;
@@ -377,26 +432,25 @@ int main(int argc, const char* argv[])
 				worker.reset(new RemoveAller(opts.fix->boolValue()));
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
+            else if (opts.scantest->boolValue())
+                worker.reset(new ScanTest());
 			else
 				worker.reset(new Maintainer(opts.fix->boolValue(),
 						not opts.accurate->boolValue()));
 
-			// Harvest the paths from it
-			for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-					i != cfg.sectionEnd(); ++i)
-			{
-				auto_ptr<dataset::WritableLocal> ds;
-				try {
-					ds.reset(dataset::WritableLocal::create(*i->second));
-				} catch (std::exception& e) {
-					cerr << "Skipping dataset " << i->first << ": " << e.what() << endl;
-					continue;
-				}
+            // Harvest the paths from it
+            for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
+                    i != cfg.sectionEnd(); ++i)
+            {
+                try {
+                    worker->process(*i->second);
+                } catch (SkipDataset& e) {
+                    cerr << "Skipping dataset " << i->first << ": " << e.what() << endl;
+                    continue;
+                }
+            }
 
-				(*worker)(*ds.get());
-			}
-
-			worker->done();
+            worker->done();
 		}
 	} catch (wibble::exception::BadOption& e) {
 		cerr << e.desc() << endl;

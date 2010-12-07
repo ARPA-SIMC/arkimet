@@ -24,6 +24,8 @@
  */
 
 #include <memory>
+#include <string>
+#include <iosfwd>
 
 struct lua_State;
 
@@ -31,6 +33,11 @@ namespace arki {
 class Metadata;
 class Summary;
 class Matcher;
+class Formatter;
+
+namespace emitter {
+class JSON;
+}
 
 namespace metadata {
 
@@ -107,6 +114,39 @@ struct Hook
     virtual ~Hook() {}
 
     virtual void operator()() = 0;
+};
+
+struct BinaryPrinter : public Consumer
+{
+    std::ostream& out;
+    std::string fname;
+
+    BinaryPrinter(std::ostream& out, const std::string& fname=std::string());
+    ~BinaryPrinter();
+
+    bool operator()(Metadata& md);
+};
+
+struct YamlPrinter : public Consumer
+{
+    std::ostream& out;
+    Formatter* formatter;
+
+    YamlPrinter(std::ostream& out, bool formatted);
+    ~YamlPrinter();
+
+    bool operator()(Metadata& md);
+};
+
+struct JSONPrinter : public Consumer
+{
+    emitter::JSON* json;
+    Formatter* formatter;
+
+    JSONPrinter(std::ostream& out, bool formatted);
+    ~JSONPrinter();
+
+    bool operator()(Metadata& md);
 };
 
 }

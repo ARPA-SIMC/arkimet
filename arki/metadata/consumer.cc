@@ -24,7 +24,10 @@
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
+#include <arki/formatter.h>
+#include <arki/emitter/json.h>
 #include "config.h"
+#include <ostream>
 
 #ifdef HAVE_LUA
 extern "C" {
@@ -52,6 +55,62 @@ bool Summarise::operator()(Metadata& md)
 	s.add(md);
 	return true;
 }
+
+BinaryPrinter::BinaryPrinter(ostream& out, const std::string& fname)
+    : out(out), fname(fname)
+{
+}
+
+BinaryPrinter::~BinaryPrinter()
+{
+}
+
+bool BinaryPrinter::operator()(Metadata& md)
+{
+    md.write(out, fname);
+    return true;
+}
+
+
+YamlPrinter::YamlPrinter(ostream& out, bool formatted)
+    : out(out), formatter(0)
+{
+    if (formatted)
+        formatter = Formatter::create();
+}
+YamlPrinter::~YamlPrinter()
+{
+    if (formatter) delete formatter;
+}
+
+bool YamlPrinter::operator()(Metadata& md)
+{
+    md.writeYaml(out, formatter);
+    out << endl;
+    return true;
+}
+
+
+JSONPrinter::JSONPrinter(ostream& out, bool formatted)
+    : json(new emitter::JSON(out)), formatter(0)
+{
+    if (formatted)
+        formatter = Formatter::create();
+}
+JSONPrinter::~JSONPrinter()
+{
+    if (formatter) delete formatter;
+    if (json) delete json;
+}
+
+bool JSONPrinter::operator()(Metadata& md)
+{
+    md.serialise(*json, formatter);
+    return true;
+}
+
+
+
 
 #ifdef HAVE_LUA
 

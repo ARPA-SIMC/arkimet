@@ -254,7 +254,6 @@ struct RealFixer : public maintenance::Agent
 	void end();
 };
 
-
 }
 }
 }

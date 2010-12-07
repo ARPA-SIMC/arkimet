@@ -260,7 +260,10 @@ size_t Reader::produce_nth(metadata::Consumer& cons, size_t idx)
 {
     size_t res = Local::produce_nth(cons, idx);
     if (m_idx)
-        res += m_idx->produce_nth(cons, idx);
+    {
+        ds::PathPrepender prepender(sys::fs::abspath(m_path), cons);
+        res += m_idx->produce_nth(prepender, idx);
+    }
     return res;
 }
 
