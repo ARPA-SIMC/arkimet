@@ -102,6 +102,29 @@ void to::test<2>()
 	ensure(!sys::fs::access("testds/.summaries/2008-01.summary", F_OK));
 }
 
+// Test produce_nth
+template<> template<>
+void to::test<3>()
+{
+    const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
+    auto_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
+
+    {
+        metadata::Collection mdc;
+        size_t count = reader->produce_nth(mdc, 0);
+        ensure_equals(count, 3u);
+        ensure_equals(mdc.size(), 3u);
+    }
+
+    {
+        metadata::Collection mdc;
+        size_t count = reader->produce_nth(mdc, 1);
+        ensure_equals(count, 0u);
+        ensure_equals(mdc.size(), 0u);
+    }
+}
+
+
 }
 
 // vim:set ts=4 sw=4:

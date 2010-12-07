@@ -63,6 +63,15 @@ public:
 	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
+    /**
+     * For each file in the archive, output to \a cons the data at position
+     * \a * idx
+     *
+     * @return the number of data produced. If 0, then all files in the archive
+     * have less than \a idx data inside.
+     */
+    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+
 	bool hasArchive() const;
 	Archives& archive();
 	const Archives& archive() const;

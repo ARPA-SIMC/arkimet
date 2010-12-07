@@ -4,7 +4,7 @@
 /*
  * dataset/empty - Virtual read only dataset that is always empty
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,8 @@ public:
 	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer) {}
 	virtual void querySummary(const Matcher& matcher, Summary& summary) {}
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out) {}
+    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0) { return 0; }
+
 
 	virtual void rescanFile(const std::string& relpath) {}
 	virtual size_t repackFile(const std::string& relpath) { return 0; }

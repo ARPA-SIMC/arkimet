@@ -131,6 +131,11 @@ void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
 	m_mft->querySummary(matcher, summary);
 }
 
+size_t OnlineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
+{
+    return m_mft->produce_nth(cons, idx);
+}
+
 void OnlineArchive::acquire(const std::string& relname)
 {
 	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
@@ -287,6 +292,12 @@ void OfflineArchive::querySummary(const Matcher& matcher, Summary& summary)
     sum.filter(matcher, summary);
 }
 
+size_t OfflineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
+{
+    // All files are offline, so there is nothing we can produce
+    return 0;
+}
+
 void OfflineArchive::acquire(const std::string& relname)
 {
     throw wibble::exception::Consistency("running acquire on offline archive", "operation does not make sense");
@@ -428,6 +439,17 @@ void Archives::querySummary(const Matcher& matcher, Summary& summary)
     }
     if (m_last)
         m_last->querySummary(matcher, summary);
+}
+
+size_t Archives::produce_nth(metadata::Consumer& cons, size_t idx)
+{
+    size_t res = 0;
+    for (map<string, Archive*>::iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
+        res += i->second->produce_nth(cons, idx);
+    if (m_last)
+        res += m_last->produce_nth(cons, idx);
+    return res;
 }
 
 static std::string poppath(std::string& path)

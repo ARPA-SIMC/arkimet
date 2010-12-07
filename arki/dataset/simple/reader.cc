@@ -98,6 +98,14 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 	m_mft->querySummary(matcher, summary);
 }
 
+size_t Reader::produce_nth(metadata::Consumer& cons, size_t idx)
+{
+    size_t res = Local::produce_nth(cons, idx);
+    if (m_mft)
+        res += m_mft->produce_nth(cons, idx);
+    return res;
+}
+
 void Reader::maintenance(maintenance::MaintFileVisitor& v)
 {
 	if (!m_mft) return;

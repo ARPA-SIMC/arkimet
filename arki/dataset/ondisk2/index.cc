@@ -364,36 +364,13 @@ void Index::scan_file(const std::string& relname, metadata::Consumer& consumer) 
 	mdq.compile(query);
 	mdq.bind(1, relname);
 
-	while (mdq.step())
-	{
-		// Rebuild the Metadata
-		Metadata md;
-		md.create();
-		md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetch<int>(0))));
-		md.source = source::Blob::create(
-				mdq.fetchString(1), mdq.fetchString(2),
-				mdq.fetch<size_t>(3), mdq.fetch<size_t>(4));
-		//md.notes = mdq.fetchItems<types::Note>(5);
-		const void* notes_p = mdq.fetchBlob(5);
-		int notes_l = mdq.fetchBytes(5);
-		md.set_notes_encoded(string((const char*)notes_p, notes_l));
-		md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
-		int j = 7;
-		if (m_uniques)
-		{
-			if (mdq.fetchType(j) != SQLITE_NULL)
-				m_uniques->read(mdq.fetch<int>(j), md);
-			++j;
-		}
-		if (m_others)
-		{
-			if (mdq.fetchType(j) != SQLITE_NULL)
-				m_others->read(mdq.fetch<int>(j), md);
-			++j;
-		}
-
-		consumer(md);
-	}
+    while (mdq.step())
+    {
+        // Rebuild the Metadata
+        Metadata md;
+        build_md(mdq, md);
+        consumer(md);
+    }
 }
 
 std::string Index::max_file_reftime(const std::string& relname) const
@@ -529,6 +506,33 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 	return true;
 }
 
+void Index::build_md(Query& q, Metadata& md) const
+{
+    // Rebuild the Metadata
+    md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
+    md.source = source::Blob::create(
+            q.fetchString(1), q.fetchString(2),
+            q.fetch<size_t>(3), q.fetch<size_t>(4));
+    // md.notes = mdq.fetchItems<types::Note>(5);
+    const void* notes_p = q.fetchBlob(5);
+    int notes_l = q.fetchBytes(5);
+    md.set_notes_encoded(string((const char*)notes_p, notes_l));
+    md.set(reftime::Position::create(Time::createFromSQL(q.fetchString(6))));
+    int j = 7;
+    if (m_uniques)
+    {
+        if (q.fetchType(j) != SQLITE_NULL)
+            m_uniques->read(q.fetch<int>(j), md);
+        ++j;
+    }
+    if (m_others)
+    {
+        if (q.fetchType(j) != SQLITE_NULL)
+            m_others->read(q.fetch<int>(j), md);
+        ++j;
+    }
+}
+
 bool Index::query(const dataset::DataQuery& q, metadata::Consumer& consumer) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
@@ -586,31 +590,9 @@ bool Index::query(const dataset::DataQuery& q, metadata::Consumer& consumer) con
 				last_fname = srcname;
 			}
 
-			// Rebuild the Metadata
-			Metadata md;
-			md.create();
-			md.set(types::AssignedDataset::create(m_name, str::fmt(mdq.fetch<int>(0))));
-			md.source = source::Blob::create(
-					mdq.fetchString(1), mdq.fetchString(2),
-					mdq.fetch<size_t>(3), mdq.fetch<size_t>(4));
-			// md.notes = mdq.fetchItems<types::Note>(5);
-			const void* notes_p = mdq.fetchBlob(5);
-			int notes_l = mdq.fetchBytes(5);
-			md.set_notes_encoded(string((const char*)notes_p, notes_l));
-			md.set(reftime::Position::create(Time::createFromSQL(mdq.fetchString(6))));
-			int j = 7;
-			if (m_uniques)
-			{
-				if (mdq.fetchType(j) != SQLITE_NULL)
-					m_uniques->read(mdq.fetch<int>(j), md);
-				++j;
-			}
-			if (m_others)
-			{
-				if (mdq.fetchType(j) != SQLITE_NULL)
-					m_others->read(mdq.fetch<int>(j), md);
-				++j;
-			}
+            // Rebuild the Metadata
+            Metadata md;
+            build_md(mdq, md);
 
 			// Buffer the results in memory, to release the database lock as soon as possible
 			mdbuf(md);
@@ -635,6 +617,39 @@ bool Index::query(const dataset::DataQuery& q, metadata::Consumer& consumer) con
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
 
 	return true;
+}
+
+size_t Index::produce_nth(metadata::Consumer& consumer, size_t idx) const
+{
+    // Buffer results in RAM so we can free the index before starting to read the data
+    metadata::Collection mdbuf;
+    {
+        Query fq("fileq", m_db);
+        fq.compile("SELECT DISTINCT file FROM md ORDER BY file");
+        while (fq.step())
+        {
+            string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+            if (m_uniques) query += ", m.uniq";
+            if (m_others) query += ", m.other";
+            query += str::fmtf(" FROM md AS m WHERE m.file=? ORDER BY m.offset LIMIT 1 OFFSET %zd", idx);
+
+            Query mdq("mdq", m_db);
+            mdq.compile(query);
+            mdq.bind(1, fq.fetchString(0));
+
+            while (mdq.step())
+            {
+                // Rebuild the Metadata
+                Metadata md;
+                build_md(mdq, md);
+                mdbuf(md);
+            }
+        }
+    }
+    // Pass it to consumer
+    mdbuf.sendTo(consumer);
+
+    return mdbuf.size();
 }
 
 void Index::invalidateSummaryCache()

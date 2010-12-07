@@ -110,6 +110,14 @@ protected:
 	/// Get a list of all other attribute tables that can be created in the database
 	std::set<types::Code> all_other_tables() const;
 
+    /**
+     * Rebuild the metadata from the rows in an index query.
+     *
+     * The rows should be:
+     * m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime[, uniq][, other]
+     */
+    void build_md(utils::sqlite::Query& q, Metadata& md) const;
+
 	Index(const ConfigFile& cfg);
 public:
 	~Index();
@@ -198,6 +206,8 @@ public:
 	 * Query summary information from DB using the given WHERE body
 	 */
 	void querySummaryFromDB(const std::string& where, Summary& summary) const;
+
+    size_t produce_nth(metadata::Consumer& consumer, size_t idx) const;
 
 	/**
 	 * Run a consistency check on the summary cache, reporting issues

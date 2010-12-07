@@ -159,6 +159,51 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 	}
 }
 
+namespace {
+struct NthFilter : public metadata::Consumer
+{
+    metadata::Consumer& next;
+    size_t idx;
+
+    NthFilter(metadata::Consumer& next, size_t idx)
+        : next(next), idx(idx+1) {}
+
+    bool operator()(Metadata& md)
+    {
+        switch (idx)
+        {
+            case 0: return false;
+            case 1: next(md); --idx; return false;
+            default: --idx; return true;
+        }
+    }
+    bool produced() const { return idx == 0; }
+};
+}
+
+size_t Manifest::produce_nth(metadata::Consumer& cons, size_t idx)
+{
+    size_t res = 0;
+    // List all files
+    vector<string> files;
+    fileList(Matcher(), files);
+
+    string absdir = sys::fs::abspath(m_path);
+    ds::PathPrepender prepender("", cons);
+    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+    {
+        string fullpath = str::joinpath(absdir, *i);
+        if (!scan::exists(fullpath)) continue;
+        prepender.path = str::dirname(fullpath);
+        NthFilter filter(prepender, idx);
+        scan::scan(fullpath, filter);
+        if (filter.produced())
+            ++res;
+    }
+
+    return res;
+}
+
 void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 {
 	string pathname = str::joinpath(dir, relpath);

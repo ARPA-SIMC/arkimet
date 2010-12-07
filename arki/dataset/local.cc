@@ -84,6 +84,13 @@ void Local::querySummary(const Matcher& matcher, Summary& summary)
 		archive().querySummary(matcher, summary);
 }
 
+size_t Local::produce_nth(metadata::Consumer& cons, size_t idx)
+{
+    if (hasArchive())
+        return archive().produce_nth(cons, idx);
+    return 0;
+}
+
 void Local::readConfig(const std::string& path, ConfigFile& cfg)
 {
 	using namespace wibble;

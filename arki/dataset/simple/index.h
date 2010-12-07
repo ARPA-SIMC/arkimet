@@ -67,6 +67,7 @@ public:
 
 	void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	void querySummary(const Matcher& matcher, Summary& summary);
+    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
 	void rescanFile(const std::string& dir, const std::string& relpath);
 

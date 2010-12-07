@@ -478,18 +478,77 @@ void to::test<7>()
 	ensure_dataset_clean(arc, 1, 3);
 }
 
+template<> template<>
+void to::test<8>()
+{
+    using namespace arki::dataset;
+
+    {
+        auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+
+        // Acquire
+        system("cp inbound/test.grib1 testds/.archive/last/");
+        arc->acquire("test.grib1");
+        arc->flush();
+    }
+    ensure_archive_clean("testds/.archive/last", 1, 3);
+
+    metadata::Collection mdc;
+
+    {
+        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 0), 1u);;
+        ensure_equals(mdc.size(), 1u);
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 1), 1u);;
+        ensure_equals(mdc.size(), 1u);
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 2), 1u);;
+        ensure_equals(mdc.size(), 1u);
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 3), 0u);;
+        ensure_equals(mdc.size(), 0u);
+    }
+
+    {
+        auto_ptr<Archives> arc(new Archives("testds/.archive"));
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 0), 1u);;
+        ensure_equals(mdc.size(), 1u);
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 1), 1u);;
+        ensure_equals(mdc.size(), 1u);
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 2), 1u);;
+        ensure_equals(mdc.size(), 1u);
+
+        mdc.clear();
+        ensure_equals(arc->produce_nth(mdc, 3), 0u);;
+        ensure_equals(mdc.size(), 0u);
+    }
+}
+
 // Retest with sqlite
-template<> template<> void to::test<8>() { ForceSqlite fs; test<1>(); }
-template<> template<> void to::test<9>() { ForceSqlite fs; test<2>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; test<3>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
-template<> template<> void to::test<15>() { ForceSqlite fs; test<8>(); }
+template<> template<> void to::test<9>() { ForceSqlite fs; test<1>(); }
+template<> template<> void to::test<10>() { ForceSqlite fs; test<2>(); }
+template<> template<> void to::test<11>() { ForceSqlite fs; test<3>(); }
+template<> template<> void to::test<12>() { ForceSqlite fs; test<4>(); }
+template<> template<> void to::test<13>() { ForceSqlite fs; test<5>(); }
+template<> template<> void to::test<14>() { ForceSqlite fs; test<6>(); }
+template<> template<> void to::test<15>() { ForceSqlite fs; test<7>(); }
+template<> template<> void to::test<16>() { ForceSqlite fs; test<8>(); }
+template<> template<> void to::test<17>() { ForceSqlite fs; test<9>(); }
 
 template<> template<>
-void to::test<16>()
+void to::test<18>()
 {
     using namespace arki::dataset;
 
@@ -518,7 +577,7 @@ void to::test<16>()
 }
 
 template<> template<>
-void to::test<17>()
+void to::test<19>()
 {
     using namespace arki::dataset;
 
@@ -562,5 +621,6 @@ void to::test<17>()
         // TODO: maintenance
     }
 }
+
 
 }

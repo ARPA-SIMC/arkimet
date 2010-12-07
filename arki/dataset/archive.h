@@ -64,6 +64,12 @@ public:
     virtual void flush() = 0;
     virtual void maintenance(maintenance::MaintFileVisitor& v) = 0;
     virtual void vacuum() = 0;
+    /**
+     * Output to \a cons the idx-th element of each file
+     *
+     * @return true if something was produced, else false
+     */
+    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0) = 0;
 
     static bool is_archive(const std::string& dir);
     static Archive* create(const std::string& dir, bool writable=false);
@@ -89,6 +95,7 @@ public:
     virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
     virtual void acquire(const std::string& relname, metadata::Collection& mds);
@@ -122,6 +129,7 @@ struct OfflineArchive : public Archive
     virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
     virtual void acquire(const std::string& relname, metadata::Collection& mds);
@@ -175,6 +183,7 @@ public:
 	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
 	void acquire(const std::string& relname);
 	void acquire(const std::string& relname, metadata::Collection& mds);
