@@ -281,6 +281,20 @@ struct RemoveAller : public WorkerOnWritable
 	}
 };
 
+struct Counter : public metadata::Consumer
+{
+    metadata::Consumer& next;
+    size_t count;
+
+    Counter(metadata::Consumer& next) : next(next), count(0) {}
+
+    bool operator()(Metadata& md)
+    {
+        ++count;
+        return next(md);
+    }
+};
+
 struct ScanTest : public Worker
 {
     metadata::BinaryPrinter printer;
@@ -291,9 +305,17 @@ struct ScanTest : public Worker
     virtual void process(const ConfigFile& cfg)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+        Counter counter(printer);
         if (dataset::Local* ld = dynamic_cast<dataset::Local*>(ds.get()))
         {
-            ld->scan_test(printer, idx);
+            counter.count = 0;
+            size_t total = ld->scan_test(counter, idx);
+            if (counter.count)
+                nag::warning("%s: %zd/%zd samples with problems at index %zd",
+                        cfg.value("name").c_str(), counter.count, total, idx);
+            else
+                nag::verbose("%s: %zd samples ok at index %zd",
+                        cfg.value("name").c_str(), total, idx);
         } else {
             throw SkipDataset("dataset is not a local dataset");
         }
