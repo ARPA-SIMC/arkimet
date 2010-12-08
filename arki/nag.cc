@@ -1,7 +1,7 @@
 /*
  * nag - Verbose and debug output support
  *
- * Copyright (C) 2005--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2005--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ void init(bool verbose, bool debug, bool testing)
 	{
 		fprintf(stderr, "%s\n", PACKAGE_NAME " " PACKAGE_VERSION ", compiled on " DATE " " TIME);
 		fprintf(stderr, "%s",
-			"Copyright (C) 2007-2009 ARPA Emilia Romagna.\n"
+			"Copyright (C) 2007-2010 ARPA Emilia Romagna.\n"
 			PACKAGE_NAME " comes with ABSOLUTELY NO WARRANTY.\n"
 			"This is free software, and you are welcome to redistribute it and/or modify it\n"
 			"under the terms of the GNU General Public License as published by the Free\n"
