@@ -60,7 +60,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* invalidate;
 	BoolOption* remove_all;
 	BoolOption* stats;
-	BoolOption* scantest;
+	OptvalIntOption* scantest;
 	StringOption* op_remove;
 	StringOption* restr;
 
@@ -92,8 +92,10 @@ struct Options : public StandardParserWithManpage
 			"Given metadata extracted from one or more datasets, remove it from the datasets where it is stored");
 		restr = add<StringOption>("restrict", 0, "restrict", "names",
 			"restrict operations to only those datasets that allow one of the given (comma separated) names");
-        scantest = add<BoolOption>("scantest", 0, "scantest", "",
-            "Output metadata for data in the datasets that cannot be scanned or does not match the dataset filter");
+        scantest = add<OptvalIntOption>("scantest", 0, "scantest", "idx",
+            "Output metadata for data in the datasets that cannot be scanned or does not match the dataset filter."
+            " Sample the data at position idx (starting from 0) in each file in the dataset."
+            " If idx is omitted, it defaults to 0 (the first one)");
     }
 };
 
@@ -313,9 +315,12 @@ struct ScanTest : public Worker
             if (counter.count)
                 nag::warning("%s: %zd/%zd samples with problems at index %zd",
                         cfg.value("name").c_str(), counter.count, total, idx);
-            else
+            else if (total)
                 nag::verbose("%s: %zd samples ok at index %zd",
                         cfg.value("name").c_str(), total, idx);
+            else
+                nag::verbose("%s: no samples found at index %zd",
+                        cfg.value("name").c_str(), idx);
         } else {
             throw SkipDataset("dataset is not a local dataset");
         }
@@ -382,13 +387,13 @@ int main(int argc, const char* argv[])
 
 		auto_ptr<Worker> worker;
 
-		size_t actionCount = 0;
-		if (opts.stats->boolValue()) ++actionCount;
-		if (opts.invalidate->boolValue()) ++actionCount;
-		if (opts.repack->boolValue()) ++actionCount;
-		if (opts.remove_all->boolValue()) ++actionCount;
-		if (opts.op_remove->boolValue()) ++actionCount;
-        if (opts.scantest->boolValue()) ++actionCount;
+        size_t actionCount = 0;
+        if (opts.stats->isSet()) ++actionCount;
+        if (opts.invalidate->isSet()) ++actionCount;
+        if (opts.repack->isSet()) ++actionCount;
+        if (opts.remove_all->isSet()) ++actionCount;
+        if (opts.op_remove->isSet()) ++actionCount;
+        if (opts.scantest->isSet()) ++actionCount;
         if (actionCount > 1)
             throw wibble::exception::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all or --scantest can be given in one invocation");
 
@@ -454,8 +459,13 @@ int main(int argc, const char* argv[])
 				worker.reset(new RemoveAller(opts.fix->boolValue()));
 			else if (opts.repack->boolValue())
 				worker.reset(new Repacker(opts.fix->boolValue()));
-            else if (opts.scantest->boolValue())
-                worker.reset(new ScanTest());
+            else if (opts.scantest->isSet())
+            {
+                size_t idx = 0;
+                if (opts.scantest->hasValue())
+                    idx = opts.scantest->value();
+                worker.reset(new ScanTest(idx));
+            }
 			else
 				worker.reset(new Maintainer(opts.fix->boolValue(),
 						not opts.accurate->boolValue()));
