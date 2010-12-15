@@ -211,6 +211,20 @@ static int arkilua_copy(lua_State* L)
     return 1;
 }
 
+// Add a summary to this summary
+static int arkilua_add_summary(lua_State* L)
+{
+    Summary* s = Summary::lua_check(L, 1);
+    luaL_argcheck(L, s != NULL, 1, "`arki.summary' expected");
+    Summary* s1 = Summary::lua_check(L, 2);
+    luaL_argcheck(L, s != NULL, 2, "`arki.summary' expected");
+
+    s->add(*s1);
+
+    return 0;
+}
+
+
 
 static int arkilua_gc (lua_State *L)
 {
@@ -268,6 +282,7 @@ static const struct luaL_reg summarylib [] = {
     { "data", arkilua_data },
     { "filter", arkilua_filter },
     { "copy", arkilua_copy },
+    { "add_summary", arkilua_add_summary },
     { "__gc", arkilua_gc },
     { "__tostring", arkilua_tostring },
     { NULL, NULL }

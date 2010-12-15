@@ -279,14 +279,14 @@ void TargetFileProcessor::end() { next->end(); }
 
 std::auto_ptr<DatasetProcessor> ProcessorMaker::make(Matcher& query, Output& out)
 {
-    if (summary)
-        return auto_ptr<DatasetProcessor>(new SummaryProcessor(*this, query, out));
-    else if (data_only || !postprocess.empty()
+    if (data_only || !postprocess.empty()
 #ifdef HAVE_LUA
         || !report.empty()
 #endif
         )
         return auto_ptr<DatasetProcessor>(new BinaryProcessor(*this, query, out));
+    else if (summary)
+        return auto_ptr<DatasetProcessor>(new SummaryProcessor(*this, query, out));
     else
         return auto_ptr<DatasetProcessor>(new DataProcessor(*this, query, out));
 }
