@@ -116,6 +116,39 @@ int Time::compare(const Type& o) const
 	return 0;
 }
 
+Item<types::Time> Time::start_of_month() const
+{
+    types::Time* t;
+    Item<types::Time> res = t = new Time;
+    t->vals[0] = vals[0];
+    t->vals[1] = vals[1];
+    t->vals[2] = 1;
+    t->vals[3] = t->vals[4] = t->vals[5] = 0;
+    return res;
+}
+Item<types::Time> Time::start_of_next_month() const
+{
+    types::Time* t;
+    Item<types::Time> res = t = new types::Time;
+    t->vals[0] = vals[0] + vals[1] / 12;
+    t->vals[1] = (vals[1] % 12) + 1;
+    t->vals[2] = 1;
+    t->vals[3] = t->vals[4] = t->vals[5] = 0;
+    return res;
+}
+Item<types::Time> Time::end_of_month() const
+{
+    types::Time* t;
+    Item<types::Time> res = t = new types::Time;
+    t->vals[0] = vals[0];
+    t->vals[1] = vals[1];
+    t->vals[2] = grcal::date::daysinmonth(vals[0], vals[1]);
+    t->vals[3] = 23;
+    t->vals[4] = 59;
+    t->vals[5] = 59;
+    return res;
+}
+
 std::string Time::toISO8601(char sep) const
 {
 	char buf[25];

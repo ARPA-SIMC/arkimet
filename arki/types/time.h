@@ -80,6 +80,15 @@ struct Time : public types::CoreType<Time>
 	const int& operator[](unsigned idx) const { return vals[idx]; }
 	int& operator[](unsigned idx) { return vals[idx]; }
 
+    /// Some time operations
+
+    /// Return the time at the start of this month
+    Item<types::Time> start_of_month() const;
+    /// Return the time at the start of the next month
+    Item<types::Time> start_of_next_month() const;
+    /// Return the time at the very end of this month
+    Item<types::Time> end_of_month() const;
+
 	/// Return the time formatted as a string in ISO-8601 format
 	std::string toISO8601(char sep='T') const;
 
