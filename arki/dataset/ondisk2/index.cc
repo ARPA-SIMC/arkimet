@@ -446,10 +446,8 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 				db_time_extremes(m_db, db_begin, db_end);
 				if (db_begin.defined() && db_end.defined())
 				{
-					// If the bounds of the query time are
-					// open, or go past the bounds of the
-					// database, replace them with the
-					// database bounds
+                    // Intersect the time bounds of the query with the time
+                    // bounds of the database
 					if (!begin.defined() || begin < db_begin) begin = db_begin;
 					if (!end.defined() || end > db_end) end = db_end;
 					long long int qrange = grcal::date::duration(begin->vals, end->vals);
@@ -907,7 +905,7 @@ bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
 	return true;
 }
 
-static inline bool range_evelopes_full_month(const Item<types::Time>& begin, const Item<types::Time>& end)
+static inline bool range_envelopes_full_month(const Item<types::Time>& begin, const Item<types::Time>& end)
 {
     bool begins_at_beginning = begin->vals[2] == 1 &&
         begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0;
@@ -991,7 +989,7 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 
 	// If the selected interval does not envelope any whole month, query
 	// the DB directly
-	if (!range_evelopes_full_month(begin, end))
+	if (!range_envelopes_full_month(begin, end))
 		return querySummaryFromDB(matcher, summary);
 
 	// Query partial month at beginning, middle whole months, partial
