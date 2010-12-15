@@ -1088,11 +1088,16 @@ struct ServerProcess : public sys::ChildProcess
 
     virtual int main()
     {
-        // Set FD_CLOEXEC so server workers don't get the master socket
-        http.set_sock_cloexec();
+        try {
+            // Set FD_CLOEXEC so server workers don't get the master socket
+            http.set_sock_cloexec();
 
-        // Server main loop
-        http.run_server();
+            // Server main loop
+            http.run_server();
+        } catch (std::exception& e) {
+            log << log::ERR << str::replace(e.what(), '\n', ' ') << endl;
+            return 1;
+        }
 
         return 0;
     }
