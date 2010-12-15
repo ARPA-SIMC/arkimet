@@ -308,19 +308,17 @@ string GribLua::run_function(int id, Metadata& md)
 		return std::string();
 }
 
-static void check_grib_error(int error, const char* context)
-{
-	if (error != GRIB_SUCCESS)
-		throw wibble::exception::Consistency(context, grib_get_error_message(error));
-}
+#define check_grib_error(error, ...) do { \
+        if (error != GRIB_SUCCESS) \
+            throw wibble::exception::Consistency(str::fmtf(__VA_ARGS__), grib_get_error_message(error)); \
+    } while (0)
 
 // Never returns in case of error
-static void arkilua_check_gribapi(lua_State* L, int error, const char* context)
-{
-	if (error != GRIB_SUCCESS)
-		luaL_error(L, "grib_api error \"%s\" while %s",
-					grib_get_error_message(error), context);
-}
+#define arkilua_check_gribapi(L, error, ...) do { \
+        if (error != GRIB_SUCCESS) \
+            luaL_error(L, "grib_api error \"%s\" while %s", \
+                        grib_get_error_message(error), str::fmtf(__VA_ARGS__).c_str()); \
+    } while (0)
 
 // Lookup a grib value for grib.<fieldname>
 int Grib::arkilua_lookup_grib(lua_State* L)
@@ -342,20 +340,20 @@ int Grib::arkilua_lookup_grib(lua_State* L)
 	if (res == GRIB_NOT_FOUND)
 		type = GRIB_TYPE_MISSING;
 	else
-		arkilua_check_gribapi(L, res, "getting type of key");
+		arkilua_check_gribapi(L, res, "getting type of key %s", name);
 
 	// Look up the value and push the function result for lua
 	switch (type)
 	{
 		case GRIB_TYPE_LONG: {
 			long val;
-			arkilua_check_gribapi(L, grib_get_long(gh, name, &val), "reading long value");
+			arkilua_check_gribapi(L, grib_get_long(gh, name, &val), "reading long value %s", name);
 			lua_pushnumber(L, val);
 			break;
 		}
 		case GRIB_TYPE_DOUBLE: {
 			double val;
-			arkilua_check_gribapi(L, grib_get_double(gh, name, &val), "reading double value");
+			arkilua_check_gribapi(L, grib_get_double(gh, name, &val), "reading double value %s", name);
 			lua_pushnumber(L, val);
 			break;
 		} 
@@ -363,7 +361,7 @@ int Grib::arkilua_lookup_grib(lua_State* L)
 			const int maxsize = 1000;
 			char buf[maxsize];
 			size_t len = maxsize;
-			arkilua_check_gribapi(L, grib_get_string(gh, name, buf, &len), "reading string value");
+			arkilua_check_gribapi(L, grib_get_string(gh, name, buf, &len), "reading string value %s", name);
 			if (len > 0) --len;
 			lua_pushlstring(L, buf, len);
 			break;
