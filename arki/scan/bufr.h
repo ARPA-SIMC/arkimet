@@ -63,6 +63,8 @@ class Bufr
 	void read_info_fixed(char* buf, Metadata& md);
 	void read_info_mobile(char* buf, Metadata& md);
 
+    bool do_scan(Metadata& md);
+
 public:
 	Bufr(bool inlineData = false);
 	~Bufr();

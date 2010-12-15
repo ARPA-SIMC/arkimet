@@ -31,7 +31,6 @@
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/reftime.h>
-#include <arki/types/area.h>
 #include <arki/types/run.h>
 #include <arki/scan/any.h>
 #include <wibble/exception.h>
@@ -140,59 +139,7 @@ void Bufr::close()
 	}
 }
 
-#if 0
-void Bufr::read_info_base(char* buf, ValueBag& area)
-{
-	uint16_t rep_cod;
-
-	memcpy(&rep_cod, buf +  0, 2);
-
-	rep_cod = ntohs(rep_cod);
-
-	std::map<int, std::string>::const_iterator rm = to_rep_memo.find(rep_cod);
-	if (rm == to_rep_memo.end())
-		area.set("rep", Value::createString(str::fmt(rep_cod)));
-	else
-		area.set("rep", Value::createString(rm->second));
-}
-
-void Bufr::read_info_fixed(char* buf, Metadata& md)
-{
-	uint32_t lat;
-	uint32_t lon;
-	uint8_t block;
-	uint16_t station;
-
-	memcpy(&lat,     buf +  2, 4);
-	memcpy(&lon,     buf +  6, 4);
-	memcpy(&block,   buf + 10, 1);
-	memcpy(&station, buf + 11, 2);
-	lat = ntohl(lat);
-	lon = ntohl(lon);
-	station = ntohs(station);
-
-	ValueBag area;
-	read_info_base(buf, area);
-	area.set("lat", Value::createInteger(lat * 10));
-	area.set("lon", Value::createInteger(lon * 10));
-	if (block) area.set("blo", Value::createInteger(block));
-	if (station) area.set("sta", Value::createInteger(station));
-	md.set(types::area::GRIB::create(area));
-}
-
-void Bufr::read_info_mobile(char* buf, Metadata& md)
-{
-	string ident;
-	ident = string(buf + 2, 9);
-
-	ValueBag area;
-	read_info_base(buf, area);
-	area.set("ide", Value::createString(ident));
-	md.set(types::area::GRIB::create(area));
-}
-#endif
-
-bool Bufr::next(Metadata& md)
+bool Bufr::do_scan(Metadata& md)
 {
 	Rawmsg rmsg;
 	if (!file->read(rmsg))
@@ -299,6 +246,25 @@ bool Bufr::next(Metadata& md)
 #endif
 
 	return true;
+}
+
+bool Bufr::next(Metadata& md)
+{
+    bool res = do_scan(md);
+    if (res)
+    {
+        // Validate reftime
+        Item<types::reftime::Position> rt = md.get<types::reftime::Position>();
+        if (rt->time->vals[1] == 0)
+            throw wibble::exception::Consistency(
+                    "checking reftime " + str::fmt(rt),
+                    "month cannot be 0");
+        if (rt->time->vals[2] == 0)
+            throw wibble::exception::Consistency(
+                    "checking reftime " + str::fmt(rt),
+                    "day cannot be 0");
+    }
+    return res;
 }
 
 namespace {

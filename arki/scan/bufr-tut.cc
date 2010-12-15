@@ -392,6 +392,27 @@ void to::test<5>()
 	ensure(not scanner.next(md));
 }
 
+// Test scanning a BUFR file with undefined dates
+template<> template<>
+void to::test<6>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    types::Time reftime;
+    wibble::sys::Buffer buf;
+
+    scanner.open("inbound/zerodate.bufr");
+
+    // See how we scan the first BUFR
+    try
+    {
+        ensure(scanner.next(md));
+        ensure(false);
+    } catch (wibble::exception::Generic& e) {
+        ensure_contains(e.what(), "cannot be 0");
+    }
+}
+
 }
 
 // vim:set ts=4 sw=4:

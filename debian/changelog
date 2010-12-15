@@ -1,3 +1,10 @@
+arkimet (0.53-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Complain after scanning a BUFR with undefined dates
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 15 Dec 2010 10:27:02 +0100
+
 arkimet (0.52-1) UNRELEASED; urgency=low
 
   * New upstream version
