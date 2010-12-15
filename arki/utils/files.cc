@@ -141,6 +141,27 @@ std::string readFile(const std::string &file)
         return sys::fs::readFile(file);
 }
 
+std::string find_executable(const std::string& name)
+{
+    // argv[0] has an explicit path: ensure it becomes absolute
+    if (name.find('/') != string::npos)
+        return sys::fs::abspath(name);
+
+    // argv[0] has no explicit path, look for it in $PATH
+    const char* path = getenv("PATH");
+    if (path == NULL)
+        return name;
+    str::Split splitter(":", path);
+    for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+    {
+        string candidate = str::joinpath(*i, name);
+        if (sys::fs::access(candidate, X_OK))
+            return sys::fs::abspath(candidate);
+    }
+
+    return name;
+}
+
 }
 }
 }

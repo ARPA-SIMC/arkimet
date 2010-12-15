@@ -104,6 +104,14 @@ ino_t inode(const std::string& file);
  */
 std::string readFile(const std::string &file);
 
+/**
+ * Compute the absolute path of an executable.
+ *
+ * If \a name is specified as a partial path, it ensures it is made absolute.
+ * If \a name is not specified as a path, it looks for the executable in $PATH
+ * and return its absolute pathname.
+ */
+std::string find_executable(const std::string& name);
 
 }
 }

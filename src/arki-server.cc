@@ -43,6 +43,8 @@
 #include <arki/formatter.h>
 #include <arki/dispatcher.h>
 #include <arki/utils.h>
+#include <arki/utils/files.h>
+#include <arki/utils/fd.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
@@ -67,6 +69,7 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "config.h"
 
@@ -77,6 +80,8 @@ using namespace arki;
 using namespace arki::utils;
 using namespace wibble;
 using namespace wibble::net;
+
+extern char** environ;
 
 namespace wibble {
 namespace commandline {
@@ -902,6 +907,7 @@ struct HTTP : public net::TCPServer
             const std::string& peer_hostaddr,
             const std::string& peer_port)
     {
+        utils::fd::HandleWatch hw("Client socket", sock);
         log << log::INFO << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
 
         if (children.size() > 256)
@@ -948,8 +954,6 @@ struct HTTP : public net::TCPServer
         auto_ptr<ChildServer> handler(new ChildServer(log, req));
         pid_t pid = handler->fork();
         children[pid] = handler.release();
-
-        close(sock);
     }
 
     void run_server()
@@ -1021,6 +1025,8 @@ struct LogFilter : public log::Sender
 
 struct ServerProcess : public sys::ChildProcess
 {
+    vector<string> restart_argv;
+    vector<string> restart_environ;
     commandline::Options& opts;
     ostream log;
     HTTP http;
@@ -1089,22 +1095,55 @@ struct ServerProcess : public sys::ChildProcess
     virtual int main()
     {
         try {
-            // Set FD_CLOEXEC so server workers don't get the master socket
+            // Set FD_CLOEXEC so server workers or restarted servers don't get
+            // the master socket
             http.set_sock_cloexec();
 
             // Server main loop
             http.run_server();
         } catch (std::exception& e) {
             log << log::ERR << str::replace(e.what(), '\n', ' ') << endl;
-            return 1;
+            restart();
         }
 
         return 0;
+    }
+
+    void restart()
+    {
+        string argv0 = utils::files::find_executable(restart_argv[0]);
+        log << log::ERR << "Restarting server " << argv0 << endl;
+
+        // Build argument and environment lists
+        char* argv[restart_argv.size() + 1];
+        for (size_t i = 0; i < restart_argv.size(); ++i)
+            argv[i] = strdup(restart_argv[i].c_str());
+        argv[restart_argv.size()] = 0;
+
+        char* envp[restart_environ.size() + 1];
+        for (size_t i = 0; i < restart_environ.size(); ++i)
+            envp[i] = strdup(restart_environ[i].c_str());
+        envp[restart_environ.size()] = 0;
+
+        // Exec self.
+        // The master socket will be closed, the child workers will keep
+        // working and we will get SIGCHLD from them
+        if (execve(argv0.c_str(), argv, envp) < 0)
+            throw wibble::exception::System("reloading server");
     }
 };
 
 int main(int argc, const char* argv[])
 {
+    // Save argv and environ so we can use them to reload the server process
+    vector<string> restart_argv;
+    vector<string> restart_environ;
+    for (int i = 0; i < argc; ++i)
+        restart_argv.push_back(argv[i]);
+    for (char** e = environ; *e; ++e)
+        restart_environ.push_back(*e);
+
+    // Initialise setproctitle hacks
     sys::process::initproctitle(argc, (char**)argv);
 
     wibble::commandline::Options opts;
@@ -1116,6 +1155,10 @@ int main(int argc, const char* argv[])
 
         if (!opts.hasNext())
             throw wibble::exception::BadOption("please specify a configuration file");
+
+        // Build the full path of argv[0]
+        restart_argv[0];
+
 
         runtime::init();
 
@@ -1133,6 +1176,8 @@ int main(int argc, const char* argv[])
 
         // Configure the server and start listening
         ServerProcess srv(opts);
+        srv.restart_argv = restart_argv;
+        srv.restart_environ = restart_environ;
         srv.log << log::INFO << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
 
         if (opts.runtest->isSet())
