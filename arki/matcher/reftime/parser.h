@@ -68,7 +68,7 @@ static std::string tosql(const int* tt)
 static std::string tosqlTime(const int& tt)
 {
 	char buf[15];
-	snprintf(buf, 25, "'%02d:%02d:%02d'", tt / 3600, (tt % 3600) / 60, tt % 60);
+	snprintf(buf, 15, "'%02d:%02d:%02d'", tt / 3600, (tt % 3600) / 60, tt % 60);
 	return buf;
 }
 
