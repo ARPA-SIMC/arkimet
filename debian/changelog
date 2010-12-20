@@ -1,3 +1,10 @@
+arkimet (0.53-2) UNRELEASED; urgency=low
+
+  * New alias in /etc/arkimet/match-alias.conf
+     - tpp
+
+ -- Emanuele Di Giacomo <edigiacomo@arpa.emr.it>  Mon, 20 Dec 2010 12:32:24 +0100
+
 arkimet (0.53-1) UNRELEASED; urgency=low
 
   * New upstream version
