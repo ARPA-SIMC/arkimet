@@ -25,6 +25,7 @@
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/dataset/maintenance.h>
+#include <arki/sort.h>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -173,6 +174,17 @@ struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
 	void dump(std::ostream& out) const;
 	size_t count(State s);
 	std::string remaining() const;
+};
+
+struct OrderCheck : public metadata::Consumer
+{
+    refcounted::Pointer<sort::Compare> order;
+    Metadata old;
+    bool first;
+
+    OrderCheck(const std::string& order);
+    virtual ~OrderCheck();
+    virtual bool operator()(Metadata& md);
 };
 
 }

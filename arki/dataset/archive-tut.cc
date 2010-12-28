@@ -120,6 +120,15 @@ void to::test<1>()
 	}
 
 	ensure_archive_clean("testds/.archive/last", 1, 3);
+
+    // Check that querying the dataset gives results sorted by reftime
+    {
+        auto_ptr<Archive> arc(Archive::create("testds/.archive/last", false));
+        OnlineArchive* a = dynamic_cast<OnlineArchive*>(arc.get());
+        ensure(a);
+        OrderCheck oc("reftime");
+        a->queryData(dataset::DataQuery(), oc);
+    }
 }
 
 // Test maintenance scan on non-indexed files

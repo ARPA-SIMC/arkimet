@@ -377,5 +377,32 @@ const char* MaintenanceCollector::names[] = {
 	"state max",
 };
 
+OrderCheck::OrderCheck(const std::string& order)
+    : order(sort::Compare::parse(order)), first(true)
+{
+}
+OrderCheck::~OrderCheck()
+{
+}
+bool OrderCheck::operator()(Metadata& md)
+{
+    if (!first)
+    {
+        if (order->compare(old, md) > 0)
+        {
+            stringstream msg;
+            old.writeYaml(msg);
+            msg << " should come after ";
+            md.writeYaml(msg);
+            throw wibble::exception::Consistency(
+                    "checking order of a metadata stream",
+                    msg.str());
+        }
+    }
+    old = md;
+    first = false;
+    return true;
+}
+
 }
 // vim:set ts=4 sw=4:
