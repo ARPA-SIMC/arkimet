@@ -95,22 +95,24 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 	metadata::Consumer* c = &consumer;
 	// Order matters here, as delete will happen in reverse order
 	auto_ptr<ds::DataInliner> inliner;
-	auto_ptr<sort::Stream> sorter;
+    refcounted::Pointer<sort::Compare> compare;
 
 	if (q.withData)
 	{
 		inliner.reset(new ds::DataInliner(*c));
 		c = inliner.get();
 	}
-		
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
 
-	string absdir = sys::fs::abspath(m_path);
-	ds::PathPrepender prepender("", *c);
+    if (q.sorter)
+        compare = q.sorter;
+    else
+        // If no sorter is provided, sort by reftime in case data files have
+        // not been sorted before archiving
+        compare = sort::Compare::parse("reftime");
+
+    string absdir = sys::fs::abspath(m_path);
+    sort::Stream sorter(*compare, *c);
+    ds::PathPrepender prepender("", sorter);
 	ds::MatcherFilter filter(q.matcher, prepender);
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 	{
@@ -120,7 +122,7 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 		scan::scan(fullpath, filter);
 	}
 
-	if (sorter.get()) sorter->flush();
+    sorter.flush();
 }
 
 void Manifest::querySummary(const Matcher& matcher, Summary& summary)
