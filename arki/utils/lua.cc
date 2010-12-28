@@ -1,7 +1,7 @@
 /*
  * utils-lua - Lua-specific utility functions
  *
- * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <arki/utils/lua.h>
 #include <arki/types.h>
 #include <arki/metadata.h>
+#include <arki/summary.h>
 #include <arki/matcher.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -54,6 +55,7 @@ Lua::Lua() : L(0)
 
 	types::Type::lua_loadlib(L);
 	Metadata::lua_openlib(L);
+	Summary::lua_openlib(L);
 	Matcher::lua_openlib(L);
 }
 
