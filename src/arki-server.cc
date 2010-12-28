@@ -42,6 +42,7 @@
 #include <arki/matcher.h>
 #include <arki/formatter.h>
 #include <arki/dispatcher.h>
+#include <arki/report.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/fd.h>
@@ -472,7 +473,14 @@ struct DatasetHandler : public LocalHandler
         res << "</ul>" << endl;
         res << "<p>Summary of dataset <b>" << dsname << "</b>:</p>" << endl;
         res << "<pre>" << endl;
-        sum.writeYaml(res);
+        try {
+            Report rep("dsinfo");
+            rep.captureOutput(res);
+            rep(sum);
+            rep.report();
+        } catch (std::exception& e) {
+            sum.writeYaml(res);
+        }
         res << "</pre>" << endl;
         res << "</body>" << endl;
         res << "</html>" << endl;
