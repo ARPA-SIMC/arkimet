@@ -229,6 +229,11 @@ void to::test<9>()
 			"function ensure_not_matches(val, expr)\n"
 			"  local matcher = arki.matcher.new(expr)\n"
 			"  if (matcher:match(val)) then error(expr .. ' should not have matched ' .. tostring(val) .. ':\\n' .. debug.traceback()) end\n"
+			"end\n"
+			"function ensure_matchers_equal(expr1, expr2)\n"
+			"  local matcher1 = arki.matcher.new(expr1)\n"
+			"  local matcher2 = arki.matcher.new(expr2)\n"
+			"  if matcher1:expanded() ~= matcher2:expanded() then error(tostring(matcher1) .. '(' .. matcher1:expanded() .. ') should be the same as ' .. tostring(matcher2) .. '(' .. matcher2:expanded() .. '):\\n' .. debug.traceback()) end\n"
 			"end\n";
 	if (luaL_dostring(L, lua_ensure.c_str()))
         {

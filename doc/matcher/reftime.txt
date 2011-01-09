@@ -28,7 +28,28 @@ means "anything from 04:00:30 June 5, 2007, but only at precisely 04:00:30 and
 The time step can be given in hours, minutes, seconds or any of their
 combinations. For example: "12h", "30m", "12h30m15s".
 
+Dates and times can also be specified relative to the curren time:
+
+ now: current date and time
+ today: current date
+
+There are also aliases for commonly used bits:
 ]]
+
+ensure_matchers_equal("reftime:=yesterday", "reftime:=today - 1 day")
+ensure_matchers_equal("reftime:=tomorrow",  "reftime:=today + 1 day")
+ensure_matchers_equal("reftime:=midday",    "reftime:=12:00:00")
+ensure_matchers_equal("reftime:=noon",      "reftime:=12:00:00")
+ensure_matchers_equal("reftime:=midnight",  "reftime:=00:00:00")
+
+-- Dates can be altered using +, -, 'ago', 'before', 'after'. For example:
+
+ensure_matchers_equal("reftime:=2 days before yesterday",   "reftime:=today - 3 days")
+ensure_matchers_equal("reftime:=1 hour and 30 minutes after tomorrow midnight",     "reftime:=tomorrow 01:30:00")
+ensure_matchers_equal("reftime:=1 hour after today midday", "reftime:=today 13:00:00")
+ensure_matchers_equal("reftime:=processione san luca 2010", "reftime:=34 days after easter 2010")
+
+-- You can use arki-dump --query 'reftime:...' to check how a query gets parsed.
 
 sample:set(arki_reftime.position(arki_time.sql("2010-09-08 07:06:05")))
 
