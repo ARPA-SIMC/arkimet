@@ -2,8 +2,8 @@ DESCRIPTION end
 |\fBarki-query\fP extracts all the metadata that matches an Arkimet expression
 |out of one or more datasets.
 |.P
-|The syntax of the match expression is the same as \fBarki-grep\fP and is
-|documented in \fI/usr/share/doc/arkimet/MATCHER\fP.
+|The syntax of the match expression is documented in 
+|\fI/usr/share/doc/arkimet/matcher/\fP.
 
 OPTIONS end
 |.SH EXAMPLES
@@ -17,8 +17,8 @@ OPTIONS end
 |.fi
 |
 |.SH SEE ALSO
-|.BR arki-dump (1),
-|.BR arki-grep (1),
+|.BR arki-scan (1),
+|.BR arki-mergeconf (1),
 |.br
-|.BR /usr/share/doc/arkimet/MATCHER
+|.BR /usr/share/doc/arkimet/matcher/
 
