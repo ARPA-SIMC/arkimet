@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include <arki/types/level.h>
 #include <arki/types/timerange.h>
 #include <arki/types/area.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/types/run.h>
 #include <arki/types/reftime.h>
 
@@ -62,7 +62,7 @@ struct arki_targetfile_shar {
 		md.set(level::GRIB1::create(110, 12, 13));
 		md.set(timerange::GRIB1::create(0, 0, 0, 0));
 		md.set(area::GRIB::create(testValues));
-		md.set(ensemble::GRIB::create(testValues));
+		md.set(proddef::GRIB::create(testValues));
 		md.add_note(types::Note::create("test note"));
 		md.set(run::Minute::create(12));
 		md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));

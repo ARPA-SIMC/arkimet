@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
@@ -84,7 +84,7 @@ struct arki_metadata_shar {
 		md.set(level::GRIB1::create(114, 12, 34));
 		md.set(timerange::GRIB1::create(1, 1, 2, 3));
 		md.set(area::GRIB::create(testValues));
-		md.set(ensemble::GRIB::create(testValues));
+		md.set(proddef::GRIB::create(testValues));
 		md.add_note(types::Note::create("test note"));
 		md.set(AssignedDataset::create("dsname", "dsid"));
 		// Test POSITION reference times
@@ -104,8 +104,8 @@ struct arki_metadata_shar {
 		inner_ensure_equals(md1.get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(1, 1, 2, 3)));
 		inner_ensure(md1.get(types::TYPE_AREA).defined());
 		inner_ensure_equals(md1.get(types::TYPE_AREA), Item<>(area::GRIB::create(testValues)));
-		inner_ensure(md1.get(types::TYPE_ENSEMBLE).defined());
-		inner_ensure_equals(md1.get(types::TYPE_ENSEMBLE), Item<>(ensemble::GRIB::create(testValues)));
+		inner_ensure(md1.get(types::TYPE_PRODDEF).defined());
+		inner_ensure_equals(md1.get(types::TYPE_PRODDEF), Item<>(proddef::GRIB::create(testValues)));
 		inner_ensure_equals(md1.notes().size(), 1u);
 		inner_ensure_equals((*md1.notes().begin())->content, "test note");
 		inner_ensure_equals(md1.get(types::TYPE_ASSIGNEDDATASET), Item<>(AssignedDataset::create("dsname", "dsid")));
@@ -314,7 +314,7 @@ void to::test<7>()
 		"  if md.level == nil then return 'level is nil' end \n"
 		"  if md.timerange == nil then return 'timerange is nil' end \n"
 		"  if md.area == nil then return 'area is nil' end \n"
-		"  if md.ensemble == nil then return 'ensemble is nil' end \n"
+		"  if md.proddef == nil then return 'proddef is nil' end \n"
 		"  if md.assigneddataset == nil then return 'assigneddataset is nil' end \n"
 		"  if md.reftime == nil then return 'reftime is nil' end \n"
 		"  if md.bbox ~= nil then return 'bbox is not nil' end \n"

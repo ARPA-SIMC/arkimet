@@ -52,7 +52,7 @@ dist_noinst_HEADERS = \
 		matcher/reftime.h \
 		matcher/reftime/parser.h \
 		matcher/area.h \
-		matcher/ensemble.h \
+		matcher/proddef.h \
 		matcher/run.h \
 		matcher/task.h \
 		matcher/quantity.h \
@@ -85,7 +85,7 @@ dist_noinst_HEADERS = \
 		types/level.h \
 		types/timerange.h \
 		types/area.h \
-		types/ensemble.h \
+		types/proddef.h \
 		types/note.h \
 		types/assigneddataset.h \
 		types/bbox.h \
@@ -158,7 +158,7 @@ libarkimet_la_SOURCES = \
 		types/level.cc \
 		types/timerange.cc \
 		types/area.cc \
-		types/ensemble.cc \
+		types/proddef.cc \
 		types/note.cc \
 		types/assigneddataset.cc \
 		types/bbox.cc \
@@ -184,7 +184,7 @@ libarkimet_la_SOURCES = \
 		matcher/reftime/reftime-lex.cc \
 		matcher/reftime/reftime-parse.cc \
 		matcher/area.cc \
-		matcher/ensemble.cc \
+		matcher/proddef.cc \
 		matcher/run.cc \
 		matcher/task.cc \
 		matcher/quantity.cc \
@@ -268,7 +268,7 @@ tests_arki_test_SOURCES = \
 		types/level-tut.cc \
 		types/timerange-tut.cc \
 		types/area-tut.cc \
-		types/ensemble-tut.cc \
+		types/proddef-tut.cc \
 		types/note-tut.cc \
 		types/assigneddataset-tut.cc \
 		types/bbox-tut.cc \
@@ -298,7 +298,7 @@ tests_arki_test_SOURCES = \
 		matcher/reftime-tut.cc \
 		matcher/reftime/parser-tut.cc \
 		matcher/area-tut.cc \
-		matcher/ensemble-tut.cc \
+		matcher/proddef-tut.cc \
 		matcher/run-tut.cc \
 		matcher/task-tut.cc \
 		matcher/quantity-tut.cc \

@@ -4,7 +4,7 @@
 /*
  * values - Dynamic type system used by some types of arkimet metadata
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ struct Encoder;
  * Base class for generic scalar values.
  *
  * This is needed in order to store arbitrary types for the key=value kind of
- * types (like Area and Ensemble).
+ * types (like Area and Proddef).
  *
  * In practice, we have to create a dynamic type system.
  */

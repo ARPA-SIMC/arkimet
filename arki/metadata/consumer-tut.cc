@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ void to::test<1>()
 		"  if md.level == nil then return 'level is nil' end \n"
 		"  if md.timerange == nil then return 'timerange is nil' end \n"
 		"  if md.area == nil then return 'area is nil' end \n"
-		"  if md.ensemble == nil then return 'ensemble is nil' end \n"
+		"  if md.proddef == nil then return 'proddef is nil' end \n"
 		"  if md.assigneddataset == nil then return 'assigneddataset is nil' end \n"
 		"  if md.reftime == nil then return 'reftime is nil' end \n"
 		"  if md.bbox ~= nil then return 'bbox is not nil' end \n"

@@ -82,7 +82,7 @@ The metadata currently supported are:
  * Level
  * Time Range
  * Area
- * Ensemble run information
+ * Product definition information
 
 The formats used to handle metadata are:
 

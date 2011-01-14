@@ -1,10 +1,10 @@
-#ifndef ARKI_MATCHER_ENSEMBLE
-#define ARKI_MATCHER_ENSEMBLE
+#ifndef ARKI_MATCHER_PRODDEF_H
+#define ARKI_MATCHER_PRODDEF_H
 
 /*
- * matcher/ensemble - Ensemble matcher
+ * matcher/proddef - Product definition matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,27 +24,27 @@
  */
 
 #include <arki/matcher.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 
 namespace arki {
 namespace matcher {
 
 /**
- * Match Ensembles
+ * Match Proddefs
  */
-struct MatchEnsemble : public Implementation
+struct MatchProddef : public Implementation
 {
-	//MatchType type() const { return MATCH_ENSEMBLE; }
+	//MatchType type() const { return MATCH_PRODDEF; }
 	std::string name() const;
 
-	static MatchEnsemble* parse(const std::string& pattern);
+	static MatchProddef* parse(const std::string& pattern);
 };
 
-struct MatchEnsembleGRIB : public MatchEnsemble
+struct MatchProddefGRIB : public MatchProddef
 {
 	ValueBag expr;
 
-	MatchEnsembleGRIB(const std::string& pattern);
+	MatchProddefGRIB(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
 };

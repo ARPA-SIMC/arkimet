@@ -55,7 +55,7 @@ dist_fmtconf_DATA = \
 	conf/format/01-gribapi \
 	conf/format/05-gribtables \
 	conf/format/10-area \
-	conf/format/10-ensemble \
+	conf/format/10-proddef \
 	conf/format/10-level \
 	conf/format/10-origin \
 	conf/format/10-product \
@@ -84,7 +84,7 @@ EXTRA_DIST = README \
 	     doc/mhooks-bufr-prepare \
 	     doc/lua-examples/area.lua \
 	     doc/lua-examples/bbox.lua \
-	     doc/lua-examples/ensemble.lua \
+	     doc/lua-examples/proddef.lua \
 	     doc/lua-examples/origin.lua \
 	     doc/lua-examples/level.lua \
 	     doc/lua-examples/product.lua \
@@ -98,7 +98,7 @@ EXTRA_DIST = README \
 	     doc/matcher/timerange.txt \
 	     doc/matcher/reftime.txt \
 	     doc/matcher/area.txt \
-	     doc/matcher/ensemble.txt \
+	     doc/matcher/proddef.txt \
 	     doc/matcher/run.txt \
 	     doc/matcher/aliases.txt \
 	     doc/matcher/expressions.txt \

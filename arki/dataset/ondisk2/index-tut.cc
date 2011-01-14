@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010 ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011 ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
@@ -67,7 +67,7 @@ struct arki_dataset_ondisk2_index_shar {
 	Metadata md1;
 
 	ValueBag testArea;
-	ValueBag testEnsemble;
+	ValueBag testProddef;
 
 	arki_dataset_ondisk2_index_shar()
 	{
@@ -80,7 +80,7 @@ struct arki_dataset_ondisk2_index_shar {
 		testArea.set("supercazzola", Value::createInteger(-1234567));
 		testArea.set("pippo", Value::createString("pippo"));
 		testArea.set("pluto", Value::createString("12"));
-		testEnsemble = testArea;
+		testProddef = testArea;
 
 		md.create();
 		md.source = source::Blob::create("grib", "antani", 10, 2000);
@@ -90,7 +90,7 @@ struct arki_dataset_ondisk2_index_shar {
 		md.set(timerange::GRIB1::create(4, 5, 6, 7));
 		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 		md.set(area::GRIB::create(testArea));
-		md.set(ensemble::GRIB::create(testEnsemble));
+		md.set(proddef::GRIB::create(testProddef));
 		md.add_note(types::Note::create("this is a test"));
 		ofstream out("test-md.metadata");
 		if (out.fail()) throw wibble::exception::File("test-md.metadata", "opening file");
@@ -105,7 +105,7 @@ struct arki_dataset_ondisk2_index_shar {
 		md1.set(timerange::GRIB1::create(4, 6, 6, 6));
 		md1.set(reftime::Position::create(types::Time::create(2003, 4, 5, 6, 7, 8)));
 		md1.set(area::GRIB::create(testArea));
-		md1.set(ensemble::GRIB::create(testEnsemble));
+		md1.set(proddef::GRIB::create(testProddef));
 		// Index one without notes
 		//md1.notes.push_back(types::Note::create("this is another test"));
 		out.open("test-md1.metadata");
@@ -125,7 +125,7 @@ void to::test<1>()
 		"path = \n"
 		"indexfile = :memory:\n"
 		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+		"unique = origin, product, level, timerange, area, proddef, reftime\n"
 	);
 	ensure(test.get() != 0);
 	Pending p;
@@ -158,7 +158,7 @@ void to::test<1>()
 	test->query(dataset::DataQuery(Matcher::parse("product:GRIB1,3")), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// TODO: level, timerange, area, ensemble, reftime
+	// TODO: level, timerange, area, proddef, reftime
 	p.commit();
 }
 
@@ -170,8 +170,8 @@ void to::test<2>()
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = :memory:\n"
-		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
-		"index = origin, product, level, timerange, area, ensemble, reftime\n"
+		"unique = origin, product, level, timerange, area, proddef, reftime\n"
+		"index = origin, product, level, timerange, area, proddef, reftime\n"
 	);
 	ensure(test.get() != 0);
 	Pending p;
@@ -290,8 +290,8 @@ void to::test<3>()
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = file1\n"
-		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
-		"index = origin, product, level, timerange, area, ensemble, reftime\n";
+		"unique = origin, product, level, timerange, area, proddef, reftime\n"
+		"index = origin, product, level, timerange, area, proddef, reftime\n";
 
 	// Remove index if it exists
 	unlink("file1");
@@ -322,7 +322,7 @@ void to::test<3>()
 	md3.set(timerange::GRIB1::create(4, 5, 6, 7));
 	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 	md3.set(area::GRIB::create(testArea));
-	md3.set(ensemble::GRIB::create(testEnsemble));
+	md3.set(proddef::GRIB::create(testProddef));
 	md3.add_note(types::Note::create("this is a test"));
 	{
 		auto_ptr<WIndex> test1 = createIndex<WIndex>(cfg);
@@ -348,7 +348,7 @@ void to::test<4>()
 		"path = .\n"
 		"indexfile = file1\n"
 		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+		"unique = origin, product, level, timerange, area, proddef, reftime\n"
 	);
 	ensure(test.get() != 0);
 	Pending p;
@@ -399,7 +399,7 @@ void to::test<5>()
 		"path = \n"
 		"indexfile = file1\n"
 		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+		"unique = origin, product, level, timerange, area, proddef, reftime\n"
 	);
 	ensure(test.get() != 0);
 	Pending p;
@@ -419,7 +419,7 @@ void to::test<5>()
 	md2.set(timerange::GRIB1::create(4, 5, 6, 7));
 	md2.set(reftime::Position::create(types::Time::create(2005, 1, 15, 12, 0, 0)));
 	md2.set(area::GRIB::create(testArea));
-	md2.set(ensemble::GRIB::create(testEnsemble));
+	md2.set(proddef::GRIB::create(testProddef));
 	test->index(md2, "test-md1", 0);
 
 	p.commit();
@@ -462,7 +462,7 @@ void to::test<6>()
 		"path = .\n"
 		"indexfile = file1\n"
 		"index = origin, product, level\n"
-		"unique = origin, product, level, timerange, area, ensemble, reftime\n"
+		"unique = origin, product, level, timerange, area, proddef, reftime\n"
 	);
 	ensure(test.get() != 0);
 	Pending p;
@@ -486,7 +486,7 @@ void to::test<6>()
 	ensure_equals(s->offset, 0x100000000LLU);
 	ensure_equals(s->size, 2000u);
 
-	// TODO: level, timerange, area, ensemble, reftime
+	// TODO: level, timerange, area, proddef, reftime
 	p.commit();
 }
 

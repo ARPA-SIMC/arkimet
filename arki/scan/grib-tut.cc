@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -111,10 +111,10 @@ void to::test<1>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!md.get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -165,10 +165,10 @@ void to::test<1>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!md.get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -219,10 +219,10 @@ void to::test<1>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!md.get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -289,10 +289,10 @@ void to::test<2>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!md.get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -343,10 +343,10 @@ void to::test<2>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!md.get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -397,10 +397,10 @@ void to::test<2>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!md.get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -545,9 +545,9 @@ void to::test<5>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!md.get(types::TYPE_ENSEMBLE).defined());
+	ensure(!md.get(types::TYPE_PRODDEF).defined());
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -616,12 +616,12 @@ void to::test<6>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
 	vb.set("ld", Value::createInteger(1));
 	vb.set("mt", Value::createInteger(9));
 	vb.set("nn", Value::createInteger(0));
-	ensure_equals(md.get(types::TYPE_ENSEMBLE), Item<>(ensemble::GRIB::create(vb)));
+	ensure_equals(md.get(types::TYPE_PRODDEF), Item<>(proddef::GRIB::create(vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -690,14 +690,14 @@ void to::test<7>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
 	vb.set("mc", Value::createString("ti"));
 	vb.set("mt", Value::createInteger(0));
 	vb.set("pf", Value::createInteger(1));
 	vb.set("tf", Value::createInteger(16));
 	vb.set("ty", Value::createInteger(3));
-	ensure_equals(md.get(types::TYPE_ENSEMBLE), Item<>(ensemble::GRIB::create(vb)));
+	ensure_equals(md.get(types::TYPE_PRODDEF), Item<>(proddef::GRIB::create(vb)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);

@@ -1,7 +1,7 @@
 /*
  * scan/grib - Scan a GRIB (version 1 or 2) file for metadata
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,14 +23,6 @@
 #include "grib.h"
 #include <grib_api.h>
 #include <arki/metadata.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/ensemble.h>
-#include <arki/types/run.h>
 #include <arki/runtime/config.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -640,24 +632,6 @@ void Grib::scanGrib1(Metadata& md)
 void Grib::scanGrib2(Metadata& md)
 {
 	scanLua(grib2_funcs, md);
-
-#if 0
-		md.set(types::timerange::GRIB2::create(t.num("ptype"), t.num("punit"), t.num("p1"), t.num("p2")));
-
-		ValueBag table = t.table("area");
-		if (!table.empty())
-			md.set(types::area::GRIB::create(table));
-		table = t.table("ensemble");
-		if (!table.empty())
-			md.set(types::ensemble::GRIB::create(table));
-
-		if (t.has("run_hour"))
-		{
-			unsigned hour = t.num("run_hour");
-			unsigned min = t.has("run_minute") ? t.num("run_minute") : 0;
-			md.set(types::run::Minute::create(hour, min));
-		}
-#endif
 }
 
 }

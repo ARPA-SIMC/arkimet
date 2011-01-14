@@ -79,17 +79,17 @@ function scan(md)
 	end
 	md:set(arki_area.grib(area))
 
-	-- Ensemble
+	-- Proddef
 	if gribl.typeOfProcessedData >= 3 and gribl.typeOfProcessedData <= 5 then
-		local ensemble = {}
-		ensemble.mc = grib.marsClass
-		ensemble.mt = gribl.marsType
-		ensemble.ty = grib.typeOfEnsembleForecast
-		ensemble.pf = grib.perturbationNumber
-		ensemble.tf = grib.numberOfForecastsInEnsemble
+		local proddef = {}
+		proddef.mc = grib.marsClass
+		proddef.mt = gribl.marsType
+		proddef.ty = grib.typeOfEnsembleForecast
+		proddef.pf = grib.perturbationNumber
+		proddef.tf = grib.numberOfForecastsInEnsemble
 		if grib.derivedForecast then
-			ensemble.d = grib.derivedForecast
+			proddef.d = grib.derivedForecast
 		end
-		md:set(arki_ensemble.grib(ensemble))
+		md:set(arki_proddef.grib(proddef))
 	end
 end

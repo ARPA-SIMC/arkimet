@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  */
 
 #include <arki/types/test-utils.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/matcher.h>
 
 #include <sstream>
@@ -36,9 +36,9 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_types_ensemble_shar {
+struct arki_types_proddef_shar {
 };
-TESTGRP(arki_types_ensemble);
+TESTGRP(arki_types_proddef);
 
 // Check GRIB
 template<> template<>
@@ -57,21 +57,21 @@ void to::test<1>()
 	test2.set("undici", Value::createInteger(11));
 	test2.set("dodici", Value::createInteger(-12));
 
-	Item<Ensemble> o = ensemble::GRIB::create(test1);
-	ensure_equals(o->style(), Ensemble::GRIB);
-	const ensemble::GRIB* v = o->upcast<ensemble::GRIB>();
+	Item<Proddef> o = proddef::GRIB::create(test1);
+	ensure_equals(o->style(), Proddef::GRIB);
+	const proddef::GRIB* v = o->upcast<proddef::GRIB>();
 	ensure_equals(v->values().size(), 7u);
 	ensure_equals(v->values(), test1);
 
-	ensure_equals(o, Item<Ensemble>(ensemble::GRIB::create(test1)));
-	ensure(o != ensemble::GRIB::create(test2));
+	ensure_equals(o, Item<Proddef>(proddef::GRIB::create(test1)));
+	ensure(o != proddef::GRIB::create(test2));
 
 	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_ENSEMBLE);
+	ensure_serialises(o, types::TYPE_PRODDEF);
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
-	Matcher m = Matcher::parse("ensemble:" + o->exactQuery());
+	Matcher m = Matcher::parse("proddef:" + o->exactQuery());
 	ensure(m(o));
 }
 
@@ -83,7 +83,7 @@ void to::test<2>()
 	ValueBag test1;
 	test1.set("uno", Value::createInteger(1));
 	test1.set("pippo", Value::createString("pippo"));
-	Item<Ensemble> o = ensemble::GRIB::create(test1);
+	Item<Proddef> o = proddef::GRIB::create(test1);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -92,8 +92,8 @@ void to::test<2>()
 		"  if v['uno'] ~= 1 then return 'v[\\'uno\\'] is '..v['uno']..' instead of 1' end \n"
 		"  if v['pippo'] ~= 'pippo' then return 'v[\\'pippo\\'] is '..v['pippo']..' instead of \\'pippo\\'' end \n"
 		"  if tostring(o) ~= 'GRIB(pippo=pippo, uno=1)' then return 'tostring gave '..tostring(o)..' instead of GRIB(pippo=pippo, uno=1)' end \n"
-		"  o1 = arki_ensemble.grib{uno=1, pippo='pippo'}\n"
-		"  if o ~= o1 then return 'new ensemble is '..tostring(o1)..' instead of '..tostring(o) end\n"
+		"  o1 = arki_proddef.grib{uno=1, pippo='pippo'}\n"
+		"  if o ~= o1 then return 'new proddef is '..tostring(o1)..' instead of '..tostring(o) end\n"
 		"end \n"
 	);
 
@@ -113,9 +113,9 @@ void to::test<3>()
 	test2.set("count", Value::createInteger(2));
 	test2.set("pippo", Value::createString("pippo"));
 	ensure_compares(
-		ensemble::GRIB::create(test1),
-		ensemble::GRIB::create(test2),
-		ensemble::GRIB::create(test2));
+		proddef::GRIB::create(test1),
+		proddef::GRIB::create(test2),
+		proddef::GRIB::create(test2));
 }
 
 }

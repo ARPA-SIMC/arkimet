@@ -4,7 +4,7 @@
 /*
  * types - arkimet metadata type system
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ enum Code
 	TYPE_SOURCE = 7,
 	TYPE_ASSIGNEDDATASET = 8,
 	TYPE_AREA = 9,
-	TYPE_ENSEMBLE = 10,
+	TYPE_PRODDEF = 10,
 	TYPE_SUMMARYITEM = 11,
 	TYPE_SUMMARYSTATS = 12,
 	TYPE_TIME = 13,

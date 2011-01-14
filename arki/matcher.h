@@ -4,7 +4,7 @@
 /*
  * matcher - Match metadata expressions
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ enum MatchType
 	MATCH_TIMERANGE =  8,
 	MATCH_REFTIME   = 16,
 	MATCH_AREA      = 32,
-	MATCH_ENSEMBLE  = 64,
+	MATCH_PRODDEF   = 64,
 };
 #endif
 

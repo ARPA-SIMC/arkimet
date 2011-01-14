@@ -1,7 +1,7 @@
 /*
  * metadata/test-generator - Metadata generator to user for tests
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ void Generator::defaults_grib2()
     add_if_missing(types::TYPE_TIMERANGE, "GRIB2(11, 1, 3h, 3h)");
     add_if_missing(types::TYPE_REFTIME, "2010-06-01T00:00:00Z");
     add_if_missing(types::TYPE_AREA, "GRIB(Ni=511, Nj=415, latfirst=-16125000, latlast=9750000, latp=-40000000, lonfirst=344250000, lonlast=16125000, lonp=10000000, rot=0, tn=1)");
-    add_if_missing(types::TYPE_ENSEMBLE, "GRIB(mc=ti, mt=0, pf=1, tf=16, ty=3)");
+    add_if_missing(types::TYPE_PRODDEF, "GRIB(mc=ti, mt=0, pf=1, tf=16, ty=3)");
 }
 
 void Generator::defaults_bufr()

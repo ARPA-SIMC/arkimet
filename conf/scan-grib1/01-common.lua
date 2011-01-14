@@ -70,20 +70,20 @@ function scan(md)
 	end
 	md:set(arki_area.grib(area))
 
-	-- Ensemble
-	local ensemble = {}
+	-- Proddef
+	local proddef = {}
 	if grib.localDefinitionNumber then
-		ensemble.ld = gribl.localDefinitionNumber
-		ensemble.mt = gribl.marsType
+		proddef.ld = gribl.localDefinitionNumber
+		proddef.mt = gribl.marsType
 		if grib.clusterNumber then
-			ensemble.nn = gribl.clusterNumber
+			proddef.nn = gribl.clusterNumber
 		end
 		if grib.forecastProbabilityNumber then
-			ensemble.nn = gribl.forecastProbabilityNumber
+			proddef.nn = gribl.forecastProbabilityNumber
 		end
 		if grib.perturbationNumber then
-			ensemble.nn = gribl.perturbationNumber
+			proddef.nn = gribl.perturbationNumber
 		end
-		md:set(arki_ensemble.grib(ensemble))
+		md:set(arki_proddef.grib(proddef))
 	end
 end

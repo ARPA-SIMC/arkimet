@@ -1,7 +1,7 @@
 /*
  * dataset/index - Dataset index infrastructure
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ struct IndexGlobalData
 		all_components.insert(types::TYPE_LEVEL);
 		all_components.insert(types::TYPE_TIMERANGE);
 		all_components.insert(types::TYPE_AREA);
-		all_components.insert(types::TYPE_ENSEMBLE);
+		all_components.insert(types::TYPE_PRODDEF);
 		all_components.insert(types::TYPE_RUN);
 		//all_components.insert(types::TYPE_REFTIME);
 		all_components.insert(types::TYPE_QUANTITY);
@@ -103,7 +103,7 @@ Index::Index(const ConfigFile& cfg)
 	// What metadata components we index
 	string index = cfg.value("index");
 	if (index.empty())
-		index = "origin, product, level, timerange, area, ensemble, run";
+		index = "origin, product, level, timerange, area, proddef, run";
 	m_components_indexed = parseMetadataBitmask(index);
 
 	// What metadata components we use to create a unique id

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/types/assigneddataset.h>
 
 #include <sstream>
@@ -80,7 +80,7 @@ struct arki_itemset_shar {
 		md.set(level::GRIB1::create(114, 12, 34));
 		md.set(timerange::GRIB1::create(1, 1, 2, 3));
 		md.set(area::GRIB::create(testValues));
-		md.set(ensemble::GRIB::create(testValues));
+		md.set(proddef::GRIB::create(testValues));
 		md.set(AssignedDataset::create("dsname", "dsid"));
 		// Test POSITION reference times
 		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
@@ -261,7 +261,7 @@ void to::test<9>()
 	ensure_stores(types::Area, md, val, val1);
 }
 
-// Test ensembles
+// Test proddefs
 template<> template<>
 void to::test<10>()
 {
@@ -279,9 +279,9 @@ void to::test<10>()
 	test2.set("blinda", Value::createInteger(0));
 	test2.set("supercazzola", Value::createInteger(-1234567));
 
-	Item<> val(ensemble::GRIB::create(test1));
-	Item<> val1(ensemble::GRIB::create(test2));
-	ensure_stores(types::Ensemble, md, val, val1);
+	Item<> val(proddef::GRIB::create(test1));
+	Item<> val1(proddef::GRIB::create(test2));
+	ensure_stores(types::Proddef, md, val, val1);
 }
 
 // Test dataset info

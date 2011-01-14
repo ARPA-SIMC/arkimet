@@ -27,7 +27,7 @@
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -101,10 +101,10 @@ void to::test<1>()
 	ensure(mdc[0].get(types::TYPE_AREA).defined());
 	ensure_equals(mdc[0].get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!mdc[0].get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!mdc[0].get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(mdc[0].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -152,10 +152,10 @@ void to::test<1>()
 	ensure(mdc[1].get(types::TYPE_AREA).defined());
 	ensure_equals(mdc[1].get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!mdc[1].get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!mdc[1].get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(mdc[1].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -203,10 +203,10 @@ void to::test<1>()
 	ensure(mdc[2].get(types::TYPE_AREA).defined());
 	ensure_equals(mdc[2].get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check ensemble
+	// Check proddef
 	vb.clear();
-	ensure(!mdc[2].get(types::TYPE_ENSEMBLE).defined());
-	//ensure_equals(md.get(types::TYPE_ENSEMBLE), ensemble::GRIB::create(vb));
+	ensure(!mdc[2].get(types::TYPE_PRODDEF).defined());
+	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
 
 	// Check reftime
 	ensure_equals(mdc[2].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);

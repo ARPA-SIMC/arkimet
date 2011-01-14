@@ -1,7 +1,7 @@
 /*
- * matcher/ensemble - Ensemble matcher
+ * matcher/proddef - Product definition matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/matcher/ensemble.h>
+#include <arki/matcher/proddef.h>
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>
 
@@ -30,26 +30,26 @@ using namespace wibble;
 namespace arki {
 namespace matcher {
 
-std::string MatchEnsemble::name() const { return "ensemble"; }
+std::string MatchProddef::name() const { return "proddef"; }
 
-MatchEnsembleGRIB::MatchEnsembleGRIB(const std::string& pattern)
+MatchProddefGRIB::MatchProddefGRIB(const std::string& pattern)
 {
 	expr = ValueBag::parse(pattern);
 }
 
-bool MatchEnsembleGRIB::matchItem(const Item<>& o) const
+bool MatchProddefGRIB::matchItem(const Item<>& o) const
 {
-	const types::ensemble::GRIB* v = dynamic_cast<const types::ensemble::GRIB*>(o.ptr());
+	const types::proddef::GRIB* v = dynamic_cast<const types::proddef::GRIB*>(o.ptr());
 	if (!v) return false;
 	return v->values().contains(expr);
 }
 
-std::string MatchEnsembleGRIB::toString() const
+std::string MatchProddefGRIB::toString() const
 {
 	return "GRIB:" + expr.toString();
 }
 
-MatchEnsemble* MatchEnsemble::parse(const std::string& pattern)
+MatchProddef* MatchProddef::parse(const std::string& pattern)
 {
 	size_t beg = 0;
 	size_t pos = pattern.find(':', beg);
@@ -61,15 +61,15 @@ MatchEnsemble* MatchEnsemble::parse(const std::string& pattern)
 		name = str::trim(pattern.substr(beg, pos-beg));
 		rest = pattern.substr(pos+1);
 	}
-	switch (types::Ensemble::parseStyle(name))
+	switch (types::Proddef::parseStyle(name))
 	{
-		case types::Ensemble::GRIB: return new MatchEnsembleGRIB(rest);
+		case types::Proddef::GRIB: return new MatchProddefGRIB(rest);
 		default:
-			throw wibble::exception::Consistency("parsing type of ensemble to match", "unsupported ensemble style: " + name);
+			throw wibble::exception::Consistency("parsing type of proddef to match", "unsupported proddef style: " + name);
 	}
 }
 
-MatcherType ensemble("ensemble", types::TYPE_ENSEMBLE, (MatcherType::subexpr_parser)MatchEnsemble::parse);
+MatcherType proddef("proddef", types::TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
 
 }
 }

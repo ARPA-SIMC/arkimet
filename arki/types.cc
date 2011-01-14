@@ -1,7 +1,7 @@
 /*
  * types - arkimet metadata type system
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ Code checkCodeName(const std::string& name)
 	if (nname == "source") return TYPE_SOURCE;
 	if (nname == "assigneddataset") return TYPE_ASSIGNEDDATASET;
 	if (nname == "area") return TYPE_AREA;
-	if (nname == "ensemble") return TYPE_ENSEMBLE;
+	if (nname == "proddef") return TYPE_PRODDEF;
 	if (nname == "summaryitem") return TYPE_SUMMARYITEM;
 	if (nname == "summarystats") return TYPE_SUMMARYSTATS;
 	if (nname == "bbox") return TYPE_BBOX;
@@ -92,7 +92,7 @@ std::string formatCode(const Code& c)
 		case TYPE_SOURCE: return "SOURCE";
 		case TYPE_ASSIGNEDDATASET: return "ASSIGNEDDATASET";
 		case TYPE_AREA: return "AREA";
-		case TYPE_ENSEMBLE: return "ENSEMBLE";
+		case TYPE_PRODDEF: return "PRODDEF";
 		case TYPE_SUMMARYITEM: return "SUMMARYITEM";
 		case TYPE_SUMMARYSTATS: return "SUMMARYSTATS";
 		case TYPE_BBOX: return "BBOX";

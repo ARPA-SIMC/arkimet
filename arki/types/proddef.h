@@ -1,10 +1,10 @@
-#ifndef ARKI_TYPES_ENSEMBLE_H
-#define ARKI_TYPES_ENSEMBLE_H
+#ifndef ARKI_TYPES_PRODDEF_H
+#define ARKI_TYPES_PRODDEF_H
 
 /*
- * types/ensemble - Geographical ensemble
+ * types/proddef - Product definition
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,10 +31,10 @@ struct lua_State;
 namespace arki {
 namespace types {
 
-struct Ensemble;
+struct Proddef;
 
 template<>
-struct traits<Ensemble>
+struct traits<Proddef>
 {
 	static const char* type_tag;
 	static const types::Code type_code;
@@ -45,11 +45,11 @@ struct traits<Ensemble>
 };
 
 /**
- * The vertical ensemble or layer of some data
+ * The vertical proddef or layer of some data
  *
- * It can contain information like ensembletype and ensemble value.
+ * It can contain information like proddef type and proddef value.
  */
-struct Ensemble : public types::StyledType<Ensemble>
+struct Proddef : public types::StyledType<Proddef>
 {
 	/// Style values
 	static const Style GRIB = 1;
@@ -60,16 +60,16 @@ struct Ensemble : public types::StyledType<Ensemble>
 	static std::string formatStyle(Style s);
 
 	/// CODEC functions
-	static Item<Ensemble> decode(const unsigned char* buf, size_t len);
-	static Item<Ensemble> decodeString(const std::string& val);
-	static Item<Ensemble> decodeMapping(const emitter::memory::Mapping& val);
+	static Item<Proddef> decode(const unsigned char* buf, size_t len);
+	static Item<Proddef> decodeString(const std::string& val);
+	static Item<Proddef> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 };
 
-namespace ensemble {
+namespace proddef {
 
-struct GRIB : public Ensemble
+struct GRIB : public Proddef
 {
 protected:
 	ValueBag m_values;
@@ -87,7 +87,7 @@ public:
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	virtual int compare_local(const Ensemble& o) const;
+	virtual int compare_local(const Proddef& o) const;
 	virtual bool operator==(const Type& o) const;
 
 	static Item<GRIB> create(const ValueBag& values);

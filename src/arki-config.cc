@@ -227,7 +227,7 @@ struct Wizard
 		md_descs[types::TYPE_TIMERANGE] = "time range of statistical aggregation";
 		md_descs[types::TYPE_REFTIME] = "reference time";
 		md_descs[types::TYPE_AREA] = "geographical area";
-		md_descs[types::TYPE_ENSEMBLE] = "description of the ensemble forecast run";
+		md_descs[types::TYPE_PRODDEF] = "product definition";
 		md_descs[types::TYPE_RUN] = "identification of the forecast run within a day";
 
 		if (opts.hasNext())
@@ -432,7 +432,7 @@ public:
     	metadatas.push_back(types::TYPE_TIMERANGE);
     	metadatas.push_back(types::TYPE_REFTIME);
     	metadatas.push_back(types::TYPE_AREA);
-    	metadatas.push_back(types::TYPE_ENSEMBLE);
+    	metadatas.push_back(types::TYPE_PRODDEF);
     	metadatas.push_back(types::TYPE_RUN);
 	}
 
@@ -617,7 +617,7 @@ public:
 			" - area:bbox coveredby POLYGON((10 43, 10 45, 13 45, 13 43, 10 43))\n"
 			" - area:bbox intersects LINESTRING(10 43, 10 45, 13 45, 13 43)\n"
 			;
-    	filter_help[types::TYPE_ENSEMBLE] = 
+    	filter_help[types::TYPE_PRODDEF] = 
 			"Syntax:\n"
 			" - style:key=val[,key=val[,...]]\n"
 			" - style can be only GRIB, for now.\n"

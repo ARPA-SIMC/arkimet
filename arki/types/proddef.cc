@@ -1,7 +1,7 @@
 /*
- * types/ensemble - Geographical ensemble
+ * types/proddef - Product definition
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
-#include <arki/types/ensemble.h>
+#include <arki/types/proddef.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/emitter.h>
@@ -35,8 +35,8 @@
 #include <arki/utils/lua.h>
 #endif
 
-#define CODE types::TYPE_ENSEMBLE
-#define TAG "ensemble"
+#define CODE types::TYPE_PRODDEF
+#define TAG "proddef"
 #define SERSIZELEN 2
 
 using namespace std;
@@ -46,25 +46,25 @@ using namespace arki::utils::codec;
 namespace arki {
 namespace types {
 
-const char* traits<Ensemble>::type_tag = TAG;
-const types::Code traits<Ensemble>::type_code = CODE;
-const size_t traits<Ensemble>::type_sersize_bytes = SERSIZELEN;
-const char* traits<Ensemble>::type_lua_tag = LUATAG_TYPES ".ensemble";
+const char* traits<Proddef>::type_tag = TAG;
+const types::Code traits<Proddef>::type_code = CODE;
+const size_t traits<Proddef>::type_sersize_bytes = SERSIZELEN;
+const char* traits<Proddef>::type_lua_tag = LUATAG_TYPES ".proddef";
 
 // Style constants
-const unsigned char Ensemble::GRIB;
+const unsigned char Proddef::GRIB;
 
-Ensemble::Style Ensemble::parseStyle(const std::string& str)
+Proddef::Style Proddef::parseStyle(const std::string& str)
 {
 	if (str == "GRIB") return GRIB;
-	throw wibble::exception::Consistency("parsing Ensemble style", "cannot parse Ensemble style '"+str+"': only GRIB is supported");
+	throw wibble::exception::Consistency("parsing Proddef style", "cannot parse Proddef style '"+str+"': only GRIB is supported");
 }
 
-std::string Ensemble::formatStyle(Ensemble::Style s)
+std::string Proddef::formatStyle(Proddef::Style s)
 {
 	switch (s)
 	{
-		case Ensemble::GRIB: return "GRIB";
+		case Proddef::GRIB: return "GRIB";
 		default:
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -72,41 +72,41 @@ std::string Ensemble::formatStyle(Ensemble::Style s)
 	}
 }
 
-Item<Ensemble> Ensemble::decode(const unsigned char* buf, size_t len)
+Item<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
-	ensureSize(len, 1, "Ensemble");
+	ensureSize(len, 1, "Proddef");
 	Style s = (Style)decodeUInt(buf, 1);
 	switch (s)
 	{
 		case GRIB:
-			return ensemble::GRIB::create(ValueBag::decode(buf+1, len-1));
+			return proddef::GRIB::create(ValueBag::decode(buf+1, len-1));
 		default:
-			throw wibble::exception::Consistency("parsing Ensemble", "style is " + formatStyle(s) + " but we can only decode GRIB");
+			throw wibble::exception::Consistency("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
 	}
 }
 
-Item<Ensemble> Ensemble::decodeString(const std::string& val)
+Item<Proddef> Proddef::decodeString(const std::string& val)
 {
 	string inner;
-	Ensemble::Style style = outerParse<Ensemble>(val, inner);
+	Proddef::Style style = outerParse<Proddef>(val, inner);
 	switch (style)
 	{
-		case Ensemble::GRIB: return ensemble::GRIB::create(ValueBag::parse(inner)); 
+		case Proddef::GRIB: return proddef::GRIB::create(ValueBag::parse(inner)); 
 		default:
-			throw wibble::exception::Consistency("parsing Ensemble", "unknown Ensemble style " + formatStyle(style));
+			throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + formatStyle(style));
 	}
 }
 
-Item<Ensemble> Ensemble::decodeMapping(const emitter::memory::Mapping& val)
+Item<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Ensemble::GRIB: return ensemble::GRIB::decodeMapping(val);
+        case Proddef::GRIB: return proddef::GRIB::decodeMapping(val);
         default:
-            throw wibble::exception::Consistency("parsing Ensemble", "unknown Ensemble style " + val.get_string());
+            throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + val.get_string());
     }
 }
 
@@ -116,32 +116,32 @@ static int arkilua_new_grib(lua_State* L)
 	luaL_checktype(L, 1, LUA_TTABLE);
 	ValueBag vals;
 	vals.load_lua_table(L);
-	ensemble::GRIB::create(vals)->lua_push(L);
+	proddef::GRIB::create(vals)->lua_push(L);
 	return 1;
 }
 
-void Ensemble::lua_loadlib(lua_State* L)
+void Proddef::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
 		{ "grib", arkilua_new_grib },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_ensemble", lib, 0);
+	luaL_openlib(L, "arki_proddef", lib, 0);
 	lua_pop(L, 1);
 }
 #endif
 
-namespace ensemble {
+namespace proddef {
 
 static TypeCache<GRIB> cache_grib;
 
 GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
-Ensemble::Style GRIB::style() const { return Ensemble::GRIB; }
+Proddef::Style GRIB::style() const { return Proddef::GRIB; }
 
 void GRIB::encodeWithoutEnvelope(Encoder& enc) const
 {
-	Ensemble::encodeWithoutEnvelope(enc);
+	Proddef::encodeWithoutEnvelope(enc);
 	m_values.encode(enc);
 }
 std::ostream& GRIB::writeToOstream(std::ostream& o) const
@@ -150,7 +150,7 @@ std::ostream& GRIB::writeToOstream(std::ostream& o) const
 }
 void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
 {
-    Ensemble::serialiseLocal(e, f);
+    Proddef::serialiseLocal(e, f);
     e.add("va");
     m_values.serialise(e);
 }
@@ -162,7 +162,7 @@ std::string GRIB::exactQuery() const
 {
     return "GRIB:" + m_values.toString();
 }
-const char* GRIB::lua_type_name() const { return "arki.types.ensemble.grib"; }
+const char* GRIB::lua_type_name() const { return "arki.types.proddef.grib"; }
 
 #ifdef HAVE_LUA
 bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
@@ -170,19 +170,19 @@ bool GRIB::lua_lookup(lua_State* L, const std::string& name) const
 	if (name == "val")
 		values().lua_push(L);
 	else
-		return Ensemble::lua_lookup(L, name);
+		return Proddef::lua_lookup(L, name);
 	return true;
 }
 #endif
 
-int GRIB::compare_local(const Ensemble& o) const
+int GRIB::compare_local(const Proddef& o) const
 {
 	// We should be the same kind, so upcast
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v)
 		throw wibble::exception::Consistency(
 			"comparing metadata types",
-			string("second element claims to be a GRIB Ensemble, but is a ") + typeid(&o).name() + " instead");
+			string("second element claims to be a GRIB Proddef, but is a ") + typeid(&o).name() + " instead");
 
 	return m_values.compare(v->m_values);
 }
@@ -203,12 +203,12 @@ Item<GRIB> GRIB::create(const ValueBag& values)
 
 static void debug_interns()
 {
-	fprintf(stderr, "Ensemble GRIB: sz %zd reused %zd\n", cache_grib.size(), cache_grib.reused());
+	fprintf(stderr, "Proddef GRIB: sz %zd reused %zd\n", cache_grib.size(), cache_grib.reused());
 }
 
 }
 
-static MetadataType ensembleType = MetadataType::create<Ensemble>(ensemble::debug_interns);
+static MetadataType proddefType = MetadataType::create<Proddef>(proddef::debug_interns);
 
 }
 }

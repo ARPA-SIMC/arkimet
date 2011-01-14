@@ -1,7 +1,7 @@
 /*
  * matcher - Match metadata expressions
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -419,7 +419,7 @@ bool Matcher::match(const Metadata& md) const
 	if (!level.match(md.levels)) return false;
 	if (!timerange.match(md.timeranges)) return false;
 	if (!area.match(md.areas)) return false;
-	if (!ensemble.match(md.ensembles)) return false;
+	if (!proddef.match(md.proddef)) return false;
 	if (!reftime.match(md.reftime)) return false;
 	return true;
 }
@@ -441,7 +441,7 @@ std::string Matcher::toString(bool formatted) const
 	if (!level.empty()) appendList(res, sep, level.toString());
 	if (!timerange.empty()) appendList(res, sep, timerange.toString());
 	if (!area.empty()) appendList(res, sep, area.toString());
-	if (!ensemble.empty()) appendList(res, sep, ensemble.toString());
+	if (!proddef.empty()) appendList(res, sep, proddef.toString());
 	if (!reftime.empty()) appendList(res, sep, reftime.toString());
 
 	return res;
