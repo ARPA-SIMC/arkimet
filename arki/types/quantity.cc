@@ -1,7 +1,7 @@
 /*
  * types/quantity - Metadata quantity
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -103,13 +103,14 @@ bool Quantity::operator==(const Type& o) const
 
 void Quantity::encodeWithoutEnvelope(Encoder& enc) const
 {
-	enc.addVarint(values.size());
+    enc.addVarint(values.size());
 
-	for (std::set<std::string>::iterator i=values.begin(); i!=values.end(); i++)
-	{
-		enc.addVarint((*i).size());
-		enc.addString((*i));
-	}
+    for (std::set<std::string>::const_iterator i = values.begin();
+            i != values.end(); ++i)
+    {
+        enc.addVarint((*i).size());
+        enc.addString((*i));
+    }
 }
 
 Item<Quantity> Quantity::decode(const unsigned char* buf, size_t len)

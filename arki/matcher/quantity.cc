@@ -52,12 +52,13 @@ bool MatchQuantity::matchItem(const Item<>& o) const
 	//se il matche specifica dei valori
 	if (values.size())
 	{
-		//allora tutti i valori indicati devono essere presenti nell'oggetto
-		for (std::set<std::string>::iterator i=values.begin(); i!=values.end(); i++)
-		{
-			if (v->values.find(*i) == v->values.end())
-				return false;
-		}
+        //allora tutti i valori indicati devono essere presenti nell'oggetto
+        for (std::set<std::string>::const_iterator i = values.begin();
+                i != values.end(); ++i)
+        {
+            if (v->values.find(*i) == v->values.end())
+                return false;
+        }
 	}
 
 	return true;
@@ -65,11 +66,12 @@ bool MatchQuantity::matchItem(const Item<>& o) const
 
 std::string MatchQuantity::toString() const
 {
-	CommaJoiner res;
-	res.add("QUANTITY");
-	for (std::set<std::string>::iterator i=values.begin(); i!=values.end(); i++)
-		res.add(*i);
-	return res.join();
+    CommaJoiner res;
+    res.add("QUANTITY");
+    for (std::set<std::string>::const_iterator i = values.begin();
+            i != values.end(); ++i)
+        res.add(*i);
+    return res.join();
 }
 
 /*============================================================================*/
