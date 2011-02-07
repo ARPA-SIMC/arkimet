@@ -32,6 +32,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 
 using namespace std;
