@@ -1,8 +1,7 @@
-
 /*
  * utils/pcounter - Persistent counter
  *
- * Copyright (C) 2010 ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,70 +18,21 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Guido Billi <guidobilli@gmail.com>
+ * Author: Enrico Zini <enrico@enricozini.org>
  */
 
 #include <arki/utils/pcounter.h>
+#include <wibble/sys/fs.h>
 
-/*=============================================================================*/
+using namespace wibble;
 
-#include <stdexcept>
-#include <string>
-#if defined(WIN32)
-	#include <windows.h>
-#elif defined(__linux__) || defined(linux)
-	#include <sys/stat.h>
-	#include <errno.h>
-#endif
-
-namespace arki { namespace utils {
-
-/*=============================================================================*/
+namespace arki {
+namespace utils {
 
 bool PersistentCounter_fexists__(const std::string& path)
 {
-	#if defined(WIN32)
-	{
-		char*	fileName = (char*)path.c_str();
-		DWORD	fileAttr = GetFileAttributes(fileName);
-		if (fileAttr == INVALID_FILE_ATTRIBUTES)
-		{
-			DWORD err = GetLastError();
-			if ((err == ERROR_FILE_NOT_FOUND) || (err == ERROR_PATH_NOT_FOUND))
-				return false;
-			throw std::runtime_error("Unable to check file existance for " + path);
-		}
-		return true;
-	}
-	#elif defined(__linux__)
-	{
-		struct stat dirstats;
-		if (stat(path.c_str(), &dirstats) == -1)
-		{
-			if ((errno == ENOENT) || (errno == ENOTDIR))
-				return false;
-			throw std::runtime_error("Unable to check file existance for " + path);
-		}
-		return true;
-
-	}
-	#else
-		#error fexists not defined on this platform!
-	#endif
+    return sys::fs::exists(path);
 }
 
-/*=============================================================================*/
-
-} }
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
+}

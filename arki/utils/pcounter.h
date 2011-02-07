@@ -1,8 +1,7 @@
-
 /*
  * utils/pcounter - Persistent counter
  *
- * Copyright (C) 2010 ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +18,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Guido Billi <guidobilli@gmail.com>
+ * Author: Enrico Zini <enrico@enricozini.org>
  */
 
-#ifndef __ARKIMET_UTILS_PERSISTENTCOUNTER_H__
-#define __ARKIMET_UTILS_PERSISTENTCOUNTER_H__
+#ifndef ARKI_UTILS_PERSISTENTCOUNTER_H
+#define ARKI_UTILS_PERSISTENTCOUNTER_H
 
 /*=============================================================================*/
 
@@ -34,7 +34,8 @@
 #include <sstream>
 #include <cstdio>
 
-namespace arki { namespace utils {
+namespace arki {
+namespace utils {
 
 /*=============================================================================*/
 
@@ -194,44 +195,7 @@ template <class TYPE> TYPE& operator<<(TYPE& left, PersistentCounter<TYPE>& righ
 
 /*=============================================================================*/
 
-} }
-
+}
+}
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
