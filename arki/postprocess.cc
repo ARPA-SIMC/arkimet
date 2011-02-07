@@ -110,6 +110,7 @@ struct Child : public utils::IODispatcher
 
     virtual void read_stdout()
     {
+#ifdef HAVE_SPLICE
         // After we've seen some data, we can leave it up to splice
         if (!data_start_hook)
         {
@@ -128,6 +129,7 @@ struct Child : public utils::IODispatcher
                 // Else pass it on to the traditional method
             }
         }
+#endif
         // Else read and write
 
         // Read data from child

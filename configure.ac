@@ -56,7 +56,8 @@ AM_PROG_LIBTOOL
 
 dnl Check what libc features are available on this system
 gl_CHECK_TYPE_STRUCT_DIRENT_D_TYPE
-gt_FUNC_MKDTEMP
+gl_FUNC_MKDTEMP
+ez_FUNC_SPLICE
 
 dnl Call in pkg-config explicitly, so we can safely put the first
 dnl PKG_CHECK_EXISTS inside an if

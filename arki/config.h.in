@@ -22,6 +22,9 @@
 /* mkdtemp is available */
 #undef HAVE_MKDTEMP
 
+/* the `splice' function is available */
+#undef HAVE_SPLICE
+
 /* Name of package */
 #undef PACKAGE
 
