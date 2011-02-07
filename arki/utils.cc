@@ -20,6 +20,9 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#define _XOPEN_SOURCE 700
+#define _XOPEN_SOURCE_EXTENDED 1
+
 #include <arki/utils.h>
 #include <wibble/sys/fs.h>
 #include <wibble/sys/process.h>
