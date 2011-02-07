@@ -19,6 +19,9 @@
 /* SQLite 3 is available */
 #undef HAVE_SQLITE3
 
+/* mkdtemp is available */
+#undef HAVE_MKDTEMP
+
 /* Name of package */
 #undef PACKAGE
 

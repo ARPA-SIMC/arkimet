@@ -1,7 +1,7 @@
 /*
  * utils - General utility functions
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,28 @@
 
 using namespace std;
 using namespace wibble;
+
+#ifndef HAVE_MKDTEMP
+/* Replacement mkdtemp if not provided by libc */
+char *mkdtemp(char *dir_template) {
+  if (dir_template == NULL) { errno=EINVAL; return NULL; };
+  if (strlen(dir_template) < 6 ) { errno=EINVAL; return NULL; };
+  if (strcmp(dir_template + strlen(dir_template) - 6, "XXXXXX") != 0)
+{ errno=EINVAL; return NULL; };
+  char * pos = dir_template + strlen(dir_template) - 6;
+
+  do {
+      int num = rand() % 1000000;
+      int res = 0;
+      sprintf(pos, "%06d", num);
+      res = mkdir(dir_template, 0755);
+      if (res == 0) { return dir_template; }; // success
+      if (errno == EEXIST) { continue; }; // try with a different number
+      return NULL; // pass mkdir errorcode otherwise
+  } while (0);
+  return NULL;
+}
+#endif
 
 namespace arki {
 namespace utils {
