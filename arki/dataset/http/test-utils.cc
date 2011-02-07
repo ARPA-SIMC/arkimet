@@ -23,28 +23,7 @@
 
 #include <cstring>
 #include <cstdlib>
-#if 0
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/dataset/local.h>
-#include <arki/dataset/ondisk2.h>
-#include <arki/dataset/simple/reader.h>
-#include <arki/dataset/simple/writer.h>
-#include <arki/dataset/simple/index.h>
-#include <arki/dispatcher.h>
-#include <arki/scan/grib.h>
-#include <arki/utils/files.h>
-#include <wibble/string.h>
-#include <wibble/regexp.h>
-#include <wibble/grcal/grcal.h>
-#include <wibble/sys/fs.h>
-#include <fstream>
-#include <strings.h>
-
-using namespace arki;
-using namespace arki::types;
-using namespace arki::utils;
-#endif
+#include <unistd.h>
 
 using namespace std;
 using namespace wibble;
