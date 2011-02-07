@@ -26,6 +26,7 @@
 
 #include <fstream>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <sys/types.h>
 #include <sys/stat.h>
