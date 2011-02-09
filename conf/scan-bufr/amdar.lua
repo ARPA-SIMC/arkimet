@@ -5,8 +5,14 @@ function scan(msg, md)
 	blo = msg:find('block')
 	sta = msg:find('station')
 	id = msg:find('ident')
-	if lat then area.lat = lat:enqi() end
-	if lon then area.lon = lon:enqi() end
+    -- Approximate to 1 degree to allow arkimet to perform grouping
+    if lat and lon then
+        area.latfirst = math.floor(lat:enqd()) * 100000
+        area.latlast = math.ceil(lat:enqd()) * 100000
+        area.lonfirst = math.floor(lon:enqd()) * 100000
+        area.lonlast = math.ceil(lon:enqd()) * 100000
+        area.type = 0
+    end
 	if blo then area.blo = blo:enqi() end
 	if sta then area.sta = sta:enqi() end
 	if id then area.id = id:enqc() end

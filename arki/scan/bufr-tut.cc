@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -411,6 +411,50 @@ void to::test<6>()
     } catch (wibble::exception::Generic& e) {
         ensure_contains(e.what(), "cannot be 0");
     }
+}
+
+// Test scanning a ship
+template<> template<>
+void to::test<7>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/ship.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=DHDE, latfirst=3700000, latlast=3800000, lonfirst=-1100000, lonlast=-1000000, type=0)"));
+}
+
+// Test scanning an amdar
+template<> template<>
+void to::test<8>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/amdar.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=EU4444, latfirst=6400000, latlast=6500000, lonfirst=2100000, lonlast=2200000, type=0)"));
+}
+
+// Test scanning an airep
+template<> template<>
+void to::test<9>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/airep.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=ACA872, latfirst=5100000, latlast=5200000, lonfirst=-5400000, lonlast=-5300000, type=0)"));
+}
+
+// Test scanning an acars
+template<> template<>
+void to::test<10>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/acars.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=2DPCV2RA, latfirst=3900000, latlast=4000000, lonfirst=-8800000, lonlast=-8700000, type=0)"));
 }
 
 }
