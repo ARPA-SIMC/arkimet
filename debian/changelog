@@ -1,3 +1,12 @@
+arkimet (0.56-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - BUFR scan approximates mobile station coordinates using gridded
+       bounding boxes with one degree resolution, in order to create groupable
+       areas
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 09 Feb 2011 12:03:31 +0000
+
 arkimet (0.55-1) UNRELEASED; urgency=low
 
   * New upstream version
