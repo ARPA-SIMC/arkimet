@@ -194,6 +194,15 @@ if area.style == "GRIB" then
     --  r2ll(arki.lonmax, arki.latmax),
     --  r2ll(arki.lonmin, arki.latmax)
     -- }
+  elseif a.type == "mob" then
+      local x = a.x
+      local y = a.y
+      bbox = {}
+      bbox[1] = { y, x }
+      bbox[2] = { y + 1,  x }
+      bbox[3] = { y + 1,  x + 1 }
+      bbox[4] = { y, x + 1 }
+      bbox[5] = bbox[1]
   elseif a.lat ~= nil and a.lon ~= nil then
       bbox = {}
       bbox[1] = { a.lat / 100000, a.lon / 100000 }

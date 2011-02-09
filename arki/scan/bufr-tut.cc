@@ -25,6 +25,7 @@
 #include <arki/types/product.h>
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
+#include <arki/types/proddef.h>
 #include <arki/types/run.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -421,7 +422,8 @@ void to::test<7>()
     scan::Bufr scanner;
     scanner.open("inbound/ship.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=DHDE, latfirst=3700000, latlast=3800000, lonfirst=-1100000, lonlast=-1000000, type=0)"));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=-11, y=37, type=mob)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=DHDE)"));
 }
 
 // Test scanning an amdar
@@ -432,7 +434,8 @@ void to::test<8>()
     scan::Bufr scanner;
     scanner.open("inbound/amdar.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=EU4444, latfirst=6400000, latlast=6500000, lonfirst=2100000, lonlast=2200000, type=0)"));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=21, y=64, type=mob)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=EU4444)"));
 }
 
 // Test scanning an airep
@@ -443,7 +446,8 @@ void to::test<9>()
     scan::Bufr scanner;
     scanner.open("inbound/airep.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=ACA872, latfirst=5100000, latlast=5200000, lonfirst=-5400000, lonlast=-5300000, type=0)"));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=-54, y=51, type=mob)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=ACA872)"));
 }
 
 // Test scanning an acars
@@ -454,7 +458,8 @@ void to::test<10>()
     scan::Bufr scanner;
     scanner.open("inbound/acars.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(id=2DPCV2RA, latfirst=3900000, latlast=4000000, lonfirst=-8800000, lonlast=-8700000, type=0)"));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=-88, y=39, type=mob)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=2DPCV2RA)"));
 }
 
 }

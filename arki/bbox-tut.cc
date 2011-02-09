@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -235,6 +235,43 @@ void to::test<5>()
 	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
 }
+
+// Simplified BUFR mobile station areas
+template<> template<>
+void to::test<6>()
+{
+#ifdef HAVE_GEOS
+    BBox bbox;
+    ValueBag vb;
+    vb.set("type", Value::createString("mob"));
+    vb.set("x", Value::createInteger(11));
+    vb.set("y", Value::createInteger(45));
+
+    Item<types::Area> area(types::area::GRIB::create(vb));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
+    //cerr <<" AREA " << area << endl;
+
+    ensure(g.get() != 0);
+    ensure_equals(g->getNumPoints(), 5u);
+    ensure_equals(g->getGeometryType(), "Polygon");
+    //ensure_equals(g->getNumGeometries(), 1u);
+    //ensure(g->isRectangle());
+    ensure_equals(g->getDimension(), 2);
+
+    auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    ensure_equals(cs->getAt(0).x, 11.0);
+    ensure_equals(cs->getAt(0).y, 45.0);
+    ensure_equals(cs->getAt(1).x, 11.0);
+    ensure_equals(cs->getAt(1).y, 46.0);
+    ensure_equals(cs->getAt(2).x, 12.0);
+    ensure_equals(cs->getAt(2).y, 46.0);
+    ensure_equals(cs->getAt(3).x, 12.0);
+    ensure_equals(cs->getAt(3).y, 45.0);
+    ensure_equals(cs->getAt(4).x, 11.0);
+    ensure_equals(cs->getAt(4).y, 45.0);
+#endif
+}
+
 
 }
 
