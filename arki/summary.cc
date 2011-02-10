@@ -731,6 +731,7 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
                     if (!i->defined()) continue;
                     e.add((*i)->tag());
                     e.start_mapping();
+					if (f) e.add("desc", (*f)(*i));
                     (*i)->serialiseLocal(e, f);
                     e.end_mapping();
                 }
