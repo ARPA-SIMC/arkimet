@@ -12,7 +12,7 @@ Build-Depends: cdbs (>= 0.4.43), debhelper (>= 5), dh-buildinfo, doxygen, pkg-co
   curl
 Standards-Version: 3.7.2.0
 XS-Python-Version: >= 2.5
-XS-Vcs-Svn: https://svn.smr.arpa.emr.it/xgribarch
+XS-Vcs-Svn: https://svn.smr.arpa.emr.it/arkimet
 
 Package: arkimet
 Section: misc
