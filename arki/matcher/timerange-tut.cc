@@ -182,9 +182,22 @@ template<> template<>
 void to::test<6>()
 {
     // On GRIB1
-    md.set(timerange::GRIB1::create(4, 3, 2, 1));
-    ensure_matches("timerange:timedef,+72h,1,6h", md);
-    ensure_not_matches("timerange:timedef,+72h,1,6h", md);
+    md.set(timerange::GRIB1::create(1, 0, 60, 0));
+    ensure_matches("timerange:timedef,1h", md);
+    ensure_matches("timerange:timedef,1h,254", md);
+    ensure_matches("timerange:timedef,60m,254,0", md);
+    ensure_not_matches("timerange:timedef,2h", md);
+    ensure_not_matches("timerange:timedef,1h,1,0", md);
+    ensure_not_matches("timerange:timedef,1h,254,1s", md);
+
+    md.set(timerange::GRIB1::create(3, 1, 1, 3));
+    ensure_matches("timerange:timedef,+3h", md);
+    ensure_matches("timerange:timedef,+3h,0", md);
+    ensure_matches("timerange:timedef,+3h,0,2h", md);
+    ensure_not_matches("timerange:timedef,+2h", md);
+    ensure_not_matches("timerange:timedef,+3h,1,2h", md);
+    ensure_not_matches("timerange:timedef,+3h,0,1h", md);
+
     // On GRIB2
     md.set(timerange::GRIB2::create(1, 2, 3, 4));
     ensure_matches("timerange:timedef,+72h,1,6h", md);
