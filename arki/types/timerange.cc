@@ -1,7 +1,7 @@
 /*
  * types/timerange - Time span information
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -632,6 +632,21 @@ bool GRIB1::operator==(const Type& o) const
 	return atype == btype && aunit == bunit && ap1 == bp1 && ap2 == bp2;
 }
 
+bool GRIB1::get_forecast_step(int& step, bool& is_seconds) const
+{
+    return false;
+}
+
+int GRIB1::get_proc_type() const
+{
+    return -1;
+}
+
+bool GRIB1::get_proc_duration(int& duration, bool& is_seconds) const
+{
+    return false;
+}
+
 Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
 {
 	GRIB1* res = new GRIB1;
@@ -806,6 +821,21 @@ bool GRIB2::operator==(const Type& o) const
 	return m_type == v->m_type && m_unit == v->m_unit && m_p1 == v->m_p1 && m_p2 == v->m_p2;
 }
 
+bool GRIB2::get_forecast_step(int& step, bool& is_seconds) const
+{
+    return false;
+}
+
+int GRIB2::get_proc_type() const
+{
+    return -1;
+}
+
+bool GRIB2::get_proc_duration(int& duration, bool& is_seconds) const
+{
+    return false;
+}
+
 Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed long p1, signed long p2)
 {
 	GRIB2* res = new GRIB2;
@@ -968,6 +998,25 @@ bool BUFR::operator==(const Type& o) const
 		return seconds() == v->seconds();
 	else
 		return months() == v->months();
+}
+
+bool BUFR::get_forecast_step(int& step, bool& is_seconds) const
+{
+    if ((is_seconds = this->is_seconds()))
+        step = seconds();
+    else
+        step = seconds();
+    return true;
+}
+
+int BUFR::get_proc_type() const
+{
+    return -1;
+}
+
+bool BUFR::get_proc_duration(int& duration, bool& is_seconds) const
+{
+    return false;
 }
 
 Item<BUFR> BUFR::create(unsigned value, unsigned char unit)

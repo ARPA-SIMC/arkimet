@@ -4,7 +4,7 @@
 /*
  * types/timerange - Time span information
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,31 @@ struct Timerange : public types::StyledType<Timerange>
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
+    /**
+     * Compute the forecast step
+     *
+     * @retval step The forecast step
+     * @retval is_seconds if true, the forecast step is in seconds, if false it
+     *         is in months
+     * @return true if the forecast step could be computed, else false
+     */
+    virtual bool get_forecast_step(int& step, bool& is_seconds) const = 0;
+
+    /**
+     * Return the type of statistical processing (or -1 if not available)
+     */
+    virtual int get_proc_type() const = 0;
+
+    /**
+     * Compute the duration of statistical processing
+     *
+     * @retval duration The computed duration
+     * @retval is_seconds if true, the duration is in seconds, if false it is
+     *         in months
+     * @return true if the duration could be computed, else false
+     */
+    virtual bool get_proc_duration(int& duration, bool& is_seconds) const = 0;
+
 	/// CODEC functions
 	static Item<Timerange> decode(const unsigned char* buf, size_t len);
 	static Item<Timerange> decodeString(const std::string& val);
@@ -99,6 +124,10 @@ public:
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
+    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
+    virtual int get_proc_type() const;
+    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
+
 	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;
 
@@ -128,6 +157,10 @@ public:
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
+    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
+    virtual int get_proc_type() const;
+    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
+
 	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;
 
@@ -156,6 +189,10 @@ public:
 	virtual std::string exactQuery() const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
+    virtual int get_proc_type() const;
+    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
 
 	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;

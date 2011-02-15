@@ -1,7 +1,7 @@
 /*
  * matcher/timerange - Timerange matcher
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -178,8 +178,8 @@ bool MatchTimerangeGRIB2::matchItem(const Item<>& o) const
 	if (!v) return false;
 	if (type != -1 && (unsigned)type != v->type()) return false;
 	if (unit != -1 && (unsigned)unit != v->unit()) return false;
-	if (p1 >= 0 && (unsigned)p1 != v->p1()) return false;
-	if (p2 >= 0 && (unsigned)p2 != v->p2()) return false;
+	if (p1 >= 0 && p1 != v->p1()) return false;
+	if (p2 >= 0 && p2 != v->p2()) return false;
 	return true;
 }
 
@@ -229,6 +229,83 @@ std::string MatchTimerangeBUFR::toString() const
 	return str::fmtf("BUFR,%u%s", value, is_seconds ? "s" : "mo");
 }
 
+MatchTimerangeTimedef::MatchTimerangeTimedef(const std::string& pattern)
+{
+    OptionalCommaList args(pattern);
+
+    if (args.has(0))
+    {
+        types::timerange::GRIB1::Unit unit;
+        step = parseValueWithUnit(args[0], unit);
+        step_is_seconds = unit == types::timerange::GRIB1::SECOND;
+        has_step = true;
+    } else {
+        step = 0;
+        step_is_seconds = true;
+        has_step = false;
+    }
+
+    has_proc_type = args.has(1);
+
+    if (has_proc_type && args[1] == "-")
+    {
+        proc_type = -1;
+        has_proc_duration = false;
+        proc_duration = 0;
+    } else {
+        proc_type = args.getInt(1, -1);
+        if (has_proc_type && args.has(2))
+        {
+            types::timerange::GRIB1::Unit unit;
+            proc_duration = parseValueWithUnit(args[2], unit);
+            proc_duration_is_seconds = unit == types::timerange::GRIB1::SECOND;
+            has_proc_duration = true;
+        } else {
+            has_proc_duration = false;
+            proc_duration = 0;
+            proc_duration_is_seconds = true;
+        }
+    }
+}
+
+bool MatchTimerangeTimedef::matchItem(const Item<>& o) const
+{
+    const types::Timerange* v = dynamic_cast<const types::Timerange*>(o.ptr());
+    if (!v) return false;
+    if (has_step)
+    {
+        int v_step;
+        bool v_is_seconds;
+        if (!v->get_forecast_step(v_step, v_is_seconds))
+            return false;
+        if (step != v_step || step_is_seconds != v_is_seconds)
+            return false;
+    }
+    if (has_proc_type)
+    {
+        if (proc_type != v->get_proc_type())
+            return false;
+
+        if (has_proc_duration)
+        {
+            int v_duration;
+            bool v_is_seconds;
+            if (!v->get_proc_duration(v_duration, v_is_seconds))
+                return false;
+            if (proc_duration != v_duration || proc_duration_is_seconds != v_is_seconds)
+                return false;
+        }
+    }
+    return true;
+}
+
+std::string MatchTimerangeTimedef::toString() const
+{
+    //if (!has_forecast) return "timedef";
+    //return str::fmtf("timedef,%u%s", value, is_seconds ? "s" : "mo");
+}
+
+
 
 MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 {
@@ -242,6 +319,10 @@ MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 		name = str::trim(pattern.substr(beg, pos-beg));
 		rest = pattern.substr(pos+1);
 	}
+
+    if (name == "timedef")
+        return new MatchTimerangeTimedef(rest);
+
 	switch (types::Timerange::parseStyle(name))
 	{
 		case types::Timerange::GRIB1: return new MatchTimerangeGRIB1(rest);

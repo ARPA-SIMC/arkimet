@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,9 +18,11 @@
 
 #include <arki/matcher/test-utils.h>
 #include <arki/matcher.h>
+#include <arki/matcher/timerange.h>
 #include <arki/metadata.h>
 #include <arki/types/timerange.h>
 
+#include <memory>
 #include <sstream>
 #include <iostream>
 
@@ -128,6 +130,70 @@ void to::test<4>()
 	ensure_not_matches("timerange:GRIB1,0,12h", md);
 	ensure_not_matches("timerange:GRIB1,0,12y", md);
 	ensure_not_matches("timerange:GRIB1,0,,12y", md);
+}
+
+// Test timedef matcher parsing
+template<> template<>
+void to::test<5>()
+{
+    {
+        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("timedef,+72h,1,6h"));
+        const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
+        ensure(m);
+
+        ensure(m->has_step);
+        ensure_equals(m->step, 72 * 3600);
+        ensure(m->step_is_seconds);
+
+        ensure(m->has_proc_type);
+        ensure_equals(m->proc_type, 1);
+
+        ensure(m->has_proc_duration);
+        ensure_equals(m->proc_duration, 6 * 3600);
+        ensure(m->proc_duration_is_seconds);
+    }
+
+    {
+        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("timedef,-72h"));
+        const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
+        ensure(m);
+
+        ensure(m->has_step);
+        ensure_equals(m->step, -72 * 3600);
+        ensure(m->step_is_seconds);
+
+        ensure(not m->has_proc_type);
+        ensure(not m->has_proc_duration);
+    }
+
+    {
+        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("timedef,,-"));
+        const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
+        ensure(m);
+
+        ensure(not m->has_step);
+
+        ensure(m->has_proc_type);
+        ensure_equals(m->proc_type, -1);
+    }
+}
+
+// Try matching timedef timerange
+template<> template<>
+void to::test<6>()
+{
+    // On GRIB1
+    md.set(timerange::GRIB1::create(4, 3, 2, 1));
+    ensure_matches("timerange:timedef,+72h,1,6h", md);
+    ensure_not_matches("timerange:timedef,+72h,1,6h", md);
+    // On GRIB2
+    md.set(timerange::GRIB2::create(1, 2, 3, 4));
+    ensure_matches("timerange:timedef,+72h,1,6h", md);
+    ensure_not_matches("timerange:timedef,+72h,1,6h", md);
+    // On BUFR
+    md.set(timerange::BUFR::create(2, 1));
+    ensure_matches("timerange:timedef,+72h,1,6h", md);
+    ensure_not_matches("timerange:timedef,+72h,1,6h", md);
 }
 
 }

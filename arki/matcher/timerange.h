@@ -4,7 +4,7 @@
 /*
  * matcher/timerange - Timerange matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,6 +76,34 @@ struct MatchTimerangeBUFR : public MatchTimerange
 	MatchTimerangeBUFR(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
+};
+
+/**
+ * 'timedef' timerange matcher implementation.
+ *
+ * Syntax:
+ *
+ *    timerange:timedef,+72h,1,6h
+ *                        |  | +---- Duration of statistical process
+ *                        |  +------ Type of statistical process (from DB-All.e)
+ *                        +--------- Forecast step
+ */
+struct MatchTimerangeTimedef : public MatchTimerange
+{
+    bool has_step;
+    int step;
+    bool step_is_seconds;
+
+    bool has_proc_type;
+    int proc_type;
+
+    bool has_proc_duration;
+    int proc_duration;
+    bool proc_duration_is_seconds;
+
+    MatchTimerangeTimedef(const std::string& pattern);
+    bool matchItem(const Item<>& o) const;
+    std::string toString() const;
 };
 
 }
