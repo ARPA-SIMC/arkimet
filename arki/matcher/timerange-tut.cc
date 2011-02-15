@@ -90,7 +90,6 @@ void to::test<2>()
 	ensure_not_matches("timerange:GRIB2,,,,5", md);
 }
 
-
 // Try matching BUFR timerange
 template<> template<>
 void to::test<3>()

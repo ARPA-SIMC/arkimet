@@ -75,6 +75,7 @@ typedef enum t_enum_GRIB_TIMERANGE {
   GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2             = 6,
   GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2              = 7,
   GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2                               = 10,
+  GRIB_TIMERANGE_COSMO_NUDGING                                            = 13,
   GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2           = 51,
   GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2     = 113,
   GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2    = 114,
@@ -634,16 +635,253 @@ bool GRIB1::operator==(const Type& o) const
 
 bool GRIB1::get_forecast_step(int& step, bool& is_seconds) const
 {
+    int timemul;
+    is_seconds = get_timeunit_conversion(timemul);
+
+    switch (m_type)
+    {
+        case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1: // = 0
+        case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME: // = 1
+        case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2: // = 10
+  // statproc = 254
+  // CALL gribtr_to_second(unit, p1_g1, p1)
+  // p2 = 0
+            step = m_p1 * timemul;
+            return true;
+        case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2: // = 2
+  // ELSE IF (tri == 2) THEN ! somewhere between p1 and p2, not good for grib2 standard
+  //   statproc = 205
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            step = m_p2 * timemul;
+            return true;
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2: // = 3
+  // ELSE IF (tri == 3) THEN ! average
+  //   statproc = 0
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            step = m_p2 * timemul;
+            return true;
+        case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2: // = 4
+  // ELSE IF (tri == 4) THEN ! accumulation
+  //   statproc = 1
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            step = m_p2 * timemul;
+            return true;
+        case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1: // = 5
+  // ELSE IF (tri == 5) THEN ! difference
+  //   statproc = 4
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            step = m_p2 * timemul;
+            return true;
+        case GRIB_TIMERANGE_COSMO_NUDGING: // = 13
+  // ELSE IF (tri == 13) THEN ! COSMO-nudging, use a temporary value then normalize
+  //   statproc = 206 ! check if 206 is legal!
+  //   p1 = 0 ! analysis regardless of p2_g1
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+// ! Timerange 206 (COSMO nudging) is converted to point in time if
+// ! interval length is 0, or to a proper timerange if parameter is
+// ! recognized as a COSMO statistically processed parameter (and in case
+// ! of maximum or minimum the parameter is corrected as well); if
+// ! parameter is not recognized, it is converted to instantaneous with a
+// ! warning.
+//            return 206;
+// We cannot do that as we do not know the parameter here
+            step = 0;
+            return true;
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2://             = 6,
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2://              = 7,
+        case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2://           = 51,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2://     = 113,
+        case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2://    = 114,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_AT_INTERVALS_P2://       = 115,
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_FORECAST_PERIOD_P1_AT_INTERVALS_P2://     = 116,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_FIRST_P1_OTHER_P2_REDUCED://          = 117,
+        case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2://    = 118,
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_FIRST_P1_OTHER_P2_REDUCED://            = 119,
+        case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2://                 = 123,
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2://            = 124,
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_RESPECT_TO_AVERAGE_OF_TENDENCY://       = 125,
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS://                  = 128,
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS://             = 129,
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES://                       = 130,
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES://                  = 131
+  // call l4f_log(L4F_ERROR,'timerange_g1_to_g2: GRIB1 timerange '//TRIM(to_char(tri)) &
+  //  //' cannot be converted to GRIB2.')
+  // CALL raise_error()
+            return false;
+
+// if (statproc == 254 .and. p2 /= 0 ) then
+//   call l4f_log(L4F_WARN,"inconsistence in timerange:254,"//trim(to_char(p1))//","//trim(to_char(p2)))
+// end if
+    }
     return false;
 }
 
 int GRIB1::get_proc_type() const
 {
+    switch (m_type)
+    {
+        case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
+        case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
+        case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
+  // statproc = 254
+  // CALL gribtr_to_second(unit, p1_g1, p1)
+  // p2 = 0
+            return 254;
+        case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+  // ELSE IF (tri == 2) THEN ! somewhere between p1 and p2, not good for grib2 standard
+  //   statproc = 205
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            return 205;
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+  // ELSE IF (tri == 3) THEN ! average
+  //   statproc = 0
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            return 0;
+        case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+  // ELSE IF (tri == 4) THEN ! accumulation
+  //   statproc = 1
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            return 1;
+        case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1:
+  // ELSE IF (tri == 5) THEN ! difference
+  //   statproc = 4
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            return 4;
+        case GRIB_TIMERANGE_COSMO_NUDGING:
+  // ELSE IF (tri == 13) THEN ! COSMO-nudging, use a temporary value then normalize
+  //   statproc = 206 ! check if 206 is legal!
+  //   p1 = 0 ! analysis regardless of p2_g1
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+// ! Timerange 206 (COSMO nudging) is converted to point in time if
+// ! interval length is 0, or to a proper timerange if parameter is
+// ! recognized as a COSMO statistically processed parameter (and in case
+// ! of maximum or minimum the parameter is corrected as well); if
+// ! parameter is not recognized, it is converted to instantaneous with a
+// ! warning.
+//            return 206;
+// We cannot do that as we do not know the parameter here
+            return 254;
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2://             = 6,
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2://              = 7,
+        case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2://           = 51,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2://     = 113,
+        case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2://    = 114,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_AT_INTERVALS_P2://       = 115,
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_FORECAST_PERIOD_P1_AT_INTERVALS_P2://     = 116,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_FIRST_P1_OTHER_P2_REDUCED://          = 117,
+        case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2://    = 118,
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_FIRST_P1_OTHER_P2_REDUCED://            = 119,
+        case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2://                 = 123,
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2://            = 124,
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_RESPECT_TO_AVERAGE_OF_TENDENCY://       = 125,
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS://                  = 128,
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS://             = 129,
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES://                       = 130,
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES://                  = 131
+  // call l4f_log(L4F_ERROR,'timerange_g1_to_g2: GRIB1 timerange '//TRIM(to_char(tri)) &
+  //  //' cannot be converted to GRIB2.')
+  // CALL raise_error()
+            return -1;
+
+// if (statproc == 254 .and. p2 /= 0 ) then
+//   call l4f_log(L4F_WARN,"inconsistence in timerange:254,"//trim(to_char(p1))//","//trim(to_char(p2)))
+// end if
+    }
     return -1;
 }
 
 bool GRIB1::get_proc_duration(int& duration, bool& is_seconds) const
 {
+    int timemul;
+    is_seconds = get_timeunit_conversion(timemul);
+
+    switch (m_type)
+    {
+        case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
+        case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
+        case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
+  // statproc = 254
+  // CALL gribtr_to_second(unit, p1_g1, p1)
+  // p2 = 0
+            duration = 0;
+            return true;
+        case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+  // ELSE IF (tri == 2) THEN ! somewhere between p1 and p2, not good for grib2 standard
+  //   statproc = 205
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            duration = (m_p2 - m_p1) * timemul;
+            return true;
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+  // ELSE IF (tri == 3) THEN ! average
+  //   statproc = 0
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            duration = (m_p2 - m_p1) * timemul;
+            return true;
+        case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+  // ELSE IF (tri == 4) THEN ! accumulation
+  //   statproc = 1
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            duration = (m_p2 - m_p1) * timemul;
+            return true;
+        case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1:
+  // ELSE IF (tri == 5) THEN ! difference
+  //   statproc = 4
+  //   CALL gribtr_to_second(unit, p2_g1, p1)
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+            duration = (m_p2 - m_p1) * timemul;
+            return true;
+        case GRIB_TIMERANGE_COSMO_NUDGING:
+  // ELSE IF (tri == 13) THEN ! COSMO-nudging, use a temporary value then normalize
+  //   statproc = 206 ! check if 206 is legal!
+  //   p1 = 0 ! analysis regardless of p2_g1
+  //   CALL gribtr_to_second(unit, p2_g1-p1_g1, p2)
+// ! Timerange 206 (COSMO nudging) is converted to point in time if
+// ! interval length is 0, or to a proper timerange if parameter is
+// ! recognized as a COSMO statistically processed parameter (and in case
+// ! of maximum or minimum the parameter is corrected as well); if
+// ! parameter is not recognized, it is converted to instantaneous with a
+// ! warning.
+//            return 206;
+// We cannot do that as we do not know the parameter here
+            duration = 0;
+            return true;
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2://             = 6,
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2://              = 7,
+        case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2://           = 51,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2://     = 113,
+        case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2://    = 114,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_AT_INTERVALS_P2://       = 115,
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_FORECAST_PERIOD_P1_AT_INTERVALS_P2://     = 116,
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_FIRST_P1_OTHER_P2_REDUCED://          = 117,
+        case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2://    = 118,
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_FIRST_P1_OTHER_P2_REDUCED://            = 119,
+        case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2://                 = 123,
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2://            = 124,
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_RESPECT_TO_AVERAGE_OF_TENDENCY://       = 125,
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS://                  = 128,
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS://             = 129,
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES://                       = 130,
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES://                  = 131
+  // call l4f_log(L4F_ERROR,'timerange_g1_to_g2: GRIB1 timerange '//TRIM(to_char(tri)) &
+  //  //' cannot be converted to GRIB2.')
+  // CALL raise_error()
+            return false;
+
+// if (statproc == 254 .and. p2 /= 0 ) then
+//   call l4f_log(L4F_WARN,"inconsistence in timerange:254,"//trim(to_char(p1))//","//trim(to_char(p2)))
+// end if
+    }
     return false;
 }
 
@@ -657,34 +895,45 @@ Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char 
 	return cache_grib1.intern(res);
 }
 
+bool GRIB1::get_timeunit_conversion(int& timemul) const
+{
+    bool is_seconds = true;
+    timemul = 1;
+    switch ((t_enum_GRIB_TIMEUNIT)m_unit)
+    {
+        case GRIB_TIMEUNIT_UNKNOWN:
+            throw wibble::exception::Consistency("normalising TimeRange", "time unit is UNKNOWN (-1)");
+        case GRIB_TIMEUNIT_MINUTE: timemul = 60; break;
+        case GRIB_TIMEUNIT_HOUR: timemul = 3600; break;
+        case GRIB_TIMEUNIT_DAY: timemul = 3600*24; break;
+        case GRIB_TIMEUNIT_MONTH: timemul = 1; is_seconds = false; break;
+        case GRIB_TIMEUNIT_YEAR: timemul = 12; is_seconds = false; break;
+        case GRIB_TIMEUNIT_DECADE: timemul = 120; is_seconds = false; break;
+        case GRIB_TIMEUNIT_NORMAL: timemul = 12*30; is_seconds = false; break;
+        case GRIB_TIMEUNIT_CENTURY: timemul = 12*100; is_seconds = false; break;
+        case GRIB_TIMEUNIT_HOURS3: timemul = 3600*3; break;
+        case GRIB_TIMEUNIT_HOURS6: timemul = 3600*6; break;
+        case GRIB_TIMEUNIT_HOURS12: timemul = 3600*12; break;
+        case GRIB_TIMEUNIT_SECOND: timemul = 1; break;
+        default:
+            throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(m_unit)+")");
+    }
+    return is_seconds;
+}
+
 void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 {
-	otype = m_type;
+    otype = m_type;
 
-	// Make sense of the time range unit
-	int timemul = 1;
-	ounit = SECOND;
-	switch ((t_enum_GRIB_TIMEUNIT)m_unit)
-	{
-		case GRIB_TIMEUNIT_UNKNOWN:
-			throw wibble::exception::Consistency("normalising TimeRange", "time unit is UNKNOWN (-1)");
-		case GRIB_TIMEUNIT_MINUTE: timemul = 60; break;
-		case GRIB_TIMEUNIT_HOUR: timemul = 3600; break;
-		case GRIB_TIMEUNIT_DAY: timemul = 3600*24; break;
-		case GRIB_TIMEUNIT_MONTH: timemul = 1; ounit = MONTH; break;
-		case GRIB_TIMEUNIT_YEAR: timemul = 12; ounit = MONTH; break;
-		case GRIB_TIMEUNIT_DECADE: timemul = 120; ounit = MONTH; break;
-		case GRIB_TIMEUNIT_NORMAL: timemul = 12*30; ounit = MONTH; break;
-		case GRIB_TIMEUNIT_CENTURY: timemul = 12*100; ounit = MONTH; break;
-		case GRIB_TIMEUNIT_HOURS3: timemul = 3600*3; break;
-		case GRIB_TIMEUNIT_HOURS6: timemul = 3600*6; break;
-		case GRIB_TIMEUNIT_HOURS12: timemul = 3600*12; break;
-		case GRIB_TIMEUNIT_SECOND: timemul = 1; break;
-		default:
-			throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(m_unit)+")");
-	}
+    // Make sense of the time range unit
+    int timemul;
+    if (get_timeunit_conversion(timemul))
+        ounit = SECOND;
+    else
+        ounit = MONTH;
 
-	op1 = 0, op2 = 0;
+    // Convert p1 and p2
+    op1 = 0, op2 = 0;
 
 	switch ((t_enum_GRIB_TIMERANGE)m_type)
 	{
@@ -828,7 +1077,7 @@ bool GRIB2::get_forecast_step(int& step, bool& is_seconds) const
 
 int GRIB2::get_proc_type() const
 {
-    return -1;
+    return m_type;
 }
 
 bool GRIB2::get_proc_duration(int& duration, bool& is_seconds) const

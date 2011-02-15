@@ -101,6 +101,16 @@ struct GRIB1 : public Timerange
 {
 protected:
 	std::ostream& writeNumbers(std::ostream& o) const;
+    /**
+     * Get time unit conversion
+     *
+     * @retval timemul
+     *   Factor to multiply to a value in the current units to obtain months or
+     *   seconds
+     * @returns
+     *   true if multiplying by timemul gives seconds, false if it gives months
+     */
+    bool get_timeunit_conversion(int& timemul) const;
 
 	unsigned char m_type, m_unit;
 	unsigned char m_p1, m_p2;

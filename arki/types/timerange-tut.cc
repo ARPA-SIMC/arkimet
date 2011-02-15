@@ -49,8 +49,8 @@ void to::test<1>()
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
 	ensure_equals(v->type(), 2u);
 	ensure_equals(v->unit(), 254u);
-	ensure_equals(v->p1(), 2);
-	ensure_equals(v->p2(), 3);
+	ensure_equals(v->p1(), 2u);
+	ensure_equals(v->p2(), 3u);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
@@ -401,6 +401,46 @@ void to::test<13>()
 		timerange::GRIB1::create(2, 254, 2, 4),
 		timerange::GRIB1::create(2, 254, 2, 4));
 }
+
+// Test computing timedef information
+template<> template<>
+void to::test<14>()
+{
+    int val;
+    bool issec;
+
+    {
+        // GRIB1, forecast at +60min
+        Item<Timerange> tr(timerange::GRIB1::create(1, 0, 60, 0));
+
+        ensure(tr->get_forecast_step(val, issec));
+        ensure_equals(val, 3600);
+        ensure_equals(issec, true);
+        ensure(tr->get_proc_type());
+
+        ensure_equals(tr->get_proc_type(), 254);
+
+        ensure(tr->get_proc_duration(val, issec));
+        ensure_equals(val, 0);
+        ensure_equals(issec, true);
+    }
+
+    {
+        // GRIB1, average between rt+1h and rt+3h
+        Item<Timerange> tr(timerange::GRIB1::create(3, 1, 1, 3));
+
+        ensure(tr->get_forecast_step(val, issec));
+        ensure_equals(val, 3 * 3600);
+        ensure_equals(issec, true);
+
+        ensure_equals(tr->get_proc_type(), 0);
+
+        ensure(tr->get_proc_duration(val, issec));
+        ensure_equals(val, 2 * 3600);
+        ensure_equals(issec, true);
+    }
+}
+
 
 }
 
