@@ -74,6 +74,22 @@ static int parseValueWithUnit(const std::string& str, types::timerange::GRIB1::U
 	}
 }
 
+static int parseTimedefValueWithUnit(const std::string& str, bool& is_second)
+{
+    using namespace types::timerange;
+
+    const char* s = str.c_str();
+    Timedef::Unit unit;
+    uint32_t val;
+    if (!Timedef::timeunit_parse(s, unit, val) || *s)
+        throw wibble::exception::Consistency(
+                "parsing 'timerange' match expression",
+                "cannot parse time '" + str + "'");
+
+    int timemul;
+    is_second = Timedef::timeunit_conversion(unit, timemul);
+    return val * timemul;
+}
 
 std::string MatchTimerange::name() const { return "timerange"; }
 
@@ -230,41 +246,45 @@ std::string MatchTimerangeBUFR::toString() const
 }
 
 MatchTimerangeTimedef::MatchTimerangeTimedef(const std::string& pattern)
+    : has_step(false), has_proc_type(false), has_proc_duration(false)
 {
     OptionalCommaList args(pattern);
 
+    // Step match
     if (args.has(0))
     {
-        types::timerange::GRIB1::Unit unit;
-        step = parseValueWithUnit(args[0], unit);
-        step_is_seconds = unit == types::timerange::GRIB1::SECOND;
         has_step = true;
-    } else {
-        step = 0;
-        step_is_seconds = true;
-        has_step = false;
+        if (args[0] == "-")
+        {
+            step = -1;
+            step_is_seconds = true;
+        } else
+            step = parseTimedefValueWithUnit(args[0], step_is_seconds);
     }
 
-    has_proc_type = args.has(1);
-
-    if (has_proc_type && args[1] == "-")
+    // Statistical processing type
+    if (args.has(1))
     {
-        proc_type = -1;
-        has_proc_duration = false;
-        proc_duration = 0;
-    } else {
-        proc_type = args.getInt(1, -1);
-        if (has_proc_type && args.has(2))
+        has_proc_type = true;
+        if (args[1] == "-")
         {
-            types::timerange::GRIB1::Unit unit;
-            proc_duration = parseValueWithUnit(args[2], unit);
-            proc_duration_is_seconds = unit == types::timerange::GRIB1::SECOND;
-            has_proc_duration = true;
-        } else {
-            has_proc_duration = false;
+            proc_type = -1;
             proc_duration = 0;
-            proc_duration_is_seconds = true;
+            return;
         }
+        proc_type = args.getInt(1, -1);
+    }
+
+    // Statistical processing duration
+    if (args.has(2))
+    {
+        has_proc_duration = true;
+        if (args[2] == "-")
+        {
+            proc_duration = -1;
+            proc_duration_is_seconds = true;
+        } else
+            proc_duration = parseTimedefValueWithUnit(args[2], proc_duration_is_seconds);
     }
 }
 
@@ -272,40 +292,68 @@ bool MatchTimerangeTimedef::matchItem(const Item<>& o) const
 {
     const types::Timerange* v = dynamic_cast<const types::Timerange*>(o.ptr());
     if (!v) return false;
+
     if (has_step)
     {
         int v_step;
         bool v_is_seconds;
         if (!v->get_forecast_step(v_step, v_is_seconds))
-            return false;
+            return step == -1;
         if (step != v_step || step_is_seconds != v_is_seconds)
             return false;
     }
+
     if (has_proc_type)
     {
         if (proc_type != v->get_proc_type())
             return false;
+    }
 
-        if (has_proc_duration)
-        {
-            int v_duration;
-            bool v_is_seconds;
-            if (!v->get_proc_duration(v_duration, v_is_seconds))
-                return false;
-            if (proc_duration != v_duration || proc_duration_is_seconds != v_is_seconds)
-                return false;
-        }
+    if (has_proc_duration)
+    {
+        int v_duration;
+        bool v_is_seconds;
+        if (!v->get_proc_duration(v_duration, v_is_seconds))
+            return proc_duration == -1;
+        if (proc_duration != v_duration || proc_duration_is_seconds != v_is_seconds)
+            return false;
     }
     return true;
 }
 
 std::string MatchTimerangeTimedef::toString() const
 {
-    //if (!has_forecast) return "timedef";
-    //return str::fmtf("timedef,%u%s", value, is_seconds ? "s" : "mo");
+    CommaJoiner res;
+    res.add("Timedef");
+    if (has_step)
+    {
+        if (step == -1)
+        {
+            res.add("-");
+        } else {
+            if (step_is_seconds)
+                res.add(str::fmtf("%ds", step));
+            else
+                res.add(str::fmtf("%dmo", step));
+            if (has_proc_type)
+            {
+                if (proc_type == -1)
+                    res.add("-");
+                else {
+                    res.add(proc_type);
+                    if (has_proc_duration)
+                    {
+                        if (proc_duration_is_seconds)
+                            res.add(str::fmtf("%ds", proc_duration));
+                        else
+                            res.add(str::fmtf("%dmo", proc_duration));
+                    }
+                }
+            }
+        }
+    }
+    return res.join();
 }
-
-
 
 MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 {
@@ -320,17 +368,15 @@ MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 		rest = pattern.substr(pos+1);
 	}
 
-    if (name == "timedef")
-        return new MatchTimerangeTimedef(rest);
-
-	switch (types::Timerange::parseStyle(name))
-	{
-		case types::Timerange::GRIB1: return new MatchTimerangeGRIB1(rest);
-		case types::Timerange::GRIB2: return new MatchTimerangeGRIB2(rest);
-		case types::Timerange::BUFR: return new MatchTimerangeBUFR(rest);
-		default:
-			throw wibble::exception::Consistency("parsing type of timerange to match", "unsupported timerange style: " + name);
-	}
+    switch (types::Timerange::parseStyle(name))
+    {
+        case types::Timerange::GRIB1: return new MatchTimerangeGRIB1(rest);
+        case types::Timerange::GRIB2: return new MatchTimerangeGRIB2(rest);
+        case types::Timerange::TIMEDEF: return new MatchTimerangeTimedef(rest);
+        case types::Timerange::BUFR: return new MatchTimerangeBUFR(rest);
+        default:
+                                     throw wibble::exception::Consistency("parsing type of timerange to match", "unsupported timerange style: " + name);
+    }
 }
 
 MatcherType timerange("timerange", types::TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);

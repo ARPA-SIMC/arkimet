@@ -37,15 +37,19 @@ function scan(md)
 		md:set(arki_level.grib2s(ltype1, lscale1, lvalue1))
 	end
 
-	-- Time range
-	local ptype, punit, p1, p2 = 0, gribl.stepUnits, 0, gribl.endStep
-	if grib.productDefinitionTemplateNumber then
-		ptype = grib.productDefinitionTemplateNumber
-	end
-	if gribl.lengthOfTimeRange ~= nil then
-		p1 = gribl.lengthOfTimeRange
-	end
-	md:set(arki_timerange.grib2(ptype, punit, p1, p2))
+    -- Time range
+    local tr_ft = gribl.forecastTime
+    local tr_ftu = gribl.indicatorOfUnitOfTimeRange
+    if tr_ft ~= nil and tr_ftu ~= nil then
+        local tr_sp = gribl.typeOfStatisticalProcessing
+        local tr_spu = gribl.indicatorOfUnitForTimeRange
+        local tr_spl = gribl.lengthOfTimeRange
+        if tr_sp ~= nil and tr_spu ~= nil and tr_spl ~= nil then
+            md:set(arki_timerange.timedef(tr_ft, tr_ftu, tr_sp, tr_spl, tr_spu))
+        else
+            md:set(arki_timerange.grib2(tr_ft, tr_ftu))
+        end
+    end
 
 	function norm_lon(lon)
 		if lon > 180 then

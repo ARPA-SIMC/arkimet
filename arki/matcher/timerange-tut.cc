@@ -90,9 +90,70 @@ void to::test<2>()
 	ensure_not_matches("timerange:GRIB2,,,,5", md);
 }
 
-// Try matching BUFR timerange
+// Try matching Timedef timerange
 template<> template<>
 void to::test<3>()
+{
+    md.set(timerange::Timedef::createFromYaml("6h,1,3h"));
+
+    ensure_matches("timerange:Timedef", md);
+    ensure_matches("timerange:Timedef,,", md);
+    ensure_matches("timerange:Timedef,6h", md);
+    ensure_matches("timerange:Timedef,6h,,", md);
+    ensure_matches("timerange:Timedef,6h,1,", md);
+    ensure_matches("timerange:Timedef,6h,1,3h", md);
+    // Incomplete matches are allowed
+    ensure_matches("timerange:Timedef,,1,", md);
+    ensure_matches("timerange:Timedef,,,3h", md);
+    ensure_not_matches("timerange:GRIB1", md);
+    ensure_not_matches("timerange:Timedef,5h", md);
+    ensure_not_matches("timerange:Timedef,6h,2", md);
+    ensure_not_matches("timerange:Timedef,6h,1,4h", md);
+    ensure_not_matches("timerange:Timedef,,2", md);
+    ensure_not_matches("timerange:Timedef,,2,4h", md);
+    ensure_not_matches("timerange:Timedef,,,4h", md);
+    ensure_not_matches("timerange:Timedef,-", md);
+    ensure_not_matches("timerange:Timedef,6h,-", md);
+    ensure_not_matches("timerange:Timedef,6h,2,-", md);
+
+    md.set(timerange::Timedef::createFromYaml("6h"));
+    ensure_matches("timerange:Timedef", md);
+    ensure_matches("timerange:Timedef,,", md);
+    ensure_matches("timerange:Timedef,6h", md);
+    ensure_matches("timerange:Timedef,6h,,", md);
+    ensure_matches("timerange:Timedef,6h,-", md);
+    ensure_matches("timerange:Timedef,6h,-,-", md);
+    ensure_not_matches("timerange:GRIB1", md);
+    ensure_not_matches("timerange:Timedef,5h", md);
+    ensure_not_matches("timerange:Timedef,6h,1", md);
+    ensure_not_matches("timerange:Timedef,6h,1,4h", md);
+    ensure_not_matches("timerange:Timedef,,2", md);
+    ensure_not_matches("timerange:Timedef,,2,4h", md);
+    ensure_not_matches("timerange:Timedef,,,4h", md);
+    ensure_not_matches("timerange:Timedef,-", md);
+    ensure_not_matches("timerange:Timedef,6h,2,-", md);
+
+    md.set(timerange::Timedef::createFromYaml("6h,2"));
+    ensure_matches("timerange:Timedef", md);
+    ensure_matches("timerange:Timedef,,", md);
+    ensure_matches("timerange:Timedef,6h", md);
+    ensure_matches("timerange:Timedef,6h,,", md);
+    ensure_matches("timerange:Timedef,6h,,-", md);
+    ensure_matches("timerange:Timedef,6h,2,-", md);
+    ensure_not_matches("timerange:GRIB1", md);
+    ensure_not_matches("timerange:Timedef,5h", md);
+    ensure_not_matches("timerange:Timedef,6h,1", md);
+    ensure_not_matches("timerange:Timedef,6h,1,-", md);
+    ensure_not_matches("timerange:Timedef,6h,2,4h", md);
+    ensure_not_matches("timerange:Timedef,,2,4h", md);
+    ensure_not_matches("timerange:Timedef,,,4h", md);
+    ensure_not_matches("timerange:Timedef,-", md);
+    ensure_not_matches("timerange:Timedef,6h,-", md);
+}
+
+// Try matching BUFR timerange
+template<> template<>
+void to::test<4>()
 {
 	md.set(timerange::BUFR::create(2, 1));
 
@@ -119,7 +180,7 @@ void to::test<3>()
 
 // Try some cases that have been buggy
 template<> template<>
-void to::test<4>()
+void to::test<5>()
 {
 	Metadata md;
 
@@ -133,10 +194,10 @@ void to::test<4>()
 
 // Test timedef matcher parsing
 template<> template<>
-void to::test<5>()
+void to::test<6>()
 {
     {
-        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("timedef,+72h,1,6h"));
+        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,+72h,1,6h"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         ensure(m);
 
@@ -153,12 +214,12 @@ void to::test<5>()
     }
 
     {
-        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("timedef,-72h"));
+        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,72h"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         ensure(m);
 
         ensure(m->has_step);
-        ensure_equals(m->step, -72 * 3600);
+        ensure_equals(m->step, 72 * 3600);
         ensure(m->step_is_seconds);
 
         ensure(not m->has_proc_type);
@@ -166,7 +227,7 @@ void to::test<5>()
     }
 
     {
-        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("timedef,,-"));
+        auto_ptr<matcher::MatchTimerange> matcher(matcher::MatchTimerange::parse("Timedef,,-"));
         const matcher::MatchTimerangeTimedef* m = dynamic_cast<const matcher::MatchTimerangeTimedef*>(matcher.get());
         ensure(m);
 
@@ -177,35 +238,108 @@ void to::test<5>()
     }
 }
 
-// Try matching timedef timerange
+// Try matching timedef timerange on GRIB1
 template<> template<>
-void to::test<6>()
+void to::test<7>()
 {
-    // On GRIB1
     md.set(timerange::GRIB1::create(1, 0, 60, 0));
-    ensure_matches("timerange:timedef,1h", md);
-    ensure_matches("timerange:timedef,1h,254", md);
-    ensure_matches("timerange:timedef,60m,254,0", md);
-    ensure_not_matches("timerange:timedef,2h", md);
-    ensure_not_matches("timerange:timedef,1h,1,0", md);
-    ensure_not_matches("timerange:timedef,1h,254,1s", md);
+    ensure_matches("timerange:Timedef,1h", md);
+    ensure_matches("timerange:Timedef,1h,254", md);
+    ensure_matches("timerange:Timedef,60m,254,0", md);
+    ensure_not_matches("timerange:Timedef,2h", md);
+    ensure_not_matches("timerange:Timedef,1h,1,0", md);
+    ensure_not_matches("timerange:Timedef,1h,254,1s", md);
 
     md.set(timerange::GRIB1::create(3, 1, 1, 3));
-    ensure_matches("timerange:timedef,+3h", md);
-    ensure_matches("timerange:timedef,+3h,0", md);
-    ensure_matches("timerange:timedef,+3h,0,2h", md);
-    ensure_not_matches("timerange:timedef,+2h", md);
-    ensure_not_matches("timerange:timedef,+3h,1,2h", md);
-    ensure_not_matches("timerange:timedef,+3h,0,1h", md);
+    ensure_matches("timerange:Timedef,+3h", md);
+    ensure_matches("timerange:Timedef,+3h,0", md);
+    ensure_matches("timerange:Timedef,+3h,0,2h", md);
+    ensure_not_matches("timerange:Timedef,+2h", md);
+    ensure_not_matches("timerange:Timedef,+3h,1,2h", md);
+    ensure_not_matches("timerange:Timedef,+3h,0,1h", md);
+}
 
+// Try matching timedef timerange on GRIB2
+template<> template<>
+void to::test<8>()
+{
     // On GRIB2
-    md.set(timerange::GRIB2::create(1, 2, 3, 4));
-    ensure_matches("timerange:timedef,+72h,1,6h", md);
-    ensure_not_matches("timerange:timedef,+72h,1,6h", md);
-    // On BUFR
+    md.set(timerange::GRIB2::create(3, 1, 1, 3));
+    // timerange:GRIB2 metadata items do not carry enough information to feed Timedef matchers
+    ensure_matches("timerange:Timedef", md);
+    ensure_matches("timerange:Timedef,-", md);
+    ensure_matches("timerange:Timedef,-,-", md);
+    ensure_matches("timerange:Timedef,-,-,-", md);
+    ensure_not_matches("timerange:Timedef,+3h", md);
+    ensure_not_matches("timerange:Timedef,+3h,0", md);
+    ensure_not_matches("timerange:Timedef,+3h,0,2h", md);
+}
+
+// Try matching timedef timerange on Timedef
+template<> template<>
+void to::test<9>()
+{
+    md.set(timerange::Timedef::createFromYaml("72h,1,6h"));
+    ensure_matches("timerange:Timedef,+72h", md);
+    ensure_matches("timerange:Timedef,+72h,1", md);
+    ensure_matches("timerange:Timedef,+72h,1,6h", md);
+    ensure_matches("timerange:Timedef,+72h,1", md);
+    ensure_matches("timerange:Timedef,+72h,,6h", md);
+    ensure_matches("timerange:Timedef,,1", md);
+    ensure_matches("timerange:Timedef,,1,6h", md);
+    ensure_matches("timerange:Timedef,,,6h", md);
+    ensure_not_matches("timerange:Timedef,73h", md);
+    ensure_not_matches("timerange:Timedef,72h,-", md);
+    ensure_not_matches("timerange:Timedef,72h,-", md);
+
+    md.set(timerange::Timedef::createFromYaml("72h"));
+    ensure_matches("timerange:Timedef,+72h", md);
+    ensure_matches("timerange:Timedef,+72h,-", md);
+    ensure_matches("timerange:Timedef,+72h,-,-", md);
+    ensure_matches("timerange:Timedef,+72h,,-", md);
+    ensure_matches("timerange:Timedef,,-", md);
+    ensure_matches("timerange:Timedef,,-,-", md);
+    ensure_matches("timerange:Timedef,,,-", md);
+    ensure_not_matches("timerange:Timedef,73h", md);
+    ensure_not_matches("timerange:Timedef,72h,1", md);
+
+    md.set(timerange::Timedef::createFromYaml("72h,1"));
+    ensure_matches("timerange:Timedef,+72h", md);
+    ensure_matches("timerange:Timedef,+72h,1", md);
+    ensure_matches("timerange:Timedef,+72h,1,-", md);
+    ensure_matches("timerange:Timedef,+72h,,-", md);
+    ensure_matches("timerange:Timedef,,1", md);
+    ensure_matches("timerange:Timedef,,1,-", md);
+    ensure_matches("timerange:Timedef,,,-", md);
+    ensure_not_matches("timerange:Timedef,73h", md);
+    ensure_not_matches("timerange:Timedef,72h,2", md);
+    ensure_not_matches("timerange:Timedef,72h,1,3h", md);
+
+    md.set(timerange::Timedef::createFromYaml("72d,1,6h"));
+    ensure_matches("timerange:Timedef,+72d", md);
+    ensure_matches("timerange:Timedef,+72d,1", md);
+    ensure_matches("timerange:Timedef,+72d,1,6h", md);
+    ensure_matches("timerange:Timedef,+72d,1", md);
+    ensure_matches("timerange:Timedef,+72d,,6h", md);
+    ensure_matches("timerange:Timedef,,1", md);
+    ensure_matches("timerange:Timedef,,1,6h", md);
+    ensure_matches("timerange:Timedef,,,6h", md);
+    ensure_not_matches("timerange:Timedef,73d", md);
+    ensure_not_matches("timerange:Timedef,72d,-", md);
+    ensure_not_matches("timerange:Timedef,72d,-", md);
+}
+
+// Try matching timedef timerange on BUFR
+template<> template<>
+void to::test<10>()
+{
     md.set(timerange::BUFR::create(2, 1));
-    ensure_matches("timerange:timedef,+72h,1,6h", md);
-    ensure_not_matches("timerange:timedef,+72h,1,6h", md);
+    ensure_matches("timerange:Timedef,+2h", md);
+    ensure_matches("timerange:Timedef,+2h,-", md);
+    ensure_matches("timerange:Timedef,+2h,-,-", md);
+    ensure_not_matches("timerange:Timedef,+1h", md);
+    ensure_not_matches("timerange:Timedef,-", md);
+    ensure_not_matches("timerange:Timedef,2h,1", md);
 }
 
 }

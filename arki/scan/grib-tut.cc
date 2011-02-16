@@ -671,9 +671,11 @@ void to::test<7>()
 	ensure(md.get(types::TYPE_LEVEL).defined());
 	ensure_equals(md.get(types::TYPE_LEVEL), Item<>(level::GRIB2S::create(103, 0, 10)));
 
-	// Check timerange
-	ensure(md.get(types::TYPE_TIMERANGE).defined());
-	ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB2::create(11, 1, 3, 3)));
+    // Check timerange
+    ensure(md.get(types::TYPE_TIMERANGE).defined());
+    ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(timerange::Timedef::create(
+                    0, timerange::Timedef::UNIT_SECOND,
+                    2, 3, timerange::Timedef::UNIT_HOUR)));
 
 	// Check area
 	vb.clear();

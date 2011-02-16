@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <stdint.h>
 
 struct lua_State;
 
@@ -56,6 +57,7 @@ struct Timerange : public types::StyledType<Timerange>
 	static const Style GRIB1 = 1;
 	static const Style GRIB2 = 2;
 	static const Style BUFR = 3;
+	static const Style TIMEDEF = 4;
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -176,6 +178,86 @@ public:
 
 	static Item<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
 	static Item<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+};
+
+class Timedef : public Timerange
+{
+public:
+    enum Unit {
+        UNIT_MINUTE  = 0,
+        UNIT_HOUR    = 1,
+        UNIT_DAY     = 2,
+        UNIT_MONTH   = 3,
+        UNIT_YEAR    = 4,
+        UNIT_DECADE  = 5,
+        UNIT_NORMAL  = 6,
+        UNIT_CENTURY = 7,
+        UNIT_3HOURS  = 10,
+        UNIT_6HOURS  = 11,
+        UNIT_12HOURS = 12,
+        UNIT_SECOND  = 13,
+        UNIT_MISSING = 255
+    };
+
+protected:
+    Unit m_step_unit;
+    uint32_t m_step_len;
+
+    uint8_t m_stat_type;
+    Unit m_stat_unit;
+    uint32_t m_stat_len;
+
+public:
+    Unit step_unit() const { return m_step_unit; }
+    unsigned step_len() const { return m_step_len; }
+    uint8_t stat_type() const { return m_stat_type; }
+    Unit stat_unit() const { return m_stat_unit; }
+    unsigned stat_len() const { return m_stat_len; }
+
+    virtual Style style() const;
+    virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+    virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+    virtual std::string exactQuery() const;
+    virtual const char* lua_type_name() const;
+    virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
+    virtual int get_proc_type() const;
+    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
+
+    virtual int compare_local(const Timerange& o) const;
+    virtual bool operator==(const Type& o) const;
+
+    static Item<Timedef> create(uint32_t step_len, Unit step_unit=UNIT_SECOND);
+    static Item<Timedef> create(uint32_t step_len, Unit step_unit,
+                              uint8_t stat_type, uint32_t stat_len, Unit stat_unit=UNIT_SECOND);
+    static Item<Timedef> createFromYaml(const std::string& str);
+    static Item<Timedef> decodeMapping(const emitter::memory::Mapping& val);
+
+    /**
+     * Unit conversion for code table 4.4 GRIB2 indicator of unit of time range
+     *
+     * @param unit value to use
+     * @retval timemul
+     *   Factor to multiply to a value in the current units to obtain months or
+     *   seconds
+     * @returns
+     *   true if multiplying by timemul gives seconds, false if it gives months
+     */
+    static bool timeunit_conversion(Unit unit, int& timemul);
+
+    /**
+     * Return the suffix for the given time unit
+     *
+     * Can return NULL if unit is 255 or an invalid/unsupported value
+     */
+    static const char* timeunit_suffix(Unit unit);
+
+    static void timeunit_output(Unit unit, uint32_t val, std::ostream& out);
+
+    static bool timeunit_parse_suffix(const char*& str, Unit& unit);
+    static bool timeunit_parse(const char*& str, Unit& unit, uint32_t& val);
 };
 
 class BUFR : public Timerange

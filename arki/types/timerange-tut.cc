@@ -154,8 +154,8 @@ void to::test<4>()
 	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
 	ensure_equals(v->type(), 250u);
 	ensure_equals(v->unit(), 1u);
-	ensure_equals(v->p1(), 124);
-	ensure_equals(v->p2(), 127);
+	ensure_equals(v->p1(), 124u);
+	ensure_equals(v->p2(), 127u);
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
@@ -189,8 +189,8 @@ void to::test<5>()
 	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
 	ensure_equals(v->type(), 2u);
 	ensure_equals(v->unit(), 254u);
-	ensure_equals(v->p1(), 2u);
-	ensure_equals(v->p2(), 3u);
+	ensure_equals(v->p1(), 2);
+	ensure_equals(v->p2(), 3);
 
 	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 254, 2, 3)));
 
@@ -339,9 +339,238 @@ void to::test<10>()
 	ensure(o2 > o1);
 }
 
-// Check BUFR
+// Check Timedef with step and statistical processing
 template<> template<>
 void to::test<11>()
+{
+    using namespace timerange;
+    Item<Timedef> v = Timedef::createFromYaml("6h,2,60m");
+    ensure_equals(v->style(), Timerange::TIMEDEF);
+    ensure_equals(v->step_unit(), Timedef::UNIT_HOUR);
+    ensure_equals(v->step_len(), 6u);
+    ensure_equals(v->stat_type(), 2);
+    ensure_equals(v->stat_unit(), Timedef::UNIT_MINUTE);
+    ensure_equals(v->stat_len(), 60u);
+
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::create(6, Timedef::UNIT_HOUR, 2, 60, Timedef::UNIT_MINUTE)));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("360m, 2, 1h")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("21600s,2,3600s")));
+
+    ensure(v != timerange::Timedef::createFromYaml("5h,2,60m"));
+    ensure(v != timerange::Timedef::createFromYaml("6h"));
+    ensure(v != timerange::Timedef::createFromYaml("6h,3,60m"));
+    ensure(v != timerange::Timedef::createFromYaml("6h,2"));
+    ensure(v != timerange::Timedef::createFromYaml("6h,2,61m"));
+    ensure(v != timerange::Timedef::createFromYaml("6mo,2,60m"));
+
+    // Test encoding/decoding
+    Item<Timerange> o(v);
+    ensure_serialises(o, types::TYPE_TIMERANGE);
+
+    // Test generating a matcher expression
+    ensure_equals(v->exactQuery(), "Timedef,6h,2,60m");
+    Matcher m = Matcher::parse("timerange:" + v->exactQuery());
+    ensure(m(v));
+}
+
+// Check Timedef with step and statistical processing, in months
+template<> template<>
+void to::test<12>()
+{
+    using namespace timerange;
+    Item<Timedef> v = timerange::Timedef::createFromYaml("1y,2,3mo");
+    ensure_equals(v->style(), Timerange::TIMEDEF);
+    ensure_equals(v->step_unit(), Timedef::UNIT_YEAR);
+    ensure_equals(v->step_len(), 1u);
+    ensure_equals(v->stat_type(), 2);
+    ensure_equals(v->stat_unit(), Timedef::UNIT_MONTH);
+    ensure_equals(v->stat_len(), 3u);
+
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::create(1, Timedef::UNIT_YEAR, 2, 3, Timedef::UNIT_MONTH)));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("12mo, 2, 3mo")));
+
+    ensure(v != timerange::Timedef::createFromYaml("2y,2,3mo"));
+    ensure(v != timerange::Timedef::createFromYaml("1y"));
+    ensure(v != timerange::Timedef::createFromYaml("1y,3,3mo"));
+    ensure(v != timerange::Timedef::createFromYaml("1y,2"));
+    ensure(v != timerange::Timedef::createFromYaml("1y,2,4mo"));
+
+    // Test encoding/decoding
+    Item<Timerange> o(v);
+    ensure_serialises(o, types::TYPE_TIMERANGE);
+
+    // Test generating a matcher expression
+    ensure_equals(v->exactQuery(), "Timedef,1y,2,3mo");
+    Matcher m = Matcher::parse("timerange:" + v->exactQuery());
+    ensure(m(v));
+}
+
+// Check Timedef with step only
+template<> template<>
+void to::test<13>()
+{
+    using namespace timerange;
+    Item<Timedef> v = timerange::Timedef::createFromYaml("1d");
+    ensure_equals(v->style(), Timerange::TIMEDEF);
+    ensure_equals(v->step_unit(), Timedef::UNIT_DAY);
+    ensure_equals(v->step_len(), 1u);
+    ensure_equals(v->stat_type(), 255);
+    ensure_equals(v->stat_unit(), Timedef::UNIT_MISSING);
+    ensure_equals(v->stat_len(), 0u);
+
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::create(1, Timedef::UNIT_DAY)));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("24h")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("1440m")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("86400s")));
+
+    ensure(v != timerange::Timedef::createFromYaml("2d"));
+    ensure(v != timerange::Timedef::createFromYaml("1d,0"));
+    ensure(v != timerange::Timedef::createFromYaml("1d,0,0s"));
+    ensure(v != timerange::Timedef::createFromYaml("1mo"));
+
+    // Test encoding/decoding
+    Item<Timerange> o(v);
+    ensure_serialises(o, types::TYPE_TIMERANGE);
+
+    // Test generating a matcher expression
+    ensure_equals(v->exactQuery(), "Timedef,1d,-");
+    Matcher m = Matcher::parse("timerange:" + v->exactQuery());
+    ensure(m(v));
+}
+
+// Check Timedef with step only, in months
+template<> template<>
+void to::test<14>()
+{
+    using namespace timerange;
+    Item<Timedef> v = timerange::Timedef::createFromYaml("2ce");
+    ensure_equals(v->style(), Timerange::TIMEDEF);
+    ensure_equals(v->step_unit(), Timedef::UNIT_CENTURY);
+    ensure_equals(v->step_len(), 2u);
+    ensure_equals(v->stat_type(), 255);
+    ensure_equals(v->stat_unit(), Timedef::UNIT_MISSING);
+    ensure_equals(v->stat_len(), 0u);
+
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::create(2, Timedef::UNIT_CENTURY)));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("20de")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("200y")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("2400mo")));
+
+    ensure(v != timerange::Timedef::createFromYaml("1ce"));
+    ensure(v != timerange::Timedef::createFromYaml("2ce,0"));
+    ensure(v != timerange::Timedef::createFromYaml("2ce,0,0s"));
+    ensure(v != timerange::Timedef::createFromYaml("2d"));
+
+    // Test encoding/decoding
+    Item<Timerange> o(v);
+    ensure_serialises(o, types::TYPE_TIMERANGE);
+
+    // Test generating a matcher expression
+    ensure_equals(v->exactQuery(), "Timedef,2ce,-");
+    Matcher m = Matcher::parse("timerange:" + v->exactQuery());
+    ensure(m(v));
+}
+
+// Check Timedef2 with step, and only statistical process type
+template<> template<>
+void to::test<15>()
+{
+    using namespace timerange;
+    Item<Timedef> v = Timedef::createFromYaml("6h,2");
+    ensure_equals(v->style(), Timerange::TIMEDEF);
+    ensure_equals(v->step_unit(), Timedef::UNIT_HOUR);
+    ensure_equals(v->step_len(), 6u);
+    ensure_equals(v->stat_type(), 2);
+    ensure_equals(v->stat_unit(), Timedef::UNIT_MISSING);
+    ensure_equals(v->stat_len(), 0u);
+
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::create(6, Timedef::UNIT_HOUR, 2, 0, Timedef::UNIT_MISSING)));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("360m, 2")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("21600s,2")));
+
+    ensure(v != timerange::Timedef::createFromYaml("5h,2"));
+    ensure(v != timerange::Timedef::createFromYaml("6h"));
+    ensure(v != timerange::Timedef::createFromYaml("6h,3"));
+    ensure(v != timerange::Timedef::createFromYaml("6h,2,60m"));
+
+    // Test encoding/decoding
+    Item<Timerange> o(v);
+    ensure_serialises(o, types::TYPE_TIMERANGE);
+
+    // Test generating a matcher expression
+    ensure_equals(v->exactQuery(), "Timedef,6h,2,-");
+    Matcher m = Matcher::parse("timerange:" + v->exactQuery());
+    ensure(m(v));
+}
+
+// Check Timedef with step in months, and only statistical process type
+template<> template<>
+void to::test<16>()
+{
+    using namespace timerange;// Check Timedef with seconds
+    Item<Timedef> v = Timedef::createFromYaml("6no,2");
+    ensure_equals(v->style(), Timerange::TIMEDEF);
+    ensure_equals(v->step_unit(), Timedef::UNIT_NORMAL);
+    ensure_equals(v->step_len(), 6u);
+    ensure_equals(v->stat_type(), 2);
+    ensure_equals(v->stat_unit(), Timedef::UNIT_MISSING);
+    ensure_equals(v->stat_len(), 0u);
+
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::create(6, Timedef::UNIT_NORMAL, 2, 0, Timedef::UNIT_MISSING)));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("180y, 2")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("18de, 2")));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("2160mo, 2")));
+
+    ensure(v != timerange::Timedef::createFromYaml("5no,2"));
+    ensure(v != timerange::Timedef::createFromYaml("6no"));
+    ensure(v != timerange::Timedef::createFromYaml("6no,3"));
+    ensure(v != timerange::Timedef::createFromYaml("6no,2,60d"));
+
+    // Test encoding/decoding
+    Item<Timerange> o(v);
+    ensure_serialises(o, types::TYPE_TIMERANGE);
+
+    // Test generating a matcher expression
+    ensure_equals(v->exactQuery(), "Timedef,6no,2,-");
+    Matcher m = Matcher::parse("timerange:" + v->exactQuery());
+    ensure(m(v));
+}
+
+// Check Timedef with step and statistical processing, one in seconds and one in months
+template<> template<>
+void to::test<17>()
+{
+    using namespace timerange;
+    Item<Timedef> v = timerange::Timedef::createFromYaml("1y,2,3d");
+    ensure_equals(v->style(), Timerange::TIMEDEF);
+    ensure_equals(v->step_unit(), Timedef::UNIT_YEAR);
+    ensure_equals(v->step_len(), 1u);
+    ensure_equals(v->stat_type(), 2);
+    ensure_equals(v->stat_unit(), Timedef::UNIT_DAY);
+    ensure_equals(v->stat_len(), 3u);
+
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::create(1, Timedef::UNIT_YEAR, 2, 3, Timedef::UNIT_DAY)));
+    ensure_equals(v, Item<Timerange>(timerange::Timedef::createFromYaml("12mo, 2, 72h")));
+
+    ensure(v != timerange::Timedef::createFromYaml("2y,2,3d"));
+    ensure(v != timerange::Timedef::createFromYaml("1y"));
+    ensure(v != timerange::Timedef::createFromYaml("1y,3,3d"));
+    ensure(v != timerange::Timedef::createFromYaml("1y,2"));
+    ensure(v != timerange::Timedef::createFromYaml("1y,2,4d"));
+
+    // Test encoding/decoding
+    Item<Timerange> o(v);
+    ensure_serialises(o, types::TYPE_TIMERANGE);
+
+    // Test generating a matcher expression
+    ensure_equals(v->exactQuery(), "Timedef,1y,2,3d");
+    Matcher m = Matcher::parse("timerange:" + v->exactQuery());
+    ensure(m(v));
+}
+
+// Check BUFR
+template<> template<>
+void to::test<18>()
 {
 	Item<Timerange> o = timerange::BUFR::create(6, 1);
 	ensure_equals(o->style(), Timerange::BUFR);
@@ -369,7 +598,7 @@ void to::test<11>()
 
 // Test Lua functions
 template<> template<>
-void to::test<12>()
+void to::test<19>()
 {
 #ifdef HAVE_LUA
 	Item<Timerange> o = timerange::GRIB1::create(2, 254, 2, 3);
@@ -394,7 +623,7 @@ void to::test<12>()
 
 // Check comparisons
 template<> template<>
-void to::test<13>()
+void to::test<20>()
 {
 	ensure_compares(
 		timerange::GRIB1::create(2, 254, 2, 3),
@@ -404,7 +633,7 @@ void to::test<13>()
 
 // Test computing timedef information
 template<> template<>
-void to::test<14>()
+void to::test<21>()
 {
     int val;
     bool issec;

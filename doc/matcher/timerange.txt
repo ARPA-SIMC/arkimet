@@ -48,7 +48,7 @@ ensure_not_matches(sample, "timerange:GRIB1,2,6h")
 ensure_not_matches(sample, "timerange:GRIB1,2,6m,12m")
 
 -- GRIB2
--- Syntax: timerange:GRIB1,type,unit,p1,p2
+-- Syntax: timerange:GRIB2,type,unit,p1,p2
 -- Any of type, unit, p1 or p2 can be omitted; if omitted, any value will match
 -- Unit is given explicitly and p1,p2 do not use suffixes
 
@@ -62,6 +62,29 @@ ensure_not_matches(sample, "timerange:GRIB2,1")
 ensure_not_matches(sample, "timerange:GRIB2,0,1,5")
 ensure_not_matches(sample, "timerange:GRIB2,0,2,6")
 ensure_not_matches(sample, "timerange:GRIB2,0,0,360")
+
+
+-- Timedef
+-- Syntax: timerange:Timedef,fcstep,proctype,proclen
+--
+-- fcstep is the forecast step
+-- proctype is the type of statistical processing (use "-" for data with no
+--          statistical processing)
+-- proclen is the time duration the interval for statistical processing
+--
+-- Any of fcstep, proctype, proclen can be omitted; if omitted, any value will
+-- match
+
+sample:set(arki_timerange.timedef("6h")) -- 6-hours forecast
+
+ensure_matches(sample, "timerange:Timedef,6h")
+
+sample:set(arki_timerange.timedef("6h", 0, "3h")) -- 6-hours forecast, average over 3 hours
+ensure_matches(sample, "timerange:Timedef,6h,0,3h") -- 6hours forecast, average over 3 hours
+ensure_matches(sample, "timerange:Timedef,,0,3h") -- all averages over 3 hours
+
+ensure_not_matches(sample, "timerange:Timedef,3h")
+ensure_not_matches(sample, "timerange:Timedef,,1,3h")
 
 -- BUFR
 -- Syntax: timerange:BUFR,val

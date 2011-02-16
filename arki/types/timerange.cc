@@ -60,6 +60,7 @@ const char* traits<Timerange>::type_lua_tag = LUATAG_TIMERANGE;
 // Style constants
 const unsigned char Timerange::GRIB1;
 const unsigned char Timerange::GRIB2;
+const unsigned char Timerange::TIMEDEF;
 const unsigned char Timerange::BUFR;
 
 // Constants from meteosatlib's libgrib
@@ -154,6 +155,7 @@ Timerange::Style Timerange::parseStyle(const std::string& str)
 {
 	if (str == "GRIB1") return GRIB1;
 	if (str == "GRIB2") return GRIB2;
+	if (str == "Timedef") return TIMEDEF;
 	if (str == "BUFR") return BUFR;
 	throw wibble::exception::Consistency("parsing Timerange style", "cannot parse Timerange style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
@@ -164,6 +166,7 @@ std::string Timerange::formatStyle(Timerange::Style s)
 	{
 		case Timerange::GRIB1: return "GRIB1";
 		case Timerange::GRIB2: return "GRIB2";
+		case Timerange::TIMEDEF: return "Timedef";
 		case Timerange::BUFR: return "BUFR";
 		default:
 			std::stringstream str;
@@ -193,6 +196,23 @@ Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 			        p2   = dec.popSInt(4, "GRIB2 p2");
 			return timerange::GRIB2::create(type, unit, p1, p2);
 		}
+        case TIMEDEF: {
+            uint8_t step_unit = dec.popUInt(1, "timedef forecast step unit");
+            uint32_t step_len = 0;
+            if (step_unit != 255)
+                step_len = dec.popVarint<uint32_t>("timedef forecast step length");
+            uint8_t stat_type = dec.popUInt(1, "timedef statistical processing type");
+            uint8_t stat_unit = 255;
+            uint32_t stat_len = 0;
+            if (stat_type != 255)
+            {
+                stat_unit = dec.popUInt(1, "timedef statistical processing unit");
+                if (stat_unit != 255)
+                    stat_len = dec.popVarint<uint32_t>("timedef statistical processing length");
+            }
+            return timerange::Timedef::create(step_len, (timerange::Timedef::Unit)step_unit,
+                                            stat_type, stat_len, (timerange::Timedef::Unit)stat_unit);
+        }
 		case BUFR: {
 			uint8_t unit   = dec.popUInt(1, "BUFR unit");
 			unsigned value = dec.popVarint<unsigned>("BUFR value");
@@ -211,15 +231,25 @@ Item<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& val)
     {
         case Timerange::GRIB1: return timerange::GRIB1::decodeMapping(val);
         case Timerange::GRIB2: return timerange::GRIB2::decodeMapping(val);
+        case Timerange::TIMEDEF: return timerange::Timedef::decodeMapping(val);
         case Timerange::BUFR: return timerange::BUFR::decodeMapping(val);
         default:
             throw wibble::exception::Consistency("parsing Timerange", "unknown Timerange style " + val.get_string());
     }
 }
 
+static void skipCommasAndSpaces(const char*& str)
+{
+    // Skip commas and spaces, if any
+    while (*str && (::isspace(*str) || *str == ','))
+        ++str;
+}
+
 static int getNumber(const char * & start, const char* what)
 {
 	char* endptr;
+
+    skipCommasAndSpaces(start);
 
 	if (!*start)
 		throw wibble::exception::Consistency("parsing TimeRange", string("no ") + what);
@@ -230,9 +260,7 @@ static int getNumber(const char * & start, const char* what)
 				string("expected ") + what + ", but found \"" + start + "\"");
 	start = endptr;
 
-	// Skip commas and spaces, if any
-	while (*start && (::isspace(*start) || *start == ','))
-		++start;
+    skipCommasAndSpaces(start);
 
 	return res;
 }
@@ -415,6 +443,8 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 			skipSuffix(start);
 			return timerange::GRIB2::create(type, unit, p1, p2);
 		}
+        case Timerange::TIMEDEF:
+            return timerange::Timedef::createFromYaml(inner);
 		case Timerange::BUFR: {
 			const char* start = inner.c_str();
 			unsigned value = getNumber(start, "forecast seconds");
@@ -448,6 +478,82 @@ static int arkilua_new_grib2(lua_State* L)
 	return 1;
 }
 
+// Parse a time unit in string or number form
+static timerange::Timedef::Unit arkilua_checkunit(lua_State* L, int pos)
+{
+    switch (lua_type(L, pos))
+    {
+        case LUA_TSTRING: {
+            const char* str = lua_tostring(L, pos);
+            timerange::Timedef::Unit unit;
+            if (!timerange::Timedef::timeunit_parse_suffix(str, unit))
+                luaL_argcheck(L, 0, pos, "unit name not valid");
+            if (*str) // Trailing garbage in unit
+                luaL_argcheck(L, 0, pos, "unit name not valid");
+            return unit;
+        }
+        case LUA_TNUMBER:
+            return (timerange::Timedef::Unit)lua_tointeger(L, pos);
+        default:
+            luaL_argcheck(L, 0, pos, "unit is not string or number");
+            return timerange::Timedef::UNIT_MISSING; // This should never be reached
+    }
+}
+
+// Parse ("3h") or (3, "h") or (3, 1)
+static int arkilua_checkunit_val(lua_State* L, int pos, timerange::Timedef::Unit& unit, uint32_t& val)
+{
+    switch (lua_type(L, pos))
+    {
+        case LUA_TSTRING: {
+            const char* str = lua_tostring(L, pos);
+            if (!timerange::Timedef::timeunit_parse(str, unit, val))
+                luaL_argcheck(L, 0, pos, "value is not a number with a time range suffix");
+            if (*str) // Trailing garbage in unit
+                luaL_argcheck(L, 0, pos, "value is not a number with a time range suffix");
+            return 1;
+        }
+        case LUA_TNUMBER:
+            val = lua_tointeger(L, pos);
+            unit = arkilua_checkunit(L, pos + 1);
+            return 2;
+        default:
+            luaL_argcheck(L, 0, pos, "value is not string or number");
+            return 0; // This return shouldn't be reached
+    }
+}
+
+static int arkilua_new_timedef(lua_State* L)
+{
+    using namespace timerange;
+
+    uint32_t step_len = 0;
+    Timedef::Unit step_unit = Timedef::UNIT_SECOND;
+    int stat_type = 255;
+    uint32_t stat_len = 0;
+    Timedef::Unit stat_unit = Timedef::UNIT_MISSING;
+
+    int pos = 1;
+
+    // Parse forecast step
+    pos += arkilua_checkunit_val(L, pos, step_unit, step_len);
+
+    if (lua_gettop(L) >= pos)
+    {
+        // Parse type of statistical processing
+        stat_type = luaL_checkint(L, pos);
+        ++pos;
+
+        // Parse length of statistical processing
+        if (lua_gettop(L) >= pos)
+            pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
+    }
+
+    Item<> res = timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
+    res->lua_push(L);
+    return 1;
+}
+
 static int arkilua_new_bufr(lua_State* L)
 {
 	int value = luaL_checkint(L, 1);
@@ -463,6 +569,7 @@ void Timerange::lua_loadlib(lua_State* L)
 	static const struct luaL_reg lib [] = {
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
+		{ "timedef", arkilua_new_timedef },
 		{ "bufr", arkilua_new_bufr },
 		{ NULL, NULL }
 	};
@@ -474,6 +581,7 @@ namespace timerange {
 
 static TypeCache<GRIB1> cache_grib1;
 static TypeCache<GRIB2> cache_grib2;
+static TypeCache<Timedef> cache_timedef;
 static TypeCache<BUFR> cache_bufr;
 
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
@@ -976,7 +1084,6 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 	op2 *= timemul;
 }
 
-
 Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
 
 void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
@@ -1077,7 +1184,7 @@ bool GRIB2::get_forecast_step(int& step, bool& is_seconds) const
 
 int GRIB2::get_proc_type() const
 {
-    return m_type;
+    return -1;
 }
 
 bool GRIB2::get_proc_duration(int& duration, bool& is_seconds) const
@@ -1094,6 +1201,439 @@ Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed long p1
 	res->m_p2 = p2;
 	return cache_grib2.intern(res);
 }
+
+Timerange::Style Timedef::style() const { return Timerange::TIMEDEF; }
+
+void Timedef::encodeWithoutEnvelope(Encoder& enc) const
+{
+    Timerange::encodeWithoutEnvelope(enc);
+
+    enc.addUInt(m_step_unit, 1);
+    if (m_step_unit != 255)
+        enc.addVarint(m_step_len);
+
+    enc.addUInt(m_stat_type, 1);
+    if (m_stat_type != 255)
+    {
+        enc.addUInt(m_stat_unit, 1);
+        if (m_stat_unit != 255)
+            enc.addVarint(m_stat_len);
+    }
+}
+
+std::ostream& Timedef::writeToOstream(std::ostream& o) const
+{
+    utils::SaveIOState sios(o);
+
+    o << formatStyle(style()) << "("
+      << setfill('0') << internal;
+
+    timeunit_output(m_step_unit, m_step_len, o);
+
+    if (m_stat_type != 255)
+    {
+        o << ", " << (unsigned)m_stat_type;
+        if (m_stat_unit != UNIT_MISSING)
+        {
+            o << ", ";
+            timeunit_output(m_stat_unit, m_stat_len, o);
+        }
+    }
+    o << ")";
+
+    return o;
+}
+
+Item<Timedef> Timedef::createFromYaml(const std::string& encoded)
+{
+    const char* str = encoded.c_str();
+
+    Unit step_unit;
+    uint32_t step_len;
+    if (!timeunit_parse(str, step_unit, step_len))
+        throw wibble::exception::Consistency("parsing Timerange", "cannot parse time range step");
+
+    int stat_type;
+    Unit stat_unit = UNIT_MISSING;
+    uint32_t stat_len = 0;
+
+    if (!*str)
+        stat_type = 255;
+    else
+    {
+        stat_type = getNumber(str, "type of statistical processing");
+        if (*str && !timeunit_parse(str, stat_unit, stat_len))
+            throw wibble::exception::Consistency("parsing Timerange", "cannot parse length of statistical processing");
+    }
+
+    return timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
+}
+
+
+void Timedef::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Timerange::serialiseLocal(e, f);
+    e.add("sl", (int)m_step_len);
+    e.add("su", (int)m_step_unit);
+    if (m_stat_type != 255)
+    {
+        e.add("pt", (int)m_stat_type);
+        if (m_stat_unit != UNIT_MISSING)
+        {
+            e.add("pl", (int)m_stat_len);
+            e.add("pu", (int)m_stat_unit);
+        }
+    }
+}
+Item<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
+{
+    using namespace emitter::memory;
+
+    uint32_t step_len = val["sl"].want_int("parsing Timedef forecast step length");
+    Timedef::Unit step_unit = (Timedef::Unit)val["su"].want_int("parsing Timedef forecast step units");
+
+    int stat_type = 255;
+    uint32_t stat_len = 0;
+    Timedef::Unit stat_unit = Timedef::UNIT_MISSING;
+
+    const Node& pt = val["pt"];
+    if (pt.is_int())
+    {
+        stat_type = pt.get_int();
+
+        const Node& pu = val["pu"];
+        if (pu.is_int())
+        {
+            stat_unit = (Timedef::Unit)pu.get_int();
+            stat_len = val["pl"].want_int("parsing Timedef length of interval of statistical processing");
+        }
+    }
+
+    return timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
+}
+
+std::string Timedef::exactQuery() const
+{
+    stringstream o;
+    o << formatStyle(style()) << ",";
+    if (m_step_unit == 255)
+        o << "-,";
+    else
+        o << m_step_len << timeunit_suffix(m_step_unit) << ",";
+    if (m_stat_type == 255)
+        o << "-";
+    else
+    {
+        o << (unsigned)m_stat_type << ",";
+        if (m_stat_unit == 255)
+            o << "-";
+        else
+            o << m_stat_len << timeunit_suffix(m_stat_unit);
+    }
+    return o.str();
+}
+
+const char* Timedef::lua_type_name() const { return "arki.types.timerange.grib2"; }
+
+bool Timedef::lua_lookup(lua_State* L, const std::string& name) const
+{
+    if (name == "step_unit")
+        lua_pushnumber(L, m_step_unit);
+    else if (name == "step_len")
+        lua_pushnumber(L, m_step_len);
+    else if (name == "stat_type")
+        lua_pushnumber(L, m_stat_type);
+    else if (name == "stat_unit")
+        lua_pushnumber(L, m_stat_unit);
+    else if (name == "stat_len")
+        lua_pushnumber(L, m_stat_len);
+    else
+        return Timerange::lua_lookup(L, name);
+    return true;
+}
+
+int Timedef::compare_local(const Timerange& o) const
+{
+    // We should be the same kind, so upcast
+    const Timedef* v = dynamic_cast<const Timedef*>(&o);
+    if (!v)
+        throw wibble::exception::Consistency(
+                "comparing metadata types",
+                string("second element claims to be a Timedef Timerange, but is a ") + typeid(&o).name() + " instead");
+
+    // Normalise step time units and compare steps
+    if (m_step_unit == 255 && v->m_step_unit != 255) return -1;
+    if (m_step_unit != 255 && v->m_step_unit == 255) return 1;
+    if (m_step_unit != 255)
+    {
+        int timemul1;
+        bool is1 = timeunit_conversion(m_step_unit, timemul1);
+        int timemul2;
+        bool is2 = timeunit_conversion(v->m_step_unit, timemul2);
+        if (is1 && !is2) return -1;
+        if (is2 && !is1) return 1;
+        if (int res = m_step_len * timemul1 - v->m_step_len * timemul2) return res;
+    }
+
+    // Compare type of statistical processing
+    if (int res = m_stat_type - v->m_stat_type) return res;
+
+    // Normalise stat units and compare stat processing length
+    if (m_stat_unit == 255 && v->m_stat_unit != 255) return -1;
+    if (m_stat_unit != 255 && v->m_stat_unit == 255) return 1;
+    if (m_stat_unit != 255)
+    {
+        int timemul1;
+        bool is1 = timeunit_conversion(m_stat_unit, timemul1);
+        int timemul2;
+        bool is2 = timeunit_conversion(v->m_stat_unit, timemul2);
+        if (is1 && !is2) return -1;
+        if (is2 && !is1) return 1;
+        if (int res = m_stat_len * timemul1 - v->m_stat_len * timemul2) return res;
+    }
+
+    return 0;
+}
+
+bool Timedef::operator==(const Type& o) const
+{
+    const Timedef* v = dynamic_cast<const Timedef*>(&o);
+    if (!v) return false;
+
+    // Normalise step time units and compare steps
+    if (m_step_unit == UNIT_MISSING && v->m_step_unit != UNIT_MISSING) return false;
+    if (m_step_unit != UNIT_MISSING && v->m_step_unit == UNIT_MISSING) return false;
+    if (m_step_unit != UNIT_MISSING)
+    {
+        int timemul1;
+        bool is1 = timeunit_conversion(m_step_unit, timemul1);
+        int timemul2;
+        bool is2 = timeunit_conversion(v->m_step_unit, timemul2);
+        if (is1 != is2) return false;
+        if (m_step_len * timemul1 != v->m_step_len * timemul2) return false;
+    }
+
+    // Compare type of statistical processing
+    if (m_stat_type != v->m_stat_type) return false;
+
+    // Normalise stat units and compare stat processing length
+    if (m_stat_unit == UNIT_MISSING && v->m_stat_unit != UNIT_MISSING) return false;
+    if (m_stat_unit != UNIT_MISSING && v->m_stat_unit == UNIT_MISSING) return false;
+    if (m_stat_unit != UNIT_MISSING)
+    {
+        int timemul1;
+        bool is1 = timeunit_conversion(m_stat_unit, timemul1);
+        int timemul2;
+        bool is2 = timeunit_conversion(v->m_stat_unit, timemul2);
+        if (is1 != is2) return false;
+        if (m_stat_len * timemul1 != v->m_stat_len * timemul2) return false;
+    }
+
+    return true;
+}
+
+bool Timedef::get_forecast_step(int& step, bool& is_seconds) const
+{
+    if (m_step_unit == UNIT_MISSING) return false;
+
+    int timemul;
+    is_seconds = timeunit_conversion(m_step_unit, timemul);
+    step = m_step_len * timemul;
+    return true;
+}
+
+int Timedef::get_proc_type() const
+{
+    if (m_stat_type == 255)
+        return -1;
+    return m_stat_type;
+}
+
+bool Timedef::get_proc_duration(int& duration, bool& is_seconds) const
+{
+    if (m_stat_type == 255 || m_stat_unit == UNIT_MISSING) return false;
+
+    int timemul;
+    is_seconds = timeunit_conversion(m_stat_unit, timemul);
+    duration = m_stat_len * timemul;
+    return true;
+}
+
+Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit)
+{
+    Timedef* res = new Timedef;
+    res->m_step_len = step_len;
+    res->m_step_unit = step_unit;
+    res->m_stat_type = 255;
+    res->m_stat_len = 0;
+    res->m_stat_unit = UNIT_MISSING;
+    return cache_timedef.intern(res);
+}
+
+Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit,
+                          uint8_t stat_type, uint32_t stat_len, Unit stat_unit)
+{
+    Timedef* res = new Timedef;
+    res->m_step_len = step_len;
+    res->m_step_unit = step_unit;
+    res->m_stat_type = stat_type;
+    res->m_stat_len = stat_len;
+    res->m_stat_unit = stat_unit;
+    return cache_timedef.intern(res);
+}
+
+bool Timedef::timeunit_conversion(Unit unit, int& timemul)
+{
+    bool is_seconds = true;
+    timemul = 1;
+    switch (unit)
+    {
+        case UNIT_MINUTE: timemul = 60; break;
+        case UNIT_HOUR: timemul = 3600; break;
+        case UNIT_DAY: timemul = 3600*24; break;
+        case UNIT_MONTH: timemul = 1; is_seconds = false; break;
+        case UNIT_YEAR: timemul = 12; is_seconds = false; break;
+        case UNIT_DECADE: timemul = 120; is_seconds = false; break;
+        case UNIT_NORMAL: timemul = 12*30; is_seconds = false; break;
+        case UNIT_CENTURY: timemul = 12*100; is_seconds = false; break;
+        case UNIT_3HOURS: timemul = 3600*3; break;
+        case UNIT_6HOURS: timemul = 3600*6; break;
+        case UNIT_12HOURS: timemul = 3600*12; break;
+        case UNIT_SECOND: timemul = 1; break;
+        case UNIT_MISSING:
+            throw wibble::exception::Consistency("normalising time", "time unit is missing (255)");
+        default:
+            throw wibble::exception::Consistency("normalising time", "time unit is unknown ("+str::fmt((int)unit)+")");
+    }
+    return is_seconds;
+}
+
+void Timedef::timeunit_output(Unit unit, uint32_t val, std::ostream& out)
+{
+    out << val << timeunit_suffix(unit);
+}
+
+bool Timedef::timeunit_parse_suffix(const char*& str, Unit& unit)
+{
+    if (!*str) return false;
+
+    switch (*str)
+    {
+        case 'm':
+            ++str;
+            switch (*str)
+            {
+                case 'o': ++str; unit = UNIT_MONTH; break;
+                default: unit = UNIT_MINUTE; break;
+            }
+            return true;
+        case 'h':
+            ++str;
+            switch (*str)
+            {
+                case '3': ++str; unit = UNIT_3HOURS; break;
+                case '6': ++str; unit = UNIT_6HOURS; break;
+                case '1':
+                    if (*(str+1) && *(str+1) == '2')
+                    {
+                        str += 2;
+                        unit = UNIT_12HOURS;
+                        break;
+                    }
+                    // Fallover to the next case
+                default: unit = UNIT_HOUR; break;
+            }
+            return true;
+        case 'd':
+            ++str;
+            switch (*str)
+            {
+                case 'e': ++str; unit = UNIT_DECADE; break;
+                default: unit = UNIT_DAY; break;
+            }
+            return true;
+        case 'y': ++str; unit = UNIT_YEAR; return true;
+        case 'n':
+            if (*(str+1) && *(str+1) == 'o')
+            {
+                str += 2;
+                unit = UNIT_NORMAL;
+                return true;
+            }
+            return false;
+        case 'c':
+            if (*(str+1) && *(str+1) == 'e')
+            {
+                str += 2;
+                unit = UNIT_CENTURY;
+                return true;
+            }
+            return false;
+        case 's': ++str; unit = UNIT_SECOND; return true;
+    }
+    return false;
+}
+
+bool Timedef::timeunit_parse(const char*& str, Unit& unit, uint32_t& val)
+{
+    if (!*str)
+        return false;
+
+    skipCommasAndSpaces(str);
+
+    if (str[0] == '-')
+    {
+        unit = UNIT_MISSING;
+        val = 0;
+
+        skipCommasAndSpaces(str);
+        return true;
+    }
+
+    char* endptr;
+    val = strtoul(str, &endptr, 10);
+    if (endptr == str)
+        return false;
+
+    str = endptr;
+
+    if (!timeunit_parse_suffix(str, unit))
+    {
+        if (val == 0)
+        {
+            unit = UNIT_SECOND;
+            return true;
+        }
+        return false;
+    }
+
+    skipCommasAndSpaces(str);
+    return true;
+}
+
+const char* Timedef::timeunit_suffix(Unit unit)
+{
+    switch (unit)
+    {
+        case UNIT_MINUTE: return "m";
+        case UNIT_HOUR: return "h";
+        case UNIT_DAY: return "d";
+        case UNIT_MONTH: return "mo";
+        case UNIT_YEAR: return "y";
+        case UNIT_DECADE: return "de";
+        case UNIT_NORMAL: return "no";
+        case UNIT_CENTURY: return "ce";
+        case UNIT_3HOURS: return "h3";
+        case UNIT_6HOURS: return "h6";
+        case UNIT_12HOURS: return "h12";
+        case UNIT_SECOND: return "s";
+        case UNIT_MISSING:
+            throw wibble::exception::Consistency("finding time unit suffix", "time unit is missing (255)");
+        default:
+            throw wibble::exception::Consistency("finding time unit suffix", "time unit is unknown ("+str::fmt((int)unit)+")");
+    }
+}
+
 
 bool BUFR::is_seconds() const
 {
@@ -1279,9 +1819,10 @@ Item<BUFR> BUFR::create(unsigned value, unsigned char unit)
 
 static void debug_interns()
 {
-	fprintf(stderr, "timerange GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
-	fprintf(stderr, "timerange GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
-	fprintf(stderr, "timerange BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
+    fprintf(stderr, "timerange GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
+    fprintf(stderr, "timerange GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
+    fprintf(stderr, "timerange Timedef: sz %zd reused %zd\n", cache_timedef.size(), cache_timedef.reused());
+    fprintf(stderr, "timerange BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
 }
 
 }

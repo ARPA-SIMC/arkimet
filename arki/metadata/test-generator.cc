@@ -78,7 +78,7 @@ void Generator::defaults_grib2()
     add_if_missing(types::TYPE_ORIGIN, "GRIB2(250, 200, 0, 1, 2)");
     add_if_missing(types::TYPE_PRODUCT, "GRIB2(250, 0, 1, 2)");
     add_if_missing(types::TYPE_LEVEL, "GRIB2S(103, 0, 10)");
-    add_if_missing(types::TYPE_TIMERANGE, "GRIB2(11, 1, 3h, 3h)");
+    add_if_missing(types::TYPE_TIMERANGE, "Timedef(3h, 0, 3h)");
     add_if_missing(types::TYPE_REFTIME, "2010-06-01T00:00:00Z");
     add_if_missing(types::TYPE_AREA, "GRIB(Ni=511, Nj=415, latfirst=-16125000, latlast=9750000, latp=-40000000, lonfirst=344250000, lonlast=16125000, lonp=10000000, rot=0, tn=1)");
     add_if_missing(types::TYPE_PRODDEF, "GRIB(mc=ti, mt=0, pf=1, tf=16, ty=3)");
