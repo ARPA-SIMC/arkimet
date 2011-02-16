@@ -640,12 +640,11 @@ void to::test<21>()
 
     {
         // GRIB1, forecast at +60min
-        Item<Timerange> tr(timerange::GRIB1::create(1, 0, 60, 0));
+        Item<Timerange> tr(timerange::GRIB1::create(0, 0, 60, 0));
 
         ensure(tr->get_forecast_step(val, issec));
         ensure_equals(val, 3600);
         ensure_equals(issec, true);
-        ensure(tr->get_proc_type());
 
         ensure_equals(tr->get_proc_type(), 254);
 

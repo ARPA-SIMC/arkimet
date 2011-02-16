@@ -242,7 +242,7 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-    md.set(timerange::GRIB1::create(1, 0, 60, 0));
+    md.set(timerange::GRIB1::create(0, 0, 60, 0));
     ensure_matches("timerange:Timedef,1h", md);
     ensure_matches("timerange:Timedef,1h,254", md);
     ensure_matches("timerange:Timedef,60m,254,0", md);
