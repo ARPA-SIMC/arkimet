@@ -1463,7 +1463,7 @@ Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit)
 {
     Timedef* res = new Timedef;
     res->m_step_len = step_len;
-    res->m_step_unit = step_unit;
+    res->m_step_unit = step_unit == UNIT_MISSING ? UNIT_MISSING : step_len == 0 ? UNIT_SECOND : step_unit;
     res->m_stat_type = 255;
     res->m_stat_len = 0;
     res->m_stat_unit = UNIT_MISSING;
@@ -1475,10 +1475,10 @@ Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit,
 {
     Timedef* res = new Timedef;
     res->m_step_len = step_len;
-    res->m_step_unit = step_unit;
+    res->m_step_unit = step_unit == UNIT_MISSING ? UNIT_MISSING : step_len == 0 ? UNIT_SECOND : step_unit;
     res->m_stat_type = stat_type;
     res->m_stat_len = stat_len;
-    res->m_stat_unit = stat_unit;
+    res->m_stat_unit = stat_unit == UNIT_MISSING ? UNIT_MISSING : stat_len == 0 ? UNIT_SECOND : stat_unit;
     return cache_timedef.intern(res);
 }
 
