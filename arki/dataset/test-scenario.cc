@@ -127,6 +127,7 @@ struct Ondisk2Scenario : public Scenario
             throw wibble::exception::Consistency(
                     str::fmtf("checking that only %d files have been archived", expected_archived),
                     "archive output is: " + packlog.str());
+        ds->flush();
     }
 
     /// Rename the 'last' archive to the given name
@@ -172,6 +173,7 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
 
         Importer importer(*ds);
         scan::scan("inbound/test.grib1", importer);
+        ds->flush();
 
         // Run a check to remove new dataset marker
         stringstream checklog;
@@ -209,6 +211,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
             gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT00:00:00Z", i));
         Importer importer(*ds);
         gen.generate(importer);
+        ds->flush();
 
         // Run a check to remove new dataset marker
         stringstream checklog;
@@ -261,6 +264,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
             gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT00:00:00Z", i));
         Importer importer(*ds);
         gen.generate(importer);
+        ds->flush();
 
         // Run a check to remove new dataset marker
         stringstream checklog;
