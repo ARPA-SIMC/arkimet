@@ -9,35 +9,29 @@ local pollution_codes = {
 }
 
 function scan(msg, md)
-	area = {}
-	lat = msg:find('latitude')
-	lon = msg:find('longitude')
-	blo = msg:find('block')
-	sta = msg:find('station')
-	id = msg:find('ident')
-	gems = msg:find('B01214', 257, nil, nil, nil, nil, nil, nil)
-	name = msg:find('B01019', 257, nil, nil, nil, nil, nil, nil)
+    local area = bufr_read_area_fixed(msg)
+    if area then md:set(arki_area.grib(area)) end
 
-	-- Look for pollutant type
-	polltype = nil
-	msg:foreach(function(ctx)
-		if ctx:pind() ~= 257 and polltype == nil then
-			ctx:foreach(function(var)
-				if polltype == nil then
-					polltype = pollution_codes[var:code()]
-				end
-			end)
-		end
-	end)
+    local proddef = bufr_read_proddef(msg)
+    gems = msg:find('B01214', 257, nil, nil, nil, nil, nil, nil)
+    name = msg:find('B01019', 257, nil, nil, nil, nil, nil, nil)
+    if gems or name then
+        if proddef == nil then proddef = {} end
+        if gems then proddef.gems = gems:enqc() end
+        if name then proddef.name = name:enqc() end
+    end
+    if proddef then md:set(arki_proddef.grib(proddef)) end
 
-	if lat then area.lat = lat:enqi() end
-	if lon then area.lon = lon:enqi() end
-	if blo then area.blo = blo:enqi() end
-	if sta then area.sta = sta:enqi() end
-	if id then area.id = id:enqc() end
-	if gems then area.gems = gems:enqc() end
-	if name then area.name = name:enqc() end
-	md:set(arki_area.grib(area))
-
-	if polltype ~= nil then md:set(md.product:addValues{p=polltype}) end
+    -- Look for pollutant type
+    polltype = nil
+    msg:foreach(function(ctx)
+        if ctx:pind() ~= 257 and polltype == nil then
+            ctx:foreach(function(var)
+                if polltype == nil then
+                    polltype = pollution_codes[var:code()]
+                end
+            end)
+        end
+    end)
+    if polltype ~= nil then md:set(md.product:addValues{p=polltype}) end
 end

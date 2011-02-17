@@ -86,12 +86,11 @@ void to::test<1>()
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2005, 12, 1, 18, 0, 0))));
 
-	// Check area
-	Item<area::GRIB> area = md.get(types::TYPE_AREA).upcast<area::GRIB>();
-	ensure_equals(area->values().get("lat")->toString(), "4153000");
-	ensure_equals(area->values().get("lon")->toString(), "2070000");
-	ensure_equals(area->values().get("blo")->toString(), "13");
-	ensure_equals(area->values().get("sta")->toString(), "577");
+    // Check area
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4153000, lon=2070000)"));
+
+    // Check proddef
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=13, sta=577)"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -296,6 +295,7 @@ void to::test<3>()
 }
 
 // Test scanning a BUFR file that can only be decoded partially
+// (note: it can now be fully decoded)
 template<> template<>
 void to::test<4>()
 {
@@ -381,9 +381,11 @@ void to::test<5>()
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2010, 8, 8, 23, 0, 0))));
 
-	// Check area
-	ensure(md.has(types::TYPE_AREA));
-	ensure_equals(md.get<Area>(), Area::decodeString("GRIB(gems=IT0002, lat=4601194, lon=826889, name=NO_3118_PIEVEVERGONTE)"));
+    // Check area
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4601194, lon=826889)"));
+
+    // Check proddef
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(gems=IT0002, name=NO_3118_PIEVEVERGONTE)"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -462,6 +464,17 @@ void to::test<10>()
     ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=2DPCV2RA)"));
 }
 
+// Test scanning a GTS synop
+template<> template<>
+void to::test<11>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/synop-gts.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4586878, lon=717080)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=6, sta=717)"));
+}
 }
 
 // vim:set ts=4 sw=4:

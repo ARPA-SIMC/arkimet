@@ -515,6 +515,8 @@ static int arkilua_checkunit_val(lua_State* L, int pos, timerange::Timedef::Unit
         }
         case LUA_TNUMBER:
             val = lua_tointeger(L, pos);
+            if (lua_gettop(L) == pos && val == 0)
+                return 1;
             unit = arkilua_checkunit(L, pos + 1);
             return 2;
         default:

@@ -36,6 +36,20 @@ namespace bufr {
 
 BufrLua::BufrLua()
 {
+    // Load common library functions, if they exist
+    string dirname = runtime::rcDirName("scan-bufr", "ARKI_SCAN_BUFR");
+    string fname = str::joinpath(dirname, "common.lua");
+    if (sys::fs::access(fname, F_OK))
+    {
+        if (luaL_dofile(L, fname.c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            string error = lua_tostring(L, -1);
+            // Pop the error from the stack
+            lua_pop(L, 1);
+            throw wibble::exception::Consistency("parsing " + fname, error);
+        }
+    }
 }
 
 BufrLua::~BufrLua()
