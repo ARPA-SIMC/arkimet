@@ -713,6 +713,29 @@ void to::test<7>()
 	ensure(not scanner.next(md));
 }
 
+// Scan a GRIB2 with experimental UTM areas
+template<> template<>
+void to::test<8>()
+{
+    Metadata md;
+    scan::Grib scanner;
+    scanner.open("inbound/calmety_20110215.grib2");
+    ensure(scanner.next(md));
+
+    ensure_equals(md.get<Origin>(), Origin::decodeString("GRIB2(00200, 00000, 000, 000, 203)"));
+    ensure_equals(md.get<Product>(), Product::decodeString("GRIB2(200, 0, 200, 33)"));
+    ensure_equals(md.get<Level>(), Level::decodeString("GRIB2S(103, 0, 10)"));
+    ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s)"));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4586878, lon=717080)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=6, sta=717)"));
+    ensure_equals(md.get<Reftime>(), Reftime::decodeString("2010-05-24 12:00:00"));
+    ensure_equals(md.get<Run>(), Run::decodeString("MINUTE(12)"));
+
+    // No more gribs
+    ensure(not scanner.next(md));
+}
+
+
 }
 
 // vim:set ts=4 sw=4:
