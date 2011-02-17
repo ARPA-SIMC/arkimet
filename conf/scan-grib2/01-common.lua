@@ -47,7 +47,7 @@ function scan(md)
         if tr_sp ~= nil and tr_spu ~= nil and tr_spl ~= nil then
             md:set(arki_timerange.timedef(tr_ft, tr_ftu, tr_sp, tr_spl, tr_spu))
         else
-            md:set(arki_timerange.grib2(tr_ft, tr_ftu))
+            md:set(arki_timerange.timedef(tr_ft, tr_ftu))
         end
     end
 
