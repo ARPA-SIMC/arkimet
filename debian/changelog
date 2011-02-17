@@ -1,3 +1,13 @@
+arkimet (0.57-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - New 'Timedef' timerange metadata style, used by BUFR and GRIB2
+     - New 'Timedef' timerange matcher, working on GRIB1, Timedef and BUFR
+       metadata items
+     - Refactoring and fine tuning of BUFR scanning
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 17 Feb 2011 17:39:26 +0000
+
 arkimet (0.56-1) UNRELEASED; urgency=low
 
   * New upstream version
