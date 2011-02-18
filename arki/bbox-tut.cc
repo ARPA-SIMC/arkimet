@@ -272,6 +272,37 @@ void to::test<6>()
 #endif
 }
 
+// Experimental UTM areas
+template<> template<>
+void to::test<7>()
+{
+#ifdef HAVE_GEOS
+    BBox bbox;
+    Item<types::Area> area = types::Area::decodeString("GRIB(latfirst=557532704, latlast=812532704, lonfirst=402500000, lonlast=847500000, tn=32768, utm=1)");
+
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
+    //cerr <<" AREA " << area << endl;
+
+    ensure(g.get() != 0);
+    ensure_equals(g->getNumPoints(), 5u);
+    ensure_equals(g->getGeometryType(), "Polygon");
+    //ensure_equals(g->getNumGeometries(), 1u);
+    //ensure(g->isRectangle());
+    ensure_equals(g->getDimension(), 2);
+
+    auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    ensure_equals(cs->getAt(0).x, 11.0);
+    ensure_equals(cs->getAt(0).y, 45.0);
+    ensure_equals(cs->getAt(1).x, 11.0);
+    ensure_equals(cs->getAt(1).y, 46.0);
+    ensure_equals(cs->getAt(2).x, 12.0);
+    ensure_equals(cs->getAt(2).y, 46.0);
+    ensure_equals(cs->getAt(3).x, 12.0);
+    ensure_equals(cs->getAt(3).y, 45.0);
+    ensure_equals(cs->getAt(4).x, 11.0);
+    ensure_equals(cs->getAt(4).y, 45.0);
+#endif
+}
 
 }
 

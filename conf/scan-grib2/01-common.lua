@@ -62,25 +62,32 @@ function scan(md)
 	-- Area
 	local area = {}
 	area.tn = grib.gridDefinitionTemplateNumber
+    if area.tn == 32768 then
+        area.utm = 1
+        area.latfirst = grib.northingOfFirstGridPoint * 1000
+        area.lonfirst = grib.eastingOfFirstGridPoint * 1000
+        area.latlast = grib.northingOfLastGridPoint * 1000
+        area.lonlast = grib.eastingOfLastGridPoint * 1000
+    else
+        area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
+        area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
 
-	area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
-	area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
-
-	if grib.numberOfPointsAlongAParallel then
-		area.Ni = grib.numberOfPointsAlongAParallel
-		area.Nj = grib.numberOfPointsAlongAMeridian
-		area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000000
-		area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000000
-	end
-	if grib.numberOfPointsAlongXAxis then
-		area.Ni = grib.numberOfPointsAlongXAxis
-		area.Nj = grib.numberOfPointsAlongYAxis
-	end
-	if grib.angleOfRotationInDegrees then
-		area.rot = grib.angleOfRotationInDegrees * 1000000
-		area.latp = grib.latitudeOfSouthernPoleInDegrees * 1000000
-		area.lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000
-	end
+        if grib.numberOfPointsAlongAParallel then
+            area.Ni = grib.numberOfPointsAlongAParallel
+            area.Nj = grib.numberOfPointsAlongAMeridian
+            area.latlast = grib.latitudeOfLastGridPointInDegrees * 1000000
+            area.lonlast = grib.longitudeOfLastGridPointInDegrees * 1000000
+        end
+        if grib.numberOfPointsAlongXAxis then
+            area.Ni = grib.numberOfPointsAlongXAxis
+            area.Nj = grib.numberOfPointsAlongYAxis
+        end
+        if grib.angleOfRotationInDegrees then
+            area.rot = grib.angleOfRotationInDegrees * 1000000
+            area.latp = grib.latitudeOfSouthernPoleInDegrees * 1000000
+            area.lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000
+        end
+    end
 	md:set(arki_area.grib(area))
 
 	-- Proddef
