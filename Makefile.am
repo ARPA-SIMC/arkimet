@@ -39,6 +39,7 @@ dist_conf_DATA = conf/match-alias.conf
 dist_sg1conf_DATA = conf/scan-grib1/01-common.lua
 dist_sg2conf_DATA = conf/scan-grib2/01-common.lua
 dist_sbconf_DATA = \
+	conf/scan-bufr/common.lua \
 	conf/scan-bufr/acars.lua \
 	conf/scan-bufr/airep.lua \
 	conf/scan-bufr/amdar.lua \
