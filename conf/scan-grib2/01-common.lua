@@ -64,10 +64,13 @@ function scan(md)
 	area.tn = grib.gridDefinitionTemplateNumber
     if area.tn == 32768 then
         area.utm = 1
-        area.latfirst = grib.northingOfFirstGridPoint * 1000
-        area.lonfirst = grib.eastingOfFirstGridPoint * 1000
-        area.latlast = grib.northingOfLastGridPoint * 1000
-        area.lonlast = grib.eastingOfLastGridPoint * 1000
+        area.latfirst = grib.northingOfFirstGridPoint
+        area.lonfirst = grib.eastingOfFirstGridPoint
+        area.latlast = grib.northingOfLastGridPoint
+        area.lonlast = grib.eastingOfLastGridPoint
+        area.fe = grib.falseEasting
+        area.fn = grib.falseNorthing
+        area.zone = grib.zone
     else
         area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
         area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000

@@ -278,7 +278,7 @@ void to::test<7>()
 {
 #ifdef HAVE_GEOS
     BBox bbox;
-    Item<types::Area> area = types::Area::decodeString("GRIB(latfirst=557532704, latlast=812532704, lonfirst=402500000, lonlast=847500000, tn=32768, utm=1)");
+    Item<types::Area> area = types::Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
 
     auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
     //cerr <<" AREA " << area << endl;
@@ -291,16 +291,16 @@ void to::test<7>()
     ensure_equals(g->getDimension(), 2);
 
     auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-    ensure_equals(cs->getAt(0).x, 11.0);
-    ensure_equals(cs->getAt(0).y, 45.0);
-    ensure_equals(cs->getAt(1).x, 11.0);
-    ensure_equals(cs->getAt(1).y, 46.0);
-    ensure_equals(cs->getAt(2).x, 12.0);
-    ensure_equals(cs->getAt(2).y, 46.0);
-    ensure_equals(cs->getAt(3).x, 12.0);
-    ensure_equals(cs->getAt(3).y, 45.0);
-    ensure_equals(cs->getAt(4).x, 11.0);
-    ensure_equals(cs->getAt(4).y, 45.0);
+    ensure_equals(floor(cs->getAt(0).x * 1000), 13996);
+    ensure_equals(floor(cs->getAt(0).y * 1000), 43718);
+    ensure_equals(floor(cs->getAt(1).x * 1000), 19453);
+    ensure_equals(floor(cs->getAt(1).y * 1000), 43346);
+    ensure_equals(floor(cs->getAt(2).x * 1000), 19868);
+    ensure_equals(floor(cs->getAt(2).y * 1000), 45602);
+    ensure_equals(floor(cs->getAt(3).x * 1000), 14198);
+    ensure_equals(floor(cs->getAt(3).y * 1000), 46004);
+    ensure_equals(floor(cs->getAt(4).x * 1000), 13996);
+    ensure_equals(floor(cs->getAt(4).y * 1000), 43718);
 #endif
 }
 

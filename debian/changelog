@@ -1,3 +1,10 @@
+arkimet (0.58-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Scan and compute bounding boxes for experimental UTM GRIB2s
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 22 Feb 2011 15:55:33 +0000
+
 arkimet (0.57-1) UNRELEASED; urgency=low
 
   * New upstream version

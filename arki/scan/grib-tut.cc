@@ -726,7 +726,7 @@ void to::test<8>()
     ensure_equals(md.get<Product>(), Product::decodeString("GRIB2(200, 0, 200, 33)"));
     ensure_equals(md.get<Level>(), Level::decodeString("GRIB2S(103, 0, 10)"));
     ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s)"));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(latfirst=557532704, latlast=812532704, lonfirst=402500000, lonlast=847500000, tn=32768, utm=1)"));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)"));
     ensure_equals(md.has(types::TYPE_PRODDEF), false);
     ensure_equals(md.get<Reftime>(), Reftime::decodeString("2011-02-15T00:00:00Z"));
     ensure_equals(md.get<Run>(), Run::decodeString("MINUTE(0)"));
