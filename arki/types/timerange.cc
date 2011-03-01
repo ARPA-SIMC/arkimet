@@ -157,7 +157,7 @@ Timerange::Style Timerange::parseStyle(const std::string& str)
 	if (str == "GRIB2") return GRIB2;
 	if (str == "Timedef") return TIMEDEF;
 	if (str == "BUFR") return BUFR;
-	throw wibble::exception::Consistency("parsing Timerange style", "cannot parse Timerange style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
+	throw wibble::exception::Consistency("parsing Timerange style", "cannot parse Timerange style '"+str+"': only GRIB1, GRIB2, Timedef and BUFR are supported");
 }
 
 std::string Timerange::formatStyle(Timerange::Style s)
