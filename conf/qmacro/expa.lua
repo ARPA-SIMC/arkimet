@@ -125,9 +125,14 @@ function QueryChunk:setupgq(gq)
 
 	-- Consolidate in the end
 	gq:consolidate()
+	if debug then
+		io.stderr:write("Master query: ", tostring(gq:mergedquery()), "\n")
+		io.stderr:write("Result space:\n")
+		io.stderr:write(gq:dump(), "\n")
+	end
 end
 
-function QueryChunk:queryData(cons)
+function QueryChunk:checkData(cons)
 	for idx, dsname in ipairs(self:datasets()) do
 		if verbose then io.stderr:write("Trying query on ", dsname, "\n") end
 
@@ -149,24 +154,23 @@ function QueryChunk:queryData(cons)
 			-- print (query:expanded())
 		
 			-- Query dataset storing results
-			mds = {}
+			if self.mds == nil then 
+				self.mds = {} 
+			end
 			ds:queryData({matcher=query}, function(md)
 				if gq:checkandmark(md) then
-					table.insert(mds, md:copy())
+					table.insert(self.mds, md:copy())
 				end
 				return true
 			end)
 
 			
-			if #mds == 0 then
+			if #self.mds == 0 then
 				if verbose then
 					io.stderr:write("No results from ", dsname, "\n")
 				end
 			elseif gq:satisfied() then
 				if verbose then io.stderr:write("Satisfied query on ", dsname, "\n") end
-				for idx, md in ipairs(mds) do
-					cons(md)
-				end
 				return
 			elseif verbose then
 				io.stderr:write("Unsatisfied query on ", dsname, "\n")
@@ -178,6 +182,12 @@ function QueryChunk:queryData(cons)
 	end
 
 	error("Query cannot be satisfied")
+end
+
+function QueryChunk:outputData(cons)
+	for idx, md in ipairs(self.mds) do
+		cons(md)
+	end
 end
 
 function QueryChunk:querySummary(sum)
@@ -228,7 +238,10 @@ end
 
 function queryData(q, cons)
 	for _, info in pairs(chunks) do
-		info:queryData(cons)
+		info:checkData(cons)
+	end
+	for _, info in pairs(chunks) do
+		info:outputData(cons)
 	end
 end
 
