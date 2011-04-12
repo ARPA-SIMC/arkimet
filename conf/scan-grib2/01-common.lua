@@ -71,6 +71,8 @@ function scan(md)
         area.fe = grib.falseEasting
         area.fn = grib.falseNorthing
         area.zone = grib.zone
+	area.Ni = grib.Ni
+	area.Nj = grib.Nj
     else
         area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
         area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
