@@ -105,7 +105,7 @@ TOTCOUNT=0
 runtest() {
     #echo "TEST $@"
     TOTCOUNT=`expr $TOTCOUNT + 1`
-    if [ $# == 1 ]
+    if [ $# -eq 1 ]
     then
         name="$1"
     else

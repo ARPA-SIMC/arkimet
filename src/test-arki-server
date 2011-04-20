@@ -6,7 +6,7 @@ BINDIR=`dirname $0`
 
 . $BINDIR/testlib.sh
 
-if [ $# == 0 ]
+if [ $# -eq 0 ]
 then
     setup
     trap cleanup EXIT
@@ -23,7 +23,7 @@ then
     arki-server -p 7117 --url="http://localhost:7117" --accesslog="as-access.log" --errorlog="as-error.log" --runtest="$BINDIR/`basename $0` run" conf
 
     endtest
-elif [ $1 == 'run' ]
+elif [ $1 = 'run' ]
 then
     BASEURL=http://localhost:7117
 
