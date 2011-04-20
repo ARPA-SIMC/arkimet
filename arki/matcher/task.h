@@ -40,14 +40,14 @@ struct MatchTask : public Implementation
 	//MatchType type() const { return MATCH_TASK; }
 	std::string name() const;
 
-	static MatchTask* parse(const std::string& pattern);
-
 	std::string task;
 
 	MatchTask(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
 
+    static MatchTask* parse(const std::string& pattern);
+    static void init();
 };
 
 /*============================================================================*/

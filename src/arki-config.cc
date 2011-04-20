@@ -777,6 +777,7 @@ int main(int argc, const char* argv[])
 	try {
 		if (opts.parse(argc, argv))
 			return 0;
+        runtime::init();
 
 		// Fill in the information for the wizard 
 		Wizard wizard(opts);

@@ -506,11 +506,11 @@ std::vector< Item<Time> > Time::generate(
 }
 
 
-namespace time {
-
-static MetadataType timeType = MetadataType::create<Time>();
-
+void Time::init()
+{
+    MetadataType::register_type<Time>();
 }
+
 }
 }
 

@@ -41,7 +41,8 @@ struct MatchTimerange : public Implementation
 	//MatchType type() const { return MATCH_TIMERANGE; }
 	std::string name() const;
 
-	static MatchTimerange* parse(const std::string& pattern);
+    static MatchTimerange* parse(const std::string& pattern);
+    static void init();
 };
 
 struct MatchTimerangeGRIB1 : public MatchTimerange

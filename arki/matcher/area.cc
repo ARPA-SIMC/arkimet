@@ -194,7 +194,10 @@ bool MatchAreaBBoxCoveredBy::matchGeom(const ARKI_GEOS_GEOMETRY* val) const
 
 #endif
 
-MatcherType area("area", types::TYPE_AREA, (MatcherType::subexpr_parser)MatchArea::parse);
+void MatchArea::init()
+{
+    Matcher::register_matcher("area", types::TYPE_AREA, (MatcherType::subexpr_parser)MatchArea::parse);
+}
 
 }
 }

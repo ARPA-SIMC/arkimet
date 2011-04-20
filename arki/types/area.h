@@ -74,6 +74,9 @@ struct Area : public types::StyledType<Area>
 	const ARKI_GEOS_GEOMETRY* bbox() const;
 
 	static void lua_loadlib(lua_State* L);
+
+    // Register this type tree with the type system
+    static void init();
 };
 
 namespace area {

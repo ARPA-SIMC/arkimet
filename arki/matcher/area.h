@@ -38,7 +38,8 @@ struct MatchArea : public Implementation
 	//MatchType type() const { return MATCH_AREA; }
 	std::string name() const;
 
-	static MatchArea* parse(const std::string& pattern);
+    static MatchArea* parse(const std::string& pattern);
+    static void init();
 };
 
 struct MatchAreaGRIB : public MatchArea

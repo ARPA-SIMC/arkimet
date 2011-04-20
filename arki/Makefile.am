@@ -4,7 +4,7 @@ SUBDIRS = .
 
 arkiincludedir = $(includedir)/arki
 
-dist_noinst_HEADERS = \
+include_HEADERS = \
 		config.h \
 		configfile.h \
 		transaction.h \
@@ -113,9 +113,8 @@ dist_noinst_HEADERS = \
 		querymacro.h \
 		values.h \
 		utils.h \
-		nag.h
-
-dist_noinst_HEADERS += \
+		nag.h \
+		types-init.h \
 		tests/test-utils.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
@@ -129,24 +128,28 @@ $(top_builddir)/arki/matcher/reftime/reftime-lex.h $(top_builddir)/arki/matcher/
 $(top_builddir)/arki/matcher/reftime/reftime-parse.hh $(top_builddir)/arki/matcher/reftime/reftime-parse.cc: $(srcdir)/matcher/reftime/reftime-parse.yy
 	$(srcdir)/buildbison $<
 
-lib_LTLIBRARIES = libarkimet.la
-libarkimet_la_SOURCES = \
+noinst_LTLIBRARIES = libarkimet-core.la libarkimet-types.la libarkimet-dataset.la
+
+libarkimet_core_la_SOURCES = \
 		nag.cc \
 		utils.cc \
 		utils/accounting.cc \
 		utils/codec.cc \
-		utils/compress.cc \
 		utils/datareader.cc \
-		utils/sqlite.cc \
 		utils/fd.cc \
 		utils/files.cc \
-		utils/dataset.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
 		configfile.cc \
 		transaction.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
+		tests/test-utils.cc
+libarkimet_core_la_LDFLAGS =
+
+libarkimet_types_la_SOURCES = \
+		utils/compress.cc \
+		utils/sqlite.cc \
 		values.cc \
 		types.cc \
 		types/utils.cc \
@@ -191,9 +194,16 @@ libarkimet_la_SOURCES = \
 		sort.cc \
 		formatter.cc \
 		bbox.cc \
-		targetfile.cc \
+		postprocess.cc \
 		scan/any.cc \
 		scan/dir.cc \
+		types-init.cc
+libarkimet_types_la_LIBADD = libarkimet-core.la
+libarkimet_types_la_LDFLAGS =
+
+libarkimet_dataset_la_SOURCES = \
+		utils/dataset.cc \
+		targetfile.cc \
 		dataset.cc \
 		dataset/maintenance.cc \
 		dataset/index/base.cc \
@@ -223,13 +233,17 @@ libarkimet_la_SOURCES = \
 		datasetpool.cc \
 		metadatagrid.cc \
 		dispatcher.cc \
-		postprocess.cc \
-		querymacro.cc \
+		querymacro.cc
+libarkimet_dataset_la_LIBADD = libarkimet-types.la
+libarkimet_dataset_la_LDFLAGS =
+
+lib_LTLIBRARIES = libarkimet.la
+libarkimet_la_SOURCES = \
 		runtime/io.cc \
 		runtime/config.cc \
 		runtime/processor.cc \
-		runtime.cc \
-		tests/test-utils.cc
+		runtime.cc
+libarkimet_la_LIBADD = libarkimet-dataset.la
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
 if GCOV
@@ -343,56 +357,56 @@ tests_arki_test_SOURCES = \
 		runtime/processor-tut.cc \
 		runtime-tut.cc \
 		tests/tut-main.cpp
-tests_arki_test_LDADD = -dlpreopen libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
 
 if GRIBAPI
-dist_noinst_HEADERS += scan/grib.h
-libarkimet_la_SOURCES += scan/grib.cc
+include_HEADERS += scan/grib.h
+libarkimet_types_la_SOURCES += scan/grib.cc
 tests_arki_test_SOURCES += scan/grib-tut.cc
 INCLUDES += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
+libarkimet_types_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
 tests_arki_test_LDADD += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
 
 if LUA
-dist_noinst_HEADERS += formatter/lua.h utils/lua.h report.h tests/lua.h
-libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
+include_HEADERS += formatter/lua.h utils/lua.h report.h tests/lua.h
+libarkimet_types_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
 tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
 INCLUDES += $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(LUA_LIBS)
+libarkimet_types_la_LDFLAGS += $(LUA_LIBS)
 tests_arki_test_LDADD += $(LUA_LIBS)
 endif
 
 if DBALLE
-dist_noinst_HEADERS += scan/bufr.h
-libarkimet_la_SOURCES += scan/bufr.cc
+include_HEADERS += scan/bufr.h
+libarkimet_types_la_SOURCES += scan/bufr.cc
 tests_arki_test_SOURCES += scan/bufr-tut.cc
 INCLUDES += $(DBALLE_CFLAGS)
-libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
+libarkimet_types_la_LDFLAGS += $(DBALLE_LIBS)
 tests_arki_test_LDADD += $(DBALLE_LIBS)
 if LUA
-dist_noinst_HEADERS += scan/bufrlua.h
-libarkimet_la_SOURCES += scan/bufrlua.cc
+include_HEADERS += scan/bufrlua.h
+libarkimet_types_la_SOURCES += scan/bufrlua.cc
 endif
 endif
 
 if CURL
-dist_noinst_HEADERS += dataset/http.h
-libarkimet_la_SOURCES += dataset/http.cc
+include_HEADERS += dataset/http.h
+libarkimet_dataset_la_SOURCES += dataset/http.cc
 tests_arki_test_SOURCES += dataset/http-tut.cc
 INCLUDES += @LIBCURL_CPPFLAGS@
-libarkimet_la_LDFLAGS += @LIBCURL@
+libarkimet_dataset_la_LDFLAGS += @LIBCURL@
 tests_arki_test_LDADD += @LIBCURL@
 endif
 
 if ODIMH5
-dist_noinst_HEADERS += scan/odimh5.h
-libarkimet_la_SOURCES += scan/odimh5.cc
+include_HEADERS += scan/odimh5.h
+libarkimet_types_la_SOURCES += scan/odimh5.cc
 tests_arki_test_SOURCES += scan/odimh5-tut.cc
 INCLUDES += $(ODIMH5_CFLAGS)
-libarkimet_la_LDFLAGS += $(ODIMH5_LIBS)
+libarkimet_types_la_LDFLAGS += $(ODIMH5_LIBS)
 tests_arki_test_LDADD += $(ODIMH5_LIBS)
 endif
 
@@ -404,7 +418,7 @@ endif
 
 if LZO
 INCLUDES += $(LZO_CFLAGS)
-libarkimet_la_LDFLAGS += $(LZO_LIBS)
+libarkimet_core_la_LDFLAGS += $(LZO_LIBS)
 tests_arki_test_LDADD += $(LZO_LIBS)
 endif
 

@@ -112,7 +112,10 @@ MatchReftime* MatchReftime::parse(const std::string& pattern)
 }
 
 
-MatcherType reftimeMatcher("reftime", types::TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
+void MatchReftime::init()
+{
+    Matcher::register_matcher("reftime", types::TYPE_REFTIME, (MatcherType::subexpr_parser)MatchReftime::parse);
+}
 
 }
 }

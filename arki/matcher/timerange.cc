@@ -379,7 +379,10 @@ MatchTimerange* MatchTimerange::parse(const std::string& pattern)
     }
 }
 
-MatcherType timerange("timerange", types::TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
+void MatchTimerange::init()
+{
+    Matcher::register_matcher("timerange", types::TYPE_TIMERANGE, (MatcherType::subexpr_parser)MatchTimerange::parse);
+}
 
 }
 }

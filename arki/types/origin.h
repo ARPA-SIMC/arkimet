@@ -74,6 +74,9 @@ struct Origin : public types::StyledType<Origin>
 	static int getMaxIntCount();
 
 	static void lua_loadlib(lua_State* L);
+
+    // Register this type tree with the type system
+    static void init();
 };
 
 namespace origin {

@@ -178,11 +178,6 @@ bool INVALID::operator==(const Type& o) const
 	return true;
 }
 
-ARKI_GEOS_GEOMETRY* INVALID::geometry(const ARKI_GEOS_GEOMETRYFACTORY& gf) const
-{
-	return 0;
-}
-
 Item<INVALID> INVALID::create()
 {
 	return new INVALID;
@@ -190,7 +185,10 @@ Item<INVALID> INVALID::create()
 
 }
 
-static MetadataType bboxType = MetadataType::create<BBox>();
+void BBox::init()
+{
+    MetadataType::register_type<BBox>();
+}
 
 }
 }

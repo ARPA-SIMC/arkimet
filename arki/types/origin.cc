@@ -62,6 +62,7 @@ const unsigned char Origin::GRIB2;
 const unsigned char Origin::BUFR;
 const unsigned char Origin::ODIMH5;
 
+
 // Deprecated
 int Origin::getMaxIntCount() { return 5; }
 
@@ -647,7 +648,10 @@ static void debug_interns()
 
 }
 
-static MetadataType originType = MetadataType::create<Origin>(origin::debug_interns);
+void Origin::init()
+{
+    MetadataType::register_type<Origin>(origin::debug_interns);
+}
 
 }
 }

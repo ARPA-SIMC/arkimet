@@ -146,6 +146,9 @@ struct Time : public types::CoreType<Time>
 			const types::Time& begin, const types::Time& end, int step);
 
 	static void lua_loadlib(lua_State* L);
+
+    // Register this type tree with the type system
+    static void init();
 };
 
 static inline std::ostream& operator<<(std::ostream& o, const Time& i)

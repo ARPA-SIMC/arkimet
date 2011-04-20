@@ -448,6 +448,13 @@ std::string Matcher::toString(bool formatted) const
 }
 #endif
 
+void Matcher::register_matcher(const std::string& name, types::Code code, matcher::MatcherType::subexpr_parser parse_func)
+{
+    // TODO: when we are done getting rid of static constructors, reorganize
+    // the code not to need this awkward new
+    new matcher::MatcherType(name, code, parse_func);
+}
+
 #ifdef HAVE_LUA
 static void arkilua_matchermetatable(lua_State* L);
 

@@ -31,7 +31,6 @@
 
 
 #include <arki/types.h>
-#include <arki/utils/geosfwd.h>
 
 struct lua_State;
 
@@ -76,15 +75,8 @@ struct BBox : public types::StyledType<BBox>
 	static Item<BBox> decodeString(const std::string& val);
 	static Item<BBox> decodeMapping(const emitter::memory::Mapping& val);
 
-	// GEOS functions
-	/**
-	 * Return a new GEOS Geometry for this bounding box.
-	 *
-	 * The object will need to be deallocated by the caller.
-	 *
-	 * Invalid bounding boxes can return 0 here.
-	 */
-	virtual ARKI_GEOS_GEOMETRY* geometry(const ARKI_GEOS_GEOMETRYFACTORY& gf) const = 0;
+    // Register this type tree with the type system
+    static void init();
 };
 
 namespace bbox {
@@ -98,8 +90,6 @@ struct INVALID : public BBox
 
 	virtual int compare_local(const BBox& o) const;
 	virtual bool operator==(const Type& o) const;
-
-	ARKI_GEOS_GEOMETRY* geometry(const ARKI_GEOS_GEOMETRYFACTORY& gf) const;
 
 	static Item<INVALID> create();
 };

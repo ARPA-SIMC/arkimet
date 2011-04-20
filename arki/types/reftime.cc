@@ -409,8 +409,11 @@ Item<Reftime> Collector::makeReftime() const
 	return Period::create(begin, end);
 }
 
-static MetadataType reftimeType = MetadataType::create<Reftime>();
+}
 
+void Reftime::init()
+{
+    MetadataType::register_type<Reftime>();
 }
 
 }

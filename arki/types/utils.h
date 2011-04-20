@@ -137,6 +137,23 @@ struct MetadataType
 		);
 	}
 
+    template<typename T>
+    static void register_type(intern_stats intern_stats_func = 0)
+    {
+        // FIXME: when we remove create() we can make MetadataType not register
+        // itself and remove the need of this awkward new
+        new MetadataType(
+            traits<T>::type_code,
+            traits<T>::type_sersize_bytes,
+            traits<T>::type_tag,
+            (MetadataType::item_decoder)T::decode,
+            (MetadataType::string_decoder)T::decodeString,
+            (MetadataType::mapping_decoder)T::decodeMapping,
+            T::lua_loadlib,
+            intern_stats_func
+        );
+    }
+
 	static void lua_loadlib(lua_State* L);
 };
 

@@ -208,7 +208,10 @@ static void debug_interns()
 
 }
 
-static MetadataType proddefType = MetadataType::create<Proddef>(proddef::debug_interns);
+void Proddef::init()
+{
+    MetadataType::register_type<Proddef>(proddef::debug_interns);
+}
 
 }
 }

@@ -240,7 +240,10 @@ static void debug_interns()
 
 }
 
-static MetadataType runType = MetadataType::create<Run>(run::debug_interns);
+void Run::init()
+{
+    MetadataType::register_type<Run>(run::debug_interns);
+}
 
 }
 }

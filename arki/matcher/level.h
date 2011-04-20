@@ -37,7 +37,8 @@ struct MatchLevel : public Implementation
 	//MatchType type() const { return MATCH_LEVEL; }
 	std::string name() const;
 
-	static MatchLevel* parse(const std::string& pattern);
+    static MatchLevel* parse(const std::string& pattern);
+    static void init();
 };
 
 struct MatchLevelGRIB1 : public MatchLevel

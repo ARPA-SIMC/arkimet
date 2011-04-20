@@ -322,7 +322,10 @@ static void debug_interns()
 
 }
 
-static MetadataType areaType = MetadataType::create<Area>(area::debug_interns);
+void Area::init()
+{
+    MetadataType::register_type<Area>(area::debug_interns);
+}
 
 }
 }

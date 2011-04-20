@@ -1,4 +1,5 @@
 #include <wibble/tests.h>
+#include <arki/types-init.h>
 #include <signal.h>
 #include <cstring>
 #include <cstdlib>
@@ -18,6 +19,7 @@ void signal_to_exception(int)
 int main(int argc,const char* argv[])
 {
   arki::nag::init(false, false, true);
+  arki::types::init_default_types();
   tut::reporter visi;
 
   signal(SIGSEGV,signal_to_exception);         

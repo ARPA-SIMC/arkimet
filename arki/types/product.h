@@ -72,6 +72,8 @@ struct Product : public types::StyledType<Product>
 	static int getMaxIntCount();
 
 	static void lua_loadlib(lua_State* L);
+
+	static void init();
 };
 
 

@@ -37,7 +37,8 @@ struct MatchProduct : public Implementation
 	//MatchType type() const { return MATCH_PRODUCT; }
 	std::string name() const;
 
-	static MatchProduct* parse(const std::string& pattern);
+    static MatchProduct* parse(const std::string& pattern);
+    static void init();
 };
 
 struct MatchProductGRIB1 : public MatchProduct

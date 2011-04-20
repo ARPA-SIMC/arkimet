@@ -89,7 +89,10 @@ MatchRun* MatchRun::parse(const std::string& pattern)
 	}
 }
 
-MatcherType run("run", types::TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
+void MatchRun::init()
+{
+    Matcher::register_matcher("run", types::TYPE_RUN, (MatcherType::subexpr_parser)MatchRun::parse);
+}
 
 }
 }

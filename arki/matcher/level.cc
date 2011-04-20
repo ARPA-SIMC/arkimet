@@ -296,7 +296,10 @@ MatchLevel* MatchLevel::parse(const std::string& pattern)
 	}
 }
 
-MatcherType level("level", types::TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
+void MatchLevel::init()
+{
+    Matcher::register_matcher("level", types::TYPE_LEVEL, (MatcherType::subexpr_parser)MatchLevel::parse);
+}
 
 }
 }

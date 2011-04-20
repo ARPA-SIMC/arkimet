@@ -37,7 +37,8 @@ struct MatchRun : public Implementation
 	//MatchType type() const { return MATCH_RUN; }
 	std::string name() const;
 
-	static MatchRun* parse(const std::string& pattern);
+    static MatchRun* parse(const std::string& pattern);
+    static void init();
 };
 
 struct MatchRunMinute : public MatchRun

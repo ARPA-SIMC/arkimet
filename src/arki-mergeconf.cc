@@ -73,6 +73,7 @@ int main(int argc, const char* argv[])
 	try {
 		if (opts.parse(argc, argv))
 			return 0;
+        runtime::init();
 
 		ConfigFile cfg;
 		bool foundConfig = false;

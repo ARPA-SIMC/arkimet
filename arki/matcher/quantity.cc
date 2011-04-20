@@ -74,21 +74,17 @@ std::string MatchQuantity::toString() const
     return res.join();
 }
 
-/*============================================================================*/
-
 MatchQuantity* MatchQuantity::parse(const std::string& pattern)
 {
 	return new MatchQuantity(pattern);
 }
 
-MatcherType quantity("quantity", types::TYPE_QUANTITY, (MatcherType::subexpr_parser)MatchQuantity::parse);
+void MatchQuantity::init()
+{
+    Matcher::register_matcher("quantity", types::TYPE_QUANTITY, (MatcherType::subexpr_parser)MatchQuantity::parse);
+}
 
-/*============================================================================*/
-
-} }
+}
+}
 
 // vim:set ts=4 sw=4:
-
-
-
-

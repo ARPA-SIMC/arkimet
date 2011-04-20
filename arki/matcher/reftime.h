@@ -67,7 +67,8 @@ struct MatchReftime : public Implementation
 	 */
 	void dateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const;
 
-	static MatchReftime* parse(const std::string& pattern);
+    static MatchReftime* parse(const std::string& pattern);
+    static void init();
 };
 
 }

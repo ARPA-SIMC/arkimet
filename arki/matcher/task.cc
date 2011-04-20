@@ -64,21 +64,17 @@ std::string MatchTask::toString() const
 	return res.join();
 }
 
-/*============================================================================*/
-
 MatchTask* MatchTask::parse(const std::string& pattern)
 {
 	return new MatchTask(pattern);
 }
 
-MatcherType task("task", types::TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
+void MatchTask::init()
+{
+    Matcher::register_matcher("task", types::TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
+}
 
-/*============================================================================*/
-
-} }
+}
+}
 
 // vim:set ts=4 sw=4:
-
-
-
-

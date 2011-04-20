@@ -1829,7 +1829,10 @@ static void debug_interns()
 
 }
 
-static MetadataType timerangeType = MetadataType::create<Timerange>(timerange::debug_interns);
+void Timerange::init()
+{
+    MetadataType::register_type<Timerange>(timerange::debug_interns);
+}
 
 }
 }

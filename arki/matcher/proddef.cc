@@ -69,7 +69,10 @@ MatchProddef* MatchProddef::parse(const std::string& pattern)
 	}
 }
 
-MatcherType proddef("proddef", types::TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
+void MatchProddef::init()
+{
+    Matcher::register_matcher("proddef", types::TYPE_PRODDEF, (MatcherType::subexpr_parser)MatchProddef::parse);
+}
 
 }
 }

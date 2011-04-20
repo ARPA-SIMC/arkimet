@@ -66,6 +66,9 @@ struct Run : public types::StyledType<Run>
 	static Item<Run> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
+
+    // Register this type tree with the type system
+    static void init();
 };
 
 namespace run {

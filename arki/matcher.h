@@ -305,12 +305,12 @@ struct Matcher
 	 */
 	bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
 
-	/// Format back into a string that can be parsed again
-	std::string toString() const
-	{
-		if (m_impl) return m_impl->toString();
-		return std::string();
-	}
+    /// Format back into a string that can be parsed again
+    std::string toString() const
+    {
+        if (m_impl) return m_impl->toString();
+        return std::string();
+    }
 
 	/**
 	 * Format back into a string that can be parsed again, with all
@@ -325,6 +325,8 @@ struct Matcher
 	/// Parse a string into a matcher
 	static Matcher parse(const std::string& pattern);
 
+    /// Register a matcher type
+    static void register_matcher(const std::string& name, types::Code code, matcher::MatcherType::subexpr_parser parse_func);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin

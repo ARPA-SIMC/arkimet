@@ -231,41 +231,13 @@ Item<Quantity> Quantity::create(const std::set<std::string>& values)
 }
 
 
-/*============================================================================*/
+void Quantity::init()
+{
+    MetadataType::register_type<Quantity>();
+}
 
-static MetadataType quantityType = MetadataType::create<Quantity>();
-
-/*============================================================================*/
-
-} }
+}
+}
 
 #include <arki/types.tcc>
 // vim:set ts=4 sw=4:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

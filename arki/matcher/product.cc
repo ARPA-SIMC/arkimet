@@ -187,7 +187,10 @@ MatchProduct* MatchProduct::parse(const std::string& pattern)
 	}
 }
 
-MatcherType product("product", types::TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
+void MatchProduct::init()
+{
+    Matcher::register_matcher("product", types::TYPE_PRODUCT, (MatcherType::subexpr_parser)MatchProduct::parse);
+}
 
 }
 }

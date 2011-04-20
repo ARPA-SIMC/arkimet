@@ -38,7 +38,8 @@ struct MatchOrigin : public Implementation
 	//MatchType type() const { return MATCH_ORIGIN; }
 	std::string name() const;
 
-	static MatchOrigin* parse(const std::string& pattern);
+    static MatchOrigin* parse(const std::string& pattern);
+    static void init();
 };
 
 struct MatchOriginGRIB1 : public MatchOrigin

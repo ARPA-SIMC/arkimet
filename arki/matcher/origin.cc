@@ -173,7 +173,10 @@ MatchOrigin* MatchOrigin::parse(const std::string& pattern)
 	}
 }
 
-MatcherType origin("origin", types::TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
+void MatchOrigin::init()
+{
+    Matcher::register_matcher("origin", types::TYPE_ORIGIN, (MatcherType::subexpr_parser)MatchOrigin::parse);
+}
 
 }
 }

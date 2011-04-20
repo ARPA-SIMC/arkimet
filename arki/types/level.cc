@@ -859,7 +859,10 @@ static void debug_interns()
 
 }
 
-static MetadataType levelType = MetadataType::create<Level>(level::debug_interns);
+void Level::init()
+{
+    MetadataType::register_type<Level>(level::debug_interns);
+}
 
 }
 }

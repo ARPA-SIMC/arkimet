@@ -162,39 +162,15 @@ Item<Task> Task::create(const std::string& val)
 
 /*============================================================================*/
 
-static MetadataType taskType = MetadataType::create<Task>();
+void Task::init()
+{
+    MetadataType::register_type<Task>();
+}
 
 /*============================================================================*/
 
-} }
+}
+}
 
 #include <arki/types.tcc>
 // vim:set ts=4 sw=4:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

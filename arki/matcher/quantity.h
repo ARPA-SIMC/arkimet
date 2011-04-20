@@ -43,14 +43,14 @@ struct MatchQuantity : public Implementation
 	//MatchType type() const { return MATCH_TASK; }
 	std::string name() const;
 
-	static MatchQuantity* parse(const std::string& pattern);
-
 	std::set<std::string> values;
 
 	MatchQuantity(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
 
+    static MatchQuantity* parse(const std::string& pattern);
+    static void init();
 };
 
 /*============================================================================*/

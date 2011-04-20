@@ -754,7 +754,10 @@ static void debug_interns()
 
 }
 
-static MetadataType productType = MetadataType::create<Product>(product::debug_interns);
+void Product::init()
+{
+    MetadataType::register_type<Product>(product::debug_interns);
+}
 
 }
 }
