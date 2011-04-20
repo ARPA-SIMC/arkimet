@@ -125,6 +125,7 @@ function QueryChunk:setupgq(gq)
 
 	-- Consolidate in the end
 	gq:consolidate()
+
 	if debug then
 		io.stderr:write("Master query: ", tostring(gq:mergedquery()), "\n")
 		io.stderr:write("Result space:\n")
