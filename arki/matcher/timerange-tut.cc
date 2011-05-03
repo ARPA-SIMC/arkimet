@@ -347,12 +347,20 @@ template<> template<>
 void to::test<11>()
 {
     md.set(Timerange::decodeString("Timedef(3h)"));
+    ensure_matches("timerange:Timedef,+3h,-", md);
+    ensure_not_matches("timerange:Timedef,+3h, 254", md);
+
+    md.set(Timerange::decodeString("Timedef(3h)"));
+    ensure_matches("timerange:Timedef,+3h,-", md);
+    ensure_not_matches("timerange:Timedef,+3h, 254", md);
+
+    md.set(Timerange::decodeString("Timedef(3h,254)"));
     ensure_matches("timerange:Timedef,+3h, 254", md);
 
     md.set(Timerange::decodeString("GRIB1(000, 003h)"));
     ensure_matches("timerange:Timedef,+3h, 254", md);
 
-    md.set(Timerange::decodeString("Timedef(0s)"));
+    md.set(Timerange::decodeString("Timedef(0s,254)"));
     ensure_matches("timerange:Timedef,0,254", md);
 
     md.set(Timerange::decodeString("GRIB1(000, 000h)"));
