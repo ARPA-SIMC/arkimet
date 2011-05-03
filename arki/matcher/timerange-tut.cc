@@ -342,6 +342,23 @@ void to::test<10>()
     ensure_not_matches("timerange:Timedef,2h,1", md);
 }
 
+// Try matching timedef timerange on known values
+template<> template<>
+void to::test<11>()
+{
+    md.set(Timerange::decodeString("Timedef(3h)"));
+    ensure_matches("timerange:Timedef,+3h, 254", md);
+
+    md.set(Timerange::decodeString("GRIB1(000, 003h)"));
+    ensure_matches("timerange:Timedef,+3h, 254", md);
+
+    md.set(Timerange::decodeString("Timedef(0s)"));
+    ensure_matches("timerange:Timedef,0,254", md);
+
+    md.set(Timerange::decodeString("GRIB1(000, 000h)"));
+    ensure_matches("timerange:Timedef,0,254", md);
+}
+
 }
 
 // vim:set ts=4 sw=4:
