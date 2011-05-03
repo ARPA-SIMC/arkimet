@@ -725,7 +725,7 @@ void to::test<8>()
     ensure_equals(md.get<Origin>(), Origin::decodeString("GRIB2(00200, 00000, 000, 000, 203)"));
     ensure_equals(md.get<Product>(), Product::decodeString("GRIB2(200, 0, 200, 33)"));
     ensure_equals(md.get<Level>(), Level::decodeString("GRIB2S(103, 0, 10)"));
-    ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s)"));
+    ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s, 254)"));
     ensure_equals(md.get<Area>(), Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)"));
     ensure_equals(md.has(types::TYPE_PRODDEF), false);
     ensure_equals(md.get<Reftime>(), Reftime::decodeString("2011-02-15T00:00:00Z"));
@@ -735,6 +735,27 @@ void to::test<8>()
     ensure(not scanner.next(md));
 }
 
+// Check scanning of some Timedef cases
+template<> template<>
+void to::test<9>()
+{
+    {
+        Metadata md;
+        scan::Grib scanner;
+        scanner.open("inbound/ninfa_ana.grib2");
+        ensure(scanner.next(md));
+
+        ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+    }
+    {
+        Metadata md;
+        scan::Grib scanner;
+        scanner.open("inbound/ninfa_forc.grib2");
+        ensure(scanner.next(md));
+
+        ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(3h,254)"));
+    }
+}
 
 }
 

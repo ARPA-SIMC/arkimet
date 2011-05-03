@@ -41,13 +41,18 @@ function scan(md)
     local tr_ft = gribl.forecastTime
     local tr_ftu = gribl.indicatorOfUnitOfTimeRange
     if tr_ft ~= nil and tr_ftu ~= nil then
-        local tr_sp = gribl.typeOfStatisticalProcessing
-        local tr_spu = gribl.indicatorOfUnitForTimeRange
-        local tr_spl = gribl.lengthOfTimeRange
-        if tr_sp ~= nil and tr_spu ~= nil and tr_spl ~= nil then
-            md:set(arki_timerange.timedef(tr_ft, tr_ftu, tr_sp, tr_spl, tr_spu))
+        local pdtn = gribl.productDefinitionTemplateNumber
+        if pdtn >= 0 and pdtn <= 7 then
+            md:set(arki_timerange.timedef(tr_ft, tr_ftu, 254))
         else
-            md:set(arki_timerange.timedef(tr_ft, tr_ftu))
+            local tr_sp = gribl.typeOfStatisticalProcessing
+            local tr_spu = gribl.indicatorOfUnitForTimeRange
+            local tr_spl = gribl.lengthOfTimeRange
+            if tr_sp ~= nil and tr_spu ~= nil and tr_spl ~= nil then
+                md:set(arki_timerange.timedef(tr_ft, tr_ftu, tr_sp, tr_spl, tr_spu))
+            else
+                md:set(arki_timerange.timedef(tr_ft, tr_ftu))
+            end
         end
     end
 
