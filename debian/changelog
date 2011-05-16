@@ -1,3 +1,10 @@
+arkimet (0.58-2) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Timedef fixes for GRIB2
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 03 May 2011 15:40:39 +0200
+
 arkimet (0.58-1) UNRELEASED; urgency=low
 
   * New upstream version
