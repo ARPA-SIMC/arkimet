@@ -23,6 +23,7 @@
 #include <arki/utils/geosdef.h>
 #include <arki/types/area.h>
 
+#include <cmath>
 #include <sstream>
 #include <iostream>
 #include <memory>
