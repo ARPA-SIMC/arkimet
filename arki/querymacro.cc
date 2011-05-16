@@ -29,6 +29,8 @@
 #include <arki/nag.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
+#include <arki/utils/dataset.h>
+#include <arki/sort.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include "config.h"
@@ -186,6 +188,8 @@ ReadonlyDataset* Querymacro::dataset(const std::string& name)
 
 void Querymacro::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
+  metadata::Consumer *c = &consumer;
+
 	if (funcid_querydata == -1) return;
 
 	// Retrieve the Lua function registered for this
@@ -196,7 +200,19 @@ void Querymacro::queryData(const dataset::DataQuery& q, metadata::Consumer& cons
 	q.lua_push_table(*L, -1);
 
 	// Push consumer C closure
-	lua_pushlightuserdata(*L, &consumer);
+    auto_ptr<utils::ds::DataInliner> inliner;
+    auto_ptr<sort::Stream> sorter;
+    if (q.withData)
+    {
+        inliner.reset(new utils::ds::DataInliner(*c));
+        c = inliner.get();
+    }
+    if (q.sorter)
+    {
+        sorter.reset(new sort::Stream(*q.sorter, *c));
+        c = sorter.get();
+    }
+	lua_pushlightuserdata(*L, c);
 	lua_pushcclosure(*L, arkilua_metadataconsumer, 1);
 
 	// Call the function
