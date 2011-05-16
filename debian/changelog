@@ -1,4 +1,11 @@
-arkimet (0.58-2) UNRELEASED; urgency=low
+arkimet (0.60-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Fix data inlining in qmacro
+
+ -- Enrico Zini <enrico@debian.org>  Mon, 16 May 2011 16:48:46 +0200
+
+arkimet (0.59-1) UNRELEASED; urgency=low
 
   * New upstream version
      - Timedef fixes for GRIB2
