@@ -26,6 +26,7 @@
 #include <arki/metadata/collection.h>
 #include <arki/summary.h>
 #include <arki/dataset/ondisk2.h>
+#include <arki/sort.h>
 #include <arki/scan/grib.h>
 #include <arki/utils.h>
 #include <arki/utils/lua.h>
@@ -232,6 +233,56 @@ void to::test<6>()
 		qm.querySummary(Matcher::parse(""), s);
 		ensure_equals(s.count(), 2u);
 	}
+}
+
+// Try "expa" matchers with inline option
+template<> template<>
+void to::test<7>()
+{
+    Querymacro qm(cfg, "expa",
+            "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+            "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+            );
+
+    dataset::DataQuery dq;
+    dq.withData = true;
+    metadata::Collection mdc;
+    qm.queryData(dq, mdc);
+    ensure_equals(mdc.size(), 2u);
+    ensure(mdc[0].hasData());
+    ensure(mdc[1].hasData());
+
+    Summary s;
+    qm.querySummary(Matcher::parse(""), s);
+    ensure_equals(s.count(), 2u);
+}
+
+// Try "expa" matchers with sort option
+// TODO: ensure sorting
+template<> template<>
+void to::test<8>()
+{
+    Querymacro qm(cfg, "expa",
+            "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+            "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
+            );
+
+    dataset::DataQuery dq;
+    metadata::Collection mdc;
+
+    //sort::Stream sorter(*cmp, mdc);
+    dq.sorter = sort::Compare::parse("month:-reftime");
+
+    qm.queryData(dq, mdc);
+    ensure_equals(mdc.size(), 2u);
+    ensure(mdc[0].source.defined());
+    ensure_equals(mdc[0].get(types::TYPE_REFTIME), Item<>(types::Reftime::decodeString("2009-08-08 00:00:00")));
+    ensure(mdc[1].source.defined());
+    ensure_equals(mdc[1].get(types::TYPE_REFTIME), Item<>(types::Reftime::decodeString("2009-08-07 00:00:00")));
+
+    Summary s;
+    qm.querySummary(Matcher::parse(""), s);
+    ensure_equals(s.count(), 2u);
 }
 
 }

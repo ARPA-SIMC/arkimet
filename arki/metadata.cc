@@ -437,6 +437,11 @@ std::string Metadata::completePathname(const std::string& pathname) const
 	return wibble::str::joinpath(str::dirname(m_filename), pathname);
 }
 
+bool Metadata::hasData() const
+{
+    return m_inline_buf.size();
+}
+
 wibble::sys::Buffer Metadata::getData() const
 {
 	if (m_inline_buf.size())
