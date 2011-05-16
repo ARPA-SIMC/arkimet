@@ -53,6 +53,7 @@ dnl Use libtool
 dnl AM_ENABLE_STATIC
 dnl AM_DISABLE_SHARED
 LT_INIT
+AC_PROG_LIBTOOL
 
 dnl Check what libc features are available on this system
 gl_CHECK_TYPE_STRUCT_DIRENT_D_TYPE
