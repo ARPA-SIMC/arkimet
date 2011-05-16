@@ -135,7 +135,6 @@ typesinclude_HEADERS = \
 		types/time.h \
 		types/reftime.h \
 		types/source.h \
-		types/utils.h \
 		types/origin.h \
 		types/product.h \
 		types/level.h \
