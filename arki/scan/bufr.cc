@@ -145,8 +145,8 @@ bool Bufr::do_scan(Metadata& md)
 	if (!file->read(rmsg))
 		return false;
 
-	BufrBulletin bulletin;
-	bulletin.decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
+	auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
+	bulletin->decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
 
 	md.create();
 
@@ -170,24 +170,24 @@ bool Bufr::do_scan(Metadata& md)
 
 	// Set reference time
 	md.set(types::reftime::Position::create(new types::Time(
-			bulletin.rep_year, bulletin.rep_month, bulletin.rep_day,
-			bulletin.rep_hour, bulletin.rep_minute, bulletin.rep_second)));
+			bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
+			bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second)));
 
 	// Set origin from the bufr header
 	UItem<types::product::BUFR> product;
-	switch (bulletin.edition)
+	switch (bulletin->edition)
 	{
 		case 2:
 		case 3:
 		case 4:
 			// No process?
-			md.set(types::origin::BUFR::create(bulletin.centre, bulletin.subcentre));
-			md.set(product = types::product::BUFR::create(bulletin.type, bulletin.subtype, bulletin.localsubtype));
+			md.set(types::origin::BUFR::create(bulletin->centre, bulletin->subcentre));
+			md.set(product = types::product::BUFR::create(bulletin->type, bulletin->subtype, bulletin->localsubtype));
 			break;
 		default:
 		{
 			std::stringstream str;
-			str << "edition is " << bulletin.edition << " but I can only handle 3 and 4";
+			str << "edition is " << bulletin->edition << " but I can only handle 3 and 4";
 			throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
 		}
 	}
@@ -201,7 +201,7 @@ bool Bufr::do_scan(Metadata& md)
 
 	// Tru to decode the data; if we fail, we are done
 	try {
-		bulletin.decode(rmsg);
+		bulletin->decode(rmsg);
 	} catch (wreport::error& e) {
 		// We can still try to handle partially decoded files
 
@@ -209,22 +209,22 @@ bool Bufr::do_scan(Metadata& md)
 		if (e.code() != WR_ERR_PARSE) return true;
 
 		// Not if we didn't decode just one subset
-		if (bulletin.subsets.size() != 1) return true;
+		if (bulletin->subsets.size() != 1) return true;
 
 		// Not if the subset is empty
-		if (bulletin.subsets[0].empty()) return true;
+		if (bulletin->subsets[0].empty()) return true;
 	} catch (std::exception& e) {
 		return true;
 	}
 
 	// If there is more than one subset, we are done
-	if (bulletin.subsets.size() != 1)
+	if (bulletin->subsets.size() != 1)
 		return true;
 
 	// Try to parse as a dba_msg
 	Msgs msgs;
 	try {
-		importer->from_bulletin(bulletin, msgs);
+		importer->from_bulletin(*bulletin, msgs);
 	} catch (std::exception& e) {
 		// If we cannot import it as a Msgs, we are done
 		return true;

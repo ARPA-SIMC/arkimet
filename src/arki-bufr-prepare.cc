@@ -116,8 +116,8 @@ static int extract_rep_cod(const Msg& msg)
 static void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
 {
 	// Create new message with the same info as the old one
-	BufrBulletin newmsg;
-	copy_base_msg(newmsg, msg);
+	auto_ptr<BufrBulletin> newmsg(BufrBulletin::create());
+	copy_base_msg(*newmsg, msg);
 
 	// Loop over subsets
 	for (size_t i = 0; i < msg.subsets.size(); ++i)
@@ -125,24 +125,24 @@ static void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer&
 		// Create a bufrex_msg with the subset contents
 
 		// Remove existing subsets
-		newmsg.subsets.clear();
+		newmsg->subsets.clear();
 
 		// Copy subset
-		newmsg.subsets.push_back(msg.subsets[i]);
+		newmsg->subsets.push_back(msg.subsets[i]);
 
 		// Parse into dba_msg
 		try {
 			Msgs msgs;
-			importer.from_bulletin(newmsg, msgs);
+			importer.from_bulletin(*newmsg, msgs);
 			const Msg& m = *msgs[0];
 
 			// Update reference time
-			if (const Var* var = m.get_year_var()) newmsg.rep_year = var->enqi();
-			if (const Var* var = m.get_month_var()) newmsg.rep_month = var->enqi();
-			if (const Var* var = m.get_day_var()) newmsg.rep_day = var->enqi();
-			if (const Var* var = m.get_hour_var()) newmsg.rep_hour = var->enqi();
-			if (const Var* var = m.get_minute_var()) newmsg.rep_minute = var->enqi();
-			if (const Var* var = m.get_second_var()) newmsg.rep_second = var->enqi();
+			if (const Var* var = m.get_year_var()) newmsg->rep_year = var->enqi();
+			if (const Var* var = m.get_month_var()) newmsg->rep_month = var->enqi();
+			if (const Var* var = m.get_day_var()) newmsg->rep_day = var->enqi();
+			if (const Var* var = m.get_hour_var()) newmsg->rep_hour = var->enqi();
+			if (const Var* var = m.get_minute_var()) newmsg->rep_minute = var->enqi();
+			if (const Var* var = m.get_second_var()) newmsg->rep_second = var->enqi();
 		} catch (wreport::error& e) {
 			// Don't bother with updating reference time if
 			// we cannot understand the layout of this BUFR
@@ -150,7 +150,7 @@ static void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer&
 
 		// Write out the message
 		Rawmsg newrmsg;
-		newmsg.encode(newrmsg);
+		newmsg->encode(newrmsg);
 		outfile.write(newrmsg);
 	}
 }
@@ -164,10 +164,10 @@ static void process(const std::string& filename, File& outfile)
 	while (file->read(rmsg))
 	{
 		// Decode message
-		BufrBulletin msg;
+		auto_ptr<BufrBulletin> msg(BufrBulletin::create());
 		bool decoded;
 		try {
-			msg.decode(rmsg, rmsg.file.c_str(), rmsg.offset);
+			msg->decode(rmsg, rmsg.file.c_str(), rmsg.offset);
 			decoded = true;
 		} catch (std::exception& e) {
 			nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",
@@ -175,10 +175,10 @@ static void process(const std::string& filename, File& outfile)
 			decoded = false;
 		}
 
-		if (!decoded || msg.subsets.size() == 1u)
+		if (!decoded || msg->subsets.size() == 1u)
 			outfile.write(rmsg);
 		else
-			splitmsg(rmsg, msg, *importer, outfile);
+			splitmsg(rmsg, *msg, *importer, outfile);
 	}
 }
 
