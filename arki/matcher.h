@@ -374,6 +374,13 @@ struct MatcherAliasDatabase
 	static const matcher::Aliases* get(const std::string& type);
 	static const void reset();
 	static void serialise(ConfigFile& cfg);
+
+    /**
+     * Dump the alias database to the given output stream
+     *
+     * (used for debugging purposes)
+     */
+    static void debug_dump(std::ostream& out);
 };
 
 }

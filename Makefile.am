@@ -105,6 +105,7 @@ EXTRA_DIST = README \
 	     doc/matcher/run.txt \
 	     doc/matcher/aliases.txt \
 	     doc/matcher/expressions.txt \
+	     test/conf/match-alias.conf \
 	     test/data/layer.grib1 \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \

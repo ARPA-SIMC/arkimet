@@ -615,6 +615,13 @@ void MatcherAliasDatabase::serialise(ConfigFile& cfg)
 	}
 }
 
+void MatcherAliasDatabase::debug_dump(std::ostream& out)
+{
+    ConfigFile cfg;
+    serialise(cfg);
+    cfg.output(out, "(debug output)");
+}
+
 }
 
 // vim:set ts=4 sw=4:
