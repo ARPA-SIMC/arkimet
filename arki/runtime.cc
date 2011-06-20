@@ -272,14 +272,6 @@ void CommandLine::setupProcessing()
 			// And parse it as an expression
 			strquery = next();
 		}
-
-
-		if (qmacro && qmacro->isSet())
-		{
-			query = Matcher::parse("");
-		} else {
-			query = Matcher::parse(strquery);
-		}
 	}
 
 
@@ -345,48 +337,57 @@ void CommandLine::setupProcessing()
 	}
 
 
-	// Validate the query with all the servers
-	if (exprfile)
-	{
-		string orig = query.toString();
-		string wanted = query.toStringExpanded();
-		if (orig != wanted)
-		{
-			std::set<std::string> servers;
-			for (ConfigFile::const_section_iterator i = inputInfo.sectionBegin();
-					i != inputInfo.sectionEnd(); ++i)
-			{
-				string server = i->second->value("server");
-				if (!server.empty()) servers.insert(server);
-			}
-			bool mismatch = false;
-			for (set<string>::const_iterator i = servers.begin();
-					i != servers.end(); ++i)
-			{
-				string got;
-				try {
-					got = dataset::HTTP::expandMatcher(orig, *i);
-				} catch (wibble::exception::Generic& e) {
-					// If the server cannot expand the query, we're
-					// ok as we send it expanded. What we are
-					// checking here is that the server does not
-					// have a different idea of the same aliases
-					// that we use
-					continue;
-				}
-				if (got != wanted)
-				{
-					nag::warning("Server %s expands the query as %s", i->c_str(), got.c_str());
-					mismatch = true;
-				}
-			}
-			if (mismatch)
-			{
-				nag::warning("Locally, we expand the query as %s", wanted.c_str());
-				throw wibble::exception::Consistency("checking alias consistency", "aliases locally and on the server differ");
-			}
-		}
-	}
+    // Validate the query with all the servers
+    if (exprfile)
+    {
+        if (qmacro && qmacro->isSet())
+        {
+            query = Matcher::parse("");
+        } else {
+            // Resolve the query on each server (including the local system, if
+            // queried). If at least one server can expand it, send that
+            // expanded query to all servers. If two servers expand the same
+            // query in different ways, raise an error.
+            set<string> servers_seen;
+            string expanded;
+            string resolved_by;
+            bool first = true;
+            for (ConfigFile::const_section_iterator i = inputInfo.sectionBegin();
+                    i != inputInfo.sectionEnd(); ++i)
+            {
+                string server = i->second->value("server");
+                if (servers_seen.find(server) != servers_seen.end()) continue;
+                string got;
+                try {
+                    if (server.empty())
+                    {
+                        got = Matcher::parse(strquery).toStringExpanded();
+                        resolved_by = "local system";
+                    } else {
+                        got = dataset::HTTP::expandMatcher(strquery, server);
+                        resolved_by = server;
+                    }
+                } catch (wibble::exception::Generic& e) {
+                    // If the server cannot expand the query, we're
+                    // ok as we send it expanded. What we are
+                    // checking here is that the server does not
+                    // have a different idea of the same aliases
+                    // that we use
+                    continue;
+                }
+                if (!first && got != expanded)
+                {
+                    nag::warning("%s expands the query as %s", server.c_str(), got.c_str());
+                    nag::warning("%s expands the query as %s", resolved_by.c_str(), expanded.c_str());
+                    throw wibble::exception::Consistency("checking alias consistency", "two systems queried disagree about the query alias expansion");
+                } else if (first)
+                    expanded = got;
+                first = false;
+            }
+
+            query = Matcher::parse(expanded);
+        }
+    }
 
 	// Open output stream
 
