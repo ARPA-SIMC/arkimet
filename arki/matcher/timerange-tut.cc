@@ -365,6 +365,35 @@ void to::test<11>()
 
     md.set(Timerange::decodeString("GRIB1(000, 000h)"));
     ensure_matches("timerange:Timedef,0,254", md);
+
+    /////
+    md.set(Timerange::decodeString("GRIB1(004, 000h, 003h)"));
+    ensure_not_matches("timerange:Timedef,3h,,1h", md);
+
+    md.set(Timerange::decodeString("GRIB1(000, 000h)"));
+    ensure_not_matches("timerange:Timedef,3h,,1h", md);
+
+    md.set(Timerange::decodeString("GRIB1(004, 000h, 012h)"));
+    ensure_not_matches("timerange:Timedef,,1,3h", md);
+
+    md.set(Timerange::decodeString("GRIB1(013, 000h, 012h)"));
+    ensure_not_matches("timerange:Timedef,,1,3h", md);
+
+    md.set(Timerange::decodeString("GRIB1(000, 000h)"));
+    ensure_not_matches("timerange:Timedef,,1,3h", md);
+
+    md.set(Timerange::decodeString("GRIB1(013, 000h, 012h)"));
+    ensure_matches("timerange:GRIB1,13,0", md);
+}
+
+// Test some serialisation scenarios
+template<> template<>
+void to::test<12>()
+{
+    Matcher m = Matcher::parse("timerange:Timedef,,1,3h");
+    //Matcher m1 = Matcher::parse(m.toStringExpanded());
+    //ensure_equals(m, m1);
+    ensure_equals(m.toStringExpanded(), "timerange:Timedef,,1,3h");
 }
 
 }
