@@ -385,6 +385,12 @@ void CommandLine::setupProcessing()
                 first = false;
             }
 
+            // If no server could expand it, do it anyway locally: either we
+            // can resolve it with local aliases, or we raise an appropriate
+            // error message
+            if (first)
+                expanded = strquery;
+
             query = Matcher::parse(expanded);
         }
     }
