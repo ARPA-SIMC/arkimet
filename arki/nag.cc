@@ -19,10 +19,9 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+#include <config.h>
 
 #include <arki/nag.h>
-
-#include "config.h"
 
 #include <cstdlib>
 #include <cstdio>

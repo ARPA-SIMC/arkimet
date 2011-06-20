@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <config.h>
+
 #include <arki/runtime.h>
 
 #include <wibble/exception.h>
@@ -48,7 +50,6 @@
 #include <fcntl.h>
 #include <iostream>
 #include <cstdlib>
-#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
