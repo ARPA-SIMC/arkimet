@@ -52,11 +52,15 @@ void JSON::val_head()
 
 void JSON::add_null()
 {
+    val_head();
+
     out << "null";
 }
 
 void JSON::add_bool(bool val)
 {
+    val_head();
+
     if (val)
         out << "true";
     else
