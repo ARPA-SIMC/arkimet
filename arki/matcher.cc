@@ -103,25 +103,32 @@ bool OR::matchItem(const Item<>& t) const
 
 std::string OR::toString() const
 {
-	if (empty()) return string();
-
-	if (not unparsed.empty()) return front()->name() + ":" + unparsed;
-
-	return toStringExpanded();
+    if (empty()) return string();
+    return front()->name() + ":" + toStringValueOnly();
 }
 
 std::string OR::toStringExpanded() const
 {
-	if (empty()) return string();
+    if (empty()) return string();
+    return front()->name() + ":" + toStringValueOnlyExpanded();
+}
 
-	std::string res = front()->name() + ":";
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		if (i != begin())
-			res += " or ";
-		res += (*i)->toString();
-	}
-	return res;
+std::string OR::toStringValueOnly() const
+{
+    if (not unparsed.empty()) return unparsed;
+    return toStringValueOnlyExpanded();
+}
+
+std::string OR::toStringValueOnlyExpanded() const
+{
+    string res;
+    for (const_iterator i = begin(); i != end(); ++i)
+    {
+        if (i != begin())
+            res += " or ";
+        res += (*i)->toString();
+    }
+    return res;
 }
 
 OR* OR::parse(const MatcherType& mt, const std::string& pattern)
@@ -290,7 +297,7 @@ void Aliases::serialise(ConfigFile& cfg) const
 {
 	for (std::map< std::string, const OR* >::const_iterator i = db.begin();
 			i != db.end(); ++i)
-		cfg.setValue(i->first, i->second->toString());
+		cfg.setValue(i->first, i->second->toStringValueOnly());
 }
 
 void Aliases::add(const MatcherType& type, const ConfigFile& entries)

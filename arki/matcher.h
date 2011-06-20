@@ -111,8 +111,14 @@ struct OR : public std::vector< refcounted::Pointer<const Implementation> >, pub
 
 	virtual bool matchItem(const Item<>& t) const;
 
-	std::string toString() const;
-	std::string toStringExpanded() const;
+    // Serialise as "type:original definition"
+    std::string toString() const;
+    // Serialise as "type:expanded definition"
+    std::string toStringExpanded() const;
+    // Serialise as "original definition" only
+    std::string toStringValueOnly() const;
+    // Serialise as "expanded definition" only
+    std::string toStringValueOnlyExpanded() const;
 
 	static OR* parse(const MatcherType& type, const std::string& pattern);
 };
