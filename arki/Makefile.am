@@ -4,168 +4,117 @@ SUBDIRS = .
 
 arkiincludedir = $(includedir)/arki
 
-pkginclude_HEADERS = \
-		config.h \
-		configfile.h \
-		transaction.h \
-		dataset.h \
-		datasetpool.h \
-		dispatcher.h \
-		emitter.h \
-		matcher.h \
-		itemset.h \
-		metadata.h \
-		summary.h \
-		refcounted.h \
-		runtime.h \
-		types.h \
-		types.tcc \
-		metadatagrid.h \
-		sort.h \
-		formatter.h \
+nobase_dist_arkiinclude_HEADERS = \
 		bbox.h \
-		targetfile.h \
-		postprocess.h \
-		querymacro.h \
-		values.h \
-		utils.h \
-		nag.h \
-		types-init.h
-
-dsincludedir = $(pkginclude)/dataset
-dsinclude_HEADERS = \
-		dataset/targetfile.h \
-		dataset/local.h \
-		dataset/file.h \
-		dataset/maintenance.h \
+		configfile.h \
+		config.h \
 		dataset/archive.h \
-		dataset/ondisk2.h \
-		dataset/outbound.h \
 		dataset/discard.h \
 		dataset/empty.h \
-		dataset/merged.h \
+		dataset/file.h \
 		dataset/gridquery.h \
-		dataset/test-utils.h \
-		dataset/test-scenario.h
-
-dsod2includedir = $(pkginclude)/dataset/ondisk2
-dsod2include_HEADERS = \
+		dataset.h \
+		dataset/http/inbound.h \
+		dataset/http/server.h \
+		dataset/http/test-utils.h \
+		dataset/index/attr.h \
+		dataset/index/base.h \
+		dataset/local.h \
+		dataset/maintenance.h \
+		dataset/merged.h \
 		dataset/ondisk2/aggregate.h \
+		dataset/ondisk2.h \
 		dataset/ondisk2/index.h \
 		dataset/ondisk2/reader.h \
+		dataset/ondisk2/test-utils.h \
+		dataset/ondisk2/writer/datafile.h \
 		dataset/ondisk2/writer.h \
-		dataset/ondisk2/test-utils.h
-
-dsod2wrincludedir = $(pkginclude)/dataset/ondisk2/writer
-dsod2wrinclude_HEADERS = \
-		dataset/ondisk2/writer/datafile.h
-
-dssincludedir = $(pkginclude)/dataset/simple
-dssinclude_HEADERS = \
-		dataset/simple/index.h \
+		dataset/outbound.h \
+		datasetpool.h \
 		dataset/simple/datafile.h \
+		dataset/simple/index.h \
 		dataset/simple/reader.h \
-		dataset/simple/writer.h
-
-dshincludedir = $(pkginclude)/dataset/http
-dshinclude_HEADERS = \
-		dataset/http/server.h \
-		dataset/http/inbound.h \
-		dataset/http/test-utils.h
-
-dsiincludedir = $(pkginclude)/dataset/index
-dsiinclude_HEADERS = \
-		dataset/index/base.h \
-		dataset/index/attr.h
-
-emitterincludedir = $(pkginclude)/emitter
-emitterinclude_HEADERS = \
+		dataset/simple/writer.h \
+		dataset/targetfile.h \
+		dataset/test-scenario.h \
+		dataset/test-utils.h \
+		dispatcher.h \
+		emitter.h \
+		emitter/json.h \
 		emitter/memory.h \
-		emitter/json.h
-
-formatterincludedir = $(pkginclude)/formatter
-formatterinclude_HEADERS =
-
-matcherincludedir = $(pkginclude)/matcher
-matcherinclude_HEADERS = \
-		matcher/test-utils.h \
-		matcher/utils.h \
-		matcher/origin.h \
-		matcher/product.h \
-		matcher/level.h \
-		matcher/timerange.h \
-		matcher/reftime.h \
+		formatter.h \
+		itemset.h \
 		matcher/area.h \
+		matcher.h \
+		matcher/level.h \
+		matcher/origin.h \
 		matcher/proddef.h \
+		matcher/product.h \
+		matcher/quantity.h \
+		matcher/reftime.h \
+		matcher/reftime/parser.h \
 		matcher/run.h \
 		matcher/task.h \
-		matcher/quantity.h
-
-matcherrtincludedir = $(pkginclude)/matcher/reftime
-matcherrtinclude_HEADERS = \
-		matcher/reftime/parser.h
-
-metadataincludedir = $(pkginclude)/metadata
-metadatainclude_HEADERS = \
-		metadata/consumer.h \
+		matcher/test-utils.h \
+		matcher/timerange.h \
+		matcher/utils.h \
 		metadata/collection.h \
+		metadata/consumer.h \
+		metadatagrid.h \
+		metadata.h \
 		metadata/stream.h \
-		metadata/test-generator.h
-
-scanincludedir = $(pkginclude)/scan
-scaninclude_HEADERS = \
-		scan/any.h \
-		scan/dir.h
-
-summaryincludedir = $(pkginclude)/summary
-summaryinclude_HEADERS = \
-		summary/node.h \
-		summary/stats.h
-
-runtimeincludedir = $(pkginclude)/runtime
-runtimeinclude_HEADERS = \
+		metadata/test-generator.h \
+		nag.h \
+		postprocess.h \
+		querymacro.h \
+		refcounted.h \
+		runtime/config.h \
+		runtime.h \
 		runtime/io.h \
 		runtime/processor.h \
-		runtime/config.h
-
-typesincludedir = $(pkginclude)/types
-typesinclude_HEADERS = \
-		types/utils.h \
-		types/test-utils.h \
-		types/time.h \
-		types/reftime.h \
-		types/source.h \
-		types/origin.h \
-		types/product.h \
-		types/level.h \
-		types/timerange.h \
+		scan/any.h \
+		scan/dir.h \
+		sort.h \
+		summary.h \
+		summary/node.h \
+		summary/stats.h \
+		targetfile.h \
+		tests/test-utils.h \
+		transaction.h \
 		types/area.h \
-		types/proddef.h \
-		types/note.h \
 		types/assigneddataset.h \
 		types/bbox.h \
+		types.h \
+		types-init.h \
+		types/level.h \
+		types/note.h \
+		types/origin.h \
+		types/proddef.h \
+		types/product.h \
+		types/quantity.h \
+		types/reftime.h \
 		types/run.h \
+		types/source.h \
 		types/task.h \
-		types/quantity.h
-
-utilsincludedir = $(pkginclude)/utils
-utilsinclude_HEADERS = \
-		utils/geosfwd.h \
-		utils/geosdef.h \
+		types.tcc \
+		types/test-utils.h \
+		types/time.h \
+		types/timerange.h \
+		types/utils.h \
 		utils/accounting.h \
 		utils/codec.h \
 		utils/compress.h \
 		utils/datareader.h \
-		utils/sqlite.h \
+		utils/dataset.h \
 		utils/fd.h \
 		utils/files.h \
-		utils/dataset.h \
+		utils/geosdef.h \
+		utils/geosfwd.h \
+		utils.h \
 		utils/pcounter.h \
-		utils/process.h
-
-testincludedir = $(pkginclude)/tests
-testinclude_HEADERS = \
-		tests/test-utils.h
+		utils/process.h \
+		utils/sqlite.h \
+		values.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
 		$(top_builddir)/arki/matcher/reftime/reftime-lex.cc \
@@ -412,7 +361,7 @@ tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) 
 INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
 
 if GRIBAPI
-scaninclude_HEADERS += scan/grib.h
+nobase_dist_arkiinclude_HEADERS += scan/grib.h
 libarkimet_types_la_SOURCES += scan/grib.cc
 tests_arki_test_SOURCES += scan/grib-tut.cc
 INCLUDES += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
@@ -421,10 +370,7 @@ tests_arki_test_LDADD += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
 
 if LUA
-pkginclude_HEADERS += report.h
-formatterinclude_HEADERS += formatter/lua.h
-utilsinclude_HEADERS += utils/lua.h
-testinclude_HEADERS += tests/lua.h
+nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
 libarkimet_types_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
 tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
 INCLUDES += $(LUA_CFLAGS)
@@ -433,20 +379,20 @@ tests_arki_test_LDADD += $(LUA_LIBS)
 endif
 
 if DBALLE
-scaninclude_HEADERS += scan/bufr.h
+nobase_dist_arkiinclude_HEADERS += scan/bufr.h
 libarkimet_types_la_SOURCES += scan/bufr.cc
 tests_arki_test_SOURCES += scan/bufr-tut.cc
 INCLUDES += $(DBALLE_CFLAGS)
 libarkimet_types_la_LDFLAGS += $(DBALLE_LIBS)
 tests_arki_test_LDADD += $(DBALLE_LIBS)
 if LUA
-scaninclude_HEADERS += scan/bufrlua.h
+nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
 libarkimet_types_la_SOURCES += scan/bufrlua.cc
 endif
 endif
 
 if CURL
-dsinclude_HEADERS += dataset/http.h
+nobase_dist_arkiinclude_HEADERS += dataset/http.h
 libarkimet_dataset_la_SOURCES += dataset/http.cc
 tests_arki_test_SOURCES += dataset/http-tut.cc
 INCLUDES += @LIBCURL_CPPFLAGS@
@@ -455,7 +401,7 @@ tests_arki_test_LDADD += @LIBCURL@
 endif
 
 if ODIMH5
-scaninclude_HEADERS += scan/odimh5.h
+nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_types_la_SOURCES += scan/odimh5.cc
 tests_arki_test_SOURCES += scan/odimh5-tut.cc
 INCLUDES += $(ODIMH5_CFLAGS)
