@@ -335,23 +335,27 @@ std::string MatchTimerangeTimedef::toString() const
                 res.add(str::fmtf("%ds", step));
             else
                 res.add(str::fmtf("%dmo", step));
-            if (has_proc_type)
-            {
-                if (proc_type == -1)
-                    res.add("-");
-                else {
-                    res.add(proc_type);
-                    if (has_proc_duration)
-                    {
-                        if (proc_duration_is_seconds)
-                            res.add(str::fmtf("%ds", proc_duration));
-                        else
-                            res.add(str::fmtf("%dmo", proc_duration));
-                    }
-                }
-            }
         }
+    } else
+        res.addUndef();
+
+    if (has_proc_type)
+    {
+        if (proc_type == -1)
+            res.add("-");
+        else
+            res.add(proc_type);
+    } else
+        res.addUndef();
+
+    if (has_proc_duration)
+    {
+        if (proc_duration_is_seconds)
+            res.add(str::fmtf("%ds", proc_duration));
+        else
+            res.add(str::fmtf("%dmo", proc_duration));
     }
+
     return res.join();
 }
 

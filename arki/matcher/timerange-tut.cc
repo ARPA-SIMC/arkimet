@@ -393,7 +393,7 @@ void to::test<12>()
     Matcher m = Matcher::parse("timerange:Timedef,,1,3h");
     //Matcher m1 = Matcher::parse(m.toStringExpanded());
     //ensure_equals(m, m1);
-    ensure_equals(m.toStringExpanded(), "timerange:Timedef,,1,3h");
+    ensure_equals(m.toStringExpanded(), "timerange:Timedef,,1,10800s");
 }
 
 }

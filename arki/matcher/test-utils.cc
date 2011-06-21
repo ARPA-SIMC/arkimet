@@ -88,6 +88,11 @@ void impl_ensure_matches(const wibble::tests::Location& loc, const std::string& 
 
 	inner_ensure_equals(m1.toString(), m.toString());
 	inner_ensure_equals(m1(md), m(md));
+
+    // Retry with an expanded stringification
+    Matcher m2 = Matcher::parse(m.toStringExpanded());
+    inner_ensure_equals(m2.toStringExpanded(), m.toStringExpanded());
+    inner_ensure_equals(m2(md), m(md));
 }
 
 }
