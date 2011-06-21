@@ -67,7 +67,6 @@ bool MatchQuantity::matchItem(const Item<>& o) const
 std::string MatchQuantity::toString() const
 {
     CommaJoiner res;
-    res.add("QUANTITY");
     for (std::set<std::string>::const_iterator i = values.begin();
             i != values.end(); ++i)
         res.add(*i);
@@ -76,7 +75,7 @@ std::string MatchQuantity::toString() const
 
 MatchQuantity* MatchQuantity::parse(const std::string& pattern)
 {
-	return new MatchQuantity(pattern);
+    return new MatchQuantity(pattern);
 }
 
 void MatchQuantity::init()

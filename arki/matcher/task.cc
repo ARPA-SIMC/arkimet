@@ -58,10 +58,9 @@ bool MatchTask::matchItem(const Item<>& o) const
 
 std::string MatchTask::toString() const
 {
-	CommaJoiner res;
-	res.add("TASK");
-	if (task.size()) res.add(task); else res.addUndef();
-	return res.join();
+    CommaJoiner res;
+    if (task.size()) res.add(task); else res.addUndef();
+    return res.join();
 }
 
 MatchTask* MatchTask::parse(const std::string& pattern)
