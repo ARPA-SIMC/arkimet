@@ -176,7 +176,7 @@ template<> template<>
 void to::test<6>()
 {
     ensure_equals(dataset::HTTP::expandMatcher("origin:GRIB1,200;product:t", "http://localhost:7117"),
-          "origin:GRIB1,200; product:GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167 or GRIB1,200,200,11");
+          "origin:GRIB1,200; product:GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167 or GRIB1,200,200,11 or GRIB2,200,0,200,11");
     try {
         dataset::HTTP::expandMatcher("origin:GRIB1,200;product:pippo", "http://localhost:7117");
         ensure(false);
