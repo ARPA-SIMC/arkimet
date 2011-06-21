@@ -43,8 +43,10 @@ sample:set(arki_timerange.grib1(2, 1, 6, 12))
 ensure_matches(sample, "timerange:GRIB1,2")
 ensure_matches(sample, "timerange:GRIB1,2,6h,12h")
 
+-- partial match also works
+ensure_matches(sample, "timerange:GRIB1,2,6h")
+
 ensure_not_matches(sample, "timerange:GRIB1,1")
-ensure_not_matches(sample, "timerange:GRIB1,2,6h")
 ensure_not_matches(sample, "timerange:GRIB1,2,6m,12m")
 
 -- GRIB2

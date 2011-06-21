@@ -30,48 +30,60 @@ using namespace wibble;
 namespace arki {
 namespace matcher {
 
-static int parseValueWithUnit(const std::string& str, types::timerange::GRIB1::Unit& u)
+template<typename INT>
+static bool parseValueWithUnit(const std::string& str, INT& val, types::timerange::GRIB1::Unit& u)
 {
-	const char* s = str.c_str();
-	char* e = NULL;
-	long int value = strtol(s, &e, 10);
-	if (value == 0)
-		return 0;
-	string unit = str.substr(e-s);
-	if (unit == "s")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value;
-	}
-	else if (unit == "m")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value * 60;
-	}
-	else if (unit == "h")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value * 3600;
-	}
-	else if (unit == "d")
-	{
-		u = types::timerange::GRIB1::SECOND;
-		return value * 3600 * 24;
-	}
-	else if (unit == "mo")
-	{
-		u = types::timerange::GRIB1::MONTH;
-		return value;
-	}
-	else if (unit == "y")
-	{
-		u = types::timerange::GRIB1::MONTH;
-		return value * 12;
-	} else {
-		throw wibble::exception::Consistency(
-				"parsing 'timerange' match expression '" + str + "'",
-				"unknown time suffix '" + unit + "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'");
-	}
+    if (str.empty()) return false;
+
+    const char* s = str.c_str();
+    char* e = NULL;
+    long int value = strtol(s, &e, 10);
+    if (value == 0)
+    {
+        val = 0;
+        return true;
+    }
+    string unit = str.substr(e-s);
+    if (unit == "s")
+    {
+        u = types::timerange::GRIB1::SECOND;
+        val = value;
+        return true;
+    }
+    else if (unit == "m")
+    {
+        u = types::timerange::GRIB1::SECOND;
+        val = value * 60;
+        return true;
+    }
+    else if (unit == "h")
+    {
+        u = types::timerange::GRIB1::SECOND;
+        val = value * 3600;
+        return true;
+    }
+    else if (unit == "d")
+    {
+        u = types::timerange::GRIB1::SECOND;
+        val = value * 3600 * 24;
+        return true;
+    }
+    else if (unit == "mo")
+    {
+        u = types::timerange::GRIB1::MONTH;
+        val = value;
+        return true;
+    }
+    else if (unit == "y")
+    {
+        u = types::timerange::GRIB1::MONTH;
+        val = value * 12;
+        return true;
+    } else {
+        throw wibble::exception::Consistency(
+                "parsing 'timerange' match expression '" + str + "'",
+                "unknown time suffix '" + unit + "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'");
+    }
 }
 
 static int parseTimedefValueWithUnit(const std::string& str, bool& is_second)
@@ -94,7 +106,9 @@ static int parseTimedefValueWithUnit(const std::string& str, bool& is_second)
 std::string MatchTimerange::name() const { return "timerange"; }
 
 MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
-	: matchType(false), matchBody(false), unit(types::timerange::GRIB1::SECOND), ptype(0), p1(0), p2(0)
+    : unit(types::timerange::GRIB1::SECOND),
+      has_ptype(false), has_p1(false), has_p2(false),
+      ptype(0), p1(0), p2(0)
 {
 	OptionalCommaList args(pattern);
 	const types::timerange::GRIB1::Unit missingUnit = (types::timerange::GRIB1::Unit)-1;
@@ -103,12 +117,15 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 	{
 		types::timerange::GRIB1::Unit first = missingUnit;
 		types::timerange::GRIB1::Unit second = missingUnit;
-		matchType = true;
-		ptype = strtoul(args[0].c_str(), NULL, 10);
-		if (args.size() == 1)
-			return;
-		matchBody = true;
-		p1 = parseValueWithUnit(args[1], first);
+        if (!args[0].empty())
+        {
+            has_ptype = true;
+            ptype = strtoul(args[0].c_str(), NULL, 10);
+        } else
+            has_ptype = false;
+        if (args.size() == 1)
+            return;
+        has_p1 = parseValueWithUnit(args[1], p1, first);
 		if (args.size() == 2)
 		{
 			if (first == missingUnit)
@@ -117,7 +134,7 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 				unit = first;
 			return;
 		}
-		p2 = parseValueWithUnit(args[2], second);
+        has_p2 = parseValueWithUnit(args[2], p2, second);
 
 		// If first or second units haven't been set, use the other as default
 		if (first == missingUnit)
@@ -140,43 +157,56 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 
 bool MatchTimerangeGRIB1::matchItem(const Item<>& o) const
 {
-	const types::timerange::GRIB1* v = dynamic_cast<const types::timerange::GRIB1*>(o.ptr());
-	if (!v) return false;
+    const types::timerange::GRIB1* v = dynamic_cast<const types::timerange::GRIB1*>(o.ptr());
+    if (!v) return false;
+    int mtype, mp1, mp2;
+    types::timerange::GRIB1::Unit munit;
+    v->getNormalised(mtype, munit, mp1, mp2);
 
-	if (matchType)
-	{
-		int mtype, mp1, mp2;
-		types::timerange::GRIB1::Unit munit;
-		v->getNormalised(mtype, munit, mp1, mp2);
-		if (ptype != mtype)
-			return false;
-		if (matchBody)
-		{
-			if (p1 != mp1 || p2 != mp2)
-				return false;
-			if (unit != munit && (p1 != 0 || p2 != 0))
-				return false;
-		}
-	}
-	return true;
+    if (has_ptype && ptype != mtype)
+        return false;
+    if (has_p1 && p1 != mp1)
+        return false;
+    if (has_p2 && p2 != mp2)
+        return false;
+    if (unit != munit)
+    {
+        // If the units are different, we fail unless we match zeros
+        if (has_p1 && p1 != 0)
+            return false;
+        if (has_p2 && p2 != 0)
+            return false;
+    }
+    return true;
 }
 
 std::string MatchTimerangeGRIB1::toString() const
 {
-	string res = "GRIB1";
-	if (matchType)
-		res += ","+str::fmt(ptype);
-	if (matchBody)
-	{
-		const char* u = "s";
-		switch (unit)
-		{
-			case types::timerange::GRIB1::SECOND: u = "s"; break;
-			case types::timerange::GRIB1::MONTH: u = "mo"; break;
-		}
-		res += "," + str::fmt(p1) + u + "," + str::fmt(p2) + u;
-	}
-	return res;
+    CommaJoiner res;
+    res.add("GRIB1");
+    if (has_ptype)
+        res.add(ptype);
+    else
+        res.addUndef();
+
+    const char* u = "s";
+    switch (unit)
+    {
+        case types::timerange::GRIB1::SECOND: u = "s"; break;
+        case types::timerange::GRIB1::MONTH: u = "mo"; break;
+    }
+
+    if (has_p1)
+        res.add(str::fmtf("%d%s", p1, u));
+    else
+        res.addUndef();
+
+    if (has_p2)
+        res.add(str::fmtf("%d%s", p2, u));
+    else
+        res.addUndef();
+
+    return res.join();
 }
 
 MatchTimerangeGRIB2::MatchTimerangeGRIB2(const std::string& pattern)
@@ -218,7 +248,7 @@ MatchTimerangeBUFR::MatchTimerangeBUFR(const std::string& pattern)
 	if (has_forecast)
 	{
 		types::timerange::GRIB1::Unit unit;
-		value = parseValueWithUnit(args[0], unit);
+		has_forecast = parseValueWithUnit(args[0], value, unit);
 		is_seconds = unit == types::timerange::GRIB1::SECOND;
 	} else {
 		value = 0;

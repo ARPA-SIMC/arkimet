@@ -46,20 +46,21 @@ TESTGRP(arki_matcher_timerange);
 template<> template<>
 void to::test<1>()
 {
+    // md.set(timerange::GRIB1::create(2, 254u, 22, 23));
 	ensure_matches("timerange:GRIB1", md);
 	ensure_matches("timerange:GRIB1,,", md);
 	ensure_matches("timerange:GRIB1,2", md);
 	ensure_matches("timerange:GRIB1,2,,", md);
-	// Incomplete matches are not allowed
-	ensure_not_matches("timerange:GRIB1,,22s,", md);
-	ensure_not_matches("timerange:GRIB1,,,23s", md);
-	// ensure_not_matches("timerange:GRIB1,2,22s,", md);
-	ensure_not_matches("timerange:GRIB1,2,,23s", md);
-	ensure_not_matches("timerange:GRIB1,,22s,23s", md);
-	ensure_matches("timerange:GRIB1,2,22s,23s", md);
-	ensure_not_matches("timerange:GRIB1,2,23s,23s", md);
-	ensure_not_matches("timerange:GRIB1,2,22s,22s", md);
-	// ensure_not_matches("timerange:GRIB1,2,22,23");
+    // Incomplete matches are now allowed
+    ensure_matches("timerange:GRIB1,,22s,", md);
+    ensure_matches("timerange:GRIB1,,,23s", md);
+    ensure_matches("timerange:GRIB1,2,22s,", md);
+    ensure_matches("timerange:GRIB1,2,,23s", md);
+    ensure_matches("timerange:GRIB1,,22s,23s", md);
+    ensure_matches("timerange:GRIB1,2,22s,23s", md);
+    ensure_not_matches("timerange:GRIB1,2,23s,23s", md);
+    ensure_not_matches("timerange:GRIB1,2,22s,22s", md);
+    // ensure_not_matches("timerange:GRIB1,2,22,23");
 
 	// Match timerange in years, which gave problems
 	md.set(timerange::GRIB1::create(2, 4, 2, 3));

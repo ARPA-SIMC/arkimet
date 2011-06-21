@@ -47,9 +47,9 @@ struct MatchTimerange : public Implementation
 
 struct MatchTimerangeGRIB1 : public MatchTimerange
 {
-	bool matchType, matchBody;
-	types::timerange::GRIB1::Unit unit;
-	int ptype, p1, p2;
+    types::timerange::GRIB1::Unit unit;
+    bool has_ptype, has_p1, has_p2;
+    int ptype, p1, p2;
 
 	MatchTimerangeGRIB1(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
