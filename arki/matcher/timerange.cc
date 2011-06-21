@@ -350,7 +350,9 @@ std::string MatchTimerangeTimedef::toString() const
 
     if (has_proc_duration)
     {
-        if (proc_duration_is_seconds)
+        if (proc_duration == -1)
+            res.add("-");
+        else if (proc_duration_is_seconds)
             res.add(str::fmtf("%ds", proc_duration));
         else
             res.add(str::fmtf("%dmo", proc_duration));
