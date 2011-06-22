@@ -1,3 +1,19 @@
+arkimet (0.61-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Ported to new dballe/wreport
+     - Fixed matcher expansion/serialization (fixes several odd behaviours
+       with timedef timerange matches)
+     - GRIB1 timeranges now allows partial matching
+     - Changed alias expansion strategy, now server-side alias expansion works
+       even if the client doesn't have the aliases. The default alias
+       configuration is now empty.
+     - Fixed packaging and installing of headers
+     - Emitter fixes by Emanuele di Giacomo
+     - config.h fixes by Emanuele di Giacomo
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 22 Jun 2011 11:33:43 +0200
+
 arkimet (0.60-1) UNRELEASED; urgency=low
 
   * New upstream version
