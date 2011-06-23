@@ -24,9 +24,9 @@
 #include <arki/metadata.h>
 #include <arki/summary.h>
 #include <arki/utils/lua.h>
+#include <arki/runtime/config.h>
 #include <wibble/regexp.h>
-
-#include <cstdlib>
+#include <wibble/sys/fs.h>
 
 using namespace std;
 using namespace wibble;
@@ -55,16 +55,17 @@ void Report::load(const std::string& params)
 	if (args.empty())
 		throw wibble::exception::Consistency("initialising report", "report command is empty");
 
-	// See if an env variable is set
-	std::string filename;
-	char* dir = getenv("ARKI_REPORT");
-	if (dir)
-		filename = str::joinpath(dir, args[0]);
-	else
-		// Otherwise, use the compile-time configuration directory
-		filename = str::joinpath(str::joinpath(CONF_DIR, "report"), args[0]);
-
-	loadFile(filename);
+    // Look for the script in all report paths
+    std::string filename;
+    const runtime::Config& conf = runtime::Config::get();
+    for (vector<string>::const_iterator i = conf.dir_report.begin();
+            i != conf.dir_report.end(); ++i)
+    {
+        filename = str::joinpath(*i, args[0]);
+        if (sys::fs::exists(filename))
+            break;
+    }
+    loadFile(filename);
 }
 
 void Report::loadFile(const std::string& fname)

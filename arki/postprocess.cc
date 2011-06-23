@@ -24,6 +24,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/utils/process.h>
+#include <arki/runtime/config.h>
 #include <wibble/string.h>
 #include <wibble/regexp.h>
 #include <wibble/operators.h>
@@ -287,11 +288,10 @@ void Postprocess::start()
 
     // Build a list of argv0 candidates
     vector<string> cand_argv0;
-    // TODO: colon-separated $PATH-like semantics
-    char* env_ppdir = getenv("ARKI_POSTPROC");
-    if (env_ppdir)
-        cand_argv0.push_back(str::joinpath(env_ppdir, m_child->cmd.args[0]));
-    cand_argv0.push_back(str::joinpath(POSTPROC_DIR, m_child->cmd.args[0]));
+    const runtime::Config& conf = runtime::Config::get();
+    for (vector<string>::const_iterator i = conf.dir_postproc.begin();
+            i != conf.dir_postproc.end(); ++i)
+        cand_argv0.push_back(str::joinpath(*i, m_child->cmd.args[0]));
 
     // Get the first good one from the list
     string argv0;

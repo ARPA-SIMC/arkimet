@@ -40,6 +40,27 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
+Config::Config()
+{
+    // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv("ARKI_POSTPROC"))
+        dir_postproc.push_back(envdir);
+    dir_postproc.push_back(POSTPROC_DIR);
+
+    // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv("ARKI_REPORT"))
+        dir_report.push_back(envdir);
+    dir_report.push_back(str::joinpath(CONF_DIR, "report"));
+}
+
+Config& Config::get()
+{
+    static Config* instance = 0;
+    if (!instance)
+        instance = new Config;
+    return *instance;
+}
+
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 {
 	using namespace wibble;

@@ -31,6 +31,20 @@
 namespace arki {
 namespace runtime {
 
+struct Config
+{
+    /// Directories where postprocessor executables are found
+    std::vector<std::string> dir_postproc;
+
+    /// Directories where report scripts are found
+    std::vector<std::string> dir_report;
+
+    Config();
+
+    /// Get the runtime configuration
+    static Config& get();
+};
+
 /**
  * Parse the config file with the given name into the ConfigFile object 'cfg'.
  *
