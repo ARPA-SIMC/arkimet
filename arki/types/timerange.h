@@ -146,10 +146,11 @@ public:
 	virtual int compare_local(const Timerange& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	void getNormalised(int& type, Unit& unit, int& p1, int& p2) const;
+    void getNormalised(int& type, Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const;
 
 	static Item<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
 	static Item<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };
 
 class GRIB2 : public Timerange

@@ -190,7 +190,8 @@ void to::test<5>()
 	ensure_matches("timerange:GRIB1,0,0h,0h", md);
 	ensure_not_matches("timerange:GRIB1,0,12h", md);
 	ensure_not_matches("timerange:GRIB1,0,12y", md);
-	ensure_not_matches("timerange:GRIB1,0,,12y", md);
+    // This matches, because p2 is ignored with ptype=0
+    ensure_matches("timerange:GRIB1,0,,12y", md);
 }
 
 // Test timedef matcher parsing

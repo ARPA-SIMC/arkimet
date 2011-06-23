@@ -10,7 +10,7 @@ ensure_equals(o.style, "GRIB1")
 ensure_equals(o.type, 0)
 ensure_equals(o.unit, "second")
 ensure_equals(o.p1, 21600)
-ensure_equals(o.p2, 0)
+ensure_equals(o.p2, nil) -- p2 is meaningless with type=0
 ensure_equals(tostring(o), "GRIB1(000, 006h)")
 
 

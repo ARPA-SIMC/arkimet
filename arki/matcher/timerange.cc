@@ -161,20 +161,26 @@ bool MatchTimerangeGRIB1::matchItem(const Item<>& o) const
     if (!v) return false;
     int mtype, mp1, mp2;
     types::timerange::GRIB1::Unit munit;
-    v->getNormalised(mtype, munit, mp1, mp2);
+    bool use_p1, use_p2;
+    v->getNormalised(mtype, munit, mp1, mp2, use_p1, use_p2);
+    // FIXME: here FAILS for GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
+    // normalisation does something else than reduction to months or seconds in
+    // that case. GRIB1 match should in fact be deprecated in favour of
+    // timedef. Even better, GRIB1 timeranges should just be scanned as
+    // timedefs
 
     if (has_ptype && ptype != mtype)
         return false;
-    if (has_p1 && p1 != mp1)
+    if (has_p1 && use_p1 && p1 != mp1)
         return false;
-    if (has_p2 && p2 != mp2)
+    if (has_p2 && use_p2 && p2 != mp2)
         return false;
     if (unit != munit)
     {
         // If the units are different, we fail unless we match zeros
-        if (has_p1 && p1 != 0)
+        if (has_p1 && use_p1 && p1 != 0)
             return false;
-        if (has_p2 && p2 != 0)
+        if (has_p2 && use_p2 && p2 != 0)
             return false;
     }
     return true;
@@ -184,8 +190,12 @@ std::string MatchTimerangeGRIB1::toString() const
 {
     CommaJoiner res;
     res.add("GRIB1");
+    bool use_p1 = true, use_p2 = true;
     if (has_ptype)
+    {
         res.add(ptype);
+        types::timerange::GRIB1::arg_significance(ptype, use_p1, use_p2);
+    }
     else
         res.addUndef();
 
@@ -196,12 +206,12 @@ std::string MatchTimerangeGRIB1::toString() const
         case types::timerange::GRIB1::MONTH: u = "mo"; break;
     }
 
-    if (has_p1)
+    if (has_p1 && use_p1)
         res.add(str::fmtf("%d%s", p1, u));
     else
         res.addUndef();
 
-    if (has_p2)
+    if (has_p2 && use_p2)
         res.add(str::fmtf("%d%s", p2, u));
     else
         res.addUndef();

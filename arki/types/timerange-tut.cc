@@ -54,7 +54,8 @@ void to::test<1>()
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
-	v->getNormalised(t, u, p1, p2);
+    bool use_p1, use_p2;
+    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
 	ensure_equals(t, 2);
 	ensure_equals(u, timerange::GRIB1::SECOND);
 	ensure_equals(p1, 2);
@@ -89,7 +90,8 @@ void to::test<2>()
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
-	v->getNormalised(t, u, p1, p2);
+    bool use_p1, use_p2;
+    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
 	ensure_equals(t, 2);
 	ensure_equals(u, timerange::GRIB1::SECOND);
 	ensure_equals(p1, 2 * 3600);
@@ -124,7 +126,8 @@ void to::test<3>()
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
-	v->getNormalised(t, u, p1, p2);
+    bool use_p1, use_p2;
+    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
 	ensure_equals(t, 2);
 	ensure_equals(u, timerange::GRIB1::MONTH);
 	ensure_equals(p1, 2 * 12);
@@ -159,7 +162,8 @@ void to::test<4>()
 
 	timerange::GRIB1::Unit u;
 	int t, p1, p2;
-	v->getNormalised(t, u, p1, p2);
+    bool use_p1, use_p2;
+	v->getNormalised(t, u, p1, p2, use_p1, use_p2);
 	ensure_equals(t, 250);
 	ensure_equals(u, timerange::GRIB1::SECOND);
 	ensure_equals(p1, 124 * 3600);

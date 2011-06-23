@@ -690,7 +690,8 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 	int type;
 	timerange::GRIB1::Unit unit;
 	int p1, p2;
-	getNormalised(type, unit, p1, p2);
+    bool use_p1, use_p2;
+    getNormalised(type, unit, p1, p2, use_p1, use_p2);
 
 	if (name == "type")
 		lua_pushnumber(L, type);
@@ -701,10 +702,20 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 			case timerange::GRIB1::MONTH: lua_pushstring(L, "month"); break;
 			default: lua_pushnil(L); break;
 		}
-	else if (name == "p1")
-		lua_pushnumber(L, p1);
-	else if (name == "p2")
-		lua_pushnumber(L, p2);
+    else if (name == "p1")
+    {
+        if (use_p1)
+            lua_pushnumber(L, p1);
+        else
+            lua_pushnil(L);
+    }
+    else if (name == "p2")
+    {
+        if (use_p2)
+            lua_pushnumber(L, p2);
+        else
+            lua_pushnil(L);
+    }
 	else
 		return Timerange::lua_lookup(L, name);
 	return true;
@@ -721,8 +732,9 @@ int GRIB1::compare_local(const Timerange& o) const
 
 	int atype, ap1, ap2, btype, bp1, bp2;
 	Unit aunit, bunit;
-	getNormalised(atype, aunit, ap1, ap2);
-	v->getNormalised(btype, bunit, bp1, bp2);
+    bool dummy_use_p1, dummy_use_p2;
+    getNormalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
+    v->getNormalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
 
 	if (int res = atype - btype) return res;
 	if (int res = aunit - bunit) return res;
@@ -737,8 +749,9 @@ bool GRIB1::operator==(const Type& o) const
 
 	int atype, ap1, ap2, btype, bp1, bp2;
 	Unit aunit, bunit;
-	getNormalised(atype, aunit, ap1, ap2);
-	v->getNormalised(btype, bunit, bp1, bp2);
+    bool dummy_use_p1, dummy_use_p2;
+    getNormalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
+    v->getNormalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
 
 	return atype == btype && aunit == bunit && ap1 == bp1 && ap2 == bp2;
 }
@@ -1031,7 +1044,7 @@ bool GRIB1::get_timeunit_conversion(int& timemul) const
     return is_seconds;
 }
 
-void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
+void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2, bool& use_op1, bool& use_op2) const
 {
     otype = m_type;
 
@@ -1044,11 +1057,14 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 
     // Convert p1 and p2
     op1 = 0, op2 = 0;
+    use_op1 = use_op2 = false;
 
-	switch ((t_enum_GRIB_TIMERANGE)m_type)
-	{
-		case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
-			op1 = m_p1; break;
+    switch ((t_enum_GRIB_TIMERANGE)m_type)
+    {
+        case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
+            op1 = m_p1;
+            use_op1 = true;
+            break;
 		case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
 			break;
 		case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
@@ -1056,10 +1072,15 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 		case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
 		case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1:
 		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2:
-		case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2:
-			op1 = m_p1; op2 = m_p2; break;
-		case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
-			op1 = m_p1 << 8 | m_p2; break;
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2:
+            op1 = m_p1; op2 = m_p2;
+            use_op1 = use_op2 = true;
+            break;
+        case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
+            op1 = m_p1 << 8 | m_p2;
+            use_op1 = true;
+            use_op2 = false;
+            break;
 		case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2:
 		case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2:
 		case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2:
@@ -1071,19 +1092,76 @@ void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2) const
 		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS:
 		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS:
 		case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES:
-		case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
-			op1 = m_p1; op2 = m_p2; break;
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
+            op1 = m_p1;
+            op2 = m_p2;
+            use_op1 = use_op2 = true;
+            break;
 		case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2:
 		case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2:
-		case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
-			op2 = m_p2; break;
-		default:
-			// Fallback for unknown time range types
-			op1 = m_p1; op2 = m_p2; break;
-	}
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
+            op2 = m_p2;
+            use_op2 = true;
+            break;
+        default:
+            // Fallback for unknown time range types
+            op1 = m_p1;
+            op2 = m_p2;
+            use_op1 = use_op2 = true;
+            break;
+    }
 
 	op1 *= timemul;
 	op2 *= timemul;
+}
+
+void GRIB1::arg_significance(unsigned type, bool& use_p1, bool& use_p2)
+{
+    use_p1 = use_p2 = false;
+
+    switch ((t_enum_GRIB_TIMERANGE)type)
+    {
+        case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
+            use_p1 = true;
+            break;
+        case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
+            break;
+        case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+        case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
+        case GRIB_TIMERANGE_DIFFERENCE_REFTIME_PLUS_P2_REFTIME_PLUS_P1:
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_MINUS_P2:
+        case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_MINUS_P1_REFTIME_PLUS_P2:
+            use_p1 = use_p2 = true;
+            break;
+        case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
+            use_p1 = true;
+            use_p2 = true;
+            break;
+        case GRIB_TIMERANGE_CLIMATOLOGICAL_MEAN_OVER_MULTIPLE_YEARS_FOR_P2:
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_REFTIME_PERIOD_P2:
+        case GRIB_TIMERANGE_ACCUMULATED_OVER_FORECAST_PERIOD_P1_REFTIME_PERIOD_P2:
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_OF_PERIOD_P1_AT_INTERVALS_P2:
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_FORECAST_PERIOD_P1_AT_INTERVALS_P2:
+        case GRIB_TIMERANGE_AVERAGE_OVER_FORECAST_FIRST_P1_OTHER_P2_REDUCED:
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_FIRST_P1_OTHER_P2_REDUCED:
+        case GRIB_TIMERANGE_STDDEV_OF_FORECASTS_RESPECT_TO_AVERAGE_OF_TENDENCY:
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS:
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS:
+        case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES:
+        case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
+            use_p1 = use_p2 = true;
+            break;
+        case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2:
+        case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2:
+        case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
+            use_p2 = true;
+            break;
+        default:
+            // Fallback for unknown time range types
+            use_p1 = use_p2 = true;
+            break;
+    }
 }
 
 Timerange::Style GRIB2::style() const { return Timerange::GRIB2; }
