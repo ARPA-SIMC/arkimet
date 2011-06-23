@@ -135,11 +135,6 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file = 0);
 std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir = 0);
 
 /**
- * Return the full pathname of a rc directory
- */
-std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir = 0);
-
-/**
  * Read the content of an rc directory, by concatenating all non-hidden,
  * non-backup files in it, sorted alphabetically by name
  */

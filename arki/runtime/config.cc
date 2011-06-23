@@ -266,7 +266,7 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 	// Else, nothing is loaded.
 }
 
-std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir)
+static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir)
 {
 	std::string dirname;
 	char* fromEnv = 0;
