@@ -52,6 +52,12 @@ Config::Config()
         dir_report.push_back(envdir);
     dir_report.push_back(str::joinpath(CONF_DIR, "report"));
 
+    // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv("ARKI_QMACRO"))
+        dir_qmacro.push_back(envdir);
+    dir_qmacro.push_back(str::joinpath(CONF_DIR, "qmacro"));
+
+
     if (const char* envdir = getenv("ARKI_TMPDIR"))
         dir_temp = envdir;
     else if (const char* envdir = getenv("TMPDIR"))

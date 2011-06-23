@@ -31,8 +31,15 @@
 namespace arki {
 namespace runtime {
 
+/**
+ * Hold runtime configuration read from compile-time defaults and environment
+ * variables
+ */
 struct Config
 {
+    /**
+     * Regular string vector with extra convenience methods for file lookup
+     */
     struct Dirlist : public std::vector<std::string>
     {
         /**
@@ -47,6 +54,9 @@ struct Config
 
     /// Directories where report scripts are found
     Dirlist dir_report;
+
+    /// Directories where query macro scripts are found
+    Dirlist dir_qmacro;
 
     /// Temporary file directory
     std::string dir_temp;
