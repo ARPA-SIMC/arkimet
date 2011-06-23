@@ -1,3 +1,11 @@
+arkimet (0.62-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Timerange GRIB1 expansion skips p1 or p2 if they are not relevant
+       according to ptype
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 23 Jun 2011 11:44:03 +0200
+
 arkimet (0.61-1) UNRELEASED; urgency=low
 
   * New upstream version

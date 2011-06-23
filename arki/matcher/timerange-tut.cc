@@ -396,6 +396,14 @@ void to::test<12>()
     //Matcher m1 = Matcher::parse(m.toStringExpanded());
     //ensure_equals(m, m1);
     ensure_equals(m.toStringExpanded(), "timerange:Timedef,,1,10800s");
+
+    // Ensure that timerange expansion skips irrelevant arguments
+    m = Matcher::parse("timerange:GRIB1,0,1h,2h");
+    ensure_equals(m.toStringExpanded(), "timerange:GRIB1,0,3600s");
+    m = Matcher::parse("timerange:GRIB1,124,1h,2h");
+    ensure_equals(m.toStringExpanded(), "timerange:GRIB1,124,,7200s");
+    m = Matcher::parse("timerange:GRIB1,6,1h,2h");
+    ensure_equals(m.toStringExpanded(), "timerange:GRIB1,6,3600s,7200s");
 }
 
 }
