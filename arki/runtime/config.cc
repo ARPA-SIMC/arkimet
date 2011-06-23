@@ -72,6 +72,11 @@ Config::Config()
         dir_scan_bufr.push_back(envdir);
     dir_scan_bufr.push_back(str::joinpath(CONF_DIR, "scan-bufr"));
 
+    // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv("ARKI_TARGETFILE"))
+        dir_targetfile.push_back(envdir);
+    dir_targetfile.push_back(str::joinpath(CONF_DIR, "targetfile"));
+
     if (const char* envdir = getenv("ARKI_TMPDIR"))
         dir_temp = envdir;
     else if (const char* envdir = getenv("TMPDIR"))

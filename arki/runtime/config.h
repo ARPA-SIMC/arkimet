@@ -86,6 +86,9 @@ struct Config
     /// Directories where bufr scan scripts are found
     Dirlist dir_scan_bufr;
 
+    /// Directories where targetfile scripts are found
+    Dirlist dir_targetfile;
+
     /// Temporary file directory
     std::string dir_temp;
 

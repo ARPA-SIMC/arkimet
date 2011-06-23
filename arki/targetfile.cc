@@ -130,7 +130,7 @@ Targetfile::~Targetfile()
 
 void Targetfile::loadRCFiles()
 {
-	vector<string> files = runtime::rcFiles("targetfile", "ARKI_TARGETFILE");
+	vector<string> files = runtime::Config::get().dir_targetfile.list_files(".lua");
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 	{
 		if (luaL_dofile(*L, i->c_str()))
