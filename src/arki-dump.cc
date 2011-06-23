@@ -52,6 +52,7 @@ struct Options : public StandardParserWithManpage
 	BoolOption* config;
 	BoolOption* aliases;
 	BoolOption* bbox;
+	BoolOption* info;
 	StringOption* outfile;
 
 	Options() : StandardParserWithManpage("arki-dump", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -79,6 +80,8 @@ struct Options : public StandardParserWithManpage
 			"print the arkimet configuration used to access the given file or dataset or URL");
 
 		aliases = add<BoolOption>("aliases", 0, "aliases", "", "dump the alias database (to dump the aliases of a remote server, put the server URL on the command line)");
+
+        info = add<BoolOption>("info", 0, "info", "", "dump configuration information");
 
 #ifdef HAVE_GEOS
 		bbox = add<BoolOption>("bbox", 0, "bbox", "", "dump the bounding box");
@@ -163,6 +166,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--query conflicts with --annotate");
 		if (opts.query->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--query conflicts with --bbox");
+		if (opts.query->boolValue() && opts.info && opts.info->isSet())
+			throw wibble::exception::BadOption("--query conflicts with --info");
 
 		if (opts.config->boolValue() && opts.aliases->boolValue())
 			throw wibble::exception::BadOption("--config conflicts with --aliases");
@@ -174,6 +179,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--config conflicts with --annotate");
 		if (opts.config->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--config conflicts with --bbox");
+		if (opts.config->boolValue() && opts.info && opts.info->isSet())
+			throw wibble::exception::BadOption("--config conflicts with --info");
 
 		if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
 			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-data");
@@ -183,6 +190,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
 		if (opts.aliases->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--aliases conflicts with --bbox");
+		if (opts.aliases->boolValue() && opts.info && opts.info->isSet())
+			throw wibble::exception::BadOption("--aliases conflicts with --info");
 
 		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
 			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
@@ -192,6 +201,8 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
 		if (opts.annotate->boolValue() && opts.bbox && opts.bbox->isSet())
 			throw wibble::exception::BadOption("--annotate conflicts with --bbox");
+		if (opts.annotate->boolValue() && opts.info && opts.info->isSet())
+			throw wibble::exception::BadOption("--annotate conflicts with --info");
 
 		if (opts.query->boolValue())
 		{
@@ -264,6 +275,13 @@ int main(int argc, const char* argv[])
 			return 0;
 		}
 #endif
+
+        if (opts.info->boolValue())
+        {
+            cout << "arkimet runtime information:" << endl;
+            runtime::Config::get().describe(cout);
+            return 0;
+        }
 
 		// Open the input file
 		runtime::Input in(opts);

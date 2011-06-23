@@ -73,7 +73,11 @@ struct Config
          * and from the compiled in path CONF_DIR/confdir
          */
         void init_config_and_env(const char* confdir, const char* envname);
+
+        /// Write a description to the given output stream
+        void describe(std::ostream& out, const char* desc, const char* envvar) const;
     };
+
     /// Directories where postprocessor executables are found
     Dirlist dir_postproc;
 
@@ -99,6 +103,9 @@ struct Config
     std::string dir_temp;
 
     Config();
+
+    /// Write a description to the given output stream
+    void describe(std::ostream& out) const;
 
     /// Get the runtime configuration
     static Config& get();
