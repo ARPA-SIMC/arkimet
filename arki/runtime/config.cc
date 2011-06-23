@@ -47,35 +47,12 @@ Config::Config()
         dir_postproc.push_back(envdir);
     dir_postproc.push_back(POSTPROC_DIR);
 
-    // TODO: colon-separated $PATH-like semantics
-    if (const char* envdir = getenv("ARKI_REPORT"))
-        dir_report.push_back(envdir);
-    dir_report.push_back(str::joinpath(CONF_DIR, "report"));
-
-    // TODO: colon-separated $PATH-like semantics
-    if (const char* envdir = getenv("ARKI_QMACRO"))
-        dir_qmacro.push_back(envdir);
-    dir_qmacro.push_back(str::joinpath(CONF_DIR, "qmacro"));
-
-    // TODO: colon-separated $PATH-like semantics
-    if (const char* envdir = getenv("ARKI_SCAN_GRIB1"))
-        dir_scan_grib1.push_back(envdir);
-    dir_scan_grib1.push_back(str::joinpath(CONF_DIR, "scan-grib1"));
-
-    // TODO: colon-separated $PATH-like semantics
-    if (const char* envdir = getenv("ARKI_SCAN_GRIB2"))
-        dir_scan_grib2.push_back(envdir);
-    dir_scan_grib2.push_back(str::joinpath(CONF_DIR, "scan-grib2"));
-
-    // TODO: colon-separated $PATH-like semantics
-    if (const char* envdir = getenv("ARKI_SCAN_BUFR"))
-        dir_scan_bufr.push_back(envdir);
-    dir_scan_bufr.push_back(str::joinpath(CONF_DIR, "scan-bufr"));
-
-    // TODO: colon-separated $PATH-like semantics
-    if (const char* envdir = getenv("ARKI_TARGETFILE"))
-        dir_targetfile.push_back(envdir);
-    dir_targetfile.push_back(str::joinpath(CONF_DIR, "targetfile"));
+    dir_report.init_config_and_env("report", "ARKI_REPORT");
+    dir_qmacro.init_config_and_env("qmacro", "ARKI_QMACRO");
+    dir_scan_grib1.init_config_and_env("scan-grib1", "ARKI_SCAN_GRIB1");
+    dir_scan_grib2.init_config_and_env("scan-grib2", "ARKI_SCAN_GRIB2");
+    dir_scan_bufr.init_config_and_env("scan-bufr", "ARKI_SCAN_BUFR");
+    dir_targetfile.init_config_and_env("targetfile", "ARKI_TARGETFILE");
 
     if (const char* envdir = getenv("ARKI_TMPDIR"))
         dir_temp = envdir;
@@ -91,6 +68,14 @@ Config& Config::get()
     if (!instance)
         instance = new Config;
     return *instance;
+}
+
+void Config::Dirlist::init_config_and_env(const char* confdir, const char* envname)
+{
+    // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv(envname))
+        push_back(envdir);
+    push_back(str::joinpath(CONF_DIR, confdir));
 }
 
 std::string Config::Dirlist::find_file(const std::string& fname, bool executable) const

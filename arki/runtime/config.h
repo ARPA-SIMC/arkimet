@@ -67,6 +67,12 @@ struct Config
          *   If true, limit the list to the first directory found
          */
         std::vector<std::string> list_files(const std::string& ext, bool first_only=true) const;
+
+        /**
+         * Add the directory from the envirnment variable \a envname (if set)
+         * and from the compiled in path CONF_DIR/confdir
+         */
+        void init_config_and_env(const char* confdir, const char* envname);
     };
     /// Directories where postprocessor executables are found
     Dirlist dir_postproc;
