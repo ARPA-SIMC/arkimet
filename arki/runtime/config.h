@@ -55,6 +55,18 @@ struct Config
          * @return the pathname if found, or the empty string if not found
          */
         std::string find_file_noerror(const std::string& fname, bool executable=false) const;
+
+        /**
+         * List the files if the first directory found
+         *
+         * The file list is sorted by directory order and then by file name.
+         *
+         * @param ext
+         *   The extension (including the dot) that files must have to be considered
+         * @param first_only
+         *   If true, limit the list to the first directory found
+         */
+        std::vector<std::string> list_files(const std::string& ext, bool first_only=true) const;
     };
     /// Directories where postprocessor executables are found
     Dirlist dir_postproc;
@@ -65,7 +77,13 @@ struct Config
     /// Directories where query macro scripts are found
     Dirlist dir_qmacro;
 
-    /// Directories where query macro scripts are found
+    /// Directories where grib1 scan scripts are found
+    Dirlist dir_scan_grib1;
+
+    /// Directories where grib2 scan scripts are found
+    Dirlist dir_scan_grib2;
+
+    /// Directories where bufr scan scripts are found
     Dirlist dir_scan_bufr;
 
     /// Temporary file directory

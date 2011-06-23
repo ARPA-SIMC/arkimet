@@ -58,6 +58,16 @@ Config::Config()
     dir_qmacro.push_back(str::joinpath(CONF_DIR, "qmacro"));
 
     // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv("ARKI_SCAN_GRIB1"))
+        dir_scan_grib1.push_back(envdir);
+    dir_scan_grib1.push_back(str::joinpath(CONF_DIR, "scan-grib1"));
+
+    // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv("ARKI_SCAN_GRIB2"))
+        dir_scan_grib2.push_back(envdir);
+    dir_scan_grib2.push_back(str::joinpath(CONF_DIR, "scan-grib2"));
+
+    // TODO: colon-separated $PATH-like semantics
     if (const char* envdir = getenv("ARKI_SCAN_BUFR"))
         dir_scan_bufr.push_back(envdir);
     dir_scan_bufr.push_back(str::joinpath(CONF_DIR, "scan-bufr"));
@@ -100,6 +110,51 @@ std::string Config::Dirlist::find_file_noerror(const std::string& fname, bool ex
             return res;
     }
     return std::string();
+}
+
+std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, bool first_only) const
+{
+    vector<string> res;
+
+    for (const_iterator i = begin(); i != end(); ++i)
+    {
+        vector<string> files;
+        sys::fs::Directory dir(*i);
+        for (sys::fs::Directory::const_iterator di = dir.begin(); di != dir.end(); ++di)
+        {
+            string file = *di;
+            // Skip hidden files
+            if (file[0] == '.') continue;
+            // Skip files with different ending
+            if (not str::endsWith(file, ext)) continue;
+            // Skip non-files
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
+            if (di->d_type == DT_UNKNOWN)
+            {
+#endif
+                std::auto_ptr<struct stat> st = sys::fs::stat(str::joinpath(*i, file));
+                if (!S_ISREG(st->st_mode)) continue;
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
+            } else if (di->d_type != DT_REG)
+                continue;
+#endif
+            files.push_back(file);
+        }
+
+        // Sort the file names
+        std::sort(files.begin(), files.end());
+
+        // Append the sorted file list to the result
+        for (vector<string>::const_iterator fn = files.begin();
+                fn != files.end(); ++fn)
+            res.push_back(str::joinpath(*i, *fn));
+
+        // Stop here if we got results and only a dir is needed
+        if (!res.empty() && first_only)
+            break;
+    }
+
+    return res;
 }
 
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName)

@@ -111,29 +111,27 @@ struct GribLua : public Lua
 	 * Return the error message, or an empty string if no error
 	 */
 	std::string run_function(int id, Metadata& md);
-	
-	/**arki.
-	 * arki.If code is non-empty, load scan code from it. Else, load scan code
-	 * from configuration files. Store scan function IDs in \a ids
-	 */
-	void load_scan_code(const std::string& code, const std::string& tag, vector<int>& ids)
-	{
+
+    /**
+     * If code is non-empty, load scan code from it. Else, load scan code
+     * from configuration files. Store scan function IDs in \a ids
+     */
+    void load_scan_code(const std::string& code, const runtime::Config::Dirlist& src, vector<int>& ids)
+    {
 		/// Load the grib1 scanning functions
 		if (!code.empty())
 		{
-			int id = load_function(tag + " scan instructions", code);
+			int id = load_function("grib scan instructions", code);
 			if (id != -1) ids.push_back(id);
 			return;
 		}
-		vector<string> files = runtime::rcFiles("scan-" + tag, "ARKI_SCAN_" + str::toupper(tag));
-		for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-		{
-			// Skip non-lua files
-			if (! str::endsWith(*i, ".lua")) continue;
-			int id = load_function(*i);
-			if (id != -1) ids.push_back(id);
-		}
-	}
+        vector<string> files = src.list_files(".lua");
+        for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+        {
+            int id = load_function(*i);
+            if (id != -1) ids.push_back(id);
+        }
+    }
 };
 
 GribLua::GribLua(Grib* scanner)
@@ -474,11 +472,11 @@ Grib::Grib(bool inlineData, const std::string& grib1code, const std::string& gri
 		grib_multi_support_off(context);
 	}
 
-	/// Load the grib1 scanning functions
-	L->load_scan_code(grib1code, "grib1", grib1_funcs);
+    /// Load the grib1 scanning functions
+    L->load_scan_code(grib1code, runtime::Config::get().dir_scan_grib1, grib1_funcs);
 
-	/// Load the grib2 scanning functions
-	L->load_scan_code(grib2code, "grib2", grib2_funcs);
+    /// Load the grib2 scanning functions
+    L->load_scan_code(grib2code, runtime::Config::get().dir_scan_grib2, grib2_funcs);
 
 	//arkilua_dumpstack(L, "Afterinit", stderr);
 }

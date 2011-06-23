@@ -1,6 +1,5 @@
-
 /*
- * scan/grib - Scan a ODIMH5 file for metadata
+ * scan/odimh5 - Scan a ODIMH5 file for metadata
  *
  * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
