@@ -68,6 +68,22 @@ Config& Config::get()
     return *instance;
 }
 
+std::string Config::Dirlist::find_file(const std::string& fname, bool executable) const
+{
+    int mode = executable ? X_OK : F_OK;
+    for (const_iterator i = begin(); i != end(); ++i)
+    {
+        string res = str::joinpath(*i, fname);
+        if (sys::fs::access(res, mode))
+            return res;
+    }
+
+    // Build a nice error message
+    throw wibble::exception::Consistency(
+            str::fmtf("looking for %s %s", executable ? "program" : "file", fname.c_str()),
+            "file not found; tried: " + str::join(begin(), end()));
+}
+
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 {
 	using namespace wibble;

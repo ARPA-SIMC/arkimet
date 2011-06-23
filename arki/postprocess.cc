@@ -285,24 +285,7 @@ void Postprocess::validate(const map<string, string>& cfg)
 void Postprocess::start()
 {
     // Expand args[0] to the full pathname and check that the program exists
-
-    // Build a list of argv0 candidates
-    vector<string> cand_argv0;
-    const runtime::Config& conf = runtime::Config::get();
-    for (vector<string>::const_iterator i = conf.dir_postproc.begin();
-            i != conf.dir_postproc.end(); ++i)
-        cand_argv0.push_back(str::joinpath(*i, m_child->cmd.args[0]));
-
-    // Get the first good one from the list
-    string argv0;
-    for (vector<string>::const_iterator i = cand_argv0.begin();
-            i != cand_argv0.end(); ++i)
-        if (sys::fs::access(*i, X_OK))
-            argv0 = *i;
-
-    if (argv0.empty())
-        throw wibble::exception::Consistency("running postprocessing filter", "postprocess command \"" + m_command + "\" does not exists or it is not executable; tried: " + str::join(cand_argv0.begin(), cand_argv0.end()));
-    m_child->cmd.args[0] = argv0;
+    m_child->cmd.args[0] = runtime::Config::get().dir_postproc.find_file(m_child->cmd.args[0], true);
 
     // Spawn the command
     m_child->start();

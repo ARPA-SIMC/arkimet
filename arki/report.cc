@@ -56,16 +56,7 @@ void Report::load(const std::string& params)
 		throw wibble::exception::Consistency("initialising report", "report command is empty");
 
     // Look for the script in all report paths
-    std::string filename;
-    const runtime::Config& conf = runtime::Config::get();
-    for (vector<string>::const_iterator i = conf.dir_report.begin();
-            i != conf.dir_report.end(); ++i)
-    {
-        filename = str::joinpath(*i, args[0]);
-        if (sys::fs::exists(filename))
-            break;
-    }
-    loadFile(filename);
+    loadFile(runtime::Config::get().dir_report.find_file(args[0]));
 }
 
 void Report::loadFile(const std::string& fname)

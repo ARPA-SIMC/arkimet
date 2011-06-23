@@ -33,11 +33,20 @@ namespace runtime {
 
 struct Config
 {
+    struct Dirlist : public std::vector<std::string>
+    {
+        /**
+         * Look for the file in all directories.
+         *
+         * @return the pathname if found, raises an exception if not found
+         */
+        std::string find_file(const std::string& fname, bool executable=false) const;
+    };
     /// Directories where postprocessor executables are found
-    std::vector<std::string> dir_postproc;
+    Dirlist dir_postproc;
 
     /// Directories where report scripts are found
-    std::vector<std::string> dir_report;
+    Dirlist dir_report;
 
     /// Temporary file directory
     std::string dir_temp;
