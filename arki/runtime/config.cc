@@ -51,6 +51,13 @@ Config::Config()
     if (const char* envdir = getenv("ARKI_REPORT"))
         dir_report.push_back(envdir);
     dir_report.push_back(str::joinpath(CONF_DIR, "report"));
+
+    if (const char* envdir = getenv("ARKI_TMPDIR"))
+        dir_temp = envdir;
+    else if (const char* envdir = getenv("TMPDIR"))
+        dir_temp = envdir;
+    else
+        dir_temp = "/tmp";
 }
 
 Config& Config::get()

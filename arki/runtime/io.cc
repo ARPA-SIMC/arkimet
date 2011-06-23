@@ -21,6 +21,7 @@
  */
 
 #include <arki/runtime/io.h>
+#include <arki/runtime/config.h>
 #include <arki/metadata/consumer.h>
 
 #include <wibble/exception.h>
@@ -182,24 +183,13 @@ Tempfile::Tempfile(const std::string& dirname, bool dirname_is_pathname) : m_out
 		if (fd < 0)
 			throw wibble::exception::File(m_name, "creating file");
 	} else {
-		// Start with the temp dir name
-		string tpl = dirname;
-		if (tpl.empty())
-		{
-			char* dir = getenv("ARKI_TMPDIR");
-			if (dir != NULL)
-				tpl = dir;
-			else
-			{
-				dir = getenv("TMPDIR");
-				if (dir != NULL)
-					tpl = dir;
-				else
-					tpl = "/tmp";
-			}
-		}
-
-		tpl += "/arkimet.XXXXXX";
+        // Start with the temp dir name
+        string tpl = dirname;
+        if (tpl.empty())
+            tpl = runtime::Config::get().dir_temp;
+        // Add temporary file name
+        tpl = str::joinpath(tpl, "arkimet.XXXXXX");
+        // Move everything to a modifiable buffer for mkstemp
 		char name[tpl.size() + 1];
 		memcpy(name, tpl.c_str(), tpl.size() + 1);
 		fd = mkstemp(name);

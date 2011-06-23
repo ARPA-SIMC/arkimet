@@ -21,7 +21,6 @@
 #include <arki/tests/test-utils.h>
 #include <arki/utils/process.h>
 #include <wibble/string.h>
-#include <cstdlib>
 #include <sstream>
 
 namespace tut {
@@ -30,15 +29,8 @@ using namespace arki;
 using namespace wibble;
 
 struct arki_utils_process_shar {
-    string scriptdir;
-
     arki_utils_process_shar()
     {
-        char* env_ppdir = getenv("ARKI_POSTPROC");
-        if (env_ppdir)
-            scriptdir = env_ppdir;
-        else
-            scriptdir = ".";
     }
 };
 TESTGRP(arki_utils_process);

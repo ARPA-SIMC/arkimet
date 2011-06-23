@@ -39,6 +39,9 @@ struct Config
     /// Directories where report scripts are found
     std::vector<std::string> dir_report;
 
+    /// Temporary file directory
+    std::string dir_temp;
+
     Config();
 
     /// Get the runtime configuration
