@@ -37,9 +37,8 @@ namespace bufr {
 BufrLua::BufrLua()
 {
     // Load common library functions, if they exist
-    string dirname = runtime::rcDirName("scan-bufr", "ARKI_SCAN_BUFR");
-    string fname = str::joinpath(dirname, "common.lua");
-    if (sys::fs::access(fname, F_OK))
+    string fname = runtime::Config::get().dir_scan_bufr.find_file_noerror("common.lua");
+    if (!fname.empty())
     {
         if (luaL_dofile(L, fname.c_str()))
         {
@@ -65,13 +64,12 @@ int BufrLua::get_scan_func(MsgType type)
 	// Else try to load it
 	string name = str::tolower(msg_type_name(type));
 
-        // Load the right bufr scan file
-        string dirname = runtime::rcDirName("scan-bufr", "ARKI_SCAN_BUFR");
-        string fname = str::joinpath(dirname, name + ".lua");
+    // Load the right bufr scan file
+    string fname = runtime::Config::get().dir_scan_bufr.find_file_noerror(name + ".lua");
 
-	// If the fine does not exist, we are done
-	if (!sys::fs::access(fname, F_OK))
-		return scan_funcs[type] = -1;
+    // If the fine does not exist, we are done
+    if (fname.empty())
+        return scan_funcs[type] = -1;
 
 	// Compile the macro
         if (luaL_dofile(L, fname.c_str()))

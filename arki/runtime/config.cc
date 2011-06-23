@@ -57,6 +57,10 @@ Config::Config()
         dir_qmacro.push_back(envdir);
     dir_qmacro.push_back(str::joinpath(CONF_DIR, "qmacro"));
 
+    // TODO: colon-separated $PATH-like semantics
+    if (const char* envdir = getenv("ARKI_SCAN_BUFR"))
+        dir_scan_bufr.push_back(envdir);
+    dir_scan_bufr.push_back(str::joinpath(CONF_DIR, "scan-bufr"));
 
     if (const char* envdir = getenv("ARKI_TMPDIR"))
         dir_temp = envdir;
@@ -76,6 +80,18 @@ Config& Config::get()
 
 std::string Config::Dirlist::find_file(const std::string& fname, bool executable) const
 {
+    string res = find_file_noerror(fname, executable);
+    if (res.empty())
+        // Build a nice error message
+        throw wibble::exception::Consistency(
+                str::fmtf("looking for %s %s", executable ? "program" : "file", fname.c_str()),
+                "file not found; tried: " + str::join(begin(), end()));
+    else
+        return res;
+}
+
+std::string Config::Dirlist::find_file_noerror(const std::string& fname, bool executable) const
+{
     int mode = executable ? X_OK : F_OK;
     for (const_iterator i = begin(); i != end(); ++i)
     {
@@ -83,11 +99,7 @@ std::string Config::Dirlist::find_file(const std::string& fname, bool executable
         if (sys::fs::access(res, mode))
             return res;
     }
-
-    // Build a nice error message
-    throw wibble::exception::Consistency(
-            str::fmtf("looking for %s %s", executable ? "program" : "file", fname.c_str()),
-            "file not found; tried: " + str::join(begin(), end()));
+    return std::string();
 }
 
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName)

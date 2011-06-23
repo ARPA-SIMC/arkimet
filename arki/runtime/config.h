@@ -48,6 +48,13 @@ struct Config
          * @return the pathname if found, raises an exception if not found
          */
         std::string find_file(const std::string& fname, bool executable=false) const;
+
+        /**
+         * Look for the file in all directories.
+         *
+         * @return the pathname if found, or the empty string if not found
+         */
+        std::string find_file_noerror(const std::string& fname, bool executable=false) const;
     };
     /// Directories where postprocessor executables are found
     Dirlist dir_postproc;
@@ -57,6 +64,9 @@ struct Config
 
     /// Directories where query macro scripts are found
     Dirlist dir_qmacro;
+
+    /// Directories where query macro scripts are found
+    Dirlist dir_scan_bufr;
 
     /// Temporary file directory
     std::string dir_temp;
