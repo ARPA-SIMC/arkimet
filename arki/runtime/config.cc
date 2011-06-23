@@ -60,6 +60,19 @@ Config::Config()
         dir_temp = envdir;
     else
         dir_temp = "/tmp";
+
+    if (const char* envurl = getenv("ARKI_INBOUND"))
+        url_inbound = envurl;
+}
+
+static void describe_envvar(ostream& out, const char* envvar)
+{
+    out << "  change with " << envvar << " (currently ";
+    if (const char* envdir = getenv(envvar))
+        out << "'" << envdir << "'";
+    else
+        out << "unset";
+    out << ")" << endl;
 }
 
 void Config::describe(std::ostream& out) const
@@ -72,7 +85,13 @@ void Config::describe(std::ostream& out) const
     dir_scan_bufr.describe(out, "BUFR scan scripts", "ARKI_SCAN_BUFR");
     dir_targetfile.describe(out, "Target file name scripts", "ARKI_TARGETFILE");
 
-    /// Temporary file directory
+    out << "URL of remote inbound directory: ";
+    if (url_inbound.empty())
+        out << "none." << endl;
+    else
+        out << url_inbound << endl;
+    describe_envvar(out, "ARKI_INBOUND");
+
     out << "Temporary directory: " << dir_temp << "(set with ARKI_TMPDIR and TMPDIR)" << endl;
 }
 
@@ -89,15 +108,7 @@ void Config::Dirlist::describe(ostream& out, const char* desc, const char* envva
     out << desc << ": ";
     out << str::join(begin(), end(), ":");
     out << endl;
-    if (envvar)
-    {
-        out << "  change with " << envvar << " (currently ";
-        if (const char* envdir = getenv(envvar))
-            out << "'" << envdir << "'";
-        else
-            out << "unset";
-        out << ")" << endl;
-    }
+    if (envvar) describe_envvar(out, envvar);
 }
 
 void Config::Dirlist::init_config_and_env(const char* confdir, const char* envname)

@@ -102,6 +102,9 @@ struct Config
     /// Temporary file directory
     std::string dir_temp;
 
+    /// URL of remote inbound directory
+    std::string url_inbound;
+
     Config();
 
     /// Write a description to the given output stream

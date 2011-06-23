@@ -99,15 +99,12 @@ int main(int argc, const char* argv[])
         runtime::init();
 
         // Fetch the remote URL
-        string url;
         if (opts.url->isSet())
-            url = opts.url->stringValue();
-        else if (const char* envurl = getenv("ARKI_INBOUND"))
-            url = envurl;
-        else
+            runtime::Config::get().url_inbound = opts.url->stringValue();
+        if (runtime::Config::get().url_inbound.empty())
             throw wibble::exception::BadOption("please specify --url or set ARKI_INBOUND in the environment");
 
-        dataset::HTTPInbound inbound(url);
+        dataset::HTTPInbound inbound(runtime::Config::get().url_inbound);
 
         if (opts.do_list->isSet())
         {
