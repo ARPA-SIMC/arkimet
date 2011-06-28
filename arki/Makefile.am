@@ -43,6 +43,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		emitter/json.h \
 		emitter/memory.h \
 		formatter.h \
+		iotrace.h \
 		itemset.h \
 		matcher/area.h \
 		matcher.h \
@@ -359,6 +360,11 @@ tests_arki_test_SOURCES = \
 tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
+
+if IOTRACE
+libarkimet_core_la_SOURCES += iotrace.cc
+tests_arki_test_SOURCES += iotrace-tut.cc
+endif
 
 if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h

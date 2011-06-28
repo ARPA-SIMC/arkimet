@@ -1,7 +1,7 @@
 /*
  * runtime/config - Common configuration-related code used in most arkimet executables
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,9 @@ Config::Config()
 
     if (const char* envurl = getenv("ARKI_INBOUND"))
         url_inbound = envurl;
+
+    if (const char* envfile = getenv("ARKI_IOTRACE"))
+        file_iotrace_output = envfile;
 }
 
 static void describe_envvar(ostream& out, const char* envvar)
@@ -93,6 +96,17 @@ void Config::describe(std::ostream& out) const
     describe_envvar(out, "ARKI_INBOUND");
 
     out << "Temporary directory: " << dir_temp << "(set with ARKI_TMPDIR and TMPDIR)" << endl;
+
+    out << "I/O profiling: ";
+#ifdef ARKI_IOTRACE
+    if (file_iotrace_output.empty())
+        out << "disabled." << endl;
+    else
+        out << "logged to " << file_iotrace_output << endl;
+#else
+    out << "disabled at compile time." << endl;
+#endif
+    describe_envvar(out, "ARKI_IOTRACE");
 }
 
 Config& Config::get()

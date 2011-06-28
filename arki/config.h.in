@@ -24,3 +24,6 @@
 
 /* the `splice' function is available */
 #undef HAVE_SPLICE
+
+/* I/O profiling is enabled */
+#undef ARKI_IOTRACE

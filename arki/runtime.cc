@@ -44,6 +44,7 @@
 #include <arki/querymacro.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
+#include <arki/iotrace.h>
 #include <arki/types-init.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -80,6 +81,7 @@ void init()
 {
     types::init_default_types();
     runtime::readMatcherAliasDatabase();
+    iotrace::init();
 }
 
 std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query)

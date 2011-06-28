@@ -4,7 +4,7 @@
 /*
  * runtime/config - Common configuration-related code used in most arkimet executables
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -104,6 +104,10 @@ struct Config
 
     /// URL of remote inbound directory
     std::string url_inbound;
+
+    /// I/O profiling log file
+    std::string file_iotrace_output;
+
 
     Config();
 

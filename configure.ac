@@ -16,6 +16,13 @@ AC_ARG_ENABLE([bufr],
     [],
     [enable_bufr="yes"])
 
+AC_ARG_ENABLE([iotrace],
+    [AS_HELP_STRING(
+        [--enable-iotrace],
+        [build with I/O profiling support])],
+    [],
+    [enable_iotrace="yes"])
+
 AC_ARG_ENABLE([gcov],
     [AS_HELP_STRING(
         [--enable-gcov],
@@ -248,6 +255,13 @@ AC_SUBST(LZO_VERSION)
 AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
 AM_CONDITIONAL([LZO_EMBEDDED], [test x"$LZO_VERSION" = x"embedded"])
 
+dnl Enable compile-time options for I/O profiling, if requested
+if test $enable_iotrace = yes
+then
+	AC_DEFINE([ARKI_IOTRACE], 1, [I/O profiling is enabled])
+fi
+AM_CONDITIONAL([IOTRACE], [test x"$enable_iotrace" = x"yes"])
+
 LIBARKI_VERSION_INFO=`echo $VERSION | awk -F. '{ printf "%d:%d:%d", $1+$2, $3, $2 }'`
 AC_SUBST(LIBARKI_VERSION_INFO)
 
@@ -318,6 +332,7 @@ AS_HELP_STRING([GNU readline support:], [$have_readline])
 AS_HELP_STRING([LZO compression:], [$LZO_VERSION])
 AS_HELP_STRING([Zlib compression:], [$have_zlib])
 AS_HELP_STRING([SQLite version:], [$SQLITE3_VERSION])
+AS_HELP_STRING([I/O profiling:], [$enable_iotrace])
 AS_HELP_STRING([Code coverage:], [$enable_gcov])
 dnl AS_HELP_STRING([BUFR support via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB1 support via Meteosatlib's libgrib:], [$have_libgrib])
