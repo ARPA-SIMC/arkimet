@@ -30,6 +30,7 @@
 #include <arki/config.h>
 #include <vector>
 #include <string>
+#include <iosfwd>
 
 namespace arki {
 namespace iotrace {
@@ -64,6 +65,17 @@ struct Collector : public Listener
 
     Collector();
     ~Collector();
+
+    virtual void operator()(const Event& e);
+
+    void dump(std::ostream& out) const;
+};
+
+struct Logger : public Listener
+{
+    std::ostream& out;
+
+    Logger(std::ostream& out) : out(out) {}
 
     virtual void operator()(const Event& e);
 };

@@ -1,7 +1,7 @@
 /*
  * utils/datareader - Read data from files
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <arki/utils/compress.h>
 #include <arki/utils/files.h>
 #include <arki/nag.h>
+#include <arki/iotrace.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 
@@ -83,6 +84,7 @@ public:
 			throw wibble::exception::Consistency("reading from " + fname, "read only " + str::fmt(res) + "/" + str::fmt(size) + " bytes at " + str::fmt(ofs));
 
 		acct::plain_data_read_count.incr();
+        iotrace::trace_file(fname, ofs, size, "read data");
 	}
 };
 
@@ -133,6 +135,7 @@ public:
 		last_ofs = ofs + size;
 
 		acct::gzip_data_read_count.incr();
+        iotrace::trace_file(fname, ofs, size, "read data");
 	}
 };
 
@@ -226,6 +229,7 @@ public:
 		last_ofs = ofs + size;
 
 		acct::gzip_data_read_count.incr();
+        iotrace::trace_file(fname, ofs, size, "read data");
 	}
 };
 

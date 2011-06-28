@@ -34,6 +34,7 @@
 #include <arki/utils/compress.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include <arki/iotrace.h>
 // #include <arki/utils/lua.h>
 
 #include <wibble/exception.h>
@@ -524,6 +525,9 @@ bool Summary::read(int fd, const std::string& filename)
     wibble::sys::Buffer buf;
     string signature;
     unsigned version;
+
+    iotrace::trace_file(filename, 0, 0, "read summary");
+
     if (!types::readBundle(fd, filename, buf, signature, version))
         return false;
 
@@ -541,6 +545,9 @@ bool Summary::read(std::istream& in, const std::string& filename)
     wibble::sys::Buffer buf;
     string signature;
     unsigned version;
+
+    iotrace::trace_file(filename, 0, 0, "read summary");
+
     if (!types::readBundle(in, filename, buf, signature, version))
         return false;
 

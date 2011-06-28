@@ -26,6 +26,7 @@
 #include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/iotrace.h>
 #include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
 
@@ -111,9 +112,11 @@ void to::test<3>()
 
     {
         metadata::Collection mdc;
+        //iotrace::Collector c;
         size_t count = reader->produce_nth(mdc, 0);
         ensure_equals(count, 3u);
         ensure_equals(mdc.size(), 3u);
+        //c.dump(cerr);
     }
 
     {

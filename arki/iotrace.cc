@@ -23,6 +23,7 @@
 #include <arki/runtime/config.h>
 #include <vector>
 #include <set>
+#include <fstream>
 #include <stdint.h>
 
 using namespace std;
@@ -159,11 +160,18 @@ static ListenerList* listeners = 0;
 
 void init()
 {
-    if (!itable) itable = new StringInternTable;
+    // Prevent double initialisation
+    if (itable) return;
+
+    itable = new StringInternTable;
 
     if (!runtime::Config::get().file_iotrace_output.empty())
     {
-        runtime::Config::get().file_iotrace_output;
+        ostream* out = new ofstream(runtime::Config::get().file_iotrace_output.c_str());
+        Logger* logger = new Logger(*out);
+        add_listener(*logger);
+        // Lose references, effectively creating garbage; never mind, as we log
+        // until the end of the program.
     }
 }
 
@@ -229,6 +237,18 @@ Collector::~Collector()
 void Collector::operator()(const Event& e)
 {
     events.push_back(e);
+}
+
+void Collector::dump(std::ostream& out) const
+{
+    for (vector<Event>::const_iterator i = events.begin();
+            i != events.end(); ++i)
+        out << i->filename() << ":" << i->offset << ":" << i->size << ": " << i->desc << endl;
+}
+
+void Logger::operator()(const Event& e)
+{
+    out << e.filename() << ":" << e.offset << ":" << e.size << ": " << e.desc << endl;
 }
 
 }

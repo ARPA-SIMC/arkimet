@@ -29,6 +29,7 @@
 #include <arki/utils/fd.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include <arki/iotrace.h>
 #include "config.h"
 
 #include <wibble/exception.h>
@@ -252,6 +253,8 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
 		size_t size = source.upcast<types::source::Inline>()->size;
 		m_inline_buf = wibble::sys::Buffer(size);
 
+        iotrace::trace_file(filename, 0, size, "read inline data");
+
 		// Read the inline data
 		in.read((char*)m_inline_buf.data(), size);
 		if (in.fail())
@@ -458,6 +461,7 @@ wibble::sys::Buffer Metadata::getData() const
 
 			// Read the data
 			m_inline_buf.resize(blob->size);
+            iotrace::trace_file(file, blob->offset, blob->size, "read blob data");
 			dataReader.read(file, blob->offset, blob->size, m_inline_buf.data());
 
 			return m_inline_buf;
@@ -546,8 +550,10 @@ void Metadata::readFile(std::istream& in, const std::string& fname, metadata::Co
 		if (signature == "MG")
 		{
 			// Handle metadata group
+            iotrace::trace_file(fname, 0, 0, "read metadata group");
 			Metadata::readGroup(buf, version, fname, mdc);
 		} else {
+            iotrace::trace_file(fname, 0, 0, "read metadata");
 			md.read(buf, version, fname);
 
 			// If the source is inline, then the data follows the metadata

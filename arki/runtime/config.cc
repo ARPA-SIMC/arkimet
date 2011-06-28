@@ -25,6 +25,7 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/matcher.h>
+#include <arki/config.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
@@ -103,10 +104,10 @@ void Config::describe(std::ostream& out) const
         out << "disabled." << endl;
     else
         out << "logged to " << file_iotrace_output << endl;
+    describe_envvar(out, "ARKI_IOTRACE");
 #else
     out << "disabled at compile time." << endl;
 #endif
-    describe_envvar(out, "ARKI_IOTRACE");
 }
 
 Config& Config::get()
