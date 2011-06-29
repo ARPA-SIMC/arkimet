@@ -38,6 +38,13 @@ arki_bufr_prepare_SOURCES = arki-bufr-prepare.cc
 arki_bufr_prepare_LDFLAGS = $(all_libs)
 endif
 
+if LUA
+bin_PROGRAMS += arki-shell
+
+arki_shell_SOURCES = arki-shell.cc
+arki_shell_LDFLAGS = $(all_libs)
+endif
+
 arki_scan_SOURCES = arki-scan.cc
 arki_scan_LDFLAGS = $(all_libs)
 
