@@ -1,7 +1,7 @@
 /*
  * metadatagrid - Index values by a combination of metadata
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,8 +31,7 @@ using namespace arki::utils;
 
 namespace arki {
 
-MetadataGrid::MetadataGrid()
-        : maxidx(0) {}
+MetadataGrid::MetadataGrid() {}
 
 int MetadataGrid::index(const ItemSet& md) const
 {
@@ -97,7 +96,6 @@ void MetadataGrid::clear()
 {
         dims.clear();
         dim_sizes.clear();
-        maxidx = 0;
 }
 
 void MetadataGrid::add(const Item<>& item)
@@ -121,7 +119,6 @@ void MetadataGrid::add(const ItemSet& is)
 void MetadataGrid::consolidate()
 {
         dim_sizes.clear();
-        maxidx = dims.empty() ? 0 : 1;
         for (std::map<types::Code, std::vector< Item<> > >::iterator i = dims.begin();
                         i != dims.end(); ++i)
         {
@@ -130,7 +127,6 @@ void MetadataGrid::consolidate()
                                 j != dim_sizes.end(); ++j)
                         *j *= i->second.size();
                 dim_sizes.push_back(1);
-                maxidx *= i->second.size();
         }
 }
 
