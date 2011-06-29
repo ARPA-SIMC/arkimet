@@ -35,6 +35,7 @@
 #include <arki/sort.h>
 #include <arki/scan/any.h>
 #include <arki/nag.h>
+#include <arki/iotrace.h>
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -316,6 +317,8 @@ class PlainManifest : public Manifest
 		in.open(pathname.c_str(), ios::in);
 		if (!in.is_open() || in.fail())
 			throw wibble::exception::File(pathname, "opening file for reading");
+
+        iotrace::trace_file(pathname, 0, 0, "read MANIFEST");
 
 		string line;
 		for (size_t lineno = 1; !in.eof(); ++lineno)
