@@ -60,7 +60,10 @@ protected:
     std::vector< Item<types::Time> > times;
     // Sorted list of mdgrid indices requested per every reference time
     std::vector<int> wantedidx;
-    // Bitmaps corresponding to wantedidx, of seen items per reftime step
+    /**
+     * Bitmaps corresponding to wantedidx*times, marking items that have been
+     * seen at each requested time
+     */
     std::vector<bool> todolist;
     // Extra filters to add to the merged query
     std::vector<Matcher> filters;
