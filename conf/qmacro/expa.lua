@@ -155,9 +155,8 @@ function QueryChunk:checkData(cons)
 			-- print (query:expanded())
 		
 			-- Query dataset storing results
-			if self.mds == nil then 
-				self.mds = {} 
-			end
+			self.mds = {}
+
 			ds:queryData({matcher=query}, function(md)
 				if gq:checkandmark(md) then
 					table.insert(self.mds, md:copy())
