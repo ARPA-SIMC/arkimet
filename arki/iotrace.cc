@@ -20,6 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 #include <arki/iotrace.h>
+#include <arki/utils/intern.h>
 #include <arki/runtime/config.h>
 #include <vector>
 #include <set>
@@ -30,103 +31,6 @@ using namespace std;
 
 namespace arki {
 namespace iotrace {
-
-static const unsigned TABLE_SIZE = 1024;
-
-namespace {
-
-// Bernstein hash function
-uint32_t hash(const char *str)
-{
-    if (str == NULL) return 0;
-
-    uint32_t h = 5381;
-
-    for (const char *s = str; *s; ++s)
-        h = (h * 33) ^ *s;
-
-    return h % TABLE_SIZE;
-}
-
-// Bernstein hash function
-uint32_t hash(const std::string& str)
-{
-    uint32_t h = 5381;
-    for (string::const_iterator s = str.begin(); s != str.end(); ++s)
-        h = (h * 33) ^ *s;
-
-    return h % TABLE_SIZE;
-}
-
-}
-
-/**
- * Hashtable-based string interning
- */
-struct StringInternTable
-{
-    struct Bucket
-    {
-        std::string val;
-        int id;
-        Bucket* next;
-
-        Bucket() : id(-1), next(0) {}
-        Bucket(const std::string& val) : val(val), id(-1), next(0) {}
-        ~Bucket()
-        {
-            if (next) delete next;
-        }
-
-        template<typename T>
-        Bucket* get(const T& val)
-        {
-            if (this->val == val)
-                return this;
-            if (next)
-                return next->get(val);
-            return next = new Bucket(val);
-        }
-    };
-
-    // Hash table
-    Bucket* table[TABLE_SIZE];
-    // Interned string table
-    vector<string> string_table;
-
-
-    StringInternTable()
-    {
-        for (unsigned i = 0; i < TABLE_SIZE; ++i)
-            table[i] = 0;
-    }
-    ~StringInternTable()
-    {
-        for (unsigned i = 0; i < TABLE_SIZE; ++i)
-            if (table[i])
-                delete table[i];
-    }
-
-    // Get the intern ID for a string
-    template<typename T>
-    unsigned intern(const T& val)
-    {
-        uint32_t pos = hash(val);
-        Bucket* res = 0;
-        if (table[pos])
-            res = table[pos]->get(val);
-        else
-            res = table[pos] = new Bucket(val);
-        if (res->id == -1)
-        {
-            res->id = string_table.size();
-            // In case strings can share their memory representation, share the
-            // reference to the hashtable buckets here
-            string_table.push_back(res->val);
-        }
-        return res->id;
-    }
-};
 
 struct ListenerList
 {
@@ -155,7 +59,7 @@ struct ListenerList
     }
 };
 
-static StringInternTable* itable = 0;
+static utils::StringInternTable* itable = 0;
 static ListenerList* listeners = 0;
 
 void init()
@@ -163,7 +67,7 @@ void init()
     // Prevent double initialisation
     if (itable) return;
 
-    itable = new StringInternTable;
+    itable = new utils::StringInternTable;
 
     if (!runtime::Config::get().file_iotrace_output.empty())
     {
