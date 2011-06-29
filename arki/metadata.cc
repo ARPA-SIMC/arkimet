@@ -461,7 +461,6 @@ wibble::sys::Buffer Metadata::getData() const
 
 			// Read the data
 			m_inline_buf.resize(blob->size);
-            iotrace::trace_file(file, blob->offset, blob->size, "read blob data");
 			dataReader.read(file, blob->offset, blob->size, m_inline_buf.data());
 
 			return m_inline_buf;
