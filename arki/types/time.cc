@@ -492,6 +492,29 @@ Item<Time> Time::createDifference(const Item<Time>& a, const Item<Time>& b)
 		return Time::create(res[0], res[1], res[2], res[3], res[4], res[5]);
 }
 
+bool Time::range_overlaps(
+        const UItem<types::Time>& ts1, const UItem<types::Time>& te1,
+        const UItem<types::Time>& ts2, const UItem<types::Time>& te2)
+{
+    // If any of the intervals are open at both ends, they obviously overlap
+    if (!ts1.defined() && !te1.defined())
+        return true;
+    if (!ts2.defined() && !te2.defined())
+        return true;
+
+    if (!ts1.defined())
+        return !ts2.defined() || ts2 <= te1;
+    if (!te1.defined())
+        return !te2.defined() || te2 >= ts1;
+
+    if (!ts2.defined())
+        return te2 >= ts1;
+    if (!te2.defined())
+        return ts2 <= te1;
+
+    return !(te1 < ts2 || ts1 > te2);
+}
+
 std::vector< Item<Time> > Time::generate(
 		const types::Time& begin, const types::Time& end, int step)
 {

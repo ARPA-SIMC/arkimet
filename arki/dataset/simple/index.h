@@ -65,6 +65,14 @@ public:
 	virtual void check(maintenance::MaintFileVisitor& v, bool quick=true) = 0;
 	virtual void flush() = 0;
 
+    /**
+     * Compute the date extremes of this manifest
+     *
+     * @returns true if the range has at least one bound (i.e. either with
+     * or without are defined), false otherwise
+     */
+    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const = 0;
+
 	void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	void querySummary(const Matcher& matcher, Summary& summary);
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);

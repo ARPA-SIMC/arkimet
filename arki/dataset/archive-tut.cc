@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/utils/files.h>
+#include <arki/iotrace.h>
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 
@@ -85,6 +86,8 @@ struct arki_dataset_archive_shar : public DatasetTest {
 		cfg.setValue("step", "daily");
 		cfg.setValue("unique", "origin, reftime");
 		cfg.setValue("archive age", "7");
+
+        iotrace::init();
 	}
 
 #define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
@@ -483,7 +486,7 @@ void to::test<7>()
 	}
 
 	// Everything should be fine now
-	Archives arc("testds/.archive");
+	Archives arc("testds", "testds/.archive");
 	ensure_dataset_clean(arc, 1, 3);
 }
 
@@ -525,7 +528,7 @@ void to::test<8>()
     }
 
     {
-        auto_ptr<Archives> arc(new Archives("testds/.archive"));
+        auto_ptr<Archives> arc(new Archives("testds", "testds/.archive"));
 
         mdc.clear();
         ensure_equals(arc->produce_nth(mdc, 0), 1u);;
@@ -612,6 +615,7 @@ void to::test<19>()
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
         Summary s;
+        iotrace::Collector ioc;
         ds->querySummary(Matcher::parse(""), s);
 
         Item<types::Reftime> rt = s.getReferenceTime();
@@ -628,6 +632,50 @@ void to::test<19>()
     {
         auto_ptr<WritableDataset> ds(WritableDataset::create(scen.cfg));
         // TODO: maintenance
+    }
+}
+
+// Check behaviour of global archive summary cache
+template<> template<>
+void to::test<20>()
+{
+    using namespace arki::dataset;
+
+    const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");
+
+    // Check that archive cache works
+    auto_ptr<ReadonlyDataset> d(ReadonlyDataset::create(scen.cfg));
+    Summary s;
+
+    // Access the datasets so we don't count manifest reads in the iostats below
+    d->querySummary(Matcher(), s);
+
+    // Query once without cache, it should scan all the archives
+    sys::fs::deleteIfExists(str::joinpath(scen.path, ".summaries/archives.summary"));
+    {
+        iotrace::Collector ioc;
+        d->querySummary(Matcher(), s);
+        ensure_equals(ioc.events.size(), 5u);
+    }
+
+    // Rebuild the cache
+    {
+        auto_ptr<Archives> a(new Archives(scen.path, str::joinpath(scen.path, ".archive"), false));
+        a->vacuum();
+    }
+
+    // Query again, now we have the cache and it should do much less I/O
+    {
+        iotrace::Collector ioc;
+        d->querySummary(Matcher(), s);
+        ensure_equals(ioc.events.size(), 2u);
+    }
+
+    // Query without cache and with a reftime bound, it should still scan the datasets
+    {
+        iotrace::Collector ioc;
+        d->querySummary(Matcher::parse("reftime:>=2010-09-10"), s);
+        ensure_equals(ioc.events.size(), 6u);
     }
 }
 

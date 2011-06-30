@@ -185,6 +185,30 @@ void to::test<6>()
 	ensure_equals(v.size(), 31u*24u);
 }
 
+// Test Time::range_overlaps
+template<> template<>
+void to::test<7>()
+{
+    UItem<types::Time> topen;
+    UItem<types::Time> t2000(Time::create(2000, 1, 1, 0, 0, 0));
+    UItem<types::Time> t2005(Time::create(2005, 1, 1, 0, 0, 0));
+    UItem<types::Time> t2007(Time::create(2007, 1, 1, 0, 0, 0));
+    UItem<types::Time> t2010(Time::create(2010, 1, 1, 0, 0, 0));
+
+    ensure(    Time::range_overlaps(topen, topen, topen, topen));
+    ensure(    Time::range_overlaps(topen, topen, t2005, t2010));
+    ensure(    Time::range_overlaps(t2005, t2010, topen, topen));
+    ensure(    Time::range_overlaps(t2005, topen, topen, topen));
+    ensure(    Time::range_overlaps(t2005, topen, t2010, topen));
+    ensure(    Time::range_overlaps(t2010, topen, t2005, topen));
+    ensure(    Time::range_overlaps(topen, t2005, topen, t2010));
+    ensure(    Time::range_overlaps(topen, t2010, topen, t2005));
+    ensure(    Time::range_overlaps(t2010, topen, topen, t2010));
+    ensure(not Time::range_overlaps(t2000, t2005, t2007, t2010));
+    ensure(not Time::range_overlaps(t2007, t2010, t2000, t2005));
+    ensure(not Time::range_overlaps(t2010, topen, topen, t2005));
+}
+
 }
 
 // vim:set ts=4 sw=4:

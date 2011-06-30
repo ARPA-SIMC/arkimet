@@ -161,6 +161,14 @@ struct Collector
 	void merge(const Reftime* rt1);
 	void merge(const Collector& c);
 
+    /**
+     * Compute the date extremes of this merger
+     *
+     * @returns true if the range has at least one bound (i.e. either with
+     * or without are defined), false otherwise
+     */
+    bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+
 	/// Create a reftime with the data we have collected
 	Item<Reftime> makeReftime() const;
 };

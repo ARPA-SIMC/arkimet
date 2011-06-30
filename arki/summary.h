@@ -267,6 +267,14 @@ public:
 	 */
 	Item<types::Reftime> getReferenceTime() const;
 
+    /**
+     * Compute the date extremes of this summary
+     *
+     * @returns true if the range has at least one bound (i.e. either with
+     * or without are defined), false otherwise
+     */
+    bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+
 	/**
 	 * Get the convex hull of the union of all bounding boxes covered by the
 	 * metadata bundle.

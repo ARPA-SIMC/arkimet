@@ -4,7 +4,7 @@
 /*
  * dataset/archive - Handle archived data
  *
- * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,6 +65,13 @@ public:
     virtual void maintenance(maintenance::MaintFileVisitor& v) = 0;
     virtual void vacuum() = 0;
     /**
+     * Compute the date extremes of this archive
+     *
+     * @returns true if the range has at least one bound (i.e. either with
+     * or without are defined), false otherwise
+     */
+    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const = 0;
+    /**
      * Output to \a cons the idx-th element of each file
      *
      * @return true if something was produced, else false
@@ -95,6 +102,7 @@ public:
     virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
@@ -129,6 +137,7 @@ struct OfflineArchive : public Archive
     virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
+    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
@@ -165,6 +174,7 @@ struct OfflineArchive : public Archive
 class Archives : public ReadonlyDataset
 {
 protected:
+	std::string m_scache_root;
 	std::string m_dir;
 	bool m_read_only;
 
@@ -174,9 +184,20 @@ protected:
 	// Look up an archive, returns 0 if not found
 	Archive* lookup(const std::string& name);
 
+    void invalidate_summary_cache();
+    Summary summary_for_all();
+    void rebuild_summary_cache();
+
 public:
-	Archives(const std::string& dir, bool read_only = true);
+	Archives(const std::string& root, const std::string& dir, bool read_only = true);
 	virtual ~Archives();
+
+    /**
+     * Update the list of archives
+     *
+     * It can be called to update the archive view after some have been moved.
+     */
+    void rescan_archives();
 
 	const std::string& path() const { return m_dir; }
 
@@ -184,6 +205,7 @@ public:
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
 
 	void acquire(const std::string& relname);
 	void acquire(const std::string& relname, metadata::Collection& mds);

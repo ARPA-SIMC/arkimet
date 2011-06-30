@@ -448,6 +448,14 @@ Item<types::Reftime> Summary::getReferenceTime() const
     return counter.merger.makeReftime();
 }
 
+bool Summary::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+{
+    summary::StatsReftime counter;
+    if (root)
+        root->visitStats(counter);
+    return counter.merger.date_extremes(begin, end);
+}
+
 namespace {
 struct ResolveVisitor : public summary::Visitor
 {
@@ -629,6 +637,8 @@ void Summary::write(std::ostream& out, const std::string& filename) const
     // Prepare the encoded data
     string encoded = encode(true);
 
+    iotrace::trace_file(filename, 0, encoded.size(), "write summary");
+
     // Write out
     out.write(encoded.data(), encoded.size());
     if (out.fail())
@@ -644,6 +654,7 @@ void Summary::writeAtomically(const std::string& fname)
     if (fd == -1)
         throw wibble::exception::File(tmpfile, "creating temporary file for the summary");
     try {
+        iotrace::trace_file(fname, 0, enc.size(), "write summary");
         int res = ::write(fd, enc.data(), enc.size());
         if (res < 0 || (unsigned)res != enc.size())
             throw wibble::exception::File(tmpfile, "writing " + str::fmt(enc.size()) + " bytes to the file");

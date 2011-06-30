@@ -409,6 +409,25 @@ Item<Reftime> Collector::makeReftime() const
 	return Period::create(begin, end);
 }
 
+bool Collector::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+{
+    if (!this->begin.defined())
+    {
+        begin.clear();
+        end.clear();
+        return false;
+    }
+    if (!begin.defined() || this->begin < begin)
+        begin = this->begin;
+
+    if (!this->end.defined())
+        end.clear();
+    if (!end.defined() || this->end > end)
+        end = this->end;
+
+    return true;
+}
+
 }
 
 void Reftime::init()

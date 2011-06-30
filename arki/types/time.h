@@ -145,6 +145,22 @@ struct Time : public types::CoreType<Time>
 	static std::vector< Item<Time> > generate(
 			const types::Time& begin, const types::Time& end, int step);
 
+    /**
+     * Check if two ranges overlap.
+     *
+     * Ranges can be open ended: an open end is represented by an undefined
+     * time item.
+     *
+     * @param ts1 start of the first range
+     * @param te1 end of the first range
+     * @param ts2 start of the second range
+     * @param te2 end of the second range
+     */
+    static bool range_overlaps(
+            const UItem<types::Time>& ts1, const UItem<types::Time>& te1,
+            const UItem<types::Time>& ts2, const UItem<types::Time>& te2);
+
+
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system

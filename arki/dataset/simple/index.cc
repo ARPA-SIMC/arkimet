@@ -430,6 +430,18 @@ public:
 		}
 	}
 
+    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+    {
+		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
+		{
+			if (!begin.defined() || (i->start_time.defined() && i->start_time < begin))
+				begin = i->start_time;
+			if (!end.defined() || (i->end_time.defined() && i->end_time > end))
+				end = i->end_time;
+		}
+        return !info.empty();
+    }
+
 	void vacuum()
 	{
 	}
@@ -733,6 +745,29 @@ public:
 			end_time = types::Time::createFromSQL(q.fetchString(1));
 		}
 	}
+
+    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+    {
+		Query q("sel_date_extremes", m_db);
+		q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
+
+        bool found = false;
+        UItem<types::Time> st;
+        UItem<types::Time> et;
+        while (q.step())
+        {
+			st = types::Time::createFromSQL(q.fetchString(0));
+			et = types::Time::createFromSQL(q.fetchString(1));
+
+			if (!begin.defined() || (st.defined() && st < begin))
+				begin = st;
+			if (!end.defined() || (et.defined() && et > end))
+				end = et;
+
+            found = true;
+		}
+        return found;
+    }
 
 	void vacuum()
 	{

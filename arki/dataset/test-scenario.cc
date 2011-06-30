@@ -22,6 +22,7 @@
 
 #include <arki/dataset/test-scenario.h>
 #include <arki/dataset/ondisk2.h>
+#include <arki/dataset/archive.h>
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata/consumer.h>
 #include <arki/scan/any.h>
@@ -274,6 +275,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
 
         // Pack and build 'offline' archive
         run_repack(6, 3);
+        ds->archive().rescan_archives();
         mvlast("offline");
         // same as ro, but only the toplevel summary is present
         string ofsum = sys::fs::readFile(str::joinpath(path, ".archive/offline/summary"));
@@ -284,6 +286,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
 
         // Pack and build 'wrongro' archive
         run_repack(9, 3);
+        ds->archive().rescan_archives();
         mvlast("wrongro");
         // same as ro, but toplevel summary does not match the data
         sys::fs::writeFile(
@@ -292,6 +295,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
 
         // Pack and build 'ro' archive
         run_repack(12, 3);
+        ds->archive().rescan_archives();
         mvlast("ro");
         // normal archive dir archived to mounted readonly media with dir.summary at the top
         sys::fs::writeFile(
@@ -300,10 +304,12 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
 
         // Pack and build 'old' archive
         run_repack(15, 3);
+        ds->archive().rescan_archives();
         mvlast("old");
 
         // Pack and build 'last' archive
         run_repack(18, 3);
+        ds->archive().rescan_archives();
     }
 };
 

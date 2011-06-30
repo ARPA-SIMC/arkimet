@@ -65,14 +65,14 @@ bool Local::hasArchive() const
 Archives& Local::archive()
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, ".archive"));
+		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"));
 	return *m_archive;
 }
 
 const Archives& Local::archive() const
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, ".archive"));
+		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"));
 	return *m_archive;
 }
 
@@ -243,14 +243,14 @@ bool WritableLocal::hasArchive() const
 Archives& WritableLocal::archive()
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
+		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"), false);
 	return *m_archive;
 }
 
 const Archives& WritableLocal::archive() const
 {
 	if (!m_archive)
-		m_archive = new Archives(str::joinpath(m_path, ".archive"), false);
+		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"), false);
 	return *m_archive;
 }
 

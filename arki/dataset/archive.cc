@@ -1,7 +1,7 @@
 /*
  * dataset/archive - Handle archived data
  *
- * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
 #include <arki/metadata/collection.h>
+#include <arki/utils/fd.h>
 #include <arki/utils/files.h>
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
@@ -41,7 +42,11 @@
 #include <fstream>
 #include <ctime>
 #include <cstdio>
+#include <cerrno>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "config.h"
 
@@ -89,7 +94,6 @@ Archive* Archive::create(const std::string& dir, bool writable)
     }
 }
 
-
 OnlineArchive::OnlineArchive(const std::string& dir)
 : m_dir(dir), m_mft(0)
 {
@@ -134,6 +138,11 @@ void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
 size_t OnlineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
 {
     return m_mft->produce_nth(cons, idx);
+}
+
+bool OnlineArchive::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+{
+    return m_mft->date_extremes(begin, end);
 }
 
 void OnlineArchive::acquire(const std::string& relname)
@@ -298,6 +307,11 @@ size_t OfflineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
     return 0;
 }
 
+bool OfflineArchive::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+{
+    return sum.date_extremes(begin, end);
+}
+
 void OfflineArchive::acquire(const std::string& relname)
 {
     throw wibble::exception::Consistency("running acquire on offline archive", "operation does not make sense");
@@ -332,11 +346,37 @@ void OfflineArchive::vacuum()
 }
 
 
-Archives::Archives(const std::string& dir, bool read_only)
-    : m_dir(dir), m_read_only(read_only), m_last(0)
+Archives::Archives(const std::string& root, const std::string& dir, bool read_only)
+    : m_scache_root(str::joinpath(root, ".summaries")), m_dir(dir), m_read_only(read_only), m_last(0)
 {
     // Create the directory if it does not exist
     wibble::sys::fs::mkpath(m_dir);
+
+    // Look for other archives other than 'last'
+    rescan_archives();
+}
+
+Archives::~Archives()
+{
+	for (map<string, Archive*>::iterator i = m_archives.begin();
+			i != m_archives.end(); ++i)
+		delete i->second;
+	if (m_last)
+		delete m_last;
+}
+
+void Archives::rescan_archives()
+{
+    // Clean up existing archives and restart from scratch
+    if (m_last)
+    {
+        delete m_last;
+        m_last = 0;
+    }
+    for (std::map<std::string, Archive*>::const_iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
+        delete i->second;
+    m_archives.clear();
 
     // Look for subdirectories: they are archives
     sys::fs::Directory d(m_dir);
@@ -355,15 +395,16 @@ Archives::Archives(const std::string& dir, bool read_only)
         } else {
             // Add directory with a manifest inside
             string pathname = str::joinpath(m_dir, *i);
-            if (!read_only || Archive::is_archive(pathname))
+            if (!m_read_only || Archive::is_archive(pathname))
                 names.insert(*i);
         }
     }
 
+    // Look for existing archives
     for (set<string>::const_iterator i = names.begin();
             i != names.end(); ++i)
     {
-        auto_ptr<Archive> a(Archive::create(str::joinpath(m_dir, *i), !read_only));
+        auto_ptr<Archive> a(Archive::create(str::joinpath(m_dir, *i), !m_read_only));
         if (a.get())
         {
             if (*i == "last")
@@ -375,21 +416,13 @@ Archives::Archives(const std::string& dir, bool read_only)
 
     // Instantiate the 'last' archive even if the directory does not exist,
     // if not read only
-    if (!read_only && !m_last)
+    if (!m_read_only && !m_last)
     {
+
         OnlineArchive* o;
         m_last = o = new OnlineArchive(str::joinpath(m_dir, "last"));
         o->openRW();
     }
-}
-
-Archives::~Archives()
-{
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		delete i->second;
-	if (m_last)
-		delete m_last;
 }
 
 void Archives::flush()
@@ -430,15 +463,113 @@ void Archives::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 		m_last->queryBytes(q, out);
 }
 
-void Archives::querySummary(const Matcher& matcher, Summary& summary)
+Summary Archives::summary_for_all()
 {
+    Summary s;
+    string sum_file = str::joinpath(m_scache_root, "archives.summary");
+    bool has_cache = true;
+    int fd = open(sum_file.c_str(), O_RDONLY);
+    if (fd < 0)
+    {
+        if (errno == ENOENT)
+            has_cache = false;
+        else
+            throw wibble::exception::System("opening file " + sum_file);
+    }
+    utils::fd::HandleWatch hw(sum_file, fd);
+
+    if (has_cache)
+        s.read(fd, sum_file);
+    else
+    {
+        Matcher m;
+        // Query the summaries of all archives
+        for (map<string, Archive*>::iterator i = m_archives.begin();
+                i != m_archives.end(); ++i)
+            i->second->querySummary(m, s);
+        if (m_last)
+            m_last->querySummary(m, s);
+    }
+
+    return s;
+}
+
+void Archives::rebuild_summary_cache()
+{
+    // Only when writable
+    if (m_read_only)
+        throw wibble::exception::Consistency(
+                "rebuilding summary cache for archives in " + m_dir,
+                "archive opened in read only mode");
+
+    string sum_file = str::joinpath(m_scache_root, "archives.summary");
+    Summary s;
+    Matcher m;
+
+    // Query the summaries of all archives
     for (map<string, Archive*>::iterator i = m_archives.begin();
             i != m_archives.end(); ++i)
-    {
-        i->second->querySummary(matcher, summary);
-    }
+        i->second->querySummary(m, s);
     if (m_last)
-        m_last->querySummary(matcher, summary);
+        m_last->querySummary(m, s);
+
+    // Add all summaries in toplevel dirs
+    sys::fs::Directory d(m_dir);
+    for (sys::fs::Directory::const_iterator i = d.begin();
+            i != d.end(); ++i)
+    {
+        // Skip '.', '..' and hidden files
+        if ((*i)[0] == '.') continue;
+        if (!str::endsWith(*i, ".summary")) continue;
+        s.readFile(str::joinpath(m_dir, *i));
+    }
+
+    // Write back to the cache directory, if allowed
+    if (!m_read_only)
+        if (sys::fs::access(m_scache_root, W_OK))
+            s.writeAtomically(sum_file);
+}
+
+void Archives::querySummary(const Matcher& matcher, Summary& summary)
+{
+    UItem<types::Time> matcher_begin;
+    UItem<types::Time> matcher_end;
+
+    // Extract date range from matcher
+    if (matcher.date_extremes(matcher_begin, matcher_end))
+    {
+        // Query only archives that fit that date range
+        for (map<string, Archive*>::iterator i = m_archives.begin();
+                i != m_archives.end(); ++i)
+        {
+            UItem<types::Time> arc_begin;
+            UItem<types::Time> arc_end;
+            if (!i->second->date_extremes(arc_begin, arc_end)
+                    || types::Time::range_overlaps(matcher_begin, matcher_end, arc_begin, arc_end))
+                i->second->querySummary(matcher, summary);
+        }
+        if (m_last)
+        {
+            UItem<types::Time> arc_begin;
+            UItem<types::Time> arc_end;
+            if (!m_last->date_extremes(arc_begin, arc_end)
+                    || types::Time::range_overlaps(matcher_begin, matcher_end, arc_begin, arc_end))
+                m_last->querySummary(matcher, summary);
+        }
+    } else {
+        // Use archive summary cache
+        Summary s = summary_for_all();
+        s.filter(matcher, summary);
+    }
+}
+
+bool Archives::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+{
+    bool res = false;
+    for (map<string, Archive*>::const_iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
+        res |= i->second->date_extremes(begin, end);
+    return res;
 }
 
 size_t Archives::produce_nth(metadata::Consumer& cons, size_t idx)
@@ -450,6 +581,11 @@ size_t Archives::produce_nth(metadata::Consumer& cons, size_t idx)
     if (m_last)
         res += m_last->produce_nth(cons, idx);
     return res;
+}
+
+void Archives::invalidate_summary_cache()
+{
+    sys::fs::deleteIfExists(str::joinpath(m_scache_root, "archives.summary"));
 }
 
 static std::string poppath(std::string& path)
@@ -477,6 +613,7 @@ void Archives::acquire(const std::string& relname)
 	else
 		throw wibble::exception::Consistency("acquiring " + relname,
 				"archive " + name + " does not exist in " + m_dir);
+    invalidate_summary_cache();
 }
 
 void Archives::acquire(const std::string& relname, metadata::Collection& mds)
@@ -488,6 +625,7 @@ void Archives::acquire(const std::string& relname, metadata::Collection& mds)
 	else
 		throw wibble::exception::Consistency("acquiring " + relname,
 				"archive " + name + " does not exist in " + m_dir);
+    invalidate_summary_cache();
 }
 
 void Archives::remove(const std::string& relname)
@@ -499,6 +637,7 @@ void Archives::remove(const std::string& relname)
 	else
 		throw wibble::exception::Consistency("removing " + relname,
 				"archive " + name + " does not exist in " + m_dir);
+    invalidate_summary_cache();
 }
 
 void Archives::rescan(const std::string& relname)
@@ -510,6 +649,7 @@ void Archives::rescan(const std::string& relname)
 	else
 		throw wibble::exception::Consistency("rescanning " + relname,
 				"archive " + name + " does not exist in " + m_dir);
+    invalidate_summary_cache();
 }
 
 namespace {
@@ -550,6 +690,8 @@ void Archives::vacuum()
 		i->second->vacuum();
 	if (m_last)
 		m_last->vacuum();
+    if (!m_read_only)
+        rebuild_summary_cache();
 }
 
 }
