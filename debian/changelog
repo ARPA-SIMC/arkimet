@@ -1,3 +1,13 @@
+arkimet (0.63-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - implemented arki-dump --info
+     - implemented I/O profiling support (ARKI_IOTRACE)
+     - cache aggregated archives summary for much faster global summary
+       queries
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 30 Jun 2011 14:32:54 +0200
+
 arkimet (0.62-1) UNRELEASED; urgency=low
 
   * New upstream version
