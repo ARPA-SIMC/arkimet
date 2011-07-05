@@ -1,3 +1,16 @@
+local cosmo_centres = { [78]=1, [80]=1, [200]=1 }
+local cosmo_nudging_table2 = {
+     [11]=0,  [15]=2,  [16]=3,  [17]=0,  [33]=0,  [34]=0,
+     [57]=1,  [61]=1,  [78]=1,  [79]=1,  [90]=1, [111]=0,
+    [112]=0, [113]=0, [114]=0, [121]=0, [122]=0, [124]=0,
+    [125]=0, [126]=0, [127]=0 }
+local cosmo_nudging_table201 = {
+      [5]=0,  [20]=1,  [22]=0,  [23]=0,  [24]=0,  [25]=0,
+     [26]=0,  [27]=0,  [42]=1, [102]=1, [113]=1, [132]=1,
+    [135]=1, [187]=2, [218]=2, [219]=2 }
+local cosmo_nudging_table202 = {
+    [231]=0, [232]=0, [233]=0 }
+
 function scan(md)
 	-- Reference time
 	local year = (grib.centuryOfReferenceTimeOfData - 1) * 100 + grib.yearOfCentury
@@ -23,7 +36,37 @@ function scan(md)
 	end
 
 	-- Time range
-	md:set(arki_timerange.grib1(grib.timeRangeIndicator, grib.indicatorOfUnitOfTimeRange, grib.P1, grib.P2))
+    if gribl.timeRangeIndicator == 13 and cosmo_centres[gribl.centre]
+    then
+        -- COSMO 'nudging'
+        -- Special scan directly to timedef timeranges
+        -- needs to be done here since it depends on the parameter
+        local statproc = nil
+        if grib.P2 ~= 0 then
+            -- guess timerange according to parameter
+            if gribl.gribTablesVersionNo == 2 then
+                -- table 2
+                statproc = cosmo_nudging_table2[gribl.indicatorOfParameter]
+            elseif gribl.gribTablesVersionNo == 201 then
+                -- table 201
+                statproc = cosmo_nudging_table201[gribl.indicatorOfParameter]
+            elseif gribl.gribTablesVersionNo == 202 then
+                -- table 202
+                statproc = cosmo_nudging_table202[gribl.indicatorOfParameter]
+            end
+        end
+        if statproc == nil then
+            -- default to point in time
+            md:set(arki_timerange.timedef(0, "s", 254))
+        else
+            -- known statistical processing
+            local tunit = gribl.indicatorOfUnitOfTimeRange
+            if tunit == 254 then tunit = 13 end
+            md:set(arki_timerange.timedef(0, "s", statproc, grib.P2-grib.P1, tunit))
+        end
+    else
+        md:set(arki_timerange.grib1(grib.timeRangeIndicator, grib.indicatorOfUnitOfTimeRange, grib.P1, grib.P2))
+    end
 
 	-- Area
 	local area = {}
