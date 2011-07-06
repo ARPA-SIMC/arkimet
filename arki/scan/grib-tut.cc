@@ -528,7 +528,7 @@ void to::test<5>()
 
 	// Check timerange
 	ensure(md.get(types::TYPE_TIMERANGE).defined());
-    ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(Timerange::decodeString("Timedef(0s, 254)")));
+    ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(Timerange::decodeString("Timedef(0s, 253)")));
 
 
 	// Check area
@@ -768,18 +768,18 @@ void to::test<10>()
         scan::scan("inbound/cosmonudging-t2.grib1", mdc);
         ensure_equals(mdc.size(), 35u);
         for (unsigned i = 0; i < 5; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
         ensure_equals(mdc[5].get<Timerange>(), Timerange::decodeString("Timedef(0s, 2, 1h)"));
         ensure_equals(mdc[6].get<Timerange>(), Timerange::decodeString("Timedef(0s, 3, 1h)"));
         for (unsigned i = 7; i < 13; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
         ensure_equals(mdc[13].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
         for (unsigned i = 14; i < 19; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
         ensure_equals(mdc[19].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
         ensure_equals(mdc[20].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
         for (unsigned i = 21; i < 26; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
         ensure_equals(mdc[26].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
         for (unsigned i = 27; i < 35; ++i)
             ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s, 0, 12h)"));
@@ -792,27 +792,27 @@ void to::test<10>()
         ensure_equals(mdc[1].get<Timerange>(), Timerange::decodeString("Timedef(0s, 0, 12h)"));
         ensure_equals(mdc[2].get<Timerange>(), Timerange::decodeString("Timedef(0s, 0, 12h)"));
         for (unsigned i = 3; i < 16; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
         ensure_equals(mdc[16].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
         ensure_equals(mdc[17].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
         for (unsigned i = 18; i < 26; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
         ensure_equals(mdc[26].get<Timerange>(), Timerange::decodeString("Timedef(0s, 2, 1h)"));
         for (unsigned i = 27; i < 33; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t202.grib1", mdc);
         ensure_equals(mdc.size(), 11u);
         for (unsigned i = 0; i < 11; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t203.grib1", mdc);
         ensure_equals(mdc.size(), 1u);
-        ensure_equals(mdc[0].get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+        ensure_equals(mdc[0].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
     }
 }
 

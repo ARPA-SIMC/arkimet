@@ -56,8 +56,9 @@ function scan(md)
             end
         end
         if statproc == nil then
-            -- default to point in time
-            md:set(arki_timerange.timedef(0, "s", 254))
+	    -- default to point in time, with 'cosmo nudging analysys' as
+	    -- statistical processing
+            md:set(arki_timerange.timedef(0, "s", 253))
         else
             -- known statistical processing
             local tunit = gribl.indicatorOfUnitOfTimeRange
