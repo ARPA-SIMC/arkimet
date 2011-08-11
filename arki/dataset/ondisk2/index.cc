@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/dataset/ondisk2/index.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/configfile.h>
@@ -1349,7 +1351,7 @@ void WIndex::reset(const std::string& file)
 		sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
 }
 
-void WIndex::relocate_data(int id, off_t newofs)
+void WIndex::relocate_data(int id, off64_t newofs)
 {
 	Query query("update_offset", m_db);
 	query.compile("UPDATE md SET offset = ? WHERE id = ?");

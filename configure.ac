@@ -56,6 +56,10 @@ dnl AC_CHECK_CXX_EH
 dnl Needed by subdir-objects
 AM_PROG_CC_C_O
 
+dnl Support large files on 32bit systems
+AC_SYS_LARGEFILE
+AC_FUNC_FSEEKO
+
 dnl Use libtool
 dnl AM_ENABLE_STATIC
 dnl AM_DISABLE_SHARED

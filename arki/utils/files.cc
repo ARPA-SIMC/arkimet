@@ -1,7 +1,7 @@
 /*
  * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -111,19 +111,19 @@ bool hasDontpackFlagfile(const std::string& dir)
 
 time_t timestamp(const std::string& file)
 {
-    std::auto_ptr<struct stat> st = sys::fs::stat(file);
+    std::auto_ptr<struct stat64> st = sys::fs::stat(file);
     return st.get() == NULL ? 0 : st->st_mtime;
 }
 
 size_t size(const std::string& file)
 {
-    std::auto_ptr<struct stat> st = sys::fs::stat(file);
+    std::auto_ptr<struct stat64> st = sys::fs::stat(file);
     return st.get() == NULL ? 0 : (size_t)st->st_size;
 }
 
 ino_t inode(const std::string& file)
 {
-    std::auto_ptr<struct stat> st = sys::fs::stat(file);
+    std::auto_ptr<struct stat64> st = sys::fs::stat(file);
     return st.get() == NULL ? 0 : st->st_ino;
 }
 

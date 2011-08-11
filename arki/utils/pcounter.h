@@ -167,7 +167,7 @@ protected:
 	}
 	void save(TYPE value)
 	{
-		if (fseek(m_file, 0, SEEK_SET))
+		if (fseeko(m_file, 0, SEEK_SET))
 			throw std::runtime_error("Unable to save persistent counter value to "+m_path+": seek failed");
 
 		std::ostringstream ss;

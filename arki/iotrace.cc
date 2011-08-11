@@ -19,6 +19,9 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+#include "config.h"
+
 #include <arki/iotrace.h>
 #include <arki/utils/intern.h>
 #include <arki/runtime/config.h>
@@ -79,7 +82,7 @@ void init()
     }
 }
 
-void trace_file(const std::string& name, off_t offset, size_t size, const char* desc)
+void trace_file(const std::string& name, off64_t offset, size_t size, const char* desc)
 {
     if (listeners)
     {
@@ -92,7 +95,7 @@ void trace_file(const std::string& name, off_t offset, size_t size, const char* 
     }
 }
 
-void trace_file(const char* name, off_t offset, size_t size, const char* desc)
+void trace_file(const char* name, off64_t offset, size_t size, const char* desc)
 {
     if (listeners)
     {

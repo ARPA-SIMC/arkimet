@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <sys/types.h>
 #include <string>
 #include <arki/transaction.h>
 
@@ -50,7 +51,7 @@ struct Datafile
 	 * Append the data to the datafile and return a pending with the cancelable
 	 * operation.  The pending is only valid as long as this Datafile is valid.
 	 */
-	Pending append(Metadata& md, off_t* ofs);
+	Pending append(Metadata& md, off64_t* ofs);
 };
 
 }

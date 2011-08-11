@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/local.h>
 #include <arki/dataset/archive.h>
@@ -74,7 +76,7 @@ HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool qui
 
 void HoleFinder::finaliseFile()
 {
-	off_t size;
+	off64_t size;
 
 	if (last_file.empty())
 		return;
@@ -124,7 +126,7 @@ cleanup:
 	last_file.clear();
 }
 
-void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_t size)
+void HoleFinder::operator()(const std::string& file, int id, off64_t offset, size_t size)
 {
 	if (last_file != file)
 	{

@@ -1,7 +1,7 @@
 /*
  * scan/dir - Find data files inside directories
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,23 +54,22 @@ static void scan(vector<string>& res, const std::string& top, const std::string&
 		if (str::endsWith(*i, ".gz.idx"))
 			continue;
 
-		// stat(2) the file
-		string pathname = str::joinpath(root, *i);
-		std::auto_ptr<struct stat> st = sys::fs::stat(pathname);
+        // stat(2) the file
+        string pathname = str::joinpath(root, *i);
 
-		if (S_ISDIR(st->st_mode))
-		{
-			// If it is a directory, recurse into it
-			scan(res, top, pathname, files_in_root, level + 1);
-		} else if ((files_in_root || level > 0) && S_ISREG(st->st_mode)) {
-			if (str::endsWith(pathname, ".gz"))
-				pathname = pathname.substr(0, pathname.size() - 3);
-			if (scan::canScan(pathname))
-				// Skip files in the root dir
-				// We point to a good file, keep it
-				res.push_back(pathname.substr(top.size() + 1));
-		}
-	}
+        if (i.isdir())
+        {
+            // If it is a directory, recurse into it
+            scan(res, top, pathname, files_in_root, level + 1);
+        } else if ((files_in_root || level > 0) && i.isreg()) {
+            if (str::endsWith(pathname, ".gz"))
+                pathname = pathname.substr(0, pathname.size() - 3);
+            if (scan::canScan(pathname))
+                // Skip files in the root dir
+                // We point to a good file, keep it
+                res.push_back(pathname.substr(top.size() + 1));
+        }
+    }
 }
 
 std::vector<std::string> dir(const std::string& root, bool files_in_root)

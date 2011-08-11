@@ -20,6 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
 #include <arki/dataset/maintenance.h>

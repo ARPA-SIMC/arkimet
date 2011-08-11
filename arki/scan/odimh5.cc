@@ -103,7 +103,7 @@ struct OdimH5Validator : public Validator
 {
 	virtual ~OdimH5Validator() { }
 
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
+	virtual void validate(int fd, off64_t offset, size_t size, const std::string& fname) const
 	{
 		/* we check that file header is a valid HDF5 header */
 

@@ -174,16 +174,7 @@ std::vector<std::string> Config::Dirlist::list_files(const std::string& ext, boo
             // Skip files with different ending
             if (not str::endsWith(file, ext)) continue;
             // Skip non-files
-#ifdef HAVE_STRUCT_DIRENT_D_TYPE
-            if (di->d_type == DT_UNKNOWN)
-            {
-#endif
-                std::auto_ptr<struct stat> st = sys::fs::stat(str::joinpath(*i, file));
-                if (!S_ISREG(st->st_mode)) continue;
-#ifdef HAVE_STRUCT_DIRENT_D_TYPE
-            } else if (di->d_type != DT_REG)
-                continue;
-#endif
+            if (!di.isreg()) continue;
             files.push_back(file);
         }
 
@@ -219,10 +210,10 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 	while (!fname.empty() && fname[fname.size() - 1] == '/')
 		fname.resize(fname.size() - 1);
 
-	// Check if it's a file or a directory
-	std::auto_ptr<struct stat> st = sys::fs::stat(fname);
-	if (st.get() == 0)
-		throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
+    // Check if it's a file or a directory
+    std::auto_ptr<struct stat64> st = sys::fs::stat(fname);
+    if (st.get() == 0)
+        throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
 	if (S_ISDIR(st->st_mode))
 	{
 		// If it's a directory, merge in its config file
@@ -353,15 +344,15 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 	}
 
 #ifdef CONF_DIR
-	// Else, CONF_DIR is tried.
-	string name = string(CONF_DIR) + "/match-alias.conf";
-	auto_ptr<struct stat> st = wibble::sys::fs::stat(name);
-	if (st.get())
-	{
-		parseConfigFile(cfg, name);
-		MatcherAliasDatabase::addGlobal(cfg);
-		return;
-	}
+    // Else, CONF_DIR is tried.
+    string name = string(CONF_DIR) + "/match-alias.conf";
+    auto_ptr<struct stat64> st = wibble::sys::fs::stat(name);
+    if (st.get())
+    {
+        parseConfigFile(cfg, name);
+        MatcherAliasDatabase::addGlobal(cfg);
+        return;
+    }
 #endif
 
 	// Else, nothing is loaded.
@@ -403,18 +394,9 @@ std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::st
 		if (file[0] == '.') continue;
 		// Skip backup files
 		if (file[file.size() - 1] == '~') continue;
-		// Skip non-files
-#ifdef HAVE_STRUCT_DIRENT_D_TYPE
-		if (i->d_type == DT_UNKNOWN)
-		{
-#endif
-			std::auto_ptr<struct stat> st = wibble::sys::fs::stat(dirname + "/" + file);
-			if (!S_ISREG(st->st_mode)) continue;
-#ifdef HAVE_STRUCT_DIRENT_D_TYPE
-		} else if (i->d_type != DT_REG)
-			continue;
-#endif
-		files.push_back(wibble::str::joinpath(dirname, *i));
+        // Skip non-files
+        if (!i.isreg()) continue;
+        files.push_back(wibble::str::joinpath(dirname, *i));
 	}
 
 	// Sort the file names

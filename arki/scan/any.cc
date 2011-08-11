@@ -1,7 +1,7 @@
 /*
  * scan/any - Scan files autodetecting the format
  *
- * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,12 +108,12 @@ static bool scan_file(const std::string& file, metadata::Consumer& c)
 bool scan(const std::string& file, metadata::Consumer& c)
 {
 	string md_fname = file + ".metadata";
-	auto_ptr<struct stat> st_file = sys::fs::stat(file);
+	auto_ptr<struct stat64> st_file = sys::fs::stat(file);
 	if (!st_file.get())
 		st_file = sys::fs::stat(file + ".gz");
 	if (!st_file.get())
 		throw wibble::exception::File(file, "getting file information");
-	auto_ptr<struct stat> st_md = sys::fs::stat(md_fname);
+	auto_ptr<struct stat64> st_md = sys::fs::stat(md_fname);
 
 	if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
 	{
@@ -128,10 +128,10 @@ bool scan(const std::string& file, metadata::Consumer& c)
 bool scan(const std::string& file, const std::string& format, metadata::Consumer& c)
 {
 	string md_fname = file + ".metadata";
-	auto_ptr<struct stat> st_file = sys::fs::stat(file);
+	auto_ptr<struct stat64> st_file = sys::fs::stat(file);
 	if (!st_file.get())
 		throw wibble::exception::File(file, "getting file information");
-	auto_ptr<struct stat> st_md = sys::fs::stat(md_fname);
+	auto_ptr<struct stat64> st_md = sys::fs::stat(md_fname);
 
 	if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
 	{
@@ -194,7 +194,7 @@ void compress(const std::string& file, size_t groupsize)
 	compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
-	std::auto_ptr<struct stat> st = sys::fs::stat(file);
+	std::auto_ptr<struct stat64> st = sys::fs::stat(file);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;

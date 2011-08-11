@@ -41,7 +41,7 @@ namespace iotrace {
 struct Event
 {
     unsigned file_id;
-    off_t offset;
+    off64_t offset;
     size_t size;
     const char* desc;
 
@@ -98,10 +98,10 @@ void init();
  *   Description of the I/O operation. It MUST be some static string, since its
  *   contents are not copied but only a pointer to it is kepy.
  */
-void trace_file(const std::string& name, off_t offset, size_t size, const char* desc);
+void trace_file(const std::string& name, off64_t offset, size_t size, const char* desc);
 
 /// Specialised implementation for C-style filenames
-void trace_file(const char* name, off_t offset, size_t size, const char* desc);
+void trace_file(const char* name, off64_t offset, size_t size, const char* desc);
 
 void add_listener(Listener& l);
 void remove_listener(Listener& l);
@@ -109,8 +109,8 @@ void remove_listener(Listener& l);
 #else
 
 void init() {}
-void trace_file(const std::string& name, off_t offset, size_t size, const char* desc) {}
-void trace_file(const char* name, off_t offset, size_t size, const char* desc) {}
+void trace_file(const std::string& name, off64_t offset, size_t size, const char* desc) {}
+void trace_file(const char* name, off64_t offset, size_t size, const char* desc) {}
 
 #endif
 

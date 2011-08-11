@@ -50,7 +50,7 @@ struct Append : public Transaction
 	Metadata& md;
 	UItem<types::Source> origSource;
 	wibble::sys::Buffer buf;
-	off_t pos;
+	off64_t pos;
 
 	Append(Datafile& df, Metadata& md) : fired(false), df(df), md(md)
    	{
@@ -93,11 +93,11 @@ struct Append : public Transaction
 		fcntl(df.fd, F_SETLK, &lock);
 	}
 
-	off_t wrpos()
+	off64_t wrpos()
 	{
 		// Get the write position in the data file
-		off_t size = lseek(df.fd, 0, SEEK_END);
-		if (size == (off_t)-1)
+		off64_t size = lseek(df.fd, 0, SEEK_END);
+		if (size == (off64_t)-1)
 			throw wibble::exception::File(df.pathname, "reading the current position");
 		return size;
 	}
@@ -159,7 +159,7 @@ Datafile::~Datafile()
 		throw wibble::exception::File(pathname, "Closing file");
 }
 
-Pending Datafile::append(Metadata& md, off_t* ofs)
+Pending Datafile::append(Metadata& md, off64_t* ofs)
 {
 	Append* res = new Append(*this, md);
 	*ofs = res->pos;

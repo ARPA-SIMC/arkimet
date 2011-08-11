@@ -592,7 +592,7 @@ void list_files(const std::string& root, const std::string& path, vector<string>
     for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if ((*i)[0] == '.') continue;
-        if (dir.isdir(i))
+        if (i.isdir())
             list_files(root, str::joinpath(path, *i), files);
         else
             files.push_back(str::joinpath(path, *i));

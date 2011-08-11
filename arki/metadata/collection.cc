@@ -1,7 +1,7 @@
 /*
  * metadata/collection - In-memory collection of metadata
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -193,7 +193,7 @@ std::string Collection::ensureContiguousData(const std::string& source) const
 		last_end += s->size;
 	}
 	string fname = (*this)[0].completePathname(last_file);
-	std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+	std::auto_ptr<struct stat64> st = sys::fs::stat(fname);
 	if (st.get() == NULL)
 		throw wibble::exception::File(fname, "validating data described in " + source);
 	if (st->st_size != last_end)
@@ -211,7 +211,7 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
 	compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
-	std::auto_ptr<struct stat> st = sys::fs::stat(datafile);
+	std::auto_ptr<struct stat64> st = sys::fs::stat(datafile);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;

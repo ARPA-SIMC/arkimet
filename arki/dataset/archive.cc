@@ -386,7 +386,7 @@ void Archives::rescan_archives()
     {
         // Skip '.', '..' and hidden files
         if ((*i)[0] == '.') continue;
-        if (!d.isdir(i))
+        if (!i.isdir())
         {
             // Add .summary files
             string name = *i;

@@ -69,7 +69,7 @@ struct IndexFileVisitor
 {
 	virtual ~IndexFileVisitor() {}
 
-	virtual void operator()(const std::string& file, int id, off_t offset, size_t size) = 0;
+	virtual void operator()(const std::string& file, int id, off64_t offset, size_t size) = 0;
 };
 
 /**
@@ -85,7 +85,7 @@ struct HoleFinder : IndexFileVisitor
 	const std::string& m_root;
 
 	std::string last_file;
-	off_t last_file_size;
+	off64_t last_file_size;
 	bool quick;
 	const scan::Validator* validator;
 	int validator_fd;
@@ -102,7 +102,7 @@ struct HoleFinder : IndexFileVisitor
 
 	void finaliseFile();
 
-	void operator()(const std::string& file, int id, off_t offset, size_t size);
+	void operator()(const std::string& file, int id, off64_t offset, size_t size);
 
 	void end()
 	{

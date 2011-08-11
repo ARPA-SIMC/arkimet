@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,10 +16,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
+#include "config.h"
 #include <arki/dataset/test-utils.h>
 #include <arki/dataset/ondisk2/writer/datafile.h>
 #include <arki/metadata.h>
-#include <arki/scan/grib.h>
+#include <arki/metadata/collection.h>
+#include <arki/scan/any.h>
 #include <arki/utils/files.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -47,11 +49,14 @@ inline size_t datasize(const Metadata& md)
 
 struct arki_dataset_ondisk2_writer_datafile_shar {
 	string fname;
+	metadata::Collection mdc;
 
 	arki_dataset_ondisk2_writer_datafile_shar()
 		: fname("testfile.grib")
 	{
 		system(("rm -f " + fname).c_str());
+		// Keep some valid metadata handy
+		ensure(scan::scan("inbound/test.grib1", mdc));
 	}
 
 #if 0
@@ -83,12 +88,9 @@ TESTGRP(arki_dataset_ondisk2_writer_datafile);
 template<> template<>
 void to::test<1>()
 {
-	scan::Grib scanner;
-
 	Metadata md;
 	size_t totsize = 0;
 	off_t ofs;
-	scanner.open("inbound/test.grib1");
 
 	Datafile df(fname);
 
@@ -97,69 +99,79 @@ void to::test<1>()
 	ensure_equals(files::size(fname), 0u);
 
 	// Get a metadata
-	ensure(scanner.next(md));
-	Item<types::Source> origSource = md.source;
-	size_t size = datasize(md);
+	Item<types::Source> origSource = mdc[0].source;
+	size_t size = datasize(mdc[0]);
 
 	{
 		// Start the append transaction, nothing happens until commit
-		Pending p = df.append(md, &ofs);
+		Pending p = df.append(mdc[0], &ofs);
 		ensure_equals(ofs, 0u);
 		ensure_equals(files::size(fname), 0u);
-		ensure_equals(md.source, origSource);
+		ensure_equals(mdc[0].source, origSource);
 
 		// After commit, data is appended
 		p.commit();
 		ensure_equals(files::size(fname), size);
-		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, 0, size)));
+		ensure_equals(mdc[0].source, Item<types::Source>(types::source::Blob::create("grib1", fname, 0, size)));
 	}
 
 	totsize += size;
 
 	// Get another metadata
-	ensure(scanner.next(md));
-	origSource = md.source;
-	size = datasize(md);
+	origSource = mdc[1].source;
+	size = datasize(mdc[1]);
 
 	{
 		// Start the append transaction, nothing happens until commit
-		Pending p = df.append(md, &ofs);
+		Pending p = df.append(mdc[1], &ofs);
 		ensure_equals(ofs, (off_t)totsize);
 		ensure_equals(files::size(fname), totsize);
-		ensure_equals(md.source, origSource);
+		ensure_equals(mdc[1].source, origSource);
 
 		// After rollback, nothing has changed
 		p.rollback();
 		ensure_equals(files::size(fname), totsize);
-		ensure_equals(md.source, origSource);
+		ensure_equals(mdc[1].source, origSource);
 	}
 
 	// Get another metadata
-	ensure(scanner.next(md));
-	origSource = md.source;
-	size = datasize(md);
+	origSource = mdc[2].source;
+	size = datasize(mdc[2]);
 
 	{
 		// Start the append transaction, nothing happens until commit
-		Pending p = df.append(md, &ofs);
+		Pending p = df.append(mdc[2], &ofs);
 		ensure_equals(ofs, totsize);
 		ensure_equals(files::size(fname), totsize);
-		ensure_equals(md.source, origSource);
+		ensure_equals(mdc[2].source, origSource);
 
 		// After commit, data is appended
 		p.commit();
 		ensure_equals(files::size(fname), totsize + size);
-		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
+		ensure_equals(mdc[2].source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
 	}
 
 	// When pending is out of scope, everything is normal
 	ensure_equals(files::size(fname), totsize + size);
-	ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
+	ensure_equals(mdc[2].source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
+}
+
+// Test with large files
+template<> template<>
+void to::test<2>()
+{
+	Datafile df(fname);
+	ensure(ftruncate(df.fd, 0x7FFFFFFF) != -1);
+	{
+		off_t ofs;
+		Pending p = df.append(mdc[0], &ofs);
+		p.commit();
+	}
 }
 
 // Test replace
 template<> template<>
-void to::test<2>()
+void to::test<3>()
 {
 #if 0
 	appendData();
@@ -225,7 +237,7 @@ void to::test<2>()
 
 // Test remove and pack
 template<> template<>
-void to::test<3>()
+void to::test<4>()
 {
 #if 0
 	appendData();
