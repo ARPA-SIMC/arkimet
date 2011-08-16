@@ -576,16 +576,16 @@ std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
     return o
 	  << formatStyle(style()) << "("
 	  << setfill('0') << internal
-	  << setw(3) << (int)m_type << ", "
-	  << setw(3) << (int)m_scale << ", "
-	  << setw(10) << (int)m_value << ")";
+	  << setw(3) << (unsigned)m_type << ", "
+	  << setw(3) << (unsigned)m_scale << ", "
+	  << setw(10) << m_value << ")";
 }
 void GRIB2S::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Level::serialiseLocal(e, f);
-    e.add("lt", (int)m_type);
-    e.add("sc", (int)m_scale);
-    e.add("va", (int)m_value);
+    e.add("lt", (unsigned)m_type);
+    e.add("sc", (unsigned)m_scale);
+    e.add("va", m_value);
 }
 Item<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
 {
@@ -657,26 +657,26 @@ void GRIB2D::encodeWithoutEnvelope(Encoder& enc) const
 }
 std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 {
-	utils::SaveIOState sios(o);
+    utils::SaveIOState sios(o);
     return o
-	  << formatStyle(style()) << "("
-	  << setfill('0') << internal
-	  << setw(3) << (int)m_type1 << ", "
-	  << setw(3) << (int)m_scale1 << ", "
-	  << setw(10) << (int)m_value1 << ", "
-	  << setw(3) << (int)m_type2 << ", "
-	  << setw(3) << (int)m_scale2 << ", "
-	  << setw(10) << (int)m_value2 << ")";
+        << formatStyle(style()) << "("
+        << setfill('0') << internal
+        << setw(3) << (unsigned)m_type1 << ", "
+        << setw(3) << (unsigned)m_scale1 << ", "
+        << setw(10) << m_value1 << ", "
+        << setw(3) << (unsigned)m_type2 << ", "
+        << setw(3) << (unsigned)m_scale2 << ", "
+        << setw(10) << m_value2 << ")";
 }
 void GRIB2D::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Level::serialiseLocal(e, f);
-    e.add("l1", (int)m_type1);
-    e.add("s1", (int)m_scale1);
-    e.add("v1", (int)m_value1);
-    e.add("l2", (int)m_type2);
-    e.add("s2", (int)m_scale2);
-    e.add("v2", (int)m_value2);
+    e.add("l1", (unsigned)m_type1);
+    e.add("s1", (unsigned)m_scale1);
+    e.add("v1", m_value1);
+    e.add("l2", (unsigned)m_type2);
+    e.add("s2", (unsigned)m_scale2);
+    e.add("v2", m_value2);
 }
 Item<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
 {
