@@ -816,6 +816,16 @@ void to::test<10>()
     }
 }
 
+// Check scanning a GRIB2 with a bug in level scanning code
+template<> template<>
+void to::test<11>()
+{
+    metadata::Collection mdc;
+    scan::scan("inbound/wronglevel.grib2", mdc);
+    ensure_equals(mdc.size(), 1u);
+    ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,0,0)"));
+}
+
 }
 
 // vim:set ts=4 sw=4:
