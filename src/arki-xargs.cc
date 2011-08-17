@@ -1,7 +1,7 @@
 /*
  * arki-xargs - Runs a command on every blob of data found in the input files
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/metadata.h>
 #include <arki/types/reftime.h>
 #include <arki/scan/any.h>
@@ -34,8 +36,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-
-#include "config.h"
 
 using namespace std;
 using namespace arki;

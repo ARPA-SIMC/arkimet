@@ -1,7 +1,7 @@
 /*
  * arki-bufr-prepare - Prepare BUFR messages for importing into arkimet
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/runtime.h>
 #include <arki/nag.h>
 #include <arki/scan/bufr.h>
@@ -32,8 +34,6 @@
 
 #include <arpa/inet.h>
 #include <cstring>
-
-#include "config.h"
 
 using namespace std;
 using namespace arki;

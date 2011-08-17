@@ -20,13 +20,13 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
 #include <wibble/string.h>
 #include <arki/utils/lua.h>
 #include <arki/runtime.h>
-
-#include "config.h"
 
 #ifdef HAVE_LIBREADLINE
  #if defined(HAVE_READLINE_READLINE_H)

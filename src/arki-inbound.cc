@@ -1,7 +1,7 @@
 /*
  * arki-inbound - Manage a remote inbound queue
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <wibble/exception.h>
 #include <wibble/string.h>
 
@@ -28,8 +30,6 @@
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
 #include <arki/runtime.h>
-
-#include "config.h"
 
 #include <memory>
 #include <iostream>

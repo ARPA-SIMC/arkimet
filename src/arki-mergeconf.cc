@@ -1,7 +1,7 @@
 /*
  * arki-mergeconf - Merge arkimet dataset configurations
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+#include "config.h"
+
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/summary.h>
@@ -28,7 +31,6 @@
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <arki/utils/geosdef.h>
-#include "config.h"
 #include <memory>
 
 using namespace std;

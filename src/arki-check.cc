@@ -1,7 +1,7 @@
 /*
  * arki-check - Update dataset summaries
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>
 #include <wibble/sys/fs.h>
@@ -31,8 +33,6 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
-
-#include "config.h"
 
 #include <fstream>
 #include <iostream>
