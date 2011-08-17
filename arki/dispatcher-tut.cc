@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/tests/test-utils.h>
 #include <arki/dispatcher.h>
 #include <arki/dataset.h>
@@ -29,7 +31,6 @@
 #include <arki/scan/grib.h>
 #include <arki/scan/any.h>
 #include <arki/utils/accounting.h>
-#include "config.h"
 
 namespace tut {
 using namespace std;

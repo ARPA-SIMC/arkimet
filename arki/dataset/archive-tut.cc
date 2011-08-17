@@ -18,6 +18,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/dataset/test-utils.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/ondisk2/writer.h>

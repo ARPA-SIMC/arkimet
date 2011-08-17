@@ -18,6 +18,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/tests/test-utils.h>
 #include <arki/utils/intern.h>
 #include <wibble/string.h>

@@ -18,6 +18,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/tests/test-utils.h>
 #include <arki/dataset.h>
 #include <arki/dataset/ondisk2/index.h>

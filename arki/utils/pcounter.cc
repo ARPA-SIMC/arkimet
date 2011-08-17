@@ -21,6 +21,8 @@
  * Author: Enrico Zini <enrico@enricozini.org>
  */
 
+#include "config.h"
+
 #include <arki/utils/pcounter.h>
 #include <wibble/sys/fs.h>
 

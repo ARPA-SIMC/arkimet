@@ -2,7 +2,7 @@
 /*
  * matcher/reftime/reftime.ll - Lexer for reftime expressions
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@ struct LexInterval {
 	int val;
 	int idx;
 };
+
+#include "config.h"
 
 #include "reftime-parse.hh"
 #include "parser.h"

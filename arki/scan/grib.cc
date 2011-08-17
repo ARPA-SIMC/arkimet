@@ -20,8 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "grib.h"
 #include "config.h"
+#include "grib.h"
 #include <grib_api.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>

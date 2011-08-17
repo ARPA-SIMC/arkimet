@@ -19,6 +19,9 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+#include "config.h"
+
 #include <arki/utils/intern.h>
 #include <vector>
 #include <set>

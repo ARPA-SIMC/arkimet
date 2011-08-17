@@ -1,7 +1,7 @@
 /*
  * scan/bufr - Scan a BUFR file for metadata.
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+#include "config.h"
 
 #include <arki/scan/bufr.h>
 #include <dballe/msg/repinfo.h>
@@ -39,8 +41,6 @@
 #include <cstring>
 #include <stdint.h>
 #include <arpa/inet.h>
-
-#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/scan/bufrlua.h>

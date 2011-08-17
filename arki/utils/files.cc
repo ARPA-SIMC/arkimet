@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/utils/files.h>
 #include <arki/utils.h>
 #include <wibble/string.h>

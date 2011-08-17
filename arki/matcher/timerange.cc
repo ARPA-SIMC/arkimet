@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/matcher/timerange.h>
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>

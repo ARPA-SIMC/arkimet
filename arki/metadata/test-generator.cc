@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>

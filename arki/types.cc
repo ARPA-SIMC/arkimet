@@ -21,6 +21,8 @@
  * Author: Guido Billi <guidobilli@gmail.com>
  */
 
+#include "config.h"
+
 #include <arki/types.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
@@ -34,8 +36,6 @@
 
 #include <cstring>
 #include <unistd.h>
-
-#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>

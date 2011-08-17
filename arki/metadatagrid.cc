@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/metadatagrid.h>
 #include <arki/metadata.h>
 

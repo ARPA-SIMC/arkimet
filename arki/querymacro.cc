@@ -1,7 +1,7 @@
 /*
  * arki/querymacro - Macros implementing special query strategies
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/querymacro.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -33,7 +35,6 @@
 #include <arki/sort.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
-#include "config.h"
 
 using namespace std;
 using namespace wibble;

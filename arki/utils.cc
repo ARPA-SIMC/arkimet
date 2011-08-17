@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #define _XOPEN_SOURCE 700
 #define _XOPEN_SOURCE_EXTENDED 1
 
@@ -36,7 +38,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include "config.h"
 
 using namespace std;
 using namespace wibble;

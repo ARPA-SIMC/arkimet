@@ -1,7 +1,7 @@
 /**
  * dataset/test-scenario - Build dataset scenarios for testing arkimet
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+#include "config.h"
 
 #include <arki/dataset/test-scenario.h>
 #include <arki/dataset/ondisk2.h>

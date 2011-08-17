@@ -1,7 +1,7 @@
 /*
  * summary - Handle a summary of a group of summary
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+#include "config.h"
 
 #include <arki/summary.h>
 #include <arki/summary/node.h>
@@ -46,8 +48,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>

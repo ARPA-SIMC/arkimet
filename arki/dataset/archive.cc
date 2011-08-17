@@ -20,6 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/dataset/archive.h>
 #include <arki/dataset/simple/index.h>
 #include <arki/dataset/simple/reader.h>
@@ -47,8 +49,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/report.h>

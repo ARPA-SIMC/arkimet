@@ -18,6 +18,8 @@
  * Author: Guido Billi <guidobilli@gmail.com>
  */
 
+#include "config.h"
+
 #include <arki/tests/test-utils.h>
 #include <arki/utils/pcounter.h>
 using namespace arki;

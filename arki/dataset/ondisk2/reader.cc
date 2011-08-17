@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk2/reader - Local on disk dataset reader
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+
+#include "config.h"
 
 #include <arki/dataset/ondisk2/reader.h>
 #include <arki/dataset/ondisk2/index.h>
@@ -47,8 +49,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
-
-#include "config.h"
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
