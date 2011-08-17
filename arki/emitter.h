@@ -54,8 +54,8 @@ public:
     void add(const char* val) { add_string(val); }
     void add(double val) { add_double(val); }
     void add(int val) { add_int(val); }
-    void add(unsigned val) { add_int(val); }
-    void add(size_t val) { add_int(val); }
+    void add(unsigned int val) { add_int(val); }
+    void add(unsigned long long int val) { add_int(val); }
     void add(long long int val) { add_int(val); }
     void add(bool val) { add_bool(val); }
 
