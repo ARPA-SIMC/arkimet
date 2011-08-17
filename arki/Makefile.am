@@ -7,7 +7,7 @@ arkiincludedir = $(includedir)/arki
 nobase_dist_arkiinclude_HEADERS = \
 		bbox.h \
 		configfile.h \
-		config.h \
+		libconfig.h \
 		dataset/archive.h \
 		dataset/discard.h \
 		dataset/empty.h \
