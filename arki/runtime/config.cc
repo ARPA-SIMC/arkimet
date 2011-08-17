@@ -20,18 +20,18 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include "config.h"
+
 #include <arki/runtime/config.h>
 #include <arki/dataset.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/matcher.h>
-#include <arki/config.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 #include <fstream>
 #include <memory>
-#include "config.h"
 
 using namespace std;
 using namespace wibble;

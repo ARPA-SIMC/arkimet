@@ -27,7 +27,7 @@
  * I/O profiling
  */
 
-#include <arki/config.h>
+#include <arki/libconfig.h>
 #include <vector>
 #include <string>
 #include <iosfwd>
