@@ -161,16 +161,16 @@ Item<Level> Level::decode(const unsigned char* buf, size_t len)
 		case GRIB2S: {
 			unsigned char type = dec.popUInt(1, "GRIB2S level type");
 			unsigned char scale = dec.popUInt(1, "GRIB2S level scale");
-			unsigned long value = dec.popVarint<unsigned long>("GRIB2S level value");
+			unsigned int value = dec.popVarint<unsigned int>("GRIB2S level value");
 			return level::GRIB2S::create(type, scale, value);
 		}
 		case GRIB2D: {
 			unsigned char type1 = dec.popUInt(1, "GRIB2D type1");
 			unsigned char scale1 = dec.popUInt(1, "GRIB2D scale2");
-			unsigned long value1 = dec.popVarint<unsigned long>("GRIB2D value1");
+			unsigned int value1 = dec.popVarint<unsigned int>("GRIB2D value1");
 			unsigned char type2 = dec.popUInt(1, "GRIB2D type2");
 			unsigned char scale2 = dec.popUInt(1, "GRIB2D scale2");
-			unsigned long value2 = dec.popVarint<unsigned long>("GRIB2D value2");
+			unsigned int value2 = dec.popVarint<unsigned int>("GRIB2D value2");
 			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
 		}
 		case ODIMH5: {
@@ -382,15 +382,15 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 {
 	o << formatStyle(style()) << "(";
 	o << setfill('0') << internal;
-	o << setw(3) << (int)m_type;
+	o << setw(3) << (unsigned)m_type;
 	switch (valType())
 	{
 		case 0: break;
 		case 1:
-			 o << ", " << setw(5) << (int)m_l1;
+			 o << ", " << setw(5) << (unsigned)m_l1;
 			 break;
 		default:
-			 o << ", " << setw(3) << (int)m_l1 << ", " << setw(3) << (int)m_l2;
+			 o << ", " << setw(3) << (unsigned)m_l1 << ", " << setw(3) << (unsigned)m_l2;
 			 break;
 	}
 	o << setfill(' ');
@@ -399,16 +399,16 @@ std::ostream& GRIB1::writeToOstream(std::ostream& o) const
 void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Level::serialiseLocal(e, f);
-    e.add("lt", (int)m_type);
+    e.add("lt", (unsigned)m_type);
     switch (valType())
     {
         case 0: break;
         case 1:
-            e.add("l1", (int)m_l1);
+            e.add("l1", (unsigned)m_l1);
             break;
         case 2:
-            e.add("l1", (int)m_l1);
-            e.add("l2", (int)m_l2);
+            e.add("l1", (unsigned)m_l1);
+            e.add("l2", (unsigned)m_l2);
             break;
     }
 }
@@ -637,7 +637,7 @@ bool GRIB2S::lua_lookup(lua_State* L, const std::string& name) const
 	return true;
 }
 
-Item<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned long value)
+Item<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned int value)
 {
 	GRIB2S* res = new GRIB2S;
 	res->m_type = type;
@@ -746,8 +746,8 @@ bool GRIB2D::lua_lookup(lua_State* L, const std::string& name) const
 #endif
 
 Item<GRIB2D> GRIB2D::create(
-	unsigned char type1, unsigned char scale1, unsigned long value1,
-	unsigned char type2, unsigned char scale2, unsigned long value2)
+	unsigned char type1, unsigned char scale1, unsigned int value1,
+	unsigned char type2, unsigned char scale2, unsigned int value2)
 {
 	GRIB2D* res = new GRIB2D;
 	res->m_type1 = type1;

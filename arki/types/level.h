@@ -132,7 +132,7 @@ class GRIB2S : public GRIB2
 protected:
 	unsigned char m_type;
 	unsigned char m_scale;
-	unsigned long m_value;
+	unsigned int m_value;
 
 public:
 	unsigned type() const { return m_type; }
@@ -150,7 +150,7 @@ public:
 	virtual int compare_local(const Level& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<GRIB2S> create(unsigned char type, unsigned char scale, unsigned long val);
+	static Item<GRIB2S> create(unsigned char type, unsigned char scale, unsigned int val);
 	static Item<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
 };
 
@@ -159,10 +159,10 @@ class GRIB2D : public GRIB2
 protected:
 	unsigned char m_type1;
 	unsigned char m_scale1;
-	unsigned long m_value1;
+	unsigned int m_value1;
 	unsigned char m_type2;
 	unsigned char m_scale2;
-	unsigned long m_value2;
+	unsigned int m_value2;
 
 public:
 	unsigned type1() const { return m_type1; }
@@ -183,8 +183,8 @@ public:
 	virtual int compare_local(const Level& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<GRIB2D> create(unsigned char type1, unsigned char scale1, unsigned long val1,
-                               unsigned char type2, unsigned char scale2, unsigned long val2);
+	static Item<GRIB2D> create(unsigned char type1, unsigned char scale1, unsigned int val1,
+                               unsigned char type2, unsigned char scale2, unsigned int val2);
 	static Item<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
 };
 
