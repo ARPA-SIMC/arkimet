@@ -115,8 +115,8 @@ Item<Source> Source::decode(const unsigned char* buf, size_t len)
 		case BLOB: {
 			unsigned fname_len = dec.popVarint<unsigned>("blob source file name length");
 			string fname = dec.popString(fname_len, "blob source file name");
-			size_t offset = dec.popVarint<size_t>("blob source offset");
-			size_t size = dec.popVarint<size_t>("blob source size");
+			uint64_t offset = dec.popVarint<uint64_t>("blob source offset");
+			uint64_t size = dec.popVarint<uint64_t>("blob source size");
 			return source::Blob::create(format, fname, offset, size);
 		}
 		case URL: {
@@ -125,7 +125,7 @@ Item<Source> Source::decode(const unsigned char* buf, size_t len)
 			return source::URL::create(format, url);
 		}
 		case INLINE: {
-			size_t size = dec.popVarint<size_t>("inline source size");
+			uint64_t size = dec.popVarint<uint64_t>("inline source size");
 			return source::Inline::create(format, size);
 		}
 		default:
@@ -269,7 +269,7 @@ bool Blob::operator==(const Type& o) const
 	return format == v->format && filename == v->filename && offset == v->offset && size == v->size;
 }
 
-Item<Blob> Blob::create(const std::string& format, const std::string& filename, size_t offset, size_t size)
+Item<Blob> Blob::create(const std::string& format, const std::string& filename, uint64_t offset, uint64_t size)
 {
 	Blob* res = new Blob;
 	res->format = format;
@@ -416,7 +416,7 @@ bool Inline::operator==(const Type& o) const
 	return format == v->format && size == v->size;
 }
 
-Item<Inline> Inline::create(const std::string& format, size_t size)
+Item<Inline> Inline::create(const std::string& format, uint64_t size)
 {
 	Inline* res = new Inline;
 	res->format = format;

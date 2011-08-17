@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <stdint.h>
 
 struct lua_State;
 
@@ -78,8 +79,8 @@ namespace source {
 struct Blob : public Source
 {
 	std::string filename;
-	size_t offset;
-	size_t size;
+	uint64_t offset;
+	uint64_t size;
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -103,7 +104,7 @@ struct Blob : public Source
 	 */
 	Item<Blob> fileOnly() const;
 
-	static Item<Blob> create(const std::string& format, const std::string& filename, size_t offset, size_t size);
+	static Item<Blob> create(const std::string& format, const std::string& filename, uint64_t offset, uint64_t size);
 	static Item<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };
 
@@ -127,7 +128,7 @@ struct URL : public Source
 
 struct Inline : public Source
 {
-	size_t size;
+	uint64_t size;
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -139,7 +140,7 @@ struct Inline : public Source
 	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<Inline> create(const std::string& format, size_t size);
+	static Item<Inline> create(const std::string& format, uint64_t size);
 	static Item<Inline> decodeMapping(const emitter::memory::Mapping& val);
 };
 

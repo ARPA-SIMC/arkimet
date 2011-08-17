@@ -24,6 +24,7 @@
  */
 
 #include <string>
+#include <stdint.h>
 
 namespace arki {
 
@@ -53,10 +54,10 @@ public:
     void add(const std::string& val) { add_string(val); }
     void add(const char* val) { add_string(val); }
     void add(double val) { add_double(val); }
-    void add(int val) { add_int(val); }
-    void add(unsigned int val) { add_int(val); }
-    void add(unsigned long long int val) { add_int(val); }
-    void add(long long int val) { add_int(val); }
+    void add(int32_t val) { add_int(val); }
+    void add(int64_t val) { add_int(val); }
+    void add(uint32_t val) { add_int(val); }
+    void add(uint64_t val) { add_int(val); }
     void add(bool val) { add_bool(val); }
 
     // Shortcut to add a mapping, which also ensure the key is a string

@@ -30,6 +30,7 @@
 #include <string>
 #include <memory>
 #include <iosfwd>
+#include <stdint.h>
 
 struct lua_State;
 
@@ -62,7 +63,7 @@ namespace summary {
 struct Stats : public types::CoreType<Stats>
 {
     size_t count;
-    unsigned long long size;
+    uint64_t size;
     types::reftime::Collector reftimeMerger;
 
     Stats() : count(0), size(0) {}

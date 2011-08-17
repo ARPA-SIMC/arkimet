@@ -143,8 +143,8 @@ void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
             e.add("e"); reftimeMerger.begin->serialiseList(e);
         }
     }
-    e.add("c", (long long int)count);
-    e.add("s", (long long int)size);
+    e.add("c", count);
+    e.add("s", size);
 }
 
 UItem<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
