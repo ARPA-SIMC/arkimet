@@ -298,7 +298,7 @@ protected:
 	/// Create the tables in the database
 	void initDB();
 
-	void bindInsertParams(utils::sqlite::Query& q, Metadata& md, const std::string& file, size_t ofs, char* timebuf);
+	void bindInsertParams(utils::sqlite::Query& q, Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
 
 public:
 	WIndex(const ConfigFile& cfg);
@@ -324,7 +324,7 @@ public:
 	 * @retval id
 	 *   The id of the metadata in the database
 	 */
-	void index(Metadata& md, const std::string& file, size_t ofs, int* id = 0);
+	void index(Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
 
 	/**
 	 * Index the given metadata item, or replace it in the index.
@@ -332,7 +332,7 @@ public:
 	 * @retval id
 	 *   The id of the metadata in the database
 	 */
-	void replace(Metadata& md, const std::string& file, size_t ofs, int* id = 0);
+	void replace(Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
 
 	/**
 	 * Remove the given metadata item from the index.

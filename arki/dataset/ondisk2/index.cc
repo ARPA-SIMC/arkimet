@@ -512,7 +512,7 @@ void Index::build_md(Query& q, Metadata& md) const
     md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
     md.source = source::Blob::create(
             q.fetchString(1), q.fetchString(2),
-            q.fetch<size_t>(3), q.fetch<size_t>(4));
+            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const void* notes_p = q.fetchBlob(5);
     int notes_l = q.fetchBytes(5);
@@ -1197,7 +1197,7 @@ void WIndex::initDB()
 	if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& file, size_t ofs, char* timebuf)
+void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
 {
 	int idx = 0;
 
@@ -1244,7 +1244,7 @@ Pending WIndex::beginExclusiveTransaction()
 	return Pending(new SqliteTransaction(m_db, true));
 }
 
-void WIndex::index(Metadata& md, const std::string& file, size_t ofs, int* id)
+void WIndex::index(Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
 	m_insert.reset();
 
@@ -1261,7 +1261,7 @@ void WIndex::index(Metadata& md, const std::string& file, size_t ofs, int* id)
 	invalidateSummaryCache(md);
 }
 
-void WIndex::replace(Metadata& md, const std::string& file, size_t ofs, int* id)
+void WIndex::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
 	m_replace.reset();
 

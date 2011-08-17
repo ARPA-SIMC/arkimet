@@ -158,13 +158,13 @@ Item<Source> Source::decodeString(const std::string& val)
 				throw wibble::exception::Consistency("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
 
 			return source::Blob::create(format, fname,
-					strtoul(inner.substr(pos, end-pos).c_str(), 0, 10),
-					strtoul(inner.substr(end+1).c_str(), 0, 10));
+					strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
+					strtoull(inner.substr(end+1).c_str(), 0, 10));
 		}
 		case Source::URL:
 			return source::URL::create(format, inner);
 		case Source::INLINE:
-			return source::Inline::create(format, strtoul(inner.c_str(), 0, 10));
+			return source::Inline::create(format, strtoull(inner.c_str(), 0, 10));
 		default:
 			throw wibble::exception::Consistency("parsing Source", "unknown Source style " + str::fmt(style));
 	}
