@@ -826,6 +826,18 @@ void to::test<11>()
     ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,0,0)"));
 }
 
+// Check opening very long GRIB files for scanning
+template<> template<>
+void to::test<12>()
+{
+	scan::Grib scanner;
+	int fd = open("bigfile.grib1", O_WRONLY | O_CREAT, 0644);
+	ensure(fd != -1);
+	ensure(ftruncate(fd, 0xFFFFFFFF) != -1);
+	close(fd);
+	scanner.open("bigfile.grib1");
+}
+
 }
 
 // vim:set ts=4 sw=4:
