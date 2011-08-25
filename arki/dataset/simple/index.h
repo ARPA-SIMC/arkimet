@@ -65,6 +65,11 @@ public:
 	virtual void check(maintenance::MaintFileVisitor& v, bool quick=true) = 0;
 	virtual void flush() = 0;
 
+    /// Invalidate global summary
+    void invalidate_summary();
+    /// Invalidate summary for file \a relname and global summary
+    void invalidate_summary(const std::string& relname);
+
     /**
      * Compute the date extremes of this manifest
      *

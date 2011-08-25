@@ -246,20 +246,23 @@ void OnlineArchive::remove(const std::string& relname)
 	sys::fs::deleteIfExists(pathname + ".summary");
 	sys::fs::deleteIfExists(pathname + ".metadata");
 	//sys::fs::deleteIfExists(pathname);
-
 	deindex(relname);
+
+    m_mft->invalidate_summary();
 }
 
 void OnlineArchive::deindex(const std::string& relname)
 {
-	if (!m_mft) throw wibble::exception::Consistency("deindexing file from " + m_dir, "archive opened in read only mode");
-	m_mft->remove(relname);
+    if (!m_mft) throw wibble::exception::Consistency("deindexing file from " + m_dir, "archive opened in read only mode");
+    m_mft->remove(relname);
+    m_mft->invalidate_summary();
 }
 
 void OnlineArchive::rescan(const std::string& relname)
 {
-	if (!m_mft) throw wibble::exception::Consistency("rescanning file in " + m_dir, "archive opened in read only mode");
-	m_mft->rescanFile(m_dir, relname);
+    if (!m_mft) throw wibble::exception::Consistency("rescanning file in " + m_dir, "archive opened in read only mode");
+    m_mft->rescanFile(m_dir, relname);
+    m_mft->invalidate_summary();
 }
 
 void OnlineArchive::vacuum()

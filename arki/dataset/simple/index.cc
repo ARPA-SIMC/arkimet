@@ -207,6 +207,17 @@ size_t Manifest::produce_nth(metadata::Consumer& cons, size_t idx)
     return res;
 }
 
+void Manifest::invalidate_summary()
+{
+    sys::fs::deleteIfExists(str::joinpath(m_path, "summary"));
+}
+
+void Manifest::invalidate_summary(const std::string& relname)
+{
+    sys::fs::deleteIfExists(str::joinpath(m_path, relname) + ".summary");
+    invalidate_summary();
+}
+
 void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 {
 	string pathname = str::joinpath(dir, relpath);
@@ -221,8 +232,8 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 	if (mtime == 0)
 		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
 
-	// Invalidate summary
-	sys::fs::deleteIfExists(pathname + ".summary");
+    // Invalidate summary
+    invalidate_summary(pathname);
 
 	// Invalidate metadata if older than data
 	time_t ts_md = files::timestamp(pathname + ".metadata");
