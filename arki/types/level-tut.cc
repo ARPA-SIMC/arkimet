@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -151,32 +151,60 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	Item<Level> o = level::GRIB2S::create(100, 100, 500);
-	ensure_equals(o->style(), Level::GRIB2S);
-	const level::GRIB2S* v = o->upcast<level::GRIB2S>();
-	ensure_equals(v->type(), 100u);
-	ensure_equals(v->scale(), 100u);
-	ensure_equals(v->value(), 500u);
+    Item<Level> o = level::GRIB2S::create(100, 100, 500);
+    ensure_equals(o->style(), Level::GRIB2S);
+    const level::GRIB2S* v = o->upcast<level::GRIB2S>();
+    ensure_equals(v->type(), 100u);
+    ensure_equals(v->scale(), 100u);
+    ensure_equals(v->value(), 500u);
 
-	ensure_equals(o, Item<Level>(level::GRIB2S::create(100, 100, 500)));
-	ensure(o != level::GRIB2S::create(100, 0, 50000));
-	ensure(o != level::GRIB2S::create(101, 100, 500));
-	ensure(o != level::GRIB2S::create(100, 1, 500));
-	ensure(o != level::GRIB1::create(100));
-	ensure(o != level::GRIB1::create(100, 50000));
+    ensure_equals(o, Item<Level>(level::GRIB2S::create(100, 100, 500)));
+    ensure(o != level::GRIB2S::create(100, 0, 50000));
+    ensure(o != level::GRIB2S::create(101, 100, 500));
+    ensure(o != level::GRIB2S::create(100, 1, 500));
+    ensure(o != level::GRIB1::create(100));
+    ensure(o != level::GRIB1::create(100, 50000));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_LEVEL);
+    // Test encoding/decoding
+    ensure_serialises(o, types::TYPE_LEVEL);
 
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB2S,100,100,500");
-	Matcher m = Matcher::parse("level:" + o->exactQuery());
-	ensure(m(o));
+    // Test generating a matcher expression
+    ensure_equals(o->exactQuery(), "GRIB2S,100,100,500");
+    Matcher m = Matcher::parse("level:" + o->exactQuery());
+    ensure(m(o));
+}
+
+// Check GRIB2S with missing values
+template<> template<>
+void to::test<6>()
+{
+    Item<Level> o = level::GRIB2S::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
+    ensure_equals(o->style(), Level::GRIB2S);
+    const level::GRIB2S* v = o->upcast<level::GRIB2S>();
+    ensure_equals(v->type(), level::GRIB2S::MISSING_TYPE);
+    ensure_equals(v->scale(), level::GRIB2S::MISSING_SCALE);
+    ensure_equals(v->value(), level::GRIB2S::MISSING_VALUE);
+
+    ensure_equals(o, Item<Level>(level::GRIB2S::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE)));
+    ensure(o != level::GRIB2S::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, 1));
+    ensure(o != level::GRIB2S::create(1, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+    ensure(o != level::GRIB2S::create(level::GRIB2S::MISSING_TYPE, 1, level::GRIB2S::MISSING_VALUE));
+    ensure(o != level::GRIB2S::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, 1));
+    ensure(o != level::GRIB1::create(100));
+    ensure(o != level::GRIB1::create(100, 50000));
+
+    // Test encoding/decoding
+    ensure_serialises(o, types::TYPE_LEVEL);
+
+    // Test generating a matcher expression
+    ensure_equals(o->exactQuery(), "GRIB2S,-,-,-");
+    Matcher m = Matcher::parse("level:" + o->exactQuery());
+    ensure(m(o));
 }
 
 // Check GRIB2D
 template<> template<>
-void to::test<6>()
+void to::test<7>()
 {
 	Item<Level> o = level::GRIB2D::create(100, 100, 500, 100, 100, 1000);
 	ensure_equals(o->style(), Level::GRIB2D);
@@ -203,7 +231,7 @@ void to::test<6>()
 
 // Test Lua functions
 template<> template<>
-void to::test<7>()
+void to::test<8>()
 {
 #ifdef HAVE_LUA
 	Item<Level> o = level::GRIB1::create(104, 132, 231);
@@ -227,7 +255,7 @@ void to::test<7>()
 
 // Check comparisons
 template<> template<>
-void to::test<8>()
+void to::test<9>()
 {
 	ensure_compares(
 		level::GRIB1::create(104, 132, 231),
@@ -237,7 +265,7 @@ void to::test<8>()
 
 // Check ODIMH5
 template<> template<>
-void to::test<9>()
+void to::test<10>()
 {
 	Item<Level> o = level::ODIMH5::create(10.123, 20.123);
 	ensure_equals(o->style(), Level::ODIMH5);
@@ -258,7 +286,7 @@ void to::test<9>()
 
 // Check ODIMH5
 template<> template<>
-void to::test<10>()
+void to::test<11>()
 {
 	Item<Level> o = level::ODIMH5::create(10.123, 20.123);
 

@@ -39,6 +39,16 @@ ensure_equals(o.scale, 0)
 ensure_equals(o.value, 1000)
 ensure_equals(tostring(o), "GRIB2S(103, 000, 0000001000)")
 
+-- Create with missing values
+local o = arki_level.grib2s(nil, nil, nil)
+
+-- Accessors
+ensure_equals(o.style, "GRIB2S")
+ensure_equals(o.type, nil)
+ensure_equals(o.scale, nil)
+ensure_equals(o.value, nil)
+ensure_equals(tostring(o), "GRIB2S(  -,   -,          -)")
+
 
 -- GRIB2 layer
 

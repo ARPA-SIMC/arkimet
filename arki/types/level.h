@@ -4,7 +4,7 @@
 /*
  * types/level - Vertical level or layer
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <stdint.h>
 
 struct lua_State;
 
@@ -130,14 +131,18 @@ struct GRIB2 : public Level
 class GRIB2S : public GRIB2
 {
 protected:
-	unsigned char m_type;
-	unsigned char m_scale;
-	unsigned int m_value;
+	uint8_t m_type;
+	uint8_t m_scale;
+	uint32_t m_value;
 
 public:
-	unsigned type() const { return m_type; }
-	unsigned scale() const { return m_scale; }
-	unsigned value() const { return m_value; }
+    static const uint8_t MISSING_TYPE;
+    static const uint8_t MISSING_SCALE;
+    static const uint32_t MISSING_VALUE;
+
+    uint8_t type() const { return m_type; }
+    uint8_t scale() const { return m_scale; }
+    uint32_t value() const { return m_value; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -150,7 +155,7 @@ public:
 	virtual int compare_local(const Level& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<GRIB2S> create(unsigned char type, unsigned char scale, unsigned int val);
+	static Item<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
 	static Item<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
 };
 

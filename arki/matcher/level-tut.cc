@@ -86,6 +86,24 @@ void to::test<2>()
 	ensure_not_matches("level:GRIB2S,,,11", md);
 	//m = Matcher::parse("level:BUFR,11,12,13");
 	//ensure(not m(md));
+
+    md.set(level::GRIB2S::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+
+    ensure_matches("level:GRIB2S", md);
+    ensure_matches("level:GRIB2S,,,", md);
+    ensure_matches("level:GRIB2S,-,,", md);
+    ensure_matches("level:GRIB2S,,-,", md);
+    ensure_matches("level:GRIB2S,,,-", md);
+    ensure_matches("level:GRIB2S,-,-,", md);
+    ensure_matches("level:GRIB2S,-,,-", md);
+    ensure_matches("level:GRIB2S,,-,-", md);
+    ensure_matches("level:GRIB2S,-,-,-", md);
+    ensure_not_matches("level:GRIB2S,1", md);
+    ensure_not_matches("level:GRIB2S,,1", md);
+    ensure_not_matches("level:GRIB2S,,,1", md);
+    ensure_not_matches("level:GRIB2S,1,-", md);
+    ensure_not_matches("level:GRIB2S,-,1", md);
+    ensure_not_matches("level:GRIB2S,-,-,1", md);
 }
 
 // Try matching GRIB2D level

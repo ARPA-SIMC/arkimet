@@ -27,6 +27,7 @@
 #include <wibble/string.h>
 #include <vector>
 #include <string>
+#include <stdint.h>
 
 namespace arki {
 namespace matcher {
@@ -37,11 +38,12 @@ struct OptionalCommaList : public std::vector<std::string>
 
 	OptionalCommaList(const std::string& pattern, bool has_tail=false);
 
-	bool has(size_t pos) const;
-	int getInt(size_t pos, int def) const;
-	unsigned getUnsigned(size_t pos, unsigned def) const;
-	double getDouble(size_t pos, double def) const;
-	const std::string& 	getString	(size_t pos, const std::string& def) const;
+    bool has(size_t pos) const;
+    int getInt(size_t pos, int def) const;
+    unsigned getUnsigned(size_t pos, unsigned def) const;
+    uint32_t getUnsignedWithMissing(size_t pos, uint32_t missing, bool& has_val) const;
+    double getDouble(size_t pos, double def) const;
+    const std::string& 	getString	(size_t pos, const std::string& def) const;
 
 #if 0
 	bool matchInt(size_t pos, int val) const
@@ -123,6 +125,16 @@ struct CommaJoiner : std::vector<std::string>
 		push_back(wibble::str::fmt(val));
 		last = size();
 	}
+
+    template<typename T>
+    void add(const T& val, const T& missing)
+    {
+        if (val == missing)
+            push_back("-");
+        else
+            push_back(wibble::str::fmt(val));
+        last = size();
+    }
 
 	void addUndef()
 	{

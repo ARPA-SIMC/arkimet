@@ -76,6 +76,17 @@ unsigned OptionalCommaList::getUnsigned(size_t pos, unsigned def) const
 	return strtoul((*this)[pos].c_str(), 0, 10);
 }
 
+uint32_t OptionalCommaList::getUnsignedWithMissing(size_t pos, uint32_t missing, bool& has_val) const
+{
+    if ((has_val = has(pos)))
+    {
+        if ((*this)[pos] == "-")
+            return missing;
+        else
+            return strtoul((*this)[pos].c_str(), 0, 10);
+    }
+}
+
 double OptionalCommaList::getDouble(size_t pos, double def) const
 {
 	if (!has(pos)) return def;

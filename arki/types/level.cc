@@ -1,7 +1,7 @@
 /*
  * types/level - Vertical level or layer
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -159,9 +159,9 @@ Item<Level> Level::decode(const unsigned char* buf, size_t len)
 			}
 		}
 		case GRIB2S: {
-			unsigned char type = dec.popUInt(1, "GRIB2S level type");
-			unsigned char scale = dec.popUInt(1, "GRIB2S level scale");
-			unsigned int value = dec.popVarint<unsigned int>("GRIB2S level value");
+			uint8_t type = dec.popUInt(1, "GRIB2S level type");
+			uint8_t scale = dec.popUInt(1, "GRIB2S level scale");
+			uint32_t value = dec.popVarint<uint32_t>("GRIB2S level value");
 			return level::GRIB2S::create(type, scale, value);
 		}
 		case GRIB2D: {
@@ -201,6 +201,40 @@ static int getNumber(const char * & start, const char* what)
 		++start;
 
 	return res;
+}
+
+template<typename T>
+static T getUnsigned(const char * & start, const char* what, T missing=(T)-1)
+{
+    char* endptr;
+
+    if (!*start)
+        throw wibble::exception::Consistency("parsing Level", string("no ") + what + " found");
+
+    // Skip spaces, if any
+    while (*start && (::isspace(*start)))
+        ++start;
+
+    T res;
+    if (*start == '-')
+    {
+        res = missing;
+        ++start;
+    }
+    else
+    {
+        res = (T)strtoul(start, &endptr, 10);
+        if (endptr == start)
+            throw wibble::exception::Consistency("parsing Level",
+                    string("expected ") + what + ", but found \"" + start + "\"");
+        start = endptr;
+    }
+
+    // Skip colons and spaces, if any
+    while (*start && (::isspace(*start) || *start == ','))
+        ++start;
+
+    return res;
 }
 
 static double getDouble(const char * & start, const char* what)
@@ -247,14 +281,14 @@ Item<Level> Level::decodeString(const std::string& val)
 				}
 			}
 		}
-		case Level::GRIB2S: {
-			const char* start = inner.c_str();
+        case Level::GRIB2S: {
+            const char* start = inner.c_str();
 
-			int type = getNumber(start, "level type");
-			int scale = getNumber(start, "scale of level value");
-			int value = getNumber(start, "level value");
-			return level::GRIB2S::create(type, scale, value);
-		}
+            uint8_t type = getUnsigned<uint8_t>(start, "level type", level::GRIB2S::MISSING_TYPE);
+            uint8_t scale = getUnsigned<uint8_t>(start, "scale of level value", level::GRIB2S::MISSING_SCALE);
+            uint32_t value = getUnsigned<uint32_t>(start, "level value", level::GRIB2S::MISSING_VALUE);
+            return level::GRIB2S::create(type, scale, value);
+        }
 		case Level::GRIB2D: {
 			const char* start = inner.c_str();
 
@@ -308,12 +342,28 @@ static int arkilua_new_grib1(lua_State* L)
 
 static int arkilua_new_grib2s(lua_State* L)
 {
-	int type = luaL_checkint(L, 1);
-	int scale = luaL_checkint(L, 2);
-	int val = luaL_checkint(L, 3);
-	Item<> res = level::GRIB2S::create(type, scale, val);
-	res->lua_push(L);
-	return 1;
+    uint8_t type;
+    uint8_t scale;
+    uint32_t val;
+
+    if (lua_isnil(L, 1))
+        type = level::GRIB2S::MISSING_TYPE;
+    else
+        type = luaL_checkint(L, 1);
+
+    if (lua_isnil(L, 2))
+        scale = level::GRIB2S::MISSING_SCALE;
+    else
+        scale = luaL_checkint(L, 2);
+
+    if (lua_isnil(L, 3))
+        val = level::GRIB2S::MISSING_VALUE;
+    else
+        val = luaL_checkint(L, 3);
+
+    Item<> res = level::GRIB2S::create(type, scale, val);
+    res->lua_push(L);
+    return 1;
 }
 
 static int arkilua_new_grib2d(lua_State* L)
@@ -560,6 +610,9 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 	return true;
 }
 
+const uint8_t GRIB2S::MISSING_TYPE = 0xff;
+const uint8_t GRIB2S::MISSING_SCALE = 0xff;
+const uint32_t GRIB2S::MISSING_VALUE = 0xFFFFFFFF;
 
 Level::Style GRIB2S::style() const { return Level::GRIB2S; }
 
@@ -572,32 +625,68 @@ void GRIB2S::encodeWithoutEnvelope(Encoder& enc) const
 }
 std::ostream& GRIB2S::writeToOstream(std::ostream& o) const
 {
-	utils::SaveIOState sios(o);
-    return o
-	  << formatStyle(style()) << "("
-	  << setfill('0') << internal
-	  << setw(3) << (unsigned)m_type << ", "
-	  << setw(3) << (unsigned)m_scale << ", "
-	  << setw(10) << m_value << ")";
+    utils::SaveIOState sios(o);
+    o << formatStyle(style()) << "(";
+
+    if (m_type == MISSING_TYPE)
+        o << setfill(' ') << internal << setw(3) << "-" << ", ";
+    else
+        o << setfill('0') << internal << setw(3) << (unsigned)m_type << ", ";
+
+    if (m_scale == MISSING_SCALE)
+        o << setfill(' ') << internal << setw(3) << "-" << ", ";
+    else
+        o << setfill('0') << internal << setw(3) << (unsigned)m_scale << ", ";
+
+    if (m_value == MISSING_VALUE)
+        o << setfill(' ') << internal << setw(10) << "-" << ")";
+    else
+        o << setfill('0') << internal << setw(10) << m_value << ")";
+
+    return o;
 }
 void GRIB2S::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Level::serialiseLocal(e, f);
-    e.add("lt", (unsigned)m_type);
-    e.add("sc", (unsigned)m_scale);
-    e.add("va", m_value);
+
+    if (m_type == MISSING_TYPE)
+    {
+        e.add("lt"); e.add_null();
+    }
+    else
+        e.add("lt", (unsigned)m_type);
+
+    if (m_scale == MISSING_SCALE)
+    {
+        e.add("sc"); e.add_null();
+    } else
+        e.add("sc", (unsigned)m_scale);
+
+    if (m_value == MISSING_VALUE)
+    {
+        e.add("va"); e.add_null();
+    } else
+        e.add("va", m_value);
 }
 Item<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
+    const Node& lt = val["lt"];
+    const Node& sc = val["sc"];
+    const Node& va = val["va"];
     return GRIB2S::create(
-            val["lt"].want_int("parsing GRIB2S level type"),
-            val["sc"].want_int("parsing GRIB2S level scale"),
-            val["va"].want_int("parsing GRIB2S level value"));
+            lt.is_null() ? MISSING_TYPE : lt.want_int("parsing GRIB2S level type"),
+            sc.is_null() ? MISSING_SCALE : sc.want_int("parsing GRIB2S level scale"),
+            va.is_null() ? MISSING_VALUE : va.want_int("parsing GRIB2S level value"));
 }
 std::string GRIB2S::exactQuery() const
 {
-	return str::fmtf("GRIB2S,%d,%d,%d", (int)m_type, (int)m_scale, (int)m_value);
+    stringstream res;
+    res << "GRIB2S,";
+    if (m_type == MISSING_TYPE) res << "-,"; else res << (unsigned)m_type << ",";
+    if (m_scale == MISSING_SCALE) res << "-,"; else res << (unsigned)m_scale << ",";
+    if (m_value == MISSING_VALUE) res << "-"; else res << m_value;
+    return res.str();
 }
 const char* GRIB2S::lua_type_name() const { return "arki.types.level.grib2s"; }
 
@@ -626,15 +715,24 @@ bool GRIB2S::operator==(const Type& o) const
 
 bool GRIB2S::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (name == "type")
-		lua_pushnumber(L, type());
-	else if (name == "scale")
-		lua_pushnumber(L, scale());
-	else if (name == "value")
-		lua_pushnumber(L, value());
-	else
-		return Level::lua_lookup(L, name);
-	return true;
+    if (name == "type")
+        if (m_type == MISSING_TYPE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_type);
+    else if (name == "scale")
+        if (m_scale == MISSING_SCALE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_scale);
+    else if (name == "value")
+        if (m_value == MISSING_VALUE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_value);
+    else
+        return Level::lua_lookup(L, name);
+    return true;
 }
 
 Item<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned int value)

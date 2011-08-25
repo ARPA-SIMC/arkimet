@@ -825,7 +825,7 @@ void to::test<11>()
     metadata::Collection mdc;
     scan::scan("inbound/wronglevel.grib2", mdc);
     ensure_equals(mdc.size(), 1u);
-    ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,0,0)"));
+    ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,-,-)"));
 }
 
 // Check opening very long GRIB files for scanning

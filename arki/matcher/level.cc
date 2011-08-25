@@ -34,6 +34,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace matcher {
@@ -78,30 +79,30 @@ std::string MatchLevelGRIB1::toString() const
 
 MatchLevelGRIB2S::MatchLevelGRIB2S(const std::string& pattern)
 {
-	OptionalCommaList args(pattern);
-	type = args.getInt(0, -1);
-	scale = args.getInt(1, -1);
-	value = args.getInt(2, -1);
+    OptionalCommaList args(pattern);
+    type = args.getUnsignedWithMissing(0, level::GRIB2S::MISSING_TYPE, has_type);
+    scale = args.getUnsignedWithMissing(1, level::GRIB2S::MISSING_SCALE, has_scale);
+    value = args.getUnsignedWithMissing(2, level::GRIB2S::MISSING_VALUE, has_value);
 }
 
 bool MatchLevelGRIB2S::matchItem(const Item<>& o) const
 {
-	const types::level::GRIB2S* v = dynamic_cast<const types::level::GRIB2S*>(o.ptr());
-	if (!v) return false;
-	if (type != -1 && (unsigned)type != v->type()) return false;
-	if (scale != -1 && (unsigned)scale != v->scale()) return false;
-	if (value >= 0 && (unsigned)value != v->value()) return false;
-	return true;
+    const types::level::GRIB2S* v = dynamic_cast<const types::level::GRIB2S*>(o.ptr());
+    if (!v) return false;
+    if (has_type && type != v->type()) return false;
+    if (has_scale && scale != v->scale()) return false;
+    if (has_value && value != v->value()) return false;
+    return true;
 }
 
 std::string MatchLevelGRIB2S::toString() const
 {
-	CommaJoiner res;
-	res.add("GRIB2S");
-	if (type != -1) res.add(type); else res.addUndef();
-	if (scale != -1) res.add(scale); else res.addUndef();
-	if (value != -1) res.add(value); else res.addUndef();
-	return res.join();
+    CommaJoiner res;
+    res.add("GRIB2S");
+    if (has_type) res.add((unsigned)type, (unsigned)level::GRIB2S::MISSING_TYPE); else res.addUndef();
+    if (has_scale) res.add((unsigned)scale, (unsigned)level::GRIB2S::MISSING_SCALE); else res.addUndef();
+    if (has_value) res.add(value, level::GRIB2S::MISSING_VALUE); else res.addUndef();
+    return res.join();
 }
 
 
