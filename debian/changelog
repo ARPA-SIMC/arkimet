@@ -1,3 +1,14 @@
+arkimet (0.64-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - 64bit file size support on 32bit systems
+        - requires wibble version 0.2.0
+        - renamed arki/config.h to arki/libconfig.h
+     - Support GRIB2S levels with missing values
+     - Invalidate archive summaries when needed during maintenance
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 25 Aug 2011 17:13:58 +0200
+
 arkimet (0.63-1) UNRELEASED; urgency=low
 
   * New upstream version
