@@ -566,9 +566,13 @@ void Grib::setSource(Metadata& md)
 	size_t size;
 	check_grib_error(grib_get_message(gh, &vbuf, &size), "accessing the encoded GRIB data");
 
+#if 0  // We cannot use this as long is too small for 64bit file offsets
 	// Get the position in the file of the en of the grib
 	long offset;
 	check_grib_error(grib_get_long(gh, "offset", &offset), "reading offset");
+#endif
+    off_t offset = ftello(in);
+    offset -= size;
 
 	if (m_inline_data)
 	{
@@ -593,10 +597,10 @@ void MultiGrib::setSource(Metadata& md)
 	check_grib_error(grib_get_message(gh, &vbuf, &size), "accessing the encoded GRIB data");
 	const char* buf = static_cast<const char*>(vbuf);
 
-	// Get the write position in the file
-	size_t offset = tmpfile.tellp();
-	if (tmpfile.fail())
-		throw wibble::exception::File(tmpfilename, "reading the current position");
+    // Get the write position in the file
+    streampos offset = tmpfile.tellp();
+    if (tmpfile.fail())
+        throw wibble::exception::File(tmpfilename, "reading the current position");
 
 	// Write the data
 	tmpfile.write(buf, size);
