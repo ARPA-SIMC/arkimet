@@ -94,9 +94,8 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 	// TODO: does it make sense to check with the summary first?
 
 	metadata::Consumer* c = &consumer;
-    // Order matters here, as delete will happen in reverse order
-    auto_ptr<ds::DataInliner> inliner;
-    auto_ptr<sort::Stream> sorter;
+	// Order matters here, as delete will happen in reverse order
+	auto_ptr<ds::DataInliner> inliner;
     refcounted::Pointer<sort::Compare> compare;
 
 	if (q.withData)
@@ -106,20 +105,16 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 	}
 
     if (q.sorter)
-    {
-        // FIXME: this can lead to OOM on big queries
         compare = q.sorter;
-        sorter.reset(new sort::Stream(*compare, *c));
-        c = sorter.get();
-    }
-    //else
-    //    // If no sorter is provided, sort by reftime in case data files have
-    //    // not been sorted before archiving
-    //    compare = sort::Compare::parse("reftime");
+    else
+        // If no sorter is provided, sort by reftime in case data files have
+        // not been sorted before archiving
+        compare = sort::Compare::parse("reftime");
 
     string absdir = sys::fs::abspath(m_path);
-    ds::PathPrepender prepender("", *c);
-    ds::MatcherFilter filter(q.matcher, prepender);
+    sort::Stream sorter(*compare, *c);
+    ds::PathPrepender prepender("", sorter);
+	ds::MatcherFilter filter(q.matcher, prepender);
 	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
 	{
 		string fullpath = str::joinpath(absdir, *i);
@@ -128,8 +123,7 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 		scan::scan(fullpath, filter);
 	}
 
-    if (sorter.get())
-        sorter->flush();
+    sorter.flush();
 }
 
 void Manifest::querySummary(const Matcher& matcher, Summary& summary)
