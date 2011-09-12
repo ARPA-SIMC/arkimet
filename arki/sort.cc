@@ -200,19 +200,16 @@ void Stream::setEndOfPeriod(const UItem<types::Reftime>& rt)
 
 bool Stream::operator()(Metadata& m)
 {
-//cerr << "stream with " << sorter.toString() << endl;
-//cerr << "hasInterval: " << hasInterval << " got " << m.get(types::TYPE_REFTIME) << " eop: " << endofperiod << endl;
 	if (hasInterval && (!endofperiod.defined() || m.get(types::TYPE_REFTIME) > endofperiod))
 	{
-//cerr << "Flushing." << endl;
 		flush();
 		buffer.push_back(m);
 		setEndOfPeriod(m.get(types::TYPE_REFTIME).upcast<types::Reftime>());
 	}
-	else
-		buffer.push_back(m);
-//cerr << "Buffering " << m.get(types::TYPE_REFTIME) << endl;		
-	return true;
+    else
+        buffer.push_back(m);
+    buffer.back().dropCachedData();
+    return true;
 }
 
 void Stream::flush()

@@ -44,6 +44,9 @@ namespace metadata {
  */
 struct Collection : public std::vector<Metadata>, public Consumer, public ReadonlyDataset
 {
+    Collection();
+    virtual ~Collection();
+
 	bool operator()(Metadata& md)
 	{
 		push_back(md);

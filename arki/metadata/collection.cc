@@ -92,6 +92,9 @@ static void compressAndWrite(const std::string& buf, std::ostream& out, const st
 		out.write(buf.data(), buf.size());
 }
 
+Collection::Collection() {}
+Collection::~Collection() {}
+
 void Collection::writeTo(std::ostream& out, const std::string& fname) const
 {
 	static const size_t blocksize = 256;
