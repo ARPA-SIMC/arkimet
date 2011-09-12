@@ -114,16 +114,15 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
     string absdir = sys::fs::abspath(m_path);
     sort::Stream sorter(*compare, *c);
     ds::PathPrepender prepender("", sorter);
-	ds::MatcherFilter filter(q.matcher, prepender);
-	for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
-	{
-		string fullpath = str::joinpath(absdir, *i);
-		if (!scan::exists(fullpath)) continue;
-		prepender.path = str::dirname(fullpath);
-		scan::scan(fullpath, filter);
-	}
-
-    sorter.flush();
+    ds::MatcherFilter filter(q.matcher, prepender);
+    for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
+    {
+        string fullpath = str::joinpath(absdir, *i);
+        if (!scan::exists(fullpath)) continue;
+        prepender.path = str::dirname(fullpath);
+        scan::scan(fullpath, filter);
+        sorter.flush();
+    }
 }
 
 void Manifest::querySummary(const Matcher& matcher, Summary& summary)
