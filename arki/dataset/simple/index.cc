@@ -614,8 +614,13 @@ public:
 
 		if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
 			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
-		dirty = false;
-	}
+
+        invalidate_summary();
+        Summary s;
+        querySummary(Matcher(), s);
+
+        dirty = false;
+    }
 
 	static bool exists(const std::string& dir)
 	{
