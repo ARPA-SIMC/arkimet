@@ -305,6 +305,7 @@ class PlainManifest : public Manifest
 	vector<Info> info;
 	ino_t last_inode;
 	bool dirty;
+    bool rw;
 
 	/**
 	 * Reread the MANIFEST file.
@@ -377,7 +378,7 @@ class PlainManifest : public Manifest
 
 public:
 	PlainManifest(const std::string& dir)
-		: Manifest(dir), last_inode(0), dirty(false)
+		: Manifest(dir), last_inode(0), dirty(false), rw(false)
 	{
 	}
 
@@ -386,17 +387,19 @@ public:
 		flush();
 	}
 
-	void openRO()
-	{
-		if (!reread())
-			throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_path);
-	}
+    void openRO()
+    {
+        if (!reread())
+            throw wibble::exception::Consistency("opening archive index", "MANIFEST does not exist in " + m_path);
+        rw = false;
+    }
 
-	void openRW()
-	{
-		if (!reread())
-			dirty = true;
-	}
+    void openRW()
+    {
+        if (!reread())
+            dirty = true;
+        rw = true;
+    }
 
 	void fileList(const Matcher& matcher, std::vector<std::string>& files)
 	{
@@ -598,28 +601,33 @@ public:
 
 	void flush()
 	{
-		if (!dirty) return;
-		string pathname(str::joinpath(m_path, "MANIFEST.tmp"));
+        if (dirty)
+        {
+            string pathname(str::joinpath(m_path, "MANIFEST.tmp"));
 
-		std::ofstream out;
-		out.open(pathname.c_str(), ios::out);
-		if (!out.is_open() || out.fail())
-			throw wibble::exception::File(pathname, "opening file for writing");
+            std::ofstream out;
+            out.open(pathname.c_str(), ios::out);
+            if (!out.is_open() || out.fail())
+                throw wibble::exception::File(pathname, "opening file for writing");
 
-		for (vector<Info>::const_iterator i = info.begin();
-				i != info.end(); ++i)
-			i->write(out);
+            for (vector<Info>::const_iterator i = info.begin();
+                    i != info.end(); ++i)
+                i->write(out);
 
-		out.close();
+            out.close();
 
-		if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
-			throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
+            if (::rename(pathname.c_str(), str::joinpath(m_path, "MANIFEST").c_str()) < 0)
+                throw wibble::exception::System("Renaming " + pathname + " to " + str::joinpath(m_path, "MANIFEST"));
 
-        invalidate_summary();
-        Summary s;
-        querySummary(Matcher(), s);
+            invalidate_summary();
+            dirty = false;
+        }
 
-        dirty = false;
+        if (rw && ! sys::fs::exists(str::joinpath(m_path, "summary")))
+        {
+            Summary s;
+            querySummary(Matcher(), s);
+        }
     }
 
 	static bool exists(const std::string& dir)
