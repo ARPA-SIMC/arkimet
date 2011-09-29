@@ -463,7 +463,7 @@ void to::test<10>()
     scanner.open("inbound/acars.bufr");
     ensure(scanner.next(md));
     ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=-88, y=39, type=mob)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=2DPCV2RA)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=JBNYR3RA)"));
 }
 
 // Test scanning a GTS synop
