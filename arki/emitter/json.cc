@@ -126,17 +126,19 @@ void JSON::add_string(const std::string& val)
 
 void JSON::add_raw(const std::string& val)
 {
-    out << endl;
     out.write(val.data(), val.size());
-    out << endl;
+    // Always use \n on any platform, to prevent ambiguities in case real data
+    // start with \r or \n
+    out << '\n';
     if (out.bad()) throw wibble::exception::System("write failed");
 }
 
 void JSON::add_raw(const wibble::sys::Buffer& val)
 {
-    out << endl;
     out.write((const char*)val.data(), val.size());
-    out << endl;
+    // Always use \n on any platform, to prevent ambiguities in case real data
+    // start with \r or \n
+    out << '\n';
     if (out.bad()) throw wibble::exception::System("write failed");
 }
 
