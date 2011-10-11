@@ -386,6 +386,10 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
         (*i)->serialise(e, f);
     e.end_list();
     e.end_mapping();
+
+    // If the source is inline, then the data follows the metadata
+    if (source->style() == types::Source::INLINE)
+        e.add_raw(m_inline_buf);
 }
 
 void Metadata::read(const emitter::memory::Mapping& val)

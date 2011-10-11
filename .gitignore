@@ -38,7 +38,7 @@ Makefile
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /m4/lt~obsolete.m4
-/arki/config.h
+/arki/libconfig.h
 /arki/stamp-h2
 /arki-check.1
 /arki-config.1

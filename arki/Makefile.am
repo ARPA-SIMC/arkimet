@@ -144,6 +144,7 @@ libarkimet_core_la_SOURCES = \
 		utils/process.cc \
 		configfile.cc \
 		transaction.cc \
+		emitter.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
 		tests/test-utils.cc

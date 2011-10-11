@@ -4,7 +4,7 @@
 /*
  * emitter - Arkimet structured data formatter
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,12 @@
 
 #include <string>
 #include <stdint.h>
+
+namespace wibble {
+namespace sys {
+struct Buffer;
+}
+}
 
 namespace arki {
 
@@ -49,6 +55,12 @@ public:
     virtual void add_int(long long int val) = 0;
     virtual void add_double(double val) = 0;
     virtual void add_string(const std::string& val) = 0;
+
+    /// Add raw data
+    virtual void add_raw(const std::string& val);
+
+    /// Add raw data
+    virtual void add_raw(const wibble::sys::Buffer& val);
 
     // Shortcuts
     void add(const std::string& val) { add_string(val); }

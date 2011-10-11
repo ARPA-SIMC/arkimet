@@ -1,3 +1,10 @@
+arkimet (0.65-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Implemented inline data output for JSON
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 11 Oct 2011 14:47:12 +0200
+
 arkimet (0.64-1) UNRELEASED; urgency=low
 
   * New upstream version
