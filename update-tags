@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -ue
+
+ctags --sort=yes --c++-kinds=+p --fields=+iaS --extra=+q -f tags -R arki/ src/

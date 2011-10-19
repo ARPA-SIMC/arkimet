@@ -67,6 +67,7 @@ dist_tfconf_DATA = conf/targetfile/mars.lua
 
 EXTRA_DIST = README \
 	     README.Cineca \
+	     update-tags \
 	     doc/DATASET \
 	     doc/adding-formats.txt \
 	     conf/qmacro/test0.lua \
