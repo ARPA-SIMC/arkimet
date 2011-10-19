@@ -64,6 +64,7 @@ public:
     virtual void add_double(double val);
     virtual void add_string(const std::string& val);
 
+    virtual void add_break();
     virtual void add_raw(const std::string& val);
     virtual void add_raw(const wibble::sys::Buffer& val);
 

@@ -24,6 +24,7 @@
 
 namespace arki {
 
+void Emitter::add_break() {}
 void Emitter::add_raw(const std::string& val) {}
 void Emitter::add_raw(const wibble::sys::Buffer& val) {}
 

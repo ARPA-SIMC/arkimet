@@ -56,6 +56,9 @@ public:
     virtual void add_double(double val) = 0;
     virtual void add_string(const std::string& val) = 0;
 
+    /// Add a break in the output stream, such as a newline between JSON chunks
+    virtual void add_break();
+
     /// Add raw data
     virtual void add_raw(const std::string& val);
 
