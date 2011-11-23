@@ -1,0 +1,13 @@
+ * GRIB1
+
+Scanned as GRIB1(centre, subCentre, generatingProcessIdentifier)
+
+ * GRIB2
+
+Scanned as GRIB2(centre, subCentre, typeOfGeneratingProcess,
+                 backgroundGeneratingProcessIdentifier,
+                 generatingProcessIdentifier))
+
+ * BUFR
+
+Scanned as BUFR(centre, subcentre) from message header only.

@@ -1,0 +1,24 @@
+ * GRIB1
+
+Scanned as GRIB1(centre, gribTablesVersionNo, indicatorOfParameter)
+
+
+ * GRIB2
+
+Scanned as GRIB2(centre, discipline, parameterCategory, parameterNumber)
+
+
+ * BUFR
+
+Scanned as BUFR(type, subtype, localsubtype)
+
+If DB-All.e can identify the message type, it is instead scanned as:
+BUFR(type, subtype, localsubtype, t=type)
+
+If DB-All.e can provide a physical interpretation of the message data, then
+in some cases extra key=value pairs are added to the product definition:
+
+ - for 'pollution' messages, "p=<polltype>" is added to represent the type of
+   pollutant measured in the message. <polltype> is one of the codes defined at
+   the top of /etc/arkimet/scan-bufr/pollution.lua
+

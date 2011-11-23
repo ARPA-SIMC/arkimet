@@ -1,0 +1,5 @@
+This directory contains documentation about the default scanning configuration
+of arkimet.
+
+Each file documents what is scanned for each type of metadata, for all possible
+input encodings.
