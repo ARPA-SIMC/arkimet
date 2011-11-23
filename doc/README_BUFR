@@ -1,34 +1,44 @@
-(17:01:06) pat1: ho qualche readme per archiviare bufr in arkimet ?
-(17:01:32) pat1: ho le due opzioni se mi ricordo bene
-(17:01:34) spanezz@jabber.linux.it: al momento, la cosa piú facile è:
-1. fare un dataset con type=simple
-2. arki-scan --dispatch come al solito
-(17:01:42) spanezz@jabber.linux.it: questo non controlla duplicati
-(17:02:04) spanezz@jabber.linux.it: uhm, in mezzo ci vuole un arki-bufr-prepare senza --annotate
-(17:02:09) spanezz@jabber.linux.it: per spacchettare i subset
-(17:02:33) spanezz@jabber.linux.it: o col --annotate per aggiungere i dati extra
-(17:02:39) pat1: cosi' facendo che chiavi di accesso ho ?
-(17:02:53) pat1: data e type subtype immagino
-(17:03:05) spanezz@jabber.linux.it: senza --annotate, solo reftime, type e subtype
-(17:03:12) spanezz@jabber.linux.it: con --annotate, anche lat, lon e stazione
-(17:03:55) pat1: questo che mi stai dicendo non è in un README-bufr ?
-(17:05:15) spanezz@jabber.linux.it: potrebbe esserlo, se solo tu copiassi quello che ti sto dicendo e lo incollassi in un  README-bufr
-(17:05:41) spanezz@jabber.linux.it: (oggi sto lavorando su altre cose non arpa)
-(17:06:00) pat1: mica dico ora
-(17:06:13) spanezz@jabber.linux.it: o si fa ora che la roba è scritta
-(17:06:20) spanezz@jabber.linux.it: che in futuro non mi ricordo di questo scrollback
-(17:06:21) pat1: ok, io chiedo a Massimo di archiviare i temp
-(17:06:28) spanezz@jabber.linux.it: la cosa facile  è che tu copi, incolli e committi
-(17:06:32) pat1: manca il db non simple
-(17:06:47) spanezz@jabber.linux.it: il db non simple va anche lui
-(17:06:58) spanezz@jabber.linux.it: però usi --annotate altrimenti è facile avere conflitti
-(17:07:18) pat1: 1. fare un dataset con type=???
-(17:08:12) spanezz@jabber.linux.it: type=ondisk2
-(17:08:17) spanezz@jabber.linux.it: o type=simple
-(17:08:55) pat1: poi
-2. arki-scan --dispatch come al solito 
-(17:09:20) spanezz@jabber.linux.it: 2. arki-bufr-prepare
-(17:09:24) spanezz@jabber.linux.it: 3. arki-scan --dispatch come al solito 
-(17:09:32) pat1: ok
-(17:09:54) pat1: cosa dice che in quel dataset ci vanno dei bufr ?
-(17:13:29) spanezz@jabber.linux.it: il filtro
+ * Notes about scanning BUFR messages
+
+BUFR messages are scanned in two steps: header first, then data.
+
+Scanning happens via DB-All.e. The header is scanned in a straightforward way,
+acquiring reftime, origin (from centre and subcentre) and product (from type,
+subtype and local subtype).
+
+If the BUFR message only contains one subset, and if DB-All.e can perform
+physical interpretation of the message contents, then:
+
+ - 't=<msgtype>' keyword is added to the product metadata to encode the type
+   of message (synop, temp, buoy and so on, according to DB-All.e);
+ - the corresponding /etc/arkimet/scan-bufr/<msgtype>.lua script is run to
+   collect extra information from the message data.
+
+Information scanned from the data are more accurate and replace information
+found in the header; however, since the data section of a BUFR message cannot
+always be interpreted by DB-All.e, the header is always available and provides
+a good fallback.
+
+
+ * Multisubset BUFR messages and arki-bufr-prepare
+
+If a BUFR message contains multiple subsets, then the data section is ignored
+during scanning. This is because each subset is likely to provide different
+reference time or area information, resulting in an ambiguous scan.
+
+arkimet does not dispatch messages at the subset level, but at the BUFR level.
+This means that no attempt is made to dispatch each subset to its appropriate
+dataset: subsets are together in a BUFR and stay together when dispatching.
+Doing otherwise would mean rewriting the BUFR data, violating the arkimet
+constraint that mandates that data is never ever modified during processing.
+
+If you need to process multi-subset BUFR messages which contain data that
+should be dispatched in several datasets, then you can use the
+arki-bufr-prepare tool, which will split multi-subset BUFR messages into
+one BUFR message per subset. That is currently the only known way to process
+each subset independently.
+
+Please note that arki-bufr-prepare reencodes the BUFR contents: it is important
+that you test it on your types of BUFR data to see that no information is lost
+during the process.
+
