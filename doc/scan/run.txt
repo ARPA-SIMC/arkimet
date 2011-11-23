@@ -1,0 +1,7 @@
+ * GRIB1 and GRIB2
+
+Scanned as MINUTE(hour, minute)
+
+ * BUFR
+
+Not scanned.
