@@ -1,0 +1,27 @@
+ * GRIB1
+
+Levels are scanned as GRIB1(indicatorOfTypeOfLevel, level)
+
+Layers are scanned as GRIB1(indicatorOfTypeOfLevel, topLevel, bottomLevel)
+
+
+ * GRIB2
+
+Levels are scanned as GRIB2S(typeOfFirstFixedSurface,
+                             scaleFactorOfFirstFixedSurface,
+                             scaledValueOfFirstFixedSurface)
+
+Layers are scanned as GRIB2D(typeOfFirstFixedSurface,
+                             scaleFactorOfFirstFixedSurface,
+                             scaledValueOfFirstFixedSurface,
+                             typeOfSecondFixedSurface,
+                             scaleFactorOfSecondFixedSurface,
+                             scaledValueOfSecondFixedSurface)
+
+If the scaleFactor for a surface is -1, both the scaleFactor and the
+corresponding scaledValue are set to 0.
+
+
+ * BUFR
+
+Levels are not scanned for BUFR messages.

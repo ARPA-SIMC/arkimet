@@ -1,0 +1,43 @@
+ * GRIB1
+
+Product defintions are only scanned when there is a localDefinitionNumber value
+set. In that case, they are scanned as:
+
+  GRIB(ld=localDefinitionNumber, mt=marsType, nn=<see below>)
+
+The value of nn is either perturbationNumber, forecastProbabilityNumber or
+clusterNumber, according to which one is set. If more than one are set, then
+the order of preference is as the names appear above; that is,
+perturbationNumber has priority over forecastProbabilityNumber and so on.
+
+
+ * GRIB2
+
+Product definitions are only scanned when typeOfProcessedData is 3, 4 or 5.
+In that case, they are scanneda s:
+
+  GRIB(mc=marsClass, mt=marsType, ty=typeOfEnsembleForecast,
+       pf=perturbationNumber, tf=numberOfForecastsInEnsemble,
+       d=derivedForecast)
+
+d=derivedForecast may be missing if it was missing in the GRIB message.
+
+
+ * BUFR
+
+For all supported types except pollution and ship, proddef is scanned as:
+
+  GRIB(blo=block, sta=station, id=ident)
+
+Any of blo, sta or id can be missing if they are missing in the BUFR message.`
+
+
+
+
+conf/scan-bufr/pollution.lua:    local proddef = bufr_read_proddef(msg)
+conf/scan-bufr/pollution.lua:        if proddef == nil then proddef = {} end
+conf/scan-bufr/pollution.lua:        if gems then proddef.gems = gems:enqc() end
+conf/scan-bufr/pollution.lua:        if name then proddef.name = name:enqc() end
+conf/scan-bufr/pollution.lua:    if proddef then md:set(arki_proddef.grib(proddef)) end
+conf/scan-bufr/ship.lua:    if id then md:set(arki_proddef.grib{id=id:enqc()}) end
+
