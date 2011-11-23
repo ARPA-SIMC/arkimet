@@ -1,0 +1,68 @@
+ * GRIB1 and GRIB2
+
+Area is scanned as:
+
+  GRIB(tn=gridDefinitionTemplateNumber, (1)
+       latfirst = latitudeOfFirstGridPointInDegrees * 1000000,
+       lonfirst = longitudeOfFirstGridPointInDegrees * 1000000,
+       latlast = grib.latitudeOfLastGridPointInDegrees * 1000000, (2)
+       lonlast = grib.longitudeOfLastGridPointInDegrees * 1000000, (2)
+       Ni = numberOfPointsAlongAParallel or numberOfPointsAlongXAxis,
+       Nj = numberOfPointsAlongAMeridian or numberOfPointsAlongYAxis,
+       rot = grib.angleOfRotationInDegrees * 1000000, (3)
+       latp = grib.latitudeOfSouthernPoleInDegrees * 1000000, (3)
+       lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000, (3)
+      )
+
+Since the area:GRIB metadata type can only store integer values, a 6 digit
+decimal precision is achieved by multiplying each floating point number by
+1000000.
+
+Notes:
+
+ (1) only for GRIB2
+ (2) only when numberOfPointsAlongAParallel is defined
+ (3) only when angleOfRotationInDegrees is defined
+
+
+Special cases:
+
+ * GRIB1 and UTM
+
+In case latitudeOfFirstGridPointInDegrees is >= 1000, the GRIB is assumed to
+have an area expressed in UTM coordinates. In that case, the extra keyword
+'utm=1' is set in the area metadata, values are multiplied by 1000 instead of
+1000000 and rotation information is never scanned.
+
+ * GRIB2 and UTM
+
+If gridDefinitionTemplateNumber is 32768, then the area is scanned instead as:
+
+  GRIB(utm=1,
+       latfirst=northingOfFirstGridPoint,
+       lonfirst=eastingOfFirstGridPoint,
+       latlast=northingOfLastGridPoint,
+       lonlast=eastingOfLastGridPoint,
+       fe=falseEasting,
+       fn=falseNorthing,
+       zone=zone,
+       Ni=Ni,
+       Nj=Nj)
+
+
+ * BUFR
+
+For fixed stations (buoy, pilot, temp, metar, synop, pollution), area is
+scanned as:
+
+  GRIB(lat=latitude, lon=longitude)
+
+For mobile stations (airep, acars, amdar, ship, temp_ship), area is scanned as:
+
+  GRIB(lat=floor(latitude), lon=floor(longitude), type=mob)
+
+note that for mobile stations, coordinates are rounded down to 1 degree. This
+is done because, in order to be efficient, arkimet is designed to exploit
+similarity across metadata values. Since mobile stations have latitude and
+longitude values that keep changing with time, rounding mean that various
+nearby data can share the same area metadata.
