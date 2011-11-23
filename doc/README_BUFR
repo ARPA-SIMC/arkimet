@@ -19,6 +19,11 @@ found in the header; however, since the data section of a BUFR message cannot
 always be interpreted by DB-All.e, the header is always available and provides
 a good fallback.
 
+In Lua scripts and in scanning documentation, values are given either as B
+variable codes (such as B01001) or as names. The names are documented in the
+DB-All.e Fortran API as "Input and output parameters" and as "Variable
+aliases".
+
 
  * Multisubset BUFR messages and arki-bufr-prepare
 
