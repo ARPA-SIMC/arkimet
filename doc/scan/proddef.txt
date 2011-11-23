@@ -29,15 +29,13 @@ For all supported types except pollution and ship, proddef is scanned as:
 
   GRIB(blo=block, sta=station, id=ident)
 
-Any of blo, sta or id can be missing if they are missing in the BUFR message.`
+Any of blo, sta or id can be missing if they are missing in the BUFR message.
 
 
+For pollution messages, proddef is scanned as before, but with two extra data:
 
+  GRIB(blo=block, sta=station, id=ident, gems=B01214, name=B01019)
 
-conf/scan-bufr/pollution.lua:    local proddef = bufr_read_proddef(msg)
-conf/scan-bufr/pollution.lua:        if proddef == nil then proddef = {} end
-conf/scan-bufr/pollution.lua:        if gems then proddef.gems = gems:enqc() end
-conf/scan-bufr/pollution.lua:        if name then proddef.name = name:enqc() end
-conf/scan-bufr/pollution.lua:    if proddef then md:set(arki_proddef.grib(proddef)) end
-conf/scan-bufr/ship.lua:    if id then md:set(arki_proddef.grib{id=id:enqc()}) end
+As before, also gems and name can be missing if they are missing in the BUFR
+message.
 
