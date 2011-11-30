@@ -100,9 +100,10 @@ function scan(md)
     end
 	md:set(arki_area.grib(area))
 
-	-- Proddef
+    -- Proddef
+    local proddef = {}
+    proddef.tod = gribl.typeOfProcessedData
 	if gribl.typeOfProcessedData >= 3 and gribl.typeOfProcessedData <= 5 then
-		local proddef = {}
 		proddef.mc = grib.marsClass
 		proddef.mt = gribl.marsType
 		proddef.ty = grib.typeOfEnsembleForecast
@@ -111,6 +112,6 @@ function scan(md)
 		if grib.derivedForecast then
 			proddef.d = grib.derivedForecast
 		end
-		md:set(arki_proddef.grib(proddef))
 	end
+    md:set(arki_proddef.grib(proddef))
 end

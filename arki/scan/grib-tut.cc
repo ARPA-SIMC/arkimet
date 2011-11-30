@@ -679,14 +679,8 @@ void to::test<7>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	vb.set("mc", Value::createString("ti"));
-	vb.set("mt", Value::createInteger(0));
-	vb.set("pf", Value::createInteger(1));
-	vb.set("tf", Value::createInteger(16));
-	vb.set("ty", Value::createInteger(3));
-	ensure_equals(md.get(types::TYPE_PRODDEF), Item<>(proddef::GRIB::create(vb)));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(mc=ti,mt=0,pf=1,tf=16,tod=4,ty=3)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -714,7 +708,7 @@ void to::test<8>()
     ensure_md_equals(md, Level, "GRIB2S(103, 0, 10)");
     ensure_md_equals(md, Timerange, "Timedef(0s, 254)");
     ensure_md_equals(md, Area, "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
     ensure_md_equals(md, Reftime, "2011-02-15T00:00:00Z");
     ensure_md_equals(md, Run, "MINUTE(0)");
 
