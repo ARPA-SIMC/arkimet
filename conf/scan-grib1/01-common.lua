@@ -35,14 +35,27 @@ function scan(md)
 		md:set(arki_level.grib1(ltype, grib.topLevel, grib.bottomLevel))
 	end
 
-	-- Time range
+    -- Create this array here so time range can add to it
+    local proddef = {}
+
+    -- Time range
     if gribl.timeRangeIndicator == 13 and cosmo_centres[gribl.centre]
     then
         -- COSMO 'nudging'
         -- Special scan directly to timedef timeranges
         -- needs to be done here since it depends on the parameter
-        local statproc = nil
-        if grib.P2 ~= 0 then
+
+        proddef.tod = 0 -- Analysis product
+
+        -- Instantaneous data
+        if grib.P1 == 0 and grib.P2 == 0 then
+            md:set(arki_timerange.timedef(0, "s", 254))
+        elseif grib.P1 > grib.P2 then
+            -- TODO: this could be a general warning
+            error("COSMO message with P1 > P2")
+        else
+            local statproc = nil
+
             -- guess timerange according to parameter
             if gribl.gribTablesVersionNo == 2 then
                 -- table 2
@@ -54,19 +67,25 @@ function scan(md)
                 -- table 202
                 statproc = cosmo_nudging_table202[gribl.indicatorOfParameter]
             end
-        end
-        if statproc == nil then
-	    -- default to point in time, with 'cosmo nudging analysys' as
-	    -- statistical processing
-            md:set(arki_timerange.timedef(0, "s", 253))
-        else
-            -- known statistical processing
-            local tunit = gribl.indicatorOfUnitOfTimeRange
-            if tunit == 254 then tunit = 13 end
-            md:set(arki_timerange.timedef(0, "s", statproc, grib.P2-grib.P1, tunit))
+            -- If gribTablesVersionNo is unsupported or if
+            -- gribl.indicatorOfParameter is not found in tables, statproc
+            -- is nil and later below we default to 'point in time' and
+            -- 'cosmo nudging analysis'
+
+            if statproc == nil then
+                -- default to point in time, with 'cosmo nudging analysis' as
+                -- statistical processing
+                error("Unknown COSMO parameter type")
+            else
+                -- known statistical processing
+                local tunit = gribl.indicatorOfUnitOfTimeRange
+                if tunit == 254 then tunit = 13 end
+                md:set(arki_timerange.timedef(0, "s", statproc, grib.P2-grib.P1, tunit))
+            end
         end
     else
         md:set(arki_timerange.grib1(grib.timeRangeIndicator, grib.indicatorOfUnitOfTimeRange, grib.P1, grib.P2))
+        proddef.tod = 1 -- Initial instant of forecast
     end
 
 	-- Area
@@ -115,7 +134,6 @@ function scan(md)
 	md:set(arki_area.grib(area))
 
 	-- Proddef
-	local proddef = {}
 	if grib.localDefinitionNumber then
 		proddef.ld = gribl.localDefinitionNumber
 		proddef.mt = gribl.marsType
@@ -128,6 +146,10 @@ function scan(md)
 		if grib.perturbationNumber then
 			proddef.nn = gribl.perturbationNumber
 		end
+	end
+
+	-- Only set proddef if there is some data in it
+	if next(proddef) ~= nil then
 		md:set(arki_proddef.grib(proddef))
 	end
 end

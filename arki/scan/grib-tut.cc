@@ -53,6 +53,9 @@ struct arki_scan_grib_shar {
 };
 TESTGRP(arki_scan_grib);
 
+#define ensure_md_equals(md, type, strval) \
+    ensure_equals((md).get<type>(), type::decodeString(strval))
+
 // Scan a well-known grib file, with no padding between messages
 template<> template<>
 void to::test<1>()
@@ -113,10 +116,8 @@ void to::test<1>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	ensure(!md.get(types::TYPE_PRODDEF).defined());
-	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -139,9 +140,8 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(80, 255, 100)));
+    // Check origin
+    ensure_md_equals(md, Origin, "GRIB1(80, 255, 100)");
 
 	// Check product
 	ensure(md.get(types::TYPE_PRODUCT).defined());
@@ -167,10 +167,8 @@ void to::test<1>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	ensure(!md.get(types::TYPE_PRODDEF).defined());
-	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -221,10 +219,8 @@ void to::test<1>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	ensure(!md.get(types::TYPE_PRODDEF).defined());
-	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -291,10 +287,8 @@ void to::test<2>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	ensure(!md.get(types::TYPE_PRODDEF).defined());
-	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -345,10 +339,8 @@ void to::test<2>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	ensure(!md.get(types::TYPE_PRODDEF).defined());
-	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -399,10 +391,8 @@ void to::test<2>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	ensure(!md.get(types::TYPE_PRODDEF).defined());
-	//ensure_equals(md.get(types::TYPE_PRODDEF), proddef::GRIB::create(vb));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -530,8 +520,7 @@ void to::test<5>()
 
 	// Check timerange
 	ensure(md.get(types::TYPE_TIMERANGE).defined());
-    ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(Timerange::decodeString("Timedef(0s, 253)")));
-
+    ensure_md_equals(md, Timerange, "Timedef(0s, 254)");
 
 	// Check area
 	vb.clear();
@@ -548,17 +537,16 @@ void to::test<5>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	ensure(!md.get(types::TYPE_PRODDEF).defined());
+    // Check proddef
+    vb.clear();
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2009, 9, 2, 0, 0, 0))));
 
-	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(0)));
+    // Check run
+    ensure_md_equals(md, Run, "MINUTE(00:00)");
 
 	// No more gribs
 	ensure(not scanner.next(md));
@@ -619,12 +607,8 @@ void to::test<6>()
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
-	// Check proddef
-	vb.clear();
-	vb.set("ld", Value::createInteger(1));
-	vb.set("mt", Value::createInteger(9));
-	vb.set("nn", Value::createInteger(0));
-	ensure_equals(md.get(types::TYPE_PRODDEF), Item<>(proddef::GRIB::create(vb)));
+    // Check proddef
+    ensure_md_equals(md, Proddef, "GRIB(ld=1,mt=9,nn=0,tod=1)");
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -725,15 +709,14 @@ void to::test<8>()
     scanner.open("inbound/calmety_20110215.grib2");
     ensure(scanner.next(md));
 
-    ensure_equals(md.get<Origin>(), Origin::decodeString("GRIB2(00200, 00000, 000, 000, 203)"));
-    ensure_equals(md.get<Product>(), Product::decodeString("GRIB2(200, 0, 200, 33)"));
-    ensure_equals(md.get<Level>(), Level::decodeString("GRIB2S(103, 0, 10)"));
-    ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s, 254)"));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)"));
-
-    ensure_equals(md.has(types::TYPE_PRODDEF), false);
-    ensure_equals(md.get<Reftime>(), Reftime::decodeString("2011-02-15T00:00:00Z"));
-    ensure_equals(md.get<Run>(), Run::decodeString("MINUTE(0)"));
+    ensure_md_equals(md, Origin, "GRIB2(00200, 00000, 000, 000, 203)");
+    ensure_md_equals(md, Product, "GRIB2(200, 0, 200, 33)");
+    ensure_md_equals(md, Level, "GRIB2S(103, 0, 10)");
+    ensure_md_equals(md, Timerange, "Timedef(0s, 254)");
+    ensure_md_equals(md, Area, "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    ensure_md_equals(md, Reftime, "2011-02-15T00:00:00Z");
+    ensure_md_equals(md, Run, "MINUTE(0)");
 
     // No more gribs
     ensure(not scanner.next(md));
@@ -770,51 +753,51 @@ void to::test<10>()
         scan::scan("inbound/cosmonudging-t2.grib1", mdc);
         ensure_equals(mdc.size(), 35u);
         for (unsigned i = 0; i < 5; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
-        ensure_equals(mdc[5].get<Timerange>(), Timerange::decodeString("Timedef(0s, 2, 1h)"));
-        ensure_equals(mdc[6].get<Timerange>(), Timerange::decodeString("Timedef(0s, 3, 1h)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+        ensure_md_equals(mdc[5], Timerange, "Timedef(0s, 2, 1h)");
+        ensure_md_equals(mdc[6], Timerange, "Timedef(0s, 3, 1h)");
         for (unsigned i = 7; i < 13; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
-        ensure_equals(mdc[13].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+        ensure_md_equals(mdc[13], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 14; i < 19; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
-        ensure_equals(mdc[19].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
-        ensure_equals(mdc[20].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+        ensure_md_equals(mdc[19], Timerange, "Timedef(0s, 1, 12h)");
+        ensure_md_equals(mdc[20], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 21; i < 26; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
-        ensure_equals(mdc[26].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+        ensure_md_equals(mdc[26], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 27; i < 35; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s, 0, 12h)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s, 0, 12h)");
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t201.grib1", mdc);
         ensure_equals(mdc.size(), 33u);
-        ensure_equals(mdc[0].get<Timerange>(), Timerange::decodeString("Timedef(0s, 0, 12h)"));
-        ensure_equals(mdc[1].get<Timerange>(), Timerange::decodeString("Timedef(0s, 0, 12h)"));
-        ensure_equals(mdc[2].get<Timerange>(), Timerange::decodeString("Timedef(0s, 0, 12h)"));
+        ensure_md_equals(mdc[0], Timerange, "Timedef(0s, 0, 12h)");
+        ensure_md_equals(mdc[1], Timerange, "Timedef(0s, 0, 12h)");
+        ensure_md_equals(mdc[2], Timerange, "Timedef(0s, 0, 12h)");
         for (unsigned i = 3; i < 16; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
-        ensure_equals(mdc[16].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
-        ensure_equals(mdc[17].get<Timerange>(), Timerange::decodeString("Timedef(0s, 1, 12h)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+        ensure_md_equals(mdc[16], Timerange, "Timedef(0s, 1, 12h)");
+        ensure_md_equals(mdc[17], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 18; i < 26; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
-        ensure_equals(mdc[26].get<Timerange>(), Timerange::decodeString("Timedef(0s, 2, 1h)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+        ensure_md_equals(mdc[26], Timerange, "Timedef(0s, 2, 1h)");
         for (unsigned i = 27; i < 33; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t202.grib1", mdc);
         ensure_equals(mdc.size(), 11u);
         for (unsigned i = 0; i < 11; ++i)
-            ensure_equals(mdc[i].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t203.grib1", mdc);
         ensure_equals(mdc.size(), 1u);
-        ensure_equals(mdc[0].get<Timerange>(), Timerange::decodeString("Timedef(0s,253)"));
+        ensure_md_equals(mdc[0], Timerange, "Timedef(0s,254)");
     }
 }
 
