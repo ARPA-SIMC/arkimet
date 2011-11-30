@@ -53,9 +53,6 @@ struct arki_scan_grib_shar {
 };
 TESTGRP(arki_scan_grib);
 
-#define ensure_md_equals(md, type, strval) \
-    ensure_equals((md).get<type>(), type::decodeString(strval))
-
 // Scan a well-known grib file, with no padding between messages
 template<> template<>
 void to::test<1>()

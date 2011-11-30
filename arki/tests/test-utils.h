@@ -33,6 +33,10 @@ void impl_ensure_contains(const wibble::tests::Location& loc, const std::string&
 #define inner_ensure_not_contains(x, y) arki::tests::impl_ensure_not_contains(wibble::tests::Location(loc, __FILE__, __LINE__, #x " == " #y), (x), (y))
 void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::string& haystack, const std::string& needle);
 
+#define ensure_md_equals(md, type, strval) \
+    ensure_equals((md).get<type>(), type::decodeString(strval))
+
+
 }
 }
 
