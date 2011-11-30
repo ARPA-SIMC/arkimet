@@ -107,7 +107,7 @@ void to::test<3>()
     produceGRIB(p);
     p.flush();
 
-    ensure_equals(str.str(), "45039\n");
+    ensure_equals(str.str(), "45063\n");
 }
 
 // Test actually sending some data

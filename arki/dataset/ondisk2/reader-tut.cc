@@ -66,7 +66,7 @@ void to::test<1>()
 	reader->queryBytes(bq, os);
 
 	string out = sys::fs::readFile("testcountbytes.out");
-	ensure_equals(out, "7411\n");
+	ensure_equals(out, "7419\n");
 }
 
 // Test that summary files are not created for all the extent of the query, but

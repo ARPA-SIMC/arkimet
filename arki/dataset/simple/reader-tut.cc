@@ -76,7 +76,7 @@ void to::test<1>()
 	reader->queryBytes(bq, os);
 
 	string out = sys::fs::readFile("testcountbytes.out");
-	ensure_equals(out, "7399\n");
+	ensure_equals(out, "7407\n");
 }
 
 #if 0

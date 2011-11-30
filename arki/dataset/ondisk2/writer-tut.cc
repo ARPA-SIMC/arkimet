@@ -129,7 +129,7 @@ void to::test<1>()
 		writer.repack(s, true);
 		ensure_equals(s.str(),
 			"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
-			"testdir: 1 file deleted, 65408 total bytes freed.\n");
+			"testdir: 1 file deleted, 67472 total bytes freed.\n");
 
 		c.clear();
 
@@ -240,7 +240,7 @@ void to::test<3>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 65408 total bytes freed.\n");
+		"testdir: 1 file packed, 67472 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);
@@ -637,7 +637,7 @@ void to::test<9>()
 	{
 		stringstream s;
 		writer.repack(s, true);
-		ensure_equals(s.str(), "testdir: 30448 total bytes freed.\n");
+		ensure_equals(s.str(), "testdir: 32512 total bytes freed.\n");
 	}
 
 	// Ensure that we have the summary cache
