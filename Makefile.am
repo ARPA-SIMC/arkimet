@@ -66,6 +66,7 @@ EXTRA_DIST = README \
 	     doc/matcher/aliases.txt \
 	     doc/matcher/expressions.txt \
 	     test/conf/match-alias.conf \
+	     test/data/cosmo \
 	     test/data/layer.grib1 \
 	     test/data/test.bufr \
 	     test/data/test.grib1 \
