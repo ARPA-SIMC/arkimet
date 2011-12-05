@@ -739,6 +739,18 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
+    // Shortcut to read one single GRIB from a file
+    struct OneGrib : public Metadata
+    {
+        void read(const char* fname)
+        {
+            metadata::Collection mdc;
+            scan::scan(fname, mdc);
+            ensure_equals(mdc.size(), 1u);
+            Metadata::operator=(mdc[0]);
+        }
+    };
+
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t2.grib1", mdc);
@@ -784,12 +796,67 @@ void to::test<10>()
         for (unsigned i = 0; i < 11; ++i)
             ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
     }
-    {
-        metadata::Collection mdc;
-        scan::scan("inbound/cosmonudging-t203.grib1", mdc);
-        ensure_equals(mdc.size(), 1u);
-        ensure_md_equals(mdc[0], Timerange, "Timedef(0s,254)");
-    }
+
+    OneGrib md;
+
+    md.read("inbound/cosmonudging-t203.grib1");
+    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+
+    md.read("inbound/cosmo/anist_1.grib");
+    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/anist_1.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/anproc_1.grib");
+    ensure_md_equals(md, Timerange, "Timedef(0s,1,1h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/anproc_1.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(0s,1,1h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/anproc_2.grib");
+    ensure_md_equals(md, Timerange, "Timedef(0s,0,1h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/anproc_3.grib");
+    ensure_md_equals(md, Timerange, "Timedef(0s,2,1h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/anproc_4.grib");
+    ensure_md_equals(md, Timerange, "Timedef(0s,1,12h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/fc0ist_1.grib");
+    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+
+    md.read("inbound/cosmo/fcist_1.grib");
+    ensure_md_equals(md, Timerange, "Timedef(6h,254)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+
+    md.read("inbound/cosmo/fcist_1.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(6h,254)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/fcist_2.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(6h,254)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=4)");
+
+    md.read("inbound/cosmo/fcproc_1.grib");
+    ensure_md_equals(md, Timerange, "Timedef(6h,1,6h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+
+    md.read("inbound/cosmo/fcproc_1.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(12h,1,12h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=4)");
+
+    md.read("inbound/cosmo/fcproc_2.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(12h,2,3h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=4)");
 }
 
 // Check scanning a GRIB2 with a bug in level scanning code
