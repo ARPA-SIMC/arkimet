@@ -2,7 +2,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = embedded wibble arki src .
+SUBDIRS = conf embedded wibble arki src .
 
 man_MANS = \
 	arki-config.1 \
@@ -26,52 +26,11 @@ arki-%.1: src/arki-% doc/mhooks-%
 #%.1: tools/%
 #	( cd tools && ./`basename $<` help manpage ) > $@
 
-bboxconfdir = $(confdir)/bbox
-sg1confdir = $(confdir)/scan-grib1
-sg2confdir = $(confdir)/scan-grib2
-sbconfdir = $(confdir)/scan-bufr
-fmtconfdir = $(confdir)/format
-reportconfdir = $(confdir)/report
-qmconfdir = $(confdir)/qmacro
-tfconfdir = $(confdir)/targetfile
-
-dist_conf_DATA = conf/match-alias.conf
-dist_sg1conf_DATA = conf/scan-grib1/01-common.lua
-dist_sg2conf_DATA = conf/scan-grib2/01-common.lua
-dist_sbconf_DATA = \
-	conf/scan-bufr/common.lua \
-	conf/scan-bufr/acars.lua \
-	conf/scan-bufr/airep.lua \
-	conf/scan-bufr/amdar.lua \
-	conf/scan-bufr/buoy.lua \
-	conf/scan-bufr/metar.lua \
-	conf/scan-bufr/pilot.lua \
-	conf/scan-bufr/pollution.lua \
-	conf/scan-bufr/ship.lua \
-	conf/scan-bufr/synop.lua \
-	conf/scan-bufr/temp.lua \
-	conf/scan-bufr/temp_ship.lua
-dist_bboxconf_DATA = conf/bbox/01-common
-dist_fmtconf_DATA = \
-	conf/format/01-gribapi \
-	conf/format/05-gribtables \
-	conf/format/10-area \
-	conf/format/10-proddef \
-	conf/format/10-level \
-	conf/format/10-origin \
-	conf/format/10-product \
-	conf/format/10-timerange
-dist_reportconf_DATA = conf/report/count conf/report/datasets conf/report/mdstats
-dist_qmconf_DATA = conf/qmacro/noop.lua conf/qmacro/expa.lua conf/qmacro/gridspace.lua
-dist_tfconf_DATA = conf/targetfile/mars.lua
-
 EXTRA_DIST = README \
 	     README.Cineca \
 	     update-tags \
 	     doc/DATASET \
 	     doc/adding-formats.txt \
-	     conf/qmacro/test0.lua \
-	     conf/qmacro/noopcopy.lua \
              arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dump \

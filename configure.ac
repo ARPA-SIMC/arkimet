@@ -313,6 +313,7 @@ AM_CONDITIONAL([GCOV], [test x"$enable_gcov" = x"yes"])
 
 AC_CONFIG_FILES([
 Makefile
+conf/Makefile
 embedded/Makefile
 embedded/sqlite/Makefile
 embedded/minilzo/Makefile
