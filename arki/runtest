@@ -4,6 +4,19 @@ TOP_SRCDIR=`pwd`/`dirname $0`/..
 
 CMD=`pwd`/"$1"
 
+## Run under eatmydata if available
+
+libeatmydata="/usr/lib/libeatmydata/libeatmydata.so"
+if [ -e $libeatmydata ]
+then
+	if [ -n "$LD_PRELOAD" ]; then
+		export LD_PRELOAD="$libeatmydata $LD_PRELOAD"
+	else
+		export LD_PRELOAD="$libeatmydata"
+	fi
+fi
+
+
 ## Set up the test environment
 
 export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
