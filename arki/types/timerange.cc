@@ -456,6 +456,45 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 	}
 }
 
+Item<timerange::Timedef> Timerange::to_timedef() const
+{
+    using namespace timerange;
+
+    uint32_t step_len;
+    Timedef::Unit step_unit;
+    uint8_t stat_type;
+    uint32_t stat_len;
+    Timedef::Unit stat_unit;
+
+    int ival;
+    bool is_seconds;
+
+    if (get_forecast_step(ival, is_seconds))
+    {
+        step_len = ival;
+        step_unit = is_seconds ? Timedef::UNIT_SECOND : Timedef::UNIT_MONTH;
+    } else {
+        step_len = 0;
+        step_unit = Timedef::UNIT_MISSING;
+    }
+
+    if ((ival = get_proc_type()) != -1)
+        stat_type = ival;
+    else
+        stat_type = 255;
+
+    if (stat_type != 254 && get_proc_duration(ival, is_seconds))
+    {
+        stat_len = ival;
+        stat_unit = is_seconds ? Timedef::UNIT_SECOND : Timedef::UNIT_MONTH;
+    } else {
+        stat_len = 0;
+        stat_unit = Timedef::UNIT_MISSING;
+    }
+
+    return Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
+}
+
 static int arkilua_new_grib1(lua_State* L)
 {
 	int type = luaL_checkint(L, 1);

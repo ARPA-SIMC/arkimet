@@ -45,6 +45,10 @@ struct traits<Timerange>
 	typedef unsigned char Style;
 };
 
+namespace timerange {
+class Timedef;
+}
+
 /**
  * The time span information of the data
  *
@@ -88,6 +92,9 @@ struct Timerange : public types::StyledType<Timerange>
      * @return true if the duration could be computed, else false
      */
     virtual bool get_proc_duration(int& duration, bool& is_seconds) const = 0;
+
+    /// Create a Timedef equivalent of this time range
+    virtual Item<timerange::Timedef> to_timedef() const;
 
 	/// CODEC functions
 	static Item<Timerange> decode(const unsigned char* buf, size_t len);
@@ -204,10 +211,15 @@ public:
     };
 
 protected:
+    /// Units for forecast step, or UNIT_MISSING if forecast step is missing
     Unit m_step_unit;
     uint32_t m_step_len;
 
+    /// Type of statistical processing, or 255 if missing
     uint8_t m_stat_type;
+
+    /// Units for length of statistical processing, or UNIT_MINUTE if length of
+    /// statistical processing is missing
     Unit m_stat_unit;
     uint32_t m_stat_len;
 
