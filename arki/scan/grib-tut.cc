@@ -643,52 +643,17 @@ void to::test<7>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 411, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::GRIB2::create(250, 98, 4, 255, 131)));
-
-	// Check product
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::GRIB2::create(250, 0, 2, 22)));
-
-	// Check level
-	ensure(md.get(types::TYPE_LEVEL).defined());
-	ensure_equals(md.get(types::TYPE_LEVEL), Item<>(level::GRIB2S::create(103, 0, 10)));
-
-    // Check timerange
-    ensure(md.get(types::TYPE_TIMERANGE).defined());
-    ensure_equals(md.get(types::TYPE_TIMERANGE), Item<>(timerange::Timedef::create(
-                    0, timerange::Timedef::UNIT_SECOND,
-                    2, 3, timerange::Timedef::UNIT_HOUR)));
-
-	// Check area
-	vb.clear();
-	vb.set("Ni", Value::createInteger(511));
-	vb.set("Nj", Value::createInteger(415));
-	vb.set("latfirst", Value::createInteger(-16125000));
-	vb.set("latlast", Value::createInteger(9750000));
-	vb.set("lonfirst", Value::createInteger(344250000));
-	vb.set("lonlast", Value::createInteger(16125000));
-	vb.set("latp", Value::createInteger(-40000000));
-	vb.set("lonp", Value::createInteger(10000000));
-	vb.set("rot", Value::createInteger(0));
-	vb.set("tn", Value::createInteger(1));
-	ensure(md.get(types::TYPE_AREA).defined());
-	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
-
-    // Check proddef
+    ensure_md_equals(md, Origin, "GRIB2(250, 98, 4, 255, 131)");
+    ensure_md_equals(md, Product, "GRIB2(250, 0, 2, 22)");
+    ensure_md_equals(md, Level, "GRIB2S(103, 0, 10)");
+    ensure_md_equals(md, Timerange, "Timedef(3h, 2, 3h)");
+    ensure_md_equals(md, Area, "GRIB(Ni=511,Nj=415,latfirst=-16125000,latlast=9750000,lonfirst=344250000,lonlast=16125000,latp=-40000000,lonp=10000000,rot=0,tn=1)");
     ensure_md_equals(md, Proddef, "GRIB(mc=ti,mt=0,pf=1,tf=16,tod=4,ty=3)");
+    ensure_md_equals(md, Reftime, "2010-05-24T12:00:00");
+    ensure_md_equals(md, Run, "MINUTE(12:00)");
 
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2010, 5, 24, 12, 0, 0))));
-
-	// Check run
-	ensure_equals(md.get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(md.get(types::TYPE_RUN), Item<>(run::Minute::create(12)));
-
-	// No more gribs
-	ensure(not scanner.next(md));
+    // No more gribs
+    ensure(not scanner.next(md));
 }
 
 // Scan a GRIB2 with experimental UTM areas
@@ -810,11 +775,12 @@ void to::test<10>()
     ensure_md_equals(md, Timerange, "Timedef(0s,254)");
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
-    md.read("inbound/cosmo/anproc_1.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,1,1h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    md.read("inbound/cosmo/fc0ist_1.grib");
+    // ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(0s,254)"));
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
-    md.read("inbound/cosmo/anproc_1.grib2");
+    md.read("inbound/cosmo/anproc_1.grib");
     ensure_md_equals(md, Timerange, "Timedef(0s,1,1h)");
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
@@ -827,36 +793,48 @@ void to::test<10>()
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
     md.read("inbound/cosmo/anproc_4.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,1,12h)");
+    ensure_md_equals(md, Timerange, "Timedef(0s,0,12h)");
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
-    md.read("inbound/cosmo/fc0ist_1.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    md.read("inbound/cosmo/anproc_1.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(0s,0,24h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+
+    md.read("inbound/cosmo/anproc_2.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(0s,1,24h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
     md.read("inbound/cosmo/fcist_1.grib");
-    ensure_md_equals(md, Timerange, "Timedef(6h,254)");
+    // ensure_md_equals(md, Timerange, "Timedef(6h,254)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,254)"));
     ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
     md.read("inbound/cosmo/fcist_1.grib2");
     ensure_md_equals(md, Timerange, "Timedef(6h,254)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
     md.read("inbound/cosmo/fcist_2.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(6h,254)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=4)");
+    // ensure_md_equals(md, Timerange, "Timedef(6h,254)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,254)"));
+    ensure_md_equals(md, Proddef, "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)");
 
     md.read("inbound/cosmo/fcproc_1.grib");
-    ensure_md_equals(md, Timerange, "Timedef(6h,1,6h)");
+    // ensure_md_equals(md, Timerange, "Timedef(6h,1,6h)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,1,6h)"));
     ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
     md.read("inbound/cosmo/fcproc_1.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(12h,1,12h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=4)");
+    // ensure_md_equals(md, Timerange, "Timedef(12h,1,12h)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,1,12h)"));
+    ensure_md_equals(md, Proddef, "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)");
 
     md.read("inbound/cosmo/fcproc_2.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(12h,2,3h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=4)");
+    ensure_md_equals(md, Timerange, "Timedef(15h,2,3h)");
+    ensure_md_equals(md, Proddef, "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)");
+
+    md.read("inbound/cosmo/fcproc_3.grib2");
+    ensure_md_equals(md, Timerange, "Timedef(48h,1,24h)");
+    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 }
 
 // Check scanning a GRIB2 with a bug in level scanning code
