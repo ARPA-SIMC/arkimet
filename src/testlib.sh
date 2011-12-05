@@ -8,6 +8,18 @@ cleanup() {
 
 # Setup the test environment and change into the test dir
 setup() {
+    ## Run under eatmydata if available
+
+    libeatmydata="/usr/lib/libeatmydata/libeatmydata.so"
+    if [ -e $libeatmydata ]
+    then
+        if [ -n "$LD_PRELOAD" ]; then
+            export LD_PRELOAD="$libeatmydata $LD_PRELOAD"
+        else
+            export LD_PRELOAD="$libeatmydata"
+        fi
+    fi
+
     TOP_SRCDIR=$(readlink -f $(pwd)/$(dirname $0)/..)
     BINDIR=$TOP_SRCDIR/src
 

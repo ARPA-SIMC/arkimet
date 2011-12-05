@@ -49,7 +49,7 @@ function scan(md)
 
         -- Instantaneous data
         if grib.P1 == 0 and grib.P2 == 0 then
-            md:set(arki_timerange.timedef(0, "s", 254))
+            md:set(arki_timerange.timedef(0, "s", 254, 0, "s"))
         elseif grib.P1 > grib.P2 then
             -- TODO: this could be a general warning
             error("COSMO message with P1 > P2")

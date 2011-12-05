@@ -43,7 +43,7 @@ function scan(md)
     if tr_ft ~= nil and tr_ftu ~= nil then
         local pdtn = gribl.productDefinitionTemplateNumber
         if pdtn >= 0 and pdtn <= 7 then
-            md:set(arki_timerange.timedef(tr_ft, tr_ftu, 254))
+            md:set(arki_timerange.timedef(tr_ft, tr_ftu, 254, 0, "s"))
         else
             local tr_sp = gribl.typeOfStatisticalProcessing
             local tr_spu = gribl.indicatorOfUnitForTimeRange

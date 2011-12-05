@@ -483,7 +483,7 @@ Item<timerange::Timedef> Timerange::to_timedef() const
     else
         stat_type = 255;
 
-    if (stat_type != 254 && get_proc_duration(ival, is_seconds))
+    if (get_proc_duration(ival, is_seconds))
     {
         stat_len = ival;
         stat_unit = is_seconds ? Timedef::UNIT_SECOND : Timedef::UNIT_MONTH;

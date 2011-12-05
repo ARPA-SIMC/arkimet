@@ -517,7 +517,7 @@ void to::test<5>()
 
 	// Check timerange
 	ensure(md.get(types::TYPE_TIMERANGE).defined());
-    ensure_md_equals(md, Timerange, "Timedef(0s, 254)");
+    ensure_md_equals(md, Timerange, "Timedef(0s, 254, 0s)");
 
 	// Check area
 	vb.clear();
@@ -668,7 +668,7 @@ void to::test<8>()
     ensure_md_equals(md, Origin, "GRIB2(00200, 00000, 000, 000, 203)");
     ensure_md_equals(md, Product, "GRIB2(200, 0, 200, 33)");
     ensure_md_equals(md, Level, "GRIB2S(103, 0, 10)");
-    ensure_md_equals(md, Timerange, "Timedef(0s, 254)");
+    ensure_md_equals(md, Timerange, "Timedef(0s, 254, 0s)");
     ensure_md_equals(md, Area, "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
     ensure_md_equals(md, Reftime, "2011-02-15T00:00:00Z");
@@ -688,7 +688,7 @@ void to::test<9>()
         scanner.open("inbound/ninfa_ana.grib2");
         ensure(scanner.next(md));
 
-        ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s,254)"));
+        ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(0s,254,0s)"));
     }
     {
         Metadata md;
@@ -696,7 +696,7 @@ void to::test<9>()
         scanner.open("inbound/ninfa_forc.grib2");
         ensure(scanner.next(md));
 
-        ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(3h,254)"));
+        ensure_equals(md.get<Timerange>(), Timerange::decodeString("Timedef(3h,254,0s)"));
     }
 }
 
@@ -721,18 +721,18 @@ void to::test<10>()
         scan::scan("inbound/cosmonudging-t2.grib1", mdc);
         ensure_equals(mdc.size(), 35u);
         for (unsigned i = 0; i < 5; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
         ensure_md_equals(mdc[5], Timerange, "Timedef(0s, 2, 1h)");
         ensure_md_equals(mdc[6], Timerange, "Timedef(0s, 3, 1h)");
         for (unsigned i = 7; i < 13; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
         ensure_md_equals(mdc[13], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 14; i < 19; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
         ensure_md_equals(mdc[19], Timerange, "Timedef(0s, 1, 12h)");
         ensure_md_equals(mdc[20], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 21; i < 26; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
         ensure_md_equals(mdc[26], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 27; i < 35; ++i)
             ensure_md_equals(mdc[i], Timerange, "Timedef(0s, 0, 12h)");
@@ -745,39 +745,39 @@ void to::test<10>()
         ensure_md_equals(mdc[1], Timerange, "Timedef(0s, 0, 12h)");
         ensure_md_equals(mdc[2], Timerange, "Timedef(0s, 0, 12h)");
         for (unsigned i = 3; i < 16; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
         ensure_md_equals(mdc[16], Timerange, "Timedef(0s, 1, 12h)");
         ensure_md_equals(mdc[17], Timerange, "Timedef(0s, 1, 12h)");
         for (unsigned i = 18; i < 26; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
         ensure_md_equals(mdc[26], Timerange, "Timedef(0s, 2, 1h)");
         for (unsigned i = 27; i < 33; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t202.grib1", mdc);
         ensure_equals(mdc.size(), 11u);
         for (unsigned i = 0; i < 11; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254)");
+            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
     }
 
     OneGrib md;
 
     md.read("inbound/cosmonudging-t203.grib1");
-    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+    ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
 
     md.read("inbound/cosmo/anist_1.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+    ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
     md.read("inbound/cosmo/anist_1.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(0s,254)");
+    ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
     md.read("inbound/cosmo/fc0ist_1.grib");
-    // ensure_md_equals(md, Timerange, "Timedef(0s,254)");
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(0s,254)"));
+    // ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(0s,254,0s)"));
     ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
     md.read("inbound/cosmo/anproc_1.grib");
@@ -805,17 +805,17 @@ void to::test<10>()
     ensure_md_equals(md, Proddef, "GRIB(tod=0)");
 
     md.read("inbound/cosmo/fcist_1.grib");
-    // ensure_md_equals(md, Timerange, "Timedef(6h,254)");
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,254)"));
+    // ensure_md_equals(md, Timerange, "Timedef(6h,254,0s)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,254,0s)"));
     ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
     md.read("inbound/cosmo/fcist_1.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(6h,254)");
+    ensure_md_equals(md, Timerange, "Timedef(6h,254,0s)");
     ensure_md_equals(md, Proddef, "GRIB(tod=1)");
 
     md.read("inbound/cosmo/fcist_2.grib2");
-    // ensure_md_equals(md, Timerange, "Timedef(6h,254)");
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,254)"));
+    // ensure_md_equals(md, Timerange, "Timedef(6h,254,0s)");
+    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,254,0s)"));
     ensure_md_equals(md, Proddef, "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)");
 
     md.read("inbound/cosmo/fcproc_1.grib");

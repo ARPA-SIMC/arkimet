@@ -4,8 +4,10 @@ arkimet (0.66-1) UNRELEASED; urgency=low
      - Documented the scanning process
      - Introduced Type of Data (tod) key in proddef
      - Fine tuned scanning of GRIB1 and GRIB2 timeranges
+     - Use 0s as length of statistical processes for timedef with statistical
+       type=254 (instant)
 
- -- Enrico Zini <enrico@debian.org>  Mon, 05 Dec 2011 17:40:04 +0100
+ -- Enrico Zini <enrico@debian.org>  Mon, 05 Dec 2011 19:07:27 +0100
 
 arkimet (0.65-1) UNRELEASED; urgency=low
 
