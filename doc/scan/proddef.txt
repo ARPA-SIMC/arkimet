@@ -1,9 +1,18 @@
  * GRIB1
 
-Product defintions are only scanned when there is a localDefinitionNumber value
-set. In that case, they are scanned as:
+Product definitions are scanned as:
 
-  GRIB(ld=localDefinitionNumber, mt=marsType, nn=<see below>)
+  GRIB(tod=1)
+
+except for COSMO nudging analyses (timeRangeIndicator=13) where they are
+scanned as:
+
+  GRIB(tod=0)
+
+When there is a localDefinitionNumber value set, ensemble information is also
+included:
+
+  GRIB(ld=localDefinitionNumber, mt=marsType, nn=<see below>, tod=<see above>)
 
 The value of nn is either perturbationNumber, forecastProbabilityNumber or
 clusterNumber, according to which one is set. If more than one are set, then
@@ -13,12 +22,15 @@ perturbationNumber has priority over forecastProbabilityNumber and so on.
 
  * GRIB2
 
-Product definitions are only scanned when typeOfProcessedData is 3, 4 or 5.
-In that case, they are scanneda s:
+Product definitions are scanned as:
+
+  GRIB(tod=typeOfProcessedData)
+
+When typeOfProcessedData is 3, 4 or 5, ensemble information is also included:
 
   GRIB(mc=marsClass, mt=marsType, ty=typeOfEnsembleForecast,
        pf=perturbationNumber, tf=numberOfForecastsInEnsemble,
-       d=derivedForecast)
+       d=derivedForecast, tod=typeOfProcessedData)
 
 d=derivedForecast may be missing if it was missing in the GRIB message.
 

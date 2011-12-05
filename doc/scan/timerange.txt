@@ -1,13 +1,67 @@
  * GRIB1
 
-TBD
+Timeranges are scanned as:
+
+   GRIB1(timeRangeIndicator, P1, P2)
+
+indicatorOfUnitOfTimeRange is used for the measurement unit of P1 and P2.
+
+
+For COSMO GRIBs with timeRangeIndicator=13, Timeranges are instead scanned
+using Timedefs. Since their timerange definition depends on the product type,
+their meaning can only be determined at scan time, when all the GRIB contents
+are available.
+
+COSMO GRIB scanning works as such:
+
+ - for instantaneous data (P1 = P2 = 0): Timedef(0s,254,0s)
+ - otherwise: Timedef(0s, <see below>, P2-P1<indicatorOfUnitOfTimeRange>)
+
+The type of statistical processing is inferred through a table lookup based on
+gribTablesVersionNo and indicatorOfParameter.
 
 
  * GRIB2
 
-TBD
+For analyses, Timeranges are scanned as:
+
+   Timedef(forecastTime<indicatorOfUnitOfTimeRange>, 254, 0s)
+
+For forecasts, Timeranges are scanned as:
+
+   Timedef(forecastTime + lengthOfTimeRange <indicatorOfUnitOfTimeRange>,
+           typeOfStatisticalProcessing,
+            lengthOfTimeRange<indicatorOfUnitOfTimeRange>)
+
+   or, when statistical processing information is not available:
+
+   Timedef(forecastTime<indicatorOfUnitOfTimeRange>)
+
+For forecasts when productDefinitionTemplateNumber=8 and typeOfProcessedData=0,
+they are scanned as:
+
+   Timedef(0s, typeOfStatisticalProcessing, lengthOfTimeRange<indicatorOfUnitOfTimeRange>)
+
+   or, when statistical processing information is not available:
+
+   Timedef(0s)
 
 
  * BUFR
 
-TBD
+Timeranges are only scanned for BUFR messages which contain forecast data. At
+the moment this happens only for local uses.
+
+Timedef timeranges are used to store the forecast time only: no statistical
+process information is retained.
+
+The contents of the BUFR message are scanned after interpretation by DB-All.e,
+taking note of all P1 values for data with pindicator!=254. If all P1 values
+are the same, they are used as the forecast step in seconds.
+
+Timeranges are then scanned as:
+
+   Timedef(<forecast step><unit>)
+
+where the forecast step is represented as second, minute or hour according to
+the largest unit that can be used without loss of information.
