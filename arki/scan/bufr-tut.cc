@@ -477,6 +477,19 @@ void to::test<11>()
     ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4586878, lon=717080)"));
     ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=6, sta=717)"));
 }
+
+// Test scanning a message with a different date in the header than in its contents
+template<> template<>
+void to::test<12>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/synop-gts-different-date-in-header.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4586878, lon=717080)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=6, sta=717)"));
+}
+
 }
 
 // vim:set ts=4 sw=4:

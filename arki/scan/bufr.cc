@@ -139,6 +139,30 @@ void Bufr::close()
 	}
 }
 
+static void extract_reftime(const dballe::Msg& msg, Metadata& md)
+{
+	static int srcs[] = { DBA_MSG_YEAR, DBA_MSG_MONTH, DBA_MSG_DAY, DBA_MSG_HOUR, DBA_MSG_MINUTE, DBA_MSG_SECOND };
+	int vals[6];
+
+	for (unsigned i = 0; i < 6; ++i)
+	{
+		if (const wreport::Var* var = msg.find_by_id(srcs[i]))
+			if (var->isset())
+			{
+				vals[i] = var->enqi();
+				continue;
+			}
+		if (i == 5)
+			// In case of seconds, if no value is found we default to 0
+			vals[i] = 0;
+		else
+			return;
+	}
+
+	// If we got here, vals is complete
+	md.set(types::reftime::Position::create(types::Time::create(vals)));
+}
+
 bool Bufr::do_scan(Metadata& md)
 {
 	Rawmsg rmsg;
@@ -239,6 +263,9 @@ bool Bufr::do_scan(Metadata& md)
 	ValueBag newvals;
 	newvals.set("t", Value::createString(msg_type_name(msgs[0]->type)));
         md.set(product->addValues(newvals));
+
+	// Set reference time from date and time if available
+	extract_reftime(*msgs[0], md);
 
 	// DB-All.e managed to make sense of the message: hand it down to Lua
 	// to extract further metadata
