@@ -65,3 +65,50 @@ Timeranges are then scanned as:
 
 where the forecast step is represented as second, minute or hour according to
 the largest unit that can be used without loss of information.
+
+
+ * Example timerange matches
+
+A Timedef timerange is as such:
+
+    timerange: Timedef, forecastStep, procType, procLen
+
+- forecastStep is the time elapsed from the reference time:
+  for analysis, forecastStep=0;
+  for instantaneous forecasts, forecastStep is the forecast time;
+  for processed forecasts, forecastStep refers to the end of the processing interval.
+
+- procType is the type of statistical processing:
+  for instantaneous data, procType=254;
+  for processed data, procType is defined according to WMO GRIB2 table 4.10 (0=average, 1=accumulation, 2=maximum, etc.).
+
+- procLen is the length of time over which the statistical processing is done;
+  for instantaneous data, procLen=0
+
+- The time unit for forecastStep and procLen is specified as a suffix (s, m, h, d, mo, y);
+  a value of 0 can be used without suffix;
+  an expression can contain different suffixes, but mo (month) can not be mixed with other suffixes.
+
+- Any of forecastStep, proctype and proclen can be omitted: if so, any value will match;
+  an hyphen (-) matches a missing value.
+
+- For processsed analysis, the "reference time" is usually the beginning of processing interval;
+  only for Grib 1 with timeRangeIndicator=13 is it the end of the processing interval.
+
+Examples:
+Timedef,0,254    instantaneous analysis
+Timedef,6h,254   +6h instantaneous forecasts
+Timedef,6h,1,6h  forecasts accumulated from +0 to +6h
+
+Timedef,,254     all instantaneous products (analysis or forecasts)
+Timedef,24h,1    all forecasts whose accumulation period ends at +24h
+Timedef,,1,6h    all products accumulated over a 6h interval (analysis or forecasts)
+
+
+For GRIB1, an alternative syntax can be used:
+
+    timerange: GRIB1, type, P1, P2
+
+- type is the "time range indicator", defined according to WMO code table 5 (0=instantaneous, 3=average, 4=accumulation, etc.)
+
+- P1 and P2 are the time periods, and their significance depends on the value of "type"
