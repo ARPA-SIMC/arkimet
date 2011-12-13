@@ -6,6 +6,7 @@ arkimet (0.66-1) UNRELEASED; urgency=low
      - Fine tuned scanning of GRIB1 and GRIB2 timeranges
      - Use 0s as length of statistical processes for timedef with statistical
        type=254 (instant)
+     - Updated BUFR ship scanning script which was still obsolete
 
  -- Enrico Zini <enrico@debian.org>  Mon, 05 Dec 2011 19:07:27 +0100
 
