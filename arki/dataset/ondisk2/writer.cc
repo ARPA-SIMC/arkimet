@@ -118,7 +118,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 
 	string reldest = (*m_tf)(md) + "." + md.source->format;
 	writer::Datafile* df = file(reldest);
-	off_t ofs;
+	off64_t ofs;
 
 	Pending p_idx = m_idx.beginTransaction();
 	Pending p_df = df->append(md, &ofs);
@@ -146,7 +146,7 @@ bool Writer::replace(Metadata& md)
 
 	string reldest = (*m_tf)(md) + "." + md.source->format;
 	writer::Datafile* df = file(reldest);
-	off_t ofs;
+	off64_t ofs;
 
 	Pending p_idx = m_idx.beginTransaction();
 	Pending p_df = df->append(md, &ofs);
@@ -242,7 +242,7 @@ struct Deleter : public maintenance::IndexFileVisitor
 	Deleter(const std::string& name, std::ostream& log, bool writable)
 		: name(name), log(log), writable(writable) {}
 
-	void operator()(const std::string& file, int id, off_t offset, size_t size)
+	void operator()(const std::string& file, int id, off64_t offset, size_t size)
 	{
 		if (last_fname == file) return;
 		if (writable)
@@ -368,7 +368,7 @@ struct FileCopier : maintenance::IndexFileVisitor
 	FileCopier(WIndex& idx, const std::string& src, const std::string& dst);
 	virtual ~FileCopier();
 
-	void operator()(const std::string& file, int id, off_t offset, size_t size);
+	void operator()(const std::string& file, int id, off64_t offset, size_t size);
 
 	void flush();
 };
@@ -394,7 +394,7 @@ FileCopier::~FileCopier()
 	flush();
 }
 
-void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
+void FileCopier::operator()(const std::string& file, int id, off64_t offset, size_t size)
 {
 	if (buf.size() < size)
 		buf.resize(size);

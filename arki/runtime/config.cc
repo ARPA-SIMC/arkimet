@@ -33,6 +33,11 @@
 #include <fstream>
 #include <memory>
 
+#ifndef linux
+#define _POSIX_SOURCE
+#include <unistd.h>
+#endif
+
 using namespace std;
 using namespace wibble;
 using namespace wibble::commandline;
