@@ -6,7 +6,12 @@ function fmt_timerange(v)
 		if timerange[v.type] == nil then
 			return nil
 		end
-		return timerange:desc(v.type).." - p1 "..v.p1..", p2 "..v.p2..", time unit "..v.unit
+		str = timerange:desc(v.type) .. " - "
+		if v.p1 then str = str .. "p1 " .. v.p1 .. " " end
+		if v.p2 then str = str .. "p2 " .. v.p2 .. " " end
+		if v.unit then str = str .. "time unit " .. v.unit end
+		-- return timerange:desc(v.type).." - p1 "..v.p1..", p2 "..v.p2..", time unit "..v.unit
+		return str
 	end
 	return nil
 end

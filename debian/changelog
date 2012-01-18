@@ -2,8 +2,10 @@ arkimet (0.67-2) UNRELEASED; urgency=low
 
   * New upstream version
      - Applied patch from Emanuele: tolerate empty query subexpressions
+     - Applied patch from Emanuele: fix an error message showing up in the
+       timerange formatter result under some conditions
 
- -- Enrico Zini <enrico@debian.org>  Wed, 18 Jan 2012 15:38:28 +0100
+ -- Enrico Zini <enrico@debian.org>  Wed, 18 Jan 2012 16:06:22 +0100
 
 arkimet (0.67-1) UNRELEASED; urgency=low
 
