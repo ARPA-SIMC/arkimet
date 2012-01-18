@@ -253,7 +253,8 @@ AND* AND::parse(const std::string& pattern)
 	for (wibble::Tokenizer::const_iterator i = tok.begin();
 			i != tok.end(); ++i)
 	{
-		string expr = *i;
+		string expr = wibble::str::trim(*i);
+		if (expr.empty()) continue;
 		size_t pos = expr.find(':');
 		if (pos == string::npos)
 			throw wibble::exception::Consistency(

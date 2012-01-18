@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 0.67, [enrico@enricozini.org])
+AC_INIT(arkimet, 0.68, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AM_CONFIG_HEADER(config.h)

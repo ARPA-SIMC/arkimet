@@ -264,6 +264,15 @@ void to::test<9>()
 	}
 }
 
+template<> template<>
+void to::test<10>()
+{
+	Matcher m1, m2;
+
+	m1 = Matcher::parse("origin:GRIB1 OR BUFR\n    ");
+	m2 = Matcher::parse("origin:GRIB1 OR BUFR;\n   \n;   \n  ;\n");
+	ensure(m1.toString() == m2.toString());
+}
 
 }
 

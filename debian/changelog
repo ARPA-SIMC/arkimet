@@ -1,3 +1,10 @@
+arkimet (0.67-2) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Applied patch from Emanuele: tolerate empty query subexpressions
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 18 Jan 2012 15:38:28 +0100
+
 arkimet (0.67-1) UNRELEASED; urgency=low
 
   * New upstream version
