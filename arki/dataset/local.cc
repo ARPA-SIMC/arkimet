@@ -227,6 +227,10 @@ WritableLocal::WritableLocal(const ConfigFile& cfg)
         m_default_replace_strategy = REPLACE_ALWAYS;
     else if (repl == "USN")
         m_default_replace_strategy = REPLACE_HIGHER_USN;
+    else if (repl == "" || repl == "no" || repl == "never")
+        m_default_replace_strategy = REPLACE_NEVER;
+    else
+        throw wibble::exception::Consistency("reading configuration for dataset " + m_name, "Replace strategy '" + repl + "' is not recognised");
 
 	string tmp = cfg.value("archive age");
 	if (!tmp.empty())
