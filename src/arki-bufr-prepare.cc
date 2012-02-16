@@ -77,6 +77,7 @@ static void copy_base_msg(BufrBulletin& dst, const BufrBulletin& src)
 	dst.subtype = src.subtype;
 	dst.localsubtype = src.localsubtype;
 	dst.edition = src.edition;
+    dst.master_table_number = src.master_table_number;
 	dst.rep_year = src.rep_year;
 	dst.rep_month = src.rep_month;
 	dst.rep_day = src.rep_day;
@@ -89,6 +90,9 @@ static void copy_base_msg(BufrBulletin& dst, const BufrBulletin& src)
 	dst.local_table = src.local_table;
 	// Do not compress, since it only makes sense for multisubset messages
 	dst.compression = 0;
+    dst.update_sequence_number = src.update_sequence_number;
+
+    // FIXME: the original optional section is lost
 
 	// Copy data descriptor section
 	dst.datadesc = src.datadesc;
