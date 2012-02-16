@@ -103,7 +103,7 @@ public:
     /**
      * Set a hook for the posixBuf, valid until it returns false.
      *
-     * This replaces an existinf buf, if present.
+     * This replaces an existing buf, if present.
      */
     void set_hook(metadata::Hook& hook);
 

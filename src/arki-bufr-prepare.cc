@@ -51,13 +51,13 @@ struct Options : public StandardParserWithManpage
     StringOption* outfile;
     IntOption* force_usn;
 
-	Options() : StandardParserWithManpage("arki-bufr-prepare", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
-	{
-		usage = "[options] file1 file2...";
-		description =
-			"Read BUFR messages, encode each subsection in a "
-			"separate message and add an optional section with "
-			"information useful for arki-prepare";
+    Options() : StandardParserWithManpage("arki-bufr-prepare", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
+    {
+        usage = "[options] file1 file2...";
+        description =
+            "Read BUFR messages, encode each subsection in a "
+            "separate message and add an optional section with "
+            "information useful for arki-prepare";
 
         debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
         verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
@@ -212,25 +212,25 @@ public:
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    wibble::commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
-		nag::init(opts.verbose->isSet(), opts.debug->isSet());
+        nag::init(opts.verbose->isSet(), opts.debug->isSet());
 
-		runtime::init();
+        runtime::init();
 
         Copier copier;
 
         if (opts.force_usn->isSet())
             copier.override_usn(opts.force_usn->intValue());
 
-		auto_ptr<File> outfile;
-		if (opts.outfile->isSet())
-			outfile = File::create(BUFR, opts.outfile->stringValue().c_str(), "wb");
-		else
-			outfile = File::create(BUFR, "(stdout)", "wb");
+        auto_ptr<File> outfile;
+        if (opts.outfile->isSet())
+            outfile = File::create(BUFR, opts.outfile->stringValue().c_str(), "wb");
+        else
+            outfile = File::create(BUFR, "(stdout)", "wb");
 
         if (!opts.hasNext())
         {
@@ -242,15 +242,15 @@ int main(int argc, const char* argv[])
             }
         }
 
-		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+        return 0;
+    } catch (wibble::exception::BadOption& e) {
+        cerr << e.desc() << endl;
+        opts.outputHelp(cerr);
+        return 1;
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }
 
 // vim:set ts=4 sw=4:
