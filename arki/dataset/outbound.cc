@@ -92,7 +92,7 @@ void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 	}
 }
 
-WritableDataset::AcquireResult Outbound::acquire(Metadata& md)
+WritableDataset::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
 {
 	string reldest = (*m_tf)(md);
 	string dest = m_path + "/" + reldest;
@@ -112,11 +112,6 @@ WritableDataset::AcquireResult Outbound::acquire(Metadata& md)
 	// This should never be reached, but we throw an exception to avoid a
 	// warning from the compiler
 	throw wibble::exception::Consistency("this code is here to appease a compiler warning", "this code path should never be reached");
-}
-
-bool Outbound::replace(Metadata& md)
-{
-	return acquire(md) == ACQ_OK;
 }
 
 void Outbound::remove(Metadata&)

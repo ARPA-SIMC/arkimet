@@ -69,13 +69,7 @@ public:
 	 * false.  If false is returned, a note is added to the dataset explaining
 	 * the reason of the failure.
 	 */
-	virtual AcquireResult acquire(Metadata& md);
-
-	/**
-	 * This dataset does not detect duplicates, so replace is the same as
-	 * acquire.
-	 */
-	bool replace(Metadata& md);
+	virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT);
 
 	/**
 	 * This dataset stores duplicates, so it cannot unambiguously locale

@@ -315,7 +315,7 @@ void to::test<5>()
 	{
 		auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test80")));
 		// Replace it
-		if (!testds->replace(mdc[0]))
+		if (testds->acquire(mdc[0], WritableDataset::REPLACE_ALWAYS) != WritableDataset::ACQ_OK)
 		{
 			std::vector< Item<types::Note> > notes = mdc[0].notes();
 			for (size_t i = 0; i < notes.size(); ++i)

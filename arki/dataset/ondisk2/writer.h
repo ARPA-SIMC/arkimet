@@ -57,7 +57,6 @@ protected:
 	ConfigFile m_cfg;
 	WIndex m_idx;
 	TargetFile* m_tf;
-	bool m_replace;
 
 	std::map<std::string, writer::Datafile*> m_df_cache;
 
@@ -70,20 +69,18 @@ public:
 
 	virtual ~Writer();
 
-	/**
-	 * Acquire the given metadata item (and related data) in this dataset.
-	 *
-	 * After acquiring the data successfully, the data can be retrieved from
-	 * the dataset.  Also, information such as the dataset name and the id of
-	 * the data in the dataset are added to the Metadata object.
-	 *
-	 * @return true if the data is successfully stored in the dataset, else
-	 * false.  If false is returned, a note is added to the dataset explaining
-	 * the reason of the failure.
-	 */
-	virtual AcquireResult acquire(Metadata& md);
-
-	virtual bool replace(Metadata& md);
+    /**
+     * Acquire the given metadata item (and related data) in this dataset.
+     *
+     * After acquiring the data successfully, the data can be retrieved from
+     * the dataset.  Also, information such as the dataset name and the id of
+     * the data in the dataset are added to the Metadata object.
+     *
+     * @return true if the data is successfully stored in the dataset, else
+     * false.  If false is returned, a note is added to the dataset explaining
+     * the reason of the failure.
+     */
+    virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT);
 
 	void remove(const std::string& id);
     virtual void remove(Metadata& md);

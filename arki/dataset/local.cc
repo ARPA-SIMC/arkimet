@@ -217,9 +217,17 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
 }
 
 WritableLocal::WritableLocal(const ConfigFile& cfg)
-	: m_path(cfg.value("path")), m_archive(0),
-	  m_archive_age(-1), m_delete_age(-1)
+    : m_path(cfg.value("path")),
+      m_archive(0), m_archive_age(-1), m_delete_age(-1),
+      m_default_replace_strategy(REPLACE_NEVER)
 {
+    m_name = cfg.value("name");
+    string repl = cfg.value("replace");
+    if (repl == "yes" || repl == "true" || repl == "always")
+        m_default_replace_strategy = REPLACE_ALWAYS;
+    else if (repl == "USN")
+        m_default_replace_strategy = REPLACE_HIGHER_USN;
+
 	string tmp = cfg.value("archive age");
 	if (!tmp.empty())
 		m_archive_age = strtoul(tmp.c_str(), 0, 10);

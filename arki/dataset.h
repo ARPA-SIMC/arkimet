@@ -214,11 +214,37 @@ public:
 		ACQ_ERROR
 	};
 
+    enum ReplaceStrategy {
+        /// Default strategy, as configured in the dataset
+        REPLACE_DEFAULT,
+        /// Never replace
+        REPLACE_NEVER,
+        /// Always replace
+        REPLACE_ALWAYS,
+        /**
+         * Replace if update sequence number is higher (do not replace if USN
+         * not available)
+         */
+        REPLACE_HIGHER_USN,
+    };
+
 protected:
-	std::string m_name;
+    std::string m_name;
+
+	/**
+	 * Insert the given metadata in the dataset.
+	 *
+	 * In case of conflict, replaces existing data.
+	 *
+	 * @return true if the data is successfully stored in the dataset, else
+	 * false.  If false is returned, a note is added to the dataset explaining
+	 * the reason of the failure.
+	 */
+	//virtual bool replace(Metadata& md) = 0;
 
 public:
-	virtual ~WritableDataset() {}
+    WritableDataset();
+    virtual ~WritableDataset();
 
 	// Return the dataset name
 	const std::string& name() const { return m_name; }
@@ -232,18 +258,7 @@ public:
 	 *
 	 * @return The outcome of the operation.
 	 */
-	virtual AcquireResult acquire(Metadata& md) = 0;
-
-	/**
-	 * Insert the given metadata in the dataset.
-	 *
-	 * In case of conflict, replaces existing data.
-	 *
-	 * @return true if the data is successfully stored in the dataset, else
-	 * false.  If false is returned, a note is added to the dataset explaining
-	 * the reason of the failure.
-	 */
-	virtual bool replace(Metadata& md) = 0;
+	virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT) = 0;
 
 	/**
 	 * Remove the given metadata from the database.

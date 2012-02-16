@@ -63,10 +63,8 @@ namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
 	: WritableLocal(cfg), m_cfg(cfg),
-	  m_idx(cfg), m_tf(0), m_replace(false)
+	  m_idx(cfg), m_tf(0)
 {
-	m_name = cfg.value("name");
-
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_path);
 
@@ -76,7 +74,6 @@ Writer::Writer(const ConfigFile& cfg)
 		files::createDontpackFlagfile(m_path);
 
 	m_tf = TargetFile::create(cfg);
-	m_replace = ConfigFile::boolValue(cfg.value("replace"), false);
 	m_idx.open();
 }
 
@@ -108,64 +105,68 @@ writer::Datafile* Writer::file(const std::string& pathname)
 }
 
 
-WritableDataset::AcquireResult Writer::acquire(Metadata& md)
+WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
-	// TODO: refuse if md is before "archive age"
+    if (replace == REPLACE_DEFAULT) replace = m_default_replace_strategy;
+    switch (replace)
+    {
+        case REPLACE_NEVER: {
+            // TODO: refuse if md is before "archive age"
 
-	// If replace is on in the configuration file, do a replace instead
-	if (m_replace)
-		return replace(md) ? ACQ_OK : ACQ_ERROR;
+            string reldest = (*m_tf)(md) + "." + md.source->format;
+            writer::Datafile* df = file(reldest);
+            off64_t ofs;
 
-	string reldest = (*m_tf)(md) + "." + md.source->format;
-	writer::Datafile* df = file(reldest);
-	off64_t ofs;
+            Pending p_idx = m_idx.beginTransaction();
+            Pending p_df = df->append(md, &ofs);
 
-	Pending p_idx = m_idx.beginTransaction();
-	Pending p_df = df->append(md, &ofs);
+            try {
+                int id;
+                m_idx.index(md, reldest, ofs, &id);
+                p_df.commit();
+                p_idx.commit();
+                md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
+                return ACQ_OK;
+            } catch (utils::sqlite::DuplicateInsert& di) {
+                md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
+                return ACQ_ERROR_DUPLICATE;
+            } catch (std::exception& e) {
+                // sqlite will take care of transaction consistency
+                md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+                return ACQ_ERROR;
+            }
+        }
+        case REPLACE_ALWAYS: {
+            // TODO: refuse if md is before "archive age"
 
-	try {
-		int id;
-		m_idx.index(md, reldest, ofs, &id);
-		p_df.commit();
-		p_idx.commit();
-		md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
-		return ACQ_OK;
-	} catch (utils::sqlite::DuplicateInsert& di) {
-		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
-		return ACQ_ERROR_DUPLICATE;
-	} catch (std::exception& e) {
-		// sqlite will take care of transaction consistency
-		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
-		return ACQ_ERROR;
-	}
-}
+            string reldest = (*m_tf)(md) + "." + md.source->format;
+            writer::Datafile* df = file(reldest);
+            off64_t ofs;
 
-bool Writer::replace(Metadata& md)
-{
-	// TODO: refuse if md is before "archive age"
+            Pending p_idx = m_idx.beginTransaction();
+            Pending p_df = df->append(md, &ofs);
 
-	string reldest = (*m_tf)(md) + "." + md.source->format;
-	writer::Datafile* df = file(reldest);
-	off64_t ofs;
-
-	Pending p_idx = m_idx.beginTransaction();
-	Pending p_df = df->append(md, &ofs);
-
-	try {
-		int id;
-		m_idx.replace(md, reldest, ofs, &id);
-		// In a replace, we necessarily replace inside the same file,
-		// as it depends on the metadata reftime
-		//createPackFlagfile(df->pathname);
-		p_df.commit();
-		p_idx.commit();
-		md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
-		return true;
-	} catch (std::exception& e) {
-		// sqlite will take care of transaction consistency
-		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
-		return false;
-	}
+            try {
+                int id;
+                m_idx.replace(md, reldest, ofs, &id);
+                // In a replace, we necessarily replace inside the same file,
+                // as it depends on the metadata reftime
+                //createPackFlagfile(df->pathname);
+                p_df.commit();
+                p_idx.commit();
+                md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
+                return ACQ_OK;
+            } catch (std::exception& e) {
+                // sqlite will take care of transaction consistency
+                md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+                return ACQ_ERROR;
+            }
+        }
+        case REPLACE_HIGHER_USN:
+            throw wibble::exception::Consistency("acquiring into dataset " + m_name, "REPLACE_HIGHER_USN is not implemented yet");
+        default:
+            throw wibble::exception::Consistency("acquiring into dataset " + m_name, "unsupported replace strategy " + str::fmt((int)replace));
+    }
 }
 
 void Writer::remove(Metadata& md)

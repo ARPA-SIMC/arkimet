@@ -41,16 +41,10 @@ Discard::~Discard()
 {
 }
 
-WritableDataset::AcquireResult Discard::acquire(Metadata& md)
+WritableDataset::AcquireResult Discard::acquire(Metadata& md, ReplaceStrategy replace)
 {
 	md.set(types::AssignedDataset::create(m_name, ""));
 	return ACQ_OK;
-}
-
-bool Discard::replace(Metadata& md)
-{
-	md.set(types::AssignedDataset::create(m_name, ""));
-	return true;
 }
 
 WritableDataset::AcquireResult Discard::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

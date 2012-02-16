@@ -56,15 +56,14 @@ public:
 	virtual ~Outbound();
 
     /**
-	 * Acquire the given metadata item (and related data) in this dataset.
-	 *
-	 * @return true if the data is successfully stored in the dataset, else
-	 * false.  If false is returned, a note is added to the dataset explaining
-	 * the reason of the failure.
-	 */
-	virtual AcquireResult acquire(Metadata& md);
+     * Acquire the given metadata item (and related data) in this dataset.
+     *
+     * @return true if the data is successfully stored in the dataset, else
+     * false.  If false is returned, a note is added to the dataset explaining
+     * the reason of the failure.
+     */
+    virtual AcquireResult acquire(Metadata& md, ReplaceStrategy replace=REPLACE_DEFAULT);
 
-	virtual bool replace(Metadata& md);
 	virtual void remove(Metadata& id);
 	virtual void removeAll(std::ostream& log, bool writable=false);
 

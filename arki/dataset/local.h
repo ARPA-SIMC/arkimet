@@ -100,6 +100,7 @@ protected:
 	mutable Archives* m_archive;
 	int m_archive_age;
 	int m_delete_age;
+    ReplaceStrategy m_default_replace_strategy;
 
 public:
 	WritableLocal(const ConfigFile& cfg);

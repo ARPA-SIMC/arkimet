@@ -63,6 +63,14 @@ DataQuery::~DataQuery() {}
 
 }
 
+WritableDataset::WritableDataset()
+{
+}
+
+WritableDataset::~WritableDataset()
+{
+}
+
 void WritableDataset::flush() {}
 
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)

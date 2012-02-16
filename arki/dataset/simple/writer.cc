@@ -114,7 +114,7 @@ Datafile* Writer::file(const std::string& pathname)
 	return res;
 }
 
-WritableDataset::AcquireResult Writer::acquire(Metadata& md)
+WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
 	// TODO: refuse if md is before "archive age"
 
@@ -140,12 +140,6 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md)
 
 	// After appending, keep updated info in-memory, and update manifest on
 	// flush when the Datafile structures are deallocated
-}
-
-bool Writer::replace(Metadata& md)
-{
-	// Same as acquire
-	return acquire(md) == ACQ_OK;
 }
 
 void Writer::remove(Metadata& id)
