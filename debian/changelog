@@ -1,3 +1,10 @@
+arkimet (0.69-1) UNRELEASED; urgency=low
+
+  * New upstream version
+     - Implemented arki-bufr-prepare --usn
+
+ -- Enrico Zini <enrico@debian.org>  Thu, 16 Feb 2012 13:07:30 +0100
+
 arkimet (0.67-2) UNRELEASED; urgency=low
 
   * New upstream version

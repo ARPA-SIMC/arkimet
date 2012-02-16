@@ -46,9 +46,10 @@ namespace commandline {
 
 struct Options : public StandardParserWithManpage
 {
-	BoolOption* verbose;
-	BoolOption* debug;
-	StringOption* outfile;
+    BoolOption* verbose;
+    BoolOption* debug;
+    StringOption* outfile;
+    IntOption* force_usn;
 
 	Options() : StandardParserWithManpage("arki-bufr-prepare", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -58,133 +59,156 @@ struct Options : public StandardParserWithManpage
 			"separate message and add an optional section with "
 			"information useful for arki-prepare";
 
-		debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
-		verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
-		outfile = add<StringOption>("output", 'o', "output", "file",
-				"write the output to the given file instead of standard output");
-	}
+        debug = add<BoolOption>("debug", 0, "debug", "", "debug output");
+        verbose = add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
+        outfile = add<StringOption>("output", 'o', "output", "file",
+                "write the output to the given file instead of standard output");
+        force_usn = add<IntOption>("usn", 0, "usn", "number",
+                "overwrite the update sequence number of every BUFR message with this value");
+    }
 };
 
 }
 }
 
-static std::map<std::string, int> to_rep_cod;
-
-static void copy_base_msg(BufrBulletin& dst, const BufrBulletin& src)
+class Copier
 {
-	// Copy message attributes
-	dst.type = src.type;
-	dst.subtype = src.subtype;
-	dst.localsubtype = src.localsubtype;
-	dst.edition = src.edition;
-    dst.master_table_number = src.master_table_number;
-	dst.rep_year = src.rep_year;
-	dst.rep_month = src.rep_month;
-	dst.rep_day = src.rep_day;
-	dst.rep_hour = src.rep_hour;
-	dst.rep_minute = src.rep_minute;
-	dst.rep_second = src.rep_second;
-	dst.centre = src.centre;
-	dst.subcentre = src.subcentre;
-	dst.master_table = src.master_table;
-	dst.local_table = src.local_table;
-	// Do not compress, since it only makes sense for multisubset messages
-	dst.compression = 0;
-    dst.update_sequence_number = src.update_sequence_number;
+protected:
+    std::map<std::string, int> to_rep_cod;
+    bool override_usn_active;
+    int override_usn_value;
 
-    // FIXME: the original optional section is lost
+    void copy_base_msg(BufrBulletin& dst, const BufrBulletin& src)
+    {
+        // Copy message attributes
+        dst.type = src.type;
+        dst.subtype = src.subtype;
+        dst.localsubtype = src.localsubtype;
+        dst.edition = src.edition;
+        dst.master_table_number = src.master_table_number;
+        dst.rep_year = src.rep_year;
+        dst.rep_month = src.rep_month;
+        dst.rep_day = src.rep_day;
+        dst.rep_hour = src.rep_hour;
+        dst.rep_minute = src.rep_minute;
+        dst.rep_second = src.rep_second;
+        dst.centre = src.centre;
+        dst.subcentre = src.subcentre;
+        dst.master_table = src.master_table;
+        dst.local_table = src.local_table;
+        // Do not compress, since it only makes sense for multisubset messages
+        dst.compression = 0;
+        if (override_usn_active)
+            dst.update_sequence_number = override_usn_value;
+        else
+            dst.update_sequence_number = src.update_sequence_number;
 
-	// Copy data descriptor section
-	dst.datadesc = src.datadesc;
+        // FIXME: the original optional section is lost
 
-	// Load encoding tables
-	dst.load_tables();
-}
+        // Copy data descriptor section
+        dst.datadesc = src.datadesc;
 
-static int extract_rep_cod(const Msg& msg)
-{
-	const char* rep_memo = NULL;
-	if (const Var* var = msg.get_rep_memo_var())
-		rep_memo = var->value();
-	else
-		rep_memo = Msg::repmemo_from_type(msg.type);
+        // Load encoding tables
+        dst.load_tables();
+    }
 
-	// Convert rep_memo to rep_cod
-	std::map<std::string, int>::const_iterator rc = to_rep_cod.find(rep_memo);
-	if (rc == to_rep_cod.end())
-		return 0;
-	else
-		return rc->second;
-}
+    int extract_rep_cod(const Msg& msg)
+    {
+        const char* rep_memo = NULL;
+        if (const Var* var = msg.get_rep_memo_var())
+            rep_memo = var->value();
+        else
+            rep_memo = Msg::repmemo_from_type(msg.type);
 
-static void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
-{
-	// Create new message with the same info as the old one
-	auto_ptr<BufrBulletin> newmsg(BufrBulletin::create());
-	copy_base_msg(*newmsg, msg);
+        // Convert rep_memo to rep_cod
+        std::map<std::string, int>::const_iterator rc = to_rep_cod.find(rep_memo);
+        if (rc == to_rep_cod.end())
+            return 0;
+        else
+            return rc->second;
+    }
 
-	// Loop over subsets
-	for (size_t i = 0; i < msg.subsets.size(); ++i)
-	{
-		// Create a bufrex_msg with the subset contents
+    void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
+    {
+        // Create new message with the same info as the old one
+        auto_ptr<BufrBulletin> newmsg(BufrBulletin::create());
+        copy_base_msg(*newmsg, msg);
 
-		// Remove existing subsets
-		newmsg->subsets.clear();
+        // Loop over subsets
+        for (size_t i = 0; i < msg.subsets.size(); ++i)
+        {
+            // Create a bufrex_msg with the subset contents
 
-		// Copy subset
-		newmsg->subsets.push_back(msg.subsets[i]);
+            // Remove existing subsets
+            newmsg->subsets.clear();
 
-		// Parse into dba_msg
-		try {
-			Msgs msgs;
-			importer.from_bulletin(*newmsg, msgs);
-			const Msg& m = *msgs[0];
+            // Copy subset
+            newmsg->subsets.push_back(msg.subsets[i]);
 
-			// Update reference time
-			if (const Var* var = m.get_year_var()) newmsg->rep_year = var->enqi();
-			if (const Var* var = m.get_month_var()) newmsg->rep_month = var->enqi();
-			if (const Var* var = m.get_day_var()) newmsg->rep_day = var->enqi();
-			if (const Var* var = m.get_hour_var()) newmsg->rep_hour = var->enqi();
-			if (const Var* var = m.get_minute_var()) newmsg->rep_minute = var->enqi();
-			if (const Var* var = m.get_second_var()) newmsg->rep_second = var->enqi();
-		} catch (wreport::error& e) {
-			// Don't bother with updating reference time if
-			// we cannot understand the layout of this BUFR
-		}
+            // Parse into dba_msg
+            try {
+                Msgs msgs;
+                importer.from_bulletin(*newmsg, msgs);
+                const Msg& m = *msgs[0];
 
-		// Write out the message
-		Rawmsg newrmsg;
-		newmsg->encode(newrmsg);
-		outfile.write(newrmsg);
-	}
-}
+                // Update reference time
+                if (const Var* var = m.get_year_var()) newmsg->rep_year = var->enqi();
+                if (const Var* var = m.get_month_var()) newmsg->rep_month = var->enqi();
+                if (const Var* var = m.get_day_var()) newmsg->rep_day = var->enqi();
+                if (const Var* var = m.get_hour_var()) newmsg->rep_hour = var->enqi();
+                if (const Var* var = m.get_minute_var()) newmsg->rep_minute = var->enqi();
+                if (const Var* var = m.get_second_var()) newmsg->rep_second = var->enqi();
+            } catch (wreport::error& e) {
+                // Don't bother with updating reference time if
+                // we cannot understand the layout of this BUFR
+            }
 
-static void process(const std::string& filename, File& outfile)
-{
-	auto_ptr<File> file = File::create(BUFR, filename.c_str(), "r");
-	auto_ptr<msg::Importer> importer = msg::Importer::create(BUFR);
+            // Write out the message
+            Rawmsg newrmsg;
+            newmsg->encode(newrmsg);
+            outfile.write(newrmsg);
+        }
+    }
 
-	Rawmsg rmsg;
-	while (file->read(rmsg))
-	{
-		// Decode message
-		auto_ptr<BufrBulletin> msg(BufrBulletin::create());
-		bool decoded;
-		try {
-			msg->decode(rmsg, rmsg.file.c_str(), rmsg.offset);
-			decoded = true;
-		} catch (std::exception& e) {
-			nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",
-				rmsg.file.c_str(), rmsg.offset, rmsg.index, e.what());
-			decoded = false;
-		}
+public:
+    Copier() : override_usn_active(false)
+    {
+        to_rep_cod = scan::Bufr::read_map_to_rep_cod();
+    }
 
-		if (!decoded || msg->subsets.size() == 1u)
-			outfile.write(rmsg);
-		else
-			splitmsg(rmsg, *msg, *importer, outfile);
-	}
-}
+    void override_usn(int value)
+    {
+        override_usn_active = true;
+        override_usn_value = value;
+    }
+
+    void process(const std::string& filename, File& outfile)
+    {
+        auto_ptr<File> file = File::create(BUFR, filename.c_str(), "r");
+        auto_ptr<msg::Importer> importer = msg::Importer::create(BUFR);
+
+        Rawmsg rmsg;
+        while (file->read(rmsg))
+        {
+            // Decode message
+            auto_ptr<BufrBulletin> msg(BufrBulletin::create());
+            bool decoded;
+            try {
+                msg->decode(rmsg, rmsg.file.c_str(), rmsg.offset);
+                decoded = true;
+            } catch (std::exception& e) {
+                nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",
+                    rmsg.file.c_str(), rmsg.offset, rmsg.index, e.what());
+                decoded = false;
+            }
+
+            if ((!decoded || msg->subsets.size() == 1u) && !override_usn_active)
+                outfile.write(rmsg);
+            else
+                splitmsg(rmsg, *msg, *importer, outfile);
+        }
+    }
+};
 
 int main(int argc, const char* argv[])
 {
@@ -197,7 +221,10 @@ int main(int argc, const char* argv[])
 
 		runtime::init();
 
-		to_rep_cod = scan::Bufr::read_map_to_rep_cod();
+        Copier copier;
+
+        if (opts.force_usn->isSet())
+            copier.override_usn(opts.force_usn->intValue());
 
 		auto_ptr<File> outfile;
 		if (opts.outfile->isSet())
@@ -205,15 +232,15 @@ int main(int argc, const char* argv[])
 		else
 			outfile = File::create(BUFR, "(stdout)", "wb");
 
-		if (!opts.hasNext())
-		{
-			process("(stdin)", *outfile);
-		} else {
-			while (opts.hasNext())
-			{
-				process(opts.next().c_str(), *outfile);
-			}
-		}
+        if (!opts.hasNext())
+        {
+            copier.process("(stdin)", *outfile);
+        } else {
+            while (opts.hasNext())
+            {
+                copier.process(opts.next().c_str(), *outfile);
+            }
+        }
 
 		return 0;
 	} catch (wibble::exception::BadOption& e) {
