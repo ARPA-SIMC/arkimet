@@ -2,8 +2,10 @@ arkimet (0.69-1) UNRELEASED; urgency=low
 
   * New upstream version
      - Implemented arki-bufr-prepare --usn
+     - Added replace=always, in dataset configuration, same as replace=yes.
+       Replace is not a boolean anymore, but a strategy.
 
- -- Enrico Zini <enrico@debian.org>  Thu, 16 Feb 2012 13:07:30 +0100
+ -- Enrico Zini <enrico@debian.org>  Thu, 16 Feb 2012 15:12:05 +0100
 
 arkimet (0.67-2) UNRELEASED; urgency=low
 
