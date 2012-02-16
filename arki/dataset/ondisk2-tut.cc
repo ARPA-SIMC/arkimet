@@ -789,6 +789,17 @@ void to::test<15>()
 
     // Acquire with the same high USN: it fails
     ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
+
+    // Try to query the element and see if it is the right one
+    {
+        metadata::Collection mdc_read;
+        auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("testbufr")));
+        testds->queryData(dataset::DataQuery(Matcher::parse("origin:BUFR"), true), mdc_read);
+        ensure_equals(mdc_read.size(), 1u);
+        int usn;
+        ensure_equals(scan::update_sequence_number(mdc_read[0], usn), true);
+        ensure_equals(usn, 2);
+    }
 }
 
 
