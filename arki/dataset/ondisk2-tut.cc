@@ -29,6 +29,7 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/types/time.h>
 #include <arki/scan/grib.h>
+#include <arki/scan/any.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
 #include <wibble/sys/childprocess.h>
@@ -737,6 +738,57 @@ void to::test<14>()
 		}
 	}
 	ensure(!sys::fs::exists("testall/20/2007.grib1"));
+}
+
+// Test Update Sequence Number replacement strategy
+template<> template<>
+void to::test<15>()
+{
+    // Configure a BUFR dataset
+    system("rm -rf testbufr/*");
+    string conf =
+        "[testbufr]\n"
+        "type = ondisk2\n"
+        "step = daily\n"
+        "filter = origin:BUFR\n"
+        "unique = reftime\n"
+        "name = testbufr\n"
+        "path = testbufr\n";
+    stringstream incfg(conf);
+    ConfigFile cfg;
+    cfg.parse(incfg, "(memory)");
+
+    dataset::ondisk2::Writer bd(*cfg.section("testbufr"));
+
+    metadata::Collection mdc;
+    ensure(scan::scan("inbound/synop-gts.bufr", mdc));
+
+    metadata::Collection mdc_upd;
+    ensure(scan::scan("inbound/synop-gts-usn2.bufr", mdc_upd));
+
+    // Acquire
+    ensure_equals(bd.acquire(mdc[0]), WritableDataset::ACQ_OK);
+
+    // Acquire again: it fails
+    ensure_equals(bd.acquire(mdc[0]), WritableDataset::ACQ_ERROR_DUPLICATE);
+
+    // Acquire again: it fails even with a higher USN
+    ensure_equals(bd.acquire(mdc_upd[0]), WritableDataset::ACQ_ERROR_DUPLICATE);
+
+    // Acquire with replace: it works
+    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_ALWAYS), WritableDataset::ACQ_OK);
+
+    // Acquire with USN: it fails
+    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
+
+    // Acquire with a newer USN: it works
+    ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_OK);
+
+    // Acquire with the lower USN: it fails
+    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
+
+    // Acquire with the same high USN: it fails
+    ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
 }
 
 
