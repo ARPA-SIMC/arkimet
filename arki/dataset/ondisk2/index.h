@@ -83,6 +83,7 @@ protected:
 
 	mutable utils::sqlite::SQLiteDB m_db;
 	mutable utils::sqlite::PrecompiledQuery m_get_id;
+	mutable utils::sqlite::PrecompiledQuery m_get_current;
 
 	// Subtables
 	Aggregate* m_uniques;
@@ -148,6 +149,15 @@ public:
 	/// Return the database ID of a metadata in this index.  If the
 	/// metadata is not there, return -1.
 	int id(const Metadata& md) const;
+
+    /**
+     * Return the metadata for the version of \a md that is already in the
+     * database
+     *
+     * @returns
+     *   true if the element was found, else false and \a current is untouched
+     */
+    bool get_current(const Metadata& md, Metadata& current) const;
 
 	/// Return the number of items currently indexed by this index
 	size_t count() const;

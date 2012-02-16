@@ -228,6 +228,22 @@ const Validator& Validator::by_filename(const std::string& filename)
 	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
 }
 
+bool update_sequence_number(const Metadata& md, int& usn)
+{
+#ifdef HAVE_DBALLE
+    // Update Sequence Numbers are only supported by BUFR
+    if (md.source->format != "bufr")
+        return false;
+
+    wibble::sys::Buffer data = md.getData();
+    string buf((const char*)data.data(), data.size());
+    usn = Bufr::update_sequence_number(buf);
+    return true;
+#else
+    return false;
+#endif
+}
+
 }
 }
 // vim:set ts=4 sw=4:

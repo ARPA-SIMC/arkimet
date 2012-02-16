@@ -90,9 +90,9 @@ struct IndexGlobalData
 static IndexGlobalData igd;
 
 Index::Index(const ConfigFile& cfg)
-	: m_name(cfg.value("name")), m_root(cfg.value("path")),
-	  m_get_id("getid", m_db),
-	  m_uniques(0), m_others(0)
+    : m_name(cfg.value("name")), m_root(cfg.value("path")),
+      m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
+      m_uniques(0), m_others(0)
 {
 	m_indexpath = cfg.value("indexfile");
 	if (m_indexpath.empty())
@@ -185,6 +185,14 @@ void Index::initQueries()
 	if (m_uniques) query += " AND uniq=?";
 	if (m_others) query += " AND other=?";
 	m_get_id.compile(query);
+
+    query = "SELECT id, format, file, offset, size, notes, reftime";
+    if (m_uniques) query += ", uniq";
+    if (m_others) query += ", other";
+    query += " FROM md WHERE reftime=?";
+    if (m_uniques) query += " AND uniq=?";
+    if (m_others) query += " AND other=?";
+    m_get_current.compile(query);
 }
 
 std::set<types::Code> Index::unique_codes() const
@@ -248,6 +256,46 @@ int Index::id(const Metadata& md) const
 		id = m_get_id.fetch<int>(0);
 
 	return id;
+}
+
+bool Index::get_current(const Metadata& md, Metadata& current) const
+{
+    m_get_current.reset();
+
+    int idx = 0;
+    UItem<> urt = md.get(types::TYPE_REFTIME);
+    if (!urt.defined()) return false;
+    Item<types::Reftime> rt(urt.upcast<types::Reftime>());
+    if (rt->style() != types::Reftime::POSITION) return false;
+    string sqltime = rt.upcast<types::reftime::Position>()->time->toSQL();
+    m_get_current.bind(++idx, sqltime);
+
+    int id_unique = -1;
+    if (m_uniques)
+    {
+        id_unique = m_uniques->get(md);
+        // If we do not have this aggregate, then we do not have this metadata
+        if (id_unique == -1) return false;
+        m_get_current.bind(++idx, id_unique);
+    }
+
+    int id_other = -1;
+    if (m_others)
+    {
+        id_other = m_others->get(md);
+        // If we do not have this aggregate, then we do not have this metadata
+        if (id_other == -1) return false;
+        m_get_current.bind(++idx, id_other);
+    }
+
+    bool found = false;
+    while (m_get_current.step())
+    {
+        current.create();
+        build_md(m_get_current, current);
+        found = true;
+    }
+    return found;
 }
 
 size_t Index::count() const

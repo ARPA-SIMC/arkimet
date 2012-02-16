@@ -27,6 +27,7 @@
 #include <ctime>
 
 namespace arki {
+class Metadata;
 
 namespace metadata {
 class Consumer;
@@ -106,6 +107,20 @@ struct Validator
 	 */
 	static const Validator& by_filename(const std::string& filename);
 };
+
+/**
+ * Return the update sequence number for this data
+ *
+ * The data associated to the metadata is read and scanned if needed.
+ *
+ * @retval
+ *   The update sequence number found. This is left untouched if the function
+ *   returns false.
+ * @returns
+ *   true if the update sequence number could be found, else false
+ *
+ */
+bool update_sequence_number(const Metadata& md, int& usn);
 
 }
 }

@@ -379,6 +379,13 @@ std::map<int, std::string> Bufr::read_map_to_rep_memo(const std::string& fname)
 	return res;
 }
 
+int Bufr::update_sequence_number(const std::string& buf)
+{
+    auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
+    bulletin->decode_header(buf);
+    return bulletin->update_sequence_number;
+}
+
 }
 }
 // vim:set ts=4 sw=4:

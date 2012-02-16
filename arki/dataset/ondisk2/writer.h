@@ -63,6 +63,10 @@ protected:
 	/// Return a (shared) instance of the Datafile for the given relative pathname
 	writer::Datafile* file(const std::string& pathname);
 
+    AcquireResult acquire_replace_never(Metadata& md);
+    AcquireResult acquire_replace_always(Metadata& md);
+    AcquireResult acquire_replace_higher_usn(Metadata& md);
+
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'
 	Writer(const ConfigFile& cfg);

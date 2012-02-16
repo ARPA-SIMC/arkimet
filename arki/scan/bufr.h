@@ -92,6 +92,9 @@ public:
 
 	static std::map<std::string, int> read_map_to_rep_cod(const std::string& fname = std::string());
 	static std::map<int, std::string> read_map_to_rep_memo(const std::string& fname = std::string());
+
+    /// Return the update sequence number for a BUFR
+    static int update_sequence_number(const std::string& buf);
 };
 
 }

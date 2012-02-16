@@ -282,6 +282,37 @@ void to::test<3>()
 	}
 }
 
+// Test reading update sequence numbers
+template<> template<>
+void to::test<4>()
+{
+    {
+        // Gribs don't have update sequence numbrs, and the usn parameter must
+        // be left untouched
+        metadata::Collection mdc;
+        scan::scan("inbound/test.grib1", mdc);
+        int usn = 42;
+        ensure_equals(scan::update_sequence_number(mdc[0], usn), false);
+        ensure_equals(usn, 42);
+    }
+
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/synop-gts.bufr", mdc);
+        int usn;
+        ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
+        ensure_equals(usn, 0);
+    }
+
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/synop-gts-usn2.bufr", mdc);
+        int usn;
+        ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
+        ensure_equals(usn, 2);
+    }
+}
+
 }
 
 // vim:set ts=4 sw=4:
