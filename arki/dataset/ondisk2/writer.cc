@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk2/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -200,7 +200,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         throw wibble::exception::Consistency("acquiring into dataset " + m_name, "Insert reported a conflict, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
 
     // If there is no new Update Sequence Number, report a duplicate
-    if (old_usn >= new_usn)
+    if (old_usn > new_usn)
         return ACQ_ERROR_DUPLICATE;
 
     // Replace, reusing the pending datafile transaction from earlier
