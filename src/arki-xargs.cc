@@ -24,6 +24,7 @@
 
 #include <arki/metadata.h>
 #include <arki/types/reftime.h>
+#include <arki/types/timerange.h>
 #include <arki/scan/any.h>
 #include <arki/runtime.h>
 
@@ -50,6 +51,7 @@ struct Options : public StandardParserWithManpage
 	IntOption* max_args;
 	StringOption* max_bytes;
 	StringOption* time_interval;
+    BoolOption* split_timerange;
 
 	Options() : StandardParserWithManpage("arki-xargs", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
 	{
@@ -74,7 +76,8 @@ struct Options : public StandardParserWithManpage
 		time_interval = add<StringOption>("time-interval", 0, "time-interval", "interval",
 			"create one data file per 'interval', where interval "
 			"can be minute, hour, day, month or year");
-
+        split_timerange = add<BoolOption>("split-timerange", 0, "split-timerange", "",
+            "start a new data file when the time range changes");
 		// We need to pass switches in [initial-arguments] untouched
 		no_switches_after_first_arg = true;
 	}
@@ -94,6 +97,7 @@ protected:
 	int tmpfile_fd;
 	int cur_interval[6];
 	types::reftime::Collector timespan;
+    UItem<types::Timerange> last_timerange;
 
 	void startCluster(const std::string& new_format)
 	{
@@ -137,6 +141,8 @@ protected:
 		size = 0;
 		cur_interval[0] = -1;
 		timespan.clear();
+        if (split_timerange)
+            last_timerange.clear();
 	}
 
 	void run_child()
@@ -196,6 +202,8 @@ protected:
 		if (cur_interval[0] == -1 && max_interval != 0)
 			md_to_interval(md, cur_interval);
 		timespan.merge(md.get(types::TYPE_REFTIME).upcast<types::Reftime>());
+        if (split_timerange and not last_timerange.defined())
+            last_timerange = md.get<types::Timerange>();
 	}
 
 	bool exceeds_count(Metadata& md) const
@@ -218,16 +226,25 @@ protected:
 		return memcmp(cur_interval, candidate, 6*sizeof(int)) != 0;
 	}
 
-public:
-	size_t max_args;
-	size_t max_bytes;
-	size_t max_interval;
+    bool exceeds_timerange(Metadata& md) const
+    {
+        if (not split_timerange) return false;
+        if (not last_timerange.defined()) return false;
+        if (last_timerange == md.get<types::Timerange>()) return false;
+        return true;
+    }
 
-	Clusterer(const vector<string>& args) :
-		args(args), tmpfile_fd(-1), max_args(0), max_bytes(0), max_interval(0)
-	{
-		cur_interval[0] = -1;
-	}
+public:
+    size_t max_args;
+    size_t max_bytes;
+    size_t max_interval;
+    bool split_timerange;
+
+    Clusterer(const vector<string>& args) :
+        args(args), tmpfile_fd(-1), max_args(0), max_bytes(0), max_interval(0), split_timerange(false)
+    {
+        cur_interval[0] = -1;
+    }
 	~Clusterer()
 	{
 		if (tmpfile_fd >= 0)
@@ -239,7 +256,7 @@ public:
 		sys::Buffer buf = md.getData();
 
 		if (format.empty() || format != md.source->format ||
-		    exceeds_count(md) || exceeds_size(buf) || exceeds_interval(md))
+		    exceeds_count(md) || exceeds_size(buf) || exceeds_interval(md) || exceeds_timerange(md))
 		{
 			flush();
 			startCluster(md.source->format);
@@ -339,6 +356,8 @@ int main(int argc, const char* argv[])
 			consumer.max_bytes = parse_size(opts.max_bytes->stringValue());
 		if (opts.time_interval->isSet())
 			consumer.max_interval = parse_interval(opts.time_interval->stringValue());
+		if (opts.split_timerange->boolValue())
+			consumer.split_timerange = true;
 
 		if (opts.inputfiles->values().empty())
 		{
