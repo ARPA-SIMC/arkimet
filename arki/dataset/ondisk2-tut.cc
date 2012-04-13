@@ -778,8 +778,8 @@ void to::test<15>()
     // Acquire with replace: it works
     ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_ALWAYS), WritableDataset::ACQ_OK);
 
-    // Acquire with USN: it fails
-    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
+    // Acquire with USN: it works, since USNs the same as the existing ones do overwrite
+    ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_OK);
 
     // Acquire with a newer USN: it works
     ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_OK);
@@ -787,8 +787,8 @@ void to::test<15>()
     // Acquire with the lower USN: it fails
     ensure_equals(bd.acquire(mdc[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
 
-    // Acquire with the same high USN: it fails
-    ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_ERROR_DUPLICATE);
+    // Acquire with the same high USN: it works, since USNs the same as the existing ones do overwrite
+    ensure_equals(bd.acquire(mdc_upd[0], WritableDataset::REPLACE_HIGHER_USN), WritableDataset::ACQ_OK);
 
     // Try to query the element and see if it is the right one
     {
