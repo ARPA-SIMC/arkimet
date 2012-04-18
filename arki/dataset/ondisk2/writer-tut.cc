@@ -25,6 +25,7 @@
 #include <arki/metadata/collection.h>
 #include <arki/configfile.h>
 #include <arki/scan/grib.h>
+#include <arki/scan/bufr.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/summary.h>
@@ -714,6 +715,31 @@ void to::test<10>()
 		reader.querySummary(Matcher(), s);
 		ensure_equals(s.count(), 3u);
 	}
+}
+
+// Try to reproduce a bug where two conflicting BUFR files were not properly
+// imported with USN handling
+template<> template<>
+void to::test<11>()
+{
+    ConfigFile cfg;
+    cfg.setValue("path", "gts_temp");
+    cfg.setValue("name", "gts_temp");
+    cfg.setValue("type", "ondisk2");
+    cfg.setValue("step", "daily");
+    cfg.setValue("unique", "origin, reftime, proddef");
+    cfg.setValue("filter", "product:BUFR:t=temp");
+    cfg.setValue("replace", "USN");
+
+    Metadata md;
+    scan::Bufr scanner;
+    Writer writer(cfg);
+    scanner.open("inbound/conflicting-temp-same-usn.bufr");
+    size_t count = 0;
+    for ( ; scanner.next(md); ++count)
+        ensure_equals(writer.acquire(md), WritableDataset::ACQ_OK);
+    ensure_equals(count, 3u);
+    writer.flush();
 }
 
 }
