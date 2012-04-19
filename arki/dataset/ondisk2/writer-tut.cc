@@ -738,7 +738,7 @@ void to::test<11>()
     size_t count = 0;
     for ( ; scanner.next(md); ++count)
         ensure_equals(writer.acquire(md), WritableDataset::ACQ_OK);
-    ensure_equals(count, 3u);
+    ensure_equals(count, 2u);
     writer.flush();
 }
 

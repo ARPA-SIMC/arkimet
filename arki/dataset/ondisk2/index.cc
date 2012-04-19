@@ -191,7 +191,6 @@ void Index::initQueries()
     if (m_others) query += ", other";
     query += " FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
-    if (m_others) query += " AND other=?";
     m_get_current.compile(query);
 }
 
@@ -277,15 +276,6 @@ bool Index::get_current(const Metadata& md, Metadata& current) const
         // If we do not have this aggregate, then we do not have this metadata
         if (id_unique == -1) return false;
         m_get_current.bind(++idx, id_unique);
-    }
-
-    int id_other = -1;
-    if (m_others)
-    {
-        id_other = m_others->get(md);
-        // If we do not have this aggregate, then we do not have this metadata
-        if (id_other == -1) return false;
-        m_get_current.bind(++idx, id_other);
     }
 
     bool found = false;
