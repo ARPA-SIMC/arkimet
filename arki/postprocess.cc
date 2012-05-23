@@ -219,7 +219,7 @@ Postprocess::Postprocess(const std::string& command)
     m_child->m_err = &m_errors;
 
     // Parse command into its components
-    Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
+    Splitter sp("[[:space:]]+", REG_EXTENDED);
     for (Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
         m_child->cmd.args.push_back(*j);
     //cerr << "Split \"" << m_command << "\" into: " << str::join(m_child->cmd.args.begin(), m_child->cmd.args.end(), ", ") << endl;
