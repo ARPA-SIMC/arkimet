@@ -490,6 +490,18 @@ void to::test<12>()
     ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=6, sta=717)"));
 }
 
+// Test scanning a message which raises domain errors when interpreted
+template<> template<>
+void to::test<13>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/interpreted-range.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(type=mob, x=10, y=53)"));
+    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=DBBC)"));
+}
+
 }
 
 // vim:set ts=4 sw=4:

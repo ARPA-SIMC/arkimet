@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(arkimet, 0.71, [enrico@enricozini.org])
+AC_INIT(arkimet, 0.72, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AM_CONFIG_HEADER(config.h)
@@ -107,11 +107,11 @@ dnl Look for DB-All.e C++ libraries, for BUFR support
 if test $enable_bufr = yes
 then
 	dnl Check for DB-All.e C++ libraries (this needs to be outside of the if, 
-	PKG_CHECK_EXISTS([libdballe >= 5.0], [have_dballe=yes], [have_dballe=no])
+	PKG_CHECK_EXISTS([libdballe >= 5.19], [have_dballe=yes], [have_dballe=no])
 	if test $have_dballe = yes
 	then
 		AC_DEFINE([HAVE_DBALLE], 1, [dballe functions are available])
-		PKG_CHECK_MODULES(DBALLE,[libdballe >= 5.0])
+		PKG_CHECK_MODULES(DBALLE,[libdballe >= 5.19])
 	else
 		AC_MSG_WARN([compiling without DB-All.e: BUFR support will be disabled])
 	fi

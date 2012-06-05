@@ -29,6 +29,7 @@
 #include <dballe/core/csv.h>
 #include <dballe/core/file.h>
 #include <wreport/bulletin.h>
+#include <wreport/options.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -223,37 +224,43 @@ bool Bufr::do_scan(Metadata& md)
 	// If we don't have extra scanning support, we are done
 	if (!extras) return true;
 
-	// Tru to decode the data; if we fail, we are done
-	try {
-		bulletin->decode(rmsg);
-	} catch (wreport::error& e) {
-		// We can still try to handle partially decoded files
+    // Try to decode the data; if we fail, we are done
+    try {
+        // Ignore domain errors, it's ok if we lose some oddball data
+        wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
 
-		// Not if the error was not a parse error
-		if (e.code() != WR_ERR_PARSE) return true;
+        bulletin->decode(rmsg);
+    } catch (wreport::error& e) {
+        // We can still try to handle partially decoded files
 
-		// Not if we didn't decode just one subset
-		if (bulletin->subsets.size() != 1) return true;
+        // Not if the error was not a parse error
+        if (e.code() != WR_ERR_PARSE) return true;
 
-		// Not if the subset is empty
-		if (bulletin->subsets[0].empty()) return true;
-	} catch (std::exception& e) {
-		return true;
-	}
+        // Not if we didn't decode just one subset
+        if (bulletin->subsets.size() != 1) return true;
 
-	// If there is more than one subset, we are done
-	if (bulletin->subsets.size() != 1)
-		return true;
+        // Not if the subset is empty
+        if (bulletin->subsets[0].empty()) return true;
+    } catch (std::exception& e) {
+        return true;
+    }
 
-	// Try to parse as a dba_msg
-	Msgs msgs;
-	try {
-		importer->from_bulletin(*bulletin, msgs);
-	} catch (std::exception& e) {
-		// If we cannot import it as a Msgs, we are done
-		return true;
-	}
-	
+    // If there is more than one subset, we are done
+    if (bulletin->subsets.size() != 1)
+        return true;
+
+    // Try to parse as a dba_msg
+    Msgs msgs;
+    try {
+        // Ignore domain errors, it's ok if we lose some oddball data
+        wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
+
+        importer->from_bulletin(*bulletin, msgs);
+    } catch (std::exception& e) {
+        // If we cannot import it as a Msgs, we are done
+        return true;
+    }
+
 	// We decoded a different number of subsets than declared by the BUFR.
 	// How could this happen? Treat it as an obscure BUFR and go no further
 	if (msgs.size() != 1)

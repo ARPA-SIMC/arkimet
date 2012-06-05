@@ -1,3 +1,9 @@
+arkimet (0.72-1) UNRELEASED; urgency=low
+
+  * Ignore domain errors when scanning BUFRs
+
+ -- Enrico Zini <enrico@debian.org>  Tue, 05 Jun 2012 15:45:06 +0200
+
 arkimet (0.71-1) UNRELEASED; urgency=low
 
   * Fixed duplicate lookup for USN replacement
