@@ -123,6 +123,8 @@ BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
 		$(top_builddir)/arki/matcher/reftime/reftime-parse.hh \
 		$(top_builddir)/arki/matcher/reftime/reftime-parse.cc
 
+all_built_sources: $(BUILT_SOURCES)
+
 $(top_builddir)/arki/matcher/reftime/reftime-lex.h $(top_builddir)/arki/matcher/reftime/reftime-lex.cc: $(srcdir)/matcher/reftime/reftime-lex.ll
 	$(srcdir)/buildflex $<
 
