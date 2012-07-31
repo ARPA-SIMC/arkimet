@@ -43,6 +43,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		emitter/json.h \
 		emitter/memory.h \
 		formatter.h \
+		validator.h \
 		iotrace.h \
 		itemset.h \
 		matcher/area.h \
@@ -198,6 +199,7 @@ libarkimet_types_la_SOURCES = \
 		matcher/quantity.cc \
 		sort.cc \
 		formatter.cc \
+		validator.cc \
 		bbox.cc \
 		postprocess.cc \
 		scan/any.cc \
@@ -298,6 +300,7 @@ tests_arki_test_SOURCES = \
 		itemset-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
+		validator-tut.cc \
 		bbox-tut.cc \
 		targetfile-tut.cc \
 		metadata-tut.cc \

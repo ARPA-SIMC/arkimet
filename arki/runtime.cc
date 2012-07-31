@@ -46,6 +46,7 @@
 #include <arki/nag.h>
 #include <arki/iotrace.h>
 #include <arki/types-init.h>
+#include <arki/validator.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -266,6 +267,13 @@ void CommandLine::setupProcessing()
     {
         if (validate->stringValue() == "list")
         {
+            // Print validator list and exit
+            const ValidatorRepository& vals = ValidatorRepository::get();
+            for (ValidatorRepository::const_iterator i = vals.begin();
+                    i != vals.end(); ++i)
+            {
+                cout << i->second->name << " - " << i->second->desc << endl;
+            }
             throw HandledByCommandLineParser();
         }
     }
@@ -450,7 +458,23 @@ void CommandLine::setupProcessing()
 		dispatcher->reportStatus = status->boolValue();
 		if (ignore_duplicates && ignore_duplicates->boolValue())
 			dispatcher->ignore_duplicates = true;
-	}
+
+        if (validate)
+        {
+            const ValidatorRepository& vals = ValidatorRepository::get();
+
+            // Add validators to dispatcher
+            str::Split splitter(",", validate->stringValue());
+            for (str::Split::const_iterator iname = splitter.begin();
+                    iname != splitter.end(); ++iname)
+            {
+                ValidatorRepository::const_iterator i = vals.find(*iname);
+                if (i == vals.end())
+                    throw wibble::exception::BadOption("unknown validator '%s'. You can get a list using --validate=list.");
+                dispatcher->validators.push_back(i->second);
+            }
+        }
+    }
 
 	if (postproc_data && postproc_data->isSet())
 	{

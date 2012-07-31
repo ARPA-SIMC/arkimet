@@ -33,6 +33,7 @@
 #include <arki/configfile.h>
 #include <string>
 #include <memory>
+#include <vector>
 #include <sys/time.h>
 
 namespace arki {
@@ -43,6 +44,7 @@ class Summary;
 class Dispatcher;
 class Formatter;
 class Targetfile;
+class Validator;
 
 namespace runtime {
 class MetadataDispatch;
@@ -176,6 +178,7 @@ struct MetadataDispatch : public metadata::Consumer
 	Dispatcher* dispatcher;
 	metadata::Collection results;
 	DatasetProcessor& next;
+    std::vector<const Validator*> validators;
 	bool ignore_duplicates;
 	bool reportStatus;
 
