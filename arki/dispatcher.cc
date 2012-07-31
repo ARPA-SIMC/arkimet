@@ -216,31 +216,6 @@ done:
     return result;
 }
 
-Dispatcher::Outcome Dispatcher::dispatch_error(Metadata& md, metadata::Consumer& mdc)
-{
-    hook_pre_dispatch(md);
-
-    try {
-        // Fetch the data into memory here, so that if problems arise we do not
-        // fail in bits of code that are more critical
-        md.getData();
-    } catch (std::exception& e) {
-        md.add_note(types::Note::create(
-                    string("Failed to read the data associated with the metadata: ") + e.what()));
-        return DISP_NOTWRITTEN;
-    }
-
-    UItem<types::Source> origSource = md.source;
-
-    // Acquire it in the error dataset
-    Dispatcher::Outcome result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
-
-    if (m_can_continue)
-        m_can_continue = mdc(md);
-
-    return result;
-}
-
 
 RealDispatcher::RealDispatcher(const ConfigFile& cfg)
 	: Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)

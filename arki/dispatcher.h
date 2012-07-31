@@ -109,9 +109,6 @@ public:
      */
     Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
 
-    /// Dispatch to error dataset
-    Outcome dispatch_error(Metadata& md, metadata::Consumer& mdc);
-
     virtual void flush() = 0;
 };
 
