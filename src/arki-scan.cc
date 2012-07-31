@@ -97,6 +97,8 @@ int main(int argc, const char* argv[])
 			return 0;
 		else
 			return 2;
+    } catch (runtime::HandledByCommandLineParser& e) {
+        return e.status;
 	} catch (wibble::exception::BadOption& e) {
 		cerr << e.desc() << endl;
 		opts.outputHelp(cerr);

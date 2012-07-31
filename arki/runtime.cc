@@ -84,6 +84,9 @@ void init()
     iotrace::init();
 }
 
+HandledByCommandLineParser::HandledByCommandLineParser(int status) : status(status) {}
+HandledByCommandLineParser::~HandledByCommandLineParser() {}
+
 std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query)
 {
     auto_ptr<ReadonlyDataset> ds;
@@ -122,6 +125,7 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 	files = 0; moveok = moveko = movework = 0;
 	restr = 0;
 	ignore_duplicates = 0;
+    validate = 0;
 
 	outputOpts = createGroup("Options controlling output style");
 	merged = 0; postproc_data = 0;
@@ -150,7 +154,7 @@ CommandLine::CommandLine(const std::string& name, int mansection)
 			" to be written. See /etc/arkimet/targetfile for details.");
 	summary = outputOpts->add<BoolOption>("summary", 0, "summary", "",
 			"output only the summary of the data");
-	summary_restrict = outputOpts->add<StringOption>("summary-restrict", 0, "summary-restrict", "types.",
+	summary_restrict = outputOpts->add<StringOption>("summary-restrict", 0, "summary-restrict", "types",
 			"summarise using only the given metadata types (comma-separated list)");
 	sort = outputOpts->add<StringOption>("sort", 0, "sort", "period:order",
 			"sort order.  Period can be year, month, day, hour or minute."
@@ -195,9 +199,11 @@ void CommandLine::addScanOptions()
 			"move input files here before opening them. This is useful to "
 			"catch the cases where arki-scan crashes without having a "
 			"chance to handle errors.");
-
 	ignore_duplicates = dispatchOpts->add<BoolOption>("ignore-duplicates", 0, "ignore-duplicates", "",
 			"do not consider the run unsuccessful in case of duplicates");
+    validate = dispatchOpts->add<StringOption>("validate", 0, "validate", "checks",
+            "run the given checks on the input data before dispatching"
+            " (comma-separated list; use 'list' to get a list)");
 }
 
 void CommandLine::addQueryOptions()
@@ -255,6 +261,15 @@ bool CommandLine::parse(int argc, const char* argv[])
 
 void CommandLine::setupProcessing()
 {
+    // Honour --validate=list
+    if (validate)
+    {
+        if (validate->stringValue() == "list")
+        {
+            throw HandledByCommandLineParser();
+        }
+    }
+
 	// Parse the matcher query
 	if (exprfile)
 	{

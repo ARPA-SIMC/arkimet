@@ -54,6 +54,22 @@ void init();
 
 std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query);
 
+/**
+ * Exception raised when the command line parser has handled the current
+ * command invocation.
+ *
+ * For example, this happens when using --validate=list, which prints a list of
+ * validators then exits.
+ */
+struct HandledByCommandLineParser
+{
+    /// The exit status that we should return from main
+    int status;
+
+    HandledByCommandLineParser(int status=0);
+    ~HandledByCommandLineParser();
+};
+
 struct CommandLine : public wibble::commandline::StandardParserWithManpage
 {
 	wibble::commandline::OptionGroup* infoOpts;
@@ -85,6 +101,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	wibble::commandline::StringOption* moveko;
 	wibble::commandline::StringOption* movework;
 	wibble::commandline::StringOption* summary_restrict;
+	wibble::commandline::StringOption* validate;
 	wibble::commandline::VectorOption<wibble::commandline::ExistingFile>* postproc_data;
 	wibble::commandline::VectorOption<wibble::commandline::String>* cfgfiles;
 	wibble::commandline::VectorOption<wibble::commandline::String>* dispatch;
