@@ -81,6 +81,104 @@ Dispatcher::~Dispatcher()
 {
 }
 
+void Dispatcher::hook_pre_dispatch(Metadata& md)
+{
+}
+
+void Dispatcher::hook_found_datasets(Metadata& md, vector<string>& found)
+{
+}
+
+WritableDataset::AcquireResult Dispatcher::dispatch_error(Metadata& md) { return dispatch_dataset("error", md); }
+WritableDataset::AcquireResult Dispatcher::dispatch_duplicates(Metadata& md) { return dispatch_dataset("duplicates", md); }
+
+Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
+{
+    hook_pre_dispatch(md);
+
+    try {
+        // Fetch the data into memory here, so that if problems arise we do not
+        // fail in bits of code that are more critical
+        md.getData();
+    } catch (std::exception& e) {
+        md.add_note(types::Note::create(
+                    string("Failed to read the data associated with the metadata: ") + e.what()));
+        return DISP_NOTWRITTEN;
+    }
+
+    vector<string> found;
+    // See what outbound datasets match this metadata
+    for (vector< pair<string, Matcher> >::const_iterator i = outbounds.begin();
+            i != outbounds.end(); ++i)
+        if (i->second(md))
+        {
+            // Operate on a copy
+            Metadata md1 = md;
+            // File it to the outbound dataset right away
+            if (dispatch_dataset(i->first, md1) != WritableDataset::ACQ_OK)
+            {
+                // What do we do in case of error?
+                // The dataset will already have added a note to the dataset
+                // explaining what was wrong.  The best we can do is keep a
+                // count of failures.
+                ++m_outbound_failures;
+            }
+            if (m_can_continue)
+                m_can_continue = mdc(md);
+        }
+    // See how many proper datasets match this metadata
+    for (vector< pair<string, Matcher> >::const_iterator i = datasets.begin();
+            i != datasets.end(); ++i)
+        if (i->second(md))
+            found.push_back(i->first);
+    hook_found_datasets(md, found);
+
+    UItem<types::Source> origSource = md.source;
+
+    // If we found only one dataset, acquire it in that dataset; else,
+    // acquire it in the error dataset
+    Dispatcher::Outcome result;
+    if (found.empty())
+    {
+        md.add_note(types::Note::create("Message could not be assigned to any dataset"));
+        result = dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+    }
+    else if (found.size() > 1)
+    {
+        string msg = "Message matched multiple datasets: ";
+        for (vector<string>::const_iterator i = found.begin();
+                i != found.end(); ++i)
+            if (i == found.begin())
+                msg += *i;
+            else
+                msg += ", " + *i;
+        md.add_note(types::Note::create(msg));
+        result = dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+    } else {
+        // Acquire into the dataset
+        switch (dispatch_dataset(found[0], md))
+        {
+            case WritableDataset::ACQ_OK:
+                result = DISP_OK;
+                break;
+            case WritableDataset::ACQ_ERROR_DUPLICATE:
+                // If insertion in the designed dataset failed, insert in the
+                // error dataset
+                result = dispatch_duplicates(md) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
+                break;
+            case WritableDataset::ACQ_ERROR:
+            default:
+                // If insertion in the designed dataset failed, insert in the
+                // error dataset
+                result = dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+                break;
+        }
+    }
+
+    if (m_can_continue)
+        m_can_continue = mdc(md);
+    return result;
+}
 
 RealDispatcher::RealDispatcher(const ConfigFile& cfg)
 	: Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)
@@ -101,105 +199,22 @@ RealDispatcher::~RealDispatcher()
 	// a reference to the version inside the DatasetPool cache
 }
 
-Dispatcher::Outcome RealDispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
+WritableDataset::AcquireResult RealDispatcher::dispatch_dataset(const std::string& name, Metadata& md)
 {
-	try {
-		// Fetch the data into memory here, so that if problems arise we do not
-		// fail in bits of code that are more critical
-		md.getData();
-	} catch (std::exception& e) {
-		md.add_note(types::Note::create(
-			string("Failed to read the data associated with the metadata: ") + e.what()));
-		return DISP_NOTWRITTEN;
-	}
+    // File it to the outbound dataset right away
+    WritableDataset* target = pool.get(name);
+    return target->acquire(md);
+}
 
-	vector<string> found;
-	// See what outbound datasets match this metadata
-	for (vector< pair<string, Matcher> >::const_iterator i = outbounds.begin();
-			i != outbounds.end(); ++i)
-		if (i->second(md))
-		{
-			// Operate on a copy
-			Metadata md1 = md;
-			// File it to the outbound dataset right away
-			WritableDataset* target = pool.get(i->first);
-			if (target->acquire(md1) != WritableDataset::ACQ_OK)
-			{
-				// What do we do in case of error?
-				// The dataset will already have added a note to the dataset
-				// explaining what was wrong.  The best we can do is keep a
-				// count of failures.
-				++m_outbound_failures;
-			}
-			if (m_can_continue)
-				m_can_continue = mdc(md);
-		}
-	// See how many datasets match this metadata
-	for (vector< pair<string, Matcher> >::const_iterator i = datasets.begin();
-			i != datasets.end(); ++i)
-		if (i->second(md))
-			found.push_back(i->first);
+WritableDataset::AcquireResult RealDispatcher::dispatch_error(Metadata& md)
+{
+    return dserror->acquire(md);
+}
 
-	UItem<types::Source> origSource = md.source;
-	bool inErrorDS = false;
-	
-	// If we found only one dataset, acquire it in that dataset; else,
-	// acquire it in the error dataset
-	string tgname;
-	WritableDataset* target = 0;
-	if (found.size() == 1)
-	{
-		tgname = found[0];
-	}
-	else if (found.empty())
-	{
-		md.add_note(types::Note::create("Message could not be assigned to any dataset"));
-		target = dserror;
-		inErrorDS = true;
-	}
-	else if (found.size() > 1)
-	{
-		string msg = "Message matched multiple datasets: ";
-		for (vector<string>::const_iterator i = found.begin();
-				i != found.end(); ++i)
-			if (i == found.begin())
-				msg += *i;
-			else
-				msg += ", " + *i;
-		md.add_note(types::Note::create(msg));
-		target = dserror;
-		inErrorDS = true;
-	}
-
-	// Acquire into the dataset
-	if (!target)
-		target = pool.get(tgname);
-	Dispatcher::Outcome result;
-	switch (target->acquire(md))
-	{
-		case WritableDataset::ACQ_OK:
-			result = inErrorDS ? DISP_ERROR : DISP_OK;
-			break;
-		case WritableDataset::ACQ_ERROR_DUPLICATE:
-			// If insertion in the designed dataset failed, insert in the
-			// error dataset
-			if (dsduplicates)
-				target = dsduplicates;
-			else
-				target = dserror;
-			result = target->acquire(md) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
-			break;
-		case WritableDataset::ACQ_ERROR:
-		default:
-			// If insertion in the designed dataset failed, insert in the
-			// error dataset
-			target = dserror;
-			result = target->acquire(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
-			break;
-	}
-	if (m_can_continue)
-		m_can_continue = mdc(md);
-	return result;
+WritableDataset::AcquireResult RealDispatcher::dispatch_duplicates(Metadata& md)
+{
+    WritableDataset* target = dsduplicates ? dsduplicates : dserror;
+    return target->acquire(md);
 }
 
 void RealDispatcher::flush() { pool.flush(); }
@@ -215,101 +230,37 @@ TestDispatcher::TestDispatcher(const ConfigFile& cfg, std::ostream& out)
 }
 TestDispatcher::~TestDispatcher() {}
 
-Dispatcher::Outcome TestDispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
+void TestDispatcher::hook_pre_dispatch(Metadata& md)
 {
-	// Increment the metadata counter, so that we can refer to metadata in the
-	// messages
-	++m_count;
-	string prefix = "Message " + str::fmt(md.source);
+    // Increment the metadata counter, so that we can refer to metadata in the
+    // messages
+    ++m_count;
+    prefix = "Message " + str::fmt(md.source);
+}
 
-	try {
-		// Fetch the data into memory here, so that if problems arise we do not
-		// fail in bits of code that are more critical
-		md.getData();
-	} catch (std::exception& e) {
-		out << prefix << ": Failed to read the data associated with the metadata: " << e.what() << endl;
-		return DISP_NOTWRITTEN;
-	}
+void TestDispatcher::hook_found_datasets(Metadata& md, vector<string>& found)
+{
+    if (found.empty())
+    {
+        out << prefix << ": not matched by any dataset" << endl;
+    }
+    else if (found.size() > 1)
+    {
+        out << prefix << ": matched by multiple datasets: ";
+        for (vector<string>::const_iterator i = found.begin();
+                i != found.end(); ++i)
+            if (i == found.begin())
+                out << *i;
+            else
+                out << ", " << *i;
+        out << endl;
+    }
+}
 
-	vector<string> found;
-
-	// See what outbound datasets match this metadata
-	for (vector< pair<string, Matcher> >::const_iterator i = outbounds.begin();
-			i != outbounds.end(); ++i)
-	{
-		out << prefix << ": output to " << i->first << " outbound dataset" << endl;
-		if (WritableDataset::testAcquire(*cfg.section(i->first), md, out) != WritableDataset::ACQ_OK)
-		{
-			// What do we do in case of error?
-			// The dataset will already have added a note to the dataset
-			// explaining what was wrong.  The best we can do is keep a
-			// count of failures.
-			++m_outbound_failures;
-		}
-	}
-
-	// See how many proper datasets match this metadata
-	for (vector< pair<string, Matcher> >::const_iterator i = datasets.begin();
-			i != datasets.end(); ++i)
-		if (i->second(md))
-			found.push_back(i->first);
-
-	bool inErrorDS = false;
-	
-	// If we found only one dataset, acquire it in that dataset; else,
-	// acquire it in the error dataset
-	string tgname;
-	ConfigFile* target = 0;
-	if (found.size() == 1)
-	{
-		tgname = found[0];
-	}
-	else if (found.empty())
-	{
-		out << prefix << ": not matched by any dataset" << endl;
-		tgname = "error";
-		inErrorDS = true;
-	}
-	else if (found.size() > 1)
-	{
-		out << prefix << ": matched by multiple datasets: ";
-		for (vector<string>::const_iterator i = found.begin();
-				i != found.end(); ++i)
-			if (i == found.begin())
-				out << *i;
-			else
-				out << ", " << *i;
-		out << endl;
-		tgname = "error";
-		inErrorDS = true;
-	}
-	out << prefix << ": acquire to " << tgname << " dataset" << endl;
-
-	// Test acquire into the dataset
-	if (!target) target = cfg.section(tgname);
-
-	Dispatcher::Outcome result;
-	switch (WritableDataset::testAcquire(*target, md, out))
-	{
-		case WritableDataset::ACQ_OK:
-			result = inErrorDS ? DISP_ERROR : DISP_OK;
-			break;
-		case WritableDataset::ACQ_ERROR_DUPLICATE:
-			// If insertion in the designed dataset failed, insert in the
-			// error dataset
-			target = cfg.section("duplicates");
-			if (!target) target = cfg.section("error");
-			result = WritableDataset::testAcquire(*target, md, out) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
-			break;
-		case WritableDataset::ACQ_ERROR:
-		default:
-			// If insertion in the designed dataset failed, insert in the
-			// error dataset
-			target = cfg.section("error");
-			result = WritableDataset::testAcquire(*target, md, out) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
-			break;
-	}
-	return result;
+WritableDataset::AcquireResult TestDispatcher::dispatch_dataset(const std::string& name, Metadata& md)
+{
+    out << prefix << ": acquire to " << name << " dataset" << endl;
+    return WritableDataset::testAcquire(*cfg.section(name), md, out);
 }
 
 void TestDispatcher::flush()

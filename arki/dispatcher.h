@@ -24,6 +24,7 @@
  */
 
 #include <arki/datasetpool.h>
+#include <arki/dataset.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <string>
@@ -32,7 +33,6 @@
 
 namespace arki {
 class ConfigFile;
-class WritableDataset;
 class Metadata;
 
 namespace metadata {
@@ -46,11 +46,21 @@ protected:
 	std::vector< std::pair<std::string, Matcher> > datasets;
 	std::vector< std::pair<std::string, Matcher> > outbounds;
 
-	// True if we can import another one
-	bool m_can_continue;
+    /// True if we can import another one
+    bool m_can_continue;
 
-	// Number of failed acquires to outbound datasets
-	int m_outbound_failures;
+    /// Number of failed acquires to outbound datasets
+    int m_outbound_failures;
+
+    /// Hook called at the beginning of the dispatch procedure for a message.
+    virtual void hook_pre_dispatch(Metadata& md);
+
+    /// Hook called with the list of matching datasets for a message.
+    virtual void hook_found_datasets(Metadata& md, std::vector<std::string>& found);
+
+    virtual WritableDataset::AcquireResult dispatch_dataset(const std::string& name, Metadata& md) = 0;
+    virtual WritableDataset::AcquireResult dispatch_error(Metadata& md);
+    virtual WritableDataset::AcquireResult dispatch_duplicates(Metadata& md);
 
 public:
 	enum Outcome {
@@ -82,45 +92,51 @@ public:
 	 */
 	size_t outboundFailures() const { return m_outbound_failures; }
 
-	virtual Outcome dispatch(Metadata& md, metadata::Consumer& mdc) = 0;
-	virtual void flush() = 0;
+    /**
+     * Dispatch the metadata and its data.
+     *
+     * @returns The outcome of the dispatch.
+     */
+    Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
+
+    /// Dispatch to error dataset
+    void dispatch_error(Metadata& md, metadata::Consumer& mdc);
+
+    virtual void flush() = 0;
 };
 
 /**
  * Infrastructure to dispatch metadata into various datasets
+ *
+ * The metadata will be edited to reflect the data stored inside the target
+ * dataset, and sent to the given metadata::Consumer.
+ *
+ * If there are outbound datasets, a different metadata can be sent to
+ * the consumer for every output dataset that accepted it.
+ *
+ * The metadata sent to the consumer is just a reference to the metadata on
+ * input, that will be changed during the dispatch process.  If you are
+ * storing the metadata instead of processing them right away, remember to
+ * store a copy.
  */
 class RealDispatcher : public Dispatcher
 {
 protected:
-	WritableDatasetPool pool;
+    WritableDatasetPool pool;
 
-	// Error dataset
-	WritableDataset* dserror;
+    // Error dataset
+    WritableDataset* dserror;
 
-	// Duplicates dataset
-	WritableDataset* dsduplicates;
+    // Duplicates dataset
+    WritableDataset* dsduplicates;
+
+    virtual WritableDataset::AcquireResult dispatch_dataset(const std::string& name, Metadata& md);
+    virtual WritableDataset::AcquireResult dispatch_error(Metadata& md);
+    virtual WritableDataset::AcquireResult dispatch_duplicates(Metadata& md);
 
 public:
 	RealDispatcher(const ConfigFile& cfg);
 	~RealDispatcher();
-
-	/**
-	 * Dispatch the metadata and its data.
-	 *
-	 * The metadata will be edited to reflect the data stored inside the target
-	 * dataset, and sent to the given metadata::Consumer.
-	 *
-	 * If there are outbound datasets, a different metadata can be sent to
-	 * the consumer for every output dataset that accepted it.
-	 *
-	 * The metadata sent to the consumer is just a reference to the metadata on
-	 * input, that will be changed during the dispatch process.  If you are
-	 * storing the metadata instead of processing them right away, remember to
-	 * store a copy.
-	 *
-	 * @returns The outcome of the dispatch.
-	 */
-	Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
 
 	/**
 	 * Flush all dataset data do disk
@@ -128,27 +144,30 @@ public:
 	void flush();
 };
 
+/**
+ * Test dispatcher implementation.
+ *
+ * Nothing will happen, except that information about what would have
+ * happened on a real dispatch will be sent to the given output stream.
+ *
+ * @returns The outcome of the dispatch.
+ */
 class TestDispatcher : public Dispatcher
 {
 protected:
 	const ConfigFile& cfg;
 	std::ostream& out;
 	size_t m_count;
-	std::map<std::string, std::string> m_seen;
+    std::string prefix;
+    std::map<std::string, std::string> m_seen;
+
+    virtual void hook_pre_dispatch(Metadata& md);
+    virtual void hook_found_datasets(Metadata& md, std::vector<std::string>& found);
+    virtual WritableDataset::AcquireResult dispatch_dataset(const std::string& name, Metadata& md);
 
 public:
 	TestDispatcher(const ConfigFile& cfg, std::ostream& out);
 	~TestDispatcher();
-
-	/**
-	 * Dispatch the metadata and its data.
-	 *
-	 * Nothing will happen, except that information about what would have
-	 * happened on a real dispatch will be sent to the given output stream.
-	 *
-	 * @returns The outcome of the dispatch.
-	 */
-	Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
 
 	/**
 	 * Flush all dataset data do disk

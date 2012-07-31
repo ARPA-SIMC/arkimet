@@ -601,33 +601,46 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 
 bool MetadataDispatch::operator()(Metadata& md)
 {
-	bool problems = false;
+    if (!validators.empty())
+    {
+        vector<string> errors;
+        bool ok = true;
+        for (vector<const Validator*>::const_iterator i = validators.begin();
+                i != validators.end(); ++i)
+            ok = ok && (**i)(md, errors);
 
-	// Try dispatching
-	switch (dispatcher->dispatch(md, results))
-	{
-		case Dispatcher::DISP_OK:
-			++countSuccessful;
-			break;
-		case Dispatcher::DISP_DUPLICATE_ERROR:
-			++countDuplicates;
-			problems = true;
-			break;
-		case Dispatcher::DISP_ERROR:
-			++countInErrorDataset;
-			problems = true;
-			break;
-		case Dispatcher::DISP_NOTWRITTEN:
-			// If dispatching failed, add a big note about it.
-			// Analising the notes in the output should be enough to catch this
-			// even happening.
-			md.add_note(types::Note::create("WARNING: The data has not been imported in ANY dataset"));
-			++countNotImported;
-			problems = true;
-			break;
-	}
+        if (!ok)
+        {
+            for (vector<string>::const_iterator i = errors.begin();
+                    i != errors.end(); ++i)
+                md.add_note(types::Note::create("Validation error: " + *i));
+            // TODO: dispatch in error dataset
+            ++countInErrorDataset;
+        }
+    }
 
-	return dispatcher->canContinue();
+    // Try dispatching
+    switch (dispatcher->dispatch(md, results))
+    {
+        case Dispatcher::DISP_OK:
+            ++countSuccessful;
+            break;
+        case Dispatcher::DISP_DUPLICATE_ERROR:
+            ++countDuplicates;
+            break;
+        case Dispatcher::DISP_ERROR:
+            ++countInErrorDataset;
+            break;
+        case Dispatcher::DISP_NOTWRITTEN:
+            // If dispatching failed, add a big note about it.
+            // Analising the notes in the output should be enough to catch this
+            // even happening.
+            md.add_note(types::Note::create("WARNING: The data has not been imported in ANY dataset"));
+            ++countNotImported;
+            break;
+    }
+
+    return dispatcher->canContinue();
 }
 
 void MetadataDispatch::flush()
