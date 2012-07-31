@@ -54,11 +54,14 @@ protected:
     /// Number of failed acquires to outbound datasets
     int m_outbound_failures;
 
-    /// Hook called at the beginning of the dispatch procedure for a message.
+    /// Hook called at the beginning of the dispatch procedure for a message
     virtual void hook_pre_dispatch(Metadata& md);
 
-    /// Hook called with the list of matching datasets for a message.
+    /// Hook called with the list of matching datasets for a message
     virtual void hook_found_datasets(Metadata& md, std::vector<std::string>& found);
+
+    /// Hook called to output the final metadata to a consumer
+    virtual void hook_output(Metadata& md, metadata::Consumer& mdc);
 
     virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
     virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
@@ -137,6 +140,7 @@ protected:
     // Duplicates dataset
     WritableDataset* dsduplicates;
 
+    virtual void hook_output(Metadata& md, metadata::Consumer& mdc);
     virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md);
     virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
     virtual WritableDataset::AcquireResult raw_dispatch_duplicates(Metadata& md);

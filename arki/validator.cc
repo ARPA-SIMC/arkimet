@@ -105,7 +105,10 @@ void ValidatorRepository::add(std::auto_ptr<Validator> v)
 {
     iterator i = find(v->name);
     if (i == end())
-        insert(make_pair(v->name, v.release()));
+    {
+        Validator* pv = v.release();
+        insert(make_pair(pv->name, pv));
+    }
     else
     {
         delete i->second;
@@ -119,7 +122,7 @@ const ValidatorRepository& ValidatorRepository::get()
     if (!instance)
     {
         instance = new ValidatorRepository;
-        // TODO: add validators
+        instance->add(auto_ptr<Validator>(new validators::DailyImport));
     }
     return *instance;
 }

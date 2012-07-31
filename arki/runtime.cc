@@ -239,8 +239,6 @@ bool CommandLine::parse(int argc, const char* argv[])
         throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
 	if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
 		throw wibble::exception::BadOption("--upload only makes sense with --postprocess");
-    if (validate && validate->isSet() and (!dispatch or !dispatch->isSet()))
-        throw wibble::exception::BadOption("--validate only makes sense with --dispatch");
 
 	// Initialize the processor maker
     pmaker.summary = summary->boolValue();
@@ -472,10 +470,13 @@ void CommandLine::setupProcessing()
             {
                 ValidatorRepository::const_iterator i = vals.find(*iname);
                 if (i == vals.end())
-                    throw wibble::exception::BadOption("unknown validator '%s'. You can get a list using --validate=list.");
+                    throw wibble::exception::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
                 dispatcher->dispatcher->add_validator(*(i->second));
             }
         }
+    } else {
+        if (validate && validate->isSet())
+            throw wibble::exception::BadOption("--validate only makes sense with --dispatch or --testdispatch");
     }
 
 	if (postproc_data && postproc_data->isSet())

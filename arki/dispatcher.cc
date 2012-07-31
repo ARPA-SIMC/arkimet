@@ -95,6 +95,10 @@ void Dispatcher::hook_found_datasets(Metadata& md, vector<string>& found)
 {
 }
 
+void Dispatcher::hook_output(Metadata& md, metadata::Consumer& mdc)
+{
+}
+
 WritableDataset::AcquireResult Dispatcher::raw_dispatch_error(Metadata& md) { return raw_dispatch_dataset("error", md); }
 WritableDataset::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md) { return raw_dispatch_dataset("duplicates", md); }
 
@@ -211,8 +215,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     }
 
 done:
-    if (m_can_continue)
-        m_can_continue = mdc(md);
+    hook_output(md, mdc);
     return result;
 }
 
@@ -234,6 +237,12 @@ RealDispatcher::~RealDispatcher()
 {
 	// The error and duplicates datasets do not want deallocation, as they are
 	// a reference to the version inside the DatasetPool cache
+}
+
+void RealDispatcher::hook_output(Metadata& md, metadata::Consumer& mdc)
+{
+    if (m_can_continue)
+        m_can_continue = mdc(md);
 }
 
 WritableDataset::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
