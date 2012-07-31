@@ -178,7 +178,6 @@ struct MetadataDispatch : public metadata::Consumer
 	Dispatcher* dispatcher;
 	metadata::Collection results;
 	DatasetProcessor& next;
-    std::vector<const Validator*> validators;
 	bool ignore_duplicates;
 	bool reportStatus;
 

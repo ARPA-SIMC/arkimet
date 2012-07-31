@@ -239,6 +239,8 @@ bool CommandLine::parse(int argc, const char* argv[])
         throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
 	if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
 		throw wibble::exception::BadOption("--upload only makes sense with --postprocess");
+    if (validate && validate->isSet() and (!dispatch or !dispatch->isSet()))
+        throw wibble::exception::BadOption("--validate only makes sense with --dispatch");
 
 	// Initialize the processor maker
     pmaker.summary = summary->boolValue();
@@ -471,7 +473,7 @@ void CommandLine::setupProcessing()
                 ValidatorRepository::const_iterator i = vals.find(*iname);
                 if (i == vals.end())
                     throw wibble::exception::BadOption("unknown validator '%s'. You can get a list using --validate=list.");
-                dispatcher->validators.push_back(i->second);
+                dispatcher->dispatcher->add_validator(*(i->second));
             }
         }
     }
@@ -601,25 +603,7 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 
 bool MetadataDispatch::operator()(Metadata& md)
 {
-    if (!validators.empty())
-    {
-        vector<string> errors;
-        bool ok = true;
-        for (vector<const Validator*>::const_iterator i = validators.begin();
-                i != validators.end(); ++i)
-            ok = ok && (**i)(md, errors);
-
-        if (!ok)
-        {
-            for (vector<string>::const_iterator i = errors.begin();
-                    i != errors.end(); ++i)
-                md.add_note(types::Note::create("Validation error: " + *i));
-            // TODO: dispatch in error dataset
-            ++countInErrorDataset;
-        }
-    }
-
-    // Try dispatching
+    // Dispatch to matching dataset
     switch (dispatcher->dispatch(md, results))
     {
         case Dispatcher::DISP_OK:

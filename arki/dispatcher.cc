@@ -31,6 +31,7 @@
 #include <arki/metadata/consumer.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
+#include <arki/validator.h>
 
 using namespace std;
 using namespace wibble;
@@ -81,6 +82,11 @@ Dispatcher::~Dispatcher()
 {
 }
 
+void Dispatcher::add_validator(const Validator& v)
+{
+    validators.push_back(&v);
+}
+
 void Dispatcher::hook_pre_dispatch(Metadata& md)
 {
 }
@@ -94,19 +100,47 @@ WritableDataset::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md)
 
 Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
 {
+    Dispatcher::Outcome result;
+    vector<string> found;
+
     hook_pre_dispatch(md);
 
+    // Run validation
+    if (!validators.empty())
+    {
+        bool validates_ok = true;
+        vector<string> errors;
+
+        // Run validators
+        for (vector<const Validator*>::const_iterator i = validators.begin();
+                i != validators.end(); ++i)
+            validates_ok = validates_ok && (**i)(md, errors);
+
+        // Annotate with the validation errors
+        for (vector<string>::const_iterator i = errors.begin();
+                i != errors.end(); ++i)
+            md.add_note(types::Note::create("Validation error: " + *i));
+
+        if (!validates_ok)
+        {
+            // Dispatch directly to the error dataset
+            result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+            goto done;
+        }
+    }
+
+
+    // Fetch the data into memory here, so that if problems arise we do not
+    // fail in bits of code that are more critical
     try {
-        // Fetch the data into memory here, so that if problems arise we do not
-        // fail in bits of code that are more critical
         md.getData();
     } catch (std::exception& e) {
         md.add_note(types::Note::create(
                     string("Failed to read the data associated with the metadata: ") + e.what()));
-        return DISP_NOTWRITTEN;
+        result = DISP_NOTWRITTEN;
+        goto done;
     }
 
-    vector<string> found;
     // See what outbound datasets match this metadata
     for (vector< pair<string, Matcher> >::const_iterator i = outbounds.begin();
             i != outbounds.end(); ++i)
@@ -126,6 +160,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
             if (m_can_continue)
                 m_can_continue = mdc(md);
         }
+
     // See how many proper datasets match this metadata
     for (vector< pair<string, Matcher> >::const_iterator i = datasets.begin();
             i != datasets.end(); ++i)
@@ -133,17 +168,16 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
             found.push_back(i->first);
     hook_found_datasets(md, found);
 
-    UItem<types::Source> origSource = md.source;
-
     // If we found only one dataset, acquire it in that dataset; else,
     // acquire it in the error dataset
-    Dispatcher::Outcome result;
     if (found.empty())
     {
         md.add_note(types::Note::create("Message could not be assigned to any dataset"));
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        goto done;
     }
-    else if (found.size() > 1)
+
+    if (found.size() > 1)
     {
         string msg = "Message matched multiple datasets: ";
         for (vector<string>::const_iterator i = found.begin();
@@ -154,31 +188,59 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
                 msg += ", " + *i;
         md.add_note(types::Note::create(msg));
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
-    } else {
-        // Acquire into the dataset
-        switch (raw_dispatch_dataset(found[0], md))
-        {
-            case WritableDataset::ACQ_OK:
-                result = DISP_OK;
-                break;
-            case WritableDataset::ACQ_ERROR_DUPLICATE:
-                // If insertion in the designed dataset failed, insert in the
-                // error dataset
-                result = raw_dispatch_duplicates(md) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
-                break;
-            case WritableDataset::ACQ_ERROR:
-            default:
-                // If insertion in the designed dataset failed, insert in the
-                // error dataset
-                result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
-                break;
-        }
+        goto done;
     }
 
+    // Acquire into the dataset
+    switch (raw_dispatch_dataset(found[0], md))
+    {
+        case WritableDataset::ACQ_OK:
+            result = DISP_OK;
+            break;
+        case WritableDataset::ACQ_ERROR_DUPLICATE:
+            // If insertion in the designed dataset failed, insert in the
+            // error dataset
+            result = raw_dispatch_duplicates(md) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
+            break;
+        case WritableDataset::ACQ_ERROR:
+        default:
+            // If insertion in the designed dataset failed, insert in the
+            // error dataset
+            result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+            break;
+    }
+
+done:
     if (m_can_continue)
         m_can_continue = mdc(md);
     return result;
 }
+
+Dispatcher::Outcome Dispatcher::dispatch_error(Metadata& md, metadata::Consumer& mdc)
+{
+    hook_pre_dispatch(md);
+
+    try {
+        // Fetch the data into memory here, so that if problems arise we do not
+        // fail in bits of code that are more critical
+        md.getData();
+    } catch (std::exception& e) {
+        md.add_note(types::Note::create(
+                    string("Failed to read the data associated with the metadata: ") + e.what()));
+        return DISP_NOTWRITTEN;
+    }
+
+    UItem<types::Source> origSource = md.source;
+
+    // Acquire it in the error dataset
+    Dispatcher::Outcome result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+
+    if (m_can_continue)
+        m_can_continue = mdc(md);
+
+    return result;
+}
+
 
 RealDispatcher::RealDispatcher(const ConfigFile& cfg)
 	: Dispatcher(cfg), pool(cfg), dserror(0), dsduplicates(0)

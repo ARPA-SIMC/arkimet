@@ -145,6 +145,29 @@ void to::test<2>()
 #endif
 }
 
+// Test dispatch to error datasets after validation errors
+template<> template<>
+void to::test<3>()
+{
+    Metadata md;
+    metadata::Collection mdc;
+    scan::Grib scanner;
+    RealDispatcher dispatcher(config);
+    // TODO dispatcher.add_validator(...);
+    scanner.open("inbound/test.grib1");
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dsname(mdc.back()), "error");
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dsname(mdc.back()), "error");
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dsname(mdc.back()), "error");
+    ensure(!scanner.next(md));
+    dispatcher.flush();
+}
+
 }
 
 // vim:set ts=4 sw=4:

@@ -34,6 +34,7 @@
 namespace arki {
 class ConfigFile;
 class Metadata;
+class Validator;
 
 namespace metadata {
 class Consumer;
@@ -45,6 +46,7 @@ protected:
 	// Dispatching information
 	std::vector< std::pair<std::string, Matcher> > datasets;
 	std::vector< std::pair<std::string, Matcher> > outbounds;
+    std::vector<const Validator*> validators;
 
     /// True if we can import another one
     bool m_can_continue;
@@ -77,6 +79,14 @@ public:
 	Dispatcher(const ConfigFile& cfg);
 	virtual ~Dispatcher();
 
+    /**
+     * Add a validator to this dispatcher.
+     *
+     * Memory management is handled by the caller, so the validator must be
+     * valid during the whole lifetime of the dispatcher.
+     */
+    void add_validator(const Validator& v);
+
 	/**
 	 * Return true if the metadata consumer called by the last dispatch()
 	 * invocation returned true.
@@ -100,7 +110,7 @@ public:
     Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
 
     /// Dispatch to error dataset
-    void dispatch_error(Metadata& md, metadata::Consumer& mdc);
+    Outcome dispatch_error(Metadata& md, metadata::Consumer& mdc);
 
     virtual void flush() = 0;
 };
