@@ -58,9 +58,9 @@ protected:
     /// Hook called with the list of matching datasets for a message.
     virtual void hook_found_datasets(Metadata& md, std::vector<std::string>& found);
 
-    virtual WritableDataset::AcquireResult dispatch_dataset(const std::string& name, Metadata& md) = 0;
-    virtual WritableDataset::AcquireResult dispatch_error(Metadata& md);
-    virtual WritableDataset::AcquireResult dispatch_duplicates(Metadata& md);
+    virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
+    virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
+    virtual WritableDataset::AcquireResult raw_dispatch_duplicates(Metadata& md);
 
 public:
 	enum Outcome {
@@ -130,9 +130,9 @@ protected:
     // Duplicates dataset
     WritableDataset* dsduplicates;
 
-    virtual WritableDataset::AcquireResult dispatch_dataset(const std::string& name, Metadata& md);
-    virtual WritableDataset::AcquireResult dispatch_error(Metadata& md);
-    virtual WritableDataset::AcquireResult dispatch_duplicates(Metadata& md);
+    virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md);
+    virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
+    virtual WritableDataset::AcquireResult raw_dispatch_duplicates(Metadata& md);
 
 public:
 	RealDispatcher(const ConfigFile& cfg);
@@ -163,7 +163,7 @@ protected:
 
     virtual void hook_pre_dispatch(Metadata& md);
     virtual void hook_found_datasets(Metadata& md, std::vector<std::string>& found);
-    virtual WritableDataset::AcquireResult dispatch_dataset(const std::string& name, Metadata& md);
+    virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md);
 
 public:
 	TestDispatcher(const ConfigFile& cfg, std::ostream& out);

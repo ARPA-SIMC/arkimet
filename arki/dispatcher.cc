@@ -89,8 +89,8 @@ void Dispatcher::hook_found_datasets(Metadata& md, vector<string>& found)
 {
 }
 
-WritableDataset::AcquireResult Dispatcher::dispatch_error(Metadata& md) { return dispatch_dataset("error", md); }
-WritableDataset::AcquireResult Dispatcher::dispatch_duplicates(Metadata& md) { return dispatch_dataset("duplicates", md); }
+WritableDataset::AcquireResult Dispatcher::raw_dispatch_error(Metadata& md) { return raw_dispatch_dataset("error", md); }
+WritableDataset::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md) { return raw_dispatch_dataset("duplicates", md); }
 
 Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
 {
@@ -115,7 +115,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
             // Operate on a copy
             Metadata md1 = md;
             // File it to the outbound dataset right away
-            if (dispatch_dataset(i->first, md1) != WritableDataset::ACQ_OK)
+            if (raw_dispatch_dataset(i->first, md1) != WritableDataset::ACQ_OK)
             {
                 // What do we do in case of error?
                 // The dataset will already have added a note to the dataset
@@ -141,7 +141,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     if (found.empty())
     {
         md.add_note(types::Note::create("Message could not be assigned to any dataset"));
-        result = dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
     }
     else if (found.size() > 1)
     {
@@ -153,10 +153,10 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
             else
                 msg += ", " + *i;
         md.add_note(types::Note::create(msg));
-        result = dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
     } else {
         // Acquire into the dataset
-        switch (dispatch_dataset(found[0], md))
+        switch (raw_dispatch_dataset(found[0], md))
         {
             case WritableDataset::ACQ_OK:
                 result = DISP_OK;
@@ -164,13 +164,13 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
             case WritableDataset::ACQ_ERROR_DUPLICATE:
                 // If insertion in the designed dataset failed, insert in the
                 // error dataset
-                result = dispatch_duplicates(md) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
+                result = raw_dispatch_duplicates(md) == WritableDataset::ACQ_OK ? DISP_DUPLICATE_ERROR : DISP_NOTWRITTEN;
                 break;
             case WritableDataset::ACQ_ERROR:
             default:
                 // If insertion in the designed dataset failed, insert in the
                 // error dataset
-                result = dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+                result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
                 break;
         }
     }
@@ -199,19 +199,19 @@ RealDispatcher::~RealDispatcher()
 	// a reference to the version inside the DatasetPool cache
 }
 
-WritableDataset::AcquireResult RealDispatcher::dispatch_dataset(const std::string& name, Metadata& md)
+WritableDataset::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
 {
     // File it to the outbound dataset right away
     WritableDataset* target = pool.get(name);
     return target->acquire(md);
 }
 
-WritableDataset::AcquireResult RealDispatcher::dispatch_error(Metadata& md)
+WritableDataset::AcquireResult RealDispatcher::raw_dispatch_error(Metadata& md)
 {
     return dserror->acquire(md);
 }
 
-WritableDataset::AcquireResult RealDispatcher::dispatch_duplicates(Metadata& md)
+WritableDataset::AcquireResult RealDispatcher::raw_dispatch_duplicates(Metadata& md)
 {
     WritableDataset* target = dsduplicates ? dsduplicates : dserror;
     return target->acquire(md);
@@ -257,7 +257,7 @@ void TestDispatcher::hook_found_datasets(Metadata& md, vector<string>& found)
     }
 }
 
-WritableDataset::AcquireResult TestDispatcher::dispatch_dataset(const std::string& name, Metadata& md)
+WritableDataset::AcquireResult TestDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
 {
     out << prefix << ": acquire to " << name << " dataset" << endl;
     return WritableDataset::testAcquire(*cfg.section(name), md, out);
