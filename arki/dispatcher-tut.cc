@@ -31,6 +31,7 @@
 #include <arki/scan/grib.h>
 #include <arki/scan/any.h>
 #include <arki/utils/accounting.h>
+#include <arki/validator.h>
 
 namespace tut {
 using namespace std;
@@ -153,7 +154,8 @@ void to::test<3>()
     metadata::Collection mdc;
     scan::Grib scanner;
     RealDispatcher dispatcher(config);
-    // TODO dispatcher.add_validator(...);
+    validators::FailAlways fail_always;
+    dispatcher.add_validator(fail_always);
     scanner.open("inbound/test.grib1");
     ensure(scanner.next(md));
     ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);

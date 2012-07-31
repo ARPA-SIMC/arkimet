@@ -30,6 +30,23 @@ using namespace std;
 
 namespace arki {
 
+namespace validators {
+
+FailAlways::FailAlways()
+{
+   name = "fail_always";
+   desc = "validator that always fails";
+}
+bool FailAlways::operator()(const Metadata& v, std::vector<std::string>& errors) const
+{
+    errors.push_back("fail_always: message does not validate and never will");
+    return false;
+}
+
+}
+
+Validator::~Validator() {}
+
 ValidatorRepository::~ValidatorRepository()
 {
     for (iterator i = begin(); i != end(); ++i)

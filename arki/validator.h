@@ -33,11 +33,10 @@ class Metadata;
 
 struct Validator
 {
-public:
     std::string name;
     std::string desc;
 
-    virtual ~Validator() = 0;
+    virtual ~Validator();
 
     /**
      * Validate a Metadata.
@@ -49,6 +48,15 @@ public:
      */
     virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const = 0;
 };
+
+namespace validators
+{
+    struct FailAlways : public Validator
+    {
+        FailAlways();
+        virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const;
+    };
+}
 
 struct ValidatorRepository : public std::map<std::string, Validator*>
 {
