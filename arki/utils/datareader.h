@@ -24,6 +24,7 @@
  */
 
 #include <string>
+#include <sys/types.h>
 
 namespace arki {
 namespace utils {

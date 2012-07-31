@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <sys/types.h>
 
 namespace arki {
 

@@ -25,6 +25,7 @@
 
 #include <string>
 #include <ctime>
+#include <sys/types.h>
 
 namespace arki {
 class Metadata;

@@ -25,6 +25,7 @@
 
 #include <arki/metadata/consumer.h>
 #include <wibble/sys/buffer.h>
+#include <sys/types.h>
 #include <string>
 #include <vector>
 

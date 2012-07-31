@@ -31,6 +31,7 @@
 #include <vector>
 #include <string>
 #include <iosfwd>
+#include <sys/types.h>
 
 namespace arki {
 namespace iotrace {
