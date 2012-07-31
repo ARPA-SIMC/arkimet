@@ -56,6 +56,12 @@ namespace validators
         FailAlways();
         virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const;
     };
+
+    struct DailyImport : public Validator
+    {
+        DailyImport();
+        virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const;
+    };
 }
 
 struct ValidatorRepository : public std::map<std::string, Validator*>

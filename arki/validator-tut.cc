@@ -23,6 +23,8 @@
 #include <arki/matcher/test-utils.h>
 #include <arki/validator.h>
 #include <arki/metadata.h>
+#include <arki/types/reftime.h>
+#include <time.h>
 
 #include <memory>
 #include <sstream>
@@ -41,51 +43,94 @@ using namespace std;
 using namespace arki;
 
 struct arki_validator_shar {
-    Metadata md;
-
     arki_validator_shar()
     {
-        md.create();
-        arki::tests::fill(md);
     }
 };
 TESTGRP(arki_validator);
 
-// See if the validator makes a difference
+// Test FailAlways
 template<> template<>
 void to::test<1>()
 {
-    /*
-    auto_ptr<Formatter> validator(Formatter::create());
+    Metadata md;
+    arki::tests::fill(md);
 
-    stringstream str1;
-    md.writeYaml(str1);
+    validators::FailAlways v;
+    vector<string> errors;
+    ensure(!v(md, errors));
+    ensure_equals(errors.size(), 1u);
+}
 
-    stringstream str2;
-    md.writeYaml(str2, validator.get());
-
-    // They must be different
-    ensure(str1.str() != str2.str());
-
-    // str2 contains annotations, so it should be longer
-    ensure(str1.str().size() < str2.str().size());
-
-    // Read back the two metadatas
-    Metadata md1; md1.create();
+static void dump_errors(const vector<string>& errors)
+{
+    unsigned count = 1;
+    for (vector<string>::const_iterator i = errors.begin();
+            i != errors.end(); ++i, ++count)
     {
-        stringstream str(str1.str(), ios_base::in);
-        md1.readYaml(str, "(test memory buffer)");
+        cerr << "Error " << count << ": " << *i << endl;
     }
-    Metadata md2; md2.create();
-    {
-        stringstream str(str2.str(), ios_base::in);
-        md2.readYaml(str, "(test memory buffer)");
-    }
+}
 
-    // Once reparsed, they should have the same content
-    ensure_equals(md, md1);
-    ensure_equals(md, md2);
-    */
+#define ensure_no_errors() \
+    do { \
+        errors.clear(); \
+        bool tmp = v(md, errors); \
+        dump_errors(errors); \
+        ensure(tmp); \
+        ensure_equals(errors.size(), 0u); \
+    } while(0)
+
+#define ensure_errors(count) \
+    do { \
+        errors.clear(); \
+        bool tmp = v(md, errors); \
+        ensure(!tmp); \
+        ensure_equals(errors.size(), count); \
+    } while(0)
+
+
+// Test DailyImport
+template<> template<>
+void to::test<2>()
+{
+    Metadata md;
+    arki::tests::fill(md);
+
+    time_t ts_now = time(NULL);
+    time_t ts = ts_now;
+    struct tm t;
+
+    validators::DailyImport v;
+    vector<string> errors;
+    localtime_r(&ts, &t);
+    md.set(types::reftime::Position::create(types::Time::create(t)));
+    ensure_no_errors();
+
+    // 12 hours into the future
+    ts = ts_now + 3600 * 12;
+    localtime_r(&ts, &t);
+    md.set(types::reftime::Position::create(types::Time::create(t)));
+    ensure_no_errors();
+
+    // 6 days into the past
+    ts = ts_now - 3600 * 24 * 6;
+    localtime_r(&ts, &t);
+    md.set(types::reftime::Position::create(types::Time::create(t)));
+    ensure_no_errors();
+
+    // 2 days into the future
+    ts = ts_now + 3600 * 24 * 2;
+    localtime_r(&ts, &t);
+    md.set(types::reftime::Position::create(types::Time::create(t)));
+    ensure_errors(1u);
+
+    // 8 days into the past
+    errors.clear();
+    ts = ts_now - 3600 * 24 * 8;
+    localtime_r(&ts, &t);
+    md.set(types::reftime::Position::create(types::Time::create(t)));
+    ensure_errors(1u);
 }
 
 }
