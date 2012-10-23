@@ -1,7 +1,7 @@
 /*
  * dataset/maintenance - Dataset maintenance utilities
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -188,6 +188,19 @@ void HoleFinder::scan(const std::string& file)
 		}
 	} hfc(file, *this);
 
+	struct HFSorter : public sort::Compare
+	{
+		virtual int compare(const Metadata& a, const Metadata& b) const {
+			int res = a.get(types::TYPE_REFTIME).compare(b.get(types::TYPE_REFTIME));
+			if (res == 0)
+				return a.source.compare(b.source);
+			return res;
+		}
+		virtual std::string toString() const {
+			return "HFSorter";
+		}
+	} cmp;
+
 	string fname = str::joinpath(m_root, file);
 
 	// If the data file is compressed, create a temporary uncompressed copy
@@ -197,7 +210,8 @@ void HoleFinder::scan(const std::string& file)
 
 	metadata::Collection mdc;
 	scan::scan(fname, mdc);
-	mdc.sort(""); // Sort by reftime, to find items out of order
+	//mdc.sort(""); // Sort by reftime, to find items out of order
+	mdc.sort(cmp); // Sort by reftime and by offset
 	mdc.sendTo(hfc);
 	finaliseFile();
 }
