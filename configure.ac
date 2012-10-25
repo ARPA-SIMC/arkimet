@@ -16,6 +16,13 @@ AC_ARG_ENABLE([bufr],
     [],
     [enable_bufr="yes"])
 
+AC_ARG_ENABLE([vm2],
+	      [AS_HELP_STRING(
+	       [--enable-vm2],
+	       [build VM2 support])],
+	      [],
+	      [enable_vm2="yes"])
+
 AC_ARG_ENABLE([iotrace],
     [AS_HELP_STRING(
         [--enable-iotrace],
@@ -210,6 +217,7 @@ else
 fi
 AM_CONDITIONAL([ODIMH5], [test x"$have_odimh5" = x"yes"])
 
+
 dnl Check for Curl
 LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
@@ -258,6 +266,15 @@ AC_SUBST(LZO_LIBS)
 AC_SUBST(LZO_VERSION)
 AM_CONDITIONAL([LZO], [test x"$have_lzo" = x"yes"])
 AM_CONDITIONAL([LZO_EMBEDDED], [test x"$LZO_VERSION" = x"embedded"])
+
+dnl Check for vm2 support
+if test $enable_vm2 = yes
+then
+	have_vm2=yes
+	AC_DEFINE([HAVE_VM2], 1, [vm2 format enabled])
+fi
+AM_CONDITIONAL([VM2], [test x"$have_vm2" = x"yes" ])
+
 
 dnl Enable compile-time options for I/O profiling, if requested
 if test $enable_iotrace = yes
@@ -330,6 +347,7 @@ AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
 AS_HELP_STRING([ODIMH5 via radarlib:], [$have_odimh5])
+AS_HELP_STRING([VM2 support:], [$have_vm2])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])
 AS_HELP_STRING([GEOS support:], [$have_geos, version $GEOS_VERSION])

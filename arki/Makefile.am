@@ -436,6 +436,12 @@ libarkimet_core_la_LDFLAGS += $(LZO_LIBS)
 tests_arki_test_LDADD += $(LZO_LIBS)
 endif
 
+if VM2
+nobase_dist_arkiinclude_HEADERS += scan/vm2.h
+libarkimet_types_la_SOURCES += scan/vm2.cc
+tests_arki_test_SOURCES += scan/vm2-tut.cc
+endif
+
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \
 	     matcher/reftime/reftime-parse.yy \

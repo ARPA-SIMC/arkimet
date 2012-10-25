@@ -1,7 +1,7 @@
 /*
  * dataset/file - Dataset on a single file
  *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -135,6 +135,10 @@ File* File::create(const ConfigFile& cfg)
 #ifdef HAVE_ODIMH5
 	if (format == "odimh5")
 		return new RawFile(cfg);
+#endif
+#ifdef HAVE_VM2
+    if (format == "vm2")
+        return new RawFile(cfg);
 #endif
 	throw wibble::exception::Consistency("creating a file dataset", "unknown file format \""+format+"\"");
 }

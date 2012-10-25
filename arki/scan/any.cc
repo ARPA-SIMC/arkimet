@@ -1,7 +1,7 @@
 /*
  * scan/any - Scan files autodetecting the format
  *
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,9 @@
 #endif
 #ifdef HAVE_ODIMH5
 #include <arki/scan/odimh5.h>
+#endif
+#ifdef HAVE_VM2
+#include <arki/scan/vm2.h>
 #endif
 
 using namespace std;
@@ -91,6 +94,16 @@ static bool scan_file(const std::string& file, const std::string& format, metada
 			c(md);
 		return true;
 	}
+#endif
+#ifdef HAVE_VM2
+    if (format == "vm2") {
+        scan::Vm2 scanner;
+        scanner.open(file);
+        Metadata md;
+        while (scanner.next(md))
+            c(md);
+        return true;
+    }
 #endif
 	return false;
 }
@@ -165,6 +178,10 @@ bool canScan(const std::string& file)
 	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
 		return true;
 #endif
+#ifdef HAVE_VM2
+    if (ext == "vm2")
+        return true;
+#endif
 	return false;
 }
 
@@ -224,6 +241,10 @@ const Validator& Validator::by_filename(const std::string& filename)
 #ifdef HAVE_ODIMH5
 	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
 		return odimh5::validator();
+#endif
+#ifdef HAVE_VM2
+   if (ext == "vm2")
+       return vm2::validator();
 #endif
 	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
 }

@@ -4,7 +4,7 @@
 /*
  * matcher/product - Product matcher
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,6 +89,17 @@ struct MatchProductODIMH5 : public MatchProduct
 	MatchProductODIMH5(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
+};
+
+struct MatchProductVM2 : public MatchProduct
+{
+    // This is -1 when should be ignored
+    int variable_id;
+    ValueBag expr;
+
+    MatchProductVM2(const std::string& pattern);
+    bool matchItem(const Item<>& o) const;
+    std::string toString() const;
 };
 
 }

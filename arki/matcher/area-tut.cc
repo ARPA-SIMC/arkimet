@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ void to::test<1>()
 {
 	ValueBag testArea2;
 	testArea2.set("foo", Value::createInteger(15));
-	testArea2.set("bar", Value::createInteger(15000));
+	testArea2.set("bar", Value::createInteger(5000));
 	testArea2.set("baz", Value::createInteger(-1200));
 	testArea2.set("moo", Value::createInteger(0x1ffffff));
 	testArea2.set("antani", Value::createInteger(0));
@@ -329,6 +329,27 @@ void to::test<9>()
 
 #endif
 
+}
+// Try matching Area with VM2
+template<> template<>
+void to::test<10>()
+{
+	Metadata md;
+	md.create();
+	md.set(area::VM2::create(1));
+
+	ensure_matches("area:VM2", md);
+	ensure_matches("area:VM2,", md);
+	ensure_matches("area:VM2,1", md);
+	ensure_not_matches("area:VM2,2", md);
+	ensure_not_matches("area:GRIB:lon=0,lat=0", md);
+
+	try {
+		ensure_matches("area:VM2,ciccio=riccio", md);
+		ensure(false);
+	} catch (wibble::exception::Consistency& e) {
+		ensure(string(e.what()).find("is not a number") != string::npos);
+	}
 }
 
 

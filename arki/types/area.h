@@ -4,7 +4,7 @@
 /*
  * types/area - Geographical area
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,6 +57,7 @@ struct Area : public types::StyledType<Area>
 	/// Style values
 	static const Style GRIB = 1;
 	static const Style ODIMH5 = 2;
+    static const Style VM2 = 3;
 
 	Area();
 
@@ -129,6 +130,31 @@ public:
 
 	static Item<ODIMH5> create(const ValueBag& values);
 	static Item<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+};
+
+class VM2 : public Area
+{
+protected:
+    unsigned m_station_id;
+
+public:
+    virtual ~VM2();
+
+    unsigned station_id() const { return m_station_id; }
+
+    virtual Style style() const;
+	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+	virtual std::ostream& writeToOstream(std::ostream& o) const;
+    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+    virtual std::string exactQuery() const;
+	virtual const char* lua_type_name() const;
+	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+    virtual int compare_local(const Area& o) const;
+    virtual bool operator==(const Type& o) const;
+
+    static Item<VM2> create(unsigned station_id);
+    static Item<VM2> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 

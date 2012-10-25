@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2012  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,11 @@
 #include <arki/matcher.h>
 #include <arki/metadata.h>
 #include <arki/types/product.h>
+#include <arki/matcher/product.h>
 
 #include <sstream>
 #include <iostream>
+#include <memory>
 
 namespace tut {
 using namespace std;
@@ -100,6 +102,24 @@ void to::test<2>()
 		ensure(false);
 	} catch (wibble::exception::Consistency& e) {
 		ensure(string(e.what()).find("key=value") != string::npos);
+	}
+}
+// Try matching VM2 product
+template<> template<>
+void to::test<3>()
+{
+	md.set(product::VM2::create(1));
+
+	ensure_matches("product:VM2", md);
+	ensure_matches("product:VM2,", md);
+	ensure_matches("product:VM2,1", md);
+	ensure_not_matches("product:GRIB1,1,2,3", md);
+    ensure_not_matches("product:VM2,2", md);
+	try {
+		ensure_matches("product:VM2,ciccio=riccio", md);
+		ensure(false);
+	} catch (wibble::exception::Consistency& e) {
+		ensure(string(e.what()).find("is not a number") != string::npos);
 	}
 }
 

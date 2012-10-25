@@ -4,7 +4,7 @@
 /*
  * types/product - Product metadata item
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ struct Product : public types::StyledType<Product>
 	static const unsigned char GRIB2 = 2;
 	static const unsigned char BUFR = 3;
 	static const unsigned char ODIMH5 	= 4;
+    static const unsigned char VM2 = 5;
 
 	/// Convert a string into a style
 	static Style parseStyle(const std::string& str);
@@ -218,6 +219,34 @@ public:
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const;
+};
+
+class VM2 : public Product
+{
+protected:
+ unsigned m_variable_id;
+
+public:
+ virtual ~VM2() {}
+
+ unsigned variable_id() const { return m_variable_id; }
+
+ virtual Style style() const;
+ virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+ virtual std::ostream& writeToOstream(std::ostream& o) const;
+ virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+ virtual std::string exactQuery() const;
+ virtual const char* lua_type_name() const;
+
+ virtual int compare_local(const Product& o) const;
+ virtual bool operator==(const Type& o) const;
+
+ bool lua_lookup(lua_State* L, const std::string& name) const;
+
+ static Item<VM2> create(unsigned variable_id);
+ static Item<VM2> decodeMapping(const emitter::memory::Mapping& val);
+
+ virtual std::vector<int> toIntVector() const;
 };
 
 }

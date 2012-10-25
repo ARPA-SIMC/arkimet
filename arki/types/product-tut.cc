@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -185,6 +185,32 @@ void to::test<5>()
 		product::BUFR::create(1, 2, 3, vb),
 		product::BUFR::create(1, 2, 3, vb1),
 		product::BUFR::create(1, 2, 3, vb1));
+    ensure_compares(
+        product::VM2::create(1),
+        product::VM2::create(2),
+        product::VM2::create(2));
+}
+
+// Check VM2
+template<> template<>
+void to::test<6>()
+{
+	Item<Product> o = product::VM2::create(1);
+	ensure_equals(o->style(), Product::VM2);
+	const product::VM2* v = o->upcast<product::VM2>();
+	ensure_equals(v->variable_id(), 1ul);
+
+	ensure_equals(o, Item<Product>(product::VM2::create(1)));
+
+	ensure(o != product::VM2::create(2));
+
+	// Test encoding/decoding
+	ensure_serialises(o, types::TYPE_PRODUCT);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "VM2,1");
+	Matcher m = Matcher::parse("product:" + o->exactQuery());
+	ensure(m(o));
 }
 
 }

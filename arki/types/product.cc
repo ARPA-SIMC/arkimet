@@ -1,7 +1,7 @@
 /*
  * types/product - Product metadata item
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,7 @@ const unsigned char Product::GRIB1;
 const unsigned char Product::GRIB2;
 const unsigned char Product::BUFR;
 const unsigned char Product::ODIMH5;
+const unsigned char Product::VM2;
 
 // Deprecated
 int Product::getMaxIntCount() { return 4; }
@@ -71,6 +72,7 @@ Product::Style Product::parseStyle(const std::string& str)
 	if (str == "GRIB2") return GRIB2;
 	if (str == "BUFR") return BUFR;
 	if (str == "ODIMH5") 	return ODIMH5;
+    if (str == "VM2") return VM2;
 	throw wibble::exception::Consistency("parsing Product style", "cannot parse Product style '"+str+"': only GRIB1, GRIB2 and BUFR are supported");
 }
 
@@ -82,6 +84,7 @@ std::string Product::formatStyle(Product::Style s)
 		case Product::GRIB2: return "GRIB2";
 		case Product::BUFR: return "BUFR";
 		case Product::ODIMH5: return "ODIMH5";
+        case Product::VM2: return "VM2";
 		default: 
 			std::stringstream str;
 			str << "(unknown " << (int)s << ")";
@@ -132,6 +135,9 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
 
 			return product::ODIMH5::create(o, p);
 		}
+        case VM2: {
+            return product::VM2::create(dec.popUInt(4, "VM2 variable id"));
+        }
 		default:
 			throw wibble::exception::Consistency("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
 	}
@@ -183,6 +189,16 @@ Item<Product> Product::decodeString(const std::string& val)
 
 			return product::ODIMH5::create(o, p);
 		}
+        case Product::VM2: {
+            using wibble::exception::Consistency;
+            const char* innerptr = inner.c_str();
+            char* endptr;
+            unsigned long variable_id = strtoul(innerptr, &endptr, 10); 
+            if (innerptr == endptr)
+                throw Consistency("parsing" + inner,
+                                  "expected a number, but found \"" + inner +"\"");
+            return product::VM2::create(variable_id);
+        }
 		default:
 			throw wibble::exception::Consistency("parsing Product", "unknown Product style " + formatStyle(style));
 	}
@@ -198,6 +214,7 @@ Item<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
         case Product::GRIB2: return product::GRIB2::decodeMapping(val);
         case Product::BUFR: return product::BUFR::decodeMapping(val);
         case Product::ODIMH5: return product::ODIMH5::decodeMapping(val);
+        case Product::VM2: return product::VM2::decodeMapping(val);
         default:
             throw wibble::exception::Consistency("parsing Product", "unknown Product style " + val.get_string());
     }
@@ -268,6 +285,7 @@ static TypeCache<GRIB1> cache_grib1;
 static TypeCache<GRIB2> cache_grib2;
 static TypeCache<BUFR> cache_bufr;
 static TypeCache<ODIMH5>	cache_odimh5;
+static TypeCache<VM2> cache_vm2;
 
 Product::Style GRIB1::style() const { return Product::GRIB1; }
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
@@ -744,12 +762,81 @@ void ODIMH5::lua_register_methods(lua_State* L) const
 //	};
 //	luaL_register(L, NULL, lib);
 }
+
+Product::Style VM2::style() const
+{
+	return Product::VM2;
+}
+void VM2::encodeWithoutEnvelope(Encoder& enc) const
+{
+	Product::encodeWithoutEnvelope(enc);
+	enc.addUInt(m_variable_id, 4);
+}
+std::ostream& VM2::writeToOstream(std::ostream& o) const
+{
+	return o << formatStyle(style()) << "(" << m_variable_id << ")";
+}
+void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
+{
+    Product::serialiseLocal(e, f);
+    e.add("id", m_variable_id);
+}
+std::string VM2::exactQuery() const
+{
+    return str::fmtf("VM2,%lu", m_variable_id);
+}
+const char* VM2::lua_type_name() const { return "arki.types.product.vm2"; }
+int VM2::compare_local(const Product& o) const
+{
+    const VM2* v = dynamic_cast<const VM2*>(&o);
+    if (!v)
+        throw wibble::exception::Consistency(
+            "comparing metadata types",
+            string("second element claims to be a VM2 Product, but it is a ") + typeid(&o).name() + " instead");
+    if (m_variable_id == v->m_variable_id) return 0;
+    return (m_variable_id > v->m_variable_id ? 1 : -1);
+}
+bool VM2::operator==(const Type& o) const
+{
+    const VM2* v = dynamic_cast<const VM2*>(&o);
+    if (!v) return false;
+    return m_variable_id == v->m_variable_id;
+}
+#ifdef HAVE_LUA
+bool VM2::lua_lookup(lua_State* L, const std::string& name) const
+{
+    if (name == "id") {
+        lua_pushnumber(L, variable_id());
+    } else {
+        return Product::lua_lookup(L, name);
+    }
+    return true;
+}
+#endif
+
+Item<VM2> VM2::create(unsigned variable_id)
+{
+    VM2* res = new VM2;
+    res->m_variable_id = variable_id;
+    return cache_vm2.intern(res);
+}
+Item<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return VM2::create(val["id"].want_int("parsing VM2 variable id"));
+}
+
+std::vector<int> VM2::toIntVector() const
+{
+	return vector<int>();
+}
+
 static void debug_interns()
 {
 	fprintf(stderr, "product GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
 	fprintf(stderr, "product GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
 	fprintf(stderr, "product BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
 	fprintf(stderr, "product ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
+    fprintf(stderr, "product VM2: sz %zd reused %zd\n", cache_vm2.size(), cache_odimh5.reused());
 }
 
 }

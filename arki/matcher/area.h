@@ -4,7 +4,7 @@
 /*
  * matcher/area - Area matcher
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,17 @@ struct MatchAreaODIMH5 : public MatchArea
 	MatchAreaODIMH5(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
 	std::string toString() const;
+};
+
+struct MatchAreaVM2 : public MatchArea
+{
+    // This is -1 when should be ignored
+    int station_id;
+    ValueBag expr;
+
+    MatchAreaVM2(const std::string& pattern);
+    bool matchItem(const Item<>& o) const;
+    std::string toString() const;
 };
 
 #ifdef HAVE_GEOS

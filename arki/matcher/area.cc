@@ -1,7 +1,7 @@
 /*
  * matcher/area - Area matcher
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,23 +71,58 @@ std::string MatchAreaODIMH5::toString() const
 	return "ODIMH5:" + expr.toString();
 }
 
+MatchAreaVM2::MatchAreaVM2(const std::string& pattern)
+{
+    OptionalCommaList args(pattern, true);
+	station_id = args.getInt(0, -1);
+    expr = ValueBag::parse(args.tail);
+}
+
+bool MatchAreaVM2::matchItem(const Item<>& o) const
+{
+    const types::area::VM2* v = dynamic_cast<const types::area::VM2*>(o.ptr());
+    if (!v) return false;
+    if (station_id != -1 && (unsigned) station_id != v->station_id()) return false;
+    return true;
+}
+
+std::string MatchAreaVM2::toString() const
+{
+    CommaJoiner res;
+    res.add("VM2");
+    if (station_id != -1) res.add(station_id); else res.addUndef();
+    return res.join();
+}
+
 
 MatchArea* MatchArea::parse(const std::string& pattern)
 {
-	string p = str::trim(pattern);
-	if (strncasecmp(p.c_str(), "grib:", 5) == 0)
-	{
-		return new MatchAreaGRIB(str::trim(p.substr(5)));
-	} 
-	else if (strncasecmp(p.c_str(), "odimh5:", 7) == 0)
-	{
-		return new MatchAreaODIMH5(str::trim(p.substr(7)));
-#ifdef HAVE_GEOS
-	} else if (strncasecmp(p.c_str(), "bbox ", 5) == 0) {
-		return MatchAreaBBox::parse(str::trim(p.substr(5)));
+    string p = str::trim(pattern);
+    if (strncasecmp(p.c_str(), "grib:", 5) == 0)
+    {
+        return new MatchAreaGRIB(str::trim(p.substr(5)));
+    } 
+    else if (strncasecmp(p.c_str(), "odimh5:", 7) == 0)
+    {
+        return new MatchAreaODIMH5(str::trim(p.substr(7)));
+    }
+#ifdef HAVE_VM2
+    else if (strncasecmp(p.c_str(), "vm2", 3) == 0)
+    {
+        if (strncasecmp(p.c_str(), "vm2,", 4) == 0)
+            return new MatchAreaVM2(str::trim(p.substr(4)));
+        else
+            return new MatchAreaVM2(str::trim(p.substr(3)));
+    }
 #endif
-	} else 
-		throw wibble::exception::Consistency("parsing type of area to match", "unsupported area match: " + str::trim(p.substr(0, 5)));
+#ifdef HAVE_GEOS
+    else if (strncasecmp(p.c_str(), "bbox ", 5) == 0) 
+    {
+        return MatchAreaBBox::parse(str::trim(p.substr(5)));
+    }
+#endif
+    else
+        throw wibble::exception::Consistency("parsing type of area to match", "unsupported area match: " + str::trim(p.substr(0, 5)));
 }
 
 #ifdef HAVE_GEOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -152,6 +152,29 @@ void to::test<4>()
 	Matcher m = Matcher::parse("area:" + o->exactQuery());
 	ensure(m(o));
 }
+
+// Check VM2
+template<> template<>
+void to::test<5>()
+{
+	Item<Area> o = area::VM2::create(1);
+	ensure_equals(o->style(), Area::VM2);
+	const area::VM2* v = o->upcast<area::VM2>();
+	ensure_equals(v->station_id(), 1u);
+
+	ensure_equals(o, Item<Area>(area::VM2::create(1)));
+	ensure(o != area::VM2::create(2));
+
+	// Test encoding/decoding
+	ensure_serialises(o, types::TYPE_AREA);
+
+	// Test generating a matcher expression
+	ensure_equals(o->exactQuery(), "VM2,1");
+	Matcher m = Matcher::parse("area:" + o->exactQuery());
+	ensure(m(o));
+}
+
+
 
 
 

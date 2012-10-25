@@ -1,7 +1,7 @@
 /*
  * matcher/product - Product matcher
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -166,6 +166,27 @@ std::string MatchProductODIMH5::toString() const
 	return res.join();
 }
 
+MatchProductVM2::MatchProductVM2(const std::string& pattern)
+{
+    OptionalCommaList args(pattern, true);
+	variable_id = args.getInt(0, -1);
+    expr = ValueBag::parse(args.tail);
+}
+bool MatchProductVM2::matchItem(const Item<>& o) const
+{
+	const types::product::VM2* v = dynamic_cast<const types::product::VM2*>(o.ptr());
+	if (!v) return false;
+    if (variable_id != -1 && (unsigned)variable_id != v->variable_id()) return false;
+    return true;
+}
+std::string MatchProductVM2::toString() const
+{
+    CommaJoiner res;
+    res.add("VM2");
+    if (variable_id != -1) res.add(variable_id); else res.addUndef();
+    return res.join();
+}
+
 MatchProduct* MatchProduct::parse(const std::string& pattern)
 {
 	size_t beg = 0;
@@ -184,6 +205,7 @@ MatchProduct* MatchProduct::parse(const std::string& pattern)
 		case types::Product::GRIB2: return new MatchProductGRIB2(rest);
 		case types::Product::BUFR: return new MatchProductBUFR(rest);
 		case types::Product::ODIMH5: return new MatchProductODIMH5(rest);
+        case types::Product::VM2: return new MatchProductVM2(rest);
 		default:
 			throw wibble::exception::Consistency("parsing type of product to match", "unsupported product style: " + name);
 	}
