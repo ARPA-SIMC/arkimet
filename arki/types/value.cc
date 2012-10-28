@@ -38,7 +38,7 @@
 
 #define CODE types::TYPE_VALUE
 #define TAG "value"
-#define SERSIZELEN 1
+#define SERSIZELEN 0   // Not supported in version 1
 
 using namespace std;
 using namespace arki::utils;
