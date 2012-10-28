@@ -55,6 +55,7 @@ struct Value : public types::CoreType<Value>
     std::string buffer;
 
     virtual bool operator==(const Type& o) const;
+    virtual int compare(const Type& o) const;
     virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
     virtual std::ostream& writeToOstream(std::ostream& o) const;
     virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;

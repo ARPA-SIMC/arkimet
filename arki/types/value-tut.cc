@@ -43,25 +43,22 @@ TESTGRP(arki_types_value);
 template<> template<>
 void to::test<1>()
 {
-#if 0 // TODO
-	Item<Run> o = run::Minute::create(12);
-	ensure_equals(o->style(), Run::MINUTE);
-	const run::Minute* v = o->upcast<run::Minute>();
-	ensure(v);
+    using namespace utils::codec;
+    Item<Value> o = Value::create("ciao");
 
-	ensure_equals(o, Item<Run>(run::Minute::create(12)));
-	ensure_equals(o, Item<Run>(run::Minute::create(12, 0)));
+    string encoded;
+    Encoder enc(encoded);
+    o->encodeWithoutEnvelope(enc);
+    ensure_equals(encoded.size(), 4);
+    ensure_equals(encoded, "ciao");
 
-	ensure(o != run::Minute::create(12, 1));
+    ensure_equals(o, Item<Value>(Value::create("ciao")));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_RUN);
+    ensure(o != Value::create("cia"));
+    ensure(o != Value::create("ciap"));
 
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "MINUTE,12:00");
-	Matcher m = Matcher::parse("run:" + o->exactQuery());
-	ensure(m(o));
-#endif
+    // Test encoding/decoding
+    ensure_serialises(o, types::TYPE_VALUE);
 }
 
 // Test Lua functions
@@ -93,12 +90,10 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-#if 0 // TODO
-	ensure_compares(
-		run::Minute::create(12, 30),
-		run::Minute::create(13, 00),
-		run::Minute::create(13, 00));
-#endif
+    ensure_compares(
+            Value::create("ciao"),
+            Value::create("ciap"),
+            Value::create("ciap"));
 }
 
 }

@@ -60,9 +60,29 @@ bool Value::operator==(const Type& o) const
     return buffer == v->buffer;
 }
 
+int Value::compare(const Type& o) const
+{
+    using namespace wibble;
+
+    int res = CoreType<Value>::compare(o);
+    if (res != 0) return res;
+
+    // We should be the same kind, so upcast
+    const Value* v = dynamic_cast<const Value*>(&o);
+    if (!v)
+        throw wibble::exception::Consistency(
+                "comparing metadata types",
+                str::fmtf("second element claims to be `value', but is `%s' instead",
+                    typeid(&o).name()));
+
+    // Just compare buffers
+    if (buffer < v->buffer) return -1;
+    if (buffer == v->buffer) return 0;
+    return 1;
+}
+
 void Value::encodeWithoutEnvelope(Encoder& enc) const
 {
-    enc.addVarint(buffer.size());
     enc.addString(buffer);
 }
 
@@ -85,21 +105,7 @@ void Value::serialiseLocal(Emitter& e, const Formatter* f) const
 
 Item<Value> Value::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils::codec;
-#if 0
-	Decoder dec(buf, len);
-	Style s = (Style)dec.popUInt(1, "run style");
-	switch (s)
-	{
-		case MINUTE: {
-		        unsigned int m = dec.popVarint<unsigned>("run minute");
-			return run::Minute::create(m / 60, m % 60);
-		}
-		default:
-			throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
-	}
-#endif
-    return Value::create("");
+    return Value::create(string((const char*)buf, len));
 }
 
 Item<Value> Value::decodeString(const std::string& val)
