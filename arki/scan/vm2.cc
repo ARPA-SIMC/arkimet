@@ -37,6 +37,7 @@
 #include <arki/types/time.h>
 #include <arki/types/reftime.h>
 #include <arki/types/product.h>
+#include <arki/types/value.h>
 
 using namespace std;
 using namespace wibble;
@@ -86,7 +87,7 @@ const Validator& validator() { return vm_validator; }
 
 }
 
-Vm2::Vm2() : in(NULL), offset(0), size(0) {}
+Vm2::Vm2() : in(NULL), offset(0), size(0), lineno(0) {}
 
 Vm2::~Vm2()
 {
@@ -112,44 +113,65 @@ void Vm2::close()
 		in = 0;
 		offset = 0;
 		size = 0;
+        lineno = 0;
 	}
 }
 
 bool Vm2::next(Metadata& md)
 {
-	char buf[1024];
-	
-	if (fgets(buf, sizeof buf, in) == NULL)
-		return false;
+    std::string line;
+    while (true)
+    {
+        char c = fgetc(in);
+        if (c == EOF)
+            return false;
+        if (c == '\r')
+            continue;
+        if (c == '\n')
+            break;
+        line.append(1, c);
+    }
 
-	std::string line(buf);
-
-	size = line.size();
-	offset += size;
+    size = line.size();
+    offset += size;
+    ++lineno;
 
 	md.create();
 	setSource(md);
 
-	using wibble::str::Split;
-	Split splitter(",", line);
+    str::Split splitter(",", line);
+    str::Split::const_iterator i = splitter.begin();
+    if (i == splitter.end())
+        throw wibble::exception::Consistency(
+            str::fmtf("reading %s:%d", filename.c_str(), lineno),
+            "line does not contain a date field");
 
-	std::vector<std::string> vals;
-	for (Split::const_iterator i = splitter.begin();
-	     i != splitter.end(); ++i)
-	  vals.push_back(*i);
-	
-	int y, m, d, ho, mi;
-	sscanf(vals.at(0).c_str(), "%04d%02d%02d%02d%02d", &y, &m, &d, &ho, &mi);
-	using arki::types::reftime::Position;
-	md.set(Position::decodeString(str::fmtf("%04d-%02d-%02d %02d:%02d:00", y, m, d, ho, mi)));
+    int y, m, d, ho, mi;
+    if (sscanf(i->c_str(), "%04d%02d%02d%02d%02d", &y, &m, &d, &ho, &mi) != 5)
+        throw wibble::exception::Consistency(
+            str::fmtf("reading %s:%d", filename.c_str(), lineno),
+            "date cannot be parsed");
+    md.set(types::reftime::Position::create(types::Time::create(y, m, d, ho, mi, 0)));
 
-    unsigned long station_id = strtoul(vals.at(1).c_str(), NULL, 10);
-    unsigned long variable_id = strtoul(vals.at(2).c_str(), NULL, 10);
+    ++i;
+    if (i == splitter.end())
+        throw wibble::exception::Consistency(
+            str::fmtf("reading %s:%d", filename.c_str(), lineno),
+            "line does not contain a station id field");
+    unsigned long station_id = strtoul(i->c_str(), NULL, 10);
+
+    ++i;
+    if (i == splitter.end())
+        throw wibble::exception::Consistency(
+            str::fmtf("reading %s:%d", filename.c_str(), lineno),
+            "line does not contain a variable id field");
+    unsigned long variable_id = strtoul(i->c_str(), NULL, 10);
 
     md.set(types::area::VM2::create(station_id));
     md.set(types::product::VM2::create(variable_id));
+    md.set(types::Value::create(i.remainder()));
 
-	return true;
+    return true;
 }
 
 void Vm2::setSource(Metadata& md)

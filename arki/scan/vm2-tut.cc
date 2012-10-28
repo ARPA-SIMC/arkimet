@@ -31,6 +31,7 @@
 #include <arki/types/area.h>
 #include <arki/types/proddef.h>
 #include <arki/types/run.h>
+#include <arki/types/value.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
@@ -63,17 +64,17 @@ void to::test<1>()
     types::Time reftime;
     wibble::sys::Buffer buf;
 
-    scanner.open("test/data/test.vm2");
+    scanner.open("inbound/test.vm2");
     // See how we scan the first vm2
     ensure(scanner.next(md));
 
     // Check the source info
-    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", sys::fs::abspath("test/data/test.vm2"), 0, 35)));
+    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", sys::fs::abspath("inbound/test.vm2"), 0, 34)));
 
     // Check that the source can be read properly
     buf = md.getData();
-    ensure_equals(buf.size(), 35u);
-    ensure_equals(string((const char*)buf.data(), 35), "198710310000,1,227,1.2,,,000000000\n");
+    ensure_equals(buf.size(), 34u);
+    ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
 
     // Check area
     ensure(md.get(types::TYPE_AREA).defined());
@@ -82,9 +83,11 @@ void to::test<1>()
     // Check product
     ensure(md.get(types::TYPE_PRODUCT).defined());
     ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::VM2::create(227)));
-    // Check reftime 
+    // Check reftime
     ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
     ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(1987,10,31, 0, 0, 0))));
+    // Check value
+    ensure_equals(md.get<types::Value>()->buffer, "1.2,,,000000000");
 }
 
 template<> template<>

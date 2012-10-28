@@ -45,6 +45,7 @@ protected:
 	FILE* in;
 	off_t offset;
 	size_t size;
+    unsigned lineno;
 
 	/**
 	 * Set the source information in the metadata

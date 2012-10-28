@@ -77,9 +77,24 @@ void to::test<2>()
     ensure_serialises(o, types::TYPE_VALUE);
 }
 
-// Test Lua functions
+// Check binary value with zeros
 template<> template<>
 void to::test<3>()
+{
+    using namespace utils::codec;
+    Item<Value> o = Value::create(string("ci\0ao", 5));
+
+    ensure_equals(o, Item<Value>(Value::create(string("ci\0ao", 5))));
+
+    ensure(o != Value::create("ciao"));
+
+    // Test encoding/decoding
+    ensure_serialises(o, types::TYPE_VALUE);
+}
+
+// Test Lua functions
+template<> template<>
+void to::test<4>()
 {
 #if 0 // TODO
 #ifdef HAVE_LUA
@@ -104,7 +119,7 @@ void to::test<3>()
 
 // Check comparisons
 template<> template<>
-void to::test<4>()
+void to::test<5>()
 {
     ensure_compares(
             Value::create("ciao"),
