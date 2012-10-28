@@ -45,6 +45,7 @@
 #include <arki/matcher/quantity.h>
 #include <arki/types/task.h>
 #include <arki/matcher/task.h>
+#include <arki/types/value.h>
 
 namespace arki {
 namespace types {
@@ -73,6 +74,7 @@ void init_default_types()
     matcher::MatchQuantity::init();
     Task::init();
     matcher::MatchTask::init();
+    Value::init();
 }
 
 }

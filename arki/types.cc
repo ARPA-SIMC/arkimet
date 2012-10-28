@@ -68,6 +68,7 @@ Code checkCodeName(const std::string& name)
 	if (nname == "run") return TYPE_RUN;
 	if (nname == "task") 		return TYPE_TASK;
 	if (nname == "quantity") 	return TYPE_QUANTITY;
+	if (nname == "value") 	return TYPE_VALUE;
 	return TYPE_INVALID;
 }
 
@@ -99,6 +100,7 @@ std::string formatCode(const Code& c)
 		case TYPE_RUN: return "RUN";
 		case TYPE_TASK:	return "TASK";
 		case TYPE_QUANTITY:	return "QUANTITY";
+		case TYPE_VALUE:	return "VALUE";
 		default: return "unknown(" + wibble::str::fmt((int)c) + ")";
 	}
 }

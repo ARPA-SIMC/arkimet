@@ -103,6 +103,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/time.h \
 		types/timerange.h \
 		types/utils.h \
+		types/value.h \
 		utils/accounting.h \
 		utils/codec.h \
 		utils/compress.h \
@@ -174,6 +175,7 @@ libarkimet_types_la_SOURCES = \
 		types/run.cc \
 		types/task.cc \
 		types/quantity.cc \
+		types/value.cc \
 		itemset.cc \
 		metadata.cc \
 		metadata/consumer.cc \
@@ -297,6 +299,7 @@ tests_arki_test_SOURCES = \
 		types/run-tut.cc \
 		types/task-tut.cc \
 		types/quantity-tut.cc \
+		types/value-tut.cc \
 		itemset-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
