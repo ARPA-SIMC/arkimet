@@ -101,62 +101,6 @@ static bool needsQuoting(const std::string& str)
 	return false;
 }
 
-static std::string escape(const std::string& str)
-{
-	string res;
-	for (string::const_iterator i = str.begin(); i != str.end(); ++i)
-		if (*i == '\n')
-			res += "\\n";
-		else if (*i == '\t')
-			res += "\\t";
-		else if (*i == 0 || iscntrl(*i))
-		{
-			char buf[5];
-			snprintf(buf, 5, "\\x%02x", (unsigned int)*i);
-			res += buf;
-		}
-		else if (*i == '"' || *i == '\\')
-		{
-			res += "\\";
-			res += *i;
-		}
-		else
-			res += *i;
-	return res;
-}
-
-static std::string unescape(const std::string& str, size_t& lenParsed)
-{
-	string res;
-	string::const_iterator i = str.begin();
-	for ( ; i != str.end() && *i != '"'; ++i)
-		if (*i == '\\' && (i+1) != str.end())
-		{
-			switch (*(i+1))
-			{
-				case 'n': res += '\n'; break;
-				case 't': res += '\t'; break;
-				case 'x': {
-					char buf[5] = "0x\0\0";
-					// Read up to 2 extra hex digits
-					for (size_t j = 0; j < 2 && i+2+j != str.end() && isxdigit(*(i+2+j)); ++j)
-						buf[2+j] = *(i+2+j);
-					res += (char)atoi(buf);
-					break;
-				}
-				default:
-					res += *(i+1);
-					break;
-			}
-			++i;
-		} else
-			res += *i;
-	if (i != str.end() && *i == '"')
-		++i;
-	lenParsed = i - str.begin();
-	return res;
-}
-
 static inline size_t skipSpaces(const std::string& str, size_t cur)
 {
 	while (cur < str.size() && isspace(str[cur]))
@@ -344,7 +288,7 @@ struct String : public Common<std::string>
 		if (parsesAsNumber(m_val, idummy) || needsQuoting(m_val))
 		{
 			// If it is surrounded by double quotes or it parses as a number, we need to escape it
-			return "\"" + escape(m_val) + "\"";
+			return "\"" + codec::c_escape(m_val) + "\"";
 		} else {
 			// Else, we can use the value as it is
 			return m_val;
@@ -435,7 +379,7 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 
 		// Unescape the string
 		size_t parsed;
-		string res = unescape(str.substr(begin), parsed);
+		string res = codec::c_unescape(str.substr(begin), parsed);
 
 		lenParsed = skipSpaces(str, begin + parsed);
 		return new value::String(res);

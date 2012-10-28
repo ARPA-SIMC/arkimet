@@ -88,19 +88,12 @@ void Value::encodeWithoutEnvelope(Encoder& enc) const
 
 std::ostream& Value::writeToOstream(std::ostream& o) const
 {
-#if 0
-	utils::SaveIOState sis(o);
-    return o << formatStyle(style()) << "("
-			 << setfill('0') << fixed
-			 << setw(2) << (m_minute / 60) << ":"
-			 << setw(2) << (m_minute % 60) << ")";
-#endif
-    return o;
+    return o << codec::c_escape(buffer);
 }
 
 void Value::serialiseLocal(Emitter& e, const Formatter* f) const
 {
-    //e.add("va", (int)m_minute);
+    e.add("va", buffer);
 }
 
 Item<Value> Value::decode(const unsigned char* buf, size_t len)
@@ -110,46 +103,13 @@ Item<Value> Value::decode(const unsigned char* buf, size_t len)
 
 Item<Value> Value::decodeString(const std::string& val)
 {
-#if 0
-	string inner;
-	Run::Style style = outerParse<Run>(val, inner);
-	switch (style)
-	{
-		case Run::MINUTE: {
-			size_t sep = inner.find(':');
-			int hour, minute;
-			if (sep == string::npos)
-			{
-				// 12
-				hour = strtoul(inner.c_str(), 0, 10);
-				minute = 0;
-			} else {
-				// 12:00
-				hour = strtoul(inner.substr(0, sep).c_str(), 0, 10);
-				minute = strtoul(inner.substr(sep+1).c_str(), 0, 10);
-			}
-			return run::Minute::create(hour, minute);
-		}
-		default:
-			throw wibble::exception::Consistency("parsing Run", "unknown Run style " + formatStyle(style));
-	}
-#endif
-    return Value::create("");
+    size_t len;
+    return Value::create(codec::c_unescape(val, len));
 }
 
 Item<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
 {
-#if 0
-    using namespace emitter::memory;
-
-    switch (style_from_mapping(val))
-    {
-        case Run::MINUTE: return run::Minute::decodeMapping(val);
-        default:
-            throw wibble::exception::Consistency("parsing Run", "unknown Run style " + val.get_string());
-    }
-#endif
-    return Value::create("");
+    return Value::create(val["va"].want_string("parsing item value encoded in metadata"));
 }
 
 Item<Value> Value::create(const std::string& buf)
