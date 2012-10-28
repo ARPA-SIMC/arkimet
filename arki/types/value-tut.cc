@@ -39,7 +39,7 @@ struct arki_types_value_shar {
 };
 TESTGRP(arki_types_value);
 
-// Check MINUTE
+// Check text value
 template<> template<>
 void to::test<1>()
 {
@@ -61,9 +61,25 @@ void to::test<1>()
     ensure_serialises(o, types::TYPE_VALUE);
 }
 
-// Test Lua functions
+// Check binary value
 template<> template<>
 void to::test<2>()
+{
+    using namespace utils::codec;
+    Item<Value> o = Value::create("ciao♥");
+
+    ensure_equals(o, Item<Value>(Value::create("ciao♥")));
+
+    ensure(o != Value::create("ciao"));
+    ensure(o != Value::create("cia♥"));
+
+    // Test encoding/decoding
+    ensure_serialises(o, types::TYPE_VALUE);
+}
+
+// Test Lua functions
+template<> template<>
+void to::test<3>()
 {
 #if 0 // TODO
 #ifdef HAVE_LUA
@@ -88,7 +104,7 @@ void to::test<2>()
 
 // Check comparisons
 template<> template<>
-void to::test<3>()
+void to::test<4>()
 {
     ensure_compares(
             Value::create("ciao"),
