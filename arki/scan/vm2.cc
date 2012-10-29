@@ -120,11 +120,13 @@ void Vm2::close()
 bool Vm2::next(Metadata& md)
 {
     std::string line;
+    size = 0;
     while (true)
     {
         char c = fgetc(in);
         if (c == EOF)
             return false;
+        ++size;
         if (c == '\r')
             continue;
         if (c == '\n')
@@ -132,7 +134,6 @@ bool Vm2::next(Metadata& md)
         line.append(1, c);
     }
 
-    size = line.size();
     offset += size;
     ++lineno;
 
