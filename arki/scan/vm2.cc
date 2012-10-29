@@ -42,7 +42,7 @@
 using namespace std;
 using namespace wibble;
 
-#define VM2_REGEXP "^[0-9]{12},[0-9]+,[0-9]+,.*,.*,.*,.*\n$"
+#define VM2_REGEXP "^[0-9]{12},[0-9]+,[0-9]+,.*,.*,.*,.*[\r\n]*$"
 
 namespace arki {
 namespace scan {
