@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,10 @@
 namespace arki {
 namespace tests {
 
+#define LOC wibble::tests::Location(__FILE__, __LINE__, "")
+#define ILOC wibble::tests::Location(loc, __FILE__, __LINE__, "")
+#define LOCPRM const wibble::tests::Location& loc
+
 #define ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(__FILE__, __LINE__, #x " == " #y), (x), (y))
 #define inner_ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(loc, __FILE__, __LINE__, #x " == " #y), (x), (y))
 void impl_ensure_contains(const wibble::tests::Location& loc, const std::string& haystack, const std::string& needle);
@@ -36,6 +40,8 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
 #define ensure_md_equals(md, type, strval) \
     ensure_equals((md).get<type>(), type::decodeString(strval))
 
+void ensure_file_exists(LOCPRM, const std::string& fname);
+void ensure_not_file_exists(LOCPRM, const std::string& fname);
 
 }
 }

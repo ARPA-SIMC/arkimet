@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,10 +22,12 @@
 
 #include <arki/tests/test-utils.h>
 #include <wibble/exception.h>
+#include <wibble/sys/fs.h>
 #include <sstream>
 
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 namespace arki {
 namespace tests {
@@ -50,6 +52,25 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
     }
 }
 
+void ensure_file_exists(LOCPRM, const std::string& fname)
+{
+    if (not sys::fs::exists(fname))
+    {
+        std::stringstream ss;
+        ss << "file '" << fname << "' does not exists";
+        throw tut::failure(loc.msg(ss.str()));
+    }
+}
+
+void ensure_not_file_exists(LOCPRM, const std::string& fname)
+{
+    if (sys::fs::exists(fname))
+    {
+        std::stringstream ss;
+        ss << "file '" << fname << "' does exists";
+        throw tut::failure(loc.msg(ss.str()));
+    }
+}
 }
 }
 // vim:set ts=4 sw=4:
