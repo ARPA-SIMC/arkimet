@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -262,12 +262,12 @@ struct TestDataset
 
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
-        ensure(scan::scan(td.fname, input_data));
-        ensure_equals(input_data.size(), td.info.size());
+        inner_ensure(scan::scan(td.fname, input_data));
+        inner_ensure_equals(input_data.size(), td.info.size());
 
         for (unsigned i = 0; i < input_data.size(); ++i)
         {
-            ensure_equals(ds->acquire(input_data[i]), td.info[i].import_outcome);
+            inner_ensure_equals(ds->acquire(input_data[i]), td.info[i].import_outcome);
             ensure_file_exists(ILOC, str::joinpath(path, td.info[i].destfile));
         }
     }
@@ -282,7 +282,7 @@ struct TestDataset
         {
             metadata::Collection mdc;
             ds->queryData(dataset::DataQuery(td.info[i].matcher, false), mdc);
-            ensure_equals(mdc.size(), 1u);
+            inner_ensure_equals(mdc.size(), 1u);
         }
 
         // // Check that the source record that comes out is ok
