@@ -440,9 +440,11 @@ tests_arki_test_LDADD += $(LZO_LIBS)
 endif
 
 if VM2
-nobase_dist_arkiinclude_HEADERS += scan/vm2.h
-libarkimet_types_la_SOURCES += scan/vm2.cc
-tests_arki_test_SOURCES += scan/vm2-tut.cc
+nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
+libarkimet_types_la_SOURCES += scan/vm2.cc utils/vm2.cc
+tests_arki_test_SOURCES += scan/vm2-tut.cc utils/vm2-tut.cc
+libarkimet_types_la_LDFLAGS += $(VM2_LIBS)
+INCLUDES += $(VM2_CFLAGS)
 endif
 
 EXTRA_DIST = runtest buildbison buildflex \

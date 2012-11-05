@@ -172,6 +172,12 @@ void to::test<5>()
 	ensure_equals(o->exactQuery(), "VM2,1");
 	Matcher m = Matcher::parse("area:" + o->exactQuery());
 	ensure(m(o));
+
+    // Test derived values
+    ValueBag vb1 = ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
+    ensure(area::VM2::create(1)->derived_values() == vb1);
+    ValueBag vb2 = ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
+    ensure(area::VM2::create(1)->derived_values() != vb2);
 }
 
 

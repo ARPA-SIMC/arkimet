@@ -14,6 +14,12 @@ function fmt_product(v)
 		-- v.centre, v.discipline, v.category, v.number
 	elseif v.style == "BUFR" then
 		-- v.type, v.subtype, v.localsubtype
+	elseif v.style == "VM2" then
+		str = "id=" .. tostring(v.id)
+		for k, v in pairs(v.dval) do
+			str = str .. ", " .. k .. "=" .. tostring(v)
+		end
+		return str
 	end
 	return nil
 end

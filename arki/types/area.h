@@ -23,6 +23,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <memory>
+
 #include <arki/types.h>
 #include <arki/values.h>
 #include <arki/utils/geosfwd.h>
@@ -136,11 +138,13 @@ class VM2 : public Area
 {
 protected:
     unsigned m_station_id;
+    mutable std::auto_ptr<ValueBag> m_derived_values;
 
 public:
     virtual ~VM2();
 
     unsigned station_id() const { return m_station_id; }
+    const ValueBag& derived_values() const;
 
     virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;

@@ -65,6 +65,7 @@ struct MatchAreaVM2 : public MatchArea
     // This is -1 when should be ignored
     int station_id;
     ValueBag expr;
+    std::vector<int> idlist;
 
     MatchAreaVM2(const std::string& pattern);
     bool matchItem(const Item<>& o) const;

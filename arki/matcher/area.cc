@@ -29,6 +29,10 @@
 #include <wibble/regexp.h>
 #include <strings.h>
 
+#ifdef HAVE_VM2
+#include <arki/utils/vm2.h>
+#endif
+
 using namespace std;
 using namespace wibble;
 
@@ -76,6 +80,10 @@ MatchAreaVM2::MatchAreaVM2(const std::string& pattern)
     OptionalCommaList args(pattern, true);
 	station_id = args.getInt(0, -1);
     expr = ValueBag::parse(args.tail);
+#ifdef HAVE_VM2
+    if (!expr.empty())
+        idlist = utils::vm2::Source::get().find_stations(expr);
+#endif
 }
 
 bool MatchAreaVM2::matchItem(const Item<>& o) const
@@ -83,15 +91,23 @@ bool MatchAreaVM2::matchItem(const Item<>& o) const
     const types::area::VM2* v = dynamic_cast<const types::area::VM2*>(o.ptr());
     if (!v) return false;
     if (station_id != -1 && (unsigned) station_id != v->station_id()) return false;
+    if (!expr.empty() && 
+        std::find(idlist.begin(), idlist.end(), v->station_id()) == idlist.end())
+            return false;
     return true;
 }
 
 std::string MatchAreaVM2::toString() const
 {
-    CommaJoiner res;
-    res.add("VM2");
-    if (station_id != -1) res.add(station_id); else res.addUndef();
-    return res.join();
+	stringstream res;
+	res << "VM2";
+	if (station_id != -1)
+	{
+		res << "," << station_id;
+	}
+	if (!expr.empty())
+		res << ":" << expr.toString();
+	return res.str();
 }
 
 

@@ -26,6 +26,11 @@
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>
 #include <limits>
+#include <algorithm>
+
+#ifdef HAVE_VM2
+#include <arki/utils/vm2.h>
+#endif
 
 using namespace std;
 using namespace wibble;
@@ -171,20 +176,33 @@ MatchProductVM2::MatchProductVM2(const std::string& pattern)
     OptionalCommaList args(pattern, true);
 	variable_id = args.getInt(0, -1);
     expr = ValueBag::parse(args.tail);
+#ifdef HAVE_VM2
+    if (!expr.empty())
+        idlist = utils::vm2::Source::get().find_variables(expr);
+#endif
 }
 bool MatchProductVM2::matchItem(const Item<>& o) const
 {
 	const types::product::VM2* v = dynamic_cast<const types::product::VM2*>(o.ptr());
 	if (!v) return false;
+
     if (variable_id != -1 && (unsigned)variable_id != v->variable_id()) return false;
+    if (!expr.empty() && 
+        std::find(idlist.begin(), idlist.end(), v->variable_id()) == idlist.end())
+            return false;
     return true;
 }
 std::string MatchProductVM2::toString() const
 {
-    CommaJoiner res;
-    res.add("VM2");
-    if (variable_id != -1) res.add(variable_id); else res.addUndef();
-    return res.join();
+	stringstream res;
+	res << "VM2";
+	if (variable_id != -1)
+	{
+		res << "," << variable_id;
+	}
+	if (!expr.empty())
+		res << ":" << expr.toString();
+	return res.str();
 }
 
 MatchProduct* MatchProduct::parse(const std::string& pattern)

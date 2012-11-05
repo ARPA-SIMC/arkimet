@@ -350,6 +350,9 @@ void to::test<10>()
 	} catch (wibble::exception::Consistency& e) {
 		ensure(string(e.what()).find("is not a number") != string::npos);
 	}
+    ensure_not_matches("area: VM2:ciccio=riccio", md);
+    ensure_not_matches("area: VM2,1:ciccio=riccio", md);
+    ensure_matches("area: VM2,1:lon=1207738", md);
 }
 
 

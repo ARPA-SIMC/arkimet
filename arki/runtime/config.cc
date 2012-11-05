@@ -72,6 +72,9 @@ Config::Config()
 
     if (const char* envfile = getenv("ARKI_IOTRACE"))
         file_iotrace_output = envfile;
+
+    if (const char* envfile = getenv("ARKI_VM2_FILE"))
+        file_vm2_config = envfile;
 }
 
 static void describe_envvar(ostream& out, const char* envvar)

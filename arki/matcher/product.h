@@ -96,6 +96,7 @@ struct MatchProductVM2 : public MatchProduct
     // This is -1 when should be ignored
     int variable_id;
     ValueBag expr;
+    std::vector<int> idlist;
 
     MatchProductVM2(const std::string& pattern);
     bool matchItem(const Item<>& o) const;

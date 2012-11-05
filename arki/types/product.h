@@ -23,6 +23,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <memory>
+
 #include <arki/types.h>
 #include <arki/values.h>
 
@@ -225,11 +227,13 @@ class VM2 : public Product
 {
 protected:
  unsigned m_variable_id;
+ mutable std::auto_ptr<ValueBag> m_derived_values;
 
 public:
  virtual ~VM2() {}
 
  unsigned variable_id() const { return m_variable_id; }
+ const ValueBag& derived_values() const;
 
  virtual Style style() const;
  virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;

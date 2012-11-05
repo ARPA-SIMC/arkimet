@@ -121,6 +121,9 @@ void to::test<3>()
 	} catch (wibble::exception::Consistency& e) {
 		ensure(string(e.what()).find("is not a number") != string::npos);
 	}
+    ensure_not_matches("product: VM2:ciccio=riccio", md);
+    ensure_not_matches("product: VM2,1:ciccio=riccio", md);
+    ensure_matches("product: VM2,1:bcode=B20013", md);
 }
 
 }

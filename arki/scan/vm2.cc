@@ -31,6 +31,7 @@
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
 #include <cstring>
+#include <sstream>
 #include <unistd.h>
 
 #include <arki/types/area.h>
@@ -39,10 +40,13 @@
 #include <arki/types/product.h>
 #include <arki/types/value.h>
 
+#include <arki/utils/vm2.h>
+#include <vm2/parser.h>
+
 using namespace std;
 using namespace wibble;
 
-#define VM2_REGEXP "^[0-9]{12},[0-9]+,[0-9]+,.*,.*,.*,.*[\r\n]*$"
+#define VM2_REGEXP "^[0-9]{12},[0-9]+,[0-9]+,.*,.*,.*,[0-9]*[\r\n]*$"
 
 namespace arki {
 namespace scan {
@@ -63,7 +67,7 @@ struct VM2Validator : public Validator
 
         std::string s((const char *)buf, size);
 
-		wibble::Regexp re(VM2_REGEXP, 0, REG_EXTENDED);
+		wibble::Regexp re(::vm2::Parser::regexp_str, 0, REG_EXTENDED);
 		if (!re.match(s)) 
 			throw wibble::exception::Consistency("Not a valid VM2 file", s);
 	}
@@ -75,7 +79,7 @@ struct VM2Validator : public Validator
 
 		if (size == 0)
 			throw wibble::exception::Consistency("Empty VM2 file");
-		wibble::Regexp re(VM2_REGEXP, 0, REG_EXTENDED);
+        wibble::Regexp re(::vm2::Parser::regexp_str, 0, REG_EXTENDED);
 		if (!re.match(s))
 			throw wibble::exception::Consistency("Not a valid VM2 file", s);
 	}
@@ -87,11 +91,11 @@ const Validator& validator() { return vm_validator; }
 
 }
 
-Vm2::Vm2() : in(NULL), offset(0), size(0), lineno(0) {}
+Vm2::Vm2() : in(0), offset(0), size(0), parser(0) {}
 
 Vm2::~Vm2()
 {
-	if (in) fclose(in);
+    close();
 }
 
 void Vm2::open(const std::string& filename)
@@ -100,77 +104,65 @@ void Vm2::open(const std::string& filename)
 	close();
 	this->filename = sys::fs::abspath(filename);
 	this->basename = str::basename(filename);
-	if (!(in = fopen(filename.c_str(), "r")))
+    this->in = new std::ifstream(filename.c_str());
+	if (!in->good())
 		throw wibble::exception::File(filename, "opening file for reading");
+    parser = new ::vm2::Parser(*in);
 }
 
 void Vm2::close()
 {
 	filename.clear();
 	if (in)
-	{
-		fclose(in);
-		in = 0;
-		offset = 0;
-		size = 0;
-        lineno = 0;
-	}
+		in->close();
+    delete in;
+    delete parser;
+    in = 0;
+    parser = 0;
+    offset = 0;
+    size = 0;
 }
 
 bool Vm2::next(Metadata& md)
 {
+    ::vm2::Value value;
     std::string line;
     size = 0;
-    while (true)
-    {
-        char c = fgetc(in);
-        if (c == EOF)
-            return false;
-        ++size;
-        if (c == '\r')
-            continue;
-        if (c == '\n')
-            break;
-        line.append(1, c);
-    }
+
+    offset = in->tellg();
+
+    if (!parser->next(value))
+        return false;
+
+    size = in->tellg() - offset;
 
     offset += size;
-    ++lineno;
 
 	md.create();
 	setSource(md);
 
-    str::Split splitter(",", line);
-    str::Split::const_iterator i = splitter.begin();
-    if (i == splitter.end())
+    int y, m, d, ho, mi, s;
+    if (sscanf(value.reftime.c_str(), "%04d-%02d-%02dT%02d:%02d:%02dZ", &y, &m, &d, &ho, &mi, &s) != 6)
         throw wibble::exception::Consistency(
-            str::fmtf("reading %s:%d", filename.c_str(), lineno),
-            "line does not contain a date field");
-
-    int y, m, d, ho, mi;
-    if (sscanf(i->c_str(), "%04d%02d%02d%02d%02d", &y, &m, &d, &ho, &mi) != 5)
-        throw wibble::exception::Consistency(
-            str::fmtf("reading %s:%d", filename.c_str(), lineno),
+            str::fmtf("reading %s:%d", filename.c_str(), parser->lineno),
             "date cannot be parsed");
-    md.set(types::reftime::Position::create(types::Time::create(y, m, d, ho, mi, 0)));
+    md.set(types::reftime::Position::create(types::Time::create(y, m, d, ho, mi, s)));
+    md.set(types::area::VM2::create(value.station_id));
+    md.set(types::product::VM2::create(value.variable_id));
 
-    ++i;
-    if (i == splitter.end())
-        throw wibble::exception::Consistency(
-            str::fmtf("reading %s:%d", filename.c_str(), lineno),
-            "line does not contain a station id field");
-    unsigned long station_id = strtoul(i->c_str(), NULL, 10);
 
-    ++i;
-    if (i == splitter.end())
-        throw wibble::exception::Consistency(
-            str::fmtf("reading %s:%d", filename.c_str(), lineno),
-            "line does not contain a variable id field");
-    unsigned long variable_id = strtoul(i->c_str(), NULL, 10);
+    // TODO: helpers to encode/decode metadata value for VM2 files
+    std::stringstream mdvalue;
+    if (value.value1 != ::vm2::MISSING_DOUBLE) {
+        mdvalue << value.value1;
+    }
+    mdvalue << ",";
+    if (value.value2 != ::vm2::MISSING_DOUBLE) {
+        mdvalue << value.value2;
+    }
+    mdvalue << "," << value.value3 << "," << value.flags;
 
-    md.set(types::area::VM2::create(station_id));
-    md.set(types::product::VM2::create(variable_id));
-    md.set(types::Value::create(i.remainder()));
+    md.set(types::Value::create(mdvalue.str()));
 
     return true;
 }

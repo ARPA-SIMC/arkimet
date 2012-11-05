@@ -37,6 +37,10 @@
 #include <arki/utils/lua.h>
 #endif
 
+#ifdef HAVE_VM2
+#include <arki/utils/vm2.h>
+#endif
+
 #define CODE types::TYPE_AREA
 #define TAG "area"
 #define SERSIZELEN 2
@@ -333,6 +337,17 @@ Item<ODIMH5> ODIMH5::create(const ValueBag& values)
 
 VM2::~VM2() {}
 
+const ValueBag& VM2::derived_values() const {
+    if (m_derived_values.get() == 0) {
+#ifdef HAVE_VM2
+        m_derived_values.reset(new ValueBag(utils::vm2::Source::get().get_station(m_station_id)));
+#else
+        m_derived_values.reset(new ValueBag);
+#endif
+    }
+    return *m_derived_values;
+}
+
 Area::Style VM2::style() const { return Area::VM2; }
 
 void VM2::encodeWithoutEnvelope(Encoder& enc) const
@@ -361,6 +376,10 @@ bool VM2::lua_lookup(lua_State* L, const std::string& name) const
 {
     if (name == "id") {
         lua_pushnumber(L, station_id());
+#ifdef HAVE_VM2
+    } else if (name == "dval") {
+        derived_values().lua_push(L);
+#endif
     } else {
         return Area::lua_lookup(L, name);
     }

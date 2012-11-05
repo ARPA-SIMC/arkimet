@@ -382,3 +382,9 @@ elseif area.style == "ODIMH5" then
 
 	end
 end
+
+if area.style == "VM2" then
+	if area.dval and area.dval.lat and area.dval.lon then
+		bbox = { { area.dval.lat / 100000, area.dval.lon / 100000 } }
+	end
+end

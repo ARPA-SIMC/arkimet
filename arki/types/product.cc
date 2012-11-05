@@ -38,6 +38,10 @@
 #include <arki/utils/lua.h>
 #endif
 
+#ifdef HAVE_VM2
+#include <arki/utils/vm2.h>
+#endif
+
 #define CODE types::TYPE_PRODUCT
 #define TAG "product"
 #define SERSIZELEN 1
@@ -763,6 +767,17 @@ void ODIMH5::lua_register_methods(lua_State* L) const
 //	luaL_register(L, NULL, lib);
 }
 
+const ValueBag& VM2::derived_values() const {
+    if (m_derived_values.get() == 0) {
+#ifdef HAVE_VM2
+        m_derived_values.reset(new ValueBag(utils::vm2::Source::get().get_variable(m_variable_id)));
+#else
+        m_derived_values.reset(new ValueBag);
+#endif
+    }
+    return *m_derived_values;
+}
+
 Product::Style VM2::style() const
 {
 	return Product::VM2;
@@ -807,6 +822,10 @@ bool VM2::lua_lookup(lua_State* L, const std::string& name) const
 {
     if (name == "id") {
         lua_pushnumber(L, variable_id());
+#ifdef HAVE_VM2
+    } else if (name == "dval") {
+        derived_values().lua_push(L);
+#endif
     } else {
         return Product::lua_lookup(L, name);
     }

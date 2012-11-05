@@ -270,8 +270,17 @@ AM_CONDITIONAL([LZO_EMBEDDED], [test x"$LZO_VERSION" = x"embedded"])
 dnl Check for vm2 support
 if test $enable_vm2 = yes
 then
-	have_vm2=yes
-	AC_DEFINE([HAVE_VM2], 1, [vm2 format enabled])
+	dnl Check for VM2 library
+	PKG_CHECK_EXISTS([vm2], [have_vm2=yes], [have_vm2=no])
+	if test $have_vm2 = yes
+	then
+		AC_DEFINE([HAVE_VM2], 1, [vm2 format enabled])
+		PKG_CHECK_MODULES([VM2], [vm2])
+	else
+		AC_MSG_WARN([compiling without libvm2: VM2 support will be disabled])
+	fi
+else
+	have_vm=no
 fi
 AM_CONDITIONAL([VM2], [test x"$have_vm2" = x"yes" ])
 

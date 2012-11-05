@@ -108,6 +108,9 @@ struct Config
     /// I/O profiling log file
     std::string file_iotrace_output;
 
+    /// VM2 config file
+    std::string file_vm2_config;
+
 
     Config();
 

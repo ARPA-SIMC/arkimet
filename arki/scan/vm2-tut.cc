@@ -69,11 +69,11 @@ void to::test<1>()
     ensure(scanner.next(md));
 
     // Check the source info
-    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", sys::fs::abspath("inbound/test.vm2"), 0, 34)));
+    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", sys::fs::abspath("inbound/test.vm2"), 0, 35)));
 
     // Check that the source can be read properly
     buf = md.getData();
-    ensure_equals(buf.size(), 34u);
+    ensure_equals(buf.size(), 35u);
     ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
 
     // Check area
@@ -98,31 +98,30 @@ void to::test<2>()
 
     const scan::Validator& v = scan::vm2::validator();
 
-    int fd = open("test/data/test.vm2", O_RDONLY);
+    int fd = open("inbound/test.vm2", O_RDONLY);
 
 #define ensure_no_throws(x) do { try { x; } catch(wibble::exception::Generic& e) { ensure(false); } } while (0)
 #define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
 
-    ensure_no_throws(v.validate(fd, 0, 35, "test/data/test.vm2"));
-    ensure_no_throws(v.validate(fd, 35, 34, "test/data/test.vm2"));
+    ensure_no_throws(v.validate(fd, 0, 35, "inbound/test.vm2"));
+    ensure_no_throws(v.validate(fd, 0, 34, "inbound/test.vm2"));
+    ensure_no_throws(v.validate(fd, 35, 34, "inbound/test.vm2"));
 
-    ensure_throws(v.validate(fd, 1, 35, "test/data/test.vm2"));
-    ensure_throws(v.validate(fd, 0, 34, "test/data/test.vm2"));
-    ensure_throws(v.validate(fd, 0, 36, "test/data/test.vm2"));
-    ensure_throws(v.validate(fd, 34, 34, "test/data/test.vm2"));
-    ensure_throws(v.validate(fd, 36, 34, "test/data/test.vm2"));
+    ensure_throws(v.validate(fd, 1, 35, "inbound/test.vm2"));
+    ensure_throws(v.validate(fd, 0, 36, "inbound/test.vm2"));
+    ensure_throws(v.validate(fd, 34, 34, "inbound/test.vm2"));
+    ensure_throws(v.validate(fd, 36, 34, "inbound/test.vm2"));
 
     close(fd);
 
     metadata::Collection mdc;
-    scan::scan("test/data/test.vm2", mdc);
+    scan::scan("inbound/test.vm2", mdc);
     buf = mdc[0].getData();
 
     v.validate(buf.data(), buf.size());
     ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
-    ensure_throws(v.validate(buf.data(), buf.size()-1));
 
-    std::ifstream in("test/data/test.vm2");
+    std::ifstream in("inbound/test.vm2");
     std::string line;
     while (std::getline(in, line)) {
         line += "\n";
