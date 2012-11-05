@@ -211,6 +211,16 @@ void to::test<2>()
 	TEST_VARINT(uint64_t, 0x8000FFFFffffFFFFLLU, 10u);
 	TEST_VARINT(uint64_t, 0xffffFFFFffffFFFFLLU, 10u);
 }
+// Check C string (un)escaping
+template<> template<>
+void to::test<3>()
+{
+    using namespace utils::codec;
+
+    size_t len;
+    ensure_equals(c_unescape("cia\\x00o", len), string("cia\0o", 5));
+    ensure_equals(c_escape(string("cia\0o", 5)), "cia\\x00o");
+}
 
 }
 
