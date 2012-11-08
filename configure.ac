@@ -280,7 +280,7 @@ then
 		AC_MSG_WARN([compiling without libvm2: VM2 support will be disabled])
 	fi
 else
-	have_vm=no
+	have_vm2=no
 fi
 AM_CONDITIONAL([VM2], [test x"$have_vm2" = x"yes" ])
 
