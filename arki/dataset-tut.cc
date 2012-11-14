@@ -33,6 +33,7 @@
 #include <arki/types/source.h>
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
+#include <arki/utils/files.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 
@@ -58,6 +59,7 @@ struct TestDataInfo
 struct TestData
 {
     std::string fname;
+    std::string format;
     std::vector<TestDataInfo> info;
 };
 
@@ -71,16 +73,19 @@ struct arki_dataset_shar {
 	arki_dataset_shar()
 	{
         tdata_grib.fname = "inbound/test.grib1";
+        tdata_grib.format = "grib";
         tdata_grib.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2007/07-08.grib1", "reftime:=2007-07-08"));
         tdata_grib.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2007/07-07.grib1", "reftime:=2007-07-07"));
         tdata_grib.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2007/10-09.grib1", "reftime:=2007-10-09"));
 
         tdata_bufr.fname = "inbound/test.bufr";
+        tdata_bufr.format = "bufr";
         tdata_bufr.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2005/12-01.bufr", "reftime:=2005-12-01"));
         tdata_bufr.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=60"));
         tdata_bufr.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=6"));
 
         tdata_vm2.fname = "inbound/test.vm2";
+        tdata_vm2.format = "vm2";
         tdata_vm2.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,227"));
         tdata_vm2.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,228"));
         tdata_vm2.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2011/01-01.vm2", "reftime:=2011-01-01; product:VM2,1"));
@@ -343,12 +348,44 @@ struct TestDataset
         }
     }
 
+    void test_querybytes_integrity(LOCPRM)
+    {
+        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+
+        // Query everything
+        dataset::ByteQuery bq;
+        bq.setData(Matcher());
+        std::stringstream os;
+        ds->queryBytes(bq, os);
+
+        // Check that what we got matches the total size of what we imported
+        size_t total_size = 0;
+        for (unsigned i = 0; i < input_data.size(); ++i)
+        {
+            using namespace arki::types;
+            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            total_size += s1->size;
+        }
+        iatest(equals, total_size, os.str().size());
+
+        // Write the results to disk
+        utils::files::write_file("tempdata", os.str());
+
+        // Check that they can be scanned again
+        metadata::Collection mdc;
+        iatest(istrue, scan::scan("tempdata", td.format, mdc));
+
+        sys::fs::unlink("tempdata");
+    }
+
+
     void test_all(LOCPRM)
     {
         iftest(test_import);
         iftest(test_querydata);
         iftest(test_querysummary);
         iftest(test_querybytes);
+        iftest(test_querybytes_integrity);
     }
 };
 
