@@ -34,6 +34,7 @@
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
 #include <wibble/string.h>
+#include <wibble/sys/fs.h>
 
 #include <memory>
 #include <sstream>
@@ -260,6 +261,9 @@ struct TestDataset
 
     void test_import(LOCPRM)
     {
+        // Clear everything
+        if (sys::fs::isdir(path)) sys::fs::rmtree(path);
+
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
         iatest(istrue, scan::scan(td.fname, input_data));
