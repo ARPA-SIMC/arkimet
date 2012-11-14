@@ -32,23 +32,28 @@ using namespace wibble;
 namespace arki {
 namespace tests {
 
-Location::Location(const Location& parent, const std::string& file, int line)
-    : parent(&parent), file(file), line(line)
+Location::Location(const char* file, int line, const char* args)
+    : parent(0), file(file), line(line), args(args)
+{
+}
+
+Location::Location(const Location& parent, const char* file, int line, const char* args)
+    : parent(&parent), file(file), line(line), args(args)
 {
 }
 
 void Location::backtrace(std::ostream& out) const
 {
     if (parent) parent->backtrace(out);
-    if (file.empty()) return;
-    out << file << ":" << line << endl;
+    out << file << ":" << line << ":" << args << endl;
 }
 
-void Location::fail_test(const std::string& msg)
+void Location::fail_test(const std::string& msg) const
 {
     std::stringstream ss;
+    ss << "Test failed at:" << endl;
     backtrace(ss);
-    ss << msg << endl;
+    ss << file << ":" << line << ":error: " << msg << endl;
     throw tut::failure(ss.str());
 }
 
@@ -72,23 +77,29 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
     }
 }
 
-void ensure_file_exists(LOCPRM, const std::string& fname)
+void test_assert_istrue(LOCPRM, bool val)
+{
+    if (!val)
+        loc.fail_test("result is false");
+}
+
+void test_assert_file_exists(LOCPRM, const std::string& fname)
 {
     if (not sys::fs::exists(fname))
     {
         std::stringstream ss;
         ss << "file '" << fname << "' does not exists";
-        throw tut::failure(loc.msg(ss.str()));
+        loc.fail_test(ss.str());
     }
 }
 
-void ensure_not_file_exists(LOCPRM, const std::string& fname)
+void test_assert_not_file_exists(LOCPRM, const std::string& fname)
 {
     if (sys::fs::exists(fname))
     {
         std::stringstream ss;
         ss << "file '" << fname << "' does exists";
-        throw tut::failure(loc.msg(ss.str()));
+        loc.fail_test(ss.str());
     }
 }
 }

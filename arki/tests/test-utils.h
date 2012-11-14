@@ -30,18 +30,19 @@ namespace tests {
 class Location
 {
     const Location* parent;
-    const std::string& file;
+    const char* file;
     int line;
+    const char* args;
 
-    Location(const Location& parent, const std::string& file, int line);
+public:
+    Location(const char* file, int line, const char* args=0);
+    Location(const Location& parent, const char* file, int line, const char* args=0);
 
-    void fail_test(const std::string& msg) ALWAYS_THROWS;
+    void fail_test(const std::string& msg) const ALWAYS_THROWS;
     void backtrace(std::ostream& out) const;
 };
 
-#define LOC wibble::tests::Location(__FILE__, __LINE__, "")
-#define ILOC wibble::tests::Location(loc, __FILE__, __LINE__, "")
-#define LOCPRM const wibble::tests::Location& loc
+#define LOCPRM const arki::tests::Location& loc
 
 #define ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(__FILE__, __LINE__, #x " == " #y), (x), (y))
 #define inner_ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(loc, __FILE__, __LINE__, #x " == " #y), (x), (y))
@@ -54,8 +55,33 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
 #define ensure_md_equals(md, type, strval) \
     ensure_equals((md).get<type>(), type::decodeString(strval))
 
-void ensure_file_exists(LOCPRM, const std::string& fname);
-void ensure_not_file_exists(LOCPRM, const std::string& fname);
+void test_assert_istrue(LOCPRM, bool val);
+
+template <class Expected, class Actual>
+void test_assert_equals(LOCPRM, const Expected& expected, const Actual& actual)
+{
+    if( expected != actual )
+    {
+        std::stringstream ss;
+        ss << "expected '" << expected << "' actual '" << actual << "'";
+        loc.fail_test(ss.str());
+    }
+}
+
+void test_assert_file_exists(LOCPRM, const std::string& fname);
+void test_assert_not_file_exists(LOCPRM, const std::string& fname);
+
+// arki::tests::test_assert_* test
+#define atest(test, ...) arki::tests::test_assert_##test(arki::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
+
+// function test, just runs the function without mangling its name
+#define ftest(test, ...) test(arki::tests::Location(__FILE__, __LINE__, #test "(" #__VA_ARGS__ ")"), ##__VA_ARGS__)
+
+// internal arkimet test, passes existing 'loc'
+#define iatest(test, ...) arki::tests::test_assert_##test(arki::tests::Location(loc, __FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
+
+// internal function test, passes existing 'loc'
+#define iftest(test, ...) test(arki::tests::Location(loc, __FILE__, __LINE__, #test "(" #__VA_ARGS__ ")"), ##__VA_ARGS__)
 
 }
 }

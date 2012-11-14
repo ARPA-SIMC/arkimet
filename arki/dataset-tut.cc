@@ -262,13 +262,13 @@ struct TestDataset
 
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
-        inner_ensure(scan::scan(td.fname, input_data));
-        inner_ensure_equals(input_data.size(), td.info.size());
+        iatest(istrue, scan::scan(td.fname, input_data));
+        iatest(equals, td.info.size(), input_data.size());
 
         for (unsigned i = 0; i < input_data.size(); ++i)
         {
-            inner_ensure_equals(ds->acquire(input_data[i]), td.info[i].import_outcome);
-            ensure_file_exists(ILOC, str::joinpath(path, td.info[i].destfile));
+            iatest(equals, td.info[i].import_outcome, ds->acquire(input_data[i]));
+            iatest(file_exists, str::joinpath(path, td.info[i].destfile));
         }
     }
 
@@ -282,7 +282,7 @@ struct TestDataset
         {
             metadata::Collection mdc;
             ds->queryData(dataset::DataQuery(td.info[i].matcher, false), mdc);
-            inner_ensure_equals(mdc.size(), 1u);
+            iatest(equals, 1u, mdc.size());
         }
 
         // // Check that the source record that comes out is ok
@@ -319,7 +319,7 @@ void to::test<14>()
         "name = test\n"
         "path = test\n"
     );
-    tds.test_import(LOC);
+    ftest(tds.test_import);
 }
 
 template<> template<>
@@ -335,7 +335,7 @@ void to::test<15>()
         "name = test\n"
         "path = test\n"
     );
-    tds.test_import(LOC);
+    ftest(tds.test_import);
 }
 
 template<> template<>
@@ -351,7 +351,7 @@ void to::test<16>()
         "name = test\n"
         "path = test\n"
     );
-    tds.test_import(LOC);
+    ftest(tds.test_import);
 }
 
 }
