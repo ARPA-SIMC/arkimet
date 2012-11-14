@@ -273,7 +273,7 @@ struct TestDataset
         }
     }
 
-    void test_dataquery(LOCPRM)
+    void test_querydata(LOCPRM)
     {
         using namespace arki::tests;
 
@@ -297,6 +297,12 @@ struct TestDataset
             iatest(istrue, td.info[i].matcher(mdc[0]));
         }
     }
+
+    void test_all(LOCPRM)
+    {
+        iftest(test_import);
+        iftest(test_querydata);
+    }
 };
 
 template<> template<>
@@ -312,7 +318,7 @@ void to::test<14>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_import);
+    ftest(tds.test_all);
 }
 
 template<> template<>
@@ -328,7 +334,7 @@ void to::test<15>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_import);
+    ftest(tds.test_all);
 }
 
 template<> template<>
@@ -344,7 +350,7 @@ void to::test<16>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_import);
+    ftest(tds.test_all);
 }
 
 }
