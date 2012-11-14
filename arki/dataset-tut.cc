@@ -29,6 +29,7 @@
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/simple/writer.h>
 #include <arki/metadata/collection.h>
+#include <arki/types/source.h>
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
 #include <wibble/string.h>
@@ -280,30 +281,22 @@ struct TestDataset
 
         for (unsigned i = 0; i < input_data.size(); ++i)
         {
+            using namespace arki::types;
+
+            // Check that what we imported can be queried
             metadata::Collection mdc;
             ds->queryData(dataset::DataQuery(td.info[i].matcher, false), mdc);
             iatest(equals, 1u, mdc.size());
+
+            // Check that the result matches what was imported
+            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            UItem<source::Blob> s2 = mdc[0].source.upcast<source::Blob>();
+            iatest(equals, s1->format, s2->format);
+            iatest(equals, s1->size, s2->size);
+
+            iatest(istrue, td.info[i].matcher(mdc[0]));
         }
-
-        // // Check that the source record that comes out is ok
-        // UItem<Source> source = mdc[0].source;
-        // ensure_equals(source->style(), Source::BLOB);
-        // ensure_equals(source->format, "grib1");
-        // UItem<source::Blob> blob = source.upcast<source::Blob>();
-        // ensure_equals(blob->filename, sys::fs::abspath("test200/2007/07-08.grib1"));
-        // ensure_equals(blob->offset, 0u);
-        // ensure_equals(blob->size, 7218u);
-
-        // mdc.clear();
-        // testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
-        // ensure_equals(mdc.size(), 0u);
-
-        // mdc.clear();
-        // testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
-        // ensure_equals(mdc.size(), 0u);
     }
-
-
 };
 
 template<> template<>
