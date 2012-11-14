@@ -32,17 +32,12 @@ using namespace wibble;
 namespace arki {
 namespace tests {
 
-Location::Location()
-    : parent(0), line(0)
-{
-}
-
 Location::Location(const Location& parent, const std::string& file, int line)
     : parent(&parent), file(file), line(line)
 {
 }
 
-void backtrace(std::ostream& out)
+void Location::backtrace(std::ostream& out) const
 {
     if (parent) parent->backtrace(out);
     if (file.empty()) return;
@@ -54,7 +49,7 @@ void Location::fail_test(const std::string& msg)
     std::stringstream ss;
     backtrace(ss);
     ss << msg << endl;
-    return ss.str();
+    throw tut::failure(ss.str());
 }
 
 void impl_ensure_contains(const wibble::tests::Location& loc, const std::string& haystack, const std::string& needle)
