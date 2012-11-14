@@ -4,7 +4,7 @@
 /*
  * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,7 +102,12 @@ ino_t inode(const std::string& file);
  * Same as wibble::sys::fs::readFile, but if \a file is "-" then reads all from
  * stdin
  */
-std::string readFile(const std::string &file);
+std::string read_file(const std::string &file);
+
+/**
+ * Atomically writes a string to a file, replacing all existing contents
+ */
+void write_file(const std::string &file, const std::string& contents);
 
 /**
  * Compute the absolute path of an executable.

@@ -1,7 +1,7 @@
 /*
  * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <cerrno>
 
 
@@ -129,7 +131,7 @@ ino_t inode(const std::string& file)
     return st.get() == NULL ? 0 : st->st_ino;
 }
 
-std::string readFile(const std::string &file)
+std::string read_file(const std::string &file)
 {
     if (file == "-")
     {
@@ -141,6 +143,23 @@ std::string readFile(const std::string &file)
     }
     else
         return sys::fs::readFile(file);
+}
+
+void write_file(const std::string &file, const std::string& contents)
+{
+    char fbuf[file.size() + 7];
+    memcpy(fbuf, file.data(), file.size());
+    memcpy(fbuf + file.size(), "XXXXXX", 7);
+    int fd = mkstemp(fbuf);
+    if (fd < 0)
+        throw wibble::exception::System("creating temp file " + string(fbuf));
+    ssize_t res = write(fd, contents.data(), contents.size());
+    if (res != contents.size())
+        throw wibble::exception::System(str::fmtf("writing %d bytes to %s", contents.size(), fbuf));
+    if (close(fd) < 0)
+        throw wibble::exception::System("closing file " + string(fbuf));
+    if (rename(fbuf, file.c_str()) < 0)
+        throw wibble::exception::System("renaming file " + string(fbuf) + " to " + file);
 }
 
 std::string find_executable(const std::string& name)

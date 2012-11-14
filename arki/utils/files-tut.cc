@@ -136,6 +136,18 @@ void to::test<5>()
 	ensure_equals(timestamp("commontest/a"), 0);
 }
 
+// Test readFile and writeFile
+template<> template<>
+void to::test<6>()
+{
+    using namespace arki::utils::files;
+    string test("ciao");
+
+    write_file("testfile", test);
+    string test1 = read_file("testfile");
+    atest(equals, test, test1);
+}
+
 }
 
 // vim:set ts=4 sw=4:
