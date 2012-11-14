@@ -25,6 +25,21 @@
 namespace arki {
 namespace tests {
 
+#define ALWAYS_THROWS __attribute__ ((noreturn))
+
+class Location
+{
+    const Location* parent;
+    const std::string& file;
+    int line;
+
+    Location();
+    Location(const Location& parent, const std::string& file, int line);
+
+    void fail_test(const std::string& msg) ALWAYS_THROWS;
+    void backtrace(std::ostream& out);
+};
+
 #define LOC wibble::tests::Location(__FILE__, __LINE__, "")
 #define ILOC wibble::tests::Location(loc, __FILE__, __LINE__, "")
 #define LOCPRM const wibble::tests::Location& loc
