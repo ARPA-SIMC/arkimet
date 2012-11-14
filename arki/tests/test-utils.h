@@ -72,16 +72,16 @@ void test_assert_file_exists(LOCPRM, const std::string& fname);
 void test_assert_not_file_exists(LOCPRM, const std::string& fname);
 
 // arki::tests::test_assert_* test
-#define atest(test, ...) arki::tests::test_assert_##test(arki::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
+#define atest(test, ...) arki::tests::test_assert_##test(arki::tests::Location(__FILE__, __LINE__, #test ": " #__VA_ARGS__), ##__VA_ARGS__)
 
 // function test, just runs the function without mangling its name
-#define ftest(test, ...) test(arki::tests::Location(__FILE__, __LINE__, #test "(" #__VA_ARGS__ ")"), ##__VA_ARGS__)
+#define ftest(test, ...) test(arki::tests::Location(__FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), ##__VA_ARGS__)
 
 // internal arkimet test, passes existing 'loc'
-#define iatest(test, ...) arki::tests::test_assert_##test(arki::tests::Location(loc, __FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
+#define iatest(test, ...) arki::tests::test_assert_##test(arki::tests::Location(loc, __FILE__, __LINE__, #test ": " #__VA_ARGS__), ##__VA_ARGS__)
 
 // internal function test, passes existing 'loc'
-#define iftest(test, ...) test(arki::tests::Location(loc, __FILE__, __LINE__, #test "(" #__VA_ARGS__ ")"), ##__VA_ARGS__)
+#define iftest(test, ...) test(arki::tests::Location(loc, __FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), ##__VA_ARGS__)
 
 }
 }

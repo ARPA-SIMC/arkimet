@@ -29,6 +29,7 @@
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/simple/writer.h>
 #include <arki/metadata/collection.h>
+#include <arki/summary.h>
 #include <arki/types/source.h>
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
@@ -259,8 +260,6 @@ struct TestDataset
 
     void test_import(LOCPRM)
     {
-        using namespace arki::tests;
-
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
         iatest(istrue, scan::scan(td.fname, input_data));
@@ -275,8 +274,6 @@ struct TestDataset
 
     void test_querydata(LOCPRM)
     {
-        using namespace arki::tests;
-
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
         for (unsigned i = 0; i < input_data.size(); ++i)
@@ -298,10 +295,56 @@ struct TestDataset
         }
     }
 
+    void test_querysummary(LOCPRM)
+    {
+        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+
+        // Query summary of everything
+        {
+            Summary s;
+            ds->querySummary(Matcher(), s);
+            iatest(equals, input_data.size(), s.count());
+        }
+
+        for (unsigned i = 0; i < input_data.size(); ++i)
+        {
+            using namespace arki::types;
+
+            // Query summary of single items
+            Summary s;
+            ds->querySummary(td.info[i].matcher, s);
+
+            iatest(equals, 1u, s.count());
+
+            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            iatest(equals, s1->size, s.size());
+        }
+    }
+
+    void test_querybytes(LOCPRM)
+    {
+        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+
+        for (unsigned i = 0; i < input_data.size(); ++i)
+        {
+            using namespace arki::types;
+
+            dataset::ByteQuery bq;
+            bq.setData(td.info[i].matcher);
+            std::stringstream os;
+            ds->queryBytes(bq, os);
+
+            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            iatest(equals, s1->size, os.str().size());
+        }
+    }
+
     void test_all(LOCPRM)
     {
         iftest(test_import);
         iftest(test_querydata);
+        iftest(test_querysummary);
+        iftest(test_querybytes);
     }
 };
 
