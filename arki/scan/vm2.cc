@@ -91,7 +91,7 @@ const Validator& validator() { return vm_validator; }
 
 }
 
-Vm2::Vm2() : in(0), offset(0), size(0), parser(0) {}
+Vm2::Vm2() : in(0), parser(0) {}
 
 Vm2::~Vm2()
 {
@@ -116,30 +116,25 @@ void Vm2::close()
 	if (in)
 		in->close();
     delete in;
-    delete parser;
+    if (parser) delete parser;
     in = 0;
     parser = 0;
-    offset = 0;
-    size = 0;
 }
 
 bool Vm2::next(Metadata& md)
 {
     ::vm2::Value value;
     std::string line;
-    size = 0;
 
-    offset = in->tellg();
-
-    if (!parser->next(value))
+    off_t offset = in->tellg();
+    if (!parser->next(value, line))
         return false;
 
-    size = in->tellg() - offset;
+    size_t size = line.size();
 
-    offset += size;
-
-	md.create();
-	setSource(md);
+    md.create();
+    md.source = types::source::Blob::create("vm2", filename, offset, size);
+    md.add_note(types::Note::create("Scanned from " + basename));
 
     int y, m, d, ho, mi, s;
     if (sscanf(value.reftime.c_str(), "%04d-%02d-%02dT%02d:%02d:%02dZ", &y, &m, &d, &ho, &mi, &s) != 6)
@@ -150,27 +145,14 @@ bool Vm2::next(Metadata& md)
     md.set(types::area::VM2::create(value.station_id));
     md.set(types::product::VM2::create(value.variable_id));
 
-
-    // TODO: helpers to encode/decode metadata value for VM2 files
-    std::stringstream mdvalue;
-    if (value.value1 != ::vm2::MISSING_DOUBLE) {
-        mdvalue << value.value1;
-    }
-    mdvalue << ",";
-    if (value.value2 != ::vm2::MISSING_DOUBLE) {
-        mdvalue << value.value2;
-    }
-    mdvalue << "," << value.value3 << "," << value.flags;
-
-    md.set(types::Value::create(mdvalue.str()));
+    // Look for the comma before the value starts
+    size_t pos = 13;
+    pos = line.find(',', pos);
+    pos = line.find(',', pos + 1);
+    // Store the rest as a value
+    md.set(types::Value::create(line.substr(pos+1)));
 
     return true;
-}
-
-void Vm2::setSource(Metadata& md)
-{
-	md.source = types::source::Blob::create("vm2", filename, offset - size, size);
-	md.add_note(types::Note::create("Scanned from " + basename));
 }
 
 }

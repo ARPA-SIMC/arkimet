@@ -69,11 +69,11 @@ void to::test<1>()
     ensure(scanner.next(md));
 
     // Check the source info
-    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", sys::fs::abspath("inbound/test.vm2"), 0, 35)));
+    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", sys::fs::abspath("inbound/test.vm2"), 0, 34)));
 
     // Check that the source can be read properly
     buf = md.getData();
-    ensure_equals(buf.size(), 35u);
+    ensure_equals(buf.size(), 34u);
     ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
 
     // Check area

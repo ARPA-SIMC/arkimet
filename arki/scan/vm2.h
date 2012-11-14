@@ -28,7 +28,9 @@
 #include <unistd.h>
 #include <fstream>
 
-#include <vm2/parser.h>
+namespace vm2 {
+class Parser;
+}
 
 namespace arki {
 class Metadata;
@@ -46,16 +48,9 @@ protected:
     std::ifstream* in;
 	std::string filename;
 	std::string basename;
-	off_t offset;
-	size_t size;
     unsigned lineno;
 
     ::vm2::Parser* parser;
-
-	/**
-	 * Set the source information in the metadata
-	 */
-	virtual void setSource(Metadata& md);
 
 public:
 	Vm2();
