@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2012  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,8 +78,8 @@ void to::test<1>()
 	size_t totsize = 0;
 	scanner.open("inbound/test.grib1");
 
-	{
-		Datafile df("./" + fname);
+    {
+        Datafile df("./" + fname, "grib");
 
 		// It should exist but be empty
 		ensure(sys::fs::exists(fname));
@@ -92,9 +92,15 @@ void to::test<1>()
 
 		// Append the data
 		df.append(md);
-		// The new data is there
-		ensure_equals(filesize(fname), size);
-		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, 0, size)));
+
+        // The new data is there
+        atest(equals, size, filesize(fname));
+        UItem<types::source::Blob> s = md.source.upcast<types::source::Blob>();
+        atest(equals, "grib1", s->format);
+        atest(equals, 0u, s->offset);
+        atest(equals, size, s->size);
+        atest(endswith, fname, s->filename);
+
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
 		ensure(!sys::fs::exists(sumfname));
@@ -107,9 +113,15 @@ void to::test<1>()
 		size = datasize(md);
 
 		df.append(md);
-		// The new data is there
-		ensure_equals(filesize(fname), totsize + size);
-		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
+
+        // The new data is there
+        atest(equals, totsize + size, filesize(fname));
+        s = md.source.upcast<types::source::Blob>();
+        atest(equals, "grib1", s->format);
+        atest(equals, totsize, s->offset);
+        atest(equals, size, s->size);
+        atest(endswith, fname, s->filename);
+
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
 		ensure(!sys::fs::exists(sumfname));
@@ -129,9 +141,15 @@ void to::test<1>()
 		size = datasize(md);
 
 		df.append(md);
-		// The new data is there
-		ensure_equals(filesize(fname), totsize + size);
-		ensure_equals(md.source, Item<types::Source>(types::source::Blob::create("grib1", fname, totsize, size)));
+
+        // The new data is there
+        atest(equals, totsize + size, filesize(fname));
+        s = md.source.upcast<types::source::Blob>();
+        atest(equals, "grib1", s->format);
+        atest(equals, totsize, s->offset);
+        atest(equals, size, s->size);
+        atest(endswith, fname, s->filename);
+
 		// Metadata and summaries don't get touched
 		ensure_equals(utils::files::inode(mdfname), inomd);
 		ensure_equals(utils::files::inode(sumfname), inosum);

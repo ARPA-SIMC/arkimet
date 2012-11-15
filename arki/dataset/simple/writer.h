@@ -51,8 +51,8 @@ protected:
 	TargetFile* m_tf;
 	std::map<std::string, Datafile*> m_df_cache;
 
-	/// Return a (shared) instance of the Datafile for the given relative pathname
-	Datafile* file(const std::string& pathname);
+    /// Return a (shared) instance of the Datafile for the given relative pathname
+    Datafile* file(const std::string& pathname, const std::string& format);
 
 public:
 	Writer(const ConfigFile& cfg);

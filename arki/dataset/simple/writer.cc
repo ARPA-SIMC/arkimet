@@ -93,7 +93,7 @@ Writer::~Writer()
 	if (m_mft) delete m_mft;
 }
 
-Datafile* Writer::file(const std::string& pathname)
+Datafile* Writer::file(const std::string& pathname, const std::string& format)
 {
 	std::map<std::string, Datafile*>::iterator i = m_df_cache.find(pathname);
 	if (i != m_df_cache.end())
@@ -109,17 +109,17 @@ Datafile* Writer::file(const std::string& pathname)
 		throw wibble::exception::Consistency("accessing data file " + pathname,
 				"cannot update compressed data files: please manually uncompress it first");
 
-	Datafile* res = new Datafile(pn);
-	m_df_cache.insert(make_pair(pathname, res));
-	return res;
+    Datafile* res = new Datafile(pn, format);
+    m_df_cache.insert(make_pair(pathname, res));
+    return res;
 }
 
 WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
 	// TODO: refuse if md is before "archive age"
 
-	string reldest = (*m_tf)(md) + "." + md.source->format;
-	Datafile* df = file(reldest);
+    string reldest = (*m_tf)(md) + "." + md.source->format;
+    Datafile* df = file(reldest, md.source->format);
 
 	// Try appending
 	UItem<types::AssignedDataset> oldads = md.get<types::AssignedDataset>();
@@ -252,7 +252,7 @@ void Writer::flush()
 	for (std::map<std::string, Datafile*>::iterator i = m_df_cache.begin();
 			i != m_df_cache.end(); ++i)
 	{
-		m_mft->acquire(i->first, utils::files::timestamp(i->second->pathname), i->second->sum);
+		m_mft->acquire(i->first, utils::files::timestamp(i->second->mdbuf.pathname), i->second->mdbuf.sum);
 		delete i->second;
 	}
 	m_df_cache.clear();

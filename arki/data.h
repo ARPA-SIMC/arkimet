@@ -42,27 +42,14 @@ protected:
     T* impl;
 
 public:
-    Base(T* impl) : impl(impl)
-    {
-        impl->ref();
-    }
-
-    Base(const Base<T>& val)
-        : impl(val.impl)
-    {
-        impl->ref();
-    }
-
-    ~Base() { impl->unref(); }
+    Base(T* impl);
+    Base(const Base<T>& val);
+    ~Base();
 
     /// Assignment
-    Base<T>& operator=(const Base<T>& val)
-    {
-        if (val.impl) val.impl->ref();
-        impl->unref();
-        impl = val.impl;
-        return *this;
-    }
+    Base<T>& operator=(const Base<T>& val);
+
+    const std::string& fname() const;
 };
 
 class Reader : Base<impl::Reader>

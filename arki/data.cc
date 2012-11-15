@@ -28,6 +28,38 @@
 namespace arki {
 namespace data {
 
+template<typename T>
+Base<T>::Base(T* impl) : impl(impl)
+{
+    impl->ref();
+}
+
+template<typename T>
+Base<T>::Base(const Base<T>& val)
+    : impl(val.impl)
+{
+    impl->ref();
+}
+
+template<typename T>
+Base<T>::~Base() { impl->unref(); }
+
+template<typename T>
+Base<T>& Base<T>::operator=(const Base<T>& val)
+{
+    if (val.impl) val.impl->ref();
+    impl->unref();
+    impl = val.impl;
+    return *this;
+}
+
+template<typename T>
+const std::string& Base<T>::fname() const { return impl->fname; }
+
+template class Base<impl::Reader>;
+template class Base<impl::Writer>;
+
+
 Reader::Reader(impl::Reader* impl) : Base<impl::Reader>(impl) {}
 Reader::~Reader() {}
 
@@ -54,7 +86,7 @@ Writer Writer::get(const std::string& format, const std::string& fname)
         return Writer(w);
 
     // Else we need to create an appropriate one
-    if (format == "grib")
+    if (format == "grib" || format == "grib1" || format == "grib2")
     {
         return Writer(reg.add(new concat::Writer(fname)));
     } else if (format == "bufr") {

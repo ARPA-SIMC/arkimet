@@ -22,6 +22,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <wibble/exception.h>
+#include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
 
@@ -74,6 +75,16 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
         std::stringstream ss;
         ss << "'" << haystack << "' must not contain '" << needle << "'";
         throw tut::failure(loc.msg(ss.str()));
+    }
+}
+
+void test_assert_endswith(LOCPRM, const std::string& expected, const std::string& actual)
+{
+    if (!str::endsWith(actual, expected))
+    {
+        std::stringstream ss;
+        ss << "'" << actual << "' does not end with '" << expected << "'";
+        loc.fail_test(ss.str());
     }
 }
 

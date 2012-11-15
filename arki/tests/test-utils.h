@@ -69,6 +69,7 @@ void test_assert_equals(LOCPRM, const Expected& expected, const Actual& actual)
     }
 }
 
+void test_assert_endswith(LOCPRM, const std::string& expected, const std::string& actual);
 void test_assert_file_exists(LOCPRM, const std::string& fname);
 void test_assert_not_file_exists(LOCPRM, const std::string& fname);
 

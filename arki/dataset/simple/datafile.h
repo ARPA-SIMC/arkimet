@@ -4,7 +4,7 @@
 /*
  * dataset/simple/datafile - Handle a data file plus its associated files
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <string>
 #include <arki/summary.h>
 #include <arki/metadata/collection.h>
+#include <arki/data.h>
 
 namespace arki {
 class Metadata;
@@ -33,24 +34,38 @@ class Metadata;
 namespace dataset {
 namespace simple {
 
+namespace datafile {
+
+/// Accumulate metadata and summaries while writing
+struct MdBuf
+{
+    std::string pathname;
+    std::string basename;
+    bool flushed;
+    metadata::Collection mds;
+    Summary sum;
+
+    MdBuf(const std::string& pathname);
+    ~MdBuf();
+
+    void add(const Metadata& md);
+    void flush();
+};
+
+}
+
 /**
  * Manage a data file in the Ondisk dataset, including all accessory files,
  * like metadata file and flagfiles
  */
 struct Datafile
 {
-	// Full path to the data file
-	std::string pathname;
-	std::string basename;
-	int fd;
-	metadata::Collection mds;
-	Summary sum;
+    // Full path to the data file
+    data::Writer writer;
+    datafile::MdBuf mdbuf;
 
-	Datafile(const std::string& pathname);
-	~Datafile();
-
-	void lock();
-	void unlock();
+    Datafile(const std::string& pathname, const std::string& format);
+    ~Datafile();
 
 	void flush();
 

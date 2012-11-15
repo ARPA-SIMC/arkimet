@@ -1,7 +1,7 @@
 /*
  * dataset/simple/datafile - Handle a data file plus its associated files
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,120 +46,79 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-Datafile::Datafile(const std::string& pathname)
-	: pathname(pathname), basename(str::basename(pathname)), fd(-1)
+namespace datafile {
+
+MdBuf::MdBuf(const std::string& pathname)
+    : pathname(pathname), basename(str::basename(pathname)), flushed(true)
 {
-	if (sys::fs::exists(pathname))
-	{
-		// Read the metadata
-		scan::scan(pathname, mds);
+    if (sys::fs::exists(pathname))
+    {
+        // Read the metadata
+        scan::scan(pathname, mds);
 
-		// Read the summary
-		if (!mds.empty())
-		{
-			string sumfname = pathname + ".summary";
-			if (utils::files::timestamp(pathname) <= utils::files::timestamp(sumfname))
-				sum.readFile(sumfname);
-			else
-			{
-				metadata::Summarise s(sum);
-				mds.sendTo(s);
-			}
-		}
-	}
+        // Read the summary
+        if (!mds.empty())
+        {
+            string sumfname = pathname + ".summary";
+            if (utils::files::timestamp(pathname) <= utils::files::timestamp(sumfname))
+                sum.readFile(sumfname);
+            else
+            {
+                metadata::Summarise s(sum);
+                mds.sendTo(s);
+            }
+        }
+    }
+}
 
-	// Open the data file
-	fd = ::open(pathname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
-	if (fd == -1)
-		throw wibble::exception::File(pathname, "opening file for appending data");
+MdBuf::~MdBuf()
+{
+    flush();
+}
+
+void MdBuf::add(const Metadata& md)
+{
+    using namespace arki::types;
+
+    mds.push_back(md);
+
+    // Replace the pathname with its basename
+    Item<source::Blob> os = md.source.upcast<source::Blob>();
+    mds.back().source = types::source::Blob::create(os->format, basename, os->offset, os->size);
+
+    sum.add(md);
+    flushed = false;
+}
+
+void MdBuf::flush()
+{
+    if (flushed) return;
+    mds.writeAtomically(pathname + ".metadata");
+    sum.writeAtomically(pathname + ".summary");
+}
+
+}
+
+Datafile::Datafile(const std::string& pathname, const std::string& format)
+    : writer(data::Writer::get(format, pathname)), mdbuf(pathname)
+{
 }
 
 Datafile::~Datafile()
 {
-	// Close files
-	if (fd != -1 && ::close(fd) == -1)
-		throw wibble::exception::File(pathname, "Closing file");
-	flush();
-}
-
-void Datafile::lock()
-{
-	struct flock lock;
-	lock.l_type = F_WRLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 0;
-	// Use SETLKW, so that if it is already locked, we just wait
-	if (fcntl(fd, F_SETLKW, &lock) == -1)
-		throw wibble::exception::System("locking the file " + pathname + " for writing");
-}
-
-void Datafile::unlock()
-{
-	struct flock lock;
-	lock.l_type = F_UNLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 0;
-	fcntl(fd, F_SETLK, &lock);
 }
 
 void Datafile::flush()
 {
-	mds.writeAtomically(pathname + ".metadata");
-	sum.writeAtomically(pathname + ".summary");
+    mdbuf.flush();
 }
 
 void Datafile::append(Metadata& md)
 {
-	// Make a backup of the original source metadata item
-	UItem<types::Source> origSource = md.source;
-
-	// Get the data blob to append
-	sys::Buffer buf = md.getData();
-
-	// Lock the file so that we are the only ones writing to it
-	lock();
-
-	// Get the write position in the data file
-	off_t wrpos = lseek(fd, 0, SEEK_END);
-	if (wrpos == (off_t)-1)
-		throw wibble::exception::File(pathname, "reading the current position");
-
-	// Set the source information that we are writing in the metadata
-	md.source = types::source::Blob::create(origSource->format, basename, wrpos, buf.size());
-
-	// Prevent caching (ignore function result)
-	(void)posix_fadvise(fd, wrpos, buf.size(), POSIX_FADV_DONTNEED);
-
-	try {
-		// Append the data
-		ssize_t res = write(fd, buf.data(), buf.size());
-		if (res < 0 || (unsigned)res != buf.size())
-			throw wibble::exception::File(pathname, "writing " + str::fmt(buf.size()) + " bytes to " + pathname);
-
-		if (fdatasync(fd) < 0)
-			throw wibble::exception::File(pathname, "flushing write to " + pathname);
-	} catch (...) {
-		// Damage mitigation, useful at least after a partial append in
-		// case of disk full
-		md.source = origSource;
-
-		// If we had a problem, attempt to truncate the file to the original size
-		if (ftruncate(fd, wrpos) == -1)
-			nag::warning("truncating %s to previous size %zd abort append: %m", pathname.c_str(), wrpos);
-
-		unlock();
-
-		throw;
-	}
-
-	unlock();
-
-	mds.push_back(md);
-	sum.add(md);
+    writer.append(md);
+    mdbuf.add(md);
 }
-			
+
 }
 }
 }
