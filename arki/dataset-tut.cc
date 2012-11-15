@@ -437,6 +437,54 @@ void to::test<16>()
     ftest(tds.test_all);
 }
 
+template<> template<>
+void to::test<17>()
+{
+    TestDataset tds(tdata_grib,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+}
+
+template<> template<>
+void to::test<18>()
+{
+    TestDataset tds(tdata_bufr,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+}
+
+template<> template<>
+void to::test<19>()
+{
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+}
+
 }
 
 // vim:set ts=4 sw=4:
