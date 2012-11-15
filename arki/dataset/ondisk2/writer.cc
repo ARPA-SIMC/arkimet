@@ -22,7 +22,6 @@
 
 #include "config.h"
 #include <arki/dataset/ondisk2/writer.h>
-#include <arki/dataset/ondisk2/writer/datafile.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/targetfile.h>
@@ -83,11 +82,11 @@ Writer::~Writer()
 	if (m_tf) delete m_tf;
 }
 
-writer::Datafile* Writer::file(const std::string& pathname)
+data::Writer Writer::file(const std::string& pathname, const std::string& format)
 {
-	std::map<std::string, writer::Datafile*>::iterator i = m_df_cache.find(pathname);
-	if (i != m_df_cache.end())
-		return i->second;
+    std::map<std::string, data::Writer>::iterator i = m_df_cache.find(pathname);
+    if (i != m_df_cache.end())
+        return i->second;
 
 	// Ensure that the directory for 'pathname' exists
 	string pn = str::joinpath(m_path, pathname);
@@ -99,19 +98,19 @@ writer::Datafile* Writer::file(const std::string& pathname)
 		throw wibble::exception::Consistency("accessing data file " + pathname,
 				"cannot update compressed data files: please manually uncompress it first");
 
-	writer::Datafile* res = new writer::Datafile(pn);
-	m_df_cache.insert(make_pair(pathname, res));
-	return res;
+    data::Writer res = data::Writer::get(format, pn);
+    m_df_cache.insert(make_pair(pathname, res));
+    return res;
 }
 
 WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     string reldest = (*m_tf)(md) + "." + md.source->format;
-    writer::Datafile* df = file(reldest);
+    data::Writer w = file(reldest, md.source->format);
     off64_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
-    Pending p_df = df->append(md, &ofs);
+    Pending p_df = w.append(md, &ofs);
 
     try {
         int id;
@@ -133,11 +132,11 @@ WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     string reldest = (*m_tf)(md) + "." + md.source->format;
-    writer::Datafile* df = file(reldest);
+    data::Writer w = file(reldest, md.source->format);
     off64_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
-    Pending p_df = df->append(md, &ofs);
+    Pending p_df = w.append(md, &ofs);
 
     try {
         int id;
@@ -160,11 +159,11 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
     string reldest = (*m_tf)(md) + "." + md.source->format;
-    writer::Datafile* df = file(reldest);
+    data::Writer w = file(reldest, md.source->format);
     off64_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
-    Pending p_df = df->append(md, &ofs);
+    Pending p_df = w.append(md, &ofs);
 
     try {
         int id;
@@ -271,10 +270,8 @@ void Writer::remove(const std::string& str_id)
 
 void Writer::flush()
 {
-	for (std::map<std::string, writer::Datafile*>::iterator i = m_df_cache.begin();
-			i != m_df_cache.end(); ++i)
-		if (i->second) delete i->second;
-	m_df_cache.clear();
+    // Clearing will also call the destructors of all data::Writers
+    m_df_cache.clear();
 }
 
 void Writer::sanityChecks(std::ostream& log, bool writable)

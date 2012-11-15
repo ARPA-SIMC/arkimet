@@ -24,6 +24,7 @@
  */
 
 #include <arki/dataset/local.h>
+#include <arki/data.h>
 #include <arki/configfile.h>
 #include <arki/dataset/ondisk2/index.h>
 #include <string>
@@ -46,7 +47,6 @@ class Archive;
 class Archives;
 
 namespace writer {
-class Datafile;
 class RealRepacker;
 class RealFixer;
 }
@@ -58,10 +58,10 @@ protected:
 	WIndex m_idx;
 	TargetFile* m_tf;
 
-	std::map<std::string, writer::Datafile*> m_df_cache;
+    std::map<std::string, data::Writer> m_df_cache;
 
-	/// Return a (shared) instance of the Datafile for the given relative pathname
-	writer::Datafile* file(const std::string& pathname);
+    /// Return a (shared) instance of the Datafile for the given relative pathname
+    data::Writer file(const std::string& pathname, const std::string& format);
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);

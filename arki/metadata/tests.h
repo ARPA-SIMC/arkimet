@@ -1,9 +1,4 @@
-#ifndef ARKI_DATA_CONCAT_H
-#define ARKI_DATA_CONCAT_H
-
-/*
- * data - Read/write functions for data blobs without envelope
- *
+/**
  * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,41 +17,19 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+#ifndef ARKI_METADATA_TESTS_H
+#define ARKI_METADATA_TESTS_H
 
-#include <arki/data/impl.h>
-#include <string>
-
-namespace wibble {
-namespace sys {
-class Buffer;
-}
-}
+#include <arki/tests/test-utils.h>
+#include <arki/metadata.h>
 
 namespace arki {
-namespace data {
-namespace concat {
+namespace tests {
 
-class Writer : public impl::Writer
-{
-protected:
-    int fd;
+/// Check that the two metadata are the same, except for source and notes
+void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& actual);
 
-public:
-    Writer(const std::string& fname);
-
-    void lock();
-    void unlock();
-    off_t wrpos();
-    void write(const wibble::sys::Buffer& buf);
-    void truncate(off_t pos);
-
-    virtual void append(Metadata& md);
-    virtual Pending append(Metadata& md, off64_t* ofs);
-};
-
-}
 }
 }
 
 #endif
-

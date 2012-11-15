@@ -37,6 +37,64 @@ namespace arki {
 namespace data {
 namespace concat {
 
+namespace {
+
+struct Append : public Transaction
+{
+    Writer& w;
+    Metadata& md;
+    bool fired;
+    wibble::sys::Buffer buf;
+    off64_t pos;
+
+    Append(Writer& w, Metadata& md) : w(w), md(md), fired(false)
+    {
+        // Get the data blob to append
+        buf = md.getData();
+
+        // Lock the file so that we are the only ones writing to it
+        w.lock();
+
+        // Insertion offset
+        pos = w.wrpos();
+    }
+
+    virtual ~Append()
+    {
+        if (!fired) rollback();
+    }
+
+    virtual void commit()
+    {
+        if (fired) return;
+
+        // Append the data
+        w.write(buf);
+
+        w.unlock();
+
+        // Set the source information that we are writing in the metadata
+        md.source = types::source::Blob::create(md.source->format, w.fname, pos, buf.size());
+
+        fired = true;
+    }
+
+    virtual void rollback()
+    {
+        if (fired) return;
+
+        // If we had a problem, attempt to truncate the file to the original size
+        w.truncate(pos);
+
+        w.unlock();
+        fired = true;
+    }
+};
+
+}
+
+
+
 Writer::Writer(const std::string& fname)
     : impl::Writer(fname), fd(-1)
 {
@@ -68,6 +126,35 @@ void Writer::unlock()
     fcntl(fd, F_SETLK, &lock);
 }
 
+off_t Writer::wrpos()
+{
+    // Get the write position in the data file
+    off_t size = lseek(fd, 0, SEEK_END);
+    if (size == (off_t)-1)
+        throw wibble::exception::File(fname, "reading the current position");
+    return size;
+}
+
+void Writer::truncate(off_t pos)
+{
+    if (ftruncate(fd, pos) == -1)
+        nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", fname.c_str(), pos);
+}
+
+void Writer::write(const wibble::sys::Buffer& buf)
+{
+    // Prevent caching (ignore function result)
+    //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
+
+    // Append the data
+    ssize_t res = ::write(fd, buf.data(), buf.size());
+    if (res < 0 || (unsigned)res != buf.size())
+        throw wibble::exception::File(fname, "writing " + str::fmt(buf.size()) + " bytes to " + fname);
+
+    if (fdatasync(fd) < 0)
+        throw wibble::exception::File(fname, "flushing write to " + fname);
+}
+
 void Writer::append(Metadata& md)
 {
     // Get the data blob to append
@@ -77,25 +164,14 @@ void Writer::append(Metadata& md)
     lock();
 
     // Get the write position in the data file
-    off_t wrpos = lseek(fd, 0, SEEK_END);
-    if (wrpos == (off_t)-1)
-        throw wibble::exception::File(fname, "reading the current position");
-
-    // Prevent caching (ignore function result)
-    // (void)posix_fadvise(fd, wrpos, buf.size(), POSIX_FADV_DONTNEED);
+    off_t pos = wrpos();
 
     try {
         // Append the data
-        ssize_t res = write(fd, buf.data(), buf.size());
-        if (res < 0 || (unsigned)res != buf.size())
-            throw wibble::exception::File(fname, "writing " + str::fmt(buf.size()) + " bytes to " + fname);
-
-        if (fdatasync(fd) < 0)
-            throw wibble::exception::File(fname, "flushing write to " + fname);
+        write(buf);
     } catch (...) {
         // If we had a problem, attempt to truncate the file to the original size
-        if (ftruncate(fd, wrpos) == -1)
-            nag::warning("truncating %s to previous size %zd abort append: %m", fname.c_str(), wrpos);
+        truncate(pos);
 
         unlock();
 
@@ -105,7 +181,14 @@ void Writer::append(Metadata& md)
     unlock();
 
     // Set the source information that we are writing in the metadata
-    md.source = types::source::Blob::create(md.source->format, fname, wrpos, buf.size());
+    md.source = types::source::Blob::create(md.source->format, fname, pos, buf.size());
+}
+
+Pending Writer::append(Metadata& md, off64_t* ofs)
+{
+    Append* res = new Append(*this, md);
+    *ofs = res->pos;
+    return res;
 }
 
 }

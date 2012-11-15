@@ -75,6 +75,11 @@ void Writer::append(Metadata& md)
     impl->append(md);
 }
 
+Pending Writer::append(Metadata& md, off_t* ofs)
+{
+    return impl->append(md, ofs);
+}
+
 Writer Writer::get(const std::string& format, const std::string& fname)
 {
     // Cached instance

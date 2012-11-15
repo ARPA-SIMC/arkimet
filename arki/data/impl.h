@@ -23,8 +23,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/transaction.h>
 #include <string>
 #include <map>
+#include <sys/types.h>
 
 namespace arki {
 class Metadata;
@@ -58,9 +60,12 @@ struct Registry
 };
 
 template<typename T>
-struct Base
+class Base
 {
+protected:
     mutable int _ref;
+
+public:
     std::string fname;
 
     /// Increment the reference count to this Data object
@@ -104,6 +109,15 @@ struct Writer : public Base<Writer>
      * the file as it was before, before raising an exception.
      */
     virtual void append(Metadata& md) = 0;
+
+    /**
+     * Append the data, in a transaction, updating md's source information.
+     *
+     * At the beginning of the transaction, the file is locked and the write
+     * offset is read. Committing the transaction actually writes the data to
+     * the file.
+     */
+    virtual Pending append(Metadata& md, off_t* ofs) = 0;
 };
 
 

@@ -34,6 +34,12 @@ struct arki_data_impl_shar {
 
 TESTGRP(arki_data_impl);
 
+struct Noop : public Transaction
+{
+    virtual void commit() {}
+    virtual void rollback() {}
+};
+
 class TestWriter : public impl::Writer
 {
 public:
@@ -41,6 +47,11 @@ public:
         : impl::Writer(fname) {}
 
     virtual void append(Metadata& md) {}
+    virtual Pending append(Metadata& md, off_t* ofs)
+    {
+        *ofs = 0;
+        return Pending(new Noop);
+    }
 };
 
 template<> template<>

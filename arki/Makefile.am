@@ -30,7 +30,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/ondisk2/index.h \
 		dataset/ondisk2/reader.h \
 		dataset/ondisk2/test-utils.h \
-		dataset/ondisk2/writer/datafile.h \
 		dataset/ondisk2/writer.h \
 		dataset/outbound.h \
 		datasetpool.h \
@@ -68,6 +67,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		metadatagrid.h \
 		metadata.h \
 		metadata/stream.h \
+		metadata/tests.h \
 		metadata/test-generator.h \
 		nag.h \
 		postprocess.h \
@@ -236,7 +236,6 @@ libarkimet_dataset_la_SOURCES = \
 		dataset/ondisk2/index.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
-		dataset/ondisk2/writer/datafile.cc \
 		dataset/http/server.cc \
 		dataset/http/inbound.cc \
 		dataset/outbound.cc \
@@ -320,6 +319,7 @@ tests_arki_test_SOURCES = \
 		metadata/consumer-tut.cc \
 		metadata/collection-tut.cc \
 		metadata/stream-tut.cc \
+		metadata/tests.cc \
 		metadata/test-generator-tut.cc \
 		summary-tut.cc \
 		summary/node-tut.cc \
@@ -355,7 +355,6 @@ tests_arki_test_SOURCES = \
 		dataset/ondisk2/aggregate-tut.cc \
 		dataset/ondisk2/index-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
-		dataset/ondisk2/writer/datafile-tut.cc \
 		dataset/ondisk2/writer-tut.cc \
 		dataset/ondisk2/test-utils.cc \
 		dataset/http/server-tut.cc \
