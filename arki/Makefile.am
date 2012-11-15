@@ -9,6 +9,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		configfile.h \
 		libconfig.h \
 		data.h \
+		data/impl.h \
+		data/concat.h \
 		dataset/archive.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -153,6 +155,8 @@ libarkimet_core_la_SOURCES = \
 		emitter/memory.cc \
 		emitter/json.cc \
 		data.cc \
+		data/impl.cc \
+		data/concat.cc \
 		tests/test-utils.cc
 libarkimet_core_la_LDFLAGS =
 
@@ -285,6 +289,8 @@ tests_arki_test_SOURCES = \
 		emitter/memory-tut.cc \
 		emitter/json-tut.cc \
 		data-tut.cc \
+		data/impl-tut.cc \
+		data/concat-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
 		types/utils-tut.cc \

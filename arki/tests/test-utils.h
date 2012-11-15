@@ -21,6 +21,7 @@
 #define ARKI_TEST_UTILS_H
 
 #include <wibble/tests.h>
+#include <wibble/exception.h>
 
 namespace arki {
 namespace tests {

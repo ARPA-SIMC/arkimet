@@ -23,5 +23,79 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <string>
+
+namespace arki {
+class Metadata;
+
+namespace data {
+
+namespace impl {
+class Reader;
+class Writer;
+}
+
+template<typename T>
+class Base
+{
+protected:
+    T* impl;
+
+public:
+    Base(T* impl) : impl(impl)
+    {
+        impl->ref();
+    }
+
+    Base(const Base<T>& val)
+        : impl(val.impl)
+    {
+        impl->ref();
+    }
+
+    ~Base() { impl->unref(); }
+
+    /// Assignment
+    Base<T>& operator=(const Base<T>& val)
+    {
+        if (val.impl) val.impl->ref();
+        impl->unref();
+        impl = val.impl;
+        return *this;
+    }
+};
+
+class Reader : Base<impl::Reader>
+{
+protected:
+    Reader(impl::Reader* impl);
+
+public:
+    ~Reader();
+
+    static Reader get(const std::string& format, const std::string& fname);
+};
+
+class Writer : Base<impl::Writer>
+{
+protected:
+    Writer(impl::Writer* impl);
+
+public:
+    ~Writer();
+
+    /**
+     * Append the data, updating md's source information.
+     *
+     * In case of write errors (for example, disk full) it tries to truncate
+     * the file as it was before, before raising an exception.
+     */
+    void append(Metadata& md);
+
+    static Writer get(const std::string& format, const std::string& fname);
+};
+
+}
+}
 
 #endif

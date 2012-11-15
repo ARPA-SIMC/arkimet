@@ -20,4 +20,54 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "data.h"
+#include "arki/data.h"
+#include "arki/data/impl.h"
+#include "arki/data/concat.h"
+#include <wibble/exception.h>
+
+namespace arki {
+namespace data {
+
+Reader::Reader(impl::Reader* impl) : Base<impl::Reader>(impl) {}
+Reader::~Reader() {}
+
+Reader Reader::get(const std::string& format, const std::string& fname)
+{
+}
+
+Writer::Writer(impl::Writer* impl) : Base<impl::Writer>(impl) {}
+Writer::~Writer() {}
+
+void Writer::append(Metadata& md)
+{
+    impl->append(md);
+}
+
+Writer Writer::get(const std::string& format, const std::string& fname)
+{
+    // Cached instance
+    impl::Registry<impl::Writer>& reg = impl::Registry<impl::Writer>::registry();
+
+    // Try to reuse an existing instance
+    impl::Writer* w = reg.get(fname);
+    if (w)
+        return Writer(w);
+
+    // Else we need to create an appropriate one
+    if (format == "grib")
+    {
+        return Writer(reg.add(new concat::Writer(fname)));
+    } else if (format == "bufr") {
+        return Writer(reg.add(new concat::Writer(fname)));
+    } else if (format == "vm2") {
+        // TODO: wrong one, but will be the same as the old wrong behaviour until we have the right one
+        return Writer(reg.add(new concat::Writer(fname)));
+    } else {
+        throw wibble::exception::Consistency(
+                "getting writer for " + format + " file " + fname,
+                "format not supported");
+    }
+}
+
+}
+}
