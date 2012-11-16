@@ -770,7 +770,7 @@ void ODIMH5::lua_register_methods(lua_State* L) const
 const ValueBag& VM2::derived_values() const {
     if (m_derived_values.get() == 0) {
 #ifdef HAVE_VM2
-        m_derived_values.reset(new ValueBag(utils::vm2::Source::get().get_variable(m_variable_id)));
+        m_derived_values.reset(new ValueBag(utils::vm2::get_variable(m_variable_id)));
 #else
         m_derived_values.reset(new ValueBag);
 #endif

@@ -28,8 +28,10 @@
 #include <unistd.h>
 #include <fstream>
 
+namespace meteo {
 namespace vm2 {
 class Parser;
+}
 }
 
 namespace arki {
@@ -50,7 +52,7 @@ protected:
 	std::string basename;
     unsigned lineno;
 
-    ::vm2::Parser* parser;
+    meteo::vm2::Parser* parser;
 
 public:
 	Vm2();

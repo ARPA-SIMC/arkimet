@@ -25,15 +25,16 @@
 #include <arki/values.h>
 #include <arki/types/value.h>
 
-#include <vm2/value.h>
-#include <vm2/source.h>
-
 namespace arki {
 namespace utils {
 namespace vm2 {
 
-Item<types::Value> decodeMdValue(const ::vm2::Value& value);
+std::vector<int> find_stations(const ValueBag& query);
+std::vector<int> find_variables(const ValueBag& query);
+ValueBag get_station(int id);
+ValueBag get_variable(int id);
 
+#if 0
 class Source {
  private:
   static Source* _instance;
@@ -68,6 +69,9 @@ struct Vm2Source : public Source {
   virtual ValueBag get_station(int id);
   virtual ValueBag get_variable(int id);
 };
+#endif
+
+
 
 }
 }

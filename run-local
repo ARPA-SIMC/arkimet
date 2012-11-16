@@ -13,6 +13,6 @@ export ARKI_ALIASES=$TOP_SRCDIR/conf/match-alias.conf
 export PATH="$TOP_SRCDIR/src:$PATH"
 export ARKI_POSTPROC=$TOP_SRCDIR/test/postproc
 export LD_LIBRARY_PATH="$TOP_SRCDIR/arki:$LD_LIBRARY_PATH"
-export ARKI_VM2_FILE="$TOP_SRCDIR/conf/vm2/source.lua"
+export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
 
 exec "$@"

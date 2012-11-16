@@ -82,7 +82,7 @@ MatchAreaVM2::MatchAreaVM2(const std::string& pattern)
     expr = ValueBag::parse(args.tail);
 #ifdef HAVE_VM2
     if (!expr.empty())
-        idlist = utils::vm2::Source::get().find_stations(expr);
+        idlist = utils::vm2::find_stations(expr);
 #endif
 }
 

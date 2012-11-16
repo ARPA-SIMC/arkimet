@@ -41,12 +41,10 @@
 #include <arki/types/value.h>
 
 #include <arki/utils/vm2.h>
-#include <vm2/parser.h>
+#include <meteo-vm2/parser.h>
 
 using namespace std;
 using namespace wibble;
-
-#define VM2_REGEXP "^[0-9]{12},[0-9]+,[0-9]+,.*,.*,.*,[0-9]*[\r\n]*$"
 
 namespace arki {
 namespace scan {
@@ -67,7 +65,7 @@ struct VM2Validator : public Validator
 
         std::string s((const char *)buf, size);
 
-		wibble::Regexp re(::vm2::Parser::regexp_str, 0, REG_EXTENDED);
+		wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
 		if (!re.match(s)) 
 			throw wibble::exception::Consistency("Not a valid VM2 file", s);
 	}
@@ -79,7 +77,7 @@ struct VM2Validator : public Validator
 
 		if (size == 0)
 			throw wibble::exception::Consistency("Empty VM2 file");
-        wibble::Regexp re(::vm2::Parser::regexp_str, 0, REG_EXTENDED);
+        wibble::Regexp re(meteo::vm2::Parser::regexp_str, 0, REG_EXTENDED);
 		if (!re.match(s))
 			throw wibble::exception::Consistency("Not a valid VM2 file", s);
 	}
@@ -107,7 +105,7 @@ void Vm2::open(const std::string& filename)
     this->in = new std::ifstream(filename.c_str());
 	if (!in->good())
 		throw wibble::exception::File(filename, "opening file for reading");
-    parser = new ::vm2::Parser(*in);
+    parser = new meteo::vm2::Parser(*in);
 }
 
 void Vm2::close()
@@ -123,7 +121,7 @@ void Vm2::close()
 
 bool Vm2::next(Metadata& md)
 {
-    ::vm2::Value value;
+    meteo::vm2::Value value;
     std::string line;
 
     off_t offset = in->tellg();
@@ -136,12 +134,7 @@ bool Vm2::next(Metadata& md)
     md.source = types::source::Blob::create("vm2", filename, offset, size);
     md.add_note(types::Note::create("Scanned from " + basename));
 
-    int y, m, d, ho, mi, s;
-    if (sscanf(value.reftime.c_str(), "%04d-%02d-%02dT%02d:%02d:%02dZ", &y, &m, &d, &ho, &mi, &s) != 6)
-        throw wibble::exception::Consistency(
-            str::fmtf("reading %s:%d", filename.c_str(), parser->lineno),
-            "date cannot be parsed");
-    md.set(types::reftime::Position::create(types::Time::create(y, m, d, ho, mi, s)));
+    md.set(types::reftime::Position::create(types::Time::create(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(types::area::VM2::create(value.station_id));
     md.set(types::product::VM2::create(value.variable_id));
 

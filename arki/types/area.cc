@@ -340,7 +340,7 @@ VM2::~VM2() {}
 const ValueBag& VM2::derived_values() const {
     if (m_derived_values.get() == 0) {
 #ifdef HAVE_VM2
-        m_derived_values.reset(new ValueBag(utils::vm2::Source::get().get_station(m_station_id)));
+        m_derived_values.reset(new ValueBag(utils::vm2::get_station(m_station_id)));
 #else
         m_derived_values.reset(new ValueBag);
 #endif

@@ -271,11 +271,11 @@ dnl Check for vm2 support
 if test $enable_vm2 = yes
 then
 	dnl Check for VM2 library
-	PKG_CHECK_EXISTS([vm2], [have_vm2=yes], [have_vm2=no])
+	PKG_CHECK_EXISTS([meteo-vm2], [have_vm2=yes], [have_vm2=no])
 	if test $have_vm2 = yes
 	then
 		AC_DEFINE([HAVE_VM2], 1, [vm2 format enabled])
-		PKG_CHECK_MODULES([VM2], [vm2])
+		PKG_CHECK_MODULES([VM2], [meteo-vm2])
 	else
 		AC_MSG_WARN([compiling without libvm2: VM2 support will be disabled])
 	fi

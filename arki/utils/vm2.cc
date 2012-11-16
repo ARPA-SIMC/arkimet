@@ -24,47 +24,22 @@
 #include <arki/types/value.h>
 #include <arki/runtime/config.h>
 
+#include <meteo-vm2/source.h>
+
 namespace arki {
 namespace utils {
 namespace vm2 {
 
-Item<types::Value> decodeMdValue(const ::vm2::Value& value) {
-  std::stringstream mdvalue;
-  if (value.value1 != ::vm2::MISSING_DOUBLE) {
-    mdvalue << value.value1;
-  }
-  mdvalue << ",";
-  if (value.value2 != ::vm2::MISSING_DOUBLE) {
-    mdvalue << value.value2;
-  }
-  mdvalue << "," << value.value3 << "," << value.flags;
-  return types::Value::create(mdvalue.str());
-}
+std::vector<int> find_stations(const ValueBag& query)
+{
+  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  lua_State* L = source->L;
 
-Source* Source::_instance = NULL;
-
-Source& Source::get() {
-  if (!_instance) {
-    std::string s = runtime::Config::get().file_vm2_config;
-    if (!s.empty())
-      _instance = new Vm2Source(s);
-    else
-      _instance = new DummySource;
-  }
-  return *_instance;
-}
-
-Vm2Source::Vm2Source(const std::string& path) : source(path) {
-  L = source.L;
-}
-Vm2Source::~Vm2Source() {}
-
-std::vector<int> Vm2Source::find_stations(const ValueBag& query) {
   std::vector<int> res;
   query.lua_push(L);
   int idx = lua_gettop(L);
   try {
-    res = source.lua_find_stations(idx);
+    res = source->lua_find_stations(idx);
   } catch (const std::exception& e) {
     lua_pop(L,1);
     throw;
@@ -72,12 +47,16 @@ std::vector<int> Vm2Source::find_stations(const ValueBag& query) {
   lua_pop(L,1);
   return res;
 }
-std::vector<int> Vm2Source::find_variables(const ValueBag& query) {
+std::vector<int> find_variables(const ValueBag& query)
+{
+  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  lua_State* L = source->L;
+
   std::vector<int> res;
   query.lua_push(L);
   int idx = lua_gettop(L);
   try {
-    res = source.lua_find_variables(idx);
+    res = source->lua_find_variables(idx);
   } catch (const std::exception& e) {
     lua_pop(L,1);
     throw;
@@ -85,9 +64,13 @@ std::vector<int> Vm2Source::find_variables(const ValueBag& query) {
   lua_pop(L,1);
   return res;
 }
-ValueBag Vm2Source::get_station(int id) {
+ValueBag get_station(int id)
+{
+  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  lua_State* L = source->L;
+
   ValueBag vb;
-  source.lua_push_station(id);
+  source->lua_push_station(id);
   if (lua_istable(L, -1)) {
     vb.load_lua_table(L, -1);
   } else {
@@ -95,9 +78,13 @@ ValueBag Vm2Source::get_station(int id) {
   }
   return vb;
 }
-ValueBag Vm2Source::get_variable(int id) {
+ValueBag get_variable(int id)
+{
+  meteo::vm2::Source* source = meteo::vm2::Source::get();
+  lua_State* L = source->L;
+
   ValueBag vb;
-  source.lua_push_variable(id);
+  source->lua_push_variable(id);
   if (lua_istable(L, -1)) {
     vb.load_lua_table(L, -1);
   } else {
