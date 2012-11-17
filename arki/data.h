@@ -25,6 +25,7 @@
 
 #include <arki/transaction.h>
 #include <string>
+#include <iosfwd>
 #include <sys/types.h>
 
 namespace arki {
@@ -99,6 +100,23 @@ public:
     Pending append(Metadata& md, off_t* ofs);
 
     static Writer get(const std::string& format, const std::string& fname);
+};
+
+/**
+ * Functor class with format-specific serialization routines
+ */
+class OstreamWriter
+{
+public:
+    virtual ~OstreamWriter();
+
+    virtual void stream(Metadata& md, std::ostream& out) const = 0;
+
+    /**
+     * Returns a pointer to a static instance of the appropriate OstreamWriter
+     * for the given format
+     */
+    static const OstreamWriter* get(const std::string& format);
 };
 
 }

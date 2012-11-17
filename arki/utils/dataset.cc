@@ -22,7 +22,8 @@
 
 #include "config.h"
 
-#include <arki/utils/dataset.h>
+#include "arki/utils/dataset.h"
+#include "arki/data.h"
 
 #include <wibble/sys/signal.h>
 #include <wibble/sys/buffer.h>
@@ -67,11 +68,10 @@ bool TemporaryDataInliner::operator()(Metadata& md)
 
 bool DataOnly::operator()(Metadata& md)
 {
-	wibble::sys::Buffer buf = md.getData();
-	sys::sig::ProcMask pm(blocked);
-	out.write((const char*)buf.data(), buf.size());
-	out.flush();
-	return true;
+    if (!writer)
+        writer = data::OstreamWriter::get(md.source->format);
+    writer->stream(md, out);
+    return true;
 }
 
 }

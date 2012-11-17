@@ -61,12 +61,48 @@ void test_assert_istrue(LOCPRM, bool val);
 template <class Expected, class Actual>
 void test_assert_equals(LOCPRM, const Expected& expected, const Actual& actual)
 {
-    if( expected != actual )
+    if (expected != actual)
     {
         std::stringstream ss;
         ss << "expected '" << expected << "' actual '" << actual << "'";
         loc.fail_test(ss.str());
     }
+}
+
+template <class Expected, class Actual>
+void test_assert_gt(LOCPRM, const Expected& expected, const Actual& actual)
+{
+    if (actual > expected) return;
+    std::stringstream ss;
+    ss << "value '" << actual << "' not greater than the expected '" << expected << "'";
+    loc.fail_test(ss.str());
+}
+
+template <class Expected, class Actual>
+void test_assert_gte(LOCPRM, const Expected& expected, const Actual& actual)
+{
+    if (actual >= expected) return;
+    std::stringstream ss;
+    ss << "value '" << actual << "' not greater or equal than the expected '" << expected << "'";
+    loc.fail_test(ss.str());
+}
+
+template <class Expected, class Actual>
+void test_assert_lt(LOCPRM, const Expected& expected, const Actual& actual)
+{
+    if (actual < expected) return;
+    std::stringstream ss;
+    ss << "value '" << actual << "' not less than the expected '" << expected << "'";
+    loc.fail_test(ss.str());
+}
+
+template <class Expected, class Actual>
+void test_assert_lte(LOCPRM, const Expected& expected, const Actual& actual)
+{
+    if (actual <= expected) return;
+    std::stringstream ss;
+    ss << "value '" << actual << "' not less than or equal than the expected '" << expected << "'";
+    loc.fail_test(ss.str());
 }
 
 void test_assert_endswith(LOCPRM, const std::string& expected, const std::string& actual);

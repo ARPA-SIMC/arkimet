@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include <arki/tests/test-utils.h>
+#include <arki/metadata/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/outbound.h>
@@ -44,6 +45,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace wibble;
 
 struct TestDataInfo
@@ -343,8 +345,17 @@ struct TestDataset
             std::stringstream os;
             ds->queryBytes(bq, os);
 
-            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
-            iatest(equals, s1->size, os.str().size());
+            // Write it out and rescan
+            files::write_file("testdata", os.str());
+            metadata::Collection tmp;
+            iatest(istrue, scan::scan("testdata", input_data[i].source->format, tmp));
+
+            // Ensure that what we rescanned is what was imported
+            iatest(equals, 1u, tmp.size());
+            iatest(md_similar, input_data[i], tmp[0]);
+
+            //UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            //iatest(equals, s1->size, os.str().size());
         }
     }
 
@@ -366,7 +377,7 @@ struct TestDataset
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             total_size += s1->size;
         }
-        iatest(equals, total_size, os.str().size());
+        iatest(gte, total_size, os.str().size());
 
         // Write the results to disk
         utils::files::write_file("tempdata", os.str());

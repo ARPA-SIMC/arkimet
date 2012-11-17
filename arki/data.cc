@@ -106,5 +106,34 @@ Writer Writer::get(const std::string& format, const std::string& fname)
     }
 }
 
+OstreamWriter::~OstreamWriter()
+{
+}
+
+const OstreamWriter* OstreamWriter::get(const std::string& format)
+{
+    static concat::OstreamWriter* ow_concat = 0;
+    static lines::OstreamWriter* ow_lines = 0;
+
+    if (format == "grib" || format == "grib1" || format == "grib2")
+    {
+        if (!ow_concat)
+            ow_concat = new concat::OstreamWriter;
+        return ow_concat;
+    } else if (format == "bufr") {
+        if (!ow_concat)
+            ow_concat = new concat::OstreamWriter;
+        return ow_concat;
+    } else if (format == "vm2") {
+        if (!ow_lines)
+            ow_lines = new lines::OstreamWriter;
+        return ow_lines;
+    } else {
+        throw wibble::exception::Consistency(
+                "getting ostream writer for " + format,
+                "format not supported");
+    }
+}
+
 }
 }

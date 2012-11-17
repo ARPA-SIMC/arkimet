@@ -32,6 +32,10 @@
 namespace arki {
 struct Metadata;
 
+namespace data {
+struct OstreamWriter;
+}
+
 namespace utils {
 namespace ds {
 
@@ -109,16 +113,12 @@ struct DataStartHookRunner : public metadata::Consumer
  */
 struct DataOnly : public metadata::Consumer
 {
-	std::ostream& out;
-	sigset_t blocked;
+    std::ostream& out;
+    const data::OstreamWriter* writer;
 
-	DataOnly(std::ostream& out) : out(out)
-	{
-		sigemptyset(&blocked);
-		sigaddset(&blocked, SIGINT);
-		sigaddset(&blocked, SIGTERM);
-	}
-	bool operator()(Metadata& md);
+    DataOnly(std::ostream& out) : out(out), writer(0) {}
+
+    bool operator()(Metadata& md);
 };
 
 }

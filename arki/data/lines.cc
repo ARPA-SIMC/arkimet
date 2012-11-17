@@ -25,6 +25,7 @@
 #include "arki/nag.h"
 #include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
+#include <wibble/sys/signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
@@ -154,6 +155,26 @@ Pending Writer::append(Metadata& md, off64_t* ofs)
     Append* res = new Append(*this, md);
     *ofs = res->pos;
     return res;
+}
+
+OstreamWriter::OstreamWriter()
+{
+    sigemptyset(&blocked);
+    sigaddset(&blocked, SIGINT);
+    sigaddset(&blocked, SIGTERM);
+}
+
+OstreamWriter::~OstreamWriter()
+{
+}
+
+void OstreamWriter::stream(Metadata& md, std::ostream& out) const
+{
+    wibble::sys::Buffer buf = md.getData();
+    sys::sig::ProcMask pm(blocked);
+    out.write((const char*)buf.data(), buf.size());
+    out << endl;
+    out.flush();
 }
 
 }

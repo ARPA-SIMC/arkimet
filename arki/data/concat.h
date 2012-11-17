@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/data.h>
 #include <arki/data/fd.h>
 #include <string>
 
@@ -43,6 +44,18 @@ public:
 
     virtual void append(Metadata& md);
     virtual Pending append(Metadata& md, off64_t* ofs);
+};
+
+class OstreamWriter : public data::OstreamWriter
+{
+protected:
+    sigset_t blocked;
+
+public:
+    OstreamWriter();
+    virtual ~OstreamWriter();
+
+    virtual void stream(Metadata& md, std::ostream& out) const;
 };
 
 }

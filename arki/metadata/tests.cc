@@ -34,29 +34,35 @@ void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& ac
 {
     for (Metadata::const_iterator i = expected.begin(); i != expected.end(); ++i)
     {
+        if (i->first == types::TYPE_ASSIGNEDDATASET) continue;
+
         UItem<> other = actual.get(i->first);
         if (!other.defined())
         {
             std::stringstream ss;
-            ss << "missing metadata item: " << i->second;
+            ss << "missing metadata item " << i->first << ": " << i->second;
             loc.fail_test(ss.str());
         }
 
         if (i->second != other)
         {
             std::stringstream ss;
-            ss << i->first << " differ: expected " << i->second << " got " << other;
+            ss << i->first << " differ: " << i->first << ": expected " << i->second << " got " << other;
             loc.fail_test(ss.str());
         }
     }
 
     for (Metadata::const_iterator i = actual.begin(); i != actual.end(); ++i)
+    {
+        if (i->first == types::TYPE_ASSIGNEDDATASET) continue;
+
         if (!expected.has(i->first))
         {
             std::stringstream ss;
-            ss << "unexpected metadata item: " << i->second;
+            ss << "unexpected metadata item " << i->first << ": " << i->second;
             loc.fail_test(ss.str());
         }
+    }
 }
 
 }
