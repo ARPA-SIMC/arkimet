@@ -103,7 +103,7 @@ void test_append_transaction_ok(LOCPRM, data::Writer dw, Metadata& md)
     p.commit();
 
     // After commit, data is appended
-    iatest(equals, orig_fsize + data_size, files::size(dw.fname()));
+    iatest(equals, orig_fsize + data_size + 1, files::size(dw.fname()));
 
     // And metadata is updated
     UItem<Blob> s = md.source.upcast<Blob>();
@@ -196,7 +196,7 @@ void to::test<2>()
         ftest(test_append_transaction_ok, dw, mdc[2]);
     }
 
-    atest(equals, 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]), files::size(fname));
+    atest(equals, 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2, files::size(fname));
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros

@@ -38,11 +38,10 @@ namespace lines {
 
 class Writer : public fd::Writer
 {
-protected:
-    int fd;
-
 public:
     Writer(const std::string& fname);
+
+    void write(const wibble::sys::Buffer& buf);
 
     virtual void append(Metadata& md);
     virtual Pending append(Metadata& md, off64_t* ofs);

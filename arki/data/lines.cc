@@ -27,6 +27,7 @@
 #include <wibble/sys/buffer.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -98,10 +99,25 @@ struct Append : public Transaction
 Writer::Writer(const std::string& fname)
     : fd::Writer(fname)
 {
-    // Open the data file
-    fd = ::open(fname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(fname, "opening file for appending data");
+}
+
+void Writer::write(const wibble::sys::Buffer& buf)
+{
+    struct iovec todo[2] = {
+        { (void*)buf.data(), buf.size() },
+        { (void*)"\n", 1 },
+    };
+
+    // Prevent caching (ignore function result)
+    //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
+
+    // Append the data
+    ssize_t res = ::writev(fd, todo, 2);
+    if (res < 0 || (unsigned)res != buf.size() + 1)
+        throw wibble::exception::File(fname, "writing " + str::fmt(buf.size() + 1) + " bytes to " + fname);
+
+    if (fdatasync(fd) < 0)
+        throw wibble::exception::File(fname, "flushing write to " + fname);
 }
 
 void Writer::append(Metadata& md)
