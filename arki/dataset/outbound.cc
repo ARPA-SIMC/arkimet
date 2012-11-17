@@ -27,6 +27,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/types/assigneddataset.h>
+#include <arki/data.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -56,40 +57,13 @@ Outbound::~Outbound()
 
 void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 {
-	// Read initial GRIB source data
-	wibble::sys::Buffer buf = md.getData();
+    // Read source information
+    UItem<types::Source> s = md.source;
 
-	// Read source information
-	UItem<types::Source> origSource = md.source;
-
-	try {
-		string dest = m_path + "/" + reldest;
-
-		// Open the output files
-		ofstream datafile;
-
-		string datafilename = dest + "." + origSource->format;
-		datafile.open(datafilename.c_str(), ios::out | ios::app | ios::binary);
-		if (!datafile.is_open() || !datafile.good())
-			throw wibble::exception::File(datafilename, "opening file for appending data");
-
-		// Get the write position in the file
-		size_t offset = datafile.tellp();
-		if (datafile.fail())
-			throw wibble::exception::File(datafilename, "reading the current position");
-
-		// Write the data
-		datafile.write((const char*)buf.data(), buf.size());
-		if (datafile.fail())
-			throw wibble::exception::File(datafilename, "writing " + str::fmt(buf.size()) + " bytes to the file");
-
-		// Put the full path in the Source of the metadata we pass on
-		md.source = types::source::Blob::create(origSource->format, datafilename, offset, buf.size());
-	} catch (...) {
-		// Restore the original source info
-		md.source = origSource;
-		throw;
-	}
+    // Write using data::Writer
+    string datafilename = str::joinpath(m_path, reldest) + "." + s->format;
+    data::Writer w = data::Writer::get(s->format, datafilename);
+    w.append(md);
 }
 
 WritableDataset::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
