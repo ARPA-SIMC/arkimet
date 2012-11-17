@@ -10,7 +10,9 @@ nobase_dist_arkiinclude_HEADERS = \
 		libconfig.h \
 		data.h \
 		data/impl.h \
+		data/fd.h \
 		data/concat.h \
+		data/lines.h \
 		dataset/archive.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -156,7 +158,9 @@ libarkimet_core_la_SOURCES = \
 		emitter/json.cc \
 		data.cc \
 		data/impl.cc \
+		data/fd.cc \
 		data/concat.cc \
+		data/lines.cc \
 		tests/test-utils.cc
 libarkimet_core_la_LDFLAGS =
 
@@ -289,7 +293,9 @@ tests_arki_test_SOURCES = \
 		emitter/json-tut.cc \
 		data-tut.cc \
 		data/impl-tut.cc \
+		data/fd-tut.cc \
 		data/concat-tut.cc \
+		data/lines-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
 		types/utils-tut.cc \

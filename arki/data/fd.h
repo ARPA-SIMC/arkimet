@@ -1,8 +1,8 @@
-#ifndef ARKI_DATA_CONCAT_H
-#define ARKI_DATA_CONCAT_H
+#ifndef ARKI_DATA_FD_H
+#define ARKI_DATA_FD_H
 
 /*
- * data - Read/write functions for data blobs without envelope
+ * data - Base class for unix fd based read/write functions
  *
  * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/data/fd.h>
+#include <arki/data/impl.h>
 #include <string>
 
 namespace wibble {
@@ -34,15 +34,21 @@ class Buffer;
 
 namespace arki {
 namespace data {
-namespace concat {
+namespace fd {
 
-class Writer : public fd::Writer
+class Writer : public impl::Writer
 {
+protected:
+    int fd;
+
 public:
     Writer(const std::string& fname);
 
-    virtual void append(Metadata& md);
-    virtual Pending append(Metadata& md, off64_t* ofs);
+    void lock();
+    void unlock();
+    off_t wrpos();
+    void write(const wibble::sys::Buffer& buf);
+    void truncate(off_t pos);
 };
 
 }

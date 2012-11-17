@@ -23,6 +23,7 @@
 #include "arki/data.h"
 #include "arki/data/impl.h"
 #include "arki/data/concat.h"
+#include "arki/data/lines.h"
 #include <wibble/exception.h>
 
 namespace arki {
@@ -97,8 +98,7 @@ Writer Writer::get(const std::string& format, const std::string& fname)
     } else if (format == "bufr") {
         return Writer(reg.add(new concat::Writer(fname)));
     } else if (format == "vm2") {
-        // TODO: wrong one, but will be the same as the old wrong behaviour until we have the right one
-        return Writer(reg.add(new concat::Writer(fname)));
+        return Writer(reg.add(new lines::Writer(fname)));
     } else {
         throw wibble::exception::Consistency(
                 "getting writer for " + format + " file " + fname,

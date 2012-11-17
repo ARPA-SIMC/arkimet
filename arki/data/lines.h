@@ -1,8 +1,8 @@
-#ifndef ARKI_DATA_CONCAT_H
-#define ARKI_DATA_CONCAT_H
+#ifndef ARKI_DATA_LINES_H
+#define ARKI_DATA_LINES_H
 
 /*
- * data - Read/write functions for data blobs without envelope
+ * data - Read/write functions for data blobs with newline separators
  *
  * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -34,10 +34,13 @@ class Buffer;
 
 namespace arki {
 namespace data {
-namespace concat {
+namespace lines {
 
 class Writer : public fd::Writer
 {
+protected:
+    int fd;
+
 public:
     Writer(const std::string& fname);
 

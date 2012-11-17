@@ -1,5 +1,5 @@
 /*
- * data - Read/write functions for data blobs without envelope
+ * data - Read/write functions for data blobs with newline separators
  *
  * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "arki/data/concat.h"
+#include "arki/data/lines.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include <wibble/exception.h>
@@ -35,7 +35,7 @@ using namespace wibble;
 
 namespace arki {
 namespace data {
-namespace concat {
+namespace lines {
 
 namespace {
 
@@ -98,6 +98,10 @@ struct Append : public Transaction
 Writer::Writer(const std::string& fname)
     : fd::Writer(fname)
 {
+    // Open the data file
+    fd = ::open(fname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (fd == -1)
+        throw wibble::exception::File(fname, "opening file for appending data");
 }
 
 void Writer::append(Metadata& md)
