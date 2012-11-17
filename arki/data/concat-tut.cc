@@ -27,6 +27,7 @@
 #include "arki/data/concat.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
+#include <sstream>
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
@@ -200,6 +201,16 @@ void to::test<2>()
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros
+}
+
+// Test with large files
+template<> template<>
+void to::test<3>()
+{
+    std::stringstream out;
+    const OstreamWriter* w = OstreamWriter::get("grib");
+    w->stream(mdc[0], out);
+    atest(equals, datasize(mdc[0]), out.str().size());
 }
 
 }
