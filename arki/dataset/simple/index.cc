@@ -651,6 +651,8 @@ class SqliteManifest : public Manifest
 		// Use new features, if we write we read it, so we do not need to
 		// support sqlite < 3.3.0 if we are above that version
 		m_db.exec("PRAGMA legacy_file_format = 0");
+        // Enable WAL journaling, which doesn't lock reads while writing
+		m_db.exec("PRAGMA journal_mode = WAL");
 	}
 
 	void initQueries()
