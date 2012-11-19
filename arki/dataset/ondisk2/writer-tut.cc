@@ -124,13 +124,12 @@ void to::test<1>()
 		ensure(not c.isClean());
 	}
 
-	// Perform packing and check that things are still ok afterwards
-	{
-		stringstream s;
-		writer.repack(s, true);
-		ensure_equals(s.str(),
-			"testdir: deleted 2007/07-07.grib1 (34960 freed)\n"
-			"testdir: 1 file deleted, 67472 total bytes freed.\n");
+    // Perform packing and check that things are still ok afterwards
+    {
+        stringstream s;
+        writer.repack(s, true);
+        atest(contains, "testdir: deleted 2007/07-07.grib1 (34960 freed)", s.str());
+        atest(re_match, "testdir: 1 file deleted, [0-9]+ total bytes freed.", s.str());
 
 		c.clear();
 
@@ -236,13 +235,12 @@ void to::test<3>()
 	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
-	// Perform packing and check that things are still ok afterwards
-	stringstream s;
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 67472 total bytes freed.\n");
-	c.clear();
+    // Perform packing and check that things are still ok afterwards
+    stringstream s;
+    writer.repack(s, true);
+    atest(contains, "testdir: packed 2007/07.grib1 (34960 saved)", s.str());
+    atest(re_match, "testdir: 1 file packed, [0-9]+ total bytes freed.", s.str());
+    c.clear();
 
 	writer.maintenance(c);
 	ensure_equals(c.count(OK), 2u);
@@ -429,13 +427,12 @@ void to::test<6>()
 		ensure_equals(blob->size, 7218u);
 	}
 
-	// Perform packing and check that things are still ok afterwards
-	s.str(std::string());
-	writer.repack(s, true);
-	ensure_equals(s.str(),
-		"testdir: packed foo/bar/test.grib1 (44412 saved)\n"
-		"testdir: 1 file packed, 46988 total bytes freed.\n");
-	c.clear();
+    // Perform packing and check that things are still ok afterwards
+    s.str(std::string());
+    writer.repack(s, true);
+    atest(contains, "testdir: packed foo/bar/test.grib1 (44412 saved)", s.str());
+    atest(re_match, "testdir: 1 file packed, [0-9]+ total bytes freed.", s.str());
+    c.clear();
 
 	writer.maintenance(c);
 	ensure_equals(c.count(OK), 1u);
@@ -634,12 +631,12 @@ void to::test<9>()
 		ensure(c.isClean());
 	}
 
-	// Perform packing to regenerate the summary cache
-	{
-		stringstream s;
-		writer.repack(s, true);
-		ensure_equals(s.str(), "testdir: 32512 total bytes freed.\n");
-	}
+    // Perform packing to regenerate the summary cache
+    {
+        stringstream s;
+        writer.repack(s, true);
+        atest(equals, "", s.str());
+    }
 
 	// Ensure that we have the summary cache
 	ensure(sys::fs::exists("testdir/.summaries/all.summary"));

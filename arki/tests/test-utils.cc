@@ -23,6 +23,7 @@
 #include <arki/tests/test-utils.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
+#include <wibble/regexp.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
 
@@ -78,12 +79,43 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
     }
 }
 
+void test_assert_re_match(LOCPRM, const std::string& regexp, const std::string& actual)
+{
+    ERegexp re(regexp);
+    if (!re.match(actual))
+    {
+        std::stringstream ss;
+        ss << "'" << actual << "' does not match regexp '" << regexp << "'";
+        loc.fail_test(ss.str());
+    }
+}
+
+void test_assert_startswith(LOCPRM, const std::string& expected, const std::string& actual)
+{
+    if (!str::startsWith(actual, expected))
+    {
+        std::stringstream ss;
+        ss << "'" << actual << "' does not start with '" << expected << "'";
+        loc.fail_test(ss.str());
+    }
+}
+
 void test_assert_endswith(LOCPRM, const std::string& expected, const std::string& actual)
 {
     if (!str::endsWith(actual, expected))
     {
         std::stringstream ss;
         ss << "'" << actual << "' does not end with '" << expected << "'";
+        loc.fail_test(ss.str());
+    }
+}
+
+void test_assert_contains(LOCPRM, const std::string& expected, const std::string& actual)
+{
+    if (actual.find(expected) == string::npos)
+    {
+        std::stringstream ss;
+        ss << "'" << actual << "' does not contain '" << expected << "'";
         loc.fail_test(ss.str());
     }
 }

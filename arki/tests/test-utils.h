@@ -105,7 +105,10 @@ void test_assert_lte(LOCPRM, const Expected& expected, const Actual& actual)
     loc.fail_test(ss.str());
 }
 
+void test_assert_startswith(LOCPRM, const std::string& expected, const std::string& actual);
 void test_assert_endswith(LOCPRM, const std::string& expected, const std::string& actual);
+void test_assert_contains(LOCPRM, const std::string& expected, const std::string& actual);
+void test_assert_re_match(LOCPRM, const std::string& regexp, const std::string& actual);
 void test_assert_file_exists(LOCPRM, const std::string& fname);
 void test_assert_not_file_exists(LOCPRM, const std::string& fname);
 
