@@ -97,6 +97,8 @@ Writer Writer::get(const std::string& format, const std::string& fname)
         return Writer(reg.add(new concat::Writer(fname)));
     } else if (format == "bufr") {
         return Writer(reg.add(new concat::Writer(fname)));
+    } else if (format == "odimh5" || format == "h5" || format == "odim") {
+        return Writer(reg.add(new concat::Writer(fname)));
     } else if (format == "vm2") {
         return Writer(reg.add(new lines::Writer(fname)));
     } else {
@@ -121,6 +123,10 @@ const OstreamWriter* OstreamWriter::get(const std::string& format)
             ow_concat = new concat::OstreamWriter;
         return ow_concat;
     } else if (format == "bufr") {
+        if (!ow_concat)
+            ow_concat = new concat::OstreamWriter;
+        return ow_concat;
+    } else if (format == "odimh5" || format == "h5" || format == "odim") {
         if (!ow_concat)
             ow_concat = new concat::OstreamWriter;
         return ow_concat;
