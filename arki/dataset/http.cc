@@ -513,7 +513,7 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
 
 	if (s.response_code >= 400)
-		s.throwError("querying configuration from " + url);
+		s.throwError("querying data from " + url);
 }
 
 void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
