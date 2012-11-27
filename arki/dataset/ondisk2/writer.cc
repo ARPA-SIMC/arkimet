@@ -274,6 +274,11 @@ void Writer::flush()
     m_df_cache.clear();
 }
 
+Pending Writer::test_writelock()
+{
+    return m_idx.beginExclusiveTransaction();
+}
+
 void Writer::sanityChecks(std::ostream& log, bool writable)
 {
 	WritableLocal::sanityChecks(log, writable);

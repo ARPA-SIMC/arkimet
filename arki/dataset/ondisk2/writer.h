@@ -89,7 +89,8 @@ public:
 	void remove(const std::string& id);
     virtual void remove(Metadata& md);
 
-	virtual void flush();
+    virtual void flush();
+    virtual Pending test_writelock();
 
 	virtual void maintenance(maintenance::MaintFileVisitor& v, bool quick=true);
 	virtual void sanityChecks(std::ostream& log, bool writable=false);

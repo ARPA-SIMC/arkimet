@@ -389,6 +389,19 @@ struct TestDataset
         sys::fs::unlink("tempdata");
     }
 
+    void test_locked(LOCPRM)
+    {
+        // Lock a dataset for writing
+        auto_ptr<WritableDataset> wds(WritableDataset::create(*cfgtest));
+        Pending p = wds->test_writelock();
+
+        // Try to read from it, it should still work with WAL
+        auto_ptr<ReadonlyDataset> rds(ReadonlyDataset::create(*cfgtest));
+        dataset::ByteQuery bq;
+        bq.setData(Matcher());
+        std::stringstream os;
+        rds->queryBytes(bq, os);
+    }
 
     void test_all(LOCPRM)
     {
@@ -397,6 +410,7 @@ struct TestDataset
         iftest(test_querysummary);
         iftest(test_querybytes);
         iftest(test_querybytes_integrity);
+        iftest(test_locked);
     }
 };
 

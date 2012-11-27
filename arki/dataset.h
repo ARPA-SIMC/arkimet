@@ -24,6 +24,7 @@
  */
 
 #include <arki/matcher.h>
+#include <arki/transaction.h>
 #include <string>
 #include <memory>
 
@@ -274,6 +275,14 @@ public:
 	 * Flush pending changes to disk
 	 */
 	virtual void flush();
+
+    /**
+     * Obtain a write lock on the database, held until the Pending is committed
+     * or rolled back.
+     *
+     * This is only used for testing.
+     */
+    virtual Pending test_writelock();
 
 	/**
 	 * Instantiate an appropriate Dataset for the given configuration

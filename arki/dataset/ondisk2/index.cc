@@ -213,7 +213,8 @@ void Index::setupPragmas()
 	// Truncate the journal instead of delete: faster on many file systems
 	// m_db.exec("PRAGMA journal_mode = TRUNCATE");
 	// Zero the header of the journal instead of delete: faster on many file systems
-	m_db.exec("PRAGMA journal_mode = WAL");
+    // Use a WAL journal, which allows reads and writes together
+    m_db.exec("PRAGMA journal_mode = WAL");
 	// Also, since the way we do inserts cause no trouble if a reader reads a
 	// partial insert, we do not need read locking
 	m_db.exec("PRAGMA read_uncommitted = 1");

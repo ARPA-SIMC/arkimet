@@ -73,6 +73,8 @@ WritableDataset::~WritableDataset()
 
 void WritableDataset::flush() {}
 
+Pending WritableDataset::test_writelock() {}
+
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
 	using namespace arki::utils;
