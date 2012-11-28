@@ -115,63 +115,6 @@ void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 	queryLocalData(q, consumer);
 }
 
-void Reader::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
-{
-	if (!m_idx)
-	{
-		// Query the archives first
-		Local::queryBytes(q, out);
-		return;
-	}
-
-	switch (q.type)
-	{
-		case dataset::ByteQuery::BQ_DATA: {
-			ds::DataOnly dataonly(out);
-			Local::queryData(q, dataonly);
-			queryLocalData(q, dataonly);
-			break;
-		}
-		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param);
-            postproc.set_output(out);
-            postproc.validate(cfg);
-			postproc.set_data_start_hook(q.data_start_hook);
-            postproc.start();
-			Local::queryData(q, postproc);
-			queryLocalData(q, postproc);
-			postproc.flush();
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			Local::queryData(q, rep);
-			queryLocalData(q, rep);
-			rep.report();
-#endif
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			Summary s;
-			Local::querySummary(q.matcher, s);
-			querySummary(q.matcher, s);
-			rep(s);
-			rep.report();
-#endif
-			break;
-		}
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
-	}
-}
-
 #if 0
 void Reader::scanSummaries(const std::string& top, const Matcher& matcher, Summary& result)
 {

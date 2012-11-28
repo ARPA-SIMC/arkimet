@@ -63,7 +63,6 @@ public:
 	 * the metadata consumer.
 	 */
 	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
