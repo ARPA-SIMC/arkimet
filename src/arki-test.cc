@@ -49,6 +49,7 @@ struct Options : public StandardParserWithManpage
 //    BoolOption* do_scan;
 //    BoolOption* do_test;
 //    BoolOption* do_import;
+    BoolOption* do_writelock;
     StringOption* build_scenario;
 
     Options() : StandardParserWithManpage("arki-test", PACKAGE_VERSION, 1, PACKAGE_BUGREPORT)
@@ -61,6 +62,7 @@ struct Options : public StandardParserWithManpage
 //        do_test = add<BoolOption>("test", 0, "test", "", "test dispatching files from the inbound queue");
 //        do_import = add<BoolOption>("import", 0, "import", "", "import files from the inbound queue");
         build_scenario = add<StringOption>("build-scenario", 0, "build-scenario", "NAME", "name of the scenario to build, or 'list' for a list");
+        do_writelock = add<BoolOption>("writelock", 0, "writelock", "", "lock a dataset for writing");
     }
 };
 
@@ -89,6 +91,18 @@ int main(int argc, const char* argv[])
             } else {
                 dataset::test::Scenario::get(name);
             }
+        } else if (opts.do_writelock->boolValue()) {
+            string dspath = opts.next();
+            ConfigFile cfg;
+            ReadonlyDataset::readConfig(dspath, cfg);
+            cout << "Dataset config:" << endl;
+            ConfigFile* dsconfig = cfg.sectionBegin()->second;
+            dsconfig->output(cout, "stdout");
+            auto_ptr<WritableDataset> ds(WritableDataset::create(*dsconfig));
+            Pending p = ds->test_writelock();
+            printf("Press ENTER to unlock %s and quit...", dspath.c_str());
+            fflush(stdout);
+            getchar();
         } else {
             throw wibble::exception::BadOption("please specify an action with --build-scenario");
         }
