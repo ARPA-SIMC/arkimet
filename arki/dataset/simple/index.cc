@@ -459,6 +459,11 @@ public:
 	{
 	}
 
+    Pending test_writelock()
+    {
+        return Pending();
+    }
+
 	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
 	{
 		reread();
@@ -804,6 +809,11 @@ public:
 			nag::warning("ignoring failed attempt to optimize database: %s", e.what());
 		}
 	}
+
+    Pending test_writelock()
+    {
+        return Pending(new SqliteTransaction(m_db, true));
+    }
 
 	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
 	{

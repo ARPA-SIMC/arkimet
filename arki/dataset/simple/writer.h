@@ -88,6 +88,8 @@ public:
 	virtual size_t removeFile(const std::string& relpath, bool withData=false);
 	virtual size_t vacuum();
 
+    virtual Pending test_writelock();
+
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };
 

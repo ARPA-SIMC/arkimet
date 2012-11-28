@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include <arki/tests/test-utils.h>
+#include <arki/dataset/test-utils.h>
 #include <arki/metadata/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/ondisk2.h>
@@ -414,6 +415,7 @@ struct TestDataset
     }
 };
 
+// ondisk2 GRIB
 template<> template<>
 void to::test<14>()
 {
@@ -430,6 +432,7 @@ void to::test<14>()
     ftest(tds.test_all);
 }
 
+// ondisk2 BUFR
 template<> template<>
 void to::test<15>()
 {
@@ -446,6 +449,7 @@ void to::test<15>()
     ftest(tds.test_all);
 }
 
+// ondisk2 VM2
 template<> template<>
 void to::test<16>()
 {
@@ -462,8 +466,28 @@ void to::test<16>()
     ftest(tds.test_all);
 }
 
+// ondisk2 ODIM
 template<> template<>
 void to::test<17>()
+{
+#if 0
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = ondisk2\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+#endif
+}
+
+// simple plainmft GRIB
+template<> template<>
+void to::test<18>()
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
@@ -478,8 +502,28 @@ void to::test<17>()
     ftest(tds.test_all);
 }
 
+// simple sqlitemft GRIB
 template<> template<>
-void to::test<18>()
+void to::test<19>()
+{
+    arki::tests::ForceSqlite fs;
+
+    TestDataset tds(tdata_grib,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+}
+
+// simple plainmft BUFR
+template<> template<>
+void to::test<20>()
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
@@ -494,8 +538,28 @@ void to::test<18>()
     ftest(tds.test_all);
 }
 
+// simple sqlitemft BUFR
 template<> template<>
-void to::test<19>()
+void to::test<21>()
+{
+    arki::tests::ForceSqlite fs;
+
+    TestDataset tds(tdata_bufr,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+}
+
+// simple plainmft VM2
+template<> template<>
+void to::test<22>()
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
@@ -508,6 +572,65 @@ void to::test<19>()
         "path = test\n"
     );
     ftest(tds.test_all);
+}
+
+// simple sqlitemft VM2
+template<> template<>
+void to::test<23>()
+{
+    arki::tests::ForceSqlite fs;
+
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+}
+
+// simple plainmft ODIM
+template<> template<>
+void to::test<24>()
+{
+#if 0
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+#endif
+}
+
+// simple sqlitemft ODIM
+template<> template<>
+void to::test<25>()
+{
+#if 0
+    arki::tests::ForceSqlite fs;
+
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    ftest(tds.test_all);
+#endif
 }
 
 }

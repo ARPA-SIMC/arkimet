@@ -405,6 +405,11 @@ size_t Writer::vacuum()
 	return 0;
 }
 
+Pending Writer::test_writelock()
+{
+    return m_mft->test_writelock();
+}
+
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
 	// TODO
