@@ -29,53 +29,61 @@ using namespace arki;
 
 namespace arki {
 
+Transaction::~Transaction() {}
+
 Pending::Pending(Transaction* trans) : trans(trans)
 {
-	trans->ref();
 }
 Pending::Pending(const Pending& p) : trans(p.trans)
 {
-	trans->ref();
 }
 Pending::~Pending()
 {
-	if (trans && trans->unref())
-	{
-		trans->rollback();
-		delete trans;
-	}
+    if (trans)
+    {
+        trans->rollback();
+        delete trans;
+    }
 }
 Pending& Pending::operator=(const Pending& p)
 {
-	if (p.trans)
-		p.trans->ref();
-	if (trans && trans->unref())
-	{
-		trans->rollback();
-		delete trans;
-	}
-	trans = p.trans;
-	return *this;
+    // Prevent damage on assignment to self
+    if (&p == this) return *this;
+
+    // There should not be two pendings with the same transaction, but handle
+    // it just in case
+    if (trans && p.trans != trans)
+    {
+        trans->rollback();
+        delete trans;
+    }
+
+    trans = p.trans;
+
+    // Force the source pointer to 0 (auto_ptr style)
+    const_cast<Pending*>(&p)->trans = 0;
+
+    return *this;
 }
+
 void Pending::commit()
 {
-	if (trans)
-	{
-		trans->commit();
-		if (trans->unref())
-			delete trans;
-		trans = 0;
-	}
+    if (trans)
+    {
+        trans->commit();
+        delete trans;
+        trans = 0;
+    }
 }
+
 void Pending::rollback()
 {
-	if (trans)
-	{
-		trans->rollback();
-		if (trans->unref())
-			delete trans;
-		trans = 0;
-	}
+    if (trans)
+    {
+        trans->rollback();
+        delete trans;
+        trans = 0;
+    }
 }
 
 }

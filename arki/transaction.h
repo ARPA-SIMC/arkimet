@@ -28,31 +28,14 @@ namespace arki {
 /**
  * RAII-style transaction.
  *
- * Reference counting is provided to allow to use Transactions inside a Pending
- * object that can be passed around.  A transaction can be created directly on
- * the stack, and in that case the reference counting can just be ignored.
+ * To work it needs to be embedded inside a Pending container.
  */
 class Transaction
 {
-protected:
-	int _ref;
-
 public:
-	Transaction() : _ref(0) {}
-	virtual ~Transaction()
-	{
-		// Here, in the implementations, you want to call rollback() unless the
-		// transaction has already fired.
-	}
-
-	/// Increment the reference count
-	void ref() { ++_ref; }
-
-	/// Decrement the reference count and return true if it goes to 0
-	bool unref() { return --_ref == 0; }
-
-	virtual void commit() = 0;
-	virtual void rollback() = 0;
+    virtual ~Transaction();
+    virtual void commit() = 0;
+    virtual void rollback() = 0;
 };
 
 /**
@@ -61,6 +44,8 @@ public:
  * The operation will be performed when the commit method is called.
  * Otherwise, if either rollback is called or the object is destroyed, the
  * operation will be undone.
+ *
+ * Copy and assignment have auto_ptr-like semantics
  */
 struct Pending
 {
