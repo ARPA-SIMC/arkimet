@@ -77,15 +77,15 @@ void AssignedDataset::encodeWithoutEnvelope(Encoder& enc) const
 
 Item<AssignedDataset> AssignedDataset::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils::codec;
-	ensureSize(len, 8, "AssignedDataset");
-	Item<Time> changed = Time::decode(buf, 5);
-	size_t name_len = decodeUInt(buf+5, 1);
-	size_t id_len = decodeUInt(buf+5+1+name_len, 2);
-	ensureSize(len, 8 + name_len + id_len, "AssignedDataset");
-	string name = string((char*)buf+5+1, 0, name_len);
-	string id = string((char*)buf+5+1+name_len+2, 0, id_len);
-	return AssignedDataset::create(changed, name, id);
+    using namespace utils::codec;
+    ensureSize(len, 8, "AssignedDataset");
+    Item<Time> changed = Time::decode(buf, 5);
+    Decoder dec(buf + 5, len - 5);
+    size_t name_len = dec.popUInt(1, "length of dataset name");
+    string name = dec.popString(name_len, "dataset name");
+    size_t id_len = dec.popUInt(2, "length of dataset id");
+    string id = dec.popString(id_len, "dataset id");
+    return AssignedDataset::create(changed, name, id);
 }
 
 std::ostream& AssignedDataset::writeToOstream(std::ostream& o) const
