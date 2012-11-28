@@ -243,6 +243,31 @@ void to::test<5>()
     atest(equals, buf.str(), r.response_body);
 }
 
+// Test /config/ with a locked DB
+template<> template<>
+void to::test<6>()
+{
+    auto_ptr<WritableDataset> ds(makeWriter());
+    Pending p = ds->test_writelock();
+
+    // Make the request
+    arki::tests::FakeRequest r;
+    r.write_get("/foo");
+
+    // Handle the request, server side
+    do_config(r);
+
+    // Handle the response, client side
+    ensure_equals(r.response_method, "HTTP/1.0 200 OK");
+    ensure_equals(r.response_headers["content-type"], "text/plain");
+    ensure_equals(r.response_headers["content-disposition"], "");
+
+    stringstream buf;
+    buf << "[testds]" << endl;
+    cfg.output(buf, "memory");
+    atest(equals, buf.str(), r.response_body);
+}
+
 }
 
 // vim:set ts=4 sw=4:
