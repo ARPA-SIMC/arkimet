@@ -73,7 +73,7 @@ WritableDataset::~WritableDataset()
 
 void WritableDataset::flush() {}
 
-Pending WritableDataset::test_writelock() {}
+Pending WritableDataset::test_writelock() { return Pending(); }
 
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
