@@ -652,7 +652,7 @@ class SqliteManifest : public Manifest
 	{
 		// Also, since the way we do inserts cause no trouble if a reader reads a
 		// partial insert, we do not need read locking
-		m_db.exec("PRAGMA read_uncommitted = 1");
+		//m_db.exec("PRAGMA read_uncommitted = 1");
 		// Use new features, if we write we read it, so we do not need to
 		// support sqlite < 3.3.0 if we are above that version
 		m_db.exec("PRAGMA legacy_file_format = 0");
