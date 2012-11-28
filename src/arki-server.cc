@@ -868,11 +868,11 @@ struct ChildServer : public sys::ChildProcess
                         // if (!script_handlers.try_do(req))
                         throw net::http::error404();
                 } catch (net::http::error& e) {
-                    log << log::WARN << e.what() << endl;
+                    log << log::WARN << str::replace(e.what(), '\n', ' ') << endl;
                     if (!req.response_started)
                         e.send(req);
                 } catch (std::exception& e) {
-                    log << log::WARN << e.what() << endl;
+                    log << log::WARN << str::replace(e.what(), '\n', ' ') << endl;
                     if (!req.response_started)
                     {
                         req.extra_response_headers["Arkimet-Exception"] = e.what();
