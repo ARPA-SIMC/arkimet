@@ -115,6 +115,21 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
 
         r.read_response();
     }
+
+    // Run the fake request through a server-side summary handler
+    void do_config(arki::tests::FakeRequest& r)
+    {
+        net::http::Request req;
+        r.setup_request(req);
+
+        // Handle the request, server side
+        auto_ptr<ReadonlyDataset> ds(makeReader());
+
+        dataset::http::ReadonlyDatasetServer srv(*ds, dsname);
+        srv.do_config(cfg, req);
+
+        r.read_response();
+    }
 };
 TESTGRP(arki_dataset_http_server);
 
@@ -204,6 +219,28 @@ void to::test<4>()
 
     ensure_equals(r.response_body.size(), 44412u);
     ensure_equals(r.response_body.substr(0, 4), "GRIB");
+}
+
+// Test /config/
+template<> template<>
+void to::test<5>()
+{
+    // Make the request
+    arki::tests::FakeRequest r;
+    r.write_get("/foo");
+
+    // Handle the request, server side
+    do_config(r);
+
+    // Handle the response, client side
+    ensure_equals(r.response_method, "HTTP/1.0 200 OK");
+    ensure_equals(r.response_headers["content-type"], "text/plain");
+    ensure_equals(r.response_headers["content-disposition"], "");
+
+    stringstream buf;
+    buf << "[testds]" << endl;
+    cfg.output(buf, "memory");
+    atest(equals, buf.str(), r.response_body);
 }
 
 }
