@@ -55,7 +55,8 @@ public:
     OstreamWriter();
     virtual ~OstreamWriter();
 
-    virtual void stream(Metadata& md, std::ostream& out) const;
+    virtual size_t stream(Metadata& md, std::ostream& out) const;
+    virtual size_t stream(Metadata& md, int out) const;
 };
 
 }

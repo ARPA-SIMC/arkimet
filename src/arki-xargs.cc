@@ -194,14 +194,8 @@ protected:
 	void add_to_cluster(Metadata& md, sys::Buffer& buf)
 	{
         std::stringstream stream;
-        arki::data::OstreamWriter::get(md.source->format)->stream(md, stream);
-        ssize_t res = write(tmpfile_fd, stream.str().c_str(), stream.str().size());
-		if (res < 0)
-			throw wibble::exception::File(tmpfile_name, "writing " + str::fmt(buf.size()));
-		if ((size_t)res != stream.str().size())
-			throw wibble::exception::Consistency("writing to " + tmpfile_name, "wrote only " + str::fmt(res) + " bytes out of " + str::fmt(stream.str().size()));
+        size += arki::data::OstreamWriter::get(md.source->format)->stream(md, tmpfile_fd);
 		++count;
-		size += res;
 		if (cur_interval[0] == -1 && max_interval != 0)
 			md_to_interval(md, cur_interval);
 		timespan.merge(md.get(types::TYPE_REFTIME).upcast<types::Reftime>());

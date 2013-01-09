@@ -148,12 +148,25 @@ OstreamWriter::~OstreamWriter()
 {
 }
 
-void OstreamWriter::stream(Metadata& md, std::ostream& out) const
+size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 {
     wibble::sys::Buffer buf = md.getData();
     sys::sig::ProcMask pm(blocked);
     out.write((const char*)buf.data(), buf.size());
     out.flush();
+    return buf.size();
+}
+
+size_t OstreamWriter::stream(Metadata& md, int out) const
+{
+    wibble::sys::Buffer buf = md.getData();
+    sys::sig::ProcMask pm(blocked);
+
+    ssize_t res = ::write(out, buf.data(), buf.size());
+    if (res < 0 || (unsigned)res != buf.size())
+        throw wibble::exception::System("writing " + str::fmt(buf.size()) + " bytes");
+
+    return buf.size();
 }
 
 }
