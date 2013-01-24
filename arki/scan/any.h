@@ -48,6 +48,14 @@ namespace scan {
 bool scan(const std::string& file, metadata::Consumer& c);
 
 /**
+ * Alternate version with explicit base dir.
+ *
+ * The source information in the metadata will point to \a relname only, with
+ * \a basedir as context.
+ */
+bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c);
+
+/**
  * Scan the given file without format autodetection, sending its metadata to a
  * consumer.
  *
@@ -58,6 +66,14 @@ bool scan(const std::string& file, metadata::Consumer& c);
  * that is not supported or recognised.
  */
 bool scan(const std::string& file, metadata::Consumer& c, const std::string& format);
+
+/**
+ * Alternate version with explicit base dir.
+ *
+ * The source information in the metadata will point to \a relname only, with
+ * \a basedir as context.
+ */
+bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c, const std::string& format);
 
 /**
  * Return true if the file looks like a file with data that can be scanned.

@@ -125,7 +125,7 @@ std::string find_executable(const std::string& name);
  *   The path name to resolve. It can be absolute or relative.
  * @retval basedir
  *   The base directory to use with str::joinpath to make the file name absolute.
- *   It is set to the emptys tring if \a pathname is an absolute path
+ *   It is set to the empty string if \a pathname is an absolute path
  * @retval relname
  *   The normalised version of \a pathname
  */

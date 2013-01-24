@@ -58,7 +58,7 @@ static void scan_metadata(const std::string& file, metadata::Consumer& c)
 	Metadata::readFile(file, c);
 }
 
-static bool scan_file(const std::string& file, const std::string& format, metadata::Consumer& c)
+static bool scan_file(const std::string& basedir, const std::string& file, const std::string& format, metadata::Consumer& c)
 {
     // Scan the file
     if (isCompressed(file))
@@ -108,52 +108,60 @@ static bool scan_file(const std::string& file, const std::string& format, metada
 	return false;
 }
 
-static bool scan_file(const std::string& file, metadata::Consumer& c)
+static std::string guess_format(const std::string& basedir, const std::string& file)
 {
-	// Get the file extension
-	size_t pos = file.rfind('.');
-	if (pos == string::npos)
-		// No extension, we do not know what it is
-		return false;
-	return scan_file(file, str::tolower(file.substr(pos+1)), c);
+    // Get the file extension
+    size_t pos = file.rfind('.');
+    if (pos == string::npos)
+        // No extension, we do not know what it is
+        return std::string();
+    return str::tolower(file.substr(pos+1));
+}
+
+bool scan(const std::string& basedir, const std::string& file, metadata::Consumer& c)
+{
+    std::string format = guess_format(basedir, file);
+
+    // If we cannot detect a format, fail
+    if (format.empty()) return false;
+
+    return scan(basedir, file, c, format);
+}
+
+bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c, const std::string& format)
+{
+    string md_fname = relname + ".metadata";
+    auto_ptr<struct stat64> st_file = sys::fs::stat(relname);
+    if (!st_file.get())
+        st_file = sys::fs::stat(relname + ".gz");
+    if (!st_file.get())
+        throw wibble::exception::File(relname, "getting file information");
+    auto_ptr<struct stat64> st_md = sys::fs::stat(md_fname);
+
+    if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
+    {
+        // If there is a metadata file, use it to save time
+        scan_metadata(md_fname, c);
+        return true;
+    } else {
+        return scan_file(basedir, relname, format, c);
+    }
 }
 
 bool scan(const std::string& file, metadata::Consumer& c)
 {
-	string md_fname = file + ".metadata";
-	auto_ptr<struct stat64> st_file = sys::fs::stat(file);
-	if (!st_file.get())
-		st_file = sys::fs::stat(file + ".gz");
-	if (!st_file.get())
-		throw wibble::exception::File(file, "getting file information");
-	auto_ptr<struct stat64> st_md = sys::fs::stat(md_fname);
-
-	if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
-	{
-		// If there is a metadata file, use it to save time
-		scan_metadata(md_fname, c);
-		return true;
-	} else {
-		return scan_file(file, c);
-	}
+    string basedir;
+    string relname;
+    utils::files::resolve_path(file, basedir, relname);
+    return scan(basedir, relname, c);
 }
 
 bool scan(const std::string& file, metadata::Consumer& c, const std::string& format)
 {
-	string md_fname = file + ".metadata";
-	auto_ptr<struct stat64> st_file = sys::fs::stat(file);
-	if (!st_file.get())
-		throw wibble::exception::File(file, "getting file information");
-	auto_ptr<struct stat64> st_md = sys::fs::stat(md_fname);
-
-	if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
-	{
-		// If there is a metadata file, use it to save time
-		scan_metadata(md_fname, c);
-		return true;
-	} else {
-		return scan_file(file, format, c);
-	}
+    string basedir;
+    string relname;
+    utils::files::resolve_path(file, basedir, relname);
+    return scan(basedir, relname, c, format);
 }
 
 bool canScan(const std::string& file)
