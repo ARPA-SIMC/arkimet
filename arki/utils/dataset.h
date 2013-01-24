@@ -106,6 +106,19 @@ struct DataOnly : public metadata::Consumer
     bool operator()(Metadata& md);
 };
 
+
+/**
+ * Make all source blobs absolute
+ */
+struct MakeAbsolute : public metadata::Consumer
+{
+   metadata::Consumer& next;
+
+   MakeAbsolute(metadata::Consumer& next) : next(next) {}
+
+   bool operator()(Metadata& md);
+};
+
 }
 }
 }

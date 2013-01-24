@@ -90,7 +90,7 @@ struct IndexGlobalData
 static IndexGlobalData igd;
 
 Index::Index(const ConfigFile& cfg)
-    : m_name(cfg.value("name")), m_root(cfg.value("path")),
+    : m_name(cfg.value("name")), m_root(sys::fs::abspath(cfg.value("path"))),
       m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0)
 {

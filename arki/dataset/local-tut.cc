@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -176,14 +176,9 @@ void to::test<2>()
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// Check that the source record that comes out is ok
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	UItem<source::Blob> blob = source.upcast<source::Blob>();
-	ensure_equals(blob->filename, sys::fs::abspath("testds/2007/07-08.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 7218u);
+    // Check that the source record that comes out is ok
+    UItem<Source> source = mdc[0].source;
+    atest(sourceblob_is, "grib1", "", sys::fs::abspath("testds/2007/07-08.grib1"), 0, 7218, mdc[0].source);
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);

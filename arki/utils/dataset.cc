@@ -76,6 +76,14 @@ bool DataOnly::operator()(Metadata& md)
     return true;
 }
 
+bool MakeAbsolute::operator()(Metadata& md)
+{
+   Item<types::source::Blob> i = md.source.upcast<types::source::Blob>();
+   if (i.defined())
+       md.source = i->makeAbsolute();
+   return next(md);
+}
+
 }
 }
 }

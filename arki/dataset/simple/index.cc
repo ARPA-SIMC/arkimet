@@ -113,7 +113,8 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 
     string absdir = sys::fs::abspath(m_path);
     sort::Stream sorter(*compare, *c);
-    ds::MatcherFilter filter(q.matcher, sorter);
+    ds::MakeAbsolute mkabs(sorter);
+    ds::MatcherFilter filter(q.matcher, mkabs);
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         string fullpath = str::joinpath(absdir, *i);
@@ -189,11 +190,12 @@ size_t Manifest::produce_nth(metadata::Consumer& cons, size_t idx)
     fileList(Matcher(), files);
 
     string absdir = sys::fs::abspath(m_path);
+    ds::MakeAbsolute mkabs(cons);
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
-        NthFilter filter(cons, idx);
+        NthFilter filter(mkabs, idx);
         scan::scan(fullpath, filter);
         if (filter.produced())
             ++res;

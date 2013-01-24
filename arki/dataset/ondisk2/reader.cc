@@ -92,8 +92,9 @@ void Reader::queryLocalData(const dataset::DataQuery& q, metadata::Consumer& con
 		c = inliner.get();
 	}
 
-	if (!m_idx || !m_idx->query(q, *c))
-		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
+    ds::MakeAbsolute mkabs(*c);
+    if (!m_idx || !m_idx->query(q, mkabs))
+            throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
 void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
@@ -132,7 +133,8 @@ size_t Reader::produce_nth(metadata::Consumer& cons, size_t idx)
     size_t res = Local::produce_nth(cons, idx);
     if (m_idx)
     {
-        res += m_idx->produce_nth(cons, idx);
+        ds::MakeAbsolute mkabs(cons);
+        res += m_idx->produce_nth(mkabs, idx);
     }
     return res;
 }

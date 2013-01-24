@@ -20,7 +20,7 @@
 #ifndef ARKI_DATASET_TESTUTILS_H
 #define ARKI_DATASET_TESTUTILS_H
 
-#include <arki/tests/test-utils.h>
+#include <arki/types/test-utils.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>

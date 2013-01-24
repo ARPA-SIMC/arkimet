@@ -173,6 +173,12 @@ struct Blob : public Source
      */
     Item<Blob> fileOnly() const;
 
+    /**
+     * Return a new source identical to this one, but with an absolute file
+     * name and no basedir.
+     */
+    Item<Blob> makeAbsolute() const;
+
     virtual wibble::sys::Buffer getData() const;
 
     static Item<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);

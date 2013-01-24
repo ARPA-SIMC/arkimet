@@ -328,6 +328,15 @@ Item<Blob> Blob::fileOnly() const
     return res;
 }
 
+Item<Blob> Blob::makeAbsolute() const
+{
+    string pathname = absolutePathname();
+    Item<Blob> res = Blob::create(format, "", pathname, offset, size);
+    if (hasData())
+        res->setCachedData(getData());
+    return res;
+}
+
 std::string Blob::absolutePathname() const
 {
     if (!filename.empty() && filename[0] == '/')
