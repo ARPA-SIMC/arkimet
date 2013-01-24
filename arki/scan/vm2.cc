@@ -1,7 +1,7 @@
 /*
  * scan/vm2 - Scan a VM2 file for metadata
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,13 +98,14 @@ Vm2::~Vm2()
 
 void Vm2::open(const std::string& filename)
 {
-	// Close the previous file if needed
-	close();
-	this->filename = sys::fs::abspath(filename);
-	this->basename = str::basename(filename);
+    // Close the previous file if needed
+    close();
+    this->filename = sys::fs::abspath(filename);
+    this->dirname = str::dirname(filename);
+    this->basename = str::basename(filename);
     this->in = new std::ifstream(filename.c_str());
-	if (!in->good())
-		throw wibble::exception::File(filename, "opening file for reading");
+    if (!in->good())
+        throw wibble::exception::File(filename, "opening file for reading");
     parser = new meteo::vm2::Parser(*in);
 }
 
@@ -131,7 +132,7 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.create();
-    md.source = types::source::Blob::create("vm2", filename, offset, size);
+    md.source = types::source::Blob::create("vm2", dirname, basename, offset, size);
     md.add_note(types::Note::create("Scanned from " + basename));
 
     md.set(types::reftime::Position::create(types::Time::create(value.year, value.month, value.mday, value.hour, value.min, value.sec)));

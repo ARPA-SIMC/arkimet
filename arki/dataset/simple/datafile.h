@@ -40,6 +40,7 @@ namespace datafile {
 struct MdBuf
 {
     std::string pathname;
+    std::string dirname;
     std::string basename;
     bool flushed;
     metadata::Collection mds;

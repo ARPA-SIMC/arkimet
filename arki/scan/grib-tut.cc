@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,20 @@ struct arki_scan_grib_shar {
 };
 TESTGRP(arki_scan_grib);
 
+namespace {
+
+Item<Source> grib1Blob(const std::string& fname, off_t pos, size_t len)
+{
+    return Item<Source>(source::Blob::create("grib1", "", sys::fs::abspath(fname), pos, len));
+}
+
+Item<Source> grib2Blob(const std::string& fname, off_t pos, size_t len)
+{
+    return Item<Source>(source::Blob::create("grib2", "", sys::fs::abspath(fname), pos, len));
+}
+
+}
+
 // Scan a well-known grib file, with no padding between messages
 template<> template<>
 void to::test<1>()
@@ -69,7 +83,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 0, 7218)));
+	ensure_equals(md.source, grib1Blob("inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -129,7 +143,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 7218, 34960)));
+	ensure_equals(md.source, grib1Blob("inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -180,7 +194,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 42178, 2234)));
+	ensure_equals(md.source, grib1Blob("inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -248,7 +262,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/padded.grib1"), 100, 7218)));
+	ensure_equals(md.source, grib1Blob("inbound/padded.grib1", 100, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -300,7 +314,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/padded.grib1"), 7418, 34960)));
+	ensure_equals(md.source, grib1Blob("inbound/padded.grib1", 7418, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -352,7 +366,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/padded.grib1"), 42478, 2234)));
+	ensure_equals(md.source, grib1Blob("inbound/padded.grib1", 42478, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -440,7 +454,7 @@ void to::test<3>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 0, 7218)));
+	ensure_equals(md.source, grib1Blob("inbound/test.grib1", 0, 7218));
 }
 
 // Test validation
@@ -495,7 +509,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/layer.grib1"), 0, 30682)));
+	ensure_equals(md.source, grib1Blob("inbound/layer.grib1", 0, 30682));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -565,7 +579,7 @@ void to::test<6>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/proselvo.grib1"), 0, 298)));
+	ensure_equals(md.source, grib1Blob("inbound/proselvo.grib1", 0, 298));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -635,7 +649,7 @@ void to::test<7>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("grib2", sys::fs::abspath("inbound/cleps_grib2.grib2"), 0, 415)));
+	ensure_equals(md.source, grib2Blob("inbound/cleps_grib2.grib2", 0, 415));
 
 	// Check that the source can be read properly
 	buf = md.getData();

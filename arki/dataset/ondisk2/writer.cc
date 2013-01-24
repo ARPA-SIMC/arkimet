@@ -190,9 +190,6 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     if (!m_idx.get_current(md, old_md))
         throw wibble::exception::Consistency("acquiring into dataset " + m_name, "Insert reported a conflict, the index failed to find the original version");
 
-    // Prepend the dataset root path, so we can find the data
-    old_md.prependPath(sys::fs::abspath(m_path));
-
     // Read the update sequence number of the old BUFR
     int old_usn;
     if (!scan::update_sequence_number(old_md, old_usn))

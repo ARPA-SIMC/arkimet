@@ -4,7 +4,7 @@
 /*
  * scan/vm2 - Scan a VM2 file for metadata
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,8 +48,9 @@ class Vm2
 {
 protected:
     std::ifstream* in;
-	std::string filename;
-	std::string basename;
+    std::string filename;
+    std::string dirname;
+    std::string basename;
     unsigned lineno;
 
     meteo::vm2::Parser* parser;

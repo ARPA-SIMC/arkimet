@@ -26,7 +26,6 @@
 #include <arki/metadata/consumer.h>
 #include <arki/formatter.h>
 #include <arki/utils/codec.h>
-#include <arki/utils/datareader.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/fd.h>
 #include <arki/emitter.h>
@@ -49,8 +48,21 @@ using namespace arki::utils;
 
 namespace arki {
 
-// TODO: @WARNING this is NOT thread safe
-static utils::DataReader dataReader;
+namespace metadata {
+
+ReadContext::ReadContext() {}
+
+ReadContext::ReadContext(const std::string& pathname)
+    : basedir(str::dirname(pathname)), pathname(pathname)
+{
+}
+
+ReadContext::ReadContext(const std::string& pathname, const std::string& basename)
+    : basedir(basedir), pathname(pathname)
+{
+}
+
+}
 
 static inline void ensureSize(size_t len, size_t req, const char* what)
 {
@@ -120,22 +132,18 @@ void Metadata::add_note(const Item<types::Note>& note)
 
 void Metadata::reset()
 {
-	m_filename.clear();
-	m_vals.clear();
-	m_notes.clear();
-	source.clear();
-	m_inline_buf = wibble::sys::Buffer();
+    m_vals.clear();
+    m_notes.clear();
+    source.clear();
 }
 
 bool Metadata::operator==(const Metadata& m) const
 {
-	if (!ItemSet::operator==(m)) return false;
+    if (!ItemSet::operator==(m)) return false;
 
-	//if (m_filename != m.m_filename) return false;
-	if (m_notes != m.m_notes) return false;
-	if (source != m.source) return false;
-	if (m_inline_buf != m.m_inline_buf) return false;
-	return true;
+    if (m_notes != m.m_notes) return false;
+    if (source != m.source) return false;
+    return true;
 }
 
 int Metadata::compare(const Metadata& m) const
@@ -152,8 +160,7 @@ int Metadata::compare(const Metadata& m) const
 
 void Metadata::create()
 {
-	reset();
-	m_filename = "(in memory)";
+    reset();
 }
 
 bool Metadata::read(istream& in, const std::string& filename, bool readInline)
@@ -177,52 +184,37 @@ bool Metadata::read(istream& in, const std::string& filename, bool readInline)
 	return true;
 }
 
-bool Metadata::read(const unsigned char*& buf, size_t& len, const std::string& filename)
+bool Metadata::read(const unsigned char*& buf, size_t& len, const metadata::ReadContext& rc)
 {
 	const unsigned char* obuf;
 	size_t olen;
 	string signature;
 	unsigned version;
 
-	if (!types::readBundle(buf, len, filename, obuf, olen, signature, version))
+	if (!types::readBundle(buf, len, rc.pathname, obuf, olen, signature, version))
 		return false;
 
 	// Ensure the signature is MD or !D
 	if (signature != "MD")
-		throw wibble::exception::Consistency("parsing file " + filename, "metadata entry does not start with 'MD'");
+		throw wibble::exception::Consistency("parsing file " + rc.pathname, "metadata entry does not start with 'MD'");
 	
-	read(obuf, olen, version, filename);
-
-	/*
-	// If the source is inline, then the data follows the metadata
-	if (readInline && source->style() == types::Source::INLINE)
-	{
-		size_t size = source.upcast<types::source::Inline>()->size;
-		m_inline_buf = wibble::sys::Buffer(size);
-
-		// Read the inline data
-		in.read((char*)m_inline_buf.data(), size);
-		if (in.fail())
-			throw wibble::exception::File(filename, "reading "+str::fmt(size)+" bytes");
-	}
-	*/
+	read(obuf, olen, version, rc);
 
 	return true;
 }
 
-void Metadata::read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename)
+void Metadata::read(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& rc)
 {
-	read((const unsigned char*)buf.data(), buf.size(), version, filename);
+	read((const unsigned char*)buf.data(), buf.size(), version, rc);
 }
 
-void Metadata::read(const unsigned char* buf, size_t len, unsigned version, const std::string& filename)
+void Metadata::read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& rc)
 {
-	reset();
-	m_filename = filename;
+    reset();
 
-	// Check version and ensure we can decode
-	if (version != 0)
-		throw wibble::exception::Consistency("parsing file " + m_filename, "version of the file is " + str::fmt(version) + " but I can only decode version 0");
+    // Check version and ensure we can decode
+    if (version != 0)
+        throw wibble::exception::Consistency("parsing file " + rc.pathname, "version of the file is " + str::fmt(version) + " but I can only decode version 0");
 	
 	// Parse the various elements
 	const unsigned char* end = buf + len;
@@ -236,7 +228,7 @@ void Metadata::read(const unsigned char* buf, size_t len, unsigned version, cons
 		switch (el_type)
 		{
 			case types::TYPE_NOTE: m_notes += string((const char*)cur, (el_start + el_len) - cur); break;
-			case types::TYPE_SOURCE: source = types::Source::decode(el_start, el_len); break;
+			case types::TYPE_SOURCE: source = types::Source::decodeRelative(el_start, el_len, rc.basedir); break;
 			default:
 				m_vals.insert(make_pair(el_type, types::decodeInner(el_type, el_start, el_len)));
 				break;
@@ -248,26 +240,27 @@ void Metadata::read(const unsigned char* buf, size_t len, unsigned version, cons
 
 void Metadata::readInlineData(std::istream& in, const std::string& filename)
 {
-	// If the source is inline, then the data follows the metadata
-	if (source->style() == types::Source::INLINE)
-	{
-		size_t size = source.upcast<types::source::Inline>()->size;
-		m_inline_buf = wibble::sys::Buffer(size);
+    // If the source is inline, then the data follows the metadata
+    if (source->style() == types::Source::INLINE)
+    {
+        size_t size = source.upcast<types::source::Inline>()->size;
+        wibble::sys::Buffer buf(size);
 
         iotrace::trace_file(filename, 0, size, "read inline data");
 
-		// Read the inline data
-		in.read((char*)m_inline_buf.data(), size);
-		if (in.fail())
-			throw wibble::exception::File(filename, "reading "+str::fmt(size)+" bytes");
-	}
+        // Read the inline data
+        in.read((char*)buf.data(), size);
+        if (in.fail())
+            throw wibble::exception::File(filename, "reading "+str::fmt(size)+" bytes");
+
+        source->setCachedData(buf);
+    }
 }
 
 bool Metadata::readYaml(std::istream& in, const std::string& filename)
 {
 	using namespace str;
 	reset();
-	m_filename = filename;
 
 	YamlStream yamlStream;
 	for (YamlStream::const_iterator i = yamlStream.begin(in);
@@ -296,13 +289,14 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
 	if (out.fail())
 		throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
 
-	// If the source is inline, then the data follows the metadata
-	if (source->style() == types::Source::INLINE)
-	{
-		out.write((const char*)m_inline_buf.data(), m_inline_buf.size());
-		if (out.fail())
-			throw wibble::exception::File(filename, "writing " + str::fmt(m_inline_buf.size()) + " bytes to the file");
-	}
+    // If the source is inline, then the data follows the metadata
+    if (source->style() == types::Source::INLINE)
+    {
+        wibble::sys::Buffer buf = source->getData();
+        out.write((const char*)buf.data(), buf.size());
+        if (out.fail())
+            throw wibble::exception::File(filename, "writing " + str::fmt(buf.size()) + " bytes to the file");
+    }
 }
 
 void Metadata::write(int outfd, const std::string& filename) const
@@ -315,7 +309,10 @@ void Metadata::write(int outfd, const std::string& filename) const
 
     // If the source is inline, then the data follows the metadata
     if (source->style() == types::Source::INLINE)
-        utils::fd::write_all(outfd, m_inline_buf.data(), m_inline_buf.size());
+    {
+        wibble::sys::Buffer buf = source->getData();
+        utils::fd::write_all(outfd, buf.data(), buf.size());
+    }
 }
 
 template<typename LIST>
@@ -391,7 +388,10 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
 
     // If the source is inline, then the data follows the metadata
     if (source->style() == types::Source::INLINE)
-        e.add_raw(m_inline_buf);
+    {
+        wibble::sys::Buffer buf = source->getData();
+        e.add_raw(buf);
+    }
 }
 
 void Metadata::read(const emitter::memory::Mapping& val)
@@ -440,54 +440,29 @@ string Metadata::encode() const
 	return res;
 }
 
-std::string Metadata::completePathname(const std::string& pathname) const
-{
-	if (pathname[0] == '/') return pathname;
-	if (m_filename.empty()) return pathname;
-	return wibble::str::joinpath(str::dirname(m_filename), pathname);
-}
-
 bool Metadata::hasData() const
 {
-    return m_inline_buf.size();
+    return source.defined() && source->hasData();
 }
 
 wibble::sys::Buffer Metadata::getData() const
 {
-	if (m_inline_buf.size())
-		return m_inline_buf;
-
-	switch (source->style())
-	{
-		case types::Source::BLOB:
-		{
-			Item<types::source::Blob> blob = source.upcast<types::source::Blob>();
-
-			// Compute the input file name
-			string file = completePathname(blob->filename);
-
-			// Read the data
-			m_inline_buf.resize(blob->size);
-			dataReader.read(file, blob->offset, blob->size, m_inline_buf.data());
-
-			return m_inline_buf;
-		}
-		case types::Source::INLINE:
-			return m_inline_buf;
-		default:
-			throw wibble::exception::Consistency("retrieving data", "data source type is " + types::Source::formatStyle(source->style()) + " but I can only handle BLOB or INLINE");
-	}
+    if (!source.defined())
+        throw wibble::exception::Consistency("retrieving data", "data source is not defined");
+    return source->getData();
 }
 
-void Metadata::dropCachedData()
+void Metadata::dropCachedData() const
 {
-	if (source.defined() && source->style() == types::Source::BLOB)
-		m_inline_buf = wibble::sys::Buffer();
+    if (source.defined())
+        source->dropCachedData();
 }
 
 void Metadata::setCachedData(const wibble::sys::Buffer& buf)
 {
-	m_inline_buf = buf;
+    if (!source.defined())
+        throw wibble::exception::Consistency("setting cached data", "data source is not defined");
+    source->setCachedData(buf);
 }
 
 size_t Metadata::dataSize() const
@@ -505,24 +480,13 @@ size_t Metadata::dataSize() const
 
 void Metadata::setInlineData(const std::string& format, wibble::sys::Buffer buf)
 {
-	source = types::source::Inline::create(format, buf.size());
-	m_inline_buf = buf;
-}
-
-void Metadata::resetInlineData()
-{
-	if (source->style() == types::Source::INLINE) return;
-	m_inline_buf = wibble::sys::Buffer();
+    source = types::source::Inline::create(format, buf.size());
+    source->setCachedData(buf);
 }
 
 void Metadata::makeInline()
 {
 	setInlineData(source->format, getData());
-}
-
-void Metadata::prependPath(const std::string& path)
-{
-	source = source.upcast<types::source::Blob>()->prependPath(path);
 }
 
 void Metadata::readFile(const std::string& fname, metadata::Consumer& mdc)
@@ -598,7 +562,7 @@ void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const
 
 void Metadata::flushDataReaders()
 {
-	dataReader.flush();
+    types::Source::flushDataReaders();
 }
 
 #ifdef HAVE_LUA

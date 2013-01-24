@@ -4,7 +4,7 @@
 /*
  * metadata - Handle xgribarch metadata
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,17 @@ namespace arki {
 
 namespace metadata {
 class Consumer;
+
+struct ReadContext
+{
+    std::string basedir;
+    std::string pathname;
+
+    ReadContext();
+    ReadContext(const std::string& pathname);
+    ReadContext(const std::string& pathname, const std::string& basedir);
+};
+
 }
 
 class Formatter;
@@ -47,8 +58,7 @@ class Formatter;
 struct Metadata : public ItemSet
 {
 protected:
-	std::string m_filename;
-	std::string m_notes;
+    std::string m_notes;
 
 	void clear();
 
@@ -56,11 +66,6 @@ public:
 	UItem<types::Source> source;
 
 protected:
-	/**
-	 * Inline data, or cached version of previously read data
-	 */
-	mutable wibble::sys::Buffer m_inline_buf;
-
 	// Empty this Metadata object
 	void reset();
 
@@ -109,17 +114,17 @@ public:
 	 *
 	 * @returns false when the end of the buffer is reached
 	 */
-	bool read(const unsigned char*& buf, size_t& len, const std::string& filename);
+	bool read(const unsigned char*& buf, size_t& len, const metadata::ReadContext& filename);
 
 	/**
 	 * Decode the metadata, without the outer bundle headers, from the given buffer.
 	 */
-	void read(const unsigned char* buf, size_t len, unsigned version, const std::string& filename);
+	void read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& filename);
 
 	/**
 	 * Decode the metadata, without the outer bundle headers, from the given buffer.
 	 */
-	void read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
+	void read(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& filename);
 
     /// Decode from structured data
 	void read(const emitter::memory::Mapping& val);
@@ -193,26 +198,20 @@ public:
 	 */
 	wibble::sys::Buffer getData() const;
 
-	/**
-	 * If \a pathname is absolute, return it. Else, prepend to it this
-	 * metadata position on the file system
-	 */
-	std::string completePathname(const std::string& pathname) const;
-
     /**
      * Returns true if data is available without having to load it (either
      * inline or cached)
      */
     bool hasData() const;
 
-	/**
-	 * If the source is not inline, but the data are cached in memory, drop
-	 * them.
-	 *
-	 * Data for non-inline metadata can be cached in memory, for example,
-	 * by a getData() call or a setCachedData() call.
-	 */
-	void dropCachedData();
+    /**
+     * If the source is not inline, but the data are cached in memory, drop
+     * them.
+     *
+     * Data for non-inline metadata can be cached in memory, for example,
+     * by a getData() call or a setCachedData() call.
+     */
+    void dropCachedData() const;
 
 	/**
 	 * Set cached data for non-inline sources, so that getData() won't have
@@ -226,13 +225,6 @@ public:
 	void setInlineData(const std::string& format, wibble::sys::Buffer buf);
 
 	/**
-	 * Remove the cached data from the metadata
-	 *
-	 * Note: this will do nothing if the source type is INLINE
-	 */
-	void resetInlineData();
-
-	/**
 	 * Read the data and inline them in the metadata
 	 */
 	void makeInline();
@@ -241,13 +233,6 @@ public:
 	 * Return the size of the data, if known
 	 */
 	size_t dataSize() const;
-
-	/**
-	 * Prepend this path to the filename in the blob source.
-	 *
-	 * If the source style is not blob, throws an exception.
-	 */
-	void prependPath(const std::string& path);
 
 	/**
 	 * Read all metadata from a file into the given consumer

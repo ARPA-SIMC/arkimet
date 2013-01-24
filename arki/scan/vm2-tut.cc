@@ -69,7 +69,7 @@ void to::test<1>()
     ensure(scanner.next(md));
 
     // Check the source info
-    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", sys::fs::abspath("inbound/test.vm2"), 0, 34)));
+    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", "", sys::fs::abspath("inbound/test.vm2"), 0, 34)));
 
     // Check that the source can be read properly
     buf = md.getData();

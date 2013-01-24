@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,20 @@ struct arki_scan_any_shar {
 };
 TESTGRP(arki_scan_any);
 
+namespace {
+
+Item<Source> grib1Blob(const std::string& fname, off_t pos, size_t len)
+{
+    return Item<Source>(source::Blob::create("grib1", "", sys::fs::abspath(fname), pos, len));
+}
+
+Item<Source> bufrBlob(const std::string& fname, off_t pos, size_t len)
+{
+    return Item<Source>(source::Blob::create("bufr", "", sys::fs::abspath(fname), pos, len));
+}
+
+}
+
 // Scan a well-known grib file, with no padding between messages
 template<> template<>
 void to::test<1>()
@@ -64,7 +78,7 @@ void to::test<1>()
 	ensure_equals(mdc.size(), 3u);
 
 	// Check the source info
-	ensure_equals(mdc[0].source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 0, 7218)));
+	ensure_equals(mdc[0].source, grib1Blob("inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -103,7 +117,7 @@ void to::test<1>()
 
 
 	// Check the source info
-	ensure_equals(mdc[1].source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 7218, 34960)));
+	ensure_equals(mdc[1].source, grib1Blob("inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -143,7 +157,7 @@ void to::test<1>()
 
 
 	// Check the source info
-	ensure_equals(mdc[2].source, Item<Source>(source::Blob::create("grib1", sys::fs::abspath("inbound/test.grib1"), 42178, 2234)));
+	ensure_equals(mdc[2].source, grib1Blob("inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -185,7 +199,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 3u);
 
 	// Check the source info
-	ensure_equals(mdc[0].source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/test.bufr"), 0, 194)));
+	ensure_equals(mdc[0].source, bufrBlob("inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -212,7 +226,7 @@ void to::test<2>()
 
 
 	// Check the source info
-	ensure_equals(mdc[1].source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/test.bufr"), 194, 220)));
+	ensure_equals(mdc[1].source, bufrBlob("inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -237,7 +251,7 @@ void to::test<2>()
 
 
 	// Check the source info
-	ensure_equals(mdc[2].source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/test.bufr"), 414, 220)));
+	ensure_equals(mdc[2].source, bufrBlob("inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();

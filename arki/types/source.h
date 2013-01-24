@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <wibble/sys/buffer.h>
 #include <stdint.h>
 
 struct lua_State;
@@ -49,7 +50,14 @@ struct traits<Source>
  */
 struct Source : public types::StyledType<Source>
 {
-	std::string format;
+protected:
+    /**
+     * Inline data, or cached version of previously read data
+     */
+    mutable wibble::sys::Buffer m_inline_buf;
+
+public:
+    std::string format;
 
 	/// Style values
 	//static const Style NONE = 0;
@@ -64,23 +72,85 @@ struct Source : public types::StyledType<Source>
 
 	virtual int compare_local(const Source& o) const;
 
-	/// CODEC functions
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	static Item<Source> decode(const unsigned char* buf, size_t len);
-	static Item<Source> decodeString(const std::string& val);
-	static Item<Source> decodeMapping(const emitter::memory::Mapping& val);
+    /// CODEC functions
+    virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
+    static Item<Source> decode(const unsigned char* buf, size_t len);
+    static Item<Source> decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir);
+    static Item<Source> decodeString(const std::string& val);
+    static Item<Source> decodeMapping(const emitter::memory::Mapping& val);
     virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+    // Management functions for inline or cached data
+
+    /**
+     * Returns true if data is available without having to load it (either
+     * inline or cached)
+     */
+    bool hasData() const;
+
+    /**
+     * If the source is not inline, but the data are cached in memory, drop
+     * them.
+     *
+     * Data for non-inline metadata can be cached in memory, for example,
+     * by a getData() call or a setCachedData() call.
+     */
+    virtual void dropCachedData() const;
+
+    /**
+     * Read the raw blob data described by this metadata.
+     *
+     * Optionally, a directory can be given as a base to resolve relative
+     * paths.
+     */
+    virtual wibble::sys::Buffer getData() const = 0;
+
+    /**
+     * Set cached data for non-inline sources, so that getData() won't have
+     * to read it again.
+     */
+    void setCachedData(const wibble::sys::Buffer& buf) const;
+
+    /**
+     * Flush open data readers.
+     *
+     * A persistent data reader is used to read data, in order to keep the last
+     * file opened and buffered to speed up reading multiple data items from
+     * the same file. This function tells the data reader to close its open
+     * files.
+     *
+     * It is useful for testing cases when data files are moved or
+     * compressed.
+     */
+    static void flushDataReaders();
 };
 
 namespace source {
 
 struct Blob : public Source
 {
-	std::string filename;
-	uint64_t offset;
-	uint64_t size;
+    /**
+     * Base directory used to resolve relative filenames.
+     *
+     * Note that this is not stored when serializing, since metadata usually
+     * point to files relative to the metadata location, in order to save
+     * space.
+     */
+    std::string basedir;
+
+    /**
+     * Data file name.
+     *
+     * Can be an absolute or a relative path. If it is a relative path, it is
+     * resolved based on \a basedir, or on the current directory if \a basedir
+     * is empty.
+     */
+    std::string filename;
+
+    uint64_t offset;
+    uint64_t size;
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -92,20 +162,21 @@ struct Blob : public Source
 	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	/**
-	 * Return a new source identical to this one, but with the given path
-	 * prepended to the file name.
-	 */
-	Item<Blob> prependPath(const std::string& path) const;
+    /// Return the absolute pathname to the data file
+    std::string absolutePathname() const;
 
-	/**
-	 * Return a new source identical to this one, but with all the
-	 * directory components stripped from the file name.
-	 */
-	Item<Blob> fileOnly() const;
+    /**
+     * Return a new source identical to this one, but with all the
+     * directory components stripped from the file name.
+     *
+     * basedir is updated so that we can still reach the data file.
+     */
+    Item<Blob> fileOnly() const;
 
-	static Item<Blob> create(const std::string& format, const std::string& filename, uint64_t offset, uint64_t size);
-	static Item<Blob> decodeMapping(const emitter::memory::Mapping& val);
+    virtual wibble::sys::Buffer getData() const;
+
+    static Item<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static Item<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 struct URL : public Source
@@ -121,6 +192,8 @@ struct URL : public Source
 
 	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
+
+    virtual wibble::sys::Buffer getData() const;
 
 	static Item<URL> create(const std::string& format, const std::string& url);
 	static Item<URL> decodeMapping(const emitter::memory::Mapping& val);
@@ -139,6 +212,9 @@ struct Inline : public Source
 
 	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
+
+    virtual void dropCachedData() const;
+    virtual wibble::sys::Buffer getData() const;
 
 	static Item<Inline> create(const std::string& format, uint64_t size);
 	static Item<Inline> decodeMapping(const emitter::memory::Mapping& val);

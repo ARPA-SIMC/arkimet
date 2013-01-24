@@ -4,7 +4,7 @@
 /*
  * scan/bufr - Scan a BUFR file for metadata.
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,12 +52,14 @@ struct BufrLua;
  */
 class Bufr
 {
-	std::string filename;
-	dballe::File* file;
-	dballe::msg::Importer* importer;
-	bool m_inline_data;
-	std::map<int, std::string> to_rep_memo;
-	bufr::BufrLua* extras;
+    std::string filename;
+    std::string dirname;
+    std::string basename;
+    dballe::File* file;
+    dballe::msg::Importer* importer;
+    bool m_inline_data;
+    std::map<int, std::string> to_rep_memo;
+    bufr::BufrLua* extras;
 
 	void read_info_base(char* buf, ValueBag& area);
 	void read_info_fixed(char* buf, Metadata& md);

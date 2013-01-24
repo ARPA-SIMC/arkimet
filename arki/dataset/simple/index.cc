@@ -1,7 +1,7 @@
 /*
  * dataset/simple/index - Index for simple datasets with no duplicate checks
  *
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,13 +113,11 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 
     string absdir = sys::fs::abspath(m_path);
     sort::Stream sorter(*compare, *c);
-    ds::PathPrepender prepender("", sorter);
-    ds::MatcherFilter filter(q.matcher, prepender);
+    ds::MatcherFilter filter(q.matcher, sorter);
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
-        prepender.path = str::dirname(fullpath);
         scan::scan(fullpath, filter);
         sorter.flush();
     }
@@ -191,13 +189,11 @@ size_t Manifest::produce_nth(metadata::Consumer& cons, size_t idx)
     fileList(Matcher(), files);
 
     string absdir = sys::fs::abspath(m_path);
-    ds::PathPrepender prepender("", cons);
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
-        prepender.path = str::dirname(fullpath);
-        NthFilter filter(prepender, idx);
+        NthFilter filter(cons, idx);
         scan::scan(fullpath, filter);
         if (filter.produced())
             ++res;

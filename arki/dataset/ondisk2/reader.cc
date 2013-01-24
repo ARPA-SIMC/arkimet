@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk2/reader - Local on disk dataset reader
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,8 +92,7 @@ void Reader::queryLocalData(const dataset::DataQuery& q, metadata::Consumer& con
 		c = inliner.get();
 	}
 
-	ds::PathPrepender prepender(sys::fs::abspath(m_path), *c);
-	if (!m_idx || !m_idx->query(q, prepender))
+	if (!m_idx || !m_idx->query(q, *c))
 		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
@@ -133,8 +132,7 @@ size_t Reader::produce_nth(metadata::Consumer& cons, size_t idx)
     size_t res = Local::produce_nth(cons, idx);
     if (m_idx)
     {
-        ds::PathPrepender prepender(sys::fs::abspath(m_path), cons);
-        res += m_idx->produce_nth(prepender, idx);
+        res += m_idx->produce_nth(cons, idx);
     }
     return res;
 }

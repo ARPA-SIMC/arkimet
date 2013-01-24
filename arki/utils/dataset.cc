@@ -1,7 +1,7 @@
 /*
  * utils/dataset - Useful functions for working with datasets
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,24 +46,26 @@ bool DataInliner::operator()(Metadata& md)
 
 bool TemporaryDataInliner::operator()(Metadata& md)
 {
-	// If we get data already inlined, we can shortcut
-	if (md.source->style() == types::Source::INLINE)
-		return next(md);
+    // If we get data already inlined, we can shortcut
+    if (md.source->style() == types::Source::INLINE)
+        return next(md);
 
-	// Save the old source
-	UItem<types::Source> oldSource = md.source;
+    // Save the old source
+    UItem<types::Source> oldSource = md.source;
 
-	// Read the data
-	wibble::sys::Buffer buf = md.getData();
-	// Change the source as inline
-	md.setInlineData(md.source->format, buf);
-	bool res = next(md);
+    // Change the source as inline
+    md.makeInline();
 
-	// Restore the old source
-	md.source = oldSource;
-	md.resetInlineData();
+    // Pass it all to the next step in the processing chain
+    bool res = next(md);
 
-	return res;
+    // Drop the cached metadata to avoid keeping all query results in memory
+    oldSource->dropCachedData();
+
+    // Restore the old source
+    md.source = oldSource;
+
+    return res;
 }
 
 bool DataOnly::operator()(Metadata& md)

@@ -177,7 +177,7 @@ std::string Collection::ensureContiguousData(const std::string& source) const
 	// Check that the metadata completely cover the data file
 	if (empty()) return std::string();
 
-	string last_file;
+	string fname;
 	off_t last_end = 0;
 	for (const_iterator i = begin(); i != end(); ++i)
 	{
@@ -187,15 +187,14 @@ std::string Collection::ensureContiguousData(const std::string& source) const
 					"metadata element points to data that does not start at the end of the previous element");
 		if (i == begin())
 		{
-			last_file = s->filename;
+			fname = s->absolutePathname();
 		} else {
-			if (last_file != s->filename)
+			if (fname != s->absolutePathname())
 				throw wibble::exception::Consistency("validating " + source,
-						"metadata element points at another data file (previous: " + last_file + ", this: " + s->filename + ")");
+						"metadata element points at another data file (previous: " + fname + ", this: " + s->absolutePathname() + ")");
 		}
 		last_end += s->size;
 	}
-	string fname = (*this)[0].completePathname(last_file);
 	std::auto_ptr<struct stat64> st = sys::fs::stat(fname);
 	if (st.get() == NULL)
 		throw wibble::exception::File(fname, "validating data described in " + source);

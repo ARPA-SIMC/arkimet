@@ -47,6 +47,7 @@ class Grib
 {
 protected:
 	std::string filename;
+	std::string dirname;
 	std::string basename;
 	FILE* in;
 	grib_context* context;
@@ -115,8 +116,10 @@ public:
 class MultiGrib : public Grib
 {
 protected:
-	std::string tmpfilename;
-	std::ostream& tmpfile;
+    std::string tmpfilename;
+    std::string tmpdirname;
+    std::string tmpbasename;
+    std::ostream& tmpfile;
 
 	/**
 	 * Set the source information in the metadata.

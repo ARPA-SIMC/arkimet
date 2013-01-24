@@ -25,6 +25,7 @@
 #include <arki/types/source.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/datareader.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -45,6 +46,13 @@ using namespace std;
 using namespace wibble;
 using namespace arki::utils;
 using namespace arki::utils::codec;
+
+namespace {
+
+// TODO: @WARNING this is NOT thread safe
+static arki::utils::DataReader dataReader;
+
+}
 
 namespace arki {
 namespace types {
@@ -105,6 +113,11 @@ void Source::serialiseLocal(Emitter& e, const Formatter* f) const
 
 Item<Source> Source::decode(const unsigned char* buf, size_t len)
 {
+    return decodeRelative(buf, len, string());
+}
+
+Item<Source> Source::decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir)
+{
 	using namespace utils::codec;
 	Decoder dec(buf, len);
 	Style s = (Style)dec.popUInt(1, "source style");
@@ -117,7 +130,7 @@ Item<Source> Source::decode(const unsigned char* buf, size_t len)
 			string fname = dec.popString(fname_len, "blob source file name");
 			uint64_t offset = dec.popVarint<uint64_t>("blob source offset");
 			uint64_t size = dec.popVarint<uint64_t>("blob source size");
-			return source::Blob::create(format, fname, offset, size);
+			return source::Blob::create(format, basedir, fname, offset, size);
 		}
 		case URL: {
 			unsigned fname_len = dec.popVarint<unsigned>("url source file name length");
@@ -157,7 +170,7 @@ Item<Source> Source::decodeString(const std::string& val)
 			if (end == string::npos)
 				throw wibble::exception::Consistency("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
 
-			return source::Blob::create(format, fname,
+			return source::Blob::create(format, string(), fname,
 					strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
 					strtoull(inner.substr(end+1).c_str(), 0, 10));
 		}
@@ -195,6 +208,25 @@ bool Source::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
+bool Source::hasData() const
+{
+    return m_inline_buf.data() != 0;
+}
+
+void Source::dropCachedData() const
+{
+    m_inline_buf = wibble::sys::Buffer();
+}
+
+void Source::setCachedData(const wibble::sys::Buffer& buf) const
+{
+    m_inline_buf = buf;
+}
+
+void Source::flushDataReaders()
+{
+    dataReader.flush();
+}
 
 namespace source {
 
@@ -212,20 +244,27 @@ void Blob::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& Blob::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-			 << format << "," << filename << ":" << offset << "+" << size
+			 << format << "," << str::joinpath(basedir, filename) << ":" << offset << "+" << size
 			 << ")";
 }
 void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Source::serialiseLocal(e, f);
+    e.add("b", basedir);
     e.add("file", filename);
     e.add("ofs", offset);
     e.add("sz", size);
 }
 Item<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
 {
+    const arki::emitter::memory::Node& rd = val["b"];
+    string basedir;
+    if (rd.is_string())
+        basedir = rd.get_string();
+
     return Blob::create(
             val["f"].want_string("parsing blob source format"),
+            basedir,
             val["file"].want_string("parsing blob source filename"),
             val["ofs"].want_int("parsing blob source offset"),
             val["sz"].want_int("parsing blob source size"));
@@ -269,26 +308,44 @@ bool Blob::operator==(const Type& o) const
 	return format == v->format && filename == v->filename && offset == v->offset && size == v->size;
 }
 
-Item<Blob> Blob::create(const std::string& format, const std::string& filename, uint64_t offset, uint64_t size)
+Item<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
 	Blob* res = new Blob;
 	res->format = format;
+	res->basedir = basedir;
 	res->filename = filename;
 	res->offset = offset;
 	res->size = size;
 	return res;
 }
 
-Item<Blob> Blob::prependPath(const std::string& path) const
-{
-	return Blob::create(format, wibble::str::joinpath(path, filename), offset, size);
-}
-
 Item<Blob> Blob::fileOnly() const
 {
-	return Blob::create(format, wibble::str::basename(filename), offset, size);
+    string pathname = absolutePathname();
+    Item<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
+    if (hasData())
+        res->setCachedData(getData());
+    return res;
 }
 
+std::string Blob::absolutePathname() const
+{
+    if (!filename.empty() && filename[0] == '/')
+        return filename;
+    return str::joinpath(basedir, filename);
+}
+
+wibble::sys::Buffer Blob::getData() const
+{
+    if (m_inline_buf.data())
+        return m_inline_buf;
+
+    // Read the data
+    m_inline_buf.resize(size);
+    dataReader.read(absolutePathname(), offset, size, m_inline_buf.data());
+
+    return m_inline_buf;
+}
 
 Source::Style URL::style() const { return Source::URL; }
 
@@ -358,6 +415,12 @@ Item<URL> URL::create(const std::string& format, const std::string& url)
 	return res;
 }
 
+wibble::sys::Buffer URL::getData() const
+{
+    if (m_inline_buf.data())
+        return m_inline_buf;
+    throw wibble::exception::Consistency("retrieving data", "retrieving data from URL sources is not yet implemented");
+}
 
 Source::Style Inline::style() const { return Source::INLINE; }
 
@@ -422,6 +485,16 @@ Item<Inline> Inline::create(const std::string& format, uint64_t size)
 	res->format = format;
 	res->size = size;
 	return res;
+}
+
+void Inline::dropCachedData() const
+{
+    // Do nothing: the cached data is the only copy we have
+}
+
+wibble::sys::Buffer Inline::getData() const
+{
+    return m_inline_buf;
 }
 
 }

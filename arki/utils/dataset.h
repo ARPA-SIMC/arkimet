@@ -4,7 +4,7 @@
 /*
  * utils/dataset - Useful functions for working with datasets
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,21 +38,6 @@ struct OstreamWriter;
 
 namespace utils {
 namespace ds {
-
-/**
- * Prepend a path to all metadata
- */
-struct PathPrepender : public metadata::Consumer
-{
-	std::string path;
-	metadata::Consumer& next;
-	PathPrepender(const std::string& path, metadata::Consumer& next) : path(path), next(next) {}
-	bool operator()(Metadata& md)
-	{
-		md.prependPath(path);
-		return next(md);
-	}
-};
 
 struct MatcherFilter : public metadata::Consumer
 {

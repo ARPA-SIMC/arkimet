@@ -1,7 +1,7 @@
 /*
  * data - Read/write functions for data blobs without envelope
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ struct Append : public Transaction
         w.unlock();
 
         // Set the source information that we are writing in the metadata
-        md.source = types::source::Blob::create(md.source->format, w.fname, pos, buf.size());
+        md.source = types::source::Blob::create(md.source->format, "", w.fname, pos, buf.size());
 
         fired = true;
     }
@@ -127,7 +127,7 @@ void Writer::append(Metadata& md)
     unlock();
 
     // Set the source information that we are writing in the metadata
-    md.source = types::source::Blob::create(md.source->format, fname, pos, buf.size());
+    md.source = types::source::Blob::create(md.source->format, "", fname, pos, buf.size());
 }
 
 Pending Writer::append(Metadata& md, off64_t* ofs)

@@ -75,11 +75,14 @@ struct Others;
 class Index
 {
 protected:
-	std::string m_name;
-	std::string m_root;
-	std::string m_scache_root;
-	std::string m_indexpath;
-	std::string m_pathname;
+    /// Dataset name
+    std::string m_name;
+    /// Absolute path to the root directory of the dataset
+    std::string m_root;
+    /// Absolute path to the summary cache directory
+    std::string m_scache_root;
+    /// Absolute path of the index database
+    std::string m_pathname;
 
 	mutable utils::sqlite::SQLiteDB m_db;
 	mutable utils::sqlite::PrecompiledQuery m_get_id;

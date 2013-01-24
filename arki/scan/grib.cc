@@ -1,7 +1,7 @@
 /*
  * scan/grib - Scan a GRIB (version 1 or 2) file for metadata
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -490,7 +490,10 @@ Grib::~Grib()
 }
 
 MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
-	: tmpfilename(tmpfilename), tmpfile(tmpfile)
+    : tmpfilename(tmpfilename),
+      tmpdirname(str::dirname(tmpfilename)),
+      tmpbasename(str::basename(tmpfilename)),
+      tmpfile(tmpfile)
 {
 	// Turn on multigrib support: we can handle them
 	grib_multi_support_on(context);
@@ -502,6 +505,7 @@ void Grib::open(const std::string& filename)
 	// Close the previous file if needed
 	close();
 	this->filename = sys::fs::abspath(filename);
+	this->dirname = str::dirname(filename);
 	this->basename = str::basename(filename);
 	if (!(in = fopen(filename.c_str(), "rb")))
 		throw wibble::exception::File(filename, "opening file for reading");
@@ -580,7 +584,7 @@ void Grib::setSource(Metadata& md)
 	}
 	else
 	{
-		md.source = types::source::Blob::create("grib" + str::fmt(edition), filename, offset, size);
+		md.source = types::source::Blob::create("grib" + str::fmt(edition), dirname, basename, offset, size);
 		md.setCachedData(wibble::sys::Buffer(vbuf, size));
 	}
 	md.add_note(types::Note::create("Scanned from " + basename + ":" + str::fmt(offset) + "+" + str::fmt(size)));
@@ -609,7 +613,7 @@ void MultiGrib::setSource(Metadata& md)
 
 	tmpfile.flush();
 
-	md.source = types::source::Blob::create("grib" + str::fmt(edition), tmpfilename, offset, size);
+    md.source = types::source::Blob::create("grib" + str::fmt(edition), tmpdirname, tmpbasename, offset, size);
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)

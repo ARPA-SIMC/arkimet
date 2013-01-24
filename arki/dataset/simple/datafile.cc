@@ -1,7 +1,7 @@
 /*
  * dataset/simple/datafile - Handle a data file plus its associated files
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ namespace simple {
 namespace datafile {
 
 MdBuf::MdBuf(const std::string& pathname)
-    : pathname(pathname), basename(str::basename(pathname)), flushed(true)
+    : pathname(pathname), dirname(str::dirname(pathname)), basename(str::basename(pathname)), flushed(true)
 {
     if (sys::fs::exists(pathname))
     {
@@ -84,7 +84,7 @@ void MdBuf::add(const Metadata& md)
 
     // Replace the pathname with its basename
     Item<source::Blob> os = md.source.upcast<source::Blob>();
-    mds.back().source = types::source::Blob::create(os->format, basename, os->offset, os->size);
+    mds.back().source = types::source::Blob::create(os->format, dirname, basename, os->offset, os->size);
 
     sum.add(md);
     flushed = false;

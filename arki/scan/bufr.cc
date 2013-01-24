@@ -1,7 +1,7 @@
 /*
  * scan/bufr - Scan a BUFR file for metadata.
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -124,20 +124,24 @@ Bufr::~Bufr()
 
 void Bufr::open(const std::string& filename)
 {
-	// Close the previous file if needed
-	close();
-	this->filename = sys::fs::abspath(filename);
-	file = File::create(BUFR, filename.c_str(), "r").release();
+    // Close the previous file if needed
+    close();
+    this->filename = sys::fs::abspath(filename);
+    dirname = str::dirname(this->filename);
+    basename = str::basename(this->filename);
+    file = File::create(BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
 {
-	filename.clear();
-	if (file)
-	{
-		delete file;
-		file = 0;
-	}
+    filename.clear();
+    dirname.clear();
+    basename.clear();
+    if (file)
+    {
+        delete file;
+        file = 0;
+    }
 }
 
 static void extract_reftime(const dballe::Msg& msg, Metadata& md)
@@ -189,11 +193,12 @@ bool Bufr::do_scan(Metadata& md)
 	if (m_inline_data)
 		md.setInlineData("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	else {
-		md.source = types::source::Blob::create("bufr", filename, rmsg.offset, rmsg.size());
+		md.source = types::source::Blob::create("bufr", dirname, basename, rmsg.offset, rmsg.size());
 		md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	}
 
 	// Set reference time
+	// FIXME: WRONG! The header date should ALWAYS be ignored
 	md.set(types::reftime::Position::create(new types::Time(
 			bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
 			bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second)));

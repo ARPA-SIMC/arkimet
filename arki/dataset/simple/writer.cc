@@ -1,7 +1,7 @@
 /*
  * dataset/simple/writer - Writer for simple datasets with no duplicate checks
  *
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -274,12 +274,13 @@ struct FileCopier : metadata::Consumer
 {
 	const scan::Validator& m_val;
 	std::string dst;
+	std::string finalbasedir;
 	std::string finalname;
 	int fd_dst;
 	off_t w_off;
 
-	FileCopier(const scan::Validator& val, const std::string& dst, const std::string& finalname)
-		: m_val(val), dst(dst), finalname(finalname), fd_dst(-1), w_off(0)
+	FileCopier(const scan::Validator& val, const std::string& dst, const std::string& finalbasedir, const std::string& finalname)
+		: m_val(val), dst(dst), finalbasedir(finalbasedir), finalname(finalname), fd_dst(-1), w_off(0)
 	{
 		fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 		if (fd_dst < 0)
@@ -308,7 +309,7 @@ bool FileCopier::operator()(Metadata& md)
 		throw wibble::exception::File(dst, "writing " + str::fmt(buf.size()) + " bytes");
 
 	// Update the Blob source using the new position
-	md.source = types::source::Blob::create(md.source->format, finalname, w_off, buf.size());
+	md.source = types::source::Blob::create(md.source->format, finalbasedir, finalname, w_off, buf.size());
 
 	w_off += buf.size();
 
@@ -341,7 +342,7 @@ size_t Writer::repackFile(const std::string& relpath)
 
 	// Write out the data with the new order
 	string pntmp = pathname + ".repack";
-	FileCopier copier(scan::Validator::by_filename(pathname), pntmp, str::basename(relpath));
+	FileCopier copier(scan::Validator::by_filename(pathname), pntmp, str::dirname(relpath), str::basename(relpath));
 	mdc.sendTo(copier);
 	copier.flush();
 

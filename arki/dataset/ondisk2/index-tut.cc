@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011 ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013 ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ struct arki_dataset_ondisk2_index_shar {
 		testProddef = testArea;
 
 		md.create();
-		md.source = source::Blob::create("grib", "antani", 10, 2000);
+		md.source = source::Blob::create("grib", "", "antani", 10, 2000);
 		md.set(origin::GRIB1::create(200, 10, 100));
 		md.set(product::GRIB1::create(3, 4, 5));
 		md.set(level::GRIB1::create(1, 2));
@@ -100,7 +100,7 @@ struct arki_dataset_ondisk2_index_shar {
 		out.close();
 
 		md1.create();
-		md1.source = source::Blob::create("grib", "blinda", 20, 40000);
+		md1.source = source::Blob::create("grib", "", "blinda", 20, 40000);
 		md1.set(origin::GRIB1::create(201, 11, 3));
 		md1.set(product::GRIB1::create(102, 103, 104));
 		md1.set(level::GRIB1::create(1, 3));
@@ -317,7 +317,7 @@ void to::test<3>()
 	// Now try to index another element
 	Metadata md3;
 	md3.create();
-	md3.source = source::Blob::create("grib", "antani3", 10, 2000);
+	md3.source = source::Blob::create("grib", "", "antani3", 10, 2000);
 	md3.set(origin::GRIB1::create(202, 12, 102));
 	md3.set(product::GRIB1::create(3, 4, 5));
 	md3.set(level::GRIB1::create(1, 2));
@@ -414,7 +414,7 @@ void to::test<5>()
 	test->index(md1, "test-md1", 0);
 	Metadata md2;
 	md2.create();
-	md2.source = source::Blob::create("grib", "antani3", 10, 2000);
+	md2.source = source::Blob::create("grib", "", "antani3", 10, 2000);
 	md2.set(origin::GRIB1::create(202, 12, 102));
 	md2.set(product::GRIB1::create(3, 4, 5));
 	md2.set(level::GRIB1::create(1, 2));
@@ -453,8 +453,8 @@ template<> template<>
 void to::test<6>()
 {
 	// Pretend the data is in a very big file
-	md.source = source::Blob::create("grib", "antani", 0x100000000LLU, 2000);
-	md1.source = source::Blob::create("grib", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF);
+	md.source = source::Blob::create("grib", "", "antani", 0x100000000LLU, 2000);
+	md1.source = source::Blob::create("grib", "", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF);
 
 	// Remove index if it exists
 	unlink("file1");

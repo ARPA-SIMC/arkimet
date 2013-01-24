@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -135,7 +135,7 @@ void to::test<1>()
 	// Create test metadata
 	Metadata md1;
 	md1.create();
-	md1.source = source::Blob::create("grib", "fname", 1, 2);
+	md1.source = source::Blob::create("grib", "", "fname", 1, 2);
 	this->fill(md1);
 
 	Metadata md2;
@@ -207,7 +207,7 @@ void to::test<2>()
 {
     // Create test metadata
     Metadata md;
-    md.source = source::Blob::create("grib", "fname", 1, 2);
+    md.source = source::Blob::create("grib", "", "fname", 1, 2);
     this->fill(md);
 
     // Encode it in a buffer 3 times

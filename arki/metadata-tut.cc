@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -123,7 +123,7 @@ TESTGRP(arki_metadata);
 template<> template<>
 void to::test<1>()
 {
-	md.source = source::Blob::create("grib", "fname", 1, 2);
+	md.source = source::Blob::create("grib", "", "fname", 1, 2);
 	ensure_equals(md.source->style(), Source::BLOB);
 	ensure_equals(md.source->format, "grib");
 
@@ -149,7 +149,7 @@ static void dump(const char* name, const std::string& str)
 template<> template<>
 void to::test<2>()
 {
-	md.source = source::Blob::create("grib", "fname", 1, 2);
+	md.source = source::Blob::create("grib", "", "fname", 1, 2);
 	fill(md);
 
 	string encoded = md.encode();
@@ -158,7 +158,7 @@ void to::test<2>()
 	Metadata md1;
 	md1.read(stream, "(test memory buffer)");
 
-	ensure_equals(md1.source, Item<Source>(source::Blob::create("grib", "fname", 1, 2)));
+	ensure_equals(md1.source, Item<Source>(source::Blob::create("grib", "", "fname", 1, 2)));
 	ensure_equals(md1.source->format, "grib");
 	ensure_matches_fill(md1);
 
@@ -185,7 +185,7 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	md.source = source::Blob::create("grib", "fname", 1, 2);
+	md.source = source::Blob::create("grib", "", "fname", 1, 2);
 	fill(md);
 
 	stringstream output;
@@ -195,7 +195,7 @@ void to::test<3>()
 	Metadata md1;
 	md1.readYaml(stream, "(test memory buffer)");
 
-	ensure_equals(md1.source, Item<Source>(source::Blob::create("grib", "fname", 1, 2)));
+	ensure_equals(md1.source, Item<Source>(source::Blob::create("grib", "", "fname", 1, 2)));
 	ensure_equals(md1.source->format, "grib");
 	ensure_matches_fill(md1);
 
@@ -223,7 +223,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    md.source = source::Blob::create("grib", "fname", 1, 2);
+    md.source = source::Blob::create("grib", "", "fname", 1, 2);
     fill(md);
 
     // Serialise to JSON;
@@ -239,7 +239,7 @@ void to::test<4>()
     Metadata md1;
     md1.read(parsed.root().want_mapping("parsing metadata"));
 
-    ensure_equals(md1.source, Item<Source>(source::Blob::create("grib", "fname", 1, 2)));
+    ensure_equals(md1.source, Item<Source>(source::Blob::create("grib", "", "fname", 1, 2)));
     ensure_equals(md1.source->format, "grib");
     ensure_matches_fill(md1);
 
@@ -306,7 +306,7 @@ template<> template<>
 void to::test<7>()
 {
 #ifdef HAVE_LUA
-	md.source = source::Blob::create("grib", "fname", 1, 2);
+	md.source = source::Blob::create("grib", "", "fname", 1, 2);
 	fill(md);
 
 	tests::Lua test(
@@ -342,7 +342,7 @@ void to::test<8>()
 {
 	const char* tmpfile = "testmd.tmp";
 	fill(md);
-	md.source = source::Blob::create("grib", "fname", 1, 2);
+	md.source = source::Blob::create("grib", "", "fname", 1, 2);
 
 	// Encode
 	int out = open(tmpfile, O_WRONLY | O_CREAT, 0666);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,15 @@ struct arki_scan_bufr_shar {
 };
 TESTGRP(arki_scan_bufr);
 
+namespace {
+
+Item<Source> bufrBlob(const std::string& fname, off_t pos, size_t len)
+{
+    return Item<Source>(source::Blob::create("bufr", "", sys::fs::abspath(fname), pos, len));
+}
+
+}
+
 // Scan a well-known bufr file, with no padding between BUFRs
 template<> template<>
 void to::test<1>()
@@ -66,7 +75,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/test.bufr"), 0, 194)));
+	ensure_equals(md.source, bufrBlob("inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -102,7 +111,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/test.bufr"), 194, 220)));
+	ensure_equals(md.source, bufrBlob("inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -130,7 +139,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/test.bufr"), 414, 220)));
+	ensure_equals(md.source, bufrBlob("inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -174,7 +183,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/padded.bufr"), 100, 194)));
+	ensure_equals(md.source, bufrBlob("inbound/padded.bufr", 100, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -204,7 +213,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/padded.bufr"), 394, 220)));
+	ensure_equals(md.source, bufrBlob("inbound/padded.bufr", 394, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -232,7 +241,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/padded.bufr"), 714, 220)));
+	ensure_equals(md.source, bufrBlob("inbound/padded.bufr", 714, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -312,7 +321,7 @@ void to::test<4>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/C23000.bufr"), 0, 2206)));
+	ensure_equals(md.source, bufrBlob("inbound/C23000.bufr", 0, 2206));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -360,7 +369,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
 	// Check the source info
-	ensure_equals(md.source, Item<Source>(source::Blob::create("bufr", sys::fs::abspath("inbound/pollution.bufr"), 0, 178)));
+	ensure_equals(md.source, bufrBlob("inbound/pollution.bufr", 0, 178));
 
 	// Check that the source can be read properly
 	buf = md.getData();

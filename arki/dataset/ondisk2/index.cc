@@ -1,7 +1,7 @@
 /*
  * dataset/index - Dataset index infrastructure
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -94,13 +94,13 @@ Index::Index(const ConfigFile& cfg)
       m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0)
 {
-	m_indexpath = cfg.value("indexfile");
-	if (m_indexpath.empty())
-		m_indexpath = "index.sqlite";
+	string indexpath = cfg.value("indexfile");
+	if (indexpath.empty())
+		indexpath = "index.sqlite";
 
 	m_scache_root = str::joinpath(m_root, ".summaries");
 
-	m_pathname = m_root.empty() ? m_indexpath : str::joinpath(m_root, m_indexpath);
+	m_pathname = m_root.empty() ? indexpath : str::joinpath(m_root, indexpath);
 
 	// What metadata components we index
 	string index = cfg.value("index");
@@ -550,7 +550,7 @@ void Index::build_md(Query& q, Metadata& md) const
     // Rebuild the Metadata
     md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
     md.source = source::Blob::create(
-            q.fetchString(1), q.fetchString(2),
+            q.fetchString(1), m_root, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const void* notes_p = q.fetchBlob(5);
