@@ -272,7 +272,7 @@ struct ServerTest : public arki::tests::DatasetTest
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
-        Metadata::readFile(sstream, "response body", mdc);
+        Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
         iatest(equals, 3u, mdc.size());
     }
@@ -294,7 +294,7 @@ struct ServerTest : public arki::tests::DatasetTest
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
-        Metadata::readFile(sstream, "response body", mdc);
+        Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
         iatest(equals, 3u, mdc.size());
     }

@@ -54,51 +54,51 @@ namespace scan {
 
 static void scan_metadata(const std::string& file, metadata::Consumer& c)
 {
-	//cerr << "Reading cached metadata from " << file << endl;
-	Metadata::readFile(file, c);
+    //cerr << "Reading cached metadata from " << file << endl;
+    Metadata::readFile(file, c);
 }
 
-static bool scan_file(const std::string& basedir, const std::string& file, const std::string& format, metadata::Consumer& c)
+static bool scan_file(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Consumer& c)
 {
     // Scan the file
-    if (isCompressed(file))
-        throw wibble::exception::Consistency("scanning " + file + ".gz", "file needs to be manually decompressed before scanning");
+    if (isCompressed(pathname))
+        throw wibble::exception::Consistency("scanning " + relname + ".gz", "file needs to be manually decompressed before scanning");
 
 #ifdef HAVE_GRIBAPI
-	if (format == "grib" || format == "grib1" || format == "grib2")
-	{
-		scan::Grib scanner;
-		scanner.open(file);
-		Metadata md;
-		while (scanner.next(md))
-			c(md);
-		return true;
-	}
+    if (format == "grib" || format == "grib1" || format == "grib2")
+    {
+        scan::Grib scanner;
+        scanner.open(pathname, basedir, relname);
+        Metadata md;
+        while (scanner.next(md))
+            c(md);
+        return true;
+    }
 #endif
 #ifdef HAVE_DBALLE
-	if (format == "bufr") {
-		scan::Bufr scanner;
-		scanner.open(file);
-		Metadata md;
-		while (scanner.next(md))
-			c(md);
-		return true;
-	}
+    if (format == "bufr") {
+        scan::Bufr scanner;
+        scanner.open(pathname, basedir, relname);
+        Metadata md;
+        while (scanner.next(md))
+            c(md);
+        return true;
+    }
 #endif
 #ifdef HAVE_ODIMH5
-	if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
-		scan::OdimH5 scanner;
-		scanner.open(file);
-		Metadata md;
-		while (scanner.next(md))
-			c(md);
-		return true;
-	}
+    if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
+        scan::OdimH5 scanner;
+        scanner.open(pathname, basedir, relname);
+        Metadata md;
+        while (scanner.next(md))
+            c(md);
+        return true;
+    }
 #endif
 #ifdef HAVE_VM2
     if (format == "vm2") {
         scan::Vm2 scanner;
-        scanner.open(file);
+        scanner.open(pathname, basedir, relname);
         Metadata md;
         while (scanner.next(md))
             c(md);
@@ -118,33 +118,36 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     return str::tolower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& file, metadata::Consumer& c)
+bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c)
 {
-    std::string format = guess_format(basedir, file);
+    std::string format = guess_format(basedir, relname);
 
     // If we cannot detect a format, fail
     if (format.empty()) return false;
-
-    return scan(basedir, file, c, format);
+    return scan(basedir, relname, c, format);
 }
 
 bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c, const std::string& format)
 {
-    string md_fname = relname + ".metadata";
-    auto_ptr<struct stat64> st_file = sys::fs::stat(relname);
+    // stat the file (or its compressed version)
+    string pathname = str::joinpath(basedir, relname);
+    auto_ptr<struct stat64> st_file = sys::fs::stat(pathname);
     if (!st_file.get())
-        st_file = sys::fs::stat(relname + ".gz");
+        st_file = sys::fs::stat(pathname + ".gz");
     if (!st_file.get())
-        throw wibble::exception::File(relname, "getting file information");
-    auto_ptr<struct stat64> st_md = sys::fs::stat(md_fname);
+        throw wibble::exception::File(pathname, "getting file information");
+
+    // stat the metadata file, if it exists
+    string md_pathname = pathname + ".metadata";
+    auto_ptr<struct stat64> st_md = sys::fs::stat(md_pathname);
 
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
-        // If there is a metadata file, use it to save time
-        scan_metadata(md_fname, c);
+        // If there is a usable metadata file, use it to save time
+        scan_metadata(md_pathname, c);
         return true;
     } else {
-        return scan_file(basedir, relname, format, c);
+        return scan_file(pathname, basedir, relname, format, c);
     }
 }
 

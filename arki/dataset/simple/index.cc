@@ -86,6 +86,26 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 	}
 }
 
+namespace {
+// Tweak Blob sources replacing basedir and prepending a directory to the file name
+struct FixSource : public metadata::Consumer
+{
+    string basedir;
+    string prepend_fname;
+    metadata::Consumer& next;
+
+    FixSource(metadata::Consumer& next) : next(next) {}
+
+    bool operator()(Metadata& md)
+    {
+        Item<types::source::Blob> i = md.source.upcast<types::source::Blob>();
+        if (i.defined())
+            md.source = types::source::Blob::create(i->format, basedir, str::joinpath(prepend_fname, i->filename), i->offset, i->size);
+        return next(md);
+    }
+};
+}
+
 void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
 {
 	vector<string> files;
@@ -113,13 +133,18 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
 
     string absdir = sys::fs::abspath(m_path);
     sort::Stream sorter(*compare, *c);
-    ds::MakeAbsolute mkabs(sorter);
-    ds::MatcherFilter filter(q.matcher, mkabs);
+    //ds::MakeAbsolute mkabs(sorter);
+    FixSource fs(sorter);
+    fs.basedir = absdir;
+    ds::MatcherFilter filter(q.matcher, fs);
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
+        fs.prepend_fname = str::dirname(*i);
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
-        scan::scan(fullpath, filter);
+        // This generates filenames relative to the metadata
+        // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
+        scan::scan(absdir, *i, filter);
         sorter.flush();
     }
 }
@@ -190,13 +215,16 @@ size_t Manifest::produce_nth(metadata::Consumer& cons, size_t idx)
     fileList(Matcher(), files);
 
     string absdir = sys::fs::abspath(m_path);
-    ds::MakeAbsolute mkabs(cons);
+    //ds::MakeAbsolute mkabs(cons);
+    FixSource fs(cons);
+    fs.basedir = absdir;
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
+        fs.prepend_fname = str::dirname(*i);
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
-        NthFilter filter(mkabs, idx);
-        scan::scan(fullpath, filter);
+        NthFilter filter(cons, idx);
+        scan::scan(absdir, *i, filter);
         if (filter.produced())
             ++res;
     }

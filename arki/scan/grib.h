@@ -47,7 +47,7 @@ class Grib
 {
 protected:
 	std::string filename;
-	std::string dirname;
+	std::string basedir;
 	std::string relname;
 	FILE* in;
 	grib_context* context;
@@ -92,6 +92,9 @@ public:
 	 * Access a file with GRIB data
 	 */
 	void open(const std::string& filename);
+
+    /// Alternate version with explicit basedir/relname separation
+    void open(const std::string& filename, const std::string& basedir, const std::string& relname);
 
 	/**
 	 * Close the input file.

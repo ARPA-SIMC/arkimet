@@ -99,10 +99,18 @@ Vm2::~Vm2()
 
 void Vm2::open(const std::string& filename)
 {
+    string basedir, relname;
+    utils::files::resolve_path(filename, basedir, relname);
+    open(sys::fs::abspath(filename), basedir, relname);
+}
+
+void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+{
     // Close the previous file if needed
     close();
     this->filename = sys::fs::abspath(filename);
-    utils::files::resolve_path(filename, dirname, relname);
+    this->basedir = basedir;
+    this->relname = relname;
     this->in = new std::ifstream(filename.c_str());
     if (!in->good())
         throw wibble::exception::File(filename, "opening file for reading");
@@ -132,7 +140,7 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.create();
-    md.source = types::source::Blob::create("vm2", dirname, relname, offset, size);
+    md.source = types::source::Blob::create("vm2", basedir, relname, offset, size);
     md.add_note(types::Note::create("Scanned from " + relname));
 
     md.set(types::reftime::Position::create(types::Time::create(value.year, value.month, value.mday, value.hour, value.min, value.sec)));

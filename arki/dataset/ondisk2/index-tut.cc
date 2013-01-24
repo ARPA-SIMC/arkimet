@@ -124,7 +124,7 @@ void to::test<1>()
 {
 	auto_ptr<WIndex> test = createIndex<WIndex>(
 		"type = ondisk2\n"
-		"path = \n"
+		"path = .\n"
 		"indexfile = :memory:\n"
 		"index = origin, product, level\n"
 		"unique = origin, product, level, timerange, area, proddef, reftime\n"

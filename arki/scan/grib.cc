@@ -501,10 +501,18 @@ MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
 
 void Grib::open(const std::string& filename)
 {
+    string basedir, relname;
+    utils::files::resolve_path(filename, basedir, relname);
+    open(sys::fs::abspath(filename), basedir, relname);
+}
+
+void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+{
     // Close the previous file if needed
     close();
-    this->filename = sys::fs::abspath(filename);
-    utils::files::resolve_path(filename, dirname, relname);
+    this->filename = filename;
+    this->basedir = basedir;
+    this->relname = relname;
     if (!(in = fopen(filename.c_str(), "rb")))
         throw wibble::exception::File(filename, "opening file for reading");
 }
@@ -582,7 +590,7 @@ void Grib::setSource(Metadata& md)
 	}
 	else
 	{
-		md.source = types::source::Blob::create("grib" + str::fmt(edition), dirname, relname, offset, size);
+		md.source = types::source::Blob::create("grib" + str::fmt(edition), basedir, relname, offset, size);
 		md.setCachedData(wibble::sys::Buffer(vbuf, size));
 	}
 	md.add_note(types::Note::create("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size)));

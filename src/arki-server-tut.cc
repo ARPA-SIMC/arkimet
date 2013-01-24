@@ -317,11 +317,11 @@ void to::test<10>()
     metadata::Collection mdc1, mdc2;
     {
         stringstream s(plain);
-        Metadata::readFile(s, "plain", mdc1);
+        Metadata::readFile(s, metadata::ReadContext("", "plain"), mdc1);
     }
     {
         stringstream s(postprocessed.str());
-        Metadata::readFile(s, "postprocessed", mdc2);
+        Metadata::readFile(s, metadata::ReadContext("", "postprocessed"), mdc2);
     }
 
     // Remove those metadata that contain test-dependent timestamps

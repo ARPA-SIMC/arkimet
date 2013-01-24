@@ -239,10 +239,20 @@ public:
 	 */
 	static void readFile(const std::string& fname, metadata::Consumer& mdc);
 
-	/**
-	 * Read a metadata group into the given consumer
-	 */
-	static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, metadata::Consumer& mdc);
+    /**
+     * Read all metadata from a file into the given consumer
+     */
+    static void readFile(const metadata::ReadContext& fname, metadata::Consumer& mdc);
+
+    /**
+     * Read all metadata from a file into the given consumer
+     */
+    static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Consumer& mdc);
+
+    /**
+     * Read a metadata group into the given consumer
+     */
+    static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Consumer& mdc);
 
 	/**
 	 * Flush open data readers.
@@ -256,11 +266,6 @@ public:
 	 * compressed.
 	 */
 	static void flushDataReaders();
-
-	/**
-	 * Read all metadata from a file into the given consumer
-	 */
-	static void readFile(std::istream& in, const std::string& fname, metadata::Consumer& mdc);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin

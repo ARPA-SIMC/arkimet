@@ -57,7 +57,7 @@ ReadContext::ReadContext(const std::string& pathname)
 {
 }
 
-ReadContext::ReadContext(const std::string& pathname, const std::string& basename)
+ReadContext::ReadContext(const std::string& pathname, const std::string& basedir)
     : basedir(basedir), pathname(pathname)
 {
 }
@@ -491,55 +491,61 @@ void Metadata::makeInline()
 
 void Metadata::readFile(const std::string& fname, metadata::Consumer& mdc)
 {
-	// Read all the metadata
-	std::ifstream in;
-	in.open(fname.c_str(), ios::in);
-	if (!in.is_open() || in.fail())
-		throw wibble::exception::File(fname, "opening file for reading");
-
-	readFile(in, fname, mdc);
-
-	in.close();
+    metadata::ReadContext context(fname);
+    readFile(context, mdc);
 }
 
-void Metadata::readFile(std::istream& in, const std::string& fname, metadata::Consumer& mdc)
+void Metadata::readFile(const metadata::ReadContext& file, metadata::Consumer& mdc)
 {
-	bool canceled = false;
-	wibble::sys::Buffer buf;
-	string signature;
-	unsigned version;
-	Metadata md;
-	while (types::readBundle(in, fname, buf, signature, version))
-	{
-		if (canceled) continue;
+    // Read all the metadata
+    std::ifstream in;
+    in.open(file.pathname.c_str(), ios::in);
+    if (!in.is_open() || in.fail())
+        throw wibble::exception::File(file.pathname, "opening file for reading");
 
-		// Ensure first 2 bytes are MD or !D
-		if (signature != "MD" && signature != "!D" && signature != "MG")
-			throw wibble::exception::Consistency("parsing file " + fname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+    readFile(in, file, mdc);
 
-		if (signature == "MG")
-		{
-			// Handle metadata group
-            iotrace::trace_file(fname, 0, 0, "read metadata group");
-			Metadata::readGroup(buf, version, fname, mdc);
-		} else {
-            iotrace::trace_file(fname, 0, 0, "read metadata");
-			md.read(buf, version, fname);
-
-			// If the source is inline, then the data follows the metadata
-			if (md.source->style() == types::Source::INLINE)
-				md.readInlineData(in, fname);
-			canceled = !mdc(md);
-		}
-	}
+    in.close();
 }
 
-void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const std::string& fname, metadata::Consumer& mdc)
+void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, metadata::Consumer& mdc)
 {
-	// Handle metadata group
-	if (version != 0)
-		throw wibble::exception::Consistency("parsing file " + fname, "can only decode metadata group version 0 (LZO compressed); found version: " + str::fmt(version));
-	
+    bool canceled = false;
+    wibble::sys::Buffer buf;
+    string signature;
+    unsigned version;
+    Metadata md;
+    while (types::readBundle(in, file.pathname, buf, signature, version))
+    {
+        if (canceled) continue;
+
+        // Ensure first 2 bytes are MD or !D
+        if (signature != "MD" && signature != "!D" && signature != "MG")
+            throw wibble::exception::Consistency("parsing file " + file.pathname, "metadata entry does not start with 'MD', '!D' or 'MG'");
+
+        if (signature == "MG")
+        {
+            // Handle metadata group
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
+            Metadata::readGroup(buf, version, file, mdc);
+        } else {
+            iotrace::trace_file(file.pathname, 0, 0, "read metadata");
+            md.read(buf, version, file);
+
+            // If the source is inline, then the data follows the metadata
+            if (md.source->style() == types::Source::INLINE)
+                md.readInlineData(in, file.pathname);
+            canceled = !mdc(md);
+        }
+    }
+}
+
+void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Consumer& mdc)
+{
+    // Handle metadata group
+    if (version != 0)
+        throw wibble::exception::Consistency("parsing file " + file.pathname, "can only decode metadata group version 0 (LZO compressed); found version: " + str::fmt(version));
+
 	// Read uncompressed size
 	ensureSize(buf.size(), 4, "uncompressed item size");
 	uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
@@ -553,9 +559,9 @@ void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const
 	unsigned iver;
 	bool canceled = false;
 	Metadata md;
-	while (!canceled && types::readBundle(ubuf, len, fname, ibuf, ilen, isig, iver))
+	while (!canceled && types::readBundle(ubuf, len, file.pathname, ibuf, ilen, isig, iver))
 	{
-		md.read(ibuf, ilen, iver, fname);
+		md.read(ibuf, ilen, iver, file);
 		canceled = !mdc(md);
 	}
 }

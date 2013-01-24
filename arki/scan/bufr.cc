@@ -125,17 +125,25 @@ Bufr::~Bufr()
 
 void Bufr::open(const std::string& filename)
 {
+    string basedir, relname;
+    utils::files::resolve_path(filename, basedir, relname);
+    open(sys::fs::abspath(filename), basedir, relname);
+}
+
+void Bufr::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+{
     // Close the previous file if needed
     close();
-    this->filename = sys::fs::abspath(filename);
-    utils::files::resolve_path(filename, dirname, relname);
+    this->filename = filename;
+    this->basedir = basedir;
+    this->relname = relname;
     file = File::create(BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
 {
     filename.clear();
-    dirname.clear();
+    basedir.clear();
     relname.clear();
     if (file)
     {
@@ -193,7 +201,7 @@ bool Bufr::do_scan(Metadata& md)
 	if (m_inline_data)
 		md.setInlineData("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	else {
-		md.source = types::source::Blob::create("bufr", dirname, relname, rmsg.offset, rmsg.size());
+		md.source = types::source::Blob::create("bufr", basedir, relname, rmsg.offset, rmsg.size());
 		md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	}
 

@@ -100,7 +100,10 @@ Index::Index(const ConfigFile& cfg)
 
 	m_scache_root = str::joinpath(m_root, ".summaries");
 
-	m_pathname = m_root.empty() ? indexpath : str::joinpath(m_root, indexpath);
+    if (indexpath == ":memory:")
+        m_pathname = indexpath;
+    else
+        m_pathname = m_root.empty() ? indexpath : str::joinpath(m_root, indexpath);
 
 	// What metadata components we index
 	string index = cfg.value("index");

@@ -411,21 +411,13 @@ void to::test<6>()
 		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
-		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-		ensure_equals(blob->format, "grib1"); 
-		ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-		ensure_equals(blob->offset, 51630u);
-		ensure_equals(blob->size, 34960u);
+                atest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960, mdc[0].source);
 
-		mdc.clear();
-		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
-		ensure_equals(mdc.size(), 1u);
-		blob = mdc[0].source.upcast<source::Blob>();
-		ensure_equals(blob->format, "grib1"); 
-		ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-		ensure_equals(blob->offset,  44412u);
-		ensure_equals(blob->size, 7218u);
-	}
+        mdc.clear();
+        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+        ensure_equals(mdc.size(), 1u);
+        atest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218, mdc[0].source);
+    }
 
     // Perform packing and check that things are still ok afterwards
     s.str(std::string());
@@ -447,11 +439,7 @@ void to::test<6>()
 	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-	UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->format, "grib1"); 
-	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 34960u);
+        atest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 0, 34960, mdc[0].source);
 
 	// Query the second element and check that it starts after the first one
 	// (there used to be a bug where the rebuild would use the offsets of
@@ -459,11 +447,7 @@ void to::test<6>()
 	mdc.clear();
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-	blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->format, "grib1"); 
-	ensure_equals(blob->filename, sys::fs::abspath("testdir/foo/bar/test.grib1"));
-	ensure_equals(blob->offset, 34960u);
-	ensure_equals(blob->size, 7218u);
+        atest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218, mdc[0].source);
 
 	// Ensure that we have the summary cache
 	ensure(sys::fs::exists("testdir/.summaries/all.summary"));
@@ -650,7 +634,7 @@ void to::test<9>()
 	{
 		stringstream s;
 		writer.check(s, false, true);
-		ensure_equals(s.str(), "testdir: testdir/.summaries/all.summary is not writable.\n");
+		ensure_equals(s.str(), "testdir: " + sys::fs::abspath("testdir/.summaries/all.summary") + " is not writable.\n");
 	}
 
 	// Fix it
@@ -658,7 +642,7 @@ void to::test<9>()
 		stringstream s;
 		writer.check(s, true, true);
 		ensure_equals(s.str(),
-			"testdir: testdir/.summaries/all.summary is not writable.\n"
+			"testdir: " + sys::fs::abspath("testdir/.summaries/all.summary") + " is not writable.\n"
 			"testdir: rebuilding summary cache.\n");
 	}
 

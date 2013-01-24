@@ -124,7 +124,7 @@ void to::test<1>()
 
     stringstream in(r.response_body);
     metadata::Collection mdc;
-    Metadata::readFile(in, "response body", mdc);
+    Metadata::readFile(in, metadata::ReadContext("", "(response body)"), mdc);
     ensure_equals(mdc.size(), 3u);
 }
 
@@ -169,7 +169,7 @@ void to::test<3>()
 
     stringstream in(r.response_body);
     metadata::Collection mdc;
-    Metadata::readFile(in, "response body", mdc);
+    Metadata::readFile(in, metadata::ReadContext("(response body)", ""), mdc);
     ensure_equals(mdc.size(), 3u);
     ensure_equals(mdc[0].get<types::AssignedDataset>()->name, "testds");
     ensure_equals(mdc[1].get<types::AssignedDataset>()->name, "testds");

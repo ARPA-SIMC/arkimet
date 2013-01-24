@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/dataset/test-utils.h>
 #include <arki/dataset/ondisk2.h>
 //#include <arki/dataset/ondisk2/maintenance.h>
 #include <arki/configfile.h>
@@ -221,14 +221,8 @@ void to::test<2>()
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// Check that the source record that comes out is ok
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	UItem<source::Blob> blob = source.upcast<source::Blob>();
-	ensure_equals(blob->filename, sys::fs::abspath("test200/2007/07-08.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 7218u);
+    // Check that the source record that comes out is ok
+    atest(sourceblob_is, "grib1", sys::fs::abspath("test200"), "2007/07-08.grib1", 0, 7218, mdc[0].source);
 
 	mdc.clear();
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
@@ -253,14 +247,8 @@ void to::test<3>()
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// Check that the source record that comes out is ok
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	UItem<source::Blob> blob = source.upcast<source::Blob>();
-	ensure_equals(blob->filename, sys::fs::abspath("test80/2007/07-07.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 34960u);
+    // Check that the source record that comes out is ok
+    atest(sourceblob_is, "grib1", sys::fs::abspath("test80"), "2007/07-07.grib1", 0, 34960, mdc[0].source);
 
 	mdc.clear();
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
@@ -285,14 +273,8 @@ void to::test<4>()
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// Check that the source record that comes out is ok
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	UItem<source::Blob> blob = source.upcast<source::Blob>();
-	ensure_equals(blob->filename, sys::fs::abspath("test98/2007/10-09.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 2234u);
+    // Check that the source record that comes out is ok
+    atest(sourceblob_is, "grib1", sys::fs::abspath("test98"), "2007/10-09.grib1", 0, 2234, mdc[0].source);
 }
 
 // Test replacing an element
