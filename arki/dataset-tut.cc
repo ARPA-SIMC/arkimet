@@ -349,7 +349,7 @@ struct TestDataset
             // Write it out and rescan
             files::write_file("testdata", os.str());
             metadata::Collection tmp;
-            iatest(istrue, scan::scan("testdata", input_data[i].source->format, tmp));
+            iatest(istrue, scan::scan("testdata", tmp, input_data[i].source->format));
 
             // Ensure that what we rescanned is what was imported
             iatest(equals, 1u, tmp.size());
@@ -385,7 +385,7 @@ struct TestDataset
 
         // Check that they can be scanned again
         metadata::Collection mdc;
-        iatest(istrue, scan::scan("tempdata", td.format, mdc));
+        iatest(istrue, scan::scan("tempdata", mdc, td.format));
 
         sys::fs::unlink("tempdata");
     }

@@ -266,7 +266,7 @@ void RawFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
 	}
 
 	ds::MatcherFilter mf(q.matcher, *c);
-	scan::scan(m_pathname, m_format, mf);
+	scan::scan(m_pathname, mf, m_format);
 }
 
 }

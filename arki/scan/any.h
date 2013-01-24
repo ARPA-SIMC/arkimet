@@ -57,7 +57,7 @@ bool scan(const std::string& file, metadata::Consumer& c);
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, const std::string& format, metadata::Consumer& c);
+bool scan(const std::string& file, metadata::Consumer& c, const std::string& format);
 
 /**
  * Return true if the file looks like a file with data that can be scanned.

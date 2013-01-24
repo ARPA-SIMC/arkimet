@@ -138,7 +138,7 @@ bool scan(const std::string& file, metadata::Consumer& c)
 	}
 }
 
-bool scan(const std::string& file, const std::string& format, metadata::Consumer& c)
+bool scan(const std::string& file, metadata::Consumer& c, const std::string& format)
 {
 	string md_fname = file + ".metadata";
 	auto_ptr<struct stat64> st_file = sys::fs::stat(file);

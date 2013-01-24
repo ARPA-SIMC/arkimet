@@ -124,7 +124,7 @@ struct ScanTestFilter : public metadata::Consumer
 
             // Rescan the data
             try {
-                scan::scan(tf.name(), md.source->format, c);
+                scan::scan(tf.name(), c, md.source->format);
             } catch (std::exception& e) {
                 // If scanning now fails, clear c so later we output the offender
                 stringstream sstream;

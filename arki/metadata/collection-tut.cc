@@ -137,7 +137,7 @@ void to::test<4>()
 	tf.stream().flush();
 
 	// Create metadata for the big BUFR file
-	scan::scan(tf.name(), "bufr", c);
+	scan::scan(tf.name(), c, "bufr");
 	ensure_equals(c.size(), (size_t)repeats);
 
 	// Compress the data file
