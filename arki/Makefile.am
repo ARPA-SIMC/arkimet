@@ -315,6 +315,7 @@ tests_arki_test_SOURCES = \
 		types/task-tut.cc \
 		types/quantity-tut.cc \
 		types/value-tut.cc \
+		types/test-utils.cc \
 		itemset-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
