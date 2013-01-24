@@ -4,7 +4,7 @@
 /*
  * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -117,6 +117,19 @@ void write_file(const std::string &file, const std::string& contents);
  * and return its absolute pathname.
  */
 std::string find_executable(const std::string& name);
+
+/**
+ * Normalise a pathname and resolve it in the file system.
+ *
+ * @param pathname
+ *   The path name to resolve. It can be absolute or relative.
+ * @retval basedir
+ *   The base directory to use with str::joinpath to make the file name absolute.
+ *   It is set to the emptys tring if \a pathname is an absolute path
+ * @retval relname
+ *   The normalised version of \a pathname
+ */
+void resolve_path(const std::string& pathname, std::string& basedir, std::string& relname);
 
 }
 }

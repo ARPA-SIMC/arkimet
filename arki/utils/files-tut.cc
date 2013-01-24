@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -146,6 +146,26 @@ void to::test<6>()
     write_file("testfile", test);
     string test1 = read_file("testfile");
     atest(equals, test, test1);
+}
+
+// Test resolve_path
+template<> template<>
+void to::test<7>()
+{
+    using namespace arki::utils::files;
+    string basedir, relname;
+
+    resolve_path(".", basedir, relname);
+    atest(equals, sys::fs::abspath("."), basedir);
+    atest(equals, ".", relname);
+
+    resolve_path("/tmp/foo", basedir, relname);
+    atest(equals, "", basedir);
+    atest(equals, "/tmp/foo", relname);
+
+    resolve_path("foo/bar/../baz", basedir, relname);
+    atest(equals, sys::fs::abspath("."), basedir);
+    atest(equals, "foo/baz", relname);
 }
 
 }

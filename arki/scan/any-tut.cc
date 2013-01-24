@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/types/test-utils.h>
 #include <arki/scan/any.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
@@ -49,20 +49,6 @@ struct arki_scan_any_shar {
 };
 TESTGRP(arki_scan_any);
 
-namespace {
-
-Item<Source> grib1Blob(const std::string& fname, off_t pos, size_t len)
-{
-    return Item<Source>(source::Blob::create("grib1", "", sys::fs::abspath(fname), pos, len));
-}
-
-Item<Source> bufrBlob(const std::string& fname, off_t pos, size_t len)
-{
-    return Item<Source>(source::Blob::create("bufr", "", sys::fs::abspath(fname), pos, len));
-}
-
-}
-
 // Scan a well-known grib file, with no padding between messages
 template<> template<>
 void to::test<1>()
@@ -77,8 +63,8 @@ void to::test<1>()
 
 	ensure_equals(mdc.size(), 3u);
 
-	// Check the source info
-	ensure_equals(mdc[0].source, grib1Blob("inbound/test.grib1", 0, 7218));
+    // Check the source info
+    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, mdc[0].source);
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -116,8 +102,8 @@ void to::test<1>()
 	ensure_md_equals(mdc[0], Run, "MINUTE(13:00)");
 
 
-	// Check the source info
-	ensure_equals(mdc[1].source, grib1Blob("inbound/test.grib1", 7218, 34960));
+    // Check the source info
+    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960, mdc[1].source);
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -156,8 +142,8 @@ void to::test<1>()
 	ensure_equals(mdc[1].get(types::TYPE_RUN), Item<>(run::Minute::create(0)));
 
 
-	// Check the source info
-	ensure_equals(mdc[2].source, grib1Blob("inbound/test.grib1", 42178, 2234));
+    // Check the source info
+    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234, mdc[2].source);
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -198,8 +184,8 @@ void to::test<2>()
 
 	ensure_equals(mdc.size(), 3u);
 
-	// Check the source info
-	ensure_equals(mdc[0].source, bufrBlob("inbound/test.bufr", 0, 194));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194, mdc[0].source);
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -225,8 +211,8 @@ void to::test<2>()
 	ensure(not mdc[0].has(types::TYPE_RUN));
 
 
-	// Check the source info
-	ensure_equals(mdc[1].source, bufrBlob("inbound/test.bufr", 194, 220));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220, mdc[1].source);
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -250,8 +236,8 @@ void to::test<2>()
 	ensure(not mdc[1].has(types::TYPE_RUN));
 
 
-	// Check the source info
-	ensure_equals(mdc[2].source, bufrBlob("inbound/test.bufr", 414, 220));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220, mdc[2].source);
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();

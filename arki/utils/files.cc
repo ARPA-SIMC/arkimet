@@ -1,7 +1,7 @@
 /*
  * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <arki/utils/files.h>
 #include <arki/utils.h>
 #include <wibble/string.h>
+#include <wibble/sys/process.h>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -154,7 +155,7 @@ void write_file(const std::string &file, const std::string& contents)
     if (fd < 0)
         throw wibble::exception::System("creating temp file " + string(fbuf));
     ssize_t res = write(fd, contents.data(), contents.size());
-    if (res != contents.size())
+    if (res != (ssize_t)contents.size())
         throw wibble::exception::System(str::fmtf("writing %d bytes to %s", contents.size(), fbuf));
     if (close(fd) < 0)
         throw wibble::exception::System("closing file " + string(fbuf));
@@ -181,6 +182,15 @@ std::string find_executable(const std::string& name)
     }
 
     return name;
+}
+
+void resolve_path(const std::string& pathname, std::string& basedir, std::string& relname)
+{
+    if (pathname[0] == '/')
+        basedir.clear();
+    else
+        basedir = sys::process::getcwd();
+    relname = str::normpath(pathname);
 }
 
 }

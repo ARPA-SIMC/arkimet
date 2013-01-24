@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ void to::test<1>()
 	ensure_equals(source->style(), Source::BLOB);
 	ensure_equals(source->format, "grib1");
 	UItem<source::Blob> blob = source.upcast<source::Blob>();
-	ensure_equals(blob->filename, sys::fs::abspath("inbound/test.grib1"));
+	ensure_equals(blob->absolutePathname(), sys::fs::abspath("inbound/test.grib1"));
 	ensure_equals(blob->offset, 0u);
 	ensure_equals(blob->size, 7218u);
 
@@ -79,7 +79,7 @@ void to::test<1>()
 	ensure_equals(source->style(), Source::BLOB);
 	ensure_equals(source->format, "grib1");
 	blob = source.upcast<source::Blob>();
-	ensure_equals(blob->filename, sys::fs::abspath("inbound/test.grib1"));
+	ensure_equals(blob->absolutePathname(), sys::fs::abspath("inbound/test.grib1"));
 	ensure_equals(blob->offset, 7218u);
 	ensure_equals(blob->size, 34960u);
 
@@ -90,7 +90,7 @@ void to::test<1>()
 	ensure_equals(source->style(), Source::BLOB);
 	ensure_equals(source->format, "grib1");
 	blob = source.upcast<source::Blob>();
-	ensure_equals(blob->filename, sys::fs::abspath("inbound/test.grib1"));
+	ensure_equals(blob->absolutePathname(), sys::fs::abspath("inbound/test.grib1"));
 	ensure_equals(blob->offset, 42178u);
 	ensure_equals(blob->size, 2234u);
 }

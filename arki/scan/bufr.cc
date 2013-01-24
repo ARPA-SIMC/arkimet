@@ -23,6 +23,7 @@
 #include "config.h"
 
 #include <arki/scan/bufr.h>
+#include <arki/utils/files.h>
 #include <dballe/msg/repinfo.h>
 #include <dballe/msg/msgs.h>
 #include <dballe/msg/codec.h>
@@ -127,8 +128,7 @@ void Bufr::open(const std::string& filename)
     // Close the previous file if needed
     close();
     this->filename = sys::fs::abspath(filename);
-    dirname = str::dirname(this->filename);
-    basename = str::basename(this->filename);
+    utils::files::resolve_path(filename, dirname, relname);
     file = File::create(BUFR, filename.c_str(), "r").release();
 }
 
@@ -136,7 +136,7 @@ void Bufr::close()
 {
     filename.clear();
     dirname.clear();
-    basename.clear();
+    relname.clear();
     if (file)
     {
         delete file;
@@ -193,7 +193,7 @@ bool Bufr::do_scan(Metadata& md)
 	if (m_inline_data)
 		md.setInlineData("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	else {
-		md.source = types::source::Blob::create("bufr", dirname, basename, rmsg.offset, rmsg.size());
+		md.source = types::source::Blob::create("bufr", dirname, relname, rmsg.offset, rmsg.size());
 		md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	}
 

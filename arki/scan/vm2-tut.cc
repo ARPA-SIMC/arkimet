@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/types/test-utils.h>
 #include <arki/scan/vm2.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
@@ -69,7 +69,7 @@ void to::test<1>()
     ensure(scanner.next(md));
 
     // Check the source info
-    ensure_equals(md.source, Item<Source>(source::Blob::create("vm2", "", sys::fs::abspath("inbound/test.vm2"), 0, 34)));
+    atest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34, md.source);
 
     // Check that the source can be read properly
     buf = md.getData();

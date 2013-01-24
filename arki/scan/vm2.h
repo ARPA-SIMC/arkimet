@@ -50,7 +50,7 @@ protected:
     std::ifstream* in;
     std::string filename;
     std::string dirname;
-    std::string basename;
+    std::string relname;
     unsigned lineno;
 
     meteo::vm2::Parser* parser;

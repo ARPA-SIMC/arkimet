@@ -24,6 +24,7 @@
 #include <arki/scan/vm2.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
+#include <arki/utils/files.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/regexp.h>
@@ -101,8 +102,7 @@ void Vm2::open(const std::string& filename)
     // Close the previous file if needed
     close();
     this->filename = sys::fs::abspath(filename);
-    this->dirname = str::dirname(filename);
-    this->basename = str::basename(filename);
+    utils::files::resolve_path(filename, dirname, relname);
     this->in = new std::ifstream(filename.c_str());
     if (!in->good())
         throw wibble::exception::File(filename, "opening file for reading");
@@ -132,8 +132,8 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.create();
-    md.source = types::source::Blob::create("vm2", dirname, basename, offset, size);
-    md.add_note(types::Note::create("Scanned from " + basename));
+    md.source = types::source::Blob::create("vm2", dirname, relname, offset, size);
+    md.add_note(types::Note::create("Scanned from " + relname));
 
     md.set(types::reftime::Position::create(types::Time::create(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(types::area::VM2::create(value.station_id));

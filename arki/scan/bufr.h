@@ -54,7 +54,7 @@ class Bufr
 {
     std::string filename;
     std::string dirname;
-    std::string basename;
+    std::string relname;
     dballe::File* file;
     dballe::msg::Importer* importer;
     bool m_inline_data;

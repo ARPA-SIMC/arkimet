@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/types/test-utils.h>
 #include <arki/scan/bufr.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
@@ -51,15 +51,6 @@ struct arki_scan_bufr_shar {
 };
 TESTGRP(arki_scan_bufr);
 
-namespace {
-
-Item<Source> bufrBlob(const std::string& fname, off_t pos, size_t len)
-{
-    return Item<Source>(source::Blob::create("bufr", "", sys::fs::abspath(fname), pos, len));
-}
-
-}
-
 // Scan a well-known bufr file, with no padding between BUFRs
 template<> template<>
 void to::test<1>()
@@ -74,8 +65,8 @@ void to::test<1>()
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/test.bufr", 0, 194));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -110,8 +101,8 @@ void to::test<1>()
 	// Next bufr
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/test.bufr", 194, 220));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -138,8 +129,8 @@ void to::test<1>()
 	// Last bufr
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/test.bufr", 414, 220));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -182,8 +173,8 @@ void to::test<2>()
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/padded.bufr", 100, 194));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/padded.bufr", 100, 194, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -212,8 +203,8 @@ void to::test<2>()
 	// Next bufr
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/padded.bufr", 394, 220));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/padded.bufr", 394, 220, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -240,8 +231,8 @@ void to::test<2>()
 	// Last bufr
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/padded.bufr", 714, 220));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/padded.bufr", 714, 220, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -320,8 +311,8 @@ void to::test<4>()
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/C23000.bufr", 0, 2206));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/C23000.bufr", 0, 2206, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -368,8 +359,8 @@ void to::test<5>()
 	// See how we scan the first BUFR
 	ensure(scanner.next(md));
 
-	// Check the source info
-	ensure_equals(md.source, bufrBlob("inbound/pollution.bufr", 0, 178));
+    // Check the source info
+    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/pollution.bufr", 0, 178, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();

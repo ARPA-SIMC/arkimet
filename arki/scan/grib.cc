@@ -29,6 +29,7 @@
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/files.h>
 #include <arki/scan/any.h>
 #include <cstring>
 #include <unistd.h>
@@ -491,8 +492,6 @@ Grib::~Grib()
 
 MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
     : tmpfilename(tmpfilename),
-      tmpdirname(str::dirname(tmpfilename)),
-      tmpbasename(str::basename(tmpfilename)),
       tmpfile(tmpfile)
 {
 	// Turn on multigrib support: we can handle them
@@ -502,13 +501,12 @@ MultiGrib::MultiGrib(const std::string& tmpfilename, std::ostream& tmpfile)
 
 void Grib::open(const std::string& filename)
 {
-	// Close the previous file if needed
-	close();
-	this->filename = sys::fs::abspath(filename);
-	this->dirname = str::dirname(filename);
-	this->basename = str::basename(filename);
-	if (!(in = fopen(filename.c_str(), "rb")))
-		throw wibble::exception::File(filename, "opening file for reading");
+    // Close the previous file if needed
+    close();
+    this->filename = sys::fs::abspath(filename);
+    utils::files::resolve_path(filename, dirname, relname);
+    if (!(in = fopen(filename.c_str(), "rb")))
+        throw wibble::exception::File(filename, "opening file for reading");
 }
 
 void Grib::close()
@@ -584,10 +582,10 @@ void Grib::setSource(Metadata& md)
 	}
 	else
 	{
-		md.source = types::source::Blob::create("grib" + str::fmt(edition), dirname, basename, offset, size);
+		md.source = types::source::Blob::create("grib" + str::fmt(edition), dirname, relname, offset, size);
 		md.setCachedData(wibble::sys::Buffer(vbuf, size));
 	}
-	md.add_note(types::Note::create("Scanned from " + basename + ":" + str::fmt(offset) + "+" + str::fmt(size)));
+	md.add_note(types::Note::create("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size)));
 }
 
 void MultiGrib::setSource(Metadata& md)
@@ -613,7 +611,7 @@ void MultiGrib::setSource(Metadata& md)
 
 	tmpfile.flush();
 
-    md.source = types::source::Blob::create("grib" + str::fmt(edition), tmpdirname, tmpbasename, offset, size);
+    md.source = types::source::Blob::create("grib" + str::fmt(edition), "", tmpfilename, offset, size);
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)

@@ -48,7 +48,7 @@ class Grib
 protected:
 	std::string filename;
 	std::string dirname;
-	std::string basename;
+	std::string relname;
 	FILE* in;
 	grib_context* context;
 	grib_handle* gh;
@@ -117,8 +117,6 @@ class MultiGrib : public Grib
 {
 protected:
     std::string tmpfilename;
-    std::string tmpdirname;
-    std::string tmpbasename;
     std::ostream& tmpfile;
 
 	/**
