@@ -78,7 +78,7 @@ arki_server_LDFLAGS = $(all_libs)
 arki_test_SOURCES = arki-test.cc
 arki_test_LDFLAGS = $(all_libs)
 
-TESTS = test-arki-server test-arki-scan test-arki-query run-test-src
+TESTS = test-arki-server test-arki-scan test-arki-query test-arki-xargs run-test-src
 check_PROGRAMS = test-src
 test_src_SOURCES = \
 		arki-server-tut.cc \

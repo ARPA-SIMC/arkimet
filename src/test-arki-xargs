@@ -1,0 +1,50 @@
+#!/bin/sh -e
+
+test -z "$ARGS" || exit 0
+
+BINDIR=`dirname $0`
+
+. $BINDIR/testlib.sh
+
+setup
+trap cleanup EXIT
+
+importtest
+
+echo -n "Testing arki-xargs"
+
+script=$TESTDIR/script.sh
+
+cat > $script <<EOF
+#!/bin/sh -e
+test "\$ARKI_XARGS_FORMAT" = GRIB1
+test "\$ARKI_XARGS_COUNT" -eq 1
+test -n "\$ARKI_XARGS_TIME_START"
+test -n "\$ARKI_XARGS_TIME_END"
+test -r "\$1"
+test -s "\$1"
+EOF
+chmod ugo+x $script
+
+runtest "arki-query --inline '' test200 | arki-xargs -n 1 -- $script"
+
+XARGS_SIZE=8000
+cat > $script <<EOF
+#!/bin/sh -ex
+test "\$ARKI_XARGS_FORMAT" = GRIB1
+test "\$ARKI_XARGS_COUNT" -ge 1
+test -n "\$ARKI_XARGS_TIME_START"
+test -n "\$ARKI_XARGS_TIME_END"
+test -r "\$1"
+test -s "\$1"
+FILESIZE=\$(stat -c%s "\$1")
+echo $FILESIZE
+test "\$FILESIZE" -le $XARGS_SIZE
+EOF
+chmod ugo+x $script
+
+runtest "arki-query --inline '' test200 | arki-xargs -s $XARGS_SIZE -- $script"
+
+testtotals
+
+exit $BADCOUNT
