@@ -5,7 +5,7 @@
 /*
  * scan/odimh5 - Scan a ODIMH5 file for metadata
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,9 +52,14 @@ public:
 	virtual ~OdimH5();
 
 	/**
-	 * Access a file with GRIB data
+	 * Access a file with ODIMH5 data
 	 */
 	void open(const std::string& filename);
+  /**
+   * Access a file with ODIMH5 data  - alternate version with explicit
+   * basedir/relname separation
+   */
+  void open(const std::string& filename, const std::string& basedir, const std::string& relname);
 
 	/**
 	 * Close the input file.
@@ -64,7 +69,7 @@ public:
 	void close();
 
 	/**
-	 * Scan the next GRIB in the file.
+	 * Scan the next ODIMH5 in the file.
 	 *
 	 * @returns
 	 *   true if it found a GRIB message,
@@ -73,9 +78,10 @@ public:
 	bool next(Metadata& md);
 
 protected:
-	std::string 		filename;	/* name of the input file */
-	std::string 		basename;	
-	OdimH5v20::OdimObject*	odimObj;	/* ODIMH5 loaded from input file */
+	std::string filename;
+	std::string basedir;
+    std::string relname;
+	OdimH5v20::OdimObject* odimObj; /* ODIMH5 loaded from input file */
 	int 			read;
 
 	/**
@@ -100,24 +106,3 @@ protected:
 
 // vim:set ts=4 sw=4:
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

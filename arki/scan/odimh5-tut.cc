@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
-
+#include <arki/types/test-utils.h>
 #include <arki/scan/odimh5.h>
 #include <arki/metadata.h>
 #include <arki/types.h>
@@ -39,8 +38,6 @@
 
 namespace tut {
 
-/*============================================================================*/
-
 using namespace std;
 using namespace wibble;
 using namespace arki;
@@ -53,186 +50,69 @@ struct arki_scan_odimh5_shar
 
 TESTGRP(arki_scan_odimh5);
 
-static const std::string pvol001path 	= "inbound/pvol001.h5";
-
-template<> template<> void to::test<1>()
+// Scan an ODIMH5 polar volume
+template<> template<>
+void to::test<1>()
 {
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
+    Metadata md;
+    scan::OdimH5 scanner;
+    wibble::sys::Buffer buf;
+    ValueBag vb;
 
-	scanner.open(pvol001path);
+    scanner.open("inbound/pvol001.h5");
 
-	ensure(scanner.next(md));
+    ensure(scanner.next(md));
 
-	// Check the source info (check filesize!)
-	size_t filesize = Radar::FileSystem::getFileSize(pvol001abspath);
-	ensure_equals(
-		md.source,
-		Item<Source>(source::Blob::create("odimh5", pvol001abspath, 0, filesize))
-	);
+    // Check the source info
+    atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/pvol001.h5", 0, 320696, md.source);
 
-	ensure(not scanner.next(md));
+    // Check that the source can be read properly
+    buf = md.getData();
+    ensure_equals(buf.size(), 320696u);
+    ensure_equals(string((const char*)buf.data(), 1, 3), "HDF");
+
+    // Check notes
+    if (md.notes().size() != 1)
+    {
+        for (size_t i = 0; i < md.notes().size(); ++i)
+            cerr << md.notes()[i] << endl;
+        ensure_equals(md.notes().size(), 1u);
+    }
+
+    // Check origin
+    ensure(md.get(types::TYPE_ORIGIN).defined());
+    ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::ODIMH5::create("wmo","rad","plc")));
+
+    // Check product
+    ensure(md.get(types::TYPE_PRODUCT).defined());
+    ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::ODIMH5::create("PVOL","SCAN")));
+
+    // Check level
+    ensure(md.get(types::TYPE_LEVEL).defined());
+    ensure_equals(md.get(types::TYPE_LEVEL), Item<>(types::level::ODIMH5::create(0,27)));
+
+    // Check reftime
+    ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
+    ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2000,1,2,3,4,5))));
+
+    // Check task
+    ensure(md.get(types::TYPE_TASK).defined());
+    ensure_equals(md.get(types::TYPE_TASK), Item<>(types::Task::create("task")));
+
+    // Check quantities
+    ensure(md.get(types::TYPE_QUANTITY).defined());
+    ensure_equals(md.get(types::TYPE_QUANTITY), Item<>(types::Quantity::create("ACRR,BRDR,CLASS,DBZH,DBZV,HGHT,KDP,LDR,PHIDP,QIND,RATE,RHOHV,SNR,SQI,TH,TV,UWND,VIL,VRAD,VWND,WRAD,ZDR,ad,ad_dev,chi2,dbz,dbz_dev,dd,dd_dev,def,def_dev,div,div_dev,ff,ff_dev,n,rhohv,rhohv_dev,w,w_dev,z,z_dev")));
+
+    // Check area
+    vb.clear();
+    vb.set("lat", Value::createInteger(44456700));
+    vb.set("lon", Value::createInteger(11623600));
+    vb.set("radius", Value::createInteger(1000));
+    ensure(md.get(types::TYPE_AREA).defined());
+    ensure_equals(md.get(types::TYPE_AREA), Item<>(area::ODIMH5::create(vb)));
+
+    ensure(not scanner.next(md));
 }
-
-
-template<> template<> void to::test<2>()
-{
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
-
-	scanner.open(pvol001path);
-
-	ensure(scanner.next(md));
-
-	// Check PRODUCT
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(
-		md.get(types::TYPE_PRODUCT),
-		Item<>(product::ODIMH5::create("PVOL","SCAN"))
-	);
-
-	ensure(not scanner.next(md));
-}
-
-
-template<> template<> void to::test<3>()
-{
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
-
-	scanner.open(pvol001path);
-
-	ensure(scanner.next(md));
-
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(
-		md.get(types::TYPE_ORIGIN),
-		Item<>(origin::ODIMH5::create("wmo","rad","plc"))
-	);
-
-	ensure(not scanner.next(md));
-}
-
-template<> template<> void to::test<4>()
-{
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
-
-	scanner.open(pvol001path);
-
-	ensure(scanner.next(md));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(
-		reftime::Position::create(types::Time::create(2000,01,02,03,04,05))
-	));
-
-	ensure(not scanner.next(md));
-}
-
-template<> template<> void to::test<5>()
-{
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
-
-	scanner.open(pvol001path);
-
-	ensure(scanner.next(md));
-
-	// Check task
-	ensure(md.get(types::TYPE_TASK).defined());
-	ensure_equals(md.get(types::TYPE_TASK), Item<>(
-		types::Task::create("task")
-	));
-
-	ensure(not scanner.next(md));
-}
-
-template<> template<> void to::test<6>()
-{
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
-
-	scanner.open(pvol001path);
-
-	ensure(scanner.next(md));
-
-	std::set<std::string>	quantities;
-
-	OdimH5v20::Specification::getStandardQuantities(quantities);
-
-	std::string values;
-	for (std::set<std::string>::iterator i=quantities.begin(); i!=quantities.end(); i++)
-	{
-		if (values.size())
-			values += ",";
-		values += *i;
-	}
-
-	// Check quantities
-	ensure(md.get(types::TYPE_QUANTITY).defined());
-	ensure_equals(md.get(types::TYPE_QUANTITY), Item<>(
-		types::Quantity::create(values)
-	));
-
-	ensure(not scanner.next(md));
-}
-
-template<> template<> void to::test<7>()
-{
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
-
-	scanner.open(pvol001path);
-
-	ensure(scanner.next(md));
-
-	// Check elevations (ANCHE CON LE RIPETIZIONI DEVE FUNZIONARE)
-	ensure(md.get(types::TYPE_LEVEL).defined());
-	ensure_equals(md.get(types::TYPE_LEVEL), Item<>(
-		types::level::ODIMH5::create(0,27)
-	));
-
-	ensure(not scanner.next(md));
-}
-
-template<> template<> void to::test<8>()
-{
-	Metadata 	md;
-	scan::OdimH5 	scanner;
-	std::string 	pvol001abspath 	= sys::fs::abspath(pvol001path);
-
-	scanner.open(pvol001path);
-
-	ensure(scanner.next(md));
-
-	//mi aspetto che valori di san pietro capofiume convertiti in interi 
-	ValueBag areaValues;
-	areaValues.set("lon",    Value::createInteger((int)(44.6547 * 1000000.)));
-	areaValues.set("lat",    Value::createInteger((int)(11.6236 * 1000000.)));
-	areaValues.set("radius", Value::createInteger((int)(1000.   * 1000.)));
-
-	md.set(types::area::ODIMH5::create(areaValues));
-
-	// Check elevations (ANCHE CON LE RIPETIZIONI DEVE FUNZIONARE)
-	ensure(md.get(types::TYPE_AREA).defined());
-	ensure_equals(md.get(types::TYPE_AREA), Item<>(
-		types::area::ODIMH5::create(areaValues)
-	));
-
-	ensure(not scanner.next(md));
-}
-
-/*============================================================================*/
 
 }
 

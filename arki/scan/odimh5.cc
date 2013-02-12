@@ -1,7 +1,7 @@
 /*
  * scan/odimh5 - Scan a ODIMH5 file for metadata
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 #include <wibble/sys/fs.h>
 using namespace wibble;
 
+#include <arki/utils/files.h>
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
 
@@ -143,11 +144,7 @@ const Validator& validator() { return odimh5_validator; }
 
 namespace arki { namespace scan {
 
-OdimH5::OdimH5()
-:filename()
-,basename()
-,odimObj(NULL)
-,read(false)
+OdimH5::OdimH5() : odimObj(0), read(false)
 {
 	//	if (m_inline_data)
 	//	{
@@ -174,10 +171,18 @@ OdimH5::~OdimH5()
 
 void OdimH5::open(const std::string& filename)
 {
+  string basedir, relname;
+  utils::files::resolve_path(filename, basedir, relname);
+  open(sys::fs::abspath(filename), basedir, relname);
+}
+
+void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
+{
 	// Close the previous file if needed
 	close();
-	this->filename = sys::fs::abspath(filename);
-	this->basename = str::basename(filename);
+	this->filename = filename;
+	this->basedir = basedir;
+  this->relname = relname;
 
 	try
 	{
@@ -197,6 +202,8 @@ void OdimH5::open(const std::string& filename)
 void OdimH5::close()
 {
 	filename.clear();
+  basedir.clear();
+  relname.clear();
 	try
 	{
 		delete odimObj;
@@ -401,11 +408,11 @@ void OdimH5::setSource(Metadata& md)
 		is.read (buff,length);
 		is.close();
 
-		md.source = types::source::Blob::create("odimh5", filename, 0, length);
+		md.source = types::source::Blob::create("odimh5", basedir, relname, 0, length);
 		md.setCachedData(wibble::sys::Buffer(buff, length));
 		buff = NULL;
 
-		md.add_note(types::Note::create("Scanned from " + basename + ":0+" + str::fmt(length)));
+		md.add_note(types::Note::create("Scanned from " + relname + ":0+" + str::fmt(length)));
 	}
 	catch (...)
 	{
