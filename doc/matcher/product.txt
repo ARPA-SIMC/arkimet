@@ -60,3 +60,22 @@ ensure_matches(sample, "product:ODIMH5,,SCAN")
 
 ensure_not_matches(sample, "product:GRIB1")
 ensure_not_matches(sample, "product:BUFR:t=temp")
+
+-- VM2
+-- Syntax: product:VM2,id:key1=value1,key2=value2,...
+-- The keys (key1=value1,...) are loaded at runtime
+-- from a meteo-vm2 attribute table.
+
+-- Assume that product with id 23 has the following attributes:
+-- {bcode="B22043",tr=254,p1=0,p2=0,lt1=1}
+sample:set(arki_product.vm2(23))
+
+ensure_matches(sample, "product:VM2")
+ensure_matches(sample, "product:VM2,23")
+ensure_matches(sample, "product:VM2,23:bcode=B22043")
+
+ensure_not_matches(sample, "product:GRIB1")
+ensure_not_matches(sample, "product:BUFR:t=temp")
+ensure_not_matches(sample, "product:VM2,12")
+ensure_not_matches(sample, "product:VM2,23:foo=bar")
+ensure_not_matches(sample, "product:VM2:foo=bar")

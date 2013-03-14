@@ -48,6 +48,26 @@ ensure_matches(sample, "area:ODIMH5:lat=45000000,lon=30000000,radius=1000")
 
 ensure_not_matches(sample, "area:GRIB:sta=88")
 
+--[[ Matching VM2 areas
+
+Syntax: area:VM2,id:key1=val1,key2=val2,...
+
+Matches any VM2 area that has the at least the given id and all the given keys,
+with the given values.
+
+The attributes (key1=value1,...) are loaded at runtime from a meteo-vm2
+attribute table.
+]]
+
+-- Assume that area with id 1 has the attributes:
+-- {lon=1207738,lat=4460016,rep="locali"}
+sample:set(arki_area.vm2(1));
+
+ensure_matches(sample, "area:VM2,1")
+ensure_matches(sample, "area:VM2:lon=1207738,lat=4460016,rep=locali")
+ensure_matcher(sample, "area:VM2:rep=locali")
+ensure_not_matches(sample, "area:VM2,2")
+ensure_not_matches(sample, "area:VM2:answer=42")
 
 --[[ Matching area bounding boxes
 

@@ -270,6 +270,13 @@ static int arkilua_new_odimh5(lua_State* L)
 	return 1;
 }
 
+static int arkilua_new_vm2(lua_State* L)
+{
+	int type = luaL_checkint(L, 1);
+	product::VM2::create(type);
+	return 1;
+}
+
 void Product::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
@@ -277,6 +284,7 @@ void Product::lua_loadlib(lua_State* L)
 		{ "grib2", arkilua_new_grib2 },
 		{ "bufr", arkilua_new_bufr },
 		{ "odimh5", arkilua_new_odimh5 },
+		{ "vm2", arkilua_new_vm2 },
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_product", lib, 0);

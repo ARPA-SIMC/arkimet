@@ -183,11 +183,19 @@ static int arkilua_new_odimh5(lua_State* L)
 	return 1;
 }
 
+static int arkilua_new_vm2(lua_State* L)
+{
+	int type = luaL_checkint(L, 1);
+	area::VM2::create(type)->lua_push(L);
+	return 1;
+}
+
 void Area::lua_loadlib(lua_State* L)
 {
 	static const struct luaL_reg lib [] = {
 		{ "grib", arkilua_new_grib },
 		{ "odimh5", arkilua_new_odimh5 },
+		{ "vm2", arkilua_new_vm2 },
 		{ NULL, NULL }
 	};
 	luaL_openlib(L, "arki_area", lib, 0);
