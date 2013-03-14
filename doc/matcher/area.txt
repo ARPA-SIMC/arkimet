@@ -65,7 +65,7 @@ sample:set(arki_area.vm2(1));
 
 ensure_matches(sample, "area:VM2,1")
 ensure_matches(sample, "area:VM2:lon=1207738,lat=4460016,rep=locali")
-ensure_matcher(sample, "area:VM2:rep=locali")
+ensure_matches(sample, "area:VM2:rep=locali")
 ensure_not_matches(sample, "area:VM2,2")
 ensure_not_matches(sample, "area:VM2:answer=42")
 
