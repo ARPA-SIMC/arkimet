@@ -60,6 +60,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/reftime.h \
 		matcher/reftime/parser.h \
 		matcher/run.h \
+		matcher/source.h \
 		matcher/task.h \
 		matcher/test-utils.h \
 		matcher/timerange.h \
@@ -207,6 +208,7 @@ libarkimet_types_la_SOURCES = \
 		matcher/area.cc \
 		matcher/proddef.cc \
 		matcher/run.cc \
+		matcher/source.cc \
 		matcher/task.cc \
 		matcher/quantity.cc \
 		sort.cc \
@@ -343,6 +345,7 @@ tests_arki_test_SOURCES = \
 		matcher/area-tut.cc \
 		matcher/proddef-tut.cc \
 		matcher/run-tut.cc \
+		matcher/source-tut.cc \
 		matcher/task-tut.cc \
 		matcher/quantity-tut.cc \
 		scan/any-tut.cc \

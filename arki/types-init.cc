@@ -46,6 +46,7 @@
 #include <arki/types/task.h>
 #include <arki/matcher/task.h>
 #include <arki/types/value.h>
+#include <arki/matcher/source.h>
 
 namespace arki {
 namespace types {
@@ -75,6 +76,7 @@ void init_default_types()
     Task::init();
     matcher::MatchTask::init();
     Value::init();
+    matcher::MatchSource::init();
 }
 
 }
