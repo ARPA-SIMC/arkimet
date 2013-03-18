@@ -273,7 +273,7 @@ static int arkilua_new_odimh5(lua_State* L)
 static int arkilua_new_vm2(lua_State* L)
 {
 	int type = luaL_checkint(L, 1);
-	product::VM2::create(type);
+	product::VM2::create(type)->lua_push(L);
 	return 1;
 }
 
