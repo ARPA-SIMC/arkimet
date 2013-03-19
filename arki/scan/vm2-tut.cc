@@ -55,7 +55,7 @@ struct arki_scan_vm2_shar {
 };
 TESTGRP(arki_scan_vm2);
 
-// Scan a well-known vm2 file
+// Scan a well-known vm2 sample
 template<> template<>
 void to::test<1>()
 {
@@ -105,7 +105,8 @@ void to::test<2>()
 
     ensure_no_throws(v.validate(fd, 0, 35, "inbound/test.vm2"));
     ensure_no_throws(v.validate(fd, 0, 34, "inbound/test.vm2"));
-    ensure_no_throws(v.validate(fd, 35, 34, "inbound/test.vm2"));
+    ensure_no_throws(v.validate(fd, 35, 35, "inbound/test.vm2"));
+    ensure_no_throws(v.validate(fd, 35, 36, "inbound/test.vm2"));
 
     ensure_throws(v.validate(fd, 1, 35, "inbound/test.vm2"));
     ensure_throws(v.validate(fd, 0, 36, "inbound/test.vm2"));
@@ -127,6 +128,43 @@ void to::test<2>()
         line += "\n";
         ensure_no_throws(v.validate(line.c_str(), line.size()));
     }
+}
+// Scan a well-known vm2 sample (with seconds)
+template<> template<>
+void to::test<3>()
+{
+    Metadata md;
+    scan::Vm2 scanner;
+    types::Time reftime;
+    wibble::sys::Buffer buf;
+
+    scanner.open("inbound/test.vm2");
+    // Skip the first vm2
+    ensure(scanner.next(md));
+
+    // See how we scan the second vm2
+    ensure(scanner.next(md));
+
+    // Check the source info
+    atest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 35, 35, md.source);
+
+    // Check that the source can be read properly
+    buf = md.getData();
+    ensure_equals(buf.size(), 35u);
+    ensure_equals(string((const char*)buf.data(), 35), "19871031000030,1,228,.5,,,000000000");
+
+    // Check area
+    ensure(md.get(types::TYPE_AREA).defined());
+    ensure_equals(md.get(types::TYPE_AREA), Item<>(area::VM2::create(1)));
+
+    // Check product
+    ensure(md.get(types::TYPE_PRODUCT).defined());
+    ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::VM2::create(228)));
+    // Check reftime
+    ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
+    ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(1987,10,31, 0, 0,30))));
+    // Check value
+    ensure_equals(md.get<types::Value>()->buffer, ".5,,,000000000");
 }
 
 }

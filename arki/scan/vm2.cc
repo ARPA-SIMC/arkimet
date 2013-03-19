@@ -148,8 +148,9 @@ bool Vm2::next(Metadata& md)
     md.set(types::product::VM2::create(value.variable_id));
 
     // Look for the comma before the value starts
-    size_t pos = 13;
+    size_t pos = 0;
     pos = line.find(',', pos);
+    pos = line.find(',', pos + 1);
     pos = line.find(',', pos + 1);
     // Store the rest as a value
     md.set(types::Value::create(line.substr(pos+1)));
