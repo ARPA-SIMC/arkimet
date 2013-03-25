@@ -29,8 +29,6 @@
 
 #include <radarlib/odimh5v20.hpp>
 
-/*============================================================================*/
-
 namespace arki {
 class Metadata;
 
@@ -40,10 +38,6 @@ struct Validator;
 namespace odimh5 {
 const Validator& validator();
 }
-
-/*============================================================================*/
-/* ODIM H5 SCANNER */
-/*============================================================================*/
 
 class OdimH5
 {
@@ -80,26 +74,15 @@ public:
 protected:
 	std::string filename;
 	std::string basedir;
-    std::string relname;
+	std::string relname;
 	OdimH5v20::OdimObject* odimObj; /* ODIMH5 loaded from input file */
-	int 			read;
+	int read;
 
-	/**
-	 * Extract metadata from a OdimH5 object 
-	 */
-	virtual void getOdimObjectData(OdimH5v20::OdimObject* obj, Metadata& md);
-	/**
-	 * Extract metadata from a OdimH5 PVOL/SCAN object
-	 * This method is called only for PVOL/SCAN objects
-	 */
-	virtual void getPVOLData(OdimH5v20::PolarVolume* obj, Metadata& md);
 	/**
 	 * Set the source information in the metadata
 	 */
 	virtual void setSource(Metadata& md);
 };
-
-/*============================================================================*/
 
 }
 }

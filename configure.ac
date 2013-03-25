@@ -23,6 +23,13 @@ AC_ARG_ENABLE([vm2],
 	      [],
 	      [enable_vm2="yes"])
 
+AC_ARG_ENABLE([odimh5],
+	      [AS_HELP_STRING(
+	       [--enable-odimh5],
+	       [build ODIMH5 support])],
+	       [],
+	       [enable_odimh5="yes"])
+
 AC_ARG_ENABLE([iotrace],
     [AS_HELP_STRING(
         [--enable-iotrace],
@@ -193,27 +200,21 @@ else
 fi
 AM_CONDITIONAL([GRIBAPI], [test x"$have_gribapi" = x"yes"])
 
-dnl Check for radarlib
-have_odimh5=yes
-AC_CHECK_LIB([radar], [radarlib_get_version])
-AC_CHECK_HEADER([radarlib/radar.hpp], [true], [have_odimh5=no])
-if test $have_odimh5 = yes
+dnl Check for odimh5 support
+if test $enable_odimh5 = yes
 then
-	AC_DEFINE([HAVE_ODIMH5], 1, [radar/odimh5 functions are available])
-	ODIMH5_CFLAGS=
-	ODIMH5_LIBS="-lradar -lhdf5 -lhdf5_cpp"
-	AC_SUBST(ODIMH5_CFLAGS)
-	AC_SUBST(ODIMH5_LIBS)
-
-	#if test x$have_lua = xno
-	#then
-	#	AC_MSG_WARN([Cannot find lua: grib scanning will be disabled])
-	#	have_gribapi=no
-	#fi
-	#AC_SUBST(LUA_CFLAGS)
-	#AC_SUBST(LUA_LIBS)
+	dnl Check for radarlib library
+	PKG_CHECK_EXISTS([radarlib], [have_odimh5=yes], [have_odimh5=no])
+	if test $have_odimh5 = yes
+	then
+		AC_DEFINE([HAVE_ODIMH5], 1, [odimh5 format enabled])
+		PKG_CHECK_MODULES([ODIMH5], [radarlib >= 1.3])
+		ODIMH5_LIBS="$ODIMH5_LIBS -lhdf5"
+	else
+		AC_MSG_WARN([compiling without libradar: ODIMH5 support will be disabled])
+	fi
 else
-	AC_MSG_WARN([compiling without radar/odimh5])
+	have_odimh5=no
 fi
 AM_CONDITIONAL([ODIMH5], [test x"$have_odimh5" = x"yes"])
 

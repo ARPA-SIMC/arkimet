@@ -22,7 +22,7 @@
 
 #include "config.h"
 
-#include "./odimh5.h"
+#include <arki/scan/odimh5.h>
 
 #include <arki/metadata.h>
 
@@ -33,26 +33,20 @@
 #include <arki/types/product.h>
 #include <arki/types/level.h>
 #include <arki/types/area.h>
+#include <arki/types/timerange.h>
 
 #include <arki/runtime/config.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
-using namespace wibble;
 
 #include <arki/utils/files.h>
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
 
-/*============================================================================*/
-
 #include <radarlib/radar.hpp>
-using namespace OdimH5v20;
 #include <radarlib/debug.hpp>
-using namespace Radar;
-
-/*============================================================================*/
 
 #include <cstring>
 #include <unistd.h>
@@ -64,40 +58,10 @@ using namespace Radar;
 #include <sstream>
 #include <memory>
 #include <iostream>
-using namespace std;
 
-/*============================================================================*/
-/* DEBUG FUNCTIONS */
-/*============================================================================*/
-
-template <class T> static void DEBUGVECTOR(const std::string& str, const std::vector<T>& values)
-{
-	#ifdef _DEBUG
-	std::ostringstream ss;
-	ss << str << ": ";
-	for (size_t i=0; i<values.size(); i++)
-		ss << values[i] << " ";
-	DEBUG(ss.str());
-	#endif
-}
-
-template <class TYPE> static void DEBUGSET(const std::string& str, const std::set<TYPE> & values)
-{
-	#ifdef _DEBUG
-	typedef typename std::set<TYPE>::const_iterator iterator;
-	std::ostringstream ss;
-	ss << str << ": ";
-	for (iterator i = values.begin(); i != values.end(); i++)
-		ss << *i << " ";
-	DEBUG(ss.str());
-	#endif
-}
-
-/*============================================================================*/
-/* VALIDATOR */
-/*============================================================================*/
-
-namespace arki { namespace scan { namespace odimh5 {
+namespace arki {
+namespace scan {
+namespace odimh5 {
 
 /* taken from: http://www.hdfgroup.org/HDF5/doc/H5.format.html#Superblock */
 static const unsigned char hdf5sign[8] = { 0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a };
@@ -136,33 +100,201 @@ static OdimH5Validator odimh5_validator;
 
 const Validator& validator() { return odimh5_validator; }
 
-} } }
+// OdimH5v20 scanner.
+// To scan a specific object/product, override the visit() methods and set
+// the attribute "supported = true" at the end of the method (otherwise, an
+// exception will be thrown).
+class Scanner : public OdimH5v20::utils::OdimObjectVisitor, public OdimH5v20::utils::OdimProduct2DVisitor {
+ private:
+	OdimH5v20::OdimObject& obj;
+	Metadata& md;
+	bool supported;
 
-/*============================================================================*/
-/* ODIM SCANNER */
-/*============================================================================*/
+ public:
+	Scanner(OdimH5v20::OdimObject& obj, Metadata& md) : obj(obj), md(md), supported(false) {}
 
-namespace arki { namespace scan {
+	void scan() {
+		using wibble::exception::Consistency;
 
-OdimH5::OdimH5() : odimObj(0), read(false)
-{
-	//	if (m_inline_data)
-	//	{
-	//		// If we inline the data, we can also do multigrib
-	//		grib_multi_support_on(context);
-	//	} else {
-	//		// Multi support is off unless a child class specifies otherwise
-	//		grib_multi_support_off(context);
-	//	}
-	//
-	//	/// Load the grib1 scanning functions
-	//	L->load_scan_code(grib1code, "grib1", grib1_funcs);
-	//
-	//	/// Load the grib2 scanning functions
-	//	L->load_scan_code(grib2code, "grib2", grib2_funcs);
-	//
-	//	//arkilua_dumpstack(L, "Afterinit", stderr);
+		// reftime
+		time_t reftime_t = obj.getDateTime();
+		struct tm reftime_tm;
+		if (gmtime_r(&reftime_t, &reftime_tm) == NULL)
+			throw wibble::exception::System("scanning odimh5 file");
+		md.set(types::reftime::Position::create(types::Time::create(reftime_tm)));
+		// origin
+		OdimH5v20::SourceInfo source = obj.getSource();
+		md.set(types::origin::ODIMH5::create(source.WMO, source.OperaRadarSite, source.Place));
+
+		visitObject(obj);
+
+		if (!supported)
+			throw wibble::exception::Consistency("scanning odimh5 file",
+																					 "unsupported file");
+	}
+
+ protected:
+	virtual void visit(OdimH5v20::PolarVolume& pvol) {
+		// product
+		md.set(types::product::ODIMH5::create(OdimH5v20::OBJECT_PVOL, OdimH5v20::PRODUCT_SCAN));
+		// task
+		std::string task = pvol.getTaskOrProdGen();
+		if (!task.empty())
+			md.set(types::Task::create(task));
+		// quantity
+		std::set<std::string> quantities = pvol.getStoredQuantities();
+		if (!quantities.empty())
+			md.set(types::Quantity::create(quantities));
+		// level
+		std::vector<double> eangles = pvol.getElevationAngles();
+		double mine = 360., maxe = 360;
+		if (!eangles.empty()) {
+			mine = *std::min_element(eangles.begin(), eangles.end());
+			maxe = *std::max_element(eangles.begin(), eangles.end());
+		}
+		md.set(types::level::ODIMH5::create(mine, maxe));
+		// area
+		double radius = 0;
+		for (int i=0; i < pvol.getScanCount(); ++i) {
+			std::auto_ptr<OdimH5v20::PolarScan> scan(pvol.getScan(i));
+			double val = scan->getRadarHorizon();
+			if (val > radius)
+				radius = val;
+		}
+		ValueBag areaValues;
+		areaValues.set("lat", Value::createInteger((int)(pvol.getLatitude() * 1000000)));
+		areaValues.set("lon", Value::createInteger((int)(pvol.getLongitude() * 1000000)));
+		areaValues.set("radius", Value::createInteger((int)(radius * 1000)));
+		md.set(types::area::ODIMH5::create(areaValues));
+		// set supported
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::ImageObject& img) {
+		scanHorizontalObject2D(img);
+	}
+	virtual void visit(OdimH5v20::CompObject& comp) {
+		scanHorizontalObject2D(comp);
+	}
+	virtual void visit(OdimH5v20::Product_PPI& prod) {
+		// level
+		double height = prod.getProdPar();
+		md.set(types::level::ODIMH5::create(height));
+		// set supported
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_CAPPI& prod) {
+		// level
+		double height = prod.getProdPar();
+		md.set(types::level::GRIB1::create(105, height));
+		// set supported
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_PCAPPI& prod) {
+		// level
+		double height = prod.getProdPar();
+		md.set(types::level::GRIB1::create(105, height));
+		// set supported
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_LBM& prod) {
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_MAX& prod) {
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_RR& prod) {
+		time_t p2 = prod.getEndDateTime() - prod.getStartDateTime();
+		// Observed accumulation with length p2
+		md.set(types::timerange::Timedef::create(0,types::timerange::Timedef::UNIT_SECOND,
+																						 1,
+																						 p2, types::timerange::Timedef::UNIT_SECOND));
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_VIL& prod) {
+		OdimH5v20::VILHeights heights = prod.getProdParVIL();
+		// Layer between two height levels above ground (hm)
+		md.set(types::level::GRIB1::create(106, heights.top/100, heights.bottom/100));
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_ETOP& prod) {
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_HSP& prod) {
+		supported = true;
+	}
+	virtual void visit(OdimH5v20::Product_VSP& prod) {
+		supported = true;
+	}
+	virtual void scanHorizontalObject2D(OdimH5v20::HorizontalObject_2D& hobj) {
+		using wibble::exception::Consistency;
+
+		// Only single product or the triplet (MAX, HSP, VSP) is supported
+		std::string prodname;
+		std::vector<std::string> prodtypes = hobj.getProductsType();
+		if (prodtypes.size() == 1) {
+			// Single product object
+			prodname = prodtypes.at(0);
+		} else if (prodtypes.size() == 3) {
+			// If the object contains 3 products, then they must be MAX, HSP, VSP.
+			
+			std::set<std::string> prodset;
+			prodset.insert(OdimH5v20::PRODUCT_MAX);
+			prodset.insert(OdimH5v20::PRODUCT_HSP);
+			prodset.insert(OdimH5v20::PRODUCT_VSP);
+			for (std::vector<std::string>::const_iterator i = prodtypes.begin();
+					 i != prodtypes.end(); ++i) {
+				if (*i != OdimH5v20::PRODUCT_MAX
+						&& *i != OdimH5v20::PRODUCT_HSP
+						&& *i != OdimH5v20::PRODUCT_VSP)
+					throw Consistency("scanning odimh5 file",
+														"Unsupported product " + *i + 
+														" in triple product HVMI");
+			}
+			// This triplet is called "HVMI"
+			prodname = "HVMI";
+		} else {
+			// Otherwise, the object is not supported
+			throw wibble::exception::Consistency("scanning odimh5 file",
+																					 "Unsupported ODIMH5 object");
+		}
+		// product
+		md.set(types::product::ODIMH5::create(hobj.getObject(), prodname));
+		// task
+		std::string task = hobj.getTaskOrProdGen();
+		if (!task.empty())
+			md.set(types::Task::create(task));
+		// quantity
+		std::set<std::string> quantities;
+		for (int i = 0; i < hobj.getProductCount(); ++i) {
+			std::auto_ptr<OdimH5v20::Product_2D> prod(hobj.getProduct(i));
+			std::set<std::string> q = prod->getStoredQuantities();
+			quantities.insert(q.begin(), q.end());
+		}
+		if (!quantities.empty())
+			md.set(types::Quantity::create(quantities));
+		// area (bounding box)
+		double latfirst = ( hobj.getLL_Latitude() < hobj.getLR_Latitude() ? hobj.getLL_Latitude() : hobj.getLR_Latitude() );
+		double lonfirst = ( hobj.getLL_Longitude() < hobj.getUL_Longitude() ? hobj.getLL_Longitude() : hobj.getUL_Longitude() );
+		double latlast =  ( hobj.getUL_Latitude() > hobj.getUR_Latitude() ? hobj.getUL_Latitude() : hobj.getUR_Latitude() );
+		double lonlast =  ( hobj.getLR_Longitude() > hobj.getUR_Longitude() ? hobj.getLR_Longitude() : hobj.getUR_Longitude() );
+		ValueBag areaValues;
+		areaValues.set("latfirst", Value::createInteger((int)(latfirst * 1000000)));
+		areaValues.set("lonfirst", Value::createInteger((int)(lonfirst * 1000000)));
+		areaValues.set("latlast", Value::createInteger((int)(latlast * 1000000)));
+		areaValues.set("lonlast", Value::createInteger((int)(lonlast * 1000000)));
+		areaValues.set("type", Value::createInteger(0));
+		md.set(types::area::GRIB::create(areaValues));
+		// level is scanned from the product
+		for (int i = 0; i < hobj.getProductCount(); ++i) {
+			std::auto_ptr<OdimH5v20::Product_2D> prod(hobj.getProduct(i));
+			visitProduct2D(*prod);
+		}
+	}
+};
+
 }
+
+OdimH5::OdimH5() : odimObj(0), read(false) {}
 
 OdimH5::~OdimH5()
 {
@@ -171,9 +303,9 @@ OdimH5::~OdimH5()
 
 void OdimH5::open(const std::string& filename)
 {
-  string basedir, relname;
+	std::string basedir, relname;
   utils::files::resolve_path(filename, basedir, relname);
-  open(sys::fs::abspath(filename), basedir, relname);
+  open(wibble::sys::fs::abspath(filename), basedir, relname);
 }
 
 void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
@@ -182,21 +314,13 @@ void OdimH5::open(const std::string& filename, const std::string& basedir, const
 	close();
 	this->filename = filename;
 	this->basedir = basedir;
-  this->relname = relname;
+	this->relname = relname;
 
-	try
-	{
-		/* create an OdimH5 factory */
-		std::auto_ptr<OdimH5v20::OdimFactory> f (new OdimH5v20::OdimFactory());
-		/* load OdimH5 object */
-		odimObj = f->open(filename);
-		read = 0;
-	}
-	catch (std::exception& e)
-	{
-		std::cerr << "scanner odim: err:" << e.what() << std::endl;
-		throw;
-	}
+	/* create an OdimH5 factory */
+	std::auto_ptr<OdimH5v20::OdimFactory> f (new OdimH5v20::OdimFactory());
+	/* load OdimH5 object */
+	odimObj = f->open(filename, H5F_ACC_RDONLY);
+	read = 0;
 }
 
 void OdimH5::close()
@@ -204,263 +328,59 @@ void OdimH5::close()
 	filename.clear();
   basedir.clear();
   relname.clear();
-	try
-	{
-		delete odimObj;
-		odimObj = NULL;
-		read = 0;
-	}
-	catch (std::exception& e)
-	{
-		std::cerr << "scanner odim: err:" << e.what() << std::endl;
-		throw;
-	}
+	delete odimObj;
+	odimObj = NULL;
+	read = 0;
 }
 
 bool OdimH5::next(Metadata& md)
 {
-	md.create();
-	setSource(md);
+	if (read >= 1) {
+		return false;
+	} else {
+		md.create();
+		setSource(md);
 
-	try
-	{
 		/* NOTA: per ora la next estrare un metadato unico per un intero file */
-		getOdimObjectData(this->odimObj, md);
+		try {
+			odimh5::Scanner scanner(*odimObj, md);
+			scanner.scan();
+		} catch (const std::exception& e) {
+			throw wibble::exception::Consistency("while scanning file " + filename,
+																					 e.what());
+		}
+
 		read++;
-		return read == 1;	//la prima volta ritorno true
+
+		return true;
 	}
-	catch (std::exception& e)
-	{
-		std::cerr << "scanner odim: err:" << e.what() << std::endl;
-		throw;
-	}
-
-	//	int griberror;
-	//
-	//	// If there's still a grib_handle around (for example, if a previous call
-	//	// to next() threw an exception), deallocate it here to prevent a leak
-	//	if (gh)
-	//	{
-	//		check_grib_error(grib_handle_delete(gh), "closing GRIB message");
-	//		gh = 0;
-	//	}
-	//
-	//	gh = grib_handle_new_from_file(context, in, &griberror);
-	//	if (gh == 0 && griberror == GRIB_END_OF_FILE)
-	//		return false;
-	//	check_grib_error(griberror, "reading GRIB from file");
-	//	if (gh == 0)
-	//		return false;
-	//
-	//	md.create();
-	//
-	//	setSource(md);
-	//
-	//	long edition;
-	//	check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
-	//	switch (edition)
-	//	{
-	//		case 1: scanGrib1(md); break;
-	//		case 2: scanGrib2(md); break;
-	//		default:
-	//			throw wibble::exception::Consistency("reading grib message", "GRIB edition " + str::fmt(edition) + " is not supported");
-	//	}
-	//
-	//	check_grib_error(grib_handle_delete(gh), "closing GRIB message");
-	//	gh = 0;
-	//
-	//	return true;
-	//	return false;
-}
-
-void OdimH5::getOdimObjectData(OdimH5v20::OdimObject* obj, Metadata& md)
-{
-	std::string object = obj->getObject();
-	if (object == OdimH5v20::OBJECT_PVOL)
-	{
-		getPVOLData((OdimH5v20::PolarVolume*)obj, md);
-	}
-	else
-	{
-		std::ostringstream ss;
-		ss << "Unsupported odimH5 object " << object << "!";
-		throw std::logic_error(ss.str());
-	}
-}
-
-void OdimH5::getPVOLData(OdimH5v20::PolarVolume* pvol, Metadata& md)
-{
-	std::string		object		= OdimH5v20::OBJECT_PVOL;
-	std::string		prod		= OdimH5v20::PRODUCT_SCAN;
-	OdimH5v20::SourceInfo	source		= pvol->getSource();
-	time_t			dateTime	= pvol->getDateTime();
-	std::string		task		= pvol->getTaskOrProdGen();
-	std::vector<double>	eangles		= pvol->getElevationAngles();
-	std::set<std::string>	quantities	= pvol->getStoredQuantities();
-	double			lat		= pvol->getLatitude();
-	double			lon		= pvol->getLongitude();
-	double			radius		= 0;
-
-	//--- IL TIPO DI OGGETTO va a finire in PRODUCT ---
-
-	DEBUG("Object:    " << object);
-	DEBUG("Prod:      " << prod);
-
-	md.set(types::product::ODIMH5::create(object, prod));
-
-	//--- SOURCE va a finire in ORIGIN ---
-
-	DEBUG("Source:    " << source.toString());
-
-	md.set(
-		types::origin::ODIMH5::create(
-			source.WMO,
-			source.OperaRadarSite,
-			source.Place
-		)
-	);
-
-	//--- DATE E TIME vanno a finire in REFTIME ---
-
-	DEBUG("Date/time: " << timeutils::absoluteToString(dateTime));
-
-	int year, month, day, hour, min, sec;
-
-	Radar::timeutils::splitYMDHMS(dateTime, year, month, day, hour, min, sec);
-
-	md.set(types::reftime::Position::create(
-		new types::Time(year, month, day, hour, min, sec)
-	));
-
-	//--- TASK ha il suo metadato ---
-
-	DEBUG("Task:      " << task);
-
-	if (task.size())
-		md.set(types::Task::create(task));
-
-	//--- QUANTITY ha il suo metadato ---
-
-	DEBUGSET<std::string>("QUANTITY: ", quantities);
-
-	if (quantities.size())
-		md.set(types::Quantity::create(quantities));
-
-	//--- EANGLE va a finire in LEVEL ---
-
-	DEBUGVECTOR<double>("EANGLE: ", eangles);
-
-	double mine = 360.;
-	double maxe = -360;
-
-	for (size_t i=0; i<eangles.size(); i++)
-	{
-		if (eangles[i] <= mine)
-			mine = eangles[i];
-		if (eangles[i] >= maxe)
-			maxe = eangles[i];
-	}
-
-	DEBUG("EANGLE: " << mine << " / " << maxe);
-
-	md.set(types::level::ODIMH5::create(mine, maxe));
-
-	//--- WHERE va a finire in AREA ---
-
-	int scanCount = pvol->getScanCount();	
-	for (int i=0; i<scanCount; i++)
-	{
-		std::auto_ptr<PolarScan> scan( pvol->getScan(i));
-		double val = scan->getRadarHorizon();
-		if (val > radius)
-			radius = val;
-	}
-
-	DEBUG("LAT:       " << lat << " degree");
-	DEBUG("LON:       " << lon << " degree");
-	DEBUG("RADIUS:    " << radius << " km");
-	ValueBag areaValues;
-	areaValues.set("lat", 	 Value::createInteger((int)(lat * 1000000)));	//gradi -> numero intero: per i valori in gradi teniamo 6 cifre significative
-	areaValues.set("lon", 	 Value::createInteger((int)(lon * 1000000)));	//gradi -> numero intero: per i valori in gradi teniamo 6 cifre significative
-	areaValues.set("radius", Value::createInteger((int)(radius * 1000)));	//km a numero intero: teniamo la misura in metri
-
-	md.set(types::area::ODIMH5::create(areaValues));
 }
 
 void OdimH5::setSource(Metadata& md)
 {
-	char* buff = NULL;
 	int length;
-	try
-	{
-		/* for ODIMH5 files the source is the entire file */
+	/* for ODIMH5 files the source is the entire file */
 
-		std::ifstream is;
-		is.open(filename.c_str(), std::ios::binary );
+	std::ifstream is;
+	is.open(filename.c_str(), std::ios::binary );
 
-		/* calcualte file size */
-		is.seekg (0, ios::end);
-		length = is.tellg();
-		is.seekg (0, ios::beg);
+	/* calcualte file size */
+	is.seekg (0, std::ios::end);
+	length = is.tellg();
+	is.seekg (0, std::ios::beg);
 
-		buff = new char [length];
+	std::auto_ptr<char> buff(new char [length]);
 
-		is.read (buff,length);
-		is.close();
+	is.read(buff.get(),length);
+	is.close();
 
-		md.source = types::source::Blob::create("odimh5", basedir, relname, 0, length);
-		md.setCachedData(wibble::sys::Buffer(buff, length));
-		buff = NULL;
+	md.source = types::source::Blob::create("odimh5", basedir, relname, 0, length);
+	md.setCachedData(wibble::sys::Buffer(buff.release(), length));
 
-		md.add_note(types::Note::create("Scanned from " + relname + ":0+" + str::fmt(length)));
-	}
-	catch (...)
-	{
-		delete[] buff;
-		throw;
-	}
+	md.add_note(types::Note::create("Scanned from " + relname + ":0+" + wibble::str::fmt(length)));
 }
 
-//bool OdimH5::scanLua(std::vector<int> ids, Metadata& md)
-//{
-//	for (vector<int>::const_iterator i = ids.begin(); i != ids.end(); ++i)
-//	{
-//		string error = L->run_function(*i, md);
-//		if (!error.empty())
-//		{
-//			md.add_note(types::Note::create("Scanning failed: " + error));
-//			return false;
-//		}
-//	}
-//	return true;
-//}
-
-
-/*============================================================================*/
-
-} }
-
-
+}
+}
 
 // vim:set ts=4 sw=4:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
