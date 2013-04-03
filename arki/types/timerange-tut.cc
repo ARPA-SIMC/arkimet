@@ -673,6 +673,22 @@ void to::test<21>()
     }
 }
 
+// Test Timedef's validity_time_to_emission_time
+template<> template<>
+void to::test<22>()
+{
+    using namespace timerange;
+    using namespace reftime;
+    Item<Timedef> v = Timedef::createFromYaml("6h");
+    Item<Position> p = Reftime::decodeString("2009-02-13 12:00:00").upcast<Position>();
+    Item<Position> p1 = v->validity_time_to_emission_time(p);
+    ensure_equals(p1->time->vals[0], 2009);
+    ensure_equals(p1->time->vals[1], 2);
+    ensure_equals(p1->time->vals[2], 13);
+    ensure_equals(p1->time->vals[3], 6);
+    ensure_equals(p1->time->vals[4], 0);
+    ensure_equals(p1->time->vals[5], 0);
+}
 
 }
 
