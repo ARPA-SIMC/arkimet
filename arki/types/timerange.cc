@@ -57,6 +57,11 @@ const types::Code traits<Timerange>::type_code = CODE;
 const size_t traits<Timerange>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Timerange>::type_lua_tag = LUATAG_TIMERANGE;
 
+const char* traits<timerange::Timedef>::type_tag = TAG;
+const types::Code traits<timerange::Timedef>::type_code = CODE;
+const size_t traits<timerange::Timedef>::type_sersize_bytes = SERSIZELEN;
+const char* traits<timerange::Timedef>::type_lua_tag = LUATAG_TIMERANGE;
+
 // Style constants
 const unsigned char Timerange::GRIB1;
 const unsigned char Timerange::GRIB2;
@@ -1549,6 +1554,11 @@ bool Timedef::operator==(const Type& o) const
     }
 
     return true;
+}
+
+Item<reftime::Position> Timedef::validity_time_to_emission_time(const Item<reftime::Position>& src) const
+{
+    return src;
 }
 
 bool Timedef::get_forecast_step(int& step, bool& is_seconds) const

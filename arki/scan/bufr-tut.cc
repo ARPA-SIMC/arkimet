@@ -502,6 +502,24 @@ void to::test<13>()
     ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=DBBC)"));
 }
 
+// Test scanning a temp forecast, to see if we got the right reftime
+template<> template<>
+void to::test<14>()
+{
+    // BUFR has datetime 2009-02-13 12:00:00, timerange instant
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/tempforecast.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Reftime>(), Reftime::decodeString("2009-02-13 12:00:00"));
+
+    // BUFR has datetime 2013-04-06 00:00:00 (validity time, in this case), timerange 254,259200,0 (+72h)
+    // and should be archived with its emission time
+    scanner.open("inbound/tempforecast1.bufr");
+    ensure(scanner.next(md));
+    ensure_equals(md.get<Reftime>(), Reftime::decodeString("2013-04-03 00:00:00"));
+}
+
 }
 
 // vim:set ts=4 sw=4:

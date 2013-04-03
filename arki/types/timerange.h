@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <arki/types/reftime.h>
 #include <stdint.h>
 
 struct lua_State;
@@ -31,8 +32,15 @@ struct lua_State;
 namespace arki {
 
 namespace types {
-
 struct Timerange;
+
+namespace reftime {
+struct Position;
+}
+
+namespace timerange {
+class Timedef;
+}
 
 template<>
 struct traits<Timerange>
@@ -45,9 +53,16 @@ struct traits<Timerange>
 	typedef unsigned char Style;
 };
 
-namespace timerange {
-class Timedef;
-}
+template<>
+struct traits<timerange::Timedef>
+{
+	static const char* type_tag;
+	static const types::Code type_code;
+	static const size_t type_sersize_bytes;
+	static const char* type_lua_tag;
+
+	typedef unsigned char Style;
+};
 
 /**
  * The time span information of the data
@@ -244,6 +259,12 @@ public:
 
     virtual int compare_local(const Timerange& o) const;
     virtual bool operator==(const Type& o) const;
+
+    /**
+     * Given a reftime representing validity time, compute and return its
+     * emission time, shifting it by what is represented by this timedef
+     */
+    Item<reftime::Position> validity_time_to_emission_time(const Item<reftime::Position>& src) const;
 
     static Item<Timedef> create(uint32_t step_len, Unit step_unit=UNIT_SECOND);
     static Item<Timedef> create(uint32_t step_len, Unit step_unit,

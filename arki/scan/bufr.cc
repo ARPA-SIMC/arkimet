@@ -36,6 +36,7 @@
 #include <arki/types/product.h>
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
+#include <arki/types/timerange.h>
 #include <arki/scan/any.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -290,6 +291,18 @@ bool Bufr::do_scan(Metadata& md)
 	// DB-All.e managed to make sense of the message: hand it down to Lua
 	// to extract further metadata
 	extras->scan(*msgs[0], md);
+
+    // Convert validity times to emission times
+    // If md has a timedef, substract it from the reftime
+    UItem<types::timerange::Timedef> timedef = md.get<types::timerange::Timedef>();
+    if (timedef.defined())
+    {
+        UItem<types::reftime::Position> p = md.get<types::reftime::Position>();
+        if (p.defined())
+        {
+            md.set(timedef->validity_time_to_emission_time(p));
+        }
+    }
 #endif
 
 	return true;
