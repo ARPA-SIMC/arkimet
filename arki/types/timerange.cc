@@ -22,6 +22,7 @@
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
+#include <wibble/grcal/grcal.h>
 #include <arki/types/timerange.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
@@ -1558,7 +1559,23 @@ bool Timedef::operator==(const Type& o) const
 
 Item<reftime::Position> Timedef::validity_time_to_emission_time(const Item<reftime::Position>& src) const
 {
-    return src;
+    // Compute our forecast step in seconds
+    int secs;
+    bool is_secs;
+    get_forecast_step(secs, is_secs);
+    if (!is_secs)
+        throw wibble::exception::Consistency("converting validity time to emission time", "timedef has a step that cannot be converted to seconds");
+
+    // Compute the new time
+    int vals[6];
+    for (int i = 0; i < 6; ++i)
+        vals[i] = src->time->vals[i];
+    vals[5] -= secs;
+    grcal::date::normalise(vals);
+
+    // Return it
+    Item<types::Time> tres(new types::Time(vals));
+    return Item<reftime::Position>(new reftime::Position(tres));
 }
 
 bool Timedef::get_forecast_step(int& step, bool& is_seconds) const
