@@ -644,9 +644,12 @@ bool Index::query(const dataset::DataQuery& q, metadata::Consumer& consumer) con
 	}
 //if (tmpfile.get()) system(str::fmtf("ls -la --si %s >&2", tmpfile->name().c_str()).c_str());
 
-	// Replay the data from the temporary file
-	if (tmpfile.get() != 0)
-		Metadata::readFile(tmpfile->name(), consumer);
+        // Replay the data from the temporary file
+        if (tmpfile.get() != 0)
+        {
+            metadata::ReadContext rc(tmpfile->name(), m_root);
+            Metadata::readFile(rc, consumer);
+        }
 
 	// Sort and output the rest
 	if (q.sorter)
