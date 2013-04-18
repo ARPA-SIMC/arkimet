@@ -730,7 +730,7 @@ void to::test<34>()
 {
     clean_and_import(&cfg, "inbound/test.vm2");
 
-    // Ensure the archive appears clean
+    // Ensure the archive has items to pack
     {
         auto_ptr<WritableLocal> writer(makeLocalWriter());
         MaintenanceCollector c;
@@ -752,6 +752,19 @@ void to::test<34>()
         s.ensure_line_contains(": 2 files packed");
         s.ensure_all_lines_seen();
     }
+    // Ensure the archive is now clean
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        MaintenanceCollector c;
+        writer->maintenance(c);
+        ensure_equals(c.fileStates.size(), 2);
+        ensure_equals(c.count(OK), 2);
+        ensure_equals(c.remaining(), "");
+        ensure(c.isClean());
+
+        ensure(!sys::fs::exists("testds/.archive"));
+    }
+
     // Check that the file size is the same
     ensure_equals(wibble::sys::fs::stat("inbound/test.vm2")->st_size,
                   wibble::sys::fs::stat("testds/1987/10-31.vm2")->st_size +
