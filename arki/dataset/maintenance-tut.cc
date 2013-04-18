@@ -724,6 +724,43 @@ template<> template<> void to::test<31>() { TempConfig tc(cfg, "type", "ondisk2"
 template<> template<> void to::test<32>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
 template<> template<> void to::test<33>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
 
+// Check that a repacked VM2 works properly (simple dataset)
+template<> template<>
+void to::test<34>()
+{
+    clean_and_import(&cfg, "inbound/test.vm2");
+
+    // Ensure the archive appears clean
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        MaintenanceCollector c;
+        writer->maintenance(c);
+        ensure_equals(c.fileStates.size(), 2);
+        ensure_equals(c.count(TO_PACK), 2);
+        ensure_equals(c.remaining(), "");
+        ensure(not c.isClean());
+
+        ensure(!sys::fs::exists("testds/.archive"));
+    }
+    // Perform packing and check that things are still ok afterwards
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        OutputChecker s;
+        writer->repack(s, true);
+        s.ensure_line_contains(": packed 1987/10-31.vm2");
+        s.ensure_line_contains(": packed 2011/01-01.vm2");
+        s.ensure_line_contains(": 2 files packed");
+        s.ensure_all_lines_seen();
+    }
+    // Check that the file size is the same
+    ensure_equals(wibble::sys::fs::stat("inbound/test.vm2")->st_size,
+                  wibble::sys::fs::stat("testds/1987/10-31.vm2")->st_size +
+                  wibble::sys::fs::stat("testds/2011/01-01.vm2")->st_size);
+}
+// Check that a repacked VM2 works properly (ondisk2 dataset)
+template<> template<> void to::test<35>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<34>(); }
+
+
 }
 
 // vim:set ts=4 sw=4:

@@ -30,6 +30,7 @@
 #include <arki/dataset/simple/index.h>
 #include <arki/dispatcher.h>
 #include <arki/scan/grib.h>
+#include <arki/scan/vm2.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <wibble/string.h>
@@ -259,14 +260,28 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
 	{
 		std::auto_ptr<WritableDataset> writer(makeWriter(wcfg));
 
-		scan::Grib scanner;
-		scanner.open(testfile);
+		if (wibble::str::endsWith(testfile, ".vm2")) {
+			scan::Vm2 scanner;
+			scanner.open(testfile);
 
-		Metadata md;
-		while (scanner.next(md))
-		{
-			WritableDataset::AcquireResult res = writer->acquire(md);
-			ensure_equals(res, WritableDataset::ACQ_OK);
+			Metadata md;
+			while (scanner.next(md))
+			{
+				WritableDataset::AcquireResult res = writer->acquire(md);
+				md.writeYaml(std::cerr);
+				ensure_equals(res, WritableDataset::ACQ_OK);
+			}
+		} else {
+
+			scan::Grib scanner;
+			scanner.open(testfile);
+
+			Metadata md;
+			while (scanner.next(md))
+			{
+				WritableDataset::AcquireResult res = writer->acquire(md);
+				ensure_equals(res, WritableDataset::ACQ_OK);
+			}
 		}
 	}
 
