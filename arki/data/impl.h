@@ -28,6 +28,12 @@
 #include <map>
 #include <sys/types.h>
 
+namespace wibble {
+namespace sys {
+class Buffer;
+}
+}
+
 namespace arki {
 class Metadata;
 
@@ -109,6 +115,12 @@ struct Writer : public Base<Writer>
      * the file as it was before, before raising an exception.
      */
     virtual void append(Metadata& md) = 0;
+
+    /**
+     * Append raw data to the file, wrapping it with the right envelope if
+     * needed.
+     */
+    virtual void append(const wibble::sys::Buffer& buf) = 0;
 
     /**
      * Append the data, in a transaction, updating md's source information.

@@ -81,6 +81,11 @@ Pending Writer::append(Metadata& md, off_t* ofs)
     return impl->append(md, ofs);
 }
 
+void Writer::append(const wibble::sys::Buffer& buf)
+{
+    impl->append(buf);
+}
+
 Writer Writer::get(const std::string& format, const std::string& fname)
 {
     // Cached instance

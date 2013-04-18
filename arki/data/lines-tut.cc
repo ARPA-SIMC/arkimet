@@ -203,7 +203,7 @@ void to::test<2>()
     // process gigabytes of zeros
 }
 
-// Test with large files
+// Test stream writer
 template<> template<>
 void to::test<3>()
 {
@@ -211,6 +211,22 @@ void to::test<3>()
     const OstreamWriter* w = OstreamWriter::get("vm2");
     w->stream(mdc[0], out);
     atest(equals, datasize(mdc[0]) + 1, out.str().size());
+}
+
+// Test raw append
+template<> template<>
+void to::test<4>()
+{
+    atest(not_file_exists, fname);
+    {
+        lines::Writer* w;
+        data::Writer dw = make_w(fname, w);
+        sys::Buffer buf("ciao", 4);
+        dw.append(buf);
+        dw.append(buf);
+    }
+
+    atest(equals, utils::files::read_file(fname), "ciao\nciao\n");
 }
 
 }

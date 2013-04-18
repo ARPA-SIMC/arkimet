@@ -47,6 +47,7 @@ public:
         : impl::Writer(fname) {}
 
     virtual void append(Metadata& md) {}
+    virtual void append(const wibble::sys::Buffer& buf) {}
     virtual Pending append(Metadata& md, off_t* ofs)
     {
         *ofs = 0;

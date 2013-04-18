@@ -150,6 +150,11 @@ void Writer::append(Metadata& md)
     md.source = types::source::Blob::create(md.source->format, "", fname, pos, buf.size());
 }
 
+void Writer::append(const wibble::sys::Buffer& buf)
+{
+    write(buf);
+}
+
 Pending Writer::append(Metadata& md, off64_t* ofs)
 {
     Append* res = new Append(*this, md);

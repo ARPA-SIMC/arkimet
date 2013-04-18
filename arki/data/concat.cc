@@ -23,6 +23,7 @@
 #include "arki/data/concat.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
+#include "arki/utils/files.h"
 #include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
 #include <wibble/sys/signal.h>
@@ -128,6 +129,11 @@ void Writer::append(Metadata& md)
 
     // Set the source information that we are writing in the metadata
     md.source = types::source::Blob::create(md.source->format, "", fname, pos, buf.size());
+}
+
+void Writer::append(const wibble::sys::Buffer& buf)
+{
+    write(buf);
 }
 
 Pending Writer::append(Metadata& md, off64_t* ofs)

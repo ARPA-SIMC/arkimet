@@ -28,6 +28,12 @@
 #include <iosfwd>
 #include <sys/types.h>
 
+namespace wibble {
+namespace sys {
+class Buffer;
+}
+}
+
 namespace arki {
 class Metadata;
 
@@ -89,6 +95,18 @@ public:
      * the file as it was before, before raising an exception.
      */
     void append(Metadata& md);
+
+    /**
+     * Append raw data to the file, wrapping it with the right envelope if
+     * needed.
+     *
+     * All exceptions are propagated upwards without special handling. If this
+     * operation fails, the file should be considered invalid.
+     *
+     * This function is intended to be used by low-level maintenance operations,
+     * like a file repack.
+     */
+    void append(const wibble::sys::Buffer& buf);
 
     /**
      * Append the data, in a transaction, updating md's source information.
