@@ -464,20 +464,28 @@ FileCopier::~FileCopier()
 
 void FileCopier::operator()(const std::string& file, int id, off64_t offset, size_t size)
 {
-	if (buf.size() < size)
-		buf.resize(size);
+    // Resize the buffer at the exact size
+    buf.resize(size);
 	ssize_t res = pread(fd_src, buf.data(), size, offset);
 	if (res < 0 || (unsigned)res != size)
 		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
 	m_val.validate(buf.data(), size);
-	res = write(fd_dst, buf.data(), size);
-	if (res < 0 || (unsigned)res != size)
-		throw wibble::exception::File(dst, "writing " + str::fmt(size) + " bytes");
+
+    // Get the file extension
+    std::string fmt;
+    size_t pos;
+    if ((pos = file.rfind('.')) != std::string::npos) {
+        fmt = file.substr(pos+1);
+    }
+    // Append the buffer
+    data::Writer writer = data::Writer::get(fmt, dst);
+    writer.append(buf);
 
 	// Reindex file from offset to w_off
 	m_idx.relocate_data(id, w_off);
 
-	w_off += size;
+    // The offset is given by the writer
+	w_off = writer.wrpos();
 }
 
 void FileCopier::flush()
