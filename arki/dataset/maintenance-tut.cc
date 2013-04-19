@@ -752,6 +752,10 @@ void to::test<34>()
         s.ensure_line_contains(": 2 files packed");
         s.ensure_all_lines_seen();
     }
+    // Check that the file size is the same
+    ensure_equals(wibble::sys::fs::stat("inbound/test.vm2")->st_size,
+                  wibble::sys::fs::stat("testds/1987/10-31.vm2")->st_size +
+                  wibble::sys::fs::stat("testds/2011/01-01.vm2")->st_size);
     // Ensure the archive is now clean
     {
         auto_ptr<WritableLocal> writer(makeLocalWriter());
@@ -764,11 +768,6 @@ void to::test<34>()
 
         ensure(!sys::fs::exists("testds/.archive"));
     }
-
-    // Check that the file size is the same
-    ensure_equals(wibble::sys::fs::stat("inbound/test.vm2")->st_size,
-                  wibble::sys::fs::stat("testds/1987/10-31.vm2")->st_size +
-                  wibble::sys::fs::stat("testds/2011/01-01.vm2")->st_size);
 }
 // Check that a repacked VM2 works properly (ondisk2 dataset)
 template<> template<> void to::test<35>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<34>(); }
