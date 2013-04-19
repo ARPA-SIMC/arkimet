@@ -117,6 +117,11 @@ public:
      */
     Pending append(Metadata& md, off_t* ofs);
 
+    /**
+     * Read the write offset
+     */
+    off_t wrpos();
+
     static Writer get(const std::string& format, const std::string& fname);
 };
 

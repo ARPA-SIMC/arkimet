@@ -86,6 +86,10 @@ void Writer::append(const wibble::sys::Buffer& buf)
     impl->append(buf);
 }
 
+off_t Writer::wrpos() {
+    return impl->wrpos();
+}
+
 Writer Writer::get(const std::string& format, const std::string& fname)
 {
     // Cached instance

@@ -130,6 +130,11 @@ struct Writer : public Base<Writer>
      * the file.
      */
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
+
+    /**
+     * Read the write offset
+     */
+    virtual off_t wrpos() = 0;
 };
 
 

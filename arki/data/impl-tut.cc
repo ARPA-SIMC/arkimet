@@ -53,6 +53,7 @@ public:
         *ofs = 0;
         return Pending(new Noop);
     }
+    virtual off_t wrpos() { return 0; }
 };
 
 template<> template<>
