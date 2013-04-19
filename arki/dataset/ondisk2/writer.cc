@@ -479,13 +479,10 @@ void FileCopier::operator()(const std::string& file, int id, off64_t offset, siz
     }
     // Append the buffer
     data::Writer writer = data::Writer::get(fmt, dst);
-    writer.append(buf);
+    w_off = writer.append(buf);
 
 	// Reindex file from offset to w_off
 	m_idx.relocate_data(id, w_off);
-
-    // The offset is given by the writer
-	w_off = writer.wrpos();
 }
 
 void FileCopier::flush()

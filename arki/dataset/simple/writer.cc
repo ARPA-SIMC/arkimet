@@ -305,12 +305,10 @@ bool FileCopier::operator()(Metadata& md)
 
 	// Write it out
     data::Writer writer = data::Writer::get(md.source->format, dst);
-    writer.append(buf);
+    w_off = writer.append(buf);
 
 	// Update the Blob source using the new position
 	md.source = types::source::Blob::create(md.source->format, finalbasedir, finalname, w_off, buf.size());
-
-	w_off = writer.wrpos();
 
 	return true;
 }
