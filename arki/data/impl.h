@@ -119,8 +119,10 @@ struct Writer : public Base<Writer>
     /**
      * Append raw data to the file, wrapping it with the right envelope if
      * needed.
+     *
+     * @return the offset at which the buffer is written
      */
-    virtual void append(const wibble::sys::Buffer& buf) = 0;
+    virtual off_t append(const wibble::sys::Buffer& buf) = 0;
 
     /**
      * Append the data, in a transaction, updating md's source information.
@@ -130,11 +132,6 @@ struct Writer : public Base<Writer>
      * the file.
      */
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
-
-    /**
-     * Read the write offset
-     */
-    virtual off_t wrpos() = 0;
 };
 
 

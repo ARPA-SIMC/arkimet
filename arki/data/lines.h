@@ -45,7 +45,7 @@ public:
     void write(const wibble::sys::Buffer& buf);
 
     virtual void append(Metadata& md);
-    virtual void append(const wibble::sys::Buffer& buf);
+    virtual off_t append(const wibble::sys::Buffer& buf);
     virtual Pending append(Metadata& md, off64_t* ofs);
 };
 

@@ -105,8 +105,10 @@ public:
      *
      * This function is intended to be used by low-level maintenance operations,
      * like a file repack.
+     *
+     * @return the offset at which the buffer is written
      */
-    void append(const wibble::sys::Buffer& buf);
+    off_t append(const wibble::sys::Buffer& buf);
 
     /**
      * Append the data, in a transaction, updating md's source information.
@@ -116,11 +118,6 @@ public:
      * the file.
      */
     Pending append(Metadata& md, off_t* ofs);
-
-    /**
-     * Read the write offset
-     */
-    off_t wrpos();
 
     static Writer get(const std::string& format, const std::string& fname);
 };

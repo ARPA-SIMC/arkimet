@@ -43,7 +43,7 @@ public:
     Writer(const std::string& fname);
 
     virtual void append(Metadata& md);
-    virtual void append(const wibble::sys::Buffer& buf);
+    virtual off_t append(const wibble::sys::Buffer& buf);
     virtual Pending append(Metadata& md, off64_t* ofs);
 };
 

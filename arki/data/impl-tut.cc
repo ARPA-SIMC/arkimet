@@ -47,13 +47,12 @@ public:
         : impl::Writer(fname) {}
 
     virtual void append(Metadata& md) {}
-    virtual void append(const wibble::sys::Buffer& buf) {}
+    virtual off_t append(const wibble::sys::Buffer& buf) { return 0; }
     virtual Pending append(Metadata& md, off_t* ofs)
     {
         *ofs = 0;
         return Pending(new Noop);
     }
-    virtual off_t wrpos() { return 0; }
 };
 
 template<> template<>

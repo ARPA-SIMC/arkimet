@@ -222,8 +222,8 @@ void to::test<4>()
         lines::Writer* w;
         data::Writer dw = make_w(fname, w);
         sys::Buffer buf("ciao", 4);
-        dw.append(buf);
-        dw.append(buf);
+        ensure_equals(dw.append(buf), 0);
+        ensure_equals(dw.append(buf), 5);
     }
 
     atest(equals, utils::files::read_file(fname), "ciao\nciao\n");
