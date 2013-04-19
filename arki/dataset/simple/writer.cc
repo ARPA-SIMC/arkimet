@@ -304,14 +304,13 @@ bool FileCopier::operator()(Metadata& md)
 	m_val.validate(buf.data(), buf.size());
 
 	// Write it out
-	ssize_t res = write(fd_dst, buf.data(), buf.size());
-	if (res < 0 || (unsigned)res != buf.size())
-		throw wibble::exception::File(dst, "writing " + str::fmt(buf.size()) + " bytes");
+    data::Writer writer = data::Writer::get(md.source->format, dst);
+    writer.append(buf);
 
 	// Update the Blob source using the new position
 	md.source = types::source::Blob::create(md.source->format, finalbasedir, finalname, w_off, buf.size());
 
-	w_off += buf.size();
+	w_off = writer.wrpos();
 
 	return true;
 }
