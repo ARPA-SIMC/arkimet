@@ -29,6 +29,7 @@ nobase_dist_conf_DATA = \
 	scan-bufr/synop.lua \
 	scan-bufr/temp.lua \
 	scan-bufr/temp_ship.lua \
+	scan-odimh5/01-common.lua \
 	targetfile/mars.lua
 
 EXTRA_DIST = \

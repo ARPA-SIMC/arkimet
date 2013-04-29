@@ -60,12 +60,12 @@ void to::test<1>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/pvol001.h5");
+	scanner.open("inbound/odimh5/PVOL_v20.h5");
 
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/pvol001.h5", 0, 320696, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/PVOL_v20.h5", 0, 320696, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -123,11 +123,11 @@ void to::test<2>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_CAPPI_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_CAPPI_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_CAPPI_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_CAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -168,9 +168,9 @@ void to::test<2>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -186,11 +186,11 @@ void to::test<3>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_ETOP_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_ETOP_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_ETOP_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_ETOP_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -230,9 +230,9 @@ void to::test<3>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -248,11 +248,11 @@ void to::test<4>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_LBM_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_LBM_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_LBM_201303181430.h5", 0, 49057, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_LBM_v20.h5", 0, 49057, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -292,9 +292,9 @@ void to::test<4>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -310,11 +310,11 @@ void to::test<5>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_MAX_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_MAX_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_MAX_201303181430.h5", 0, 49049, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_MAX_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -354,9 +354,9 @@ void to::test<5>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -372,11 +372,11 @@ void to::test<6>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_PCAPPI_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_PCAPPI_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PCAPPI_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PCAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -417,9 +417,9 @@ void to::test<6>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -435,11 +435,11 @@ void to::test<7>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_PPI_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_PPI_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PPI_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -480,9 +480,9 @@ void to::test<7>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -498,11 +498,11 @@ void to::test<8>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_RR_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_RR_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_RR_201303181430.h5", 0, 49049, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_RR_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -548,9 +548,9 @@ void to::test<8>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -566,11 +566,11 @@ void to::test<9>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/COMP_VIL_201303181430.h5");
+	scanner.open("inbound/odimh5/COMP_VIL_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_VIL_201303181430.h5", 0, 49097, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_VIL_v20.h5", 0, 49097, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -611,9 +611,9 @@ void to::test<9>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -629,11 +629,11 @@ void to::test<10>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_CAPPI_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_CAPPI_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_CAPPI_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_CAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -674,9 +674,9 @@ void to::test<10>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -692,11 +692,11 @@ void to::test<11>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_ETOP_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_ETOP_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ETOP_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ETOP_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -736,9 +736,9 @@ void to::test<11>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -754,11 +754,11 @@ void to::test<12>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_HVMI_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_HVMI_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_HVMI_201303181430.h5", 0, 68777, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_HVMI_v20.h5", 0, 68777, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -798,9 +798,9 @@ void to::test<12>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -816,11 +816,11 @@ void to::test<13>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_MAX_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_MAX_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_MAX_201303181430.h5", 0, 49049, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_MAX_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -860,9 +860,9 @@ void to::test<13>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -878,11 +878,11 @@ void to::test<14>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_PCAPPI_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_PCAPPI_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PCAPPI_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PCAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -923,9 +923,9 @@ void to::test<14>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -941,11 +941,11 @@ void to::test<15>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_PPI_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_PPI_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PPI_201303181430.h5", 0, 49113, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -986,9 +986,9 @@ void to::test<15>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -1004,11 +1004,11 @@ void to::test<16>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_RR_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_RR_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_RR_201303181430.h5", 0, 49049, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_RR_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -1054,9 +1054,9 @@ void to::test<16>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -1072,11 +1072,11 @@ void to::test<17>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_VIL_201303181430.h5");
+	scanner.open("inbound/odimh5/IMAGE_VIL_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_VIL_201303181430.h5", 0, 49097, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_VIL_v20.h5", 0, 49097, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -1117,9 +1117,9 @@ void to::test<17>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
@@ -1135,11 +1135,11 @@ void to::test<18>()
 	wibble::sys::Buffer buf;
 	ValueBag vb;
 
-	scanner.open("inbound/odimh5/IMAGE_ZLR-BB_201303181000.h5");
+	scanner.open("inbound/odimh5/IMAGE_ZLR-BB_v20.h5");
 	ensure(scanner.next(md));
 
 	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ZLR-BB_201303181000.h5", 0, 62161, md.source);
+	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ZLR-BB_v20.h5", 0, 62161, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -1179,14 +1179,27 @@ void to::test<18>()
 
 	// Check area
 	vb.clear();
-	vb.set("latfirst", Value::createInteger(42314445));
-	vb.set("lonfirst", Value::createInteger(8527891));
-	vb.set("latlast", Value::createInteger(46911769));
+	vb.set("latfirst", Value::createInteger(42314117));
+	vb.set("lonfirst", Value::createInteger(8273203));
+	vb.set("latlast", Value::createInteger(46912151));
 	vb.set("lonlast", Value::createInteger(14987079));
 	vb.set("type", Value::createInteger(0));
 	ensure(md.get(types::TYPE_AREA).defined());
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
+	ensure(not scanner.next(md));
+}
+
+// Check that the scanner silently discard an empty file
+template<> template<>
+void to::test<19>()
+{
+	Metadata md;
+	scan::OdimH5 scanner;
+	wibble::sys::Buffer buf;
+	ValueBag vb;
+
+	scanner.open("inbound/odimh5/empty.h5");
 	ensure(not scanner.next(md));
 }
 

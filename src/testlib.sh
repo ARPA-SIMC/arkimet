@@ -32,6 +32,7 @@ setup() {
     export ARKI_SCAN_GRIB1=$TOP_SRCDIR/conf/scan-grib1/
     export ARKI_SCAN_GRIB2=$TOP_SRCDIR/conf/scan-grib2/
     export ARKI_SCAN_BUFR=$TOP_SRCDIR/conf/scan-bufr/
+    export ARKI_SCAN_ODIMH5=$TOP_SRCDIR/conf/scan-odimh5/
     export ARKI_FORMATTER=$TOP_SRCDIR/conf/format/
     export ARKI_REPORT=$TOP_SRCDIR/conf/report/
     export ARKI_BBOX=$TOP_SRCDIR/conf/bbox/

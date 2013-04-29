@@ -45,9 +45,6 @@
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
 
-#include <radarlib/radar.hpp>
-#include <radarlib/debug.hpp>
-
 #include <cstring>
 #include <unistd.h>
 #include <fstream>
@@ -58,6 +55,8 @@
 #include <sstream>
 #include <memory>
 #include <iostream>
+
+#include <H5Cpp.h>
 
 namespace arki {
 namespace scan {
@@ -100,260 +99,166 @@ static OdimH5Validator odimh5_validator;
 
 const Validator& validator() { return odimh5_validator; }
 
-// OdimH5v20 scanner.
-// To scan a specific object/product, override the visit() methods and set
-// the attribute "supported = true" at the end of the method (otherwise, an
-// exception will be thrown).
-class Scanner : public OdimH5v20::utils::OdimObjectVisitor, public OdimH5v20::utils::OdimProduct2DVisitor {
- private:
-	OdimH5v20::OdimObject& obj;
-	Metadata& md;
-	bool supported;
-
- public:
-	Scanner(OdimH5v20::OdimObject& obj, Metadata& md) : obj(obj), md(md), supported(false) {}
-
-	void scan() {
-		using wibble::exception::Consistency;
-
-		// reftime
-		time_t reftime_t = obj.getDateTime();
-		struct tm reftime_tm;
-		if (gmtime_r(&reftime_t, &reftime_tm) == NULL)
-			throw wibble::exception::System("scanning odimh5 file");
-		md.set(types::reftime::Position::create(types::Time::create(reftime_tm)));
-		// origin
-		OdimH5v20::SourceInfo source = obj.getSource();
-		md.set(types::origin::ODIMH5::create(source.WMO, source.OperaRadarSite, source.Place));
-
-		visitObject(obj);
-
-		if (!supported)
-			throw wibble::exception::Consistency("scanning odimh5 file",
-																					 "unsupported file");
-	}
-
- protected:
-	virtual void visit(OdimH5v20::PolarVolume& pvol) {
-		// product
-		md.set(types::product::ODIMH5::create(OdimH5v20::OBJECT_PVOL, OdimH5v20::PRODUCT_SCAN));
-		// task
-		std::string task = pvol.getTaskOrProdGen();
-		if (!task.empty())
-			md.set(types::Task::create(task));
-		// quantity
-		std::set<std::string> quantities = pvol.getStoredQuantities();
-		if (!quantities.empty())
-			md.set(types::Quantity::create(quantities));
-		// level
-		std::vector<double> eangles = pvol.getElevationAngles();
-		double mine = 360., maxe = 360;
-		if (!eangles.empty()) {
-			mine = *std::min_element(eangles.begin(), eangles.end());
-			maxe = *std::max_element(eangles.begin(), eangles.end());
-		}
-		md.set(types::level::ODIMH5::create(mine, maxe));
-		// area
-		double radius = 0;
-		for (int i=0; i < pvol.getScanCount(); ++i) {
-			std::auto_ptr<OdimH5v20::PolarScan> scan(pvol.getScan(i));
-			double val = scan->getRadarHorizon();
-			if (val > radius)
-				radius = val;
-		}
-		ValueBag areaValues;
-		areaValues.set("lat", Value::createInteger((int)(pvol.getLatitude() * 1000000)));
-		areaValues.set("lon", Value::createInteger((int)(pvol.getLongitude() * 1000000)));
-		areaValues.set("radius", Value::createInteger((int)(radius * 1000)));
-		md.set(types::area::ODIMH5::create(areaValues));
-		// set supported
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::ImageObject& img) {
-		scanHorizontalObject2D(img);
-	}
-	virtual void visit(OdimH5v20::CompObject& comp) {
-		scanHorizontalObject2D(comp);
-	}
-	virtual void visit(OdimH5v20::Product_PPI& prod) {
-		// level
-		double height = prod.getProdPar();
-		md.set(types::level::ODIMH5::create(height));
-		// set supported
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_CAPPI& prod) {
-		// level
-		double height = prod.getProdPar();
-		md.set(types::level::GRIB1::create(105, height));
-		// set supported
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_PCAPPI& prod) {
-		// level
-		double height = prod.getProdPar();
-		md.set(types::level::GRIB1::create(105, height));
-		// set supported
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_LBM& prod) {
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_MAX& prod) {
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_RR& prod) {
-		time_t p2 = prod.getEndDateTime() - prod.getStartDateTime();
-		// Observed accumulation with length p2
-		md.set(types::timerange::Timedef::create(0,types::timerange::Timedef::UNIT_SECOND,
-																						 1,
-																						 p2, types::timerange::Timedef::UNIT_SECOND));
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_VIL& prod) {
-		OdimH5v20::VILHeights heights = prod.getProdParVIL();
-		// Layer between two height levels above ground (hm)
-		md.set(types::level::GRIB1::create(106, heights.top/100, heights.bottom/100));
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_ETOP& prod) {
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_HSP& prod) {
-		supported = true;
-	}
-	virtual void visit(OdimH5v20::Product_VSP& prod) {
-		supported = true;
-	}
-	virtual void scanHorizontalObject2D(OdimH5v20::HorizontalObject_2D& hobj) {
-		using wibble::exception::Consistency;
-
-		// Only single product or the triplet (MAX, HSP, VSP) is supported
-		std::string prodname;
-		std::vector<std::string> prodtypes = hobj.getProductsType();
-		if (prodtypes.size() == 1) {
-			// Single product object
-			prodname = prodtypes.at(0);
-		} else if (prodtypes.size() == 3) {
-			// If the object contains 3 products, then they must be MAX, HSP, VSP.
-			
-			std::set<std::string> prodset;
-			prodset.insert(OdimH5v20::PRODUCT_MAX);
-			prodset.insert(OdimH5v20::PRODUCT_HSP);
-			prodset.insert(OdimH5v20::PRODUCT_VSP);
-			for (std::vector<std::string>::const_iterator i = prodtypes.begin();
-					 i != prodtypes.end(); ++i) {
-				if (*i != OdimH5v20::PRODUCT_MAX
-						&& *i != OdimH5v20::PRODUCT_HSP
-						&& *i != OdimH5v20::PRODUCT_VSP)
-					throw Consistency("scanning odimh5 file",
-														"Unsupported product " + *i + 
-														" in triple product HVMI");
-			}
-			// This triplet is called "HVMI"
-			prodname = "HVMI";
-		} else {
-			// Otherwise, the object is not supported
-			throw wibble::exception::Consistency("scanning odimh5 file",
-																					 "Unsupported ODIMH5 object");
-		}
-		// product
-		md.set(types::product::ODIMH5::create(hobj.getObject(), prodname));
-		// task
-		std::string task = hobj.getTaskOrProdGen();
-		if (!task.empty())
-			md.set(types::Task::create(task));
-		// quantity
-		std::set<std::string> quantities;
-		for (int i = 0; i < hobj.getProductCount(); ++i) {
-			std::auto_ptr<OdimH5v20::Product_2D> prod(hobj.getProduct(i));
-			std::set<std::string> q = prod->getStoredQuantities();
-			quantities.insert(q.begin(), q.end());
-		}
-		if (!quantities.empty())
-			md.set(types::Quantity::create(quantities));
-		// area (bounding box)
-		double latfirst = ( hobj.getLL_Latitude() < hobj.getLR_Latitude() ? hobj.getLL_Latitude() : hobj.getLR_Latitude() );
-		double lonfirst = ( hobj.getLL_Longitude() < hobj.getUL_Longitude() ? hobj.getLL_Longitude() : hobj.getUL_Longitude() );
-		double latlast =  ( hobj.getUL_Latitude() > hobj.getUR_Latitude() ? hobj.getUL_Latitude() : hobj.getUR_Latitude() );
-		double lonlast =  ( hobj.getLR_Longitude() > hobj.getUR_Longitude() ? hobj.getLR_Longitude() : hobj.getUR_Longitude() );
-		ValueBag areaValues;
-		areaValues.set("latfirst", Value::createInteger((int)(latfirst * 1000000)));
-		areaValues.set("lonfirst", Value::createInteger((int)(lonfirst * 1000000)));
-		areaValues.set("latlast", Value::createInteger((int)(latlast * 1000000)));
-		areaValues.set("lonlast", Value::createInteger((int)(lonlast * 1000000)));
-		areaValues.set("type", Value::createInteger(0));
-		md.set(types::area::GRIB::create(areaValues));
-		// level is scanned from the product
-		for (int i = 0; i < hobj.getProductCount(); ++i) {
-			std::auto_ptr<OdimH5v20::Product_2D> prod(hobj.getProduct(i));
-			visitProduct2D(*prod);
-		}
-	}
-};
-
 }
 
-OdimH5::OdimH5() : odimObj(0), read(false) {}
+struct OdimH5Lua : public Lua {
+    OdimH5Lua(OdimH5* scanner) {
+        // Create the metatable for the odimh5 object
+        luaL_newmetatable(L, "odimh5");
+
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -2, "__index"); // metatable.__index = metatable
+        lua_pushcfunction(L, OdimH5::arkilua_find_attr);
+        lua_setfield(L, -2, "find_attr");
+        lua_pushcfunction(L, OdimH5::arkilua_get_groups);
+        lua_setfield(L, -2, "get_groups");
+
+        // The 'odimh5' object is a userdata that holds a pointer to this OdimH5 structure
+        OdimH5** s = (OdimH5**)lua_newuserdata(L, sizeof(OdimH5*));
+        *s = scanner;
+
+        // Set the metatable for the userdata
+        luaL_getmetatable(L, "odimh5");
+        lua_setmetatable(L, -2);
+
+        // Set the userdata object as the global 'odimh5' variable
+        lua_setglobal(L, "odimh5");
+
+        // Pop the metatable from the stack
+        lua_pop(L, 1);
+    }
+
+    /**
+     * Load scan function from file, returning the stored function ID
+     *
+     * It can return -1 if \a fname did not define a `scan' function. This
+     * can happen, for example, if one adds a .lua file that only provides
+     * a library of conveniency functions
+     */
+    int load_function(const std::string& fname) {
+        // Compile the macro
+        if (luaL_dofile(L, fname.c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            std::string error = lua_tostring(L, -1);
+            // Pop the error from the stack
+            lua_pop(L, 1);
+            throw wibble::exception::Consistency("parsing " + fname, error);
+        }
+
+        // Index the scan function
+        int id = -1;
+        lua_getglobal(L, "scan");
+        if (lua_isfunction(L, -1))
+            id = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        // Return the ID, or -1 if no 'scan' function was defined
+        return id;
+    }
+
+    /**
+     * Load scanning functions
+     */
+    void load_scan_functions(const runtime::Config::Dirlist& src, std::vector<int>& ids)
+    {
+        std::vector<std::string> files = src.list_files(".lua");
+        for (std::vector<std::string>::const_iterator i = files.begin(); i != files.end(); ++i)
+        {
+            int id = load_function(*i);
+            if (id != -1) ids.push_back(id);
+        }
+    }
+
+    /**
+     * Run previously loaded scan function, passing the given metadata
+     *
+     * Return the error message, or an empty string if no error
+     */
+    std::string run_function(int id, Metadata& md) {
+        // Retrieve the Lua function registered for this
+        lua_rawgeti(L, LUA_REGISTRYINDEX, id);
+
+        // Pass h5
+        
+        // Pass md
+        md.lua_push(L);
+
+        // Call the function
+        if (lua_pcall(L, 1, 0, 0))
+        {
+            std::string error = lua_tostring(L, -1);
+            lua_pop(L, 1);
+            return error;
+        } else
+            return std::string();
+    }
+};
+
+OdimH5::OdimH5() : h5file(0), read(false), L(new OdimH5Lua(this)) {
+    H5::Exception::dontPrint();
+    L->load_scan_functions(runtime::Config::get().dir_scan_odimh5, odimh5_funcs);
+}
 
 OdimH5::~OdimH5()
 {
-	delete odimObj;
+    delete h5file;
 }
 
 void OdimH5::open(const std::string& filename)
 {
-	std::string basedir, relname;
-  utils::files::resolve_path(filename, basedir, relname);
-  open(wibble::sys::fs::abspath(filename), basedir, relname);
+    std::string basedir, relname;
+    utils::files::resolve_path(filename, basedir, relname);
+    open(wibble::sys::fs::abspath(filename), basedir, relname);
 }
 
 void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
-	// Close the previous file if needed
-	close();
-	this->filename = filename;
-	this->basedir = basedir;
-	this->relname = relname;
+    // Close the previous file if needed
+    close();
+    this->filename = filename;
+    this->basedir = basedir;
+    this->relname = relname;
 
-	/* create an OdimH5 factory */
-	std::auto_ptr<OdimH5v20::OdimFactory> f (new OdimH5v20::OdimFactory());
-	/* load OdimH5 object */
-	odimObj = f->open(filename, H5F_ACC_RDONLY);
-	read = 0;
+    // Open H5 file
+    read = false;
+    // If the file is empty, don't open it
+    if (wibble::sys::fs::stat(filename)->st_size == 0) {
+        read = true;
+    } else {
+        try {
+            h5file = new H5::H5File(filename, H5F_ACC_RDONLY);
+        } catch (const H5::Exception& e) {
+            throw wibble::exception::Consistency("while opening file " + filename, e.getDetailMsg());
+        }
+    }
 }
 
 void OdimH5::close()
 {
-	filename.clear();
-  basedir.clear();
-  relname.clear();
-	delete odimObj;
-	odimObj = NULL;
-	read = 0;
+    filename.clear();
+    basedir.clear();
+    relname.clear();
+    read = false;
+    delete h5file;
+    h5file = NULL;
 }
 
 bool OdimH5::next(Metadata& md)
 {
-	if (read >= 1) {
-		return false;
-	} else {
-		md.create();
-		setSource(md);
+    if (read) return false;
+    md.create();
+    setSource(md);
 
-		/* NOTA: per ora la next estrare un metadato unico per un intero file */
-		try {
-			odimh5::Scanner scanner(*odimObj, md);
-			scanner.scan();
-		} catch (const std::exception& e) {
-			throw wibble::exception::Consistency("while scanning file " + filename,
-																					 e.what());
-		}
+    /* NOTA: per ora la next estrare un metadato unico per un intero file */
+    try {
+        scanLua(md);
+    } catch (const std::exception& e) {
+        throw wibble::exception::Consistency("while scanning file " + filename, e.what());
+    }
 
-		read++;
+    read = true;
 
-		return true;
-	}
+    return true;
 }
 
 void OdimH5::setSource(Metadata& md)
@@ -378,6 +283,98 @@ void OdimH5::setSource(Metadata& md)
 	md.setCachedData(wibble::sys::Buffer(buff.release(), length));
 
 	md.add_note(types::Note::create("Scanned from " + relname + ":0+" + wibble::str::fmt(length)));
+}
+
+bool OdimH5::scanLua(Metadata& md)
+{
+    for (std::vector<int>::const_iterator i = odimh5_funcs.begin();
+         i != odimh5_funcs.end(); ++i) {
+        std::string error = L->run_function(*i, md);
+        if (!error.empty())
+        {
+            md.add_note(types::Note::create("Scanning failed: " + error));
+            return false;
+        }
+
+    }
+    return true;
+}
+
+int OdimH5::arkilua_find_attr(lua_State* L)
+{
+    luaL_checkudata(L, 1, "odimh5");
+    void* userdata = lua_touserdata(L, 1);
+    OdimH5& s = **(OdimH5**)userdata;
+    H5::H5File* h5file = s.h5file;
+
+    if (!h5file)
+        luaL_error(L, "h5 file not opened");
+
+    std::string groupname = luaL_checkstring(L, 2);
+    std::string attrname = luaL_checkstring(L, 3);
+
+    try {
+        H5::Group group = h5file->openGroup(groupname.c_str());
+        H5::Attribute attr = group.openAttribute(attrname);
+        H5::DataType type = attr.getDataType();
+        switch (type.getClass()) {
+            case H5T_INTEGER:
+                {
+                    int v;
+                    attr.read(type, &v);
+                    lua_pushinteger(L, v);
+                    return 1;
+                }
+            case H5T_FLOAT:
+                {
+                    double v;
+                    attr.read(type, &v);
+                    lua_pushnumber(L, v);
+                    return 1;
+                }
+            case H5T_STRING:
+                {
+                    std::string v;
+                    attr.read(type, v);
+                    lua_pushstring(L, v.c_str());
+                    return 1;
+                }
+            default:
+                luaL_error(L, "Unsupported attribute type");
+        }
+    } catch(const H5::Exception& e) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    return 0;
+}
+
+int OdimH5::arkilua_get_groups(lua_State* L) {
+    luaL_checkudata(L, 1, "odimh5");
+    void* userdata = lua_touserdata(L, 1);
+    OdimH5& s = **(OdimH5**)userdata;
+    H5::H5File* h5file = s.h5file;
+
+    if (!h5file)
+        luaL_error(L, "h5 file not opened");
+
+    std::string groupname = luaL_checkstring(L, 2);
+
+    lua_newtable(L);
+
+    H5::Group group = h5file->openGroup(groupname.c_str());
+    hsize_t n = group.getNumObjs();
+    for (hsize_t i = 0; i < n; ++i) {
+        std::string name = group.getObjnameByIdx(i);
+        H5G_obj_t type = group.getObjTypeByIdx(i);
+        if (type == H5G_GROUP) {
+            lua_pushstring(L, "group");
+            lua_setfield(L, -2, name.c_str());
+        }
+    }
+
+    return 1;
 }
 
 }

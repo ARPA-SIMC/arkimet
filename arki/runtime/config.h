@@ -96,6 +96,9 @@ struct Config
     /// Directories where bufr scan scripts are found
     Dirlist dir_scan_bufr;
 
+    /// Directories where odimh5 scan scripts are found
+    Dirlist dir_scan_odimh5;
+
     /// Directories where targetfile scripts are found
     Dirlist dir_targetfile;
 

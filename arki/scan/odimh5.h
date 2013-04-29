@@ -27,7 +27,11 @@
 #include <string>
 #include <vector>
 
-#include <radarlib/odimh5v20.hpp>
+struct lua_State;
+
+namespace H5 {
+struct H5File;
+}
 
 namespace arki {
 class Metadata;
@@ -38,6 +42,8 @@ struct Validator;
 namespace odimh5 {
 const Validator& validator();
 }
+
+struct OdimH5Lua;
 
 class OdimH5
 {
@@ -66,8 +72,8 @@ public:
 	 * Scan the next ODIMH5 in the file.
 	 *
 	 * @returns
-	 *   true if it found a GRIB message,
-	 *   false if there are no more GRIB messages in the file
+	 *   true if it found a ODIMH5 message,
+	 *   false if there are no more ODIMH5 messages in the file
 	 */
 	bool next(Metadata& md);
 
@@ -75,13 +81,25 @@ protected:
 	std::string filename;
 	std::string basedir;
 	std::string relname;
-	OdimH5v20::OdimObject* odimObj; /* ODIMH5 loaded from input file */
-	int read;
+    H5::H5File* h5file;
+    bool read;
+    std::vector<int> odimh5_funcs;
+    OdimH5Lua* L;
 
 	/**
 	 * Set the source information in the metadata
 	 */
 	virtual void setSource(Metadata& md);
+
+    /**
+     * Run Lua scanning functions on \a md
+     */
+    bool scanLua(Metadata& md);
+
+    static int arkilua_find_attr(lua_State* L);
+    static int arkilua_get_groups(lua_State* L);
+
+    friend class OdimH5Lua;
 };
 
 }
