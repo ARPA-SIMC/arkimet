@@ -268,7 +268,6 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
 			while (scanner.next(md))
 			{
 				WritableDataset::AcquireResult res = writer->acquire(md);
-				md.writeYaml(std::cerr);
 				ensure_equals(res, WritableDataset::ACQ_OK);
 			}
 		} else {
