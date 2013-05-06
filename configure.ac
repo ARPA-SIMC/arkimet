@@ -358,7 +358,7 @@ $PACKAGE_NAME-$PACKAGE_VERSION configuration:
 AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
-AS_HELP_STRING([ODIMH5 via radarlib:], [$have_odimh5])
+AS_HELP_STRING([ODIMH5 via hdf5:], [$have_odimh5])
 AS_HELP_STRING([VM2 support:], [$have_vm2])
 AS_HELP_STRING([CURL support:], [$have_curl])
 AS_HELP_STRING([Lua support:], [$have_lua])
