@@ -8,6 +8,7 @@ URL: http://www.arpa.emr.it/sim/?arkimet‎
 Source0: %{name}-%{version}.tar.gz
 Source1: %{name}.init
 Source2: %{name}.default
+Patch0: %{name}.wibble-hidden-option.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, python-cherrypy, readline-devel, lzo-devel, libwreport-devel >= 2.0, flex, bison, meteo-vm2-devel, radarlib-devel >= 1.3.0
 Requires: python-cherrypy, radarlib >= 1.3.0, meteo-vm2, grib_api-1.10.0
@@ -32,6 +33,7 @@ Group:    Applications/Meteo
 
 %prep
 %setup -q
+%patch0 -p0
 
 %build
 %configure
