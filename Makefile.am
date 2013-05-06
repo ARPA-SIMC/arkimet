@@ -31,7 +31,6 @@ EXTRA_DIST = README \
 	     update-tags \
 	     doc/DATASET \
 	     doc/adding-formats.txt \
-             arkimet.spec \
 	     doc/mhooks-config \
 	     doc/mhooks-dump \
 	     doc/mhooks-gzip \
