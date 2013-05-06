@@ -1,0 +1,132 @@
+#!/bin/bash
+#
+# arkimet      Start/Stop arki-server
+#
+# chkconfig: - 62 38
+# description: arkimet server
+#
+# processname: arki-server
+#
+# Author: Enrico Zini <enrico@enricozini.org>
+#
+# 
+
+# Source function library
+. /etc/init.d/functions
+
+RETVAL=0
+
+NAME=arki-server
+PIDFILE=/var/run/$NAME.pid
+DAEMONUSER=arkimet
+
+
+# Include defaults if available
+if [ -f /etc/default/$NAME ] ; then
+        . /etc/default/$NAME
+fi
+
+#LOGDIR must be defined in defaults
+if [ -n "$LOGDIR" ] ; then
+    if [ -d "$LOGDIR" ] ; then
+	# dir exists, check owner
+	if [ `stat -c %U $LOGDIR` != "$DAEMONUSER" ] ; then
+	    chown -R $DAEMONUSER.$DAEMONUSER $LOGDIR
+	fi
+    else
+	mkdir -p $LOGDIR && chown $DAEMONUSER.$DAEMONUSER $LOGDIR
+    fi
+else
+    echo "LOGDIR must be defined (see /etc/default/$NAME)"
+    exit 1
+fi
+
+# Check that the user exists (if we set a user)
+# Does the user exist?
+if [ -n "$DAEMONUSER" ] ; then
+    if getent passwd | grep -q "^$DAEMONUSER:"; then
+        # Obtain the uid and gid
+        DAEMONUID=`getent passwd |grep "^$DAEMONUSER:" | awk -F : '{print $3}'`
+        DAEMONGID=`getent passwd |grep "^$DAEMONUSER:" | awk -F : '{print $4}'`
+    else
+        echo $"The user $DAEMONUSER, required to run $NAME does not exist."
+        exit 1
+    fi
+fi
+
+start() {
+    __pids_var_run "$NAME" "$PIDFILE"
+    case "$?" in
+	0)
+	    echo -n $"${NAME} is running..."
+	    echo_warning
+	    echo
+	    return 0
+	    ;;
+	1)
+	    echo -n $"${NAME} dead but pid file exists"
+	    echo_warning
+	    echo
+	    return 1
+	    ;;
+    esac
+    touch $PIDFILE && chown $DAEMONUSER.$DAEMONUSER $PIDFILE
+    # Start me up!
+    action $"Starting arki-server: " /sbin/runuser -s /bin/bash $DAEMONUSER -c "/usr/bin/arki-server --quiet $SERVER_OPTIONS &
+    echo \$! > ${PIDFILE}"
+    sleep 2 # Waiting for process to start up (un)successfully.
+    if [  x"`cat ${PIDFILE}`" = x"`pidof /usr/bin/arki-server`" ] ; then
+        # process is still running.
+        RETVAL=0
+    else
+        RETVAL=1
+        rm ${PIDFILE} 
+    fi
+    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/arki-server
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping arki-server: " 
+    killproc -p $PIDFILE arki-server
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/arki-server
+    return $RETVAL
+}    
+
+restart() {
+      stop
+    start
+}    
+
+reload() {
+    stop
+    start
+}
+
+case "$1" in
+  start)
+      start
+    ;;
+  stop)
+      stop
+    ;;
+  status)
+    status arki-server
+    ;;
+  restart)
+      restart
+    ;;
+  condrestart)
+      [ -f /var/lock/subsys/arki-server ] && restart || :
+    ;;
+  reload)
+    reload
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|status|restart|condrestart|reload}" 
+    exit 1
+esac
+
+exit $?
