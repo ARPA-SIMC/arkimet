@@ -129,6 +129,11 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Cons
 
 bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c, const std::string& format)
 {
+    // If we scan standard input, assume uncompressed data and do not try to
+    // look for an existing .metadata file
+    if (relname == "-")
+        return scan_file(relname, basedir, relname, format, c);
+
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
     auto_ptr<struct stat64> st_file = sys::fs::stat(pathname);
