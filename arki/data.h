@@ -119,6 +119,7 @@ public:
      */
     Pending append(Metadata& md, off_t* ofs);
 
+    static Writer get(const std::string& fname);
     static Writer get(const std::string& format, const std::string& fname);
 };
 

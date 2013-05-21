@@ -86,6 +86,16 @@ off_t Writer::append(const wibble::sys::Buffer& buf)
     return impl->append(buf);
 }
 
+Writer Writer::get(const std::string& fname)
+{
+    // Get the file extension
+    std::string fmt;
+    size_t pos;
+    if ((pos = fname.rfind('.')) != std::string::npos)
+        fmt = fname.substr(pos + 1);
+    return get(fmt, fname);
+}
+
 Writer Writer::get(const std::string& format, const std::string& fname)
 {
     // Cached instance

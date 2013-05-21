@@ -193,6 +193,35 @@ void resolve_path(const std::string& pathname, std::string& basedir, std::string
     relname = str::normpath(pathname);
 }
 
+string normaliseFormat(const std::string& format)
+{
+    string f = str::tolower(format);
+    if (f == "metadata") return "arkimet";
+    if (f == "grib1") return "grib";
+    if (f == "grib2") return "grib";
+#ifdef HAVE_ODIMH5
+    if (f == "h5")     return "odimh5";
+    if (f == "hdf5")   return "odimh5";
+    if (f == "odim")   return "odimh5";
+    if (f == "odimh5") return "odimh5";
+#endif
+    return f;
+}
+
+std::string format_from_ext(const std::string& fname, const char* default_format)
+{
+    // Extract the extension
+    size_t epos = fname.rfind('.');
+    if (epos != string::npos)
+        return normaliseFormat(fname.substr(epos + 1));
+    else if (default_format)
+        return default_format;
+    else
+        throw wibble::exception::Consistency(
+                "auto-detecting format from file name " + fname,
+                "file extension not recognised");
+}
+
 }
 }
 }

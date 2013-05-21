@@ -430,7 +430,7 @@ struct FileCopier : maintenance::IndexFileVisitor
 	std::string src;
 	std::string dst;
 	int fd_src;
-	int fd_dst;
+        data::Writer writer;
 	off_t w_off;
 
 	FileCopier(WIndex& idx, const std::string& src, const std::string& dst);
@@ -442,7 +442,8 @@ struct FileCopier : maintenance::IndexFileVisitor
 };
 
 FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
-	: m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1), fd_dst(-1), w_off(0)
+	: m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1),
+          writer(data::Writer::get(utils::files::format_from_ext(src), dst)), w_off(0)
 {
 	fd_src = open(src.c_str(), O_RDONLY
 #ifdef linux
@@ -451,10 +452,6 @@ FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& d
 	);
 	if (fd_src < 0)
 		throw wibble::exception::File(src, "opening file");
-
-	fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	if (fd_dst < 0)
-		throw wibble::exception::File(dst, "opening file");
 }
 
 FileCopier::~FileCopier()
@@ -471,14 +468,7 @@ void FileCopier::operator()(const std::string& file, int id, off64_t offset, siz
 		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
 	m_val.validate(buf.data(), size);
 
-    // Get the file extension
-    std::string fmt;
-    size_t pos;
-    if ((pos = file.rfind('.')) != std::string::npos) {
-        fmt = file.substr(pos+1);
-    }
     // Append the buffer
-    data::Writer writer = data::Writer::get(fmt, dst);
     w_off = writer.append(buf);
 
 	// Reindex file from offset to w_off
@@ -487,12 +477,9 @@ void FileCopier::operator()(const std::string& file, int id, off64_t offset, siz
 
 void FileCopier::flush()
 {
-	if (fd_src != -1 and close(fd_src) != 0)
-		throw wibble::exception::File(src, "closing file");
-	fd_src = -1;
-	if (fd_dst != -1 and close(fd_dst) != 0)
-		throw wibble::exception::File(dst, "closing file");
-	fd_dst = -1;
+    if (fd_src != -1 and close(fd_src) != 0)
+        throw wibble::exception::File(src, "closing file");
+    fd_src = -1;
 }
 
 struct Reindexer : public metadata::Consumer

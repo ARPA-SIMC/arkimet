@@ -1,7 +1,7 @@
 /*
  * dataset/file - Dataset on a single file
  *
- * Copyright (C) 2008--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,21 +48,6 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
-string normaliseFormat(const std::string& format)
-{
-	string f = str::tolower(format);
-	if (f == "metadata") return "arkimet";
-	if (f == "grib1") return "grib";
-	if (f == "grib2") return "grib";
-#ifdef HAVE_ODIMH5
-	if (f == "h5") 		return "odimh5";
-	if (f == "hdf5") 	return "odimh5";
-	if (f == "odim") 	return "odimh5";
-	if (f == "odimh5") 	return "odimh5";
-#endif
-	return f;
-}
-
 void File::readConfig(const std::string& fname, ConfigFile& cfg)
 {
 	using namespace wibble;
@@ -86,23 +71,15 @@ void File::readConfig(const std::string& fname, ConfigFile& cfg)
 		section.setValue("type", "file");
 		if (sys::fs::exists(fname))
 		{
-			section.setValue("path", sys::fs::abspath(fname));
-
-			string name = str::basename(fname);
-
-			// Extract the extension if present
-			size_t epos = name.rfind('.');
-			if (epos != string::npos)
-				section.setValue("format", normaliseFormat(name.substr(epos+1)));
-			else
-				section.setValue("format", "arkimet");
-
-			section.setValue("name", name);
+                    section.setValue("path", sys::fs::abspath(fname));
+                    section.setValue("format", files::format_from_ext(fname, "arkimet"));
+                    string name = str::basename(fname);
+                    section.setValue("name", name);
 		} else {
 			size_t fpos = fname.find(':');
 			if (fpos == string::npos)
 				throw wibble::exception::Consistency("examining file " + fname, "file does not exist");
-			section.setValue("format", normaliseFormat(fname.substr(0, fpos)));
+			section.setValue("format", files::normaliseFormat(fname.substr(0, fpos)));
 
 			string fname1 = fname.substr(fpos+1);
 			if (!sys::fs::exists(fname1))

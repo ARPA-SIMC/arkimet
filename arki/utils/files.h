@@ -131,6 +131,20 @@ std::string find_executable(const std::string& name);
  */
 void resolve_path(const std::string& pathname, std::string& basedir, std::string& relname);
 
+/**
+ * Normalise a file format string using the most widely used version
+ *
+ * This currently normalises:
+ *  - grib1 and grib2 to grib
+ *  - all of h5, hdf5, odim and odimh5 to odimh5
+ */
+std::string normaliseFormat(const std::string& format);
+
+/**
+ * Guess a file format from its extension
+ */
+std::string format_from_ext(const std::string& fname, const char* default_format=0);
+
 }
 }
 }

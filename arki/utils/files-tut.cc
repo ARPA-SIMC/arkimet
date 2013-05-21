@@ -168,6 +168,24 @@ void to::test<7>()
     atest(equals, "foo/baz", relname);
 }
 
+// Test format_from_ext
+template<> template<>
+void to::test<8>()
+{
+    using namespace arki::utils::files;
+
+    atest(equals, "grib", format_from_ext("test.grib"));
+    atest(equals, "grib", format_from_ext("test.grib1"));
+    atest(equals, "grib", format_from_ext("test.grib2"));
+    atest(equals, "bufr", format_from_ext("test.bufr"));
+#ifdef HAVE_ODIMH5
+    atest(equals, "odimh5", format_from_ext("test.h5"));
+    atest(equals, "odimh5", format_from_ext("test.hdf5"));
+    atest(equals, "odimh5", format_from_ext("test.odim"));
+    atest(equals, "odimh5", format_from_ext("test.odimh5"));
+#endif
+}
+
 }
 
 // vim:set ts=4 sw=4:
