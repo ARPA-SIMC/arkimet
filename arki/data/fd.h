@@ -43,6 +43,7 @@ protected:
 
 public:
     Writer(const std::string& fname);
+    ~Writer();
 
     void lock();
     void unlock();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 #include <arki/tests/test-utils.h>
 #include "data.h"
+#include "data/impl.h"
+#include "data/lines.h"
 
 namespace tut {
 using namespace std;
@@ -36,6 +38,13 @@ TESTGRP(arki_data);
 template<> template<>
 void to::test<1>()
 {
+    using namespace arki::data;
+
+    Writer w1 = Writer::get("grib", "test-data-writer");
+    Writer w2 = Writer::get("grib", "test-data-writer");
+
+    // Check that the implementation is reused
+    atest(equals, w1._implementation(), w2._implementation());
 }
 
 }

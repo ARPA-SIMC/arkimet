@@ -46,6 +46,11 @@ Writer::Writer(const std::string& fname)
         throw wibble::exception::File(fname, "opening file for appending data");
 }
 
+Writer::~Writer()
+{
+    if (fd != -1) close(fd);
+}
+
 void Writer::lock()
 {
     struct flock lock;
