@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -113,8 +113,8 @@ void to::test<2>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(TO_ARCHIVE), 2u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_TO_ARCHIVE), 2u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -146,8 +146,8 @@ void to::test<2>()
 		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
 		ensure_equals(c.remaining(), "");
 		ensure(c.isClean());
 	}
@@ -163,8 +163,8 @@ void to::test<2>()
 		MaintenanceCollector c;
 		c.clear();
 		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
 		ensure_equals(c.remaining(), "");
 		ensure(c.isClean());
 	}
@@ -200,8 +200,8 @@ void to::test<3>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(TO_DELETE), 2u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_TO_DELETE), 2u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -249,8 +249,8 @@ void to::test<4>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(OK), 0u);
-		ensure_equals(c.count(TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_OK), 0u);
+		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -266,8 +266,8 @@ void to::test<4>()
 
 		MaintenanceCollector c;
 		writer->maintenance(c);
-		ensure_equals(c.count(OK), 0u);
-		ensure_equals(c.count(TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_OK), 0u);
+		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -284,8 +284,8 @@ void to::test<4>()
 
 		MaintenanceCollector c;
 		writer->maintenance(c);
-		ensure_equals(c.count(OK), 0u);
-		ensure_equals(c.count(TO_PACK), 1u);
+		ensure_equals(c.count(COUNTED_OK), 0u);
+		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -337,8 +337,8 @@ void to::test<5>()
 		MaintenanceCollector c;
 		writer->maintenance(c, false);
 		ensure_equals(c.fileStates.size(), 2u);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -353,8 +353,8 @@ void to::test<5>()
 
 		MaintenanceCollector c;
 		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(TO_PACK), 1u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -399,8 +399,8 @@ void to::test<6>()
 		MaintenanceCollector c;
 		writer->maintenance(c, false);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(TO_PACK), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -417,11 +417,10 @@ void to::test<6>()
 		"testdir: 1 file rescanned, 7736 bytes reclaimed cleaning the index.\n");
 	c.clear();
 	writer.maintenance(c);
-	ensure_equals(c.count(OK), 1u);
-	ensure_equals(c.count(TO_PACK), 1u);
+	ensure_equals(c.count(COUNTED_OK), 1u);
+	ensure_equals(c.count(COUNTED_TO_PACK), 1u);
 	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
-cerr  << "ZAERBA 4" << endl;
 
 	// Perform packing and check that things are still ok afterwards
 	s.str(std::string());
@@ -433,7 +432,7 @@ cerr  << "ZAERBA 4" << endl;
 
 	// Maintenance and pack are ok now
 	writer.maintenance(c, false);
-	ensure_equals(c.count(OK), 2u);
+	ensure_equals(c.count(COUNTED_OK), 2u);
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
         s.str(std::string());
@@ -463,8 +462,8 @@ void to::test<7>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -481,8 +480,8 @@ void to::test<7>()
 		MaintenanceCollector c;
 		writer->maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -523,8 +522,8 @@ void to::test<8>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -569,7 +568,7 @@ void to::test<9>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(TO_INDEX), 3u);
+		ensure_equals(c.count(COUNTED_TO_INDEX), 3u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -620,7 +619,7 @@ void to::test<10>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(TO_INDEX), 1u);
+		ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -638,7 +637,7 @@ void to::test<10>()
 		writer->maintenance(c);
 		// A repack is still needed because the data is not sorted by reftime
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(TO_PACK), 1u);
+		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -735,8 +734,8 @@ void to::test<34>()
         auto_ptr<WritableLocal> writer(makeLocalWriter());
         MaintenanceCollector c;
         writer->maintenance(c);
-        ensure_equals(c.fileStates.size(), 2);
-        ensure_equals(c.count(TO_PACK), 2);
+        ensure_equals(c.fileStates.size(), 2u);
+        ensure_equals(c.count(COUNTED_TO_PACK), 2u);
         ensure_equals(c.remaining(), "");
         ensure(not c.isClean());
 
@@ -761,8 +760,8 @@ void to::test<34>()
         auto_ptr<WritableLocal> writer(makeLocalWriter());
         MaintenanceCollector c;
         writer->maintenance(c);
-        ensure_equals(c.fileStates.size(), 2);
-        ensure_equals(c.count(OK), 2);
+        ensure_equals(c.fileStates.size(), 2u);
+        ensure_equals(c.count(COUNTED_OK), 2u);
         ensure_equals(c.remaining(), "");
         ensure(c.isClean());
 

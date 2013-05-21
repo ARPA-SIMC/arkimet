@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_
 	MaintenanceCollector c;
 	ds.maintenance(c);
 	inner_ensure_equals(c.fileStates.size(), filecount);
-	inner_ensure_equals(c.count(dataset::maintenance::MaintFileVisitor::ARC_OK), filecount);
+	inner_ensure_equals(c.count(DatasetTest::COUNTED_ARC_OK), filecount);
 	inner_ensure_equals(c.remaining(), string());
 	inner_ensure(c.isClean());
 
@@ -156,7 +156,7 @@ void to::test<2>()
 		// Maintenance should show one file to index
 		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_INDEX), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -167,7 +167,7 @@ void to::test<2>()
 		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_INDEX), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 
@@ -218,7 +218,7 @@ void to::test<3>()
 		// Maintenance should show one file to rescan
 		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -230,7 +230,7 @@ void to::test<3>()
 		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 
@@ -280,7 +280,7 @@ void to::test<4>()
 		// Maintenance should show one file to rescan
 		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -291,7 +291,7 @@ void to::test<4>()
 		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 
@@ -349,8 +349,8 @@ void to::test<5>()
 		MaintenanceCollector c;
 		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -361,8 +361,8 @@ void to::test<5>()
 		MaintenanceCollector c;
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 
@@ -378,7 +378,7 @@ void to::test<5>()
 		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(ARC_OK), 3u);
+		ensure_equals(c.count(COUNTED_ARC_OK), 3u);
 		ensure_equals(c.remaining(), string());
 		ensure(c.isClean());
 
@@ -441,7 +441,7 @@ void to::test<6>()
 		c.clear();
 		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -452,7 +452,7 @@ void to::test<6>()
 		c.clear();
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(ARC_TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_ARC_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 

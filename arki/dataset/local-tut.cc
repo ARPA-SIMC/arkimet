@@ -85,8 +85,8 @@ void to::test<1>()
 		writer->maintenance(c);
 
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(TO_ARCHIVE), 2u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_TO_ARCHIVE), 2u);
 		ensure_equals(c.remaining(), "");
 		ensure(not c.isClean());
 	}
@@ -130,8 +130,8 @@ void to::test<1>()
 		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
 		ensure_equals(c.remaining(), "");
 		ensure(c.isClean());
 	}
@@ -147,8 +147,8 @@ void to::test<1>()
 		MaintenanceCollector c;
 		c.clear();
 		writer->maintenance(c);
-		ensure_equals(c.count(OK), 1u);
-		ensure_equals(c.count(ARC_OK), 2u);
+		ensure_equals(c.count(COUNTED_OK), 1u);
+		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
 		ensure_equals(c.remaining(), "");
 		ensure(c.isClean());
 	}

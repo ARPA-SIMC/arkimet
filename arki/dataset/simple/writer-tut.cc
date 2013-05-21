@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -105,7 +105,7 @@ void to::test<1>()
 
     source = md.source.upcast<types::source::Blob>();
     atest(endswith, "07-08.grib1", source->filename);
-    atest(equals, 7218, source->offset);
+    atest(equals, 7218u, source->offset);
     atest(equals, 7218u, source->size);
 
 	// Flush the changes and check that everything is allright
@@ -211,7 +211,7 @@ void to::test<3>()
 		dataset::simple::Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(TO_INDEX), 1u);
+		ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 		ensure(files::hasDontpackFlagfile("testds"));
@@ -223,7 +223,7 @@ void to::test<3>()
 
 		// Check should reindex the file
 		writer.check(s, true, true);
-		ensure_equals(s.str(), 
+		ensure_equals(s.str(),
 				"testds: rescanned 2007/07-08.grib1\n"
 				"testds: 1 file rescanned.\n");
 
@@ -292,8 +292,8 @@ void to::test<4>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -385,8 +385,8 @@ void to::test<5>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -504,8 +504,8 @@ void to::test<6>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(TO_RESCAN), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -605,8 +605,8 @@ void to::test<7>()
 		Writer writer(cfg);
 		writer.maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(OK), 2u);
-		ensure_equals(c.count(DELETED), 1u);
+		ensure_equals(c.count(COUNTED_OK), 2u);
+		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}

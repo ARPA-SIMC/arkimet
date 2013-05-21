@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,8 +55,6 @@ struct arki_dataset_simple_reader_shar : public arki::tests::DatasetTest {
 
 		clean_and_import();
 	}
-
-	virtual void operator()(const std::string& file, State state) {}
 };
 TESTGRP(arki_dataset_simple_reader);
 

@@ -1,7 +1,7 @@
 /*
  * dataset/archive - Handle archived data
  *
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -193,29 +193,20 @@ void OnlineArchive::flush()
 namespace {
 struct ToArchiveState : public maintenance::MaintFileVisitor
 {
-	maintenance::MaintFileVisitor& next;
+    maintenance::MaintFileVisitor& next;
 
-	ToArchiveState(maintenance::MaintFileVisitor& next) : next(next) {}
+    ToArchiveState(maintenance::MaintFileVisitor& next) : next(next) {}
 
-	virtual void operator()(const std::string& file, State state)
-	{
-		switch (state)
-		{
-			case OK:		next(file, ARC_OK); break;
-			case TO_ARCHIVE:	next(file, ARC_OK); break;
-			case TO_DELETE:		next(file, ARC_OK); break;
-			case TO_PACK:		next(file, ARC_OK); break;
-			case TO_INDEX:		next(file, ARC_TO_INDEX); break;
-			case TO_RESCAN:		next(file, ARC_TO_RESCAN); break;
-			case DELETED:		next(file, ARC_DELETED); break;
-			case ARC_OK:
-			case ARC_TO_INDEX:
-			case ARC_TO_RESCAN:
-			case ARC_DELETED:	next(file, state); break;
-			default:
-				throw wibble::exception::Consistency("checking archive", "programming error: found unsupported file state");
-		}
-	}
+    virtual void operator()(const std::string& file, unsigned state)
+    {
+        // Add the archived bit
+        // Remove the TO_PACK bit, since once a file is archived it's not
+        //   touched anymore, so there's no point packing it
+        // Remove the TO_ARCHIVE bit, since we're already in the archive
+        // Remove the TO_DELETE bit, since delete age doesn't affect the
+        //   archive
+        next(file, (state & ~(TO_PACK | TO_ARCHIVE | TO_DELETE)) | ARCHIVED);
+    }
 };
 }
 
@@ -663,11 +654,11 @@ struct MaintPathPrepender : public maintenance::MaintFileVisitor
 
 	MaintPathPrepender(MaintFileVisitor& next, const std::string& prefix)
 		: next(next), prefix(prefix) {}
-	
-	virtual void operator()(const std::string& file, State state)
-	{
-		next(str::joinpath(prefix, file), state);
-	}
+
+    virtual void operator()(const std::string& file, unsigned state)
+    {
+        next(str::joinpath(prefix, file), state);
+    }
 };
 }
 

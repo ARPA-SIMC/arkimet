@@ -619,7 +619,7 @@ public:
 			else // if (disk.empty() or disk.back() > i->file)
 			{
 				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->file.c_str());
-				v(i->file, MaintFileVisitor::DELETED);
+				v(i->file, MaintFileVisitor::TO_DEINDEX);
 			}
 		}
 		while (not disk.empty())
@@ -945,7 +945,7 @@ public:
 			else // if (disk.empty() or disk.back() > i->first)
 			{
 				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->first.c_str());
-				v(i->first, MaintFileVisitor::DELETED);
+				v(i->first, MaintFileVisitor::TO_DEINDEX);
 			}
 		}
 		while (not disk.empty())

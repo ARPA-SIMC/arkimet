@@ -155,17 +155,17 @@ struct Deleter : public maintenance::MaintFileVisitor
 	std::ostream& log;
 	bool writable;
 
-	Deleter(const std::string& name, std::ostream& log, bool writable)
-		: name(name), log(log), writable(writable) {}
-	void operator()(const std::string& file, State state)
-	{
-		if (writable)
-		{
-			log << name << ": deleting file " << file << endl;
-			sys::fs::deleteIfExists(file);
-		} else
-			log << name << ": would delete file " << file << endl;
-	}
+    Deleter(const std::string& name, std::ostream& log, bool writable)
+        : name(name), log(log), writable(writable) {}
+    void operator()(const std::string& file, unsigned state)
+    {
+        if (writable)
+        {
+            log << name << ": deleting file " << file << endl;
+            sys::fs::deleteIfExists(file);
+        } else
+            log << name << ": would delete file " << file << endl;
+    }
 };
 
 struct CheckAge : public maintenance::MaintFileVisitor
@@ -177,7 +177,7 @@ struct CheckAge : public maintenance::MaintFileVisitor
 
 	CheckAge(MaintFileVisitor& next, const Manifest& idx, int archive_age=-1, int delete_age=-1);
 
-	void operator()(const std::string& file, State state);
+    void operator()(const std::string& file, unsigned state);
 };
 
 CheckAge::CheckAge(MaintFileVisitor& next, const Manifest& idx, int archive_age, int delete_age)
@@ -203,30 +203,30 @@ CheckAge::CheckAge(MaintFileVisitor& next, const Manifest& idx, int archive_age,
 	}
 }
 
-void CheckAge::operator()(const std::string& file, State state)
+void CheckAge::operator()(const std::string& file, unsigned state)
 {
-	if (state != OK or (!archive_threshold.defined() and !delete_threshold.defined()))
-		next(file, state);
-	else
-	{
-		UItem<types::Time> start_time;
-		UItem<types::Time> end_time;
-		idx.fileTimespan(file, start_time, end_time);
+    if (!archive_threshold.defined() and !delete_threshold.defined())
+        next(file, state);
+    else
+    {
+        UItem<types::Time> start_time;
+        UItem<types::Time> end_time;
+        idx.fileTimespan(file, start_time, end_time);
 
-		//cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
-		if (delete_threshold > end_time)
-		{
-			nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-			next(file, TO_DELETE);
-		}
-		else if (archive_threshold > end_time)
-		{
-			nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-			next(file, TO_ARCHIVE);
-		}
-		else
-			next(file, state);
-	}
+        //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
+        if (delete_threshold > end_time)
+        {
+            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
+            next(file, state | TO_DELETE);
+        }
+        else if (archive_threshold > end_time)
+        {
+            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
+            next(file, state | TO_ARCHIVE);
+        }
+        else
+            next(file, state);
+    }
 }
 }
 

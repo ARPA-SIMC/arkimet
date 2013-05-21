@@ -4,7 +4,7 @@
 /*
  * dataset/maintenance - Dataset maintenance utilities
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,24 +43,18 @@ namespace maintenance {
  */
 struct MaintFileVisitor
 {
-	enum State {
-		OK,		/// File fully and consistently indexed
-		TO_ARCHIVE,	/// File is ok, but old enough to be archived
-		TO_DELETE,	/// File is ok, but old enough to be deleted
-		TO_PACK,	/// File contains data that has been deleted
-		TO_INDEX,	/// File is not present in the index
-		TO_RESCAN,	/// File contents are inconsistent with the index
-		DELETED,	/// File does not exist but has entries in the index
-		ARC_OK,		/// File fully and consistently archived
-		ARC_TO_INDEX,	/// File is not present in the archive index
-		ARC_TO_RESCAN,	/// File contents need reindexing in the archive
-		ARC_DELETED,	/// File does not exist, but has entries in the archive index
-		STATE_MAX
-	};
+    static const unsigned OK         = 0;
+    static const unsigned TO_ARCHIVE = 1 << 0; /// File is ok, but old enough to be archived
+    static const unsigned TO_DELETE  = 1 << 1; /// File is ok, but old enough to be deleted
+    static const unsigned TO_PACK    = 1 << 2; /// File contains data that has been deleted
+    static const unsigned TO_INDEX   = 1 << 3; /// File is not present in the index
+    static const unsigned TO_RESCAN  = 1 << 4; /// File contents are inconsistent with the index
+    static const unsigned TO_DEINDEX = 1 << 5; /// File does not exist but has entries in the index
+    static const unsigned ARCHIVED   = 1 << 6; /// File is in the archive
 
-	virtual ~MaintFileVisitor() {}
+    virtual ~MaintFileVisitor() {}
 
-	virtual void operator()(const std::string& file, State state) = 0;
+    virtual void operator()(const std::string& file, unsigned state) = 0;
 };
 
 /**
@@ -128,7 +122,7 @@ struct FindMissing : public MaintFileVisitor
 	// files: a, b, c,    e, f, g
 	// index:       c, d, e, f, g
 
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 	void end();
 };
 
@@ -137,7 +131,7 @@ struct FindMissing : public MaintFileVisitor
  */
 struct Dumper : public MaintFileVisitor
 {
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 };
 
 struct Tee : public MaintFileVisitor
@@ -147,7 +141,7 @@ struct Tee : public MaintFileVisitor
 
 	Tee(MaintFileVisitor& one, MaintFileVisitor& two);
 	virtual ~Tee();
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 };
 
 /// Base class for all repackers and rebuilders
@@ -182,7 +176,7 @@ struct FailsafeRepacker : public Agent
 
 	FailsafeRepacker(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 	void end();
 };
 
@@ -199,7 +193,7 @@ struct MockRepacker : public Agent
 
 	MockRepacker(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 	void end();
 };
 
@@ -214,7 +208,7 @@ struct MockFixer : public Agent
 
 	MockFixer(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 	void end();
 };
 
@@ -234,7 +228,7 @@ struct RealRepacker : public maintenance::Agent
 
 	RealRepacker(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 	void end();
 };
 
@@ -251,7 +245,7 @@ struct RealFixer : public maintenance::Agent
 
 	RealFixer(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, State state);
+	void operator()(const std::string& file, unsigned state);
 	void end();
 };
 

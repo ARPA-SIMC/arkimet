@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,10 +41,7 @@ using namespace arki::tests;
 using namespace arki::utils;
 using namespace arki::dataset::simple;
 
-struct arki_dataset_simple_index_shar : public dataset::maintenance::MaintFileVisitor {
-	// Little dirty hack: implement MaintFileVisitor so we can conveniently
-	// access State
-
+struct arki_dataset_simple_index_shar : public DatasetTest {
 	arki_dataset_simple_index_shar()
 	{
 		system("rm -rf testds");
@@ -52,8 +49,6 @@ struct arki_dataset_simple_index_shar : public dataset::maintenance::MaintFileVi
 		system("mkdir testds/.archive");
 		system("mkdir testds/.archive/last");
 	}
-
-	virtual void operator()(const std::string& file, State state) {}
 
 	std::string idxfname() const
 	{
@@ -181,13 +176,13 @@ struct IndexingCollector : public MaintenanceCollector
 
 	IndexingCollector(Manifest& m, const Summary& s, time_t mtime) : m(m), s(s), mtime(mtime) {}
 
-	virtual void operator()(const std::string& file, State state)
-	{
-		MaintenanceCollector::operator()(file, state);
-		int n = atoi(file.c_str());
-		if (n > 10) m.acquire(str::fmtf("%02d.grib1", n - 10), mtime, s);
-		if (n < 50) m.acquire(str::fmtf("%02d.grib1", n + 10), mtime, s);
-	}
+    virtual void operator()(const std::string& file, unsigned state)
+    {
+        MaintenanceCollector::operator()(file, state);
+        int n = atoi(file.c_str());
+        if (n > 10) m.acquire(str::fmtf("%02d.grib1", n - 10), mtime, s);
+        if (n < 50) m.acquire(str::fmtf("%02d.grib1", n + 10), mtime, s);
+    }
 };
 }
 
@@ -233,8 +228,8 @@ void to::test<8>()
 		m->openRW();
 		m->check(c);
 		ensure_equals(c.fileStates.size(), 5u);
-		ensure_equals(c.count(TO_INDEX), 2u);
-		ensure_equals(c.count(OK), 3u);
+		ensure_equals(c.count(COUNTED_TO_INDEX), 2u);
+		ensure_equals(c.count(COUNTED_OK), 3u);
 		ensure_equals(c.remaining(), string());
 		ensure(not c.isClean());
 	}
@@ -246,7 +241,7 @@ void to::test<8>()
 		m->openRO();
 		m->check(c);
 		ensure_equals(c.fileStates.size(), 5u);
-		ensure_equals(c.count(OK), 5u);
+		ensure_equals(c.count(COUNTED_OK), 5u);
 		ensure_equals(c.remaining(), string());
 		ensure(c.isClean());
 	}

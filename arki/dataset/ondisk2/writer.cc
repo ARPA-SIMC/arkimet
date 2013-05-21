@@ -332,7 +332,7 @@ struct CheckAge : public maintenance::MaintFileVisitor
 
 	CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age=-1, int delete_age=-1);
 
-	void operator()(const std::string& file, State state);
+    void operator()(const std::string& file, unsigned state);
 };
 
 CheckAge::CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age, int delete_age)
@@ -362,27 +362,27 @@ CheckAge::CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age, in
 	}
 }
 
-void CheckAge::operator()(const std::string& file, State state)
+void CheckAge::operator()(const std::string& file, unsigned state)
 {
-	if (state != OK or (archive_threshold.empty() and delete_threshold.empty()))
-		next(file, state);
-	else
-	{
-		string maxdate = idx.max_file_reftime(file);
-		//cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
-		if (delete_threshold >= maxdate)
-		{
-			nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-			next(file, TO_DELETE);
-		}
-		else if (archive_threshold >= maxdate)
-		{
-			nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-			next(file, TO_ARCHIVE);
-		}
-		else
-			next(file, state);
-	}
+    if (archive_threshold.empty() and delete_threshold.empty())
+        next(file, state);
+    else
+    {
+        string maxdate = idx.max_file_reftime(file);
+        //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
+        if (delete_threshold >= maxdate)
+        {
+            nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
+            next(file, state | TO_DELETE);
+        }
+        else if (archive_threshold >= maxdate)
+        {
+            nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
+            next(file, state | TO_ARCHIVE);
+        }
+        else
+            next(file, state);
+    }
 }
 }
 

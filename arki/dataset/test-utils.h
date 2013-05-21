@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,14 +88,25 @@ struct ForceSqlite
 };
 
 // Base class for dataset tests
-struct DatasetTest : public dataset::maintenance::MaintFileVisitor
+struct DatasetTest
 {
+    enum Counted {
+        COUNTED_OK,
+        COUNTED_ARC_OK,
+        COUNTED_TO_ARCHIVE,
+        COUNTED_TO_DELETE,
+        COUNTED_TO_PACK,
+        COUNTED_TO_INDEX,
+        COUNTED_TO_RESCAN,
+        COUNTED_TO_DEINDEX,
+        COUNTED_ARC_TO_INDEX,
+        COUNTED_ARC_TO_RESCAN,
+        COUNTED_ARC_TO_DEINDEX,
+        COUNTED_MAX,
+    };
+
 	// Default dataset configuration (to be filled by subclasser)
 	ConfigFile cfg;
-
-	// Little dirty hack: implement MaintFileVisitor so we can conveniently
-        // access State constants
-	virtual void operator()(const std::string& file, State state) {}
 
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
@@ -161,19 +172,21 @@ struct TempConfig
 
 struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
 {
-	std::map <std::string, State> fileStates;
-	size_t counts[STATE_MAX];
-	static const char* names[];
-	std::set<State> checked;
+    typedef tests::DatasetTest::Counted Counted;
 
-	MaintenanceCollector();
+    std::map <std::string, unsigned> fileStates;
+    size_t counts[tests::DatasetTest::COUNTED_MAX];
+    static const char* names[];
+    std::set<Counted> checked;
 
-	void clear();
-	bool isClean() const;
-	virtual void operator()(const std::string& file, State state);
-	void dump(std::ostream& out) const;
-	size_t count(State s);
-	std::string remaining() const;
+    MaintenanceCollector();
+
+    void clear();
+    bool isClean() const;
+    virtual void operator()(const std::string& file, unsigned state);
+    void dump(std::ostream& out) const;
+    size_t count(tests::DatasetTest::Counted state);
+    std::string remaining() const;
 };
 
 struct OrderCheck : public metadata::Consumer

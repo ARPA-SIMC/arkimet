@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
 #include <fstream>
-#include <strings.h>
+#include <cstring>
 
 using namespace std;
 using namespace arki;
@@ -301,7 +301,7 @@ void DatasetTest::impl_ensure_maint_clean(const wibble::tests::Location& loc, si
 	MaintenanceCollector c;
 	writer->maintenance(c);
 	inner_ensure_equals(c.fileStates.size(), filecount);
-	inner_ensure_equals(c.count(OK), filecount);
+	inner_ensure_equals(c.count(COUNTED_OK), filecount);
 	inner_ensure_equals(c.remaining(), string());
 	inner_ensure(c.isClean());
 }
@@ -324,74 +324,90 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 
 MaintenanceCollector::MaintenanceCollector()
 {
-	bzero(counts, sizeof(counts));
+    memset(counts, 0, sizeof(counts));
 }
 
 void MaintenanceCollector::clear()
 {
-	bzero(counts, sizeof(counts));
-	fileStates.clear();
-	checked.clear();
+    memset(counts, 0, sizeof(counts));
+    fileStates.clear();
+    checked.clear();
 }
 
 bool MaintenanceCollector::isClean() const
 {
-	for (size_t i = 0; i < STATE_MAX; ++i)
-		if (i != OK && i != ARC_OK && counts[i])
+	for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+		if (i != OK && i != tests::DatasetTest::COUNTED_ARC_OK && counts[i])
 			return false;
 	return true;
 }
 
-void MaintenanceCollector::operator()(const std::string& file, State state)
+void MaintenanceCollector::operator()(const std::string& file, unsigned state)
 {
-	fileStates[file] = state;
-	++counts[state];
+    fileStates[file] = state;
+    if (state == OK)        ++counts[tests::DatasetTest::COUNTED_OK];
+    if (state == ARCHIVED)  ++counts[tests::DatasetTest::COUNTED_ARC_OK];
+    if (state & ARCHIVED)
+    {
+        if (state & TO_INDEX)   ++counts[tests::DatasetTest::COUNTED_ARC_TO_INDEX];
+        if (state & TO_RESCAN)  ++counts[tests::DatasetTest::COUNTED_ARC_TO_RESCAN];
+        if (state & TO_DEINDEX) ++counts[tests::DatasetTest::COUNTED_ARC_TO_DEINDEX];
+    } else {
+        if (state & TO_ARCHIVE) ++counts[tests::DatasetTest::COUNTED_TO_ARCHIVE];
+        if (state & TO_DELETE)  ++counts[tests::DatasetTest::COUNTED_TO_DELETE];
+        if (state & TO_PACK)    ++counts[tests::DatasetTest::COUNTED_TO_PACK];
+        if (state & TO_INDEX)   ++counts[tests::DatasetTest::COUNTED_TO_INDEX];
+        if (state & TO_RESCAN)  ++counts[tests::DatasetTest::COUNTED_TO_RESCAN];
+        if (state & TO_DEINDEX) ++counts[tests::DatasetTest::COUNTED_TO_DEINDEX];
+    }
 }
 
-size_t MaintenanceCollector::count(State s)
+size_t MaintenanceCollector::count(tests::DatasetTest::Counted s)
 {
-	checked.insert(s);
-	return counts[s];
+    checked.insert(s);
+    return counts[s];
 }
 
 std::string MaintenanceCollector::remaining() const
 {
-	std::vector<std::string> res;
-	for (size_t i = 0; i < MaintFileVisitor::STATE_MAX; ++i)
-	{
-		if (checked.find((State)i) != checked.end())
-			continue;
-		if (counts[i] == 0)
-			continue;
-		res.push_back(str::fmtf("%s: %d", names[i], counts[i]));
-	}
-	return str::join(res.begin(), res.end());
+    std::vector<std::string> res;
+    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+    {
+        if (checked.find((Counted)i) != checked.end())
+            continue;
+        if (counts[i] == 0)
+            continue;
+        res.push_back(str::fmtf("%s: %zd", names[i], counts[i]));
+    }
+    return str::join(res.begin(), res.end());
 }
 
 void MaintenanceCollector::dump(std::ostream& out) const
 {
-	using namespace std;
-	out << "Results:" << endl;
-	for (size_t i = 0; i < STATE_MAX; ++i)
-		out << " " << names[i] << ": " << counts[i] << endl;
-	for (std::map<std::string, State>::const_iterator i = fileStates.begin();
-			i != fileStates.end(); ++i)
-		out << "   " << i->first << ": " << names[i->second] << endl;
+    using namespace std;
+    out << "Results:" << endl;
+    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+        out << " " << names[i] << ": " << counts[i] << endl;
+    /*
+       for (std::map<std::string, unsigned>::const_iterator i = fileStates.begin();
+       i != fileStates.end(); ++i)
+       out << "   " << i->first << ": " << names[i->second] << endl;
+    */
 }
 
 const char* MaintenanceCollector::names[] = {
-	"ok",
-	"to archive",
-	"to delete",
-	"to pack",
-	"to index",
-	"to rescan",
-	"deleted",
-	"arc ok",
-	"arc to index",
-	"arc to rescan",
-	"arc deleted",
-	"state max",
+    "ok",
+    "arc ok",
+    "to archive",
+    "to delete",
+    "to pack",
+    "to index",
+    "to rescan",
+    "to deindex",
+    "arc to index",
+    "arc to rescan",
+    "arc deindex",
+    "counted_max",
 };
 
 OrderCheck::OrderCheck(const std::string& order)
