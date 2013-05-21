@@ -111,7 +111,11 @@ void Vm2::open(const std::string& filename, const std::string& basedir, const st
     this->filename = sys::fs::abspath(filename);
     this->basedir = basedir;
     this->relname = relname;
-    this->in = new std::ifstream(filename.c_str());
+    if (relname == "-") {
+        this->in = &std::cin;
+    } else {
+        this->in = new std::ifstream(filename.c_str());
+    }
     if (!in->good())
         throw wibble::exception::File(filename, "opening file for reading");
     parser = new meteo::vm2::Parser(*in);
@@ -119,10 +123,8 @@ void Vm2::open(const std::string& filename, const std::string& basedir, const st
 
 void Vm2::close()
 {
-	filename.clear();
-	if (in)
-		in->close();
-    delete in;
+	if (in && relname != "-")
+        delete in;
     if (parser) delete parser;
     in = 0;
     parser = 0;

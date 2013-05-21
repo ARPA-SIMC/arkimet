@@ -47,7 +47,7 @@ const Validator& validator();
 class Vm2
 {
 protected:
-    std::ifstream* in;
+    std::istream* in;
     std::string filename;
     std::string basedir;
     std::string relname;
