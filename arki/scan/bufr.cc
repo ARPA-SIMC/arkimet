@@ -138,7 +138,12 @@ void Bufr::open(const std::string& filename, const std::string& basedir, const s
     this->filename = filename;
     this->basedir = basedir;
     this->relname = relname;
-    file = File::create(BUFR, filename.c_str(), "r").release();
+    if (filename == "-")
+    {
+        file = File::create(BUFR, "(stdin)", "r").release();
+    } else {
+        file = File::create(BUFR, filename.c_str(), "r").release();
+    }
 }
 
 void Bufr::close()
