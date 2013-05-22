@@ -1,3 +1,13 @@
+arkimet (0.74-1) UNRELEASED; urgency=low
+
+  * arki-check now can do repack and archival in a single run
+  * arki-check now does not do repack if a file is to be deleted
+  * added support for VM2 data
+  * arki-scan now supports bufr:- for scanning BUFR files from standard input
+  * ODIMH5 support moves towards a generic HDF5 support
+
+ -- Enrico Zini <enrico@debian.org>  Wed, 22 May 2013 10:31:52 +0200
+
 arkimet (0.73-1) UNRELEASED; urgency=low
 
   * arki-scan --validate={list|daily_import}
