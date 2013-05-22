@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.73
-Release: 2748%{dist}
+Version: 0.74
+Release: 2758%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/sim/?arkimet‎
@@ -85,11 +85,18 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 /sbin/ldconfig
 if [ "$1" = "0" ]; then
   # non e' un upgrade, e' una disinstallazione definitiva
-  /sbin/chkconfig --del %{name}
+  #/sbin/chkconfig --del %{name} (pare farlo in automatico)
+  :
 fi
 
-
 %changelog
+* Wed May 22 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2758%{dist}
+- arki-check now can do repack and archival in a single run
+- arki-check now does not do repack if a file is to be deleted
+- added support for VM2 data
+- arki-scan now supports bufr:- for scanning BUFR files from standard input
+- ODIMH5 support moves towards a generic HDF5 support
+
 * Wed Jan  9 2013 Emanuele Di Giacomo <edigiacomo@arpa.emr.it> - 0.73-2711%{dist}
 - Rebuild to reflect upstream changes (fixed arki-xargs serialization)
 
