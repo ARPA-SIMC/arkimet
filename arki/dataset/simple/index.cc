@@ -459,7 +459,7 @@ public:
 		Info sample;
 		sample.file = relname;
 		vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
-		if (lb->file == relname)
+		if (lb != info.end() && lb->file == relname)
 		{
 			start_time = lb->start_time;
 			end_time = lb->end_time;
