@@ -72,13 +72,13 @@ function odimh5_pvol_set_area(md)
 	local radius = 0
 	for ds, _ in pairs(odimh5:get_groups("/")) do
 		if ds:match("^dataset") then
-			local radhor = odimh5:find_attr(ds .. "/how", "radhor")
+			local radhor = odimh5:find_attr(ds .. "/how", "radhoriz")
 			if radhor ~= nil and radhor > radius then
-				radius = radhor 
+				radius = radhor
 			end
 		end
 	end
-	md:set(arki_area.odimh5{lat=lat*1000000,lon=lon*1000000,radius=1000})
+	md:set(arki_area.odimh5{lat=lat*1000000,lon=lon*1000000,radius=radius*1000})
 end
 
 function odimh5_horizobj_set_area(md)
