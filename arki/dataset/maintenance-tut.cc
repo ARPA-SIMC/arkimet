@@ -771,6 +771,125 @@ void to::test<34>()
 // Check that a repacked VM2 works properly (ondisk2 dataset)
 template<> template<> void to::test<35>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<34>(); }
 
+// Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
+template<> template<>
+void to::test<36>()
+{
+    // Data are from 07, 08, 10 2007
+    int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
+    int now[6];
+    grcal::date::now(now);
+    long long int duration = grcal::date::duration(treshold, now);
+
+    system("rm -rf testds");
+    system("mkdir testds");
+    system("mkdir testds/2007");
+    system("cp inbound/test.grib1 testds/2007/");
+
+    ConfigFile cfg = this->cfg;
+    cfg.setValue("step", "yearly");
+    cfg.setValue("delete age", str::fmt(duration/(3600*24)));
+
+    // Run maintenance to build the dataset
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+        OutputChecker s;
+        writer->check(s, true, true);
+        s.ensure_line_contains(": rescanned 2007/test.grib1");
+        s.ensure_line_contains("1 file rescanned");
+        s.ensure_all_lines_seen();
+
+        MaintenanceCollector c;
+        writer->maintenance(c);
+        ensure_equals(c.fileStates.size(), 1u);
+        // A repack is still needed because the data is not sorted by reftime
+        ensure_equals(c.count(COUNTED_TO_PACK), 1u);
+        // And the same file is also old enough to be deleted
+        ensure_equals(c.count(COUNTED_TO_DELETE), 1u);
+        ensure_equals(c.remaining(), "");
+        ensure(not c.isClean());
+    }
+
+    // Perform packing and check that things are still ok afterwards
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+
+        OutputChecker s;
+        writer->repack(s, true);
+        s.ensure_line_contains(": deleted 2007/test.grib1");
+        s.ensure_line_contains(": 1 file deleted, 1 file removed from index, 44412 total bytes freed.");
+        s.ensure_all_lines_seen();
+    }
+    ensure_maint_clean(0);
+
+    // Perform full maintenance and check that things are still ok afterwards
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+        stringstream s;
+        writer->check(s, true, true);
+        ensure_equals(s.str(), string()); // Nothing should have happened
+
+        ensure_maint_clean(0);
+    }
+}
+// Check that a repacked VM2 works properly (ondisk2 dataset)
+template<> template<> void to::test<37>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<36>(); }
+
+// Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
+template<> template<>
+void to::test<38>()
+{
+    // Data are from 07, 08, 10 2007
+    int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
+    int now[6];
+    grcal::date::now(now);
+    long long int duration = grcal::date::duration(treshold, now);
+
+    system("rm -rf testds");
+    system("mkdir testds");
+    system("mkdir testds/2007");
+    system("cp inbound/test.grib1 testds/2007/");
+
+    ConfigFile cfg = this->cfg;
+    cfg.setValue("step", "yearly");
+    cfg.setValue("archive age", str::fmt(duration/(3600*24)));
+
+    // Run maintenance to build the dataset
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+        OutputChecker s;
+        writer->check(s, true, true);
+        s.ensure_line_contains(": rescanned 2007/test.grib1");
+        s.ensure_line_contains("1 file rescanned");
+        s.ensure_all_lines_seen();
+
+        MaintenanceCollector c;
+        writer->maintenance(c);
+        ensure_equals(c.fileStates.size(), 1u);
+        // A repack is still needed because the data is not sorted by reftime
+        ensure_equals(c.count(COUNTED_TO_PACK), 1u);
+        // And the same file is also old enough to be deleted
+        ensure_equals(c.count(COUNTED_TO_ARCHIVE), 1u);
+        ensure_equals(c.remaining(), "");
+        ensure(not c.isClean());
+    }
+
+    // Perform packing and check that things are still ok afterwards
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+
+        OutputChecker s;
+        writer->repack(s, true);
+        s.ensure_line_contains(": packed 2007/test.grib1");
+        s.ensure_line_contains(": archived 2007/test.grib1");
+        s.ensure_line_contains(": 1 file packed, 1 file archived.");
+        s.ensure_line_contains(": archive cleaned up");
+        s.ensure_all_lines_seen();
+    }
+}
+// Check that a repacked VM2 works properly (ondisk2 dataset)
+template<> template<> void to::test<39>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<38>(); }
+
 
 }
 
