@@ -349,7 +349,7 @@ MockRepacker::MockRepacker(std::ostream& log, WritableLocal& w)
 
 void MockRepacker::operator()(const std::string& file, unsigned state)
 {
-    if (state & TO_PACK)
+    if (state & TO_PACK && !(state & TO_DELETE))
     {
         log() << file << " should be packed" << endl;
         ++m_count_packed;
@@ -457,7 +457,7 @@ RealRepacker::RealRepacker(std::ostream& log, WritableLocal& w)
 
 void RealRepacker::operator()(const std::string& file, unsigned state)
 {
-    if (state & TO_PACK)
+    if (state & TO_PACK && !(state & TO_DELETE))
     {
         // Repack the file
         size_t saved = w.repackFile(file);
