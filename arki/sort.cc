@@ -215,7 +215,7 @@ bool Stream::operator()(Metadata& m)
 void Stream::flush()
 {
 	if (buffer.empty()) return;
-	std::sort(buffer.begin(), buffer.end(), STLCompare(sorter));
+	std::stable_sort(buffer.begin(), buffer.end(), STLCompare(sorter));
 	for (vector<Metadata>::iterator i = buffer.begin();
 			i != buffer.end(); ++i)
 		nextConsumer(*i);
