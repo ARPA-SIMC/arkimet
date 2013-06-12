@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 0.74
-Release: 2758%{dist}
+Release: 2763%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/sim/?arkimet‎
@@ -73,7 +73,7 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 
 
 %pre
-/sbin/service %{name} stop >/dev/null 2>&1
+#/sbin/service %{name} stop >/dev/null 2>&1
 
 %post
 /sbin/ldconfig
@@ -87,10 +87,15 @@ if [ "$1" = "0" ]; then
   # non e' un upgrade, e' una disinstallazione definitiva
   #/sbin/chkconfig --del %{name} (pare farlo in automatico)
   :
+else
+  /sbin/service %{name} condrestart >/dev/null 2>&1
 fi
 
 %changelog
-* Wed May 22 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2758%{dist}
+* Wed Jun 12 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2763%{dist}
+- corretto bug nel sort dei dati
+
+* Wed May 22 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2759%{dist}
 - arki-check now can do repack and archival in a single run
 - arki-check now does not do repack if a file is to be deleted
 - added support for VM2 data
