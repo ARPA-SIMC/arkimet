@@ -28,55 +28,55 @@ endif
 if READLINE
 bin_PROGRAMS += arki-config
 arki_config_SOURCES = arki-config.cc
-arki_config_LDFLAGS = $(all_libs)
+arki_config_LDADD = $(all_libs)
 endif
 
 if DBALLE
 bin_PROGRAMS += arki-bufr-prepare
 
 arki_bufr_prepare_SOURCES = arki-bufr-prepare.cc
-arki_bufr_prepare_LDFLAGS = $(all_libs)
+arki_bufr_prepare_LDADD = $(all_libs)
 endif
 
 if LUA
 bin_PROGRAMS += arki-shell
 
 arki_shell_SOURCES = arki-shell.cc
-arki_shell_LDFLAGS = $(all_libs)
+arki_shell_LDADD = $(all_libs)
 endif
 
 arki_scan_SOURCES = arki-scan.cc
-arki_scan_LDFLAGS = $(all_libs)
+arki_scan_LDADD = $(all_libs)
 
 arki_inbound_SOURCES = arki-inbound.cc
-arki_inbound_LDFLAGS = $(all_libs)
+arki_inbound_LDADD = $(all_libs)
 
 arki_benchmark_SOURCES = arki-benchmark.cc bench/benchmark.cc
-arki_benchmark_LDFLAGS = $(all_libs)
+arki_benchmark_LDADD = $(all_libs)
 
 arki_mergeconf_SOURCES = arki-mergeconf.cc
-arki_mergeconf_LDFLAGS = $(all_libs)
+arki_mergeconf_LDADD = $(all_libs)
 
 arki_query_SOURCES = arki-query.cc
-arki_query_LDFLAGS = $(all_libs)
+arki_query_LDADD = $(all_libs)
 
 arki_check_SOURCES = arki-check.cc
-arki_check_LDFLAGS = $(all_libs)
+arki_check_LDADD = $(all_libs)
 
 arki_dump_SOURCES = arki-dump.cc
-arki_dump_LDFLAGS = $(all_libs)
+arki_dump_LDADD = $(all_libs)
 
 arki_xargs_SOURCES = arki-xargs.cc
-arki_xargs_LDFLAGS = $(all_libs)
+arki_xargs_LDADD = $(all_libs)
 
 arki_gzip_SOURCES = arki-gzip.cc
-arki_gzip_LDFLAGS = $(all_libs)
+arki_gzip_LDADD = $(all_libs)
 
 arki_server_SOURCES = arki-server.cc
-arki_server_LDFLAGS = $(all_libs)
+arki_server_LDADD = $(all_libs)
 
 arki_test_SOURCES = arki-test.cc
-arki_test_LDFLAGS = $(all_libs)
+arki_test_LDADD = $(all_libs)
 
 TESTS = test-arki-server test-arki-scan test-arki-query test-arki-xargs run-test-src
 check_PROGRAMS = test-src
