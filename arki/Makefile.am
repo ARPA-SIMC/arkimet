@@ -271,9 +271,14 @@ export ARKI_HAS_GCOV=yes
 endif
 
 # Tests
-TESTS = tests/arki-test
 TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
 check_PROGRAMS = tests/arki-test
+
+check-local:
+	for test in $(check_PROGRAMS); do \
+		$(TESTS_ENVIRONMENT) $$test ; \
+	done
+
 #tests_arki_test_CXXFLAGS = --std=c++11
 tests_arki_test_SOURCES = \
 		utils-tut.cc \

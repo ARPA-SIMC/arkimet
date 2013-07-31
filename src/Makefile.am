@@ -78,11 +78,17 @@ arki_server_LDADD = $(all_libs)
 arki_test_SOURCES = arki-test.cc
 arki_test_LDADD = $(all_libs)
 
-TESTS = test-arki-server test-arki-scan test-arki-query test-arki-xargs run-test-src
+test_scripts = test-arki-server test-arki-scan test-arki-query test-arki-xargs run-test-src
 check_PROGRAMS = test-src
+
+check-local:
+	for test in $(test_scripts); do \
+		./$$test ; \
+	done
+
 test_src_SOURCES = \
 		arki-server-tut.cc \
 		../arki/tests/tut-main.cpp
 test_src_LDADD = $(all_libs)
 
-EXTRA_DIST=testlib.sh test-arki-query test-arki-scan test-arki-server run-test-src
+EXTRA_DIST = testlib.sh $(test_scripts)
