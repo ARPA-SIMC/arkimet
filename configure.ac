@@ -352,6 +352,8 @@ embedded/minilzo/Makefile
 wibble/Makefile
 arki/Makefile
 src/Makefile
+doc/Makefile
+test/Makefile
 ])
 AC_OUTPUT
 
