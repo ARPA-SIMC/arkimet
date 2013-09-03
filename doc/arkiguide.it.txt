@@ -1,0 +1,700 @@
+= ArkiGuida =
+Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
+v0.5, 2013-04-30
+:lang: it
+
+== Introduzione ==
+Arkimet è una suite di programmi per l'archiviazione di dati. Al momento,
+sono supportati i seguenti formati: `GRIB1`, `GRIB2`, `BUFR`, `ODIMH5` e `VM2`
+(i formati realmente disponibili dipendono da come è stato compilato
+Arkimet).
+
+I dati archiviati sono organizzati per _dataset_ e ogni dato viene archiviato
+in uno di questi sulla base dei propri _metadati_ caratteristici.  Quindi, sia
+in fase di archiviazione che in fase di estrazione del dato archiviato, abbiamo
+bisogno di sapere *dove* (dataset) il dato deve essere (oppure è stato)
+archiviato e *cosa* (metadati) è quel dato.
+
+Ogni _dataset_ è associato localmente ad un directory path. Al suo interno,
+arkimet organizza i dati secondo quanto indicato dal file di configurazione
+`config`, unico file necessario all'interno di un dataset. I dati sono
+archiviati all'interno di questa directory senza alterarne il contenuto.
+
+I _metadati_ sono degli attributi che Arkimet legge dal dato in fase di
+importazione e salva all'interno del dataset opportuno. Tra questi metadati
+l'unico obbligatorio è *reftime*, i.e. l'istante di riferimento temporale del
+dato, mentre gli altri metadati dipendono dal tipo di dato. Tali attributi sono
+archiviati in un file diverso da quello del dato e quindi la perdita di tali
+attributi non altera in nessun modo il dato stesso.
+
+== Importazione ==
+
+L'importazione di un file consiste nei seguenti passi:
+
+- Arkimet legge i metadati del file, che può essere composto da uno o più
+  elementi
+- Ogni elemento del file è archiviato nell'opportuno dataset sulla base dei
+  metadati. Le modalità di archiviazione all'interno del dataset dipendono
+  dalla configurazione di quest'ultimo.
+
+=== Anatomia di un dataset ===
+
+Un dataset viene "materializzato" in una directory. Al suo interno, abbiamo il
+file di nome `config` che contiene, appunto, la configurazione del dataset
+stesso.
+
+Il file di configurazione contiene una serie di parametri nella forma `chiave =
+valore`. Ad esempio:
+
+----
+description = S.P. Capofiume radar data
+filter = origin:ODIMH5,,,itspc
+unique = reftime
+index = reftime,level,task,quantity
+replace = yes
+step = singlefile
+type = ondisk2
+----
+
+- `description`: descrizione del dataset.
+- `filter`: espressione rispetto a cui il dato deve fare match per essere
+  inserito all'interno di questo dataset. Usa la sintassi di query di Arkimet,
+  quindi si rimanda alla sezione apposita per una sua spiegazione.
+- `unique`: elenco separato da virgola di metadati che rendono univoco il dato.
+- `index`: elenco separato da virgola dei metadati indicizzati (opzionale).
+- `replace`: indica se i dati già presenti nel dataset possono essere
+  sovrascritti o meno.
+- `step`: step che indica il tipo di organizzazione dei file (`daily`,
+  `weekly`, `singlefile`, ...).
+- `type`: tipo di dataset (generalmente, `ondisk2`).
+
+L'archiviazione avviene sulla base di un elenco di dataset: Arkimet dovrà
+scegliere quello opportuno sulla base del filtro (`filter`); una volta scelto
+il dataset, il dato viene inserito al suo interno e i suoi metadati sono
+salvati nel file `index.sqlite` (database SQLite).
+
+All'interno del dataset, i file vengono organizzati in directory e file, il cui
+nome dipende dallo `step` usato e dal formato del dato (`grib1`, `grib2`,
+`odimh5`, ...). I file importati sono *concatenati* all'interno dell'archivio,
+tranne nel caso di `step=singlefile` (da usarsi nel caso in cui il formato non
+supporti il concatenamento, come `ODIMH5`).
+
+.Esempi di organizzazione di dataset
+====
+
+Il _daily step_ è composto da una directory per ogni anno; ognuna di queste
+contiene dei file nella forma `MESE-GIORNO.FORMATO`.
+....
+myds/
+    2012/
+        01-01.grib1
+        01-02.grib1
+        ...
+        12-31.grib1
+    2013/
+        01-01.grib1
+        ...
+        04-20.grib1
+....
+
+
+Lo _yearly step_ ha una directory per ogni secolo e al suo interno un file per
+ogni anno, nella forma `ANNO.FORMATO`:
+....
+myds/
+    20/
+        2012.grib1
+        2013.grib1
+....
+
+Il _singlefile step_ organizza i file senza concatenarli. Ogni file all'interno
+del dataset è nella forma `ANNO/MESE/GIORNO/ORA/ID.FORMATO`, dove il valore di
+`ID` è un identificativo univoco (contatore).
+....
+myds/
+    2013/
+        01/
+          01/
+           00/
+             1.grib1
+             2.grib1
+    ...
+....
+
+====
+
+=== Creazione di un dataset ===
+
+Per creare un dataset, si usa il comando `arki-config`, che permette di
+generare un dataset in maniera interattiva:
+
+----
+$ arki-config /path/to/my/dataset
+Config file /path/to/my/dataset/config does not exist: should I create it? (Y/n)
+----
+
+In alternativa, è possibile creare un dataset manualmente:
+
+----
+$ mkdir /path/to/my/dataset
+$ vi /path/to/my/dataset/config
+----
+
+=== Alimentazione di un dataset ===
+
+Per alimentare uno o più dataset, abbiamo bisogno delle seguenti cose:
+
+- Uno o più dataset, a cui dobbiamo aggiungere un dataset di nome `error` ed
+  uno di nome `duplicates` (il primo con `type=error` ed il secondo con
+  `type=duplicates`). In questi due dataset verranno rispettivamente inseriti i
+  file per cui si è verificato un errore in importazione e i file duplicati in
+  dataset che non possono essere sovrascritti (`replace=no`).
+- L'elenco dei dataset coinvolti nell'importazione, salvato su un file. Per
+  fare questo, useremo il comando `arki-mergeconf`.
+
+Poniamo di creare tutti i dataset all'interno della directory `$HOME/dataset`.
+Nel nostro esempio, abbiamo due dataset (`odimh5` e `grib1`) più i due dataset
+`error` e `duplicates`.
+
+----
+$ arki-config $HOME/dataset/odimh5
+...
+$ arki-config $HOME/dataset/grib1
+...
+$ arki-config $HOME/dataset/error
+...
+$ arki-config $HOME/dataset/duplicates
+...
+----
+
+A questo punto, generiamo l'elenco dei dataset, che salveremo nel file
+`$HOME/config`:
+
+----
+$ arki-mergeconf $HOME/dataset/* > $HOME/config
+----
+
+Adesso, siamo finalmente pronti per importare dei dati usando il comando
+`arki-scan`.
+
+----
+$ arki-scan --dispatch=$HOME/config $HOME/input.h5 $HOME/input.grib1 > /dev/null
+----
+
+[TIP]
+=========
+Il comando `arki-scan` scrive su standard outpout i metadati dei file di input.
+Tali metadati sono in formato binario, ma se vogliamo un formato human-readable
+possiamo usare l'opzione `--dump`.
+
+Un'altra opzione utile è `--testdispatch=FILE` da usare al posto di
+`--config=FILE`, che permette di simulare l'importazione.
+=========
+
+I dati saranno stati importati nel dataset corretto, oppure in `error` se i
+metadati del file non facevano match con __uno solo__ dei dataset (quindi, se
+nessuno o più di uno) oppure in `duplicates` se si tratta di un dato già
+presente in un dataset senza la possibilità si sovrascritttura.
+
+Se si vogliono reimportare dei dati che sono finiti in `error`, basta toglierli
+dal dataset `error` e cercare di reimportarli.
+
+Nel seguente esempio, riprendiamo fuori tutti i file `grib1` del 2013 e
+cerchiamo di reimportarli:
+
+----
+$ mv $HOME/dataset/error/2013/*.grib1 /tmp/
+$ arki-scan --dispatch=$HOME/config /tmp/*.grib1 > /dev/null
+----
+
+=== Manutenzione di un dataset ===
+
+E' possibile controllare se ci sono problemi nei dataset con il comando
+`arki-check`, a cui passiamo i path dei dataset:
+
+----
+$ arki-check $HOME/dataset/odimh5
+----
+
+Questo comando non fa nulla non dirci se c'è qualcosa da sistemare all'interno
+dei dataset indicati. Per effettuare le operazioni suggerite, si deve usare
+l'opzione `-f`:
+
+----
+$ arki-check -f $HOME/dataset/odimh5
+----
+
+Nel caso particolare in cui il comando fornisca un messaggio del genere:
+
+----
+odimh5: 2013/01/01/00/68157.odimh5 should be packed
+odimh5: 1 file should be packed.
+----
+
+Significa che è necessario fare un _repack_ dei dati e si deve usare anche
+l'opzione `-r`:
+
+----
+$ arki-check -f -r $HOME/dataset/odimh5
+----
+
+[NOTE]
+====
+I metadati sono indipendenti rispetto ai dati. Quindi, se si vogliono
+rigenerare tutti i metadati, basta eliminare il file `index.sqlite` dalla
+directory e lanciare `arki-check`.
+====
+
+=== Cancellazione dei dati basata sull'età ===
+
+Nel caso in cui si vogliano eliminare i dati più vecchi di una certo intervallo
+temporale, basta inserire il campo `delete age` nel `config`:
+
+----
+delete age = GIORNI
+----
+
+Invocando `arki-check -f -r DATASET`, ogni dato con reftime più vecchio di
+`GIORNI` giorni viene eliminato.
+
+=== Archiviazione offline dei dati basata sull'età ===
+
+Nel caso in cui si vogliano spostare i dati più vecchi di un certo intervallo
+temporale, si deve usare il campo `archive age` nel `config`:
+
+----
+archive age = GIORNI
+----
+
+Invocando `arki-check -f -r DATASET`, ogni dato con reftime più vecchio di
+`GIORNI` giorni viene spostato in una sottodirectory del dataset di nome
+`.archive/last`. Questa sottodirectory contiene
+
+- File `MANIFEST`: elenco dei file contenuti nella directory `last`
+- File `summary`: summary in formato arkimet (binario) dei file contenuti in
+  `last`
+- Una serie di directory che contengono i dati; la struttura è analoga a quella
+  dei dati in linea (dipende quindi dallo `step`). Per ogni file di dati
+  contenuto al suo interno, ci sono inoltre due file con suffisso `.metadata` e
+  `.summary` che contengono, rispettivamente, i metadati e il riassunto del file
+  a cui sono associati.
+
+Tutte le directory e i file sono creati automaticamente da Arkimet.
+
+.Esempio di dataset con .archive
+====
+
+Di seguito, è mostrato il ramo `.archive` di un dataset con `step=daily`.
+....
+DATASET/
+  .archive/
+    last/
+      MANIFEST
+      summary
+      2013/
+        01-01.grib1
+        01-01.grib1.summary
+        01-01.grib1.metadata
+        01-02.grib1
+        01-02.grib1.summary
+        01-02.grib1.metadata
+....
+
+====
+
+[NOTE]
+====
+Se si vogliono rigenerare le informazioni dei dati messi in `.archive`, basta
+eliminare i file `MANIFEST`, `summary`, `*.metadata`, `*.summary` ed invocare
+`arki-check`.
+====
+
+[NOTE]
+====
+I dati in `.archive` diventano *readonly*. Se si vogliono modificare, devono
+essere riportari in linea.
+====
+
+All'interno di `.archive` possiamo mettere delle altre directory analoghe a
+`last`. I file `MANIFEST`, `summary`, etc. sono creati con `arki-check`.
+
+.Esempio di directory multiple in .archive
+====
+....
+DATASET/
+  .archive/
+    last/
+      MANIFEST
+      summary
+      2013/
+        01-01.grib1
+        01-01.grib1.summary
+        01-01.grib1.metadata
+        01-02.grib1
+        01-02.grib1.summary
+        01-02.grib1.metadata
+    archive-2012/
+      MANIFEST
+      summary
+      2012/
+        ...
+....
+
+====
+
+Inoltre, è possibile copiare il summary di una di queste directory allo stesso
+livello di quest'ultima: Arkimet potrà dunque leggere il summary per quel
+segmento di dati anche se la directory verrà smontata. 
+
+Ad esempio, poniamo di avere la directory `DATASET/.archive/archive-2012`: possiamo allora fare la
+seguente copia:
+
+----
+cp DATASET/.archive/archive-2012/summary DATASET/.archive/archive-2012.summary
+----
+
+Generalmente, questa funzionalità viene usata per creare degli archivi offline:
+ad esempio, si potrebbero spostare i dati di `.archive` in un disco esterno,
+creare un link simbolico di questa directory dentro `.archive` e poi copiare il
+summary allo stesso livello del link simbolico. In questo modo, per estrarre i
+dati basterebbe montare il disco esterno solo quando ce n'è bisogno, perché per
+richieste sul summary Arkimet legge i file `.archive/NAME.summary`, senza
+entrare all'interno dei dischi esterni.
+
+== Estrazione ==
+
+L'estrazione dei metadati, del riassunto dei metadati o dei dati viene fatta
+usando il comando `arki-query` nella seguente forma generica:
+
+----
+$ arki-query [OPZIONI] QUERY DATASET...
+----
+
+Le *OPZIONI* vanno a specificare che tipo di estrazione si vuole fare, la
+*QUERY* quali dati si vogliono estrarre e i *DATASET* quali sono i dataset
+su cui si vuole operare.
+
+Di seguito, si forniscono indicazioni solo per alcune opzioni. Ne esistono
+molte altre, per cui si rimanda alla man page di `arki-query`.
+
+=== Linguaggio di query ===
+
+La query è composta da un elenco di matcher (uno per ogni tipo di metadato) in
+congiunzione logica tra loro (`AND`). Dunque, per fare match un dato deve fare
+match rispetto a tutti questi matcher.
+
+All'interno di ognuno di questi filtri, è specificato un elenco di possibili
+espressioni per quel metadato, in disgiunzione logica tra loro (`OR`).  Dunque,
+per fare match rispetto al singolo filtro, basta che il dato faccia match con
+almeno una delle espressioni.
+
+Ognuno di questi filtri è nella forma:
+
+----
+NOME: ESPRESSIONE or ESPRESSIONE or ESPRESSIONE ...
+----
+
+Il *NOME* è, appunto, il nome del metadato (e.g., `product`, `area`, etc.),
+mentre il *ESPRESSIONE* dipende dal tipo di metadato.
+
+[NOTE]
+====
+Il `reftime` rappresenta un'eccezione rispetto a questa sintassi: infatti, usa
+un elenco di espressioni separate da virgola (in `AND` tra di loro). Ognuna di
+queste espressioni è nella forma `OPERATORE DATA`, e.g. `>=2013-01-01`.
+====
+
+I filtri, inoltre, sono separati tra di loro da un punto e virgola o da un
+newline:
+
+----
+NOME1: ESPRESSIONE1; NOME2: ESPRESSIONE2
+NOME3: ESPRESSIONE3
+NOME4: ESPRESSIONE4
+----
+
+Per avere un'idea di quali metadati è possibile specificare, si vedano i file
+`/usr/share/doc/arkimet/matcher/*.txt`.
+
+.Esempi di query
+====
+----
+# Tutti i dati di oggi
+reftime: =today
+
+# Tutti i dati a partire da ieri alle 12:00
+reftime: >= yesterday 12:00
+
+# Tutti i dati tra il 12 aprile 2013 e il 14 aprile alle 12:58
+reftime: >= 2013-04-12, <= 2013-04-14 12:58
+
+# Tutti i prodotti GRIB1 con centro di emissione 200
+reftime: = today; origin: GRIB1,200
+
+# Solo i volumi polari ODIMH5 di ieri
+reftime: = yesterday; product: ODIMH5,PVOL,SCAN
+
+# Volumi polari oppure immagini ODIMH5 di ieri
+reftime: = yesterday; product: ODIMH5,PVOL,SCAN or ODIMH5,IMAGE
+
+# Volumi polari oppure immagini ODIMH5 di ieri per il radar di San Pietro
+# Capofiume
+reftime: = yesterday
+product: ODIMH5,PVOL,SCAN or ODIMH5,IMAGE
+origin; ODIMH5,,,itspc
+----
+====
+
+=== Estrazione dei metadati ===
+
+Per estrarre solo i metadati in formato human-readable, si usa l'opzione
+`--dump`:
+
+----
+$ arki-query --dump QUERY DATASET... > /tmp/out.txt
+----
+
+Il risultato è un file in cui, per ogni elemento estratto, sono indicati i suoi
+metadati (ogni elemento è separato dagli altri da una riga vuota).
+
+E' possibile avere anche una notazione in formato `JSON`, usando l'opzione
+`--json`.
+
+=== Estrazione del summary ===
+
+Usando le opzioni `--dump` e `--summary`, è possibile "collassare" la
+dimensione del tempo. In questo modo, gli elementi sono raggruppati secondo
+tutti i metadati tranne il reftime, che viene espresso sotto forma di
+intervallo.
+
+----
+$ arki-query --dump --summary QUERY DATASET... > /tmp/out.txt
+----
+
+Se si vuole raggruppare solo per certi metadati, si può usare in aggiunta
+l'opzione `--summary-restrict=types`, in cui `type` è l'elenco separato da
+virgola dei metadati rispetto cui raggruppare.
+
+=== Estrazione dei dati ===
+
+Per estrarre i dati, si usa l'opzione `--data`:
+
+----
+$ arki-query --data QUERY DATASET... > /tmp/out.dat
+----
+
+I dati vengono estratti nel formato originale.
+
+NOTE: se si vogliono postprocessare i dati estratti ma non è possibile farlo in
+pipe, si può usare il comando `arki-xargs`, descritto nella sezione dedicata al
+postprocessamento lato client.
+
+=== Estrazione dei dati postprocessati ===
+
+E' possibile, infine, usare dei postprocessatori, ma solo su _un singolo_
+dataset alla volta. Per invocarli, basta usare l'opzione `--postproc="NAME
+[ARGS...]"`.
+
+----
+$ arki-query --postproc="singlepoint 12 44" QUERY DATASET > /tmp/out.dat
+----
+
+NOTE: E' possibile che alcuni postprocessatori usino anche l'opzione
+`--postproc-data=FILE`, che permette di passare un file al postprocessatore.
+
+Il postprocessatore è un eseguibile che ha lo stesso nome con cui viene
+invocato nel comando, che legge da standard input i metadati in formato binario
+mischiati ai dati (stesso effetto ottenuto usando `arki-query --inline`) e che
+scrive su standard output il risultato.
+
+Per poter usare un postprocessatore su un dataset, devono essere soddisfatte
+due condizioni:
+- Il postprocessatore deve essere installato nella directory `$libdir/arkimet`.
+- Il postprocessatore deve essere abilitato per il dataset: il suo nome
+  deve essere presente nel file di configurazione del dataset alla voce
+  `postprocess=list` (dove `list` è un elenco separato da virgola).
+
+Nel caso in cui si usi un postprocessatore, il formato potrebbe cambiare.
+
+== Server HTTP ==
+
+Arkimet è un archivio distribuito che può fornire dati anche via HTTP. Per
+fare questo, è necessario usare il comando `arki-server`:
+
+----
+# Creo il file di configurazione dei dataset monitorati dal server
+$ arki-mergeconf $HOME/dataset/* > $HOME/config
+# Lancio il server
+$ arki-server --url=http://localhost:8090 --host=0.0.0.0 --port=8090 $HOME/config
+----
+
+A questo punto, è possibile estrarre i dati usando al posto dei path dei
+dataset il loro URL. Un elenco degli URL è disponibile collegandosi con
+un qualsiasi browser all'url del server (nel nostro esempio
+`http://localhost:8090`).
+
+Generalmente, l'URL è composto da `ROOTURL/dataset/DATASETNAME`, quindi il
+dataset `odimh5` nel nostro esempio sarà interrogabile nel seguente modo:
+
+----
+$ arki-query --data 'reftime: =today' http://localhost:8090/dataset/odimh5
+----
+
+E' sempre possibile indicare più di un dataset (e quindi più di un URL):
+
+----
+$ arki-query --data 'reftime: =today' \
+  http://my-host:8090/dataset/odimh5 \
+  http://your-host:8080/dataset/myradar \
+  http://www.arpa.emr.it:8090/arkimet/dataset/SPCradar
+----
+
+== Estensioni ==
+
+*TODO*
+
+=== Postprocessamento lato client ===
+
+Se vogliamo postprocessare i dati estratti da un dataset in pipe, possiamo lanciare un comando nella seguente forma:
+
+----
+$ arki-query --data QUERY DATASET | POSTPROCESSATORE > out.dat
+----
+
+Dove `POSTPROCESSATORE` è un eseguibile che legge da standard input e fa le
+opportune trasformazioni.
+
+E' possibile, tuttavia, trovarsi nella situazione in cui il postprocessatore
+non possa lavorare in pipe e/o la dimensione del risultato è eccessiva per
+essere salvata in memoria o su disco. Per venire incontro a questa esigenza,
+Arkimet mette a disposizione il comando `arki-xargs`.
+
+----
+arki-xargs [OPZIONI] COMANDO
+----
+
+Questo comando legge da standard input i dati estratti dall'archivio forniti
+con l'opzione `--inline` e, ciclicamente, invoca `COMANDO` passandogli una
+parte dei dati. Tale porzione di dati viene salvata su un file temporaneo che è
+passato come ultimo argomento al comando. Le porzioni di dati sono costruite
+sulla base delle opzioni passate ad `arki-xargs` (e.g. non più di un certo
+numero di elementi alla volta oppure non più di una certa dimensione).
+
+Inoltre, `arki-xargs` fornisce al comando una serie di variabili di ambiente
+che forniscono informazioni sui dati passati al comando stesso, come ad esempio
+il formato dei dati, il numero di elementi, etc. (vedi la man page per maggiori
+informazioni).
+
+.Esempio banale per arki-xargs
+====
+Un primo, banale esempio di utilizzo di `arki-xargs` è il seguente:
+
+----
+$ arki-query --inline QUERY DATASET | arki-xargs --max-args=1 ls
+arkidata.W4nD3K
+arkidata.qeFHcz
+arkidata.2Zrmmn
+arkidata.a2PBwb
+arkidata.OYXrHZ
+arkidata.wvxSSN
+arkidata.Gi504B
+arkidata.0y0Khq
+arkidata.UFsave
+arkidata.EbO9I2
+arkidata.qoNJXQ
+...
+----
+
+====
+
+.Esempio arki-xargs per dati ODIMH5
+====
+I dati `ODIMH5` non possono essere concatenati. Quindi, è necessario lanciare
+il nostro comando su ogni singolo file che viene restituito da Arkimet:
+
+----
+$ arki-query --inline QUERY DATASET | arki-xargs --max-args=1 ./mypostprocessor
+----
+
+Il comando `./mypostprocessor` verrà invocato un numero di volte pari al numero
+di file estratti, nella forma `./mypostprocessor TEMPDATA` (dove `TEMPDATA` è
+il file temporaneo contenente l'i-esimo file).
+
+====
+
+=== Postprocessamento lato server ===
+
+Il postprocessamento dei dati può avvenire anche lato server. Per invocare tali
+postprocessatori in fase di estrazione, si usa l'opzione `--postproc="NOME
+ARGOMENTI"`. L'uso di questa opzione attiva il postprocessatore (un eseguibile)
+`$libdir/arkimet/NOME` (`$libdir` è di solito `/usr/lib` o `/usr/lib64`) che
+funziona esattamente come un postprocessatore lato client, i.e. è equivalente
+all'invocazione:
+
+----
+$ arki-query --inline QUERY DATASET | $libdir/arkimet/NOME ARGOMENTI
+----
+
+Un postprocessatore è invocabile su un dataset se è stato abilitato per il
+dataset stesso mediante il campo `postprocess` nel file `config`:
+
+----
+postprocess = POSTPROCESSOR1, POSTPROCESSOR2, ...
+----
+
+Il postprocessatore verrà inoltre invocato con la variabile d'ambiente
+`ARKI_POSTPROC_FILES=PATH1:PATH2:...`, dove ogni path è un file indicato dal
+client mediante l'opzione `--postproc-data=PATH`.
+
+Tali eseguibili devono leggere da standard input i dati e scrivere su standard
+output il risultato.
+
+Generalmente, i postprocessatori sono shell script che usano al loro interno il
+comando `arki-xargs`.
+
+=== Query macro ===
+
+*TODO*
+
+=== Modifiche all'importatore ===
+
+*TODO*
+
+=== Bounding box ===
+
+*TODO*
+
+=== Descrizione human-readable dei metadati ===
+
+Il comando `arki-query` possiede un'opzione `--annotate`, la quale fornisce una
+descrizione human-readable di ogni metadato (se presente).
+
+Tali descrizioni sono prese a tempo di esecuzione dagli script Lua contenuti
+nella directory `$sysconfdir/arkimet/format`. In particolare, viene invocata la
+funzione il cui nome è nella forma `fmt_TIPO`: ad esempio, se `TIPO=area`,
+allora verrà invocata `fmt_area`, a cui viene passato come parametro il
+metadato stesso; tale funzione deve restituire una stringa con la descrizione
+oppure `nil`.
+
+Da notare che Arkimet legge ed esegue _tutti_ gli script contenuti in questa
+directory in alfabetico, quindi è possibile inserire anche delle funzioni di
+utilità che possono essere richiamate.
+
+=== Arkiweb ===
+
+*TODO*
+
+== Glossario ==
+
+dataset::
+  Contenitore in cui vengono archiviati dei dati omogenei. Ogni dataset
+  gestisce in modo particolare (e configurabile) i dati archiviati al suo
+  interno.
+
+metadato::
+  Attributo di un dato, come ad esempio l'istante di riferimento, l'area
+  interessata, il prodotto, etc. I metadati descrivono un dato e quindi
+  sono decisivi sia in fase di archiviazione che in fase di query.
+
+== Copyright ==
+Copyright (C) 2013 ARPA-SIMC <urpsim@smr.arpa.emr.it>

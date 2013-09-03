@@ -90,3 +90,4 @@ Makefile
 /debian/tmp/
 /debian/files
 /debian/stamp-*
+/doc/arkiguide.it.html

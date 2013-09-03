@@ -87,3 +87,16 @@ EXTRA_DIST = README \
 	     test/postproc/testcountbytes
 
 CLEANFILES = $(man_MANS)
+
+EXTRA_DIST += doc/arkiguide.it.txt
+
+if ASCIIDOC
+
+doc/arkiguide.it.html: doc/arkiguide.it.txt
+	asciidoc $< > $@
+
+EXTRA_DIST += doc/arkiguide.it.html
+
+CLEANFILES += doc/arkiguide.it.html
+
+endif

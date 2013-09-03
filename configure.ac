@@ -339,6 +339,9 @@ AC_SUBST(DEVEL_LIBS)
 dnl Conditional to enable GCOV snippets
 AM_CONDITIONAL([GCOV], [test x"$enable_gcov" = x"yes"])
 
+dnl asciidoc for arkiguide
+AC_CHECK_PROG([have_asciidoc], [asciidoc], [yes], [no])
+AM_CONDITIONAL([ASCIIDOC], [test x"$have_asciidoc" = x"yes"])
 
 AC_CONFIG_FILES([
 Makefile
