@@ -1,6 +1,6 @@
 = ArkiGuida =
 Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
-v0.5, 2013-04-30
+v0.6, 2013-09-05
 :lang: it
 
 == Introduzione ==
@@ -395,7 +395,7 @@ NOME: ESPRESSIONE or ESPRESSIONE or ESPRESSIONE ...
 ----
 
 Il *NOME* è, appunto, il nome del metadato (e.g., `product`, `area`, etc.),
-mentre il *ESPRESSIONE* dipende dal tipo di metadato.
+mentre l'*ESPRESSIONE* dipende dal tipo di metadato.
 
 [NOTE]
 ====
@@ -414,7 +414,7 @@ NOME4: ESPRESSIONE4
 ----
 
 Per avere un'idea di quali metadati è possibile specificare, si vedano i file
-`/usr/share/doc/arkimet/matcher/*.txt`.
+`/usr/share/doc/arkimet-x.xx/matcher/*.txt`.
 
 .Esempi di query
 ====
@@ -442,6 +442,45 @@ reftime: = yesterday; product: ODIMH5,PVOL,SCAN or ODIMH5,IMAGE
 reftime: = yesterday
 product: ODIMH5,PVOL,SCAN or ODIMH5,IMAGE
 origin; ODIMH5,,,itspc
+----
+====
+
+==== Configurazione di alias  ====
+
+E' possibile definire nomi mnemonici (alias) per i vari tipi di metadata.
+Tale associazione può essere definita direttamente su server nel file
+`/etc/arkimet/match-alias.conf`
+
+Per sapere quali alias sono definiti sull'arki-server in ascolto all'indirizzo
+`http://localhost:8080/` :
+
+----
+arki-dump --aliases http://localhost:8080/
+----
+
+.Esempi di alias
+====
+----
+[origin]
+arpa = GRIB1,200
+
+[product]
+#temperatura generica
+t       = GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167 or GRIB1,200,200,11 or GRIB1,80,2,11 or GRIB2,200,0,200,11
+#copertura nuvolosa totale
+tcc     = GRIB1,200,2,71 or GRIB1,98,128,164 or GRIB1,200,200,114 or GRIB2,200,0,200,114
+
+[level]
+#suolo  
+g00    = GRIB1,1 or GRIB2S,1,0,0
+
+[timerange]
+# Analisi istantanea
+an       = Timedef,0,254
+# Previsione istantanea
+f001     = Timedef,1h,254
+f002     = Timedef,2h,254
+f003     = Timedef,3h,254
 ----
 ====
 
@@ -488,6 +527,17 @@ I dati vengono estratti nel formato originale.
 NOTE: se si vogliono postprocessare i dati estratti ma non è possibile farlo in
 pipe, si può usare il comando `arki-xargs`, descritto nella sezione dedicata al
 postprocessamento lato client.
+
+.Esempio completo di estrazione dati
+
+Estrazione di tutte le temperature previste per il run odierno delle 00 da dataset GRIB ecmwf
+dal server arkimet in ascolto all'url `http://localohost:8090` :
+
+----
+$ arki-query --data 'Reftime:=today 00:00; product:GRIB1,98,128,167' http://localohost:8090 > t2m.grib
+----
+
+
 
 === Estrazione dei dati postprocessati ===
 
