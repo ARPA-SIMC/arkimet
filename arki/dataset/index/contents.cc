@@ -1067,22 +1067,6 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
 		begin = begin->start_of_next_month();
 	}
 
-	/*
-	// Iterate the months
-	int year = begin->vals[0];
-	int month = begin->vals[1];
-	while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
-	{
-		Summary s = summaryForMonth(year, month);
-		s.filter(matcher, summary);
-
-		// Increment the month
-		month = (month%12) + 1;
-		if (month == 1)
-			++year;
-	}
-	*/
-
 	return true;
 }
 
