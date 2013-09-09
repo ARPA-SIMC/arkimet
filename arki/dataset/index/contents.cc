@@ -33,6 +33,7 @@
 #include <arki/types/reftime.h>
 #include <arki/types/source.h>
 #include <arki/types/assigneddataset.h>
+#include <arki/types/value.h>
 #include <arki/summary.h>
 #include <arki/summary/stats.h>
 #include <arki/utils/files.h>
@@ -86,7 +87,8 @@ static IndexGlobalData igd;
 Contents::Contents(const ConfigFile& cfg)
     : m_name(cfg.value("name")), m_root(sys::fs::abspath(cfg.value("path"))),
       m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
-      m_uniques(0), m_others(0), scache(str::joinpath(m_root, ".summaries"))
+      m_uniques(0), m_others(0), m_smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
+      scache(str::joinpath(m_root, ".summaries"))
 {
 	string indexpath = cfg.value("indexfile");
 	if (indexpath.empty())
@@ -179,11 +181,13 @@ void Contents::initQueries()
 	string query = "SELECT id FROM md WHERE reftime=?";
 	if (m_uniques) query += " AND uniq=?";
 	if (m_others) query += " AND other=?";
+    if (m_smallfiles) query += " AND data=?";
 	m_get_id.compile(query);
 
     query = "SELECT id, format, file, offset, size, notes, reftime";
     if (m_uniques) query += ", uniq";
     if (m_others) query += ", other";
+    if (m_smallfiles) query += ", data";
     query += " FROM md WHERE reftime=?";
     if (m_uniques) query += " AND uniq=?";
     m_get_current.compile(query);
@@ -387,13 +391,8 @@ void Contents::scan_file(const std::string& relname, metadata::Consumer& consume
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
 	if (m_others) query += ", m.other";
+    if (m_smallfiles) query += ", m.data";
 	query += " FROM md AS m";
-	/*
-	if (m_uniques)
-		query += " JOIN mduniq AS u ON uniq = u.id";
-	if (m_others)
-		query += " JOIN mdother AS o ON other = o.id";
-	*/
 	query += " WHERE m.file=? ORDER BY m.offset";
 
 	Query mdq("scan_file_md", m_db);
@@ -565,6 +564,15 @@ void Contents::build_md(Query& q, Metadata& md) const
             m_others->read(q.fetch<int>(j), md);
         ++j;
     }
+    if (m_smallfiles)
+    {
+        if (q.fetchType(j) != SQLITE_NULL)
+        {
+            string data = q.fetchString(j);
+            md.set(types::Value::create(data));
+        }
+        ++j;
+    }
 }
 
 bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) const
@@ -573,6 +581,7 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) 
 
 	if (m_uniques) query += ", m.uniq";
 	if (m_others) query += ", m.other";
+	if (m_smallfiles) query += ", m.data";
 
 	query += " FROM md AS m";
 
@@ -668,6 +677,7 @@ size_t Contents::produce_nth(metadata::Consumer& consumer, size_t idx) const
             string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
             if (m_uniques) query += ", m.uniq";
             if (m_others) query += ", m.other";
+            if (m_smallfiles) query += ", m.data";
             query += str::fmtf(" FROM md AS m WHERE m.file=? ORDER BY m.offset LIMIT 1 OFFSET %zd", idx);
 
             Query mdq("mdq", m_db);
@@ -1073,6 +1083,11 @@ void WContents::initQueries()
 		un_ot += ", other";
 		placeholders += ", ?";
 	}
+    if (m_smallfiles)
+    {
+        un_ot += ", data";
+        placeholders += ", ?";
+    }
 
 	// Precompile insert
 	m_insert.compile("INSERT INTO md (format, file, offset, size, notes, reftime" + un_ot + ")"
@@ -1102,6 +1117,7 @@ void WContents::initDB()
 		" reftime TEXT NOT NULL";
 	if (m_uniques) query += ", uniq INTEGER NOT NULL";
 	if (m_others) query += ", other INTEGER NOT NULL";
+	if (m_smallfiles) query += ", data TEXT";
 	if (m_uniques)
 		query += ", UNIQUE(reftime, uniq)";
 	else
@@ -1151,6 +1167,16 @@ void WContents::bindInsertParams(Query& q, Metadata& md, const std::string& file
 		int id = m_others->obtain(md);
 		q.bind(++idx, id);
 	}
+    if (m_smallfiles)
+    {
+        UItem<types::Value> v = md.get<types::Value>();
+        if (v.defined())
+        {
+            q.bind(++idx, v->buffer);
+        } else {
+            q.bindNull(++idx);
+        }
+    }
 }
 
 Pending WContents::beginTransaction()
