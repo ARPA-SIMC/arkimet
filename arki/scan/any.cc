@@ -1,7 +1,7 @@
 /*
  * scan/any - Scan files autodetecting the format
  *
- * Copyright (C) 2009--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -279,6 +279,17 @@ bool update_sequence_number(const Metadata& md, int& usn)
 #else
     return false;
 #endif
+}
+
+wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, const std::string& value)
+{
+#ifdef HAVE_VM2
+    if (format == "vm2")
+    {
+        return scan::Vm2::reconstruct(md, value);
+    }
+#endif
+    throw wibble::exception::Consistency("reconstructing " + format + " data", "format not supported");
 }
 
 }

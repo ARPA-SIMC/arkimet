@@ -33,6 +33,7 @@
 #include <arki/scan/any.h>
 #include <cstring>
 #include <sstream>
+#include <iomanip>
 #include <unistd.h>
 
 #include <arki/types/area.h>
@@ -158,6 +159,30 @@ bool Vm2::next(Metadata& md)
     md.set(types::Value::create(line.substr(pos+1)));
 
     return true;
+}
+
+wibble::sys::Buffer Vm2::reconstruct(const Metadata& md, const std::string& value)
+{
+    stringstream res;
+
+    UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
+    UItem<types::area::VM2> area = md.get<types::Area>().upcast<types::area::VM2>();
+    UItem<types::product::VM2> product = md.get<types::Product>().upcast<types::product::VM2>();
+
+    res << setfill('0') << setw(4) << rt->time->vals[0]
+        << setfill('0') << setw(2) << rt->time->vals[1]
+        << setfill('0') << setw(2) << rt->time->vals[2]
+        << setfill('0') << setw(2) << rt->time->vals[3]
+        << setfill('0') << setw(2) << rt->time->vals[4];
+
+    if (rt->time->vals[5] != 0)
+        res << setfill('0') << setw(2) << rt->time->vals[5];
+
+    res << "," << area->station_id()
+        << "," << product->variable_id()
+        << "," << value;
+
+    return wibble::sys::Buffer(res.str().data(), res.str().size());
 }
 
 }

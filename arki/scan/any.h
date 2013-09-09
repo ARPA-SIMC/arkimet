@@ -26,6 +26,7 @@
 #include <string>
 #include <ctime>
 #include <sys/types.h>
+#include <wibble/sys/buffer.h>
 
 namespace arki {
 class Metadata;
@@ -102,6 +103,11 @@ time_t timestamp(const std::string& file);
  * Compress the given file
  */
 void compress(const std::string& file, size_t groupsize = 512);
+
+/**
+ * Reconstruct raw data based on a metadata and a value
+ */
+wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, const std::string& value);
 
 /**
  * Validate data

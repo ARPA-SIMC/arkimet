@@ -27,6 +27,7 @@
 #include <vector>
 #include <unistd.h>
 #include <fstream>
+#include <wibble/sys/buffer.h>
 
 namespace meteo {
 namespace vm2 {
@@ -83,6 +84,8 @@ public:
 	 */
 	bool next(Metadata& md);
 
+    /// Reconstruct a VM2 based on metadata and a string value
+    static wibble::sys::Buffer reconstruct(const Metadata& md, const std::string& value);
 };
 
 }

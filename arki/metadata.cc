@@ -24,6 +24,7 @@
 
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
+#include <arki/types/value.h>
 #include <arki/formatter.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/compress.h>
@@ -31,6 +32,7 @@
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/iotrace.h>
+#include <arki/scan/any.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -449,7 +451,20 @@ wibble::sys::Buffer Metadata::getData() const
 {
     if (!source.defined())
         throw wibble::exception::Consistency("retrieving data", "data source is not defined");
-    return source->getData();
+
+    if (source->hasData())
+        return source->getData();
+
+    // Se if we have a value set
+    UItem<types::Value> value = get<types::Value>();
+    if (value.defined())
+    {
+        wibble::sys::Buffer buf = arki::scan::reconstruct(source->format, *this, value->buffer);
+        source->setCachedData(buf);
+        return buf;
+    } else {
+        return source->getData();
+    }
 }
 
 void Metadata::dropCachedData() const

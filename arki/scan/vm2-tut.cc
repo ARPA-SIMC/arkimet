@@ -71,11 +71,6 @@ void to::test<1>()
     // Check the source info
     atest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34, md.source);
 
-    // Check that the source can be read properly
-    buf = md.getData();
-    ensure_equals(buf.size(), 34u);
-    ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
-
     // Check area
     ensure(md.get(types::TYPE_AREA).defined());
     ensure_equals(md.get(types::TYPE_AREA), Item<>(area::VM2::create(1)));
@@ -88,6 +83,14 @@ void to::test<1>()
     ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(1987,10,31, 0, 0, 0))));
     // Check value
     ensure_equals(md.get<types::Value>()->buffer, "1.2,,,000000000");
+
+    // Check that the source can be read properly
+    md.unset(types::TYPE_VALUE);
+    md.dropCachedData();
+    buf = md.getData();
+    ensure_equals(buf.size(), 34u);
+    ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
+
 }
 
 template<> template<>
@@ -117,6 +120,7 @@ void to::test<2>()
 
     metadata::Collection mdc;
     scan::scan("inbound/test.vm2", mdc);
+    mdc[0].unset(types::TYPE_VALUE);
     buf = mdc[0].getData();
 
     v.validate(buf.data(), buf.size());
@@ -129,6 +133,7 @@ void to::test<2>()
         ensure_no_throws(v.validate(line.c_str(), line.size()));
     }
 }
+
 // Scan a well-known vm2 sample (with seconds)
 template<> template<>
 void to::test<3>()
@@ -148,11 +153,6 @@ void to::test<3>()
     // Check the source info
     atest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 35, 35, md.source);
 
-    // Check that the source can be read properly
-    buf = md.getData();
-    ensure_equals(buf.size(), 35u);
-    ensure_equals(string((const char*)buf.data(), 35), "19871031000030,1,228,.5,,,000000000");
-
     // Check area
     ensure(md.get(types::TYPE_AREA).defined());
     ensure_equals(md.get(types::TYPE_AREA), Item<>(area::VM2::create(1)));
@@ -165,6 +165,32 @@ void to::test<3>()
     ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(1987,10,31, 0, 0,30))));
     // Check value
     ensure_equals(md.get<types::Value>()->buffer, ".5,,,000000000");
+
+    // Check that the source can be read properly
+    md.unset(types::TYPE_VALUE);
+    md.dropCachedData();
+    buf = md.getData();
+    ensure_equals(buf.size(), 35u);
+    ensure_equals(string((const char*)buf.data(), 35), "19871031000030,1,228,.5,,,000000000");
+}
+
+// Scan and reconstruct a VM2 sample
+template<> template<>
+void to::test<4>()
+{
+    UItem<types::Value> value;
+    wibble::sys::Buffer buf;
+
+    metadata::Collection mdc;
+    scan::scan("inbound/test.vm2", mdc);
+
+    value = mdc[0].get<types::Value>();
+    buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
+    atest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
+
+    value = mdc[1].get<types::Value>();
+    buf = scan::Vm2::reconstruct(mdc[1], value->buffer);
+    atest(equals, string((const char*)buf.data(), buf.size()), "19871031000030,1,228,.5,,,000000000");
 }
 
 }

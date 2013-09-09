@@ -104,14 +104,6 @@ void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 
 	if (!m_idx) return;
 
-	// First ask the index.  If it can do something useful, iterate with it
-	//
-	// If the index would just do a linear scan of everything, then instead
-	// scan the directories in sorted order.
-	//
-	// For each directory try to match its summary first, and if it matches
-	// then produce all the contents.
-
 	queryLocalData(q, consumer);
 }
 
