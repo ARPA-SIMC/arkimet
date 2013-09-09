@@ -65,34 +65,34 @@ void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& ac
     }
 }
 
-void test_assert_md_contains(LOCPRM, const Metadata& expected, const std::string& actual_type, const std::string& actual_val)
+void test_assert_md_contains(LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual)
 {
-    types::Code code = types::parseCodeName(actual_type.c_str());
-    UItem<> item = expected.get(code);
+    types::Code code = types::parseCodeName(type.c_str());
+    UItem<> item = actual.get(code);
     if (!item.defined())
     {
         std::stringstream ss;
-        ss << "metadata does not contain an item of type " << actual_type << ": expected: \"" << actual_val << "\"";
+        ss << "metadata does not contain an item of type " << type << ": expected: \"" << expected_val << "\"";
         loc.fail_test(ss.str());
     }
 
-    UItem<> item1 = types::decodeString(code, actual_val);
+    UItem<> item1 = types::decodeString(code, expected_val);
     if (item != item1)
     {
         std::stringstream ss;
-        ss << "metadata mismatch on " << actual_type << ": expected: \"" << actual_val << "\" got: \"" << item << "\"";
+        ss << "metadata mismatch on " << type << ": expected: \"" << expected_val << "\" actual: \"" << item << "\"";
         loc.fail_test(ss.str());
     }
 }
 
-void test_assert_md_unset(LOCPRM, const Metadata& expected, const std::string& actual_type)
+void test_assert_md_unset(LOCPRM, const std::string& type, const Metadata& actual)
 {
-    types::Code code = types::parseCodeName(actual_type.c_str());
-    UItem<> item = expected.get(code);
+    types::Code code = types::parseCodeName(type.c_str());
+    UItem<> item = actual.get(code);
     if (item.defined())
     {
         std::stringstream ss;
-        ss << "metadata should not contain an item of type " << actual_type << ", but it contains \"" << item << "\"";
+        ss << "metadata should not contain an item of type " << type << ", but it contains \"" << item << "\"";
         loc.fail_test(ss.str());
     }
 }

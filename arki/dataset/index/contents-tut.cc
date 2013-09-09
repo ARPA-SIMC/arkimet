@@ -37,6 +37,7 @@
 #include <arki/configfile.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
+#include <arki/iotrace.h>
 
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/mutex.h>
@@ -72,8 +73,9 @@ struct arki_dataset_index_contents_shar {
 	ValueBag testArea;
 	ValueBag testProddef;
 
-	arki_dataset_index_contents_shar()
-	{
+    arki_dataset_index_contents_shar()
+    {
+        iotrace::init();
 		testArea.set("foo", Value::createInteger(5));
 		testArea.set("bar", Value::createInteger(5000));
 		testArea.set("baz", Value::createInteger(-200));
@@ -497,17 +499,15 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-    Metadata md;
-    md.source = types::Source::decodeString("BLOB(vm2,test.vm2:0+32)");
-    md.set("product", "VM2(2)");
-    md.set("reftime", "2011-01-01T01:00:00Z");
-    md.set("area", "VM2(12)");
-    md.set("value", "50,,,000000000");
+    metadata::Collection src;
+    scan::scan("inbound/test.vm2", src);
 
     // Remove index if it exists
     unlink("file1");
 
     {
+        iotrace::Collector collector;
+
         // An index without large files
         auto_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
@@ -521,7 +521,7 @@ void to::test<7>()
 
         // Insert a metadata
         Pending p = test->beginTransaction();
-        test->index(md, "test.vm2", md.source.upcast<source::Blob>()->offset);
+        test->index(src[0], "inbound/test.vm2", src[0].source.upcast<source::Blob>()->offset);
         p.commit();
 
         // Query it back
@@ -529,18 +529,31 @@ void to::test<7>()
         test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
         // 'value' should not have been preserved
-        atest(equals, mdc.size(), 1u);
-        atest(equals, mdc[0].source, types::Source::decodeString("BLOB(vm2,test.vm2:0+32)"));
-        atest(md_contains, mdc[0], "product", "VM2(2)");
-        atest(md_contains, mdc[0], "reftime", "2011-01-01T01:00:00Z");
-        atest(md_contains, mdc[0], "area", "VM2(12)");
-        atest(md_unset, mdc[0], "value");
+        atest(equals, 1u, mdc.size());
+        UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
+        atest(equals, "vm2", source->format);
+        atest(equals, "inbound/test.vm2", source->filename);
+        atest(equals, 0, source->offset);
+        atest(equals, 34, source->size);
+        atest(md_contains, "product", "VM2(227)", mdc[0]);
+        atest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
+        atest(md_contains, "area", "VM2(1)", mdc[0]);
+        atest(md_unset, "value", mdc[0]);
+
+        // I/O should happen here
+        mdc[0].source->dropCachedData();
+        sys::Buffer buf = mdc[0].getData();
+        atest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
+        atest(equals, collector.events.size(), 1u);
+        atest(endswith, "inbound/test.vm2", collector.events[0].filename());
     }
 
     // Remove index if it exists
     unlink("file1");
 
     {
+        iotrace::Collector collector;
+
         // An index without large files
         auto_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
@@ -555,7 +568,7 @@ void to::test<7>()
 
         // Insert a metadata
         Pending p = test->beginTransaction();
-        test->index(md, "test.vm2", md.source.upcast<source::Blob>()->offset);
+        test->index(src[0], "inbound/test.vm2", src[0].source.upcast<source::Blob>()->offset);
         p.commit();
 
         // Query it back
@@ -563,12 +576,22 @@ void to::test<7>()
         test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
         // 'value' should have been preserved
-        atest(equals, mdc.size(), 1u);
-        atest(equals, mdc[0].source, types::Source::decodeString("BLOB(vm2,test.vm2:0+32)"));
-        atest(md_contains, mdc[0], "product", "VM2(2)");
-        atest(md_contains, mdc[0], "reftime", "2011-01-01T01:00:00Z");
-        atest(md_contains, mdc[0], "area", "VM2(12)");
-        atest(md_contains, mdc[0], "value", "50,,,000000000");
+        atest(equals, 1u, mdc.size());
+        UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
+        atest(equals, "vm2", source->format);
+        atest(equals, "inbound/test.vm2", source->filename);
+        atest(equals, 0, source->offset);
+        atest(equals, 34, source->size);
+        atest(md_contains, "product", "VM2(227)", mdc[0]);
+        atest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
+        atest(md_contains, "area", "VM2(1)", mdc[0]);
+        atest(md_contains, "value", "1.2,,,000000000", mdc[0]);
+
+        // No I/O should happen here
+        mdc[0].source->dropCachedData();
+        sys::Buffer buf = mdc[0].getData();
+        atest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
+        atest(equals, collector.events.size(), 0u);
     }
 }
 
