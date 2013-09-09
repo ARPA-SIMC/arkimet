@@ -4,7 +4,7 @@
 /*
  * dataset/simple/reader - Reader for simple datasets with no duplicate checks
  *
- * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,13 +41,16 @@ namespace maintenance {
 class MaintFileVisitor;
 }
 
-namespace simple {
+namespace index {
 struct Manifest;
+}
+
+namespace simple {
 
 class Reader : public Local
 {
 protected:
-	Manifest* m_mft;
+    index::Manifest* m_mft;
 
 public:
 	Reader(const ConfigFile& cfg);

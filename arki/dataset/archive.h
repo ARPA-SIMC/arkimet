@@ -46,8 +46,11 @@ namespace maintenance {
 class MaintFileVisitor;
 }
 
-namespace simple {
+namespace index {
 class Manifest;
+}
+
+namespace simple {
 class Reader;
 }
 
@@ -86,7 +89,7 @@ class OnlineArchive : public Archive
 {
 protected:
     std::string m_dir;
-    simple::Manifest* m_mft;
+    index::Manifest* m_mft;
 
     void querySummaries(const Matcher& matcher, Summary& summary);
 

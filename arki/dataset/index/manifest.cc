@@ -1,5 +1,5 @@
 /*
- * dataset/simple/index - Index for simple datasets with no duplicate checks
+ * dataset/index/manifest - Index for simple datasets with no duplicate checks
  *
  * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -22,7 +22,7 @@
 
 #include "config.h"
 
-#include <arki/dataset/simple/index.h>
+#include <arki/dataset/index/manifest.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/metadata/collection.h>
 #include <arki/configfile.h>
@@ -61,7 +61,7 @@ using namespace arki::dataset::maintenance;
 
 namespace arki {
 namespace dataset {
-namespace simple {
+namespace index {
 
 Manifest::Manifest(const ConfigFile& cfg) : m_path(cfg.value("path")) {}
 Manifest::Manifest(const std::string& path) : m_path(path) {}

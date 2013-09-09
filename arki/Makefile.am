@@ -24,6 +24,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/http/test-utils.h \
 		dataset/index/attr.h \
 		dataset/index/base.h \
+		dataset/index/manifest.h \
 		dataset/local.h \
 		dataset/maintenance.h \
 		dataset/merged.h \
@@ -36,7 +37,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/outbound.h \
 		datasetpool.h \
 		dataset/simple/datafile.h \
-		dataset/simple/index.h \
 		dataset/simple/reader.h \
 		dataset/simple/writer.h \
 		dataset/targetfile.h \
@@ -229,11 +229,11 @@ libarkimet_dataset_la_SOURCES = \
 		dataset/maintenance.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
+		dataset/index/manifest.cc \
 		dataset/targetfile.cc \
 		dataset/local.cc \
 		dataset/file.cc \
 		dataset/archive.cc \
-		dataset/simple/index.cc \
 		dataset/simple/datafile.cc \
 		dataset/simple/reader.cc \
 		dataset/simple/writer.cc \
@@ -358,11 +358,11 @@ tests_arki_test_SOURCES = \
 		dataset/maintenance-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
+		dataset/index/manifest-tut.cc \
 		dataset/targetfile-tut.cc \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
 		dataset/archive-tut.cc \
-		dataset/simple/index-tut.cc \
 		dataset/simple/datafile-tut.cc \
 		dataset/simple/reader-tut.cc \
 		dataset/simple/writer-tut.cc \

@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include <arki/dataset/simple/writer.h>
-#include <arki/dataset/simple/index.h>
+#include <arki/dataset/index/manifest.h>
 #include <arki/dataset/simple/datafile.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/dataset/maintenance.h>
@@ -76,12 +76,12 @@ Writer::Writer(const ConfigFile& cfg)
 
 	m_tf = TargetFile::create(cfg);
 
-	// If the index is missing, take note not to perform a repack until a
-	// check is made
-	if (!simple::Manifest::exists(m_path))
-		files::createDontpackFlagfile(m_path);
+    // If the index is missing, take note not to perform a repack until a
+    // check is made
+    if (!index::Manifest::exists(m_path))
+        files::createDontpackFlagfile(m_path);
 
-	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_path);
+    auto_ptr<index::Manifest> mft = index::Manifest::create(m_path);
 	m_mft = mft.release();
 	m_mft->openRW();
 }
@@ -171,16 +171,16 @@ struct Deleter : public maintenance::MaintFileVisitor
 struct CheckAge : public maintenance::MaintFileVisitor
 {
 	maintenance::MaintFileVisitor& next;
-	const Manifest& idx;
+    const index::Manifest& idx;
 	UItem<types::Time> archive_threshold;
 	UItem<types::Time> delete_threshold;
 
-	CheckAge(MaintFileVisitor& next, const Manifest& idx, int archive_age=-1, int delete_age=-1);
+    CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age=-1, int delete_age=-1);
 
     void operator()(const std::string& file, unsigned state);
 };
 
-CheckAge::CheckAge(MaintFileVisitor& next, const Manifest& idx, int archive_age, int delete_age)
+CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age, int delete_age)
 	: next(next), idx(idx)
 {
 	time_t now = time(NULL);

@@ -23,7 +23,6 @@
 #include <arki/dataset/test-utils.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/ondisk2/writer.h>
-#include <arki/dataset/simple/index.h>
 #include <arki/dataset/test-scenario.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>

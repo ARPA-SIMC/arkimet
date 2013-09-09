@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include <arki/dataset/archive.h>
-#include <arki/dataset/simple/index.h>
+#include <arki/dataset/index/manifest.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/summary.h>
@@ -67,7 +67,7 @@ Archive::~Archive() {}
 
 bool Archive::is_archive(const std::string& dir)
 {
-    return simple::Manifest::exists(dir);
+    return index::Manifest::exists(dir);
 }
 
 Archive* Archive::create(const std::string& dir, bool writable)
@@ -77,7 +77,7 @@ Archive* Archive::create(const std::string& dir, bool writable)
         // Writable is not allowed on archives that have been archived offline
         if (writable) return 0;
 
-        if (simple::Manifest::exists(dir))
+        if (index::Manifest::exists(dir))
         {
             auto_ptr<OnlineArchive> res(new OnlineArchive(dir));
             res->openRO();
@@ -108,16 +108,16 @@ OnlineArchive::~OnlineArchive()
 
 void OnlineArchive::openRO()
 {
-	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_dir);
-	m_mft = mft.release();
-	m_mft->openRO();
+    auto_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
+    m_mft = mft.release();
+    m_mft->openRO();
 }
 
 void OnlineArchive::openRW()
 {
-	auto_ptr<simple::Manifest> mft = simple::Manifest::create(m_dir);
-	m_mft = mft.release();
-	m_mft->openRW();
+    auto_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
+    m_mft = mft.release();
+    m_mft->openRW();
 }
 
 void OnlineArchive::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)

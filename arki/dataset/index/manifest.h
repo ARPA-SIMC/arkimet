@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_SIMPLE_H
-#define ARKI_DATASET_SIMPLE_H
+#ifndef ARKI_DATASET_INDEX_MANIFEST_H
+#define ARKI_DATASET_INDEX_MANIFEST_H
 
 /*
- * dataset/simple/index - Index for simple datasets with no duplicate checks
+ * dataset/index/manifest - Index for simple datasets with no duplicate checks
  *
- * Copyright (C) 2009--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ namespace maintenance {
 class MaintFileVisitor;
 }
 
-namespace simple {
+namespace index {
 
 class Manifest : public ReadonlyDataset
 {

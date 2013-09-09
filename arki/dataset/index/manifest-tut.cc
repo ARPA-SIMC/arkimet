@@ -21,7 +21,7 @@
 #include "config.h"
 
 #include <arki/dataset/test-utils.h>
-#include <arki/dataset/simple/index.h>
+#include <arki/dataset/index/manifest.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
@@ -39,10 +39,10 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
 using namespace arki::utils;
-using namespace arki::dataset::simple;
+using namespace arki::dataset::index;
 
-struct arki_dataset_simple_index_shar : public DatasetTest {
-	arki_dataset_simple_index_shar()
+struct arki_dataset_index_manifest_shar : public DatasetTest {
+	arki_dataset_index_manifest_shar()
 	{
 		system("rm -rf testds");
 		system("mkdir testds");
@@ -55,7 +55,7 @@ struct arki_dataset_simple_index_shar : public DatasetTest {
 		return Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 	}
 };
-TESTGRP(arki_dataset_simple_index);
+TESTGRP(arki_dataset_index_manifest);
 
 // Acquire and query
 template<> template<>

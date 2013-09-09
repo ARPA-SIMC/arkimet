@@ -27,7 +27,7 @@
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/dataset/simple/writer.h>
-#include <arki/dataset/simple/index.h>
+#include <arki/dataset/index/manifest.h>
 #include <arki/dispatcher.h>
 #include <arki/scan/grib.h>
 #include <arki/scan/vm2.h>
@@ -144,13 +144,13 @@ void OutputChecker::impl_ensure_all_lines_seen(const wibble::tests::Location& lo
 	}
 }
 
-ForceSqlite::ForceSqlite(bool val) : old(dataset::simple::Manifest::get_force_sqlite())
+ForceSqlite::ForceSqlite(bool val) : old(dataset::index::Manifest::get_force_sqlite())
 {
-	dataset::simple::Manifest::set_force_sqlite(val);
+	dataset::index::Manifest::set_force_sqlite(val);
 }
 ForceSqlite::~ForceSqlite()
 {
-	dataset::simple::Manifest::set_force_sqlite(old);
+	dataset::index::Manifest::set_force_sqlite(old);
 }
 
 std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
@@ -159,12 +159,12 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
 	if (wcfg->value("type") == "ondisk2")
 		return "index.sqlite";
 	else
-		return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+		return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
 std::string DatasetTest::arcidxfname() const
 {
-	return dataset::simple::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+	return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
 }
 
 int DatasetTest::days_since(int year, int month, int day)

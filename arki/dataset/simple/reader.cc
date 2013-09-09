@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include <arki/dataset/simple/reader.h>
-#include <arki/dataset/simple/index.h>
+#include <arki/dataset/index/manifest.h>
 #include <arki/configfile.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
@@ -64,10 +64,10 @@ Reader::Reader(const ConfigFile& cfg)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_path);
-	
-	if (Manifest::exists(m_path))
-	{
-		auto_ptr<Manifest> mft = Manifest::create(m_path);
+
+    if (index::Manifest::exists(m_path))
+    {
+        auto_ptr<index::Manifest> mft = index::Manifest::create(m_path);
 
 		m_mft = mft.release();
 		m_mft->openRO();
@@ -81,7 +81,7 @@ Reader::~Reader()
 
 bool Reader::is_dataset(const std::string& dir)
 {
-	return Manifest::exists(dir);
+    return index::Manifest::exists(dir);
 }
 
 void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)

@@ -39,15 +39,18 @@ namespace maintenance {
 class MaintFileVisitor;
 }
 
-namespace simple {
+namespace index {
 class Manifest;
+}
+
+namespace simple {
 class Reader;
 class Datafile;
 
 class Writer : public WritableLocal
 {
 protected:
-	simple::Manifest* m_mft;
+    index::Manifest* m_mft;
 	TargetFile* m_tf;
 	std::map<std::string, Datafile*> m_df_cache;
 
