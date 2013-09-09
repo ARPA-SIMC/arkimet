@@ -58,6 +58,9 @@ public:
 	/// Set an item
 	void set(const Item<>& i);
 
+    /// Set an item, from strings. Useful for quickly setting up data in tests.
+    void set(const std::string& type, const std::string& val);
+
 	/// Unset an item
 	void unset(types::Code code);
 

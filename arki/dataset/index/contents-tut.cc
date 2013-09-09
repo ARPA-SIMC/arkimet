@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include <arki/tests/test-utils.h>
+#include <arki/metadata/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/index/contents.h>
 #include <arki/metadata.h>
@@ -490,6 +491,85 @@ void to::test<6>()
 
 	// TODO: level, timerange, area, proddef, reftime
 	p.commit();
+}
+
+// Test smallfiles support
+template<> template<>
+void to::test<7>()
+{
+    Metadata md;
+    md.source = types::Source::decodeString("BLOB(vm2,test.vm2:0+32)");
+    md.set("product", "VM2(2)");
+    md.set("reftime", "2011-01-01T01:00:00Z");
+    md.set("area", "VM2(12)");
+    md.set("value", "50,,,000000000");
+
+    // Remove index if it exists
+    unlink("file1");
+
+    {
+        // An index without large files
+        auto_ptr<WContents> test = createIndex<WContents>(
+                "type = ondisk2\n"
+                "path = .\n"
+                "indexfile = file1\n"
+                "index = origin, product, level\n"
+                "unique = origin, product, level, timerange, area, proddef, reftime\n"
+        );
+        ensure(test.get() != 0);
+        test->open();
+
+        // Insert a metadata
+        Pending p = test->beginTransaction();
+        test->index(md, "test.vm2", md.source.upcast<source::Blob>()->offset);
+        p.commit();
+
+        // Query it back
+        metadata::Collection mdc;
+        test->query(dataset::DataQuery(Matcher::parse("")), mdc);
+
+        // 'value' should not have been preserved
+        atest(equals, mdc.size(), 1u);
+        atest(equals, mdc[0].source, types::Source::decodeString("BLOB(vm2,test.vm2:0+32)"));
+        atest(md_contains, mdc[0], "product", "VM2(2)");
+        atest(md_contains, mdc[0], "reftime", "2011-01-01T01:00:00Z");
+        atest(md_contains, mdc[0], "area", "VM2(12)");
+        atest(md_unset, mdc[0], "value");
+    }
+
+    // Remove index if it exists
+    unlink("file1");
+
+    {
+        // An index without large files
+        auto_ptr<WContents> test = createIndex<WContents>(
+                "type = ondisk2\n"
+                "path = .\n"
+                "indexfile = file1\n"
+                "index = origin, product, level\n"
+                "unique = origin, product, level, timerange, area, proddef, reftime\n"
+                "smallfiles = yes\n"
+        );
+        ensure(test.get() != 0);
+        test->open();
+
+        // Insert a metadata
+        Pending p = test->beginTransaction();
+        test->index(md, "test.vm2", md.source.upcast<source::Blob>()->offset);
+        p.commit();
+
+        // Query it back
+        metadata::Collection mdc;
+        test->query(dataset::DataQuery(Matcher::parse("")), mdc);
+
+        // 'value' should have been preserved
+        atest(equals, mdc.size(), 1u);
+        atest(equals, mdc[0].source, types::Source::decodeString("BLOB(vm2,test.vm2:0+32)"));
+        atest(md_contains, mdc[0], "product", "VM2(2)");
+        atest(md_contains, mdc[0], "reftime", "2011-01-01T01:00:00Z");
+        atest(md_contains, mdc[0], "area", "VM2(12)");
+        atest(md_contains, mdc[0], "value", "50,,,000000000");
+    }
 }
 
 }

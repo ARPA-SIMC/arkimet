@@ -29,6 +29,12 @@ namespace tests {
 /// Check that the two metadata are the same, except for source and notes
 void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& actual);
 
+/// Check that the metadata contains a given item
+void test_assert_md_contains(LOCPRM, const Metadata& expected, const std::string& actual_type, const std::string& actual_val);
+
+/// Check that the metadata does not contain
+void test_assert_md_unset(LOCPRM, const Metadata& expected, const std::string& actual_type);
+
 }
 }
 

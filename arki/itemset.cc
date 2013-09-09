@@ -47,6 +47,11 @@ void ItemSet::set(const Item<>& i)
 		it->second = i;
 }
 
+void ItemSet::set(const std::string& type, const std::string& val)
+{
+    set(types::decodeString(types::parseCodeName(type.c_str()), val));
+}
+
 void ItemSet::unset(types::Code code)
 {
 	m_vals.erase(code);

@@ -65,6 +65,38 @@ void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& ac
     }
 }
 
+void test_assert_md_contains(LOCPRM, const Metadata& expected, const std::string& actual_type, const std::string& actual_val)
+{
+    types::Code code = types::parseCodeName(actual_type.c_str());
+    UItem<> item = expected.get(code);
+    if (!item.defined())
+    {
+        std::stringstream ss;
+        ss << "metadata does not contain an item of type " << actual_type << ": expected: \"" << actual_val << "\"";
+        loc.fail_test(ss.str());
+    }
+
+    UItem<> item1 = types::decodeString(code, actual_val);
+    if (item != item1)
+    {
+        std::stringstream ss;
+        ss << "metadata mismatch on " << actual_type << ": expected: \"" << actual_val << "\" got: \"" << item << "\"";
+        loc.fail_test(ss.str());
+    }
+}
+
+void test_assert_md_unset(LOCPRM, const Metadata& expected, const std::string& actual_type)
+{
+    types::Code code = types::parseCodeName(actual_type.c_str());
+    UItem<> item = expected.get(code);
+    if (item.defined())
+    {
+        std::stringstream ss;
+        ss << "metadata should not contain an item of type " << actual_type << ", but it contains \"" << item << "\"";
+        loc.fail_test(ss.str());
+    }
+}
+
 }
 }
 // vim:set ts=4 sw=4:
