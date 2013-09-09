@@ -1,5 +1,5 @@
 /*
- * dataset/index/manifest - Index for simple datasets with no duplicate checks
+ * dataset/index/manifest - Index files with no duplicate checks
  *
  * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *

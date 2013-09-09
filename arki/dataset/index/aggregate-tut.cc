@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@
 
 #include "config.h"
 
+#include "aggregate.h"
 #include <arki/tests/test-utils.h>
-#include <arki/dataset/ondisk2/aggregate.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -31,19 +31,19 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::dataset::ondisk2;
+using namespace arki::dataset::index;
 using namespace arki::types;
 
-struct arki_dataset_ondisk2_aggregate_shar {
+struct arki_dataset_index_aggregate_shar {
 	utils::sqlite::SQLiteDB db;
-	arki_dataset_ondisk2_aggregate_shar()
+	arki_dataset_index_aggregate_shar()
 	{
 		db.open(":memory:");
 		//db.open("/tmp/zaza.sqlite");
 		//db.exec("DROP TABLE IF EXISTS sub_origin");
 	}
 };
-TESTGRP(arki_dataset_ondisk2_aggregate);
+TESTGRP(arki_dataset_index_aggregate);
 
 template<> template<>
 void to::test<1>()

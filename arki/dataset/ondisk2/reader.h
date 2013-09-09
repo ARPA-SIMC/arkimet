@@ -4,7 +4,7 @@
 /*
  * dataset/ondisk2/reader - Local on disk dataset reader
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,13 +41,16 @@ class Consumer;
 namespace dataset {
 class TargetFile;
 
+namespace index {
+class RContents;
+}
+
 namespace ondisk2 {
-class RIndex;
 
 class Reader : public Local
 {
 protected:
-	RIndex* m_idx;
+    index::RContents* m_idx;
 	TargetFile* m_tf;
 
 	// Query only the data in the dataset, without the archives

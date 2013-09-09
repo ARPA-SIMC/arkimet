@@ -43,6 +43,7 @@ using namespace std;
 using namespace wibble;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::dataset;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
 using namespace arki::utils;
@@ -460,11 +461,11 @@ void to::test<7>()
 {
 	acquireSamples();
 	system("cat inbound/test.grib1 >> testdir/2007/07-08.grib1");
-	{
-		WIndex index(cfg);
-		index.open();
-		index.reset("2007/07-08.grib1");
-	}
+    {
+        index::WContents index(cfg);
+        index.open();
+        index.reset("2007/07-08.grib1");
+    }
 
 	arki::dataset::ondisk2::Writer writer(cfg);
 	MaintenanceCollector c;

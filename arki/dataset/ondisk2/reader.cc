@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include <arki/dataset/ondisk2/reader.h>
-#include <arki/dataset/ondisk2/index.h>
+#include <arki/dataset/index/contents.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/dataset/archive.h>
 #include <arki/types/assigneddataset.h>
@@ -70,8 +70,8 @@ Reader::Reader(const ConfigFile& cfg)
 	m_tf = TargetFile::create(cfg);
 	if (sys::fs::access(str::joinpath(m_path, "index.sqlite"), F_OK))
 	{
-		m_idx = new RIndex(cfg);
-		m_idx->open();
+        m_idx = new index::RContents(cfg);
+        m_idx->open();
 	}
 }
 

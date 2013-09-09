@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_ONDISK2_INDEX_H
-#define ARKI_DATASET_ONDISK2_INDEX_H
+#ifndef ARKI_DATASET_INDEX_CONTENTS_H
+#define ARKI_DATASET_INDEX_CONTENTS_H
 
 /*
- * dataset/ondisk2/index - Dataset index infrastructure
+ * dataset/index/contents - Index for data files and their contents
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <arki/transaction.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/index/attr.h>
-#include <arki/dataset/ondisk2/aggregate.h>
+#include <arki/dataset/index/aggregate.h>
 #include <string>
 #include <set>
 #include <map>
@@ -50,7 +50,7 @@ namespace maintenance {
 struct IndexFileVisitor;
 }
 
-namespace ondisk2 {
+namespace index {
 
 struct Uniques;
 struct Others;
@@ -72,7 +72,7 @@ struct Others;
  * It must be possible to completely regenerate the dataset index by
  * rescanning all the data stored in the dataset.
  */
-class Index
+class Contents
 {
 protected:
     /// Dataset name
@@ -122,9 +122,9 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md) const;
 
-	Index(const ConfigFile& cfg);
+    Contents(const ConfigFile& cfg);
 public:
-	~Index();
+    ~Contents();
 
 	const std::string& pathname() const { return m_pathname; }
 
@@ -271,7 +271,7 @@ public:
 	Summary summaryForAll() const;
 };
 
-class RIndex : public Index
+class RContents : public Contents
 {
 protected:
 	/**
@@ -286,14 +286,14 @@ protected:
 	void metadataQuery(const std::string& query, metadata::Consumer& consumer) const;
 
 public:
-	RIndex(const ConfigFile& cfg);
-	~RIndex();
+	RContents(const ConfigFile& cfg);
+	~RContents();
 
 	/// Initialise access to the index
 	void open();
 };
 
-class WIndex : public Index
+class WContents : public Contents
 {
 protected:
 	utils::sqlite::InsertQuery m_insert;
@@ -314,8 +314,8 @@ protected:
 	void bindInsertParams(utils::sqlite::Query& q, Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
 
 public:
-	WIndex(const ConfigFile& cfg);
-	~WIndex();
+	WContents(const ConfigFile& cfg);
+	~WContents();
 
 	/**
 	 * Initialise access to the index

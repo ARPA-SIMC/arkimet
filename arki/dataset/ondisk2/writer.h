@@ -4,7 +4,7 @@
 /*
  * dataset/ondisk2/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include <arki/dataset/local.h>
 #include <arki/data.h>
 #include <arki/configfile.h>
-#include <arki/dataset/ondisk2/index.h>
+#include <arki/dataset/index/contents.h>
 #include <string>
 #include <memory>
 
@@ -55,7 +55,7 @@ class Writer : public WritableLocal
 {
 protected:
 	ConfigFile m_cfg;
-	WIndex m_idx;
+    index::WContents m_idx;
 	TargetFile* m_tf;
 
     std::map<std::string, data::Writer> m_df_cache;

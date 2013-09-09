@@ -22,7 +22,7 @@
 
 #include <arki/tests/test-utils.h>
 #include <arki/dataset.h>
-#include <arki/dataset/ondisk2/index.h>
+#include <arki/dataset/index/contents.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/types/origin.h>
@@ -50,7 +50,7 @@ namespace tut {
 using namespace std;
 using namespace wibble;
 using namespace arki;
-using namespace arki::dataset::ondisk2;
+using namespace arki::dataset::index;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -64,14 +64,14 @@ static inline auto_ptr<INDEX> createIndex(const std::string& config)
 	return auto_ptr<INDEX>(new INDEX(cfg));
 }
 
-struct arki_dataset_ondisk2_index_shar {
+struct arki_dataset_index_contents_shar {
 	Metadata md;
 	Metadata md1;
 
 	ValueBag testArea;
 	ValueBag testProddef;
 
-	arki_dataset_ondisk2_index_shar()
+	arki_dataset_index_contents_shar()
 	{
 		testArea.set("foo", Value::createInteger(5));
 		testArea.set("bar", Value::createInteger(5000));
@@ -116,13 +116,13 @@ struct arki_dataset_ondisk2_index_shar {
 		out.close();
 	}
 };
-TESTGRP(arki_dataset_ondisk2_index);
+TESTGRP(arki_dataset_index_contents);
 
 // Trying indexing a few metadata
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<WIndex> test = createIndex<WIndex>(
+	auto_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = :memory:\n"
@@ -168,7 +168,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	auto_ptr<WIndex> test = createIndex<WIndex>(
+	auto_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = :memory:\n"
@@ -258,7 +258,7 @@ struct ReadHang : public sys::ChildProcess, public metadata::Consumer
 	virtual int main()
 	{
 		try {
-			RIndex idx(cfg);
+			RContents idx(cfg);
 			idx.open();
 			idx.query(dataset::DataQuery(Matcher::parse("origin:GRIB1")), *this);
 		} catch (std::exception& e) {
@@ -300,7 +300,7 @@ void to::test<3>()
 
 	// Create the index and index two metadata
 	{
-		auto_ptr<WIndex> test1 = createIndex<WIndex>(cfg);
+		auto_ptr<WContents> test1 = createIndex<WContents>(cfg);
 		test1->open();
 
 		Pending p = test1->beginTransaction();
@@ -327,7 +327,7 @@ void to::test<3>()
 	md3.set(proddef::GRIB::create(testProddef));
 	md3.add_note(types::Note::create("this is a test"));
 	{
-		auto_ptr<WIndex> test1 = createIndex<WIndex>(cfg);
+		auto_ptr<WContents> test1 = createIndex<WContents>(cfg);
 		test1->open();
 		Pending p = test1->beginTransaction();
 		test1->index(md3, "test-md1", 0);
@@ -345,7 +345,7 @@ void to::test<4>()
 	// Remove index if it exists
 	unlink("file1");
 
-	auto_ptr<WIndex> test = createIndex<WIndex>(
+	auto_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = file1\n"
@@ -396,7 +396,7 @@ void to::test<5>()
 	// Remove index if it exists
 	unlink("file1");
 
-	auto_ptr<WIndex> test = createIndex<WIndex>(
+	auto_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = \n"
 		"indexfile = file1\n"
@@ -459,7 +459,7 @@ void to::test<6>()
 	// Remove index if it exists
 	unlink("file1");
 
-	auto_ptr<WIndex> test = createIndex<WIndex>(
+	auto_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = file1\n"

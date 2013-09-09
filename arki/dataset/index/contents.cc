@@ -1,5 +1,5 @@
 /*
- * dataset/index - Dataset index infrastructure
+ * dataset/index/contents - Index for data files and their contents
  *
  * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
@@ -22,7 +22,7 @@
 
 #include "config.h"
 
-#include <arki/dataset/ondisk2/index.h>
+#include "contents.h"
 #include <arki/dataset/maintenance.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -68,7 +68,7 @@ using namespace arki::dataset::index;
 
 namespace arki {
 namespace dataset {
-namespace ondisk2 {
+namespace index {
 
 struct IndexGlobalData
 {
@@ -89,7 +89,7 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(const ConfigFile& cfg)
+Contents::Contents(const ConfigFile& cfg)
     : m_name(cfg.value("name")), m_root(sys::fs::abspath(cfg.value("path"))),
       m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0)
@@ -121,13 +121,13 @@ Index::Index(const ConfigFile& cfg)
 	// database to see if some attributes are not available
 }
 
-Index::~Index()
+Contents::~Contents()
 {
 	if (m_uniques) delete m_uniques;
 	if (m_others) delete m_others;
 }
 
-std::set<types::Code> Index::available_other_tables() const
+std::set<types::Code> Contents::available_other_tables() const
 {
 	// See what metadata types are already handled by m_uniques,
 	// if any
@@ -154,7 +154,7 @@ std::set<types::Code> Index::available_other_tables() const
 	return available_columns;
 }
 
-std::set<types::Code> Index::all_other_tables() const
+std::set<types::Code> Contents::all_other_tables() const
 {
 	std::set<types::Code> res;
 
@@ -172,7 +172,7 @@ std::set<types::Code> Index::all_other_tables() const
 	return res;
 }
 
-void Index::initQueries()
+void Contents::initQueries()
 {
 	if (!m_others)
 	{
@@ -197,7 +197,7 @@ void Index::initQueries()
     m_get_current.compile(query);
 }
 
-std::set<types::Code> Index::unique_codes() const
+std::set<types::Code> Contents::unique_codes() const
 {
 	std::set<types::Code> res;
 	if (m_uniques) res = m_uniques->members();
@@ -205,7 +205,7 @@ std::set<types::Code> Index::unique_codes() const
 	return res;
 }
 
-void Index::setupPragmas()
+void Contents::setupPragmas()
 {
 	// Faster but riskier, since we do not have a flagfile to trap
 	// interrupted transactions
@@ -226,7 +226,7 @@ void Index::setupPragmas()
 	m_db.exec("PRAGMA legacy_file_format = 0");
 }
 
-int Index::id(const Metadata& md) const
+int Contents::id(const Metadata& md) const
 {
 	m_get_id.reset();
 
@@ -261,7 +261,7 @@ int Index::id(const Metadata& md) const
 	return id;
 }
 
-bool Index::get_current(const Metadata& md, Metadata& current) const
+bool Contents::get_current(const Metadata& md, Metadata& current) const
 {
     m_get_current.reset();
 
@@ -292,7 +292,7 @@ bool Index::get_current(const Metadata& md, Metadata& current) const
     return found;
 }
 
-size_t Index::count() const
+size_t Contents::count() const
 {
 	Query sq("count", m_db);
 	sq.compile("SELECT COUNT(*) FROM md");
@@ -358,7 +358,7 @@ struct FurtherSort
 };
 }
 
-void Index::scan_files(maintenance::IndexFileVisitor& v) const
+void Contents::scan_files(maintenance::IndexFileVisitor& v) const
 {
 	Query sq("scan_files", m_db);
 	sq.compile("SELECT id, file, reftime, offset, size FROM md ORDER BY file");
@@ -376,7 +376,7 @@ void Index::scan_files(maintenance::IndexFileVisitor& v) const
 	fs.end();
 }
 
-void Index::scan_file(const std::string& relname, maintenance::IndexFileVisitor& v, const std::string& orderBy) const
+void Contents::scan_file(const std::string& relname, maintenance::IndexFileVisitor& v, const std::string& orderBy) const
 {
 	Query sq("scan_file", m_db);
 	sq.compile("SELECT id, offset, size FROM md WHERE file=? ORDER BY " + orderBy);
@@ -390,7 +390,7 @@ void Index::scan_file(const std::string& relname, maintenance::IndexFileVisitor&
 	}
 }
 
-void Index::scan_file(const std::string& relname, metadata::Consumer& consumer) const
+void Contents::scan_file(const std::string& relname, metadata::Consumer& consumer) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
@@ -417,7 +417,7 @@ void Index::scan_file(const std::string& relname, metadata::Consumer& consumer) 
     }
 }
 
-std::string Index::max_file_reftime(const std::string& relname) const
+std::string Contents::max_file_reftime(const std::string& relname) const
 {
 	Query sq("max_file_reftime", m_db);
 	sq.compile("SELECT MAX(reftime) FROM md WHERE file=?");
@@ -472,7 +472,7 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, UItem<types::Time>& be
 	}
 }
 
-bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
+bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 {
 	vector<string> constraints;
 
@@ -548,7 +548,7 @@ bool Index::addJoinsAndConstraints(const Matcher& m, std::string& query) const
 	return true;
 }
 
-void Index::build_md(Query& q, Metadata& md) const
+void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
     md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
@@ -575,7 +575,7 @@ void Index::build_md(Query& q, Metadata& md) const
     }
 }
 
-bool Index::query(const dataset::DataQuery& q, metadata::Consumer& consumer) const
+bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
@@ -664,7 +664,7 @@ bool Index::query(const dataset::DataQuery& q, metadata::Consumer& consumer) con
 	return true;
 }
 
-size_t Index::produce_nth(metadata::Consumer& consumer, size_t idx) const
+size_t Contents::produce_nth(metadata::Consumer& consumer, size_t idx) const
 {
     // Buffer results in RAM so we can free the index before starting to read the data
     metadata::Collection mdbuf;
@@ -697,7 +697,7 @@ size_t Index::produce_nth(metadata::Consumer& consumer, size_t idx) const
     return mdbuf.size();
 }
 
-void Index::invalidateSummaryCache()
+void Contents::invalidateSummaryCache()
 {
 	// Delete all files *.summary in the cache directory
 	sys::fs::Directory dir(m_scache_root);
@@ -711,19 +711,19 @@ void Index::invalidateSummaryCache()
 		}
 }
 
-void Index::invalidateSummaryCache(int year, int month)
+void Contents::invalidateSummaryCache(int year, int month)
 {
 	sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month)));
 	sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
 }
 
-void Index::invalidateSummaryCache(const Metadata& md)
+void Contents::invalidateSummaryCache(const Metadata& md)
 {
 	Item<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
 	invalidateSummaryCache(rt->time->vals[0], rt->time->vals[1]);
 }
 
-bool Index::checkSummaryCache(std::ostream& log) const
+bool Contents::checkSummaryCache(std::ostream& log) const
 {
 	bool res = true;
 
@@ -744,14 +744,14 @@ bool Index::checkSummaryCache(std::ostream& log) const
 	return res;
 }
 
-void Index::rebuildSummaryCache()
+void Contents::rebuildSummaryCache()
 {
 	invalidateSummaryCache();
 	// Rebuild all summaries
 	summaryForAll();
 }
 
-void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
+void Contents::querySummaryFromDB(const std::string& where, Summary& summary) const
 {
 	string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
@@ -806,7 +806,7 @@ void Index::querySummaryFromDB(const std::string& where, Summary& summary) const
 	}
 }
 
-Summary Index::summaryForMonth(int year, int month) const
+Summary Contents::summaryForMonth(int year, int month) const
 {
 	Summary s;
 	string sum_file = str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month));
@@ -840,7 +840,7 @@ Summary Index::summaryForMonth(int year, int month) const
 	return s;
 }
 
-Summary Index::summaryForAll() const
+Summary Contents::summaryForAll() const
 {
 	Summary s;
 	string sum_file = str::joinpath(m_scache_root, "all.summary");
@@ -888,7 +888,7 @@ Summary Index::summaryForAll() const
 	return s;
 }
 
-bool Index::querySummaryFromDB(const Matcher& m, Summary& summary) const
+bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
 {
 	string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
@@ -968,7 +968,7 @@ static inline bool range_envelopes_full_month(const Item<types::Time>& begin, co
         end->vals[1] == (begin->vals[1] % 12) + 1;
 }
 
-bool Index::querySummary(const Matcher& matcher, Summary& summary) const
+bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
 {
 	// Check if the matcher discriminates on reference times
 	const matcher::OR* reftime = 0;
@@ -1087,16 +1087,16 @@ bool Index::querySummary(const Matcher& matcher, Summary& summary) const
 }
 
 
-RIndex::RIndex(const ConfigFile& cfg)
-   	: Index(cfg)
+RContents::RContents(const ConfigFile& cfg)
+    : Contents(cfg)
 {
 }
 
-RIndex::~RIndex()
+RContents::~RContents()
 {
 }
 
-void RIndex::open()
+void RContents::open()
 {
 	if (m_db.isOpen())
 		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
@@ -1113,48 +1113,22 @@ void RIndex::open()
 		sys::fs::mkdirIfMissing(m_scache_root, 0777);
 }
 
-void RIndex::initQueries()
+void RContents::initQueries()
 {
-	Index::initQueries();
+    Contents::initQueries();
 }
 
-#if 0
-bool RIndex::fetch(const Metadata& md, std::string& file, size_t& ofs)
-{
-	// TODO: acquire all the attr table IDs for md
-	// TODO: query those plus all the non-summarisable metadata
-	// TODO: find the matching line
-#if 0
-	// SELECT file, ofs FROM md WHERE id=id
-	string mdid = id(md);
-	m_fetch_by_id.reset();
-	m_fetch_by_id.bind(1, mdid);
-	if (!m_fetch_by_id.step())
-		return false;
-
-	// int iid = m_fetch_by_id.fetchInt(0);
-	file = m_fetch_by_id.fetchString(1);
-	ofs = m_fetch_by_id.fetchSizeT(2);
-
-	// Reset the query to close the statement
-	m_fetch_by_id.reset();
-
-	return true;
-#endif
-}
-#endif
-
-WIndex::WIndex(const ConfigFile& cfg)
-	: Index(cfg), m_insert(m_db),
+WContents::WContents(const ConfigFile& cfg)
+    : Contents(cfg), m_insert(m_db),
           m_delete("delete", m_db), m_replace("replace", m_db)
 {
 }
 
-WIndex::~WIndex()
+WContents::~WContents()
 {
 }
 
-bool WIndex::open()
+bool WContents::open()
 {
 	if (m_db.isOpen())
 		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
@@ -1182,9 +1156,9 @@ bool WIndex::open()
 	return need_create;
 }
 
-void WIndex::initQueries()
+void WContents::initQueries()
 {
-	Index::initQueries();
+    Contents::initQueries();
 
 	// Precompile insert query
 	string un_ot;
@@ -1212,7 +1186,7 @@ void WIndex::initQueries()
 	m_delete.compile("DELETE FROM md WHERE id=?");
 }
 
-void WIndex::initDB()
+void WContents::initDB()
 {
 	if (m_uniques) m_uniques->initDB(m_components_indexed);
 	if (m_others) m_others->initDB(m_components_indexed);
@@ -1242,7 +1216,7 @@ void WIndex::initDB()
 	if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
+void WContents::bindInsertParams(Query& q, Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
 {
 	int idx = 0;
 
@@ -1279,17 +1253,17 @@ void WIndex::bindInsertParams(Query& q, Metadata& md, const std::string& file, u
 	}
 }
 
-Pending WIndex::beginTransaction()
+Pending WContents::beginTransaction()
 {
 	return Pending(new SqliteTransaction(m_db));
 }
 
-Pending WIndex::beginExclusiveTransaction()
+Pending WContents::beginExclusiveTransaction()
 {
 	return Pending(new SqliteTransaction(m_db, true));
 }
 
-void WIndex::index(Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WContents::index(Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
 	m_insert.reset();
 
@@ -1306,7 +1280,7 @@ void WIndex::index(Metadata& md, const std::string& file, uint64_t ofs, int* id)
 	invalidateSummaryCache(md);
 }
 
-void WIndex::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
 	m_replace.reset();
 
@@ -1323,7 +1297,7 @@ void WIndex::replace(Metadata& md, const std::string& file, uint64_t ofs, int* i
 	invalidateSummaryCache(md);
 }
 
-void WIndex::remove(int id, std::string& file)
+void WContents::remove(int id, std::string& file)
 {
 	Query fetch_by_id("byid", m_db);
 	fetch_by_id.compile("SELECT file, reftime FROM md WHERE id=?");
@@ -1350,13 +1324,13 @@ void WIndex::remove(int id, std::string& file)
 		;
 }
 
-void WIndex::reset()
+void WContents::reset()
 {
 	m_db.exec("DELETE FROM md");
 	invalidateSummaryCache();
 }
 
-void WIndex::reset(const std::string& file)
+void WContents::reset(const std::string& file)
 {
 	// Get the file date extremes to invalidate the summary cache
 	UItem<types::Time> tmin, tmax;
@@ -1396,7 +1370,7 @@ void WIndex::reset(const std::string& file)
 		sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
 }
 
-void WIndex::relocate_data(int id, off64_t newofs)
+void WContents::relocate_data(int id, off64_t newofs)
 {
 	Query query("update_offset", m_db);
 	query.compile("UPDATE md SET offset = ? WHERE id = ?");
@@ -1406,7 +1380,7 @@ void WIndex::relocate_data(int id, off64_t newofs)
 		;
 }
 
-void WIndex::vacuum()
+void WContents::vacuum()
 {
 	m_db.exec("PRAGMA journal_mode = TRUNCATE");
 	if (m_uniques)

@@ -24,13 +24,13 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/http/test-utils.h \
 		dataset/index/attr.h \
 		dataset/index/base.h \
+		dataset/index/aggregate.h \
 		dataset/index/manifest.h \
+		dataset/index/contents.h \
 		dataset/local.h \
 		dataset/maintenance.h \
 		dataset/merged.h \
-		dataset/ondisk2/aggregate.h \
 		dataset/ondisk2.h \
-		dataset/ondisk2/index.h \
 		dataset/ondisk2/reader.h \
 		dataset/ondisk2/test-utils.h \
 		dataset/ondisk2/writer.h \
@@ -230,6 +230,8 @@ libarkimet_dataset_la_SOURCES = \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
 		dataset/index/manifest.cc \
+		dataset/index/aggregate.cc \
+		dataset/index/contents.cc \
 		dataset/targetfile.cc \
 		dataset/local.cc \
 		dataset/file.cc \
@@ -238,8 +240,6 @@ libarkimet_dataset_la_SOURCES = \
 		dataset/simple/reader.cc \
 		dataset/simple/writer.cc \
 		dataset/ondisk2.cc \
-		dataset/ondisk2/aggregate.cc \
-		dataset/ondisk2/index.cc \
 		dataset/ondisk2/reader.cc \
 		dataset/ondisk2/writer.cc \
 		dataset/http/server.cc \
@@ -359,6 +359,8 @@ tests_arki_test_SOURCES = \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
 		dataset/index/manifest-tut.cc \
+		dataset/index/aggregate-tut.cc \
+		dataset/index/contents-tut.cc \
 		dataset/targetfile-tut.cc \
 		dataset/local-tut.cc \
 		dataset/file-tut.cc \
@@ -367,8 +369,6 @@ tests_arki_test_SOURCES = \
 		dataset/simple/reader-tut.cc \
 		dataset/simple/writer-tut.cc \
 		dataset/ondisk2-tut.cc \
-		dataset/ondisk2/aggregate-tut.cc \
-		dataset/ondisk2/index-tut.cc \
 		dataset/ondisk2/reader-tut.cc \
 		dataset/ondisk2/writer-tut.cc \
 		dataset/ondisk2/test-utils.cc \

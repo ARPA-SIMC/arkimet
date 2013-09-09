@@ -326,16 +326,16 @@ struct Deleter : public maintenance::IndexFileVisitor
 struct CheckAge : public maintenance::MaintFileVisitor
 {
 	maintenance::MaintFileVisitor& next;
-	const Index& idx;
+	const index::Contents& idx;
 	std::string archive_threshold;
 	std::string delete_threshold;
 
-	CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age=-1, int delete_age=-1);
+    CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age=-1, int delete_age=-1);
 
     void operator()(const std::string& file, unsigned state);
 };
 
-CheckAge::CheckAge(MaintFileVisitor& next, const Index& idx, int archive_age, int delete_age)
+CheckAge::CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age, int delete_age)
     : next(next), idx(idx)
 {
     time_t now = override_now ? override_now : time(NULL);
@@ -424,7 +424,7 @@ void Writer::removeAll(std::ostream& log, bool writable)
 namespace {
 struct FileCopier : maintenance::IndexFileVisitor
 {
-	WIndex& m_idx;
+    index::WContents& m_idx;
 	const scan::Validator& m_val;
 	wibble::sys::Buffer buf;
 	std::string src;
@@ -433,16 +433,16 @@ struct FileCopier : maintenance::IndexFileVisitor
         data::Writer writer;
 	off_t w_off;
 
-	FileCopier(WIndex& idx, const std::string& src, const std::string& dst);
-	virtual ~FileCopier();
+    FileCopier(index::WContents& idx, const std::string& src, const std::string& dst);
+    virtual ~FileCopier();
 
 	void operator()(const std::string& file, int id, off64_t offset, size_t size);
 
 	void flush();
 };
 
-FileCopier::FileCopier(WIndex& idx, const std::string& src, const std::string& dst)
-	: m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1),
+FileCopier::FileCopier(index::WContents& idx, const std::string& src, const std::string& dst)
+    : m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1),
           writer(data::Writer::get(utils::files::format_from_ext(src), dst)), w_off(0)
 {
 	fd_src = open(src.c_str(), O_RDONLY
@@ -484,13 +484,12 @@ void FileCopier::flush()
 
 struct Reindexer : public metadata::Consumer
 {
-	WIndex& idx;
+    index::WContents& idx;
 	std::string relfile;
 	std::string basename;
 
-	Reindexer(WIndex& idx,
-		  const std::string& relfile)
-	       	: idx(idx), relfile(relfile), basename(str::basename(relfile)) {}
+    Reindexer(index::WContents& idx, const std::string& relfile)
+        : idx(idx), relfile(relfile), basename(str::basename(relfile)) {}
 
 	virtual bool operator()(Metadata& md)
 	{

@@ -1,7 +1,7 @@
 /*
- * dataset/ondisk2/aggregate - Handle aggregate tables in the index
+ * dataset/index/aggregate - Handle aggregate tables in SQL indices
  *
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
 
 #include "config.h"
 
-#include <arki/dataset/ondisk2/aggregate.h>
-#include <arki/dataset/index/base.h>
+#include "base.h"
+#include "aggregate.h"
 #include <arki/matcher.h>
 
 using namespace std;
@@ -31,24 +31,24 @@ using namespace wibble;
 
 namespace arki {
 namespace dataset {
-namespace ondisk2 {
+namespace index {
 
 void Aggregate::initQueries()
 {
 	string query = "SELECT id FROM " + m_table_name + " WHERE " ;
-	for (index::Attrs::const_iterator i = m_attrs.begin();
-			i != m_attrs.end(); ++i)
-	{
+    for (Attrs::const_iterator i = m_attrs.begin();
+            i != m_attrs.end(); ++i)
+    {
 		if (i != m_attrs.begin())
 			query += " AND ";
 		query += (*i)->name + "=?";
 	}
 	q_select.compile(query);
 
-	query.clear();
-	for (index::Attrs::const_iterator i = m_attrs.begin();
-			i != m_attrs.end(); ++i)
-	{
+    query.clear();
+    for (Attrs::const_iterator i = m_attrs.begin();
+            i != m_attrs.end(); ++i)
+    {
 		if (!query.empty()) query += ", ";
 		query += (*i)->name;
 	}
@@ -57,9 +57,9 @@ void Aggregate::initQueries()
 
 	string names;
 	string placeholders;
-	for (index::Attrs::const_iterator i = m_attrs.begin();
-			i != m_attrs.end(); ++i)
-	{
+    for (Attrs::const_iterator i = m_attrs.begin();
+            i != m_attrs.end(); ++i)
+    {
 		if (not names.empty())
 		{
 			names += ", ";
@@ -73,19 +73,19 @@ void Aggregate::initQueries()
 
 std::set<types::Code> Aggregate::members() const
 {
-	std::set<types::Code> res;
-	for (index::Attrs::const_iterator i = m_attrs.begin();
-			i != m_attrs.end(); ++i)
-		res.insert((*i)->code);
-	return res;
+    std::set<types::Code> res;
+    for (Attrs::const_iterator i = m_attrs.begin();
+            i != m_attrs.end(); ++i)
+        res.insert((*i)->code);
+    return res;
 }
 
 int Aggregate::get(const Metadata& md) const
 {
 	q_select.reset();
 	int idx = 0;
-	for (index::Attrs::const_iterator i = m_attrs.begin();
-			i != m_attrs.end(); ++i)
+    for (Attrs::const_iterator i = m_attrs.begin();
+            i != m_attrs.end(); ++i)
 	{
 		int id = -1;
 		try {
@@ -126,9 +126,9 @@ void Aggregate::read(int id, Metadata& md) const
 		i = ins.first;
 	}
 
-	size_t idx = 0;
-	for (index::Attrs::const_iterator j = m_attrs.begin();
-			j != m_attrs.end(); ++j, ++idx)
+    size_t idx = 0;
+    for (Attrs::const_iterator j = m_attrs.begin();
+            j != m_attrs.end(); ++j, ++idx)
 	{
 		int id = i->second[idx];
 		if (id != -1)
@@ -143,10 +143,10 @@ int Aggregate::add_constraints(
 {
 	if (m.empty()) return 0;
 
-	// See if the matcher has anything that we can use
-	size_t found = 0;
-	for (index::Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
-	{
+    // See if the matcher has anything that we can use
+    size_t found = 0;
+    for (Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
+    {
 		matcher::AND::const_iterator mi = m.m_impl->find((*i)->code);
 		if (mi == m.m_impl->end())
 			continue;
@@ -164,10 +164,10 @@ std::string Aggregate::make_subquery(const Matcher& m) const
 {
 	if (m.empty()) return std::string();
 
-	// See if the matcher has anything that we can use
-	vector<string> constraints;
-	for (index::Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
-	{
+    // See if the matcher has anything that we can use
+    vector<string> constraints;
+    for (Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
+    {
 		matcher::AND::const_iterator mi = m.m_impl->find((*i)->code);
 		if (mi == m.m_impl->end())
 			continue;
@@ -226,9 +226,9 @@ void Aggregate::initDB(const std::set<types::Code>& components_indexed)
 	string query = "CREATE TABLE IF NOT EXISTS " + m_table_name + " ("
 		"id INTEGER PRIMARY KEY";
 	string unique = ", UNIQUE(";
-	for (index::Attrs::const_iterator i = m_attrs.begin();
-			i != m_attrs.end(); ++i)
-	{
+    for (Attrs::const_iterator i = m_attrs.begin();
+            i != m_attrs.end(); ++i)
+    {
 		query += ", " + (*i)->name + " INTEGER NOT NULL";
 		if (i != m_attrs.begin())
 			unique += ", ";
@@ -238,9 +238,9 @@ void Aggregate::initDB(const std::set<types::Code>& components_indexed)
 	m_db.exec(query);
 
 	// Create indices on mduniq if needed
-	for (index::Attrs::const_iterator i = m_attrs.begin();
-			i != m_attrs.end(); ++i)
-	{
+    for (Attrs::const_iterator i = m_attrs.begin();
+            i != m_attrs.end(); ++i)
+    {
 		if (components_indexed.find((*i)->code) == components_indexed.end()) continue;
 		string name = (*i)->name;
 		m_db.exec("CREATE INDEX IF NOT EXISTS " + m_table_name + "_idx_" + name

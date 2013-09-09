@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_ONDISK2_AGGREGATE_H
-#define ARKI_DATASET_ONDISK2_AGGREGATE_H
+#ifndef ARKI_DATASET_INDEX_AGGREGATE_H
+#define ARKI_DATASET_INDEX_AGGREGATE_H
 
 /*
- * dataset/ondisk2/aggregate - Handle aggregate tables in the index
+ * dataset/index/aggregate - Handle aggregate tables in SQL indices
  *
- * Copyright (C) 2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,14 +31,14 @@
 
 namespace arki {
 namespace dataset {
-namespace ondisk2 {
+namespace index {
 
 class Aggregate
 {
 protected:
 	utils::sqlite::SQLiteDB& m_db;
 	std::string m_table_name;
-	index::Attrs m_attrs;
+    Attrs m_attrs;
 	mutable std::map< int, std::vector<int> > m_cache;
 
 	mutable utils::sqlite::PrecompiledQuery q_select;
