@@ -406,15 +406,14 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 
 void Writer::removeAll(std::ostream& log, bool writable)
 {
-	if (writable)
-	{
-		log << m_name << ": clearing summary cache" << endl;
-		m_idx.invalidateSummaryCache();
-	} else
-		log << m_name << ": would clear summary cache" << endl;
-
-	Deleter deleter(m_name, log, writable);
-	m_idx.scan_files(deleter);
+    Deleter deleter(m_name, log, writable);
+    m_idx.scan_files(deleter);
+    if (writable)
+    {
+        log << m_name << ": clearing index" << endl;
+        m_idx.reset();
+    } else
+        log << m_name << ": would clear index" << endl;
 
 	// TODO: empty the index
 	WritableLocal::removeAll(log, writable);

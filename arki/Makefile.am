@@ -25,6 +25,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/index/attr.h \
 		dataset/index/base.h \
 		dataset/index/aggregate.h \
+		dataset/index/summarycache.h \
 		dataset/index/manifest.h \
 		dataset/index/contents.h \
 		dataset/local.h \
@@ -231,6 +232,7 @@ libarkimet_dataset_la_SOURCES = \
 		dataset/index/attr.cc \
 		dataset/index/manifest.cc \
 		dataset/index/aggregate.cc \
+		dataset/index/summarycache.cc \
 		dataset/index/contents.cc \
 		dataset/targetfile.cc \
 		dataset/local.cc \
@@ -360,6 +362,7 @@ tests_arki_test_SOURCES = \
 		dataset/index/attr-tut.cc \
 		dataset/index/manifest-tut.cc \
 		dataset/index/aggregate-tut.cc \
+		dataset/index/summarycache-tut.cc \
 		dataset/index/contents-tut.cc \
 		dataset/targetfile-tut.cc \
 		dataset/local-tut.cc \

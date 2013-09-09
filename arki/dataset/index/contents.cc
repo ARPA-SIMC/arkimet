@@ -35,7 +35,6 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
 #include <arki/summary/stats.h>
-#include <arki/utils/fd.h>
 #include <arki/utils/files.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
@@ -51,12 +50,6 @@
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cstdio>
 
 using namespace std;
 using namespace wibble;
@@ -89,16 +82,15 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
+
 Contents::Contents(const ConfigFile& cfg)
     : m_name(cfg.value("name")), m_root(sys::fs::abspath(cfg.value("path"))),
       m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
-      m_uniques(0), m_others(0)
+      m_uniques(0), m_others(0), scache(str::joinpath(m_root, ".summaries"))
 {
 	string indexpath = cfg.value("indexfile");
 	if (indexpath.empty())
 		indexpath = "index.sqlite";
-
-	m_scache_root = str::joinpath(m_root, ".summaries");
 
     if (indexpath == ":memory:")
         m_pathname = indexpath;
@@ -697,56 +689,9 @@ size_t Contents::produce_nth(metadata::Consumer& consumer, size_t idx) const
     return mdbuf.size();
 }
 
-void Contents::invalidateSummaryCache()
-{
-	// Delete all files *.summary in the cache directory
-	sys::fs::Directory dir(m_scache_root);
-	for (sys::fs::Directory::const_iterator i = dir.begin();
-			i != dir.end(); ++i)
-		if (str::endsWith(*i, ".summary"))
-		{
-			string pathname = str::joinpath(m_scache_root, *i);
-			if (unlink(pathname.c_str()) < 0)
-				throw wibble::exception::System("deleting file " + pathname);
-		}
-}
-
-void Contents::invalidateSummaryCache(int year, int month)
-{
-	sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month)));
-	sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
-}
-
-void Contents::invalidateSummaryCache(const Metadata& md)
-{
-	Item<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
-	invalidateSummaryCache(rt->time->vals[0], rt->time->vals[1]);
-}
-
-bool Contents::checkSummaryCache(std::ostream& log) const
-{
-	bool res = true;
-
-	// Visit all .summary files in the cache directory
-	sys::fs::Directory dir(m_scache_root);
-	for (sys::fs::Directory::const_iterator i = dir.begin();
-			i != dir.end(); ++i)
-	{
-		if (!str::endsWith(*i, ".summary")) continue;
-
-		string pathname = str::joinpath(m_scache_root, *i);
-		if (!sys::fs::access(pathname, W_OK))
-		{
-			log << m_name << ": " << pathname << " is not writable." << endl;
-			res = false;
-		}
-	}
-	return res;
-}
-
 void Contents::rebuildSummaryCache()
 {
-	invalidateSummaryCache();
+    scache.invalidate();
 	// Rebuild all summaries
 	summaryForAll();
 }
@@ -808,22 +753,8 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
 
 Summary Contents::summaryForMonth(int year, int month) const
 {
-	Summary s;
-	string sum_file = str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", year, month));
-	bool has_cache = true;
-	int fd = open(sum_file.c_str(), O_RDONLY);
-	if (fd < 0)
-	{
-		if (errno == ENOENT)
-			has_cache = false;
-		else
-			throw wibble::exception::System("opening file " + sum_file);
-	}
-	utils::fd::HandleWatch hw(sum_file, fd);
-
-	if (has_cache)
-		s.read(fd, sum_file);
-	else
+    Summary s;
+    if (!scache.read(s, year, month))
 	{
 		int nextyear = year + (month/12);
 		int nextmonth = (month % 12) + 1;
@@ -832,32 +763,16 @@ Summary Contents::summaryForMonth(int year, int month) const
 			 "reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
 		       + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth), s);
 
-		// Write back to the cache directory, if allowed
-		if (sys::fs::access(m_scache_root, W_OK))
-			s.writeAtomically(sum_file);
-	}
+        scache.write(s, year, month);
+    }
 
 	return s;
 }
 
 Summary Contents::summaryForAll() const
 {
-	Summary s;
-	string sum_file = str::joinpath(m_scache_root, "all.summary");
-	bool has_cache = true;
-	int fd = open(sum_file.c_str(), O_RDONLY);
-	if (fd < 0)
-	{
-		if (errno == ENOENT)
-			has_cache = false;
-		else
-			throw wibble::exception::System("opening file " + sum_file);
-	}
-	utils::fd::HandleWatch hw(sum_file, fd);
-
-	if (has_cache)
-		s.read(fd, sum_file);
-	else
+    Summary s;
+    if (!scache.read(s))
 	{
 		// Find the datetime extremes in the database
 		UItem<types::Time> begin, end;
@@ -880,10 +795,8 @@ Summary Contents::summaryForAll() const
 			}
 		}
 
-		// Write back to the cache directory, if allowed
-		if (sys::fs::access(m_scache_root, W_OK))
-			s.writeAtomically(sum_file);
-	}
+        scache.write(s);
+    }
 
 	return s;
 }
@@ -1070,6 +983,10 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
 	return true;
 }
 
+bool Contents::checkSummaryCache(std::ostream& log) const
+{
+    return scache.check(m_name, log);
+}
 
 RContents::RContents(const ConfigFile& cfg)
     : Contents(cfg)
@@ -1093,8 +1010,7 @@ void RContents::open()
 	
 	initQueries();
 
-	if (sys::fs::access(m_root, W_OK))
-		sys::fs::mkdirIfMissing(m_scache_root, 0777);
+    scache.openRO();
 }
 
 void RContents::initQueries()
@@ -1135,7 +1051,7 @@ bool WContents::open()
 
 	initQueries();
 
-	sys::fs::mkdirIfMissing(m_scache_root, 0777);
+    scache.openRW();
 
 	return need_create;
 }
@@ -1260,8 +1176,8 @@ void WContents::index(Metadata& md, const std::string& file, uint64_t ofs, int* 
 	if (id)
 		*id = m_db.lastInsertID();
 
-	// Invalidate the summary cache for this month
-	invalidateSummaryCache(md);
+    // Invalidate the summary cache for this month
+    scache.invalidate(md);
 }
 
 void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int* id)
@@ -1277,8 +1193,8 @@ void WContents::replace(Metadata& md, const std::string& file, uint64_t ofs, int
 	if (id)
 		*id = m_db.lastInsertID();
 
-	// Invalidate the summary cache for this month
-	invalidateSummaryCache(md);
+    // Invalidate the summary cache for this month
+    scache.invalidate(md);
 }
 
 void WContents::remove(int id, std::string& file)
@@ -1297,9 +1213,9 @@ void WContents::remove(int id, std::string& file)
 				"removing item with id " + str::fmt(id),
 				"id does not exist in the index");
 
-	// Invalidate the summary cache for this month
-	Item<types::Time> rt = types::Time::createFromSQL(reftime);
-	invalidateSummaryCache(rt->vals[0], rt->vals[1]);
+    // Invalidate the summary cache for this month
+    Item<types::Time> rt = types::Time::createFromSQL(reftime);
+    scache.invalidate(rt->vals[0], rt->vals[1]);
 
 	// DELETE FROM md WHERE id=?
 	m_delete.reset();
@@ -1310,8 +1226,8 @@ void WContents::remove(int id, std::string& file)
 
 void WContents::reset()
 {
-	m_db.exec("DELETE FROM md");
-	invalidateSummaryCache();
+    m_db.exec("DELETE FROM md");
+    scache.invalidate();
 }
 
 void WContents::reset(const std::string& file)
@@ -1342,16 +1258,8 @@ void WContents::reset(const std::string& file)
 	query.bind(1, file);
 	query.step();
 
-	// Clean affected summary cache
-	bool deleted = false;
-	while (tmin <= tmax)
-	{
-		if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", tmin->vals[0], tmin->vals[1]))))
-			deleted = true;
-		tmin = tmin->start_of_next_month();
-	}
-	if (deleted)
-		sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));
+    // Clean affected summary cache
+    scache.invalidate(tmin, tmax);
 }
 
 void WContents::relocate_data(int id, off64_t newofs)

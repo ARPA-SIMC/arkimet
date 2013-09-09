@@ -28,6 +28,7 @@
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/dataset/index/aggregate.h>
+#include <arki/dataset/index/summarycache.h>
 #include <string>
 #include <set>
 #include <map>
@@ -79,8 +80,6 @@ protected:
     std::string m_name;
     /// Absolute path to the root directory of the dataset
     std::string m_root;
-    /// Absolute path to the summary cache directory
-    std::string m_scache_root;
     /// Absolute path of the index database
     std::string m_pathname;
 
@@ -93,6 +92,8 @@ protected:
 	Aggregate* m_others;
 
 	std::set<types::Code> m_components_indexed;
+
+    mutable SummaryCache scache;
 
 	/**
 	 * Add to 'query' the SQL joins and constraints based on the given matcher.
@@ -236,22 +237,6 @@ public:
 	 * Invalidate and rebuild the entire summary cache
 	 */
 	void rebuildSummaryCache();
-
-	/**
-	 * Invalidate all the summary cache
-	 */
-	void invalidateSummaryCache();
-
-	/**
-	 * Invalidate the summary for the given month AND the global summary
-	 */
-	void invalidateSummaryCache(int year, int month);
-
-	/**
-	 * Invalidate the summary cache related to the reference time of a
-	 * metadata
-	 */
-	void invalidateSummaryCache(const Metadata& md);
 
 	/**
 	 * Compute the summary for the given month, and output it to \a
