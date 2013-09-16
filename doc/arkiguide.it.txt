@@ -746,5 +746,79 @@ metadato::
   interessata, il prodotto, etc. I metadati descrivono un dato e quindi
   sono decisivi sia in fase di archiviazione che in fase di query.
 
+== Appendice: documentazione sui matcher ==
+
+=== aliases ===
+
+----
+include::matcher/aliases.txt[]
+----
+
+=== area ===
+
+----
+include::matcher/area.txt[]
+----
+
+=== expressions ===
+
+----
+include::matcher/expressions.txt[]
+----
+
+=== level ===
+
+----
+include::matcher/level.txt[]
+----
+
+=== origin ===
+
+----
+include::matcher/origin.txt[]
+----
+
+=== proddef ===
+
+----
+include::matcher/proddef.txt[]
+----
+
+=== product ===
+
+----
+include::matcher/product.txt[]
+----
+
+=== quantity ===
+
+----
+include::matcher/quantity.txt[]
+----
+
+=== reftime ===
+
+----
+include::matcher/reftime.txt[]
+----
+
+=== run ===
+
+----
+include::matcher/run.txt[]
+----
+
+=== task ===
+
+----
+include::matcher/task.txt[]
+----
+
+=== timerange ===
+
+----
+include::matcher/timerange.txt[]
+----
+
 == Copyright ==
 Copyright (C) 2013 ARPA-SIMC <urpsim@smr.arpa.emr.it>
