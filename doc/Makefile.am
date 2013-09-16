@@ -47,7 +47,7 @@ CLEANFILES =
 if ASCIIDOC
 
 arkiguide.it.html: arkiguide.it.txt
-	asciidoc $< > $@
+	asciidoc -a toc $< > $@
 
 doc_DATA += arkiguide.it.html
 
