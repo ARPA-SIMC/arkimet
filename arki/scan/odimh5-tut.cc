@@ -35,8 +35,6 @@
 
 #include <wibble/sys/fs.h>
 
-#include <radarlib/radar.hpp>
-
 namespace tut {
 
 using namespace std;
