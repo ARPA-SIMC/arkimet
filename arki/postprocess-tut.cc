@@ -25,10 +25,16 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/scan/grib.h>
+#include <arki/utils/files.h>
+#include <arki/utils/fd.h>
 
 #include <sstream>
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
@@ -154,6 +160,68 @@ void to::test<4>()
 
     ensure(plain == postprocessed.str());
 }
+
+// Try to shift a sizeable chunk of data to the postprocessor
+template<> template<>
+void to::test<5>()
+{
+    stringstream str;
+    Postprocess p("countbytes");
+    p.set_output(str);
+    p.start();
+
+    for (unsigned i = 0; i < 128; ++i)
+        produceGRIB(p);
+    p.flush();
+
+    ensure_equals(str.str(), "5763456\n");
+}
+
+// Try to shift a sizeable chunk of data out of the postprocessor
+template<> template<>
+void to::test<6>()
+{
+    const char* fname = "postprocess_output";
+    stringstream str;
+    Postprocess p("zeroes 4096");
+
+    int fd = ::open(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
+    if (fd == -1)
+        throw wibble::exception::File(fname, "opening/creating file");
+    utils::fd::TempfileHandleWatch hwfd(fname, fd);
+
+    p.set_output(fd);
+    p.start();
+
+    produceGRIB(p);
+    p.flush();
+
+    ensure_equals(utils::files::size(fname), 4096*1024);
+}
+
+// Try to shift a sizeable chunk of data to and out of the postprocessor
+template<> template<>
+void to::test<7>()
+{
+    const char* fname = "postprocess_output";
+    stringstream str;
+    Postprocess p("zeroes 4096");
+
+    int fd = ::open(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
+    if (fd == -1)
+        throw wibble::exception::File(fname, "opening/creating file");
+    utils::fd::TempfileHandleWatch hwfd(fname, fd);
+
+    p.set_output(fd);
+    p.start();
+
+    for (unsigned i = 0; i < 128; ++i)
+        produceGRIB(p);
+    p.flush();
+
+    ensure_equals(utils::files::size(fname), 4096*1024);
+}
+
 
 }
 
