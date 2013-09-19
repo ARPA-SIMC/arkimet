@@ -23,6 +23,7 @@
 #include "config.h"
 
 #include <arki/metadata.h>
+#include <arki/metadata/clusterer.h>
 #include <arki/types/reftime.h>
 #include <arki/types/timerange.h>
 #include <arki/scan/any.h>
@@ -87,64 +88,23 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-class Clusterer : public metadata::Consumer
+class Clusterer : public metadata::Clusterer
 {
 protected:
-	const vector<string>& args;
-	string format;
-	size_t count;
-	size_t size;
-	string tmpfile_name;
-	int tmpfile_fd;
-	int cur_interval[6];
-	types::reftime::Collector timespan;
-    UItem<types::Timerange> last_timerange;
+    const vector<string>& args;
+    string tmpfile_name;
+    int tmpfile_fd;
 
-	void startCluster(const std::string& new_format)
-	{
-		char fname[] = "arkidata.XXXXXX";
-		tmpfile_fd = mkstemp(fname);
-		if (tmpfile_fd < 0)
-			throw wibble::exception::System("creating temporary file");
-		tmpfile_name = fname;
-		format = new_format;
-		count = 0;
-		size = 0;
-	}
+    virtual void start_batch(const std::string& new_format)
+    {
+        metadata::Clusterer::start_batch(new_format);
 
-	void flushCluster()
-	{
-		if (tmpfile_fd < 0) return;
-
-		// Close the file so that it can be fully read
-		if (close(tmpfile_fd) < 0)
-		{
-			tmpfile_fd = -1;
-			throw wibble::exception::File(tmpfile_name, "closing file");
-		}
-		tmpfile_fd = -1;
-
-		try {
-			// Run process with fname as parameter
-			run_child();
-		} catch (...) {
-			// Use unlink and ignore errors, so that we can
-			// rethrow the right exception here
-			unlink(tmpfile_name.c_str());
-			throw;
-		} 
-
-		// Delete the file, and tolerate if the child process
-		// already deleted it
-		sys::fs::deleteIfExists(tmpfile_name);
-		format.clear();
-		count = 0;
-		size = 0;
-		cur_interval[0] = -1;
-		timespan.clear();
-        if (split_timerange)
-            last_timerange.clear();
-	}
+        char fname[] = "arkidata.XXXXXX";
+        tmpfile_fd = mkstemp(fname);
+        if (tmpfile_fd < 0)
+            throw wibble::exception::System("creating temporary file");
+        tmpfile_name = fname;
+    }
 
 	void run_child()
 	{
@@ -174,100 +134,49 @@ protected:
 			throw wibble::exception::Consistency("running " + args[0], "process returned exit status " + str::fmt(res));
 	}
 
-	void md_to_interval(Metadata& md, int* interval) const
-	{
-		UItem<types::Reftime> rt = md.get(types::TYPE_REFTIME).upcast<types::Reftime>();
-		if (!rt.defined())
-			throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");
-		UItem<types::Time> t;
-		switch (rt->style())
-		{
-			case types::Reftime::POSITION: t = rt.upcast<types::reftime::Position>()->time; break;
-			case types::Reftime::PERIOD: t = rt.upcast<types::reftime::Period>()->end; break;
-			default:
-				throw wibble::exception::Consistency("computing time interval", "reference time has invalid style: " + types::Reftime::formatStyle(rt->style()));
-		}
-		for (unsigned i = 0; i < 6; ++i)
-			interval[i] = i < max_interval ? t->vals[i] : -1;
-	}
-
-	void add_to_cluster(Metadata& md, sys::Buffer& buf)
-	{
-        std::stringstream stream;
-        size += arki::data::OstreamWriter::get(md.source->format)->stream(md, tmpfile_fd);
-		++count;
-		if (cur_interval[0] == -1 && max_interval != 0)
-			md_to_interval(md, cur_interval);
-		timespan.merge(md.get(types::TYPE_REFTIME).upcast<types::Reftime>());
-        if (split_timerange and not last_timerange.defined())
-            last_timerange = md.get<types::Timerange>();
-	}
-
-	bool exceeds_count(Metadata& md) const
-	{
-		return (max_args != 0 && count >= max_args);
-	}
-
-	bool exceeds_size(sys::Buffer& buf) const
-	{
-		if (max_bytes == 0 || size == 0) return false;
-		return size + buf.size() > max_bytes;
-	}
-
-	bool exceeds_interval(Metadata& md) const
-	{
-		if (max_interval == 0) return false;
-		if (cur_interval[0] == -1) return false;
-		int candidate[6];
-		md_to_interval(md, candidate);
-		return memcmp(cur_interval, candidate, 6*sizeof(int)) != 0;
-	}
-
-    bool exceeds_timerange(Metadata& md) const
+    virtual void add_to_batch(Metadata& md, sys::Buffer& buf)
     {
-        if (not split_timerange) return false;
-        if (not last_timerange.defined()) return false;
-        if (last_timerange == md.get<types::Timerange>()) return false;
-        return true;
+        arki::data::OstreamWriter::get(md.source->format)->stream(md, tmpfile_fd);
     }
 
 public:
-    size_t max_args;
-    size_t max_bytes;
-    size_t max_interval;
-    bool split_timerange;
-
     Clusterer(const vector<string>& args) :
-        args(args), tmpfile_fd(-1), max_args(0), max_bytes(0), max_interval(0), split_timerange(false)
+        metadata::Clusterer(), args(args), tmpfile_fd(-1)
     {
-        cur_interval[0] = -1;
     }
-	~Clusterer()
-	{
-		if (tmpfile_fd >= 0)
-			flushCluster();
-	}
+    ~Clusterer()
+    {
+        // TODO: Teardown of existing tempfiles if needed
+    }
 
-	virtual bool operator()(Metadata& md)
-	{
-		sys::Buffer buf = md.getData();
+    virtual void flush()
+    {
+        if (tmpfile_fd < 0) return;
 
-		if (format.empty() || format != md.source->format ||
-		    exceeds_count(md) || exceeds_size(buf) || exceeds_interval(md) || exceeds_timerange(md))
-		{
-			flush();
-			startCluster(md.source->format);
-		}
+        // Close the file so that it can be fully read
+        if (close(tmpfile_fd) < 0)
+        {
+            tmpfile_fd = -1;
+            throw wibble::exception::File(tmpfile_name, "closing file");
+        }
+        tmpfile_fd = -1;
 
-		add_to_cluster(md, buf);
+        try {
+            // Run process with fname as parameter
+            run_child();
+        } catch (...) {
+            // Use unlink and ignore errors, so that we can
+            // rethrow the right exception here
+            unlink(tmpfile_name.c_str());
+            throw;
+        }
 
-		return true;
-	}
+        // Delete the file, and tolerate if the child process
+        // already deleted it
+        sys::fs::deleteIfExists(tmpfile_name);
 
-	void flush()
-	{
-		flushCluster();
-	}
+        metadata::Clusterer::flush();
+    }
 };
 
 static void process(Clusterer& consumer, runtime::Input& in)
@@ -347,8 +256,8 @@ int main(int argc, const char* argv[])
 		runtime::init();
 
 		Clusterer consumer(args);
-		if (opts.max_args->isSet())
-			consumer.max_args = opts.max_args->intValue();
+        if (opts.max_args->isSet())
+            consumer.max_count = opts.max_args->intValue();
 		if (opts.max_bytes->isSet())
 			consumer.max_bytes = parse_size(opts.max_bytes->stringValue());
 		if (opts.time_interval->isSet())

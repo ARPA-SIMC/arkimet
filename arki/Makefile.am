@@ -68,6 +68,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/utils.h \
 		metadata/collection.h \
 		metadata/consumer.h \
+		metadata/clusterer.h \
 		metadatagrid.h \
 		metadata.h \
 		metadata/stream.h \
@@ -193,6 +194,7 @@ libarkimet_types_la_SOURCES = \
 		metadata/consumer.cc \
 		metadata/collection.cc \
 		metadata/stream.cc \
+		metadata/clusterer.cc \
 		metadata/test-generator.cc \
 		summary.cc \
 		summary/node.cc \
@@ -334,6 +336,7 @@ tests_arki_test_SOURCES = \
 		metadata-tut.cc \
 		metadata/consumer-tut.cc \
 		metadata/collection-tut.cc \
+		metadata/clusterer-tut.cc \
 		metadata/stream-tut.cc \
 		metadata/tests.cc \
 		metadata/test-generator-tut.cc \
