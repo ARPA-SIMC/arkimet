@@ -42,6 +42,8 @@ namespace {
 struct ClusterCounter : public metadata::Clusterer
 {
     unsigned clusters_processed;
+    ClusterCounter()
+        : metadata::Clusterer(), clusters_processed(0) {}
 
     virtual void flush()
     {
