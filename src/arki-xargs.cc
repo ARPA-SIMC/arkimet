@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include <arki/metadata.h>
-#include <arki/metadata/clusterer.h>
+#include <arki/metadata/xargs.h>
 #include <arki/types/reftime.h>
 #include <arki/types/timerange.h>
 #include <arki/scan/any.h>
@@ -88,98 +88,7 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-class Clusterer : public metadata::Clusterer
-{
-protected:
-    const vector<string>& args;
-    string tmpfile_name;
-    int tmpfile_fd;
-
-    virtual void start_batch(const std::string& new_format)
-    {
-        metadata::Clusterer::start_batch(new_format);
-
-        char fname[] = "arkidata.XXXXXX";
-        tmpfile_fd = mkstemp(fname);
-        if (tmpfile_fd < 0)
-            throw wibble::exception::System("creating temporary file");
-        tmpfile_name = fname;
-    }
-
-	void run_child()
-	{
-		if (count == 0) return;
-
-		sys::Exec child(args[0]);
-		child.args = args;
-		child.args.push_back(tmpfile_name);
-		child.searchInPath = true;
-		child.importEnv();
-
-		setenv("ARKI_XARGS_FORMAT", str::toupper(format).c_str(), 1);
-		setenv("ARKI_XARGS_COUNT", str::fmt(count).c_str(), 1);
-
-		if (timespan.begin.defined())
-		{
-			setenv("ARKI_XARGS_TIME_START", timespan.begin->toISO8601(' ').c_str(), 1);
-			if (timespan.end.defined())
-				setenv("ARKI_XARGS_TIME_END", timespan.end->toISO8601(' ').c_str(), 1);
-			else
-				setenv("ARKI_XARGS_TIME_END", timespan.begin->toISO8601(' ').c_str(), 1);
-		}
-
-		child.fork();
-		int res = child.wait();
-		if (res != 0)
-			throw wibble::exception::Consistency("running " + args[0], "process returned exit status " + str::fmt(res));
-	}
-
-    virtual void add_to_batch(Metadata& md, sys::Buffer& buf)
-    {
-        arki::data::OstreamWriter::get(md.source->format)->stream(md, tmpfile_fd);
-    }
-
-public:
-    Clusterer(const vector<string>& args) :
-        metadata::Clusterer(), args(args), tmpfile_fd(-1)
-    {
-    }
-    ~Clusterer()
-    {
-        // TODO: Teardown of existing tempfiles if needed
-    }
-
-    virtual void flush()
-    {
-        if (tmpfile_fd < 0) return;
-
-        // Close the file so that it can be fully read
-        if (close(tmpfile_fd) < 0)
-        {
-            tmpfile_fd = -1;
-            throw wibble::exception::File(tmpfile_name, "closing file");
-        }
-        tmpfile_fd = -1;
-
-        try {
-            // Run process with fname as parameter
-            run_child();
-        } catch (...) {
-            // Use unlink and ignore errors, so that we can
-            // rethrow the right exception here
-            unlink(tmpfile_name.c_str());
-            throw;
-        }
-
-        // Delete the file, and tolerate if the child process
-        // already deleted it
-        sys::fs::deleteIfExists(tmpfile_name);
-
-        metadata::Clusterer::flush();
-    }
-};
-
-static void process(Clusterer& consumer, runtime::Input& in)
+static void process(metadata::Consumer& consumer, runtime::Input& in)
 {
 	wibble::sys::Buffer buf;
 	string signature;
@@ -199,46 +108,6 @@ static void process(Clusterer& consumer, runtime::Input& in)
 	}
 }
 
-static size_t parse_size(const std::string& str)
-{
-	const char* s = str.c_str();
-	char* e;
-	unsigned long long int res = strtoull(s, &e, 10);
-	string suffix = str.substr(e-s);
-	if (suffix.empty() || suffix == "c")
-		return res;
-	if (suffix == "w") return res * 2;
-	if (suffix == "b") return res * 512;
-	if (suffix == "kB") return res * 1000;
-	if (suffix == "K") return res * 1024;
-	if (suffix == "MB") return res * 1000*1000;
-	if (suffix == "M" || suffix == "xM") return res * 1024*1024;
-	if (suffix == "GB") return res * 1000*1000*1000;
-	if (suffix == "G") return res * 1024*1024*1024;
-	if (suffix == "TB") return res * 1000*1000*1000*1000;
-	if (suffix == "T") return res * 1024*1024*1024*1024;
-	if (suffix == "PB") return res * 1000*1000*1000*1000*1000;
-	if (suffix == "P") return res * 1024*1024*1024*1024*1024;
-	if (suffix == "EB") return res * 1000*1000*1000*1000*1000*1000;
-	if (suffix == "E") return res * 1024*1024*1024*1024*1024*1024;
-	if (suffix == "ZB") return res * 1000*1000*1000*1000*1000*1000*1000;
-	if (suffix == "Z") return res * 1024*1024*1024*1024*1024*1024*1024;
-	if (suffix == "YB") return res * 1000*1000*1000*1000*1000*1000*1000*1000;
-	if (suffix == "Y") return res * 1024*1024*1024*1024*1024*1024*1024*1024;
-	throw wibble::exception::Consistency("parsing size", "unknown suffix: '"+suffix+"'");
-}
-
-static size_t parse_interval(const std::string& str)
-{
-        string name = str::trim(str::tolower(str));
-        if (name == "minute") return 5;
-        if (name == "hour") return 4;
-        if (name == "day") return 3;
-        if (name == "month") return 2;
-        if (name == "year") return 1;
-        throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + str + ".  Valid intervals are minute, hour, day, month and year");
-}
-
 int main(int argc, const char* argv[])
 {
 	wibble::commandline::Options opts;
@@ -255,13 +124,14 @@ int main(int argc, const char* argv[])
 
 		runtime::init();
 
-		Clusterer consumer(args);
+        metadata::Xargs consumer;
+        consumer.command = args;
         if (opts.max_args->isSet())
             consumer.max_count = opts.max_args->intValue();
-		if (opts.max_bytes->isSet())
-			consumer.max_bytes = parse_size(opts.max_bytes->stringValue());
-		if (opts.time_interval->isSet())
-			consumer.max_interval = parse_interval(opts.time_interval->stringValue());
+        if (opts.max_bytes->isSet())
+            consumer.set_max_bytes(opts.max_bytes->stringValue());
+        if (opts.time_interval->isSet())
+            consumer.set_interval(opts.time_interval->stringValue());
 		if (opts.split_timerange->boolValue())
 			consumer.split_timerange = true;
 
@@ -278,9 +148,9 @@ int main(int argc, const char* argv[])
 			{
 				runtime::Input in(i->c_str());
 				process(consumer, in);
-				consumer.flush();
-			}
-		}
+            }
+            consumer.flush();
+        }
 
 		return 0;
 	} catch (wibble::exception::BadOption& e) {

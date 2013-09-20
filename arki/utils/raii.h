@@ -22,6 +22,7 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
+#include <algorithm>
 
 namespace arki {
 namespace utils {
@@ -40,6 +41,9 @@ struct SetOnExit
     ~SetOnExit() { ref = val; }
 };
 
+/**
+ * Delete a pointer and zero it when we go out of scope
+ */
 template<typename T>
 struct DeleteAndZeroOnExit
 {
@@ -53,6 +57,9 @@ struct DeleteAndZeroOnExit
     }
 };
 
+/**
+ * delete[] a pointer and zero it when we go out of scope
+ */
 template<typename T>
 struct DeleteArrayAndZeroOnExit
 {
@@ -63,6 +70,37 @@ struct DeleteArrayAndZeroOnExit
     {
         delete[] ptr;
         ptr = 0;
+    }
+};
+
+/**
+ * Allocate an array, and deallocate and zero when going out of scope unless
+ * commit() is called.
+ */
+template<typename T>
+struct TransactionAllocArray
+{
+    T*& ptr;
+    bool committed;
+
+    TransactionAllocArray(T*& ptr, unsigned count, const T* data=0)
+        : ptr(ptr), committed(false)
+    {
+        ptr = new T[count];
+        if (data)
+            std::copy(data, data + count, ptr);
+    }
+    ~TransactionAllocArray()
+    {
+        if (!committed)
+        {
+            delete[] ptr;
+            ptr = 0;
+        }
+    }
+    void commit()
+    {
+        committed = true;
     }
 };
 

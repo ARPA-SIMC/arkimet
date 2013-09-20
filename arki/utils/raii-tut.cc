@@ -75,6 +75,45 @@ void to::test<3>()
     atest(equals, (int*)0, a);
 }
 
+// Check TransactionAlloc
+template<> template<>
+void to::test<4>()
+{
+    // Test rollback
+    {
+        int *a = (int*)1;
+        {
+            TransactionAllocArray<int> ta(a, 10);
+            a[0] = 42;
+            // Do not commit
+        }
+        atest(equals, (int*)0, a);
+    }
+
+    // Test commit
+    {
+        int *a = (int*)1;
+        {
+            TransactionAllocArray<int> ta(a, 10);
+            a[0] = 42;
+            ta.commit();
+        }
+        atest(equals, 42, a[0]);
+        delete[] a;
+    }
+
+    // Test alloc and initialize
+    {
+        char *a = (char*)1;
+        {
+            TransactionAllocArray<char> ta(a, 7, "antani");
+            ta.commit();
+        }
+        atest(equals, string("antani"), string(a));
+        delete[] a;
+    }
+}
+
 }
 
 // vim:set ts=4 sw=4:
