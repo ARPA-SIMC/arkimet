@@ -126,6 +126,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/pcounter.h \
 		utils/process.h \
 		utils/sqlite.h \
+		utils/raii.h \
 		values.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
@@ -154,6 +155,7 @@ libarkimet_core_la_SOURCES = \
 		utils/intern.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
+		utils/raii.cc \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \
@@ -297,6 +299,7 @@ tests_arki_test_SOURCES = \
 		utils/dataset-tut.cc \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
+		utils/raii-tut.cc \
 		refcounted-tut.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
