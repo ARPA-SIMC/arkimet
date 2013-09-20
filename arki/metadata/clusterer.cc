@@ -39,8 +39,10 @@ Clusterer::Clusterer()
 
 Clusterer::~Clusterer()
 {
-    if (!format.empty())
-        flush();
+    // Cannot flush here, since flush is virtual and we won't give subclassers
+    // a chance to do their own flushing. Flushes must be explicit.
+//    if (!format.empty())
+//        flush();
 }
 
 bool Clusterer::exceeds_count(Metadata& md) const
@@ -71,6 +73,13 @@ bool Clusterer::exceeds_timerange(Metadata& md) const
     return true;
 }
 
+void Clusterer::start_batch(const std::string& new_format)
+{
+    format = new_format;
+    count = 0;
+    size = 0;
+}
+
 void Clusterer::add_to_batch(Metadata& md, sys::Buffer& buf)
 {
     size += buf.size();
@@ -82,14 +91,7 @@ void Clusterer::add_to_batch(Metadata& md, sys::Buffer& buf)
         last_timerange = md.get<types::Timerange>();
 }
 
-void Clusterer::start_batch(const std::string& new_format)
-{
-    format = new_format;
-    count = 0;
-    size = 0;
-}
-
-void Clusterer::flush()
+void Clusterer::flush_batch()
 {
     // Reset the information about the current cluster
     format.clear();
@@ -99,6 +101,12 @@ void Clusterer::flush()
     timespan.clear();
     if (split_timerange)
         last_timerange.clear();
+}
+
+void Clusterer::flush()
+{
+    if (!format.empty())
+        flush_batch();
 }
 
 bool Clusterer::operator()(Metadata& md)

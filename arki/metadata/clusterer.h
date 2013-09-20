@@ -68,6 +68,13 @@ protected:
      */
     virtual void add_to_batch(Metadata& md, wibble::sys::Buffer& buf);
 
+    /**
+     * Reset information about the current batch, and start a new one.
+     *
+     * Subclassers will want to hook here to process the batch
+     */
+    virtual void flush_batch();
+
     /// Check if adding the given data would exceed the count limits for the current batch
     bool exceeds_count(Metadata& md) const;
 
@@ -108,9 +115,8 @@ public:
     virtual bool operator()(Metadata& md);
 
     /**
-     * Reset information about the current batch, and start a new one.
-     *
-     * Subclassers will want to hook here to process the batch
+     * Signal that no more data will be sent, and close the current partial
+     * batch.
      */
     virtual void flush();
 };

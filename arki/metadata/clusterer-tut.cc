@@ -45,10 +45,10 @@ struct ClusterCounter : public metadata::Clusterer
     ClusterCounter()
         : metadata::Clusterer(), clusters_processed(0) {}
 
-    virtual void flush()
+    virtual void flush_batch()
     {
         ++clusters_processed;
-        metadata::Clusterer::flush();
+        metadata::Clusterer::flush_batch();
     }
 };
 
@@ -58,29 +58,66 @@ struct ClusterCounter : public metadata::Clusterer
 template<> template<>
 void to::test<1>()
 {
-    ClusterCounter clusterer;
-    clusterer.max_count = 10;
+    ARKI_TEST_INFO(info);
+    unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
+    for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
+    {
+        info() << *i << " iterations";
+        ClusterCounter clusterer;
+        clusterer.max_count = 10;
 
-    for (unsigned i = 0; i < 121; ++i)
-        clusterer(mdc[0]);
-    clusterer.flush();
+        for (unsigned x = 0; x < *i; ++x)
+            clusterer(mdc[0]);
+        clusterer.flush();
 
-    atest(equals, 13u, clusterer.clusters_processed);
+        atest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
+    }
 }
 
 // Test clustering by size
 template<> template<>
 void to::test<2>()
 {
-    // mdc[0]'s data is 2234 bytes
-    ClusterCounter clusterer;
-    clusterer.max_bytes = 22340;
+    // mdc[0] has 7218b of data
+    // mdc[1] has 34960b of data
+    // mdc[2] has 2234b of data
+    ARKI_TEST_INFO(info);
+    unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
+    for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
+    {
+        info() << *i << " iterations";
+        // mdc[0]'s data is 7218 bytes, so this makes clusters of 10 elements
+        ClusterCounter clusterer;
+        clusterer.max_bytes = 72180;
 
-    for (unsigned i = 0; i < 121; ++i)
+        for (unsigned x = 0; x < *i; ++x)
+            clusterer(mdc[0]);
+        clusterer.flush();
+
+        atest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
+    }
+
+    // If max_bytes is bigger than the data, we should get a cluster with only the one item
+    {
+        ClusterCounter clusterer;
+        clusterer.max_bytes = 1;
+
         clusterer(mdc[0]);
-    clusterer.flush();
+        clusterer.flush();
 
-    atest(equals, 13u, clusterer.clusters_processed);
+        atest(equals, 1, clusterer.clusters_processed);
+    }
+    {
+        ClusterCounter clusterer;
+        clusterer.max_bytes = 8000;
+
+        clusterer(mdc[0]);
+        clusterer(mdc[1]);
+        clusterer(mdc[2]);
+        clusterer.flush();
+
+        atest(equals, 3, clusterer.clusters_processed);
+    }
 }
 
 // Test clustering by interval
