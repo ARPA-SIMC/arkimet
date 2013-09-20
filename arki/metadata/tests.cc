@@ -30,7 +30,7 @@ using namespace wibble;
 namespace arki {
 namespace tests {
 
-void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& actual)
+void test_assert_md_similar(ARKI_TEST_LOCPRM, const Metadata& expected, const Metadata& actual)
 {
     for (Metadata::const_iterator i = expected.begin(); i != expected.end(); ++i)
     {
@@ -41,14 +41,14 @@ void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& ac
         {
             std::stringstream ss;
             ss << "missing metadata item " << i->first << ": " << i->second;
-            loc.fail_test(ss.str());
+            arki_test_location.fail_test(ss.str());
         }
 
         if (i->second != other)
         {
             std::stringstream ss;
             ss << i->first << " differ: " << i->first << ": expected " << i->second << " got " << other;
-            loc.fail_test(ss.str());
+            arki_test_location.fail_test(ss.str());
         }
     }
 
@@ -60,12 +60,12 @@ void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& ac
         {
             std::stringstream ss;
             ss << "unexpected metadata item " << i->first << ": " << i->second;
-            loc.fail_test(ss.str());
+            arki_test_location.fail_test(ss.str());
         }
     }
 }
 
-void test_assert_md_contains(LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual)
+void test_assert_md_contains(ARKI_TEST_LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual)
 {
     types::Code code = types::parseCodeName(type.c_str());
     UItem<> item = actual.get(code);
@@ -73,7 +73,7 @@ void test_assert_md_contains(LOCPRM, const std::string& type, const std::string&
     {
         std::stringstream ss;
         ss << "metadata does not contain an item of type " << type << ": expected: \"" << expected_val << "\"";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 
     UItem<> item1 = types::decodeString(code, expected_val);
@@ -81,11 +81,11 @@ void test_assert_md_contains(LOCPRM, const std::string& type, const std::string&
     {
         std::stringstream ss;
         ss << "metadata mismatch on " << type << ": expected: \"" << expected_val << "\" actual: \"" << item << "\"";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_md_unset(LOCPRM, const std::string& type, const Metadata& actual)
+void test_assert_md_unset(ARKI_TEST_LOCPRM, const std::string& type, const Metadata& actual)
 {
     types::Code code = types::parseCodeName(type.c_str());
     UItem<> item = actual.get(code);
@@ -93,7 +93,7 @@ void test_assert_md_unset(LOCPRM, const std::string& type, const Metadata& actua
     {
         std::stringstream ss;
         ss << "metadata should not contain an item of type " << type << ", but it contains \"" << item << "\"";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 

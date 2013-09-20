@@ -22,6 +22,24 @@
 
 #include <wibble/tests.h>
 #include <wibble/exception.h>
+#include <sstream>
+
+namespace arki {
+namespace tests {
+struct Location;
+struct LocationInfo;
+}
+}
+
+/*
+ * These global arguments will be shadowed by local variables in functions that
+ * implement tests.
+ *
+ * They are here to act as default root nodes to fulfill method signatures when
+ * tests are called from outside other tests.
+ */
+extern const arki::tests::Location arki_test_location;
+extern const arki::tests::LocationInfo arki_test_location_info;
 
 namespace arki {
 namespace tests {
@@ -31,19 +49,49 @@ namespace tests {
 class Location
 {
     const Location* parent;
+    const arki::tests::LocationInfo* info;
     const char* file;
     int line;
     const char* args;
 
+    Location(const Location* parent, const arki::tests::LocationInfo& info, const char* file, int line, const char* args);
+
 public:
-    Location(const char* file, int line, const char* args=0);
-    Location(const Location& parent, const char* file, int line, const char* args=0);
+    Location();
+    Location nest(const arki::tests::LocationInfo& info, const char* file, int line, const char* args=0) const;
 
     void fail_test(const std::string& msg) const ALWAYS_THROWS;
     void backtrace(std::ostream& out) const;
 };
 
-#define LOCPRM const arki::tests::Location& loc
+
+struct LocationInfo : public std::stringstream
+{
+    /**
+     * Clear the stringstream and return self.
+     *
+     * Example usage:
+     *
+     * test_function(...)
+     * {
+     *    ARKI_TEST_INFO(info);
+     *    for (unsigned i = 0; i < 10; ++i)
+     *    {
+     *       info() << "Iteration #" << i;
+     *       ...
+     *    }
+     * }
+     */
+    std::ostream& operator()();
+};
+
+#define ARKI_TEST_LOCPRM arki::tests::Location arki_test_location
+
+/// Use this to declare a local variable with the given name that will be
+/// picked up by tests as extra local info
+#define ARKI_TEST_INFO(name) \
+    arki::tests::LocationInfo arki_test_location_info; \
+    arki::tests::LocationInfo& name = arki_test_location_info
 
 #define ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(__FILE__, __LINE__, #x " == " #y), (x), (y))
 #define inner_ensure_contains(x, y) arki::tests::impl_ensure_contains(wibble::tests::Location(loc, __FILE__, __LINE__, #x " == " #y), (x), (y))
@@ -56,61 +104,61 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
 #define ensure_md_equals(md, type, strval) \
     ensure_equals((md).get<type>(), type::decodeString(strval))
 
-void test_assert_istrue(LOCPRM, bool val);
+void test_assert_istrue(ARKI_TEST_LOCPRM, bool val);
 
 template <class Expected, class Actual>
-void test_assert_equals(LOCPRM, const Expected& expected, const Actual& actual)
+void test_assert_equals(ARKI_TEST_LOCPRM, const Expected& expected, const Actual& actual)
 {
     if (expected != actual)
     {
         std::stringstream ss;
         ss << "expected '" << expected << "' actual '" << actual << "'";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 
 template <class Expected, class Actual>
-void test_assert_gt(LOCPRM, const Expected& expected, const Actual& actual)
+void test_assert_gt(ARKI_TEST_LOCPRM, const Expected& expected, const Actual& actual)
 {
     if (actual > expected) return;
     std::stringstream ss;
     ss << "value '" << actual << "' not greater than the expected '" << expected << "'";
-    loc.fail_test(ss.str());
+    arki_test_location.fail_test(ss.str());
 }
 
 template <class Expected, class Actual>
-void test_assert_gte(LOCPRM, const Expected& expected, const Actual& actual)
+void test_assert_gte(ARKI_TEST_LOCPRM, const Expected& expected, const Actual& actual)
 {
     if (actual >= expected) return;
     std::stringstream ss;
     ss << "value '" << actual << "' not greater or equal than the expected '" << expected << "'";
-    loc.fail_test(ss.str());
+    arki_test_location.fail_test(ss.str());
 }
 
 template <class Expected, class Actual>
-void test_assert_lt(LOCPRM, const Expected& expected, const Actual& actual)
+void test_assert_lt(ARKI_TEST_LOCPRM, const Expected& expected, const Actual& actual)
 {
     if (actual < expected) return;
     std::stringstream ss;
     ss << "value '" << actual << "' not less than the expected '" << expected << "'";
-    loc.fail_test(ss.str());
+    arki_test_location.fail_test(ss.str());
 }
 
 template <class Expected, class Actual>
-void test_assert_lte(LOCPRM, const Expected& expected, const Actual& actual)
+void test_assert_lte(ARKI_TEST_LOCPRM, const Expected& expected, const Actual& actual)
 {
     if (actual <= expected) return;
     std::stringstream ss;
     ss << "value '" << actual << "' not less than or equal than the expected '" << expected << "'";
-    loc.fail_test(ss.str());
+    arki_test_location.fail_test(ss.str());
 }
 
-void test_assert_startswith(LOCPRM, const std::string& expected, const std::string& actual);
-void test_assert_endswith(LOCPRM, const std::string& expected, const std::string& actual);
-void test_assert_contains(LOCPRM, const std::string& expected, const std::string& actual);
-void test_assert_re_match(LOCPRM, const std::string& regexp, const std::string& actual);
-void test_assert_file_exists(LOCPRM, const std::string& fname);
-void test_assert_not_file_exists(LOCPRM, const std::string& fname);
+void test_assert_startswith(ARKI_TEST_LOCPRM, const std::string& expected, const std::string& actual);
+void test_assert_endswith(ARKI_TEST_LOCPRM, const std::string& expected, const std::string& actual);
+void test_assert_contains(ARKI_TEST_LOCPRM, const std::string& expected, const std::string& actual);
+void test_assert_re_match(ARKI_TEST_LOCPRM, const std::string& regexp, const std::string& actual);
+void test_assert_file_exists(ARKI_TEST_LOCPRM, const std::string& fname);
+void test_assert_not_file_exists(ARKI_TEST_LOCPRM, const std::string& fname);
 
 #define test_runner(loc, func, ...) \
     do { try { \
@@ -119,17 +167,25 @@ void test_assert_not_file_exists(LOCPRM, const std::string& fname);
         loc.fail_test(e.what()); \
     } } while(0)
 
+#if 0
 // arki::tests::test_assert_* test
 #define atest(test, ...) test_runner(arki::tests::Location(__FILE__, __LINE__, #test ": " #__VA_ARGS__), arki::tests::test_assert_##test, ##__VA_ARGS__)
 
 // function test, just runs the function without mangling its name
 #define ftest(test, ...) test_runner(arki::tests::Location(__FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), test, ##__VA_ARGS__)
+#endif
+
+// arki::tests::test_assert_* test
+#define atest(test, ...) test_runner(arki_test_location.nest(arki_test_location_info, __FILE__, __LINE__, #test ": " #__VA_ARGS__), arki::tests::test_assert_##test, ##__VA_ARGS__)
+
+// function test, just runs the function without mangling its name
+#define ftest(test, ...) test_runner(arki_test_location.nest(arki_test_location_info, __FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), test, ##__VA_ARGS__)
 
 // internal arkimet test, passes existing 'loc'
-#define iatest(test, ...) test_runner(arki::tests::Location(loc, __FILE__, __LINE__, #test ": " #__VA_ARGS__), arki::tests::test_assert_##test, ##__VA_ARGS__)
+#define iatest(test, ...) test_runner(arki_test_location.nest(arki_test_location_info, __FILE__, __LINE__, #test ": " #__VA_ARGS__), arki::tests::test_assert_##test, ##__VA_ARGS__)
 
 // internal function test, passes existing 'loc'
-#define iftest(test, ...) test_runner(arki::tests::Location(loc, __FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), test, ##__VA_ARGS__)
+#define iftest(test, ...) test_runner(arki_test_location.nest(arki_test_location_info, __FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), test, ##__VA_ARGS__)
 
 }
 }

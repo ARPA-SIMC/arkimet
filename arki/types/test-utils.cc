@@ -32,7 +32,7 @@ using namespace wibble;
 namespace arki {
 namespace tests {
 
-void test_assert_sourceblob_is(LOCPRM,
+void test_assert_sourceblob_is(ARKI_TEST_LOCPRM,
         const std::string& format,
         const std::string& basedir,
         const std::string& fname,
@@ -47,7 +47,7 @@ void test_assert_sourceblob_is(LOCPRM,
     {
         std::stringstream ss;
         ss << "metadata item '" << blob << "' is not a source::Blob";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 
     iatest(equals, format, blob->format);

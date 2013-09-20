@@ -267,7 +267,7 @@ struct TestDataset
         path = cfgtest->value("path");
     }
 
-    void test_import(LOCPRM)
+    void test_import(ARKI_TEST_LOCPRM)
     {
         // Clear everything
         if (sys::fs::isdir(path)) sys::fs::rmtree(path);
@@ -284,7 +284,7 @@ struct TestDataset
         }
     }
 
-    void test_querydata(LOCPRM)
+    void test_querydata(ARKI_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -307,7 +307,7 @@ struct TestDataset
         }
     }
 
-    void test_querysummary(LOCPRM)
+    void test_querysummary(ARKI_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -333,7 +333,7 @@ struct TestDataset
         }
     }
 
-    void test_querybytes(LOCPRM)
+    void test_querybytes(ARKI_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -360,7 +360,7 @@ struct TestDataset
         }
     }
 
-    void test_querybytes_integrity(LOCPRM)
+    void test_querybytes_integrity(ARKI_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -390,7 +390,7 @@ struct TestDataset
         sys::fs::unlink("tempdata");
     }
 
-    void test_locked(LOCPRM)
+    void test_locked(ARKI_TEST_LOCPRM)
     {
         // Lock a dataset for writing
         auto_ptr<WritableDataset> wds(WritableDataset::create(*cfgtest));
@@ -404,7 +404,7 @@ struct TestDataset
         rds->queryBytes(bq, os);
     }
 
-    void test_all(LOCPRM)
+    void test_all(ARKI_TEST_LOCPRM)
     {
         iftest(test_import);
         iftest(test_querydata);

@@ -27,13 +27,13 @@ namespace arki {
 namespace tests {
 
 /// Check that the two metadata are the same, except for source and notes
-void test_assert_md_similar(LOCPRM, const Metadata& expected, const Metadata& actual);
+void test_assert_md_similar(ARKI_TEST_LOCPRM, const Metadata& expected, const Metadata& actual);
 
 /// Check that the metadata contains a given item
-void test_assert_md_contains(LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual);
+void test_assert_md_contains(ARKI_TEST_LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual);
 
 /// Check that the metadata does not contain
-void test_assert_md_unset(LOCPRM, const std::string& type, const Metadata& actual);
+void test_assert_md_unset(ARKI_TEST_LOCPRM, const std::string& type, const Metadata& actual);
 
 }
 }

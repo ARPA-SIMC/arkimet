@@ -84,7 +84,7 @@ inline size_t datasize(const Metadata& md)
     return md.source.upcast<types::source::Blob>()->size;
 }
 
-void test_append_transaction_ok(LOCPRM, data::Writer dw, Metadata& md)
+void test_append_transaction_ok(ARKI_TEST_LOCPRM, data::Writer dw, Metadata& md)
 {
     typedef types::source::Blob Blob;
 
@@ -114,7 +114,7 @@ void test_append_transaction_ok(LOCPRM, data::Writer dw, Metadata& md)
     iatest(equals, dw.fname(), s->filename);
 }
 
-void test_append_transaction_rollback(LOCPRM, data::Writer dw, Metadata& md)
+void test_append_transaction_rollback(ARKI_TEST_LOCPRM, data::Writer dw, Metadata& md)
 {
     typedef types::source::Blob Blob;
 

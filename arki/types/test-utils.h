@@ -99,7 +99,7 @@ static inline void impl_ensure_compares(const wibble::tests::Location& loc, cons
     inner_ensure(not (y > z));
 }
 
-void test_assert_sourceblob_is(LOCPRM,
+void test_assert_sourceblob_is(ARKI_TEST_LOCPRM,
         const std::string& format,
         const std::string& basedir,
         const std::string& fname,

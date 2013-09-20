@@ -31,23 +31,36 @@ using namespace std;
 using namespace arki;
 using namespace wibble;
 
+const arki::tests::Location arki_test_location;
+const arki::tests::LocationInfo arki_test_location_info;
+
 namespace arki {
 namespace tests {
 
-Location::Location(const char* file, int line, const char* args)
-    : parent(0), file(file), line(line), args(args)
+Location::Location()
+    : parent(0), info(0), file(0), line(0), args(0)
+{
+    // Build a special, root location
+}
+
+Location::Location(const Location* parent, const arki::tests::LocationInfo& info, const char* file, int line, const char* args)
+    : parent(parent), info(&info), file(file), line(line), args(args)
 {
 }
 
-Location::Location(const Location& parent, const char* file, int line, const char* args)
-    : parent(&parent), file(file), line(line), args(args)
+Location Location::nest(const arki::tests::LocationInfo& info, const char* file, int line, const char* args) const
 {
+    return Location(this, info, file, line, args);
 }
 
 void Location::backtrace(std::ostream& out) const
 {
     if (parent) parent->backtrace(out);
-    out << file << ":" << line << ":" << args << endl;
+    if (!file) return; // Root node, nothing to print
+    out << file << ":" << line << ":" << args;
+    if (!info->str().empty())
+        out << " [" << info->str() << "]";
+    out << endl;
 }
 
 void Location::fail_test(const std::string& msg) const
@@ -57,6 +70,13 @@ void Location::fail_test(const std::string& msg) const
     backtrace(ss);
     ss << file << ":" << line << ":error: " << msg << endl;
     throw tut::failure(ss.str());
+}
+
+std::ostream& LocationInfo::operator()()
+{
+    str(std::string());
+    clear();
+    return *this;
 }
 
 void impl_ensure_contains(const wibble::tests::Location& loc, const std::string& haystack, const std::string& needle)
@@ -79,70 +99,70 @@ void impl_ensure_not_contains(const wibble::tests::Location& loc, const std::str
     }
 }
 
-void test_assert_re_match(LOCPRM, const std::string& regexp, const std::string& actual)
+void test_assert_re_match(ARKI_TEST_LOCPRM, const std::string& regexp, const std::string& actual)
 {
     ERegexp re(regexp);
     if (!re.match(actual))
     {
         std::stringstream ss;
         ss << "'" << actual << "' does not match regexp '" << regexp << "'";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_startswith(LOCPRM, const std::string& expected, const std::string& actual)
+void test_assert_startswith(ARKI_TEST_LOCPRM, const std::string& expected, const std::string& actual)
 {
     if (!str::startsWith(actual, expected))
     {
         std::stringstream ss;
         ss << "'" << actual << "' does not start with '" << expected << "'";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_endswith(LOCPRM, const std::string& expected, const std::string& actual)
+void test_assert_endswith(ARKI_TEST_LOCPRM, const std::string& expected, const std::string& actual)
 {
     if (!str::endsWith(actual, expected))
     {
         std::stringstream ss;
         ss << "'" << actual << "' does not end with '" << expected << "'";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_contains(LOCPRM, const std::string& expected, const std::string& actual)
+void test_assert_contains(ARKI_TEST_LOCPRM, const std::string& expected, const std::string& actual)
 {
     if (actual.find(expected) == string::npos)
     {
         std::stringstream ss;
         ss << "'" << actual << "' does not contain '" << expected << "'";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_istrue(LOCPRM, bool val)
+void test_assert_istrue(ARKI_TEST_LOCPRM, bool val)
 {
     if (!val)
-        loc.fail_test("result is false");
+        arki_test_location.fail_test("result is false");
 }
 
-void test_assert_file_exists(LOCPRM, const std::string& fname)
+void test_assert_file_exists(ARKI_TEST_LOCPRM, const std::string& fname)
 {
     if (not sys::fs::exists(fname))
     {
         std::stringstream ss;
         ss << "file '" << fname << "' does not exists";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_not_file_exists(LOCPRM, const std::string& fname)
+void test_assert_not_file_exists(ARKI_TEST_LOCPRM, const std::string& fname)
 {
     if (sys::fs::exists(fname))
     {
         std::stringstream ss;
         ss << "file '" << fname << "' does exists";
-        loc.fail_test(ss.str());
+        arki_test_location.fail_test(ss.str());
     }
 }
 }

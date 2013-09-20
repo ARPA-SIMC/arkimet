@@ -149,7 +149,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_summary(LOCPRM, arki::tests::FakeRequest& r)
+    void do_summary(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -166,7 +166,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_query(LOCPRM, arki::tests::FakeRequest& r)
+    void do_query(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -184,7 +184,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_queryData(LOCPRM, arki::tests::FakeRequest& r)
+    void do_queryData(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -202,7 +202,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_queryBytes(LOCPRM, arki::tests::FakeRequest& r)
+    void do_queryBytes(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -220,7 +220,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_config(LOCPRM, arki::tests::FakeRequest& r)
+    void do_config(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -235,7 +235,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /summary/
-    void test_summary(LOCPRM)
+    void test_summary(ARKI_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -256,7 +256,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /query/
-    void test_query(LOCPRM)
+    void test_query(ARKI_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -278,7 +278,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /querydata/
-    void test_querydata(LOCPRM)
+    void test_querydata(ARKI_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -300,7 +300,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /querybytes/
-    void test_querybytes(LOCPRM)
+    void test_querybytes(ARKI_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -319,7 +319,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /config/
-    void test_config(LOCPRM)
+    void test_config(ARKI_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -340,7 +340,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /config/ with a locked DB
-    void test_configlocked(LOCPRM)
+    void test_configlocked(ARKI_TEST_LOCPRM)
     {
         auto_ptr<WritableDataset> ds(makeWriter());
         Pending p = ds->test_writelock();
@@ -349,7 +349,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
 
-    void test_all(LOCPRM)
+    void test_all(ARKI_TEST_LOCPRM)
     {
         iftest(test_summary);
         iftest(test_query);
