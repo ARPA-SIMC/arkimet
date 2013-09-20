@@ -98,22 +98,22 @@ void test_append_transaction_ok(LOCPRM, data::Writer dw, Metadata& md)
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
-    iatest(equals, orig_fsize, (size_t)ofs);
-    iatest(equals, orig_fsize, files::size(dw.fname()));
-    iatest(equals, orig_source, md.source);
+    atest(equals, orig_fsize, (size_t)ofs);
+    atest(equals, orig_fsize, files::size(dw.fname()));
+    atest(equals, orig_source, md.source);
 
     // Commit
     p.commit();
 
     // After commit, data is appended
-    iatest(equals, orig_fsize + data_size, files::size(dw.fname()));
+    atest(equals, orig_fsize + data_size, files::size(dw.fname()));
 
     // And metadata is updated
     UItem<Blob> s = md.source.upcast<Blob>();
-    iatest(equals, "grib1", s->format);
-    iatest(equals, orig_fsize, s->offset);
-    iatest(equals, data_size, s->size);
-    iatest(equals, dw.fname(), s->filename);
+    atest(equals, "grib1", s->format);
+    atest(equals, orig_fsize, s->offset);
+    atest(equals, data_size, s->size);
+    atest(equals, dw.fname(), s->filename);
 }
 
 void test_append_transaction_rollback(LOCPRM, data::Writer dw, Metadata& md)
@@ -127,16 +127,16 @@ void test_append_transaction_rollback(LOCPRM, data::Writer dw, Metadata& md)
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
-    iatest(equals, orig_fsize, (size_t)ofs);
-    iatest(equals, orig_fsize, files::size(dw.fname()));
-    iatest(equals, orig_source, md.source);
+    atest(equals, orig_fsize, (size_t)ofs);
+    atest(equals, orig_fsize, files::size(dw.fname()));
+    atest(equals, orig_source, md.source);
 
     // Rollback
     p.rollback();
 
     // After rollback, nothing has changed
-    iatest(equals, orig_fsize, files::size(dw.fname()));
-    iatest(equals, orig_source, md.source);
+    atest(equals, orig_fsize, files::size(dw.fname()));
+    atest(equals, orig_source, md.source);
 }
 
 }

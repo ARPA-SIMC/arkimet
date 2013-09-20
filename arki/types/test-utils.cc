@@ -50,12 +50,12 @@ void test_assert_sourceblob_is(ARKI_TEST_LOCPRM,
         arki_test_location.fail_test(ss.str());
     }
 
-    iatest(equals, format, blob->format);
-    iatest(equals, basedir, blob->basedir);
-    iatest(equals, fname, blob->filename);
-    iatest(equals, ofs, blob->offset);
-    iatest(equals, size, blob->size);
-    iatest(equals, blob->absolutePathname(), sys::fs::abspath(str::joinpath(basedir, fname)));
+    atest(equals, format, blob->format);
+    atest(equals, basedir, blob->basedir);
+    atest(equals, fname, blob->filename);
+    atest(equals, ofs, blob->offset);
+    atest(equals, size, blob->size);
+    atest(equals, blob->absolutePathname(), sys::fs::abspath(str::joinpath(basedir, fname)));
 }
 
 }

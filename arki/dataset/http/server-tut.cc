@@ -242,17 +242,17 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        iftest(do_summary, r);
+        ftest(do_summary, r);
 
         // Handle the response, client side
-        iatest(equals, "HTTP/1.0 200 OK", r.response_method);
-        iatest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        iatest(equals, "attachment; filename=testds-summary.bin", r.response_headers["content-disposition"]);
+        atest(equals, "HTTP/1.0 200 OK", r.response_method);
+        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        atest(equals, "attachment; filename=testds-summary.bin", r.response_headers["content-disposition"]);
 
         Summary s;
         stringstream sstream(r.response_body);
         s.read(sstream, "response body");
-        iatest(equals, 3u, s.count());
+        atest(equals, 3u, s.count());
     }
 
     // Test /query/
@@ -263,18 +263,18 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        iftest(do_query, r);
+        ftest(do_query, r);
 
         // Handle the response, client side
-        iatest(equals, "HTTP/1.0 200 OK", r.response_method);
-        iatest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        iatest(equals, "attachment; filename=testds.bin", r.response_headers["content-disposition"]);
+        atest(equals, "HTTP/1.0 200 OK", r.response_method);
+        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        atest(equals, "attachment; filename=testds.bin", r.response_headers["content-disposition"]);
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
         Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
-        iatest(equals, 3u, mdc.size());
+        atest(equals, 3u, mdc.size());
     }
 
     // Test /querydata/
@@ -285,18 +285,18 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        iftest(do_queryData, r);
+        ftest(do_queryData, r);
 
         // Handle the response, client side
-        iatest(equals, "HTTP/1.0 200 OK", r.response_method);
-        iatest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        iatest(equals, "attachment; filename=testds.arkimet", r.response_headers["content-disposition"]);
+        atest(equals, "HTTP/1.0 200 OK", r.response_method);
+        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        atest(equals, "attachment; filename=testds.arkimet", r.response_headers["content-disposition"]);
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
         Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
-        iatest(equals, 3u, mdc.size());
+        atest(equals, 3u, mdc.size());
     }
 
     // Test /querybytes/
@@ -307,15 +307,15 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        iftest(do_queryBytes, r);
+        ftest(do_queryBytes, r);
 
         // Handle the response, client side
-        iatest(equals, "HTTP/1.0 200 OK", r.response_method);
-        iatest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        iatest(equals, "attachment; filename=testds.txt", r.response_headers["content-disposition"]);
+        atest(equals, "HTTP/1.0 200 OK", r.response_method);
+        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        atest(equals, "attachment; filename=testds.txt", r.response_headers["content-disposition"]);
 
-        iatest(equals, 44412u, r.response_body.size());
-        iatest(equals, "GRIB", r.response_body.substr(0, 4));
+        atest(equals, 44412u, r.response_body.size());
+        atest(equals, "GRIB", r.response_body.substr(0, 4));
     }
 
     // Test /config/
@@ -326,17 +326,17 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        iftest(do_config, r);
+        ftest(do_config, r);
 
         // Handle the response, client side
-        iatest(equals, "HTTP/1.0 200 OK", r.response_method);
-        iatest(equals, "text/plain", r.response_headers["content-type"]);
-        iatest(equals, "", r.response_headers["content-disposition"]);
+        atest(equals, "HTTP/1.0 200 OK", r.response_method);
+        atest(equals, "text/plain", r.response_headers["content-type"]);
+        atest(equals, "", r.response_headers["content-disposition"]);
 
         stringstream buf;
         buf << "[testds]" << endl;
         cfg.output(buf, "memory");
-        iatest(equals, buf.str(), r.response_body);
+        atest(equals, buf.str(), r.response_body);
     }
 
     // Test /config/ with a locked DB
@@ -345,18 +345,18 @@ struct ServerTest : public arki::tests::DatasetTest
         auto_ptr<WritableDataset> ds(makeWriter());
         Pending p = ds->test_writelock();
 
-        iftest(test_config);
+        ftest(test_config);
     }
 
 
     void test_all(ARKI_TEST_LOCPRM)
     {
-        iftest(test_summary);
-        iftest(test_query);
-        iftest(test_querydata);
-        iftest(test_querybytes);
-        iftest(test_config);
-        iftest(test_configlocked);
+        ftest(test_summary);
+        ftest(test_query);
+        ftest(test_querydata);
+        ftest(test_querybytes);
+        ftest(test_config);
+        ftest(test_configlocked);
     }
 };
 

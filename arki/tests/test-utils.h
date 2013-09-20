@@ -181,12 +181,6 @@ void test_assert_not_file_exists(ARKI_TEST_LOCPRM, const std::string& fname);
 // function test, just runs the function without mangling its name
 #define ftest(test, ...) test_runner(arki_test_location.nest(arki_test_location_info, __FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), test, ##__VA_ARGS__)
 
-// internal arkimet test, passes existing 'loc'
-#define iatest(test, ...) test_runner(arki_test_location.nest(arki_test_location_info, __FILE__, __LINE__, #test ": " #__VA_ARGS__), arki::tests::test_assert_##test, ##__VA_ARGS__)
-
-// internal function test, passes existing 'loc'
-#define iftest(test, ...) test_runner(arki_test_location.nest(arki_test_location_info, __FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), test, ##__VA_ARGS__)
-
 }
 }
 

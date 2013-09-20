@@ -274,13 +274,13 @@ struct TestDataset
 
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
-        iatest(istrue, scan::scan(td.fname, input_data));
-        iatest(equals, td.info.size(), input_data.size());
+        atest(istrue, scan::scan(td.fname, input_data));
+        atest(equals, td.info.size(), input_data.size());
 
         for (unsigned i = 0; i < input_data.size(); ++i)
         {
-            iatest(equals, td.info[i].import_outcome, ds->acquire(input_data[i]));
-            iatest(file_exists, str::joinpath(path, td.info[i].destfile));
+            atest(equals, td.info[i].import_outcome, ds->acquire(input_data[i]));
+            atest(file_exists, str::joinpath(path, td.info[i].destfile));
         }
     }
 
@@ -295,15 +295,15 @@ struct TestDataset
             // Check that what we imported can be queried
             metadata::Collection mdc;
             ds->queryData(dataset::DataQuery(td.info[i].matcher, false), mdc);
-            iatest(equals, 1u, mdc.size());
+            atest(equals, 1u, mdc.size());
 
             // Check that the result matches what was imported
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             UItem<source::Blob> s2 = mdc[0].source.upcast<source::Blob>();
-            iatest(equals, s1->format, s2->format);
-            iatest(equals, s1->size, s2->size);
+            atest(equals, s1->format, s2->format);
+            atest(equals, s1->size, s2->size);
 
-            iatest(istrue, td.info[i].matcher(mdc[0]));
+            atest(istrue, td.info[i].matcher(mdc[0]));
         }
     }
 
@@ -315,7 +315,7 @@ struct TestDataset
         {
             Summary s;
             ds->querySummary(Matcher(), s);
-            iatest(equals, input_data.size(), s.count());
+            atest(equals, input_data.size(), s.count());
         }
 
         for (unsigned i = 0; i < input_data.size(); ++i)
@@ -326,10 +326,10 @@ struct TestDataset
             Summary s;
             ds->querySummary(td.info[i].matcher, s);
 
-            iatest(equals, 1u, s.count());
+            atest(equals, 1u, s.count());
 
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
-            iatest(equals, s1->size, s.size());
+            atest(equals, s1->size, s.size());
         }
     }
 
@@ -349,14 +349,14 @@ struct TestDataset
             // Write it out and rescan
             files::write_file("testdata", os.str());
             metadata::Collection tmp;
-            iatest(istrue, scan::scan("testdata", tmp, input_data[i].source->format));
+            atest(istrue, scan::scan("testdata", tmp, input_data[i].source->format));
 
             // Ensure that what we rescanned is what was imported
-            iatest(equals, 1u, tmp.size());
-            iatest(md_similar, input_data[i], tmp[0]);
+            atest(equals, 1u, tmp.size());
+            atest(md_similar, input_data[i], tmp[0]);
 
             //UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
-            //iatest(equals, s1->size, os.str().size());
+            //atest(equals, s1->size, os.str().size());
         }
     }
 
@@ -378,14 +378,14 @@ struct TestDataset
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             total_size += s1->size;
         }
-        iatest(gte, total_size, os.str().size());
+        atest(gte, total_size, os.str().size());
 
         // Write the results to disk
         utils::files::write_file("tempdata", os.str());
 
         // Check that they can be scanned again
         metadata::Collection mdc;
-        iatest(istrue, scan::scan("tempdata", mdc, td.format));
+        atest(istrue, scan::scan("tempdata", mdc, td.format));
 
         sys::fs::unlink("tempdata");
     }
@@ -406,12 +406,12 @@ struct TestDataset
 
     void test_all(ARKI_TEST_LOCPRM)
     {
-        iftest(test_import);
-        iftest(test_querydata);
-        iftest(test_querysummary);
-        iftest(test_querybytes);
-        iftest(test_querybytes_integrity);
-        iftest(test_locked);
+        ftest(test_import);
+        ftest(test_querydata);
+        ftest(test_querysummary);
+        ftest(test_querybytes);
+        ftest(test_querybytes_integrity);
+        ftest(test_locked);
     }
 };
 
