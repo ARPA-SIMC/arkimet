@@ -61,6 +61,30 @@ void to::test<1>()
     wtest(equals, "0\n", out);
 }
 
+// Test that env vars are set
+template<> template<>
+void to::test<2>()
+{
+    sys::fs::deleteIfExists("tmp-xargs");
+    metadata::Xargs xargs;
+    xargs.command.push_back("/bin/sh");
+    xargs.command.push_back("-c");
+    xargs.command.push_back("set | grep ARKI_XARGS_ |tee /tmp/zz >> tmp-xargs");
+    xargs.filename_argument = 1000; // Do not pass the file name
+
+    xargs.max_count = 10;
+    for (unsigned x = 0; x < 10; ++x)
+        xargs(mdc[0]);
+    xargs.flush();
+
+    string out = utils::files::read_file("tmp-xargs");
+    wtest(contains, "ARKI_XARGS_FILENAME='", out);
+    wtest(contains, "ARKI_XARGS_FORMAT='GRIB1'\n", out);
+    wtest(contains, "ARKI_XARGS_COUNT='10'\n", out);
+    wtest(contains, "ARKI_XARGS_TIME_START='2007-07-08 13:00:00Z'\n", out);
+    wtest(contains, "ARKI_XARGS_TIME_END='2007-07-08 13:00:00Z'\n", out);
+}
+
 }
 
 // vim:set ts=4 sw=4:

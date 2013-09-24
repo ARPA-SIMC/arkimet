@@ -190,6 +190,7 @@ int Xargs::run_child()
             child.args[filename_argument] = tempfile.pathname;
     }
     child.searchInPath = true;
+    child.envFromParent = false;
 
     // Import all the environment except ARKI_XARGS_* variables
     for (char** s = environ; *s; ++s)
@@ -206,9 +207,9 @@ int Xargs::run_child()
     {
         child.env.push_back("ARKI_XARGS_TIME_START=" + timespan.begin->toISO8601(' '));
         if (timespan.end.defined())
-            child.env.push_back("ARKI_XARGS_TIME_END" + timespan.end->toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.end->toISO8601(' '));
         else
-            child.env.push_back("ARKI_XARGS_TIME_END" + timespan.begin->toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.begin->toISO8601(' '));
     }
 
     child.fork();
