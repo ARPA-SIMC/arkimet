@@ -149,7 +149,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_summary(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_summary(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -166,7 +166,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_query(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_query(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -184,7 +184,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_queryData(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_queryData(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -202,7 +202,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_queryBytes(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_queryBytes(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -220,7 +220,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_config(ARKI_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_config(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -235,7 +235,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /summary/
-    void test_summary(ARKI_TEST_LOCPRM)
+    void test_summary(WIBBLE_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -245,18 +245,18 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_summary, r);
 
         // Handle the response, client side
-        atest(equals, "HTTP/1.0 200 OK", r.response_method);
-        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        atest(equals, "attachment; filename=testds-summary.bin", r.response_headers["content-disposition"]);
+        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
+        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        wtest(equals, "attachment; filename=testds-summary.bin", r.response_headers["content-disposition"]);
 
         Summary s;
         stringstream sstream(r.response_body);
         s.read(sstream, "response body");
-        atest(equals, 3u, s.count());
+        wtest(equals, 3u, s.count());
     }
 
     // Test /query/
-    void test_query(ARKI_TEST_LOCPRM)
+    void test_query(WIBBLE_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -266,19 +266,19 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_query, r);
 
         // Handle the response, client side
-        atest(equals, "HTTP/1.0 200 OK", r.response_method);
-        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        atest(equals, "attachment; filename=testds.bin", r.response_headers["content-disposition"]);
+        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
+        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        wtest(equals, "attachment; filename=testds.bin", r.response_headers["content-disposition"]);
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
         Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
-        atest(equals, 3u, mdc.size());
+        wtest(equals, 3u, mdc.size());
     }
 
     // Test /querydata/
-    void test_querydata(ARKI_TEST_LOCPRM)
+    void test_querydata(WIBBLE_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -288,19 +288,19 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_queryData, r);
 
         // Handle the response, client side
-        atest(equals, "HTTP/1.0 200 OK", r.response_method);
-        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        atest(equals, "attachment; filename=testds.arkimet", r.response_headers["content-disposition"]);
+        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
+        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        wtest(equals, "attachment; filename=testds.arkimet", r.response_headers["content-disposition"]);
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
         Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
-        atest(equals, 3u, mdc.size());
+        wtest(equals, 3u, mdc.size());
     }
 
     // Test /querybytes/
-    void test_querybytes(ARKI_TEST_LOCPRM)
+    void test_querybytes(WIBBLE_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -310,16 +310,16 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_queryBytes, r);
 
         // Handle the response, client side
-        atest(equals, "HTTP/1.0 200 OK", r.response_method);
-        atest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        atest(equals, "attachment; filename=testds.txt", r.response_headers["content-disposition"]);
+        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
+        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
+        wtest(equals, "attachment; filename=testds.txt", r.response_headers["content-disposition"]);
 
-        atest(equals, 44412u, r.response_body.size());
-        atest(equals, "GRIB", r.response_body.substr(0, 4));
+        wtest(equals, 44412u, r.response_body.size());
+        wtest(equals, "GRIB", r.response_body.substr(0, 4));
     }
 
     // Test /config/
-    void test_config(ARKI_TEST_LOCPRM)
+    void test_config(WIBBLE_TEST_LOCPRM)
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -329,18 +329,18 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_config, r);
 
         // Handle the response, client side
-        atest(equals, "HTTP/1.0 200 OK", r.response_method);
-        atest(equals, "text/plain", r.response_headers["content-type"]);
-        atest(equals, "", r.response_headers["content-disposition"]);
+        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
+        wtest(equals, "text/plain", r.response_headers["content-type"]);
+        wtest(equals, "", r.response_headers["content-disposition"]);
 
         stringstream buf;
         buf << "[testds]" << endl;
         cfg.output(buf, "memory");
-        atest(equals, buf.str(), r.response_body);
+        wtest(equals, buf.str(), r.response_body);
     }
 
     // Test /config/ with a locked DB
-    void test_configlocked(ARKI_TEST_LOCPRM)
+    void test_configlocked(WIBBLE_TEST_LOCPRM)
     {
         auto_ptr<WritableDataset> ds(makeWriter());
         Pending p = ds->test_writelock();
@@ -349,7 +349,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
 
-    void test_all(ARKI_TEST_LOCPRM)
+    void test_all(WIBBLE_TEST_LOCPRM)
     {
         ftest(test_summary);
         ftest(test_query);

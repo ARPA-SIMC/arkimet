@@ -23,17 +23,17 @@
 #include <arki/tests/test-utils.h>
 #include <arki/metadata.h>
 
-namespace arki {
+namespace wibble {
 namespace tests {
 
 /// Check that the two metadata are the same, except for source and notes
-void test_assert_md_similar(ARKI_TEST_LOCPRM, const Metadata& expected, const Metadata& actual);
+void test_assert_md_similar(WIBBLE_TEST_LOCPRM, const arki::Metadata& expected, const arki::Metadata& actual);
 
 /// Check that the metadata contains a given item
-void test_assert_md_contains(ARKI_TEST_LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual);
+void test_assert_md_contains(WIBBLE_TEST_LOCPRM, const std::string& type, const std::string& expected_val, const arki::Metadata& actual);
 
 /// Check that the metadata does not contain
-void test_assert_md_unset(ARKI_TEST_LOCPRM, const std::string& type, const Metadata& actual);
+void test_assert_md_unset(WIBBLE_TEST_LOCPRM, const std::string& type, const arki::Metadata& actual);
 
 }
 }

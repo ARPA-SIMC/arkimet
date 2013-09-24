@@ -44,7 +44,7 @@ void to::test<1>()
     Writer w2 = Writer::get("grib", "test-data-writer");
 
     // Check that the implementation is reused
-    atest(equals, w1._implementation(), w2._implementation());
+    wtest(equals, w1._implementation(), w2._implementation());
 }
 
 }

@@ -664,7 +664,7 @@ void to::test<10>()
 		metadata::Collection mdc;
 		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
-                atest(sourceblob_is, "grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218, mdc[0].source);
+        wtest(sourceblob_is, "grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218, mdc[0].source);
 	}
 }
 

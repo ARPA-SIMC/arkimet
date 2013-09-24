@@ -94,12 +94,12 @@ void to::test<1>()
 		df.append(md);
 
         // The new data is there
-        atest(equals, size, filesize(fname));
+        wtest(equals, size, filesize(fname));
         UItem<types::source::Blob> s = md.source.upcast<types::source::Blob>();
-        atest(equals, "grib1", s->format);
-        atest(equals, 0u, s->offset);
-        atest(equals, size, s->size);
-        atest(endswith, fname, s->filename);
+        wtest(equals, "grib1", s->format);
+        wtest(equals, 0u, s->offset);
+        wtest(equals, size, s->size);
+        wtest(endswith, fname, s->filename);
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -115,12 +115,12 @@ void to::test<1>()
 		df.append(md);
 
         // The new data is there
-        atest(equals, totsize + size, filesize(fname));
+        wtest(equals, totsize + size, filesize(fname));
         s = md.source.upcast<types::source::Blob>();
-        atest(equals, "grib1", s->format);
-        atest(equals, totsize, s->offset);
-        atest(equals, size, s->size);
-        atest(endswith, fname, s->filename);
+        wtest(equals, "grib1", s->format);
+        wtest(equals, totsize, s->offset);
+        wtest(equals, size, s->size);
+        wtest(endswith, fname, s->filename);
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -143,12 +143,12 @@ void to::test<1>()
 		df.append(md);
 
         // The new data is there
-        atest(equals, totsize + size, filesize(fname));
+        wtest(equals, totsize + size, filesize(fname));
         s = md.source.upcast<types::source::Blob>();
-        atest(equals, "grib1", s->format);
-        atest(equals, totsize, s->offset);
-        atest(equals, size, s->size);
-        atest(endswith, fname, s->filename);
+        wtest(equals, "grib1", s->format);
+        wtest(equals, totsize, s->offset);
+        wtest(equals, size, s->size);
+        wtest(endswith, fname, s->filename);
 
 		// Metadata and summaries don't get touched
 		ensure_equals(utils::files::inode(mdfname), inomd);

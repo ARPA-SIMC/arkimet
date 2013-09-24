@@ -29,10 +29,10 @@ using namespace std;
 using namespace arki;
 using namespace wibble;
 
-namespace arki {
+namespace wibble {
 namespace tests {
 
-void test_assert_sourceblob_is(ARKI_TEST_LOCPRM,
+void test_assert_sourceblob_is(WIBBLE_TEST_LOCPRM,
         const std::string& format,
         const std::string& basedir,
         const std::string& fname,
@@ -47,15 +47,15 @@ void test_assert_sourceblob_is(ARKI_TEST_LOCPRM,
     {
         std::stringstream ss;
         ss << "metadata item '" << blob << "' is not a source::Blob";
-        arki_test_location.fail_test(ss.str());
+        wibble_test_location.fail_test(ss.str());
     }
 
-    atest(equals, format, blob->format);
-    atest(equals, basedir, blob->basedir);
-    atest(equals, fname, blob->filename);
-    atest(equals, ofs, blob->offset);
-    atest(equals, size, blob->size);
-    atest(equals, blob->absolutePathname(), sys::fs::abspath(str::joinpath(basedir, fname)));
+    wtest(equals, format, blob->format);
+    wtest(equals, basedir, blob->basedir);
+    wtest(equals, fname, blob->filename);
+    wtest(equals, ofs, blob->offset);
+    wtest(equals, size, blob->size);
+    wtest(equals, blob->absolutePathname(), sys::fs::abspath(str::joinpath(basedir, fname)));
 }
 
 }

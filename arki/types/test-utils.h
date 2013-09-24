@@ -27,12 +27,14 @@
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
 
-namespace arki {
+using namespace arki;
+
+namespace wibble {
 namespace tests {
 
-#define ensure_serialises(x, y) arki::tests::impl_ensure_serialises(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y))
+#define ensure_serialises(x, y) wibble::tests::impl_ensure_serialises(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y))
 template<typename T>
-static inline void impl_ensure_serialises(const wibble::tests::Location& loc, const arki::Item<T>& o, types::Code code)
+static inline void impl_ensure_serialises(const wibble::tests::Location& loc, const arki::Item<T>& o, arki::types::Code code)
 {
     // Binary encoding, without envelope
     std::string enc;
@@ -76,7 +78,7 @@ static inline void impl_ensure_serialises(const wibble::tests::Location& loc, co
     }
 }
 
-#define ensure_compares(x, y, z) arki::tests::impl_ensure_compares(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))
+#define ensure_compares(x, y, z) wibble::tests::impl_ensure_compares(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))
 template<typename T>
 static inline void impl_ensure_compares(const wibble::tests::Location& loc, const arki::Item<T>& x, const arki::Item<T>& y, const arki::Item<T>& z)
 {
@@ -99,7 +101,7 @@ static inline void impl_ensure_compares(const wibble::tests::Location& loc, cons
     inner_ensure(not (y > z));
 }
 
-void test_assert_sourceblob_is(ARKI_TEST_LOCPRM,
+void test_assert_sourceblob_is(WIBBLE_TEST_LOCPRM,
         const std::string& format,
         const std::string& basedir,
         const std::string& fname,

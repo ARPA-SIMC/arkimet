@@ -145,7 +145,7 @@ void to::test<6>()
 
     write_file("testfile", test);
     string test1 = read_file("testfile");
-    atest(equals, test, test1);
+    wtest(equals, test, test1);
 }
 
 // Test resolve_path
@@ -156,16 +156,16 @@ void to::test<7>()
     string basedir, relname;
 
     resolve_path(".", basedir, relname);
-    atest(equals, sys::fs::abspath("."), basedir);
-    atest(equals, ".", relname);
+    wtest(equals, sys::fs::abspath("."), basedir);
+    wtest(equals, ".", relname);
 
     resolve_path("/tmp/foo", basedir, relname);
-    atest(equals, "", basedir);
-    atest(equals, "/tmp/foo", relname);
+    wtest(equals, "", basedir);
+    wtest(equals, "/tmp/foo", relname);
 
     resolve_path("foo/bar/../baz", basedir, relname);
-    atest(equals, sys::fs::abspath("."), basedir);
-    atest(equals, "foo/baz", relname);
+    wtest(equals, sys::fs::abspath("."), basedir);
+    wtest(equals, "foo/baz", relname);
 }
 
 // Test format_from_ext
@@ -174,15 +174,15 @@ void to::test<8>()
 {
     using namespace arki::utils::files;
 
-    atest(equals, "grib", format_from_ext("test.grib"));
-    atest(equals, "grib", format_from_ext("test.grib1"));
-    atest(equals, "grib", format_from_ext("test.grib2"));
-    atest(equals, "bufr", format_from_ext("test.bufr"));
+    wtest(equals, "grib", format_from_ext("test.grib"));
+    wtest(equals, "grib", format_from_ext("test.grib1"));
+    wtest(equals, "grib", format_from_ext("test.grib2"));
+    wtest(equals, "bufr", format_from_ext("test.bufr"));
 #ifdef HAVE_ODIMH5
-    atest(equals, "odimh5", format_from_ext("test.h5"));
-    atest(equals, "odimh5", format_from_ext("test.hdf5"));
-    atest(equals, "odimh5", format_from_ext("test.odim"));
-    atest(equals, "odimh5", format_from_ext("test.odimh5"));
+    wtest(equals, "odimh5", format_from_ext("test.h5"));
+    wtest(equals, "odimh5", format_from_ext("test.hdf5"));
+    wtest(equals, "odimh5", format_from_ext("test.odim"));
+    wtest(equals, "odimh5", format_from_ext("test.odimh5"));
 #endif
 }
 

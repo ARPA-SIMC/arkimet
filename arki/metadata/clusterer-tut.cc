@@ -58,7 +58,7 @@ struct ClusterCounter : public metadata::Clusterer
 template<> template<>
 void to::test<1>()
 {
-    ARKI_TEST_INFO(info);
+    WIBBLE_TEST_INFO(info);
     unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
     for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
     {
@@ -70,7 +70,7 @@ void to::test<1>()
             clusterer(mdc[0]);
         clusterer.flush();
 
-        atest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
+        wtest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
     }
 }
 
@@ -81,7 +81,7 @@ void to::test<2>()
     // mdc[0] has 7218b of data
     // mdc[1] has 34960b of data
     // mdc[2] has 2234b of data
-    ARKI_TEST_INFO(info);
+    WIBBLE_TEST_INFO(info);
     unsigned items[] = { 0, 1, 10, 11, 20, 21, 121 };
     for (unsigned* i = items; i != items + sizeof(items) / sizeof(items[0]); ++i)
     {
@@ -94,7 +94,7 @@ void to::test<2>()
             clusterer(mdc[0]);
         clusterer.flush();
 
-        atest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
+        wtest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
     }
 
     // If max_bytes is bigger than the data, we should get a cluster with only the one item
@@ -105,7 +105,7 @@ void to::test<2>()
         clusterer(mdc[0]);
         clusterer.flush();
 
-        atest(equals, 1, clusterer.clusters_processed);
+        wtest(equals, 1, clusterer.clusters_processed);
     }
     {
         ClusterCounter clusterer;
@@ -116,7 +116,7 @@ void to::test<2>()
         clusterer(mdc[2]);
         clusterer.flush();
 
-        atest(equals, 3, clusterer.clusters_processed);
+        wtest(equals, 3, clusterer.clusters_processed);
     }
 }
 
@@ -131,7 +131,7 @@ void to::test<3>()
         clusterer(mdc[i]);
     clusterer.flush();
 
-    atest(equals, 2u, clusterer.clusters_processed);
+    wtest(equals, 2u, clusterer.clusters_processed);
 }
 
 // Test clustering by timerange
@@ -146,7 +146,7 @@ void to::test<4>()
     clusterer(mdc[1]);
     clusterer.flush();
 
-    atest(equals, 2u, clusterer.clusters_processed);
+    wtest(equals, 2u, clusterer.clusters_processed);
 }
 
 }

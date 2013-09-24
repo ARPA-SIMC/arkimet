@@ -62,8 +62,8 @@ void to::test<1>()
 
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/PVOL_v20.h5", 0, 320696, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/PVOL_v20.h5", 0, 320696, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -124,8 +124,8 @@ void to::test<2>()
 	scanner.open("inbound/odimh5/COMP_CAPPI_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_CAPPI_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_CAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -187,8 +187,8 @@ void to::test<3>()
 	scanner.open("inbound/odimh5/COMP_ETOP_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_ETOP_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_ETOP_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -249,8 +249,8 @@ void to::test<4>()
 	scanner.open("inbound/odimh5/COMP_LBM_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_LBM_v20.h5", 0, 49057, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_LBM_v20.h5", 0, 49057, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -311,8 +311,8 @@ void to::test<5>()
 	scanner.open("inbound/odimh5/COMP_MAX_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_MAX_v20.h5", 0, 49049, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_MAX_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -373,8 +373,8 @@ void to::test<6>()
 	scanner.open("inbound/odimh5/COMP_PCAPPI_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PCAPPI_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PCAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -436,8 +436,8 @@ void to::test<7>()
 	scanner.open("inbound/odimh5/COMP_PPI_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PPI_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -499,8 +499,8 @@ void to::test<8>()
 	scanner.open("inbound/odimh5/COMP_RR_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_RR_v20.h5", 0, 49049, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_RR_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -567,8 +567,8 @@ void to::test<9>()
 	scanner.open("inbound/odimh5/COMP_VIL_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_VIL_v20.h5", 0, 49097, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_VIL_v20.h5", 0, 49097, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -630,8 +630,8 @@ void to::test<10>()
 	scanner.open("inbound/odimh5/IMAGE_CAPPI_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_CAPPI_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_CAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -693,8 +693,8 @@ void to::test<11>()
 	scanner.open("inbound/odimh5/IMAGE_ETOP_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ETOP_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ETOP_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -755,8 +755,8 @@ void to::test<12>()
 	scanner.open("inbound/odimh5/IMAGE_HVMI_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_HVMI_v20.h5", 0, 68777, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_HVMI_v20.h5", 0, 68777, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -817,8 +817,8 @@ void to::test<13>()
 	scanner.open("inbound/odimh5/IMAGE_MAX_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_MAX_v20.h5", 0, 49049, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_MAX_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -879,8 +879,8 @@ void to::test<14>()
 	scanner.open("inbound/odimh5/IMAGE_PCAPPI_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PCAPPI_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PCAPPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -942,8 +942,8 @@ void to::test<15>()
 	scanner.open("inbound/odimh5/IMAGE_PPI_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PPI_v20.h5", 0, 49113, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PPI_v20.h5", 0, 49113, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -1005,8 +1005,8 @@ void to::test<16>()
 	scanner.open("inbound/odimh5/IMAGE_RR_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_RR_v20.h5", 0, 49049, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_RR_v20.h5", 0, 49049, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -1073,8 +1073,8 @@ void to::test<17>()
 	scanner.open("inbound/odimh5/IMAGE_VIL_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_VIL_v20.h5", 0, 49097, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_VIL_v20.h5", 0, 49097, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -1136,8 +1136,8 @@ void to::test<18>()
 	scanner.open("inbound/odimh5/IMAGE_ZLR-BB_v20.h5");
 	ensure(scanner.next(md));
 
-	// Check the source info
-	atest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ZLR-BB_v20.h5", 0, 62161, md.source);
+    // Check the source info
+    wtest(sourceblob_is, "odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ZLR-BB_v20.h5", 0, 62161, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();

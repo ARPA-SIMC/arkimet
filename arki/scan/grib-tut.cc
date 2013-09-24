@@ -69,7 +69,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -129,7 +129,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -180,7 +180,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -248,7 +248,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 100, 7218, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 100, 7218, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -300,7 +300,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 7418, 34960, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 7418, 34960, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -352,7 +352,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 42478, 2234, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 42478, 2234, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -440,7 +440,7 @@ void to::test<3>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, md.source);
 }
 
 // Test validation
@@ -495,7 +495,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/layer.grib1", 0, 30682, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/layer.grib1", 0, 30682, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -565,7 +565,7 @@ void to::test<6>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/proselvo.grib1", 0, 298, md.source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/proselvo.grib1", 0, 298, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -635,7 +635,7 @@ void to::test<7>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "grib2", sys::fs::abspath("."), "inbound/cleps_grib2.grib2", 0, 415, md.source);
+    wtest(sourceblob_is, "grib2", sys::fs::abspath("."), "inbound/cleps_grib2.grib2", 0, 415, md.source);
 
 	// Check that the source can be read properly
 	buf = md.getData();

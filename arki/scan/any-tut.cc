@@ -64,7 +64,7 @@ void to::test<1>()
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, mdc[0].source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, mdc[0].source);
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -103,7 +103,7 @@ void to::test<1>()
 
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960, mdc[1].source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960, mdc[1].source);
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -143,7 +143,7 @@ void to::test<1>()
 
 
     // Check the source info
-    atest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234, mdc[2].source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234, mdc[2].source);
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -185,7 +185,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194, mdc[0].source);
+    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194, mdc[0].source);
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -212,7 +212,7 @@ void to::test<2>()
 
 
     // Check the source info
-    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220, mdc[1].source);
+    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220, mdc[1].source);
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -237,7 +237,7 @@ void to::test<2>()
 
 
     // Check the source info
-    atest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220, mdc[2].source);
+    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220, mdc[2].source);
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,10 +27,10 @@ using namespace std;
 using namespace arki;
 using namespace wibble;
 
-namespace arki {
+namespace wibble {
 namespace tests {
 
-void test_assert_md_similar(ARKI_TEST_LOCPRM, const Metadata& expected, const Metadata& actual)
+void test_assert_md_similar(WIBBLE_TEST_LOCPRM, const Metadata& expected, const Metadata& actual)
 {
     for (Metadata::const_iterator i = expected.begin(); i != expected.end(); ++i)
     {
@@ -41,14 +41,14 @@ void test_assert_md_similar(ARKI_TEST_LOCPRM, const Metadata& expected, const Me
         {
             std::stringstream ss;
             ss << "missing metadata item " << i->first << ": " << i->second;
-            arki_test_location.fail_test(ss.str());
+            wibble_test_location.fail_test(ss.str());
         }
 
         if (i->second != other)
         {
             std::stringstream ss;
             ss << i->first << " differ: " << i->first << ": expected " << i->second << " got " << other;
-            arki_test_location.fail_test(ss.str());
+            wibble_test_location.fail_test(ss.str());
         }
     }
 
@@ -60,12 +60,12 @@ void test_assert_md_similar(ARKI_TEST_LOCPRM, const Metadata& expected, const Me
         {
             std::stringstream ss;
             ss << "unexpected metadata item " << i->first << ": " << i->second;
-            arki_test_location.fail_test(ss.str());
+            wibble_test_location.fail_test(ss.str());
         }
     }
 }
 
-void test_assert_md_contains(ARKI_TEST_LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual)
+void test_assert_md_contains(WIBBLE_TEST_LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual)
 {
     types::Code code = types::parseCodeName(type.c_str());
     UItem<> item = actual.get(code);
@@ -73,7 +73,7 @@ void test_assert_md_contains(ARKI_TEST_LOCPRM, const std::string& type, const st
     {
         std::stringstream ss;
         ss << "metadata does not contain an item of type " << type << ": expected: \"" << expected_val << "\"";
-        arki_test_location.fail_test(ss.str());
+        wibble_test_location.fail_test(ss.str());
     }
 
     UItem<> item1 = types::decodeString(code, expected_val);
@@ -81,11 +81,11 @@ void test_assert_md_contains(ARKI_TEST_LOCPRM, const std::string& type, const st
     {
         std::stringstream ss;
         ss << "metadata mismatch on " << type << ": expected: \"" << expected_val << "\" actual: \"" << item << "\"";
-        arki_test_location.fail_test(ss.str());
+        wibble_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_md_unset(ARKI_TEST_LOCPRM, const std::string& type, const Metadata& actual)
+void test_assert_md_unset(WIBBLE_TEST_LOCPRM, const std::string& type, const Metadata& actual)
 {
     types::Code code = types::parseCodeName(type.c_str());
     UItem<> item = actual.get(code);
@@ -93,7 +93,7 @@ void test_assert_md_unset(ARKI_TEST_LOCPRM, const std::string& type, const Metad
     {
         std::stringstream ss;
         ss << "metadata should not contain an item of type " << type << ", but it contains \"" << item << "\"";
-        arki_test_location.fail_test(ss.str());
+        wibble_test_location.fail_test(ss.str());
     }
 }
 

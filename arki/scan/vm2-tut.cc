@@ -69,7 +69,7 @@ void to::test<1>()
     ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34, md.source);
+    wtest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34, md.source);
 
     // Check area
     ensure(md.get(types::TYPE_AREA).defined());
@@ -151,7 +151,7 @@ void to::test<3>()
     ensure(scanner.next(md));
 
     // Check the source info
-    atest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 35, 35, md.source);
+    wtest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 35, 35, md.source);
 
     // Check area
     ensure(md.get(types::TYPE_AREA).defined());
@@ -186,11 +186,11 @@ void to::test<4>()
 
     value = mdc[0].get<types::Value>();
     buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
-    atest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
+    wtest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
 
     value = mdc[1].get<types::Value>();
     buf = scan::Vm2::reconstruct(mdc[1], value->buffer);
-    atest(equals, string((const char*)buf.data(), buf.size()), "19871031000030,1,228,.5,,,000000000");
+    wtest(equals, string((const char*)buf.data(), buf.size()), "19871031000030,1,228,.5,,,000000000");
 }
 
 }

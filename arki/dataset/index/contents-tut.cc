@@ -529,23 +529,23 @@ void to::test<7>()
         test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
         // 'value' should not have been preserved
-        atest(equals, 1u, mdc.size());
+        wtest(equals, 1u, mdc.size());
         UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
-        atest(equals, "vm2", source->format);
-        atest(equals, "inbound/test.vm2", source->filename);
-        atest(equals, 0, source->offset);
-        atest(equals, 34, source->size);
-        atest(md_contains, "product", "VM2(227)", mdc[0]);
-        atest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
-        atest(md_contains, "area", "VM2(1)", mdc[0]);
-        atest(md_unset, "value", mdc[0]);
+        wtest(equals, "vm2", source->format);
+        wtest(equals, "inbound/test.vm2", source->filename);
+        wtest(equals, 0, source->offset);
+        wtest(equals, 34, source->size);
+        wtest(md_contains, "product", "VM2(227)", mdc[0]);
+        wtest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
+        wtest(md_contains, "area", "VM2(1)", mdc[0]);
+        wtest(md_unset, "value", mdc[0]);
 
         // I/O should happen here
         mdc[0].source->dropCachedData();
         sys::Buffer buf = mdc[0].getData();
-        atest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
-        atest(equals, collector.events.size(), 1u);
-        atest(endswith, "inbound/test.vm2", collector.events[0].filename());
+        wtest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
+        wtest(equals, collector.events.size(), 1u);
+        wtest(endswith, "inbound/test.vm2", collector.events[0].filename());
     }
 
     // Remove index if it exists
@@ -576,22 +576,22 @@ void to::test<7>()
         test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
         // 'value' should have been preserved
-        atest(equals, 1u, mdc.size());
+        wtest(equals, 1u, mdc.size());
         UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
-        atest(equals, "vm2", source->format);
-        atest(equals, "inbound/test.vm2", source->filename);
-        atest(equals, 0, source->offset);
-        atest(equals, 34, source->size);
-        atest(md_contains, "product", "VM2(227)", mdc[0]);
-        atest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
-        atest(md_contains, "area", "VM2(1)", mdc[0]);
-        atest(md_contains, "value", "1.2,,,000000000", mdc[0]);
+        wtest(equals, "vm2", source->format);
+        wtest(equals, "inbound/test.vm2", source->filename);
+        wtest(equals, 0, source->offset);
+        wtest(equals, 34, source->size);
+        wtest(md_contains, "product", "VM2(227)", mdc[0]);
+        wtest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
+        wtest(md_contains, "area", "VM2(1)", mdc[0]);
+        wtest(md_contains, "value", "1.2,,,000000000", mdc[0]);
 
         // No I/O should happen here
         mdc[0].source->dropCachedData();
         sys::Buffer buf = mdc[0].getData();
-        atest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
-        atest(equals, collector.events.size(), 0u);
+        wtest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
+        wtest(equals, collector.events.size(), 0u);
     }
 }
 

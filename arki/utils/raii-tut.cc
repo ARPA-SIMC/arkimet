@@ -38,16 +38,16 @@ void to::test<1>()
     int a = 1;
     {
         SetOnExit<int> zz(a, 3);
-        atest(equals, 1, a);
+        wtest(equals, 1, a);
     }
-    atest(equals, 3, a);
+    wtest(equals, 3, a);
 
     std::string b = "foo";
     {
         SetOnExit<std::string> zz(b, "bar");
-        atest(equals, "foo", b);
+        wtest(equals, "foo", b);
     }
-    atest(equals, "bar", b);
+    wtest(equals, "bar", b);
 }
 
 // Check DeleteAndZeroOnExit
@@ -57,9 +57,9 @@ void to::test<2>()
     int *a = new int(1);
     {
         DeleteAndZeroOnExit<int> zz(a);
-        atest(equals, 1, *a);
+        wtest(equals, 1, *a);
     }
-    atest(equals, (int*)0, a);
+    wtest(equals, (int*)0, a);
 }
 
 // Check DeleteArrayAndZeroOnExit
@@ -70,9 +70,9 @@ void to::test<3>()
     a[0] = 1;
     {
         DeleteArrayAndZeroOnExit<int> zz(a);
-        atest(equals, 1, a[0]);
+        wtest(equals, 1, a[0]);
     }
-    atest(equals, (int*)0, a);
+    wtest(equals, (int*)0, a);
 }
 
 // Check TransactionAlloc
@@ -87,7 +87,7 @@ void to::test<4>()
             a[0] = 42;
             // Do not commit
         }
-        atest(equals, (int*)0, a);
+        wtest(equals, (int*)0, a);
     }
 
     // Test commit
@@ -98,7 +98,7 @@ void to::test<4>()
             a[0] = 42;
             ta.commit();
         }
-        atest(equals, 42, a[0]);
+        wtest(equals, 42, a[0]);
         delete[] a;
     }
 
@@ -109,7 +109,7 @@ void to::test<4>()
             TransactionAllocArray<char> ta(a, 7, "antani");
             ta.commit();
         }
-        atest(equals, string("antani"), string(a));
+        wtest(equals, string("antani"), string(a));
         delete[] a;
     }
 }

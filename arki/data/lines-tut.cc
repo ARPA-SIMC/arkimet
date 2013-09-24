@@ -84,7 +84,7 @@ inline size_t datasize(const Metadata& md)
     return md.source.upcast<types::source::Blob>()->size;
 }
 
-void test_append_transaction_ok(ARKI_TEST_LOCPRM, data::Writer dw, Metadata& md)
+void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, data::Writer dw, Metadata& md)
 {
     typedef types::source::Blob Blob;
 
@@ -96,25 +96,25 @@ void test_append_transaction_ok(ARKI_TEST_LOCPRM, data::Writer dw, Metadata& md)
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
-    atest(equals, orig_fsize, (size_t)ofs);
-    atest(equals, orig_fsize, files::size(dw.fname()));
-    atest(equals, orig_source, md.source);
+    wtest(equals, orig_fsize, (size_t)ofs);
+    wtest(equals, orig_fsize, files::size(dw.fname()));
+    wtest(equals, orig_source, md.source);
 
     // Commit
     p.commit();
 
     // After commit, data is appended
-    atest(equals, orig_fsize + data_size + 1, files::size(dw.fname()));
+    wtest(equals, orig_fsize + data_size + 1, files::size(dw.fname()));
 
     // And metadata is updated
     UItem<Blob> s = md.source.upcast<Blob>();
-    atest(equals, "grib1", s->format);
-    atest(equals, orig_fsize, s->offset);
-    atest(equals, data_size, s->size);
-    atest(equals, dw.fname(), s->filename);
+    wtest(equals, "grib1", s->format);
+    wtest(equals, orig_fsize, s->offset);
+    wtest(equals, data_size, s->size);
+    wtest(equals, dw.fname(), s->filename);
 }
 
-void test_append_transaction_rollback(ARKI_TEST_LOCPRM, data::Writer dw, Metadata& md)
+void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer dw, Metadata& md)
 {
     typedef types::source::Blob Blob;
 
@@ -125,16 +125,16 @@ void test_append_transaction_rollback(ARKI_TEST_LOCPRM, data::Writer dw, Metadat
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
-    atest(equals, orig_fsize, (size_t)ofs);
-    atest(equals, orig_fsize, files::size(dw.fname()));
-    atest(equals, orig_source, md.source);
+    wtest(equals, orig_fsize, (size_t)ofs);
+    wtest(equals, orig_fsize, files::size(dw.fname()));
+    wtest(equals, orig_source, md.source);
 
     // Rollback
     p.rollback();
 
     // After rollback, nothing has changed
-    atest(equals, orig_fsize, files::size(dw.fname()));
-    atest(equals, orig_source, md.source);
+    wtest(equals, orig_fsize, files::size(dw.fname()));
+    wtest(equals, orig_source, md.source);
 }
 
 }
@@ -143,14 +143,14 @@ void test_append_transaction_rollback(ARKI_TEST_LOCPRM, data::Writer dw, Metadat
 template<> template<>
 void to::test<1>()
 {
-    atest(not_file_exists, fname);
+    wtest(not_file_exists, fname);
     {
         lines::Writer* w;
         data::Writer dw = make_w(fname, w);
 
         // It should exist but be empty
-        atest(file_exists, fname);
-        atest(equals, 0u, files::size(fname));
+        wtest(file_exists, fname);
+        wtest(equals, 0u, files::size(fname));
 
         // Try a successful transaction
         ftest(test_append_transaction_ok, dw, mdc[0]);
@@ -166,12 +166,12 @@ void to::test<1>()
     metadata::Collection mdc1;
 
     // Scan the file we created
-    atest(istrue, scan::scan(fname, mdc1));
+    wtest(istrue, scan::scan(fname, mdc1));
 
     // Check that it only contains the 1st and 3rd data
-    atest(equals, 2u, mdc1.size());
-    atest(md_similar, mdc[0], mdc1[0]);
-    atest(md_similar, mdc[2], mdc1[1]);
+    wtest(equals, 2u, mdc1.size());
+    wtest(md_similar, mdc[0], mdc1[0]);
+    wtest(md_similar, mdc[2], mdc1[1]);
 }
 
 // Test with large files
@@ -185,7 +185,7 @@ void to::test<2>()
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
         w->truncate(0x7FFFFFFF);
-        atest(equals, 0x7FFFFFFFu, files::size(fname));
+        wtest(equals, 0x7FFFFFFFu, files::size(fname));
 
         // Try a successful transaction
         ftest(test_append_transaction_ok, dw, mdc[0]);
@@ -197,7 +197,7 @@ void to::test<2>()
         ftest(test_append_transaction_ok, dw, mdc[2]);
     }
 
-    atest(equals, 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2, files::size(fname));
+    wtest(equals, 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2, files::size(fname));
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros
@@ -210,14 +210,14 @@ void to::test<3>()
     std::stringstream out;
     const OstreamWriter* w = OstreamWriter::get("vm2");
     w->stream(mdc[0], out);
-    atest(equals, datasize(mdc[0]) + 1, out.str().size());
+    wtest(equals, datasize(mdc[0]) + 1, out.str().size());
 }
 
 // Test raw append
 template<> template<>
 void to::test<4>()
 {
-    atest(not_file_exists, fname);
+    wtest(not_file_exists, fname);
     {
         lines::Writer* w;
         data::Writer dw = make_w(fname, w);
@@ -226,7 +226,7 @@ void to::test<4>()
         ensure_equals(dw.append(buf), 5);
     }
 
-    atest(equals, utils::files::read_file(fname), "ciao\nciao\n");
+    wtest(equals, utils::files::read_file(fname), "ciao\nciao\n");
 }
 
 }

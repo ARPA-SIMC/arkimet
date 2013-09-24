@@ -178,7 +178,7 @@ void to::test<2>()
 
     // Check that the source record that comes out is ok
     UItem<Source> source = mdc[0].source;
-    atest(sourceblob_is, "grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218, mdc[0].source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218, mdc[0].source);
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);

@@ -58,7 +58,7 @@ void to::test<1>()
 
     string out = utils::files::read_file("tmp-xargs");
     // Nothing should be send to the child's stdin
-    atest(equals, "0\n", out);
+    wtest(equals, "0\n", out);
 }
 
 }

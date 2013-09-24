@@ -61,20 +61,20 @@ void to::test<1>()
     impl::Registry<impl::Writer>& reg = impl::Writer::registry();
 
     // At first, there is no such entry in the registry
-    atest(equals, (void*)0, reg.get("foo"));
+    wtest(equals, (void*)0, reg.get("foo"));
 
     // Create and add it
     impl::Writer* w = reg.add(new TestWriter("foo"));
     w->ref();
 
     // Now it is in the registry
-    atest(equals, w, reg.get("foo"));
+    wtest(equals, w, reg.get("foo"));
 
     // Lose the last reference
     w->unref();
 
     // Also removed from registry
-    atest(equals, (void*)0, reg.get("foo"));
+    wtest(equals, (void*)0, reg.get("foo"));
 }
 
 }

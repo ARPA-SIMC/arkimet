@@ -222,7 +222,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    atest(sourceblob_is, "grib1", sys::fs::abspath("test200"), "2007/07-08.grib1", 0, 7218, mdc[0].source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("test200"), "2007/07-08.grib1", 0, 7218, mdc[0].source);
 
 	mdc.clear();
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
@@ -248,7 +248,7 @@ void to::test<3>()
 	ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    atest(sourceblob_is, "grib1", sys::fs::abspath("test80"), "2007/07-07.grib1", 0, 34960, mdc[0].source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("test80"), "2007/07-07.grib1", 0, 34960, mdc[0].source);
 
 	mdc.clear();
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
@@ -274,7 +274,7 @@ void to::test<4>()
 	ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    atest(sourceblob_is, "grib1", sys::fs::abspath("test98"), "2007/10-09.grib1", 0, 2234, mdc[0].source);
+    wtest(sourceblob_is, "grib1", sys::fs::abspath("test98"), "2007/10-09.grib1", 0, 2234, mdc[0].source);
 }
 
 // Test replacing an element

@@ -267,24 +267,24 @@ struct TestDataset
         path = cfgtest->value("path");
     }
 
-    void test_import(ARKI_TEST_LOCPRM)
+    void test_import(WIBBLE_TEST_LOCPRM)
     {
         // Clear everything
         if (sys::fs::isdir(path)) sys::fs::rmtree(path);
 
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
-        atest(istrue, scan::scan(td.fname, input_data));
-        atest(equals, td.info.size(), input_data.size());
+        wtest(istrue, scan::scan(td.fname, input_data));
+        wtest(equals, td.info.size(), input_data.size());
 
         for (unsigned i = 0; i < input_data.size(); ++i)
         {
-            atest(equals, td.info[i].import_outcome, ds->acquire(input_data[i]));
-            atest(file_exists, str::joinpath(path, td.info[i].destfile));
+            wtest(equals, td.info[i].import_outcome, ds->acquire(input_data[i]));
+            wtest(file_exists, str::joinpath(path, td.info[i].destfile));
         }
     }
 
-    void test_querydata(ARKI_TEST_LOCPRM)
+    void test_querydata(WIBBLE_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -295,19 +295,19 @@ struct TestDataset
             // Check that what we imported can be queried
             metadata::Collection mdc;
             ds->queryData(dataset::DataQuery(td.info[i].matcher, false), mdc);
-            atest(equals, 1u, mdc.size());
+            wtest(equals, 1u, mdc.size());
 
             // Check that the result matches what was imported
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             UItem<source::Blob> s2 = mdc[0].source.upcast<source::Blob>();
-            atest(equals, s1->format, s2->format);
-            atest(equals, s1->size, s2->size);
+            wtest(equals, s1->format, s2->format);
+            wtest(equals, s1->size, s2->size);
 
-            atest(istrue, td.info[i].matcher(mdc[0]));
+            wtest(istrue, td.info[i].matcher(mdc[0]));
         }
     }
 
-    void test_querysummary(ARKI_TEST_LOCPRM)
+    void test_querysummary(WIBBLE_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -315,7 +315,7 @@ struct TestDataset
         {
             Summary s;
             ds->querySummary(Matcher(), s);
-            atest(equals, input_data.size(), s.count());
+            wtest(equals, input_data.size(), s.count());
         }
 
         for (unsigned i = 0; i < input_data.size(); ++i)
@@ -326,14 +326,14 @@ struct TestDataset
             Summary s;
             ds->querySummary(td.info[i].matcher, s);
 
-            atest(equals, 1u, s.count());
+            wtest(equals, 1u, s.count());
 
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
-            atest(equals, s1->size, s.size());
+            wtest(equals, s1->size, s.size());
         }
     }
 
-    void test_querybytes(ARKI_TEST_LOCPRM)
+    void test_querybytes(WIBBLE_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -349,18 +349,18 @@ struct TestDataset
             // Write it out and rescan
             files::write_file("testdata", os.str());
             metadata::Collection tmp;
-            atest(istrue, scan::scan("testdata", tmp, input_data[i].source->format));
+            wtest(istrue, scan::scan("testdata", tmp, input_data[i].source->format));
 
             // Ensure that what we rescanned is what was imported
-            atest(equals, 1u, tmp.size());
-            atest(md_similar, input_data[i], tmp[0]);
+            wtest(equals, 1u, tmp.size());
+            wtest(md_similar, input_data[i], tmp[0]);
 
             //UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
-            //atest(equals, s1->size, os.str().size());
+            //wtest(equals, s1->size, os.str().size());
         }
     }
 
-    void test_querybytes_integrity(ARKI_TEST_LOCPRM)
+    void test_querybytes_integrity(WIBBLE_TEST_LOCPRM)
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -378,19 +378,19 @@ struct TestDataset
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             total_size += s1->size;
         }
-        atest(gte, total_size, os.str().size());
+        wtest(gte, total_size, os.str().size());
 
         // Write the results to disk
         utils::files::write_file("tempdata", os.str());
 
         // Check that they can be scanned again
         metadata::Collection mdc;
-        atest(istrue, scan::scan("tempdata", mdc, td.format));
+        wtest(istrue, scan::scan("tempdata", mdc, td.format));
 
         sys::fs::unlink("tempdata");
     }
 
-    void test_locked(ARKI_TEST_LOCPRM)
+    void test_locked(WIBBLE_TEST_LOCPRM)
     {
         // Lock a dataset for writing
         auto_ptr<WritableDataset> wds(WritableDataset::create(*cfgtest));
@@ -404,7 +404,7 @@ struct TestDataset
         rds->queryBytes(bq, os);
     }
 
-    void test_all(ARKI_TEST_LOCPRM)
+    void test_all(WIBBLE_TEST_LOCPRM)
     {
         ftest(test_import);
         ftest(test_querydata);

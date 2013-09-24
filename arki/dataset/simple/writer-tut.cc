@@ -92,9 +92,9 @@ void to::test<1>()
 	ensure_equals(ds->id, "");
 
     Item<types::source::Blob> source = md.source.upcast<types::source::Blob>();
-    atest(endswith, "07-08.grib1", source->filename);
-    atest(equals, 0u, source->offset);
-    atest(equals, 7218u, source->size);
+    wtest(endswith, "07-08.grib1", source->filename);
+    wtest(equals, 0u, source->offset);
+    wtest(equals, 7218u, source->size);
 
 	// Import again works fine
 	res = writer.acquire(md);
@@ -104,9 +104,9 @@ void to::test<1>()
 	ensure_equals(ds->id, "");
 
     source = md.source.upcast<types::source::Blob>();
-    atest(endswith, "07-08.grib1", source->filename);
-    atest(equals, 7218u, source->offset);
-    atest(equals, 7218u, source->size);
+    wtest(endswith, "07-08.grib1", source->filename);
+    wtest(equals, 7218u, source->offset);
+    wtest(equals, 7218u, source->size);
 
 	// Flush the changes and check that everything is allright
 	writer.flush();
@@ -163,10 +163,10 @@ void to::test<2>()
 		ensure_equals(ds->id, "");
 
         UItem<types::source::Blob> source = md.source.upcast<types::source::Blob>();
-        atest(istrue, source.defined());
-        atest(endswith, "2007.grib1", source->filename);
-        atest(equals, 34960u, source->offset);
-        atest(equals, 7218u, source->size);
+        wtest(istrue, source.defined());
+        wtest(endswith, "2007.grib1", source->filename);
+        wtest(equals, 34960u, source->offset);
+        wtest(equals, 7218u, source->size);
     }
 
 	ensure(sys::fs::exists("testds/20/2007.grib1"));
