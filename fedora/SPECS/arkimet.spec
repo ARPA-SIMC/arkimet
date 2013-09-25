@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.74
-Release: 2763%{dist}
+Version: 0.75
+Release: 2798%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/sim/?arkimet‎
@@ -53,14 +53,21 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/arkimet
 %config(noreplace) %{_sysconfdir}/arkimet/match-alias.conf
-%{_sysconfdir}/arkimet/*
+%{_sysconfdir}/arkimet/bbox/*
+%{_sysconfdir}/arkimet/format/*
+%{_sysconfdir}/arkimet/qmacro/*
+%{_sysconfdir}/arkimet/report/*
+%{_sysconfdir}/arkimet/scan-bufr/*
+%{_sysconfdir}/arkimet/scan-grib1/*
+%{_sysconfdir}/arkimet/scan-grib2/*
+%{_sysconfdir}/arkimet/scan-odimh5/*
+%{_sysconfdir}/arkimet/targetfile/*
 %{_bindir}/*
 %{_sysconfdir}/rc.d/init.d/%{name}
 %config(noreplace) %{_sysconfdir}/default/arki-server
 %doc %{_mandir}/man1/*
 %doc README TODO NEWS
-%doc doc/*
-
+%doc %{_docdir}/arkimet/*
 
 %files -n arkimet-devel
 %defattr(-,root,root,-)
@@ -90,6 +97,11 @@ else
 fi
 
 %changelog
+* Tue Sep 10 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.75-2784%{dist}
+- SmallFiles support
+- split SummaryCache in its own file
+- arkiguide.it
+
 * Wed Jun 12 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.74-2763%{dist}
 - corretto bug nel sort dei dati
 
