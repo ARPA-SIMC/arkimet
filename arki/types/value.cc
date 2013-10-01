@@ -1,7 +1,7 @@
 /*
  * types/value - Metadata type to store small values
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ void Value::encodeWithoutEnvelope(Encoder& enc) const
 
 std::ostream& Value::writeToOstream(std::ostream& o) const
 {
-    return o << codec::c_escape(buffer);
+    return o << str::c_escape(buffer);
 }
 
 void Value::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -104,7 +104,7 @@ Item<Value> Value::decode(const unsigned char* buf, size_t len)
 Item<Value> Value::decodeString(const std::string& val)
 {
     size_t len;
-    return Value::create(codec::c_unescape(val, len));
+    return Value::create(str::c_unescape(val, len));
 }
 
 Item<Value> Value::decodeMapping(const emitter::memory::Mapping& val)

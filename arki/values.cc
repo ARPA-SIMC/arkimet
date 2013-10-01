@@ -1,7 +1,7 @@
 /*
  * values - Dynamic type system used by some types of arkimet metadata
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "config.h"
 
 #include <wibble/exception.h>
+#include <wibble/string.h>
 #include <arki/values.h>
 #include <arki/utils/codec.h>
 #include <arki/emitter.h>
@@ -288,7 +289,7 @@ struct String : public Common<std::string>
 		if (parsesAsNumber(m_val, idummy) || needsQuoting(m_val))
 		{
 			// If it is surrounded by double quotes or it parses as a number, we need to escape it
-			return "\"" + codec::c_escape(m_val) + "\"";
+			return "\"" + str::c_escape(m_val) + "\"";
 		} else {
 			// Else, we can use the value as it is
 			return m_val;
@@ -379,7 +380,7 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 
 		// Unescape the string
 		size_t parsed;
-		string res = codec::c_unescape(str.substr(begin), parsed);
+		string res = str::c_unescape(str.substr(begin), parsed);
 
 		lenParsed = skipSpaces(str, begin + parsed);
 		return new value::String(res);
