@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/utils/fd.h>
 #include <wibble/sys/fs.h>
 #include <sys/types.h>

@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/types/reftime.h>
 #include <arki/configfile.h>

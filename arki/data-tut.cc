@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include "data.h"
 #include "data/impl.h"
 #include "data/lines.h"
@@ -29,6 +29,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_data_shar {
 };
@@ -44,7 +45,7 @@ void to::test<1>()
     Writer w2 = Writer::get("grib", "test-data-writer");
 
     // Check that the implementation is reused
-    wtest(equals, w1._implementation(), w2._implementation());
+    wassert(actual(w1._implementation()) == w2._implementation());
 }
 
 }

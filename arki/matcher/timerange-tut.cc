@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/matcher/test-utils.h>
+#include <arki/matcher/tests.h>
 #include <arki/matcher.h>
 #include <arki/matcher/timerange.h>
 #include <arki/metadata.h>

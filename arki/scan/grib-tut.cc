@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/types/test-utils.h>
+#include <arki/metadata/tests.h>
 #include <arki/scan/grib.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
@@ -45,6 +45,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -69,7 +70,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -114,7 +115,7 @@ void to::test<1>()
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
     // Check proddef
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -129,7 +130,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -138,7 +139,7 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
 
     // Check origin
-    ensure_md_equals(md, Origin, "GRIB1(80, 255, 100)");
+    wassert(actual(md).contains("origin", "GRIB1(80, 255, 100)"));
 
 	// Check product
 	ensure(md.get(types::TYPE_PRODUCT).defined());
@@ -165,7 +166,7 @@ void to::test<1>()
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
     // Check proddef
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -180,7 +181,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -217,7 +218,7 @@ void to::test<1>()
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
     // Check proddef
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -248,7 +249,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 100, 7218, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/padded.grib1", 100, 7218));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -285,7 +286,7 @@ void to::test<2>()
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
     // Check proddef
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -300,7 +301,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 7418, 34960, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/padded.grib1", 7418, 34960));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -337,7 +338,7 @@ void to::test<2>()
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
     // Check proddef
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -352,7 +353,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/padded.grib1", 42478, 2234, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/padded.grib1", 42478, 2234));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -389,7 +390,7 @@ void to::test<2>()
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
     // Check proddef
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -440,7 +441,7 @@ void to::test<3>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
 }
 
 // Test validation
@@ -495,7 +496,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/layer.grib1", 0, 30682, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/layer.grib1", 0, 30682));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -517,7 +518,7 @@ void to::test<5>()
 
 	// Check timerange
 	ensure(md.get(types::TYPE_TIMERANGE).defined());
-    ensure_md_equals(md, Timerange, "Timedef(0s, 254, 0s)");
+    wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
 
 	// Check area
 	vb.clear();
@@ -536,14 +537,14 @@ void to::test<5>()
 
     // Check proddef
     vb.clear();
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
 	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2009, 9, 2, 0, 0, 0))));
 
     // Check run
-    ensure_md_equals(md, Run, "MINUTE(00:00)");
+    wassert(actual(md).contains("run", "MINUTE(00:00)"));
 
 	// No more gribs
 	ensure(not scanner.next(md));
@@ -565,7 +566,7 @@ void to::test<6>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("."), "inbound/proselvo.grib1", 0, 298, md.source);
+    wassert(actual(md.source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/proselvo.grib1", 0, 298));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -605,7 +606,7 @@ void to::test<6>()
 	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
 
     // Check proddef
-    ensure_md_equals(md, Proddef, "GRIB(ld=1,mt=9,nn=0,tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(ld=1,mt=9,nn=0,tod=1)"));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
@@ -635,7 +636,7 @@ void to::test<7>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "grib2", sys::fs::abspath("."), "inbound/cleps_grib2.grib2", 0, 415, md.source);
+    wassert(actual(md.source).sourceblob_is("grib2", sys::fs::abspath("."), "inbound/cleps_grib2.grib2", 0, 415));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -643,14 +644,14 @@ void to::test<7>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 411, 4), "7777");
 
-    ensure_md_equals(md, Origin, "GRIB2(250, 98, 4, 255, 131)");
-    ensure_md_equals(md, Product, "GRIB2(250, 0, 2, 22)");
-    ensure_md_equals(md, Level, "GRIB2S(103, 0, 10)");
-    ensure_md_equals(md, Timerange, "Timedef(3h, 2, 3h)");
-    ensure_md_equals(md, Area, "GRIB(Ni=511,Nj=415,latfirst=-16125000,latlast=9750000,lonfirst=344250000,lonlast=16125000,latp=-40000000,lonp=10000000,rot=0,tn=1)");
-    ensure_md_equals(md, Proddef, "GRIB(mc=ti,mt=0,pf=1,tf=16,tod=4,ty=3)");
-    ensure_md_equals(md, Reftime, "2010-05-24T12:00:00");
-    ensure_md_equals(md, Run, "MINUTE(12:00)");
+    wassert(actual(md).contains("origin", "GRIB2(250, 98, 4, 255, 131)"));
+    wassert(actual(md).contains("product", "GRIB2(250, 0, 2, 22)"));
+    wassert(actual(md).contains("level", "GRIB2S(103, 0, 10)"));
+    wassert(actual(md).contains("timerange", "Timedef(3h, 2, 3h)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=511,Nj=415,latfirst=-16125000,latlast=9750000,lonfirst=344250000,lonlast=16125000,latp=-40000000,lonp=10000000,rot=0,tn=1)"));
+    wassert(actual(md).contains("proddef", "GRIB(mc=ti,mt=0,pf=1,tf=16,tod=4,ty=3)"));
+    wassert(actual(md).contains("reftime", "2010-05-24T12:00:00"));
+    wassert(actual(md).contains("run", "MINUTE(12:00)"));
 
     // No more gribs
     ensure(not scanner.next(md));
@@ -665,14 +666,14 @@ void to::test<8>()
     scanner.open("inbound/calmety_20110215.grib2");
     ensure(scanner.next(md));
 
-    ensure_md_equals(md, Origin, "GRIB2(00200, 00000, 000, 000, 203)");
-    ensure_md_equals(md, Product, "GRIB2(200, 0, 200, 33)");
-    ensure_md_equals(md, Level, "GRIB2S(103, 0, 10)");
-    ensure_md_equals(md, Timerange, "Timedef(0s, 254, 0s)");
-    ensure_md_equals(md, Area, "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
-    ensure_md_equals(md, Reftime, "2011-02-15T00:00:00Z");
-    ensure_md_equals(md, Run, "MINUTE(0)");
+    wassert(actual(md).contains("origin", "GRIB2(00200, 00000, 000, 000, 203)"));
+    wassert(actual(md).contains("product", "GRIB2(200, 0, 200, 33)"));
+    wassert(actual(md).contains("level", "GRIB2S(103, 0, 10)"));
+    wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=90, Nj=52, fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md).contains("reftime", "2011-02-15T00:00:00Z"));
+    wassert(actual(md).contains("run", "MINUTE(0)"));
 
     // No more gribs
     ensure(not scanner.next(md));
@@ -721,120 +722,120 @@ void to::test<10>()
         scan::scan("inbound/cosmonudging-t2.grib1", mdc);
         ensure_equals(mdc.size(), 35u);
         for (unsigned i = 0; i < 5; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
-        ensure_md_equals(mdc[5], Timerange, "Timedef(0s, 2, 1h)");
-        ensure_md_equals(mdc[6], Timerange, "Timedef(0s, 3, 1h)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
+        wassert(actual(mdc[5]).contains("timerange", "Timedef(0s, 2, 1h)"));
+        wassert(actual(mdc[6]).contains("timerange", "Timedef(0s, 3, 1h)"));
         for (unsigned i = 7; i < 13; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
-        ensure_md_equals(mdc[13], Timerange, "Timedef(0s, 1, 12h)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
+        wassert(actual(mdc[13]).contains("timerange", "Timedef(0s, 1, 12h)"));
         for (unsigned i = 14; i < 19; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
-        ensure_md_equals(mdc[19], Timerange, "Timedef(0s, 1, 12h)");
-        ensure_md_equals(mdc[20], Timerange, "Timedef(0s, 1, 12h)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
+        wassert(actual(mdc[19]).contains("timerange", "Timedef(0s, 1, 12h)"));
+        wassert(actual(mdc[20]).contains("timerange", "Timedef(0s, 1, 12h)"));
         for (unsigned i = 21; i < 26; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
-        ensure_md_equals(mdc[26], Timerange, "Timedef(0s, 1, 12h)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
+        wassert(actual(mdc[26]).contains("timerange", "Timedef(0s, 1, 12h)"));
         for (unsigned i = 27; i < 35; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s, 0, 12h)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s, 0, 12h)"));
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t201.grib1", mdc);
         ensure_equals(mdc.size(), 33u);
-        ensure_md_equals(mdc[0], Timerange, "Timedef(0s, 0, 12h)");
-        ensure_md_equals(mdc[1], Timerange, "Timedef(0s, 0, 12h)");
-        ensure_md_equals(mdc[2], Timerange, "Timedef(0s, 0, 12h)");
+        wassert(actual(mdc[0]).contains("timerange", "Timedef(0s, 0, 12h)"));
+        wassert(actual(mdc[1]).contains("timerange", "Timedef(0s, 0, 12h)"));
+        wassert(actual(mdc[2]).contains("timerange", "Timedef(0s, 0, 12h)"));
         for (unsigned i = 3; i < 16; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
-        ensure_md_equals(mdc[16], Timerange, "Timedef(0s, 1, 12h)");
-        ensure_md_equals(mdc[17], Timerange, "Timedef(0s, 1, 12h)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
+        wassert(actual(mdc[16]).contains("timerange", "Timedef(0s, 1, 12h)"));
+        wassert(actual(mdc[17]).contains("timerange", "Timedef(0s, 1, 12h)"));
         for (unsigned i = 18; i < 26; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
-        ensure_md_equals(mdc[26], Timerange, "Timedef(0s, 2, 1h)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
+        wassert(actual(mdc[26]).contains("timerange", "Timedef(0s, 2, 1h)"));
         for (unsigned i = 27; i < 33; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
     }
     {
         metadata::Collection mdc;
         scan::scan("inbound/cosmonudging-t202.grib1", mdc);
         ensure_equals(mdc.size(), 11u);
         for (unsigned i = 0; i < 11; ++i)
-            ensure_md_equals(mdc[i], Timerange, "Timedef(0s,254,0s)");
+            wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
     }
 
     OneGrib md;
 
     md.read("inbound/cosmonudging-t203.grib1");
-    ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
 
     md.read("inbound/cosmo/anist_1.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anist_1.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/fc0ist_1.grib");
-    // ensure_md_equals(md, Timerange, "Timedef(0s,254,0s)");
+    // wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
     ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(0s,254,0s)"));
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/anproc_1.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,1,1h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_2.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,0,1h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,0,1h)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_3.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,2,1h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,2,1h)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_4.grib");
-    ensure_md_equals(md, Timerange, "Timedef(0s,0,12h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,0,12h)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_1.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(0s,0,24h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,0,24h)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_2.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(0s,1,24h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=0)");
+    wassert(actual(md).contains("timerange", "Timedef(0s,1,24h)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/fcist_1.grib");
-    // ensure_md_equals(md, Timerange, "Timedef(6h,254,0s)");
+    // wassert(actual(md).contains("timerange", "Timedef(6h,254,0s)"));
     ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,254,0s)"));
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcist_1.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(6h,254,0s)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("timerange", "Timedef(6h,254,0s)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcist_2.grib2");
-    // ensure_md_equals(md, Timerange, "Timedef(6h,254,0s)");
+    // wassert(actual(md).contains("timerange", "Timedef(6h,254,0s)"));
     ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,254,0s)"));
-    ensure_md_equals(md, Proddef, "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)");
+    wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
 
     md.read("inbound/cosmo/fcproc_1.grib");
-    // ensure_md_equals(md, Timerange, "Timedef(6h,1,6h)");
+    // wassert(actual(md).contains("timerange", "Timedef(6h,1,6h)"));
     ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,1,6h)"));
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcproc_1.grib2");
-    // ensure_md_equals(md, Timerange, "Timedef(12h,1,12h)");
+    // wassert(actual(md).contains("timerange", "Timedef(12h,1,12h)"));
     ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,1,12h)"));
-    ensure_md_equals(md, Proddef, "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)");
+    wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
 
     md.read("inbound/cosmo/fcproc_2.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(15h,2,3h)");
-    ensure_md_equals(md, Proddef, "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)");
+    wassert(actual(md).contains("timerange", "Timedef(15h,2,3h)"));
+    wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
 
     md.read("inbound/cosmo/fcproc_3.grib2");
-    ensure_md_equals(md, Timerange, "Timedef(48h,1,24h)");
-    ensure_md_equals(md, Proddef, "GRIB(tod=1)");
+    wassert(actual(md).contains("timerange", "Timedef(48h,1,24h)"));
+    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 }
 
 // Check scanning a GRIB2 with a bug in level scanning code

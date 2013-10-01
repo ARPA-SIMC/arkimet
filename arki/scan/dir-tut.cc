@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/scan/dir.h>
 #include <arki/utils.h>
 #include <wibble/exception.h>

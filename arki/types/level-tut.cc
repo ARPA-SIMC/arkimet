@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/level.h>
 #include <arki/matcher.h>
 
@@ -33,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -57,8 +58,8 @@ void to::test<1>()
 	ensure_equals(o, Item<Level>(level::GRIB1::create(1, 1, 1)));
 	ensure(o != level::GRIB1::create(2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_LEVEL);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,1");
@@ -85,8 +86,8 @@ void to::test<2>()
 	ensure(o != level::GRIB1::create(100, 132));
 	ensure(o != level::GRIB1::create(103, 133));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_LEVEL);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,103,132");
@@ -111,8 +112,8 @@ void to::test<3>()
 	ensure(o != level::GRIB1::create(100, 13200));
 	ensure(o != level::GRIB1::create(103, 13201));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_LEVEL);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,103,13200");
@@ -138,8 +139,8 @@ void to::test<4>()
 	ensure(o != level::GRIB1::create(104, 133, 231));
 	ensure(o != level::GRIB1::create(104, 132, 232));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_LEVEL);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,104,132,231");
@@ -166,7 +167,7 @@ void to::test<5>()
     ensure(o != level::GRIB1::create(100, 50000));
 
     // Test encoding/decoding
-    ensure_serialises(o, types::TYPE_LEVEL);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(o->exactQuery(), "GRIB2S,100,100,500");
@@ -194,7 +195,7 @@ void to::test<6>()
     ensure(o != level::GRIB1::create(100, 50000));
 
     // Test encoding/decoding
-    ensure_serialises(o, types::TYPE_LEVEL);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(o->exactQuery(), "GRIB2S,-,-,-");
@@ -220,8 +221,8 @@ void to::test<7>()
 	ensure(o != level::GRIB1::create(100));
 	ensure(o != level::GRIB2S::create(100, 100, 500));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_LEVEL);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2D,100,100,500,100,100,1000");
@@ -257,10 +258,9 @@ void to::test<8>()
 template<> template<>
 void to::test<9>()
 {
-	ensure_compares(
-		level::GRIB1::create(104, 132, 231),
-		level::GRIB1::create(104, 132, 232),
-		level::GRIB1::create(104, 132, 232));
+	wassert(actual(level::GRIB1::create(104, 132, 231)).compares(
+                level::GRIB1::create(104, 132, 232),
+                level::GRIB1::create(104, 132, 232)));
 }
 
 // Check ODIMH5
@@ -280,8 +280,8 @@ void to::test<10>()
 	ensure(o != level::GRIB1::create(100));
 	ensure(o != level::GRIB2S::create(100, 100, 500));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_LEVEL);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 // Check ODIMH5

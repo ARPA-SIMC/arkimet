@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/proddef.h>
 #include <arki/matcher.h>
 
@@ -33,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -66,8 +67,8 @@ void to::test<1>()
 	ensure_equals(o, Item<Proddef>(proddef::GRIB::create(test1)));
 	ensure(o != proddef::GRIB::create(test2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_PRODDEF);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
@@ -112,10 +113,9 @@ void to::test<3>()
 	ValueBag test2;
 	test2.set("count", Value::createInteger(2));
 	test2.set("pippo", Value::createString("pippo"));
-	ensure_compares(
-		proddef::GRIB::create(test1),
-		proddef::GRIB::create(test2),
-		proddef::GRIB::create(test2));
+    wassert(actual(proddef::GRIB::create(test1)).compares(
+                proddef::GRIB::create(test2),
+                proddef::GRIB::create(test2)));
 }
 
 }

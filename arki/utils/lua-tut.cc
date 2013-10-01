@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/utils/lua.h>
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>

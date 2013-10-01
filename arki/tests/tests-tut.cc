@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,24 +38,42 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace wibble;
+using namespace wibble::tests;
 
-struct arki_utils_shar {
+struct arki_tests_shar {
 };
-TESTGRP(arki_utils);
+TESTGRP(arki_tests);
 
 // Check compareMaps
 template<> template<>
 void to::test<1>()
 {
-	using namespace utils;
-	map<string, UItem<> > a;
-	map<string, UItem<> > b;
-
-	a["antani"] = b["antani"] = types::origin::GRIB1::create(1, 2, 3);
-	a["pippo"] = types::run::Minute::create(12);
-
-	ensure_equals(compareMaps(a, b), 1);
-	ensure_equals(compareMaps(b, a), -1);
+    wassert(actual(true).istrue());
+    wassert(actual(false).isfalse());
+    wassert(!actual(false).istrue());
+    wassert(actual(3) == 3);
+    wassert(!(actual(3) == 4));
+    wassert(actual(3) != 4);
+    wassert(!(actual(3) != 3));
+    wassert(actual(3) < 4);
+    wassert(!(actual(3) < 3));
+    wassert(actual(3) <= 4);
+    wassert(actual(3) <= 3);
+    wassert(actual(4) > 3);
+    wassert(!(actual(3) > 3));
+    wassert(actual(4) >= 3);
+    wassert(actual(3) >= 3);
+    wassert(actual("ciao").startswith("ci"));
+    wassert(!actual("ciao").startswith("ao"));
+    wassert(actual("ciao").endswith("ao"));
+    wassert(!actual("ciao").endswith("ci"));
+    wassert(actual("ciao").contains("ci"));
+    wassert(actual("ciao").contains("ia"));
+    wassert(actual("ciao").contains("ao"));
+    wassert(!actual("ciao").contains("bu"));
+    wassert(actual("ciao").matches("[ia]+"));
+    wassert(!actual("ciao").matches("[bu]+"));
+    wassert(!actual("this-file-does-not-exist").fileexists());
 }
 
 }

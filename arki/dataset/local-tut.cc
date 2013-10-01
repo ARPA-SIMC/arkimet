@@ -35,6 +35,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble::tests;
 using namespace arki::tests;
 using namespace arki::dataset;
 using namespace arki::utils;
@@ -178,7 +179,7 @@ void to::test<2>()
 
     // Check that the source record that comes out is ok
     UItem<Source> source = mdc[0].source;
-    wtest(sourceblob_is, "grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218, mdc[0].source);
+    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218));
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);

@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/metadata/collection.h>
 #include <arki/utils/datareader.h>
 #include <arki/scan/any.h>

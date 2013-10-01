@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/time.h>
 
 #include <sstream>
@@ -32,6 +32,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -73,7 +74,7 @@ void to::test<1>()
 	// Test deserialisation from SQL
 	ensure_equals(o, Item<Time>(Time::createFromSQL(o->toSQL())));
 
-	ensure_serialises(o, types::TYPE_TIME);
+    wassert(actual(o).serializes());
 }
 
 // Check an arbitrary time
@@ -109,7 +110,7 @@ void to::test<2>()
 	// Test deserialisation from SQL
 	ensure_equals(o, Item<Time>(Time::createFromSQL(o->toSQL())));
 
-	ensure_serialises(o, types::TYPE_TIME);
+    wassert(actual(o).serializes());
 }
 
 // Check time differences
@@ -136,10 +137,9 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	ensure_compares(
-		Time::create(2006, 5, 4, 3, 2, 1),
-		Time::create(2007, 6, 5, 4, 3, 2),
-		Time::create(2007, 6, 5, 4, 3, 2));
+    wassert(actual(Time::create(2006, 5, 4, 3, 2, 1)).compares(
+                Time::create(2007, 6, 5, 4, 3, 2),
+                Time::create(2007, 6, 5, 4, 3, 2)));
 }
 
 // Test Lua functions

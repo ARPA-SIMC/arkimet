@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/note.h>
 
 #include <sstream>
@@ -32,6 +32,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -54,8 +55,8 @@ void to::test<1>()
 	ensure(o != Item<Note>(Note::create(o->time, "test1")));
 	ensure(o != Item<Note>(Note::create(Time::create(1800, 1, 2, 3, 4, 5), "test")));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_NOTE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 // Check Note, created with arbitrary time
@@ -71,8 +72,8 @@ void to::test<2>()
 	ensure(o != Item<Note>(Note::create(time, "test1")));
 	ensure(o != Item<Note>(Note::create(Time::create(2007, 6, 5, 4, 3, 1), "test")));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_NOTE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 #ifdef HAVE_LUA

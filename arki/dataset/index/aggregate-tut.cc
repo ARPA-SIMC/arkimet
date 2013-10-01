@@ -21,7 +21,7 @@
 #include "config.h"
 
 #include "aggregate.h"
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,9 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/value.h>
+#include <arki/utils/codec.h>
 
 #include <sstream>
 #include <iostream>
@@ -32,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -58,7 +60,7 @@ void to::test<1>()
     ensure(o != Value::create("ciap"));
 
     // Test encoding/decoding
-    ensure_serialises(o, types::TYPE_VALUE);
+    wassert(actual(o).serializes());
 }
 
 // Check binary value
@@ -74,7 +76,7 @@ void to::test<2>()
     ensure(o != Value::create("cia♥"));
 
     // Test encoding/decoding
-    ensure_serialises(o, types::TYPE_VALUE);
+    wassert(actual(o).serializes());
 }
 
 // Check binary value with zeros
@@ -89,7 +91,7 @@ void to::test<3>()
     ensure(o != Value::create("ciao"));
 
     // Test encoding/decoding
-    ensure_serialises(o, types::TYPE_VALUE);
+    wassert(actual(o).serializes());
 }
 
 // Test Lua functions
@@ -121,10 +123,9 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-    ensure_compares(
-            Value::create("ciao"),
-            Value::create("ciap"),
-            Value::create("ciap"));
+    wassert(actual(Value::create("ciao")).compares(
+                Value::create("ciap"),
+                Value::create("ciap")));
 }
 
 }

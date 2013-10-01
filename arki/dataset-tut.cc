@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/dataset/test-utils.h>
 #include <arki/metadata/tests.h>
 #include <arki/dataset.h>
@@ -48,6 +48,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct TestDataInfo
 {
@@ -274,13 +275,13 @@ struct TestDataset
 
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
-        wtest(istrue, scan::scan(td.fname, input_data));
-        wtest(equals, td.info.size(), input_data.size());
+        wassert(actual(scan::scan(td.fname, input_data)).istrue());
+        wassert(actual(input_data.size()) == td.info.size());
 
         for (unsigned i = 0; i < input_data.size(); ++i)
         {
-            wtest(equals, td.info[i].import_outcome, ds->acquire(input_data[i]));
-            wtest(file_exists, str::joinpath(path, td.info[i].destfile));
+            wassert(actual(ds->acquire(input_data[i])) == td.info[i].import_outcome);
+            wassert(actual(str::joinpath(path, td.info[i].destfile)).fileexists());
         }
     }
 
@@ -295,15 +296,15 @@ struct TestDataset
             // Check that what we imported can be queried
             metadata::Collection mdc;
             ds->queryData(dataset::DataQuery(td.info[i].matcher, false), mdc);
-            wtest(equals, 1u, mdc.size());
+            wassert(actual(mdc.size()) == 1u);
 
             // Check that the result matches what was imported
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             UItem<source::Blob> s2 = mdc[0].source.upcast<source::Blob>();
-            wtest(equals, s1->format, s2->format);
-            wtest(equals, s1->size, s2->size);
+            wassert(actual(s2->format) == s1->format);
+            wassert(actual(s2->size) == s1->size);
 
-            wtest(istrue, td.info[i].matcher(mdc[0]));
+            wassert(actual(td.info[i].matcher(mdc[0])).istrue());
         }
     }
 
@@ -315,7 +316,7 @@ struct TestDataset
         {
             Summary s;
             ds->querySummary(Matcher(), s);
-            wtest(equals, input_data.size(), s.count());
+            wassert(actual(s.count()) == input_data.size());
         }
 
         for (unsigned i = 0; i < input_data.size(); ++i)
@@ -326,10 +327,10 @@ struct TestDataset
             Summary s;
             ds->querySummary(td.info[i].matcher, s);
 
-            wtest(equals, 1u, s.count());
+            wassert(actual(s.count()) == 1u);
 
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
-            wtest(equals, s1->size, s.size());
+            wassert(actual(s.size()) == s1->size);
         }
     }
 
@@ -349,14 +350,14 @@ struct TestDataset
             // Write it out and rescan
             files::write_file("testdata", os.str());
             metadata::Collection tmp;
-            wtest(istrue, scan::scan("testdata", tmp, input_data[i].source->format));
+            wassert(actual(scan::scan("testdata", tmp, input_data[i].source->format)).istrue());
 
             // Ensure that what we rescanned is what was imported
-            wtest(equals, 1u, tmp.size());
-            wtest(md_similar, input_data[i], tmp[0]);
+            wassert(actual(tmp.size()) == 1u);
+            wassert(actual(tmp[0]).is_similar(input_data[i]));
 
             //UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
-            //wtest(equals, s1->size, os.str().size());
+            //wassert(actual(os.str().size()) == s1->size);
         }
     }
 
@@ -378,14 +379,14 @@ struct TestDataset
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             total_size += s1->size;
         }
-        wtest(gte, total_size, os.str().size());
+        wassert(actual(os.str().size()) == total_size);
 
         // Write the results to disk
         utils::files::write_file("tempdata", os.str());
 
         // Check that they can be scanned again
         metadata::Collection mdc;
-        wtest(istrue, scan::scan("tempdata", mdc, td.format));
+        wassert(actual(scan::scan("tempdata", mdc, td.format)).istrue());
 
         sys::fs::unlink("tempdata");
     }

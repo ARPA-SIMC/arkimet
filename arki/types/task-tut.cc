@@ -1,6 +1,5 @@
-
 /*
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +19,7 @@
  * Author: Guido Billi <guidobilli@gmail.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/task.h>
 
 #include <sstream>
@@ -37,6 +36,7 @@ namespace tut {
 /*============================================================================*/
 
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -61,8 +61,8 @@ template<> template<> void to::test<2>()
 	Item<Task> o = Task::create("task");
 	ensure_equals(o->task, "task");
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TASK);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 #ifdef HAVE_LUA

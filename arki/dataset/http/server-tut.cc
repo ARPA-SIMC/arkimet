@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2010--2013  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
     string dsname;
@@ -245,14 +246,14 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_summary, r);
 
         // Handle the response, client side
-        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
-        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        wtest(equals, "attachment; filename=testds-summary.bin", r.response_headers["content-disposition"]);
+        wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
+        wassert(actual(r.response_headers["content-type"]) == "application/octet-stream");
+        wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds-summary.bin");
 
         Summary s;
         stringstream sstream(r.response_body);
         s.read(sstream, "response body");
-        wtest(equals, 3u, s.count());
+        wassert(actual(s.count()) == 3u);
     }
 
     // Test /query/
@@ -266,15 +267,15 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_query, r);
 
         // Handle the response, client side
-        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
-        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        wtest(equals, "attachment; filename=testds.bin", r.response_headers["content-disposition"]);
+        wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
+        wassert(actual(r.response_headers["content-type"]) == "application/octet-stream");
+        wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds.bin");
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
         Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
-        wtest(equals, 3u, mdc.size());
+        wassert(actual(mdc.size()) == 3u);
     }
 
     // Test /querydata/
@@ -288,15 +289,15 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_queryData, r);
 
         // Handle the response, client side
-        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
-        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        wtest(equals, "attachment; filename=testds.arkimet", r.response_headers["content-disposition"]);
+        wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
+        wassert(actual(r.response_headers["content-type"]) == "application/octet-stream");
+        wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds.arkimet");
 
         stringstream sstream(r.response_body);
         metadata::Collection mdc;
         Metadata::readFile(sstream, metadata::ReadContext("", "(response body)"), mdc);
 
-        wtest(equals, 3u, mdc.size());
+        wassert(actual(mdc.size()) == 3u);
     }
 
     // Test /querybytes/
@@ -310,12 +311,12 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_queryBytes, r);
 
         // Handle the response, client side
-        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
-        wtest(equals, "application/octet-stream", r.response_headers["content-type"]);
-        wtest(equals, "attachment; filename=testds.txt", r.response_headers["content-disposition"]);
+        wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
+        wassert(actual(r.response_headers["content-type"]) == "application/octet-stream");
+        wassert(actual(r.response_headers["content-disposition"]) == "attachment; filename=testds.txt");
 
-        wtest(equals, 44412u, r.response_body.size());
-        wtest(equals, "GRIB", r.response_body.substr(0, 4));
+        wassert(actual(r.response_body.size()) == 44412u);
+        wassert(actual(r.response_body.substr(0, 4)) == "GRIB");
     }
 
     // Test /config/
@@ -329,14 +330,14 @@ struct ServerTest : public arki::tests::DatasetTest
         ftest(do_config, r);
 
         // Handle the response, client side
-        wtest(equals, "HTTP/1.0 200 OK", r.response_method);
-        wtest(equals, "text/plain", r.response_headers["content-type"]);
-        wtest(equals, "", r.response_headers["content-disposition"]);
+        wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
+        wassert(actual(r.response_headers["content-type"]) == "text/plain");
+        wassert(actual(r.response_headers["content-disposition"]) == "");
 
         stringstream buf;
         buf << "[testds]" << endl;
         cfg.output(buf, "memory");
-        wtest(equals, buf.str(), r.response_body);
+        wassert(actual(r.response_body) == buf.str());
     }
 
     // Test /config/ with a locked DB

@@ -33,6 +33,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::dataset;
@@ -664,7 +665,7 @@ void to::test<10>()
 		metadata::Collection mdc;
 		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
-        wtest(sourceblob_is, "grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218, mdc[0].source);
+        wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
 	}
 }
 

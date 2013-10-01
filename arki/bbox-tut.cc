@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/bbox.h>
 #include <arki/utils/geosdef.h>
 #include <arki/types/area.h>

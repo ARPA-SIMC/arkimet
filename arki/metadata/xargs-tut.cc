@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/metadata/xargs.h>
 #include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
@@ -28,6 +28,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 
 struct arki_metadata_xargs_shar {
@@ -58,7 +59,7 @@ void to::test<1>()
 
     string out = utils::files::read_file("tmp-xargs");
     // Nothing should be send to the child's stdin
-    wtest(equals, "0\n", out);
+    wassert(actual(out) == "0\n");
 }
 
 // Test that env vars are set
@@ -78,11 +79,11 @@ void to::test<2>()
     xargs.flush();
 
     string out = utils::files::read_file("tmp-xargs");
-    wtest(contains, "ARKI_XARGS_FILENAME='", out);
-    wtest(contains, "ARKI_XARGS_FORMAT='GRIB1'\n", out);
-    wtest(contains, "ARKI_XARGS_COUNT='10'\n", out);
-    wtest(contains, "ARKI_XARGS_TIME_START='2007-07-08 13:00:00Z'\n", out);
-    wtest(contains, "ARKI_XARGS_TIME_END='2007-07-08 13:00:00Z'\n", out);
+    wassert(actual(out).contains("ARKI_XARGS_FILENAME='"));
+    wassert(actual(out).contains("ARKI_XARGS_FORMAT='GRIB1'\n"));
+    wassert(actual(out).contains("ARKI_XARGS_COUNT='10'\n"));
+    wassert(actual(out).contains("ARKI_XARGS_TIME_START='2007-07-08 13:00:00Z'\n"));
+    wassert(actual(out).contains("ARKI_XARGS_TIME_END='2007-07-08 13:00:00Z'\n"));
 }
 
 }

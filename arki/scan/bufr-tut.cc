@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/scan/bufr.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
@@ -43,6 +43,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -66,7 +67,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -102,7 +103,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -130,7 +131,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -174,7 +175,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/padded.bufr", 100, 194, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 100, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -204,7 +205,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/padded.bufr", 394, 220, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 394, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -232,7 +233,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/padded.bufr", 714, 220, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 714, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -312,7 +313,7 @@ void to::test<4>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/C23000.bufr", 0, 2206, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/C23000.bufr", 0, 2206));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -360,7 +361,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "bufr", sys::fs::abspath("."), "inbound/pollution.bufr", 0, 178, md.source);
+    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/pollution.bufr", 0, 178));
 
 	// Check that the source can be read properly
 	buf = md.getData();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/metadata/clusterer.h>
 #include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
@@ -26,6 +26,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble::tests;
 
 struct arki_metadata_clusterer_shar {
     metadata::Collection mdc;
@@ -70,7 +71,7 @@ void to::test<1>()
             clusterer(mdc[0]);
         clusterer.flush();
 
-        wtest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
+        wassert(actual(clusterer.clusters_processed) == (*i + 10 - 1) / 10);
     }
 }
 
@@ -94,7 +95,7 @@ void to::test<2>()
             clusterer(mdc[0]);
         clusterer.flush();
 
-        wtest(equals, (*i + 10 - 1) / 10, clusterer.clusters_processed);
+        wassert(actual(clusterer.clusters_processed) == (*i + 10 - 1) / 10);
     }
 
     // If max_bytes is bigger than the data, we should get a cluster with only the one item
@@ -105,7 +106,7 @@ void to::test<2>()
         clusterer(mdc[0]);
         clusterer.flush();
 
-        wtest(equals, 1, clusterer.clusters_processed);
+        wassert(actual(clusterer.clusters_processed) == 1);
     }
     {
         ClusterCounter clusterer;
@@ -116,7 +117,7 @@ void to::test<2>()
         clusterer(mdc[2]);
         clusterer.flush();
 
-        wtest(equals, 3, clusterer.clusters_processed);
+        wassert(actual(clusterer.clusters_processed) == 3);
     }
 }
 
@@ -131,7 +132,7 @@ void to::test<3>()
         clusterer(mdc[i]);
     clusterer.flush();
 
-    wtest(equals, 2u, clusterer.clusters_processed);
+    wassert(actual(clusterer.clusters_processed) == 2u);
 }
 
 // Test clustering by timerange
@@ -146,7 +147,7 @@ void to::test<4>()
     clusterer(mdc[1]);
     clusterer.flush();
 
-    wtest(equals, 2u, clusterer.clusters_processed);
+    wassert(actual(clusterer.clusters_processed) == 2u);
 }
 
 }

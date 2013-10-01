@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/utils/compress.h>
 #include <wibble/sys/fs.h>
 
@@ -32,6 +32,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki::utils::compress;
 
 static void fill(sys::Buffer buf, const std::string& pattern)
@@ -52,8 +53,8 @@ void to::test<1>()
 	sys::Buffer orig("ciao", 4);
 	sys::Buffer comp = lzo(orig.data(), orig.size());
 
-	ensure_equals(comp.size(), orig.size());
-	ensure(comp == orig);
+    wassert(actual(comp.size()) == orig.size());
+    wassert(actual(comp) == orig);
 }
 
 // Test a compression/decompression cycle
@@ -66,9 +67,9 @@ void to::test<2>()
 	sys::Buffer orig(4096);
 	fill(orig, "ciao");
 
-	sys::Buffer comp = lzo(orig.data(), orig.size());
-	ensure(comp.size() < orig.size());
-	ensure(unlzo(comp.data(), comp.size(), orig.size()) == orig);
+    sys::Buffer comp = lzo(orig.data(), orig.size());
+    wassert(actual(comp.size()) < orig.size());
+    wassert(actual(unlzo(comp.data(), comp.size(), orig.size())) == orig);
 }
 
 // Test a compression/decompression cycle on a large buffer
@@ -81,9 +82,9 @@ void to::test<3>()
 	sys::Buffer orig(1000000);
 	fill(orig, "ciao");
 
-	sys::Buffer comp = lzo(orig.data(), orig.size());
-	ensure(comp.size() < orig.size());
-	ensure(unlzo(comp.data(), comp.size(), orig.size()) == orig);
+    sys::Buffer comp = lzo(orig.data(), orig.size());
+    wassert(actual(comp.size()) < orig.size());
+    wassert(actual(unlzo(comp.data(), comp.size(), orig.size())) == orig);
 }
 
 // Test SeekIndex
@@ -92,9 +93,9 @@ void to::test<4>()
 {
 	SeekIndex idx;
 
-	// Opening a nonexisting file returns false
-	ensure(!sys::fs::exists("this-file-does-not-exists"));
-	ensure(!idx.read("this-file-does-not-exists"));
+    // Opening a nonexisting file returns false
+    wassert(!actual("this-file-does-not-exists").fileexists());
+    wassert(actual(idx.read("this-file-does-not-exists")).isfalse());
 }
 
 // Test SeekIndex lookup

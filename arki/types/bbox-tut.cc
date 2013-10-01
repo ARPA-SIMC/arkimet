@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/bbox.h>
 
 #include <sstream>
@@ -32,6 +32,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -50,8 +51,8 @@ void to::test<1>()
 
 	ensure_equals(o, Item<BBox>(bbox::INVALID::create()));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_BBOX);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 #ifdef HAVE_LUA

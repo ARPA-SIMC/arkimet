@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/metadata/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/index/contents.h>
@@ -51,6 +51,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::dataset::index;
 using namespace arki::types;
@@ -529,23 +530,23 @@ void to::test<7>()
         test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
         // 'value' should not have been preserved
-        wtest(equals, 1u, mdc.size());
+        wassert(actual(mdc.size()) == 1u);
         UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
-        wtest(equals, "vm2", source->format);
-        wtest(equals, "inbound/test.vm2", source->filename);
-        wtest(equals, 0, source->offset);
-        wtest(equals, 34, source->size);
-        wtest(md_contains, "product", "VM2(227)", mdc[0]);
-        wtest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
-        wtest(md_contains, "area", "VM2(1)", mdc[0]);
-        wtest(md_unset, "value", mdc[0]);
+        wassert(actual(source->format) == "vm2");
+        wassert(actual(source->filename) == "inbound/test.vm2");
+        wassert(actual(source->offset) == 0);
+        wassert(actual(source->size) == 34);
+        wassert(actual(mdc[0]).contains("product", "VM2(227)"));
+        wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
+        wassert(actual(mdc[0]).contains("area", "VM2(1)"));
+        wassert(not actual(mdc[0]).is_set("value"));
 
         // I/O should happen here
         mdc[0].source->dropCachedData();
         sys::Buffer buf = mdc[0].getData();
-        wtest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
-        wtest(equals, collector.events.size(), 1u);
-        wtest(endswith, "inbound/test.vm2", collector.events[0].filename());
+        wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
+        wassert(actual(collector.events.size()) == 1u);
+        wassert(actual(collector.events[0].filename()).endswith("inbound/test.vm2"));
     }
 
     // Remove index if it exists
@@ -576,22 +577,22 @@ void to::test<7>()
         test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
         // 'value' should have been preserved
-        wtest(equals, 1u, mdc.size());
+        wassert(actual(mdc.size()) == 1u);
         UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
-        wtest(equals, "vm2", source->format);
-        wtest(equals, "inbound/test.vm2", source->filename);
-        wtest(equals, 0, source->offset);
-        wtest(equals, 34, source->size);
-        wtest(md_contains, "product", "VM2(227)", mdc[0]);
-        wtest(md_contains, "reftime", "1987-10-31T00:00:00Z", mdc[0]);
-        wtest(md_contains, "area", "VM2(1)", mdc[0]);
-        wtest(md_contains, "value", "1.2,,,000000000", mdc[0]);
+        wassert(actual(source->format) == "vm2");
+        wassert(actual(source->filename) == "inbound/test.vm2");
+        wassert(actual(source->offset) == 0);
+        wassert(actual(source->size) == 34);
+        wassert(actual(mdc[0]).contains("product", "VM2(227)"));
+        wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
+        wassert(actual(mdc[0]).contains("area", "VM2(1)"));
+        wassert(actual(mdc[0]).contains("value", "1.2,,,000000000"));
 
         // No I/O should happen here
         mdc[0].source->dropCachedData();
         sys::Buffer buf = mdc[0].getData();
-        wtest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
-        wtest(equals, collector.events.size(), 0u);
+        wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
+        wassert(actual(collector.events.size()) == 0u);
     }
 }
 

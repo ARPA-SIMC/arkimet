@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/timerange.h>
 #include <arki/matcher.h>
 
@@ -33,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -67,8 +68,8 @@ void to::test<1>()
 	ensure(o != timerange::GRIB1::create(2, 1, 2, 3));
 	ensure(o != timerange::GRIB1::create(2, 4, 2, 3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1, 002, 002s, 003s");
@@ -103,8 +104,8 @@ void to::test<2>()
 	ensure(o != timerange::GRIB1::create(2, 1, 3, 4));
 	ensure(o != timerange::GRIB1::create(2, 4, 2, 3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1, 002, 002h, 003h");
@@ -139,8 +140,8 @@ void to::test<3>()
 	ensure(o != timerange::GRIB1::create(2, 254, 2, 3));
 	ensure(o != timerange::GRIB1::create(2, 1, 2, 3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1, 002, 002y, 003y");
@@ -175,8 +176,8 @@ void to::test<4>()
 	ensure(o != timerange::GRIB1::create(250, 4, 124, 127));
 	ensure(o != timerange::GRIB1::create(250, 254, 124, 127));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1, 250, 124h, 127h");
@@ -202,8 +203,8 @@ void to::test<5>()
 	ensure(o != timerange::GRIB2::create(2, 1, 2, 3));
 	ensure(o != timerange::GRIB2::create(2, 4, 2, 3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,2,254,2,3");
@@ -229,8 +230,8 @@ void to::test<6>()
 	ensure(o != timerange::GRIB2::create(2, 1, 3, 4));
 	ensure(o != timerange::GRIB2::create(2, 4, 2, 3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,2,1,2,3");
@@ -256,8 +257,8 @@ void to::test<7>()
 	ensure(o != timerange::GRIB2::create(2, 254, 2, 3));
 	ensure(o != timerange::GRIB2::create(2, 1, 2, 3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,2,4,2,3");
@@ -283,8 +284,8 @@ void to::test<8>()
 	ensure(o != timerange::GRIB2::create(2, 4, -2, -3));
 	ensure(o != timerange::GRIB2::create(2, 254, -2, -3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,2,1,-2,-3");
@@ -310,8 +311,8 @@ void to::test<9>()
 	ensure(o != timerange::GRIB2::create(250, 4, -2, -3));
 	ensure(o != timerange::GRIB2::create(250, 254, -2, -3));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,250,1,-2,-3");
@@ -369,7 +370,7 @@ void to::test<11>()
 
     // Test encoding/decoding
     Item<Timerange> o(v);
-    ensure_serialises(o, types::TYPE_TIMERANGE);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(v->exactQuery(), "Timedef,6h,2,60m");
@@ -401,7 +402,7 @@ void to::test<12>()
 
     // Test encoding/decoding
     Item<Timerange> o(v);
-    ensure_serialises(o, types::TYPE_TIMERANGE);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(v->exactQuery(), "Timedef,1y,2,3mo");
@@ -434,7 +435,7 @@ void to::test<13>()
 
     // Test encoding/decoding
     Item<Timerange> o(v);
-    ensure_serialises(o, types::TYPE_TIMERANGE);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(v->exactQuery(), "Timedef,1d,-");
@@ -467,7 +468,7 @@ void to::test<14>()
 
     // Test encoding/decoding
     Item<Timerange> o(v);
-    ensure_serialises(o, types::TYPE_TIMERANGE);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(v->exactQuery(), "Timedef,2ce,-");
@@ -499,7 +500,7 @@ void to::test<15>()
 
     // Test encoding/decoding
     Item<Timerange> o(v);
-    ensure_serialises(o, types::TYPE_TIMERANGE);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(v->exactQuery(), "Timedef,6h,2,-");
@@ -532,7 +533,7 @@ void to::test<16>()
 
     // Test encoding/decoding
     Item<Timerange> o(v);
-    ensure_serialises(o, types::TYPE_TIMERANGE);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(v->exactQuery(), "Timedef,6no,2,-");
@@ -564,7 +565,7 @@ void to::test<17>()
 
     // Test encoding/decoding
     Item<Timerange> o(v);
-    ensure_serialises(o, types::TYPE_TIMERANGE);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(v->exactQuery(), "Timedef,1y,2,3d");
@@ -590,8 +591,8 @@ void to::test<18>()
 	ensure(o != timerange::BUFR::create(5, 1));
 	ensure(o != timerange::BUFR::create(6, 0));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_TIMERANGE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "BUFR,6h");
@@ -629,10 +630,9 @@ void to::test<19>()
 template<> template<>
 void to::test<20>()
 {
-	ensure_compares(
-		timerange::GRIB1::create(2, 254, 2, 3),
-		timerange::GRIB1::create(2, 254, 2, 4),
-		timerange::GRIB1::create(2, 254, 2, 4));
+    wassert(actual(timerange::GRIB1::create(2, 254, 2, 3)).compares(
+                timerange::GRIB1::create(2, 254, 2, 4),
+                timerange::GRIB1::create(2, 254, 2, 4)));
 }
 
 // Test computing timedef information

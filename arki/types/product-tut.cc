@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/product.h>
 #include <arki/matcher.h>
 #include <wibble/string.h>
@@ -37,6 +37,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_types_product_shar {
 };
@@ -62,8 +63,8 @@ void to::test<1>()
 	vb.set("name", Value::createString("antani"));
 	ensure(o != product::BUFR::create(1, 2, 3, vb));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_PRODUCT);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,1,2,3");
@@ -92,8 +93,8 @@ void to::test<2>()
 	vb.set("name", Value::createString("antani"));
 	ensure(o != product::BUFR::create(1, 2, 3, vb));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_PRODUCT);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4");
@@ -122,8 +123,8 @@ void to::test<3>()
 	ensure(o != product::BUFR::create(1, 2, 3));
 	ensure(o != product::BUFR::create(1, 2, 3, vb1));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_PRODUCT);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "BUFR,1,2,3:name=antani");
@@ -169,26 +170,21 @@ void to::test<5>()
 	ValueBag vb1;
 	vb1.set("name", Value::createString("blinda"));
 
-	ensure_compares(
-		product::GRIB1::create(1, 2, 3),
-		product::GRIB1::create(2, 3, 4),
-		product::GRIB1::create(2, 3, 4));
-	ensure_compares(
-		product::GRIB2::create(1, 2, 3, 4),
-		product::GRIB2::create(2, 3, 4, 5),
-		product::GRIB2::create(2, 3, 4, 5));
-	ensure_compares(
-		product::BUFR::create(1, 2, 3),
-		product::BUFR::create(1, 2, 4),
-		product::BUFR::create(1, 2, 4));
-	ensure_compares(
-		product::BUFR::create(1, 2, 3, vb),
-		product::BUFR::create(1, 2, 3, vb1),
-		product::BUFR::create(1, 2, 3, vb1));
-    ensure_compares(
-        product::VM2::create(1),
-        product::VM2::create(2),
-        product::VM2::create(2));
+    wassert(actual(product::GRIB1::create(1, 2, 3)).compares(
+                product::GRIB1::create(2, 3, 4),
+                product::GRIB1::create(2, 3, 4)));
+    wassert(actual(product::GRIB2::create(1, 2, 3, 4)).compares(
+                product::GRIB2::create(2, 3, 4, 5),
+                product::GRIB2::create(2, 3, 4, 5)));
+    wassert(actual(product::BUFR::create(1, 2, 3)).compares(
+                product::BUFR::create(1, 2, 4),
+                product::BUFR::create(1, 2, 4)));
+    wassert(actual(product::BUFR::create(1, 2, 3, vb)).compares(
+                product::BUFR::create(1, 2, 3, vb1),
+                product::BUFR::create(1, 2, 3, vb1)));
+    wassert(actual(product::VM2::create(1)).compares(
+                product::VM2::create(2),
+                product::VM2::create(2)));
 }
 
 // Check VM2
@@ -204,8 +200,8 @@ void to::test<6>()
 
 	ensure(o != product::VM2::create(2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_PRODUCT);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "VM2,1");

@@ -66,6 +66,12 @@ Reader::~Reader() {}
 
 Reader Reader::get(const std::string& format, const std::string& fname)
 {
+    // Get the file extension
+    std::string fmt;
+    size_t pos;
+    if ((pos = fname.rfind('.')) != std::string::npos)
+        fmt = fname.substr(pos + 1);
+    return get(fmt, fname);
 }
 
 Writer::Writer(impl::Writer* impl) : Base<impl::Writer>(impl) {}

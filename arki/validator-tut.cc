@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/matcher/test-utils.h>
+#include <arki/matcher/tests.h>
 #include <arki/validator.h>
 #include <arki/metadata.h>
 #include <arki/types/reftime.h>

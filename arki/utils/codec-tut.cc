@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <wibble/string.h>
+#include <arki/tests/tests.h>
 #include <arki/utils/codec.h>
 #include <arki/types/origin.h>
 #include <arki/types/run.h>
@@ -31,6 +32,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble;
 
 struct arki_utils_codec_shar {
 };
@@ -40,16 +42,17 @@ TESTGRP(arki_utils_codec);
 template<> template<>
 void to::test<1>()
 {
+    using namespace wibble::tests;
 	using namespace utils::codec;
 
 #define TEST_CODEC(name, val, encsize) do { \
 		string enc; \
 		Encoder e(enc); \
 		e.add ## name((val), (encsize)); \
-		ensure_equals(enc.size(), (encsize)); \
-		\
-		Decoder dec((const unsigned char*)enc.data(), enc.size()); \
-		ensure_equals(dec.pop ## name((encsize), "value"), (val)); \
+        wassert(actual(enc.size()) == (encsize)); \
+        \
+        Decoder dec((const unsigned char*)enc.data(), enc.size()); \
+        wassert(actual(dec.pop ## name((encsize), "value")) ==  (val)); \
 	} while (0)
 
 	TEST_CODEC(UInt, 0u, 1u);
@@ -148,10 +151,10 @@ void to::test<1>()
 		string enc; \
 		Encoder e(enc); \
 		e.add ## name((val)); \
-		ensure_equals(enc.size(), (encsize)); \
-		\
-		Decoder dec((const unsigned char*)enc.data(), enc.size()); \
-		ensure_equals(dec.pop ## name("value"), (val)); \
+        wassert(actual(enc.size()) == (encsize)); \
+        \
+        Decoder dec((const unsigned char*)enc.data(), enc.size()); \
+        wassert(actual(dec.pop ## name("value")) == (val)); \
 	} while (0)
 	TEST_CODEC(Float, 0.0f, 4u);
 	TEST_CODEC(Float, 0.1f, 4u);
@@ -170,6 +173,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
+    using namespace wibble::tests;
 	using namespace utils::codec;
 
 #define TEST_VARINT(TYPE, val, encsize) do { \
@@ -177,12 +181,12 @@ void to::test<2>()
 		string enc; \
 		Encoder e(enc); \
 		e.addVarint(v); \
-		ensure_equals(enc.size(), (encsize)); \
-		ensure((enc[encsize-1] & 0x80) == 0); \
-		TYPE v1; \
-		size_t dsize = decodeVarint(enc.data(), enc.size(), v1); \
-		ensure_equals(dsize, (encsize)); \
-		ensure_equals(v, v1); \
+        wassert(actual(enc.size()) == (encsize)); \
+        wassert(actual(enc[encsize-1] & 0x80) == 0); \
+        TYPE v1; \
+        size_t dsize = decodeVarint(enc.data(), enc.size(), v1); \
+        wassert(actual(dsize) == (encsize)); \
+        wassert(actual(v) == v1); \
 	} while (0)
 
 	TEST_VARINT(uint8_t, 0x1, 1u);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/reftime.h>
 #include <arki/matcher.h>
 
@@ -33,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -52,8 +53,8 @@ void to::test<1>()
 	ensure_equals(o, Item<Reftime>(reftime::Position::create(Time::create(2007, 6, 5, 4, 3, 2))));
 	ensure(o != Item<Reftime>(reftime::Position::create(Time::create(2007, 6, 5, 4, 3, 1))));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_REFTIME);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "=2007-06-05T04:03:02Z");
@@ -80,8 +81,8 @@ void to::test<2>()
 		Time::create(2007, 6, 5, 4, 3, 3),
 		Time::create(2008, 7, 6, 5, 4, 2)));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_REFTIME);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "=2007-06-05T04:03:02Z");

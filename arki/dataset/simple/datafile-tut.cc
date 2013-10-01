@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2012  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::dataset::simple;
 using namespace wibble;
+using namespace wibble::tests;
 
 namespace {
 inline size_t filesize(const std::string& fname)
@@ -94,12 +95,12 @@ void to::test<1>()
 		df.append(md);
 
         // The new data is there
-        wtest(equals, size, filesize(fname));
+        wassert(actual(filesize(fname)) == size);
         UItem<types::source::Blob> s = md.source.upcast<types::source::Blob>();
-        wtest(equals, "grib1", s->format);
-        wtest(equals, 0u, s->offset);
-        wtest(equals, size, s->size);
-        wtest(endswith, fname, s->filename);
+        wassert(actual(s->format) == "grib1");
+        wassert(actual(s->offset) == 0u);
+        wassert(actual(s->size) == size);
+        wassert(actual(s->filename).endswith(fname));
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -115,12 +116,12 @@ void to::test<1>()
 		df.append(md);
 
         // The new data is there
-        wtest(equals, totsize + size, filesize(fname));
+        wassert(actual(filesize(fname)) == totsize + size);
         s = md.source.upcast<types::source::Blob>();
-        wtest(equals, "grib1", s->format);
-        wtest(equals, totsize, s->offset);
-        wtest(equals, size, s->size);
-        wtest(endswith, fname, s->filename);
+        wassert(actual(s->format) == "grib1");
+        wassert(actual(s->offset) == totsize);
+        wassert(actual(s->size) == size);
+        wassert(actual(s->filename).endswith(fname));
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -143,12 +144,12 @@ void to::test<1>()
 		df.append(md);
 
         // The new data is there
-        wtest(equals, totsize + size, filesize(fname));
+        wassert(actual(filesize(fname)) == totsize + size);
         s = md.source.upcast<types::source::Blob>();
-        wtest(equals, "grib1", s->format);
-        wtest(equals, totsize, s->offset);
-        wtest(equals, size, s->size);
-        wtest(endswith, fname, s->filename);
+        wassert(actual(s->format) == "grib1");
+        wassert(actual(s->offset) == totsize);
+        wassert(actual(s->size) == size);
+        wassert(actual(s->filename).endswith(fname));
 
 		// Metadata and summaries don't get touched
 		ensure_equals(utils::files::inode(mdfname), inomd);

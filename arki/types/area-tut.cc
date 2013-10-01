@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/area.h>
 #include <arki/matcher.h>
 
@@ -33,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -66,8 +67,8 @@ void to::test<1>()
 	ensure_equals(o, Item<Area>(area::GRIB::create(test1)));
 	ensure(o != area::GRIB::create(test2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_AREA);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
@@ -112,10 +113,9 @@ void to::test<3>()
 	ValueBag test2;
 	test2.set("count", Value::createInteger(2));
 	test2.set("pippo", Value::createString("pippo"));
-	ensure_compares(
-		area::GRIB::create(test1),
-		area::GRIB::create(test2),
-		area::GRIB::create(test2));
+    wassert(actual(area::GRIB::create(test1)).compares(
+                area::GRIB::create(test2),
+                area::GRIB::create(test2)));
 }
 
 // Check ODIMH5
@@ -144,8 +144,8 @@ void to::test<4>()
 	ensure_equals(o, Item<Area>(area::ODIMH5::create(test1)));
 	ensure(o != area::ODIMH5::create(test2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_AREA);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "ODIMH5:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
@@ -165,8 +165,8 @@ void to::test<5>()
 	ensure_equals(o, Item<Area>(area::VM2::create(1)));
 	ensure(o != area::VM2::create(2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_AREA);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "VM2,1");

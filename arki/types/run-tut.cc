@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/run.h>
 #include <arki/matcher.h>
 
@@ -33,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -54,8 +55,8 @@ void to::test<1>()
 
 	ensure(o != run::Minute::create(12, 1));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_RUN);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "MINUTE,12:00");
@@ -90,10 +91,9 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	ensure_compares(
-		run::Minute::create(12, 30),
-		run::Minute::create(13, 00),
-		run::Minute::create(13, 00));
+    wassert(actual(run::Minute::create(12, 30)).compares(
+                    run::Minute::create(13, 00),
+                    run::Minute::create(13, 00)));
 }
 
 }

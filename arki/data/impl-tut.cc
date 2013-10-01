@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include "arki/data/impl.h"
 
 namespace tut {
@@ -28,6 +28,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::data;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_data_impl_shar {
 };
@@ -61,20 +62,20 @@ void to::test<1>()
     impl::Registry<impl::Writer>& reg = impl::Writer::registry();
 
     // At first, there is no such entry in the registry
-    wtest(equals, (void*)0, reg.get("foo"));
+    wassert(actual(reg.get("foo")) == (void*)0);
 
     // Create and add it
     impl::Writer* w = reg.add(new TestWriter("foo"));
     w->ref();
 
     // Now it is in the registry
-    wtest(equals, w, reg.get("foo"));
+    wassert(actual(reg.get("foo")) == w);
 
     // Lose the last reference
     w->unref();
 
     // Also removed from registry
-    wtest(equals, (void*)0, reg.get("foo"));
+    wassert(actual(reg.get("foo")) == (void*)0);
 }
 
 }

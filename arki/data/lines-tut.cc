@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include "arki/tests/test-utils.h"
+#include "arki/tests/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/data.h"
@@ -43,6 +43,7 @@ using namespace arki;
 using namespace arki::data;
 using namespace arki::utils;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_data_lines_shar {
     string fname;
@@ -96,28 +97,26 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, data::Writer dw, Metadata& m
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
-    wtest(equals, orig_fsize, (size_t)ofs);
-    wtest(equals, orig_fsize, files::size(dw.fname()));
-    wtest(equals, orig_source, md.source);
+    wassert(actual((size_t)ofs) == orig_fsize);
+    wassert(actual(files::size(dw.fname())) == orig_fsize);
+    wassert(actual(md.source) == orig_source);
 
     // Commit
     p.commit();
 
     // After commit, data is appended
-    wtest(equals, orig_fsize + data_size + 1, files::size(dw.fname()));
+    wassert(actual(files::size(dw.fname())) == orig_fsize + data_size + 1);
 
     // And metadata is updated
     UItem<Blob> s = md.source.upcast<Blob>();
-    wtest(equals, "grib1", s->format);
-    wtest(equals, orig_fsize, s->offset);
-    wtest(equals, data_size, s->size);
-    wtest(equals, dw.fname(), s->filename);
+    wassert(actual(s->format) == "grib1");
+    wassert(actual(s->offset) == orig_fsize);
+    wassert(actual(s->size) == data_size);
+    wassert(actual(s->filename) == dw.fname());
 }
 
 void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer dw, Metadata& md)
 {
-    typedef types::source::Blob Blob;
-
     // Make a snapshot of everything before appending
     Item<types::Source> orig_source = md.source;
     size_t orig_fsize = files::size(dw.fname());
@@ -125,16 +124,16 @@ void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer dw, Metad
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
-    wtest(equals, orig_fsize, (size_t)ofs);
-    wtest(equals, orig_fsize, files::size(dw.fname()));
-    wtest(equals, orig_source, md.source);
+    wassert(actual((size_t)ofs) == orig_fsize);
+    wassert(actual(files::size(dw.fname())) == orig_fsize);
+    wassert(actual(md.source) == orig_source);
 
     // Rollback
     p.rollback();
 
     // After rollback, nothing has changed
-    wtest(equals, orig_fsize, files::size(dw.fname()));
-    wtest(equals, orig_source, md.source);
+    wassert(actual(files::size(dw.fname())) == orig_fsize);
+    wassert(actual(md.source) == orig_source);
 }
 
 }
@@ -143,14 +142,14 @@ void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer dw, Metad
 template<> template<>
 void to::test<1>()
 {
-    wtest(not_file_exists, fname);
+    wassert(!actual(fname).fileexists());
     {
         lines::Writer* w;
         data::Writer dw = make_w(fname, w);
 
         // It should exist but be empty
-        wtest(file_exists, fname);
-        wtest(equals, 0u, files::size(fname));
+        wassert(actual(fname).fileexists());
+        wassert(actual(files::size(fname)) == 0u);
 
         // Try a successful transaction
         ftest(test_append_transaction_ok, dw, mdc[0]);
@@ -166,12 +165,12 @@ void to::test<1>()
     metadata::Collection mdc1;
 
     // Scan the file we created
-    wtest(istrue, scan::scan(fname, mdc1));
+    wassert(actual(scan::scan(fname, mdc1)).istrue());
 
     // Check that it only contains the 1st and 3rd data
-    wtest(equals, 2u, mdc1.size());
-    wtest(md_similar, mdc[0], mdc1[0]);
-    wtest(md_similar, mdc[2], mdc1[1]);
+    wassert(actual(mdc1.size()) == 2u);
+    wassert(actual(mdc1[0]).is_similar(mdc[0]));
+    wassert(actual(mdc1[1]).is_similar(mdc[2]));
 }
 
 // Test with large files
@@ -185,7 +184,7 @@ void to::test<2>()
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
         w->truncate(0x7FFFFFFF);
-        wtest(equals, 0x7FFFFFFFu, files::size(fname));
+        wassert(actual(files::size(fname)) == 0x7FFFFFFFu);
 
         // Try a successful transaction
         ftest(test_append_transaction_ok, dw, mdc[0]);
@@ -197,7 +196,7 @@ void to::test<2>()
         ftest(test_append_transaction_ok, dw, mdc[2]);
     }
 
-    wtest(equals, 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2, files::size(fname));
+    wassert(actual(files::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2);
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros
@@ -210,14 +209,14 @@ void to::test<3>()
     std::stringstream out;
     const OstreamWriter* w = OstreamWriter::get("vm2");
     w->stream(mdc[0], out);
-    wtest(equals, datasize(mdc[0]) + 1, out.str().size());
+    wassert(actual(out.str().size()) == datasize(mdc[0]) + 1);
 }
 
 // Test raw append
 template<> template<>
 void to::test<4>()
 {
-    wtest(not_file_exists, fname);
+    wassert(!actual(fname).fileexists());
     {
         lines::Writer* w;
         data::Writer dw = make_w(fname, w);
@@ -226,7 +225,7 @@ void to::test<4>()
         ensure_equals(dw.append(buf), 5);
     }
 
-    wtest(equals, utils::files::read_file(fname), "ciao\nciao\n");
+    wassert(actual(utils::files::read_file(fname)) == "ciao\nciao\n");
 }
 
 }

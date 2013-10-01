@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>
@@ -29,6 +29,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::utils::files;
 
@@ -145,7 +146,7 @@ void to::test<6>()
 
     write_file("testfile", test);
     string test1 = read_file("testfile");
-    wtest(equals, test, test1);
+    wassert(actual(test1) == test);
 }
 
 // Test resolve_path
@@ -156,16 +157,16 @@ void to::test<7>()
     string basedir, relname;
 
     resolve_path(".", basedir, relname);
-    wtest(equals, sys::fs::abspath("."), basedir);
-    wtest(equals, ".", relname);
+    wassert(actual(basedir) == sys::fs::abspath("."));
+    wassert(actual(relname) == ".");
 
     resolve_path("/tmp/foo", basedir, relname);
-    wtest(equals, "", basedir);
-    wtest(equals, "/tmp/foo", relname);
+    wassert(actual(basedir) == "");
+    wassert(actual(relname) == "/tmp/foo");
 
     resolve_path("foo/bar/../baz", basedir, relname);
-    wtest(equals, sys::fs::abspath("."), basedir);
-    wtest(equals, "foo/baz", relname);
+    wassert(actual(basedir) == sys::fs::abspath("."));
+    wassert(actual(relname) == "foo/baz");
 }
 
 // Test format_from_ext
@@ -174,15 +175,15 @@ void to::test<8>()
 {
     using namespace arki::utils::files;
 
-    wtest(equals, "grib", format_from_ext("test.grib"));
-    wtest(equals, "grib", format_from_ext("test.grib1"));
-    wtest(equals, "grib", format_from_ext("test.grib2"));
-    wtest(equals, "bufr", format_from_ext("test.bufr"));
+    wassert(actual(format_from_ext("test.grib")) == "grib");
+    wassert(actual(format_from_ext("test.grib1")) == "grib");
+    wassert(actual(format_from_ext("test.grib2")) == "grib");
+    wassert(actual(format_from_ext("test.bufr")) == "bufr");
 #ifdef HAVE_ODIMH5
-    wtest(equals, "odimh5", format_from_ext("test.h5"));
-    wtest(equals, "odimh5", format_from_ext("test.hdf5"));
-    wtest(equals, "odimh5", format_from_ext("test.odim"));
-    wtest(equals, "odimh5", format_from_ext("test.odimh5"));
+    wassert(actual(format_from_ext("test.h5")) == "odimh5");
+    wassert(actual(format_from_ext("test.hdf5")) == "odimh5");
+    wassert(actual(format_from_ext("test.odim")) == "odimh5");
+    wassert(actual(format_from_ext("test.odimh5")) == "odimh5");
 #endif
 }
 

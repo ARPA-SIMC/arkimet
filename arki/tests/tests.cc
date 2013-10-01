@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,20 +17,23 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-#ifndef ARKI_TEST_UTILS_H
-#define ARKI_TEST_UTILS_H
 
-#include <wibble/tests.h>
+#include "config.h"
+
+#include <arki/tests/tests.h>
 #include <wibble/exception.h>
+#include <wibble/string.h>
+#include <wibble/regexp.h>
+#include <wibble/sys/fs.h>
 #include <sstream>
+
+using namespace std;
+using namespace arki;
+using namespace wibble;
 
 namespace arki {
 namespace tests {
 
-#define ensure_md_equals(md, type, strval) \
-    ensure_equals((md).get<type>(), type::decodeString(strval))
-
 }
 }
-
-#endif
+// vim:set ts=4 sw=4:

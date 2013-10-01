@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>

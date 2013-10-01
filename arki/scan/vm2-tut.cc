@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/scan/vm2.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
@@ -47,6 +47,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -69,7 +70,7 @@ void to::test<1>()
     ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34, md.source);
+    wassert(actual(md.source).sourceblob_is("vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34));
 
     // Check area
     ensure(md.get(types::TYPE_AREA).defined());
@@ -151,7 +152,7 @@ void to::test<3>()
     ensure(scanner.next(md));
 
     // Check the source info
-    wtest(sourceblob_is, "vm2", sys::fs::abspath("."), "inbound/test.vm2", 35, 35, md.source);
+    wassert(actual(md.source).sourceblob_is("vm2", sys::fs::abspath("."), "inbound/test.vm2", 35, 35));
 
     // Check area
     ensure(md.get(types::TYPE_AREA).defined());
@@ -186,11 +187,11 @@ void to::test<4>()
 
     value = mdc[0].get<types::Value>();
     buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
-    wtest(equals, string((const char*)buf.data(), buf.size()), "198710310000,1,227,1.2,,,000000000");
+    wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
 
     value = mdc[1].get<types::Value>();
     buf = scan::Vm2::reconstruct(mdc[1], value->buffer);
-    wtest(equals, string((const char*)buf.data(), buf.size()), "19871031000030,1,228,.5,,,000000000");
+    wassert(actual(string((const char*)buf.data(), buf.size())) == "19871031000030,1,228,.5,,,000000000");
 }
 
 }

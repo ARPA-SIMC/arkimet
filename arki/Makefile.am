@@ -63,7 +63,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/run.h \
 		matcher/source.h \
 		matcher/task.h \
-		matcher/test-utils.h \
+		matcher/tests.h \
 		matcher/timerange.h \
 		matcher/utils.h \
 		metadata/collection.h \
@@ -90,7 +90,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		summary/node.h \
 		summary/stats.h \
 		targetfile.h \
-		tests/test-utils.h \
+		tests/tests.h \
 		transaction.h \
 		types/area.h \
 		types/assigneddataset.h \
@@ -108,7 +108,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/source.h \
 		types/task.h \
 		types.tcc \
-		types/test-utils.h \
+		types/tests.h \
 		types/time.h \
 		types/timerange.h \
 		types/utils.h \
@@ -167,7 +167,7 @@ libarkimet_core_la_SOURCES = \
 		data/fd.cc \
 		data/concat.cc \
 		data/lines.cc \
-		tests/test-utils.cc
+		tests/tests.cc
 libarkimet_core_la_LDFLAGS =
 
 libarkimet_types_la_SOURCES = \
@@ -289,6 +289,7 @@ check-local:
 
 #tests_arki_test_CXXFLAGS = --std=c++11
 tests_arki_test_SOURCES = \
+		tests/tests-tut.cc \
 		utils-tut.cc \
 		utils/accounting-tut.cc \
 		utils/codec-tut.cc \
@@ -331,7 +332,7 @@ tests_arki_test_SOURCES = \
 		types/task-tut.cc \
 		types/quantity-tut.cc \
 		types/value-tut.cc \
-		types/test-utils.cc \
+		types/tests.cc \
 		itemset-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
@@ -350,7 +351,7 @@ tests_arki_test_SOURCES = \
 		summary/node-tut.cc \
 		summary/stats-tut.cc \
 		matcher-tut.cc \
-		matcher/test-utils.cc \
+		matcher/tests.cc \
 		matcher/utils-tut.cc \
 		matcher/origin-tut.cc \
 		matcher/product-tut.cc \

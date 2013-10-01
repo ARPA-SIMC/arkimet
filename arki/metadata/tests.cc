@@ -27,10 +27,38 @@ using namespace std;
 using namespace arki;
 using namespace wibble;
 
-namespace wibble {
+namespace arki {
 namespace tests {
 
-void test_assert_md_similar(WIBBLE_TEST_LOCPRM, const Metadata& expected, const Metadata& actual)
+void TestMetadataContains::check(WIBBLE_TEST_LOCPRM) const
+{
+    types::Code code = types::parseCodeName(field);
+    Item<> actual_field = actual.get(code);
+
+    if (!actual_field.defined())
+    {
+        if (inverted) return;
+        std::stringstream ss;
+        ss << "metadata does not contain a " << field << ", but we expected: \"" << expected << "\"";
+        wibble_test_location.fail_test(ss.str());
+    }
+
+    Item<> expected_field = types::decodeString(code, expected);
+    if (!inverted)
+    {
+        if (actual_field == expected_field) return;
+        std::stringstream ss;
+        ss << field << " '" << actual_field << "' is different than the expected '" << expected_field << "'";
+        wibble_test_location.fail_test(ss.str());
+    } else {
+        if (actual_field != expected_field) return;
+        std::stringstream ss;
+        ss << field << " '" << actual_field << "' is not different than the expected '" << expected_field << "'";
+        wibble_test_location.fail_test(ss.str());
+    }
+}
+
+void TestMetadataSimilar::check(WIBBLE_TEST_LOCPRM) const
 {
     for (Metadata::const_iterator i = expected.begin(); i != expected.end(); ++i)
     {
@@ -65,37 +93,30 @@ void test_assert_md_similar(WIBBLE_TEST_LOCPRM, const Metadata& expected, const 
     }
 }
 
-void test_assert_md_contains(WIBBLE_TEST_LOCPRM, const std::string& type, const std::string& expected_val, const Metadata& actual)
+void TestMetadataIsset::check(WIBBLE_TEST_LOCPRM) const
 {
-    types::Code code = types::parseCodeName(type.c_str());
+    types::Code code = types::parseCodeName(field.c_str());
     UItem<> item = actual.get(code);
-    if (!item.defined())
-    {
-        std::stringstream ss;
-        ss << "metadata does not contain an item of type " << type << ": expected: \"" << expected_val << "\"";
-        wibble_test_location.fail_test(ss.str());
-    }
 
-    UItem<> item1 = types::decodeString(code, expected_val);
-    if (item != item1)
+    if (!inverted)
     {
+        if (item.defined()) return;
         std::stringstream ss;
-        ss << "metadata mismatch on " << type << ": expected: \"" << expected_val << "\" actual: \"" << item << "\"";
+        ss << "metadata should contain a " << field << " field, but it does not";
+        wibble_test_location.fail_test(ss.str());
+    } else {
+        if (!item.defined()) return;
+        std::stringstream ss;
+        ss << "metadata should not contain a " << field << " field, but it contains \"" << item << "\"";
         wibble_test_location.fail_test(ss.str());
     }
 }
 
-void test_assert_md_unset(WIBBLE_TEST_LOCPRM, const std::string& type, const Metadata& actual)
-{
-    types::Code code = types::parseCodeName(type.c_str());
-    UItem<> item = actual.get(code);
-    if (item.defined())
-    {
-        std::stringstream ss;
-        ss << "metadata should not contain an item of type " << type << ", but it contains \"" << item << "\"";
-        wibble_test_location.fail_test(ss.str());
-    }
 }
+}
+
+namespace wibble {
+namespace tests {
 
 }
 }

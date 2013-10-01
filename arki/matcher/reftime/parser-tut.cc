@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/matcher/test-utils.h>
+#include <arki/matcher/tests.h>
 #include <arki/matcher/reftime/parser.h>
 
 #include <sstream>

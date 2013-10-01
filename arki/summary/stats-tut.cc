@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/tests/test-utils.h>
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/summary/stats.h>
 #include <arki/metadata.h>
 #include <wibble/sys/buffer.h>
@@ -39,6 +38,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_summary_stats_shar {
     Metadata md;
@@ -72,7 +72,7 @@ void to::test<1>()
     s->merge(md);
     s->merge(md);
 
-    ensure_compares(st, st1, st1);
+    wassert(actual(st).compares(st1, st1));
 }
 
 // Basic encode/decode tests
@@ -84,7 +84,7 @@ void to::test<2>()
     Stats* s;
     Item<Stats> st(s = new Stats);
     s->merge(md);
-    ensure_serialises(st, types::TYPE_SUMMARYSTATS);
+    wassert(actual(st).serializes());
 }
 
 // Basic encode/decode tests with large numbers
@@ -98,7 +98,7 @@ void to::test<3>()
     s->merge(md);
     s->count = 0x7FFFffffUL;
     s->size = 0x7FFFffffFFFFffffUL;
-    ensure_serialises(st, types::TYPE_SUMMARYSTATS);
+    wassert(actual(st).serializes());
 }
 
 // Test Lua functions

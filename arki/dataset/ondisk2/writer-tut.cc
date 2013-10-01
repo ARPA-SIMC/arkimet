@@ -41,6 +41,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset;
@@ -127,8 +128,8 @@ void to::test<1>()
     {
         stringstream s;
         writer.repack(s, true);
-        wtest(contains, "testdir: deleted 2007/07-07.grib1 (34960 freed)", s.str());
-        wtest(re_match, "testdir: 1 file deleted, [0-9]+ total bytes freed.", s.str());
+        wassert(actual(s.str()).contains("testdir: deleted 2007/07-07.grib1 (34960 freed)"));
+        wassert(actual(s.str()).matches("testdir: 1 file deleted, [0-9]+ total bytes freed."));
 
 		c.clear();
 
@@ -237,8 +238,8 @@ void to::test<3>()
     // Perform packing and check that things are still ok afterwards
     stringstream s;
     writer.repack(s, true);
-    wtest(contains, "testdir: packed 2007/07.grib1 (34960 saved)", s.str());
-    wtest(re_match, "testdir: 1 file packed, [0-9]+ total bytes freed.", s.str());
+    wassert(actual(s.str()).contains("testdir: packed 2007/07.grib1 (34960 saved)"));
+    wassert(actual(s.str()).matches("testdir: 1 file packed, [0-9]+ total bytes freed."));
     c.clear();
 
 	writer.maintenance(c);
@@ -410,19 +411,19 @@ void to::test<6>()
 		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
-                wtest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960, mdc[0].source);
+        wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
 
         mdc.clear();
         reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
         ensure_equals(mdc.size(), 1u);
-        wtest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218, mdc[0].source);
+        wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
     }
 
     // Perform packing and check that things are still ok afterwards
     s.str(std::string());
     writer.repack(s, true);
-    wtest(contains, "testdir: packed foo/bar/test.grib1 (44412 saved)", s.str());
-    wtest(re_match, "testdir: 1 file packed, [0-9]+ total bytes freed.", s.str());
+    wassert(actual(s.str()).contains("testdir: packed foo/bar/test.grib1 (44412 saved)"));
+    wassert(actual(s.str()).matches("testdir: 1 file packed, [0-9]+ total bytes freed."));
     c.clear();
 
 	writer.maintenance(c);
@@ -438,7 +439,7 @@ void to::test<6>()
 	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-        wtest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 0, 34960, mdc[0].source);
+    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
 
 	// Query the second element and check that it starts after the first one
 	// (there used to be a bug where the rebuild would use the offsets of
@@ -446,7 +447,7 @@ void to::test<6>()
 	mdc.clear();
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-        wtest(sourceblob_is, "grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218, mdc[0].source);
+    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
 
 	// Ensure that we have the summary cache
 	ensure(sys::fs::exists("testdir/.summaries/all.summary"));
@@ -618,7 +619,7 @@ void to::test<9>()
     {
         stringstream s;
         writer.repack(s, true);
-        wtest(equals, "", s.str());
+        wassert(actual(s.str()) == "");
     }
 
 	// Ensure that we have the summary cache

@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 #include <arki/utils/accounting.h>
 
 #include <sstream>
@@ -42,14 +42,15 @@ TESTGRP(arki_utils_accounting);
 template<> template<>
 void to::test<1>()
 {
-	ensure_equals(string(counter.name()), "foo");
-	ensure_equals(counter.val(), 0u);
-	counter.incr();
-	ensure_equals(counter.val(), 1u);
-	counter.incr(10);
-	ensure_equals(counter.val(), 11u);
-	counter.reset();
-	ensure_equals(counter.val(), 0u);
+    using namespace wibble::tests;
+    wassert(actual(counter.name()) == "foo");
+    wassert(actual(counter.val()) == 0u);
+    counter.incr();
+    wassert(actual(counter.val()) == 1u);
+    counter.incr(10);
+    wassert(actual(counter.val()) == 11u);
+    counter.reset();
+    wassert(actual(counter.val()) == 0u);
 }
 
 }

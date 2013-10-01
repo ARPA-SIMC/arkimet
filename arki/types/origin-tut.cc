@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/origin.h>
 #include <arki/matcher.h>
 
@@ -33,6 +33,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -57,8 +58,8 @@ void to::test<1>()
 	ensure(o != origin::GRIB2::create(1, 2, 3, 4, 5));
 	ensure(o != origin::BUFR::create(1, 2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_ORIGIN);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB1,1,2,3");
@@ -85,8 +86,8 @@ void to::test<2>()
 	ensure(o != origin::GRIB1::create(1, 2, 3));
 	ensure(o != origin::BUFR::create(1, 2));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_ORIGIN);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,5");
@@ -110,8 +111,8 @@ void to::test<3>()
 	ensure(o != origin::GRIB1::create(1, 2, 3));
 	ensure(o != origin::GRIB2::create(1, 2, 3, 4, 5));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_ORIGIN);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "BUFR,1,2");
@@ -147,10 +148,9 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	ensure_compares(
-		origin::GRIB1::create(1, 2, 3),
-		origin::GRIB1::create(2, 3, 4),
-		origin::GRIB1::create(2, 3, 4));
+    wassert(actual(origin::GRIB1::create(1, 2, 3)).compares(
+                origin::GRIB1::create(2, 3, 4),
+                origin::GRIB1::create(2, 3, 4)));
 }
 
 // Check ODIMH5
@@ -177,8 +177,8 @@ void to::test<6>()
 	ensure(o != origin::ODIMH5::create("1", "2", "3a"));
 	ensure(o != origin::ODIMH5::create("1a", "2a", "3a"));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_ORIGIN);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
 	ensure_equals(o->exactQuery(), "ODIMH5,1,2,3");
@@ -203,7 +203,7 @@ void to::test<7>()
     ensure(o != origin::ODIMH5::create("1", "2", "3"));
 
     // Test encoding/decoding
-    ensure_serialises(o, types::TYPE_ORIGIN);
+    wassert(actual(o).serializes());
 
     // Test generating a matcher expression
     ensure_equals(o->exactQuery(), "ODIMH5,,2,3");

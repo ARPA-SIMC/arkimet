@@ -20,10 +20,11 @@
 
 #include "raii.h"
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::utils::raii;
 
@@ -38,16 +39,16 @@ void to::test<1>()
     int a = 1;
     {
         SetOnExit<int> zz(a, 3);
-        wtest(equals, 1, a);
+        wassert(actual(a) == 1);
     }
-    wtest(equals, 3, a);
+    wassert(actual(a) == 3);
 
     std::string b = "foo";
     {
         SetOnExit<std::string> zz(b, "bar");
-        wtest(equals, "foo", b);
+        wassert(actual(b) == "foo");
     }
-    wtest(equals, "bar", b);
+    wassert(actual(b) == "bar");
 }
 
 // Check DeleteAndZeroOnExit
@@ -57,9 +58,9 @@ void to::test<2>()
     int *a = new int(1);
     {
         DeleteAndZeroOnExit<int> zz(a);
-        wtest(equals, 1, *a);
+        wassert(actual(*a) == 1);
     }
-    wtest(equals, (int*)0, a);
+    wassert(actual(a) == (int*)0);
 }
 
 // Check DeleteArrayAndZeroOnExit
@@ -70,9 +71,9 @@ void to::test<3>()
     a[0] = 1;
     {
         DeleteArrayAndZeroOnExit<int> zz(a);
-        wtest(equals, 1, a[0]);
+        wassert(actual(a[0]) == 1);
     }
-    wtest(equals, (int*)0, a);
+    wassert(actual(a) == (int*)0);
 }
 
 // Check TransactionAlloc
@@ -87,7 +88,7 @@ void to::test<4>()
             a[0] = 42;
             // Do not commit
         }
-        wtest(equals, (int*)0, a);
+        wassert(actual(a) == (int*)0);
     }
 
     // Test commit
@@ -98,7 +99,7 @@ void to::test<4>()
             a[0] = 42;
             ta.commit();
         }
-        wtest(equals, 42, a[0]);
+        wassert(actual(a[0]) == 42);
         delete[] a;
     }
 
@@ -109,7 +110,7 @@ void to::test<4>()
             TransactionAllocArray<char> ta(a, 7, "antani");
             ta.commit();
         }
-        wtest(equals, string("antani"), string(a));
+        wassert(actual(a) == "antani");
         delete[] a;
     }
 }

@@ -20,7 +20,7 @@
 #ifndef ARKI_MATCHER_TESTUTILS_H
 #define ARKI_MATCHER_TESTUTILS_H
 
-#include <arki/tests/test-utils.h>
+#include <arki/tests/tests.h>
 
 namespace arki {
 struct Metadata;

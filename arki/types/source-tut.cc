@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/types/test-utils.h>
+#include <arki/types/tests.h>
 #include <arki/types/source.h>
 
 #include <sstream>
@@ -28,6 +28,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -61,8 +62,8 @@ void to::test<1>()
 	ensure(o != source::URL::create("test", "testfile"));
 	ensure(o != source::Inline::create("test", 43));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_SOURCE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 // Check URL
@@ -81,8 +82,8 @@ void to::test<2>()
 	ensure(o != source::Blob::create("test", "", "http://foobar", 1, 2));
 	ensure(o != source::Inline::create("test", 1));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_SOURCE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 // Check Inline
@@ -101,8 +102,8 @@ void to::test<3>()
 	ensure(o != source::Blob::create("test", "", "", 0, 12344));
 	ensure(o != source::URL::create("test", ""));
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_SOURCE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 // Check Blob on big files
@@ -117,8 +118,8 @@ void to::test<4>()
 	ensure_equals(v->offset, 0x8000FFFFffffFFFFLLU);
 	ensure_equals(v->size, 42u);
 
-	// Test encoding/decoding
-	ensure_serialises(o, types::TYPE_SOURCE);
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
 }
 
 // Check Blob and pathnames handling
