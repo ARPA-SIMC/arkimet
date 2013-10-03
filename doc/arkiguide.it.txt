@@ -458,6 +458,9 @@ Per sapere quali alias sono definiti sull'arki-server in ascolto all'indirizzo
 arki-dump --aliases http://localhost:8080/
 ----
 
+oppure consultare l'url http://localhost:8080/aliases/
+
+
 .Esempi di alias
 ====
 ----
@@ -598,6 +601,21 @@ $ arki-query --data 'reftime: =today' \
   http://your-host:8080/dataset/myradar \
   http://www.arpa.emr.it:8090/arkimet/dataset/SPCradar
 ----
+
+In caso di attivazione di un arki-server è possibile estrarre i dati 
+direttamente via http (cioè anche da client privi del comando arki-query), 
+esempio:
+
+----
+$ curl http://my-host:8090/dataset/lmsmr4x52/query \
+  --data-urlencode "query=Reftime:=today;timerange:GRIB1,0,0" \
+  --data-urlencode "style=data" > my.grib
+----
+
+NOTE: `curl` non è strettamente necessario ma l'opzione `--data-urlencode` 
+permette di gestire agevolmente l'encoding dei caratteri non alfanumerici.
+L'url completo sarebbe qualcosa tipo:
+http://my-host:8090/dataset/lmsmr4x52/query?query=Reftime%3A%3Dtoday%3Btimerange%3AGRIB1%2C0%2C0&style=data
 
 == Estensioni ==
 
