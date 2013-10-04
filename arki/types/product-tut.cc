@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -213,6 +213,38 @@ void to::test<6>()
     ensure(product::VM2::create(1)->derived_values() == vb1);
     ValueBag vb2 = ValueBag::parse("bcode=NONONO,lt1=256,l1=0,lt2=258,tr=254,p1=0,p2=0,unit=m");
     ensure(product::VM2::create(1)->derived_values() != vb2);
+}
+
+// Test basic type ops
+template<> template<>
+void to::test<7>()
+{
+    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB1(1, 1, 1)");
+    t.lower.push_back("GRIB1(1, 2, 2)");
+    t.higher.push_back("GRIB1(1, 2, 4)");
+    t.higher.push_back("GRIB1(2, 3, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4)");
+    t.higher.push_back("BUFR(1, 2, 3, a=b)");
+    wassert(t);
+}
+template<> template<>
+void to::test<8>()
+{
+    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "GRIB2(1, 2, 3, 4)");
+    wassert(t);
+}
+template<> template<>
+void to::test<9>()
+{
+    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "BUFR(1, 2, 3, a=b)");
+    wassert(t);
+}
+template<> template<>
+void to::test<10>()
+{
+    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "VM2(1)");
+    wassert(t);
 }
 
 }

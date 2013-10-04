@@ -211,6 +211,38 @@ void to::test<7>()
     ensure(m(o));
 }
 
+// Test basic type ops
+template<> template<>
+void to::test<8>()
+{
+    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB1(1, 1, 1)");
+    t.lower.push_back("GRIB1(1, 2, 2)");
+    t.higher.push_back("GRIB1(1, 2, 4)");
+    t.higher.push_back("GRIB1(2, 3, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4, 5)");
+    t.higher.push_back("BUFR(1, 2)");
+    wassert(t);
+}
+template<> template<>
+void to::test<9>()
+{
+    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "GRIB2(1, 2, 3, 4, 5)");
+    wassert(t);
+}
+template<> template<>
+void to::test<10>()
+{
+    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "BUFR(1, 2)");
+    wassert(t);
+}
+template<> template<>
+void to::test<11>()
+{
+    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "ODIMH5(,2,3)");
+    wassert(t);
+}
+
 }
 
 // vim:set ts=4 sw=4:

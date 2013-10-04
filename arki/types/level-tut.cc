@@ -296,6 +296,40 @@ void to::test<11>()
 	ensure(m(o));
 }
 
+// Test basic type ops
+template<> template<>
+void to::test<12>()
+{
+    arki::tests::TestGenericType t(types::TYPE_LEVEL, "GRIB1(103, 132)");
+    t.lower.push_back("GRIB1(1)");
+    t.lower.push_back("GRIB1(103, 131)");
+    t.higher.push_back("GRIB1(104)");
+    t.higher.push_back("GRIB1(103, 132, 1)");
+    t.higher.push_back("GRIB1(103, 133)");
+    t.higher.push_back("GRIB2S(100, 100, 500)");
+    t.higher.push_back("GRIB2D(100,100,500,100,100,1000)");
+    t.higher.push_back("ODIMH5(10.123, 20.123)");
+    wassert(t);
+}
+template<> template<>
+void to::test<13>()
+{
+    arki::tests::TestGenericType t(types::TYPE_LEVEL, "GRIB2S(100, 100, 500)");
+    wassert(t);
+}
+template<> template<>
+void to::test<14>()
+{
+    arki::tests::TestGenericType t(types::TYPE_LEVEL, "GRIB2D(100,100,500,100,100,1000)");
+    wassert(t);
+}
+template<> template<>
+void to::test<15>()
+{
+    arki::tests::TestGenericType t(types::TYPE_LEVEL, "ODIMH5(10.123, 20.123)");
+    wassert(t);
+}
+
 
 
 }

@@ -4,7 +4,7 @@
 /*
  * types - arkimet metadata type system
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -142,6 +142,10 @@ struct UItem : public refcounted::Pointer<const TYPE>
 		return *this->m_ptr == *o.m_ptr;
 	}
 	bool operator!=(const UItem<TYPE>& o) const { return !operator==(o); }
+
+    /// Equality with strings
+    bool operator==(const std::string& o) const;
+    bool operator!=(const std::string& o) const { return !operator==(o); }
 
 	/// Encoding to compact binary representation
 	std::string encode() const
@@ -382,6 +386,16 @@ bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buff
  */
 bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filename, const unsigned char*& obuf, size_t& olen, std::string& signature, unsigned& version);
 
+}
+
+template<typename TYPE>
+bool UItem<TYPE>::operator==(const std::string& o) const
+{
+    if (!this->m_ptr && o.empty())
+        return true;
+    if (!this->m_ptr || o.empty())
+        return false;
+    return *this->m_ptr == *decodeString((*this)->serialisationCode(), o);
 }
 
 }

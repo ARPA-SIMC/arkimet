@@ -112,5 +112,35 @@ void TestSourceblobIs::check(WIBBLE_TEST_LOCPRM) const
     wassert(actual(blob->absolutePathname()) == sys::fs::abspath(str::joinpath(basedir, fname)));
 }
 
+void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
+{
+    Item<> i_sample = types::decodeString(code, sample);
+    wassert(actual(i_sample->serialisationCode()) == code);
+    wassert(actual(i_sample).serializes());
+    wassert(actual(i_sample) == sample);
+
+    vector< Item<> > ilowers;
+    for (std::vector<std::string>::const_iterator i = lower.begin();
+            i != lower.end(); ++i)
+    {
+        Item<> ii = types::decodeString(code, *i);
+        wassert(actual(ii->serialisationCode()) == code);
+        wassert(actual(ii).serializes());
+        wassert(actual(ii) == *i);
+        ilowers.push_back(ii);
+    }
+
+    vector< Item<> > ihighers;
+    for (std::vector<std::string>::const_iterator i = higher.begin();
+            i != higher.end(); ++i)
+    {
+        Item<> ii = types::decodeString(code, *i);
+        wassert(actual(ii->serialisationCode()) == code);
+        wassert(actual(ii).serializes());
+        wassert(actual(ii) == *i);
+        ihighers.push_back(ii);
+    }
+}
+
 }
 }

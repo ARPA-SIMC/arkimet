@@ -186,7 +186,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", -1, 194));
+    wassert(actual(mdc[0].source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();

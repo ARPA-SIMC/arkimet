@@ -630,19 +630,19 @@ void to::test<7>()
 	types::Time reftime;
 	wibble::sys::Buffer buf;
 
-	scanner.open("inbound/cleps_grib2.grib2");
+    wrunchecked(scanner.open("inbound/cleps_grib2.grib2"));
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source).sourceblob_is("grib2", sys::fs::abspath("."), "inbound/cleps_grib2.grib2", 0, 415));
 
-	// Check that the source can be read properly
-	buf = md.getData();
-	ensure_equals(buf.size(), 415u);
-	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
-	ensure_equals(string((const char*)buf.data() + 411, 4), "7777");
+    // Check that the source can be read properly
+    wrunchecked(buf = md.getData());
+    wassert(actual(buf.size()) == 415u);
+    wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
+    wassert(actual(string((const char*)buf.data() + 411, 4)) == "7777");
 
     wassert(actual(md).contains("origin", "GRIB2(250, 98, 4, 255, 131)"));
     wassert(actual(md).contains("product", "GRIB2(250, 0, 2, 22)"));
@@ -654,7 +654,7 @@ void to::test<7>()
     wassert(actual(md).contains("run", "MINUTE(12:00)"));
 
     // No more gribs
-    ensure(not scanner.next(md));
+    wassert(actual(scanner.next(md)).isfalse());
 }
 
 // Scan a GRIB2 with experimental UTM areas
@@ -711,16 +711,16 @@ void to::test<10>()
         void read(const char* fname)
         {
             metadata::Collection mdc;
-            scan::scan(fname, mdc);
-            ensure_equals(mdc.size(), 1u);
-            Metadata::operator=(mdc[0]);
+            wrunchecked(scan::scan(fname, mdc));
+            wassert(actual(mdc.size()) == 1u);
+            wrunchecked(Metadata::operator=(mdc[0]));
         }
     };
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/cosmonudging-t2.grib1", mdc);
-        ensure_equals(mdc.size(), 35u);
+        wrunchecked(scan::scan("inbound/cosmonudging-t2.grib1", mdc));
+        wassert(actual(mdc.size()) == 35u);
         for (unsigned i = 0; i < 5; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
         wassert(actual(mdc[5]).contains("timerange", "Timedef(0s, 2, 1h)"));
@@ -740,8 +740,8 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        scan::scan("inbound/cosmonudging-t201.grib1", mdc);
-        ensure_equals(mdc.size(), 33u);
+        wrunchecked(scan::scan("inbound/cosmonudging-t201.grib1", mdc));
+        wassert(actual(mdc.size()) == 33u);
         wassert(actual(mdc[0]).contains("timerange", "Timedef(0s, 0, 12h)"));
         wassert(actual(mdc[1]).contains("timerange", "Timedef(0s, 0, 12h)"));
         wassert(actual(mdc[2]).contains("timerange", "Timedef(0s, 0, 12h)"));
@@ -757,8 +757,8 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        scan::scan("inbound/cosmonudging-t202.grib1", mdc);
-        ensure_equals(mdc.size(), 11u);
+        wrunchecked(scan::scan("inbound/cosmonudging-t202.grib1", mdc));
+        wassert(actual(mdc.size()) == 11u);
         for (unsigned i = 0; i < 11; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
     }
@@ -777,8 +777,7 @@ void to::test<10>()
     wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/fc0ist_1.grib");
-    // wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(0s,254,0s)"));
+    wassert(actual(md.get<Timerange>()->to_timedef()) == std::string("Timedef(0s,254,0s)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/anproc_1.grib");
@@ -806,8 +805,7 @@ void to::test<10>()
     wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/fcist_1.grib");
-    // wassert(actual(md).contains("timerange", "Timedef(6h,254,0s)"));
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,254,0s)"));
+    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(6h,254,0s)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcist_1.grib2");
@@ -815,18 +813,15 @@ void to::test<10>()
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcist_2.grib2");
-    // wassert(actual(md).contains("timerange", "Timedef(6h,254,0s)"));
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,254,0s)"));
+    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(12h,254,0s)"));
     wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
 
     md.read("inbound/cosmo/fcproc_1.grib");
-    // wassert(actual(md).contains("timerange", "Timedef(6h,1,6h)"));
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(6h,1,6h)"));
+    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(6h,1,6h)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcproc_1.grib2");
-    // wassert(actual(md).contains("timerange", "Timedef(12h,1,12h)"));
-    ensure_equals(md.get<Timerange>()->to_timedef(), Timerange::decodeString("Timedef(12h,1,12h)"));
+    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(12h,1,12h)"));
     wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
 
     md.read("inbound/cosmo/fcproc_2.grib2");
@@ -842,10 +837,14 @@ void to::test<10>()
 template<> template<>
 void to::test<11>()
 {
+    // FIXME: It is unsure what is the correct expected behaviour here, across
+    // different versions of grib_api
+#if 0
     metadata::Collection mdc;
     scan::scan("inbound/wronglevel.grib2", mdc);
     ensure_equals(mdc.size(), 1u);
     ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,-,-)"));
+#endif
 }
 
 // Check opening very long GRIB files for scanning

@@ -379,7 +379,9 @@ struct TestDataset
             UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             total_size += s1->size;
         }
-        wassert(actual(os.str().size()) == total_size);
+        // We use >= and not == because some data sources add extra information
+        // to data, like line endings for VM2
+        wassert(actual(os.str().size()) >= total_size);
 
         // Write the results to disk
         utils::files::write_file("tempdata", os.str());
@@ -407,12 +409,12 @@ struct TestDataset
 
     void test_all(WIBBLE_TEST_LOCPRM)
     {
-        ftest(test_import);
-        ftest(test_querydata);
-        ftest(test_querysummary);
-        ftest(test_querybytes);
-        ftest(test_querybytes_integrity);
-        ftest(test_locked);
+        wruntest(test_import);
+        wruntest(test_querydata);
+        wruntest(test_querysummary);
+        wruntest(test_querybytes);
+        wruntest(test_querybytes_integrity);
+        wruntest(test_locked);
     }
 };
 
@@ -430,7 +432,7 @@ void to::test<14>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // ondisk2 BUFR
@@ -447,7 +449,7 @@ void to::test<15>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // ondisk2 VM2
@@ -464,7 +466,7 @@ void to::test<16>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // ondisk2 ODIM
@@ -482,7 +484,7 @@ void to::test<17>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 #endif
 }
 
@@ -500,7 +502,7 @@ void to::test<18>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // simple sqlitemft GRIB
@@ -519,7 +521,7 @@ void to::test<19>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // simple plainmft BUFR
@@ -536,7 +538,7 @@ void to::test<20>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // simple sqlitemft BUFR
@@ -555,7 +557,7 @@ void to::test<21>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // simple plainmft VM2
@@ -572,7 +574,7 @@ void to::test<22>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // simple sqlitemft VM2
@@ -591,7 +593,7 @@ void to::test<23>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 }
 
 // simple plainmft ODIM
@@ -609,7 +611,7 @@ void to::test<24>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 #endif
 }
 
@@ -630,7 +632,7 @@ void to::test<25>()
         "name = test\n"
         "path = test\n"
     );
-    ftest(tds.test_all);
+    wruntest(tds.test_all);
 #endif
 }
 

@@ -156,13 +156,13 @@ void to::test<1>()
         wtest(equals, 0u, files::size(fname));
 
         // Try a successful transaction
-        ftest(test_append_transaction_ok, dw, mdc[0]);
+        wruntest(test_append_transaction_ok, dw, mdc[0]);
 
         // Then fail one
-        ftest(test_append_transaction_rollback, dw, mdc[1]);
+        wruntest(test_append_transaction_rollback, dw, mdc[1]);
 
         // Then succeed again
-        ftest(test_append_transaction_ok, dw, mdc[2]);
+        wruntest(test_append_transaction_ok, dw, mdc[2]);
     }
 
     // Data writer goes out of scope, file is closed and flushed
@@ -193,13 +193,13 @@ void to::test<2>()
         wtest(equals, 0x7FFFFFFFu, files::size(fname));
 
         // Try a successful transaction
-        ftest(test_append_transaction_ok, dw, mdc[0]);
+        wruntest(test_append_transaction_ok, dw, mdc[0]);
 
         // Then fail one
-        ftest(test_append_transaction_rollback, dw, mdc[1]);
+        wruntest(test_append_transaction_rollback, dw, mdc[1]);
 
         // Then succeed again
-        ftest(test_append_transaction_ok, dw, mdc[2]);
+        wruntest(test_append_transaction_ok, dw, mdc[2]);
     }
 
     wtest(equals, 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]), files::size(fname));

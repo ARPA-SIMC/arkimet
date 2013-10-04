@@ -243,7 +243,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        ftest(do_summary, r);
+        wruntest(do_summary, r);
 
         // Handle the response, client side
         wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
@@ -264,7 +264,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        ftest(do_query, r);
+        wruntest(do_query, r);
 
         // Handle the response, client side
         wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
@@ -286,7 +286,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        ftest(do_queryData, r);
+        wruntest(do_queryData, r);
 
         // Handle the response, client side
         wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
@@ -308,7 +308,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        ftest(do_queryBytes, r);
+        wruntest(do_queryBytes, r);
 
         // Handle the response, client side
         wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
@@ -327,7 +327,7 @@ struct ServerTest : public arki::tests::DatasetTest
         r.write_get("/foo");
 
         // Handle the request, server side
-        ftest(do_config, r);
+        wruntest(do_config, r);
 
         // Handle the response, client side
         wassert(actual(r.response_method) == "HTTP/1.0 200 OK");
@@ -346,18 +346,18 @@ struct ServerTest : public arki::tests::DatasetTest
         auto_ptr<WritableDataset> ds(makeWriter());
         Pending p = ds->test_writelock();
 
-        ftest(test_config);
+        wruntest(test_config);
     }
 
 
     void test_all(WIBBLE_TEST_LOCPRM)
     {
-        ftest(test_summary);
-        ftest(test_query);
-        ftest(test_querydata);
-        ftest(test_querybytes);
-        ftest(test_config);
-        ftest(test_configlocked);
+        wruntest(test_summary);
+        wruntest(test_query);
+        wruntest(test_querydata);
+        wruntest(test_querybytes);
+        wruntest(test_config);
+        wruntest(test_configlocked);
     }
 };
 
@@ -366,7 +366,7 @@ template<> template<>
 void to::test<1>()
 {
     ServerTest test("simple");
-    ftest(test.test_all);
+    wruntest(test.test_all);
 }
 
 // Query a simple dataset, with sqlite manifest
@@ -375,7 +375,7 @@ void to::test<2>()
 {
     arki::tests::ForceSqlite fs;
     ServerTest test("simple");
-    ftest(test.test_all);
+    wruntest(test.test_all);
 }
 
 // Query an ondisk2 dataset, with sqlite manifest
@@ -383,7 +383,7 @@ template<> template<>
 void to::test<3>()
 {
     ServerTest test("ondisk2");
-    ftest(test.test_all);
+    wruntest(test.test_all);
 }
 
 }

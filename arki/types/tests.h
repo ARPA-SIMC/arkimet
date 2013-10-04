@@ -74,6 +74,18 @@ struct TestSourceblobIs
     void check(WIBBLE_TEST_LOCPRM) const;
 };
 
+struct TestGenericType
+{
+    types::Code code;
+    std::string sample;
+    std::vector<std::string> lower;
+    std::vector<std::string> higher;
+
+    TestGenericType(types::Code code, const std::string& sample) : code(code), sample(sample) {}
+
+    void check(WIBBLE_TEST_LOCPRM) const;
+};
+
 template<typename T>
 struct ActualItem : public wibble::tests::Actual< arki::UItem<T> >
 {
