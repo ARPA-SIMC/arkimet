@@ -408,7 +408,7 @@ tests_arki_test_SOURCES = \
 		tests/tut-main.cpp
 tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
-INCLUDES = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
 
 if IOTRACE
 libarkimet_core_la_SOURCES += iotrace.cc
@@ -419,7 +419,7 @@ if GRIBAPI
 nobase_dist_arkiinclude_HEADERS += scan/grib.h
 libarkimet_types_la_SOURCES += scan/grib.cc
 tests_arki_test_SOURCES += scan/grib-tut.cc
-INCLUDES += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
+AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
 libarkimet_types_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
 tests_arki_test_LDADD += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
@@ -428,7 +428,7 @@ if LUA
 nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
 libarkimet_types_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
 tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
-INCLUDES += $(LUA_CFLAGS)
+AM_CPPFLAGS += $(LUA_CFLAGS)
 libarkimet_types_la_LDFLAGS += $(LUA_LIBS)
 tests_arki_test_LDADD += $(LUA_LIBS)
 endif
@@ -437,7 +437,7 @@ if DBALLE
 nobase_dist_arkiinclude_HEADERS += scan/bufr.h
 libarkimet_types_la_SOURCES += scan/bufr.cc
 tests_arki_test_SOURCES += scan/bufr-tut.cc
-INCLUDES += $(DBALLE_CFLAGS)
+AM_CPPFLAGS += $(DBALLE_CFLAGS)
 libarkimet_types_la_LDFLAGS += $(DBALLE_LIBS)
 tests_arki_test_LDADD += $(DBALLE_LIBS)
 if LUA
@@ -450,7 +450,7 @@ if CURL
 nobase_dist_arkiinclude_HEADERS += dataset/http.h
 libarkimet_dataset_la_SOURCES += dataset/http.cc
 tests_arki_test_SOURCES += dataset/http-tut.cc
-INCLUDES += @LIBCURL_CPPFLAGS@
+AM_CPPFLAGS += @LIBCURL_CPPFLAGS@
 libarkimet_dataset_la_LDFLAGS += @LIBCURL@
 tests_arki_test_LDADD += @LIBCURL@
 endif
@@ -459,19 +459,19 @@ if ODIMH5
 nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_types_la_SOURCES += scan/odimh5.cc
 tests_arki_test_SOURCES += scan/odimh5-tut.cc
-INCLUDES += $(ODIMH5_CFLAGS)
+AM_CPPFLAGS += $(ODIMH5_CFLAGS)
 libarkimet_types_la_LDFLAGS += $(ODIMH5_LIBS)
 tests_arki_test_LDADD += $(ODIMH5_LIBS)
 endif
 
 if GEOS
-INCLUDES += $(GEOS_CFLAGS)
+AM_CPPFLAGS += $(GEOS_CFLAGS)
 libarkimet_la_LDFLAGS += $(GEOS_LIBS)
 tests_arki_test_LDADD += $(GEOS_LIBS)
 endif
 
 if LZO
-INCLUDES += $(LZO_CFLAGS)
+AM_CPPFLAGS += $(LZO_CFLAGS)
 libarkimet_core_la_LDFLAGS += $(LZO_LIBS)
 tests_arki_test_LDADD += $(LZO_LIBS)
 endif
@@ -481,7 +481,7 @@ nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
 libarkimet_types_la_SOURCES += scan/vm2.cc utils/vm2.cc
 tests_arki_test_SOURCES += scan/vm2-tut.cc utils/vm2-tut.cc
 libarkimet_types_la_LDFLAGS += $(VM2_LIBS)
-INCLUDES += $(VM2_CFLAGS)
+AM_CPPFLAGS += $(VM2_CFLAGS)
 endif
 
 EXTRA_DIST = runtest buildbison buildflex \
