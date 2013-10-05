@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/dataset/test-utils.h>
+#include <arki/dataset/tests.h>
 #include <arki/dataset/simple/writer.h>
 #include <arki/dataset/simple/reader.h>
 #include <arki/types/assigneddataset.h>

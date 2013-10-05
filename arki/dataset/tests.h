@@ -200,6 +200,74 @@ struct OrderCheck : public metadata::Consumer
     virtual bool operator()(Metadata& md);
 };
 
+namespace tests {
+
+struct MaintenanceResults
+{
+    /// 0: dataset is unclean, 1: dataset is clean, -1: don't check
+    int is_clean;
+    /// Number of files seen during maintenance (-1 == don't check)
+    int files_seen;
+    /// Number of files expected for each maintenance outcome (-1 == don't check)
+    int by_type[tests::DatasetTest::COUNTED_MAX];
+
+    void reset_by_type()
+    {
+        for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+            by_type[i] = -1;
+    }
+
+    MaintenanceResults()
+        : is_clean(-1), files_seen(-1)
+    {
+        reset_by_type();
+    }
+
+    MaintenanceResults(bool is_clean)
+        : is_clean(is_clean), files_seen(-1)
+    {
+        reset_by_type();
+    }
+
+    MaintenanceResults(bool is_clean, unsigned files_seen)
+        : is_clean(is_clean), files_seen(files_seen)
+    {
+        reset_by_type();
+    }
+};
+
+struct TestMaintenance
+{
+    dataset::WritableLocal& dataset;
+    const MaintenanceResults& expected;
+
+    TestMaintenance(dataset::WritableLocal& dataset, const MaintenanceResults& expected)
+        : dataset(dataset), expected(expected) {}
+
+    void check(WIBBLE_TEST_LOCPRM) const;
+};
+
+struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal*>
+{
+    ActualWritableLocal(dataset::WritableLocal* s) : Actual<dataset::WritableLocal*>(s) {}
+
+    /// Run maintenance and see that the results are as expected
+    TestMaintenance maintenance(const MaintenanceResults& expected)
+    {
+        return TestMaintenance(*actual, expected);
+    }
+};
+
+}
+
+}
+
+namespace wibble {
+namespace tests {
+
+inline arki::tests::ActualWritableLocal actual(arki::dataset::WritableLocal* actual) { return arki::tests::ActualWritableLocal(actual); }
+
+}
 }
 
 #endif

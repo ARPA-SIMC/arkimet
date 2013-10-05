@@ -42,7 +42,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/simple/writer.h \
 		dataset/targetfile.h \
 		dataset/test-scenario.h \
-		dataset/test-utils.h \
+		dataset/tests.h \
 		dispatcher.h \
 		emitter.h \
 		emitter/json.h \
@@ -388,7 +388,7 @@ tests_arki_test_SOURCES = \
 		dataset/http/server-tut.cc \
 		dataset/http/inbound-tut.cc \
 		dataset/http/test-utils.cc \
-		dataset/test-utils.cc \
+		dataset/tests.cc \
 		dataset/outbound-tut.cc \
 		dataset/discard-tut.cc \
 		dataset/empty-tut.cc \

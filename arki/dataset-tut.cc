@@ -21,7 +21,7 @@
 #include "config.h"
 
 #include <arki/tests/tests.h>
-#include <arki/dataset/test-utils.h>
+#include <arki/dataset/tests.h>
 #include <arki/metadata/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/ondisk2.h>

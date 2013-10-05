@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/dataset/test-utils.h>
+#include <arki/dataset/tests.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/test-scenario.h>

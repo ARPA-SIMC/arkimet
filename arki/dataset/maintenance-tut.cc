@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/dataset/test-utils.h>
+#include <arki/dataset/tests.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/local.h>
 #include <arki/metadata/collection.h>
@@ -733,12 +733,9 @@ void to::test<34>()
     // Ensure the archive has items to pack
     {
         auto_ptr<WritableLocal> writer(makeLocalWriter());
-        MaintenanceCollector c;
-        writer->maintenance(c);
-        ensure_equals(c.fileStates.size(), 2u);
-        ensure_equals(c.count(COUNTED_TO_PACK), 2u);
-        ensure_equals(c.remaining(), "");
-        ensure(not c.isClean());
+        arki::tests::MaintenanceResults expected(false, 2);
+        expected.by_type[COUNTED_TO_PACK] = 2;
+        wassert(actual(writer.get()).maintenance(expected));
 
         ensure(!sys::fs::exists("testds/.archive"));
     }
@@ -759,14 +756,11 @@ void to::test<34>()
     // Ensure the archive is now clean
     {
         auto_ptr<WritableLocal> writer(makeLocalWriter());
-        MaintenanceCollector c;
-        writer->maintenance(c);
-        ensure_equals(c.fileStates.size(), 2u);
-        ensure_equals(c.count(COUNTED_OK), 2u);
-        ensure_equals(c.remaining(), "");
-        ensure(c.isClean());
+        arki::tests::MaintenanceResults expected(true, 2);
+        expected.by_type[COUNTED_OK] = 2;
+        wassert(actual(writer.get()).maintenance(expected));
 
-        ensure(!sys::fs::exists("testds/.archive"));
+        wassert(!actual("testds/.archive").fileexists());
     }
 }
 // Check that a repacked VM2 works properly (ondisk2 dataset)

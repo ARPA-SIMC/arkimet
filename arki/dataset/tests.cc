@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include <arki/dataset/test-utils.h>
+#include <arki/dataset/tests.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/dataset/local.h>
@@ -435,6 +435,80 @@ bool OrderCheck::operator()(Metadata& md)
     old = md;
     first = false;
     return true;
+}
+
+namespace tests {
+
+static ostream& operator<<(ostream& out, const MaintenanceResults& c)
+{
+    out << "clean: ";
+    switch (c.is_clean)
+    {
+        case -1: out << "-"; break;
+        case 0: out << "false"; break;
+        default: out << "true"; break;
+    }
+
+    out << ", files: ";
+    if (c.files_seen == -1)
+        out << "-";
+    else
+        out << c.files_seen;
+
+    for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+        if (c.by_type[i] != -1)
+        {
+            out << ", " << MaintenanceCollector::names[i] << ": " << c.by_type[i];
+        }
+
+    return out;
+}
+
+static ostream& operator<<(ostream& out, const MaintenanceCollector& c)
+{
+    out << "clean: " << (c.isClean() ? "true" : "false");
+    out << ", files: " << c.fileStates.size();
+    for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+        if (c.counts[i] > 0)
+            out << ", " << MaintenanceCollector::names[i] << ": " << c.counts[i];
+    return out;
+}
+
+void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
+{
+    using namespace wibble::tests;
+
+    MaintenanceCollector c;
+    wrunchecked(dataset.maintenance(c));
+
+    bool ok = true;
+    if (expected.files_seen != -1 &&
+        c.fileStates.size() != (unsigned)expected.files_seen)
+        ok = false;
+
+    for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+        if (expected.by_type[i] != -1 &&
+            c.count((tests::DatasetTest::Counted)i) != (unsigned)expected.by_type[i])
+            ok = false;
+
+    if (c.remaining() != "")
+        ok = false;
+
+    if (expected.is_clean != -1)
+    {
+        if (expected.is_clean)
+            ok = ok && c.isClean();
+        else
+            ok = ok && !c.isClean();
+    }
+
+    if (ok) return;
+
+    std::stringstream ss;
+    ss << "maintenance gave '" << c << "' instead of the expected '" << expected << "'";
+    wibble_test_location.fail_test(ss.str());
+}
+
 }
 
 }
