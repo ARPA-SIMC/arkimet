@@ -114,7 +114,11 @@ void TestSourceblobIs::check(WIBBLE_TEST_LOCPRM) const
 
 void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
 {
-    Item<> i_sample = types::decodeString(code, sample);
+    WIBBLE_TEST_INFO(tinfo);
+
+    tinfo() << "current: " << sample;
+    UItem<> i_sample;
+    wrunchecked(i_sample = types::decodeString(code, sample));
     wassert(actual(i_sample->serialisationCode()) == code);
     wassert(actual(i_sample).serializes());
     wassert(actual(i_sample) == sample);
@@ -123,7 +127,9 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
     for (std::vector<std::string>::const_iterator i = lower.begin();
             i != lower.end(); ++i)
     {
-        Item<> ii = types::decodeString(code, *i);
+        tinfo() << "current: " << *i;
+        UItem<> ii;
+        wrunchecked(ii = types::decodeString(code, *i));
         wassert(actual(ii->serialisationCode()) == code);
         wassert(actual(ii).serializes());
         wassert(actual(ii) == *i);
@@ -134,7 +140,9 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
     for (std::vector<std::string>::const_iterator i = higher.begin();
             i != higher.end(); ++i)
     {
-        Item<> ii = types::decodeString(code, *i);
+        tinfo() << "current: " << *i;
+        UItem<> ii;
+        wrunchecked(ii = types::decodeString(code, *i));
         wassert(actual(ii->serialisationCode()) == code);
         wassert(actual(ii).serializes());
         wassert(actual(ii) == *i);

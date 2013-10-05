@@ -303,7 +303,7 @@ void to::test<12>()
     arki::tests::TestGenericType t(types::TYPE_LEVEL, "GRIB1(103, 132)");
     t.lower.push_back("GRIB1(1)");
     t.lower.push_back("GRIB1(103, 131)");
-    t.higher.push_back("GRIB1(104)");
+    t.higher.push_back("GRIB1(104, 132, 1)");
     t.higher.push_back("GRIB1(103, 132, 1)");
     t.higher.push_back("GRIB1(103, 133)");
     t.higher.push_back("GRIB2S(100, 100, 500)");
