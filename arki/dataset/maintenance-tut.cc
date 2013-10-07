@@ -794,15 +794,12 @@ void to::test<36>()
         s.ensure_line_contains("1 file rescanned");
         s.ensure_all_lines_seen();
 
-        MaintenanceCollector c;
-        writer->maintenance(c);
-        ensure_equals(c.fileStates.size(), 1u);
+        arki::tests::MaintenanceResults expected(false, 1);
         // A repack is still needed because the data is not sorted by reftime
-        ensure_equals(c.count(COUNTED_TO_PACK), 1u);
+        expected.by_type[COUNTED_TO_PACK] = 1;
         // And the same file is also old enough to be deleted
-        ensure_equals(c.count(COUNTED_TO_DELETE), 1u);
-        ensure_equals(c.remaining(), "");
-        ensure(not c.isClean());
+        expected.by_type[COUNTED_TO_DELETE] = 1;
+        wassert(actual(writer.get()).maintenance(expected));
     }
 
     // Perform packing and check that things are still ok afterwards
