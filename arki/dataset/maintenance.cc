@@ -26,6 +26,7 @@
 #include <arki/dataset/local.h>
 #include <arki/dataset/archive.h>
 #include <arki/metadata/collection.h>
+#include <arki/data.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
@@ -68,8 +69,15 @@ namespace dataset {
 namespace maintenance {
 
 HoleFinder::FileInfo::FileInfo(const std::string& root, const std::string& name, bool quick)
-    : root(root), name(name), size(0), validator(0), validator_fd(-1), has_hole(false), corrupted(false)
+    : root(root), name(name), checked(0), format_info(0), validator(0), validator_fd(-1), has_hole(false), corrupted(false)
 {
+    // Get the file extension
+    std::string fmt;
+    size_t pos;
+    if ((pos = name.rfind('.')) != std::string::npos)
+        fmt = name.substr(pos + 1);
+    format_info = data::Info::get(fmt);
+
     if (!quick)
     {
         string fname = str::joinpath(root, name);
@@ -90,7 +98,7 @@ HoleFinder::FileInfo::FileInfo(const std::string& root, const std::string& name,
     }
 }
 
-void HoleFinder::FileInfo::check_data(off64_t offset, size_t dsize)
+void HoleFinder::FileInfo::check_data(off64_t offset, size_t size)
 {
     // If we've already found that the file is corrupted, there is nothing
     // else to do
@@ -98,27 +106,30 @@ void HoleFinder::FileInfo::check_data(off64_t offset, size_t dsize)
 
     if (validator)
         try {
-            validator->validate(validator_fd, offset, dsize, name);
+            validator->validate(validator_fd, offset, size, name);
         } catch (wibble::exception::Generic& e) {
             string fname = str::joinpath(root, name);
-            nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, dsize, e.desc().c_str());
+            nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, size, e.desc().c_str());
             corrupted = true;
         }
 
-    if (offset != size)
+    format_info->raw_to_wrapped(offset, size);
+    if (offset > checked)
+    {
         has_hole = true;
-    size += dsize;
+    }
+    checked = offset + size;
 }
 
 unsigned HoleFinder::FileInfo::finalise()
 {
     off64_t fsize;
 
-	if (validator_fd >= 0)
-	{
-		close(validator_fd);
-		validator_fd = -1;
-	}
+    if (validator_fd >= 0)
+    {
+        close(validator_fd);
+        validator_fd = -1;
+    }
 
     if (corrupted)
     {
@@ -127,16 +138,20 @@ unsigned HoleFinder::FileInfo::finalise()
     }
 
     fsize = compress::filesize(str::joinpath(root, name));
-    if (fsize < size)
+    off64_t d_offset = 0;
+    size_t d_size = fsize;
+    if (d_size < checked)
     {
-        nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", name.c_str(), fsize, size);
+        nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", name.c_str(), fsize, checked);
         // throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
         return MaintFileVisitor::TO_RESCAN;
     }
 
     // Check if last_file_size matches the file size
-    if (fsize > size)
+    if (d_size > checked)
+    {
         has_hole = true;
+    }
 
     // Take note of files with holes
     if (has_hole)
@@ -149,7 +164,7 @@ unsigned HoleFinder::FileInfo::finalise()
 }
 
 HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick)
-	: next(next), m_root(root), cur_file(0), quick(quick)
+    : next(next), m_root(root), cur_file(0), quick(quick)
 {
 }
 

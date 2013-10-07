@@ -4,7 +4,7 @@
 /*
  * data - Read/write functions for data blobs
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,6 +77,7 @@ protected:
 public:
     ~Reader();
 
+    static Reader get(const std::string& fname);
     static Reader get(const std::string& format, const std::string& fname);
 };
 
@@ -140,6 +141,28 @@ public:
      */
     static const OstreamWriter* get(const std::string& format);
 };
+
+/**
+ * Functor class with format-specific information routines
+ */
+class Info
+{
+public:
+    virtual ~Info();
+
+    /**
+     * Given a file offset and size for the raw data, alter them so that they
+     * include all possible leading and trailing data used for this format
+     */
+    virtual void raw_to_wrapped(off64_t& offset, size_t& size) const = 0;
+
+    /**
+     * Returns a pointer to a static instance of the appropriate Info
+     * for the given format
+     */
+    static const Info* get(const std::string& format);
+};
+
 
 }
 }

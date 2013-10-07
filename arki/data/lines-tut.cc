@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -226,6 +226,18 @@ void to::test<4>()
     }
 
     wassert(actual(utils::files::read_file(fname)) == "ciao\nciao\n");
+}
+
+// Test Info
+template<> template<>
+void to::test<5>()
+{
+    const Info* i = Info::get("vm2");
+    off64_t a = 10;
+    size_t b = 20;
+    i->raw_to_wrapped(a, b);
+    wassert(actual(a) == 10);
+    wassert(actual(b) == 22);
 }
 
 }

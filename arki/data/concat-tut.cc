@@ -228,5 +228,17 @@ void to::test<4>()
     wassert(actual(utils::files::read_file(fname)) == "ciaociao");
 }
 
+// Test Info
+template<> template<>
+void to::test<5>()
+{
+    const Info* i = Info::get("grib");
+    off64_t a = 10;
+    size_t b = 20;
+    i->raw_to_wrapped(a, b);
+    wassert(actual(a) == 10);
+    wassert(actual(b) == 20);
+}
+
 }
 

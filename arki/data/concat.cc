@@ -177,6 +177,16 @@ size_t OstreamWriter::stream(Metadata& md, int out) const
     return buf.size();
 }
 
+
+Info::~Info()
+{
+}
+
+void Info::raw_to_wrapped(off64_t& offset, size_t& size) const
+{
+    // There are no headers or trailers, so nothing to do here
+}
+
 }
 }
 }

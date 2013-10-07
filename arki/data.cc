@@ -1,7 +1,7 @@
 /*
  * data - Read/write functions for data blobs
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,16 @@ template class Base<impl::Writer>;
 
 Reader::Reader(impl::Reader* impl) : Base<impl::Reader>(impl) {}
 Reader::~Reader() {}
+
+Reader Reader::get(const std::string& fname)
+{
+    // Get the file extension
+    std::string fmt;
+    size_t pos;
+    if ((pos = fname.rfind('.')) != std::string::npos)
+        fmt = fname.substr(pos + 1);
+    return get(fmt, fname);
+}
 
 Reader Reader::get(const std::string& format, const std::string& fname)
 {
@@ -155,6 +165,39 @@ const OstreamWriter* OstreamWriter::get(const std::string& format)
         if (!ow_lines)
             ow_lines = new lines::OstreamWriter;
         return ow_lines;
+    } else {
+        throw wibble::exception::Consistency(
+                "getting ostream writer for " + format,
+                "format not supported");
+    }
+}
+
+Info::~Info()
+{
+}
+
+const Info* Info::get(const std::string& format)
+{
+    static concat::Info* i_concat = 0;
+    static lines::Info* i_lines = 0;
+
+    if (format == "grib" || format == "grib1" || format == "grib2")
+    {
+        if (!i_concat)
+            i_concat = new concat::Info;
+        return i_concat;
+    } else if (format == "bufr") {
+        if (!i_concat)
+            i_concat = new concat::Info;
+        return i_concat;
+    } else if (format == "odimh5" || format == "h5" || format == "odim") {
+        if (!i_concat)
+            i_concat = new concat::Info;
+        return i_concat;
+    } else if (format == "vm2") {
+        if (!i_lines)
+            i_lines = new lines::Info;
+        return i_lines;
     } else {
         throw wibble::exception::Consistency(
                 "getting ostream writer for " + format,

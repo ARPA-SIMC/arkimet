@@ -724,36 +724,14 @@ template<> template<> void to::test<31>() { TempConfig tc(cfg, "type", "ondisk2"
 template<> template<> void to::test<32>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
 template<> template<> void to::test<33>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
 
-// Check that a repacked VM2 works properly (simple dataset)
+// Check that a freshly imported VM2 dataset is seen as packed
+// (it didn't use to because newlines were seen as gaps)
 template<> template<>
 void to::test<34>()
 {
     clean_and_import(&cfg, "inbound/test.vm2");
 
-    // Ensure the archive has items to pack
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
-        arki::tests::MaintenanceResults expected(false, 2);
-        expected.by_type[COUNTED_TO_PACK] = 2;
-        wassert(actual(writer.get()).maintenance(expected));
-
-        ensure(!sys::fs::exists("testds/.archive"));
-    }
-    // Perform packing and check that things are still ok afterwards
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
-        OutputChecker s;
-        writer->repack(s, true);
-        s.ensure_line_contains(": packed 1987/10-31.vm2");
-        s.ensure_line_contains(": packed 2011/01-01.vm2");
-        s.ensure_line_contains(": 2 files packed");
-        s.ensure_all_lines_seen();
-    }
-    // Check that the file size is the same
-    ensure_equals(wibble::sys::fs::stat("inbound/test.vm2")->st_size,
-                  wibble::sys::fs::stat("testds/1987/10-31.vm2")->st_size +
-                  wibble::sys::fs::stat("testds/2011/01-01.vm2")->st_size);
-    // Ensure the archive is now clean
+    // Ensure the archive is clean
     {
         auto_ptr<WritableLocal> writer(makeLocalWriter());
         arki::tests::MaintenanceResults expected(true, 2);
@@ -763,7 +741,6 @@ void to::test<34>()
         wassert(!actual("testds/.archive").fileexists());
     }
 }
-// Check that a repacked VM2 works properly (ondisk2 dataset)
 template<> template<> void to::test<35>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<34>(); }
 
 // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
@@ -882,6 +859,79 @@ void to::test<38>()
 // Check that a repacked VM2 works properly (ondisk2 dataset)
 template<> template<> void to::test<39>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<38>(); }
 
+// Test packing an ondisk2 dataset with VM2 data
+template<> template<>
+void to::test<40>()
+{
+    TempConfig tc(cfg, "type", "ondisk2");
+
+    clean_and_import(&cfg, "inbound/test.vm2");
+
+    // Delete something
+    metadata::Collection mdc_imported;
+    {
+        auto_ptr<ReadonlyDataset> reader(makeReader());
+        reader->queryData(DataQuery(), mdc_imported);
+    }
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        for (unsigned i = 0; i < mdc_imported.size(); ++i)
+        {
+            if (i % 2 == 0)
+                writer->remove(mdc_imported[i]);
+            else
+                // Load data now, since the file is going to change later
+                // during packing
+                mdc_imported[i].getData();
+        }
+    }
+
+    // Ensure the archive has items to pack
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        arki::tests::MaintenanceResults expected(false, 2);
+        expected.by_type[COUNTED_TO_PACK] = 2;
+        wassert(actual(writer.get()).maintenance(expected));
+
+        ensure(!sys::fs::exists("testds/.archive"));
+    }
+
+    // Perform packing and check that things are still ok afterwards
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        OutputChecker s;
+        writer->repack(s, true);
+        s.ensure_line_contains(": packed 1987/10-31.vm2");
+        s.ensure_line_contains(": packed 2011/01-01.vm2");
+        s.ensure_line_contains(": 2 files packed");
+        s.ensure_all_lines_seen();
+    }
+
+    // Check that the files have actually shrunk
+    wassert(actual(wibble::sys::fs::stat("testds/1987/10-31.vm2")->st_size) == 36);
+    wassert(actual(wibble::sys::fs::stat("testds/2011/01-01.vm2")->st_size) == 33);
+
+    // Ensure the archive is now clean
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        arki::tests::MaintenanceResults expected(true, 2);
+        expected.by_type[COUNTED_OK] = 2;
+        wassert(actual(writer.get()).maintenance(expected));
+
+        wassert(!actual("testds/.archive").fileexists());
+    }
+
+    // Ensure that the data hasn't been corrupted
+    metadata::Collection mdc_packed;
+    {
+        auto_ptr<ReadonlyDataset> reader(makeReader());
+        reader->queryData(DataQuery(), mdc_packed);
+    }
+    wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
+    wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
+    wassert(actual(mdc_packed[0].getData()) == mdc_imported[1].getData());
+    wassert(actual(mdc_packed[1].getData()) == mdc_imported[3].getData());
+}
 
 }
 

@@ -33,6 +33,10 @@ namespace scan {
 struct Validator;
 }
 
+namespace data {
+struct Info;
+}
+
 namespace dataset {
 class WritableLocal;
 
@@ -79,7 +83,8 @@ struct HoleFinder : IndexFileVisitor
     {
         std::string root;
         std::string name;
-        off64_t size;
+        off64_t checked;
+        const data::Info* format_info;
         const scan::Validator* validator;
         int validator_fd;
         bool has_hole;

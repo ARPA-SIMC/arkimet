@@ -204,6 +204,15 @@ size_t OstreamWriter::stream(Metadata& md, int out) const
 }
 
 
+Info::~Info()
+{
+}
+
+void Info::raw_to_wrapped(off64_t& offset, size_t& size) const
+{
+    size += 1;
+}
+
 }
 }
 }

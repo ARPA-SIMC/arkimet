@@ -4,7 +4,7 @@
 /*
  * data - Read/write functions for data blobs without envelope
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,14 @@ public:
 
     virtual size_t stream(Metadata& md, std::ostream& out) const;
     virtual size_t stream(Metadata& md, int out) const;
+};
+
+class Info : public data::Info
+{
+public:
+    virtual ~Info();
+
+    virtual void raw_to_wrapped(off64_t& offset, size_t& size) const;
 };
 
 }
