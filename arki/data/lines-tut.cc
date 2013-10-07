@@ -237,7 +237,7 @@ void to::test<5>()
     size_t b = 20;
     i->raw_to_wrapped(a, b);
     wassert(actual(a) == 10);
-    wassert(actual(b) == 22);
+    wassert(actual(b) == 21);
 }
 
 }
