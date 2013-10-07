@@ -67,19 +67,52 @@ namespace arki {
 namespace dataset {
 namespace maintenance {
 
-
-HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick)
-	: next(next), m_root(root), last_file_size(0), quick(quick), validator(0), validator_fd(-1),
-	  has_hole(false), is_corrupted(false)
+HoleFinder::FileInfo::FileInfo(const std::string& root, const std::string& name, bool quick)
+    : root(root), name(name), size(0), validator(0), validator_fd(-1), has_hole(false), corrupted(false)
 {
+    if (!quick)
+    {
+        string fname = str::joinpath(root, name);
+
+        // If the data file is compressed, create a temporary uncompressed copy
+        auto_ptr<utils::compress::TempUnzip> tu;
+        if (scan::isCompressed(fname))
+            tu.reset(new utils::compress::TempUnzip(fname));
+
+        validator = &scan::Validator::by_filename(fname.c_str());
+        validator_fd = open(fname.c_str(), O_RDONLY);
+        if (validator_fd < 0)
+        {
+            perror(fname.c_str());
+            corrupted = true;
+        } else
+            (void)posix_fadvise(validator_fd, 0, 0, POSIX_FADV_DONTNEED);
+    }
 }
 
-void HoleFinder::finaliseFile()
+void HoleFinder::FileInfo::check_data(off64_t offset, size_t dsize)
 {
-	off64_t size;
+    // If we've already found that the file is corrupted, there is nothing
+    // else to do
+    if (corrupted) return;
 
-	if (last_file.empty())
-		return;
+    if (validator)
+        try {
+            validator->validate(validator_fd, offset, dsize, name);
+        } catch (wibble::exception::Generic& e) {
+            string fname = str::joinpath(root, name);
+            nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, dsize, e.desc().c_str());
+            corrupted = true;
+        }
+
+    if (offset != size)
+        has_hole = true;
+    size += dsize;
+}
+
+unsigned HoleFinder::FileInfo::finalise()
+{
+    off64_t fsize;
 
 	if (validator_fd >= 0)
 	{
@@ -87,85 +120,58 @@ void HoleFinder::finaliseFile()
 		validator_fd = -1;
 	}
 
-	if (is_corrupted)
-	{
-		nag::verbose("HoleFinder: %s found corrupted", last_file.c_str());
-		next(last_file, MaintFileVisitor::TO_RESCAN);
-		goto cleanup;
-	}
+    if (corrupted)
+    {
+        nag::verbose("HoleFinder: %s found corrupted", name.c_str());
+        return MaintFileVisitor::TO_RESCAN;
+    }
 
-	size = compress::filesize(str::joinpath(m_root, last_file));
-	if (size < last_file_size)
-	{
-		nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", last_file.c_str(), size, last_file_size);
-		// throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-		next(last_file, MaintFileVisitor::TO_RESCAN);
-		goto cleanup;
-	}
+    fsize = compress::filesize(str::joinpath(root, name));
+    if (fsize < size)
+    {
+        nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", name.c_str(), fsize, size);
+        // throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
+        return MaintFileVisitor::TO_RESCAN;
+    }
 
-	// Check if last_file_size matches the file size
-	if (size > last_file_size)
-		has_hole = true;
+    // Check if last_file_size matches the file size
+    if (fsize > size)
+        has_hole = true;
 
-	// Take note of files with holes
-	if (has_hole)
-	{
-		nag::verbose("HoleFinder: %s contains deleted data", last_file.c_str());
-		next(last_file, MaintFileVisitor::TO_PACK);
-	} else {
-		next(last_file, MaintFileVisitor::OK);
-	}
+    // Take note of files with holes
+    if (has_hole)
+    {
+        nag::verbose("HoleFinder: %s contains deleted data", name.c_str());
+        return MaintFileVisitor::TO_PACK;
+    } else {
+        return MaintFileVisitor::OK;
+    }
+}
 
-cleanup:
-	// Reset counters
-	last_file_size = 0;
-	has_hole = false;
-	is_corrupted = false;
+HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick)
+	: next(next), m_root(root), cur_file(0), quick(quick)
+{
+}
 
-	// Don't finalise the same file twice
-	last_file.clear();
+void HoleFinder::end()
+{
+    if (!cur_file) return;
+
+    unsigned response = cur_file->finalise();
+    next(cur_file->name, response);
+    delete cur_file;
+    cur_file = 0;
 }
 
 void HoleFinder::operator()(const std::string& file, int id, off64_t offset, size_t size)
 {
-	if (last_file != file)
-	{
-		finaliseFile();
-		last_file = file;
-		if (!quick)
-		{
-			string fname = str::joinpath(m_root, file);
+    if (!cur_file || cur_file->name != file)
+    {
+        end();
+        cur_file = new FileInfo(m_root, file, quick);
+    }
 
-			// If the data file is compressed, create a temporary uncompressed copy
-			auto_ptr<utils::compress::TempUnzip> tu;
-			if (scan::isCompressed(fname))
-				tu.reset(new utils::compress::TempUnzip(fname));
-			
-			validator = &scan::Validator::by_filename(fname.c_str());
-			validator_fd = open(fname.c_str(), O_RDONLY);
-			if (validator_fd < 0)
-			{
-				perror(file.c_str());
-				is_corrupted = true;
-			} else
-				(void)posix_fadvise(validator_fd, 0, 0, POSIX_FADV_DONTNEED);
-		}
-	}
-	// If we've already found that the file is corrupted, there is nothing
-	// else to do
-	if (is_corrupted) return;
-	if (!quick)
-		try {
-			validator->validate(validator_fd, offset, size, file);
-		} catch (wibble::exception::Generic& e) {
-			string fname = str::joinpath(m_root, file);
-			nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, size, e.desc().c_str());
-			is_corrupted = true;
-		}
-
-	if (offset != last_file_size)
-		has_hole = true;
-	last_file_size += size;
+    cur_file->check_data(offset, size);
 }
 
 void HoleFinder::scan(const std::string& file)
@@ -213,7 +219,7 @@ void HoleFinder::scan(const std::string& file)
 	//mdc.sort(""); // Sort by reftime, to find items out of order
 	mdc.sort(cmp); // Sort by reftime and by offset
 	mdc.sendTo(hfc);
-	finaliseFile();
+    end();
 }
 
 static bool sorter(const std::string& a, const std::string& b)

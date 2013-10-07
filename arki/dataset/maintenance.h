@@ -75,17 +75,28 @@ struct IndexFileVisitor
  */
 struct HoleFinder : IndexFileVisitor
 {
+    struct FileInfo
+    {
+        std::string root;
+        std::string name;
+        off64_t size;
+        const scan::Validator* validator;
+        int validator_fd;
+        bool has_hole;
+        bool corrupted;
+
+        FileInfo(const std::string& root, const std::string& name, bool quick=true);
+
+        void check_data(off64_t offset, size_t size);
+        unsigned finalise();
+    };
+
 	MaintFileVisitor& next;
 
 	const std::string& m_root;
 
-	std::string last_file;
-	off64_t last_file_size;
+    FileInfo* cur_file;
 	bool quick;
-	const scan::Validator* validator;
-	int validator_fd;
-	bool has_hole;
-	bool is_corrupted;
 
 	HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick=true);
 
@@ -95,14 +106,13 @@ struct HoleFinder : IndexFileVisitor
 	 */
 	void scan(const std::string& file);
 
-	void finaliseFile();
-
 	void operator()(const std::string& file, int id, off64_t offset, size_t size);
 
-	void end()
-	{
-		finaliseFile();
-	}
+    /**
+     * Signal that there is no more data to scan for now, and existing data
+     * being computed should be flushed.
+     */
+    void end();
 };
 
 /**
