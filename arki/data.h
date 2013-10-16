@@ -154,7 +154,7 @@ public:
      * Given a file offset and size for the raw data, alter them so that they
      * include all possible leading and trailing data used for this format
      */
-    virtual void raw_to_wrapped(off64_t& offset, size_t& size) const = 0;
+    virtual void raw_to_wrapped(off_t& offset, size_t& size) const = 0;
 
     /**
      * Returns a pointer to a static instance of the appropriate Info

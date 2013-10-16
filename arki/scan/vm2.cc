@@ -58,7 +58,7 @@ struct VM2Validator : public Validator
 	virtual ~VM2Validator() {}
 
 	// Validate data found in a file
-	virtual void validate(int fd, off64_t offset, size_t size, const std::string& fname) const
+	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
 	{
 		char buf[1024];
 

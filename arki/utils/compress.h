@@ -142,7 +142,7 @@ struct SeekIndex
  * @param fnam
  *   Refers to the uncompressed file name (i.e. without the trailing .gz)
  */
-off64_t filesize(const std::string& file);
+off_t filesize(const std::string& file);
 
 /**
  * Create a file with a compressed version of the data described by the
@@ -167,11 +167,11 @@ protected:
 	// Output buffer for the compressor
 	wibble::sys::Buffer outbuf;
 	// Offset of end of last uncompressed data read
-	off64_t unc_ofs;
+	off_t unc_ofs;
 	// Offset of end of last uncompressed block written
-	off64_t last_unc_ofs;
+	off_t last_unc_ofs;
 	// Offset of end of last compressed data written
-	off64_t last_ofs;
+	off_t last_ofs;
 	// Number of data compressed so far
 	size_t count;
 

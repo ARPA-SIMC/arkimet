@@ -1288,7 +1288,7 @@ void WContents::reset(const std::string& file)
     scache.invalidate(tmin, tmax);
 }
 
-void WContents::relocate_data(int id, off64_t newofs)
+void WContents::relocate_data(int id, off_t newofs)
 {
 	Query query("update_offset", m_db);
 	query.compile("UPDATE md SET offset = ? WHERE id = ?");

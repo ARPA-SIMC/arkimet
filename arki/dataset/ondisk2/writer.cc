@@ -107,7 +107,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
     string reldest = (*m_tf)(md) + "." + md.source->format;
     data::Writer w = file(reldest, md.source->format);
-    off64_t ofs;
+    off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
     Pending p_df = w.append(md, &ofs);
@@ -133,7 +133,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
     string reldest = (*m_tf)(md) + "." + md.source->format;
     data::Writer w = file(reldest, md.source->format);
-    off64_t ofs;
+    off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
     Pending p_df = w.append(md, &ofs);
@@ -160,7 +160,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     // Try to acquire without replacing
     string reldest = (*m_tf)(md) + "." + md.source->format;
     data::Writer w = file(reldest, md.source->format);
-    off64_t ofs;
+    off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
     Pending p_df = w.append(md, &ofs);
@@ -310,7 +310,7 @@ struct Deleter : public maintenance::IndexFileVisitor
 	Deleter(const std::string& name, std::ostream& log, bool writable)
 		: name(name), log(log), writable(writable) {}
 
-	void operator()(const std::string& file, int id, off64_t offset, size_t size)
+	void operator()(const std::string& file, int id, off_t offset, size_t size)
 	{
 		if (last_fname == file) return;
 		if (writable)
@@ -435,7 +435,7 @@ struct FileCopier : maintenance::IndexFileVisitor
     FileCopier(index::WContents& idx, const std::string& src, const std::string& dst);
     virtual ~FileCopier();
 
-	void operator()(const std::string& file, int id, off64_t offset, size_t size);
+	void operator()(const std::string& file, int id, off_t offset, size_t size);
 
 	void flush();
 };
@@ -458,7 +458,7 @@ FileCopier::~FileCopier()
 	flush();
 }
 
-void FileCopier::operator()(const std::string& file, int id, off64_t offset, size_t size)
+void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
 {
     // Resize the buffer at the exact size
     buf.resize(size);

@@ -47,7 +47,7 @@ struct Append : public Transaction
     Metadata& md;
     bool fired;
     wibble::sys::Buffer buf;
-    off64_t pos;
+    off_t pos;
 
     Append(Writer& w, Metadata& md) : w(w), md(md), fired(false)
     {
@@ -138,7 +138,7 @@ off_t Writer::append(const wibble::sys::Buffer& buf)
     return pos;
 }
 
-Pending Writer::append(Metadata& md, off64_t* ofs)
+Pending Writer::append(Metadata& md, off_t* ofs)
 {
     Append* res = new Append(*this, md);
     *ofs = res->pos;
@@ -182,7 +182,7 @@ Info::~Info()
 {
 }
 
-void Info::raw_to_wrapped(off64_t& offset, size_t& size) const
+void Info::raw_to_wrapped(off_t& offset, size_t& size) const
 {
     // There are no headers or trailers, so nothing to do here
 }

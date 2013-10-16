@@ -280,7 +280,7 @@ void SeekIndex::read(int fd, const std::string& fname)
 	delete[] diskidx;
 }
 
-off64_t filesize(const std::string& file)
+off_t filesize(const std::string& file)
 {
 	// First try the uncompressed version
 	std::auto_ptr<struct stat64> st = wibble::sys::fs::stat(file);

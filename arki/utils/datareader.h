@@ -35,7 +35,7 @@ struct Reader
 public:
 	virtual ~Reader() {}
 
-	virtual void read(off64_t ofs, size_t size, void* buf) = 0;
+	virtual void read(off_t ofs, size_t size, void* buf) = 0;
 	virtual bool is(const std::string& fname) = 0;
 };
 }
@@ -54,7 +54,7 @@ public:
 	DataReader();
 	~DataReader();
 
-	void read(const std::string& fname, off64_t ofs, size_t size, void* buf);
+	void read(const std::string& fname, off_t ofs, size_t size, void* buf);
 	void flush();
 };
 

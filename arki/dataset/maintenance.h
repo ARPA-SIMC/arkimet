@@ -68,7 +68,7 @@ struct IndexFileVisitor
 {
 	virtual ~IndexFileVisitor() {}
 
-	virtual void operator()(const std::string& file, int id, off64_t offset, size_t size) = 0;
+	virtual void operator()(const std::string& file, int id, off_t offset, size_t size) = 0;
 };
 
 /**
@@ -83,7 +83,7 @@ struct HoleFinder : IndexFileVisitor
     {
         std::string root;
         std::string name;
-        off64_t checked;
+        off_t checked;
         const data::Info* format_info;
         const scan::Validator* validator;
         int validator_fd;
@@ -92,7 +92,7 @@ struct HoleFinder : IndexFileVisitor
 
         FileInfo(const std::string& root, const std::string& name, bool quick=true);
 
-        void check_data(off64_t offset, size_t size);
+        void check_data(off_t offset, size_t size);
         unsigned finalise();
     };
 
@@ -111,7 +111,7 @@ struct HoleFinder : IndexFileVisitor
 	 */
 	void scan(const std::string& file);
 
-	void operator()(const std::string& file, int id, off64_t offset, size_t size);
+	void operator()(const std::string& file, int id, off_t offset, size_t size);
 
     /**
      * Signal that there is no more data to scan for now, and existing data

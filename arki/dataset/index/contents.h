@@ -357,7 +357,7 @@ public:
 	 * Update the offset of the piece of data 'id' to newofs inside
 	 * the same file
 	 */
-	void relocate_data(int id, off64_t newofs);
+	void relocate_data(int id, off_t newofs);
 
 	/// Tidy up the database and reclaim deleted space
 	void vacuum();

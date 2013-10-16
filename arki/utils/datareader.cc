@@ -75,7 +75,7 @@ public:
 		return this->fname == fname;
 	}
 
-	void read(off64_t ofs, size_t size, void* buf)
+	void read(off_t ofs, size_t size, void* buf)
 	{
 		if (posix_fadvise(fd, ofs, size, POSIX_FADV_DONTNEED) != 0)
 			nag::debug("fadvise on %s failed: %m", fname.c_str());
@@ -96,7 +96,7 @@ public:
 	std::string fname;
 	std::string realfname;
 	gzFile fd;
-	off64_t last_ofs;
+	off_t last_ofs;
 
 	ZlibFileReader(const std::string& fname)
 		: fname(fname), realfname(fname + ".gz"), fd(NULL), last_ofs(0)
@@ -117,7 +117,7 @@ public:
 		return this->fname == fname;
 	}
 
-	void read(off64_t ofs, size_t size, void* buf)
+	void read(off_t ofs, size_t size, void* buf)
 	{
 		if (ofs != last_ofs)
 		{
@@ -150,7 +150,7 @@ public:
 	size_t last_block;
 	int fd;
 	gzFile gzfd;
-	off64_t last_ofs;
+	off_t last_ofs;
 
 	IdxZlibFileReader(const std::string& fname)
 		: fname(fname), realfname(fname + ".gz"), last_block(0), fd(-1), gzfd(NULL), last_ofs(0)
@@ -174,7 +174,7 @@ public:
 		return this->fname == fname;
 	}
 
-	void reposition(off64_t ofs)
+	void reposition(off_t ofs)
 	{
 		size_t block = idx.lookup(ofs);
 		if (block != last_block || gzfd == NULL)
@@ -184,7 +184,7 @@ public:
 				gzclose(gzfd);
 				gzfd = NULL;
 			}
-			off64_t res = lseek(fd, idx.ofs_comp[block], SEEK_SET);
+			off_t res = lseek(fd, idx.ofs_comp[block], SEEK_SET);
 			if (res == -1 || (size_t)res != idx.ofs_comp[block])
 				throw wibble::exception::File(realfname, "seeking to byte " + str::fmt(idx.ofs_comp[block]));
 
@@ -207,7 +207,7 @@ public:
 		acct::gzip_forward_seek_bytes.incr(ofs - idx.ofs_unc[block]);
 	}
 
-	void read(off64_t ofs, size_t size, void* buf)
+	void read(off_t ofs, size_t size, void* buf)
 	{
 		if (gzfd == NULL || ofs != last_ofs)
 		{
@@ -252,7 +252,7 @@ void DataReader::flush()
 	}
 }
 
-void DataReader::read(const std::string& fname, off64_t ofs, size_t size, void* buf)
+void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* buf)
 {
 	if (!last || !last->is(fname))
 	{

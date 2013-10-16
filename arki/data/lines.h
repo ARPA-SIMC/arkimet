@@ -46,7 +46,7 @@ public:
 
     virtual void append(Metadata& md);
     virtual off_t append(const wibble::sys::Buffer& buf);
-    virtual Pending append(Metadata& md, off64_t* ofs);
+    virtual Pending append(Metadata& md, off_t* ofs);
 };
 
 class OstreamWriter : public data::OstreamWriter
@@ -67,7 +67,7 @@ class Info : public data::Info
 public:
     virtual ~Info();
 
-    virtual void raw_to_wrapped(off64_t& offset, size_t& size) const;
+    virtual void raw_to_wrapped(off_t& offset, size_t& size) const;
 };
 
 }

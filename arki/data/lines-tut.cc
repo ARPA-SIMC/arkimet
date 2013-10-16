@@ -233,7 +233,7 @@ template<> template<>
 void to::test<5>()
 {
     const Info* i = Info::get("vm2");
-    off64_t a = 10;
+    off_t a = 10;
     size_t b = 20;
     i->raw_to_wrapped(a, b);
     wassert(actual(a) == 10);

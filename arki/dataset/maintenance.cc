@@ -98,7 +98,7 @@ HoleFinder::FileInfo::FileInfo(const std::string& root, const std::string& name,
     }
 }
 
-void HoleFinder::FileInfo::check_data(off64_t offset, size_t size)
+void HoleFinder::FileInfo::check_data(off_t offset, size_t size)
 {
     // If we've already found that the file is corrupted, there is nothing
     // else to do
@@ -123,7 +123,7 @@ void HoleFinder::FileInfo::check_data(off64_t offset, size_t size)
 
 unsigned HoleFinder::FileInfo::finalise()
 {
-    off64_t fsize;
+    off_t fsize;
 
     if (validator_fd >= 0)
     {
@@ -138,7 +138,7 @@ unsigned HoleFinder::FileInfo::finalise()
     }
 
     fsize = compress::filesize(str::joinpath(root, name));
-    off64_t d_offset = 0;
+    off_t d_offset = 0;
     size_t d_size = fsize;
     if (d_size < checked)
     {
@@ -178,7 +178,7 @@ void HoleFinder::end()
     cur_file = 0;
 }
 
-void HoleFinder::operator()(const std::string& file, int id, off64_t offset, size_t size)
+void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_t size)
 {
     if (!cur_file || cur_file->name != file)
     {
