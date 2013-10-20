@@ -136,7 +136,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Cons
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
-    auto_ptr<struct stat64> st_file = sys::fs::stat(pathname);
+    auto_ptr<struct stat> st_file = sys::fs::stat(pathname);
     if (!st_file.get())
         st_file = sys::fs::stat(pathname + ".gz");
     if (!st_file.get())
@@ -144,7 +144,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Cons
 
     // stat the metadata file, if it exists
     string md_pathname = pathname + ".metadata";
-    auto_ptr<struct stat64> st_md = sys::fs::stat(md_pathname);
+    auto_ptr<struct stat> st_md = sys::fs::stat(md_pathname);
 
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
@@ -227,7 +227,7 @@ void compress(const std::string& file, size_t groupsize)
 	compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
-	std::auto_ptr<struct stat64> st = sys::fs::stat(file);
+	std::auto_ptr<struct stat> st = sys::fs::stat(file);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;

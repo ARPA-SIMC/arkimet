@@ -1,7 +1,7 @@
 /*
  * runtime/config - Common configuration-related code used in most arkimet executables
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -220,7 +220,7 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 		fname.resize(fname.size() - 1);
 
     // Check if it's a file or a directory
-    std::auto_ptr<struct stat64> st = sys::fs::stat(fname);
+    std::auto_ptr<struct stat> st = sys::fs::stat(fname);
     if (st.get() == 0)
         throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
 	if (S_ISDIR(st->st_mode))
@@ -355,7 +355,7 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 #ifdef CONF_DIR
     // Else, CONF_DIR is tried.
     string name = string(CONF_DIR) + "/match-alias.conf";
-    auto_ptr<struct stat64> st = wibble::sys::fs::stat(name);
+    auto_ptr<struct stat> st = wibble::sys::fs::stat(name);
     if (st.get())
     {
         parseConfigFile(cfg, name);

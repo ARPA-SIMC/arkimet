@@ -1,7 +1,7 @@
 /*
  * dataset/local - Base class for local datasets
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -184,7 +184,7 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
 		fname.resize(fname.size() - 1);
 
 	// Check if it's a file or a directory
-	std::auto_ptr<struct stat64> st = sys::fs::stat(fname);
+	std::auto_ptr<struct stat> st = sys::fs::stat(fname);
 	if (st.get() == 0)
 		throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
 	if (S_ISDIR(st->st_mode))

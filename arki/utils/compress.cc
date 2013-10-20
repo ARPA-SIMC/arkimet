@@ -1,7 +1,7 @@
 /*
  * utils/compress - Compression/decompression utilities
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -220,7 +220,7 @@ TempUnzip::TempUnzip(const std::string& fname)
 	gunzip(rdfd, gzfname, wrfd, fname);
 
 	// Set the same timestamp as the compressed file
-	std::auto_ptr<struct stat64> st = sys::fs::stat(gzfname);
+	std::auto_ptr<struct stat> st = sys::fs::stat(gzfname);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;
@@ -283,7 +283,7 @@ void SeekIndex::read(int fd, const std::string& fname)
 off_t filesize(const std::string& file)
 {
 	// First try the uncompressed version
-	std::auto_ptr<struct stat64> st = wibble::sys::fs::stat(file);
+	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
 	if (st.get() != NULL)
 		return st->st_size;
 
