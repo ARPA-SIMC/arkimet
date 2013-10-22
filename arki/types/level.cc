@@ -922,6 +922,7 @@ bool ODIMH5::operator==(const Type& o) const
 	return m_max == v->m_max && m_min == v->m_min;
 }
 
+#ifdef HAVE_LUA
 bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 {
 	if (name == "max")
@@ -932,6 +933,7 @@ bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 		return Level::lua_lookup(L, name);
 	return true;
 }
+#endif
 
 Item<ODIMH5> ODIMH5::create(double val)
 {
