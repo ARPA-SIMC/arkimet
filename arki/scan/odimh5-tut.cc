@@ -969,7 +969,7 @@ void to::test<15>()
 
 	// Check level
 	ensure(md.get(types::TYPE_LEVEL).defined());
-	ensure_equals(md.get(types::TYPE_LEVEL), Item<>(types::level::ODIMH5::create(10)));
+	ensure_equals(md.get(types::TYPE_LEVEL), Item<>(types::level::ODIMH5::create(0.5)));
 
 	// Check reftime
 	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);

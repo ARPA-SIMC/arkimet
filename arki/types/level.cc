@@ -911,7 +911,9 @@ int ODIMH5::compare_local(const Level& o) const
 			"comparing metadata types",
 			string("second element claims to be a ODIMH5 Level, but is a ") + typeid(&o).name() + " instead");
 
-	return (m_max - m_min) - (v->m_max - v->m_min);
+    if (int res = m_min - v->m_min) return res;
+    return m_max - v->m_max;
+    // return (m_max - m_min) - (v->m_max - v->m_min);
 }
 
 bool ODIMH5::operator==(const Type& o) const
