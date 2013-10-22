@@ -57,7 +57,8 @@ bool Stream::checkMetadata()
 	if (buffer.size() < 8 + len)
 		return false;
 
-	md.read((const unsigned char*)buffer.data() + 8, len, version, streamname);
+    metadata::ReadContext rc("http-connection", streamname);
+	md.read((const unsigned char*)buffer.data() + 8, len, version, rc);
 
 	buffer = buffer.substr(len + 8);
 	if (md.source->style() == types::Source::INLINE)

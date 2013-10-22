@@ -45,6 +45,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_server_shar {
     ConfigFile config;
@@ -87,7 +88,8 @@ void to::test<2>()
     ensure_equals(source->style(), Source::BLOB);
     ensure_equals(source->format, "grib1");
     UItem<source::Blob> blob = source.upcast<source::Blob>();
-    ensure(str::endsWith(blob->filename, "test200/2007/07-08.grib1"));
+    wassert(actual(blob->basedir).endswith("test200"));
+    wassert(actual(blob->filename).endswith("2007/07-08.grib1"));
     ensure_equals(blob->offset, 0u);
     ensure_equals(blob->size, 7218u);
 
@@ -206,7 +208,8 @@ void to::test<7>()
     ensure_equals(source->style(), Source::BLOB);
     ensure_equals(source->format, "grib1");
     UItem<source::Blob> blob = source.upcast<source::Blob>();
-    ensure(str::endsWith(blob->filename, "test200/2007/07-08.grib1"));
+    wassert(actual(blob->basedir).endswith("test200"));
+    wassert(actual(blob->filename).endswith("2007/07-08.grib1"));
     ensure_equals(blob->offset, 0u);
     ensure_equals(blob->size, 7218u);
 }
