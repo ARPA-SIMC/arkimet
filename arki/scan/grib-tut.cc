@@ -630,28 +630,28 @@ void to::test<7>()
 	types::Time reftime;
 	wibble::sys::Buffer buf;
 
-    wrunchecked(scanner.open("inbound/cleps_grib2.grib2"));
+    wrunchecked(scanner.open("inbound/cleps_pf16_HighPriority.grib2"));
 
     // See how we scan the first BUFR
     wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("grib2", sys::fs::abspath("."), "inbound/cleps_grib2.grib2", 0, 415));
+    wassert(actual(md.source).sourceblob_is("grib2", sys::fs::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
 
     // Check that the source can be read properly
     wrunchecked(buf = md.getData());
-    wassert(actual(buf.size()) == 415u);
+    wassert(actual(buf.size()) == 432u);
     wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
-    wassert(actual(string((const char*)buf.data() + 411, 4)) == "7777");
+    wassert(actual(string((const char*)buf.data() + 428, 4)) == "7777");
 
     wassert(actual(md).contains("origin", "GRIB2(250, 98, 4, 255, 131)"));
-    wassert(actual(md).contains("product", "GRIB2(250, 0, 2, 22)"));
-    wassert(actual(md).contains("level", "GRIB2S(103, 0, 10)"));
-    wassert(actual(md).contains("timerange", "Timedef(3h, 2, 3h)"));
+    wassert(actual(md).contains("product", "GRIB2(250, 2, 0, 0)"));
+    wassert(actual(md).contains("level", "GRIB2S(1, -, -)"));
+    wassert(actual(md).contains("timerange", "Timedef(0, 254, 0)"));
     wassert(actual(md).contains("area", "GRIB(Ni=511,Nj=415,latfirst=-16125000,latlast=9750000,lonfirst=344250000,lonlast=16125000,latp=-40000000,lonp=10000000,rot=0,tn=1)"));
-    wassert(actual(md).contains("proddef", "GRIB(mc=ti,mt=0,pf=1,tf=16,tod=4,ty=3)"));
-    wassert(actual(md).contains("reftime", "2010-05-24T12:00:00"));
-    wassert(actual(md).contains("run", "MINUTE(12:00)"));
+    wassert(actual(md).contains("proddef", "GRIB(mc=ti,mt=0,pf=16,tf=16,tod=4,ty=3)"));
+    wassert(actual(md).contains("reftime", "2013-10-22T00:00:00"));
+    wassert(actual(md).contains("run", "MINUTE(00:00)"));
 
     // No more gribs
     wassert(actual(scanner.next(md)).isfalse());
