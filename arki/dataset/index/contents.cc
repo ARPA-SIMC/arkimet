@@ -682,7 +682,7 @@ size_t Contents::produce_nth(metadata::Consumer& consumer, size_t idx) const
 
             Query mdq("mdq", m_db);
             mdq.compile(query);
-            mdq.bind(1, fq.fetchString(0));
+            mdq.bindTransient(1, fq.fetchString(0));
 
             while (mdq.step())
             {
