@@ -1,0 +1,5 @@
+#!/bin/sh
+# Eat all input
+/bin/cat > /dev/null
+# Generate $1Kb of data
+dd if=/dev/zero of=/dev/stdout bs=1K count=${1:-1K}
