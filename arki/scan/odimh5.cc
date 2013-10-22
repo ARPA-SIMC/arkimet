@@ -274,13 +274,17 @@ void OdimH5::setSource(Metadata& md)
 	length = is.tellg();
 	is.seekg (0, std::ios::beg);
 
-	std::auto_ptr<char> buff(new char [length]);
+    char* buff = (char*)malloc(length);
+    try {
+        is.read(buff,length);
+        is.close();
 
-	is.read(buff.get(),length);
-	is.close();
-
-	md.source = types::source::Blob::create("odimh5", basedir, relname, 0, length);
-	md.setCachedData(wibble::sys::Buffer(buff.release(), length));
+        md.source = types::source::Blob::create("odimh5", basedir, relname, 0, length);
+        md.setCachedData(wibble::sys::Buffer(buff, length));
+    } catch (...) {
+        free(buff);
+        throw;
+    }
 
 	md.add_note(types::Note::create("Scanned from " + relname + ":0+" + wibble::str::fmt(length)));
 }
