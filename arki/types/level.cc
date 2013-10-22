@@ -384,7 +384,7 @@ static int arkilua_new_odimh5(lua_State* L)
 	double value = luaL_checknumber(L, 1);
 	if (lua_gettop(L) > 1)
 	{
-		double max = luaL_checknumber(L, 2);	
+		double max = luaL_checknumber(L, 2);
 		level::ODIMH5::create(value, max)->lua_push(L);
 	} else
 		level::ODIMH5::create(value)->lua_push(L);
