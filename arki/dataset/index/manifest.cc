@@ -253,15 +253,13 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 		tu.reset(new utils::compress::TempUnzip(pathname));
 
 	// Read the timestamp
-	time_t mtime = files::timestamp(pathname);
-	if (mtime == 0)
-		throw wibble::exception::Consistency("acquiring " + pathname, "file does not exist");
+	time_t mtime = sys::fs::timestamp(pathname);
 
     // Invalidate summary
     invalidate_summary(pathname);
 
 	// Invalidate metadata if older than data
-	time_t ts_md = files::timestamp(pathname + ".metadata");
+	time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
 	if (ts_md < mtime)
 		sys::fs::deleteIfExists(pathname + ".metadata");
 
@@ -341,7 +339,7 @@ class PlainManifest : public Manifest
 	bool reread()
 	{
 		string pathname(str::joinpath(m_path, "MANIFEST"));
-		ino_t inode = files::inode(pathname);
+		ino_t inode = sys::fs::inode(pathname, 0);
 
 		if (inode == last_inode) return inode != 0;
 
@@ -590,8 +588,8 @@ public:
 				string pathname = str::joinpath(m_path, i->file);
 
 				time_t ts_data = scan::timestamp(pathname);
-				time_t ts_md = files::timestamp(pathname + ".metadata");
-				time_t ts_sum = files::timestamp(pathname + ".summary");
+				time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
+				time_t ts_sum = sys::fs::timestamp(pathname + ".summary", 0);
 				time_t ts_idx = i->mtime;
 
 				if (ts_idx != ts_data ||
@@ -916,8 +914,8 @@ public:
 				string pathname = str::joinpath(m_path, i->first);
 
 				time_t ts_data = scan::timestamp(pathname);
-				time_t ts_md = files::timestamp(pathname + ".metadata");
-				time_t ts_sum = files::timestamp(pathname + ".summary");
+				time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
+				time_t ts_sum = sys::fs::timestamp(pathname + ".summary", 0);
 				time_t ts_idx = i->second;
 
 				if (ts_idx != ts_data ||

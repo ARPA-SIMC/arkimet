@@ -348,7 +348,7 @@ struct TestDataset
             ds->queryBytes(bq, os);
 
             // Write it out and rescan
-            files::write_file("testdata", os.str());
+            sys::fs::writeFile("testdata", os.str());
             metadata::Collection tmp;
             wassert(actual(scan::scan("testdata", tmp, input_data[i].source->format)).istrue());
 
@@ -384,7 +384,7 @@ struct TestDataset
         wassert(actual(os.str().size()) >= total_size);
 
         // Write the results to disk
-        utils::files::write_file("tempdata", os.str());
+        sys::fs::writeFile("tempdata", os.str());
 
         // Check that they can be scanned again
         metadata::Collection mdc;

@@ -196,7 +196,7 @@ void to::test<8>()
 	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/30.grib1");
 	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/40.grib1");
 	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/50.grib1");
-	time_t mtime = files::timestamp("inbound/test-sorted.grib1");
+	time_t mtime = sys::fs::timestamp("inbound/test-sorted.grib1");
 
 	// Generate their metadata and summary files
 	metadata::Collection mdc;

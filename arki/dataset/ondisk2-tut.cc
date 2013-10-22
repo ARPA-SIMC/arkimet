@@ -206,7 +206,7 @@ void to::test<1>()
 	d200.flush();
 	ensure(sys::fs::exists("test200/2007/07-08.grib1"));
 	ensure(sys::fs::exists("test200/index.sqlite"));
-	ensure(files::timestamp("test200/2007/07-08.grib1") <= files::timestamp("test200/index.sqlite"));
+    ensure(sys::fs::timestamp("test200/2007/07-08.grib1") <= sys::fs::timestamp("test200/index.sqlite"));
 //2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
 //2	ensure(!hasIndexFlagfile("test200"));
 }

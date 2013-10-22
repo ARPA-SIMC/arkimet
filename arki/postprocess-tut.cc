@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <arki/scan/grib.h>
 #include <arki/utils/files.h>
 #include <arki/utils/fd.h>
+#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
@@ -39,6 +40,9 @@
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
 #endif
+
+using namespace wibble;
+using namespace wibble::tests;
 
 namespace tut {
 using namespace std;
@@ -196,7 +200,7 @@ void to::test<6>()
     produceGRIB(p);
     p.flush();
 
-    ensure_equals(utils::files::size(fname), 4096*1024);
+    wassert(actual(sys::fs::size(fname)) == 4096*1024);
 }
 
 // Try to shift a sizeable chunk of data to and out of the postprocessor
@@ -219,7 +223,7 @@ void to::test<7>()
         produceGRIB(p);
     p.flush();
 
-    ensure_equals(utils::files::size(fname), 4096*1024);
+    wassert(actual(sys::fs::size(fname)) == 4096*1024);
 }
 
 

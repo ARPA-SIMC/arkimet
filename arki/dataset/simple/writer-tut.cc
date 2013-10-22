@@ -115,9 +115,9 @@ void to::test<1>()
 	ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
 	ensure(sys::fs::exists("testds/2007/07-08.grib1.summary"));
 	ensure(sys::fs::exists("testds/" + idxfname()));
-	ensure(files::timestamp("testds/2007/07-08.grib1") <= files::timestamp("testds/2007/07-08.grib1.metadata"));
-	ensure(files::timestamp("testds/2007/07-08.grib1.metadata") <= files::timestamp("testds/2007/07-08.grib1.summary"));
-	ensure(files::timestamp("testds/2007/07-08.grib1.summary") <= files::timestamp("testds/" + idxfname()));
+    ensure(sys::fs::timestamp("testds/2007/07-08.grib1") <= sys::fs::timestamp("testds/2007/07-08.grib1.metadata"));
+    ensure(sys::fs::timestamp("testds/2007/07-08.grib1.metadata") <= sys::fs::timestamp("testds/2007/07-08.grib1.summary"));
+    ensure(sys::fs::timestamp("testds/2007/07-08.grib1.summary") <= sys::fs::timestamp("testds/" + idxfname()));
 	ensure(files::hasDontpackFlagfile("testds"));
 
 	ensure_localds_clean(1, 2);
@@ -174,9 +174,9 @@ void to::test<2>()
 	ensure(sys::fs::exists("testds/20/2007.grib1.metadata"));
 	ensure(sys::fs::exists("testds/20/2007.grib1.summary"));
 	ensure(sys::fs::exists("testds/" + idxfname()));
-	ensure(files::timestamp("testds/20/2007.grib1") <= files::timestamp("testds/20/2007.grib1.metadata"));
-	ensure(files::timestamp("testds/20/2007.grib1.metadata") <= files::timestamp("testds/20/2007.grib1.summary"));
-	ensure(files::timestamp("testds/20/2007.grib1.summary") <= files::timestamp("testds/" + idxfname()));
+    ensure(sys::fs::timestamp("testds/20/2007.grib1") <= sys::fs::timestamp("testds/20/2007.grib1.metadata"));
+    ensure(sys::fs::timestamp("testds/20/2007.grib1.metadata") <= sys::fs::timestamp("testds/20/2007.grib1.summary"));
+    ensure(sys::fs::timestamp("testds/20/2007.grib1.summary") <= sys::fs::timestamp("testds/" + idxfname()));
 	
 	// Dataset is fine and clean
 	ensure_localds_clean(1, 2, &cfg);

@@ -215,9 +215,9 @@ bool isCompressed(const std::string& file)
 
 time_t timestamp(const std::string& file)
 {
-	time_t res = files::timestamp(file);
-	if (res != 0) return res;
-	return files::timestamp(file + ".gz");
+    time_t res = sys::fs::timestamp(file, 0);
+    if (res != 0) return res;
+    return sys::fs::timestamp(file + ".gz", 0);
 }
 
 void compress(const std::string& file, size_t groupsize)

@@ -60,7 +60,7 @@ MdBuf::MdBuf(const std::string& pathname)
         if (!mds.empty())
         {
             string sumfname = pathname + ".summary";
-            if (utils::files::timestamp(pathname) <= utils::files::timestamp(sumfname))
+            if (sys::fs::timestamp(pathname, 0) <= sys::fs::timestamp(sumfname, 0))
                 sum.readFile(sumfname);
             else
             {

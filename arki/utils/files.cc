@@ -113,75 +113,12 @@ bool hasDontpackFlagfile(const std::string& dir)
     return sys::fs::exists(str::joinpath(dir, FLAGFILE_DONTPACK));
 }
 
-
-time_t timestamp(const std::string& file)
-{
-    std::auto_ptr<struct stat> st = sys::fs::stat(file);
-    return st.get() == NULL ? 0 : st->st_mtime;
-}
-
-size_t size(const std::string& file)
-{
-    std::auto_ptr<struct stat> st = sys::fs::stat(file);
-    return st.get() == NULL ? 0 : (size_t)st->st_size;
-}
-
-ino_t inode(const std::string& file)
-{
-    std::auto_ptr<struct stat> st = sys::fs::stat(file);
-    return st.get() == NULL ? 0 : st->st_ino;
-}
-
 std::string read_file(const std::string &file)
 {
     if (file == "-")
-    {
-        string res;
-        int c;
-        while ((c = getc(stdin)) != EOF)
-            res.append(1, c);
-        return res;
-    }
+        return sys::fs::readFile(cin, "(stdin)");
     else
         return sys::fs::readFile(file);
-}
-
-void write_file(const std::string &file, const std::string& contents)
-{
-    char fbuf[file.size() + 7];
-    memcpy(fbuf, file.data(), file.size());
-    memcpy(fbuf + file.size(), "XXXXXX", 7);
-    int fd = mkstemp(fbuf);
-    if (fd < 0)
-        throw wibble::exception::System("creating temp file " + string(fbuf));
-    ssize_t res = write(fd, contents.data(), contents.size());
-    if (res != (ssize_t)contents.size())
-        throw wibble::exception::System(str::fmtf("writing %d bytes to %s", contents.size(), fbuf));
-    if (close(fd) < 0)
-        throw wibble::exception::System("closing file " + string(fbuf));
-    if (rename(fbuf, file.c_str()) < 0)
-        throw wibble::exception::System("renaming file " + string(fbuf) + " to " + file);
-}
-
-std::string find_executable(const std::string& name)
-{
-    // argv[0] has an explicit path: ensure it becomes absolute
-    if (name.find('/') != string::npos)
-        return sys::fs::abspath(name);
-
-    // argv[0] has no explicit path, look for it in $PATH
-    const char* path = getenv("PATH");
-    if (path == NULL)
-        return name;
-    str::Split splitter(":", path);
-    for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-    {
-        string candidate = str::joinpath(*i, name);
-        if (sys::fs::access(candidate, X_OK))
-            return sys::fs::abspath(candidate);
-    }
-
-    return name;
 }
 
 void resolve_path(const std::string& pathname, std::string& basedir, std::string& relname)

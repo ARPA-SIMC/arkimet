@@ -4,7 +4,7 @@
 /*
  * utils - General utility functions
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,9 +42,6 @@ template<int x> struct static_assert_test{};
 #define ARKI_STATIC_ASSERT( B ) \
 	typedef ::arki::utils::static_assert_test<\
 		sizeof(::arki::utils::STATIC_ASSERTION_FAILURE<(bool)(B)>)> arki_utils_static_assert_typedef_ ## __LINE__
-
-/// Read the entire contents of a file into a string
-std::string readFile(std::istream& file, const std::string& filename);
 
 /// Create an empty file, succeeding if it already exists
 void createFlagfile(const std::string& pathname);

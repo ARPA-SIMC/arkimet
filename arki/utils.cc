@@ -1,7 +1,7 @@
 /*
  * utils - General utility functions
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,23 +66,6 @@ char *mkdtemp(char *dir_template) {
 
 namespace arki {
 namespace utils {
-
-std::string readFile(std::istream& input, const std::string& filename)
-{
-	static const size_t bufsize = 4096;
-	char buf[bufsize];
-	string res;
-	while (true)
-	{
-		input.read(buf, bufsize);
-		res += string(buf, input.gcount());
-		if (input.eof())
-			break;
-		if (input.fail())
-			throw wibble::exception::File(filename, "reading data");
-	}
-	return res;
-}
 
 void createFlagfile(const std::string& pathname)
 {

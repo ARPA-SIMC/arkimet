@@ -643,8 +643,8 @@ void to::test<10>()
 		ensure(not c.isClean());
 	}
 
-	ensure(sys::fs::exists("testds/foo/bar/test.grib1.tmp"));
-	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412u);
+    ensure(sys::fs::exists("testds/foo/bar/test.grib1.tmp"));
+    ensure_equals(sys::fs::size("testds/foo/bar/test.grib1"), 44412u);
 
 	// Perform packing and check that things are still ok afterwards
 	{
@@ -656,7 +656,7 @@ void to::test<10>()
 	}
 	ensure_maint_clean(1);
 
-	ensure_equals(utils::files::size("testds/foo/bar/test.grib1"), 44412u);
+    ensure_equals(sys::fs::size("testds/foo/bar/test.grib1"), 44412u);
 
 	// Test querying
 	{

@@ -252,8 +252,8 @@ void Writer::flush()
 	for (std::map<std::string, Datafile*>::iterator i = m_df_cache.begin();
 			i != m_df_cache.end(); ++i)
 	{
-		m_mft->acquire(i->first, utils::files::timestamp(i->second->mdbuf.pathname), i->second->mdbuf.sum);
-		delete i->second;
+        m_mft->acquire(i->first, sys::fs::timestamp(i->second->mdbuf.pathname, 0), i->second->mdbuf.sum);
+        delete i->second;
 	}
 	m_df_cache.clear();
 	m_mft->flush();
@@ -350,9 +350,9 @@ size_t Writer::repackFile(const std::string& relpath)
 	sys::fs::deleteIfExists(pathname + ".metadata");
 	sys::fs::deleteIfExists(pathname + ".summary");
 
-	size_t size_pre = files::size(pathname);
-	size_t size_post = files::size(pntmp);
-	
+    size_t size_pre = sys::fs::size(pathname);
+    size_t size_post = sys::fs::size(pntmp);
+
 	// Rename the data file with to final name
 	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
 		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
@@ -367,9 +367,9 @@ size_t Writer::repackFile(const std::string& relpath)
 	mdc.sendTo(mds);
 	sum.writeAtomically(pathname + ".summary");
 
-	// Reindex with the new file information
-	time_t mtime = files::timestamp(pathname);
-	m_mft->acquire(relpath, mtime, sum);
+    // Reindex with the new file information
+    time_t mtime = sys::fs::timestamp(pathname);
+    m_mft->acquire(relpath, mtime, sum);
 
 	return size_pre - size_post;
 }
@@ -379,8 +379,8 @@ size_t Writer::removeFile(const std::string& relpath, bool withData)
 	m_mft->remove(relpath);
 	if (withData)
 	{
-		string pathname = str::joinpath(m_path, relpath);
-		size_t size = files::size(pathname);
+        string pathname = str::joinpath(m_path, relpath);
+        size_t size = sys::fs::size(pathname);
 		if (unlink(pathname.c_str()) < 0)
 			throw wibble::exception::System("removing " + pathname);
 		return size;

@@ -401,7 +401,7 @@ void to::test<6>()
 	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
-	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412*2);
+    wassert(actual(sys::fs::size("testdir/foo/bar/test.grib1")) == 44412*2);
 
 	{
 		// Test querying: reindexing should have chosen the last version of
@@ -431,7 +431,7 @@ void to::test<6>()
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
-	ensure_equals(utils::files::size("testdir/foo/bar/test.grib1"), 44412);
+    wassert(actual(sys::fs::size("testdir/foo/bar/test.grib1")) == 44412);
 
 	// Test querying, and see that things have moved to the beginning
 	Reader reader(cfg);

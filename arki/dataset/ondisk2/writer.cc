@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk2/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -589,8 +589,8 @@ size_t Writer::repackFile(const std::string& relpath)
 	m_idx.scan_file(relpath, copier, "reftime, offset");
 	copier.flush();
 
-	size_t size_pre = files::size(pathname);
-	size_t size_post = files::size(pntmp);
+    size_t size_pre = sys::fs::size(pathname);
+    size_t size_post = sys::fs::size(pntmp);
 
 	// Remove the .metadata file if present, because we are shuffling the
 	// data file and it will not be valid anymore
@@ -619,7 +619,7 @@ size_t Writer::removeFile(const std::string& relpath, bool withData)
 	if (withData)
 	{
 		string pathname = str::joinpath(m_path, relpath);
-		size_t size = files::size(pathname);
+        size_t size = sys::fs::size(pathname);
 		if (unlink(pathname.c_str()) < 0)
 			throw wibble::exception::System("removing " + pathname);
 		return size;
@@ -646,15 +646,15 @@ void Writer::archiveFile(const std::string& relpath)
 
 size_t Writer::vacuum()
 {
-	size_t size_pre = 0, size_post = 0;
-	if (files::size(m_idx.pathname()) > 0)
-	{
-		size_pre = files::size(m_idx.pathname())
-				+ files::size(m_idx.pathname() + "-journal");
-		m_idx.vacuum();
-		size_post = files::size(m_idx.pathname())
-				+ files::size(m_idx.pathname() + "-journal");
-	}
+    size_t size_pre = 0, size_post = 0;
+    if (sys::fs::size(m_idx.pathname(), 0) > 0)
+    {
+        size_pre = sys::fs::size(m_idx.pathname(), 0)
+                 + sys::fs::size(m_idx.pathname() + "-journal", 0);
+        m_idx.vacuum();
+        size_post = sys::fs::size(m_idx.pathname(), 0)
+                  + sys::fs::size(m_idx.pathname() + "-journal", 0);
+    }
 
 	// Rebuild the cached summaries, if needed
 	if (!sys::fs::exists(str::joinpath(m_path, ".summaries/all.summary")))

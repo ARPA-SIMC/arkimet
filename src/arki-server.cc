@@ -1119,7 +1119,7 @@ struct ServerProcess : public sys::ChildProcess
 
     void restart()
     {
-        string argv0 = utils::files::find_executable(restart_argv[0]);
+        string argv0 = sys::fs::findExecutable(restart_argv[0]);
         log << log::ERR << "Restarting server " << argv0 << endl;
 
         // Build argument and environment lists

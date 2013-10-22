@@ -133,8 +133,8 @@ void to::test<1>()
 		// Metadata and summaries are now there
 		ensure(sys::fs::exists(mdfname));
 		ensure(sys::fs::exists(sumfname));
-		inomd = utils::files::inode(mdfname);
-		inosum = utils::files::inode(sumfname);
+        inomd = sys::fs::inode(mdfname);
+        inosum = sys::fs::inode(sumfname);
 
 		// Get another metadata
 		ensure(scanner.next(md));
@@ -151,14 +151,14 @@ void to::test<1>()
         wassert(actual(s->size) == size);
         wassert(actual(s->filename).endswith(fname));
 
-		// Metadata and summaries don't get touched
-		ensure_equals(utils::files::inode(mdfname), inomd);
-		ensure_equals(utils::files::inode(sumfname), inosum);
-	}
+        // Metadata and summaries don't get touched
+        ensure_equals(sys::fs::inode(mdfname), inomd);
+        ensure_equals(sys::fs::inode(sumfname), inosum);
+    }
 
-	// After Datafile is destroyed, metadata and summaries are flushed
-	ensure(utils::files::inode(mdfname) != inomd);
-	ensure(utils::files::inode(sumfname) != inosum);
+    // After Datafile is destroyed, metadata and summaries are flushed
+    ensure(sys::fs::inode(mdfname) != inomd);
+    ensure(sys::fs::inode(sumfname) != inosum);
 }
 
 // Test remove and pack

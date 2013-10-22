@@ -126,32 +126,9 @@ void to::test<4>()
 	ensure(!hasDontpackFlagfile(name));
 }
 
-// Test timestamp
-template<> template<>
-void to::test<5>()
-{
-	ensure_equals(timestamp("commontest/a"), 0);
-	utils::createFlagfile("commontest/a");
-	ensure(timestamp("commontest/a") != 0);
-    sys::fs::unlink("commontest/a");
-	ensure_equals(timestamp("commontest/a"), 0);
-}
-
-// Test readFile and writeFile
-template<> template<>
-void to::test<6>()
-{
-    using namespace arki::utils::files;
-    string test("ciao");
-
-    write_file("testfile", test);
-    string test1 = read_file("testfile");
-    wassert(actual(test1) == test);
-}
-
 // Test resolve_path
 template<> template<>
-void to::test<7>()
+void to::test<5>()
 {
     using namespace arki::utils::files;
     string basedir, relname;
@@ -171,7 +148,7 @@ void to::test<7>()
 
 // Test format_from_ext
 template<> template<>
-void to::test<8>()
+void to::test<6>()
 {
     using namespace arki::utils::files;
 

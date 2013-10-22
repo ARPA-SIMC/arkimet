@@ -25,6 +25,7 @@
 
 #include <string>
 #include <sys/types.h>
+#include <iosfwd>
 
 #define FLAGFILE_REBUILD ".needs-rebuild"
 #define FLAGFILE_PACK ".needs-pack"
@@ -88,35 +89,11 @@ void removeDontpackFlagfile(const std::string& dir);
 /// Check if a file exists
 bool hasDontpackFlagfile(const std::string& dir);
 
-
-/// File mtime (or 0 if the file does not exist)
-time_t timestamp(const std::string& file);
-
-/// File size (or 0 if the file does not exist)
-size_t size(const std::string& file);
-
-/// File inode number (or 0 if the file does not exist)
-ino_t inode(const std::string& file);
-
 /**
  * Same as wibble::sys::fs::readFile, but if \a file is "-" then reads all from
  * stdin
  */
 std::string read_file(const std::string &file);
-
-/**
- * Atomically writes a string to a file, replacing all existing contents
- */
-void write_file(const std::string &file, const std::string& contents);
-
-/**
- * Compute the absolute path of an executable.
- *
- * If \a name is specified as a partial path, it ensures it is made absolute.
- * If \a name is not specified as a path, it looks for the executable in $PATH
- * and return its absolute pathname.
- */
-std::string find_executable(const std::string& name);
 
 /**
  * Normalise a pathname and resolve it in the file system.

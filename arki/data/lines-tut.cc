@@ -27,6 +27,7 @@
 #include "arki/data/lines.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
+#include <wibble/sys/fs.h>
 #include <sstream>
 
 namespace std {
@@ -92,20 +93,20 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, data::Writer dw, Metadata& m
     // Make a snapshot of everything before appending
     Item<types::Source> orig_source = md.source;
     size_t data_size = datasize(md);
-    size_t orig_fsize = files::size(dw.fname());
+    size_t orig_fsize = sys::fs::size(dw.fname(), 0);
 
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
     wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(files::size(dw.fname())) == orig_fsize);
+    wassert(actual(sys::fs::size(dw.fname())) == orig_fsize);
     wassert(actual(md.source) == orig_source);
 
     // Commit
     p.commit();
 
     // After commit, data is appended
-    wassert(actual(files::size(dw.fname())) == orig_fsize + data_size + 1);
+    wassert(actual(sys::fs::size(dw.fname())) == orig_fsize + data_size + 1);
 
     // And metadata is updated
     UItem<Blob> s = md.source.upcast<Blob>();
@@ -119,20 +120,20 @@ void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer dw, Metad
 {
     // Make a snapshot of everything before appending
     Item<types::Source> orig_source = md.source;
-    size_t orig_fsize = files::size(dw.fname());
+    size_t orig_fsize = sys::fs::size(dw.fname(), 0);
 
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw.append(md, &ofs);
     wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(files::size(dw.fname())) == orig_fsize);
+    wassert(actual(sys::fs::size(dw.fname(), 0)) == orig_fsize);
     wassert(actual(md.source) == orig_source);
 
     // Rollback
     p.rollback();
 
     // After rollback, nothing has changed
-    wassert(actual(files::size(dw.fname())) == orig_fsize);
+    wassert(actual(sys::fs::size(dw.fname(), 0)) == orig_fsize);
     wassert(actual(md.source) == orig_source);
 }
 
@@ -149,7 +150,7 @@ void to::test<1>()
 
         // It should exist but be empty
         wassert(actual(fname).fileexists());
-        wassert(actual(files::size(fname)) == 0u);
+        wassert(actual(sys::fs::size(fname)) == 0u);
 
         // Try a successful transaction
         wruntest(test_append_transaction_ok, dw, mdc[0]);
@@ -184,7 +185,7 @@ void to::test<2>()
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
         w->truncate(0x7FFFFFFF);
-        wassert(actual(files::size(fname)) == 0x7FFFFFFFu);
+        wassert(actual(sys::fs::size(fname)) == 0x7FFFFFFFu);
 
         // Try a successful transaction
         wruntest(test_append_transaction_ok, dw, mdc[0]);
@@ -196,7 +197,7 @@ void to::test<2>()
         wruntest(test_append_transaction_ok, dw, mdc[2]);
     }
 
-    wassert(actual(files::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2);
+    wassert(actual(sys::fs::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2);
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros
