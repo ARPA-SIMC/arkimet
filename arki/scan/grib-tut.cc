@@ -705,11 +705,16 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
+    WIBBLE_TEST_INFO(info);
+
     // Shortcut to read one single GRIB from a file
     struct OneGrib : public Metadata
     {
+        wibble::tests::LocationInfo& wibble_test_location_info;
+        OneGrib(wibble::tests::LocationInfo& info) : wibble_test_location_info(info) {}
         void read(const char* fname)
         {
+            wibble_test_location_info() << "Sample: " << fname;
             metadata::Collection mdc;
             wrunchecked(scan::scan(fname, mdc));
             wassert(actual(mdc.size()) == 1u);
@@ -763,7 +768,7 @@ void to::test<10>()
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
     }
 
-    OneGrib md;
+    OneGrib md(info);
 
     md.read("inbound/cosmonudging-t203.grib1");
     wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
@@ -812,21 +817,9 @@ void to::test<10>()
     wassert(actual(md).contains("timerange", "Timedef(6h,254,0s)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
 
-    md.read("inbound/cosmo/fcist_2.grib2");
-    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(12h,254,0s)"));
-    wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
-
     md.read("inbound/cosmo/fcproc_1.grib");
     wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(6h,1,6h)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
-
-    md.read("inbound/cosmo/fcproc_1.grib2");
-    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(12h,1,12h)"));
-    wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
-
-    md.read("inbound/cosmo/fcproc_2.grib2");
-    wassert(actual(md).contains("timerange", "Timedef(15h,2,3h)"));
-    wassert(actual(md).contains("proddef", "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"));
 
     md.read("inbound/cosmo/fcproc_3.grib2");
     wassert(actual(md).contains("timerange", "Timedef(48h,1,24h)"));
