@@ -87,6 +87,13 @@ void SQLiteDB::exec(const std::string& query)
 	       	throw SQLiteError(err, "executing query " + query);
 }
 
+void SQLiteDB::checkpoint()
+{
+    int rc = sqlite3_wal_checkpoint_v2(m_db, NULL, SQLITE_CHECKPOINT_RESTART, NULL, NULL);
+    if (rc != SQLITE_OK)
+        throw SQLiteError(m_db, "checkpointing database");
+}
+
 int SQLiteDB::lastInsertID()
 {
 #if 0

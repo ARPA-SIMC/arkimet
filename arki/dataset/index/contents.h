@@ -361,6 +361,9 @@ public:
 
 	/// Tidy up the database and reclaim deleted space
 	void vacuum();
+
+    /// Flush the journal contents to the main database
+    void flush();
 };
 
 }

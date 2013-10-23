@@ -269,6 +269,7 @@ void Writer::flush()
 {
     // Clearing will also call the destructors of all data::Writers
     m_df_cache.clear();
+	m_idx.flush();
 }
 
 Pending Writer::test_writelock()

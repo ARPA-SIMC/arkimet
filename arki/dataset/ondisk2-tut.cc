@@ -176,34 +176,33 @@ void to::test<1>()
 	// Clean the dataset
 	system("rm -rf test200/*");
 
-	Metadata md;
-	scan::Grib scanner;
-	scanner.open("inbound/test.grib1");
+	metadata::Collection mdc;
+	wassert(actual(scan::scan("inbound/test.grib1", mdc)).istrue());
 
 	dataset::ondisk2::Writer d200(*config.section("test200"));
-	ensure(scanner.next(md));
 
 	// Import once in the empty dataset
-	WritableDataset::AcquireResult res = d200.acquire(md);
+	WritableDataset::AcquireResult res = d200.acquire(mdc[0]);
 	ensure_equals(res, WritableDataset::ACQ_OK);
 	#if 0
 	for (vector<Note>::const_iterator i = md.notes.begin();
 			i != md.notes.end(); ++i)
 		cerr << *i << endl;
 	#endif
-	UItem<types::AssignedDataset> ds = getDataset(md);
+	UItem<types::AssignedDataset> ds = getDataset(mdc[0]);
 	ensure_equals(ds->name, "test200");
 	ensure_equals(ds->id, "1");
 
 	// See if we catch duplicate imports
-	md.unset(types::TYPE_ASSIGNEDDATASET);
-	res = d200.acquire(md);
+	mdc[0].unset(types::TYPE_ASSIGNEDDATASET);
+	res = d200.acquire(mdc[0]);
 	ensure_equals(res, WritableDataset::ACQ_ERROR_DUPLICATE);
-	ds = md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+	ds = mdc[0].get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
 	ensure(!ds.defined());
 
 	// Flush the changes and check that everything is allright
 	d200.flush();
+
 	ensure(sys::fs::exists("test200/2007/07-08.grib1"));
 	ensure(sys::fs::exists("test200/index.sqlite"));
     ensure(sys::fs::timestamp("test200/2007/07-08.grib1") <= sys::fs::timestamp("test200/index.sqlite"));

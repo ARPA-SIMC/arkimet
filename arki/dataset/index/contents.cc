@@ -1310,6 +1310,11 @@ void WContents::vacuum()
 	m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
+void WContents::flush()
+{
+    m_db.checkpoint();
+}
+
 }
 }
 }

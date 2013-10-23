@@ -104,6 +104,9 @@ public:
 
 	/// Get the message describing the last error message
 	std::string errmsg() const { return sqlite3_errmsg(m_db); }
+
+	/// Checkpoint the journal contents into the database file
+	void checkpoint();
 };
 
 /**
