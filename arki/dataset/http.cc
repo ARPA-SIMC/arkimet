@@ -264,7 +264,7 @@ struct MDStreamState : public ReqState
 	metadata::Stream mdc;
 
     MDStreamState(http::CurlEasy& curl, metadata::Consumer& consumer, const std::string& baseurl)
-        : ReqState(curl), mdc(consumer, "HTTP download from " + baseurl)
+        : ReqState(curl), mdc(consumer, baseurl)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
         checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
