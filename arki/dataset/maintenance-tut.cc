@@ -302,7 +302,9 @@ void to::test<4>()
 		s.ensure_line_contains(": 1 file packed");
 		s.ensure_all_lines_seen();
 
-		ensure_maint_clean(1);
+        arki::tests::MaintenanceResults expected(true, 1);
+        expected.by_type[COUNTED_OK] = 1;
+        wassert(actual(writer.get()).maintenance(expected));
 	}
 }
 
