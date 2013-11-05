@@ -104,14 +104,6 @@ function odimh5_horizobj_set_area(md)
 end
 
 function odimh5_xsec_set_area(md)
-	local lons = {
-		find_mandatory_attr("/where", "start_lon"),
-		find_mandatory_attr("/where", "stop_lon"),
-	}
-	local lats = {
-		find_mandatory_attr("/where", "start_lat"),
-		find_mandatory_attr("/where", "stop_lat"),
-	}
 	md:set(arki_area.grib{
 		type=0,
 		latfirst=find_mandatory_attr("/where", "start_lat")*1000000,
