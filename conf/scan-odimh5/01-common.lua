@@ -103,6 +103,24 @@ function odimh5_horizobj_set_area(md)
 	})
 end
 
+function odimh5_xsec_set_area(md)
+	local lons = {
+		find_mandatory_attr("/where", "start_lon"),
+		find_mandatory_attr("/where", "stop_lon"),
+	}
+	local lats = {
+		find_mandatory_attr("/where", "start_lat"),
+		find_mandatory_attr("/where", "stop_lat"),
+	}
+	md:set(arki_area.grib{
+		type=0,
+		latfirst=find_mandatory_attr("/where", "start_lat")*1000000,
+		latlast=find_mandatory_attr("/where", "stop_lat")*1000000,
+		lonfirst=find_mandatory_attr("/where", "start_lon")*1000000,
+		lonlast=find_mandatory_attr("/where", "stop_lon")*1000000,
+	})
+end
+
 function scan(md)
 	local conventions = find_mandatory_attr("/", "Conventions")
 	-- reftime
@@ -155,5 +173,16 @@ function scan(md)
 		elseif odimh5:find_attr("/dataset2/what", "product") and odimh5:find_attr("/dataset3/what", "product") then
 			md:set(arki_product.odimh5(object, "HVMI"))
 		end
+	elseif object == "XSEC" then
+		-- product
+		local product = find_mandatory_attr("/dataset1/what", "product")
+		md:set(arki_product.odimh5(object, product))
+		-- task
+		local task = find_mandatory_attr("/how", "task")
+		md:set(arki_task.new(task))
+		-- quantity
+		odimh5_set_quantity(md)
+		-- area
+		odimh5_xsec_set_area(md)
 	end
 end

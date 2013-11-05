@@ -1188,10 +1188,72 @@ void to::test<18>()
 
 	ensure(not scanner.next(md));
 }
+template<> template<>
+void to::test<19>()
+{
+	Metadata md;
+	scan::OdimH5 scanner;
+	wibble::sys::Buffer buf;
+	ValueBag vb;
+
+	scanner.open("inbound/odimh5/XSEC_v21.h5");
+	ensure(scanner.next(md));
+
+    // Check the source info
+    wassert(actual(md.source).sourceblob_is("odimh5", sys::fs::abspath("."), "inbound/odimh5/XSEC_v21.h5", 0, 19717));
+
+	// Check that the source can be read properly
+	buf = md.getData();
+	ensure_equals(buf.size(), 19717u);
+	ensure_equals(string((const char*)buf.data(), 1, 3), "HDF");
+
+	// Check notes
+	if (md.notes().size() != 1)
+	{
+		for (size_t i = 0; i < md.notes().size(); ++i)
+			cerr << md.notes()[i] << endl;
+		ensure_equals(md.notes().size(), 1u);
+	}
+
+	// Check origin
+	ensure(md.get(types::TYPE_ORIGIN).defined());
+	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::ODIMH5::create("16144","IY46","itspc")));
+
+	// Check product
+	ensure(md.get(types::TYPE_PRODUCT).defined());
+	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::ODIMH5::create("XSEC", "XSEC")));
+
+	// Check level
+	ensure(!md.get(types::TYPE_LEVEL).defined());
+
+	// Check reftime
+	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
+	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2013,11,4,14,10,0))));
+
+	// Check task
+	ensure(md.get(types::TYPE_TASK).defined());
+	ensure_equals(md.get(types::TYPE_TASK), Item<>(types::Task::create("XZS")));
+
+	// Check quantities
+	ensure(md.get(types::TYPE_QUANTITY).defined());
+	ensure_equals(md.get(types::TYPE_QUANTITY), Item<>(types::Quantity::create("DBZH")));
+
+	// Check area
+	vb.clear();
+	vb.set("latfirst", Value::createInteger(44320636));
+	vb.set("lonfirst", Value::createInteger(11122189));
+	vb.set("latlast", Value::createInteger(44821945));
+	vb.set("lonlast", Value::createInteger(12546566));
+	vb.set("type", Value::createInteger(0));
+	ensure(md.get(types::TYPE_AREA).defined());
+	ensure_equals(md.get(types::TYPE_AREA), Item<>(area::GRIB::create(vb)));
+
+	ensure(not scanner.next(md));
+}
 
 // Check that the scanner silently discard an empty file
 template<> template<>
-void to::test<19>()
+void to::test<20>()
 {
 	Metadata md;
 	scan::OdimH5 scanner;
