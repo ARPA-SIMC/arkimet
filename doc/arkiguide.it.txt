@@ -1,6 +1,6 @@
 = ArkiGuida =
 Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
-v0.6, 2013-09-05
+v0.7, 2013-12-04
 :lang: it
 
 == Introduzione ==
@@ -458,7 +458,7 @@ Per sapere quali alias sono definiti sull'arki-server in ascolto all'indirizzo
 arki-dump --aliases http://localhost:8080/
 ----
 
-oppure consultare l'url http://localhost:8080/aliases/
+oppure consultare l'url `http://localhost:8080/aliases/`
 
 
 .Esempi di alias
@@ -615,7 +615,7 @@ $ curl http://my-host:8090/dataset/lmsmr4x52/query \
 NOTE: `curl` non è strettamente necessario ma l'opzione `--data-urlencode` 
 permette di gestire agevolmente l'encoding dei caratteri non alfanumerici.
 L'url completo sarebbe qualcosa tipo:
-http://my-host:8090/dataset/lmsmr4x52/query?query=Reftime%3A%3Dtoday%3Btimerange%3AGRIB1%2C0%2C0&style=data
+`http://my-host:8090/dataset/lmsmr4x52/query?query=Reftime%3A%3Dtoday%3Btimerange%3AGRIB1%2C0%2C0&style=data`
 
 == Estensioni ==
 
