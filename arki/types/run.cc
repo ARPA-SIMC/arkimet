@@ -146,7 +146,7 @@ static int arkilua_new_minute(lua_State* L)
 
 void Run::lua_loadlib(lua_State* L)
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "minute", arkilua_new_minute },
 		{ NULL, NULL }
 	};

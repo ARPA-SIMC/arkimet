@@ -224,7 +224,7 @@ static int arkilua_tostring(lua_State *L)
 	return 1;
 }
 
-static const struct luaL_reg readonlydatasetlib [] = {
+static const struct luaL_Reg readonlydatasetlib [] = {
 	{ "queryData", arkilua_queryData },
 	{ "querySummary", arkilua_querySummary },
 	{ "__tostring", arkilua_tostring },

@@ -279,7 +279,7 @@ static int arkilua_new_vm2(lua_State* L)
 
 void Product::lua_loadlib(lua_State* L)
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
 		{ "bufr", arkilua_new_bufr },
@@ -643,7 +643,7 @@ void BUFR::lua_register_methods(lua_State* L) const
 {
 	Product::lua_register_methods(L);
 
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "addValues", arkilua_addvalues },
 		{ NULL, NULL }
 	};
@@ -768,7 +768,7 @@ void ODIMH5::lua_register_methods(lua_State* L) const
 {
 	Product::lua_register_methods(L);
 
-//	static const struct luaL_reg lib [] = {
+//	static const struct luaL_Reg lib [] = {
 //		{ "addName", arkilua_addname },
 //		{ NULL, NULL }
 //	};

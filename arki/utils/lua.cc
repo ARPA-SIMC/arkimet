@@ -39,7 +39,7 @@ namespace arki {
 Lua::Lua() : L(0)
 {
 	// Initialise the lua logic
-	L = lua_open();
+	L = luaL_newstate();
 
 	// NOTE: This one is optional: only use it for debugging
 	#if LUA_VERSION_NUM >= 501

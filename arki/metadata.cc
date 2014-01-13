@@ -884,7 +884,7 @@ static int arkilua_gc (lua_State *L)
 	return 0;
 }
 
-static const struct luaL_reg metadatalib [] = {
+static const struct luaL_Reg metadatalib [] = {
 	{ "__newindex", arkilua_newindex },
 	{ "__gc", arkilua_gc },
     { "__eq", arkilua_eq },
@@ -943,7 +943,7 @@ static int arkilua_new(lua_State* L)
 	return 1;
 }
 
-static const struct luaL_reg classlib [] = {
+static const struct luaL_Reg classlib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
 };

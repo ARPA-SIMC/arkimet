@@ -192,7 +192,7 @@ static int arkilua_new_vm2(lua_State* L)
 
 void Area::lua_loadlib(lua_State* L)
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "grib", arkilua_new_grib },
 		{ "odimh5", arkilua_new_odimh5 },
 		{ "vm2", arkilua_new_vm2 },

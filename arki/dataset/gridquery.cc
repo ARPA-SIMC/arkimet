@@ -395,12 +395,12 @@ static int arkilua_expecteditems(lua_State *L)
 	return 1;
 }
 
-static const struct luaL_reg gridqueryclasslib [] = {
+static const struct luaL_Reg gridqueryclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
 };
 
-static const struct luaL_reg gridquerylib [] = {
+static const struct luaL_Reg gridquerylib [] = {
 	{ "add", arkilua_add },
 	{ "addtime", arkilua_addtime },
 	{ "addtimes", arkilua_addtimes },

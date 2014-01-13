@@ -226,7 +226,7 @@ static int arkilua_gc (lua_State *L)
 
 void Type::lua_register_methods(lua_State* L) const
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "__index", arkilua_index },
 		{ "__tostring", arkilua_tostring },
 		{ "__gc", arkilua_gc },

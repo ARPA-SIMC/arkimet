@@ -231,7 +231,7 @@ static int arkilua_new_odimh5(lua_State* L)
 
 void Origin::lua_loadlib(lua_State* L)
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "grib1", arkilua_new_grib1 },
 		{ "grib2", arkilua_new_grib2 },
 		{ "bufr", arkilua_new_bufr },

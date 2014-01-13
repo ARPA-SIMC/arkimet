@@ -81,7 +81,7 @@ static int arkilua_tostring(lua_State *L)
 	return 1;
 }
 
-static const struct luaL_reg querymacrolib [] = {
+static const struct luaL_Reg querymacrolib [] = {
 	{ "dataset", arkilua_dataset },	                // qm:dataset(name) -> dataset
 	{ "__tostring", arkilua_tostring },
 	{NULL, NULL}

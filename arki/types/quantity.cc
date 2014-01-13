@@ -209,7 +209,7 @@ static int arkilua_new_quantity(lua_State* L)
 
 void Quantity::lua_loadlib(lua_State* L)
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "new", arkilua_new_quantity },
 		{ NULL, NULL }
 	};

@@ -136,7 +136,7 @@ static int arkilua_new_period(lua_State* L)
 
 void Reftime::lua_loadlib(lua_State* L)
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "position", arkilua_new_position },
 		{ "period", arkilua_new_period },
 		{ NULL, NULL }

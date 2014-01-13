@@ -717,7 +717,9 @@ public:
 
 	void flush()
 	{
-		// Nothing to do: everything is saved right away
+        // Not needed for index data consistency, but we need it to ensure file
+        // timestamps are consistent at this point.
+        m_db.checkpoint();
 	}
 
 	void openRO()

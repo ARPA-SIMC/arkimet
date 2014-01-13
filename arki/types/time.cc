@@ -291,7 +291,7 @@ void Time::lua_register_methods(lua_State* L) const
 {
 	Type::lua_register_methods(L);
 
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "__index", arkilua_lookup },
 		{ NULL, NULL }
 	};
@@ -332,7 +332,7 @@ static int arkilua_new_sql(lua_State* L)
 
 void Time::lua_loadlib(lua_State* L)
 {
-	static const struct luaL_reg lib [] = {
+	static const struct luaL_Reg lib [] = {
 		{ "time", arkilua_new_time },
 		{ "now", arkilua_new_now },
 		{ "iso8601", arkilua_new_iso8601 },

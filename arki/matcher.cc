@@ -516,12 +516,12 @@ static int arkilua_match (lua_State *L)
 	return 1;
 }
 
-static const struct luaL_reg matcherclasslib [] = {
+static const struct luaL_Reg matcherclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
 };
 
-static const struct luaL_reg matcherlib [] = {
+static const struct luaL_Reg matcherlib [] = {
 	{ "match", arkilua_match },
 	{ "expanded", arkilua_expanded },
 	{ "__tostring", arkilua_tostring },

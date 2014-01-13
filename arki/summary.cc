@@ -272,12 +272,12 @@ static int arkilua_tostring (lua_State *L)
     }
 #endif
 
-static const struct luaL_reg summaryclasslib [] = {
+static const struct luaL_Reg summaryclasslib [] = {
     { "new", arkilua_new },
     { NULL, NULL }
 };
 
-static const struct luaL_reg summarylib [] = {
+static const struct luaL_Reg summarylib [] = {
     { "count", arkilua_count },
     { "size", arkilua_size },
     { "data", arkilua_data },
