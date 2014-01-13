@@ -167,7 +167,9 @@ static Item<>* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
 			}
 		}
 	}
-	luaL_typerror(L, idx, "arki.types.*"); // else error
+	// TODO: luaL_typerror(L, idx, "arki.types.*");
+	// discontinued in Lua 5.2
+	luaL_error(L, "arki.types.*");
 	return 0; // to avoid warnings
 }
 static int arkilua_tostring(lua_State* L)
