@@ -530,7 +530,7 @@ void Matcher::lua_push(lua_State* L)
 
 void Matcher::lua_openlib(lua_State* L)
 {
-    utils::lua::add_global_library(L, "arki.matcher", matcherclasslib);
+    utils::lua::add_arki_global_library(L, "matcher", matcherclasslib);
 }
 
 Matcher Matcher::lua_check(lua_State* L, int idx)

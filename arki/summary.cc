@@ -313,7 +313,7 @@ void Summary::lua_push(lua_State* L)
 
 void Summary::lua_openlib(lua_State* L)
 {
-    utils::lua::add_global_library(L, "arki.summary", summaryclasslib);
+    utils::lua::add_arki_global_library(L, "summary", summaryclasslib);
 }
 
 Summary* Summary::lua_check(lua_State* L, int idx)

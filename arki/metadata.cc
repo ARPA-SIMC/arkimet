@@ -949,7 +949,7 @@ static const struct luaL_Reg classlib [] = {
 
 void Metadata::lua_openlib(lua_State* L)
 {
-    utils::lua::add_global_library(L, "arki.metadata", classlib);
+    utils::lua::add_arki_global_library(L, "metadata", classlib);
 }
 
 

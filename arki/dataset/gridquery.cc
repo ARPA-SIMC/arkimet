@@ -448,7 +448,7 @@ GridQuery* GridQuery::lua_check(lua_State* L, int idx)
 
 void GridQuery::lua_openlib(lua_State* L)
 {
-    utils::lua::add_global_library(L, "arki.gridquery", gridqueryclasslib);
+    utils::lua::add_arki_global_library(L, "gridquery", gridqueryclasslib);
 }
 
 #endif

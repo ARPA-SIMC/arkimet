@@ -20,7 +20,7 @@ ensure_equals(md.area, nil)
 
 -- Notes are accessed with md:notes(), as a table
 
-ensure_equals(table.getn(md:notes()), 0)
+ensure_equals(#md:notes(), 0)
 
 -- TODO: there is no currently implemented way to set notes
 
@@ -43,7 +43,7 @@ for name, item in pairs(md:data()) do
 		ensure_equals(item, area)
 		found = found + 1
 	elseif name == "notes" then
-		ensure_equals(table.getn(item), 0)
+		ensure_equals(#item, 0)
 		found = found + 1
 	end
 end
