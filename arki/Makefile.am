@@ -2,6 +2,11 @@
 
 SUBDIRS = .
 
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
+AM_CXXFLAGS = $(EXTRA_CXXFLAGS) $(DEVEL_CXXFLAGS)
+AM_LDFLAGS = $(EXTRA_LDFLAGS)
+
+
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
@@ -407,8 +412,6 @@ tests_arki_test_SOURCES = \
 		runtime-tut.cc \
 		tests/tut-main.cpp
 tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
-
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS) $(DEVEL_CFLAGS)
 
 if IOTRACE
 libarkimet_core_la_SOURCES += iotrace.cc

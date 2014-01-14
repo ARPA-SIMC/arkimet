@@ -325,21 +325,23 @@ dnl def_tabledir=`echo "${sharedstatedir}/lib/$PACKAGE/tables"`
 dnl AC_DEFINE_UNQUOTED(TABLE_DIR, "$def_tabledir", "Default location for table files")
 
 if test x"$GXX" = x"yes"; then
-	CXXFLAGS="-Wall $CXXFLAGS"
+	EXTRA_CXXFLAGS="-Wall"
+	EXTRA_LDFLAGS=""
 fi
 if test x"$CXX" = x"xlc" -o x"$CXX" = x"xlC"; then
 	dnl We need _XOPEN_SOURCE=700 to get mkdtemp on AIX
-	CXXFLAGS="-qrtti=all -qtls=initial-exec $CXXFLAGS"
-	LDFLAGS="-qrtti=all -qtls=initial-exec $LDFLAGS"
+	EXTRA_CXXFLAGS="-qrtti=all -qtls=initial-exec $CXXFLAGS"
+	EXTRA_LDFLAGS="-qrtti=all -qtls=initial-exec $LDFLAGS"
 fi
-LIBS="$LIBS -lm"
+AC_SUBST(EXTRA_CXXFLAGS)
+AC_SUBST(EXTRA_LDFLAGS)
 
 if test x$enable_gcov = xyes
 then
-	DEVEL_CFLAGS="--coverage"
+	DEVEL_CXXFLAGS="--coverage"
 	DEVEL_LIBS="--coverage"
 fi
-AC_SUBST(DEVEL_CFLAGS)
+AC_SUBST(DEVEL_CXXFLAGS)
 AC_SUBST(DEVEL_LIBS)
 
 dnl Conditional to enable GCOV snippets
