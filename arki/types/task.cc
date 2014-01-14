@@ -1,7 +1,7 @@
 /*
  * types/task - Metadata task
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -150,8 +150,7 @@ void Task::lua_loadlib(lua_State* L)
 		{ "new", arkilua_new_task },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_task", lib, 0);
-	lua_pop(L, 1);
+    utils::lua::add_global_library(L, "arki_task", lib);
 }
 #endif
 

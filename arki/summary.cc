@@ -1,7 +1,7 @@
 /*
  * summary - Handle a summary of a group of summary
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -300,7 +300,7 @@ static void arkilua_getmetatable(lua_State* L)
         lua_settable(L, -3);  /* metatable.__index = metatable */
 
         // Load normal methods
-        luaL_register(L, NULL, summarylib);
+        utils::lua::add_functions(L, summarylib);
     }
 }
 
@@ -313,7 +313,7 @@ void Summary::lua_push(lua_State* L)
 
 void Summary::lua_openlib(lua_State* L)
 {
-    luaL_register(L, "arki.summary", summaryclasslib);
+    utils::lua::add_global_library(L, "arki.summary", summaryclasslib);
 }
 
 Summary* Summary::lua_check(lua_State* L, int idx)

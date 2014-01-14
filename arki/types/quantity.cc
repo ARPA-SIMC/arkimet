@@ -1,7 +1,7 @@
 /*
  * types/quantity - Metadata quantity
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -213,8 +213,7 @@ void Quantity::lua_loadlib(lua_State* L)
 		{ "new", arkilua_new_quantity },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_quantity", lib, 0);
-	lua_pop(L, 1);
+    utils::lua::add_global_library(L, "arki_quantity", lib);
 }
 #endif
 

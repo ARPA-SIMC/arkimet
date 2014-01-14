@@ -1,7 +1,7 @@
 /*
  * dataset/gridquery - Lay out a metadata grid and check that metadata fit 
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -279,6 +279,7 @@ void GridQuery::dump(std::ostream& out) const
 }
 
 #ifdef HAVE_LUA
+
 typedef utils::lua::ManagedUD<GridQuery> GridQueryUD;
 
 static void arkilua_getmetatable(lua_State* L);
@@ -426,8 +427,8 @@ static void arkilua_getmetatable(lua_State* L)
 		lua_pushvalue(L, -2);  /* pushes the metatable */
 		lua_settable(L, -3);  /* metatable.__index = metatable */
 
-		// Load normal methods
-		luaL_register(L, NULL, gridquerylib);
+        // Load normal methods
+        utils::lua::add_functions(L, gridquerylib);
 	}
 }
 
@@ -447,8 +448,9 @@ GridQuery* GridQuery::lua_check(lua_State* L, int idx)
 
 void GridQuery::lua_openlib(lua_State* L)
 {
-	luaL_register(L, "arki.gridquery", gridqueryclasslib);
+    utils::lua::add_global_library(L, "arki.gridquery", gridqueryclasslib);
 }
+
 #endif
 
 }

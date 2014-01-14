@@ -1,7 +1,7 @@
 /*
  * types/run - Daily run identification for a periodic data source
  *
- * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -150,8 +150,7 @@ void Run::lua_loadlib(lua_State* L)
 		{ "minute", arkilua_new_minute },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_run", lib, 0);
-	lua_pop(L, 1);
+    utils::lua::add_global_library(L, "arki_run", lib);
 }
 
 

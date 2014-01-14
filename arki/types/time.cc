@@ -253,6 +253,7 @@ bool Time::operator==(const Time& t) const
 }
 
 #ifdef HAVE_LUA
+
 static int arkilua_lookup(lua_State *L)
 {
         Item<Time> item = Type::lua_check(L, 1, "arki.types.time").upcast<Time>();
@@ -295,7 +296,7 @@ void Time::lua_register_methods(lua_State* L) const
 		{ "__index", arkilua_lookup },
 		{ NULL, NULL }
 	};
-	luaL_register(L, NULL, lib);
+    utils::lua::add_functions(L, lib);
 }
 
 static int arkilua_new_time(lua_State* L)
@@ -339,9 +340,9 @@ void Time::lua_loadlib(lua_State* L)
 		{ "sql", arkilua_new_sql },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_time", lib, 0);
-	lua_pop(L, 1);
+    utils::lua::add_global_library(L, "arki_time", lib);
 }
+
 #endif
 
 Item<Time> Time::create()

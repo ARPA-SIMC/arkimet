@@ -1,7 +1,7 @@
 /*
  * types - arkimet metadata type system
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -237,7 +237,7 @@ void Type::lua_register_methods(lua_State* L) const
 		{ "__le", arkilua_le },
 		{ NULL, NULL }
 	};
-	luaL_register(L, NULL, lib);
+    utils::lua::add_functions(L, lib);
 
 	// Set the type name in a special field in the metatable
 	lua_pushstring(L, "__arki_type");

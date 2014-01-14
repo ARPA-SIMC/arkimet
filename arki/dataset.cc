@@ -233,23 +233,7 @@ static const struct luaL_Reg readonlydatasetlib [] = {
 
 void ReadonlyDataset::lua_push(lua_State* L)
 {
-	// The 'grib' object is a userdata that holds a pointer to this Grib structure
-	ReadonlyDataset** s = (ReadonlyDataset**)lua_newuserdata(L, sizeof(ReadonlyDataset*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, "arki.rodataset"));
-	{
-		// If the metatable wasn't previously created, create it now
-		lua_pushstring(L, "__index");
-		lua_pushvalue(L, -2);  /* pushes the metatable */
-		lua_settable(L, -3);  /* metatable.__index = metatable */
-
-		// Load normal methods
-		luaL_register(L, NULL, readonlydatasetlib);
-	}
-
-	lua_setmetatable(L, -2);
+    utils::lua::push_object_ptr(L, this, "arki.rodataset", readonlydatasetlib);
 }
 #endif
 

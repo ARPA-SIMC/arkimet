@@ -823,7 +823,6 @@ static int arkilua_data(lua_State* L)
         n[i]->lua_push(L);
         lua_rawseti(L, -2, i+1);
     }
-    luaL_setn(L, -1, n.size());
     lua_rawset(L, -3);
 
     // Add source
@@ -908,8 +907,8 @@ static void arkilua_metadatametatable(lua_State* L)
 		lua_pushcfunction(L, arkilua_lookup);
 		lua_settable(L, -3);  /* metatable.__index = arkilua_lookup */
 
-		// Load normal methods
-		luaL_register(L, NULL, metadatalib);
+        // Load normal methods
+        utils::lua::add_functions(L, metadatalib);
 	}
 }
 
@@ -950,7 +949,7 @@ static const struct luaL_Reg classlib [] = {
 
 void Metadata::lua_openlib(lua_State* L)
 {
-	luaL_register(L, "arki.metadata", classlib);
+    utils::lua::add_global_library(L, "arki.metadata", classlib);
 }
 
 

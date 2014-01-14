@@ -287,8 +287,8 @@ void Product::lua_loadlib(lua_State* L)
 		{ "vm2", arkilua_new_vm2 },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_product", lib, 0);
-	lua_pop(L, 1);
+
+    utils::lua::add_global_library(L, "arki_product", lib);
 }
 
 namespace product {
@@ -647,7 +647,7 @@ void BUFR::lua_register_methods(lua_State* L) const
 		{ "addValues", arkilua_addvalues },
 		{ NULL, NULL }
 	};
-	luaL_register(L, NULL, lib);
+    utils::lua::add_functions(L, lib);
 }
 
 Product::Style ODIMH5::style() const

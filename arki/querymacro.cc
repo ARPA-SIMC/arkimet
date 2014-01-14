@@ -32,6 +32,7 @@
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
 #include <arki/utils/dataset.h>
+#include <arki/utils/lua.h>
 #include <arki/sort.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -81,7 +82,7 @@ static int arkilua_tostring(lua_State *L)
 	return 1;
 }
 
-static const struct luaL_Reg querymacrolib [] = {
+static const struct luaL_Reg querymacrolib[] = {
 	{ "dataset", arkilua_dataset },	                // qm:dataset(name) -> dataset
 	{ "__tostring", arkilua_tostring },
 	{NULL, NULL}
@@ -94,23 +95,8 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	Matcher::lua_openlib(*L);
 	dataset::GridQuery::lua_openlib(*L);
 
-	// Create the Querymacro object
-	Querymacro** s = (Querymacro**)lua_newuserdata(*L, sizeof(Querymacro*));
-	*s = this;
-
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(*L, "arki.querymacro"));
-	{
-		// If the metatable wasn't previously created, create it now
-		lua_pushstring(*L, "__index");
-		lua_pushvalue(*L, -2);  /* pushes the metatable */
-		lua_settable(*L, -3);  /* metatable.__index = metatable */
-
-		// Load normal methods
-		luaL_register(*L, NULL, querymacrolib);
-	}
-
-	lua_setmetatable(*L, -2);
+    // Create the Querymacro object
+    utils::lua::push_object_ptr(*L, this, "arki.querymacro", querymacrolib);
 
 	// global qmacro = our userdata object
 	lua_setglobal(*L, "qmacro");

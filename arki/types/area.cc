@@ -1,7 +1,7 @@
 /*
  * types/area - Geographical area
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -198,8 +198,7 @@ void Area::lua_loadlib(lua_State* L)
 		{ "vm2", arkilua_new_vm2 },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_area", lib, 0);
-	lua_pop(L, 1);
+    utils::lua::add_global_library(L, "arki_area", lib);
 }
 #endif
 

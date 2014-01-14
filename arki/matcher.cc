@@ -466,26 +466,6 @@ void Matcher::register_matcher(const std::string& name, types::Code code, matche
 }
 
 #ifdef HAVE_LUA
-static void arkilua_matchermetatable(lua_State* L);
-
-static int arkilua_new(lua_State* L)
-{
-	Matcher* ud = (Matcher*)lua_newuserdata(L, sizeof(Matcher));
-	if (lua_gettop(L) == 0)
-		new(ud) Matcher();
-	else
-	{
-		const char* expr = lua_tostring(L, 1);
-		luaL_argcheck(L, expr != NULL, 1, "`string' expected");
-		new(ud) Matcher(Matcher::parse(expr));
-	}
-
-	// Set the summary for the userdata
-	arkilua_matchermetatable(L);
-	lua_setmetatable(L, -2);
-
-	return 1;
-}
 
 static int arkilua_gc (lua_State *L)
 {
@@ -516,46 +496,41 @@ static int arkilua_match (lua_State *L)
 	return 1;
 }
 
+static const struct luaL_Reg matcherlib [] = {
+    { "match", arkilua_match },
+    { "expanded", arkilua_expanded },
+    { "__tostring", arkilua_tostring },
+    { "__gc", arkilua_gc },
+    { NULL, NULL }
+};
+
+static int arkilua_new(lua_State* L)
+{
+    if (lua_gettop(L) == 0)
+        utils::lua::push_object_copy(L, Matcher(), "arki.matcher", matcherlib);
+    else
+    {
+        const char* expr = lua_tostring(L, 1);
+        luaL_argcheck(L, expr != NULL, 1, "`string' expected");
+        utils::lua::push_object_copy(L, Matcher::parse(expr), "arki.matcher", matcherlib);
+    }
+
+    return 1;
+}
+
 static const struct luaL_Reg matcherclasslib [] = {
 	{ "new", arkilua_new },
 	{ NULL, NULL }
 };
 
-static const struct luaL_Reg matcherlib [] = {
-	{ "match", arkilua_match },
-	{ "expanded", arkilua_expanded },
-	{ "__tostring", arkilua_tostring },
-	{ "__gc", arkilua_gc },
-	{ NULL, NULL }
-};
-
-// Push the arki.matcher metatable on the stack, creating it if needed
-static void arkilua_matchermetatable(lua_State* L)
-{
-	if (luaL_newmetatable(L, "arki.matcher"));
-	{
-		// If the metatable wasn't previously created, create it now
-		lua_pushstring(L, "__index");
-		lua_pushvalue(L, -2);  /* pushes the metatable */
-		lua_settable(L, -3);  /* metatable.__index = metatable */
-
-		// Load normal methods
-		luaL_register(L, NULL, matcherlib);
-	}
-}
-
 void Matcher::lua_push(lua_State* L)
 {
-	Matcher* ud = (Matcher*)lua_newuserdata(L, sizeof(Matcher));
-	new(ud) Matcher(*this);
-
-	arkilua_matchermetatable(L);
-	lua_setmetatable(L, -2);
+    utils::lua::push_object_copy(L, *this, "arki.matcher", matcherlib);
 }
 
 void Matcher::lua_openlib(lua_State* L)
 {
-	luaL_register(L, "arki.matcher", matcherclasslib);
+    utils::lua::add_global_library(L, "arki.matcher", matcherclasslib);
 }
 
 Matcher Matcher::lua_check(lua_State* L, int idx)

@@ -141,8 +141,8 @@ void Reftime::lua_loadlib(lua_State* L)
 		{ "period", arkilua_new_period },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_reftime", lib, 0);
-	lua_pop(L, 1);
+
+    utils::lua::add_global_library(L, "arki_reftime", lib);
 }
 
 namespace reftime {

@@ -120,7 +120,11 @@ static vector< pair<double, double> > bbox(lua_State* L)
 			throw wibble::exception::Consistency("reading bounding box", "global variable 'bbox' has not been set");
 		case LUA_TTABLE: {
 			vector< pair<double, double> > res;
+#if LUA_VERSION_NUM >= 502
+			size_t asize = lua_rawlen(L, -1);
+#else
 			size_t asize = lua_objlen(L, -1);
+#endif
 			for (size_t i = 1; i <= asize; ++i)
 			{
 				lua_rawgeti(L, -1, i);

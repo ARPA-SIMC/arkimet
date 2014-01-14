@@ -1,7 +1,7 @@
 /*
  * types/proddef - Product definition
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -126,8 +126,7 @@ void Proddef::lua_loadlib(lua_State* L)
 		{ "grib", arkilua_new_grib },
 		{ NULL, NULL }
 	};
-	luaL_openlib(L, "arki_proddef", lib, 0);
-	lua_pop(L, 1);
+    utils::lua::add_global_library(L, "arki_proddef", lib);
 }
 #endif
 
