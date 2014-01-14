@@ -1,7 +1,7 @@
 /*
  * utils-lua - Lua-specific utility functions
  *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,34 +36,48 @@ using namespace wibble;
 
 namespace arki {
 
-Lua::Lua() : L(0)
+namespace utils {
+namespace lua {
+void dumpstack(lua_State* L, const std::string& title, std::ostream& out);
+}
+}
+
+Lua::Lua(bool load_libs, bool load_arkimet) : L(0)
 {
-	// Initialise the lua logic
-	L = luaL_newstate();
+    // Initialise the lua logic
+    L = luaL_newstate();
 
-	// NOTE: This one is optional: only use it for debugging
-	#if LUA_VERSION_NUM >= 501
-	luaL_openlibs(L);
-	#else
-	luaopen_base(L);              /* opens the basic library */
-	luaopen_table(L);             /* opens the table library */
-	luaopen_io(L);                /* opens the I/O library */
-	luaopen_string(L);            /* opens the string lib. */
-	luaopen_math(L);              /* opens the math lib. */
-	luaopen_loadlib(L);           /* loadlib function */
-	luaopen_debug(L);             /* debug library  */
-	lua_settop(L, 0);
-	#endif
+    if (load_libs)
+        luaL_openlibs(L);
 
-	types::Type::lua_loadlib(L);
-	Metadata::lua_openlib(L);
-	Summary::lua_openlib(L);
-	Matcher::lua_openlib(L);
+    if (load_arkimet)
+    {
+        types::Type::lua_loadlib(L);
+        Metadata::lua_openlib(L);
+        Summary::lua_openlib(L);
+        Matcher::lua_openlib(L);
+    }
 }
 
 Lua::~Lua()
 {
 	if (L) lua_close(L);
+}
+
+std::string Lua::run_string(const std::string& str)
+{
+    if (luaL_dostring(L, str.c_str()))
+    {
+        // Copy the error, so that it will exist after the pop
+        string error = lua_tostring(L, -1);
+        // Pop the error from the stack
+        lua_pop(L, 1);
+        if (error.empty())
+            return "empty error message>";
+        else
+            return error;
+    }
+    return string();
 }
 
 void Lua::functionFromFile(const std::string& name, const std::string& fname)
@@ -113,7 +127,7 @@ std::string Lua::runFunctionSequence(const std::string& prefix, size_t count)
 
 int Lua::backtrace_error_handler(lua_State *L)
 {
-	lua_getfield(L, LUA_GLOBALSINDEX, "debug");
+    lua_getglobal(L, "debug");
 	if (!lua_istable(L, -1)) {
 		lua_pop(L, 1);
 		return 1;
@@ -201,7 +215,8 @@ std::string dumptablekeys(lua_State* L, int index)
 void dumpstack(lua_State* L, const std::string& title, std::ostream& out)
 {
 	out << title << endl;
-	for (int i = lua_gettop(L); i; --i)
+    int top = lua_gettop(L);
+	for (int i = 1; i <= top; ++i)
 	{
 		int t = lua_type(L, i);
 		out << i << ": " << t << ": ";
@@ -228,6 +243,26 @@ void dumpstack(lua_State* L, const std::string& title, std::ostream& out)
 		}
 		out << endl;
 	}
+}
+
+void add_global_library(lua_State* L, const char* name, const luaL_Reg* lib)
+{
+    lua_getglobal(L, name);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+    }
+    luaL_setfuncs(L, lib, 0);
+    lua_setglobal(L, name);
+}
+
+void add_functions(lua_State* L, const luaL_Reg* lib)
+{
+#if LUA_VERSION_NUM >= 502
+        luaL_setfuncs(L, lib, 0);
+#else
+        luaL_register(L, NULL, lib);
+#endif
 }
 
 }
