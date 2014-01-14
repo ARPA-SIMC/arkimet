@@ -76,6 +76,11 @@ void to::test<2>()
     wassert(actual(lua_gettop(L)) == 0);
 
     wassert(actual(L.run_string("if testlib.test() ~= 1 then error('fail') end")) == "");
+
+    utils::lua::add_arki_global_library(L, "testlib", lib);
+    wassert(actual(lua_gettop(L)) == 0);
+
+    wassert(actual(L.run_string("if arki.testlib.test() ~= 1 then error('fail') end")) == "");
 }
 
 template<> template<>

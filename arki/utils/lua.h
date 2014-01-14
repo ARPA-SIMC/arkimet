@@ -152,6 +152,9 @@ int tostring_arkitype(lua_State* L)
  */
 void add_global_library(lua_State* L, const char* name, const luaL_Reg* lib);
 
+/// Same as add_global_library, but registers 'name' inside the 'arki' global table
+void add_arki_global_library(lua_State* L, const char* name, const luaL_Reg* lib);
+
 /**
  * Add functions to the table currently at the top of the stack.
  */

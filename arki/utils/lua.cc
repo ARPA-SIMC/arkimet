@@ -256,6 +256,27 @@ void add_global_library(lua_State* L, const char* name, const luaL_Reg* lib)
     lua_setglobal(L, name);
 }
 
+void add_arki_global_library(lua_State* L, const char* name, const luaL_Reg* lib)
+{
+    // Get/create the 'arki' table
+    lua_getglobal(L, "arki");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        // Push an extra reference to the table, so we still have it on the
+        // stack after lua_setglobal
+        lua_pushvalue(L, -1);
+        lua_setglobal(L, "arki");
+    }
+
+    lua_pushstring(L, name);
+    lua_newtable(L);
+    luaL_setfuncs(L, lib, 0);
+    lua_rawset(L, -3);
+
+    lua_pop(L, 1);
+}
+
 void add_functions(lua_State* L, const luaL_Reg* lib)
 {
 #if LUA_VERSION_NUM >= 502
