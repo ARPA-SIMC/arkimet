@@ -322,7 +322,7 @@ void to::test<7>()
 		"  if md.reftime == nil then return 'reftime is nil' end \n"
 		"  if md.bbox ~= nil then return 'bbox is not nil' end \n"
 		"  notes = md:notes() \n"
-		"  if table.getn(notes) ~= 1 then return 'table has '..table.getn(notes)..' elements instead of 1' end \n"
+		"  if #notes ~= 1 then return 'table has '..#notes..' elements instead of 1' end \n"
 //		"  i = 0 \n"
 //		"  for name, value in md.iter do \n"
 //		"    i = i + 1 \n"
