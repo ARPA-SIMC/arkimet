@@ -147,6 +147,7 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
 	}
 }
 
+/*
 static double parseDouble(const std::string& val)
 {
 	double result;
@@ -154,6 +155,7 @@ static double parseDouble(const std::string& val)
 	ss >> result;
 	return result;
 }
+*/
 
 Item<Product> Product::decodeString(const std::string& val)
 {
