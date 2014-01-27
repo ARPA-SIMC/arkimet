@@ -252,7 +252,7 @@ void add_global_library(lua_State* L, const char* name, const luaL_Reg* lib)
         lua_pop(L, 1);
         lua_newtable(L);
     }
-    luaL_setfuncs(L, lib, 0);
+    add_functions(L, lib);
     lua_setglobal(L, name);
 }
 
@@ -271,7 +271,7 @@ void add_arki_global_library(lua_State* L, const char* name, const luaL_Reg* lib
 
     lua_pushstring(L, name);
     lua_newtable(L);
-    luaL_setfuncs(L, lib, 0);
+    add_functions(L, lib);
     lua_rawset(L, -3);
 
     lua_pop(L, 1);
