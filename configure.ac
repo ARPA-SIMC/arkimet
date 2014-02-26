@@ -4,7 +4,7 @@ AC_INIT(arkimet, 0.75, [enrico@enricozini.org])
 AC_CONFIG_SRCDIR([configure.ac])
 AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 AM_CONFIG_HEADER(config.h)
-AM_CONFIG_HEADER(wibble/config.h)
+AM_CONFIG_HEADER(embedded/wibble/wibble/config.h)
 AM_CONFIG_HEADER(arki/libconfig.h)
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -122,8 +122,8 @@ fi
 AM_CONDITIONAL([WIBBLE_STANDALONE], [test x"$have_wibble_standalone" = x"yes" ])
 AM_COND_IF([WIBBLE_STANDALONE],
 	   [PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])],
-	   [WIBBLE_LIBS='$(top_builddir)/wibble/libwibble.la']
-	   [WIBBLE_CFLAGS=""])
+	   [WIBBLE_LIBS="`pwd`/embedded/wibble/wibble/libwibble.la"]
+	   [WIBBLE_CFLAGS="-I`pwd`/embedded/wibble"])
 
 dnl Optional readline
 VL_LIB_READLINE
@@ -374,7 +374,7 @@ conf/Makefile
 embedded/Makefile
 embedded/sqlite/Makefile
 embedded/minilzo/Makefile
-wibble/Makefile
+embedded/wibble/wibble/Makefile
 arki/Makefile
 src/Makefile
 doc/Makefile

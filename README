@@ -22,13 +22,13 @@ Dependencies:
 
 To pull in the embedded wibble, use this command:
 
- darcs init
- darcs pull -a http://people.debian.org/~enrico/wibble/embeddable
+ mkdir -p embedded/wibble
+ darcs init --repodir=embedded/wibble
+ darcs pull --repodir=embedded/wibble -a http://people.debian.org/~enrico/wibble/embeddable
 
- Then just 'darcs pull' will get the new updates of wibble
+ Then just 'darcs pull --repodir=embedded' will get the new updates of wibble
 
 If you don't have darcs, run this instead:
 
- wget http://people.debian.org/~enrico/wibble/embeddable/wibble.tar.gz
- tar zxf wibble.tar.gz
- mv wibble/wibble/* wibble/
+ wget -P embedded http://people.debian.org/~enrico/wibble/embeddable/wibble.tar.gz
+ tar -C embedded -zxf embedded/wibble.tar.gz

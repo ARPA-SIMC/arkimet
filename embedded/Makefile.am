@@ -2,6 +2,11 @@
 
 SUBDIRS =
 
+if WIBBLE_STANDALONE
+else
+SUBDIRS += wibble/wibble
+endif
+
 if SQLITE_EMBEDDED
 SUBDIRS += sqlite
 endif
