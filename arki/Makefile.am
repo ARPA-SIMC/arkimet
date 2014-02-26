@@ -2,7 +2,14 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
+if WIBBLE_STANDALONE
+LIBWIBBLE_LIBS=$(WIBBLE_LIBS)
+LIBWIBBLE_CFLAGS=$(WIBBLE_CFLAGS)
+else
+LIBWIBBLE_LIBS=$(top_builddir)/wibble/libwibble.la
+endif
+
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(LIBWIBBLE_CFLAGS) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
 AM_CXXFLAGS = $(EXTRA_CXXFLAGS) $(DEVEL_CXXFLAGS)
 AM_LDFLAGS = $(EXTRA_LDFLAGS)
 
@@ -276,8 +283,8 @@ libarkimet_la_SOURCES = \
 		runtime/config.cc \
 		runtime/processor.cc \
 		runtime.cc
-libarkimet_la_LIBADD = libarkimet-dataset.la
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
+libarkimet_la_LIBADD = libarkimet-dataset.la $(LIBWIBBLE_LIBS)
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
 if GCOV
 export ARKI_HAS_GCOV=yes
@@ -411,7 +418,7 @@ tests_arki_test_SOURCES = \
 		runtime/processor-tut.cc \
 		runtime-tut.cc \
 		tests/tut-main.cpp
-tests_arki_test_LDADD = libarkimet.la ../wibble/libwibble.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD = libarkimet.la $(LIBWIBBLE_LIBS) $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 if IOTRACE
 libarkimet_core_la_SOURCES += iotrace.cc

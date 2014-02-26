@@ -9,6 +9,13 @@ AM_CONFIG_HEADER(arki/libconfig.h)
 
 AC_CONFIG_MACRO_DIR([m4])
 
+AC_ARG_ENABLE([wibble-standalone],
+    [AS_HELP_STRING(
+        [--enable-wibble-standalone],
+        [use shared libwibble])],
+    [],
+    [enable_wibble_standalone="no"])
+
 AC_ARG_ENABLE([bufr],
     [AS_HELP_STRING(
         [--enable-bufr],
@@ -104,9 +111,17 @@ if test x"$success" = x"no"; then
 fi
 AM_CONDITIONAL([SQLITE_EMBEDDED], [test x"$SQLITE3_VERSION" = x"embedded"])
 
-dnl Wibble is embedded
+dnl Check if wibble is embedded or standalone
 dnl LIBWIBBLE_DEFS
-AM_CONDITIONAL([WIBBLE_STANDALONE], [false])
+if test $enable_wibble_standalone = yes
+then
+	have_wibble_standalone=yes
+else
+	have_wibble_standalone=no
+fi
+AM_CONDITIONAL([WIBBLE_STANDALONE], [test x"$have_wibble_standalone" = x"yes" ])
+AM_COND_IF([WIBBLE_STANDALONE],
+	   [PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])])
 
 dnl Optional readline
 VL_LIB_READLINE
@@ -368,6 +383,7 @@ AC_OUTPUT
 AC_MSG_NOTICE([
 ===================================================
 $PACKAGE_NAME-$PACKAGE_VERSION configuration:
+AS_HELP_STRING([wibble standalone:], [$have_wibble_standalone])
 AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
