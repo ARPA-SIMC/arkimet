@@ -1,20 +1,13 @@
 ## Process this file with automake to produce Makefile.in
 
-if WIBBLE_STANDALONE
-LIBWIBBLE_LIBS=$(WIBBLE_LIBS)
-LIBWIBBLE_CFLAGS=$(WIBBLE_CFLAGS)
-else
-LIBWIBBLE_LIBS=$(top_builddir)/wibble/libwibble.la
-endif
-
 bin_PROGRAMS = arki-check arki-query arki-dump arki-gzip arki-mergeconf arki-benchmark arki-scan arki-xargs arki-server arki-inbound
 noinst_PROGRAMS = arki-test
 
 dist_noinst_HEADERS = bench/benchmark.h
 
-all_libs = ../arki/libarkimet.la $(LIBWIBBLE_LIBS) $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
+all_libs = ../arki/libarkimet.la $(WIBBLE_LIBS) $(LIBGRIB_LIBS) $(DBALLE_LIBS) $(SQLITE3_LDFLAGS) $(GRIBAPI_LIBS) $(LUA_LIBS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(LIBWIBBLE_CFLAGS) $(LIBGRIB_CFLAGS) $(DBALLE_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS) $(ZLIB_CFLAGS) $(DEVEL_CFLAGS) -DSERVER_DIR=\"$(serverdir)\" $(EXTRA_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(WIBBLE_CFLAGS) $(LIBGRIB_CFLAGS) $(DBALLE_CFLAGS) $(SQLITE3_CFLAGS) $(GRIBAPI_CFLAGS) $(LUA_CFLAGS) $(ZLIB_CFLAGS) $(DEVEL_CFLAGS) -DSERVER_DIR=\"$(serverdir)\" $(EXTRA_CXXFLAGS)
 AM_LDFLAGS = $(EXTRA_LDFLAGS)
 
 if GEOS

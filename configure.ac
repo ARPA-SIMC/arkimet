@@ -121,7 +121,9 @@ else
 fi
 AM_CONDITIONAL([WIBBLE_STANDALONE], [test x"$have_wibble_standalone" = x"yes" ])
 AM_COND_IF([WIBBLE_STANDALONE],
-	   [PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])])
+	   [PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])],
+	   [WIBBLE_LIBS='$(top_builddir)/wibble/libwibble.la']
+	   [WIBBLE_CFLAGS=""])
 
 dnl Optional readline
 VL_LIB_READLINE
