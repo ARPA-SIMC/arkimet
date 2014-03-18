@@ -169,7 +169,7 @@ void to::test<5>()
     wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "VM2,1");
+	ensure_equals(o->exactQuery(), "VM2,1:lat=4460016, lon=1207738, rep=locali");
 	Matcher m = Matcher::parse("area:" + o->exactQuery());
 	ensure(m(o));
 

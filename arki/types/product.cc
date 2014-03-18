@@ -796,19 +796,30 @@ void VM2::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Product::encodeWithoutEnvelope(enc);
 	enc.addUInt(m_variable_id, 4);
+    derived_values().encode(enc);
 }
 std::ostream& VM2::writeToOstream(std::ostream& o) const
 {
-	return o << formatStyle(style()) << "(" << m_variable_id << ")";
+	o << formatStyle(style()) << "(" << m_variable_id;
+    if (!derived_values().empty())
+        o << ", " << derived_values().toString();
+    return o << ")";
 }
 void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Product::serialiseLocal(e, f);
     e.add("id", m_variable_id);
+    if (!derived_values().empty()) {
+        e.add("va");
+        derived_values().serialise(e);
+    }
 }
 std::string VM2::exactQuery() const
 {
-    return str::fmtf("VM2,%lu", m_variable_id);
+    std::string s = str::fmtf("VM2,%lu", m_variable_id);
+    if (!derived_values().empty())
+        s += ":" + derived_values().toString();
+    return s;
 }
 const char* VM2::lua_type_name() const { return "arki.types.product.vm2"; }
 int VM2::compare_local(const Product& o) const

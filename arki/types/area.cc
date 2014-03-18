@@ -361,20 +361,31 @@ void VM2::encodeWithoutEnvelope(Encoder& enc) const
 {
 	Area::encodeWithoutEnvelope(enc);
 	enc.addUInt(m_station_id, 4);
+    derived_values().encode(enc);
 }
 std::ostream& VM2::writeToOstream(std::ostream& o) const
 {
-    return o << formatStyle(style()) << "(" << m_station_id << ")";
+    o << formatStyle(style()) << "(" << m_station_id;
+    if (!derived_values().empty())
+        o << "," << derived_values().toString();
+    return o << ")";
 }
 void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Area::serialiseLocal(e, f);
     e.add("id", m_station_id);
+    if (!derived_values().empty()) {
+        e.add("va");
+        derived_values().serialise(e);
+    }
 }
 
 std::string VM2::exactQuery() const
 {
-    return wibble::str::fmtf("VM2,%lu", m_station_id);
+    std::string s = wibble::str::fmtf("VM2,%lu", m_station_id);
+    if (!derived_values().empty())
+        s += ":" + derived_values().toString();
+    return s;
 }
 
 const char* VM2::lua_type_name() const { return "arki.types.area.vm2"; }

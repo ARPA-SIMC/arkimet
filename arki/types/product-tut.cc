@@ -204,7 +204,7 @@ void to::test<6>()
     wassert(actual(o).serializes());
 
 	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "VM2,1");
+	ensure_equals(o->exactQuery(), "VM2,1:bcode=B20013, l1=0, l2=0, lt1=256, lt2=258, p1=0, p2=0, tr=254, unit=m");
 	Matcher m = Matcher::parse("product:" + o->exactQuery());
 	ensure(m(o));
 
