@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 0.75
-Release: 2798%{dist}
+Release: 2876%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/sim/?arkimet‎
@@ -9,8 +9,8 @@ Source0: %{name}-%{version}.tar.gz
 Source1: %{name}.init
 Source2: %{name}.default
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, python-cherrypy, readline-devel, lzo-devel, libwreport-devel >= 2.0, flex, bison, meteo-vm2-devel, hdf5-devel
-Requires: python-cherrypy, hdf5, meteo-vm2, grib_api-1.10.0
+BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 2.0, flex, bison, meteo-vm2-devel, hdf5-devel, libwibble-devel
+Requires: hdf5, meteo-vm2, grib_api-1.10.0, libwibble-devel
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
@@ -34,7 +34,7 @@ Group:    Applications/Meteo
 %setup -q
 
 %build
-%configure
+%configure --enable-wibble-standalone
 make
 #make check
 
@@ -97,6 +97,10 @@ else
 fi
 
 %changelog
+* Thu Mar 20 2014 Emanuele Di Giacomo <edigiacomo@arpa.emr.it> - 0.75-2876%{dist}
+- libwibble-devel dependency (--enable-wibble-standalone in configure)
+- VM2 derived values in serialization
+
 * Tue Sep 10 2013 Daniele Branchini <dbranchini@arpa.emr.it> - 0.75-2784%{dist}
 - SmallFiles support
 - split SummaryCache in its own file
