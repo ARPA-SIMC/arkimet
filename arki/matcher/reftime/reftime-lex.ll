@@ -30,8 +30,8 @@ struct LexInterval {
 
 #include "config.h"
 
-#include "reftime-parse.hh"
 #include "parser.h"
+#include "reftime-parse.hh"
 
 #include <string>
 #include <wibble/exception.h>

@@ -149,7 +149,7 @@ void interval_ago(int* dst, time_t& now, const int* val)
 %pure-parser
 %name-prefix "arki_reftime"
 %lex-param { yyscan_t yyscanner }
-%parse-param { yyscan_t yyscanner }
+%parse-param { void* yyscanner }
 %parse-param { arki::matcher::reftime::Parser& state }
 //%error-verbose
 
