@@ -1,7 +1,7 @@
 /*
  * dataset/ondisk2/writer - Local on disk dataset writer
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -517,6 +517,19 @@ struct Reindexer : public metadata::Consumer
 
 void Writer::rescanFile(const std::string& relpath)
 {
+    string pathname = str::joinpath(m_path, relpath);
+
+    // Temporarily uncompress the file for scanning
+    auto_ptr<utils::compress::TempUnzip> tu;
+    if (scan::isCompressed(pathname))
+        tu.reset(new utils::compress::TempUnzip(pathname));
+
+    // Collect the scan results in a metadata::Collector
+    metadata::Collection mds;
+    if (!scan::scan(pathname, mds))
+        throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
+    // cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
+
 	// Lock away writes and reads
 	Pending p = m_idx.beginExclusiveTransaction();
 	// cerr << "LOCK" << endl;
@@ -524,19 +537,6 @@ void Writer::rescanFile(const std::string& relpath)
 	// Remove from the index all data about the file
 	m_idx.reset(relpath);
 	// cerr << " RESET " << file << endl;
-
-	string pathname = str::joinpath(m_path, relpath);
-
-	// Temporarily uncompress the file for scanning
-	auto_ptr<utils::compress::TempUnzip> tu;
-	if (scan::isCompressed(pathname))
-		tu.reset(new utils::compress::TempUnzip(pathname));
-
-	// Collect the scan results in a metadata::Collector
-	metadata::Collection mds;
-	if (!scan::scan(pathname, mds))
-		throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
-	// cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
 
 	// Scan the list of metadata, looking for duplicates and marking all
 	// the duplicates except the last one as deleted
