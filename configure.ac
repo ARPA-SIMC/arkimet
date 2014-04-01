@@ -9,12 +9,9 @@ AM_CONFIG_HEADER(arki/libconfig.h)
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_ARG_ENABLE([wibble-standalone],
-    [AS_HELP_STRING(
-        [--enable-wibble-standalone],
-        [use shared libwibble])],
-    [],
-    [enable_wibble_standalone="no"])
+AC_ARG_WITH([wibble],
+	   [AS_HELP_STRING([--with-wibble], ["force wibble version (system, embedded, check)"])],
+	    [], [with_wibble=check])
 
 AC_ARG_ENABLE([bufr],
     [AS_HELP_STRING(
@@ -77,6 +74,8 @@ dnl AC_CHECK_CXX_EH
 dnl Needed by subdir-objects
 AM_PROG_CC_C_O
 
+PKG_PROG_PKG_CONFIG
+
 dnl Support large files on 32bit systems
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
@@ -111,19 +110,25 @@ if test x"$success" = x"no"; then
 fi
 AM_CONDITIONAL([SQLITE_EMBEDDED], [test x"$SQLITE3_VERSION" = x"embedded"])
 
-dnl Check if wibble is embedded or standalone
-dnl LIBWIBBLE_DEFS
-if test $enable_wibble_standalone = yes
-then
-	have_wibble_standalone=yes
-else
-	have_wibble_standalone=no
+dnl Check for wibble
+if test x"$with_wibble" = x"check"; then
+	PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1], [with_wibble=system], [with_wibble=embedded])
 fi
-AM_CONDITIONAL([WIBBLE_STANDALONE], [test x"$have_wibble_standalone" = x"yes" ])
-AM_COND_IF([WIBBLE_STANDALONE],
-	   [PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])],
-	   [WIBBLE_LIBS="`pwd`/embedded/wibble/wibble/libwibble.la"]
-	   [WIBBLE_CFLAGS="-I`pwd`/embedded/wibble"])
+
+if test x"$with_wibble" = x"system"; then
+	PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])
+elif test x"$with_wibble" = x"embedded"; then
+	WIBBLE_LIBS="`pwd`/embedded/wibble/wibble/libwibble.la"
+	WIBBLE_CFLAGS="-I`pwd`/embedded/wibble"]
+elif test x"$with_wibble" = x"no"; then
+	AC_MSG_FAILURE([--without-wibble was given, but wibble is essential in building arkimet])
+else
+	AC_MSG_FAILURE([--with-wibble was given with unsupported argument $with_wibble])
+fi
+
+AC_SUBST(WIBBLE_CFLAGS)
+AC_SUBST(WIBBLE_LIBS)
+AM_CONDITIONAL([WIBBLE_STANDALONE], [test x"$with_wibble" = x"system" ])
 
 dnl Optional readline
 VL_LIB_READLINE
@@ -385,7 +390,7 @@ AC_OUTPUT
 AC_MSG_NOTICE([
 ===================================================
 $PACKAGE_NAME-$PACKAGE_VERSION configuration:
-AS_HELP_STRING([wibble standalone:], [$have_wibble_standalone])
+AS_HELP_STRING([wibble:], [$with_wibble])
 AS_HELP_STRING([BUFR via DB-All.e:], [$have_dballe])
 dnl AS_HELP_STRING([GRIB 1 via Meteosatlib:], [$have_libgrib])
 AS_HELP_STRING([GRIB 1+2 via grib_api:], [$have_gribapi])
