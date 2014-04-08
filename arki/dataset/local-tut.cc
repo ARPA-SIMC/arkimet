@@ -32,7 +32,7 @@
 #include <sstream>
 #include <iostream>
 
-namespace tut {
+namespace {
 using namespace std;
 using namespace arki;
 using namespace wibble::tests;
@@ -41,21 +41,24 @@ using namespace arki::dataset;
 using namespace arki::utils;
 using namespace wibble;
 
-struct arki_dataset_local_shar : public DatasetTest {
-	arki_dataset_local_shar()
-	{
-		cfg.setValue("path", "testds");
-		cfg.setValue("name", "testds");
-		cfg.setValue("type", "simple");
-		cfg.setValue("step", "daily");
-	}
-
+struct arki_dataset_local_base : public DatasetTest {
+    arki_dataset_local_base()
+    {
+        cfg.setValue("path", "testds");
+        cfg.setValue("name", "testds");
+        cfg.setValue("step", "daily");
+    }
 };
-TESTGRP(arki_dataset_local);
+
+}
+
+namespace tut {
+
+typedef dataset_tg<arki_dataset_local_base> tg;
+typedef tg::object to;
 
 // Test moving into archive data that have been compressed
-template<> template<>
-void to::test<1>()
+template<> template<> void to::test<1>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
@@ -165,8 +168,7 @@ void to::test<1>()
 }
 
 // Test querying the datasets
-template<> template<>
-void to::test<2>()
+template<> template<> void to::test<2>()
 {
 	using namespace arki::types;
 
@@ -191,8 +193,7 @@ void to::test<2>()
 }
 
 // Test querying with data only
-template<> template<>
-void to::test<3>()
+template<> template<> void to::test<3>()
 {
 	clean_and_import();
 	std::auto_ptr<ReadonlyDataset> reader(makeReader());
@@ -206,8 +207,7 @@ void to::test<3>()
 }
 
 // Test querying with inline data
-template<> template<>
-void to::test<4>()
+template<> template<> void to::test<4>()
 {
 	using namespace arki::types;
 
@@ -238,8 +238,7 @@ void to::test<4>()
 }
 
 // Test querying with archived data
-template<> template<>
-void to::test<5>()
+template<> template<> void to::test<5>()
 {
 	using namespace arki::types;
 
@@ -309,9 +308,9 @@ void to::test<5>()
 	ensure_equals(out.str().size(), 7218u);
 
 	/* TODO
-		case BQ_POSTPROCESS: {
-		case BQ_REP_METADATA: {
-		case BQ_REP_SUMMARY: {
+		case BQ_POSTPROCESS:
+		case BQ_REP_METADATA:
+		case BQ_REP_SUMMARY:
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 	*/
 
@@ -333,8 +332,7 @@ void to::test<5>()
 }
 
 // Tolerate empty dirs
-template<> template<>
-void to::test<6>()
+template<> template<> void to::test<6>()
 {
 	// Start with an empty dir
 	system("rm -rf testds");
@@ -357,22 +355,12 @@ void to::test<6>()
 	ensure(os.str().empty());
 }
 
-template<> template<> void to::test<7>() { ForceSqlite fs; to::test<1>(); }
-template<> template<> void to::test<8>() { ForceSqlite fs; to::test<2>(); }
-template<> template<> void to::test<9>() { ForceSqlite fs; to::test<3>(); }
-template<> template<> void to::test<10>() { ForceSqlite fs; to::test<4>(); }
-template<> template<> void to::test<11>() { ForceSqlite fs; to::test<5>(); }
-template<> template<> void to::test<12>() { ForceSqlite fs; to::test<6>(); }
-
-template<> template<> void to::test<13>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
-template<> template<> void to::test<14>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
-template<> template<> void to::test<15>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
-template<> template<> void to::test<16>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
-template<> template<> void to::test<17>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
-template<> template<> void to::test<18>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
-
-
-
 }
 
-// vim:set ts=4 sw=4:
+namespace {
+
+tut::tg test_ondisk2("arki_dataset_local_ondisk2", "type=ondisk2\n");
+tut::tg test_simple_plain("arki_dataset_local_simple_plain", "type=simple\nindex_type=plain\n");
+tut::tg test_simple_sqlite("arki_dataset_local_simple_sqlite", "type=simple\nindex_type=sqlite");
+
+}

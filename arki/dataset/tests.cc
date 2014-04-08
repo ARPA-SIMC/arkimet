@@ -153,6 +153,25 @@ ForceSqlite::~ForceSqlite()
 	dataset::index::Manifest::set_force_sqlite(old);
 }
 
+namespace {
+const ConfigFile* default_datasettest_config = 0;
+}
+
+DatasetTestDefaultConfig::DatasetTestDefaultConfig(const ConfigFile& cfg)
+{
+    default_datasettest_config = &cfg;
+}
+DatasetTestDefaultConfig::~DatasetTestDefaultConfig()
+{
+    default_datasettest_config = 0;
+}
+
+DatasetTest::DatasetTest()
+{
+    if (default_datasettest_config)
+        cfg = *default_datasettest_config;
+}
+
 std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
 {
 	if (!wcfg) wcfg = &cfg;

@@ -981,13 +981,23 @@ bool Manifest::exists(const std::string& dir)
 	       manifest::SqliteManifest::exists(dir);
 }
 
-std::auto_ptr<Manifest> Manifest::create(const std::string& dir)
+std::auto_ptr<Manifest> Manifest::create(const std::string& dir, const ConfigFile* cfg)
 {
-	if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dir))
-		return auto_ptr<Manifest>(new manifest::SqliteManifest(dir));
-	else
-		return auto_ptr<Manifest>(new manifest::PlainManifest(dir));
-
+    std::string value;
+    if (cfg) value = cfg->value("index_type");
+    if (value.empty())
+    {
+        if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dir))
+            return auto_ptr<Manifest>(new manifest::SqliteManifest(dir));
+        else
+            return auto_ptr<Manifest>(new manifest::PlainManifest(dir));
+    }
+    else if (value == "plain")
+        return auto_ptr<Manifest>(new manifest::PlainManifest(dir));
+    else if (value == "sqlite")
+        return auto_ptr<Manifest>(new manifest::SqliteManifest(dir));
+    else
+        throw wibble::exception::Consistency("unsupported index_type " + value);
 }
 
 }

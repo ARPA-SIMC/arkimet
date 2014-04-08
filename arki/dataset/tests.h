@@ -108,6 +108,8 @@ struct DatasetTest
 	// Default dataset configuration (to be filled by subclasser)
 	ConfigFile cfg;
 
+    DatasetTest();
+
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
 	// Return the file name of the archive index of the current dataset
@@ -139,6 +141,36 @@ struct DatasetTest
 
 #define ensure_localds_clean(...) impl_ensure_localds_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
 	void impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
+};
+
+struct DatasetTestDefaultConfig
+{
+    DatasetTestDefaultConfig(const ConfigFile& cfg);
+    ~DatasetTestDefaultConfig();
+};
+
+template<typename T>
+struct dataset_tg : public tut::test_group<T>
+{
+    ConfigFile default_config;
+
+    dataset_tg(const char* name, const std::string& config_test)
+        : tut::test_group<T>(name)
+    {
+        std::stringstream in(config_test);
+        default_config.parse(in, "(memory)");
+    }
+
+    tut::test_result run_next()
+    {
+        DatasetTestDefaultConfig dtdc(default_config);
+        return tut::test_group<T>::run_next();
+    }
+    tut::test_result run_test(int n)
+    {
+        DatasetTestDefaultConfig dtdc(default_config);
+        return tut::test_group<T>::run_test(n);
+    }
 };
 
 struct TempConfig
