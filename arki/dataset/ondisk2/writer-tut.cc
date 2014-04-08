@@ -26,6 +26,7 @@
 #include <arki/configfile.h>
 #include <arki/scan/grib.h>
 #include <arki/scan/bufr.h>
+#include <arki/scan/any.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/summary.h>
@@ -721,6 +722,128 @@ void to::test<11>()
         ensure_equals(writer.acquire(md), WritableDataset::ACQ_OK);
     ensure_equals(count, 2u);
     writer.flush();
+}
+
+template<> template<>
+void to::test<12>()
+{
+    metadata::Collection mdc;
+    scan::scan("inbound/test.grib1", mdc);
+
+    {
+        // Import files
+        Writer writer(cfg);
+        for (metadata::Collection::iterator i = mdc.begin(); i != mdc.end(); ++i)
+            wassert(actual(writer.acquire(*i)) == WritableDataset::ACQ_OK);
+    }
+
+    // Append one of the GRIBs to the wrong file
+    wibble::sys::Buffer buf = mdc[1].getData();
+    wassert(actual(buf.size()) == 34960);
+    FILE* fd = fopen("testdir/2007/10-09.grib1", "ab");
+    wassert(actual(fd != NULL).istrue());
+    wassert(actual(fwrite(buf.data(), buf.size(), 1, fd)) == 1);
+    wassert(actual(fclose(fd)) == 0);
+
+    // A simple rescanFile throws "manual fix is required" error
+    {
+        Writer writer(cfg);
+        try {
+            writer.rescanFile("2007/10-09.grib1");
+            wrunchecked(throw std::runtime_error("rescanFile should have thrown at this point"));
+        } catch (std::exception& e) {
+            wassert(actual(e.what()).contains("manual fix is required"));
+        }
+    }
+
+    // Delete index then run a maintenance
+    wassert(actual(unlink("testdir/index.sqlite")) == 0);
+
+    // Run maintenance check
+    {
+        Writer writer(cfg);
+        MaintenanceCollector c;
+        writer.maintenance(c);
+
+        wassert(actual(c.fileStates.size()) == 3u);
+        wassert(actual(c.count(COUNTED_OK)) == 0u);
+        wassert(actual(c.count(COUNTED_TO_INDEX)) == 3u);
+        wassert(actual(c.remaining()) == "");
+        wassert(actual(c.isClean()).isfalse());
+    }
+
+    {
+        // Perform full maintenance and check that things are still ok afterwards
+        Writer writer(cfg);
+        stringstream s;
+        try {
+            writer.check(s, true, true);
+            wrunchecked(throw std::runtime_error("writer.check should have thrown at this point"));
+        } catch (std::exception& e) {
+            wassert(actual(e.what()).contains("manual fix is required"));
+        }
+    }
+}
+
+template<> template<>
+void to::test<13>()
+{
+    metadata::Collection mdc;
+    scan::scan("inbound/test.grib1", mdc);
+
+    {
+        // Import files
+        Writer writer(cfg);
+        for (metadata::Collection::iterator i = mdc.begin(); i != mdc.end(); ++i)
+            wassert(actual(writer.acquire(*i)) == WritableDataset::ACQ_OK);
+    }
+
+    // Append one of the GRIBs to the wrong file
+    wibble::sys::Buffer buf1 = mdc[1].getData();
+    wibble::sys::Buffer buf2 = mdc[2].getData();
+    wassert(actual(buf1.size()) == 34960);
+    wassert(actual(buf2.size()) == 2234);
+    FILE* fd = fopen("testdir/2007/06-06.grib1", "ab");
+    wassert(actual(fd != NULL).istrue());
+    wassert(actual(fwrite(buf1.data(), buf1.size(), 1, fd)) == 1);
+    wassert(actual(fwrite(buf2.data(), buf2.size(), 1, fd)) == 1);
+    wassert(actual(fclose(fd)) == 0);
+
+    // A simple rescanFile throws "manual fix is required" error
+    {
+        Writer writer(cfg);
+        try {
+            writer.rescanFile("2007/06-06.grib1");
+            wrunchecked(throw std::runtime_error("rescanFile should have thrown at this point"));
+        } catch (std::exception& e) {
+            wassert(actual(e.what()).contains("manual fix is required"));
+        }
+    }
+
+    // Run maintenance check
+    {
+        Writer writer(cfg);
+        MaintenanceCollector c;
+        writer.maintenance(c);
+
+        wassert(actual(c.fileStates.size()) == 4u);
+        wassert(actual(c.count(COUNTED_OK)) == 3u);
+        wassert(actual(c.count(COUNTED_TO_INDEX)) == 1u);
+        wassert(actual(c.remaining()) == "");
+        wassert(actual(c.isClean()).isfalse());
+    }
+
+    {
+        // Perform full maintenance and check that things are still ok afterwards
+        Writer writer(cfg);
+        stringstream s;
+        try {
+            writer.check(s, true, true);
+            wrunchecked(throw std::runtime_error("writer.check should have thrown at this point"));
+        } catch (std::exception& e) {
+            wassert(actual(e.what()).contains("manual fix is required"));
+        }
+    }
 }
 
 }
