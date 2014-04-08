@@ -18,6 +18,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		data/fd.h \
 		data/concat.h \
 		data/lines.h \
+		data/dir.h \
 		dataset/archive.h \
 		dataset/discard.h \
 		dataset/empty.h \
@@ -172,6 +173,7 @@ libarkimet_core_la_SOURCES = \
 		data/fd.cc \
 		data/concat.cc \
 		data/lines.cc \
+		data/dir.cc \
 		tests/tests.cc
 libarkimet_core_la_LDFLAGS =
 
@@ -318,6 +320,7 @@ tests_arki_test_SOURCES = \
 		data/fd-tut.cc \
 		data/concat-tut.cc \
 		data/lines-tut.cc \
+		data/dir-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
 		types/utils-tut.cc \
