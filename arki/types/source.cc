@@ -496,6 +496,15 @@ Item<Inline> Inline::create(const std::string& format, uint64_t size)
 	return res;
 }
 
+Item<Inline> Inline::create(const std::string& format, const wibble::sys::Buffer& buf)
+{
+    Inline* res = new Inline;
+    res->format = format;
+    res->size = buf.size();
+    res->setCachedData(buf);
+    return res;
+}
+
 void Inline::dropCachedData() const
 {
     // Do nothing: the cached data is the only copy we have

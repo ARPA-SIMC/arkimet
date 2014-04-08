@@ -223,6 +223,7 @@ struct Inline : public Source
     virtual wibble::sys::Buffer getData() const;
 
 	static Item<Inline> create(const std::string& format, uint64_t size);
+    static Item<Inline> create(const std::string& format, const wibble::sys::Buffer& buf);
 	static Item<Inline> decodeMapping(const emitter::memory::Mapping& val);
 };
 
