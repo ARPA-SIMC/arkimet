@@ -68,37 +68,50 @@ namespace arki {
 namespace dataset {
 namespace maintenance {
 
-HoleFinder::FileInfo::FileInfo(const std::string& root, const std::string& name, bool quick)
-    : root(root), name(name), checked(0), format_info(0), validator(0), validator_fd(-1), has_hole(false), corrupted(false)
+namespace {
+struct FileInfo
 {
-    // Get the file extension
-    std::string fmt;
-    size_t pos;
-    if ((pos = name.rfind('.')) != std::string::npos)
-        fmt = name.substr(pos + 1);
-    format_info = data::Info::get(fmt);
+    std::string name;
+    off_t checked;
+    const data::Info* format_info;
+    const scan::Validator* validator;
+    int validator_fd;
+    bool has_hole;
+    bool corrupted;
 
-    if (!quick)
+    FileInfo(const std::string& name, bool quick=true)
+        : name(name), checked(0), format_info(0), validator(0), validator_fd(-1), has_hole(false), corrupted(false)
     {
-        string fname = str::joinpath(root, name);
+        // Get the file extension
+        std::string fmt;
+        size_t pos;
+        if ((pos = name.rfind('.')) != std::string::npos)
+            fmt = name.substr(pos + 1);
+        format_info = data::Info::get(fmt);
 
-        // If the data file is compressed, create a temporary uncompressed copy
-        auto_ptr<utils::compress::TempUnzip> tu;
-        if (scan::isCompressed(fname))
-            tu.reset(new utils::compress::TempUnzip(fname));
-
-        validator = &scan::Validator::by_filename(fname.c_str());
-        validator_fd = open(fname.c_str(), O_RDONLY);
-        if (validator_fd < 0)
+        if (!quick)
         {
-            perror(fname.c_str());
-            corrupted = true;
-        } else
-            (void)posix_fadvise(validator_fd, 0, 0, POSIX_FADV_DONTNEED);
-    }
-}
+            // If the data file is compressed, create a temporary uncompressed copy
+            auto_ptr<utils::compress::TempUnzip> tu;
+            if (scan::isCompressed(name))
+                tu.reset(new utils::compress::TempUnzip(name));
 
-void HoleFinder::FileInfo::check_data(off_t offset, size_t size)
+            validator = &scan::Validator::by_filename(name.c_str());
+            validator_fd = open(name.c_str(), O_RDONLY);
+            if (validator_fd < 0)
+            {
+                perror(name.c_str());
+                corrupted = true;
+            } else
+                (void)posix_fadvise(validator_fd, 0, 0, POSIX_FADV_DONTNEED);
+        }
+    }
+
+    void check_data(off_t offset, size_t size);
+    unsigned finalise();
+};
+
+void FileInfo::check_data(off_t offset, size_t size)
 {
     // If we've already found that the file is corrupted, there is nothing
     // else to do
@@ -108,8 +121,7 @@ void HoleFinder::FileInfo::check_data(off_t offset, size_t size)
         try {
             validator->validate(validator_fd, offset, size, name);
         } catch (wibble::exception::Generic& e) {
-            string fname = str::joinpath(root, name);
-            nag::warning("corruption detected at %s:%ld-%zd: %s", fname.c_str(), offset, size, e.desc().c_str());
+            nag::warning("corruption detected at %s:%ld-%zd: %s", name.c_str(), offset, size, e.desc().c_str());
             corrupted = true;
         }
 
@@ -121,7 +133,7 @@ void HoleFinder::FileInfo::check_data(off_t offset, size_t size)
     checked = offset + size;
 }
 
-unsigned HoleFinder::FileInfo::finalise()
+unsigned FileInfo::finalise()
 {
     off_t fsize;
 
@@ -137,7 +149,7 @@ unsigned HoleFinder::FileInfo::finalise()
         return MaintFileVisitor::TO_RESCAN;
     }
 
-    fsize = compress::filesize(str::joinpath(root, name));
+    fsize = compress::filesize(name);
     off_t d_offset = 0;
     size_t d_size = fsize;
     if (d_size < checked)
@@ -163,52 +175,30 @@ unsigned HoleFinder::FileInfo::finalise()
     }
 }
 
+}
+
 HoleFinder::HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick)
-    : next(next), m_root(root), cur_file(0), quick(quick)
+    : next(next), m_root(root), quick(quick)
 {
 }
 
-void HoleFinder::end()
+void HoleFinder::operator()(const std::string& file, const metadata::Collection& mdc)
 {
-    if (!cur_file) return;
+    string fname = str::joinpath(m_root, file);
+    FileInfo info(fname, quick);
 
-    unsigned response = cur_file->finalise();
-    next(cur_file->name, response);
-    delete cur_file;
-    cur_file = 0;
-}
-
-void HoleFinder::operator()(const std::string& file, int id, off_t offset, size_t size)
-{
-    if (!cur_file || cur_file->name != file)
+    for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
     {
-        end();
-        cur_file = new FileInfo(m_root, file, quick);
+        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+        info.check_data(source->offset, source->size);
     }
 
-    cur_file->check_data(offset, size);
+    unsigned response = info.finalise();
+    next(file, response);
 }
 
 void HoleFinder::scan(const std::string& file)
 {
-	struct HFConsumer : public metadata::Consumer
-	{
-		const std::string& file;
-		HoleFinder& hf;
-
-		HFConsumer(const std::string& file, HoleFinder& hf) : file(file), hf(hf) {}
-
-		bool operator()(Metadata& md)
-		{
-			if (md.source->style() != types::Source::BLOB)
-				throw wibble::exception::Consistency("reading metadata from " + file, "source is not Blob");
-
-			Item<types::source::Blob> s = md.source.upcast<types::source::Blob>();
-			hf(file, 0, s->offset, s->size);
-			return true;
-		}
-	} hfc(file, *this);
-
 	struct HFSorter : public sort::Compare
 	{
 		virtual int compare(const Metadata& a, const Metadata& b) const {
@@ -233,8 +223,7 @@ void HoleFinder::scan(const std::string& file)
 	scan::scan(fname, mdc);
 	//mdc.sort(""); // Sort by reftime, to find items out of order
 	mdc.sort(cmp); // Sort by reftime and by offset
-	mdc.sendTo(hfc);
-    end();
+    (*this)(file, mdc);
 }
 
 static bool sorter(const std::string& a, const std::string& b)

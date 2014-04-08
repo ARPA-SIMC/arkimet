@@ -43,6 +43,7 @@
 using namespace std;
 using namespace arki;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -314,15 +315,12 @@ void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& te
 	import(wcfg, testfile);
 }
 
-void DatasetTest::impl_ensure_maint_clean(const wibble::tests::Location& loc, size_t filecount, const ConfigFile* wcfg)
+void DatasetTest::impl_ensure_maint_clean(WIBBLE_TEST_LOCPRM, size_t filecount, const ConfigFile* wcfg)
 {
-	auto_ptr<dataset::WritableLocal> writer(makeLocalWriter(wcfg));
-	MaintenanceCollector c;
-	writer->maintenance(c);
-	inner_ensure_equals(c.fileStates.size(), filecount);
-	inner_ensure_equals(c.count(COUNTED_OK), filecount);
-	inner_ensure_equals(c.remaining(), string());
-	inner_ensure(c.isClean());
+    auto_ptr<dataset::WritableLocal> writer(makeLocalWriter(wcfg));
+    arki::tests::MaintenanceResults expected(true, filecount);
+    expected.by_type[COUNTED_OK] = filecount;
+    wassert(actual(writer.get()).maintenance(expected));
 }
 
 

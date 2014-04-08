@@ -299,7 +299,7 @@ protected:
 	/// Create the tables in the database
 	void initDB();
 
-	void bindInsertParams(utils::sqlite::Query& q, Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
+	void bindInsertParams(utils::sqlite::Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf);
 
 public:
 	WContents(const ConfigFile& cfg);
@@ -325,7 +325,7 @@ public:
 	 * @retval id
 	 *   The id of the metadata in the database
 	 */
-	void index(Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
+	void index(const Metadata& md, const std::string& file, uint64_t ofs, int* id = 0);
 
 	/**
 	 * Index the given metadata item, or replace it in the index.
@@ -352,12 +352,6 @@ public:
 	 * Remove all entries from the index that are related to the given data file
 	 */
 	void reset(const std::string& datafile);
-
-	/**
-	 * Update the offset of the piece of data 'id' to newofs inside
-	 * the same file
-	 */
-	void relocate_data(int id, off_t newofs);
 
 	/// Tidy up the database and reclaim deleted space
 	void vacuum();

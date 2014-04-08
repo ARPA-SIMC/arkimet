@@ -29,6 +29,10 @@
 
 namespace arki {
 
+namespace metadata {
+class Collection;
+}
+
 namespace scan {
 struct Validator;
 }
@@ -68,7 +72,7 @@ struct IndexFileVisitor
 {
 	virtual ~IndexFileVisitor() {}
 
-	virtual void operator()(const std::string& file, int id, off_t offset, size_t size) = 0;
+    virtual void operator()(const std::string& file, const metadata::Collection& mdc) = 0;
 };
 
 /**
@@ -79,29 +83,9 @@ struct IndexFileVisitor
  */
 struct HoleFinder : IndexFileVisitor
 {
-    struct FileInfo
-    {
-        std::string root;
-        std::string name;
-        off_t checked;
-        const data::Info* format_info;
-        const scan::Validator* validator;
-        int validator_fd;
-        bool has_hole;
-        bool corrupted;
-
-        FileInfo(const std::string& root, const std::string& name, bool quick=true);
-
-        void check_data(off_t offset, size_t size);
-        unsigned finalise();
-    };
-
-	MaintFileVisitor& next;
-
-	const std::string& m_root;
-
-    FileInfo* cur_file;
-	bool quick;
+    MaintFileVisitor& next;
+    const std::string& m_root;
+    bool quick;
 
 	HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick=true);
 
@@ -111,13 +95,7 @@ struct HoleFinder : IndexFileVisitor
 	 */
 	void scan(const std::string& file);
 
-	void operator()(const std::string& file, int id, off_t offset, size_t size);
-
-    /**
-     * Signal that there is no more data to scan for now, and existing data
-     * being computed should be flushed.
-     */
-    void end();
+    void operator()(const std::string& file, const metadata::Collection& mdc);
 };
 
 /**

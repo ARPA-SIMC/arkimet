@@ -303,7 +303,7 @@ void to::test<4>()
 	writer.repack(s, true);
 	ensure_equals(s.str(),
 		"testdir: packed 2007/07.grib1 (34960 saved)\n"
-		"testdir: 1 file packed, 37536 total bytes freed.\n");
+		"testdir: 1 file packed, 42696 total bytes freed.\n");
 	c.clear();
 
 	writer.maintenance(c);

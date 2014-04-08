@@ -109,25 +109,20 @@ template<> template<> void to::test<2>()
 
 	clean_and_import(&cfg);
 
-	// Check if files to archive are detected
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_TO_ARCHIVE), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
+    // Check if files to archive are detected
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+        arki::tests::MaintenanceResults expected(false, 3);
+        expected.by_type[COUNTED_OK] = 1;
+        expected.by_type[COUNTED_TO_ARCHIVE] = 2;
+        wassert(actual(writer.get()).maintenance(expected));
+    }
 
 	// Perform packing and check that things are still ok afterwards
 	{
 		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
-		writer->repack(s, true);
+		wrunchecked(writer->repack(s, true));
 		s.ensure_line_contains(": archived 2007/07-07.grib1");
 		s.ensure_line_contains(": archived 2007/07-08.grib1");
 		s.ensure_line_contains(": archive cleaned up");

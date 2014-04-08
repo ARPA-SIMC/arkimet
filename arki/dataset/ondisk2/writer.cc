@@ -306,21 +306,18 @@ struct Deleter : public maintenance::IndexFileVisitor
 	std::string name;
 	std::ostream& log;
 	bool writable;
-	string last_fname;
 
 	Deleter(const std::string& name, std::ostream& log, bool writable)
 		: name(name), log(log), writable(writable) {}
 
-	void operator()(const std::string& file, int id, off_t offset, size_t size)
+    void operator()(const std::string& file, const metadata::Collection& mdc)
 	{
-		if (last_fname == file) return;
 		if (writable)
 		{
 			log << name << ": deleting file " << file << endl;
 			sys::fs::deleteIfExists(file);
 		} else
 			log << name << ": would delete file " << file << endl;
-		last_fname = file;
 	}
 };
 
@@ -400,7 +397,6 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	maintenance::FindMissing fm(ca, files);
 	maintenance::HoleFinder hf(fm, m_path, quick);
 	m_idx.scan_files(hf);
-	hf.end();
 	fm.end();
 	WritableLocal::maintenance(v, quick);
 }
@@ -426,24 +422,22 @@ struct FileCopier : maintenance::IndexFileVisitor
 {
     index::WContents& m_idx;
 	const scan::Validator& m_val;
-	wibble::sys::Buffer buf;
 	std::string src;
 	std::string dst;
 	int fd_src;
         data::Writer writer;
-	off_t w_off;
 
     FileCopier(index::WContents& idx, const std::string& src, const std::string& dst);
     virtual ~FileCopier();
 
-	void operator()(const std::string& file, int id, off_t offset, size_t size);
+    void operator()(const std::string& file, const metadata::Collection& mdc);
 
 	void flush();
 };
 
 FileCopier::FileCopier(index::WContents& idx, const std::string& src, const std::string& dst)
     : m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1),
-          writer(data::Writer::get(utils::files::format_from_ext(src), dst)), w_off(0)
+          writer(data::Writer::get(utils::files::format_from_ext(src), dst))
 {
 	fd_src = open(src.c_str(), O_RDONLY
 #ifdef linux
@@ -459,20 +453,22 @@ FileCopier::~FileCopier()
 	flush();
 }
 
-void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
+//void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
+void FileCopier::operator()(const std::string& file, const metadata::Collection& mdc)
 {
-    // Resize the buffer at the exact size
-    buf.resize(size);
-	ssize_t res = pread(fd_src, buf.data(), size, offset);
-	if (res < 0 || (unsigned)res != size)
-		throw wibble::exception::File(src, "reading " + str::fmt(size) + " bytes");
-	m_val.validate(buf.data(), size);
-
-    // Append the buffer
-    w_off = writer.append(buf);
-
-	// Reindex file from offset to w_off
-	m_idx.relocate_data(id, w_off);
+    // Deindex the file
+    m_idx.reset(file);
+    for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
+    {
+        // Read the data
+        wibble::sys::Buffer buf = i->getData();
+        // Validate it
+        m_val.validate(buf.data(), buf.size());
+        // Append it to the new file
+        off_t w_off = writer.append(buf);
+        // Reindex it
+        m_idx.index(*i, file, w_off);
+    }
 }
 
 void FileCopier::flush()

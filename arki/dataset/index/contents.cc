@@ -298,92 +298,66 @@ size_t Contents::count() const
 	return res;
 }
 
-// IndexFileVisitor that takes a sequence ordered by file and produces a
-// sequence ordered by file, reftime, offset
-namespace {
-struct FurtherSort
-{
-	struct FileData
-	{
-		int id;
-		std::string reftime;
-		off_t offset;
-		size_t size;
-
-		FileData(int id, const std::string& reftime, off_t offset, size_t size)
-			: id(id), reftime(reftime), offset(offset), size(size) {}
-	};
-
-	static bool sorter(const FileData& a, const FileData& b)
-	{
-		if (a.reftime != b.reftime)
-			return a.reftime < b.reftime;
-		return a.offset < b.offset;
-	}
-
-	maintenance::IndexFileVisitor& next;
-	string curfile;
-	vector<FileData> data;
-
-	FurtherSort(maintenance::IndexFileVisitor& next) : next(next) {}
-
-	virtual void operator()(const std::string& file, const std::string& reftime, int id, off_t offset, size_t size)
-	{
-		if (file != curfile)
-		{
-			emit();
-			curfile = file;
-		}
-		data.push_back(FileData(id, reftime, offset, size));
-	}
-
-	void end()
-	{
-		emit();
-	}
-
-	void emit()
-	{
-		if (data.empty())
-			return;
-		std::sort(data.begin(), data.end(), sorter);
-		for (vector<FileData>::const_iterator i = data.begin(); i != data.end(); ++i)
-			next(curfile, i->id, i->offset, i->size);
-		data.clear();
-	}
-};
-}
-
 void Contents::scan_files(maintenance::IndexFileVisitor& v) const
 {
-	Query sq("scan_files", m_db);
-	sq.compile("SELECT id, file, reftime, offset, size FROM md ORDER BY file");
-	FurtherSort fs(v);
-	while (sq.step())
-	{
-		int id = sq.fetch<int>(0);
-		string file = sq.fetchString(1);
-		string reftime = sq.fetchString(2);
-		off_t offset = sq.fetch<off_t>(3);
-		size_t size = sq.fetch<size_t>(4);
+    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+    if (m_uniques) query += ", m.uniq";
+    if (m_others) query += ", m.other";
+    if (m_smallfiles) query += ", m.data";
+    query += " FROM md AS m";
+    query += " ORDER BY m.file, m.reftime, m.offset";
 
-		fs(file, reftime, id, offset, size);
-	}
-	fs.end();
+    Query mdq("scan_files_md", m_db);
+    mdq.compile(query);
+
+    string last_file;
+    metadata::Collection mdc;
+    while (mdq.step())
+    {
+        string file = mdq.fetchString(2);
+        if (file != last_file)
+        {
+            if (!last_file.empty())
+            {
+                v(last_file, mdc);
+                mdc.clear();
+            }
+            last_file = file;
+        }
+
+        // Rebuild the Metadata
+        Metadata md;
+        build_md(mdq, md);
+        mdc(md);
+    }
+
+    if (!last_file.empty())
+        v(last_file, mdc);
 }
 
 void Contents::scan_file(const std::string& relname, maintenance::IndexFileVisitor& v, const std::string& orderBy) const
 {
-	Query sq("scan_file", m_db);
-	sq.compile("SELECT id, offset, size FROM md WHERE file=? ORDER BY " + orderBy);
-	sq.bind(1, relname);
-	while (sq.step())
-	{
-		int id = sq.fetch<int>(0);
-		off_t offset = sq.fetch<off_t>(1);
-		size_t size = sq.fetch<size_t>(2);
-		v(relname, id, offset, size);
-	}
+    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+    if (m_uniques) query += ", m.uniq";
+    if (m_others) query += ", m.other";
+    if (m_smallfiles) query += ", m.data";
+    query += " FROM md AS m";
+    query += " WHERE file=? ORDER BY " + orderBy;
+
+    Query mdq("scan_files_md", m_db);
+    mdq.compile(query);
+    mdq.bind(1, relname);
+
+    metadata::Collection mdc;
+    while (mdq.step())
+    {
+        // Rebuild the Metadata
+        Metadata md;
+        build_md(mdq, md);
+        mdc(md);
+    }
+
+    v(relname, mdc);
 }
 
 void Contents::scan_file(const std::string& relname, metadata::Consumer& consumer) const
@@ -1136,7 +1110,7 @@ void WContents::initDB()
 	if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-void WContents::bindInsertParams(Query& q, Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
+void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string& file, uint64_t ofs, char* timebuf)
 {
 	int idx = 0;
 
@@ -1193,7 +1167,7 @@ Pending WContents::beginExclusiveTransaction()
 	return Pending(new SqliteTransaction(m_db, true));
 }
 
-void WContents::index(Metadata& md, const std::string& file, uint64_t ofs, int* id)
+void WContents::index(const Metadata& md, const std::string& file, uint64_t ofs, int* id)
 {
 	m_insert.reset();
 
@@ -1290,16 +1264,6 @@ void WContents::reset(const std::string& file)
 
     // Clean affected summary cache
     scache.invalidate(tmin, tmax);
-}
-
-void WContents::relocate_data(int id, off_t newofs)
-{
-	Query query("update_offset", m_db);
-	query.compile("UPDATE md SET offset = ? WHERE id = ?");
-	query.bind(1, newofs);
-	query.bind(2, id);
-	while (query.step())
-		;
 }
 
 void WContents::vacuum()
