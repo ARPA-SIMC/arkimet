@@ -39,22 +39,26 @@ using namespace arki::tests;
 using namespace arki::dataset;
 using namespace arki::utils;
 
+namespace {
+
+struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
+    arki_dataset_maintenance_base()
+    {
+        cfg.setValue("path", "testds");
+        cfg.setValue("name", "testds");
+        cfg.setValue("step", "daily");
+    }
+};
+
+}
+
 namespace tut {
 
-struct arki_dataset_maintenance_shar : public arki::tests::DatasetTest {
-	arki_dataset_maintenance_shar()
-	{
-		cfg.setValue("path", "testds");
-		cfg.setValue("name", "testds");
-		cfg.setValue("type", "simple");
-		cfg.setValue("step", "daily");
-	}
-};
-TESTGRP(arki_dataset_maintenance);
+typedef dataset_tg<arki_dataset_maintenance_base> tg;
+typedef tg::object to;
 
 // Test accuracy of maintenance scan, on perfect dataset
-template<> template<>
-void to::test<1>()
+template<> template<> void to::test<1>()
 {
 	clean_and_import();
 
@@ -98,8 +102,7 @@ void to::test<1>()
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive
-template<> template<>
-void to::test<2>()
+template<> template<> void to::test<2>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
@@ -181,8 +184,7 @@ void to::test<2>()
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
-template<> template<>
-void to::test<3>()
+template<> template<> void to::test<3>()
 {
 	// Data are from 07, 08, 10 2007
 	int treshold[6] = { 2007, 9, 1, 0, 0, 0 };
@@ -232,8 +234,7 @@ void to::test<3>()
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with a truncated data file
-template<> template<>
-void to::test<4>()
+template<> template<> void to::test<4>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("step", "yearly");
@@ -309,8 +310,7 @@ void to::test<4>()
 }
 
 // Test accuracy of maintenance scan, on a dataset with a corrupted data file
-template<> template<>
-void to::test<5>()
+template<> template<> void to::test<5>()
 {
 	ConfigFile cfg = this->cfg;
 	cfg.setValue("step", "monthly");
@@ -382,8 +382,7 @@ void to::test<5>()
 }
 
 // Test accuracy of maintenance scan, on a dataset with a data file larger than 2**31
-template<> template<>
-void to::test<6>()
+template<> template<> void to::test<6>()
 {
 	if (cfg.value("type") == "simple") return; // TODO: we need to avoid the SLOOOOW rescan done by simple on the data file
 	clean();
@@ -452,8 +451,7 @@ void to::test<6>()
 
 // Test accuracy of maintenance scan, on dataset with one file deleted,
 // performing repack
-template<> template<>
-void to::test<7>()
+template<> template<> void to::test<7>()
 {
 	clean_and_import();
 	system("rm testds/2007/07-07.grib1");
@@ -513,8 +511,7 @@ void to::test<7>()
 
 // Test accuracy of maintenance scan, on dataset with one file deleted,
 // performing check
-template<> template<>
-void to::test<8>()
+template<> template<> void to::test<8>()
 {
 	clean_and_import();
 	system("rm testds/2007/07-07.grib1");
@@ -556,8 +553,7 @@ void to::test<8>()
 
 // Test accuracy of maintenance scan, after deleting the index, with some
 // spurious extra files in the dataset
-template<> template<>
-void to::test<9>()
+template<> template<> void to::test<9>()
 {
 	clean_and_import();
 	sys::fs::deleteIfExists("testds/index.sqlite");
@@ -605,8 +601,7 @@ void to::test<9>()
 }
 
 // Test recreating a dataset from random datafiles
-template<> template<>
-void to::test<10>()
+template<> template<> void to::test<10>()
 {
 	system("rm -rf testds");
 	system("mkdir testds");
@@ -672,8 +667,7 @@ void to::test<10>()
 }
 
 // Ensure that if repacking changes the data file timestamp, it reindexes it properly
-template<> template<>
-void to::test<11>()
+template<> template<> void to::test<11>()
 {
 	clean_and_import();
 
@@ -702,34 +696,9 @@ void to::test<11>()
 	ensure_maint_clean(3);
 }
 
-template<> template<> void to::test<12>() { ForceSqlite fs; to::test<1>(); }
-template<> template<> void to::test<13>() { ForceSqlite fs; to::test<2>(); }
-template<> template<> void to::test<14>() { ForceSqlite fs; to::test<3>(); }
-template<> template<> void to::test<15>() { ForceSqlite fs; to::test<4>(); }
-template<> template<> void to::test<16>() { ForceSqlite fs; to::test<5>(); }
-template<> template<> void to::test<17>() { ForceSqlite fs; to::test<6>(); }
-template<> template<> void to::test<18>() { ForceSqlite fs; to::test<7>(); }
-template<> template<> void to::test<19>() { ForceSqlite fs; to::test<8>(); }
-template<> template<> void to::test<20>() { ForceSqlite fs; to::test<9>(); }
-template<> template<> void to::test<21>() { ForceSqlite fs; to::test<10>(); }
-template<> template<> void to::test<22>() { ForceSqlite fs; to::test<11>(); }
-
-template<> template<> void to::test<23>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<1>(); }
-template<> template<> void to::test<24>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<2>(); }
-template<> template<> void to::test<25>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<3>(); }
-template<> template<> void to::test<26>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<4>(); }
-template<> template<> void to::test<27>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<5>(); }
-template<> template<> void to::test<28>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<6>(); }
-template<> template<> void to::test<29>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<7>(); }
-template<> template<> void to::test<30>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<8>(); }
-template<> template<> void to::test<31>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<9>(); }
-template<> template<> void to::test<32>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<10>(); }
-template<> template<> void to::test<33>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<11>(); }
-
 // Check that a freshly imported VM2 dataset is seen as packed
 // (it didn't use to because newlines were seen as gaps)
-template<> template<>
-void to::test<34>()
+template<> template<> void to::test<12>()
 {
     clean_and_import(&cfg, "inbound/test.vm2");
 
@@ -743,11 +712,9 @@ void to::test<34>()
         wassert(!actual("testds/.archive").fileexists());
     }
 }
-template<> template<> void to::test<35>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<34>(); }
 
 // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
-template<> template<>
-void to::test<36>()
+template<> template<> void to::test<13>()
 {
     // Data are from 07, 08, 10 2007
     int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
@@ -803,12 +770,9 @@ void to::test<36>()
         ensure_maint_clean(0);
     }
 }
-// Check that a repacked VM2 works properly (ondisk2 dataset)
-template<> template<> void to::test<37>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<36>(); }
 
 // Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
-template<> template<>
-void to::test<38>()
+template<> template<> void to::test<14>()
 {
     // Data are from 07, 08, 10 2007
     int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
@@ -858,83 +822,13 @@ void to::test<38>()
         s.ensure_all_lines_seen();
     }
 }
-// Check that a repacked VM2 works properly (ondisk2 dataset)
-template<> template<> void to::test<39>() { TempConfig tc(cfg, "type", "ondisk2"); to::test<38>(); }
-
-// Test packing an ondisk2 dataset with VM2 data
-template<> template<>
-void to::test<40>()
-{
-    TempConfig tc(cfg, "type", "ondisk2");
-
-    clean_and_import(&cfg, "inbound/test.vm2");
-
-    // Delete something
-    metadata::Collection mdc_imported;
-    {
-        auto_ptr<ReadonlyDataset> reader(makeReader());
-        reader->queryData(DataQuery(), mdc_imported);
-    }
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
-        for (unsigned i = 0; i < mdc_imported.size(); ++i)
-        {
-            if (i % 2 == 0)
-                writer->remove(mdc_imported[i]);
-            else
-                // Load data now, since the file is going to change later
-                // during packing
-                mdc_imported[i].getData();
-        }
-    }
-
-    // Ensure the archive has items to pack
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
-        arki::tests::MaintenanceResults expected(false, 2);
-        expected.by_type[COUNTED_TO_PACK] = 2;
-        wassert(actual(writer.get()).maintenance(expected));
-
-        ensure(!sys::fs::exists("testds/.archive"));
-    }
-
-    // Perform packing and check that things are still ok afterwards
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
-        OutputChecker s;
-        writer->repack(s, true);
-        s.ensure_line_contains(": packed 1987/10-31.vm2");
-        s.ensure_line_contains(": packed 2011/01-01.vm2");
-        s.ensure_line_contains(": 2 files packed");
-        s.ensure_all_lines_seen();
-    }
-
-    // Check that the files have actually shrunk
-    wassert(actual(wibble::sys::fs::stat("testds/1987/10-31.vm2")->st_size) == 36);
-    wassert(actual(wibble::sys::fs::stat("testds/2011/01-01.vm2")->st_size) == 33);
-
-    // Ensure the archive is now clean
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
-        arki::tests::MaintenanceResults expected(true, 2);
-        expected.by_type[COUNTED_OK] = 2;
-        wassert(actual(writer.get()).maintenance(expected));
-
-        wassert(!actual("testds/.archive").fileexists());
-    }
-
-    // Ensure that the data hasn't been corrupted
-    metadata::Collection mdc_packed;
-    {
-        auto_ptr<ReadonlyDataset> reader(makeReader());
-        reader->queryData(DataQuery(), mdc_packed);
-    }
-    wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
-    wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
-    wassert(actual(mdc_packed[0].getData()) == mdc_imported[1].getData());
-    wassert(actual(mdc_packed[1].getData()) == mdc_imported[3].getData());
-}
 
 }
 
-// vim:set ts=4 sw=4:
+namespace {
+
+tut::tg test_ondisk2("arki_dataset_maintenance_ondisk2", "type=ondisk2\n");
+tut::tg test_simple_plain("arki_dataset_maintenance_simple_plain", "type=simple\nindex_type=plain\n");
+tut::tg test_simple_sqlite("arki_dataset_maintenance_simple_sqlite", "type=simple\nindex_type=sqlite");
+
+}

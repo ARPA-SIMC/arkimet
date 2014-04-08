@@ -44,6 +44,7 @@ using namespace std;
 using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::dataset::ondisk2;
@@ -53,11 +54,6 @@ using namespace arki::utils;
 namespace tut {
 
 struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
-	// Little dirty hack: implement MaintFileVisitor so we can conveniently
-	// access State
-
-	ConfigFile cfg;
-
 	arki_dataset_ondisk2_writer_shar()
 	{
 		system("rm -rf testdir");
@@ -845,6 +841,78 @@ void to::test<13>()
         }
     }
 }
+
+// Test packing a dataset with VM2 data
+template<> template<> void to::test<14>()
+{
+    clean_and_import(&cfg, "inbound/test.vm2");
+
+    // Delete something
+    metadata::Collection mdc_imported;
+    {
+        auto_ptr<ReadonlyDataset> reader(makeReader());
+        reader->queryData(DataQuery(), mdc_imported);
+    }
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        for (unsigned i = 0; i < mdc_imported.size(); ++i)
+        {
+            if (i % 2 == 0)
+                writer->remove(mdc_imported[i]);
+            else
+                // Load data now, since the file is going to change later
+                // during packing
+                mdc_imported[i].getData();
+        }
+    }
+
+    // Ensure the archive has items to pack
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        arki::tests::MaintenanceResults expected(false, 2);
+        expected.by_type[COUNTED_TO_PACK] = 2;
+        wassert(actual(writer.get()).maintenance(expected));
+
+        ensure(!sys::fs::exists("testdir/.archive"));
+    }
+
+    // Perform packing and check that things are still ok afterwards
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        OutputChecker s;
+        writer->repack(s, true);
+        s.ensure_line_contains(": packed 1987/10-31.vm2");
+        s.ensure_line_contains(": packed 2011/01-01.vm2");
+        s.ensure_line_contains(": 2 files packed");
+        s.ensure_all_lines_seen();
+    }
+
+    // Check that the files have actually shrunk
+    wassert(actual(wibble::sys::fs::stat("testdir/1987/10-31.vm2")->st_size) == 36);
+    wassert(actual(wibble::sys::fs::stat("testdir/2011/01-01.vm2")->st_size) == 33);
+
+    // Ensure the archive is now clean
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        arki::tests::MaintenanceResults expected(true, 2);
+        expected.by_type[COUNTED_OK] = 2;
+        wassert(actual(writer.get()).maintenance(expected));
+
+        wassert(!actual("testdir/.archive").fileexists());
+    }
+
+    // Ensure that the data hasn't been corrupted
+    metadata::Collection mdc_packed;
+    {
+        auto_ptr<ReadonlyDataset> reader(makeReader());
+        reader->queryData(DataQuery(), mdc_packed);
+    }
+    wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
+    wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
+    wassert(actual(mdc_packed[0].getData()) == mdc_imported[1].getData());
+    wassert(actual(mdc_packed[1].getData()) == mdc_imported[3].getData());
+}
+
 
 }
 
