@@ -173,33 +173,6 @@ struct dataset_tg : public tut::test_group<T>
     }
 };
 
-struct TempConfig
-{
-	ConfigFile& cfg;
-	ConfigFile backup;
-
-	TempConfig(ConfigFile& cfg)
-		: cfg(cfg), backup(cfg)
-	{
-	}
-
-	TempConfig(ConfigFile& cfg, const std::string& key, const std::string& val)
-		: cfg(cfg), backup(cfg)
-	{
-		override(key, val);
-	}
-
-	~TempConfig()
-	{
-		cfg = backup;
-	}
-
-	void override(const std::string& key, const std::string& val)
-	{
-		cfg.setValue(key, val);
-	}
-};
-
 }
 
 struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor

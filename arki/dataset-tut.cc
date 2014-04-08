@@ -509,8 +509,6 @@ void to::test<18>()
 template<> template<>
 void to::test<19>()
 {
-    arki::tests::ForceSqlite fs;
-
     TestDataset tds(tdata_grib,
         "[test]\n"
         "type = simple\n"
@@ -520,6 +518,7 @@ void to::test<19>()
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
         "path = test\n"
+        "index_type = sqlite\n"
     );
     wruntest(tds.test_all);
 }
@@ -545,8 +544,6 @@ void to::test<20>()
 template<> template<>
 void to::test<21>()
 {
-    arki::tests::ForceSqlite fs;
-
     TestDataset tds(tdata_bufr,
         "[test]\n"
         "type = simple\n"
@@ -556,6 +553,7 @@ void to::test<21>()
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
         "path = test\n"
+        "index_type = sqlite\n"
     );
     wruntest(tds.test_all);
 }
@@ -581,8 +579,6 @@ void to::test<22>()
 template<> template<>
 void to::test<23>()
 {
-    arki::tests::ForceSqlite fs;
-
     TestDataset tds(tdata_vm2,
         "[test]\n"
         "type = simple\n"
@@ -592,6 +588,7 @@ void to::test<23>()
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
         "path = test\n"
+        "index_type = sqlite\n"
     );
     wruntest(tds.test_all);
 }
@@ -620,8 +617,6 @@ template<> template<>
 void to::test<25>()
 {
 #if 0
-    arki::tests::ForceSqlite fs;
-
     TestDataset tds(tdata_vm2,
         "[test]\n"
         "type = simple\n"
@@ -631,6 +626,7 @@ void to::test<25>()
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
         "path = test\n"
+        "index_type = sqlite\n"
     );
     wruntest(tds.test_all);
 #endif
