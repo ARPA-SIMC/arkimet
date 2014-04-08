@@ -27,6 +27,9 @@
 #include <arki/dataset/maintenance.h>
 #include <arki/scan/any.h>
 #include <arki/utils/files.h>
+#include <arki/types/area.h>
+#include <arki/types/product.h>
+#include <arki/types/value.h>
 #include <wibble/sys/fs.h>
 
 #include <sstream>
@@ -47,6 +50,7 @@ struct arki_dataset_local_base : public DatasetTest {
         cfg.setValue("path", "testds");
         cfg.setValue("name", "testds");
         cfg.setValue("step", "daily");
+        cfg.setValue("unique", "product, area, reftime");
     }
 };
 
@@ -353,6 +357,97 @@ template<> template<> void to::test<6>()
 	bq.setData(Matcher::parse(""));
 	reader->queryBytes(bq, os);
 	ensure(os.str().empty());
+}
+
+// Test querying with lots of data, to trigger on disk metadata buffering
+template<> template<> void to::test<7>()
+{
+    using namespace arki::types;
+
+    clean();
+    {
+        std::auto_ptr<WritableDataset> writer(makeWriter());
+
+        // Reverse order of import, so we can check if things get sorted properly when querying
+        for (int month = 12; month >= 1; --month)
+            for (int day = 28; day >= 1; --day)
+                for (int hour = 21; hour >= 0; hour -= 3)
+                    for (int station = 2; station >= 1; --station)
+                        for (int varid = 3; varid >= 1; --varid)
+                        {
+                            int value = month + day + hour + station + varid;
+                            Metadata md;
+                            char buf[40];
+                            int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
+                                    month, day, hour, station, varid, value);
+                            wibble::sys::Buffer data(buf, len, false);
+                            md.source = types::source::Inline::create("vm2", data);
+                            md.add_note(types::Note::create("Generated from memory"));
+                            md.set(types::reftime::Position::create(types::Time::create(2013, month, day, hour, 0, 0)));
+                            md.set(types::area::VM2::create(station));
+                            md.set(types::product::VM2::create(varid));
+                            snprintf(buf, 40, "%d,,,000000000", value);
+                            md.set(types::Value::create(buf));
+                            WritableDataset::AcquireResult res = writer->acquire(md);
+                            wassert(actual(res) == WritableDataset::ACQ_OK);
+                        }
+    }
+
+    utils::files::removeDontpackFlagfile(cfg.value("path"));
+
+    // Query all the dataset and make sure the results are in the right order
+    struct CheckSortOrder : public metadata::Consumer
+    {
+        uint64_t last_value;
+        unsigned seen;
+        CheckSortOrder() : last_value(0), seen(0) {}
+        virtual uint64_t make_key(const Metadata& md) const = 0;
+        virtual bool operator()(Metadata& md)
+        {
+            uint64_t value = make_key(md);
+            wassert(actual(value) >= last_value);
+            last_value = value;
+            ++seen;
+            return true;
+        }
+    };
+
+    struct CheckReftimeSortOrder : public CheckSortOrder
+    {
+        virtual uint64_t make_key(const Metadata& md) const
+        {
+            UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
+            return rt->time->vals[1] * 10000 + rt->time->vals[2] * 100 + rt->time->vals[3];
+        }
+    };
+
+    struct CheckAllSortOrder : public CheckSortOrder
+    {
+        virtual uint64_t make_key(const Metadata& md) const
+        {
+            UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
+            UItem<types::area::VM2> area = md.get(TYPE_AREA).upcast<types::area::VM2>();
+            UItem<types::product::VM2> prod = md.get(TYPE_PRODUCT).upcast<types::product::VM2>();
+            uint64_t dt = rt->time->vals[1] * 10000 + rt->time->vals[2] * 100 + rt->time->vals[3];
+            return dt * 100 + area->station_id() * 10 + prod->variable_id();
+        }
+    };
+
+    {
+        std::auto_ptr<ReadonlyDataset> reader(makeReader());
+        CheckReftimeSortOrder cso;
+        reader->queryData(dataset::DataQuery(Matcher::parse(""), false), cso);
+        wassert(actual(cso.seen) == 16128);
+    }
+
+    {
+        std::auto_ptr<ReadonlyDataset> reader(makeReader());
+        CheckAllSortOrder cso;
+        dataset::DataQuery dq(Matcher::parse(""), false);
+        dq.sorter = sort::Compare::parse("reftime,area,product");
+        reader->queryData(dq, cso);
+        wassert(actual(cso.seen) == 16128);
+    }
 }
 
 }

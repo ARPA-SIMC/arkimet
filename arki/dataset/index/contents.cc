@@ -619,6 +619,10 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) 
 			string srcname = mdq.fetchString(2);
 			if (srcname != last_fname)
 			{
+                // Note: since we chunk at file boundary, and since files
+                // cluster data by reftime, we guarantee that sorting is
+                // consistent as long as data is required to be sorted by
+                // reftime first.
 				if (mdbuf.size() > 8192)
 				{
 					// If we pile up too many metadata, write them out
