@@ -24,9 +24,11 @@
  */
 
 #include <arki/transaction.h>
+#include <arki/nag.h>
 #include <string>
 #include <iosfwd>
 #include <sys/types.h>
+#include <memory>
 
 namespace wibble {
 namespace sys {
@@ -36,58 +38,159 @@ class Buffer;
 
 namespace arki {
 class Metadata;
+class ConfigFile;
 
-namespace data {
-
-namespace impl {
-class Reader;
-class Writer;
+namespace metadata {
+class Collection;
 }
 
-template<typename T>
-class Base
+namespace data {
+class Reader;
+class Writer;
+
+namespace impl {
+
+template<typename T, unsigned max_size=3>
+class Cache
 {
 protected:
-    T* impl;
+    T* items[max_size];
+
+    /// Move an existing element to the front of the list
+    void move_to_front(unsigned pos)
+    {
+        // Save a pointer to the item
+        T* item = items[pos];
+        // Shift all previous items forward
+        for (unsigned i = pos; i > 0; --i)
+            items[i] = items[i - 1];
+        // Set the first element to item
+        items[0] = item;
+    }
 
 public:
-    Base(T* impl);
-    Base(const Base<T>& val);
-    ~Base();
+    Cache()
+    {
+        for (unsigned i = 0; i < max_size; ++i)
+            items[i] = 0;
+    }
 
-    /// Assignment
-    Base<T>& operator=(const Base<T>& val);
+    ~Cache()
+    {
+        for (unsigned i = 0; i < max_size && items[i]; ++i)
+            delete items[i];
+    }
 
-    const std::string& fname() const;
+    void clear()
+    {
+        for (int i = max_size - 1; i >= 0; --i)
+        {
+            if (!items[i]) continue;
+            delete items[i];
+            items[i] = 0;
+        }
+    }
 
     /**
-     * Return the pointer to the implementation object.
+     * Get an element from the cache given its file name
      *
-     * This is not part of the API, but it is used to unit test implementation
-     * internals.
+     * @returns 0 if not found, else a pointer to the element, whose memory is
+     *          still managed by the cache
      */
-    T* _implementation() { return impl; }
+    T* get(const std::string& relname)
+    {
+        for (unsigned i = 0; i < max_size && items[i]; ++i)
+            if (items[i]->relname == relname)
+            {
+                // Move to front if it wasn't already
+                if (i > 0)
+                    move_to_front(i);
+                return items[0];
+            }
+        // Not found
+        return 0;
+    }
+
+    /**
+     * Add an element to the cache, taking ownership of its memory management
+     *
+     * @returns the element itself, just for the convenience of being able to
+     * type "return cache.add(Value::create());"
+     */
+    T* add(std::auto_ptr<T> val)
+    {
+        // Delete the last element if the cache is full
+        if (items[max_size - 1])
+        {
+            try {
+                delete items[max_size - 1];
+            } catch (std::exception& e) {
+                // Prevent an error in the destructor of an unrelated file to
+                // confuse what we are doing here
+                nag::warning("Cannot close the least recently used segment: %s", e.what());
+            }
+        }
+        // Shift all other elements forward
+        for (unsigned i = max_size - 1; i > 0; --i)
+            items[i] = items[i - 1];
+        // Set the first element to val
+        return items[0] = val.release();
+    }
 };
 
-class Reader : public Base<impl::Reader>
+}
+
+/// Manage instantiating the right readers/writers for a dataset
+class SegmentManager
 {
 protected:
-    Reader(impl::Reader* impl);
+    impl::Cache<Reader> readers;
+    impl::Cache<Writer> writers;
 
 public:
-    ~Reader();
+    virtual ~SegmentManager();
 
-    static Reader get(const std::string& fname);
-    static Reader get(const std::string& format, const std::string& fname);
+    void flush_writers();
+
+    virtual Reader* get_reader(const std::string& relname) = 0;
+    virtual Reader* get_reader(const std::string& format, const std::string& relname) = 0;
+    virtual Writer* get_writer(const std::string& relname) = 0;
+    virtual Writer* get_writer(const std::string& format, const std::string& relname) = 0;
+
+    /**
+     * Repack the file relname, so that it contains only the data in mds, in
+     * the same order as in mds.
+     *
+     * The source metadata in mds will be updated to point to the new file.
+     */
+    virtual Pending repack(const std::string& relname, metadata::Collection& mds) = 0;
+
+    /// Create a new SegmentManager given a dataset's configuration
+    static std::auto_ptr<SegmentManager> get(const ConfigFile& cfg);
 };
 
-class Writer : public Base<impl::Writer>
+struct Reader
 {
-protected:
-    Writer(impl::Writer* impl);
-
 public:
-    ~Writer();
+    std::string relname;
+    std::string absname;
+
+    virtual ~Reader();
+};
+
+struct Writer
+{
+    struct Payload
+    {
+        virtual ~Payload() {}
+    };
+
+    std::string relname;
+    std::string absname;
+    Payload* payload;
+
+    Writer(const std::string& relname, const std::string& absname);
+    virtual ~Writer();
 
     /**
      * Append the data, updating md's source information.
@@ -95,7 +198,7 @@ public:
      * In case of write errors (for example, disk full) it tries to truncate
      * the file as it was before, before raising an exception.
      */
-    void append(Metadata& md);
+    virtual void append(Metadata& md) = 0;
 
     /**
      * Append raw data to the file, wrapping it with the right envelope if
@@ -109,7 +212,7 @@ public:
      *
      * @return the offset at which the buffer is written
      */
-    off_t append(const wibble::sys::Buffer& buf);
+    virtual off_t append(const wibble::sys::Buffer& buf) = 0;
 
     /**
      * Append the data, in a transaction, updating md's source information.
@@ -118,10 +221,7 @@ public:
      * offset is read. Committing the transaction actually writes the data to
      * the file.
      */
-    Pending append(Metadata& md, off_t* ofs);
-
-    static Writer get(const std::string& fname);
-    static Writer get(const std::string& format, const std::string& fname);
+    virtual Pending append(Metadata& md, off_t* ofs) = 0;
 };
 
 /**

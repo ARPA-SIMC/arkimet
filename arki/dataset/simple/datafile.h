@@ -37,7 +37,7 @@ namespace simple {
 namespace datafile {
 
 /// Accumulate metadata and summaries while writing
-struct MdBuf
+struct MdBuf : public data::Writer::Payload
 {
     std::string pathname;
     std::string dirname;
@@ -54,30 +54,6 @@ struct MdBuf
 };
 
 }
-
-/**
- * Manage a data file in the Ondisk dataset, including all accessory files,
- * like metadata file and flagfiles
- */
-struct Datafile
-{
-    // Full path to the data file
-    data::Writer writer;
-    datafile::MdBuf mdbuf;
-
-    Datafile(const std::string& pathname, const std::string& format);
-    ~Datafile();
-
-	void flush();
-
-	/**
-	 * Append the data to the datafile.
-	 *
-	 * Metadata updates will only be saved when the Datafile is flushed or
-	 * destroyed
-	 */
-	void append(Metadata& md);
-};
 
 }
 }

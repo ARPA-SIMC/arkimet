@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/data/impl.h>
+#include <arki/data.h>
 #include <string>
 
 namespace wibble {
@@ -36,13 +36,13 @@ namespace arki {
 namespace data {
 namespace fd {
 
-class Writer : public impl::Writer
+class Writer : public data::Writer
 {
 protected:
     int fd;
 
 public:
-    Writer(const std::string& fname);
+    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
     ~Writer();
 
     void lock();

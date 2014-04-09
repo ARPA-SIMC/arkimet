@@ -175,14 +175,9 @@ public:
 	void scan_files(maintenance::IndexFileVisitor& v) const;
 
 	/**
-	 * Scan the information about the given file, sorted by offset
-	 */
-	void scan_file(const std::string& relname, maintenance::IndexFileVisitor& v, const std::string& orderBy = "offset") const;
-
-	/**
 	 * Send the metadata of all data items inside a file to the given consumer
 	 */
-	void scan_file(const std::string& relname, metadata::Consumer& consumer) const;
+	void scan_file(const std::string& relname, metadata::Consumer& consumer, const std::string& orderBy = "offset") const;
 
 	/**
 	 * Return the maximum reference time found in the given file.

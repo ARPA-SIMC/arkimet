@@ -40,7 +40,7 @@ namespace lines {
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& fname);
+    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
 
     void write(const wibble::sys::Buffer& buf);
 

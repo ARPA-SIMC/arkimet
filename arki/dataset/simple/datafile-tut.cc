@@ -80,11 +80,7 @@ void to::test<1>()
 	scanner.open("inbound/test.grib1");
 
     {
-        Datafile df("./" + fname, "grib");
-
-		// It should exist but be empty
-		ensure(sys::fs::exists(fname));
-		ensure_equals(filesize(fname), 0u);
+        datafile::MdBuf mdbuf("./" + fname);
 
 		// Get a metadata
 		ensure(scanner.next(md));
@@ -92,15 +88,14 @@ void to::test<1>()
 		size_t size = datasize(md);
 
 		// Append the data
-		df.append(md);
+		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual(filesize(fname)) == size);
         UItem<types::source::Blob> s = md.source.upcast<types::source::Blob>();
         wassert(actual(s->format) == "grib1");
         wassert(actual(s->offset) == 0u);
         wassert(actual(s->size) == size);
-        wassert(actual(s->filename).endswith(fname));
+        wassert(actual(s->filename) == "inbound/test.grib1");
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -113,15 +108,14 @@ void to::test<1>()
 		origSource = md.source;
 		size = datasize(md);
 
-		df.append(md);
+		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual(filesize(fname)) == totsize + size);
         s = md.source.upcast<types::source::Blob>();
         wassert(actual(s->format) == "grib1");
         wassert(actual(s->offset) == totsize);
         wassert(actual(s->size) == size);
-        wassert(actual(s->filename).endswith(fname));
+        wassert(actual(s->filename) == "inbound/test.grib1");
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -129,7 +123,7 @@ void to::test<1>()
 
 		totsize += size;
 
-		df.flush();
+		mdbuf.flush();
 		// Metadata and summaries are now there
 		ensure(sys::fs::exists(mdfname));
 		ensure(sys::fs::exists(sumfname));
@@ -141,15 +135,14 @@ void to::test<1>()
 		origSource = md.source;
 		size = datasize(md);
 
-		df.append(md);
+		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual(filesize(fname)) == totsize + size);
         s = md.source.upcast<types::source::Blob>();
         wassert(actual(s->format) == "grib1");
         wassert(actual(s->offset) == totsize);
         wassert(actual(s->size) == size);
-        wassert(actual(s->filename).endswith(fname));
+        wassert(actual(s->filename) == "inbound/test.grib1");
 
         // Metadata and summaries don't get touched
         ensure_equals(sys::fs::inode(mdfname), inomd);

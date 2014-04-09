@@ -36,8 +36,6 @@ class Matcher;
 class Summary;
 
 namespace dataset {
-class TargetFile;
-
 namespace maintenance {
 class MaintFileVisitor;
 }
@@ -56,12 +54,6 @@ class Writer : public WritableLocal
 protected:
 	ConfigFile m_cfg;
     index::WContents m_idx;
-	TargetFile* m_tf;
-
-    std::map<std::string, data::Writer> m_df_cache;
-
-    /// Return a (shared) instance of the Datafile for the given relative pathname
-    data::Writer file(const std::string& pathname, const std::string& format);
 
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);

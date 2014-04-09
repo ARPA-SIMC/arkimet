@@ -99,26 +99,6 @@ void MdBuf::flush()
 
 }
 
-Datafile::Datafile(const std::string& pathname, const std::string& format)
-    : writer(data::Writer::get(format, pathname)), mdbuf(pathname)
-{
-}
-
-Datafile::~Datafile()
-{
-}
-
-void Datafile::flush()
-{
-    mdbuf.flush();
-}
-
-void Datafile::append(Metadata& md)
-{
-    writer.append(md);
-    mdbuf.add(md);
-}
-
 }
 }
 }

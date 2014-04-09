@@ -22,7 +22,6 @@
 
 #include <arki/tests/tests.h>
 #include "data.h"
-#include "data/impl.h"
 #include "data/lines.h"
 
 namespace tut {
@@ -36,16 +35,68 @@ struct arki_data_shar {
 
 TESTGRP(arki_data);
 
+namespace {
+
+class TestItem
+{
+public:
+    std::string relname;
+
+    TestItem(const std::string& relname) : relname(relname) {}
+};
+
+}
+
+// Test the item cache
 template<> template<>
 void to::test<1>()
 {
+    data::impl::Cache<TestItem, 3> cache;
+
+    // Empty cache does not return things
+    wassert(actual(cache.get("foo") == 0).istrue());
+
+    // Add returns the item we added
+    TestItem* foo = new TestItem("foo");
+    wassert(actual(cache.add(auto_ptr<TestItem>(foo)) == foo).istrue());
+
+    // Get returns foo
+    wassert(actual(cache.get("foo") == foo).istrue());
+
+    // Add two more items
+    TestItem* bar = new TestItem("bar");
+    wassert(actual(cache.add(auto_ptr<TestItem>(bar)) == bar).istrue());
+    TestItem* baz = new TestItem("baz");
+    wassert(actual(cache.add(auto_ptr<TestItem>(baz)) == baz).istrue());
+
+    // With max_size=3, the cache should hold them all
+    wassert(actual(cache.get("foo") == foo).istrue());
+    wassert(actual(cache.get("bar") == bar).istrue());
+    wassert(actual(cache.get("baz") == baz).istrue());
+
+    // Add an extra item: the last recently used was foo, which gets popped
+    TestItem* gnu = new TestItem("gnu");
+    wassert(actual(cache.add(auto_ptr<TestItem>(gnu)) == gnu).istrue());
+
+    // Foo is not in cache anymore, bar baz and gnu are
+    wassert(actual(cache.get("foo") == 0).istrue());
+    wassert(actual(cache.get("bar") == bar).istrue());
+    wassert(actual(cache.get("baz") == baz).istrue());
+    wassert(actual(cache.get("gnu") == gnu).istrue());
+}
+
+template<> template<>
+void to::test<2>()
+{
     using namespace arki::data;
+#if 0
 
     Writer w1 = Writer::get("grib", "test-data-writer");
     Writer w2 = Writer::get("grib", "test-data-writer");
 
     // Check that the implementation is reused
     wassert(actual(w1._implementation()) == w2._implementation());
+#endif
 }
 
 }

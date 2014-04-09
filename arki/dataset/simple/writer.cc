@@ -25,7 +25,6 @@
 #include <arki/dataset/simple/writer.h>
 #include <arki/dataset/index/manifest.h>
 #include <arki/dataset/simple/datafile.h>
-#include <arki/dataset/targetfile.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
@@ -67,14 +66,12 @@ namespace dataset {
 namespace simple {
 
 Writer::Writer(const ConfigFile& cfg)
-	: WritableLocal(cfg), m_mft(0), m_tf(0)
+	: WritableLocal(cfg), m_mft(0)
 {
 	m_name = cfg.value("name");
 
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_path);
-
-	m_tf = TargetFile::create(cfg);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -89,45 +86,32 @@ Writer::Writer(const ConfigFile& cfg)
 Writer::~Writer()
 {
 	flush();
-	if (m_tf) delete m_tf;
 	if (m_mft) delete m_mft;
 }
 
-Datafile* Writer::file(const std::string& pathname, const std::string& format)
+data::Writer* Writer::file(const Metadata& md, const std::string& format)
 {
-	std::map<std::string, Datafile*>::iterator i = m_df_cache.find(pathname);
-	if (i != m_df_cache.end())
-		return i->second;
-
-	// Ensure that the directory for 'pathname' exists
-	string pn = str::joinpath(m_path, pathname);
-	size_t pos = pn.rfind('/');
-	if (pos != string::npos)
-		wibble::sys::fs::mkpath(pn.substr(0, pos));
-
-	if (scan::isCompressed(pn))
-		throw wibble::exception::Consistency("accessing data file " + pathname,
-				"cannot update compressed data files: please manually uncompress it first");
-
-    Datafile* res = new Datafile(pn, format);
-    m_df_cache.insert(make_pair(pathname, res));
-    return res;
+    data::Writer* writer = WritableLocal::file(md, format);
+    if (!writer->payload)
+        writer->payload = new datafile::MdBuf(writer->absname);
+    return writer;
 }
 
 WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
 	// TODO: refuse if md is before "archive age"
-
-    string reldest = (*m_tf)(md) + "." + md.source->format;
-    Datafile* df = file(reldest, md.source->format);
+    data::Writer* writer = file(md, md.source->format);
+    datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
 	// Try appending
 	UItem<types::AssignedDataset> oldads = md.get<types::AssignedDataset>();
 	md.set(types::AssignedDataset::create(m_name, ""));
 
-	try {
-		df->append(md);
-		return ACQ_OK;
+    try {
+        writer->append(md);
+        mdbuf->add(md);
+        m_mft->acquire(writer->relname, sys::fs::timestamp(mdbuf->pathname, 0), mdbuf->sum);
+        return ACQ_OK;
 	} catch (std::exception& e) {
 		// sqlite will take care of transaction consistency
 		if (oldads.defined())
@@ -249,14 +233,8 @@ void Writer::removeAll(std::ostream& log, bool writable)
 
 void Writer::flush()
 {
-	for (std::map<std::string, Datafile*>::iterator i = m_df_cache.begin();
-			i != m_df_cache.end(); ++i)
-	{
-        m_mft->acquire(i->first, sys::fs::timestamp(i->second->mdbuf.pathname, 0), i->second->mdbuf.sum);
-        delete i->second;
-	}
-	m_df_cache.clear();
-	m_mft->flush();
+    WritableLocal::flush();
+    m_mft->flush();
 }
 
 void Writer::rescanFile(const std::string& relpath)
@@ -269,62 +247,6 @@ void Writer::rescanFile(const std::string& relpath)
 	m_mft->rescanFile(m_path, relpath);
 }
 
-namespace {
-struct FileCopier : metadata::Consumer
-{
-	const scan::Validator& m_val;
-	std::string dst;
-	std::string finalbasedir;
-	std::string finalname;
-	int fd_dst;
-	off_t w_off;
-
-	FileCopier(const scan::Validator& val, const std::string& dst, const std::string& finalbasedir, const std::string& finalname)
-		: m_val(val), dst(dst), finalbasedir(finalbasedir), finalname(finalname), fd_dst(-1), w_off(0)
-	{
-		fd_dst = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-		if (fd_dst < 0)
-			throw wibble::exception::File(dst, "opening file");
-	}
-	virtual ~FileCopier()
-	{
-		flush();
-	}
-
-	bool operator()(Metadata& md);
-	void flush();
-};
-
-bool FileCopier::operator()(Metadata& md)
-{
-	// Read the data
-	wibble::sys::Buffer buf = md.getData();
-
-	// Check it for corruption
-	m_val.validate(buf.data(), buf.size());
-
-	// Write it out
-    data::Writer writer = data::Writer::get(md.source->format, dst);
-    w_off = writer.append(buf);
-
-	// Update the Blob source using the new position
-	md.source = types::source::Blob::create(md.source->format, finalbasedir, finalname, w_off, buf.size());
-
-	return true;
-}
-
-void FileCopier::flush()
-{
-	if (fd_dst != -1)
-	{
-		if (fdatasync(fd_dst) != 0)
-			throw wibble::exception::File(dst, "flushing data to file");
-		if (close(fd_dst) != 0)
-			throw wibble::exception::File(dst, "closing file");
-		fd_dst = -1;
-	}
-}
-}
 
 size_t Writer::repackFile(const std::string& relpath)
 {
@@ -338,10 +260,14 @@ size_t Writer::repackFile(const std::string& relpath)
 	mdc.sort();
 
 	// Write out the data with the new order
-	string pntmp = pathname + ".repack";
-	FileCopier copier(scan::Validator::by_filename(pathname), pntmp, str::dirname(relpath), str::basename(relpath));
-	mdc.sendTo(copier);
-	copier.flush();
+    Pending p_repack = m_segment_manager->repack(relpath, mdc);
+
+    // Strip paths from mds sources
+    for (metadata::Collection::iterator i = mdc.begin(); i != mdc.end(); ++i)
+    {
+        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+        i->source = source->fileOnly();
+    }
 
 	// Prevent reading the still open old file using the new offsets
 	Metadata::flushDataReaders();
@@ -351,11 +277,10 @@ size_t Writer::repackFile(const std::string& relpath)
 	sys::fs::deleteIfExists(pathname + ".summary");
 
     size_t size_pre = sys::fs::size(pathname);
-    size_t size_post = sys::fs::size(pntmp);
 
-	// Rename the data file with to final name
-	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
-		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
+    p_repack.commit();
+
+    size_t size_post = sys::fs::size(pathname);
 
 	// Write out the new metadata
 	mdc.writeAtomically(pathname + ".metadata");

@@ -63,17 +63,10 @@ struct arki_data_lines_shar {
      * return the data::Writer so that we manage the writer lifetime, but also
      * the underlying implementation so we can test it.
      */
-    data::Writer make_w(const std::string& fname, lines::Writer*& w)
+    auto_ptr<lines::Writer> make_w(const std::string& relname)
     {
-        data::Writer res = data::Writer::get("vm2", fname);
-
-        // Access and upcast the underlying implementation
-        w = dynamic_cast<lines::Writer*>(res._implementation());
-
-        if (!w)
-            throw wibble::exception::Consistency("creating test writer", "the writer we got in not a lines::Writer");
-
-        return res;
+        string absname = sys::fs::abspath(relname);
+        return auto_ptr<lines::Writer>(new lines::Writer(relname, absname));
     }
 };
 
@@ -86,54 +79,54 @@ inline size_t datasize(const Metadata& md)
     return md.source.upcast<types::source::Blob>()->size;
 }
 
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, data::Writer dw, Metadata& md)
+void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, data::Writer* dw, Metadata& md)
 {
     typedef types::source::Blob Blob;
 
     // Make a snapshot of everything before appending
     Item<types::Source> orig_source = md.source;
     size_t data_size = datasize(md);
-    size_t orig_fsize = sys::fs::size(dw.fname(), 0);
+    size_t orig_fsize = sys::fs::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
     off_t ofs;
-    Pending p = dw.append(md, &ofs);
+    Pending p = dw->append(md, &ofs);
     wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(sys::fs::size(dw.fname())) == orig_fsize);
+    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize);
     wassert(actual(md.source) == orig_source);
 
     // Commit
     p.commit();
 
     // After commit, data is appended
-    wassert(actual(sys::fs::size(dw.fname())) == orig_fsize + data_size + 1);
+    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize + data_size + 1);
 
     // And metadata is updated
     UItem<Blob> s = md.source.upcast<Blob>();
     wassert(actual(s->format) == "grib1");
     wassert(actual(s->offset) == orig_fsize);
     wassert(actual(s->size) == data_size);
-    wassert(actual(s->filename) == dw.fname());
+    wassert(actual(s->filename) == dw->absname);
 }
 
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer dw, Metadata& md)
+void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     Item<types::Source> orig_source = md.source;
-    size_t orig_fsize = sys::fs::size(dw.fname(), 0);
+    size_t orig_fsize = sys::fs::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
     off_t ofs;
-    Pending p = dw.append(md, &ofs);
+    Pending p = dw->append(md, &ofs);
     wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(sys::fs::size(dw.fname(), 0)) == orig_fsize);
+    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
     wassert(actual(md.source) == orig_source);
 
     // Rollback
     p.rollback();
 
     // After rollback, nothing has changed
-    wassert(actual(sys::fs::size(dw.fname(), 0)) == orig_fsize);
+    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
     wassert(actual(md.source) == orig_source);
 }
 
@@ -145,21 +138,20 @@ void to::test<1>()
 {
     wassert(!actual(fname).fileexists());
     {
-        lines::Writer* w;
-        data::Writer dw = make_w(fname, w);
+        auto_ptr<lines::Writer> dw(make_w(fname));
 
         // It should exist but be empty
         wassert(actual(fname).fileexists());
         wassert(actual(sys::fs::size(fname)) == 0u);
 
         // Try a successful transaction
-        wruntest(test_append_transaction_ok, dw, mdc[0]);
+        wruntest(test_append_transaction_ok, dw.get(), mdc[0]);
 
         // Then fail one
-        wruntest(test_append_transaction_rollback, dw, mdc[1]);
+        wruntest(test_append_transaction_rollback, dw.get(), mdc[1]);
 
         // Then succeed again
-        wruntest(test_append_transaction_ok, dw, mdc[2]);
+        wruntest(test_append_transaction_ok, dw.get(), mdc[2]);
     }
 
     // Data writer goes out of scope, file is closed and flushed
@@ -179,22 +171,21 @@ template<> template<>
 void to::test<2>()
 {
     {
-        lines::Writer* w;
-        data::Writer dw = make_w(fname, w);
+        auto_ptr<lines::Writer> dw(make_w(fname));
 
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
-        w->truncate(0x7FFFFFFF);
+        dw->truncate(0x7FFFFFFF);
         wassert(actual(sys::fs::size(fname)) == 0x7FFFFFFFu);
 
         // Try a successful transaction
-        wruntest(test_append_transaction_ok, dw, mdc[0]);
+        wruntest(test_append_transaction_ok, dw.get(), mdc[0]);
 
         // Then fail one
-        wruntest(test_append_transaction_rollback, dw, mdc[1]);
+        wruntest(test_append_transaction_rollback, dw.get(), mdc[1]);
 
         // Then succeed again
-        wruntest(test_append_transaction_ok, dw, mdc[2]);
+        wruntest(test_append_transaction_ok, dw.get(), mdc[2]);
     }
 
     wassert(actual(sys::fs::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]) + 2);
@@ -219,11 +210,10 @@ void to::test<4>()
 {
     wassert(!actual(fname).fileexists());
     {
-        lines::Writer* w;
-        data::Writer dw = make_w(fname, w);
+        auto_ptr<lines::Writer> dw(make_w(fname));
         sys::Buffer buf("ciao", 4);
-        ensure_equals(dw.append(buf), 0);
-        ensure_equals(dw.append(buf), 5);
+        ensure_equals(dw->append(buf), 0);
+        ensure_equals(dw->append(buf), 5);
     }
 
     wassert(actual(utils::files::read_file(fname)) == "ciao\nciao\n");

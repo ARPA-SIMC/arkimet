@@ -1,7 +1,7 @@
 /*
  * data - Read/write functions for data blobs
  *
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,122 +21,32 @@
  */
 
 #include "arki/data.h"
-#include "arki/data/impl.h"
 #include "arki/data/concat.h"
 #include "arki/data/lines.h"
+#include "arki/configfile.h"
+#include "arki/scan/any.h"
+#include "arki/metadata/collection.h"
 #include <wibble/exception.h>
+#include <wibble/string.h>
+#include <wibble/sys/fs.h>
+
+using namespace std;
+using namespace wibble;
 
 namespace arki {
 namespace data {
 
-template<typename T>
-Base<T>::Base(T* impl) : impl(impl)
-{
-    impl->ref();
-}
 
-template<typename T>
-Base<T>::Base(const Base<T>& val)
-    : impl(val.impl)
-{
-    impl->ref();
-}
-
-template<typename T>
-Base<T>::~Base() { impl->unref(); }
-
-template<typename T>
-Base<T>& Base<T>::operator=(const Base<T>& val)
-{
-    if (val.impl) val.impl->ref();
-    impl->unref();
-    impl = val.impl;
-    return *this;
-}
-
-template<typename T>
-const std::string& Base<T>::fname() const { return impl->fname; }
-
-template class Base<impl::Reader>;
-template class Base<impl::Writer>;
-
-
-Reader::Reader(impl::Reader* impl) : Base<impl::Reader>(impl) {}
 Reader::~Reader() {}
 
-Reader Reader::get(const std::string& fname)
+Writer::Writer(const std::string& relname, const std::string& absname)
+    : relname(relname), absname(absname), payload(0)
 {
-    // Get the file extension
-    std::string fmt;
-    size_t pos;
-    if ((pos = fname.rfind('.')) != std::string::npos)
-        fmt = fname.substr(pos + 1);
-    return get(fmt, fname);
 }
 
-Reader Reader::get(const std::string& format, const std::string& fname)
+Writer::~Writer()
 {
-    // Get the file extension
-    std::string fmt;
-    size_t pos;
-    if ((pos = fname.rfind('.')) != std::string::npos)
-        fmt = fname.substr(pos + 1);
-    return get(fmt, fname);
-}
-
-Writer::Writer(impl::Writer* impl) : Base<impl::Writer>(impl) {}
-Writer::~Writer() {}
-
-void Writer::append(Metadata& md)
-{
-    impl->append(md);
-}
-
-Pending Writer::append(Metadata& md, off_t* ofs)
-{
-    return impl->append(md, ofs);
-}
-
-off_t Writer::append(const wibble::sys::Buffer& buf)
-{
-    return impl->append(buf);
-}
-
-Writer Writer::get(const std::string& fname)
-{
-    // Get the file extension
-    std::string fmt;
-    size_t pos;
-    if ((pos = fname.rfind('.')) != std::string::npos)
-        fmt = fname.substr(pos + 1);
-    return get(fmt, fname);
-}
-
-Writer Writer::get(const std::string& format, const std::string& fname)
-{
-    // Cached instance
-    impl::Registry<impl::Writer>& reg = impl::Registry<impl::Writer>::registry();
-
-    // Try to reuse an existing instance
-    impl::Writer* w = reg.get(fname);
-    if (w)
-        return Writer(w);
-
-    // Else we need to create an appropriate one
-    if (format == "grib" || format == "grib1" || format == "grib2")
-    {
-        return Writer(reg.add(new concat::Writer(fname)));
-    } else if (format == "bufr") {
-        return Writer(reg.add(new concat::Writer(fname)));
-    } else if (format == "odimh5" || format == "h5" || format == "odim") {
-        return Writer(reg.add(new concat::Writer(fname)));
-    } else if (format == "vm2") {
-        return Writer(reg.add(new lines::Writer(fname)));
-    } else {
-        throw wibble::exception::Consistency(
-                "getting writer for " + format + " file " + fname,
-                "format not supported");
-    }
+    if (payload) delete payload;
 }
 
 OstreamWriter::~OstreamWriter()
@@ -204,6 +114,204 @@ const Info* Info::get(const std::string& format)
                 "format not supported");
     }
 }
+
+namespace {
+
+// Get format from file extension
+std::string get_format(const std::string& fname)
+{
+    std::string fmt;
+    size_t pos;
+    if ((pos = fname.rfind('.')) != std::string::npos)
+        fmt = fname.substr(pos + 1);
+    return fmt;
+}
+
+/// Segment manager that picks the right readers/writers based on file types
+struct AutoSegmentManager : public SegmentManager
+{
+    std::string root;
+
+    AutoSegmentManager(const std::string& root) : root(root) {}
+
+    Reader* get_reader(const std::string& relname)
+    {
+        return get_reader(get_format(relname), relname);
+    }
+
+    Reader* get_reader(const std::string& format, const std::string& relname)
+    {
+        // TODO: readers not yet implemented
+        return 0;
+    }
+
+    Writer* get_writer(const std::string& relname)
+    {
+        return get_writer(get_format(relname), relname);
+    }
+
+    auto_ptr<data::Writer> create_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    {
+        auto_ptr<data::Writer> new_writer;
+        if (format == "grib" || format == "grib1" || format == "grib2")
+        {
+            new_writer.reset(new concat::Writer(relname, absname, truncate));
+        } else if (format == "bufr") {
+            new_writer.reset(new concat::Writer(relname, absname, truncate));
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            new_writer.reset(new concat::Writer(relname, absname, truncate));
+        } else if (format == "vm2") {
+            new_writer.reset(new lines::Writer(relname, absname, truncate));
+        } else {
+            throw wibble::exception::Consistency(
+                    "getting writer for " + format + " file " + relname,
+                    "format not supported");
+        }
+        return new_writer;
+    }
+
+    Writer* get_writer(const std::string& format, const std::string& relname)
+    {
+        // Try to reuse an existing instance
+        Writer* res = writers.get(relname);
+        if (res) return res;
+
+        // Ensure that the directory for 'relname' exists
+        string absname = str::joinpath(root, relname);
+        size_t pos = absname.rfind('/');
+        if (pos != string::npos)
+            wibble::sys::fs::mkpath(absname.substr(0, pos));
+
+        // Refuse to write to compressed files
+        if (scan::isCompressed(absname))
+            throw wibble::exception::Consistency("accessing data file " + relname,
+                    "cannot update compressed data files: please manually uncompress it first");
+
+        // Else we need to create an appropriate one
+        auto_ptr<data::Writer> new_writer(create_for_format(format, relname, absname));
+        return writers.add(new_writer);
+    }
+
+    Pending repack(const std::string& relname, metadata::Collection& mds)
+    {
+        struct Rename : public Transaction
+        {
+            std::string tmpabsname;
+            std::string absname;
+            bool fired;
+
+            Rename(const std::string& tmpabsname, const std::string& absname)
+                : tmpabsname(tmpabsname), absname(absname), fired(false)
+            {
+            }
+
+            virtual ~Rename()
+            {
+                if (!fired) rollback();
+            }
+
+            virtual void commit()
+            {
+                if (fired) return;
+                // Rename the data file to its final name
+                if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
+                    throw wibble::exception::System("renaming " + tmpabsname + " to " + absname);
+                fired = true;
+            }
+
+            virtual void rollback()
+            {
+                if (fired) return;
+                unlink(tmpabsname.c_str());
+                fired = true;
+            }
+        };
+
+        string absname = str::joinpath(root, relname);
+        string tmprelname = relname + ".repack";
+        string tmpabsname = str::joinpath(root, tmprelname);
+
+        // Get a validator for this file
+        const scan::Validator& validator = scan::Validator::by_filename(absname);
+
+        // Create a writer for the temp file
+        auto_ptr<data::Writer> writer(create_for_format(get_format(relname), tmprelname, tmpabsname, true));
+
+        // Fill the temp file with all the data in the right order
+        for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
+        {
+            // Read the data
+            wibble::sys::Buffer buf = i->getData();
+            // Validate it
+            validator.validate(buf.data(), buf.size());
+            // Append it to the new file
+            off_t w_off = writer->append(buf);
+            // Update the source information in the metadata
+            i->source = types::source::Blob::create(i->source->format, root, relname, w_off, buf.size());
+        }
+
+        // Close the temp file
+        writer.release();
+
+        return new Rename(tmpabsname, absname);
+#if 0
+
+void FileCopier::operator()(const std::string& file, const metadata::Collection& mdc)
+{
+    // Deindex the file
+    m_idx.reset(file);
+    for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
+    {
+        // Read the data
+        wibble::sys::Buffer buf = i->getData();
+        // Validate it
+        m_val.validate(buf.data(), buf.size());
+        // Append it to the new file
+        off_t w_off = writer.append(buf);
+        // Reindex it
+        m_idx.index(*i, file, w_off);
+    }
+}
+
+bool FileCopier::operator()(Metadata& md)
+{
+	// Read the data
+	wibble::sys::Buffer buf = md.getData();
+
+	// Check it for corruption
+	m_val.validate(buf.data(), buf.size());
+
+	// Write it out
+    data::Writer writer = data::Writer::get(md.source->format, dst);
+    w_off = writer.append(buf);
+
+	// Update the Blob source using the new position
+	md.source = types::source::Blob::create(md.source->format, finalbasedir, finalname, w_off, buf.size());
+
+	return true;
+}
+#endif
+        throw wibble::exception::Consistency("SegmentManager::repack not implemented");
+    }
+};
+
+}
+
+SegmentManager::~SegmentManager()
+{
+}
+
+void SegmentManager::flush_writers()
+{
+    writers.clear();
+}
+
+std::auto_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)
+{
+    string root = cfg.value("path");
+    return auto_ptr<SegmentManager>(new AutoSegmentManager(root));
+}
+
 
 }
 }

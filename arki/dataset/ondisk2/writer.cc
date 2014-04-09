@@ -24,7 +24,6 @@
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/archive.h>
-#include <arki/dataset/targetfile.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -62,7 +61,7 @@ namespace ondisk2 {
 
 Writer::Writer(const ConfigFile& cfg)
 	: WritableLocal(cfg), m_cfg(cfg),
-	  m_idx(cfg), m_tf(0)
+	  m_idx(cfg)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_path);
@@ -72,49 +71,25 @@ Writer::Writer(const ConfigFile& cfg)
 	if (!sys::fs::exists(str::joinpath(m_path, "index.sqlite")))
 		files::createDontpackFlagfile(m_path);
 
-	m_tf = TargetFile::create(cfg);
 	m_idx.open();
 }
 
 Writer::~Writer()
 {
 	flush();
-	if (m_tf) delete m_tf;
-}
-
-data::Writer Writer::file(const std::string& pathname, const std::string& format)
-{
-    std::map<std::string, data::Writer>::iterator i = m_df_cache.find(pathname);
-    if (i != m_df_cache.end())
-        return i->second;
-
-	// Ensure that the directory for 'pathname' exists
-	string pn = str::joinpath(m_path, pathname);
-	size_t pos = pn.rfind('/');
-	if (pos != string::npos)
-		wibble::sys::fs::mkpath(pn.substr(0, pos));
-
-	if (scan::isCompressed(pn))
-		throw wibble::exception::Consistency("accessing data file " + pathname,
-				"cannot update compressed data files: please manually uncompress it first");
-
-    data::Writer res = data::Writer::get(format, pn);
-    m_df_cache.insert(make_pair(pathname, res));
-    return res;
 }
 
 WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    string reldest = (*m_tf)(md) + "." + md.source->format;
-    data::Writer w = file(reldest, md.source->format);
+    data::Writer* w = file(md, md.source->format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
-    Pending p_df = w.append(md, &ofs);
+    Pending p_df = w->append(md, &ofs);
 
     try {
         int id;
-        m_idx.index(md, reldest, ofs, &id);
+        m_idx.index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
         md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
@@ -131,16 +106,15 @@ WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
 WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    string reldest = (*m_tf)(md) + "." + md.source->format;
-    data::Writer w = file(reldest, md.source->format);
+    data::Writer* w = file(md, md.source->format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
-    Pending p_df = w.append(md, &ofs);
+    Pending p_df = w->append(md, &ofs);
 
     try {
         int id;
-        m_idx.replace(md, reldest, ofs, &id);
+        m_idx.replace(md, w->relname, ofs, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
@@ -158,16 +132,15 @@ WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    string reldest = (*m_tf)(md) + "." + md.source->format;
-    data::Writer w = file(reldest, md.source->format);
+    data::Writer* w = file(md, md.source->format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
-    Pending p_df = w.append(md, &ofs);
+    Pending p_df = w->append(md, &ofs);
 
     try {
         int id;
-        m_idx.index(md, reldest, ofs, &id);
+        m_idx.index(md, w->relname, ofs, &id);
         p_df.commit();
         p_idx.commit();
         md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
@@ -202,7 +175,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
     // Replace, reusing the pending datafile transaction from earlier
     try {
         int id;
-        m_idx.replace(md, reldest, ofs, &id);
+        m_idx.replace(md, w->relname, ofs, &id);
         // In a replace, we necessarily replace inside the same file,
         // as it depends on the metadata reftime
         //createPackFlagfile(df->pathname);
@@ -267,9 +240,8 @@ void Writer::remove(const std::string& str_id)
 
 void Writer::flush()
 {
-    // Clearing will also call the destructors of all data::Writers
-    m_df_cache.clear();
-	m_idx.flush();
+    WritableLocal::flush();
+    m_idx.flush();
 }
 
 Pending Writer::test_writelock()
@@ -418,65 +390,6 @@ void Writer::removeAll(std::ostream& log, bool writable)
 
 
 namespace {
-struct FileCopier : maintenance::IndexFileVisitor
-{
-    index::WContents& m_idx;
-	const scan::Validator& m_val;
-	std::string src;
-	std::string dst;
-	int fd_src;
-        data::Writer writer;
-
-    FileCopier(index::WContents& idx, const std::string& src, const std::string& dst);
-    virtual ~FileCopier();
-
-    void operator()(const std::string& file, const metadata::Collection& mdc);
-
-	void flush();
-};
-
-FileCopier::FileCopier(index::WContents& idx, const std::string& src, const std::string& dst)
-    : m_idx(idx), m_val(scan::Validator::by_filename(src)), src(src), dst(dst), fd_src(-1),
-          writer(data::Writer::get(utils::files::format_from_ext(src), dst))
-{
-	fd_src = open(src.c_str(), O_RDONLY
-#ifdef linux
-			| O_NOATIME
-#endif
-	);
-	if (fd_src < 0)
-		throw wibble::exception::File(src, "opening file");
-}
-
-FileCopier::~FileCopier()
-{
-	flush();
-}
-
-//void FileCopier::operator()(const std::string& file, int id, off_t offset, size_t size)
-void FileCopier::operator()(const std::string& file, const metadata::Collection& mdc)
-{
-    // Deindex the file
-    m_idx.reset(file);
-    for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
-    {
-        // Read the data
-        wibble::sys::Buffer buf = i->getData();
-        // Validate it
-        m_val.validate(buf.data(), buf.size());
-        // Append it to the new file
-        off_t w_off = writer.append(buf);
-        // Reindex it
-        m_idx.index(*i, file, w_off);
-    }
-}
-
-void FileCopier::flush()
-{
-    if (fd_src != -1 and close(fd_src) != 0)
-        throw wibble::exception::File(src, "closing file");
-    fd_src = -1;
-}
 
 struct Reindexer : public metadata::Consumer
 {
@@ -581,13 +494,20 @@ size_t Writer::repackFile(const std::string& relpath)
 	// Make a copy of the file with the right data in it, sorted by
 	// reftime, and update the offsets in the index
 	string pathname = str::joinpath(m_path, relpath);
-	string pntmp = pathname + ".repack";
-	FileCopier copier(m_idx, pathname, pntmp);
-	m_idx.scan_file(relpath, copier, "reftime, offset");
-	copier.flush();
+
+    metadata::Collection mds;
+    m_idx.scan_file(relpath, mds, "reftime, offset");
+    Pending p_repack = m_segment_manager->repack(relpath, mds);
+
+    // Reindex mds
+    m_idx.reset(relpath);
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+        m_idx.index(*i, source->filename, source->offset);
+    }
 
     size_t size_pre = sys::fs::size(pathname);
-    size_t size_post = sys::fs::size(pntmp);
 
 	// Remove the .metadata file if present, because we are shuffling the
 	// data file and it will not be valid anymore
@@ -599,12 +519,13 @@ size_t Writer::repackFile(const std::string& relpath)
 	// Prevent reading the still open old file using the new offsets
 	Metadata::flushDataReaders();
 
-	// Rename the file with to final name
-	if (rename(pntmp.c_str(), pathname.c_str()) < 0)
-		throw wibble::exception::System("renaming " + pntmp + " to " + pathname);
+    // Commit the changes in the file system
+    p_repack.commit();
 
-	// Commit the changes on the database
+	// Commit the changes in the database
 	p.commit();
+
+    size_t size_post = sys::fs::size(pathname);
 
 	return size_pre - size_post;
 }

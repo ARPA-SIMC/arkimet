@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/dataset.h>
+#include <arki/dataset/local.h>
 #include <string>
 
 namespace arki {
@@ -33,20 +33,15 @@ class Matcher;
 
 namespace dataset {
 
-class TargetFile;
-
 /**
  * Store-only dataset.
  *
  * This dataset is not used for archival, but only to store data as an outbound
  * area.
  */
-class Outbound : public WritableDataset
+class Outbound : public WritableLocal
 {
 protected:
-	std::string m_path;
-	TargetFile* m_tf;
-
 	void storeBlob(Metadata& md, const std::string& reldest);
 
 public:
@@ -66,6 +61,11 @@ public:
 
 	virtual void remove(Metadata& id);
 	virtual void removeAll(std::ostream& log, bool writable=false);
+
+    virtual size_t repackFile(const std::string& relpath);
+    virtual void rescanFile(const std::string& relpath);
+    virtual size_t removeFile(const std::string& relpath, bool withData=false);
+    virtual size_t vacuum();
 
 	static AcquireResult testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out);
 };

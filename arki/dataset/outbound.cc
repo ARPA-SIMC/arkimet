@@ -43,16 +43,13 @@ using namespace wibble;
 namespace arki {
 namespace dataset {
 
-Outbound::Outbound(const ConfigFile& cfg) : m_tf(0)
+Outbound::Outbound(const ConfigFile& cfg)
+    : WritableLocal(cfg)
 {
-	m_name = cfg.value("name");
-	m_path = cfg.value("path");
-	m_tf = TargetFile::create(cfg);
 }
 
 Outbound::~Outbound()
 {
-	if (m_tf) delete m_tf;
 }
 
 void Outbound::storeBlob(Metadata& md, const std::string& reldest)
@@ -61,9 +58,8 @@ void Outbound::storeBlob(Metadata& md, const std::string& reldest)
     UItem<types::Source> s = md.source;
 
     // Write using data::Writer
-    string datafilename = str::joinpath(m_path, reldest) + "." + s->format;
-    data::Writer w = data::Writer::get(s->format, datafilename);
-    w.append(md);
+    data::Writer* w = file(md, md.source->format);
+    w->append(md);
 }
 
 WritableDataset::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy replace)
@@ -96,6 +92,26 @@ void Outbound::remove(Metadata&)
 void Outbound::removeAll(std::ostream& log, bool writable)
 {
 	log << m_name << ": cleaning dataset not implemented" << endl;
+}
+
+size_t Outbound::repackFile(const std::string& relpath)
+{
+    throw wibble::exception::Consistency("repacking file " + relpath, "dataset does not support repacking files");
+}
+
+void Outbound::rescanFile(const std::string& relpath)
+{
+    throw wibble::exception::Consistency("rescanning file " + relpath, "dataset does not support rescanning files");
+}
+
+size_t Outbound::removeFile(const std::string& relpath, bool withData)
+{
+    throw wibble::exception::Consistency("removing file " + relpath, "dataset does not support removing files");
+}
+
+size_t Outbound::vacuum()
+{
+    return 0;
 }
 
 WritableDataset::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

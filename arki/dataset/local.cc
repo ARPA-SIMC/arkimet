@@ -27,6 +27,7 @@
 #include <arki/dataset/simple/writer.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/maintenance.h>
+#include <arki/dataset/targetfile.h>
 #include <arki/utils/files.h>
 #include <arki/configfile.h>
 #include <arki/scan/any.h>
@@ -49,13 +50,15 @@ namespace arki {
 namespace dataset {
 
 Local::Local(const ConfigFile& cfg)
-	: m_name(cfg.value("name")), m_path(cfg.value("path")), m_archive(0)
+    : m_name(cfg.value("name")),
+      m_path(cfg.value("path")),
+      m_archive(0)
 {
 }
 
 Local::~Local()
 {
-	if (m_archive) delete m_archive;
+    if (m_archive) delete m_archive;
 }
 
 bool Local::hasArchive() const
@@ -216,10 +219,22 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
 	}
 }
 
+SegmentedLocal::SegmentedLocal(const ConfigFile& cfg)
+    : Local(cfg), m_segment_manager(data::SegmentManager::get(cfg).release())
+{
+}
+
+SegmentedLocal::~SegmentedLocal()
+{
+    if (m_segment_manager) delete m_segment_manager;
+}
+
 WritableLocal::WritableLocal(const ConfigFile& cfg)
     : m_path(cfg.value("path")),
       m_archive(0), m_archive_age(-1), m_delete_age(-1),
-      m_default_replace_strategy(REPLACE_NEVER)
+      m_default_replace_strategy(REPLACE_NEVER),
+      m_tf(TargetFile::create(cfg)),
+      m_segment_manager(data::SegmentManager::get(cfg).release())
 {
     m_name = cfg.value("name");
     string repl = cfg.value("replace");
@@ -242,7 +257,9 @@ WritableLocal::WritableLocal(const ConfigFile& cfg)
 
 WritableLocal::~WritableLocal()
 {
-	if (m_archive) delete m_archive;
+    if (m_segment_manager) delete m_segment_manager;
+    if (m_tf) delete m_tf;
+    if (m_archive) delete m_archive;
 }
 
 bool WritableLocal::hasArchive() const
@@ -266,6 +283,17 @@ const Archives& WritableLocal::archive() const
 	if (!m_archive)
 		m_archive = new Archives(m_path, str::joinpath(m_path, ".archive"), false);
 	return *m_archive;
+}
+
+data::Writer* WritableLocal::file(const Metadata& md, const std::string& format)
+{
+    string relname = (*m_tf)(md) + "." + md.source->format;
+    return m_segment_manager->get_writer(format, relname);
+}
+
+void WritableLocal::flush()
+{
+    m_segment_manager->flush_writers();
 }
 
 void WritableLocal::archiveFile(const std::string& relpath)

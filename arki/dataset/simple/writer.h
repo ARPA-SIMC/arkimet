@@ -51,11 +51,9 @@ class Writer : public WritableLocal
 {
 protected:
     index::Manifest* m_mft;
-	TargetFile* m_tf;
-	std::map<std::string, Datafile*> m_df_cache;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    Datafile* file(const std::string& pathname, const std::string& format);
+    data::Writer* file(const Metadata& md, const std::string& format);
 
 public:
 	Writer(const ConfigFile& cfg);

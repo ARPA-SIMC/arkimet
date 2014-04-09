@@ -335,39 +335,14 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
         v(last_file, mdc);
 }
 
-void Contents::scan_file(const std::string& relname, maintenance::IndexFileVisitor& v, const std::string& orderBy) const
-{
-    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-    if (m_uniques) query += ", m.uniq";
-    if (m_others) query += ", m.other";
-    if (m_smallfiles) query += ", m.data";
-    query += " FROM md AS m";
-    query += " WHERE file=? ORDER BY " + orderBy;
-
-    Query mdq("scan_files_md", m_db);
-    mdq.compile(query);
-    mdq.bind(1, relname);
-
-    metadata::Collection mdc;
-    while (mdq.step())
-    {
-        // Rebuild the Metadata
-        Metadata md;
-        build_md(mdq, md);
-        mdc(md);
-    }
-
-    v(relname, mdc);
-}
-
-void Contents::scan_file(const std::string& relname, metadata::Consumer& consumer) const
+void Contents::scan_file(const std::string& relname, metadata::Consumer& consumer, const std::string& orderBy) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
 	if (m_others) query += ", m.other";
     if (m_smallfiles) query += ", m.data";
 	query += " FROM md AS m";
-	query += " WHERE m.file=? ORDER BY m.offset";
+    query += " WHERE m.file=? ORDER BY " + orderBy;
 
 	Query mdq("scan_file_md", m_db);
 	mdq.compile(query);

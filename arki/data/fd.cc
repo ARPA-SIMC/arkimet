@@ -37,17 +37,21 @@ namespace arki {
 namespace data {
 namespace fd {
 
-Writer::Writer(const std::string& fname)
-    : impl::Writer(fname), fd(-1)
+Writer::Writer(const std::string& relname, const std::string& absname, bool truncate)
+    : data::Writer(relname, absname), fd(-1)
 {
     // Open the data file
-    fd = ::open(fname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (truncate)
+        fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    else
+        fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
     if (fd == -1)
-        throw wibble::exception::File(fname, "opening file for appending data");
+        throw wibble::exception::File(absname, "opening file for appending data");
 }
 
 Writer::~Writer()
 {
+    //if (fdatasync(fd_dst) != 0) throw wibble::exception::File(dst, "flushing data to file");
     if (fd != -1) close(fd);
 }
 
@@ -60,7 +64,7 @@ void Writer::lock()
     lock.l_len = 0;
     // Use SETLKW, so that if it is already locked, we just wait
     if (fcntl(fd, F_SETLKW, &lock) == -1)
-        throw wibble::exception::System("locking the file " + fname + " for writing");
+        throw wibble::exception::System("locking the file " + absname + " for writing");
 }
 
 void Writer::unlock()
@@ -78,14 +82,14 @@ off_t Writer::wrpos()
     // Get the write position in the data file
     off_t size = lseek(fd, 0, SEEK_END);
     if (size == (off_t)-1)
-        throw wibble::exception::File(fname, "reading the current position");
+        throw wibble::exception::File(absname, "reading the current position");
     return size;
 }
 
 void Writer::truncate(off_t pos)
 {
     if (ftruncate(fd, pos) == -1)
-        nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", fname.c_str(), pos);
+        nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", absname.c_str(), pos);
 }
 
 void Writer::write(const wibble::sys::Buffer& buf)
@@ -96,10 +100,10 @@ void Writer::write(const wibble::sys::Buffer& buf)
     // Append the data
     ssize_t res = ::write(fd, buf.data(), buf.size());
     if (res < 0 || (unsigned)res != buf.size())
-        throw wibble::exception::File(fname, "writing " + str::fmt(buf.size()) + " bytes to " + fname);
+        throw wibble::exception::File(absname, "writing " + str::fmt(buf.size()) + " bytes");
 
     if (fdatasync(fd) < 0)
-        throw wibble::exception::File(fname, "flushing write to " + fname);
+        throw wibble::exception::File(absname, "flushing write");
 }
 
 }

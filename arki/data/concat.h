@@ -40,7 +40,7 @@ namespace concat {
 class Writer : public fd::Writer
 {
 public:
-    Writer(const std::string& fname);
+    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
 
     virtual void append(Metadata& md);
     virtual off_t append(const wibble::sys::Buffer& buf);

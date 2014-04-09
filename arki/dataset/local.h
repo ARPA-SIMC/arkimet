@@ -32,7 +32,14 @@ class ConfigFile;
 class Metadata;
 class Matcher;
 
+namespace data {
+class SegmentManager;
+class Reader;
+class Writer;
+}
+
 namespace dataset {
+class TargetFile;
 struct Archives;
 
 namespace maintenance {
@@ -47,7 +54,7 @@ class Local : public ReadonlyDataset
 protected:
 	std::string m_name;
 	std::string m_path;
-	mutable Archives* m_archive;
+    mutable Archives* m_archive;
 
 public:
 	Local(const ConfigFile& cfg);
@@ -93,6 +100,19 @@ public:
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 };
 
+/**
+ * Local dataset with data stored in segment files
+ */
+class SegmentedLocal : public Local
+{
+protected:
+    data::SegmentManager* m_segment_manager;
+
+public:
+    SegmentedLocal(const ConfigFile& cfg);
+    ~SegmentedLocal();
+};
+
 class WritableLocal : public WritableDataset
 {
 protected:
@@ -101,6 +121,14 @@ protected:
 	int m_archive_age;
 	int m_delete_age;
     ReplaceStrategy m_default_replace_strategy;
+    TargetFile* m_tf;
+    data::SegmentManager* m_segment_manager;
+
+    /**
+     * Return an instance of the Writer for the file where the given metadata
+     * should be written
+     */
+    data::Writer* file(const Metadata& md, const std::string& format);
 
 public:
 	WritableLocal(const ConfigFile& cfg);
@@ -112,6 +140,8 @@ public:
 	bool hasArchive() const;
 	Archives& archive();
 	const Archives& archive() const;
+
+    virtual void flush();
 
 	// Maintenance functions
 

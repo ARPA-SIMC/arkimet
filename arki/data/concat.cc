@@ -1,7 +1,7 @@
 /*
  * data - Read/write functions for data blobs without envelope
  *
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ struct Append : public Transaction
         w.unlock();
 
         // Set the source information that we are writing in the metadata
-        md.source = types::source::Blob::create(md.source->format, "", w.fname, pos, buf.size());
+        md.source = types::source::Blob::create(md.source->format, "", w.absname, pos, buf.size());
 
         fired = true;
     }
@@ -97,8 +97,8 @@ struct Append : public Transaction
 
 
 
-Writer::Writer(const std::string& fname)
-    : fd::Writer(fname)
+Writer::Writer(const std::string& relname, const std::string& absname, bool truncate)
+    : fd::Writer(relname, absname, truncate)
 {
 }
 
@@ -128,7 +128,7 @@ void Writer::append(Metadata& md)
     unlock();
 
     // Set the source information that we are writing in the metadata
-    md.source = types::source::Blob::create(md.source->format, "", fname, pos, buf.size());
+    md.source = types::source::Blob::create(md.source->format, "", absname, pos, buf.size());
 }
 
 off_t Writer::append(const wibble::sys::Buffer& buf)
