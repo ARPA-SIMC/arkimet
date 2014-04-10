@@ -20,10 +20,9 @@
 
 #include "config.h"
 
+#include "fd.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
-#include "arki/data.h"
-#include "arki/data/fd.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
 

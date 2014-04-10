@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include "arki/utils/dataset.h"
-#include "arki/data.h"
+#include "arki/dataset/data.h"
 
 #include <wibble/sys/signal.h>
 #include <wibble/sys/buffer.h>

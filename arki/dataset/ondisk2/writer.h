@@ -24,7 +24,6 @@
  */
 
 #include <arki/dataset/local.h>
-#include <arki/data.h>
 #include <arki/configfile.h>
 #include <arki/dataset/index/contents.h>
 #include <string>

@@ -26,7 +26,7 @@
 #include <arki/dataset/local.h>
 #include <arki/dataset/archive.h>
 #include <arki/metadata/collection.h>
-#include <arki/data.h>
+#include <arki/dataset/data.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>

@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_SIMLE_DATAFILE_H
-#define ARKI_DATASET_SIMLE_DATAFILE_H
+#ifndef ARKI_DATA_FD_H
+#define ARKI_DATA_FD_H
 
 /*
- * dataset/simple/datafile - Handle a data file plus its associated files
+ * data - Base class for unix fd based read/write functions
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,41 +23,38 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <string>
-#include <arki/summary.h>
 #include <arki/dataset/data.h>
-#include <arki/metadata/collection.h>
+#include <string>
+
+namespace wibble {
+namespace sys {
+class Buffer;
+}
+}
 
 namespace arki {
-class Metadata;
+namespace data {
+namespace fd {
 
-namespace dataset {
-namespace simple {
-
-namespace datafile {
-
-/// Accumulate metadata and summaries while writing
-struct MdBuf : public data::Writer::Payload
+class Writer : public data::Writer
 {
-    std::string pathname;
-    std::string dirname;
-    std::string basename;
-    bool flushed;
-    metadata::Collection mds;
-    Summary sum;
+protected:
+    int fd;
 
-    MdBuf(const std::string& pathname);
-    ~MdBuf();
+public:
+    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
+    ~Writer();
 
-    void add(const Metadata& md);
-    void flush();
+    void lock();
+    void unlock();
+    off_t wrpos();
+    void write(const wibble::sys::Buffer& buf);
+    void truncate(off_t pos);
 };
 
 }
-
-}
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif
+

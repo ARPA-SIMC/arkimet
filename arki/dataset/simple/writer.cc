@@ -26,6 +26,7 @@
 #include <arki/dataset/index/manifest.h>
 #include <arki/dataset/simple/datafile.h>
 #include <arki/dataset/maintenance.h>
+#include <arki/dataset/data.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>

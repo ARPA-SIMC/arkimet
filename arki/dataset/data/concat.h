@@ -23,8 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/data.h>
-#include <arki/data/fd.h>
+#include <arki/dataset/data/fd.h>
 #include <string>
 
 namespace wibble {

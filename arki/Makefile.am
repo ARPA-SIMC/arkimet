@@ -13,12 +13,12 @@ nobase_dist_arkiinclude_HEADERS = \
 		bbox.h \
 		configfile.h \
 		libconfig.h \
-		data.h \
-		data/fd.h \
-		data/concat.h \
-		data/lines.h \
-		data/dir.h \
 		dataset/archive.h \
+		dataset/data.h \
+		dataset/data/fd.h \
+		dataset/data/concat.h \
+		dataset/data/lines.h \
+		dataset/data/dir.h \
 		dataset/discard.h \
 		dataset/empty.h \
 		dataset/file.h \
@@ -167,11 +167,6 @@ libarkimet_core_la_SOURCES = \
 		emitter.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
-		data.cc \
-		data/fd.cc \
-		data/concat.cc \
-		data/lines.cc \
-		data/dir.cc \
 		tests/tests.cc
 libarkimet_core_la_LDFLAGS =
 
@@ -238,6 +233,11 @@ libarkimet_dataset_la_SOURCES = \
 		utils/dataset.cc \
 		targetfile.cc \
 		dataset.cc \
+		dataset/data.cc \
+		dataset/data/fd.cc \
+		dataset/data/concat.cc \
+		dataset/data/lines.cc \
+		dataset/data/dir.cc \
 		dataset/maintenance.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
@@ -313,11 +313,6 @@ tests_arki_test_SOURCES = \
 		transaction-tut.cc \
 		emitter/memory-tut.cc \
 		emitter/json-tut.cc \
-		data-tut.cc \
-		data/fd-tut.cc \
-		data/concat-tut.cc \
-		data/lines-tut.cc \
-		data/dir-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
 		types/utils-tut.cc \
@@ -372,6 +367,11 @@ tests_arki_test_SOURCES = \
 		matcher/quantity-tut.cc \
 		scan/any-tut.cc \
 		scan/dir-tut.cc \
+		dataset/data-tut.cc \
+		dataset/data/fd-tut.cc \
+		dataset/data/concat-tut.cc \
+		dataset/data/lines-tut.cc \
+		dataset/data/dir-tut.cc \
 		dataset/maintenance-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \

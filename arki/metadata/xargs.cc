@@ -22,7 +22,7 @@
 #include "xargs.h"
 #include <arki/metadata.h>
 #include <arki/utils/raii.h>
-#include <arki/data.h>
+#include <arki/dataset/data.h>
 #include <wibble/sys/fs.h>
 #include <wibble/sys/exec.h>
 #include <unistd.h>

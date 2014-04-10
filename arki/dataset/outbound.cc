@@ -27,7 +27,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/types/assigneddataset.h>
-#include <arki/data.h>
+#include <arki/dataset/data.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>

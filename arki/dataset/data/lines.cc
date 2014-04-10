@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "arki/data/lines.h"
+#include "lines.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include <wibble/exception.h>

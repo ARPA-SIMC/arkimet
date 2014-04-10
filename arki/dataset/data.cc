@@ -20,9 +20,9 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "arki/data.h"
-#include "arki/data/concat.h"
-#include "arki/data/lines.h"
+#include "data.h"
+#include "data/concat.h"
+#include "data/lines.h"
 #include "arki/configfile.h"
 #include "arki/scan/any.h"
 #include "arki/metadata/collection.h"

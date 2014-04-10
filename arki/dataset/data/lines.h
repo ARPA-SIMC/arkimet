@@ -1,10 +1,10 @@
-#ifndef ARKI_DATA_FD_H
-#define ARKI_DATA_FD_H
+#ifndef ARKI_DATA_LINES_H
+#define ARKI_DATA_LINES_H
 
 /*
- * data - Base class for unix fd based read/write functions
+ * data - Read/write functions for data blobs with newline separators
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/data.h>
+#include <arki/dataset/data/fd.h>
 #include <string>
 
 namespace wibble {
@@ -34,22 +34,39 @@ class Buffer;
 
 namespace arki {
 namespace data {
-namespace fd {
+namespace lines {
 
-class Writer : public data::Writer
+class Writer : public fd::Writer
 {
-protected:
-    int fd;
-
 public:
     Writer(const std::string& relname, const std::string& absname, bool truncate=false);
-    ~Writer();
 
-    void lock();
-    void unlock();
-    off_t wrpos();
     void write(const wibble::sys::Buffer& buf);
-    void truncate(off_t pos);
+
+    virtual void append(Metadata& md);
+    virtual off_t append(const wibble::sys::Buffer& buf);
+    virtual Pending append(Metadata& md, off_t* ofs);
+};
+
+class OstreamWriter : public data::OstreamWriter
+{
+protected:
+    sigset_t blocked;
+
+public:
+    OstreamWriter();
+    virtual ~OstreamWriter();
+
+    virtual size_t stream(Metadata& md, std::ostream& out) const;
+    virtual size_t stream(Metadata& md, int out) const;
+};
+
+class Info : public data::Info
+{
+public:
+    virtual ~Info();
+
+    virtual void raw_to_wrapped(off_t& offset, size_t& size) const;
 };
 
 }

@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "arki/data/concat.h"
+#include "fd.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include <wibble/exception.h>

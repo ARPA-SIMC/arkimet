@@ -1,4 +1,9 @@
+#ifndef ARKI_DATA_DIR_H
+#define ARKI_DATA_DIR_H
+
 /*
+ * data/dir - Directory based data collection
+ *
  * Copyright (C) 2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,47 +23,16 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
+#include <arki/dataset/data.h>
 
-#include "arki/tests/tests.h"
-#include "arki/metadata/tests.h"
-#include "arki/metadata/collection.h"
-#include "arki/data.h"
-#include "arki/data/dir.h"
-#include "arki/scan/any.h"
-#include "arki/utils/files.h"
-#include <wibble/sys/fs.h>
-#include <sstream>
+namespace arki {
+class Metadata;
 
-namespace std {
-static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
-{
-        m.writeYaml(o);
-            return o;
+namespace data {
+namespace dir {
+
+}
 }
 }
 
-namespace tut {
-using namespace std;
-using namespace arki;
-using namespace arki::data;
-using namespace arki::utils;
-using namespace wibble;
-using namespace wibble::tests;
-
-struct arki_data_dir_shar {
-    arki_data_dir_shar()
-    {
-    }
-};
-
-TESTGRP(arki_data_dir);
-
-// Try to append some data
-template<> template<>
-void to::test<1>()
-{
-}
-
-}
-
+#endif

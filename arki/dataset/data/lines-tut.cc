@@ -20,11 +20,10 @@
 
 #include "config.h"
 
+#include "lines.h"
 #include "arki/tests/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
-#include "arki/data.h"
-#include "arki/data/lines.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include <wibble/sys/fs.h>

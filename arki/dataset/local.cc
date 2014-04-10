@@ -28,6 +28,7 @@
 #include <arki/dataset/archive.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/targetfile.h>
+#include <arki/dataset/data.h>
 #include <arki/utils/files.h>
 #include <arki/configfile.h>
 #include <arki/scan/any.h>

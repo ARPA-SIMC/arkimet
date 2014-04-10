@@ -20,7 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "arki/data/concat.h"
+#include "concat.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include "arki/utils/files.h"
