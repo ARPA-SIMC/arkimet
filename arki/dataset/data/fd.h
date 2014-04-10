@@ -33,6 +33,7 @@ class Buffer;
 }
 
 namespace arki {
+namespace dataset {
 namespace data {
 namespace fd {
 
@@ -52,6 +53,7 @@ public:
     void truncate(off_t pos);
 };
 
+}
 }
 }
 }

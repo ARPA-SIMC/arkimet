@@ -33,6 +33,7 @@ class Buffer;
 }
 
 namespace arki {
+namespace dataset {
 namespace data {
 namespace lines {
 
@@ -72,6 +73,6 @@ public:
 }
 }
 }
+}
 
 #endif
-

@@ -176,7 +176,7 @@ struct IndexingCollector : public MaintenanceCollector
 
 	IndexingCollector(Manifest& m, const Summary& s, time_t mtime) : m(m), s(s), mtime(mtime) {}
 
-    virtual void operator()(const std::string& file, unsigned state)
+    virtual void operator()(const std::string& file, dataset::data::FileState state)
     {
         MaintenanceCollector::operator()(file, state);
         int n = atoi(file.c_str());

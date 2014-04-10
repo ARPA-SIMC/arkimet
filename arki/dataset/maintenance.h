@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/dataset/data.h>
 #include <string>
 #include <vector>
 #include <sys/types.h>
@@ -51,18 +52,9 @@ namespace maintenance {
  */
 struct MaintFileVisitor
 {
-    static const unsigned OK         = 0;
-    static const unsigned TO_ARCHIVE = 1 << 0; /// File is ok, but old enough to be archived
-    static const unsigned TO_DELETE  = 1 << 1; /// File is ok, but old enough to be deleted
-    static const unsigned TO_PACK    = 1 << 2; /// File contains data that has been deleted
-    static const unsigned TO_INDEX   = 1 << 3; /// File is not present in the index
-    static const unsigned TO_RESCAN  = 1 << 4; /// File contents are inconsistent with the index
-    static const unsigned TO_DEINDEX = 1 << 5; /// File does not exist but has entries in the index
-    static const unsigned ARCHIVED   = 1 << 6; /// File is in the archive
-
     virtual ~MaintFileVisitor() {}
 
-    virtual void operator()(const std::string& file, unsigned state) = 0;
+    virtual void operator()(const std::string& file, data::FileState state) = 0;
 };
 
 /**
@@ -115,7 +107,7 @@ struct FindMissing : public MaintFileVisitor
 	// files: a, b, c,    e, f, g
 	// index:       c, d, e, f, g
 
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 	void end();
 };
 
@@ -124,7 +116,7 @@ struct FindMissing : public MaintFileVisitor
  */
 struct Dumper : public MaintFileVisitor
 {
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 };
 
 struct Tee : public MaintFileVisitor
@@ -134,7 +126,7 @@ struct Tee : public MaintFileVisitor
 
 	Tee(MaintFileVisitor& one, MaintFileVisitor& two);
 	virtual ~Tee();
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 };
 
 /// Base class for all repackers and rebuilders
@@ -169,7 +161,7 @@ struct FailsafeRepacker : public Agent
 
 	FailsafeRepacker(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 	void end();
 };
 
@@ -186,7 +178,7 @@ struct MockRepacker : public Agent
 
 	MockRepacker(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 	void end();
 };
 
@@ -201,7 +193,7 @@ struct MockFixer : public Agent
 
 	MockFixer(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 	void end();
 };
 
@@ -221,7 +213,7 @@ struct RealRepacker : public maintenance::Agent
 
 	RealRepacker(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 	void end();
 };
 
@@ -238,7 +230,7 @@ struct RealFixer : public maintenance::Agent
 
 	RealFixer(std::ostream& log, WritableLocal& w);
 
-	void operator()(const std::string& file, unsigned state);
+	void operator()(const std::string& file, data::FileState state);
 	void end();
 };
 

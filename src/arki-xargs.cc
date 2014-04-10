@@ -28,7 +28,6 @@
 #include <arki/types/timerange.h>
 #include <arki/scan/any.h>
 #include <arki/runtime.h>
-#include <arki/data.h>
 
 #include <wibble/exception.h>
 #include <wibble/commandline/parser.h>

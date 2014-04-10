@@ -197,7 +197,7 @@ struct ToArchiveState : public maintenance::MaintFileVisitor
 
     ToArchiveState(maintenance::MaintFileVisitor& next) : next(next) {}
 
-    virtual void operator()(const std::string& file, unsigned state)
+    virtual void operator()(const std::string& file, data::FileState state)
     {
         // Add the archived bit
         // Remove the TO_PACK bit, since once a file is archived it's not
@@ -205,7 +205,7 @@ struct ToArchiveState : public maintenance::MaintFileVisitor
         // Remove the TO_ARCHIVE bit, since we're already in the archive
         // Remove the TO_DELETE bit, since delete age doesn't affect the
         //   archive
-        next(file, (state & ~(TO_PACK | TO_ARCHIVE | TO_DELETE)) | ARCHIVED);
+        next(file, state - FILE_TO_PACK - FILE_TO_ARCHIVE - FILE_TO_DELETE + FILE_ARCHIVED);
     }
 };
 }
@@ -655,7 +655,7 @@ struct MaintPathPrepender : public maintenance::MaintFileVisitor
 	MaintPathPrepender(MaintFileVisitor& next, const std::string& prefix)
 		: next(next), prefix(prefix) {}
 
-    virtual void operator()(const std::string& file, unsigned state)
+    virtual void operator()(const std::string& file, data::FileState state)
     {
         next(str::joinpath(prefix, file), state);
     }

@@ -108,7 +108,7 @@ struct FileInfo
     }
 
     void check_data(off_t offset, size_t size);
-    unsigned finalise();
+    data::FileState finalise();
 };
 
 void FileInfo::check_data(off_t offset, size_t size)
@@ -133,7 +133,7 @@ void FileInfo::check_data(off_t offset, size_t size)
     checked = offset + size;
 }
 
-unsigned FileInfo::finalise()
+data::FileState FileInfo::finalise()
 {
     off_t fsize;
 
@@ -146,7 +146,7 @@ unsigned FileInfo::finalise()
     if (corrupted)
     {
         nag::verbose("HoleFinder: %s found corrupted", name.c_str());
-        return MaintFileVisitor::TO_RESCAN;
+        return FILE_TO_RESCAN;
     }
 
     fsize = compress::filesize(name);
@@ -156,7 +156,7 @@ unsigned FileInfo::finalise()
     {
         nag::verbose("HoleFinder: %s found truncated (%zd < %zd bytes)", name.c_str(), fsize, checked);
         // throw wibble::exception::Consistency("checking size of "+last_file, "file is shorter than what the index believes: please run a dataset check");
-        return MaintFileVisitor::TO_RESCAN;
+        return FILE_TO_RESCAN;
     }
 
     // Check if last_file_size matches the file size
@@ -169,9 +169,9 @@ unsigned FileInfo::finalise()
     if (has_hole)
     {
         nag::verbose("HoleFinder: %s contains deleted data", name.c_str());
-        return MaintFileVisitor::TO_PACK;
+        return FILE_TO_PACK;
     } else {
-        return MaintFileVisitor::OK;
+        return FILE_OK;
     }
 }
 
@@ -193,7 +193,7 @@ void HoleFinder::operator()(const std::string& file, const metadata::Collection&
         info.check_data(source->offset, source->size);
     }
 
-    unsigned response = info.finalise();
+    data::FileState response = info.finalise();
     next(file, response);
 }
 
@@ -238,12 +238,12 @@ FindMissing::FindMissing(MaintFileVisitor& next, const std::vector<std::string>&
 	std::sort(disk.begin(), disk.end(), sorter);
 }
 
-void FindMissing::operator()(const std::string& file, unsigned state)
+void FindMissing::operator()(const std::string& file, data::FileState state)
 {
     while (not disk.empty() and disk.back() < file)
     {
         nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), state | TO_INDEX);
+        next(disk.back(), state + FILE_TO_INDEX);
         disk.pop_back();
     }
     if (!disk.empty() && disk.back() == file)
@@ -259,7 +259,7 @@ void FindMissing::operator()(const std::string& file, unsigned state)
     else // if (disk.empty() || disk.back() > file)
     {
         nag::verbose("FindMissing: %s has been deleted", file.c_str());
-        next(file, (state & ~TO_RESCAN) | TO_DEINDEX);
+        next(file, state - FILE_TO_RESCAN + FILE_TO_DEINDEX);
     }
 }
 
@@ -268,28 +268,19 @@ void FindMissing::end()
     while (not disk.empty())
     {
         nag::verbose("FindMissing: %s is not in index", disk.back().c_str());
-        next(disk.back(), TO_INDEX);
+        next(disk.back(), FILE_TO_INDEX);
         disk.pop_back();
     }
 }
 
-void Dumper::operator()(const std::string& file, unsigned state)
+void Dumper::operator()(const std::string& file, data::FileState state)
 {
-    string res = file;
-    if (state == OK)        res += " OK";
-    if (state & TO_ARCHIVE) res += " TO_ARCHIVE";
-    if (state & TO_DELETE)  res += " TO_DELETE";
-    if (state & TO_PACK)    res += " TO_PACK";
-    if (state & TO_INDEX)   res += " TO_INDEX";
-    if (state & TO_RESCAN)  res += " TO_RESCAN";
-    if (state & TO_DEINDEX) res += " TO_DEINDEX";
-    if (state & ARCHIVED)   res += " ARCHIVED";
-    cerr << res << endl;
+    cerr << file << " " << state.to_string() << endl;
 }
 
 Tee::Tee(MaintFileVisitor& one, MaintFileVisitor& two) : one(one), two(two) {}
 Tee::~Tee() {}
-void Tee::operator()(const std::string& file, unsigned state)
+void Tee::operator()(const std::string& file, data::FileState state)
 {
 	one(file, state);
 	two(file, state);
@@ -336,9 +327,9 @@ FailsafeRepacker::FailsafeRepacker(std::ostream& log, WritableLocal& w)
 {
 }
 
-void FailsafeRepacker::operator()(const std::string& file, unsigned state)
+void FailsafeRepacker::operator()(const std::string& file, data::FileState state)
 {
-    if (state & TO_INDEX) ++m_count_deleted;
+    if (state.has(FILE_TO_INDEX)) ++m_count_deleted;
 }
 
 void FailsafeRepacker::end()
@@ -357,39 +348,39 @@ MockRepacker::MockRepacker(std::ostream& log, WritableLocal& w)
 {
 }
 
-void MockRepacker::operator()(const std::string& file, unsigned state)
+void MockRepacker::operator()(const std::string& file, data::FileState state)
 {
-    if (state & TO_PACK && !(state & TO_DELETE))
+    if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
         log() << file << " should be packed" << endl;
         ++m_count_packed;
     }
-    if (state & TO_ARCHIVE)
+    if (state.has(FILE_TO_ARCHIVE))
     {
         log() << file << " should be archived" << endl;
         ++m_count_archived;
     }
-    if (state & TO_DELETE)
+    if (state.has(FILE_TO_DELETE))
     {
         log() << file << " should be deleted and removed from the index" << endl;
         ++m_count_deleted;
         ++m_count_deindexed;
     }
-    if (state & TO_INDEX)
+    if (state.has(FILE_TO_INDEX))
     {
         ostream& l = log() << file << " should be deleted";
-        if (state & ARCHIVED) l << " from the archive" << endl;
+        if (state.has(FILE_ARCHIVED)) l << " from the archive" << endl;
         l << endl;
         ++m_count_deleted;
     }
-    if (state & TO_DEINDEX)
+    if (state.has(FILE_TO_DEINDEX))
     {
         ostream& l = log() << file << " should be removed from the";
-        if (state & ARCHIVED) l << " archive";
+        if (state.has(FILE_ARCHIVED)) l << " archive";
         l << " index" << endl;
         ++m_count_deindexed;
     }
-    if (state & TO_RESCAN || state & ARCHIVED)
+    if (state.has(FILE_TO_RESCAN) || state.has(FILE_ARCHIVED))
     {
         log() << file << " should be rescanned by the archive" << endl;
         ++m_count_rescanned;
@@ -419,25 +410,25 @@ MockFixer::MockFixer(std::ostream& log, WritableLocal& w)
 {
 }
 
-void MockFixer::operator()(const std::string& file, unsigned state)
+void MockFixer::operator()(const std::string& file, data::FileState state)
 {
-    if (state & TO_PACK)
+    if (state.has(FILE_TO_PACK))
     {
         log() << file << " should be packed" << endl;
         ++m_count_packed;
     }
-    if (state & (TO_INDEX | TO_RESCAN))
+    if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
     {
         ostream& l = log() << file << " should be rescanned";
-        if (state & ARCHIVED)
+        if (state.has(FILE_ARCHIVED))
             l << " by the archive";
         l << endl;
         ++m_count_rescanned;
     }
-    if (state & TO_DEINDEX)
+    if (state.has(FILE_TO_DEINDEX))
     {
         ostream& l = log() << file << " should be removed";
-        if (state & ARCHIVED)
+        if (state.has(FILE_ARCHIVED))
             l << " from the archive";
         l << endl;
         ++m_count_deindexed;
@@ -465,9 +456,9 @@ RealRepacker::RealRepacker(std::ostream& log, WritableLocal& w)
 {
 }
 
-void RealRepacker::operator()(const std::string& file, unsigned state)
+void RealRepacker::operator()(const std::string& file, data::FileState state)
 {
-    if (state & TO_PACK && !(state & TO_DELETE))
+    if (state.has(FILE_TO_PACK) && !state.has(FILE_TO_DELETE))
     {
         // Repack the file
         size_t saved = w.repackFile(file);
@@ -475,7 +466,7 @@ void RealRepacker::operator()(const std::string& file, unsigned state)
         ++m_count_packed;
         m_count_freed += saved;
     }
-    if (state & TO_ARCHIVE)
+    if (state.has(FILE_TO_ARCHIVE))
     {
         // Create the target directory in the archive
         w.archiveFile(file);
@@ -484,7 +475,7 @@ void RealRepacker::operator()(const std::string& file, unsigned state)
         m_touched_archive = true;
         m_redo_summary = true;
     }
-    if (state & TO_DELETE)
+    if (state.has(FILE_TO_DELETE))
     {
         // Delete obsolete files
         size_t size = w.removeFile(file, true);
@@ -494,9 +485,9 @@ void RealRepacker::operator()(const std::string& file, unsigned state)
         m_count_freed += size;
         m_redo_summary = true;
     }
-    if (state & ARCHIVED)
+    if (state.has(FILE_ARCHIVED))
     {
-        if (state & TO_INDEX || state & TO_RESCAN)
+        if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
         {
             /// File is not present in the archive index
             /// File contents need reindexing in the archive
@@ -505,7 +496,7 @@ void RealRepacker::operator()(const std::string& file, unsigned state)
             ++m_count_rescanned;
             m_touched_archive = true;
         }
-        if (state & TO_DEINDEX)
+        if (state.has(FILE_TO_DEINDEX))
         {
             w.archive().remove(file);
             log() << "deleted from archive index " << file << endl;
@@ -513,7 +504,7 @@ void RealRepacker::operator()(const std::string& file, unsigned state)
             m_touched_archive = true;
         }
     } else {
-        if (state & TO_INDEX)
+        if (state.has(FILE_TO_INDEX))
         {
             // Delete all files not indexed
             size_t size = w.removeFile(file, true);
@@ -521,7 +512,7 @@ void RealRepacker::operator()(const std::string& file, unsigned state)
             ++m_count_deleted;
             m_count_freed += size;
         }
-        if (state & TO_DEINDEX)
+        if (state.has(FILE_TO_DEINDEX))
         {
             // Remove from index those files that have been deleted
             w.removeFile(file, false);
@@ -573,11 +564,11 @@ RealFixer::RealFixer(std::ostream& log, WritableLocal& w)
 {
 }
 
-void RealFixer::operator()(const std::string& file, unsigned state)
+void RealFixer::operator()(const std::string& file, data::FileState state)
 {
     /* Packing is left to the repacker, during check we do not
      * mangle the data files
-    case TO_PACK: {
+    case FILE_TO_PACK: {
             // Repack the file
             size_t saved = repack(w.path(), file, w.m_idx);
             log() << "packed " << file << " (" << saved << " saved)" << endl;
@@ -585,9 +576,9 @@ void RealFixer::operator()(const std::string& file, unsigned state)
             break;
     }
     */
-    if (state & ARCHIVED)
+    if (state.has(FILE_ARCHIVED))
     {
-        if (state & TO_INDEX || state & TO_RESCAN)
+        if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
         {
             /// File is not present in the archive index
             /// File contents need reindexing in the archive
@@ -596,7 +587,7 @@ void RealFixer::operator()(const std::string& file, unsigned state)
             ++m_count_rescanned;
             m_touched_archive = true;
         }
-        if (state & TO_DEINDEX)
+        if (state.has(FILE_TO_DEINDEX))
         {
             /// File does not exist, but has entries in the archive index
             w.archive().remove(file);
@@ -605,14 +596,14 @@ void RealFixer::operator()(const std::string& file, unsigned state)
             m_touched_archive = true;
         }
     } else {
-        if (state & TO_INDEX || state & TO_RESCAN)
+        if (state.has(FILE_TO_INDEX) || state.has(FILE_TO_RESCAN))
         {
             w.rescanFile(file);
             log() << "rescanned " << file << endl;
             ++m_count_rescanned;
             m_redo_summary = true;
         }
-        if (state & TO_DEINDEX)
+        if (state.has(FILE_TO_DEINDEX))
         {
             // Remove from index those files that have been deleted
             w.removeFile(file, false);

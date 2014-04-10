@@ -142,7 +142,7 @@ struct Deleter : public maintenance::MaintFileVisitor
 
     Deleter(const std::string& name, std::ostream& log, bool writable)
         : name(name), log(log), writable(writable) {}
-    void operator()(const std::string& file, unsigned state)
+    void operator()(const std::string& file, data::FileState state)
     {
         if (writable)
         {
@@ -162,7 +162,7 @@ struct CheckAge : public maintenance::MaintFileVisitor
 
     CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age=-1, int delete_age=-1);
 
-    void operator()(const std::string& file, unsigned state);
+    void operator()(const std::string& file, data::FileState state);
 };
 
 CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age, int delete_age)
@@ -188,7 +188,7 @@ CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archi
 	}
 }
 
-void CheckAge::operator()(const std::string& file, unsigned state)
+void CheckAge::operator()(const std::string& file, data::FileState state)
 {
     if (!archive_threshold.defined() and !delete_threshold.defined())
         next(file, state);
@@ -202,12 +202,12 @@ void CheckAge::operator()(const std::string& file, unsigned state)
         if (delete_threshold > end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state | TO_DELETE);
+            next(file, state + FILE_TO_DELETE);
         }
         else if (archive_threshold > end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state | TO_ARCHIVE);
+            next(file, state + FILE_TO_ARCHIVE);
         }
         else
             next(file, state);

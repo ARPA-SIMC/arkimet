@@ -33,6 +33,7 @@ class Buffer;
 }
 
 namespace arki {
+namespace dataset {
 namespace data {
 namespace concat {
 
@@ -67,6 +68,7 @@ public:
     virtual void raw_to_wrapped(off_t& offset, size_t& size) const;
 };
 
+}
 }
 }
 }

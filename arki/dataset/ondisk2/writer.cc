@@ -303,7 +303,7 @@ struct CheckAge : public maintenance::MaintFileVisitor
 
     CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age=-1, int delete_age=-1);
 
-    void operator()(const std::string& file, unsigned state);
+    void operator()(const std::string& file, data::FileState state);
 };
 
 CheckAge::CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archive_age, int delete_age)
@@ -333,7 +333,7 @@ CheckAge::CheckAge(MaintFileVisitor& next, const index::Contents& idx, int archi
 	}
 }
 
-void CheckAge::operator()(const std::string& file, unsigned state)
+void CheckAge::operator()(const std::string& file, data::FileState state)
 {
     if (archive_threshold.empty() and delete_threshold.empty())
         next(file, state);
@@ -344,12 +344,12 @@ void CheckAge::operator()(const std::string& file, unsigned state)
         if (delete_threshold >= maxdate)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
-            next(file, state | TO_DELETE);
+            next(file, state + FILE_TO_DELETE);
         }
         else if (archive_threshold >= maxdate)
         {
             nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
-            next(file, state | TO_ARCHIVE);
+            next(file, state + FILE_TO_ARCHIVE);
         }
         else
             next(file, state);

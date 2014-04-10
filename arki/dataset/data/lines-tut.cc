@@ -40,7 +40,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::data;
+using namespace arki::dataset::data;
 using namespace arki::utils;
 using namespace wibble;
 using namespace wibble::tests;
@@ -78,7 +78,7 @@ inline size_t datasize(const Metadata& md)
     return md.source.upcast<types::source::Blob>()->size;
 }
 
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, data::Writer* dw, Metadata& md)
+void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, Writer* dw, Metadata& md)
 {
     typedef types::source::Blob Blob;
 
@@ -108,7 +108,7 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, data::Writer* dw, Metadata& 
     wassert(actual(s->filename) == dw->absname);
 }
 
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, data::Writer* dw, Metadata& md)
+void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, Writer* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     Item<types::Source> orig_source = md.source;

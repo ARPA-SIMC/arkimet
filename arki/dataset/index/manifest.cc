@@ -578,7 +578,7 @@ public:
 			while (not disk.empty() and disk.back() < i->file)
 			{
 				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-				v(disk.back(), MaintFileVisitor::TO_INDEX);
+				v(disk.back(), FILE_TO_INDEX);
 				disk.pop_back();
 			}
 			if (not disk.empty() and disk.back() == i->file)
@@ -606,24 +606,24 @@ public:
 					if (ts_md < ts_data)
 						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
 								m_path.c_str(), i->file.c_str(), ts_md, ts_sum);
-					v(i->file, MaintFileVisitor::TO_RESCAN);
+					v(i->file, FILE_TO_RESCAN);
 				}
 				else
 				{
 					hf.scan(i->file);
-					//v(i->file, MaintFileVisitor::OK);
+					//v(i->file, FILE_OK);
 				}
 			}
 			else // if (disk.empty() or disk.back() > i->file)
 			{
 				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->file.c_str());
-				v(i->file, MaintFileVisitor::TO_DEINDEX);
+				v(i->file, FILE_TO_DEINDEX);
 			}
 		}
 		while (not disk.empty())
 		{
 			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-			v(disk.back(), MaintFileVisitor::TO_INDEX);
+			v(disk.back(), FILE_TO_INDEX);
 			disk.pop_back();
 		}
 	}
@@ -906,7 +906,7 @@ public:
 			while (not disk.empty() and disk.back() < i->first)
 			{
 				nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-				v(disk.back(), MaintFileVisitor::TO_INDEX);
+				v(disk.back(), FILE_TO_INDEX);
 				disk.pop_back();
 			}
 			if (not disk.empty() and disk.back() == i->first)
@@ -934,24 +934,24 @@ public:
 					if (ts_md < ts_data)
 						nag::verbose("%s: %s metadata has a timestamp (%d) newer that its summary (%d)",
 								m_path.c_str(), i->first.c_str(), ts_md, ts_sum);
-					v(i->first, MaintFileVisitor::TO_RESCAN);
+					v(i->first, FILE_TO_RESCAN);
 				}
 				else
 				{
 					hf.scan(i->first);
-					// v(i->first, MaintFileVisitor::OK);
+					// v(i->first, FILE_OK);
 				}
 			}
 			else // if (disk.empty() or disk.back() > i->first)
 			{
 				nag::verbose("%s: %s has been deleted from the archive", m_path.c_str(), i->first.c_str());
-				v(i->first, MaintFileVisitor::TO_DEINDEX);
+				v(i->first, FILE_TO_DEINDEX);
 			}
 		}
 		while (not disk.empty())
 		{
 			nag::verbose("%s: %s is not in index", m_path.c_str(), disk.back().c_str());
-			v(disk.back(), MaintFileVisitor::TO_INDEX);
+			v(disk.back(), FILE_TO_INDEX);
 			disk.pop_back();
 		}
 	}

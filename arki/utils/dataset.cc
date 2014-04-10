@@ -71,7 +71,7 @@ bool TemporaryDataInliner::operator()(Metadata& md)
 bool DataOnly::operator()(Metadata& md)
 {
     if (!writer)
-        writer = data::OstreamWriter::get(md.source->format);
+        writer = dataset::data::OstreamWriter::get(md.source->format);
     writer->stream(md, out);
     return true;
 }

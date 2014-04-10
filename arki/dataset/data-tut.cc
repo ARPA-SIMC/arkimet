@@ -27,6 +27,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::dataset;
 using namespace wibble;
 using namespace wibble::tests;
 
@@ -88,7 +89,6 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    using namespace arki::data;
 #if 0
 
     Writer w1 = Writer::get("grib", "test-data-writer");

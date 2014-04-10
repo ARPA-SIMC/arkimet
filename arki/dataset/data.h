@@ -1,5 +1,5 @@
-#ifndef ARKI_DATA_H
-#define ARKI_DATA_H
+#ifndef ARKI_DATASET_DATA_H
+#define ARKI_DATASET_DATA_H
 
 /*
  * data - Read/write functions for data blobs
@@ -44,9 +44,49 @@ namespace metadata {
 class Collection;
 }
 
+namespace dataset {
+static const unsigned FILE_OK    = 0;
+static const unsigned FILE_TO_ARCHIVE = 1 << 0; /// File is ok, but old enough to be archived
+static const unsigned FILE_TO_DELETE  = 1 << 1; /// File is ok, but old enough to be deleted
+static const unsigned FILE_TO_PACK    = 1 << 2; /// File contains data that has been deleted
+static const unsigned FILE_TO_INDEX   = 1 << 3; /// File is not present in the index
+static const unsigned FILE_TO_RESCAN  = 1 << 4; /// File contents are inconsistent with the index
+static const unsigned FILE_TO_DEINDEX = 1 << 5; /// File does not exist but has entries in the index
+static const unsigned FILE_ARCHIVED   = 1 << 6; /// File is in the archive
+
 namespace data {
 class Reader;
 class Writer;
+
+struct FileState
+{
+    unsigned value;
+
+    FileState() : value(FILE_OK) {}
+    FileState(unsigned value) : value(value) {}
+
+    bool is_ok() const { return value == FILE_OK; }
+    bool is_archived_ok() const { return value == FILE_ARCHIVED; }
+
+    bool has(unsigned state) const
+    {
+        return value & state;
+    }
+
+    FileState operator+(const FileState& fs) const
+    {
+        return FileState(value + fs.value);
+
+    }
+
+    FileState operator-(const FileState& fs) const
+    {
+        return FileState(value & ~fs.value);
+
+    }
+
+    std::string to_string() const;
+};
 
 namespace impl {
 
@@ -264,6 +304,7 @@ public:
 };
 
 
+}
 }
 }
 

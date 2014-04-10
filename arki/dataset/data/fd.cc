@@ -34,6 +34,7 @@ using namespace std;
 using namespace wibble;
 
 namespace arki {
+namespace dataset {
 namespace data {
 namespace fd {
 
@@ -106,6 +107,7 @@ void Writer::write(const wibble::sys::Buffer& buf)
         throw wibble::exception::File(absname, "flushing write");
 }
 
+}
 }
 }
 }

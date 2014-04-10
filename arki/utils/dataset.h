@@ -32,8 +32,10 @@
 namespace arki {
 struct Metadata;
 
+namespace dataset {
 namespace data {
 struct OstreamWriter;
+}
 }
 
 namespace utils {
@@ -99,7 +101,7 @@ struct DataStartHookRunner : public metadata::Consumer
 struct DataOnly : public metadata::Consumer
 {
     std::ostream& out;
-    const data::OstreamWriter* writer;
+    const dataset::data::OstreamWriter* writer;
 
     DataOnly(std::ostream& out) : out(out), writer(0) {}
 

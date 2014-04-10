@@ -34,8 +34,22 @@ using namespace std;
 using namespace wibble;
 
 namespace arki {
+namespace dataset {
 namespace data {
 
+std::string FileState::to_string() const
+{
+    vector<const char*> res;
+    if (value == FILE_OK)        res.push_back("OK");
+    if (value & FILE_TO_ARCHIVE) res.push_back("TO_ARCHIVE");
+    if (value & FILE_TO_DELETE)  res.push_back("TO_DELETE");
+    if (value & FILE_TO_PACK)    res.push_back("TO_PACK");
+    if (value & FILE_TO_INDEX)   res.push_back("TO_INDEX");
+    if (value & FILE_TO_RESCAN)  res.push_back("TO_RESCAN");
+    if (value & FILE_TO_DEINDEX) res.push_back("TO_DEINDEX");
+    if (value & FILE_ARCHIVED)   res.push_back("ARCHIVED");
+    return str::join(res.begin(), res.end(), ",");
+}
 
 Reader::~Reader() {}
 
@@ -313,5 +327,6 @@ std::auto_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)
 }
 
 
+}
 }
 }

@@ -36,6 +36,7 @@ using namespace std;
 using namespace wibble;
 
 namespace arki {
+namespace dataset {
 namespace data {
 namespace concat {
 
@@ -187,6 +188,7 @@ void Info::raw_to_wrapped(off_t& offset, size_t& size) const
     // There are no headers or trailers, so nothing to do here
 }
 
+}
 }
 }
 }

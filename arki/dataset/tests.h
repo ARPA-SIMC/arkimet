@@ -25,6 +25,7 @@
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/dataset/maintenance.h>
+#include <arki/dataset/data.h>
 #include <arki/sort.h>
 #include <vector>
 #include <string>
@@ -179,7 +180,7 @@ struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
 {
     typedef tests::DatasetTest::Counted Counted;
 
-    std::map <std::string, unsigned> fileStates;
+    std::map <std::string, dataset::data::FileState> fileStates;
     size_t counts[tests::DatasetTest::COUNTED_MAX];
     static const char* names[];
     std::set<Counted> checked;
@@ -188,7 +189,7 @@ struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
 
     void clear();
     bool isClean() const;
-    virtual void operator()(const std::string& file, unsigned state);
+    virtual void operator()(const std::string& file, dataset::data::FileState state);
     void dump(std::ostream& out) const;
     size_t count(tests::DatasetTest::Counted state);
     std::string remaining() const;

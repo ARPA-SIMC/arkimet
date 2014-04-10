@@ -354,28 +354,30 @@ void MaintenanceCollector::clear()
 bool MaintenanceCollector::isClean() const
 {
 	for (size_t i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-		if (i != OK && i != tests::DatasetTest::COUNTED_ARC_OK && counts[i])
+		if (i != tests::DatasetTest::COUNTED_OK && i != tests::DatasetTest::COUNTED_ARC_OK && counts[i])
 			return false;
 	return true;
 }
 
-void MaintenanceCollector::operator()(const std::string& file, unsigned state)
+void MaintenanceCollector::operator()(const std::string& file, dataset::data::FileState state)
 {
+    using namespace arki::dataset;
+
     fileStates[file] = state;
-    if (state == OK)        ++counts[tests::DatasetTest::COUNTED_OK];
-    if (state == ARCHIVED)  ++counts[tests::DatasetTest::COUNTED_ARC_OK];
-    if (state & ARCHIVED)
+    if (state.is_ok())           ++counts[tests::DatasetTest::COUNTED_OK];
+    if (state.is_archived_ok())  ++counts[tests::DatasetTest::COUNTED_ARC_OK];
+    if (state.has(FILE_ARCHIVED))
     {
-        if (state & TO_INDEX)   ++counts[tests::DatasetTest::COUNTED_ARC_TO_INDEX];
-        if (state & TO_RESCAN)  ++counts[tests::DatasetTest::COUNTED_ARC_TO_RESCAN];
-        if (state & TO_DEINDEX) ++counts[tests::DatasetTest::COUNTED_ARC_TO_DEINDEX];
+        if (state.has(FILE_TO_INDEX))   ++counts[tests::DatasetTest::COUNTED_ARC_TO_INDEX];
+        if (state.has(FILE_TO_RESCAN))  ++counts[tests::DatasetTest::COUNTED_ARC_TO_RESCAN];
+        if (state.has(FILE_TO_DEINDEX)) ++counts[tests::DatasetTest::COUNTED_ARC_TO_DEINDEX];
     } else {
-        if (state & TO_ARCHIVE) ++counts[tests::DatasetTest::COUNTED_TO_ARCHIVE];
-        if (state & TO_DELETE)  ++counts[tests::DatasetTest::COUNTED_TO_DELETE];
-        if (state & TO_PACK)    ++counts[tests::DatasetTest::COUNTED_TO_PACK];
-        if (state & TO_INDEX)   ++counts[tests::DatasetTest::COUNTED_TO_INDEX];
-        if (state & TO_RESCAN)  ++counts[tests::DatasetTest::COUNTED_TO_RESCAN];
-        if (state & TO_DEINDEX) ++counts[tests::DatasetTest::COUNTED_TO_DEINDEX];
+        if (state.has(FILE_TO_ARCHIVE)) ++counts[tests::DatasetTest::COUNTED_TO_ARCHIVE];
+        if (state.has(FILE_TO_DELETE))  ++counts[tests::DatasetTest::COUNTED_TO_DELETE];
+        if (state.has(FILE_TO_PACK))    ++counts[tests::DatasetTest::COUNTED_TO_PACK];
+        if (state.has(FILE_TO_INDEX))   ++counts[tests::DatasetTest::COUNTED_TO_INDEX];
+        if (state.has(FILE_TO_RESCAN))  ++counts[tests::DatasetTest::COUNTED_TO_RESCAN];
+        if (state.has(FILE_TO_DEINDEX)) ++counts[tests::DatasetTest::COUNTED_TO_DEINDEX];
     }
 }
 

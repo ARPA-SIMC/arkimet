@@ -32,15 +32,15 @@ class ConfigFile;
 class Metadata;
 class Matcher;
 
+namespace dataset {
+class TargetFile;
+struct Archives;
+
 namespace data {
 class SegmentManager;
 class Reader;
 class Writer;
 }
-
-namespace dataset {
-class TargetFile;
-struct Archives;
 
 namespace maintenance {
 class MaintFileVisitor;
