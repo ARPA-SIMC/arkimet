@@ -146,6 +146,11 @@ Pending Writer::append(Metadata& md, off_t* ofs)
     return res;
 }
 
+FileState Writer::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+{
+    return fd::Writer::check(absname, mds, 0, quick);
+}
+
 OstreamWriter::OstreamWriter()
 {
     sigemptyset(&blocked);
@@ -176,16 +181,6 @@ size_t OstreamWriter::stream(Metadata& md, int out) const
         throw wibble::exception::System("writing " + str::fmt(buf.size()) + " bytes");
 
     return buf.size();
-}
-
-
-Info::~Info()
-{
-}
-
-void Info::raw_to_wrapped(off_t& offset, size_t& size) const
-{
-    // There are no headers or trailers, so nothing to do here
 }
 
 }

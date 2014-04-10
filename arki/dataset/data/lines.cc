@@ -165,6 +165,11 @@ Pending Writer::append(Metadata& md, off_t* ofs)
     return res;
 }
 
+FileState Writer::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+{
+    return fd::Writer::check(absname, mds, 2, quick);
+}
+
 OstreamWriter::OstreamWriter()
 {
     sigemptyset(&blocked);
@@ -204,15 +209,6 @@ size_t OstreamWriter::stream(Metadata& md, int out) const
     return buf.size() + 1;
 }
 
-
-Info::~Info()
-{
-}
-
-void Info::raw_to_wrapped(off_t& offset, size_t& size) const
-{
-    size += 1;
-}
 
 }
 }

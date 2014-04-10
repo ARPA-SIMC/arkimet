@@ -68,29 +68,6 @@ struct IndexFileVisitor
 };
 
 /**
- * IndexFileVisitor that feeds a MaintFileVisitor with OK or HOLES status.
- *
- * TO_INDEX and TO_RESCAN will have to be detected by MaintFileVisitors
- * further down the chain.
- */
-struct HoleFinder : IndexFileVisitor
-{
-    MaintFileVisitor& next;
-    const std::string& m_root;
-    bool quick;
-
-	HoleFinder(MaintFileVisitor& next, const std::string& root, bool quick=true);
-
-	/**
-	 * Scan the file using scan::scan, check for holes and (optionally)
-	 * corruption, then report the result to the chained visitor
-	 */
-	void scan(const std::string& file);
-
-    void operator()(const std::string& file, const metadata::Collection& mdc);
-};
-
-/**
  * MaintFileVisitor that feeds a MaintFileVisitor with TO_INDEX status.
  *
  * The input feed is assumed to come from the index, and is checked against the

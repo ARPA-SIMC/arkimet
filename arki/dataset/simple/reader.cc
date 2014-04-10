@@ -60,7 +60,7 @@ namespace dataset {
 namespace simple {
 
 Reader::Reader(const ConfigFile& cfg)
-	: Local(cfg), m_mft(0)
+	: SegmentedLocal(cfg), m_mft(0)
 {
 	// Create the directory if it does not exist
 	wibble::sys::fs::mkpath(m_path);
@@ -108,8 +108,8 @@ size_t Reader::produce_nth(metadata::Consumer& cons, size_t idx)
 
 void Reader::maintenance(maintenance::MaintFileVisitor& v)
 {
-	if (!m_mft) return;
-	m_mft->check(v);
+    if (!m_mft) return;
+    m_mft->check(*m_segment_manager, v);
 }
 
 }

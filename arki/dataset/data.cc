@@ -96,39 +96,6 @@ const OstreamWriter* OstreamWriter::get(const std::string& format)
     }
 }
 
-Info::~Info()
-{
-}
-
-const Info* Info::get(const std::string& format)
-{
-    static concat::Info* i_concat = 0;
-    static lines::Info* i_lines = 0;
-
-    if (format == "grib" || format == "grib1" || format == "grib2")
-    {
-        if (!i_concat)
-            i_concat = new concat::Info;
-        return i_concat;
-    } else if (format == "bufr") {
-        if (!i_concat)
-            i_concat = new concat::Info;
-        return i_concat;
-    } else if (format == "odimh5" || format == "h5" || format == "odim") {
-        if (!i_concat)
-            i_concat = new concat::Info;
-        return i_concat;
-    } else if (format == "vm2") {
-        if (!i_lines)
-            i_lines = new lines::Info;
-        return i_lines;
-    } else {
-        throw wibble::exception::Consistency(
-                "getting ostream writer for " + format,
-                "format not supported");
-    }
-}
-
 namespace {
 
 // Get format from file extension
@@ -268,44 +235,27 @@ struct AutoSegmentManager : public SegmentManager
         writer.release();
 
         return new Rename(tmpabsname, absname);
-#if 0
-
-void FileCopier::operator()(const std::string& file, const metadata::Collection& mdc)
-{
-    // Deindex the file
-    m_idx.reset(file);
-    for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
-    {
-        // Read the data
-        wibble::sys::Buffer buf = i->getData();
-        // Validate it
-        m_val.validate(buf.data(), buf.size());
-        // Append it to the new file
-        off_t w_off = writer.append(buf);
-        // Reindex it
-        m_idx.index(*i, file, w_off);
     }
-}
 
-bool FileCopier::operator()(Metadata& md)
-{
-	// Read the data
-	wibble::sys::Buffer buf = md.getData();
+    FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true)
+    {
+        string format = get_format(relname);
+        string absname = str::joinpath(root, relname);
 
-	// Check it for corruption
-	m_val.validate(buf.data(), buf.size());
-
-	// Write it out
-    data::Writer writer = data::Writer::get(md.source->format, dst);
-    w_off = writer.append(buf);
-
-	// Update the Blob source using the new position
-	md.source = types::source::Blob::create(md.source->format, finalbasedir, finalname, w_off, buf.size());
-
-	return true;
-}
-#endif
-        throw wibble::exception::Consistency("SegmentManager::repack not implemented");
+        if (format == "grib" || format == "grib1" || format == "grib2")
+        {
+            return concat::Writer::check(absname, mds, quick);
+        } else if (format == "bufr") {
+            return concat::Writer::check(absname, mds, quick);
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            return concat::Writer::check(absname, mds, quick);
+        } else if (format == "vm2") {
+            return lines::Writer::check(absname, mds, quick);
+        } else {
+            throw wibble::exception::Consistency(
+                    "checking " + format + " file " + relname,
+                    "format not supported");
+        }
     }
 };
 
@@ -318,6 +268,11 @@ SegmentManager::~SegmentManager()
 void SegmentManager::flush_writers()
 {
     writers.clear();
+}
+
+std::auto_ptr<SegmentManager> SegmentManager::get(const std::string& root)
+{
+    return auto_ptr<SegmentManager>(new AutoSegmentManager(root));
 }
 
 std::auto_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)

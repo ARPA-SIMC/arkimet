@@ -45,6 +45,7 @@ public:
     virtual void append(Metadata& md);
     virtual off_t append(const wibble::sys::Buffer& buf);
     virtual Pending append(Metadata& md, off_t* ofs);
+    static FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
 };
 
 class OstreamWriter : public data::OstreamWriter
@@ -58,14 +59,6 @@ public:
 
     virtual size_t stream(Metadata& md, std::ostream& out) const;
     virtual size_t stream(Metadata& md, int out) const;
-};
-
-class Info : public data::Info
-{
-public:
-    virtual ~Info();
-
-    virtual void raw_to_wrapped(off_t& offset, size_t& size) const;
 };
 
 }

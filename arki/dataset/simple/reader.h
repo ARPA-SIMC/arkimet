@@ -47,7 +47,7 @@ struct Manifest;
 
 namespace simple {
 
-class Reader : public Local
+class Reader : public SegmentedLocal
 {
 protected:
     index::Manifest* m_mft;

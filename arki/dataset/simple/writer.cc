@@ -220,14 +220,14 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	// TODO Detect if data is not in reftime order
 
 	CheckAge ca(v, *m_mft, m_archive_age, m_delete_age);
-	m_mft->check(ca, quick);
+	m_mft->check(*m_segment_manager, ca, quick);
 	WritableLocal::maintenance(v, quick);
 }
 
 void Writer::removeAll(std::ostream& log, bool writable)
 {
 	Deleter deleter(m_name, log, writable);
-	m_mft->check(deleter, true);
+	m_mft->check(*m_segment_manager, deleter, true);
 	// TODO: empty manifest
 	WritableLocal::removeAll(log, writable);
 }

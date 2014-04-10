@@ -51,6 +51,7 @@ public:
     off_t wrpos();
     void write(const wibble::sys::Buffer& buf);
     void truncate(off_t pos);
+    static FileState check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 };
 
 }

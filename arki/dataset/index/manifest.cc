@@ -22,22 +22,22 @@
 
 #include "config.h"
 
-#include <arki/dataset/index/manifest.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/metadata/collection.h>
-#include <arki/configfile.h>
-#include <arki/summary.h>
-#include <arki/types/reftime.h>
-#include <arki/matcher.h>
-#include <arki/scan/dir.h>
-#include <arki/utils/sqlite.h>
-#include <arki/utils/files.h>
-#include <arki/utils/dataset.h>
-#include <arki/utils/compress.h>
-#include <arki/sort.h>
-#include <arki/scan/any.h>
-#include <arki/nag.h>
-#include <arki/iotrace.h>
+#include "arki/dataset/index/manifest.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/metadata/collection.h"
+#include "arki/configfile.h"
+#include "arki/summary.h"
+#include "arki/types/reftime.h"
+#include "arki/matcher.h"
+#include "arki/scan/dir.h"
+#include "arki/utils/sqlite.h"
+#include "arki/utils/files.h"
+#include "arki/utils/dataset.h"
+#include "arki/utils/compress.h"
+#include "arki/sort.h"
+#include "arki/scan/any.h"
+#include "arki/nag.h"
+#include "arki/iotrace.h"
 
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -62,6 +62,43 @@ using namespace arki::dataset::maintenance;
 namespace arki {
 namespace dataset {
 namespace index {
+
+namespace {
+void scan_file(data::SegmentManager& sm, const std::string& root, const std::string& relname, MaintFileVisitor& visitor, bool quick=true)
+{
+    struct HFSorter : public sort::Compare
+    {
+        virtual int compare(const Metadata& a, const Metadata& b) const {
+            int res = a.get(types::TYPE_REFTIME).compare(b.get(types::TYPE_REFTIME));
+            if (res == 0)
+                return a.source.compare(b.source);
+            return res;
+        }
+        virtual std::string toString() const {
+            return "HFSorter";
+        }
+    } cmp;
+
+    string absname = str::joinpath(root, relname);
+
+    // If the data file is compressed, create a temporary uncompressed copy
+    auto_ptr<utils::compress::TempUnzip> tu;
+    if (!quick && scan::isCompressed(absname))
+        tu.reset(new utils::compress::TempUnzip(absname));
+
+    metadata::Collection mdc;
+    scan::scan(absname, mdc);
+    //mdc.sort(""); // Sort by reftime, to find items out of order
+    mdc.sort(cmp); // Sort by reftime and by offset
+
+    // Check the state of the file
+    data::FileState state = sm.check(relname, mdc, quick);
+
+    // Pass on the file state to the visitor
+    visitor(relname, state);
+}
+}
+
 
 Manifest::Manifest(const ConfigFile& cfg) : m_path(cfg.value("path")) {}
 Manifest::Manifest(const std::string& path) : m_path(path) {}
@@ -546,9 +583,8 @@ public:
 		dirty = true;
 	}
 
-	virtual void check(MaintFileVisitor& v, bool quick=true)
+	virtual void check(data::SegmentManager& sm, MaintFileVisitor& v, bool quick=true)
 	{
-		HoleFinder hf(v, m_path, quick);
 #if 0
 	// TODO: run file:///usr/share/doc/sqlite3-doc/pragma.html#debug
 	// and delete the index if it fails
@@ -609,10 +645,7 @@ public:
 					v(i->file, FILE_TO_RESCAN);
 				}
 				else
-				{
-					hf.scan(i->file);
-					//v(i->file, FILE_OK);
-				}
+                    scan_file(sm, m_path, i->file, v, quick);
 			}
 			else // if (disk.empty() or disk.back() > i->file)
 			{
@@ -883,10 +916,8 @@ public:
 			;
 	}
 
-	virtual void check(MaintFileVisitor& v, bool quick=true)
+	virtual void check(data::SegmentManager& sm, MaintFileVisitor& v, bool quick=true)
 	{
-		HoleFinder hf(v, m_path, quick);
-
 		// List of files existing on disk
 		std::vector<std::string> disk = scan::dir(m_path, true);
 		std::sort(disk.begin(), disk.end(), sorter);
@@ -937,10 +968,7 @@ public:
 					v(i->first, FILE_TO_RESCAN);
 				}
 				else
-				{
-					hf.scan(i->first);
-					// v(i->first, FILE_OK);
-				}
+                    scan_file(sm, m_path, i->first, v, quick);
 			}
 			else // if (disk.empty() or disk.back() > i->first)
 			{

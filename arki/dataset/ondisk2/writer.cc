@@ -355,6 +355,23 @@ void CheckAge::operator()(const std::string& file, data::FileState state)
             next(file, state);
     }
 }
+
+struct FileChecker : public maintenance::IndexFileVisitor
+{
+    data::SegmentManager& sm;
+    bool quick;
+    maintenance::MaintFileVisitor& next;
+
+    FileChecker(data::SegmentManager& sm, bool quick, maintenance::MaintFileVisitor& next)
+        : sm(sm), quick(quick), next(next)
+    {
+    }
+
+    virtual void operator()(const std::string& relname, const metadata::Collection& mds)
+    {
+        next(relname, sm.check(relname, mds, quick));
+    }
+};
 }
 
 void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
@@ -368,8 +385,8 @@ void Writer::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 	CheckAge ca(v, m_idx, m_archive_age, m_delete_age);
 	vector<string> files = scan::dir(m_path);
 	maintenance::FindMissing fm(ca, files);
-	maintenance::HoleFinder hf(fm, m_path, quick);
-	m_idx.scan_files(hf);
+    FileChecker checker(*m_segment_manager, quick, fm);
+	m_idx.scan_files(checker);
 	fm.end();
 	WritableLocal::maintenance(v, quick);
 }

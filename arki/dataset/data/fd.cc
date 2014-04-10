@@ -22,9 +22,13 @@
 
 #include "fd.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/scan/any.h"
+#include "arki/utils/compress.h"
 #include "arki/nag.h"
 #include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
+#include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -105,6 +109,67 @@ void Writer::write(const wibble::sys::Buffer& buf)
 
     if (fdatasync(fd) < 0)
         throw wibble::exception::File(absname, "flushing write");
+}
+
+FileState Writer::check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap, bool quick)
+{
+    size_t end_of_last_data_checked(0);
+    const scan::Validator* validator(0);
+    bool has_hole(false);
+
+    if (!quick)
+        validator = &scan::Validator::by_filename(absname.c_str());
+
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        if (validator)
+        {
+            sys::Buffer buf;
+            try {
+                buf = i->getData();
+            } catch (std::exception& e) {
+                string source = str::fmt(i->source);
+                nag::warning("%s: cannot read %s: %s", absname.c_str(), source.c_str(), e.what());
+                return FILE_TO_RESCAN;
+            }
+
+            try {
+                validator->validate(buf.data(), buf.size());
+                // validator_fd, offset, size, name);
+            } catch (std::exception& e) {
+                string source = str::fmt(i->source);
+                nag::warning("%s: invalid data read %s: %s", absname.c_str(), source.c_str(), e.what());
+                return FILE_TO_RESCAN;
+            }
+        }
+
+        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+
+        if (source->offset < end_of_last_data_checked || source->offset > end_of_last_data_checked + max_gap)
+            has_hole = true;
+
+        end_of_last_data_checked = max(end_of_last_data_checked, source->offset + source->size);
+    }
+
+    size_t file_size = utils::compress::filesize(absname);
+    if (file_size < end_of_last_data_checked)
+    {
+        nag::warning("%s: file looks truncated: its size is %zd but data is known to exist until %zd bytes", absname.c_str(), file_size, (size_t)end_of_last_data_checked);
+        return FILE_TO_RESCAN;
+    }
+
+    // Check if file_size matches the expected file size
+    if (file_size > end_of_last_data_checked + max_gap)
+        has_hole = true;
+
+    // Take note of files with holes
+    if (has_hole)
+    {
+        nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
+        return FILE_TO_PACK;
+    } else {
+        return FILE_OK;
+    }
 }
 
 }

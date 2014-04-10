@@ -212,9 +212,10 @@ struct ToArchiveState : public maintenance::MaintFileVisitor
 
 void OnlineArchive::maintenance(maintenance::MaintFileVisitor& v)
 {
-	ToArchiveState tas(v);
-	m_mft->check(tas);
-	m_mft->flush();
+    auto_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(m_dir));
+    ToArchiveState tas(v);
+    m_mft->check(*segment_manager, tas);
+    m_mft->flush();
 }
 
 /*

@@ -205,6 +205,16 @@ public:
      */
     virtual Pending repack(const std::string& relname, metadata::Collection& mds) = 0;
 
+    /**
+     * Check the given file against its expected set of contents.
+     *
+     * @returns the FileState with the state of the file
+     */
+    virtual FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
+
+    /// Create a SegmentManager using default options
+    static std::auto_ptr<SegmentManager> get(const std::string& root);
+
     /// Create a new SegmentManager given a dataset's configuration
     static std::auto_ptr<SegmentManager> get(const ConfigFile& cfg);
 };
@@ -281,28 +291,6 @@ public:
      */
     static const OstreamWriter* get(const std::string& format);
 };
-
-/**
- * Functor class with format-specific information routines
- */
-class Info
-{
-public:
-    virtual ~Info();
-
-    /**
-     * Given a file offset and size for the raw data, alter them so that they
-     * include all possible leading and trailing data used for this format
-     */
-    virtual void raw_to_wrapped(off_t& offset, size_t& size) const = 0;
-
-    /**
-     * Returns a pointer to a static instance of the appropriate Info
-     * for the given format
-     */
-    static const Info* get(const std::string& format);
-};
-
 
 }
 }

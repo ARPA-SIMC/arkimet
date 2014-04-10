@@ -119,9 +119,10 @@ void to::test<4>()
 	m->openRW();
 	m->flush();
 	ensure(sys::fs::exists("testds/.archive/last/" + idxfname()));
-	
-	MaintenanceCollector c;
-	m->check(c);
+
+    MaintenanceCollector c;
+    auto_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
+    m->check(*sm, c);
 	ensure_equals(c.fileStates.size(), 0u);
 	ensure_equals(c.remaining(), string());
 	ensure(c.isClean());
@@ -226,7 +227,8 @@ void to::test<8>()
 		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 		IndexingCollector c(*m, s, mtime);
 		m->openRW();
-		m->check(c);
+        auto_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
+        m->check(*sm, c);
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_TO_INDEX), 2u);
 		ensure_equals(c.count(COUNTED_OK), 3u);
@@ -239,7 +241,8 @@ void to::test<8>()
 		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 		MaintenanceCollector c;
 		m->openRO();
-		m->check(c);
+        auto_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
+        m->check(*sm, c);
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_OK), 5u);
 		ensure_equals(c.remaining(), string());
