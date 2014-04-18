@@ -127,7 +127,6 @@ struct PreserveFileTimes
 {
     std::string fname;
     struct timespec times[2];
-    int fd;
 
     PreserveFileTimes(const std::string& fname);
     ~PreserveFileTimes();

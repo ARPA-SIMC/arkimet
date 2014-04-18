@@ -271,7 +271,8 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         wassert(actual(second_in_segment->offset) > 0);
 
         // Truncate at the position in second_in_segment
-        segments().truncate(second_in_segment->filename, second_in_segment->offset);
+        string truncated_fname = second_in_segment->filename.substr(7);
+        segments().truncate(truncated_fname, second_in_segment->offset);
 
         // See that the truncated file is detected
         {
@@ -298,7 +299,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             auto_ptr<WritableLocal> writer(makeLocalWriter());
 
             LineChecker s;
-            s.require_line_contains(": rescanned " + second_in_segment->filename.substr(7));
+            s.require_line_contains(": rescanned " + truncated_fname);
             s.require_line_contains(": 1 file rescanned");
             wassert(actual(writer.get()).check(s, true, true));
 

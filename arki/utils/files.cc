@@ -161,14 +161,10 @@ std::string format_from_ext(const std::string& fname, const char* default_format
 }
 
 PreserveFileTimes::PreserveFileTimes(const std::string& fname)
-    : fname(fname), fd(-1)
+    : fname(fname)
 {
-    fd = open(fname.c_str(), O_RDWR);
-    if (fd == -1)
-        throw wibble::exception::File(fname, "cannot open file");
-
     struct stat st;
-    if (fstat(fd, &st) == -1)
+    if (stat(fname.c_str(), &st) == -1)
         throw wibble::exception::File(fname, "cannot stat file");
 
     times[0] = st.st_atim;
@@ -177,11 +173,8 @@ PreserveFileTimes::PreserveFileTimes(const std::string& fname)
 
 PreserveFileTimes::~PreserveFileTimes()
 {
-    if (fd == -1) return;
-    if (futimens(fd, times) == -1)
+    if (utimensat(AT_FDCWD, fname.c_str(), times, 0) == -1)
         throw wibble::exception::File(fname, "cannot set file times");
-    if (close(fd) == -1)
-        throw wibble::exception::File(fname, "cannot close file");
 }
 
 }
