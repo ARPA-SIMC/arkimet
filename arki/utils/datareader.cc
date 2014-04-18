@@ -27,6 +27,7 @@
 #include <arki/utils/accounting.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/files.h>
+#include <arki/utils/fd.h>
 #include <arki/nag.h>
 #include <arki/iotrace.h>
 #include <wibble/exception.h>
@@ -88,6 +89,60 @@ public:
 		acct::plain_data_read_count.incr();
         iotrace::trace_file(fname, ofs, size, "read data");
 	}
+};
+
+struct DirReader : public Reader
+{
+public:
+    std::string fname;
+    std::string format;
+    int dirfd;
+
+    DirReader(const std::string& fname)
+        : fname(fname)
+    {
+        size_t pos;
+        if ((pos = fname.rfind('.')) != std::string::npos)
+            format = fname.substr(pos + 1);
+
+        // Open the new file
+        dirfd = ::open(fname.c_str(), O_PATH | O_DIRECTORY);
+        if (dirfd == -1)
+            throw wibble::exception::File(fname, "opening directory");
+    }
+
+    ~DirReader()
+    {
+        ::close(dirfd);
+    }
+
+    bool is(const std::string& fname)
+    {
+        return this->fname == fname;
+    }
+
+    void read(off_t ofs, size_t size, void* buf)
+    {
+        string dataname = str::fmtf("%06zd.%s", ofs, format.c_str());
+        string absname = str::joinpath(fname, dataname);
+        int file_fd = openat(dirfd, dataname.c_str(), O_RDONLY | O_CLOEXEC);
+        if (file_fd == -1)
+            throw wibble::exception::File(absname, "cannot open file");
+
+        fd::HandleWatch hw(absname, file_fd);
+
+        if (posix_fadvise(file_fd, 0, size, POSIX_FADV_DONTNEED) != 0)
+            nag::debug("fadvise on %s failed: %m", absname.c_str());
+
+        ssize_t res = pread(file_fd, buf, size, 0);
+        if (res < 0)
+            throw wibble::exception::File(absname, "reading " + str::fmt(size) + " bytes at start of file");
+        if ((size_t)res != size)
+            throw wibble::exception::Consistency("reading from " + absname, "read only " + str::fmt(res) + "/" + str::fmt(size) + " bytes at start of file");
+
+        acct::plain_data_read_count.incr();
+        iotrace::trace_file(fname, ofs, size, "read data");
+    }
 };
 
 struct ZlibFileReader : public Reader
@@ -259,11 +314,16 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
 		// Close the last file
 		flush();
 
-		// Open the new file
-		if (sys::fs::exists(fname))
-			last = new datareader::FileReader(fname);
-		else if (sys::fs::exists(fname + ".gz.idx"))
-			last = new datareader::IdxZlibFileReader(fname);
+        // Open the new file
+        std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+        if (st.get())
+        {
+            if (S_ISDIR(st->st_mode))
+                last = new datareader::DirReader(fname);
+            else
+                last = new datareader::FileReader(fname);
+        } else if (sys::fs::exists(fname + ".gz.idx"))
+            last = new datareader::IdxZlibFileReader(fname);
 		else if (sys::fs::exists(fname + ".gz"))
 			last = new datareader::ZlibFileReader(fname);
 		else
