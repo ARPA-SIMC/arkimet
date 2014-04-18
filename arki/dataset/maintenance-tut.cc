@@ -46,7 +46,69 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     {
         cfg.setValue("path", "testds");
         cfg.setValue("name", "testds");
+        cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         cfg.setValue("step", "daily");
+    }
+
+    void import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        clean();
+
+        std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+        for (int i = 0; i < 3; ++i)
+        {
+            Metadata md = fixture.test_data[i].md;
+            WritableDataset::AcquireResult res = writer->acquire(md);
+            wassert(actual(res) == WritableDataset::ACQ_OK);
+        }
+
+        utils::files::removeDontpackFlagfile(cfg.value("path"));
+    }
+
+    void generic_maintenance_tests(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        unsigned file_count = fixture.count_dataset_files();
+
+        wruntest(import_all, fixture);
+
+        // Ensure everything appears clean
+        {
+            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            wassert(actual(writer.get()).maintenance_clean(file_count));
+
+            // Check that maintenance does not accidentally create an archive
+            wassert(!actual("testds/.archive").fileexists());
+        }
+
+        // Ensure packing has nothing to report
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            stringstream s;
+            writer->repack(s, false);
+            wassert(actual(s.str()) == "");
+
+            wassert(actual(writer.get()).maintenance_clean(file_count));
+        }
+
+        // Perform packing and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            stringstream s;
+            writer->repack(s, true);
+            wassert(actual(s.str()) == "");
+
+            wassert(actual(writer.get()).maintenance_clean(file_count));
+        }
+
+        // Perform full maintenance and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            stringstream s;
+            writer->check(s, true, true);
+            wassert(actual(s.str()) == ""); // Nothing should have happened
+
+            wassert(actual(writer.get()).maintenance_clean(file_count));
+        }
     }
 };
 
@@ -60,45 +122,10 @@ typedef tg::object to;
 // Test accuracy of maintenance scan, on perfect dataset
 template<> template<> void to::test<1>()
 {
-	clean_and_import();
-
-	// Ensure the archive appears clean
-	{
-		ensure_maint_clean(3);
-
-		// Check that maintenance does not accidentally create an archive
-		ensure(!sys::fs::exists("testds/.archive"));
-	}
-
-	// Ensure packing has nothing to report
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		stringstream s;
-		writer->repack(s, false);
-		ensure_equals(s.str(), "");
-
-		ensure_maint_clean(3);
-	}
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		stringstream s;
-		writer->repack(s, true);
-		ensure_not_contains(s.str(), "2007/");
-
-		ensure_maint_clean(3);
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		stringstream s;
-		writer->check(s, true, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-
-		ensure_maint_clean(3);
-	}
+    wruntest(generic_maintenance_tests, testdata::GRIBData());
+    wruntest(generic_maintenance_tests, testdata::BUFRData());
+    wruntest(generic_maintenance_tests, testdata::VM2Data());
+    wruntest(generic_maintenance_tests, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive

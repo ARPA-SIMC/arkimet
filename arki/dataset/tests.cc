@@ -530,5 +530,17 @@ void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
 
 }
 
+namespace testdata {
+
+unsigned Fixture::count_dataset_files() const
+{
+    set<string> files;
+    for (int i = 0; i < 3; ++i)
+        files.insert(test_data[i].destfile);
+    return files.size();
+}
+
+}
+
 }
 // vim:set ts=4 sw=4:

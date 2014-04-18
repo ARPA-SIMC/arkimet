@@ -50,87 +50,12 @@ using namespace arki::utils;
 using namespace wibble;
 using namespace wibble::tests;
 
-struct TestDataInfo
-{
-    Metadata md;
-    string destfile;
-    Matcher matcher;
-
-    void set(const Metadata& md, const std::string& destfile, const std::string& matcher)
-    {
-        this->md = md;
-        this->destfile = destfile;
-        this->matcher = Matcher::parse(matcher);
-    }
-};
-
-struct TestData
-{
-    std::string format;
-    TestDataInfo test_data[3];
-};
-
-struct TestDataGRIB : TestData
-{
-    TestDataGRIB()
-    {
-        metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc);
-        format = "grib";
-        test_data[0].set(mdc[0], "2007/07-08.grib1", "reftime:=2007-07-08");
-        test_data[1].set(mdc[1], "2007/07-07.grib1", "reftime:=2007-07-07");
-        test_data[2].set(mdc[2], "2007/10-09.grib1", "reftime:=2007-10-09");
-    }
-};
-
-struct TestDataBUFR : TestData
-{
-    TestDataBUFR()
-    {
-        metadata::Collection mdc;
-        scan::scan("inbound/test.bufr", mdc);
-        format = "bufr";
-        test_data[0].set(mdc[0], "2005/12-01.bufr", "reftime:=2005-12-01");
-        test_data[1].set(mdc[1], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=60");
-        test_data[2].set(mdc[2], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=6");
-    }
-};
-
-struct TestDataVM2 : TestData
-{
-    TestDataVM2()
-    {
-        metadata::Collection mdc;
-        scan::scan("inbound/test.vm2", mdc);
-        format = "vm2";
-        test_data[0].set(mdc[0], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,227");
-        test_data[1].set(mdc[1], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,228");
-        test_data[2].set(mdc[2], "2011/01-01.vm2", "reftime:=2011-01-01; product:VM2,1");
-    }
-};
-
-struct TestDataODIM : TestData
-{
-    TestDataODIM()
-    {
-        metadata::Collection mdc;
-        format = "odim";
-        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
-        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
-        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
-        test_data[0].set(mdc[0], "2013/03-18.odimh5", "reftime:=2013-03-18");
-        test_data[1].set(mdc[1], "2000/01-02.odimh5", "reftime:=2000-01-02");
-        test_data[2].set(mdc[2], "2013/11-04.odimh5", "reftime:=2013-11-04");
-    }
-};
-
-
 struct arki_dataset_shar {
     ConfigFile config;
-    TestDataGRIB tdata_grib;
-    TestDataBUFR tdata_bufr;
-    TestDataVM2 tdata_vm2;
-    TestDataODIM tdata_odim;
+    testdata::GRIBData tdata_grib;
+    testdata::BUFRData tdata_bufr;
+    testdata::VM2Data tdata_vm2;
+    testdata::ODIMData tdata_odim;
 
 	arki_dataset_shar()
 	{
@@ -292,12 +217,12 @@ void to::test<13>()
 
 struct TestDataset
 {
-    const TestData& td;
+    const testdata::Fixture& td;
     ConfigFile config;
     ConfigFile* cfgtest;
     std::string path;
 
-    TestDataset(const TestData& td, const std::string& conf)
+    TestDataset(const testdata::Fixture& td, const std::string& conf)
         : td(td)
     {
         stringstream incfg(conf);
@@ -656,8 +581,7 @@ void to::test<24>()
 template<> template<>
 void to::test<25>()
 {
-#if 0
-    TestDataset tds(tdata_vm2,
+    TestDataset tds(tdata_odim,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
@@ -669,7 +593,6 @@ void to::test<25>()
         "index_type = sqlite\n"
     );
     wruntest(tds.test_all);
-#endif
 }
 
 }

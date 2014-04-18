@@ -24,9 +24,12 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
+#include <arki/metadata/collection.h>
+#include <arki/matcher.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/data.h>
 #include <arki/sort.h>
+#include <arki/scan/any.h>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -206,7 +209,90 @@ struct OrderCheck : public metadata::Consumer
     virtual bool operator()(Metadata& md);
 };
 
+namespace testdata {
+
+struct Element
+{
+    Metadata md;
+    std::string destfile;
+    Matcher matcher;
+
+    void set(const Metadata& md, const std::string& destfile, const std::string& matcher)
+    {
+        this->md = md;
+        this->destfile = destfile;
+        this->matcher = Matcher::parse(matcher);
+    }
+};
+
+struct Fixture
+{
+    std::string format;
+    Element test_data[3];
+
+    unsigned count_dataset_files() const;
+};
+
+struct GRIBData : Fixture
+{
+    GRIBData()
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/test.grib1", mdc);
+        format = "grib";
+        test_data[0].set(mdc[0], "2007/07-08.grib1", "reftime:=2007-07-08");
+        test_data[1].set(mdc[1], "2007/07-07.grib1", "reftime:=2007-07-07");
+        test_data[2].set(mdc[2], "2007/10-09.grib1", "reftime:=2007-10-09");
+    }
+};
+
+struct BUFRData : Fixture
+{
+    BUFRData()
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/test.bufr", mdc);
+        format = "bufr";
+        test_data[0].set(mdc[0], "2005/12-01.bufr", "reftime:=2005-12-01");
+        test_data[1].set(mdc[1], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=60");
+        test_data[2].set(mdc[2], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=6");
+    }
+};
+
+struct VM2Data : Fixture
+{
+    VM2Data()
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/test.vm2", mdc);
+        format = "vm2";
+        test_data[0].set(mdc[0], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,227");
+        test_data[1].set(mdc[1], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,228");
+        test_data[2].set(mdc[2], "2011/01-01.vm2", "reftime:=2011-01-01; product:VM2,1");
+    }
+};
+
+struct ODIMData : Fixture
+{
+    ODIMData()
+    {
+        metadata::Collection mdc;
+        format = "odim";
+        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
+        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
+        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
+        test_data[0].set(mdc[0], "2013/03-18.odimh5", "reftime:=2013-03-18");
+        test_data[1].set(mdc[1], "2000/01-02.odimh5", "reftime:=2000-01-02");
+        test_data[2].set(mdc[2], "2013/11-04.odimh5", "reftime:=2013-11-04");
+    }
+};
+
+}
+
+
 namespace tests {
+
+
 
 struct MaintenanceResults
 {
@@ -245,7 +331,7 @@ struct MaintenanceResults
 struct TestMaintenance
 {
     dataset::WritableLocal& dataset;
-    const MaintenanceResults& expected;
+    MaintenanceResults expected;
 
     TestMaintenance(dataset::WritableLocal& dataset, const MaintenanceResults& expected)
         : dataset(dataset), expected(expected) {}
@@ -260,6 +346,12 @@ struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal
     /// Run maintenance and see that the results are as expected
     TestMaintenance maintenance(const MaintenanceResults& expected)
     {
+        return TestMaintenance(*actual, expected);
+    }
+    TestMaintenance maintenance_clean(unsigned data_count)
+    {
+        MaintenanceResults expected(true, data_count);
+        expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
         return TestMaintenance(*actual, expected);
     }
 };
