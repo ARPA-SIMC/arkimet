@@ -22,6 +22,7 @@
 
 #include <arki/metadata/tests.h>
 #include <arki/configfile.h>
+#include <arki/types.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>
@@ -30,6 +31,7 @@
 #include <arki/dataset/data.h>
 #include <arki/sort.h>
 #include <arki/scan/any.h>
+#include <wibble/string.h>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -83,6 +85,24 @@ struct OutputChecker : public std::stringstream
 	void impl_ensure_all_lines_seen(const wibble::tests::Location& loc);
 };
 
+struct LineChecker : public std::stringstream
+{
+    struct RequiredString : public std::string
+    {
+        bool seen;
+        RequiredString() : seen(false) {}
+        RequiredString(const std::string& s) : std::string(s), seen(false) {}
+    };
+    std::vector<std::string> ignore_regexps;
+    std::vector<RequiredString> require_contains;
+    std::vector<RequiredString> require_contains_re;
+
+    void ignore_regexp(const std::string& regexp);
+    void require_line_contains(const std::string& needle);
+    void require_line_contains_re(const std::string& needle);
+    void check(WIBBLE_TEST_LOCPRM);
+};
+
 struct ForceSqlite
 {
 	bool old;
@@ -90,6 +110,9 @@ struct ForceSqlite
 	ForceSqlite(bool val = true);
 	~ForceSqlite();
 };
+
+// Return the number of days passed from the given date until today
+int days_since(int year, int month, int day);
 
 // Base class for dataset tests
 struct DatasetTest
@@ -127,9 +150,6 @@ struct DatasetTest
 	dataset::ondisk2::Writer* makeOndisk2Writer(const ConfigFile* wcfg = 0);
 	dataset::simple::Reader* makeSimpleReader(const ConfigFile* wcfg = 0);
 	dataset::simple::Writer* makeSimpleWriter(const ConfigFile* wcfg = 0);
-	
-	// Return the number of days passed from the given date until today
-	int days_since(int year, int month, int day);
 
 	// Clean the dataset directory
 	void clean(const ConfigFile* wcfg = 0);
@@ -214,13 +234,18 @@ namespace testdata {
 struct Element
 {
     Metadata md;
+    UItem<types::Time> time;
     std::string destfile;
     Matcher matcher;
 
-    void set(const Metadata& md, const std::string& destfile, const std::string& matcher)
+    void set(const Metadata& md, const std::string& matcher)
     {
+        using namespace wibble;
+
+        Item<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
         this->md = md;
-        this->destfile = destfile;
+        this->time = rt->time;
+        this->destfile = str::fmtf("%04d/%02d-%02d.%s", time->vals[0], time->vals[1], time->vals[2], md.source->format.c_str());
         this->matcher = Matcher::parse(matcher);
     }
 };
@@ -229,8 +254,16 @@ struct Fixture
 {
     std::string format;
     Element test_data[3];
+    /// Date that falls somewhere inbetween files in the dataset
+    int selective_cutoff[6];
+    std::set<std::string> fnames_before_cutoff;
+    std::set<std::string> fnames_after_cutoff;
 
     unsigned count_dataset_files() const;
+    // Value for "archive age" or "delete age" that would work on part of the
+    // dataset, but not all of it
+    unsigned selective_days_since() const;
+    void finalise_init();
 };
 
 struct GRIBData : Fixture
@@ -240,9 +273,10 @@ struct GRIBData : Fixture
         metadata::Collection mdc;
         scan::scan("inbound/test.grib1", mdc);
         format = "grib";
-        test_data[0].set(mdc[0], "2007/07-08.grib1", "reftime:=2007-07-08");
-        test_data[1].set(mdc[1], "2007/07-07.grib1", "reftime:=2007-07-07");
-        test_data[2].set(mdc[2], "2007/10-09.grib1", "reftime:=2007-10-09");
+        test_data[0].set(mdc[0], "reftime:=2007-07-08");
+        test_data[1].set(mdc[1], "reftime:=2007-07-07");
+        test_data[2].set(mdc[2], "reftime:=2007-10-09");
+        finalise_init();
     }
 };
 
@@ -253,9 +287,10 @@ struct BUFRData : Fixture
         metadata::Collection mdc;
         scan::scan("inbound/test.bufr", mdc);
         format = "bufr";
-        test_data[0].set(mdc[0], "2005/12-01.bufr", "reftime:=2005-12-01");
-        test_data[1].set(mdc[1], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=60");
-        test_data[2].set(mdc[2], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=6");
+        test_data[0].set(mdc[0], "reftime:=2005-12-01");
+        test_data[1].set(mdc[1], "reftime:=2004-11-30; proddef:GRIB:blo=60");
+        test_data[2].set(mdc[2], "reftime:=2004-11-30; proddef:GRIB:blo=6");
+        finalise_init();
     }
 };
 
@@ -266,9 +301,10 @@ struct VM2Data : Fixture
         metadata::Collection mdc;
         scan::scan("inbound/test.vm2", mdc);
         format = "vm2";
-        test_data[0].set(mdc[0], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,227");
-        test_data[1].set(mdc[1], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,228");
-        test_data[2].set(mdc[2], "2011/01-01.vm2", "reftime:=2011-01-01; product:VM2,1");
+        test_data[0].set(mdc[0], "reftime:=1987-10-31; product:VM2,227");
+        test_data[1].set(mdc[1], "reftime:=1987-10-31; product:VM2,228");
+        test_data[2].set(mdc[2], "reftime:=2011-01-01; product:VM2,1");
+        finalise_init();
     }
 };
 
@@ -281,9 +317,10 @@ struct ODIMData : Fixture
         scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
         scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
         scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
-        test_data[0].set(mdc[0], "2013/03-18.odimh5", "reftime:=2013-03-18");
-        test_data[1].set(mdc[1], "2000/01-02.odimh5", "reftime:=2000-01-02");
-        test_data[2].set(mdc[2], "2013/11-04.odimh5", "reftime:=2013-11-04");
+        test_data[0].set(mdc[0], "reftime:=2013-03-18");
+        test_data[1].set(mdc[1], "reftime:=2000-01-02");
+        test_data[2].set(mdc[2], "reftime:=2013-11-04");
+        finalise_init();
     }
 };
 

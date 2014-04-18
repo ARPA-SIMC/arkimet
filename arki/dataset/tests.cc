@@ -37,6 +37,7 @@
 #include <wibble/sys/fs.h>
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
+#include <algorithm>
 #include <fstream>
 #include <cstring>
 
@@ -145,6 +146,87 @@ void OutputChecker::impl_ensure_all_lines_seen(const wibble::tests::Location& lo
 	}
 }
 
+void LineChecker::ignore_regexp(const std::string& regexp)
+{
+    ignore_regexps.push_back(regexp);
+}
+
+void LineChecker::require_line_contains(const std::string& needle)
+{
+    require_contains.push_back(needle);
+}
+
+void LineChecker::require_line_contains_re(const std::string& needle)
+{
+    require_contains_re.push_back(needle);
+}
+
+namespace {
+struct Line : public std::string
+{
+    bool seen;
+    Line() : seen(false) {}
+    Line(const std::string& s) : std::string(s), seen(false) {}
+};
+}
+
+void LineChecker::check(WIBBLE_TEST_LOCPRM)
+{
+    vector<Line> lines;
+    Splitter splitter("[\n\r]+", REG_EXTENDED);
+    for (Splitter::const_iterator i = splitter.begin(str()); i != splitter.end(); ++i)
+        lines.push_back(" " + *i);
+
+    // Mark ignored lines as seen
+    for (vector<string>::const_iterator i = ignore_regexps.begin(); i != ignore_regexps.end(); ++i)
+    {
+        ERegexp re(*i);
+        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
+            if (re.match(*j))
+                j->seen = true;
+    }
+
+    stringstream complaints;
+
+    // Check required lines
+    for (vector<RequiredString>::iterator i = require_contains.begin(); i != require_contains.end(); ++i)
+    {
+        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
+        {
+            if (j->find(*i) == string::npos) continue;
+            if (j->seen) continue;
+            i->seen = true;
+            j->seen = true;
+            break;
+        }
+        // Complain about required line i not found
+        if (!i->seen)
+            complaints << "Required match not found: \"" << *i << "\"" << endl;
+    }
+    for (vector<RequiredString>::iterator i = require_contains_re.begin(); i != require_contains_re.end(); ++i)
+    {
+        ERegexp re(*i);
+        for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
+        {
+            if (!re.match(*j)) continue;
+            if (j->seen) continue;
+            i->seen = true;
+            j->seen = true;
+            break;
+        }
+        // Complain about required line i not found
+        if (!i->seen)
+            complaints << "Required regexp not matched: \"" << *i << "\"" << endl;
+    }
+
+    for (vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+        if (!i->seen)
+            complaints << "Output line not checked: \"" << *i << "\"" << endl;
+
+    if (!complaints.str().empty())
+        wibble_test_location.fail_test(complaints.str());
+}
+
 ForceSqlite::ForceSqlite(bool val) : old(dataset::index::Manifest::get_force_sqlite())
 {
 	dataset::index::Manifest::set_force_sqlite(val);
@@ -152,6 +234,18 @@ ForceSqlite::ForceSqlite(bool val) : old(dataset::index::Manifest::get_force_sql
 ForceSqlite::~ForceSqlite()
 {
 	dataset::index::Manifest::set_force_sqlite(old);
+}
+
+int days_since(int year, int month, int day)
+{
+    // Data are from 07, 08, 10 2007
+    int threshold[6] = { year, month, day, 0, 0, 0 };
+    int now[6];
+    grcal::date::now(now);
+    long long int duration = grcal::date::duration(threshold, now);
+
+    //cerr << str::fmt(duration/(3600*24)) + " days";
+    return duration/(3600*24);
 }
 
 namespace {
@@ -185,18 +279,6 @@ std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
 std::string DatasetTest::arcidxfname() const
 {
 	return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-}
-
-int DatasetTest::days_since(int year, int month, int day)
-{
-	// Data are from 07, 08, 10 2007
-	int threshold[6] = { year, month, day, 0, 0, 0 };
-	int now[6];
-	grcal::date::now(now);
-	long long int duration = grcal::date::duration(threshold, now);
-
-	//cerr << str::fmt(duration/(3600*24)) + " days";
-	return duration/(3600*24);
 }
 
 ReadonlyDataset* DatasetTest::makeReader(const ConfigFile* wcfg)
@@ -532,12 +614,40 @@ void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
 
 namespace testdata {
 
+void Fixture::finalise_init()
+{
+    // Compute selective_cutoff
+    UItem<types::Time> tmin = test_data[0].time;
+    //Item<types::Time> tmax = test_data[0].time;
+    for (int i = 2; i < 3; ++i)
+    {
+        tmin = min(tmin, test_data[i].time);
+        //tmax = max(tmax, test_data[i].time);
+    }
+    for (int i = 0; i < 6; ++i)
+        selective_cutoff[i] = tmin->vals[i];
+    ++selective_cutoff[1];
+    wibble::grcal::date::normalise(selective_cutoff);
+
+    Item<Time> cutoff(Time::create(selective_cutoff));
+    for (int i = 0; i < 3; ++i)
+        if (test_data[i].time < cutoff)
+            fnames_before_cutoff.insert(test_data[i].destfile);
+        else
+            fnames_after_cutoff.insert(test_data[i].destfile);
+}
+
 unsigned Fixture::count_dataset_files() const
 {
     set<string> files;
     for (int i = 0; i < 3; ++i)
         files.insert(test_data[i].destfile);
     return files.size();
+}
+
+unsigned Fixture::selective_days_since() const
+{
+    return tests::days_since(selective_cutoff[0], selective_cutoff[1], selective_cutoff[2]);
 }
 
 }

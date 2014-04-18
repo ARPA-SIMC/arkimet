@@ -65,7 +65,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         utils::files::removeDontpackFlagfile(cfg.value("path"));
     }
 
-    void generic_maintenance_tests(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_maintenance_on_clean(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
         unsigned file_count = fixture.count_dataset_files();
 
@@ -110,6 +110,78 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             wassert(actual(writer.get()).maintenance_clean(file_count));
         }
     }
+
+    void test_move_to_archive(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        cfg.setValue("archive age", str::fmt(fixture.selective_days_since()));
+        wruntest(import_all, fixture);
+
+        // Check if files to archive are detected
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
+            expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
+            expected.by_type[COUNTED_TO_ARCHIVE] = fixture.fnames_before_cutoff.size();
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // FIXME: from here
+
+        // Perform packing and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            wrunchecked(writer->repack(s, true));
+            for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
+                    i != fixture.fnames_before_cutoff.end(); ++i)
+                s.require_line_contains(": archived " + *i);
+            s.require_line_contains(": archive cleaned up");
+            s.require_line_contains_re(str::fmtf(": %zd files? archived", fixture.fnames_before_cutoff.size()));
+            wruntest(s.check);
+        }
+
+        // Check that the files have been moved to the archive
+        for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
+                i != fixture.fnames_before_cutoff.end(); ++i)
+        {
+            wassert(actual("testds/.archive/last/" + *i).fileexists());
+            wassert(actual("testds/.archive/last/" + *i + ".metadata").fileexists());
+            wassert(actual("testds/.archive/last/" + *i + ".summary").fileexists());
+            wassert(!actual("testds/" + *i).fileexists());
+        }
+
+        // Maintenance should now show a normal situation
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(true, fixture.count_dataset_files());
+            expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
+            expected.by_type[COUNTED_ARC_OK] = fixture.fnames_before_cutoff.size();
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Perform full maintenance and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            stringstream s;
+            s.str(std::string());
+            writer->check(s, true, true);
+            wassert(actual(s.str()) == ""); // Nothing should have happened
+
+            arki::tests::MaintenanceResults expected(true, fixture.count_dataset_files());
+            expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
+            expected.by_type[COUNTED_ARC_OK] = fixture.fnames_before_cutoff.size();
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Test that querying returns all items
+        {
+            std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+
+            metadata::Counter counter;
+            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
+            wassert(actual(counter.count) == 3);
+        }
+    }
 };
 
 }
@@ -122,87 +194,19 @@ typedef tg::object to;
 // Test accuracy of maintenance scan, on perfect dataset
 template<> template<> void to::test<1>()
 {
-    wruntest(generic_maintenance_tests, testdata::GRIBData());
-    wruntest(generic_maintenance_tests, testdata::BUFRData());
-    wruntest(generic_maintenance_tests, testdata::VM2Data());
-    wruntest(generic_maintenance_tests, testdata::ODIMData());
+    wruntest(test_maintenance_on_clean, testdata::GRIBData());
+    wruntest(test_maintenance_on_clean, testdata::BUFRData());
+    wruntest(test_maintenance_on_clean, testdata::VM2Data());
+    wruntest(test_maintenance_on_clean, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive
 template<> template<> void to::test<2>()
 {
-	ConfigFile cfg = this->cfg;
-	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
-
-	clean_and_import(&cfg);
-
-    // Check if files to archive are detected
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-        arki::tests::MaintenanceResults expected(false, 3);
-        expected.by_type[COUNTED_OK] = 1;
-        expected.by_type[COUNTED_TO_ARCHIVE] = 2;
-        wassert(actual(writer.get()).maintenance(expected));
-    }
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		OutputChecker s;
-		wrunchecked(writer->repack(s, true));
-		s.ensure_line_contains(": archived 2007/07-07.grib1");
-		s.ensure_line_contains(": archived 2007/07-08.grib1");
-		s.ensure_line_contains(": archive cleaned up");
-		s.ensure_line_contains(": 2 files archived");
-		s.ensure_all_lines_seen();
-	}
-
-	// Check that the files have been moved to the archive
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.summary"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.summary"));
-	ensure(!sys::fs::exists("testds/2007/07-07.grib1"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
-
-	// Maintenance should now show a normal situation
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		stringstream s;
-		s.str(std::string());
-		writer->check(s, true, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-
-		MaintenanceCollector c;
-		c.clear();
-		writer->maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_ARC_OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
-
-	// Test that querying returns all items
-	{
-		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
-
-		metadata::Counter counter;
-		reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
-		ensure_equals(counter.count, 3u);
-	}
+    wruntest(test_move_to_archive, testdata::GRIBData());
+    wruntest(test_move_to_archive, testdata::BUFRData());
+    wruntest(test_move_to_archive, testdata::VM2Data());
+    wruntest(test_move_to_archive, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
