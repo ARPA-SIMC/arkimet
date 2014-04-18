@@ -1,5 +1,5 @@
-#ifndef ARKI_DATA_DIR_H
-#define ARKI_DATA_DIR_H
+#ifndef ARKI_DATASET_DATA_DIR_H
+#define ARKI_DATASET_DATA_DIR_H
 
 /*
  * data/dir - Directory based data collection
@@ -28,9 +28,40 @@
 namespace arki {
 class Metadata;
 
+namespace dataset {
 namespace data {
 namespace dir {
 
+class Writer : public data::Writer
+{
+protected:
+    std::string seqfile;
+
+public:
+    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
+    ~Writer();
+
+    virtual void append(Metadata& md);
+    virtual off_t append(const wibble::sys::Buffer& buf);
+    virtual Pending append(Metadata& md, off_t* ofs);
+    static FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
+};
+
+class OstreamWriter : public data::OstreamWriter
+{
+protected:
+    sigset_t blocked;
+
+public:
+    OstreamWriter();
+    virtual ~OstreamWriter();
+
+    virtual size_t stream(Metadata& md, std::ostream& out) const;
+    virtual size_t stream(Metadata& md, int out) const;
+};
+
+
+}
 }
 }
 }

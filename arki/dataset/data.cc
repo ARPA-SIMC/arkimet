@@ -23,6 +23,7 @@
 #include "data.h"
 #include "data/concat.h"
 #include "data/lines.h"
+#include "data/dir.h"
 #include "arki/configfile.h"
 #include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
@@ -140,7 +141,7 @@ struct AutoSegmentManager : public SegmentManager
         } else if (format == "bufr") {
             new_writer.reset(new concat::Writer(relname, absname, truncate));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            new_writer.reset(new concat::Writer(relname, absname, truncate));
+            new_writer.reset(new dir::Writer(relname, absname, truncate));
         } else if (format == "vm2") {
             new_writer.reset(new lines::Writer(relname, absname, truncate));
         } else {

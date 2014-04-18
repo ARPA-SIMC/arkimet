@@ -118,9 +118,9 @@ struct TestDataODIM : TestData
         scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
         scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
         scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
-        test_data[0].set(mdc[0], "2013/", "reftime:=2013-03-18");
-        test_data[1].set(mdc[1], "2000/", "reftime:=2000-01-02");
-        test_data[2].set(mdc[2], "2013/", "reftime:=2013-11-04");
+        test_data[0].set(mdc[0], "2013/03-18.odimh5", "reftime:=2013-03-18");
+        test_data[1].set(mdc[1], "2000/01-02.odimh5", "reftime:=2000-01-02");
+        test_data[2].set(mdc[2], "2013/11-04.odimh5", "reftime:=2013-11-04");
     }
 };
 

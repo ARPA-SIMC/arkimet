@@ -1,5 +1,5 @@
-#ifndef ARKI_DATA_CONCAT_H
-#define ARKI_DATA_CONCAT_H
+#ifndef ARKI_DATASET_DATA_CONCAT_H
+#define ARKI_DATASET_DATA_CONCAT_H
 
 /*
  * data - Read/write functions for data blobs without envelope

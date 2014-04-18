@@ -40,7 +40,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace arki::data;
+using namespace arki::dataset::data;
 using namespace arki::utils;
 using namespace wibble;
 using namespace wibble::tests;

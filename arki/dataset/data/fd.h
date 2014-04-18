@@ -1,5 +1,5 @@
-#ifndef ARKI_DATA_FD_H
-#define ARKI_DATA_FD_H
+#ifndef ARKI_DATASET_DATA_FD_H
+#define ARKI_DATASET_DATA_FD_H
 
 /*
  * data - Base class for unix fd based read/write functions
