@@ -33,6 +33,7 @@
 #include <arki/scan/vm2.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/fd.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <wibble/regexp.h>
@@ -40,6 +41,10 @@
 #include <algorithm>
 #include <fstream>
 #include <cstring>
+#include <limits.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 using namespace std;
 using namespace arki;
@@ -580,7 +585,7 @@ void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
     using namespace wibble::tests;
 
     MaintenanceCollector c;
-    wrunchecked(dataset.maintenance(c));
+    wrunchecked(dataset.maintenance(c, quick));
 
     bool ok = true;
     if (expected.files_seen != -1 &&
@@ -632,6 +637,44 @@ void truncate_datafile(const std::string& absname, off_t offset)
         if (truncate(absname.c_str(), offset) < 0)
             throw wibble::exception::File(absname, str::fmtf("Truncating file at %zd", (size_t)offset));
     }
+}
+
+void corrupt_datafile(const std::string& absname)
+{
+    string to_corrupt = absname;
+    if (sys::fs::isdir(absname))
+    {
+        // Truncate dir segment
+        string format = utils::require_format(absname);
+        sys::fs::Directory dir(absname);
+        unsigned long first = ULONG_MAX;
+        string selected;
+        for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+        {
+            if (!i.isreg()) continue;
+            if (*i != ".sequence" && !str::endsWith(*i, format)) continue;
+            unsigned long cur = strtoul((*i).c_str(), 0, 10);
+            if (cur < first)
+            {
+                first = cur;
+                selected = *i;
+            }
+        }
+        if (selected.empty())
+            throw wibble::exception::Consistency("corrupting " + absname, "no files found to corrupt");
+        to_corrupt = str::joinpath(absname, selected);
+    }
+
+    // Corrupt the beginning of the file
+    int fd = open(to_corrupt.c_str(), O_RDWR);
+    if (fd == -1)
+        throw wibble::exception::File(to_corrupt, "cannot open file");
+    fd::HandleWatch hw(to_corrupt, fd);
+    ssize_t written = pwrite(fd, "\0\0\0\0", 4, 0);
+    if (written < 0)
+        throw wibble::exception::File(to_corrupt, "cannot write to file");
+    if (written != 4)
+        throw wibble::exception::Consistency("corrupting " + to_corrupt, "wrote less than 4 bytes");
 }
 
 }

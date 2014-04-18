@@ -67,6 +67,34 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         utils::files::removeDontpackFlagfile(cfg.value("path"));
     }
 
+    void import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        wruntest(import_all, fixture);
+
+        // Pack the dataset in case something imported data out of order
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            wrunchecked(writer->repack(s, true));
+            s.ignore_regexp(": packed ");
+            s.ignore_regexp(": [0-9]+ files? packed");
+            wruntest(s.check);
+        }
+    }
+
+    UItem<types::source::Blob> find_imported_second_in_file()
+    {
+        // Find the imported_result element whose offset is > 0
+        UItem<types::source::Blob> second_in_segment;
+        for (int i = 0; i < 3; ++i)
+        {
+            second_in_segment = import_results[i].source.upcast<types::source::Blob>();
+            if (second_in_segment->offset > 0)
+                return second_in_segment;
+        }
+        throw wibble::exception::Consistency("second in file not found");
+    }
+
     void test_preconditions(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
         wassert(actual(fixture.fnames_before_cutoff.size()) > 0);
@@ -229,13 +257,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         wruntest(import_all, fixture);
 
         // Find the imported_result element whose offset is > 0
-        UItem<types::source::Blob> second_in_segment;
-        for (int i = 0; i < 3; ++i)
-        {
-            second_in_segment = import_results[i].source.upcast<types::source::Blob>();
-            if (second_in_segment->offset > 0)
-                break;
-        }
+        UItem<types::source::Blob> second_in_segment = find_imported_second_in_file();
         wassert(actual(second_in_segment->offset) > 0);
 
         // Truncate at the position in second_in_segment
@@ -284,6 +306,67 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             metadata::Counter counter;
             reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
             wassert(actual(counter.count) == 2);
+        }
+    }
+
+    void test_corrupted_datafile(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        cfg.setValue("step", fixture.max_selective_aggregation);
+        wruntest(import_all_packed, fixture);
+
+        // Find the imported_result element whose offset is > 0
+        UItem<types::source::Blob> second_in_segment = find_imported_second_in_file();
+        wassert(actual(second_in_segment->offset) > 0);
+
+        // Corrupt the first grib in the file
+        corrupt_datafile(second_in_segment->absolutePathname());
+
+        // A quick check has nothing to complain
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            wassert(actual(writer.get()).maintenance_clean(2));
+        }
+
+        // A thorough check should find the corruption
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, 2);
+            expected.by_type[COUNTED_OK] = 1;
+            expected.by_type[COUNTED_TO_RESCAN] = 1;
+            wassert(actual(writer.get()).maintenance(expected, false));
+        }
+
+        // Perform full maintenance and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+            LineChecker s;
+            wrunchecked(writer->check(s, true, false));
+            s.require_line_contains(": rescanned " + second_in_segment->filename.substr(7));
+            s.require_line_contains(": 1 file rescanned");
+            wruntest(s.check);
+
+            // The corrupted file has been deindexed, now there is a gap in the data file
+            arki::tests::MaintenanceResults expected(false, 2);
+            expected.by_type[COUNTED_OK] = 1;
+            expected.by_type[COUNTED_TO_PACK] = 1;
+            wassert(actual(writer.get()).maintenance(expected, false));
+        }
+
+        // Perform packing and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+            LineChecker s;
+            wrunchecked(writer->repack(s, true));
+            s.require_line_contains(": packed " + second_in_segment->filename.substr(7));
+            s.require_line_contains(": 1 file packed");
+            wruntest(s.check);
+        }
+
+        // Maintenance and pack are ok now
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            wassert(actual(writer.get()).maintenance_clean(2));
+            wassert(actual(writer.get()).maintenance_clean(2, false));
         }
     }
 };
@@ -339,73 +422,12 @@ template<> template<> void to::test<4>()
 // Test accuracy of maintenance scan, on a dataset with a corrupted data file
 template<> template<> void to::test<5>()
 {
-	ConfigFile cfg = this->cfg;
-	cfg.setValue("step", "monthly");
-	clean_and_import(&cfg);
-
-	// Pack the dataset because 07.grib1 imported data out of order
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		stringstream s;
-		writer->repack(s, true);
-		ensure_contains(s.str(), ": packed 2007/07.grib1");
-		ensure_contains(s.str(), ": 1 file packed");
-	}
-
-	// Corrupt the first grib in the file
-        system("touch savets -r testds/2007/07.grib1 &&"
-               "dd if=/dev/zero of=testds/2007/07.grib1 bs=1 count=2 conv=notrunc > /dev/null 2>&1 &&"
-               "touch testds/2007/07.grib1 -r savets &&"
-               "rm savets");
-
-	// A quick check has nothing to complain
-	ensure_maint_clean(2);
-
-	// A thorough check should find the corruption
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		MaintenanceCollector c;
-		writer->maintenance(c, false);
-		ensure_equals(c.fileStates.size(), 2u);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		stringstream s;
-		writer->check(s, true, false);
-		ensure_contains(s.str(), ": rescanned 2007/07.grib1");
-		ensure_contains(s.str(), ": 1 file rescanned");
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		stringstream s;
-		writer->repack(s, true);
-		ensure_contains(s.str(), ": packed 2007/07.grib1");
-		ensure_contains(s.str(), ": 1 file packed");
-	}
-
-	// Maintenance and pack are ok now
-	ensure_maint_clean(2);
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		stringstream s;
-		writer->repack(s, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-	}
+    wruntest(test_corrupted_datafile, testdata::GRIBData());
+    wruntest(test_corrupted_datafile, testdata::BUFRData());
+    // TODO: VM2 scanning does not yet deal gracefully with corruption
+    wruntest(test_corrupted_datafile, testdata::VM2Data());
+    // TODO: ODIM scanning does not yet deal gracefully with corruption
+    wruntest(test_corrupted_datafile, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on a dataset with a data file larger than 2**31

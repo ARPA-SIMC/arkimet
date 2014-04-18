@@ -375,9 +375,10 @@ struct TestMaintenance
 {
     dataset::WritableLocal& dataset;
     MaintenanceResults expected;
+    bool quick;
 
-    TestMaintenance(dataset::WritableLocal& dataset, const MaintenanceResults& expected)
-        : dataset(dataset), expected(expected) {}
+    TestMaintenance(dataset::WritableLocal& dataset, const MaintenanceResults& expected, bool quick=true)
+        : dataset(dataset), expected(expected), quick(quick) {}
 
     void check(WIBBLE_TEST_LOCPRM) const;
 };
@@ -387,20 +388,23 @@ struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal
     ActualWritableLocal(dataset::WritableLocal* s) : Actual<dataset::WritableLocal*>(s) {}
 
     /// Run maintenance and see that the results are as expected
-    TestMaintenance maintenance(const MaintenanceResults& expected)
+    TestMaintenance maintenance(const MaintenanceResults& expected, bool quick=true)
     {
-        return TestMaintenance(*actual, expected);
+        return TestMaintenance(*actual, expected, quick);
     }
-    TestMaintenance maintenance_clean(unsigned data_count)
+    TestMaintenance maintenance_clean(unsigned data_count, bool quick=true)
     {
         MaintenanceResults expected(true, data_count);
         expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
-        return TestMaintenance(*actual, expected);
+        return TestMaintenance(*actual, expected, quick);
     }
 };
 
 /// Truncate a datafile or dir segment at the given offset
 void truncate_datafile(const std::string& absname, off_t offset);
+/// Corrupt a datafile by overwriting the first 4 bytes of its first data
+/// element with zeros
+void corrupt_datafile(const std::string& absname);
 
 }
 
