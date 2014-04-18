@@ -57,11 +57,10 @@ static void scan(vector<string>& res, const std::string& top, const std::string&
         // stat(2) the file
         string pathname = str::joinpath(root, *i);
 
-        if (i.isdir())
-        {
-            // If it is a directory, recurse into it
+        if (i.isdir() && !sys::fs::exists(str::joinpath(pathname, ".sequence")))
+            // It is a directory, and not a directory segment: recurse into it
             scan(res, top, pathname, files_in_root, level + 1);
-        } else if ((files_in_root || level > 0) && i.isreg()) {
+        else if ((files_in_root || level > 0) && i.isreg()) {
             if (str::endsWith(pathname, ".gz"))
                 pathname = pathname.substr(0, pathname.size() - 3);
             if (scan::canScan(pathname))
