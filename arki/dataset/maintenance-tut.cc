@@ -43,13 +43,26 @@ namespace {
 
 struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     Metadata import_results[3];
+    dataset::data::SegmentManager* segment_manager;
 
     arki_dataset_maintenance_base()
+        : segment_manager(0)
     {
         cfg.setValue("path", "testds");
         cfg.setValue("name", "testds");
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         cfg.setValue("step", "daily");
+    }
+    ~arki_dataset_maintenance_base()
+    {
+        if (segment_manager) delete segment_manager;
+    }
+
+    dataset::data::SegmentManager& segments()
+    {
+        if (!segment_manager)
+            segment_manager = dataset::data::SegmentManager::get(cfg).release();
+        return *segment_manager;
     }
 
     void import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
@@ -370,12 +383,12 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         }
     }
 
-    void test_deleted_datafile(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_deleted_datafile_repack(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
         wruntest(import_all_packed, fixture);
         string deleted_fname = import_results[0].source.upcast<types::source::Blob>()->filename.substr(7);
         unsigned file_count = fixture.count_dataset_files();
-        sys::fs::unlink(str::joinpath("testds", deleted_fname));
+        segments().remove(deleted_fname);
 
         // Initial check finds the deleted file
         {
@@ -407,6 +420,35 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             LineChecker s;
             wrunchecked(writer->repack(s, true));
             s.require_line_contains(": deleted from index " + deleted_fname);
+            s.require_line_contains(": 1 file removed from index");
+            wruntest(s.check);
+
+            wassert(actual(writer.get()).maintenance_clean(file_count - 1));
+        }
+    }
+
+    void test_deleted_datafile_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        wruntest(import_all_packed, fixture);
+        string deleted_fname = import_results[0].source.upcast<types::source::Blob>()->filename.substr(7);
+        unsigned file_count = fixture.count_dataset_files();
+        segments().remove(deleted_fname);
+
+        // Initial check finds the deleted file
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, file_count);
+            expected.by_type[COUNTED_OK] = file_count - 1;
+            expected.by_type[COUNTED_TO_DEINDEX] = 1;
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Perform full maintenance and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            wrunchecked(writer->check(s, true, true));
+            s.require_line_contains(": deindexed " + deleted_fname);
             s.require_line_contains(": 1 file removed from index");
             wruntest(s.check);
 
@@ -546,52 +588,20 @@ template<> template<> void to::test<6>()
 // performing repack
 template<> template<> void to::test<7>()
 {
-    wruntest(test_deleted_datafile, testdata::GRIBData());
-    wruntest(test_deleted_datafile, testdata::BUFRData());
-    wruntest(test_deleted_datafile, testdata::VM2Data());
-    wruntest(test_deleted_datafile, testdata::ODIMData());
+    wruntest(test_deleted_datafile_repack, testdata::GRIBData());
+    wruntest(test_deleted_datafile_repack, testdata::BUFRData());
+    wruntest(test_deleted_datafile_repack, testdata::VM2Data());
+    wruntest(test_deleted_datafile_repack, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on dataset with one file deleted,
 // performing check
 template<> template<> void to::test<8>()
 {
-	clean_and_import();
-	system("rm testds/2007/07-07.grib1");
-
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		MaintenanceCollector c;
-		writer->maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		OutputChecker s;
-
-		writer->check(s, true, true);
-		s.ensure_line_contains(": deindexed 2007/07-07.grib1");
-		s.ensure_line_contains("1 file removed from index");
-		s.ensure_all_lines_seen();
-	}
-	ensure_maint_clean(2);
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		OutputChecker s;
-		writer->repack(s, true);
-		s.ensure_all_lines_seen(); // Nothing should have happened
-
-		ensure_maint_clean(2);
-	}
+    wruntest(test_deleted_datafile_check, testdata::GRIBData());
+    wruntest(test_deleted_datafile_check, testdata::BUFRData());
+    wruntest(test_deleted_datafile_check, testdata::VM2Data());
+    wruntest(test_deleted_datafile_check, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, after deleting the index, with some

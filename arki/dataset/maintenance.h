@@ -38,10 +38,6 @@ namespace scan {
 struct Validator;
 }
 
-namespace data {
-struct Info;
-}
-
 namespace dataset {
 class WritableLocal;
 
