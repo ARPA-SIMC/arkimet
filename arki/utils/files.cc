@@ -27,6 +27,7 @@
 #include <wibble/string.h>
 #include <wibble/sys/process.h>
 
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstdio>
@@ -157,6 +158,30 @@ std::string format_from_ext(const std::string& fname, const char* default_format
         throw wibble::exception::Consistency(
                 "auto-detecting format from file name " + fname,
                 "file extension not recognised");
+}
+
+PreserveFileTimes::PreserveFileTimes(const std::string& fname)
+    : fname(fname), fd(-1)
+{
+    fd = open(fname.c_str(), O_RDWR);
+    if (fd == -1)
+        throw wibble::exception::File(fname, "cannot open file");
+
+    struct stat st;
+    if (fstat(fd, &st) == -1)
+        throw wibble::exception::File(fname, "cannot stat file");
+
+    times[0] = st.st_atim;
+    times[1] = st.st_mtim;
+}
+
+PreserveFileTimes::~PreserveFileTimes()
+{
+    if (fd == -1) return;
+    if (futimens(fd, times) == -1)
+        throw wibble::exception::File(fname, "cannot set file times");
+    if (close(fd) == -1)
+        throw wibble::exception::File(fname, "cannot close file");
 }
 
 }

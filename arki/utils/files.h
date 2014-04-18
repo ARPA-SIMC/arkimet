@@ -4,7 +4,7 @@
 /*
  * utils/files - arkimet-specific file functions
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 
 #include <string>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <iosfwd>
 
 #define FLAGFILE_REBUILD ".needs-rebuild"
@@ -121,6 +122,16 @@ std::string normaliseFormat(const std::string& format);
  * Guess a file format from its extension
  */
 std::string format_from_ext(const std::string& fname, const char* default_format=0);
+
+struct PreserveFileTimes
+{
+    std::string fname;
+    struct timespec times[2];
+    int fd;
+
+    PreserveFileTimes(const std::string& fname);
+    ~PreserveFileTimes();
+};
 
 }
 }

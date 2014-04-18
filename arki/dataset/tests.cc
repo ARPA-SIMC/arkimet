@@ -42,6 +42,7 @@
 #include <fstream>
 #include <cstring>
 #include <limits.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -617,6 +618,8 @@ void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
 
 void truncate_datafile(const std::string& absname, off_t offset)
 {
+    files::PreserveFileTimes pft(absname);
+
     if (sys::fs::isdir(absname))
     {
         // Truncate dir segment
@@ -641,6 +644,8 @@ void truncate_datafile(const std::string& absname, off_t offset)
 
 void corrupt_datafile(const std::string& absname)
 {
+    files::PreserveFileTimes pft(absname);
+
     string to_corrupt = absname;
     if (sys::fs::isdir(absname))
     {
