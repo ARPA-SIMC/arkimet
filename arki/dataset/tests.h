@@ -57,6 +57,10 @@ struct Writer;
 }
 }
 
+namespace testdata {
+struct Fixture;
+}
+
 namespace tests {
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc);
@@ -128,8 +132,13 @@ struct DatasetTest
 
 	// Default dataset configuration (to be filled by subclasser)
 	ConfigFile cfg;
+    dataset::data::SegmentManager* segment_manager;
+    Metadata import_results[3];
 
     DatasetTest();
+    ~DatasetTest();
+
+    dataset::data::SegmentManager& segments();
 
 	// Return the file name of the index of the current dataset
 	std::string idxfname(const ConfigFile* wcfg = 0) const;
@@ -159,6 +168,9 @@ struct DatasetTest
 
 #define ensure_localds_clean(...) impl_ensure_localds_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
 	void impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
+
+    void import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture);
+    void import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture);
 };
 
 struct DatasetTestDefaultConfig

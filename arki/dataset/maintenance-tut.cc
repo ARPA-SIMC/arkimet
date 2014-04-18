@@ -42,56 +42,12 @@ using namespace arki::utils;
 namespace {
 
 struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
-    Metadata import_results[3];
-    dataset::data::SegmentManager* segment_manager;
-
     arki_dataset_maintenance_base()
-        : segment_manager(0)
     {
         cfg.setValue("path", "testds");
         cfg.setValue("name", "testds");
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         cfg.setValue("step", "daily");
-    }
-    ~arki_dataset_maintenance_base()
-    {
-        if (segment_manager) delete segment_manager;
-    }
-
-    dataset::data::SegmentManager& segments()
-    {
-        if (!segment_manager)
-            segment_manager = dataset::data::SegmentManager::get(cfg).release();
-        return *segment_manager;
-    }
-
-    void import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
-    {
-        clean();
-
-        std::auto_ptr<WritableLocal> writer(makeLocalWriter());
-        for (int i = 0; i < 3; ++i)
-        {
-            import_results[i] = fixture.test_data[i].md;
-            WritableDataset::AcquireResult res = writer->acquire(import_results[i]);
-            wassert(actual(res) == WritableDataset::ACQ_OK);
-        }
-
-        utils::files::removeDontpackFlagfile(cfg.value("path"));
-    }
-
-    void import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
-    {
-        wruntest(import_all, fixture);
-
-        // Pack the dataset in case something imported data out of order
-        {
-            auto_ptr<WritableLocal> writer(makeLocalWriter());
-            LineChecker checker;
-            checker.ignore_regexp(": packed ");
-            checker.ignore_regexp(": [0-9]+ files? packed");
-            wassert(actual(writer.get()).repack(checker, true));
-        }
     }
 
     UItem<types::source::Blob> find_imported_second_in_file()

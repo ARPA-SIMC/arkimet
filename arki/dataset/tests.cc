@@ -53,6 +53,7 @@ using namespace wibble;
 using namespace wibble::tests;
 using namespace arki::types;
 using namespace arki::utils;
+using namespace arki::dataset;
 
 namespace arki {
 namespace tests {
@@ -270,9 +271,21 @@ DatasetTestDefaultConfig::~DatasetTestDefaultConfig()
 }
 
 DatasetTest::DatasetTest()
+    : segment_manager(0)
 {
     if (default_datasettest_config)
         cfg = *default_datasettest_config;
+}
+DatasetTest::~DatasetTest()
+{
+    if (segment_manager) delete segment_manager;
+}
+
+dataset::data::SegmentManager& DatasetTest::segments()
+{
+    if (!segment_manager)
+        segment_manager = dataset::data::SegmentManager::get(cfg).release();
+    return *segment_manager;
 }
 
 std::string DatasetTest::idxfname(const ConfigFile* wcfg) const
@@ -426,6 +439,36 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 	if (filecount > 0)
 		inner_ensure(sys::fs::exists(str::joinpath(reader->path(), idxfname())));
 }
+
+void DatasetTest::import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+{
+    clean();
+
+    std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+    for (int i = 0; i < 3; ++i)
+    {
+        import_results[i] = fixture.test_data[i].md;
+        WritableDataset::AcquireResult res = writer->acquire(import_results[i]);
+        wassert(actual(res) == WritableDataset::ACQ_OK);
+    }
+
+    utils::files::removeDontpackFlagfile(cfg.value("path"));
+}
+
+void DatasetTest::import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+{
+    wruntest(import_all, fixture);
+
+    // Pack the dataset in case something imported data out of order
+    {
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        LineChecker checker;
+        checker.ignore_regexp(": packed ");
+        checker.ignore_regexp(": [0-9]+ files? packed");
+        wassert(actual(writer.get()).repack(checker, true));
+    }
+}
+
 
 }
 

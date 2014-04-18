@@ -56,8 +56,7 @@ namespace tut {
 struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 	arki_dataset_ondisk2_writer_shar()
 	{
-		system("rm -rf testdir");
-
+        system("rm -rf testdir");
 		cfg.setValue("path", "testdir");
 		cfg.setValue("name", "testdir");
 		cfg.setValue("type", "ondisk2");
@@ -77,6 +76,69 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 		ensure_equals(count, 3u);
 		writer.flush();
 	}
+
+    Metadata& find_imported_second_in_file()
+    {
+        // Find the imported_result element whose offset is > 0
+        UItem<types::source::Blob> second_in_segment;
+        for (int i = 0; i < 3; ++i)
+        {
+            second_in_segment = import_results[i].source.upcast<types::source::Blob>();
+            if (second_in_segment->offset > 0)
+                return import_results[i];
+        }
+        throw wibble::exception::Consistency("second in file not found");
+    }
+
+    void test_delete_and_repack_hole(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        cfg.setValue("step", fixture.max_selective_aggregation);
+        cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
+        wruntest(import_all, fixture);
+        Metadata& md = find_imported_second_in_file();
+        UItem<types::source::Blob> second_in_segment = md.source.upcast<types::source::Blob>();
+        string holed_fname = second_in_segment->filename.substr(8);
+
+        {
+            // Remove one element
+            arki::dataset::ondisk2::Writer writer(cfg);
+            writer.remove(md);
+            writer.flush();
+        }
+
+        {
+            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, 2);
+            expected.by_type[COUNTED_OK] = 1;
+            expected.by_type[COUNTED_TO_PACK] = 1;
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        {
+            // Test packing has something to report
+            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            s.require_line_contains(": " + holed_fname + " should be packed");
+            s.require_line_contains(": 1 file should be packed");
+            wassert(actual(writer.get()).repack(s, false));
+        }
+
+        // Perform packing and check that things are still ok afterwards
+        {
+            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            s.require_line_contains(": packed " + holed_fname);
+            s.require_line_contains(": 1 file packed");
+            wassert(actual(writer.get()).repack(s, true));
+
+            wassert(actual(writer.get()).maintenance_clean(2));
+        }
+
+        // Ensure that we have the summary cache
+        wassert(actual("testdir/.summaries/all.summary").fileexists());
+        //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
+        //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+    }
 };
 TESTGRP(arki_dataset_ondisk2_writer);
 
@@ -85,73 +147,10 @@ TESTGRP(arki_dataset_ondisk2_writer);
 template<> template<>
 void to::test<1>()
 {
-	acquireSamples();
-	files::removeDontpackFlagfile("testdir");
-	{
-		// Remove one element
-		arki::dataset::ondisk2::Writer writer(cfg);
-		writer.remove("2");
-		writer.flush();
-	}
-
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-
-	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count(COUNTED_OK), 2u);
-	ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	{
-		// Test packing has something to report
-		stringstream s;
-		writer.repack(s, false);
-		ensure_equals(s.str(),
-			"testdir: 2007/07-07.grib1 should be deleted\n"
-			"testdir: 1 file should be deleted.\n");
-
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_INDEX), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
-
-    // Perform packing and check that things are still ok afterwards
-    {
-        stringstream s;
-        writer.repack(s, true);
-        wassert(actual(s.str()).contains("testdir: deleted 2007/07-07.grib1 (34960 freed)"));
-        wassert(actual(s.str()).matches("testdir: 1 file deleted, [0-9]+ total bytes freed."));
-
-		c.clear();
-
-		writer.maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		stringstream s;
-		writer.check(s, true, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-		c.clear();
-		writer.maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(c.isClean());
-	}
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::exists("testdir/.summaries/all.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+    wruntest(test_delete_and_repack_hole, testdata::GRIBData());
+    wruntest(test_delete_and_repack_hole, testdata::BUFRData());
+    wruntest(test_delete_and_repack_hole, testdata::VM2Data());
+    wruntest(test_delete_and_repack_hole, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on dataset with one file to reclaim,
