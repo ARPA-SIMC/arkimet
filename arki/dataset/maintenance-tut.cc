@@ -369,6 +369,50 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             wassert(actual(writer.get()).maintenance_clean(2, false));
         }
     }
+
+    void test_deleted_datafile(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        wruntest(import_all_packed, fixture);
+        string deleted_fname = import_results[0].source.upcast<types::source::Blob>()->filename.substr(7);
+        unsigned file_count = fixture.count_dataset_files();
+        sys::fs::unlink(str::joinpath("testds", deleted_fname));
+
+        // Initial check finds the deleted file
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, file_count);
+            expected.by_type[COUNTED_OK] = file_count - 1;
+            expected.by_type[COUNTED_TO_DEINDEX] = 1;
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Packing should notice the problem and do nothing
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+            LineChecker s;
+            wrunchecked(writer->repack(s, false));
+            s.require_line_contains(": " + deleted_fname + " should be removed from the index");
+            s.require_line_contains(": 1 file should be removed from the index");
+            wruntest(s.check);
+
+            arki::tests::MaintenanceResults expected(false, file_count);
+            expected.by_type[COUNTED_OK] = file_count - 1;
+            expected.by_type[COUNTED_TO_DEINDEX] = 1;
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Perform packing and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+            LineChecker s;
+            wrunchecked(writer->repack(s, true));
+            s.require_line_contains(": deleted from index " + deleted_fname);
+            s.require_line_contains(": 1 file removed from index");
+            wruntest(s.check);
+
+            wassert(actual(writer.get()).maintenance_clean(file_count - 1));
+        }
+    }
 };
 
 }
@@ -502,60 +546,10 @@ template<> template<> void to::test<6>()
 // performing repack
 template<> template<> void to::test<7>()
 {
-	clean_and_import();
-	system("rm testds/2007/07-07.grib1");
-
-	// Initial check finds the deleted file
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		MaintenanceCollector c;
-		writer->maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
-
-	// Packing has something to report
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		OutputChecker s;
-		writer->repack(s, false);
-		s.ensure_line_contains(": 2007/07-07.grib1 should be removed from the index");
-		s.ensure_line_contains(": 1 file should be removed from the index");
-		s.ensure_all_lines_seen();
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 2u);
-		ensure_equals(c.count(COUNTED_TO_DEINDEX), 1u);
-		ensure_equals(c.remaining(), string());
-		ensure(not c.isClean());
-	}
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		OutputChecker s;
-		writer->repack(s, true);
-		s.ensure_line_contains(": deleted from index 2007/07-07.grib1");
-		s.ensure_line_contains(": 1 file removed from index");
-		s.ensure_all_lines_seen();
-	}
-	ensure_maint_clean(2);
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		OutputChecker s;
-		writer->check(s, true, true);
-		s.ensure_all_lines_seen(); // Nothing should have happened
-
-		ensure_maint_clean(2);
-	}
+    wruntest(test_deleted_datafile, testdata::GRIBData());
+    wruntest(test_deleted_datafile, testdata::BUFRData());
+    wruntest(test_deleted_datafile, testdata::VM2Data());
+    wruntest(test_deleted_datafile, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on dataset with one file deleted,
