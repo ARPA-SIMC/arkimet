@@ -124,21 +124,11 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
     {
         if (validator)
         {
-            sys::Buffer buf;
             try {
-                buf = i->getData();
+                validator->validate(*i);
             } catch (std::exception& e) {
                 string source = str::fmt(i->source);
-                nag::warning("%s: cannot read %s: %s", absname.c_str(), source.c_str(), e.what());
-                return FILE_TO_RESCAN;
-            }
-
-            try {
-                validator->validate(buf.data(), buf.size());
-                // validator_fd, offset, size, name);
-            } catch (std::exception& e) {
-                string source = str::fmt(i->source);
-                nag::warning("%s: invalid data read %s: %s", absname.c_str(), source.c_str(), e.what());
+                nag::warning("%s: validation failed at %s: %s", absname.c_str(), source.c_str(), e.what());
                 return FILE_TO_RESCAN;
             }
         }

@@ -249,7 +249,7 @@ struct AutoSegmentManager : public SegmentManager
         } else if (format == "bufr") {
             return concat::Writer::check(absname, mds, quick);
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            return concat::Writer::check(absname, mds, quick);
+            return dir::Writer::check(absname, mds, quick);
         } else if (format == "vm2") {
             return lines::Writer::check(absname, mds, quick);
         } else {

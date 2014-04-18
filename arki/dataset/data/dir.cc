@@ -21,7 +21,9 @@
  */
 #include "dir.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 #include "arki/utils/fd.h"
+#include "arki/scan/any.h"
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/buffer.h>
@@ -234,7 +236,66 @@ Pending Writer::append(Metadata& md, off_t* ofs)
 
 FileState Writer::check(const std::string& absname, const metadata::Collection& mds, bool quick)
 {
-    throw wibble::exception::Consistency("dir::Writer::check not implemented");
+    size_t last_sequence_checked(0);
+    const scan::Validator* validator(0);
+    bool has_hole(false);
+    std::string format;
+    size_t pos;
+    if ((pos = absname.rfind('.')) != std::string::npos)
+        format = absname.substr(pos + 1);
+    else
+        throw wibble::exception::Consistency("checking directory segment " + absname, "cannot get data type from directory name");
+
+    if (!quick)
+        validator = &scan::Validator::by_filename(absname.c_str());
+
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        if (validator)
+        {
+            try {
+                validator->validate(*i);
+            } catch (std::exception& e) {
+                string source = str::fmt(i->source);
+                nag::warning("%s: validation failed at %s: %s", absname.c_str(), source.c_str(), e.what());
+                return FILE_TO_RESCAN;
+            }
+        }
+
+        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+
+        if (source->offset != last_sequence_checked + 1)
+            has_hole = true;
+
+        ++last_sequence_checked;
+    }
+
+    sys::fs::Directory dir(absname);
+    size_t max_sequence = 0;
+    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (!str::endsWith(*i, format)) continue;
+        max_sequence = max(max_sequence, (size_t)strtoul((*i).c_str(), 0, 10));
+    }
+    if (max_sequence < last_sequence_checked)
+    {
+        nag::warning("%s: some files may have disappeared: its highest index is %zd but data is known to exist until index %zd", absname.c_str(), max_sequence, (size_t)last_sequence_checked);
+        return FILE_TO_RESCAN;
+    }
+
+    // Check if file_size matches the expected file size
+    if (max_sequence > last_sequence_checked)
+        has_hole = true;
+
+    // Take note of files with holes
+    if (has_hole)
+    {
+        nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
+        return FILE_TO_PACK;
+    } else {
+        return FILE_OK;
+    }
 }
 
 OstreamWriter::OstreamWriter()

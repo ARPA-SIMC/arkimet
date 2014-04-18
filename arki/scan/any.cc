@@ -299,6 +299,12 @@ void compress(const std::string& file, size_t groupsize)
 	// TODO: delete uncompressed version
 }
 
+void Validator::validate(const Metadata& md) const
+{
+    sys::Buffer buf = md.getData();
+    validate(buf.data(), buf.size());
+}
+
 const Validator& Validator::by_filename(const std::string& filename)
 {
 	// Get the file extension
