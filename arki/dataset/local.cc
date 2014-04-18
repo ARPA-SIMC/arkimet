@@ -338,6 +338,14 @@ void WritableLocal::archiveFile(const std::string& relpath)
 	archive().acquire(arcrelname);
 }
 
+size_t WritableLocal::removeFile(const std::string& relpath, bool withData)
+{
+    if (withData)
+        return m_segment_manager->remove(relpath);
+    else
+        return 0;
+}
+
 void WritableLocal::maintenance(maintenance::MaintFileVisitor& v, bool quick)
 {
 	if (hasArchive())

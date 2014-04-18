@@ -302,16 +302,8 @@ size_t Writer::repackFile(const std::string& relpath)
 
 size_t Writer::removeFile(const std::string& relpath, bool withData)
 {
-	m_mft->remove(relpath);
-	if (withData)
-	{
-        string pathname = str::joinpath(m_path, relpath);
-        size_t size = sys::fs::size(pathname);
-		if (unlink(pathname.c_str()) < 0)
-			throw wibble::exception::System("removing " + pathname);
-		return size;
-	} else
-		return 0;
+    m_mft->remove(relpath);
+    return WritableLocal::removeFile(relpath, withData);
 }
 
 void Writer::archiveFile(const std::string& relpath)

@@ -65,6 +65,13 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         utils::files::removeDontpackFlagfile(cfg.value("path"));
     }
 
+    void test_preconditions(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        wassert(actual(fixture.fnames_before_cutoff.size()) > 0);
+        wassert(actual(fixture.fnames_after_cutoff.size()) > 0);
+        wassert(actual(fixture.fnames_before_cutoff.size() + fixture.fnames_after_cutoff.size()) == fixture.count_dataset_files());
+    }
+
     void test_maintenance_on_clean(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
         unsigned file_count = fixture.count_dataset_files();
@@ -182,6 +189,37 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             wassert(actual(counter.count) == 3);
         }
     }
+
+    void test_delete_age(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        cfg.setValue("delete age", str::fmt(fixture.selective_days_since()));
+        wruntest(import_all, fixture);
+
+        // Check if files to delete are detected
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
+            expected.by_type[COUNTED_OK] = fixture.fnames_after_cutoff.size();
+            expected.by_type[COUNTED_TO_DELETE] = fixture.fnames_before_cutoff.size();
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+        // Perform packing and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            wrunchecked(writer->repack(s, true));
+            for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
+                    i != fixture.fnames_before_cutoff.end(); ++i)
+                s.require_line_contains(": deleted " + *i);
+            s.require_line_contains_re(str::fmtf(": %zd files? deleted, %zd files? removed from index",
+                        fixture.fnames_before_cutoff.size(),
+                        fixture.fnames_before_cutoff.size()));
+            wruntest(s.check);
+        }
+
+        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        wassert(actual(writer.get()).maintenance_clean(fixture.fnames_after_cutoff.size()));
+    }
 };
 
 }
@@ -194,6 +232,11 @@ typedef tg::object to;
 // Test accuracy of maintenance scan, on perfect dataset
 template<> template<> void to::test<1>()
 {
+    wruntest(test_preconditions, testdata::GRIBData());
+    wruntest(test_preconditions, testdata::BUFRData());
+    wruntest(test_preconditions, testdata::VM2Data());
+    wruntest(test_preconditions, testdata::ODIMData());
+
     wruntest(test_maintenance_on_clean, testdata::GRIBData());
     wruntest(test_maintenance_on_clean, testdata::BUFRData());
     wruntest(test_maintenance_on_clean, testdata::VM2Data());
@@ -212,51 +255,10 @@ template<> template<> void to::test<2>()
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
 template<> template<> void to::test<3>()
 {
-	// Data are from 07, 08, 10 2007
-	int treshold[6] = { 2007, 9, 1, 0, 0, 0 };
-	int now[6];
-	grcal::date::now(now);
-	long long int duration = grcal::date::duration(treshold, now);
-
-	ConfigFile cfg = this->cfg;
-	cfg.setValue("delete age", str::fmt(duration/(3600*24)));
-	clean_and_import(&cfg);
-
-	// Check that expired files are detected
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		MaintenanceCollector c;
-		writer->maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_OK), 1u);
-		ensure_equals(c.count(COUNTED_TO_DELETE), 2u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-
-		OutputChecker s;
-		writer->repack(s, true);
-		s.ensure_line_contains(": deleted 2007/07-07.grib1");
-		s.ensure_line_contains(": deleted 2007/07-08.grib1");
-		s.ensure_line_contains(": 2 files deleted, 2 files removed from index");
-		s.ensure_all_lines_seen();
-	}
-	ensure_maint_clean(1);
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		stringstream s;
-		writer->check(s, true, true);
-		ensure_equals(s.str(), string()); // Nothing should have happened
-
-		ensure_maint_clean(1);
-	}
+    wruntest(test_delete_age, testdata::GRIBData());
+    wruntest(test_delete_age, testdata::BUFRData());
+    wruntest(test_delete_age, testdata::VM2Data());
+    wruntest(test_delete_age, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with a truncated data file

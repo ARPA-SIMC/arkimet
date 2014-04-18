@@ -212,6 +212,11 @@ public:
      */
     virtual FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true) = 0;
 
+    /**
+     * Remove a file, returning its size
+     */
+    virtual size_t remove(const std::string& relname) = 0;
+
     /// Create a SegmentManager using default options
     static std::auto_ptr<SegmentManager> get(const std::string& root);
 

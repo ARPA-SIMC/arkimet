@@ -298,6 +298,29 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
     }
 }
 
+size_t Writer::remove(const std::string& absname)
+{
+    std::string format;
+    size_t pos;
+    if ((pos = absname.rfind('.')) != std::string::npos)
+        format = absname.substr(pos + 1);
+    else
+        throw wibble::exception::Consistency("removing directory segment " + absname, "cannot get data type from directory name");
+
+    size_t size = 0;
+    sys::fs::Directory dir(absname);
+    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (*i != ".sequence" && !str::endsWith(*i, format)) continue;
+        string pathname = str::joinpath(absname, *i);
+        size += sys::fs::size(pathname);
+        if (unlink(pathname.c_str()) < 0)
+            throw wibble::exception::System("removing " + pathname);
+    }
+    return size;
+}
+
 OstreamWriter::OstreamWriter()
 {
     throw wibble::exception::Consistency("dir::OstreamWriter not implemented");

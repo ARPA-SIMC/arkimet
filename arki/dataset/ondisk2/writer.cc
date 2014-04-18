@@ -550,17 +550,9 @@ size_t Writer::repackFile(const std::string& relpath)
 
 size_t Writer::removeFile(const std::string& relpath, bool withData)
 {
-	m_idx.reset(relpath);
-
-	if (withData)
-	{
-		string pathname = str::joinpath(m_path, relpath);
-        size_t size = sys::fs::size(pathname);
-		if (unlink(pathname.c_str()) < 0)
-			throw wibble::exception::System("removing " + pathname);
-		return size;
-	} else
-		return 0;
+    m_idx.reset(relpath);
+    // TODO: also remove .metadata and .summary files
+    return WritableLocal::removeFile(relpath, withData);
 }
 
 void Writer::archiveFile(const std::string& relpath)

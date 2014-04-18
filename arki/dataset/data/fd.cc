@@ -28,6 +28,7 @@
 #include "arki/nag.h"
 #include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
+#include <wibble/sys/fs.h>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -161,6 +162,15 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
         return FILE_OK;
     }
 }
+
+size_t Writer::remove(const std::string& absname)
+{
+    size_t size = sys::fs::size(absname);
+    if (unlink(absname.c_str()) < 0)
+        throw wibble::exception::System("removing " + absname);
+    return size;
+}
+
 
 }
 }
