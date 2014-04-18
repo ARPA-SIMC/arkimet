@@ -24,6 +24,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/utils.h"
 #include "arki/utils/fd.h"
+#include "arki/utils/files.h"
 #include "arki/scan/any.h"
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -318,6 +319,25 @@ size_t Writer::remove(const std::string& absname)
             throw wibble::exception::System("removing " + pathname);
     }
     return size;
+}
+
+void Writer::truncate(const std::string& absname, size_t offset)
+{
+    utils::files::PreserveFileTimes pft(absname);
+
+    // Truncate dir segment
+    string format = utils::require_format(absname);
+    sys::fs::Directory dir(absname);
+    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (*i != ".sequence" && !str::endsWith(*i, format)) continue;
+        if (strtoul((*i).c_str(), 0, 10) >= offset)
+        {
+            //cerr << "UNLINK " << absname << " -- " << *i << endl;
+            sys::fs::unlink(str::joinpath(absname, *i));
+        }
+    }
 }
 
 OstreamWriter::OstreamWriter()

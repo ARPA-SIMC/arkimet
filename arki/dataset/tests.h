@@ -438,8 +438,6 @@ struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal
     }
 };
 
-/// Truncate a datafile or dir segment at the given offset
-void truncate_datafile(const std::string& absname, off_t offset);
 /// Corrupt a datafile by overwriting the first 4 bytes of its first data
 /// element with zeros
 void corrupt_datafile(const std::string& absname);

@@ -271,7 +271,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         wassert(actual(second_in_segment->offset) > 0);
 
         // Truncate at the position in second_in_segment
-        truncate_datafile(second_in_segment->absolutePathname(), second_in_segment->offset);
+        segments().truncate(second_in_segment->filename, second_in_segment->offset);
 
         // See that the truncated file is detected
         {
@@ -736,25 +736,8 @@ template<> template<> void to::test<11>()
 	ensure_maint_clean(3);
 }
 
-// Check that a freshly imported VM2 dataset is seen as packed
-// (it didn't use to because newlines were seen as gaps)
-template<> template<> void to::test<12>()
-{
-    clean_and_import(&cfg, "inbound/test.vm2");
-
-    // Ensure the archive is clean
-    {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
-        arki::tests::MaintenanceResults expected(true, 2);
-        expected.by_type[COUNTED_OK] = 2;
-        wassert(actual(writer.get()).maintenance(expected));
-
-        wassert(!actual("testds/.archive").fileexists());
-    }
-}
-
 // Test accuracy of maintenance scan, on a dataset with one file to both repack and delete
-template<> template<> void to::test<13>()
+template<> template<> void to::test<12>()
 {
     // Data are from 07, 08, 10 2007
     int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
@@ -812,7 +795,7 @@ template<> template<> void to::test<13>()
 }
 
 // Test accuracy of maintenance scan, on a dataset with one file to both repack and archive
-template<> template<> void to::test<14>()
+template<> template<> void to::test<13>()
 {
     // Data are from 07, 08, 10 2007
     int treshold[6] = { 2008, 1, 1, 0, 0, 0 };

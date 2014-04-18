@@ -270,6 +270,27 @@ struct AutoSegmentManager : public SegmentManager
                     "format not supported");
         }
     }
+
+    void truncate(const std::string& relname, size_t offset)
+    {
+        string format = utils::get_format(relname);
+        string absname = str::joinpath(root, relname);
+
+        if (format == "grib" || format == "grib1" || format == "grib2")
+        {
+            return fd::Writer::truncate(absname, offset);
+        } else if (format == "bufr") {
+            return fd::Writer::truncate(absname, offset);
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            return dir::Writer::truncate(absname, offset);
+        } else if (format == "vm2") {
+            return fd::Writer::truncate(absname, offset);
+        } else {
+            throw wibble::exception::Consistency(
+                    "truncating " + format + " file " + absname,
+                    "format not supported");
+        }
+    }
 };
 
 }

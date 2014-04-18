@@ -25,6 +25,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
 #include "arki/utils/compress.h"
+#include "arki/utils/files.h"
 #include "arki/nag.h"
 #include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
@@ -171,6 +172,12 @@ size_t Writer::remove(const std::string& absname)
     return size;
 }
 
+void Writer::truncate(const std::string& absname, size_t offset)
+{
+    utils::files::PreserveFileTimes pft(absname);
+    if (::truncate(absname.c_str(), offset) < 0)
+        throw wibble::exception::File(absname, str::fmtf("Truncating file at %zd", offset));
+}
 
 }
 }

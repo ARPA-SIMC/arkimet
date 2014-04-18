@@ -46,6 +46,7 @@ public:
     virtual Pending append(Metadata& md, off_t* ofs);
     static FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
     static size_t remove(const std::string& absname);
+    static void truncate(const std::string& absname, size_t offset);
 };
 
 class OstreamWriter : public data::OstreamWriter

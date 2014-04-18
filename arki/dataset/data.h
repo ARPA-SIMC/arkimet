@@ -217,6 +217,13 @@ public:
      */
     virtual size_t remove(const std::string& relname) = 0;
 
+    /**
+     * Truncate a file at the given offset
+     *
+     * This function is useful for implementing unit tests.
+     */
+    virtual void truncate(const std::string& relname, size_t offset) = 0;
+
     /// Create a SegmentManager using default options
     static std::auto_ptr<SegmentManager> get(const std::string& root);
 
