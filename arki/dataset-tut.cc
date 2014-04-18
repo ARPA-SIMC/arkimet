@@ -52,49 +52,88 @@ using namespace wibble::tests;
 
 struct TestDataInfo
 {
-    WritableDataset::AcquireResult import_outcome;
+    Metadata md;
     string destfile;
     Matcher matcher;
 
-    TestDataInfo(WritableDataset::AcquireResult ar, const std::string& df, const std::string& matcher)
-        : import_outcome(ar), destfile(df), matcher(Matcher::parse(matcher)) {}
+    void set(const Metadata& md, const std::string& destfile, const std::string& matcher)
+    {
+        this->md = md;
+        this->destfile = destfile;
+        this->matcher = Matcher::parse(matcher);
+    }
 };
 
 struct TestData
 {
-    std::string fname;
     std::string format;
-    std::vector<TestDataInfo> info;
+    TestDataInfo test_data[3];
+};
+
+struct TestDataGRIB : TestData
+{
+    TestDataGRIB()
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/test.grib1", mdc);
+        format = "grib";
+        test_data[0].set(mdc[0], "2007/07-08.grib1", "reftime:=2007-07-08");
+        test_data[1].set(mdc[1], "2007/07-07.grib1", "reftime:=2007-07-07");
+        test_data[2].set(mdc[2], "2007/10-09.grib1", "reftime:=2007-10-09");
+    }
+};
+
+struct TestDataBUFR : TestData
+{
+    TestDataBUFR()
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/test.bufr", mdc);
+        format = "bufr";
+        test_data[0].set(mdc[0], "2005/12-01.bufr", "reftime:=2005-12-01");
+        test_data[1].set(mdc[1], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=60");
+        test_data[2].set(mdc[2], "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=6");
+    }
+};
+
+struct TestDataVM2 : TestData
+{
+    TestDataVM2()
+    {
+        metadata::Collection mdc;
+        scan::scan("inbound/test.vm2", mdc);
+        format = "vm2";
+        test_data[0].set(mdc[0], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,227");
+        test_data[1].set(mdc[1], "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,228");
+        test_data[2].set(mdc[2], "2011/01-01.vm2", "reftime:=2011-01-01; product:VM2,1");
+    }
+};
+
+struct TestDataODIM : TestData
+{
+    TestDataODIM()
+    {
+        metadata::Collection mdc;
+        format = "odim";
+        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
+        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
+        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
+        test_data[0].set(mdc[0], "2013/", "reftime:=2013-03-18");
+        test_data[1].set(mdc[1], "2000/", "reftime:=2000-01-02");
+        test_data[2].set(mdc[2], "2013/", "reftime:=2013-11-04");
+    }
 };
 
 
 struct arki_dataset_shar {
-	ConfigFile config;
-    TestData tdata_grib;
-    TestData tdata_bufr;
-    TestData tdata_vm2;
+    ConfigFile config;
+    TestDataGRIB tdata_grib;
+    TestDataBUFR tdata_bufr;
+    TestDataVM2 tdata_vm2;
+    TestDataODIM tdata_odim;
 
 	arki_dataset_shar()
 	{
-        tdata_grib.fname = "inbound/test.grib1";
-        tdata_grib.format = "grib";
-        tdata_grib.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2007/07-08.grib1", "reftime:=2007-07-08"));
-        tdata_grib.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2007/07-07.grib1", "reftime:=2007-07-07"));
-        tdata_grib.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2007/10-09.grib1", "reftime:=2007-10-09"));
-
-        tdata_bufr.fname = "inbound/test.bufr";
-        tdata_bufr.format = "bufr";
-        tdata_bufr.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2005/12-01.bufr", "reftime:=2005-12-01"));
-        tdata_bufr.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=60"));
-        tdata_bufr.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2004/11-30.bufr", "reftime:=2004-11-30; proddef:GRIB:blo=6"));
-
-        tdata_vm2.fname = "inbound/test.vm2";
-        tdata_vm2.format = "vm2";
-        tdata_vm2.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,227"));
-        tdata_vm2.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "1987/10-31.vm2", "reftime:=1987-10-31; product:VM2,228"));
-        tdata_vm2.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2011/01-01.vm2", "reftime:=2011-01-01; product:VM2,1"));
-        tdata_vm2.info.push_back(TestDataInfo(WritableDataset::ACQ_OK, "2011/01-01.vm2", "reftime:=2011-01-01; product:VM2,2"));
-
 		system("rm -rf test200");
 		system("rm -rf test80");
 		system("rm -rf test98");
@@ -257,7 +296,6 @@ struct TestDataset
     ConfigFile config;
     ConfigFile* cfgtest;
     std::string path;
-    metadata::Collection input_data;
 
     TestDataset(const TestData& td, const std::string& conf)
         : td(td)
@@ -275,13 +313,12 @@ struct TestDataset
 
         auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
-        wassert(actual(scan::scan(td.fname, input_data)).istrue());
-        wassert(actual(input_data.size()) == td.info.size());
-
-        for (unsigned i = 0; i < input_data.size(); ++i)
+        for (unsigned i = 0; i < 3; ++i)
         {
-            wassert(actual(ds->acquire(input_data[i])) == td.info[i].import_outcome);
-            wassert(actual(str::joinpath(path, td.info[i].destfile)).fileexists());
+            Metadata md = td.test_data[i].md;
+            wassert(actual(ds->acquire(md)) == WritableDataset::ACQ_OK);
+            wassert(actual(str::joinpath(path, td.test_data[i].destfile)).fileexists());
+            wassert(actual(md.source.upcast<types::source::Blob>()->filename).endswith(td.test_data[i].destfile));
         }
     }
 
@@ -289,22 +326,28 @@ struct TestDataset
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
-        for (unsigned i = 0; i < input_data.size(); ++i)
+        // Query everything, we should get 3 results
+        metadata::Collection mdc;
+        ds->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
+        wassert(actual(mdc.size()) == 3);
+
+        for (unsigned i = 0; i < 3; ++i)
         {
             using namespace arki::types;
 
             // Check that what we imported can be queried
             metadata::Collection mdc;
-            ds->queryData(dataset::DataQuery(td.info[i].matcher, false), mdc);
+            ds->queryData(dataset::DataQuery(td.test_data[i].matcher, false), mdc);
             wassert(actual(mdc.size()) == 1u);
 
             // Check that the result matches what was imported
-            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            UItem<source::Blob> s1 = td.test_data[i].md.source.upcast<source::Blob>();
             UItem<source::Blob> s2 = mdc[0].source.upcast<source::Blob>();
             wassert(actual(s2->format) == s1->format);
             wassert(actual(s2->size) == s1->size);
+            wassert(actual(mdc[0]).is_similar(td.test_data[i].md));
 
-            wassert(actual(td.info[i].matcher(mdc[0])).istrue());
+            wassert(actual(td.test_data[i].matcher(mdc[0])).istrue());
         }
     }
 
@@ -316,20 +359,20 @@ struct TestDataset
         {
             Summary s;
             ds->querySummary(Matcher(), s);
-            wassert(actual(s.count()) == input_data.size());
+            wassert(actual(s.count()) == 3);
         }
 
-        for (unsigned i = 0; i < input_data.size(); ++i)
+        for (unsigned i = 0; i < 3; ++i)
         {
             using namespace arki::types;
 
             // Query summary of single items
             Summary s;
-            ds->querySummary(td.info[i].matcher, s);
+            ds->querySummary(td.test_data[i].matcher, s);
 
             wassert(actual(s.count()) == 1u);
 
-            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            UItem<source::Blob> s1 = td.test_data[i].md.source.upcast<source::Blob>();
             wassert(actual(s.size()) == s1->size);
         }
     }
@@ -338,23 +381,23 @@ struct TestDataset
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
-        for (unsigned i = 0; i < input_data.size(); ++i)
+        for (unsigned i = 0; i < 3; ++i)
         {
             using namespace arki::types;
 
             dataset::ByteQuery bq;
-            bq.setData(td.info[i].matcher);
+            bq.setData(td.test_data[i].matcher);
             std::stringstream os;
             ds->queryBytes(bq, os);
 
             // Write it out and rescan
             sys::fs::writeFile("testdata", os.str());
             metadata::Collection tmp;
-            wassert(actual(scan::scan("testdata", tmp, input_data[i].source->format)).istrue());
+            wassert(actual(scan::scan("testdata", tmp, td.test_data[i].md.source->format)).istrue());
 
             // Ensure that what we rescanned is what was imported
             wassert(actual(tmp.size()) == 1u);
-            wassert(actual(tmp[0]).is_similar(input_data[i]));
+            wassert(actual(tmp[0]).is_similar(td.test_data[i].md));
 
             //UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
             //wassert(actual(os.str().size()) == s1->size);
@@ -373,10 +416,10 @@ struct TestDataset
 
         // Check that what we got matches the total size of what we imported
         size_t total_size = 0;
-        for (unsigned i = 0; i < input_data.size(); ++i)
+        for (unsigned i = 0; i < 3; ++i)
         {
             using namespace arki::types;
-            UItem<source::Blob> s1 = input_data[i].source.upcast<source::Blob>();
+            UItem<source::Blob> s1 = td.test_data[i].md.source.upcast<source::Blob>();
             total_size += s1->size;
         }
         // We use >= and not == because some data sources add extra information
@@ -465,6 +508,7 @@ void to::test<16>()
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
         "path = test\n"
+        "smallfiles = true\n"
     );
     wruntest(tds.test_all);
 }
@@ -473,8 +517,7 @@ void to::test<16>()
 template<> template<>
 void to::test<17>()
 {
-#if 0
-    TestDataset tds(tdata_vm2,
+    TestDataset tds(tdata_odim,
         "[test]\n"
         "type = ondisk2\n"
         "step = daily\n"
@@ -485,7 +528,6 @@ void to::test<17>()
         "path = test\n"
     );
     wruntest(tds.test_all);
-#endif
 }
 
 // simple plainmft GRIB
@@ -597,8 +639,7 @@ void to::test<23>()
 template<> template<>
 void to::test<24>()
 {
-#if 0
-    TestDataset tds(tdata_vm2,
+    TestDataset tds(tdata_odim,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
@@ -609,7 +650,6 @@ void to::test<24>()
         "path = test\n"
     );
     wruntest(tds.test_all);
-#endif
 }
 
 // simple sqlitemft ODIM
