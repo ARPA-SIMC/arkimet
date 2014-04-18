@@ -121,6 +121,23 @@ MoveToTempDir::~MoveToTempDir()
     sys::fs::rmtree(tmp_dir);
 }
 
+std::string get_format(const std::string& fname)
+{
+    std::string fmt;
+    size_t pos;
+    if ((pos = fname.rfind('.')) != std::string::npos)
+        fmt = fname.substr(pos + 1);
+    return fmt;
+}
+
+std::string require_format(const std::string& fname)
+{
+    std::string res = get_format(fname);
+    if (res.empty())
+        throw wibble::exception::Consistency("getting extension from file name " + fname, "file name has no extension");
+    return res;
+}
+
 }
 }
 // vim:set ts=4 sw=4:

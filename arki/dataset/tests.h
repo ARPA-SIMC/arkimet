@@ -253,6 +253,8 @@ struct Element
 struct Fixture
 {
     std::string format;
+    // Maximum aggregation period that still generates more than one file
+    std::string max_selective_aggregation;
     Element test_data[3];
     /// Date that falls somewhere inbetween files in the dataset
     int selective_cutoff[6];
@@ -273,6 +275,7 @@ struct GRIBData : Fixture
         metadata::Collection mdc;
         scan::scan("inbound/test.grib1", mdc);
         format = "grib";
+        max_selective_aggregation = "monthly";
         test_data[0].set(mdc[0], "reftime:=2007-07-08");
         test_data[1].set(mdc[1], "reftime:=2007-07-07");
         test_data[2].set(mdc[2], "reftime:=2007-10-09");
@@ -287,6 +290,7 @@ struct BUFRData : Fixture
         metadata::Collection mdc;
         scan::scan("inbound/test.bufr", mdc);
         format = "bufr";
+        max_selective_aggregation = "yearly";
         test_data[0].set(mdc[0], "reftime:=2005-12-01");
         test_data[1].set(mdc[1], "reftime:=2004-11-30; proddef:GRIB:blo=60");
         test_data[2].set(mdc[2], "reftime:=2004-11-30; proddef:GRIB:blo=6");
@@ -301,6 +305,7 @@ struct VM2Data : Fixture
         metadata::Collection mdc;
         scan::scan("inbound/test.vm2", mdc);
         format = "vm2";
+        max_selective_aggregation = "yearly";
         test_data[0].set(mdc[0], "reftime:=1987-10-31; product:VM2,227");
         test_data[1].set(mdc[1], "reftime:=1987-10-31; product:VM2,228");
         test_data[2].set(mdc[2], "reftime:=2011-01-01; product:VM2,1");
@@ -314,6 +319,7 @@ struct ODIMData : Fixture
     {
         metadata::Collection mdc;
         format = "odim";
+        max_selective_aggregation = "yearly";
         scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
         scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
         scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
@@ -392,6 +398,9 @@ struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal
         return TestMaintenance(*actual, expected);
     }
 };
+
+/// Truncate a datafile or dir segment at the given offset
+void truncate_datafile(const std::string& absname, off_t offset);
 
 }
 

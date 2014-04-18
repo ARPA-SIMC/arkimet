@@ -22,6 +22,7 @@
 #include "dir.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/utils.h"
 #include "arki/utils/fd.h"
 #include "arki/scan/any.h"
 #include <wibble/exception.h>
@@ -98,11 +99,11 @@ struct SequenceFile
         ssize_t count = pread(fd, &cur, sizeof(cur), 0);
         if (count < 0)
             throw wibble::exception::File(pathname, "cannot read sequence file");
+
         if ((size_t)count < sizeof(cur))
             cur = 0;
-
-        // Increment
-        ++cur;
+        else
+            ++cur;
 
         // Write it out
         count = pwrite(fd, &cur, sizeof(cur), 0);
@@ -236,19 +237,26 @@ Pending Writer::append(Metadata& md, off_t* ofs)
 
 FileState Writer::check(const std::string& absname, const metadata::Collection& mds, bool quick)
 {
-    size_t last_sequence_checked(0);
+    size_t next_sequence_expected(0);
     const scan::Validator* validator(0);
-    bool has_hole(false);
-    std::string format;
-    size_t pos;
-    if ((pos = absname.rfind('.')) != std::string::npos)
-        format = absname.substr(pos + 1);
-    else
-        throw wibble::exception::Consistency("checking directory segment " + absname, "cannot get data type from directory name");
+    bool out_of_order(false);
+    std::string format = utils::require_format(absname);
 
     if (!quick)
         validator = &scan::Validator::by_filename(absname.c_str());
 
+    // List the dir elements we know about
+    set<size_t> expected;
+    sys::fs::Directory dir(absname);
+    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (!str::endsWith(*i, format)) continue;
+        expected.insert((size_t)strtoul((*i).c_str(), 0, 10));
+    }
+
+    // Check the list of elements we expect for sort order, gaps, and match
+    // with what is in the file system
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         if (validator)
@@ -264,32 +272,28 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
 
         Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
 
-        if (source->offset != last_sequence_checked + 1)
-            has_hole = true;
+        if (source->offset != next_sequence_expected)
+            out_of_order = true;
 
-        ++last_sequence_checked;
+        set<size_t>::const_iterator ei = expected.find(source->offset);
+        if (ei == expected.end())
+        {
+            nag::warning("%s: expected file %zd not found in the file system", absname.c_str(), (size_t)source->offset);
+            return FILE_TO_RESCAN;
+        } else
+            expected.erase(ei);
+
+        ++next_sequence_expected;
     }
 
-    sys::fs::Directory dir(absname);
-    size_t max_sequence = 0;
-    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    if (!expected.empty())
     {
-        if (!i.isreg()) continue;
-        if (!str::endsWith(*i, format)) continue;
-        max_sequence = max(max_sequence, (size_t)strtoul((*i).c_str(), 0, 10));
-    }
-    if (max_sequence < last_sequence_checked)
-    {
-        nag::warning("%s: some files may have disappeared: its highest index is %zd but data is known to exist until index %zd", absname.c_str(), max_sequence, (size_t)last_sequence_checked);
+        nag::warning("%s: found %zd file(s) that the index does now know about", absname.c_str(), expected.size());
         return FILE_TO_RESCAN;
     }
 
-    // Check if file_size matches the expected file size
-    if (max_sequence > last_sequence_checked)
-        has_hole = true;
-
     // Take note of files with holes
-    if (has_hole)
+    if (out_of_order)
     {
         nag::verbose("%s: contains deleted data or data to be reordered", absname.c_str());
         return FILE_TO_PACK;
@@ -300,12 +304,7 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
 
 size_t Writer::remove(const std::string& absname)
 {
-    std::string format;
-    size_t pos;
-    if ((pos = absname.rfind('.')) != std::string::npos)
-        format = absname.substr(pos + 1);
-    else
-        throw wibble::exception::Consistency("removing directory segment " + absname, "cannot get data type from directory name");
+    std::string format = utils::require_format(absname);
 
     size_t size = 0;
     sys::fs::Directory dir(absname);

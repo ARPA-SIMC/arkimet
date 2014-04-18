@@ -133,7 +133,7 @@ struct DirSource : public metadata::Consumer
    bool operator()(Metadata& md)
    {
        Item<types::source::Blob> i = md.source.upcast<types::source::Blob>();
-       cerr << i << endl;
+       //cerr << i << endl;
        if (i.defined())
            md.source = types::source::Blob::create(i->format, i->basedir, dirname, pos, i->size);
        return next(md);

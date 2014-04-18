@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2014  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,6 +42,8 @@ using namespace arki::utils;
 namespace {
 
 struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
+    Metadata import_results[3];
+
     arki_dataset_maintenance_base()
     {
         cfg.setValue("path", "testds");
@@ -57,8 +59,8 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         std::auto_ptr<WritableLocal> writer(makeLocalWriter());
         for (int i = 0; i < 3; ++i)
         {
-            Metadata md = fixture.test_data[i].md;
-            WritableDataset::AcquireResult res = writer->acquire(md);
+            import_results[i] = fixture.test_data[i].md;
+            WritableDataset::AcquireResult res = writer->acquire(import_results[i]);
             wassert(actual(res) == WritableDataset::ACQ_OK);
         }
 
@@ -220,6 +222,70 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         auto_ptr<WritableLocal> writer(makeLocalWriter());
         wassert(actual(writer.get()).maintenance_clean(fixture.fnames_after_cutoff.size()));
     }
+
+    void test_truncated_datafile_at_data_boundary(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        cfg.setValue("step", fixture.max_selective_aggregation);
+        wruntest(import_all, fixture);
+
+        // Find the imported_result element whose offset is > 0
+        UItem<types::source::Blob> second_in_segment;
+        for (int i = 0; i < 3; ++i)
+        {
+            second_in_segment = import_results[i].source.upcast<types::source::Blob>();
+            if (second_in_segment->offset > 0)
+                break;
+        }
+        wassert(actual(second_in_segment->offset) > 0);
+
+        // Truncate at the position in second_in_segment
+        truncate_datafile(second_in_segment->absolutePathname(), second_in_segment->offset);
+
+        // See that the truncated file is detected
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, 2);
+            expected.by_type[COUNTED_OK] = 1;
+            expected.by_type[COUNTED_TO_RESCAN] = 1;
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Perform packing and check that nothing has happened
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            wrunchecked(writer->repack(s, true));
+            s.ignore_regexp("total bytes freed.");
+            wruntest(s.check);
+
+            arki::tests::MaintenanceResults expected(false, 2);
+            expected.by_type[COUNTED_OK] = 1;
+            expected.by_type[COUNTED_TO_RESCAN] = 1;
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Perform full maintenance and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+
+            LineChecker s;
+            wrunchecked(writer->check(s, true, true));
+            s.require_line_contains(": rescanned " + second_in_segment->filename.substr(7));
+            s.require_line_contains(": 1 file rescanned");
+            wruntest(s.check);
+
+            wassert(actual(writer.get()).maintenance_clean(2));
+        }
+
+        // Try querying and make sure we get the two files
+        {
+            std::auto_ptr<ReadonlyDataset> reader(makeReader());
+
+            metadata::Counter counter;
+            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
+            wassert(actual(counter.count) == 2);
+        }
+    }
 };
 
 }
@@ -264,77 +330,10 @@ template<> template<> void to::test<3>()
 // Test accuracy of maintenance scan, on perfect dataset, with a truncated data file
 template<> template<> void to::test<4>()
 {
-	ConfigFile cfg = this->cfg;
-	cfg.setValue("step", "yearly");
-	clean_and_import(&cfg);
-
-	// Truncate the last grib out of a file
-	if (truncate("testds/20/2007.grib1", 42178) < 0)
-		throw wibble::exception::System("truncating testds/20/2007.grib1");
-
-	// See that the truncated file is detected
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		MaintenanceCollector c;
-		writer->maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 1u);
-		ensure_equals(c.count(COUNTED_OK), 0u);
-		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-		OutputChecker s;
-
-		writer->repack(s, true);
-		s.ignore_line_containing("total bytes freed.");
-		s.ensure_all_lines_seen();
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 0u);
-		ensure_equals(c.count(COUNTED_TO_RESCAN), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-
-		OutputChecker s;
-		writer->check(s, true, true);
-		s.ensure_line_contains(": rescanned 20/2007.grib1");
-		s.ensure_line_contains(": 1 file rescanned");
-		s.ensure_all_lines_seen();
-
-		MaintenanceCollector c;
-		writer->maintenance(c);
-		ensure_equals(c.count(COUNTED_OK), 0u);
-		ensure_equals(c.count(COUNTED_TO_PACK), 1u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform packing after the file has been rescanned and check that
-	// things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
-
-		OutputChecker s;
-		writer->repack(s, true);
-		s.ensure_line_contains(": packed 20/2007.grib1");
-		s.ensure_line_contains(": 1 file packed");
-		s.ensure_all_lines_seen();
-
-        arki::tests::MaintenanceResults expected(true, 1);
-        expected.by_type[COUNTED_OK] = 1;
-        wassert(actual(writer.get()).maintenance(expected));
-	}
+    wruntest(test_truncated_datafile_at_data_boundary, testdata::GRIBData());
+    wruntest(test_truncated_datafile_at_data_boundary, testdata::BUFRData());
+    wruntest(test_truncated_datafile_at_data_boundary, testdata::VM2Data());
+    wruntest(test_truncated_datafile_at_data_boundary, testdata::ODIMData());
 }
 
 // Test accuracy of maintenance scan, on a dataset with a corrupted data file

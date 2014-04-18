@@ -105,6 +105,18 @@ struct MoveToTempDir
     ~MoveToTempDir();
 };
 
+/**
+ * Get format from file extension
+ *
+ * @returns the empty string if no file extension was found
+ */
+std::string get_format(const std::string& fname);
+
+/**
+ * Get format from file extension, throwing an exception if no extension was
+ * found
+ */
+std::string require_format(const std::string& fname);
 
 }
 }

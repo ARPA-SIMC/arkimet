@@ -27,6 +27,7 @@
 #include "arki/configfile.h"
 #include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
+#include "arki/utils.h"
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
@@ -99,16 +100,6 @@ const OstreamWriter* OstreamWriter::get(const std::string& format)
 
 namespace {
 
-// Get format from file extension
-std::string get_format(const std::string& fname)
-{
-    std::string fmt;
-    size_t pos;
-    if ((pos = fname.rfind('.')) != std::string::npos)
-        fmt = fname.substr(pos + 1);
-    return fmt;
-}
-
 /// Segment manager that picks the right readers/writers based on file types
 struct AutoSegmentManager : public SegmentManager
 {
@@ -118,7 +109,7 @@ struct AutoSegmentManager : public SegmentManager
 
     Reader* get_reader(const std::string& relname)
     {
-        return get_reader(get_format(relname), relname);
+        return get_reader(utils::get_format(relname), relname);
     }
 
     Reader* get_reader(const std::string& format, const std::string& relname)
@@ -129,7 +120,7 @@ struct AutoSegmentManager : public SegmentManager
 
     Writer* get_writer(const std::string& relname)
     {
-        return get_writer(get_format(relname), relname);
+        return get_writer(utils::get_format(relname), relname);
     }
 
     auto_ptr<data::Writer> create_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
@@ -217,7 +208,7 @@ struct AutoSegmentManager : public SegmentManager
         const scan::Validator& validator = scan::Validator::by_filename(absname);
 
         // Create a writer for the temp file
-        auto_ptr<data::Writer> writer(create_for_format(get_format(relname), tmprelname, tmpabsname, true));
+        auto_ptr<data::Writer> writer(create_for_format(utils::get_format(relname), tmprelname, tmpabsname, true));
 
         // Fill the temp file with all the data in the right order
         for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
@@ -240,7 +231,7 @@ struct AutoSegmentManager : public SegmentManager
 
     FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true)
     {
-        string format = get_format(relname);
+        string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
 
         if (format == "grib" || format == "grib1" || format == "grib2")
@@ -261,7 +252,7 @@ struct AutoSegmentManager : public SegmentManager
 
     size_t remove(const std::string& relname)
     {
-        string format = get_format(relname);
+        string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
 
         if (format == "grib" || format == "grib1" || format == "grib2")

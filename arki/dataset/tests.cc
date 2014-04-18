@@ -610,6 +610,30 @@ void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
     wibble_test_location.fail_test(ss.str());
 }
 
+void truncate_datafile(const std::string& absname, off_t offset)
+{
+    if (sys::fs::isdir(absname))
+    {
+        // Truncate dir segment
+        string format = utils::require_format(absname);
+        sys::fs::Directory dir(absname);
+        for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+        {
+            if (!i.isreg()) continue;
+            if (*i != ".sequence" && !str::endsWith(*i, format)) continue;
+            if (strtoul((*i).c_str(), 0, 10) >= offset)
+            {
+                //cerr << "UNLINK " << absname << " -- " << *i << endl;
+                sys::fs::unlink(str::joinpath(absname, *i));
+            }
+        }
+    } else {
+        // Truncate file
+        if (truncate(absname.c_str(), offset) < 0)
+            throw wibble::exception::File(absname, str::fmtf("Truncating file at %zd", (size_t)offset));
+    }
+}
+
 }
 
 namespace testdata {
