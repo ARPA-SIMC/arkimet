@@ -85,22 +85,16 @@ struct OutputChecker : public std::stringstream
 	void impl_ensure_all_lines_seen(const wibble::tests::Location& loc);
 };
 
-struct LineChecker : public std::stringstream
+struct LineChecker
 {
-    struct RequiredString : public std::string
-    {
-        bool seen;
-        RequiredString() : seen(false) {}
-        RequiredString(const std::string& s) : std::string(s), seen(false) {}
-    };
     std::vector<std::string> ignore_regexps;
-    std::vector<RequiredString> require_contains;
-    std::vector<RequiredString> require_contains_re;
+    std::vector<std::string> require_contains;
+    std::vector<std::string> require_contains_re;
 
     void ignore_regexp(const std::string& regexp);
     void require_line_contains(const std::string& needle);
     void require_line_contains_re(const std::string& needle);
-    void check(WIBBLE_TEST_LOCPRM);
+    void check(WIBBLE_TEST_LOCPRM, const std::string& s) const;
 };
 
 struct ForceSqlite
@@ -383,6 +377,31 @@ struct TestMaintenance
     void check(WIBBLE_TEST_LOCPRM) const;
 };
 
+struct TestRepack
+{
+    dataset::WritableLocal& dataset;
+    LineChecker expected;
+    bool write;
+
+    TestRepack(dataset::WritableLocal& dataset, const LineChecker& expected, bool write=false)
+        : dataset(dataset), expected(expected), write(write) {}
+
+    void check(WIBBLE_TEST_LOCPRM) const;
+};
+
+struct TestCheck
+{
+    dataset::WritableLocal& dataset;
+    LineChecker expected;
+    bool write;
+    bool quick;
+
+    TestCheck(dataset::WritableLocal& dataset, const LineChecker& expected, bool write=false, bool quick=true)
+        : dataset(dataset), expected(expected), write(write), quick(quick) {}
+
+    void check(WIBBLE_TEST_LOCPRM) const;
+};
+
 struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal*>
 {
     ActualWritableLocal(dataset::WritableLocal* s) : Actual<dataset::WritableLocal*>(s) {}
@@ -397,6 +416,25 @@ struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal
         MaintenanceResults expected(true, data_count);
         expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
         return TestMaintenance(*actual, expected, quick);
+    }
+    TestRepack repack(const LineChecker& expected, bool write=false)
+    {
+        return TestRepack(*actual, expected, write);
+    }
+    TestRepack repack_clean(bool write=false)
+    {
+        LineChecker expected;
+        expected.ignore_regexp("total bytes freed.");
+        return TestRepack(*actual, expected, write);
+    }
+    TestCheck check(const LineChecker& expected, bool write=false, bool quick=true)
+    {
+        return TestCheck(*actual, expected, write, quick);
+    }
+    TestCheck check_clean(bool write=false)
+    {
+        LineChecker expected;
+        return TestCheck(*actual, expected, write);
     }
 };
 

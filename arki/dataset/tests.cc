@@ -176,11 +176,11 @@ struct Line : public std::string
 };
 }
 
-void LineChecker::check(WIBBLE_TEST_LOCPRM)
+void LineChecker::check(WIBBLE_TEST_LOCPRM, const std::string& s) const
 {
     vector<Line> lines;
     Splitter splitter("[\n\r]+", REG_EXTENDED);
-    for (Splitter::const_iterator i = splitter.begin(str()); i != splitter.end(); ++i)
+    for (Splitter::const_iterator i = splitter.begin(s); i != splitter.end(); ++i)
         lines.push_back(" " + *i);
 
     // Mark ignored lines as seen
@@ -195,33 +195,35 @@ void LineChecker::check(WIBBLE_TEST_LOCPRM)
     stringstream complaints;
 
     // Check required lines
-    for (vector<RequiredString>::iterator i = require_contains.begin(); i != require_contains.end(); ++i)
+    for (vector<string>::const_iterator i = require_contains.begin(); i != require_contains.end(); ++i)
     {
+        bool found = false;
         for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
         {
             if (j->find(*i) == string::npos) continue;
             if (j->seen) continue;
-            i->seen = true;
             j->seen = true;
+            found = true;
             break;
         }
         // Complain about required line i not found
-        if (!i->seen)
+        if (!found)
             complaints << "Required match not found: \"" << *i << "\"" << endl;
     }
-    for (vector<RequiredString>::iterator i = require_contains_re.begin(); i != require_contains_re.end(); ++i)
+    for (vector<string>::const_iterator i = require_contains_re.begin(); i != require_contains_re.end(); ++i)
     {
         ERegexp re(*i);
+        bool found = false;
         for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
         {
             if (!re.match(*j)) continue;
             if (j->seen) continue;
-            i->seen = true;
+            found = true;
             j->seen = true;
             break;
         }
         // Complain about required line i not found
-        if (!i->seen)
+        if (!found)
             complaints << "Required regexp not matched: \"" << *i << "\"" << endl;
     }
 
@@ -614,6 +616,24 @@ void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
     std::stringstream ss;
     ss << "maintenance gave '" << c << "' instead of the expected '" << expected << "'";
     wibble_test_location.fail_test(ss.str());
+}
+
+void TestRepack::check(WIBBLE_TEST_LOCPRM) const
+{
+    using namespace wibble::tests;
+
+    stringstream s;
+    wrunchecked(dataset.repack(s, write));
+    wruntest(expected.check, s.str());
+}
+
+void TestCheck::check(WIBBLE_TEST_LOCPRM) const
+{
+    using namespace wibble::tests;
+
+    stringstream s;
+    wrunchecked(dataset.check(s, write, quick));
+    wruntest(expected.check, s.str());
 }
 
 void truncate_datafile(const std::string& absname, off_t offset)

@@ -87,11 +87,10 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         // Pack the dataset in case something imported data out of order
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter());
-            LineChecker s;
-            wrunchecked(writer->repack(s, true));
-            s.ignore_regexp(": packed ");
-            s.ignore_regexp(": [0-9]+ files? packed");
-            wruntest(s.check);
+            LineChecker checker;
+            checker.ignore_regexp(": packed ");
+            checker.ignore_regexp(": [0-9]+ files? packed");
+            wassert(actual(writer.get()).repack(checker, true));
         }
     }
 
@@ -181,13 +180,12 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
-            wrunchecked(writer->repack(s, true));
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
                 s.require_line_contains(": archived " + *i);
             s.require_line_contains(": archive cleaned up");
             s.require_line_contains_re(str::fmtf(": %zd files? archived", fixture.fnames_before_cutoff.size()));
-            wruntest(s.check);
+            wassert(actual(writer.get()).repack(s, true));
         }
 
         // Check that the files have been moved to the archive
@@ -250,14 +248,13 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
-            wrunchecked(writer->repack(s, true));
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
                 s.require_line_contains(": deleted " + *i);
             s.require_line_contains_re(str::fmtf(": %zd files? deleted, %zd files? removed from index",
                         fixture.fnames_before_cutoff.size(),
                         fixture.fnames_before_cutoff.size()));
-            wruntest(s.check);
+            wassert(actual(writer.get()).repack(s, true));
         }
 
         auto_ptr<WritableLocal> writer(makeLocalWriter());
@@ -288,10 +285,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         // Perform packing and check that nothing has happened
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter());
-            LineChecker s;
-            wrunchecked(writer->repack(s, true));
-            s.ignore_regexp("total bytes freed.");
-            wruntest(s.check);
+            wassert(actual(writer.get()).repack_clean(true));
 
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
@@ -304,10 +298,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             auto_ptr<WritableLocal> writer(makeLocalWriter());
 
             LineChecker s;
-            wrunchecked(writer->check(s, true, true));
             s.require_line_contains(": rescanned " + second_in_segment->filename.substr(7));
             s.require_line_contains(": 1 file rescanned");
-            wruntest(s.check);
+            wassert(actual(writer.get()).check(s, true, true));
 
             wassert(actual(writer.get()).maintenance_clean(2));
         }
@@ -353,10 +346,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            wrunchecked(writer->check(s, true, false));
             s.require_line_contains(": rescanned " + second_in_segment->filename.substr(7));
             s.require_line_contains(": 1 file rescanned");
-            wruntest(s.check);
+            wassert(actual(writer.get()).check(s, true, false));
 
             // The corrupted file has been deindexed, now there is a gap in the data file
             arki::tests::MaintenanceResults expected(false, 2);
@@ -369,10 +361,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            wrunchecked(writer->repack(s, true));
             s.require_line_contains(": packed " + second_in_segment->filename.substr(7));
             s.require_line_contains(": 1 file packed");
-            wruntest(s.check);
+            wassert(actual(writer.get()).repack(s, true));
         }
 
         // Maintenance and pack are ok now
@@ -403,10 +394,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            wrunchecked(writer->repack(s, false));
             s.require_line_contains(": " + deleted_fname + " should be removed from the index");
             s.require_line_contains(": 1 file should be removed from the index");
-            wruntest(s.check);
+            wassert(actual(writer.get()).repack(s, false));
 
             arki::tests::MaintenanceResults expected(false, file_count);
             expected.by_type[COUNTED_OK] = file_count - 1;
@@ -418,10 +408,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            wrunchecked(writer->repack(s, true));
             s.require_line_contains(": deleted from index " + deleted_fname);
             s.require_line_contains(": 1 file removed from index");
-            wruntest(s.check);
+            wassert(actual(writer.get()).repack(s, true));
 
             wassert(actual(writer.get()).maintenance_clean(file_count - 1));
         }
@@ -447,13 +436,50 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
-            wrunchecked(writer->check(s, true, true));
             s.require_line_contains(": deindexed " + deleted_fname);
             s.require_line_contains(": 1 file removed from index");
-            wruntest(s.check);
+            wassert(actual(writer.get()).check(s, true, true));
 
             wassert(actual(writer.get()).maintenance_clean(file_count - 1));
         }
+    }
+
+    void test_deleted_index_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        unsigned file_count = fixture.count_dataset_files();
+        wruntest(import_all_packed, fixture);
+        sys::fs::deleteIfExists("testds/index.sqlite");
+        sys::fs::deleteIfExists("testds/MANIFEST");
+        sys::fs::mkpath("testds/2014/");
+        system("echo 'GRIB garbage 7777' > testds/2014/01.grib1.tmp");
+
+        // See if the files to index are detected in the correct number
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, file_count);
+            expected.by_type[COUNTED_TO_INDEX] = file_count;
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // Perform full maintenance and check that things are still ok afterwards
+        {
+            auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
+                    i != fixture.fnames_before_cutoff.end(); ++i)
+                s.require_line_contains(": rescanned " + *i);
+            for (set<string>::const_iterator i = fixture.fnames_after_cutoff.begin();
+                    i != fixture.fnames_after_cutoff.end(); ++i)
+                s.require_line_contains(": rescanned " + *i);
+            s.require_line_contains(str::fmtf(": %d files rescanned", file_count));
+            wassert(actual(writer.get()).check(s, true, true));
+
+            wassert(actual(writer.get()).maintenance_clean(file_count));
+            wassert(actual(writer.get()).repack_clean(true));
+        }
+
+        // The spurious file should not have been touched
+        wassert(actual("testds/2014/01.grib1.tmp").fileexists());
     }
 };
 
@@ -608,49 +634,10 @@ template<> template<> void to::test<8>()
 // spurious extra files in the dataset
 template<> template<> void to::test<9>()
 {
-	clean_and_import();
-	sys::fs::deleteIfExists("testds/index.sqlite");
-	sys::fs::deleteIfExists("testds/MANIFEST");
-	system("echo 'GRIB garbage 7777' > testds/2007/07.grib1.tmp");
-
-	// See if the files to index are detected in the correct number
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		MaintenanceCollector c;
-		writer->maintenance(c);
-
-		ensure_equals(c.fileStates.size(), 3u);
-		ensure_equals(c.count(COUNTED_TO_INDEX), 3u);
-		ensure_equals(c.remaining(), "");
-		ensure(not c.isClean());
-	}
-
-	// Perform full maintenance and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		OutputChecker s;
-
-		writer->check(s, true, true);
-		s.ensure_line_contains("rescanned 2007/07-07.grib1");
-		s.ensure_line_contains("rescanned 2007/07-08.grib1");
-		s.ensure_line_contains("rescanned 2007/10-09.grib1");
-		s.ensure_line_contains("3 files rescanned");
-		s.ensure_all_lines_seen();
-	}
-	ensure_maint_clean(3);
-
-	// The spurious file should not have been touched
-	ensure(sys::fs::exists("testds/2007/07.grib1.tmp"));
-
-	// Perform packing and check that things are still ok afterwards
-	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter());
-		OutputChecker s;
-		writer->repack(s, true);
-		s.ensure_all_lines_seen(); // Nothing should have happened
-
-		ensure_maint_clean(3);
-	}
+    wruntest(test_deleted_index_check, testdata::GRIBData());
+    wruntest(test_deleted_index_check, testdata::BUFRData());
+    wruntest(test_deleted_index_check, testdata::VM2Data());
+    wruntest(test_deleted_index_check, testdata::ODIMData());
 }
 
 // Test recreating a dataset from random datafiles
