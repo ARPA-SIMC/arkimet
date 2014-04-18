@@ -193,13 +193,18 @@ Writer::~Writer()
 void Writer::append(Metadata& md)
 {
     SequenceFile sf(seqfile);
+    sys::Buffer buf = md.getData();
+    size_t pos = 0;
     while (true)
     {
-        size_t pos = sf.next();
-        string fname = str::joinpath(absname, str::fmtf("%zd.%s", pos, md.source->format.c_str()));
-        if (add_file(fname, md.getData()))
+        pos = sf.next();
+        string fname = str::joinpath(absname, str::fmtf("%06zd.%s", pos, md.source->format.c_str()));
+        if (add_file(fname, buf))
             break;
     }
+
+    // Set the source information that we are writing in the metadata
+    md.source = types::source::Blob::create(md.source->format, "", absname, pos, buf.size());
 }
 
 off_t Writer::append(const wibble::sys::Buffer& buf)

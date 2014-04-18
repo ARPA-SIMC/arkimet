@@ -108,6 +108,66 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
 	return false;
 }
 
+static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
+{
+    unsigned long na = strtoul(a.c_str(), 0, 10);
+    unsigned long nb = strtoul(b.c_str(), 0, 10);
+    return na < nb;
+}
+
+namespace {
+
+struct DirSource : public metadata::Consumer
+{
+   metadata::Consumer& next;
+   const std::string& dirname;
+   size_t pos;
+
+   DirSource(metadata::Consumer& next, const std::string dirname) : next(next), dirname(dirname), pos(0) {}
+
+   void set_pos(size_t pos)
+   {
+       this->pos = pos;
+   }
+
+   bool operator()(Metadata& md)
+   {
+       Item<types::source::Blob> i = md.source.upcast<types::source::Blob>();
+       cerr << i << endl;
+       if (i.defined())
+           md.source = types::source::Blob::create(i->format, i->basedir, dirname, pos, i->size);
+       return next(md);
+   }
+};
+
+}
+
+static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Consumer& c)
+{
+    // Collect all file names in the directory
+    vector<std::string> fnames;
+    sys::fs::Directory dir(pathname);
+    for (sys::fs::Directory::const_iterator di = dir.begin(); di != dir.end(); ++di)
+        if (di.isreg() && str::endsWith(*di, format))
+            fnames.push_back(*di);
+
+    // Sort them numerically
+    std::sort(fnames.begin(), fnames.end(), dir_segment_fnames_lt);
+
+    // Scan them one by one
+    DirSource dirsource(c, relname);
+    for (vector<string>::const_iterator i = fnames.begin(); i != fnames.end(); ++i)
+    {
+        //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relname << endl;
+        dirsource.set_pos(strtoul(i->c_str(), 0, 10));
+        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, dirsource))
+            return false;
+
+    }
+
+    return true;
+}
+
 static std::string guess_format(const std::string& basedir, const std::string& file)
 {
     // Get the file extension
@@ -151,6 +211,8 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Cons
         // If there is a usable metadata file, use it to save time
         scan_metadata(md_pathname, c);
         return true;
+    } else if (S_ISDIR(st_file->st_mode)) {
+        return scan_dir(pathname, basedir, relname, format, c);
     } else {
         return scan_file(pathname, basedir, relname, format, c);
     }
