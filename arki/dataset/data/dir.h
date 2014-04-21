@@ -35,15 +35,26 @@ namespace dir {
 class Writer : public data::Writer
 {
 protected:
+    std::string format;
     std::string seqfile;
 
 public:
-    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
+    Writer(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false);
     ~Writer();
 
     virtual void append(Metadata& md);
     virtual off_t append(const wibble::sys::Buffer& buf);
     virtual Pending append(Metadata& md, off_t* ofs);
+    /**
+     * Append a hardlink to the data pointed by md.
+     *
+     * This of course only works if it is possible to hardlink from this
+     * segment to the file pointed by md. That is, if they are in the same file
+     * system.
+     *
+     * @returns the offset in the segment at which md was appended
+     */
+    off_t link(const std::string& absname);
     static FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
     static size_t remove(const std::string& absname);
     static void truncate(const std::string& absname, size_t offset);

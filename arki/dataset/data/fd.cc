@@ -226,7 +226,6 @@ Pending Writer::repack(
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
     // Create a writer for the temp file
-    //auto_ptr<data::Writer> writer(create_for_format(utils::get_format(relname), tmprelname, tmpabsname, true));
     auto_ptr<data::Writer> writer(make_repack_writer(tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order

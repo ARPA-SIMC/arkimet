@@ -137,6 +137,11 @@ bool add_file(const std::string& absname, const wibble::sys::Buffer& buf)
     return true;
 }
 
+std::string data_fname(size_t pos, const std::string& format)
+{
+    return str::fmtf("%06zd.%s", pos, format.c_str());
+}
+
 struct Append : public Transaction
 {
     bool fired;
@@ -174,7 +179,7 @@ struct Append : public Transaction
         // guarantee consecutive numbers, so it is just a cosmetic issue. This
         // case should be rare enough that even the cosmetic issue should
         // rarely be noticeable.
-        string target_name = str::joinpath(absname, str::fmtf("%06zd.%s", pos, md.source->format.c_str()));
+        string target_name = str::joinpath(absname, data_fname(pos, md.source->format));
         unlink(target_name.c_str());
 
         fired = true;
@@ -183,9 +188,11 @@ struct Append : public Transaction
 
 }
 
-Writer::Writer(const std::string& relname, const std::string& absname, bool truncate)
-    : data::Writer(relname, absname), seqfile(str::joinpath(absname, ".sequence"))
+Writer::Writer(const std::string& format, const std::string& relname, const std::string& absname, bool truncate)
+    : data::Writer(relname, absname), format(format), seqfile(str::joinpath(absname, ".sequence"))
 {
+    if (truncate && sys::fs::exists(absname)) sys::fs::rmtree(absname);
+
     // Ensure that the directory 'absname' exists
     wibble::sys::fs::mkpath(absname);
 }
@@ -202,7 +209,7 @@ void Writer::append(Metadata& md)
     while (true)
     {
         pos = sf.next();
-        string fname = str::joinpath(absname, str::fmtf("%06zd.%s", pos, md.source->format.c_str()));
+        string fname = str::joinpath(absname, data_fname(pos, format));
         if (add_file(fname, buf))
             break;
     }
@@ -226,7 +233,7 @@ Pending Writer::append(Metadata& md, off_t* ofs)
     while (true)
     {
         pos = sf.next();
-        target_name = str::joinpath(absname, str::fmtf("%06zd.%s", pos, md.source->format.c_str()));
+        target_name = str::joinpath(absname, data_fname(pos, format));
         if (add_file(target_name, buf))
             break;
     }
@@ -234,6 +241,23 @@ Pending Writer::append(Metadata& md, off_t* ofs)
     *ofs = pos;
 
     return new Append(md, absname, pos, size);
+}
+
+off_t Writer::link(const std::string& srcabsname)
+{
+    SequenceFile sf(seqfile);
+    std::string target_name;
+    size_t pos = 0;
+    while (true)
+    {
+        pos = sf.next();
+        target_name = str::joinpath(absname, data_fname(pos, format));
+        if (::link(srcabsname.c_str(), target_name.c_str()) == 0)
+            break;
+        if (errno != EEXIST)
+            throw wibble::exception::System("cannot link " + absname + " as " + target_name);
+    }
+    return pos;
 }
 
 FileState Writer::check(const std::string& absname, const metadata::Collection& mds, bool quick)
@@ -342,7 +366,86 @@ void Writer::truncate(const std::string& absname, size_t offset)
 
 Pending Writer::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
 {
-    throw wibble::exception::Consistency("dir::Writer::repack not implemented");
+    struct Rename : public Transaction
+    {
+        std::string tmpabsname;
+        std::string absname;
+        std::string tmppos;
+        bool fired;
+
+        Rename(const std::string& tmpabsname, const std::string& absname)
+            : tmpabsname(tmpabsname), absname(absname), tmppos(absname + ".pre-repack"), fired(false)
+        {
+        }
+
+        virtual ~Rename()
+        {
+            if (!fired) rollback();
+        }
+
+        virtual void commit()
+        {
+            if (fired) return;
+
+            // It is impossible to make this atomic, so we just try to make it as quick as possible
+
+            // Move the old directory inside the emp dir, to free the old directory name
+            if (rename(absname.c_str(), tmppos.c_str()))
+                throw wibble::exception::System("cannot rename " + absname + " to " + tmppos);
+
+            // Rename the data file to its final name
+            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
+                throw wibble::exception::System("cannot rename " + tmpabsname + " to " + absname
+                    + " (ATTENTION: please check if you need to rename " + tmppos + " to " + absname
+                    + " manually to restore the dataset as it was before the repack)");
+
+            // Remove the old data
+            sys::fs::rmtree(tmppos);
+
+            fired = true;
+        }
+
+        virtual void rollback()
+        {
+            if (fired) return;
+
+            try
+            {
+                sys::fs::rmtree(tmpabsname);
+            } catch (std::exception& e) {
+                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabsname.c_str(), e.what());
+            }
+
+            rename(tmppos.c_str(), absname.c_str());
+
+            fired = true;
+        }
+    };
+
+    string format = utils::require_format(relname);
+    string absname = str::joinpath(rootdir, relname);
+    string tmprelname = relname + ".repack";
+    string tmpabsname = absname + ".repack";
+
+    // Create a writer for the temp dir
+    auto_ptr<dir::Writer> writer(new dir::Writer(format, tmprelname, tmpabsname, true));
+
+    // Fill the temp file with all the data in the right order
+    for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        UItem<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+
+        // Make a hardlink in the target directory for the file pointed by *i
+        off_t pos = writer->link(str::joinpath(source->absolutePathname(), data_fname(source->offset, source->format)));
+
+        // Update the source information in the metadata
+        i->source = types::source::Blob::create(source->format, rootdir, relname, pos, source->size);
+    }
+
+    // Close the temp writer
+    writer.release();
+
+    return new Rename(tmpabsname, absname);
 }
 
 OstreamWriter::OstreamWriter()
