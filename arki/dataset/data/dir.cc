@@ -340,6 +340,11 @@ void Writer::truncate(const std::string& absname, size_t offset)
     }
 }
 
+Pending Writer::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
+{
+    throw wibble::exception::Consistency("dir::Writer::repack not implemented");
+}
+
 OstreamWriter::OstreamWriter()
 {
     throw wibble::exception::Consistency("dir::OstreamWriter not implemented");

@@ -46,6 +46,7 @@ public:
     virtual off_t append(const wibble::sys::Buffer& buf);
     virtual Pending append(Metadata& md, off_t* ofs);
     static FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
+    static Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);
 };
 
 class OstreamWriter : public data::OstreamWriter

@@ -167,66 +167,22 @@ struct AutoSegmentManager : public SegmentManager
 
     Pending repack(const std::string& relname, metadata::Collection& mds)
     {
-        struct Rename : public Transaction
+        string format = utils::get_format(relname);
+
+        if (format == "grib" || format == "grib1" || format == "grib2")
         {
-            std::string tmpabsname;
-            std::string absname;
-            bool fired;
-
-            Rename(const std::string& tmpabsname, const std::string& absname)
-                : tmpabsname(tmpabsname), absname(absname), fired(false)
-            {
-            }
-
-            virtual ~Rename()
-            {
-                if (!fired) rollback();
-            }
-
-            virtual void commit()
-            {
-                if (fired) return;
-                // Rename the data file to its final name
-                if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
-                    throw wibble::exception::System("renaming " + tmpabsname + " to " + absname);
-                fired = true;
-            }
-
-            virtual void rollback()
-            {
-                if (fired) return;
-                unlink(tmpabsname.c_str());
-                fired = true;
-            }
-        };
-
-        string absname = str::joinpath(root, relname);
-        string tmprelname = relname + ".repack";
-        string tmpabsname = str::joinpath(root, tmprelname);
-
-        // Get a validator for this file
-        const scan::Validator& validator = scan::Validator::by_filename(absname);
-
-        // Create a writer for the temp file
-        auto_ptr<data::Writer> writer(create_for_format(utils::get_format(relname), tmprelname, tmpabsname, true));
-
-        // Fill the temp file with all the data in the right order
-        for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
-        {
-            // Read the data
-            wibble::sys::Buffer buf = i->getData();
-            // Validate it
-            validator.validate(buf.data(), buf.size());
-            // Append it to the new file
-            off_t w_off = writer->append(buf);
-            // Update the source information in the metadata
-            i->source = types::source::Blob::create(i->source->format, root, relname, w_off, buf.size());
+            return concat::Writer::repack(root, relname, mds);
+        } else if (format == "bufr") {
+            return concat::Writer::repack(root, relname, mds);
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            return dir::Writer::repack(root, relname, mds);
+        } else if (format == "vm2") {
+            return lines::Writer::repack(root, relname, mds);
+        } else {
+            throw wibble::exception::Consistency(
+                    "repacking " + format + " file " + relname,
+                    "format not supported");
         }
-
-        // Close the temp file
-        writer.release();
-
-        return new Rename(tmpabsname, absname);
     }
 
     FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true)

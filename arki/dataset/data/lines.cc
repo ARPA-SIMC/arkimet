@@ -170,6 +170,16 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
     return fd::Writer::check(absname, mds, 2, quick);
 }
 
+static data::Writer* make_repack_writer(const std::string& relname, const std::string& absname)
+{
+    return new lines::Writer(relname, absname, true);
+}
+
+Pending Writer::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
+{
+    return fd::Writer::repack(rootdir, relname, mds, make_repack_writer);
+}
+
 OstreamWriter::OstreamWriter()
 {
     sigemptyset(&blocked);

@@ -179,6 +179,75 @@ void Writer::truncate(const std::string& absname, size_t offset)
         throw wibble::exception::File(absname, str::fmtf("Truncating file at %zd", offset));
 }
 
+Pending Writer::repack(
+        const std::string& rootdir,
+        const std::string& relname,
+        metadata::Collection& mds,
+        data::Writer* make_repack_writer(const std::string&, const std::string&))
+{
+    struct Rename : public Transaction
+    {
+        std::string tmpabsname;
+        std::string absname;
+        bool fired;
+
+        Rename(const std::string& tmpabsname, const std::string& absname)
+            : tmpabsname(tmpabsname), absname(absname), fired(false)
+        {
+        }
+
+        virtual ~Rename()
+        {
+            if (!fired) rollback();
+        }
+
+        virtual void commit()
+        {
+            if (fired) return;
+            // Rename the data file to its final name
+            if (rename(tmpabsname.c_str(), absname.c_str()) < 0)
+                throw wibble::exception::System("renaming " + tmpabsname + " to " + absname);
+            fired = true;
+        }
+
+        virtual void rollback()
+        {
+            if (fired) return;
+            unlink(tmpabsname.c_str());
+            fired = true;
+        }
+    };
+
+    string absname = str::joinpath(rootdir, relname);
+    string tmprelname = relname + ".repack";
+    string tmpabsname = absname + ".repack";
+
+    // Get a validator for this file
+    const scan::Validator& validator = scan::Validator::by_filename(absname);
+
+    // Create a writer for the temp file
+    //auto_ptr<data::Writer> writer(create_for_format(utils::get_format(relname), tmprelname, tmpabsname, true));
+    auto_ptr<data::Writer> writer(make_repack_writer(tmprelname, tmpabsname));
+
+    // Fill the temp file with all the data in the right order
+    for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        // Read the data
+        wibble::sys::Buffer buf = i->getData();
+        // Validate it
+        validator.validate(buf.data(), buf.size());
+        // Append it to the new file
+        off_t w_off = writer->append(buf);
+        // Update the source information in the metadata
+        i->source = types::source::Blob::create(i->source->format, rootdir, relname, w_off, buf.size());
+    }
+
+    // Close the temp file
+    writer.release();
+
+    return new Rename(tmpabsname, absname);
+}
+
 }
 }
 }
