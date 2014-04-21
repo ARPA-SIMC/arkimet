@@ -290,7 +290,7 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
     if (!expected.empty())
     {
         nag::warning("%s: found %zd file(s) that the index does now know about", absname.c_str(), expected.size());
-        return FILE_TO_RESCAN;
+        return FILE_TO_PACK;
     }
 
     // Take note of files with holes

@@ -40,12 +40,15 @@
 #define TIME "??:??:??"
 #endif
 
+using namespace std;
+
 namespace arki {
 namespace nag {
 
 static bool _verbose = false;
 static bool _debug = false;
 static bool _testing = false;
+static TestCollect* collector = 0;
 
 void init(bool verbose, bool debug, bool testing)
 {
@@ -72,6 +75,15 @@ bool is_debug() { return _debug; }
 
 void warning(const char* fmt, ...)
 {
+    if (collector)
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        collector->collect(fmt, ap);
+        va_end(ap);
+        return;
+    }
+
 	if (_testing) return;
 
 	va_list ap;
@@ -83,6 +95,15 @@ void warning(const char* fmt, ...)
 
 void verbose(const char* fmt, ...)
 {
+    if (collector && collector->verbose)
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        collector->collect(fmt, ap);
+        va_end(ap);
+        return;
+    }
+
 	if (!_verbose) return;
 
 	va_list ap;
@@ -94,6 +115,15 @@ void verbose(const char* fmt, ...)
 
 void debug(const char* fmt, ...)
 {
+    if (collector && collector->debug)
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        collector->collect(fmt, ap);
+        va_end(ap);
+        return;
+    }
+
 	if (!_debug) return;
 
 	va_list ap;
@@ -101,6 +131,37 @@ void debug(const char* fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	putc('\n', stderr);
+}
+
+TestCollect::TestCollect(bool verbose, bool debug)
+    : previous_collector(collector), verbose(verbose), debug(debug)
+{
+    collector = this;
+}
+
+TestCollect::~TestCollect()
+{
+    collector = previous_collector;
+    for (vector<string>::const_iterator i = collected.begin();
+            i != collected.end(); ++i)
+    {
+        fwrite(i->data(), i->size(), 1, stderr);
+        putc('\n', stderr);
+    }
+}
+
+void TestCollect::collect(const char* fmt, va_list ap)
+{
+    char buf[1024];
+    int size = vsnprintf(buf, 1024, fmt, ap);
+    if (size > 1024)
+        size = 1024;
+    collected.push_back(string(buf, size));
+}
+
+void TestCollect::clear()
+{
+    collected.clear();
 }
 
 }

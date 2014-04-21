@@ -1,7 +1,7 @@
 /*
  * nag - Verbose and debug output support
  *
- * Copyright (C) 2005--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2005--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
 
 #ifndef ARKI_NAG_H
 #define ARKI_NAG_H
+
+#include <vector>
+#include <string>
+#include <cstdarg>
 
 /** @file
  * Debugging aid framework that allows to print, at user request, runtime
@@ -52,6 +56,21 @@ void verbose(const char* fmt, ...);
 
 /// Output a message, if debug messages are allowed (a newline is automatically appended)
 void debug(const char* fmt, ...);
+
+/// Collect messages during a test, and print them out during destruction
+struct TestCollect
+{
+    TestCollect* previous_collector;
+    bool verbose;
+    bool debug;
+    std::vector<std::string> collected;
+
+    TestCollect(bool verbose=true, bool debug=false);
+    ~TestCollect();
+
+    void collect(const char* fmt, va_list ap);
+    void clear();
+};
 
 }
 }
