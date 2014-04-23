@@ -264,6 +264,7 @@ struct Fixture
     Element test_data[3];
     /// Date that falls somewhere inbetween files in the dataset
     int selective_cutoff[6];
+    std::set<std::string> fnames;
     std::set<std::string> fnames_before_cutoff;
     std::set<std::string> fnames_after_cutoff;
 

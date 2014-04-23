@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2014  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -271,6 +271,61 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
         //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
     }
+
+    // Test accuracy of maintenance scan, after deleting the index
+    void test_delete_index_and_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    {
+        cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
+        wruntest(import_all_packed, fixture);
+
+        // Query everything when the dataset is in a clean state
+        metadata::Collection mdc_pre;
+        {
+            std::auto_ptr<ReadonlyDataset> reader(makeReader());
+            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc_pre);
+            wassert(actual(mdc_pre.size()) == 3);
+        }
+
+        sys::fs::deleteIfExists("testdir/index.sqlite");
+
+        // All files are found as files to be indexed
+        {
+            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
+            expected.by_type[COUNTED_TO_INDEX] = fixture.count_dataset_files();
+            wassert(actual(writer.get()).maintenance(expected));
+        }
+
+        // A check rebuilds the index
+        {
+            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            LineChecker s;
+            for (set<string>::const_iterator i = fixture.fnames.begin();
+                    i != fixture.fnames.end(); ++i)
+                s.require_line_contains(": rescanned " + *i);
+            s.require_line_contains(str::fmtf(": %zd files rescanned", fixture.fnames.size()));
+            wassert(actual(writer.get()).check(s, true));
+
+            wassert(actual(writer.get()).maintenance_clean(fixture.fnames.size()));
+            wassert(actual(writer.get()).repack_clean(true));
+        }
+
+        // Query everything after the rebuild and check that everything is
+        // still there
+        metadata::Collection mdc_post;
+        {
+            std::auto_ptr<ReadonlyDataset> reader(makeReader());
+            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc_post);
+            wassert(actual(mdc_post.size()) == 3);
+        }
+
+        wassert(actual(mdc_post[0]).is_similar(mdc_pre[0]));
+        wassert(actual(mdc_post[1]).is_similar(mdc_pre[1]));
+        wassert(actual(mdc_post[2]).is_similar(mdc_pre[2]));
+
+        // Ensure that we have the summary cache
+        wassert(actual("testdir/.summaries/all.summary").fileexists());
+    }
 };
 TESTGRP(arki_dataset_ondisk2_writer);
 
@@ -283,10 +338,6 @@ void to::test<1>()
     wruntest(test_hole_file_and_repack, testdata::ODIMData());
 }
 
-// Test accuracy of maintenance scan, on dataset with one file to reclaim,
-// performing repack
-// Test accuracy of maintenance scan, on dataset with one file to reclaim,
-// performing check
 template<> template<>
 void to::test<2>()
 {
@@ -297,8 +348,6 @@ void to::test<2>()
 
 }
 
-// Test accuracy of maintenance scan, on dataset with one file to pack,
-// performing repack
 template<> template<>
 void to::test<3>()
 {
@@ -308,8 +357,6 @@ void to::test<3>()
     wruntest(test_hole_file_and_check, testdata::ODIMData());
 }
 
-// Test accuracy of maintenance scan, on dataset with one file to pack,
-// performing check
 template<> template<>
 void to::test<4>()
 {
@@ -319,53 +366,13 @@ void to::test<4>()
     wruntest(test_delete_file_and_check, testdata::ODIMData());
 }
 
-// Test accuracy of maintenance scan, after deleting the index
 template<> template<>
 void to::test<5>()
 {
-	acquireSamples();
-	system("rm testdir/index.sqlite");
-
-	arki::dataset::ondisk2::Writer writer(cfg);
-	MaintenanceCollector c;
-	writer.maintenance(c);
-
-	ensure_equals(c.fileStates.size(), 3u);
-	ensure_equals(c.count(COUNTED_OK), 0u);
-	ensure_equals(c.count(COUNTED_TO_INDEX), 3u);
-	ensure_equals(c.remaining(), "");
-	ensure(not c.isClean());
-
-	stringstream s;
-
-	// Perform full maintenance and check that things are still ok afterwards
-	writer.check(s, true, true);
-	ensure_equals(s.str(),
-		"testdir: rescanned 2007/07-07.grib1\n"
-		"testdir: rescanned 2007/07-08.grib1\n"
-		"testdir: rescanned 2007/10-09.grib1\n"
-		"testdir: 3 files rescanned.\n");
-	c.clear();
-	writer.maintenance(c);
-	ensure_equals(c.count(COUNTED_OK), 3u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	// Perform packing and check that things are still ok afterwards
-	s.str(std::string());
-	writer.repack(s, true);
-	ensure_equals(s.str(), string()); // Nothing should have happened
-	c.clear();
-
-	writer.maintenance(c);
-	ensure_equals(c.count(COUNTED_OK), 3u);
-	ensure_equals(c.remaining(), "");
-	ensure(c.isClean());
-
-	// Ensure that we have the summary cache
-	ensure(sys::fs::exists("testdir/.summaries/all.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+    wruntest(test_delete_index_and_check, testdata::GRIBData());
+    wruntest(test_delete_index_and_check, testdata::BUFRData());
+    wruntest(test_delete_index_and_check, testdata::VM2Data());
+    wruntest(test_delete_index_and_check, testdata::ODIMData());
 }
 
 // Test recreating a dataset from just a datafile with duplicate data and a rebuild flagfile

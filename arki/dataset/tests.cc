@@ -740,18 +740,18 @@ void Fixture::finalise_init()
 
     Item<Time> cutoff(Time::create(selective_cutoff));
     for (int i = 0; i < 3; ++i)
+    {
+        fnames.insert(test_data[i].destfile);
         if (test_data[i].time < cutoff)
             fnames_before_cutoff.insert(test_data[i].destfile);
         else
             fnames_after_cutoff.insert(test_data[i].destfile);
+    }
 }
 
 unsigned Fixture::count_dataset_files() const
 {
-    set<string> files;
-    for (int i = 0; i < 3; ++i)
-        files.insert(test_data[i].destfile);
-    return files.size();
+    return fnames.size();
 }
 
 unsigned Fixture::selective_days_since() const
