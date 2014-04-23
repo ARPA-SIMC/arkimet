@@ -113,7 +113,7 @@ void Writer::write(const wibble::sys::Buffer& buf)
         throw wibble::exception::File(absname, "flushing write");
 }
 
-FileState Writer::check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap, bool quick)
+FileState Maint::check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
     size_t end_of_last_data_checked(0);
     const scan::Validator* validator(0);
@@ -164,7 +164,7 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
     }
 }
 
-size_t Writer::remove(const std::string& absname)
+size_t Maint::remove(const std::string& absname)
 {
     size_t size = sys::fs::size(absname);
     if (unlink(absname.c_str()) < 0)
@@ -172,14 +172,14 @@ size_t Writer::remove(const std::string& absname)
     return size;
 }
 
-void Writer::truncate(const std::string& absname, size_t offset)
+void Maint::truncate(const std::string& absname, size_t offset)
 {
     utils::files::PreserveFileTimes pft(absname);
     if (::truncate(absname.c_str(), offset) < 0)
         throw wibble::exception::File(absname, str::fmtf("Truncating file at %zd", offset));
 }
 
-Pending Writer::repack(
+Pending Maint::repack(
         const std::string& rootdir,
         const std::string& relname,
         metadata::Collection& mds,

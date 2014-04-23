@@ -146,18 +146,18 @@ Pending Writer::append(Metadata& md, off_t* ofs)
     return res;
 }
 
-FileState Writer::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+FileState Maint::check(const std::string& absname, const metadata::Collection& mds, bool quick)
 {
-    return fd::Writer::check(absname, mds, 0, quick);
+    return fd::Maint::check(absname, mds, 0, quick);
 }
 
 static data::Writer* make_repack_writer(const std::string& relname, const std::string& absname)
 {
     return new concat::Writer(relname, absname, true);
 }
-Pending Writer::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
+Pending Maint::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
 {
-    return fd::Writer::repack(rootdir, relname, mds, make_repack_writer);
+    return fd::Maint::repack(rootdir, relname, mds, make_repack_writer);
 }
 
 OstreamWriter::OstreamWriter()

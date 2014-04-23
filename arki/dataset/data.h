@@ -286,6 +286,16 @@ struct Writer
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
 };
 
+struct Maint
+{
+    virtual ~Maint();
+
+    virtual FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true) = 0;
+    virtual size_t remove(const std::string& absname) = 0;
+    virtual void truncate(const std::string& absname, size_t offset) = 0;
+    virtual Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) = 0;
+};
+
 /**
  * Functor class with format-specific serialization routines
  */

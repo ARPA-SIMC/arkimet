@@ -260,7 +260,7 @@ off_t Writer::link(const std::string& srcabsname)
     return pos;
 }
 
-FileState Writer::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+FileState Maint::check(const std::string& absname, const metadata::Collection& mds, bool quick)
 {
     size_t next_sequence_expected(0);
     const scan::Validator* validator(0);
@@ -327,7 +327,7 @@ FileState Writer::check(const std::string& absname, const metadata::Collection& 
     }
 }
 
-size_t Writer::remove(const std::string& absname)
+size_t Maint::remove(const std::string& absname)
 {
     std::string format = utils::require_format(absname);
 
@@ -345,7 +345,7 @@ size_t Writer::remove(const std::string& absname)
     return size;
 }
 
-void Writer::truncate(const std::string& absname, size_t offset)
+void Maint::truncate(const std::string& absname, size_t offset)
 {
     utils::files::PreserveFileTimes pft(absname);
 
@@ -364,7 +364,7 @@ void Writer::truncate(const std::string& absname, size_t offset)
     }
 }
 
-Pending Writer::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
+Pending Maint::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
 {
     struct Rename : public Transaction
     {

@@ -51,9 +51,14 @@ public:
     off_t wrpos();
     void write(const wibble::sys::Buffer& buf);
     void truncate(off_t pos);
-    static FileState check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
-    static size_t remove(const std::string& absname);
-    static void truncate(const std::string& absname, size_t offset);
+};
+
+struct Maint : public data::Maint
+{
+    size_t remove(const std::string& absname);
+    void truncate(const std::string& absname, size_t offset);
+    FileState check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
+
     static Pending repack(
             const std::string& rootdir,
             const std::string& relname,

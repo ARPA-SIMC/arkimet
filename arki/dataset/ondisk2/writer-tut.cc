@@ -336,6 +336,11 @@ void to::test<1>()
     wruntest(test_hole_file_and_repack, testdata::BUFRData());
     wruntest(test_hole_file_and_repack, testdata::VM2Data());
     wruntest(test_hole_file_and_repack, testdata::ODIMData());
+    cfg.setValue("segments", "dir");
+    wruntest(test_hole_file_and_repack, testdata::GRIBData());
+    wruntest(test_hole_file_and_repack, testdata::BUFRData());
+    wruntest(test_hole_file_and_repack, testdata::VM2Data());
+    wruntest(test_hole_file_and_repack, testdata::ODIMData());
 }
 
 template<> template<>
@@ -345,12 +350,21 @@ void to::test<2>()
     wruntest(test_delete_file_and_repack, testdata::BUFRData());
     wruntest(test_delete_file_and_repack, testdata::VM2Data());
     wruntest(test_delete_file_and_repack, testdata::ODIMData());
-
+    cfg.setValue("segments", "dir");
+    wruntest(test_delete_file_and_repack, testdata::GRIBData());
+    wruntest(test_delete_file_and_repack, testdata::BUFRData());
+    wruntest(test_delete_file_and_repack, testdata::VM2Data());
+    wruntest(test_delete_file_and_repack, testdata::ODIMData());
 }
 
 template<> template<>
 void to::test<3>()
 {
+    wruntest(test_hole_file_and_check, testdata::GRIBData());
+    wruntest(test_hole_file_and_check, testdata::BUFRData());
+    wruntest(test_hole_file_and_check, testdata::VM2Data());
+    wruntest(test_hole_file_and_check, testdata::ODIMData());
+    cfg.setValue("segments", "dir");
     wruntest(test_hole_file_and_check, testdata::GRIBData());
     wruntest(test_hole_file_and_check, testdata::BUFRData());
     wruntest(test_hole_file_and_check, testdata::VM2Data());
@@ -364,11 +378,21 @@ void to::test<4>()
     wruntest(test_delete_file_and_check, testdata::BUFRData());
     wruntest(test_delete_file_and_check, testdata::VM2Data());
     wruntest(test_delete_file_and_check, testdata::ODIMData());
+    cfg.setValue("segments", "dir");
+    wruntest(test_delete_file_and_check, testdata::GRIBData());
+    wruntest(test_delete_file_and_check, testdata::BUFRData());
+    wruntest(test_delete_file_and_check, testdata::VM2Data());
+    wruntest(test_delete_file_and_check, testdata::ODIMData());
 }
 
 template<> template<>
 void to::test<5>()
 {
+    wruntest(test_delete_index_and_check, testdata::GRIBData());
+    wruntest(test_delete_index_and_check, testdata::BUFRData());
+    wruntest(test_delete_index_and_check, testdata::VM2Data());
+    wruntest(test_delete_index_and_check, testdata::ODIMData());
+    cfg.setValue("segments", "dir");
     wruntest(test_delete_index_and_check, testdata::GRIBData());
     wruntest(test_delete_index_and_check, testdata::BUFRData());
     wruntest(test_delete_index_and_check, testdata::VM2Data());

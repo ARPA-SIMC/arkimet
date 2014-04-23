@@ -65,6 +65,10 @@ Writer::~Writer()
     if (payload) delete payload;
 }
 
+Maint::~Maint()
+{
+}
+
 OstreamWriter::~OstreamWriter()
 {
 }
@@ -100,12 +104,11 @@ const OstreamWriter* OstreamWriter::get(const std::string& format)
 
 namespace {
 
-/// Segment manager that picks the right readers/writers based on file types
-struct AutoSegmentManager : public SegmentManager
+struct BaseSegmentManager : public SegmentManager
 {
     std::string root;
 
-    AutoSegmentManager(const std::string& root) : root(root) {}
+    BaseSegmentManager(const std::string& root) : root(root) {}
 
     Reader* get_reader(const std::string& relname)
     {
@@ -123,25 +126,66 @@ struct AutoSegmentManager : public SegmentManager
         return get_writer(utils::get_format(relname), relname);
     }
 
-    auto_ptr<data::Writer> create_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    // Create the appropriate Writer for a segment that already exists. Returns
+    // 0 if the segment does not exist.
+    auto_ptr<data::Writer> create_writer_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
     {
+        std::auto_ptr<struct stat> st = sys::fs::stat(absname);
         auto_ptr<data::Writer> new_writer;
-        if (format == "grib" || format == "grib1" || format == "grib2")
+        if (!st.get())
+            return new_writer;
+
+        if (S_ISDIR(st->st_mode))
         {
-            new_writer.reset(new concat::Writer(relname, absname, truncate));
-        } else if (format == "bufr") {
-            new_writer.reset(new concat::Writer(relname, absname, truncate));
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
             new_writer.reset(new dir::Writer(format, relname, absname, truncate));
-        } else if (format == "vm2") {
-            new_writer.reset(new lines::Writer(relname, absname, truncate));
         } else {
-            throw wibble::exception::Consistency(
-                    "getting writer for " + format + " file " + relname,
-                    "format not supported");
+            if (format == "grib" || format == "grib1" || format == "grib2")
+            {
+                new_writer.reset(new concat::Writer(relname, absname, truncate));
+            } else if (format == "bufr") {
+                new_writer.reset(new concat::Writer(relname, absname, truncate));
+            } else if (format == "vm2") {
+                new_writer.reset(new lines::Writer(relname, absname, truncate));
+            } else {
+                throw wibble::exception::Consistency(
+                        "getting writer for " + format + " file " + relname,
+                        "format not supported");
+            }
         }
         return new_writer;
     }
+
+    // Create the appropriate Maint for a segment that already exists. Retursn
+    // 0 if the segment does not exist.
+    auto_ptr<data::Maint> create_maint_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
+    {
+        std::auto_ptr<struct stat> st = sys::fs::stat(absname);
+        auto_ptr<data::Maint> new_maint;
+        if (!st.get())
+            return new_maint;
+
+        if (S_ISDIR(st->st_mode))
+        {
+            new_maint.reset(new dir::Maint);
+        } else {
+            if (format == "grib" || format == "grib1" || format == "grib2")
+            {
+                new_maint.reset(new concat::Maint);
+            } else if (format == "bufr") {
+                new_maint.reset(new concat::Maint);
+            } else if (format == "vm2") {
+                new_maint.reset(new lines::Maint);
+            } else {
+                throw wibble::exception::Consistency(
+                        "preparing maintenance for " + format + " file " + relname,
+                        "format not supported");
+            }
+        }
+        return new_maint;
+    }
+
+    virtual auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false) = 0;
+    virtual auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
 
     Writer* get_writer(const std::string& format, const std::string& relname)
     {
@@ -161,91 +205,111 @@ struct AutoSegmentManager : public SegmentManager
                     "cannot update compressed data files: please manually uncompress it first");
 
         // Else we need to create an appropriate one
-        auto_ptr<data::Writer> new_writer(create_for_format(format, relname, absname));
+        auto_ptr<data::Writer> new_writer(create_writer_for_format(format, relname, absname));
         return writers.add(new_writer);
     }
 
     Pending repack(const std::string& relname, metadata::Collection& mds)
     {
         string format = utils::get_format(relname);
-
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            return concat::Writer::repack(root, relname, mds);
-        } else if (format == "bufr") {
-            return concat::Writer::repack(root, relname, mds);
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            return dir::Writer::repack(root, relname, mds);
-        } else if (format == "vm2") {
-            return lines::Writer::repack(root, relname, mds);
-        } else {
-            throw wibble::exception::Consistency(
-                    "repacking " + format + " file " + relname,
-                    "format not supported");
-        }
+        string absname = str::joinpath(root, relname);
+        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
+        return maint->repack(root, relname, mds);
     }
 
     FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            return concat::Writer::check(absname, mds, quick);
-        } else if (format == "bufr") {
-            return concat::Writer::check(absname, mds, quick);
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            return dir::Writer::check(absname, mds, quick);
-        } else if (format == "vm2") {
-            return lines::Writer::check(absname, mds, quick);
-        } else {
-            throw wibble::exception::Consistency(
-                    "checking " + format + " file " + relname,
-                    "format not supported");
-        }
+        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
+        return maint->check(absname, mds, quick);
     }
 
     size_t remove(const std::string& relname)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            return concat::Writer::remove(absname);
-        } else if (format == "bufr") {
-            return concat::Writer::remove(absname);
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            return dir::Writer::remove(absname);
-        } else if (format == "vm2") {
-            return lines::Writer::remove(absname);
-        } else {
-            throw wibble::exception::Consistency(
-                    "removing " + format + " file " + absname,
-                    "format not supported");
-        }
+        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
+        return maint->remove(absname);
     }
 
     void truncate(const std::string& relname, size_t offset)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
+        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
+        return maint->truncate(absname, offset);
+    }
+};
+
+/// Segment manager that picks the right readers/writers based on file types
+struct AutoSegmentManager : public BaseSegmentManager
+{
+    AutoSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
+
+    auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    {
+        auto_ptr<data::Writer> new_writer(create_writer_for_existing_segment(format, relname, absname, truncate));
+        if (new_writer.get()) return new_writer;
 
         if (format == "grib" || format == "grib1" || format == "grib2")
         {
-            return fd::Writer::truncate(absname, offset);
+            new_writer.reset(new concat::Writer(relname, absname, truncate));
         } else if (format == "bufr") {
-            return fd::Writer::truncate(absname, offset);
+            new_writer.reset(new concat::Writer(relname, absname, truncate));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            return dir::Writer::truncate(absname, offset);
+            new_writer.reset(new dir::Writer(format, relname, absname, truncate));
         } else if (format == "vm2") {
-            return fd::Writer::truncate(absname, offset);
+            new_writer.reset(new lines::Writer(relname, absname, truncate));
         } else {
             throw wibble::exception::Consistency(
-                    "truncating " + format + " file " + absname,
+                    "getting writer for " + format + " file " + relname,
                     "format not supported");
         }
+        return new_writer;
+    }
+
+    auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    {
+        auto_ptr<data::Maint> new_maint(create_maint_for_existing_segment(format, relname, absname));
+        if (new_maint.get()) return new_maint;
+
+        if (format == "grib" || format == "grib1" || format == "grib2")
+        {
+            new_maint.reset(new concat::Maint);
+        } else if (format == "bufr") {
+            new_maint.reset(new concat::Maint);
+        } else if (format == "odimh5" || format == "h5" || format == "odim") {
+            new_maint.reset(new dir::Maint);
+        } else if (format == "vm2") {
+            new_maint.reset(new lines::Maint);
+        } else {
+            throw wibble::exception::Consistency(
+                    "preparing maintenance for " + format + " file " + relname,
+                    "format not supported");
+        }
+        return new_maint;
+    }
+
+};
+
+/// Segment manager that always picks directory segments
+struct ForceDirSegmentManager : public BaseSegmentManager
+{
+    ForceDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
+
+    auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    {
+        auto_ptr<data::Writer> new_writer(create_writer_for_existing_segment(format, relname, absname, truncate));
+        if (new_writer.get()) return new_writer;
+        return auto_ptr<data::Writer>(new dir::Writer(format, relname, absname, truncate));
+    }
+
+    auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    {
+        auto_ptr<data::Maint> new_maint(create_maint_for_existing_segment(format, relname, absname));
+        if (new_maint.get()) return new_maint;
+        return auto_ptr<data::Maint>(new dir::Maint);
     }
 };
 
@@ -268,7 +332,10 @@ std::auto_ptr<SegmentManager> SegmentManager::get(const std::string& root)
 std::auto_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)
 {
     string root = cfg.value("path");
-    return auto_ptr<SegmentManager>(new AutoSegmentManager(root));
+    if (cfg.value("segments") == "dir")
+        return auto_ptr<SegmentManager>(new ForceDirSegmentManager(root));
+    else
+        return auto_ptr<SegmentManager>(new AutoSegmentManager(root));
 }
 
 

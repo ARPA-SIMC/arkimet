@@ -394,9 +394,25 @@ void to::test<14>()
         "[test]\n"
         "type = ondisk2\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// ondisk2 GRIB dirsegments
+template<> template<>
+void to::test<15>()
+{
+    TestDataset tds(tdata_grib,
+        "[test]\n"
+        "type = ondisk2\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
         "name = test\n"
         "path = test\n"
     );
@@ -405,13 +421,12 @@ void to::test<14>()
 
 // ondisk2 BUFR
 template<> template<>
-void to::test<15>()
+void to::test<16>()
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
         "type = ondisk2\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
@@ -420,15 +435,31 @@ void to::test<15>()
     wruntest(tds.test_all);
 }
 
+// ondisk2 BUFR dirsegments
+template<> template<>
+void to::test<17>()
+{
+    TestDataset tds(tdata_bufr,
+        "[test]\n"
+        "type = ondisk2\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    wruntest(tds.test_all);
+}
+
 // ondisk2 VM2
 template<> template<>
-void to::test<16>()
+void to::test<18>()
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
         "type = ondisk2\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
@@ -438,17 +469,51 @@ void to::test<16>()
     wruntest(tds.test_all);
 }
 
+// ondisk2 VM2 dirsegments
+template<> template<>
+void to::test<19>()
+{
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = ondisk2\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
+        "name = test\n"
+        "path = test\n"
+        "smallfiles = true\n"
+    );
+    wruntest(tds.test_all);
+}
+
 // ondisk2 ODIM
 template<> template<>
-void to::test<17>()
+void to::test<20>()
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
         "type = ondisk2\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// ondisk2 ODIM dirsegments
+template<> template<>
+void to::test<21>()
+{
+    TestDataset tds(tdata_odim,
+        "[test]\n"
+        "type = ondisk2\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
         "name = test\n"
         "path = test\n"
     );
@@ -457,13 +522,12 @@ void to::test<17>()
 
 // simple plainmft GRIB
 template<> template<>
-void to::test<18>()
+void to::test<22>()
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
@@ -472,17 +536,51 @@ void to::test<18>()
     wruntest(tds.test_all);
 }
 
-// simple sqlitemft GRIB
+// simple plainmft GRIB dirsegments
 template<> template<>
-void to::test<19>()
+void to::test<23>()
 {
     TestDataset tds(tdata_grib,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// simple sqlitemft GRIB
+template<> template<>
+void to::test<24>()
+{
+    TestDataset tds(tdata_grib,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+        "index_type = sqlite\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// simple sqlitemft GRIB dirsegments
+template<> template<>
+void to::test<25>()
+{
+    TestDataset tds(tdata_grib,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
         "name = test\n"
         "path = test\n"
         "index_type = sqlite\n"
@@ -492,13 +590,12 @@ void to::test<19>()
 
 // simple plainmft BUFR
 template<> template<>
-void to::test<20>()
+void to::test<26>()
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
@@ -507,17 +604,51 @@ void to::test<20>()
     wruntest(tds.test_all);
 }
 
-// simple sqlitemft BUFR
+// simple plainmft BUFR dirsegments
 template<> template<>
-void to::test<21>()
+void to::test<27>()
 {
     TestDataset tds(tdata_bufr,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// simple sqlitemft BUFR
+template<> template<>
+void to::test<28>()
+{
+    TestDataset tds(tdata_bufr,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+        "index_type = sqlite\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// simple sqlitemft BUFR dirsegments
+template<> template<>
+void to::test<29>()
+{
+    TestDataset tds(tdata_bufr,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
         "name = test\n"
         "path = test\n"
         "index_type = sqlite\n"
@@ -527,13 +658,12 @@ void to::test<21>()
 
 // simple plainmft VM2
 template<> template<>
-void to::test<22>()
+void to::test<30>()
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
@@ -542,15 +672,31 @@ void to::test<22>()
     wruntest(tds.test_all);
 }
 
-// simple sqlitemft VM2
+// simple plainmft VM2 dirsegments
 template<> template<>
-void to::test<23>()
+void to::test<31>()
 {
     TestDataset tds(tdata_vm2,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// simple sqlitemft VM2
+template<> template<>
+void to::test<32>()
+{
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
@@ -560,15 +706,32 @@ void to::test<23>()
     wruntest(tds.test_all);
 }
 
+// simple sqlitemft VM2 dirsegments
+template<> template<>
+void to::test<33>()
+{
+    TestDataset tds(tdata_vm2,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
+        "name = test\n"
+        "path = test\n"
+        "index_type = sqlite\n"
+    );
+    wruntest(tds.test_all);
+}
+
 // simple plainmft ODIM
 template<> template<>
-void to::test<24>()
+void to::test<34>()
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
         "name = test\n"
@@ -577,17 +740,51 @@ void to::test<24>()
     wruntest(tds.test_all);
 }
 
-// simple sqlitemft ODIM
+// simple plainmft ODIM dirsegments
 template<> template<>
-void to::test<25>()
+void to::test<35>()
 {
     TestDataset tds(tdata_odim,
         "[test]\n"
         "type = simple\n"
         "step = daily\n"
-        "filter = origin: GRIB1,200\n"
         "index = origin, reftime\n"
         "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
+        "name = test\n"
+        "path = test\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// simple sqlitemft ODIM
+template<> template<>
+void to::test<36>()
+{
+    TestDataset tds(tdata_odim,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "name = test\n"
+        "path = test\n"
+        "index_type = sqlite\n"
+    );
+    wruntest(tds.test_all);
+}
+
+// simple sqlitemft ODIM dirsegments
+template<> template<>
+void to::test<37>()
+{
+    TestDataset tds(tdata_odim,
+        "[test]\n"
+        "type = simple\n"
+        "step = daily\n"
+        "index = origin, reftime\n"
+        "unique = reftime, origin, product, level, timerange, area\n"
+        "segments = dir\n"
         "name = test\n"
         "path = test\n"
         "index_type = sqlite\n"

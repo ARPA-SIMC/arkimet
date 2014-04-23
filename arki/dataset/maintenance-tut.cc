@@ -23,6 +23,7 @@
 #include <arki/dataset/local.h>
 #include <arki/metadata/collection.h>
 #include <arki/utils/files.h>
+#include <arki/nag.h>
 #include <wibble/sys/fs.h>
 #include <wibble/grcal/grcal.h>
 
@@ -129,8 +130,6 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             expected.by_type[COUNTED_TO_ARCHIVE] = fixture.fnames_before_cutoff.size();
             wassert(actual(writer.get()).maintenance(expected));
         }
-
-        // FIXME: from here
 
         // Perform packing and check that things are still ok afterwards
         {
@@ -464,10 +463,12 @@ template<> template<> void to::test<1>()
 // Test accuracy of maintenance scan, on perfect dataset, with data to archive
 template<> template<> void to::test<2>()
 {
+    nag::TestCollect tc;
     wruntest(test_move_to_archive, testdata::GRIBData());
     wruntest(test_move_to_archive, testdata::BUFRData());
     wruntest(test_move_to_archive, testdata::VM2Data());
     wruntest(test_move_to_archive, testdata::ODIMData());
+    tc.clear();
 }
 
 // Test accuracy of maintenance scan, on perfect dataset, with data to delete
@@ -810,5 +811,8 @@ namespace {
 tut::tg test_ondisk2("arki_dataset_maintenance_ondisk2", "type=ondisk2\n");
 tut::tg test_simple_plain("arki_dataset_maintenance_simple_plain", "type=simple\nindex_type=plain\n");
 tut::tg test_simple_sqlite("arki_dataset_maintenance_simple_sqlite", "type=simple\nindex_type=sqlite");
+tut::tg test_ondisk2_dir("arki_dataset_maintenance_ondisk2_dirs", "type=ondisk2\nsegments=dir\n");
+tut::tg test_simple_plain_dir("arki_dataset_maintenance_simple_plain_dirs", "type=simple\nindex_type=plain\nsegments=dir\n");
+tut::tg test_simple_sqlite_dir("arki_dataset_maintenance_simple_sqlite_dirs", "type=simple\nindex_type=sqlite\nsegments=dir\n");
 
 }

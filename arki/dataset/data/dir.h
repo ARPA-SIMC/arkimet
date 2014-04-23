@@ -55,10 +55,14 @@ public:
      * @returns the offset in the segment at which md was appended
      */
     off_t link(const std::string& absname);
-    static FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
-    static size_t remove(const std::string& absname);
-    static void truncate(const std::string& absname, size_t offset);
-    static Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);
+};
+
+struct Maint : public data::Maint
+{
+    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
+    size_t remove(const std::string& absname);
+    void truncate(const std::string& absname, size_t offset);
+    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);
 };
 
 class OstreamWriter : public data::OstreamWriter
