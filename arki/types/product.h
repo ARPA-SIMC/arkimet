@@ -120,12 +120,16 @@ protected:
 	unsigned char m_discipline;
 	unsigned char m_category;
 	unsigned char m_number;
+    unsigned char m_table_version;
+    unsigned char m_local_table_version;
 
 public:
 	unsigned centre() const { return m_centre; }
 	unsigned discipline() const { return m_discipline; }
 	unsigned category() const { return m_category; }
 	unsigned number() const { return m_number; }
+    unsigned table_version() const { return m_table_version; }
+    unsigned local_table_version() const { return m_local_table_version; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -139,7 +143,13 @@ public:
 
 	bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	static Item<GRIB2> create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number);
+    static Item<GRIB2> create(
+            unsigned short centre,
+            unsigned char discipline,
+            unsigned char category,
+            unsigned char number,
+            unsigned char table_version=4,
+            unsigned char local_table_version=255);
 	static Item<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions

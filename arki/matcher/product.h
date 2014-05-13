@@ -60,6 +60,8 @@ struct MatchProductGRIB2 : public MatchProduct
 	int discipline;
 	int category;
 	int number;
+    int table_version;
+    int local_table_version;
 
 	MatchProductGRIB2(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;

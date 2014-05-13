@@ -75,6 +75,8 @@ MatchProductGRIB2::MatchProductGRIB2(const std::string& pattern)
 	discipline = args.getInt(1, -1);
 	category = args.getInt(2, -1);
 	number = args.getInt(3, -1);
+    table_version = args.getInt(4, -1);
+    local_table_version = args.getInt(5, -1);
 }
 
 bool MatchProductGRIB2::matchItem(const Item<>& o) const
@@ -84,7 +86,9 @@ bool MatchProductGRIB2::matchItem(const Item<>& o) const
 	if (centre != -1 && (unsigned)centre != v->centre()) return false;
 	if (discipline != -1 && (unsigned)discipline != v->discipline()) return false;
 	if (category != -1 && (unsigned)category != v->category()) return false;
-	if (number != -1 && (unsigned)number != v->number()) return false;
+    if (number != -1 && (unsigned)number != v->number()) return false;
+    if (table_version != -1 && (unsigned)table_version != v->table_version()) return false;
+    if (local_table_version != -1 && (unsigned)local_table_version != v->local_table_version()) return false;
 	return true;
 }
 
@@ -96,6 +100,8 @@ std::string MatchProductGRIB2::toString() const
 	if (discipline != -1) res.add(discipline); else res.addUndef();
 	if (category != -1) res.add(category); else res.addUndef();
 	if (number != -1) res.add(number); else res.addUndef();
+    if (table_version != -1) res.add(table_version); else res.addUndef();
+    if (local_table_version != -1) res.add(local_table_version); else res.addUndef();
 	return res.join();
 }
 

@@ -111,10 +111,14 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
 		}
 		case GRIB2: {
 			uint16_t centre     = dec.popUInt(2, "GRIB2 centre");
-			uint8_t	 discipline = dec.popUInt(1, "GRIB2 discipline"),
-				 category   = dec.popUInt(1, "GRIB2 category"),
-				 number     = dec.popUInt(1, "GRIB2 number");
-			return product::GRIB2::create(centre, discipline, category, number);
+            uint8_t discipline = dec.popUInt(1, "GRIB2 discipline");
+            uint8_t category   = dec.popUInt(1, "GRIB2 category");
+            uint8_t number     = dec.popUInt(1, "GRIB2 number");
+            uint8_t table_version = 4;
+            if (dec.len > 0) table_version = dec.popUInt(1, "GRIB2 table version");
+            uint8_t local_table_version = 255;
+            if (dec.len > 0) local_table_version = dec.popUInt(1, "GRIB2 local table version");
+			return product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version);
 		}
 		case BUFR: {
 			uint8_t type         = dec.popUInt(1, "GRIB1 type"),
@@ -169,8 +173,11 @@ Item<Product> Product::decodeString(const std::string& val)
 			return product::GRIB1::create(nums.vals[0], nums.vals[1], nums.vals[2]);
 		}
 		case Product::GRIB2: {
-			NumberList<4> nums(inner, "Product");
-			return product::GRIB2::create(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3]);
+            NumberList<6, 4> nums(inner, "Product", true);
+            unsigned char table_version = nums.found > 4 ? nums.vals[4] : 4;
+            unsigned char local_table_version = nums.found > 5 ? nums.vals[5] : 255;
+            return product::GRIB2::create(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3],
+                    table_version, local_table_version);
 		}
 		case Product::BUFR: {
 			NumberList<3> nums(inner, "Product", true);
@@ -242,7 +249,9 @@ static int arkilua_new_grib2(lua_State* L)
 	int discipline = luaL_checkint(L, 2);
 	int category = luaL_checkint(L, 3);
 	int number = luaL_checkint(L, 4);
-	Item<> res = product::GRIB2::create(centre, discipline, category, number);
+    int table_version = lua_gettop(L) > 4 ? luaL_checkint(L, 5) : 4;
+    int local_table_version = lua_gettop(L) > 5 ? luaL_checkint(L, 6) : 255;
+    Item<> res = product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version);
 	res->lua_push(L);
 	return 1;
 }
@@ -399,18 +408,31 @@ void GRIB2::encodeWithoutEnvelope(Encoder& enc) const
 	enc.addUInt(m_centre, 2);
 	enc.addUInt(m_discipline, 1);
 	enc.addUInt(m_category, 1);
-	enc.addUInt(m_number, 1); 
+    enc.addUInt(m_number, 1);
+    if (m_table_version != 4 || m_local_table_version != 255)
+    {
+        enc.addUInt(m_table_version, 1);
+        if (m_local_table_version != 255)
+            enc.addUInt(m_local_table_version, 1);
+    }
 }
 std::ostream& GRIB2::writeToOstream(std::ostream& o) const
 {
-    return o << formatStyle(style()) << "("
-	     << setfill('0')
-	     << setw(5) << (int)m_centre << ", "
-	     << setw(3) << (int)m_discipline << ", "
-	     << setw(3) << (int)m_category << ", "
-	     << setw(3) << (int)m_number
-	     << setfill(' ')
-	     << ")";
+    o << formatStyle(style()) << "("
+      << setfill('0')
+      << setw(5) << (int)m_centre << ", "
+      << setw(3) << (int)m_discipline << ", "
+      << setw(3) << (int)m_category << ", "
+      << setw(3) << (int)m_number;
+    if (m_table_version != 4 || m_local_table_version != 255)
+    {
+        o << ", " << setw(3) << (int)m_table_version;
+        if (m_local_table_version != 255)
+            o << ", " << setw(3) << (int)m_local_table_version;
+    }
+    o << setfill(' ')
+      << ")";
+    return o;
 }
 void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
 {
@@ -419,18 +441,34 @@ void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("di", m_discipline);
     e.add("ca", m_category);
     e.add("no", m_number);
+    e.add("tv", m_table_version);
+    e.add("ltv", m_local_table_version);
 }
 Item<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
+    using namespace emitter::memory;
+    const Node& tv = val["tv"];
+    const Node& ltv = val["ltv"];
     return GRIB2::create(
-            val["ce"].want_int("parsing GRIB1 origin centre"),
-            val["di"].want_int("parsing GRIB1 origin discipline"),
-            val["ca"].want_int("parsing GRIB1 origin category"),
-            val["no"].want_int("parsing GRIB1 origin number"));
+            val["ce"].want_int("parsing GRIB2 origin centre"),
+            val["di"].want_int("parsing GRIB2 origin discipline"),
+            val["ca"].want_int("parsing GRIB2 origin category"),
+            val["no"].want_int("parsing GRIB2 origin number"),
+            tv.is_null() ? 4 : tv.want_int("parsing GRIB2 table version"),
+            ltv.is_null() ? 255 : ltv.want_int("parsing GRIB2 local table version")
+            );
 }
 std::string GRIB2::exactQuery() const
 {
-    return str::fmtf("GRIB2,%d,%d,%d,%d", (int)m_centre, (int)m_discipline, (int)m_category, (int)m_number);
+    string res = str::fmtf("GRIB2,%d,%d,%d,%d",
+            (int)m_centre, (int)m_discipline, (int)m_category, (int)m_number);
+    if (m_table_version != 4 || m_local_table_version != 255)
+    {
+        res += str::fmtf(",%d", (int)m_table_version);
+        if (m_local_table_version != 255)
+            res += str::fmtf(",%d", (int)m_local_table_version);
+    }
+    return res;
 }
 const char* GRIB2::lua_type_name() const { return "arki.types.product.grib2"; }
 
@@ -446,7 +484,9 @@ int GRIB2::compare_local(const Product& o) const
 	if (int res = m_centre - v->m_centre) return res;
 	if (int res = m_discipline - v->m_discipline) return res;
 	if (int res = m_category - v->m_category) return res;
-	return m_number - v->m_number;
+    if (int res = m_number - v->m_number) return res;
+    if (int res = m_table_version - v->m_table_version) return res;
+    return m_local_table_version - v->m_local_table_version;
 }
 
 bool GRIB2::operator==(const Type& o) const
@@ -456,16 +496,20 @@ bool GRIB2::operator==(const Type& o) const
 	return m_centre == v->m_centre
 	    && m_discipline == v->m_discipline
 	    && m_category == v->m_category
-	    && m_number == v->m_number;
+        && m_number == v->m_number
+        && m_table_version == v->m_table_version
+        && m_local_table_version == v->m_local_table_version;
 }
 
-Item<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number)
+Item<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number, unsigned char table_version, unsigned char local_table_version)
 {
 	GRIB2* res = new GRIB2;
 	res->m_centre = centre;
 	res->m_discipline = discipline;
 	res->m_category = category;
 	res->m_number = number;
+    res->m_table_version = table_version;
+    res->m_local_table_version = local_table_version;
 	return cache_grib2.intern(res);
 }
 
@@ -476,6 +520,8 @@ std::vector<int> GRIB2::toIntVector() const
 	res.push_back(m_discipline);
 	res.push_back(m_category);
 	res.push_back(m_number);
+    res.push_back(m_table_version);
+    res.push_back(m_local_table_version);
 	return res;
 }
 bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
@@ -488,6 +534,10 @@ bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 		lua_pushnumber(L, category());
 	else if (name == "number")
 		lua_pushnumber(L, number());
+    else if (name == "table_version")
+        lua_pushnumber(L, table_version());
+    else if (name == "local_table_version")
+        lua_pushnumber(L, local_table_version());
 	else
 		return Product::lua_lookup(L, name);
 	return true;

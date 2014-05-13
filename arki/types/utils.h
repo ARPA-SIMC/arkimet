@@ -178,15 +178,17 @@ static typename T::Style outerParse(const std::string& str, std::string& inner)
 }
 
 // Parse a list of numbers of the given size
-template<int SIZE>
+template<int SIZE, int REQUIRED=SIZE>
 struct NumberList
 {
 	int vals[SIZE];
+    unsigned found;
 	std::string tail;
 
 	unsigned size() const { return SIZE; }
 
 	NumberList(const std::string& str, const std::string& what, bool has_tail=false)
+        : found(0)
 	{
 		using namespace std;
 		using namespace wibble::str;
@@ -198,8 +200,13 @@ struct NumberList
 			while (*start && (::isspace(*start) || *start == ','))
 				++start;
 			if (!*start)
-				throw wibble::exception::Consistency(string("parsing ") + what,
-					"found " + fmt(i) + " values instead of " + fmt(SIZE));
+            {
+                if (found < REQUIRED)
+                    throw wibble::exception::Consistency(string("parsing ") + what,
+                            "found " + fmt(i) + " values instead of " + fmt(SIZE));
+                else
+                    break;
+            }
 
 			// Parse the number
 			char* endptr;
@@ -209,6 +216,7 @@ struct NumberList
 					"expected a number, but found \"" + str.substr(start - str.c_str()) + "\"");
 
 			start = endptr;
+            ++found;
 		}
 		if (!has_tail && *start)
 			throw wibble::exception::Consistency(string("parsing ") + what,

@@ -83,6 +83,8 @@ void to::test<2>()
 	ensure_equals(v->discipline(), 2u);
 	ensure_equals(v->category(), 3u);
 	ensure_equals(v->number(), 4u);
+    ensure_equals(v->table_version(), 4u);
+    ensure_equals(v->local_table_version(), 255u);
 
 	ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4)));
 
@@ -245,6 +247,101 @@ void to::test<10>()
 {
     arki::tests::TestGenericType t(types::TYPE_PRODUCT, "VM2(1)");
     wassert(t);
+}
+
+// Check GRIB2 with different table version
+template<> template<>
+void to::test<11>()
+{
+    Item<Product> o = product::GRIB2::create(1, 2, 3, 4, 5);
+    ensure_equals(o->style(), Product::GRIB2);
+    const product::GRIB2* v = o->upcast<product::GRIB2>();
+    ensure_equals(v->centre(), 1u);
+    ensure_equals(v->discipline(), 2u);
+    ensure_equals(v->category(), 3u);
+    ensure_equals(v->number(), 4u);
+    ensure_equals(v->table_version(), 5u);
+    ensure_equals(v->local_table_version(), 255u);
+
+    ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4, 5)));
+
+    ensure(o != product::GRIB1::create(1, 2, 3));
+    ensure(o != product::GRIB2::create(2, 3, 4, 5));
+    ensure(o != product::GRIB2::create(1, 2, 3, 4));
+    ensure(o != product::GRIB2::create(1, 2, 3, 4, 6));
+    ensure(o != product::BUFR::create(1, 2, 3));
+    ValueBag vb;
+    vb.set("name", Value::createString("antani"));
+    ensure(o != product::BUFR::create(1, 2, 3, vb));
+
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
+
+    // Test generating a matcher expression
+    ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,5");
+    Matcher m = Matcher::parse("product:" + o->exactQuery());
+    ensure(m(o));
+}
+
+// Check GRIB2 with different table version or local table version
+template<> template<>
+void to::test<12>()
+{
+    Item<Product> o = product::GRIB2::create(1, 2, 3, 4, 4, 5);
+    ensure_equals(o->style(), Product::GRIB2);
+    const product::GRIB2* v = o->upcast<product::GRIB2>();
+    ensure_equals(v->centre(), 1u);
+    ensure_equals(v->discipline(), 2u);
+    ensure_equals(v->category(), 3u);
+    ensure_equals(v->number(), 4u);
+    ensure_equals(v->table_version(), 4u);
+    ensure_equals(v->local_table_version(), 5u);
+
+    ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4, 4, 5)));
+
+    ensure(o != product::GRIB1::create(1, 2, 3));
+    ensure(o != product::GRIB2::create(2, 3, 4, 5));
+    ensure(o != product::GRIB2::create(1, 2, 3, 4));
+    ensure(o != product::GRIB2::create(1, 2, 3, 4, 4));
+    ensure(o != product::GRIB2::create(1, 2, 3, 4, 4, 6));
+    ensure(o != product::BUFR::create(1, 2, 3));
+    ValueBag vb;
+    vb.set("name", Value::createString("antani"));
+    ensure(o != product::BUFR::create(1, 2, 3, vb));
+
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
+
+    // Test generating a matcher expression
+    ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,4,5");
+    Matcher m = Matcher::parse("product:" + o->exactQuery());
+    ensure(m(o));
+}
+
+// Test GRIB2 Lua constructor
+template<> template<>
+void to::test<13>()
+{
+#ifdef HAVE_LUA
+    arki::tests::Lua test(
+        "function test(o) \n"
+        "  p = arki_product.grib2(1, 2, 3, 4)\n"
+        "  if p.table_version ~= 4 then return 'p.table_version '..p.table_version..' instead of 4' end \n"
+        "  if p.local_table_version ~= 255 then return 'p.local_table_version '..p.local_table_version..' instead of 255' end \n"
+
+        "  p = arki_product.grib2(1, 2, 3, 4, 5)\n"
+        "  if p.table_version ~= 5 then return 'p.table_version '..p.table_version..' instead of 5' end \n"
+        "  if p.local_table_version ~= 255 then return 'p.local_table_version '..p.local_table_version..' instead of 255' end \n"
+
+        "  p = arki_product.grib2(1, 2, 3, 4, 5, 6)\n"
+        "  if p.table_version ~= 5 then return 'p.table_version '..p.table_version..' instead of 5' end \n"
+        "  if p.local_table_version ~= 6 then return 'p.local_table_version '..p.local_table_version..' instead of 6' end \n"
+
+        "end \n"
+    );
+
+    wassert(actual(test.run()) == "");
+#endif
 }
 
 }
