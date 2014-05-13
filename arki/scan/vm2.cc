@@ -25,6 +25,7 @@
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <arki/utils/files.h>
+#include <arki/nag.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/regexp.h>
@@ -137,8 +138,17 @@ bool Vm2::next(Metadata& md)
     std::string line;
 
     off_t offset = in->tellg();
-    if (!parser->next(value, line))
-        return false;
+    while (true)
+    {
+        try {
+            if (!parser->next(value, line))
+                return false;
+            else
+                break;
+        } catch (wibble::exception::Consistency& e) {
+            nag::warning("Skipping VM2 line: %s", e.what());
+        }
+    }
 
     size_t size = line.size();
 
