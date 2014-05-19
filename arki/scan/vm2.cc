@@ -137,9 +137,10 @@ bool Vm2::next(Metadata& md)
     meteo::vm2::Value value;
     std::string line;
 
-    off_t offset = in->tellg();
+    off_t offset = 0;
     while (true)
     {
+        offset = in->tellg();
         try {
             if (!parser->next(value, line))
                 return false;

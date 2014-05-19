@@ -194,6 +194,26 @@ void to::test<4>()
     wassert(actual(string((const char*)buf.data(), buf.size())) == "19871031000030,1,228,.5,,,000000000");
 }
 
+// Scan a corrupted VM2
+template<> template<>
+void to::test<5>()
+{
+    system("cp inbound/test.vm2 inbound/test-corrupted.vm2");
+    system("dd if=/dev/zero of=inbound/test-corrupted.vm2 bs=1 seek=71 count=33 conv=notrunc 2>/dev/null");
+
+    metadata::Collection mdc;
+    scan::scan("inbound/test-corrupted.vm2", mdc);
+
+    wassert(actual(mdc.size()) == 3);
+
+    // Check the source info
+    wassert(actual(mdc[0].source).sourceblob_is("vm2", sys::fs::abspath("."), "inbound/test-corrupted.vm2", 0, 34));
+    wassert(actual(mdc[1].source).sourceblob_is("vm2", sys::fs::abspath("."), "inbound/test-corrupted.vm2", 35, 35));
+    wassert(actual(mdc[2].source).sourceblob_is("vm2", sys::fs::abspath("."), "inbound/test-corrupted.vm2", 105, 32));
+
+    system("rm inbound/test-corrupted.vm2");
+}
+
 }
 
 // vim:set ts=4 sw=4:
