@@ -231,17 +231,16 @@ AM_CONDITIONAL([GRIBAPI], [test x"$have_gribapi" = x"yes"])
 dnl Check for odimh5 support
 if test $enable_odimh5 = yes
 then
-	dnl Check for hdf5_cpp
-	dnl PKG_CHECK_EXISTS([radarlib], [have_odimh5=yes], [have_odimh5=no])
-	AC_CHECK_LIB([hdf5_cpp], [main], [have_odimh5=yes], [have_odimh5=no])
-	AC_CHECK_HEADER([H5Cpp.h], [true], [have_odimh5_no])
+	dnl Check for hdf5
+	AC_CHECK_LIB([hdf5], [main], [have_odimh5=yes], [have_odimh5=no])
+	AC_CHECK_HEADER([hdf5.h], [true], [have_odimh5_no])
 	if test $have_odimh5 = yes
 	then
 		AC_DEFINE([HAVE_ODIMH5], 1, [odimh5 format enabled])
-		ODIMH5_LIBS="-lhdf5 -lhdf5_cpp"
+		ODIMH5_LIBS="-lhdf5"
 		AC_SUBST([ODIMH5_LIBS])
 	else
-		AC_MSG_WARN([compiling without libhdf5_cpp: ODIMH5 support will be disabled])
+		AC_MSG_WARN([compiling without libhdf5: ODIMH5 support will be disabled])
 	fi
 else
 	have_odimh5=no
