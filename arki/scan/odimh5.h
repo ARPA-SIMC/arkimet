@@ -5,7 +5,7 @@
 /*
  * scan/odimh5 - Scan a ODIMH5 file for metadata
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,16 +22,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Guido Billi <guidobilli@gmail.com>
+ * Author: Enrico Zini <enrico@enricozini.org>
  */
 
 #include <string>
 #include <vector>
+#include <arki/utils/h5.h>
 
 struct lua_State;
-
-namespace H5 {
-struct H5File;
-}
 
 namespace arki {
 class Metadata;
@@ -81,7 +79,7 @@ protected:
 	std::string filename;
 	std::string basedir;
 	std::string relname;
-    H5::H5File* h5file;
+    hid_t h5file;
     bool read;
     std::vector<int> odimh5_funcs;
     OdimH5Lua* L;

@@ -1,7 +1,7 @@
 /*
  * scan/odimh5 - Scan a ODIMH5 file for metadata
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Author: Guido Billi <guidobilli@gmail.com>
+ * Author: Enrico Zini <enrico@enricozini.org>
  */
 
 #include "config.h"
@@ -56,7 +57,7 @@
 #include <memory>
 #include <iostream>
 
-#include <H5Cpp.h>
+using namespace std;
 
 namespace arki {
 namespace scan {
@@ -100,6 +101,7 @@ static OdimH5Validator odimh5_validator;
 const Validator& validator() { return odimh5_validator; }
 
 }
+
 
 struct OdimH5Lua : public Lua {
     OdimH5Lua(OdimH5* scanner) {
@@ -194,14 +196,15 @@ struct OdimH5Lua : public Lua {
     }
 };
 
-OdimH5::OdimH5() : h5file(0), read(false), L(new OdimH5Lua(this)) {
-    H5::Exception::dontPrint();
+OdimH5::OdimH5()
+    : h5file(-1), read(false), L(new OdimH5Lua(this))
+{
     L->load_scan_functions(runtime::Config::get().dir_scan_odimh5, odimh5_funcs);
 }
 
 OdimH5::~OdimH5()
 {
-    delete h5file;
+    if (h5file >= 0) H5Fclose(h5file);
 }
 
 void OdimH5::open(const std::string& filename)
@@ -213,6 +216,8 @@ void OdimH5::open(const std::string& filename)
 
 void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
+    using namespace arki::utils::h5;
+
     // Close the previous file if needed
     close();
     this->filename = filename;
@@ -221,15 +226,15 @@ void OdimH5::open(const std::string& filename, const std::string& basedir, const
 
     // Open H5 file
     read = false;
-    // If the file is empty, don't open it
     if (wibble::sys::fs::stat(filename)->st_size == 0) {
+        // If the file is empty, don't open it
         read = true;
     } else {
-        try {
-            h5file = new H5::H5File(filename, H5F_ACC_RDONLY);
-        } catch (const H5::Exception& e) {
-            throw wibble::exception::Consistency("while opening file " + filename, e.getDetailMsg());
-        }
+        MuteErrors h5e;
+        if ((h5file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
+            // If the file is not HDF5, don't open it
+            read = true;
+            //h5e.throw_error("opening file " + filename);
     }
 }
 
@@ -239,8 +244,11 @@ void OdimH5::close()
     basedir.clear();
     relname.clear();
     read = false;
-    delete h5file;
-    h5file = NULL;
+    if (h5file >= 0)
+    {
+        H5Fclose(h5file);
+        h5file = -1;
+    }
 }
 
 bool OdimH5::next(Metadata& md)
@@ -291,6 +299,8 @@ void OdimH5::setSource(Metadata& md)
 
 bool OdimH5::scanLua(Metadata& md)
 {
+    using namespace arki::utils::h5;
+    MuteErrors h5e;
     for (std::vector<int>::const_iterator i = odimh5_funcs.begin();
          i != odimh5_funcs.end(); ++i) {
         std::string error = L->run_function(*i, md);
@@ -306,76 +316,88 @@ bool OdimH5::scanLua(Metadata& md)
 
 int OdimH5::arkilua_find_attr(lua_State* L)
 {
+    using namespace arki::utils::h5;
+
     luaL_checkudata(L, 1, "odimh5");
     void* userdata = lua_touserdata(L, 1);
     OdimH5& s = **(OdimH5**)userdata;
-    H5::H5File* h5file = s.h5file;
 
-    if (!h5file)
+    if (s.h5file < 0)
         luaL_error(L, "h5 file not opened");
 
-    std::string groupname = luaL_checkstring(L, 2);
-    std::string attrname = luaL_checkstring(L, 3);
+#define fail() do { lua_pushnil(L); return 1; } while(0)
 
-    try {
-        H5::Group group = h5file->openGroup(groupname.c_str());
-        H5::Attribute attr = group.openAttribute(attrname);
-        H5::DataType type = attr.getDataType();
-        switch (type.getClass()) {
-            case H5T_INTEGER:
-                {
-                    int v;
-                    attr.read(type, &v);
-                    lua_pushinteger(L, v);
-                    return 1;
-                }
-            case H5T_FLOAT:
-                {
-                    double v;
-                    attr.read(type, &v);
-                    lua_pushnumber(L, v);
-                    return 1;
-                }
-            case H5T_STRING:
-                {
-                    std::string v;
-                    attr.read(type, v);
-                    lua_pushstring(L, v.c_str());
-                    return 1;
-                }
-            default:
-                luaL_error(L, "Unsupported attribute type");
-        }
-    } catch(const H5::Exception& e) {
-        lua_pushnil(L);
-        return 1;
+    Group group(H5Gopen(s.h5file, luaL_checkstring(L, 2), H5P_DEFAULT));
+    if (group < 0) fail();
+
+    Attr attr(H5Aopen(group, luaL_checkstring(L, 3), H5P_DEFAULT));
+    if (attr < 0) fail();
+
+    Type data_type(H5Aget_type(attr));
+    if (data_type < 0) fail();
+
+    H5T_class_t type_class = H5Tget_class(data_type);
+    if (type_class == H5T_NO_CLASS) fail();
+
+    switch (type_class)
+    {
+        case H5T_INTEGER:
+            {
+                int v;
+                if (H5Aread(attr, H5T_NATIVE_INT, &v) < 0) fail();
+                lua_pushinteger(L, v);
+                return 1;
+            }
+        case H5T_FLOAT:
+            {
+                double v;
+                if (H5Aread(attr, H5T_NATIVE_DOUBLE, &v) < 0) fail();
+                lua_pushnumber(L, v);
+                return 1;
+            }
+        case H5T_STRING:
+            {
+                std::string v;
+                if (!attr.read_string(v)) fail();
+                lua_pushlstring(L, v.data(), v.size());
+                return 1;
+            }
+        default:
+            fail();
     }
 
     return 0;
+#undef fail
 }
 
-int OdimH5::arkilua_get_groups(lua_State* L) {
+int OdimH5::arkilua_get_groups(lua_State* L)
+{
+    using namespace arki::utils::h5;
+
     luaL_checkudata(L, 1, "odimh5");
     void* userdata = lua_touserdata(L, 1);
     OdimH5& s = **(OdimH5**)userdata;
-    H5::H5File* h5file = s.h5file;
 
-    if (!h5file)
+    if (s.h5file < 0)
         luaL_error(L, "h5 file not opened");
-
-    std::string groupname = luaL_checkstring(L, 2);
 
     lua_newtable(L);
 
-    H5::Group group = h5file->openGroup(groupname.c_str());
-    hsize_t n = group.getNumObjs();
-    for (hsize_t i = 0; i < n; ++i) {
-        std::string name = group.getObjnameByIdx(i);
-        H5G_obj_t type = group.getObjTypeByIdx(i);
-        if (type == H5G_GROUP) {
-            lua_pushstring(L, "group");
-            lua_setfield(L, -2, name.c_str());
-        }
+    Group group(H5Gopen(s.h5file, luaL_checkstring(L, 2), H5P_DEFAULT));
+    if (group < 0) return 1;
+
+    hsize_t num_objs;
+    if (H5Gget_num_objs(group, &num_objs) < 0) return 1;
+
+    const unsigned name_size = 512;
+    char name[512];
+    for (hsize_t i = 0; i < num_objs; ++i) {
+        int type = H5Gget_objtype_by_idx(group, i);
+        if (type < 0) continue;
+        if (H5Gget_objname_by_idx(group, i, name, name_size) < 0) continue;
+        if (type != H5G_GROUP) continue;
+        lua_pushstring(L, "group");
+        lua_setfield(L, -2, name);
     }
 
     return 1;

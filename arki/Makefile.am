@@ -127,6 +127,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/files.h \
 		utils/geosdef.h \
 		utils/geosfwd.h \
+		utils/h5.h \
 		utils.h \
 		utils/intern.h \
 		utils/pcounter.h \
@@ -158,6 +159,7 @@ libarkimet_core_la_SOURCES = \
 		utils/datareader.cc \
 		utils/fd.cc \
 		utils/files.cc \
+		utils/h5.cc \
 		utils/intern.cc \
 		utils/pcounter.cc \
 		utils/process.cc \
@@ -303,6 +305,7 @@ tests_arki_test_SOURCES = \
 		utils/sqlite-tut.cc \
 		utils/fd-tut.cc \
 		utils/files-tut.cc \
+		utils/h5-tut.cc \
 		utils/intern-tut.cc \
 		utils/dataset-tut.cc \
 		utils/pcounter-tut.cc \
