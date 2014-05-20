@@ -2,9 +2,9 @@
 #define ARKI_METADATA_H
 
 /*
- * metadata - Handle xgribarch metadata
+ * metadata - Handle arkimet metadata
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -192,11 +192,21 @@ public:
 
 	/**
 	 * Read the raw blob data described by this metadata.
-	 *
-	 * Optionally, an input directory can be given as a base to resolve
-	 * relative paths.
 	 */
 	wibble::sys::Buffer getData() const;
+
+    /**
+     * Read the raw blob data described by this metadata, forcing loading it
+     * from file. Returns a 0-length buffer when not possible
+     */
+    wibble::sys::Buffer getDataFromFile() const;
+
+    /**
+     * Read the raw blob data described by this metadata, forcing
+     * reconstructing it from the Value metadata.
+     * Returns a 0-length buffer when not possible
+     */
+    wibble::sys::Buffer getDataFromValue() const;
 
     /**
      * Returns true if data is available without having to load it (either

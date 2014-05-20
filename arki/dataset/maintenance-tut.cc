@@ -280,7 +280,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         UItem<types::source::Blob> second_in_segment = find_imported_second_in_file();
         wassert(actual(second_in_segment->offset) > 0);
 
-        // Corrupt the first grib in the file
+        // Corrupt the first datum in the file
         corrupt_datafile(second_in_segment->absolutePathname());
 
         // A quick check has nothing to complain
@@ -291,6 +291,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
         // A thorough check should find the corruption
         {
+            //nag::TestCollect tc;
             auto_ptr<WritableLocal> writer(makeLocalWriter());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;

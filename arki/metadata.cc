@@ -294,7 +294,7 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
     // If the source is inline, then the data follows the metadata
     if (source->style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = source->getData();
+        wibble::sys::Buffer buf = source->getCachedData();
         out.write((const char*)buf.data(), buf.size());
         if (out.fail())
             throw wibble::exception::File(filename, "writing " + str::fmt(buf.size()) + " bytes to the file");
@@ -312,7 +312,7 @@ void Metadata::write(int outfd, const std::string& filename) const
     // If the source is inline, then the data follows the metadata
     if (source->style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = source->getData();
+        wibble::sys::Buffer buf = source->getCachedData();
         utils::fd::write_all(outfd, buf.data(), buf.size());
     }
 }
@@ -391,7 +391,7 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
     // If the source is inline, then the data follows the metadata
     if (source->style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = source->getData();
+        wibble::sys::Buffer buf = source->getCachedData();
         e.add_raw(buf);
     }
 }
@@ -444,7 +444,7 @@ string Metadata::encode() const
 
 bool Metadata::hasData() const
 {
-    return source.defined() && source->hasData();
+    return source.defined() && source->hasCachedData();
 }
 
 wibble::sys::Buffer Metadata::getData() const
@@ -452,19 +452,30 @@ wibble::sys::Buffer Metadata::getData() const
     if (!source.defined())
         throw wibble::exception::Consistency("retrieving data", "data source is not defined");
 
-    if (source->hasData())
-        return source->getData();
+    if (source->hasCachedData())
+        return source->getCachedData();
 
     // Se if we have a value set
+    wibble::sys::Buffer buf = getDataFromValue();
+    if (!buf.data())
+        buf = getDataFromFile();
+    if (!buf.data())
+        throw wibble::exception::Consistency("retrieving data", "data is not accessible");
+
+    source->setCachedData(buf);
+    return buf;
+}
+
+wibble::sys::Buffer Metadata::getDataFromFile() const
+{
+    return source->loadData();
+}
+
+wibble::sys::Buffer Metadata::getDataFromValue() const
+{
     UItem<types::Value> value = get<types::Value>();
-    if (value.defined())
-    {
-        wibble::sys::Buffer buf = arki::scan::reconstruct(source->format, *this, value->buffer);
-        source->setCachedData(buf);
-        return buf;
-    } else {
-        return source->getData();
-    }
+    if (!value.defined()) return wibble::sys::Buffer();
+    return arki::scan::reconstruct(source->format, *this, value->buffer);
 }
 
 void Metadata::dropCachedData() const

@@ -88,28 +88,32 @@ public:
      * Returns true if data is available without having to load it (either
      * inline or cached)
      */
-    bool hasData() const;
+    bool hasCachedData() const;
+
+    /**
+     * Returns the cached data, if present. Returns an empty buffer if not.
+     */
+    wibble::sys::Buffer getCachedData() const;
 
     /**
      * If the source is not inline, but the data are cached in memory, drop
      * them.
      *
-     * Data for non-inline metadata can be cached in memory, for example,
-     * by a getData() call or a setCachedData() call.
+     * Data for non-inline metadata can be cached in memory by a
+     * setCachedData() call.
      */
     virtual void dropCachedData() const;
 
     /**
      * Read the raw blob data described by this metadata.
      *
-     * Optionally, a directory can be given as a base to resolve relative
-     * paths.
+     * This does not read or set the cached data buffer. It returns an empty
+     * buffer if the data is not accessible.
      */
-    virtual wibble::sys::Buffer getData() const = 0;
+    virtual wibble::sys::Buffer loadData() const = 0;
 
     /**
-     * Set cached data for non-inline sources, so that getData() won't have
-     * to read it again.
+     * Set cached data for non-inline sources
      */
     void setCachedData(const wibble::sys::Buffer& buf) const;
 
@@ -179,7 +183,7 @@ struct Blob : public Source
      */
     Item<Blob> makeAbsolute() const;
 
-    virtual wibble::sys::Buffer getData() const;
+    virtual wibble::sys::Buffer loadData() const;
 
     static Item<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static Item<Blob> decodeMapping(const emitter::memory::Mapping& val);
@@ -199,7 +203,7 @@ struct URL : public Source
 	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
 
-    virtual wibble::sys::Buffer getData() const;
+    virtual wibble::sys::Buffer loadData() const;
 
 	static Item<URL> create(const std::string& format, const std::string& url);
 	static Item<URL> decodeMapping(const emitter::memory::Mapping& val);
@@ -220,7 +224,7 @@ struct Inline : public Source
 	virtual bool operator==(const Type& o) const;
 
     virtual void dropCachedData() const;
-    virtual wibble::sys::Buffer getData() const;
+    virtual wibble::sys::Buffer loadData() const;
 
 	static Item<Inline> create(const std::string& format, uint64_t size);
     static Item<Inline> create(const std::string& format, const wibble::sys::Buffer& buf);

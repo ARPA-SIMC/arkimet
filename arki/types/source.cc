@@ -208,9 +208,14 @@ bool Source::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-bool Source::hasData() const
+bool Source::hasCachedData() const
 {
     return m_inline_buf.data() != 0;
+}
+
+wibble::sys::Buffer Source::getCachedData() const
+{
+    return m_inline_buf;
 }
 
 void Source::dropCachedData() const
@@ -323,8 +328,8 @@ Item<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
     Item<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
-    if (hasData())
-        res->setCachedData(getData());
+    if (hasCachedData())
+        res->setCachedData(getCachedData());
     return res;
 }
 
@@ -332,8 +337,8 @@ Item<Blob> Blob::makeAbsolute() const
 {
     string pathname = absolutePathname();
     Item<Blob> res = Blob::create(format, "", pathname, offset, size);
-    if (hasData())
-        res->setCachedData(getData());
+    if (hasCachedData())
+        res->setCachedData(getCachedData());
     return res;
 }
 
@@ -344,16 +349,12 @@ std::string Blob::absolutePathname() const
     return str::joinpath(basedir, filename);
 }
 
-wibble::sys::Buffer Blob::getData() const
+wibble::sys::Buffer Blob::loadData() const
 {
-    if (m_inline_buf.data())
-        return m_inline_buf;
-
     // Read the data
-    m_inline_buf.resize(size);
-    dataReader.read(absolutePathname(), offset, size, m_inline_buf.data());
-
-    return m_inline_buf;
+    wibble::sys::Buffer buf(size);
+    dataReader.read(absolutePathname(), offset, size, buf.data());
+    return buf;
 }
 
 Source::Style URL::style() const { return Source::URL; }
@@ -424,11 +425,15 @@ Item<URL> URL::create(const std::string& format, const std::string& url)
 	return res;
 }
 
-wibble::sys::Buffer URL::getData() const
+wibble::sys::Buffer URL::loadData() const
 {
+    throw wibble::exception::Consistency("retrieving data", "retrieving data from URL sources is not yet implemented");
+    //return wibble::sys::Buffer();
+    /*
     if (m_inline_buf.data())
         return m_inline_buf;
     throw wibble::exception::Consistency("retrieving data", "retrieving data from URL sources is not yet implemented");
+    */
 }
 
 Source::Style Inline::style() const { return Source::INLINE; }
@@ -510,9 +515,10 @@ void Inline::dropCachedData() const
     // Do nothing: the cached data is the only copy we have
 }
 
-wibble::sys::Buffer Inline::getData() const
+wibble::sys::Buffer Inline::loadData() const
 {
-    return m_inline_buf;
+    return wibble::sys::Buffer();
+    //return m_inline_buf;
 }
 
 }

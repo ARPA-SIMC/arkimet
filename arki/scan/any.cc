@@ -1,7 +1,7 @@
 /*
  * scan/any - Scan files autodetecting the format
  *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -301,8 +301,14 @@ void compress(const std::string& file, size_t groupsize)
 
 void Validator::validate(const Metadata& md) const
 {
-    sys::Buffer buf = md.getData();
-    validate(buf.data(), buf.size());
+    bool found = false;
+    sys::Buffer buf = md.getDataFromValue();
+    if (buf.data()) validate(buf.data(), buf.size());
+    buf = md.getDataFromFile();
+    if (buf.data())
+        validate(buf.data(), buf.size());
+    else
+        throw wibble::exception::Consistency("validating data", "data is not accessible");
 }
 
 const Validator& Validator::by_filename(const std::string& filename)
