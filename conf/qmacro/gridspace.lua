@@ -12,7 +12,7 @@
 -- they are queried one after the other until one satisfies the request
 
 dataset_aliases = {
-	LMSMR = { "lmsmr4x56", "lmsmr4x55", "lmsmr4x57" }
+	LMSMR = { "lmsmr4x52", "lmsmr4x45", "lmsmr4x53" }
 }
 
 datasets_tried = {}
