@@ -87,6 +87,7 @@ function scan(md)
 	area.Ni = grib.Ni
 	area.Nj = grib.Nj
     else
+      if grib.latitudeOfFirstGridPointInDegrees ~= nil then
         area.latfirst = grib.latitudeOfFirstGridPointInDegrees * 1000000
         area.lonfirst = grib.longitudeOfFirstGridPointInDegrees * 1000000
 
@@ -105,6 +106,7 @@ function scan(md)
             area.latp = grib.latitudeOfSouthernPoleInDegrees * 1000000
             area.lonp = grib.longitudeOfSouthernPoleInDegrees * 1000000
         end
+      end
     end
 	md:set(arki_area.grib(area))
 
