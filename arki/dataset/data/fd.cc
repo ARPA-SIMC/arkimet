@@ -140,7 +140,7 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
         if (source->offset < end_of_last_data_checked || source->offset > end_of_last_data_checked + max_gap)
             has_hole = true;
 
-        end_of_last_data_checked = max(end_of_last_data_checked, source->offset + source->size);
+        end_of_last_data_checked = max(end_of_last_data_checked, (size_t)(source->offset + source->size));
     }
 
     size_t file_size = utils::compress::filesize(absname);
