@@ -36,6 +36,8 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace wibble;
+using namespace wibble::tests;
 
 struct arki_dispatcher_shar {
 	ConfigFile config;
@@ -167,6 +169,33 @@ void to::test<3>()
     ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
     ensure_equals(dsname(mdc.back()), "error");
     ensure(!scanner.next(md));
+    dispatcher.flush();
+}
+
+// Test dispatching files with no reftime, they should end up in the error dataset
+template<> template<>
+void to::test<4>()
+{
+    metadata::Collection source;
+    scan::scan("inbound/wrongdate.bufr", source);
+    wassert(actual(source.size()) == 6);
+
+    RealDispatcher dispatcher(config);
+    metadata::Collection mdc;
+
+    wassert(actual(dispatcher.dispatch(source[0], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(mdc.back())) == "error");
+    wassert(actual(dispatcher.dispatch(source[1], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(mdc.back())) == "error");
+    wassert(actual(dispatcher.dispatch(source[2], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(mdc.back())) == "error");
+    wassert(actual(dispatcher.dispatch(source[3], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(mdc.back())) == "error");
+    wassert(actual(dispatcher.dispatch(source[4], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(mdc.back())) == "error");
+    wassert(actual(dispatcher.dispatch(source[5], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dsname(mdc.back())) == "error");
+
     dispatcher.flush();
 }
 

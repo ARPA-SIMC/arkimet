@@ -32,6 +32,7 @@
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/validator.h>
+#include <arki/types/reftime.h>
 
 using namespace std;
 using namespace wibble;
@@ -108,6 +109,18 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     vector<string> found;
 
     hook_pre_dispatch(md);
+
+    // Ensure that we have a reference time
+    UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
+    if (!rt.defined())
+    {
+        using namespace arki::types;
+        md.add_note(types::Note::create("Validation error: reference time is missing"));
+        // Set today as a dummy reference time, and import into the error dataset
+        md.set(reftime::Position::create(Time::create()));
+        result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
+        goto done;
+    }
 
     // Run validation
     if (!validators.empty())

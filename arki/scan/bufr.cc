@@ -40,6 +40,7 @@
 #include <arki/scan/any.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
+#include <wibble/grcal/grcal.h>
 #include <sstream>
 #include <cstring>
 #include <stdint.h>
@@ -239,10 +240,6 @@ bool Bufr::do_scan(Metadata& md)
 	// Default to a generic product unless we find more info later
 	//md.set(types::product::BUFR::create("generic"));
 
-#ifdef HAVE_LUA
-	// If we don't have extra scanning support, we are done
-	if (!extras) return true;
-
     // Try to decode the data; if we fail, we are done
     try {
         // Ignore domain errors, it's ok if we lose some oddball data
@@ -293,9 +290,28 @@ bool Bufr::do_scan(Metadata& md)
 	// Set reference time from date and time if available
 	extract_reftime(*msgs[0], md);
 
-	// DB-All.e managed to make sense of the message: hand it down to Lua
-	// to extract further metadata
-	extras->scan(*msgs[0], md);
+    if (extras)
+    {
+        // DB-All.e managed to make sense of the message: hand it down to Lua
+        // to extract further metadata
+        extras->scan(*msgs[0], md);
+    }
+
+    // Check that the date is a valid date, unset if it is rubbish
+    UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
+    if (rt.defined())
+    {
+        if (rt->time->vals[0] <= 0)
+            md.unset(types::TYPE_REFTIME);
+        else
+        {
+            int tmpvals[6];
+            memcpy(tmpvals, rt->time->vals, 6 * sizeof(int));
+            wibble::grcal::date::normalise(tmpvals);
+            if (memcmp(rt->time->vals, tmpvals, 6 * sizeof(int)) != 0)
+                md.unset(types::TYPE_REFTIME);
+        }
+    }
 
     // Convert validity times to emission times
     // If md has a timedef, substract it from the reftime
@@ -308,28 +324,13 @@ bool Bufr::do_scan(Metadata& md)
             md.set(timedef->validity_time_to_emission_time(p));
         }
     }
-#endif
 
-	return true;
+    return true;
 }
 
 bool Bufr::next(Metadata& md)
 {
-    bool res = do_scan(md);
-    if (res)
-    {
-        // Validate reftime
-        Item<types::reftime::Position> rt = md.get<types::reftime::Position>();
-        if (rt->time->vals[1] == 0)
-            throw wibble::exception::Consistency(
-                    "checking reftime " + str::fmt(rt),
-                    "month cannot be 0");
-        if (rt->time->vals[2] == 0)
-            throw wibble::exception::Consistency(
-                    "checking reftime " + str::fmt(rt),
-                    "day cannot be 0");
-    }
-    return res;
+    return do_scan(md);
 }
 
 namespace {

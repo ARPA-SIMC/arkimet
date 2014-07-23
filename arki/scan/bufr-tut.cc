@@ -404,19 +404,12 @@ void to::test<6>()
 {
     Metadata md;
     scan::Bufr scanner;
-    types::Time reftime;
-    wibble::sys::Buffer buf;
 
     scanner.open("inbound/zerodate.bufr");
 
-    // See how we scan the first BUFR
-    try
-    {
-        ensure(scanner.next(md));
-        ensure(false);
-    } catch (wibble::exception::Generic& e) {
-        ensure_contains(e.what(), "cannot be 0");
-    }
+    // Missing datetime info should lead to missing Reftime
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(md.get<Reftime>().defined()).isfalse());
 }
 
 // Test scanning a ship
@@ -519,6 +512,35 @@ void to::test<14>()
     scanner.open("inbound/tempforecast1.bufr");
     ensure(scanner.next(md));
     ensure_equals(md.get<Reftime>(), Reftime::decodeString("2013-04-03 00:00:00"));
+}
+
+// Test scanning a bufr with all sorts of wrong dates
+template<> template<>
+void to::test<15>()
+{
+    Metadata md;
+    scan::Bufr scanner;
+    scanner.open("inbound/wrongdate.bufr");
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(md.get<Reftime>().defined()).isfalse());
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(md.get<Reftime>().defined()).isfalse());
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(md.get<Reftime>().defined()).isfalse());
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(md.get<Reftime>().defined()).isfalse());
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(md.get<Reftime>().defined()).isfalse());
+
+    wassert(actual(scanner.next(md)).istrue());
+    wassert(actual(md.get<Reftime>().defined()).isfalse());
+
+    wassert(actual(scanner.next(md)).isfalse());
 }
 
 }
