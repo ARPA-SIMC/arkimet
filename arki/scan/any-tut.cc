@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -312,6 +312,15 @@ void to::test<4>()
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 2);
     }
+}
+
+// Test reading NetCDF files
+template<> template<>
+void to::test<5>()
+{
+    metadata::Collection mdc;
+    wassert(actual(scan::scan("inbound/example_1.nc", mdc)).istrue());
+    wassert(actual(mdc.size()) == 1);
 }
 
 }

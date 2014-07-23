@@ -44,6 +44,9 @@
 #ifdef HAVE_VM2
 #include <arki/scan/vm2.h>
 #endif
+#ifdef HAVE_NETCDF
+#include <arki/scan/nc.h>
+#endif
 
 using namespace std;
 using namespace wibble;
@@ -98,6 +101,16 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
 #ifdef HAVE_VM2
     if (format == "vm2") {
         scan::Vm2 scanner;
+        scanner.open(pathname, basedir, relname);
+        Metadata md;
+        while (scanner.next(md))
+            c(md);
+        return true;
+    }
+#endif
+#ifdef HAVE_NETCDF
+    if (format == "nc") {
+        scan::NetCDF scanner;
         scanner.open(pathname, basedir, relname);
         Metadata md;
         while (scanner.next(md))
@@ -260,6 +273,10 @@ bool canScan(const std::string& file)
     if (ext == "vm2")
         return true;
 #endif
+#ifdef HAVE_NETCDF
+    if (ext == "nc")
+        return true;
+#endif
 	return false;
 }
 
@@ -301,7 +318,6 @@ void compress(const std::string& file, size_t groupsize)
 
 void Validator::validate(const Metadata& md) const
 {
-    bool found = false;
     sys::Buffer buf = md.getDataFromValue();
     if (buf.data()) validate(buf.data(), buf.size());
     buf = md.getDataFromFile();
@@ -335,6 +351,10 @@ const Validator& Validator::by_filename(const std::string& filename)
 #ifdef HAVE_VM2
    if (ext == "vm2")
        return vm2::validator();
+#endif
+#ifdef HAVE_NETCDF
+   if (ext == "nc")
+       return netcdf::validator();
 #endif
 	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
 }

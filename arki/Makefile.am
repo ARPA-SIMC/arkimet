@@ -470,6 +470,15 @@ libarkimet_types_la_LDFLAGS += $(ODIMH5_LIBS)
 tests_arki_test_LDADD += $(ODIMH5_LIBS)
 endif
 
+if NETCDF
+nobase_dist_arkiinclude_HEADERS += scan/nc.h
+libarkimet_types_la_SOURCES += scan/nc.cc
+tests_arki_test_SOURCES += scan/nc-tut.cc
+AM_CPPFLAGS += $(NETCDF_CFLAGS)
+libarkimet_types_la_LDFLAGS += $(NETCDF_LIBS)
+tests_arki_test_LDADD += $(NETCDF_LIBS)
+endif
+
 if GEOS
 AM_CPPFLAGS += $(GEOS_CFLAGS)
 libarkimet_la_LDFLAGS += $(GEOS_LIBS)
