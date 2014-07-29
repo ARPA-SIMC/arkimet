@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/libconfig.h>
 #include <arki/dataset/data.h>
 
 namespace arki {

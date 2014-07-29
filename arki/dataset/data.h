@@ -4,7 +4,7 @@
 /*
  * data - Read/write functions for data blobs
  *
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/libconfig.h>
 #include <arki/transaction.h>
 #include <arki/nag.h>
 #include <string>
