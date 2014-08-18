@@ -24,6 +24,7 @@
  */
 
 #include <arki/libconfig.h>
+#include <stddef.h>
 #include <string>
 #include <sys/types.h>
 

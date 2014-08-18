@@ -20,15 +20,14 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/types/source.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
-#include <arki/types/source.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/datareader.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include "config.h"
 #include <sstream>
 
 #ifdef HAVE_LUA

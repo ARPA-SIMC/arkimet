@@ -19,9 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
 #include <arki/utils/datareader.h>
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>

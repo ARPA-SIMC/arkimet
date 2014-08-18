@@ -23,8 +23,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/libconfig.h>
 #include <arki/types.h>
 #include <wibble/sys/buffer.h>
+#include <stddef.h>
 #include <stdint.h>
 
 struct lua_State;
