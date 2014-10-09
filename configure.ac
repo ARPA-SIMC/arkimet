@@ -233,7 +233,7 @@ if test $enable_odimh5 = yes
 then
 	dnl Check for hdf5
 	AC_CHECK_LIB([hdf5], [main], [have_odimh5=yes], [have_odimh5=no])
-	AC_CHECK_HEADER([hdf5.h], [true], [have_odimh5_no])
+	AC_CHECK_HEADER([hdf5.h], [true], [have_odimh5=no])
 	if test $have_odimh5 = yes
 	then
 		AC_DEFINE([HAVE_ODIMH5], 1, [odimh5 format enabled])
