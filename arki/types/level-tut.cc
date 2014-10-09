@@ -330,6 +330,49 @@ void to::test<15>()
     wassert(t);
 }
 
+// Check GRIB2D with missing values
+template<> template<>
+void to::test<16>()
+{
+    Item<Level> o = level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
+                                          level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
+    ensure_equals(o->style(), Level::GRIB2D);
+    const level::GRIB2D* v = o->upcast<level::GRIB2D>();
+    ensure_equals(v->type1(), level::GRIB2S::MISSING_TYPE);
+    ensure_equals(v->scale1(), level::GRIB2S::MISSING_SCALE);
+    ensure_equals(v->value1(), level::GRIB2S::MISSING_VALUE);
+    ensure_equals(v->type2(), level::GRIB2S::MISSING_TYPE);
+    ensure_equals(v->scale2(), level::GRIB2S::MISSING_SCALE);
+    ensure_equals(v->value2(), level::GRIB2S::MISSING_VALUE);
+
+    ensure_equals(o, Item<Level>(level::GRIB2D::create(
+                level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
+                level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE
+                )));
+    ensure(o != level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, 1,
+                                      level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+    ensure(o != level::GRIB2D::create(1, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
+                                      level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+    ensure(o != level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, 1, level::GRIB2S::MISSING_VALUE,
+                                      level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+    ensure(o != level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
+                                      1, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+    ensure(o != level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
+                                      level::GRIB2S::MISSING_TYPE, 1, level::GRIB2S::MISSING_VALUE));
+    ensure(o != level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
+                                      level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, 1));
+
+    ensure(o != level::GRIB1::create(100));
+    ensure(o != level::GRIB1::create(100, 50000));
+
+    // Test encoding/decoding
+    wassert(actual(o).serializes());
+
+    // Test generating a matcher expression
+    ensure_equals(o->exactQuery(), "GRIB2D,-,-,-,-,-,-");
+    Matcher m = Matcher::parse("level:" + o->exactQuery());
+    ensure(m(o));
+}
 
 
 }

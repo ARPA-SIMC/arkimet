@@ -165,12 +165,12 @@ Item<Level> Level::decode(const unsigned char* buf, size_t len)
 			return level::GRIB2S::create(type, scale, value);
 		}
 		case GRIB2D: {
-			unsigned char type1 = dec.popUInt(1, "GRIB2D type1");
-			unsigned char scale1 = dec.popUInt(1, "GRIB2D scale2");
-			unsigned int value1 = dec.popVarint<unsigned int>("GRIB2D value1");
-			unsigned char type2 = dec.popUInt(1, "GRIB2D type2");
-			unsigned char scale2 = dec.popUInt(1, "GRIB2D scale2");
-			unsigned int value2 = dec.popVarint<unsigned int>("GRIB2D value2");
+			uint8_t type1 = dec.popUInt(1, "GRIB2D level type1");
+			uint8_t scale1 = dec.popUInt(1, "GRIB2D level scale1");
+			uint32_t value1 = dec.popVarint<uint32_t>("GRIB2D level value1");
+			uint8_t type2 = dec.popUInt(1, "GRIB2D level type2");
+			uint8_t scale2 = dec.popUInt(1, "GRIB2D level scale2");
+			uint32_t value2 = dec.popVarint<uint32_t>("GRIB2D level value2");
 			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
 		}
 		case ODIMH5: {
@@ -292,12 +292,12 @@ Item<Level> Level::decodeString(const std::string& val)
 		case Level::GRIB2D: {
 			const char* start = inner.c_str();
 
-			int type1 = getNumber(start, "type of first level");
-			int scale1 = getNumber(start, "scale of value of first level");
-			int value1 = getNumber(start, "value of first level");
-			int type2 = getNumber(start, "type of second level");
-			int scale2 = getNumber(start, "scale of value of second level");
-			int value2 = getNumber(start, "value of second level");
+			uint8_t type1 = getUnsigned<uint8_t>(start, "type of first level", level::GRIB2S::MISSING_TYPE);
+			uint32_t scale1 = getUnsigned<uint32_t>(start, "scale of value of first level", level::GRIB2S::MISSING_SCALE);
+			uint32_t value1 = getUnsigned<uint32_t>(start, "value of first level", level::GRIB2S::MISSING_VALUE);
+			uint8_t type2 = getUnsigned<uint8_t>(start, "type of second level", level::GRIB2S::MISSING_TYPE);
+			uint32_t scale2 = getUnsigned<uint32_t>(start, "scale of value of second level", level::GRIB2S::MISSING_SCALE);
+			uint32_t value2 = getUnsigned<uint32_t>(start, "value of second level", level::GRIB2S::MISSING_VALUE);
 			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
 		}
 		case Level::ODIMH5: {
@@ -368,12 +368,43 @@ static int arkilua_new_grib2s(lua_State* L)
 
 static int arkilua_new_grib2d(lua_State* L)
 {
-	int type1 = luaL_checkint(L, 1);
-	int scale1 = luaL_checkint(L, 2);
-	int val1 = luaL_checkint(L, 3);
-	int type2 = luaL_checkint(L, 4);
-	int scale2 = luaL_checkint(L, 5);
-	int val2 = luaL_checkint(L, 6);
+    uint8_t type1;
+    uint8_t scale1;
+    uint32_t val1;
+    uint8_t type2;
+    uint8_t scale2;
+    uint32_t val2;
+
+    if (lua_isnil(L, 1))
+        type1 = level::GRIB2S::MISSING_TYPE;
+    else
+        type1 = luaL_checkint(L, 1);
+
+    if (lua_isnil(L, 2))
+        scale1 = level::GRIB2S::MISSING_SCALE;
+    else
+        scale1 = luaL_checkint(L, 2);
+
+    if (lua_isnil(L, 3))
+        val1 = level::GRIB2S::MISSING_VALUE;
+    else
+        val1 = luaL_checkint(L, 3);
+
+    if (lua_isnil(L, 1))
+        type2 = level::GRIB2S::MISSING_TYPE;
+    else
+        type2 = luaL_checkint(L, 4);
+
+    if (lua_isnil(L, 2))
+        scale2 = level::GRIB2S::MISSING_SCALE;
+    else
+        scale2 = luaL_checkint(L, 5);
+
+    if (lua_isnil(L, 3))
+        val2 = level::GRIB2S::MISSING_VALUE;
+    else
+        val2 = luaL_checkint(L, 6);
+
 	Item<> res = level::GRIB2D::create(type1, scale1, val1, type2, scale2, val2);
 	res->lua_push(L);
 	return 1;
@@ -755,42 +786,113 @@ void GRIB2D::encodeWithoutEnvelope(Encoder& enc) const
 std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
 {
     utils::SaveIOState sios(o);
-    return o
-        << formatStyle(style()) << "("
-        << setfill('0') << internal
-        << setw(3) << (unsigned)m_type1 << ", "
-        << setw(3) << (unsigned)m_scale1 << ", "
-        << setw(10) << m_value1 << ", "
-        << setw(3) << (unsigned)m_type2 << ", "
-        << setw(3) << (unsigned)m_scale2 << ", "
-        << setw(10) << m_value2 << ")";
+
+    o << formatStyle(style()) << "(";
+
+    if (m_type1 == GRIB2S::MISSING_TYPE)
+        o << setfill(' ') << internal << setw(3) << "-" << ", ";
+    else
+        o << setfill('0') << internal << setw(3) << (unsigned)m_type1 << ", ";
+
+    if (m_scale1 == GRIB2S::MISSING_SCALE)
+        o << setfill(' ') << internal << setw(3) << "-" << ", ";
+    else
+        o << setfill('0') << internal << setw(3) << (unsigned)m_scale1 << ", ";
+
+    if (m_value1 == GRIB2S::MISSING_VALUE)
+        o << setfill(' ') << internal << setw(10) << "-" << ",";
+    else
+        o << setfill('0') << internal << setw(10) << m_value1 << ",";
+
+    if (m_type2 == GRIB2S::MISSING_TYPE)
+        o << setfill(' ') << internal << setw(3) << "-" << ", ";
+    else
+        o << setfill('0') << internal << setw(3) << (unsigned)m_type2 << ", ";
+
+    if (m_scale2 == GRIB2S::MISSING_SCALE)
+        o << setfill(' ') << internal << setw(3) << "-" << ", ";
+    else
+        o << setfill('0') << internal << setw(3) << (unsigned)m_scale2 << ", ";
+
+    if (m_value2 == GRIB2S::MISSING_VALUE)
+        o << setfill(' ') << internal << setw(10) << "-" << ")";
+    else
+        o << setfill('0') << internal << setw(10) << m_value2 << ")";
+
+    return o;
 }
 void GRIB2D::serialiseLocal(Emitter& e, const Formatter* f) const
 {
     Level::serialiseLocal(e, f);
-    e.add("l1", (unsigned)m_type1);
-    e.add("s1", (unsigned)m_scale1);
-    e.add("v1", m_value1);
-    e.add("l2", (unsigned)m_type2);
-    e.add("s2", (unsigned)m_scale2);
-    e.add("v2", m_value2);
+
+    if (m_type1 == GRIB2S::MISSING_TYPE)
+    {
+        e.add("l1"); e.add_null();
+    }
+    else
+        e.add("l1", (unsigned)m_type1);
+
+    if (m_scale1 == GRIB2S::MISSING_SCALE)
+    {
+        e.add("s1"); e.add_null();
+    } else
+        e.add("s1", (unsigned)m_scale1);
+
+    if (m_value1 == GRIB2S::MISSING_VALUE)
+    {
+        e.add("v1"); e.add_null();
+    } else
+        e.add("v1", m_value1);
+
+    if (m_type2 == GRIB2S::MISSING_TYPE)
+    {
+        e.add("l2"); e.add_null();
+    }
+    else
+        e.add("l2", (unsigned)m_type2);
+
+    if (m_scale2 == GRIB2S::MISSING_SCALE)
+    {
+        e.add("s2"); e.add_null();
+    } else
+        e.add("s2", (unsigned)m_scale2);
+
+    if (m_value2 == GRIB2S::MISSING_VALUE)
+    {
+        e.add("v2"); e.add_null();
+    } else
+        e.add("v2", m_value2);
+
 }
 Item<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
+    const Node& l1 = val["l1"];
+    const Node& s1 = val["s1"];
+    const Node& v1 = val["v1"];
+    const Node& l2 = val["l2"];
+    const Node& s2 = val["s2"];
+    const Node& v2 = val["v2"];
+
     return GRIB2D::create(
-            val["l1"].want_int("parsing GRIB2D level type1"),
-            val["s1"].want_int("parsing GRIB2D level scale1"),
-            val["v1"].want_int("parsing GRIB2D level value1"),
-            val["l2"].want_int("parsing GRIB2D level type2"),
-            val["s2"].want_int("parsing GRIB2D level scale2"),
-            val["v2"].want_int("parsing GRIB2D level value2"));
+        l1.is_null() ? GRIB2S::MISSING_TYPE : l1.want_int("parsing GRIB2D level type1"),
+        s1.is_null() ? GRIB2S::MISSING_SCALE : s1.want_int("parsing GRIB2D level scale1"),
+        v1.is_null() ? GRIB2S::MISSING_VALUE : v1.want_int("parsing GRIB2D level value1"),
+        l2.is_null() ? GRIB2S::MISSING_TYPE : l2.want_int("parsing GRIB2D level type2"),
+        s2.is_null() ? GRIB2S::MISSING_SCALE : s2.want_int("parsing GRIB2D level scale2"),
+        v2.is_null() ? GRIB2S::MISSING_VALUE : v2.want_int("parsing GRIB2D level value2"));
 }
 std::string GRIB2D::exactQuery() const
 {
-	return str::fmtf("GRIB2D,%d,%d,%d,%d,%d,%d",
-			(int)m_type1, (int)m_scale1, (int)m_value1,
-			(int)m_type2, (int)m_scale2, (int)m_value2);
+    stringstream res;
+    res << "GRIB2D,";
+    if (m_type1 == GRIB2S::MISSING_TYPE) res << "-,"; else res << (unsigned)m_type1 << ",";
+    if (m_scale1 == GRIB2S::MISSING_SCALE) res << "-,"; else res << (unsigned)m_scale1 << ",";
+    if (m_value1 == GRIB2S::MISSING_VALUE) res << "-,"; else res << m_value1 << ",";
+    if (m_type2 == GRIB2S::MISSING_TYPE) res << "-,"; else res << (unsigned)m_type2 << ",";
+    if (m_scale2 == GRIB2S::MISSING_SCALE) res << "-,"; else res << (unsigned)m_scale2 << ",";
+    if (m_value2 == GRIB2S::MISSING_VALUE) res << "-"; else res << m_value2;
+    return res.str();
 }
 const char* GRIB2D::lua_type_name() const { return "arki.types.level.grib2d"; }
 
@@ -824,21 +926,40 @@ bool GRIB2D::operator==(const Type& o) const
 #ifdef HAVE_LUA
 bool GRIB2D::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (name == "type1")
-		lua_pushnumber(L, type1());
-	else if (name == "scale1")
-		lua_pushnumber(L, scale1());
-	else if (name == "value1")
-		lua_pushnumber(L, value1());
-	else if (name == "type2")
-		lua_pushnumber(L, type2());
-	else if (name == "scale2")
-		lua_pushnumber(L, scale2());
-	else if (name == "value2")
-		lua_pushnumber(L, value2());
-	else
-		return Level::lua_lookup(L, name);
-	return true;
+    if (name == "type1")
+        if (m_type1 == GRIB2S::MISSING_TYPE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_type1);
+    else if (name == "scale1")
+        if (m_scale1 == GRIB2S::MISSING_SCALE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_scale1);
+    else if (name == "value1")
+        if (m_value1 == GRIB2S::MISSING_VALUE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_value1);
+    else if (name == "type2")
+        if (m_type2 == GRIB2S::MISSING_TYPE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_type2);
+    else if (name == "scale2")
+        if (m_scale2 == GRIB2S::MISSING_SCALE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_scale2);
+    else if (name == "value2")
+        if (m_value2 == GRIB2S::MISSING_VALUE)
+            lua_pushnil(L);
+        else
+            lua_pushnumber(L, m_value2);
+    else
+        return Level::lua_lookup(L, name);
+
+    return true;
 }
 #endif
 

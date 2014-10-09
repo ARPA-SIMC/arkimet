@@ -162,20 +162,20 @@ public:
 class GRIB2D : public GRIB2
 {
 protected:
-	unsigned char m_type1;
-	unsigned char m_scale1;
-	unsigned int m_value1;
-	unsigned char m_type2;
-	unsigned char m_scale2;
-	unsigned int m_value2;
+	uint8_t m_type1;
+	uint8_t  m_scale1;
+	uint32_t m_value1;
+	uint8_t m_type2;
+	uint8_t  m_scale2;
+	uint32_t m_value2;
 
 public:
-	unsigned type1() const { return m_type1; }
-	unsigned scale1() const { return m_scale1; }
-	unsigned value1() const { return m_value1; }
-	unsigned type2() const { return m_type2; }
-	unsigned scale2() const { return m_scale2; }
-	unsigned value2() const { return m_value2; }
+	uint8_t type1() const { return m_type1; }
+	uint8_t scale1() const { return m_scale1; }
+	uint32_t value1() const { return m_value1; }
+	uint8_t type2() const { return m_type2; }
+	uint8_t scale2() const { return m_scale2; }
+	uint32_t value2() const { return m_value2; }
 
 	virtual Style style() const;
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
@@ -188,8 +188,9 @@ public:
 	virtual int compare_local(const Level& o) const;
 	virtual bool operator==(const Type& o) const;
 
-	static Item<GRIB2D> create(unsigned char type1, unsigned char scale1, unsigned int val1,
-                               unsigned char type2, unsigned char scale2, unsigned int val2);
+    static Item<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
+                               uint8_t type2, uint8_t scale2, uint32_t val2);
+
 	static Item<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
 };
 
