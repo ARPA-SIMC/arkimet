@@ -53,3 +53,22 @@ function read_grib_table(edition, table)
 
   return res
 end
+
+
+function get_grib2_table_prefix(centre, table_version, local_table_version)
+    local default_table_version = 4
+
+    if table_version == nil or table_version == 255 then
+        table_version = default_table_version
+    end
+
+    if local_table_version ~= nil and local_table_version ~= 0 then
+        centres = read_grib_table(1, "0")
+        if centres[centre] ~= nil then
+            return string.format('tables/local/%s/%d/',
+                centres:abbr(centre), table_version)
+        end
+    end
+
+    return string.format('tables/%d/', table_version)
+end

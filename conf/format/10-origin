@@ -11,8 +11,18 @@ function fmt_origin(v)
 		return string.format("GRIB1 from %s, subcentre %d, process %d",
 			grib1_centres:desc(v.centre), v.subcentre, v.process)
 	elseif v.style == "GRIB2" then
+        -- TODO: index table_version for processtype "{table_version}/4.3"
 		-- v.centre, v.subcentre, v.processtype, v.bgprocessid, v.processid
-		return nil
+        table_version = 4
+        processtypes = read_grib_table(2, string.format("tables/%d/4.3", table_version))
+        if processtypes[v.processtype] then
+            processtype = processtypes:desc(v.processtype)
+        else
+            processtype = string.format("type %d", v.processtype)
+        end
+
+	    return string.format("GRIB2 from %s, subcentre %d, type %s, background process %d, process %d",
+            grib1_centres:desc(v.centre), v.subcentre, processtype, v.bgprocessid, v.processid)
 	elseif v.style == "BUFR" then
 		-- v.centre, v.subcentre
 		return nil

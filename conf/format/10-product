@@ -11,7 +11,22 @@ function fmt_product(v)
 			return string.gsub(names:desc(product), '[*][*]', "^")
 		end
 	elseif v.style == "GRIB2" then
-		-- v.centre, v.discipline, v.category, v.number
+		-- v.centre, v.discipline, v.category, v.number, v.table_version, v.local_table_version
+        centre, category, discipline, number, table_version, local_table_version = v.centre, v.category, v.discipline, v.number, v.table_version, v.local_table_version
+        if table_version == nil then
+            table_version = 4
+        end
+
+        if local_table_version == nil then
+            local_table_version = 0
+        end
+        tableprefix = get_grib2_table_prefix(centre, table_version, local_table_version)
+        tablename = tableprefix .. string.format("4.2.%d.%d", discipline, category)
+        names = read_grib_table(2, tablename)
+
+        if names[number] then
+            return string.gsub(names:desc(number), '[*][*]', "^")
+        end
 	elseif v.style == "BUFR" then
 		-- v.type, v.subtype, v.localsubtype
 	elseif v.style == "VM2" then

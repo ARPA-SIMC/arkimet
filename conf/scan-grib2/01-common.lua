@@ -17,7 +17,9 @@ function scan(md)
 	md:set(arki_product.grib2(gribl.centre,
 				  gribl.discipline,
 				  gribl.parameterCategory,
-				  gribl.parameterNumber))
+				  gribl.parameterNumber,
+                  gribl.tablesVersion,
+                  gribl.localTablesVersion))
 
 	-- Level
 	local ltype1, lscale1, lvalue1 = gribl.typeOfFirstFixedSurface, 0, 0
