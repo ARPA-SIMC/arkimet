@@ -133,6 +133,30 @@ void to::test<3>()
 	ensure_not_matches("level:GRIB2D,,,,115", md);
 	//m = Matcher::parse("level:BUFR,11,12,13");
 	//ensure(not m(md));
+    md.set(level::GRIB2D::create(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
+                                 level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE));
+
+    ensure_matches("level:GRIB2D", md);
+    ensure_matches("level:GRIB2D,,,", md);
+    ensure_matches("level:GRIB2D,-,,", md);
+    ensure_matches("level:GRIB2D,,-,", md);
+    ensure_matches("level:GRIB2D,,,-", md);
+    ensure_matches("level:GRIB2D,-,-,", md);
+    ensure_matches("level:GRIB2D,-,,-", md);
+    ensure_matches("level:GRIB2D,,-,-", md);
+    ensure_matches("level:GRIB2D,-,-,-", md);
+    ensure_matches("level:GRIB2D,-,-,-,-", md);
+    ensure_matches("level:GRIB2D,-,-,-,-,-", md);
+    ensure_matches("level:GRIB2D,-,-,-,-,-", md);
+    ensure_not_matches("level:GRIB2D,1", md);
+    ensure_not_matches("level:GRIB2D,,1", md);
+    ensure_not_matches("level:GRIB2D,,,1", md);
+    ensure_not_matches("level:GRIB2D,1,-", md);
+    ensure_not_matches("level:GRIB2D,-,1", md);
+    ensure_not_matches("level:GRIB2D,-,-,1", md);
+    ensure_not_matches("level:GRIB2D,-,-,1", md);
+    ensure_not_matches("level:GRIB2D,-,-,-,1", md);
+    ensure_not_matches("level:GRIB2D,-,-,-,-,1", md);
 }
 
 // Try matching ODIMH5 level

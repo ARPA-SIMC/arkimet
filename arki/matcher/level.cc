@@ -108,39 +108,38 @@ std::string MatchLevelGRIB2S::toString() const
 
 MatchLevelGRIB2D::MatchLevelGRIB2D(const std::string& pattern)
 {
-	OptionalCommaList args(pattern);
-	type1 = args.getInt(0, -1);
-	scale1 = args.getInt(1, -1);
-	value1 = args.getInt(2, -1);
-	type2 = args.getInt(3, -1);
-	scale2 = args.getInt(4, -1);
-	value2 = args.getInt(5, -1);
+    OptionalCommaList args(pattern);
+    type1 = args.getUnsignedWithMissing(0, level::GRIB2S::MISSING_TYPE, has_type1);
+    scale1 = args.getUnsignedWithMissing(1, level::GRIB2S::MISSING_SCALE, has_scale1);
+    value1 = args.getUnsignedWithMissing(2, level::GRIB2S::MISSING_VALUE, has_value1);
+    type2 = args.getUnsignedWithMissing(3, level::GRIB2S::MISSING_TYPE, has_type2);
+    scale2 = args.getUnsignedWithMissing(4, level::GRIB2S::MISSING_SCALE, has_scale2);
+    value2 = args.getUnsignedWithMissing(5, level::GRIB2S::MISSING_VALUE, has_value2);
 }
 
 bool MatchLevelGRIB2D::matchItem(const Item<>& o) const
 {
 	const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(o.ptr());
-	if (!v) return false;
-	if (type1 != -1 && (unsigned)type1 != v->type1()) return false;
-	if (scale1 != -1 && (unsigned)scale1 != v->scale1()) return false;
-	if (value1 >= 0 && (unsigned)value1 != v->value1()) return false;
-	if (type2 != -1 && (unsigned)type2 != v->type2()) return false;
-	if (scale2 != -1 && (unsigned)scale2 != v->scale2()) return false;
-	if (value2 >= 0 && (unsigned)value2 != v->value2()) return false;
-	return true;
+    if (has_type1 && type1 != v->type1()) return false;
+    if (has_scale1 && scale1 != v->scale1()) return false;
+    if (has_value1 && value1 != v->value1()) return false;
+    if (has_type2 && type2 != v->type2()) return false;
+    if (has_scale2 && scale2 != v->scale2()) return false;
+    if (has_value2 && value2 != v->value2()) return false;
+    return true;
 }
 
 std::string MatchLevelGRIB2D::toString() const
 {
-	CommaJoiner res;
-	res.add("GRIB2D");
-	if (type1 != -1) res.add(type1); else res.addUndef();
-	if (scale1 != -1) res.add(scale1); else res.addUndef();
-	if (value1 != -1) res.add(value1); else res.addUndef();
-	if (type2 != -1) res.add(type2); else res.addUndef();
-	if (scale2 != -1) res.add(scale2); else res.addUndef();
-	if (value2 != -1) res.add(value2); else res.addUndef();
-	return res.join();
+    CommaJoiner res;
+    res.add("GRIB2D");
+    if (has_type1) res.add((unsigned)type1, (unsigned)level::GRIB2S::MISSING_TYPE); else res.addUndef();
+    if (has_scale1) res.add((unsigned)scale1, (unsigned)level::GRIB2S::MISSING_SCALE); else res.addUndef();
+    if (has_value1) res.add(value1, level::GRIB2S::MISSING_VALUE); else res.addUndef();
+    if (has_type2) res.add((unsigned)type2, (unsigned)level::GRIB2S::MISSING_TYPE); else res.addUndef();
+    if (has_scale2) res.add((unsigned)scale2, (unsigned)level::GRIB2S::MISSING_SCALE); else res.addUndef();
+    if (has_value2) res.add(value2, level::GRIB2S::MISSING_VALUE); else res.addUndef();
+    return res.join();
 }
 
 static void split(const std::string& str, std::vector<std::string>& result)

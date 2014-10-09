@@ -69,13 +69,18 @@ struct MatchLevelGRIB2S : public MatchLevel
 
 struct MatchLevelGRIB2D : public MatchLevel
 {
-	// This is -1 when it should be ignored in the match
-	int type1;
-	int scale1;
-	int value1;
-	int type2;
-	int scale2;
-	int value2;
+    uint8_t type1;
+    bool has_type1;
+    uint8_t scale1;
+    bool has_scale1;
+    uint32_t value1;
+    bool has_value1;
+    uint8_t type2;
+    bool has_type2;
+    uint8_t scale2;
+    bool has_scale2;
+    uint32_t value2;
+    bool has_value2;
 
 	MatchLevelGRIB2D(const std::string& pattern);
 	bool matchItem(const Item<>& o) const;
