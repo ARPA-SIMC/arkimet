@@ -51,13 +51,13 @@ function scan(md)
             local tr_spu = gribl.indicatorOfUnitForTimeRange
             local tr_spl = gribl.lengthOfTimeRange
             if tr_sp ~= nil and tr_spu ~= nil and tr_spl ~= nil then
-                if pdtn == 8 and gribl.typeOfProcessedData == 0 then
+                if pdtn >= 8 and pdtn <= 14 and gribl.typeOfProcessedData == 0 then
                     md:set(arki_timerange.timedef(0, "s", tr_sp, tr_spl, tr_spu))
                 else
                     md:set(arki_timerange.timedef(tr_ft + tr_spl, tr_ftu, tr_sp, tr_spl, tr_spu))
                 end
             else
-                if pdtn == 8 and gribl.typeOfProcessedData == 0 then
+                if pdtn >= 8 and pdtn <= 14 and gribl.typeOfProcessedData == 0 then
                     md:set(arki_timerange.timedef(0, "s"))
                 else
                     md:set(arki_timerange.timedef(tr_ft, tr_ftu))
