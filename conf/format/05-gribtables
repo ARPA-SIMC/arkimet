@@ -66,7 +66,7 @@ function get_grib2_table_prefix(centre, table_version, local_table_version)
         centres = read_grib_table(1, "0")
         if centres[centre] ~= nil then
             return string.format('tables/local/%s/%d/',
-                centres:abbr(centre), table_version)
+                centres:abbr(centre), local_table_version)
         end
     end
 
