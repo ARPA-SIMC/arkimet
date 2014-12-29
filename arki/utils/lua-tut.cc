@@ -50,7 +50,7 @@ void to::test<1>()
     wassert(actual(lua_gettop(L)) == 0);
 
     wassert(actual(L.run_string("a=3")) == "");
-    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near <eof>"));
+    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
     wassert(actual(lua_gettop(L)) == 0);
 }
 
@@ -93,7 +93,7 @@ void to::test<3>()
     wassert(actual(lua_gettop(L)) == 0);
 
     wassert(actual(L.run_string("a=3")) == "");
-    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near <eof>"));
+    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
 }
 
 template<> template<>
@@ -106,7 +106,7 @@ void to::test<4>()
     wassert(actual(lua_gettop(L)) == 0);
 
     wassert(actual(L.run_string("a=3")) == "");
-    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near <eof>"));
+    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
 }
 
 template<> template<>
@@ -119,7 +119,7 @@ void to::test<5>()
     wassert(actual(lua_gettop(L)) == 0);
 
     wassert(actual(L.run_string("a=3")) == "");
-    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near <eof>"));
+    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
 }
 
 template<> template<>
@@ -132,7 +132,7 @@ void to::test<6>()
     wassert(actual(lua_gettop(L)) == 0);
 
     wassert(actual(L.run_string("a=3")) == "");
-    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near <eof>"));
+    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
 }
 
 template<> template<>
@@ -141,7 +141,7 @@ void to::test<7>()
     // Test running trivial Lua code, with arkimet libraries loaded
     Lua L(true, true);
     wassert(actual(L.run_string("a=3")) == "");
-    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near <eof>"));
+    wassert(actual(L.run_string("foo(")).matches("unexpected symbol near"));
 }
 
 // Run lua-example/*.lua files, doctest style
