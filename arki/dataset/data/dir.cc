@@ -491,6 +491,26 @@ size_t OstreamWriter::stream(Metadata& md, int out) const
     throw wibble::exception::Consistency("dir::OstreamWriter::stream not implemented");
 }
 
+HoleWriter::HoleWriter(const std::string& format, const std::string& relname, const std::string& absname, bool truncate)
+    : Writer(format, relname, absname, truncate)
+{
+}
+
+size_t HoleWriter::write_file(const Metadata& md, int fd, const std::string& absname)
+{
+    utils::fd::HandleWatch hw(absname, fd);
+
+    try {
+        if (ftruncate(fd, md.source->getSize()) == -1)
+            throw wibble::exception::File(absname, "cannot set file size");
+
+        return md.source->getSize();
+    } catch (...) {
+        unlink(absname.c_str());
+        throw;
+    }
+}
+
 }
 }
 }

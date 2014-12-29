@@ -313,6 +313,24 @@ struct ForceDirSegmentManager : public BaseSegmentManager
     }
 };
 
+#if 0
+/// Segment manager that always uses hole file segments
+struct HoleFileSegmentManager : public BaseSegmentManager
+{
+    HoleFileSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
+
+    auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    {
+        return auto_ptr<data::Writer>(new mock::HoleWriter(format, relname, absname, truncate));
+    }
+
+    auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname)
+    {
+        return auto_ptr<data::Maint>(new mock::HoleMaint);
+    }
+};
+#endif
+
 }
 
 SegmentManager::~SegmentManager()

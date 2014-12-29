@@ -84,6 +84,9 @@ public:
 
     virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
+    /// Return the size of the data, or 0 if it is unknown
+    virtual uint64_t getSize() const = 0;
+
     // Management functions for inline or cached data
 
     /**
@@ -168,6 +171,8 @@ struct Blob : public Source
 	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;
 
+    virtual uint64_t getSize() const;
+
     /// Return the absolute pathname to the data file
     std::string absolutePathname() const;
 
@@ -207,6 +212,8 @@ struct URL : public Source
 
     virtual wibble::sys::Buffer loadData() const;
 
+    virtual uint64_t getSize() const;
+
 	static Item<URL> create(const std::string& format, const std::string& url);
 	static Item<URL> decodeMapping(const emitter::memory::Mapping& val);
 };
@@ -221,6 +228,8 @@ struct Inline : public Source
     virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 	virtual const char* lua_type_name() const;
 	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+
+    virtual uint64_t getSize() const;
 
 	virtual int compare_local(const Source& o) const;
 	virtual bool operator==(const Type& o) const;

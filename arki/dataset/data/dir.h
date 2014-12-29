@@ -101,6 +101,20 @@ public:
     off_t link(const std::string& absname);
 };
 
+/**
+ * Same as Writer, but uses ftruncate to write dummy empty file with the
+ * original size but that take up no blocks in the file system. This is used
+ * only for testing.
+ */
+class HoleWriter : public Writer
+{
+protected:
+    virtual size_t write_file(const Metadata& md, int fd, const std::string& absname);
+
+public:
+    HoleWriter(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false);
+};
+
 struct Maint : public data::Maint
 {
     FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);

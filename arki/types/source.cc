@@ -356,6 +356,8 @@ wibble::sys::Buffer Blob::loadData() const
     return buf;
 }
 
+uint64_t Blob::getSize() const { return size; }
+
 Source::Style URL::style() const { return Source::URL; }
 
 void URL::encodeWithoutEnvelope(Encoder& enc) const
@@ -435,6 +437,14 @@ wibble::sys::Buffer URL::loadData() const
     */
 }
 
+uint64_t URL::getSize() const
+{
+    if (m_inline_buf.data())
+        return m_inline_buf.size();
+    else
+        return 0;
+}
+
 Source::Style Inline::style() const { return Source::INLINE; }
 
 void Inline::encodeWithoutEnvelope(Encoder& enc) const
@@ -508,6 +518,8 @@ Item<Inline> Inline::create(const std::string& format, const wibble::sys::Buffer
     res->setCachedData(buf);
     return res;
 }
+
+uint64_t Inline::getSize() const { return size; }
 
 void Inline::dropCachedData() const
 {
