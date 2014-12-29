@@ -33,11 +33,54 @@ namespace dataset {
 namespace data {
 namespace dir {
 
+struct SequenceFile
+{
+    std::string dirname;
+    std::string pathname;
+    int fd;
+
+    SequenceFile(const std::string& pathname);
+    ~SequenceFile();
+
+    /**
+     * Open the sequence file.
+     *
+     * This is not automatically done in the constructor, because Writer, when
+     * truncating, needs to have the time to recreate its directory before
+     * creating the sequence file.
+     */
+    void open();
+
+    /**
+     * Increment the sequence and get the pathname of the file corresponding
+     * to the new value, and the corresponding 'offset', that is, the file
+     * sequence number itself.
+     */
+    std::pair<std::string, size_t> next(const std::string& format);
+
+    /**
+     * Call next() then open its result with O_EXCL; retry with a higher number
+     * if the file already exists.
+     *
+     * Returns the open file descriptor, and the corresponding 'offset', that
+     * is, the file sequence number itself.
+     */
+    void open_next(const std::string& format, std::string& absname, size_t& pos, int& fd);
+
+    static std::string data_fname(size_t pos, const std::string& format);
+};
+
 class Writer : public data::Writer
 {
 protected:
     std::string format;
-    std::string seqfile;
+    SequenceFile seqfile;
+
+    /**
+     * Write the data in md to a file. Delete the file in case of errors. Close fd
+     * in any case. Return the size of the data that has been written.
+     */
+    virtual size_t write_file(const Metadata& md, int fd, const std::string& absname);
 
 public:
     Writer(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false);

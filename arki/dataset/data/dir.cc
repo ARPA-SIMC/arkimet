@@ -72,49 +72,6 @@ struct FdLock
     }
 };
 
-struct SequenceFile
-{
-    std::string pathname;
-    int fd;
-
-    SequenceFile(const std::string& pathname)
-        : pathname(pathname), fd(-1)
-    {
-        fd = open(pathname.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
-        if (fd == -1)
-            throw wibble::exception::File(pathname, "cannot open sequence file");
-    }
-
-    ~SequenceFile()
-    {
-        if (fd != -1)
-            close(fd);
-    }
-
-    size_t next()
-    {
-        FdLock lock(pathname, fd);
-        uint64_t cur;
-
-        // Read the value in the sequence file
-        ssize_t count = pread(fd, &cur, sizeof(cur), 0);
-        if (count < 0)
-            throw wibble::exception::File(pathname, "cannot read sequence file");
-
-        if ((size_t)count < sizeof(cur))
-            cur = 0;
-        else
-            ++cur;
-
-        // Write it out
-        count = pwrite(fd, &cur, sizeof(cur), 0);
-        if (count < 0)
-            throw wibble::exception::File(pathname, "cannot write sequence file");
-
-        return (size_t)cur;
-    }
-};
-
 /// Write the buffer to a file. If the file already exists, does nothing and returns false
 bool add_file(const std::string& absname, const wibble::sys::Buffer& buf)
 {
@@ -135,11 +92,6 @@ bool add_file(const std::string& absname, const wibble::sys::Buffer& buf)
         throw wibble::exception::File(absname, "flushing write");
 
     return true;
-}
-
-std::string data_fname(size_t pos, const std::string& format)
-{
-    return str::fmtf("%06zd.%s", pos, format.c_str());
 }
 
 struct Append : public Transaction
@@ -179,7 +131,7 @@ struct Append : public Transaction
         // guarantee consecutive numbers, so it is just a cosmetic issue. This
         // case should be rare enough that even the cosmetic issue should
         // rarely be noticeable.
-        string target_name = str::joinpath(absname, data_fname(pos, md.source->format));
+        string target_name = str::joinpath(absname, SequenceFile::data_fname(pos, md.source->format));
         unlink(target_name.c_str());
 
         fired = true;
@@ -188,34 +140,115 @@ struct Append : public Transaction
 
 }
 
+SequenceFile::SequenceFile(const std::string& dirname)
+    : dirname(dirname), pathname(str::joinpath(dirname, ".sequence")), fd(-1)
+{
+}
+
+SequenceFile::~SequenceFile()
+{
+    if (fd != -1)
+        close(fd);
+}
+
+void SequenceFile::open()
+{
+    fd = ::open(pathname.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
+    if (fd == -1)
+        throw wibble::exception::File(pathname, "cannot open sequence file");
+}
+
+std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
+{
+    FdLock lock(pathname, fd);
+    uint64_t cur;
+
+    // Read the value in the sequence file
+    ssize_t count = pread(fd, &cur, sizeof(cur), 0);
+    if (count < 0)
+        throw wibble::exception::File(pathname, "cannot read sequence file");
+
+    if ((size_t)count < sizeof(cur))
+        cur = 0;
+    else
+        ++cur;
+
+    // Write it out
+    count = pwrite(fd, &cur, sizeof(cur), 0);
+    if (count < 0)
+        throw wibble::exception::File(pathname, "cannot write sequence file");
+
+    return make_pair(str::joinpath(dirname, data_fname(cur, format)), (size_t)cur);
+}
+
+void SequenceFile::open_next(const std::string& format, std::string& absname, size_t& pos, int& fd)
+{
+    while (true)
+    {
+        pair<string, size_t> dest = next(format);
+
+        fd = ::open(dest.first.c_str(), O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+        if (fd > 0)
+        {
+            absname = dest.first;
+            pos = dest.second;
+            return;
+        }
+        if (errno != EEXIST) throw wibble::exception::File(dest.first, "cannot create file");
+    }
+}
+
+std::string SequenceFile::data_fname(size_t pos, const std::string& format)
+{
+    return str::fmtf("%06zd.%s", pos, format.c_str());
+}
+
 Writer::Writer(const std::string& format, const std::string& relname, const std::string& absname, bool truncate)
-    : data::Writer(relname, absname), format(format), seqfile(str::joinpath(absname, ".sequence"))
+    : data::Writer(relname, absname), format(format), seqfile(absname)
 {
     if (truncate && sys::fs::exists(absname)) sys::fs::rmtree(absname);
 
     // Ensure that the directory 'absname' exists
     wibble::sys::fs::mkpath(absname);
+
+    seqfile.open();
 }
 
 Writer::~Writer()
 {
 }
 
+size_t Writer::write_file(const Metadata& md, int fd, const std::string& absname)
+{
+    utils::fd::HandleWatch hw(absname, fd);
+
+    try {
+        sys::Buffer buf = md.getData();
+
+        ssize_t count = pwrite(fd, buf.data(), buf.size(), 0);
+        if (count < 0)
+            throw wibble::exception::File(absname, "cannot write file");
+
+        if (fdatasync(fd) < 0)
+            throw wibble::exception::File(absname, "flushing write");
+
+        return buf.size();
+    } catch (...) {
+        unlink(absname.c_str());
+        throw;
+    }
+}
+
 void Writer::append(Metadata& md)
 {
-    SequenceFile sf(seqfile);
-    sys::Buffer buf = md.getData();
-    size_t pos = 0;
-    while (true)
-    {
-        pos = sf.next();
-        string fname = str::joinpath(absname, data_fname(pos, format));
-        if (add_file(fname, buf))
-            break;
-    }
+    string dest;
+    size_t pos;
+    int fd;
+    seqfile.open_next(format, dest, pos, fd);
+    size_t size = write_file(md, fd, dest);
 
     // Set the source information that we are writing in the metadata
-    md.source = types::source::Blob::create(md.source->format, "", absname, pos, buf.size());
+    md.source = types::source::Blob::create(md.source->format, "", absname, pos, size);
 }
 
 off_t Writer::append(const wibble::sys::Buffer& buf)
@@ -225,37 +258,28 @@ off_t Writer::append(const wibble::sys::Buffer& buf)
 
 Pending Writer::append(Metadata& md, off_t* ofs)
 {
-    SequenceFile sf(seqfile);
-    sys::Buffer buf = md.getData();
-    string target_name;
-    size_t pos = 0;
-    size_t size = buf.size();
-    while (true)
-    {
-        pos = sf.next();
-        target_name = str::joinpath(absname, data_fname(pos, format));
-        if (add_file(target_name, buf))
-            break;
-    }
-
+    string dest;
+    size_t pos;
+    int fd;
+    seqfile.open_next(format, dest, pos, fd);
+    size_t size = write_file(md, fd, dest);
     *ofs = pos;
-
     return new Append(md, absname, pos, size);
 }
 
 off_t Writer::link(const std::string& srcabsname)
 {
-    SequenceFile sf(seqfile);
-    std::string target_name;
-    size_t pos = 0;
+    size_t pos;
     while (true)
     {
-        pos = sf.next();
-        target_name = str::joinpath(absname, data_fname(pos, format));
-        if (::link(srcabsname.c_str(), target_name.c_str()) == 0)
+        pair<string, size_t> dest = seqfile.next(format);
+        if (::link(srcabsname.c_str(), dest.first.c_str()) == 0)
+        {
+            pos = dest.second;
             break;
+        }
         if (errno != EEXIST)
-            throw wibble::exception::System("cannot link " + absname + " as " + target_name);
+            throw wibble::exception::System("cannot link " + srcabsname + " as " + dest.first);
     }
     return pos;
 }
@@ -436,7 +460,7 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
         UItem<types::source::Blob> source = i->source.upcast<types::source::Blob>();
 
         // Make a hardlink in the target directory for the file pointed by *i
-        off_t pos = writer->link(str::joinpath(source->absolutePathname(), data_fname(source->offset, source->format)));
+        off_t pos = writer->link(str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)));
 
         // Update the source information in the metadata
         i->source = types::source::Blob::create(source->format, rootdir, relname, pos, source->size);
