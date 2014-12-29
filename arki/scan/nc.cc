@@ -138,6 +138,10 @@ void NetCDF::close()
 
 bool NetCDF::next(Metadata& md)
 {
+    if (!backend) return false;
+
+    NcFile& nc = backend->nc;
+
 #if 0
     meteo::vm2::Value value;
     std::string line;

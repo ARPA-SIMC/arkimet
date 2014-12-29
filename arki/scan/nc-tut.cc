@@ -67,14 +67,14 @@ void to::test<1>()
 
     scanner.open("inbound/example_1.nc");
     // See how we scan the first vm2
-    ensure(scanner.next(md));
+    wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
     wassert(actual(md.source).sourceblob_is("vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34));
 
     // Check area
-    ensure(md.get(types::TYPE_AREA).defined());
-    ensure_equals(md.get(types::TYPE_AREA), Item<>(area::VM2::create(1)));
+    wassert(actual(md.get(types::TYPE_AREA).defined()).istrue());
+    wassert(actual(md.get(types::TYPE_AREA)) == Item<>(area::VM2::create(1)));
 
     // Check product
     ensure(md.get(types::TYPE_PRODUCT).defined());
