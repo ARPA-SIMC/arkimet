@@ -119,7 +119,8 @@ MatchLevelGRIB2D::MatchLevelGRIB2D(const std::string& pattern)
 
 bool MatchLevelGRIB2D::matchItem(const Item<>& o) const
 {
-	const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(o.ptr());
+    const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(o.ptr());
+    if (!v) return false;
     if (has_type1 && type1 != v->type1()) return false;
     if (has_scale1 && scale1 != v->scale1()) return false;
     if (has_value1 && value1 != v->value1()) return false;
