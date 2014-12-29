@@ -707,21 +707,6 @@ void to::test<10>()
 {
     WIBBLE_TEST_INFO(info);
 
-    // Shortcut to read one single GRIB from a file
-    struct OneGrib : public Metadata
-    {
-        wibble::tests::LocationInfo& wibble_test_location_info;
-        OneGrib(wibble::tests::LocationInfo& info) : wibble_test_location_info(info) {}
-        void read(const char* fname)
-        {
-            wibble_test_location_info() << "Sample: " << fname;
-            metadata::Collection mdc;
-            wrunchecked(scan::scan(fname, mdc));
-            wassert(actual(mdc.size()) == 1u);
-            wrunchecked(Metadata::operator=(mdc[0]));
-        }
-    };
-
     {
         metadata::Collection mdc;
         wrunchecked(scan::scan("inbound/cosmonudging-t2.grib1", mdc));
@@ -768,62 +753,80 @@ void to::test<10>()
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
     }
 
+
+    // Shortcut to read one single GRIB from a file
+    struct OneGrib
+    {
+        wibble::tests::LocationInfo& wibble_test_location_info;
+        Metadata md;
+
+        OneGrib(wibble::tests::LocationInfo& info) : wibble_test_location_info(info) {}
+        void read(const char* fname)
+        {
+            wibble_test_location_info() << "Sample: " << fname;
+            metadata::Collection mdc;
+            wrunchecked(scan::scan(fname, mdc));
+            wassert(actual(mdc.size()) == 1u);
+            wrunchecked(md = mdc[0]);
+        }
+    };
+
     OneGrib md(info);
 
     md.read("inbound/cosmonudging-t203.grib1");
-    wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,254,0s)"));
 
     md.read("inbound/cosmo/anist_1.grib");
-    wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,254,0s)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anist_1.grib2");
-    wassert(actual(md).contains("timerange", "Timedef(0s,254,0s)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,254,0s)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/fc0ist_1.grib");
-    wassert(actual(md.get<Timerange>()->to_timedef()) == std::string("Timedef(0s,254,0s)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
+    wassert(actual(md.md.get<Timerange>()->to_timedef()) == std::string("Timedef(0s,254,0s)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/anproc_1.grib");
-    wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,1,1h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_2.grib");
-    wassert(actual(md).contains("timerange", "Timedef(0s,0,1h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,0,1h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_3.grib");
-    wassert(actual(md).contains("timerange", "Timedef(0s,2,1h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,2,1h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_4.grib");
-    wassert(actual(md).contains("timerange", "Timedef(0s,0,12h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,0,12h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_1.grib2");
-    wassert(actual(md).contains("timerange", "Timedef(0s,0,24h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,0,24h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/anproc_2.grib2");
-    wassert(actual(md).contains("timerange", "Timedef(0s,1,24h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(0s,1,24h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=0)"));
 
     md.read("inbound/cosmo/fcist_1.grib");
-    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(6h,254,0s)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
+    wassert(actual(md.md.get<Timerange>()->to_timedef()) == string("Timedef(6h,254,0s)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcist_1.grib2");
-    wassert(actual(md).contains("timerange", "Timedef(6h,254,0s)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(6h,254,0s)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcproc_1.grib");
-    wassert(actual(md.get<Timerange>()->to_timedef()) == string("Timedef(6h,1,6h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
+    wassert(actual(md.md.get<Timerange>()->to_timedef()) == string("Timedef(6h,1,6h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
 
     md.read("inbound/cosmo/fcproc_3.grib2");
-    wassert(actual(md).contains("timerange", "Timedef(48h,1,24h)"));
-    wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
+    wassert(actual(md.md).contains("timerange", "Timedef(48h,1,24h)"));
+    wassert(actual(md.md).contains("proddef", "GRIB(tod=1)"));
 }
 
 // Check scanning a GRIB2 with a bug in level scanning code

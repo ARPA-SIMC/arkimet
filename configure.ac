@@ -68,6 +68,9 @@ AC_PROG_YACC
 AM_PROG_CC_STDC
 AC_HEADER_STDC
 
+dnl Use c++11
+AX_CXX_COMPILE_STDCXX_11(noext,optional)
+
 dnl Check that exceptions are working
 dnl AC_CHECK_CXX_EH
 

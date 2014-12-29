@@ -184,8 +184,9 @@ public:
 
     void process(const std::string& filename, File& outfile)
     {
-        auto_ptr<File> file = File::create(BUFR, filename.c_str(), "r");
-        auto_ptr<msg::Importer> importer = msg::Importer::create(BUFR);
+        // Use .release() so the code is the same even with the new C++11's dballe
+        auto_ptr<File> file(File::create(BUFR, filename.c_str(), "r").release());
+        auto_ptr<msg::Importer> importer(msg::Importer::create(BUFR).release());
 
         Rawmsg rmsg;
         while (file->read(rmsg))
@@ -228,9 +229,9 @@ int main(int argc, const char* argv[])
 
         auto_ptr<File> outfile;
         if (opts.outfile->isSet())
-            outfile = File::create(BUFR, opts.outfile->stringValue().c_str(), "wb");
+            outfile.reset(File::create(BUFR, opts.outfile->stringValue().c_str(), "wb").release());
         else
-            outfile = File::create(BUFR, "(stdout)", "wb");
+            outfile.reset(File::create(BUFR, "(stdout)", "wb").release());
 
         if (!opts.hasNext())
         {
