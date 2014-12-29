@@ -40,10 +40,11 @@ class Output;
 
 struct DatasetProcessor
 {
-	virtual ~DatasetProcessor() {}
+    virtual ~DatasetProcessor() {}
 
-	virtual void process(ReadonlyDataset& ds, const std::string& name) = 0;
-	virtual void end() {}
+    virtual void process(ReadonlyDataset& ds, const std::string& name) = 0;
+    virtual void end() {}
+    virtual std::string describe() const = 0;
 };
 
 struct TargetFileProcessor : public DatasetProcessor
@@ -51,12 +52,13 @@ struct TargetFileProcessor : public DatasetProcessor
     DatasetProcessor* next;
     std::string pattern;
     Output& output;
+    std::vector<std::string> description_attrs;
 
     TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, Output& output);
     virtual ~TargetFileProcessor();
 
+    virtual std::string describe() const;
     virtual void process(ReadonlyDataset& ds, const std::string& name);
-
     virtual void end();
 };
 

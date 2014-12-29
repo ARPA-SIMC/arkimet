@@ -32,8 +32,10 @@
 #include <arki/targetfile.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
+#include <wibble/string.h>
 
 using namespace std;
+using namespace wibble;
 
 namespace arki {
 namespace runtime {
@@ -41,6 +43,8 @@ namespace runtime {
 struct Printer : public metadata::Consumer
 {
     virtual bool operator()(const Summary& s) = 0;
+
+    virtual std::string describe() const = 0;
 
     static Printer* create(ProcessorMaker& maker, Output& out);
 };
@@ -60,6 +64,8 @@ struct YamlPrinter : public Printer
     {
         if (formatter) delete formatter;
     }
+
+    virtual string describe() const { return "yaml"; }
 
     virtual bool operator()(Metadata& md)
     {
@@ -93,6 +99,8 @@ struct JSONPrinter : public Printer
         if (formatter) delete formatter;
     }
 
+    virtual string describe() const { return "json"; }
+
     virtual bool operator()(Metadata& md)
     {
         md.serialise(json, formatter);
@@ -117,6 +125,8 @@ struct BinaryPrinter : public Printer
     ~BinaryPrinter()
     {
     }
+
+    virtual string describe() const { return "binary"; }
 
     virtual bool operator()(Metadata& md)
     {
@@ -146,19 +156,35 @@ struct DataProcessor : public DatasetProcessor
     Output& output;
     Printer* printer;
     dataset::DataQuery query;
+    vector<string> description_attrs;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
         : output(out), printer(Printer::create(maker, out)), query(q, false)
     {
+        description_attrs.push_back("query=" + q.toString());
+        description_attrs.push_back("printer=" + printer->describe());
+        if (maker.data_inline)
+            description_attrs.push_back("data_inline=true");
         query.withData = maker.data_inline;
 
         if (!maker.sort.empty())
+        {
+            description_attrs.push_back("sort=" + maker.sort);
             query.sorter = sort::Compare::parse(maker.sort);
+        }
     }
 
     virtual ~DataProcessor()
     {
         if (printer) delete printer;
+    }
+
+    virtual std::string describe() const
+    {
+        string res = "data(";
+        res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+        res += ")";
+        return res;
     }
 
     virtual void process(ReadonlyDataset& ds, const std::string& name)
@@ -179,16 +205,29 @@ struct SummaryProcessor : public DatasetProcessor
     Printer* printer;
     string summary_restrict;
     Summary summary;
+    vector<string> description_attrs;
 
     SummaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
         : output(out), matcher(q), printer(Printer::create(maker, out))
     {
+        description_attrs.push_back("query=" + q.toString());
+        if (!maker.summary_restrict.empty())
+            description_attrs.push_back("restrict=" + maker.summary_restrict);
+        description_attrs.push_back("printer=" + printer->describe());
         summary_restrict = maker.summary_restrict;
     }
 
     virtual ~SummaryProcessor()
     {
         if (printer) delete printer;
+    }
+
+    virtual std::string describe() const
+    {
+        string res = "summary(";
+        res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+        res += ")";
+        return res;
     }
 
     virtual void process(ReadonlyDataset& ds, const std::string& name)
@@ -219,33 +258,50 @@ struct BinaryProcessor : public DatasetProcessor
 {
 	Output& out;
 	dataset::ByteQuery query;
+    vector<string> description_attrs;
 
 	BinaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
 		: out(out)
 	{
-		if (!maker.postprocess.empty())
-		{
-			query.setPostprocess(q, maker.postprocess);
-			query.data_start_hook = maker.data_start_hook;
+        description_attrs.push_back("query=" + q.toString());
+        if (!maker.postprocess.empty())
+        {
+            description_attrs.push_back("postproc=" + maker.postprocess);
+            query.setPostprocess(q, maker.postprocess);
+            query.data_start_hook = maker.data_start_hook;
 #ifdef HAVE_LUA
-		} else if (!maker.report.empty()) {
-			if (maker.summary)
-				query.setRepSummary(q, maker.report);
-			else
-				query.setRepMetadata(q, maker.report);
+        } else if (!maker.report.empty()) {
+            if (maker.summary)
+            {
+                description_attrs.push_back("summary_report=" + maker.report);
+                query.setRepSummary(q, maker.report);
+            } else {
+                description_attrs.push_back("data_report=" + maker.report);
+                query.setRepMetadata(q, maker.report);
+            }
 #endif
-		} else
-			query.setData(q);
-		
-		if (!maker.sort.empty())
-		{
-			query.sorter = sort::Compare::parse(maker.sort);
-		}
-	}
+        } else {
+            query.setData(q);
+        }
+
+        if (!maker.sort.empty())
+        {
+            description_attrs.push_back("sort=" + maker.sort);
+            query.sorter = sort::Compare::parse(maker.sort);
+        }
+    }
 
 	virtual ~BinaryProcessor()
 	{
 	}
+
+    virtual std::string describe() const
+    {
+        string res = "binary(";
+        res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+        res += ")";
+        return res;
+    }
 
 	virtual void process(ReadonlyDataset& ds, const std::string& name)
 	{
@@ -263,11 +319,21 @@ struct BinaryProcessor : public DatasetProcessor
 TargetFileProcessor::TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, Output& output)
 		: next(next), pattern(pattern), output(output)
 {
+    description_attrs.push_back("pattern=" + pattern);
+    description_attrs.push_back("next=" + next->describe());
 }
 
 TargetFileProcessor::~TargetFileProcessor()
 {
 		if (next) delete next;
+}
+
+std::string TargetFileProcessor::describe() const
+{
+    string res = "targetfile(";
+    res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+    res += ")";
+    return res;
 }
 
 void TargetFileProcessor::process(ReadonlyDataset& ds, const std::string& name)
