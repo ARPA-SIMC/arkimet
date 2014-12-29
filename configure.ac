@@ -228,26 +228,8 @@ dnl Check for hdf5 support
 PKG_CHECK_MODULES([HDF5], [hdf5-serial], [have_hdf5=yes], [have_hdf5=no])
 if test $have_hdf5 = yes
 then
-    dnl Check for hdf5
-    PKG_CHECK_EXISTS([hdf5], [have_odimh5=yes], [have_odimh5=no])
-    if test $have_odimh5 = yes
-    then
-        PKG_CHECK_MODULES([ODIMH5], [hdf5], , [have_odimh5=no])
-    else
-        AC_CHECK_LIB([hdf5], [main], [have_odimh5=yes], [have_odimh5=no])
-        AC_CHECK_HEADER([hdf5.h], [true], [have_odimh5=no])
-        if test $have_odimh5 = yes
-        then
-            ODIMH5_LIBS="-lhdf5"
-            AC_SUBST([ODIMH5_LIBS])
-        fi
-    fi
-    if test $have_odimh5 = yes
-    then
-        AC_DEFINE([HAVE_ODIMH5], 1, [odimh5 format enabled])
-    else
-        AC_MSG_WARN([compiling without libhdf5: ODIMH5 support will be disabled])
-    fi
+    PKG_CHECK_MODULES([HDF5],[hdf5-serial])
+    AC_DEFINE([HAVE_HDF5], 1, [hdf5 format enabled])
 else
     AC_MSG_WARN([compiling without libhdf5])
 fi
