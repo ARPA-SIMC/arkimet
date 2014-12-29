@@ -461,13 +461,13 @@ libarkimet_dataset_la_LDFLAGS += @LIBCURL@
 tests_arki_test_LDADD += @LIBCURL@
 endif
 
-if ODIMH5
+if HDF5
 nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_types_la_SOURCES += scan/odimh5.cc
 tests_arki_test_SOURCES += scan/odimh5-tut.cc
-AM_CPPFLAGS += $(ODIMH5_CFLAGS)
-libarkimet_types_la_LDFLAGS += $(ODIMH5_LIBS)
-tests_arki_test_LDADD += $(ODIMH5_LIBS)
+AM_CPPFLAGS += $(HDF5_CFLAGS)
+libarkimet_types_la_LDFLAGS += $(HDF5_LIBS)
+tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 
 if NETCDF

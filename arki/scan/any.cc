@@ -38,7 +38,7 @@
 #ifdef HAVE_DBALLE
 #include <arki/scan/bufr.h>
 #endif
-#ifdef HAVE_ODIMH5
+#ifdef HAVE_HDF5
 #include <arki/scan/odimh5.h>
 #endif
 #ifdef HAVE_VM2
@@ -88,7 +88,7 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         return true;
     }
 #endif
-#ifdef HAVE_ODIMH5
+#ifdef HAVE_HDF5
     if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
         scan::OdimH5 scanner;
         scanner.open(pathname, basedir, relname);
@@ -265,7 +265,7 @@ bool canScan(const std::string& file)
 	if (ext == "bufr")
 		return true;
 #endif
-#ifdef HAVE_ODIMH5
+#ifdef HAVE_HDF5
 	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
 		return true;
 #endif
@@ -344,7 +344,7 @@ const Validator& Validator::by_filename(const std::string& filename)
 	if (ext == "bufr")
 		return bufr::validator();
 #endif
-#ifdef HAVE_ODIMH5
+#ifdef HAVE_HDF5
 	if ((ext == "h5") || (ext == "odimh5") || (ext == "odim"))
 		return odimh5::validator();
 #endif

@@ -156,7 +156,7 @@ void to::test<6>()
     wassert(actual(format_from_ext("test.grib1")) == "grib");
     wassert(actual(format_from_ext("test.grib2")) == "grib");
     wassert(actual(format_from_ext("test.bufr")) == "bufr");
-#ifdef HAVE_ODIMH5
+#ifdef HAVE_HDF5
     wassert(actual(format_from_ext("test.h5")) == "odimh5");
     wassert(actual(format_from_ext("test.hdf5")) == "odimh5");
     wassert(actual(format_from_ext("test.odim")) == "odimh5");

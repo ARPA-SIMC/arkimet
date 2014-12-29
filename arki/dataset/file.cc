@@ -109,7 +109,7 @@ File* File::create(const ConfigFile& cfg)
 	if (format == "bufr")
 		return new RawFile(cfg);
 #endif
-#ifdef HAVE_ODIMH5
+#ifdef HAVE_HDF5
 	if (format == "odimh5")
 		return new RawFile(cfg);
 #endif

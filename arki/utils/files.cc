@@ -137,7 +137,7 @@ string normaliseFormat(const std::string& format)
     if (f == "metadata") return "arkimet";
     if (f == "grib1") return "grib";
     if (f == "grib2") return "grib";
-#ifdef HAVE_ODIMH5
+#ifdef HAVE_HDF5
     if (f == "h5")     return "odimh5";
     if (f == "hdf5")   return "odimh5";
     if (f == "odim")   return "odimh5";
