@@ -33,6 +33,7 @@
 #include <arki/types/reftime.h>
 #include <arki/types/area.h>
 #include <arki/types/proddef.h>
+#include <arki/types/source/blob.h>
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
 #include <arki/matcher.h>
@@ -88,8 +89,8 @@ struct arki_dataset_index_contents_shar {
 		testArea.set("pluto", Value::createString("12"));
 		testProddef = testArea;
 
-		md.create();
-		md.source = source::Blob::create("grib", "", "antani", 10, 2000);
+        md.create();
+        md.source = Source::createBlob("grib", "", "antani", 10, 2000);
 		md.set(origin::GRIB1::create(200, 10, 100));
 		md.set(product::GRIB1::create(3, 4, 5));
 		md.set(level::GRIB1::create(1, 2));
@@ -103,8 +104,8 @@ struct arki_dataset_index_contents_shar {
 		md.write(out, "test-md.metadata");
 		out.close();
 
-		md1.create();
-		md1.source = source::Blob::create("grib", "", "blinda", 20, 40000);
+        md1.create();
+        md1.source = Source::createBlob("grib", "", "blinda", 20, 40000);
 		md1.set(origin::GRIB1::create(201, 11, 3));
 		md1.set(product::GRIB1::create(102, 103, 104));
 		md1.set(level::GRIB1::create(1, 3));
@@ -321,7 +322,7 @@ void to::test<3>()
 	// Now try to index another element
 	Metadata md3;
 	md3.create();
-	md3.source = source::Blob::create("grib", "", "antani3", 10, 2000);
+    md3.source = Source::createBlob("grib", "", "antani3", 10, 2000);
 	md3.set(origin::GRIB1::create(202, 12, 102));
 	md3.set(product::GRIB1::create(3, 4, 5));
 	md3.set(level::GRIB1::create(1, 2));
@@ -418,7 +419,7 @@ void to::test<5>()
 	test->index(md1, "test-md1", 0);
 	Metadata md2;
 	md2.create();
-	md2.source = source::Blob::create("grib", "", "antani3", 10, 2000);
+	md2.source = Source::createBlob("grib", "", "antani3", 10, 2000);
 	md2.set(origin::GRIB1::create(202, 12, 102));
 	md2.set(product::GRIB1::create(3, 4, 5));
 	md2.set(level::GRIB1::create(1, 2));
@@ -456,9 +457,9 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	// Pretend the data is in a very big file
-	md.source = source::Blob::create("grib", "", "antani", 0x100000000LLU, 2000);
-	md1.source = source::Blob::create("grib", "", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF);
+    // Pretend the data is in a very big file
+    md.source = Source::createBlob("grib", "", "antani", 0x100000000LLU, 2000);
+    md1.source = Source::createBlob("grib", "", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF);
 
 	// Remove index if it exists
 	unlink("file1");

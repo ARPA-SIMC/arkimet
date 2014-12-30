@@ -4,7 +4,7 @@
 /*
  * types/source - Source information
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -134,115 +134,12 @@ public:
      * compressed.
      */
     static void flushDataReaders();
+
+    static Item<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static Item<Source> createInline(const std::string& format, uint64_t size);
+    static Item<Source> createInline(const std::string& format, const wibble::sys::Buffer& buf);
+    static Item<Source> createURL(const std::string& format, const std::string& url);
 };
-
-namespace source {
-
-struct Blob : public Source
-{
-    /**
-     * Base directory used to resolve relative filenames.
-     *
-     * Note that this is not stored when serializing, since metadata usually
-     * point to files relative to the metadata location, in order to save
-     * space.
-     */
-    std::string basedir;
-
-    /**
-     * Data file name.
-     *
-     * Can be an absolute or a relative path. If it is a relative path, it is
-     * resolved based on \a basedir, or on the current directory if \a basedir
-     * is empty.
-     */
-    std::string filename;
-
-    uint64_t offset;
-    uint64_t size;
-
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
-	virtual int compare_local(const Source& o) const;
-	virtual bool operator==(const Type& o) const;
-
-    virtual uint64_t getSize() const;
-
-    /// Return the absolute pathname to the data file
-    std::string absolutePathname() const;
-
-    /**
-     * Return a new source identical to this one, but with all the
-     * directory components stripped from the file name.
-     *
-     * basedir is updated so that we can still reach the data file.
-     */
-    Item<Blob> fileOnly() const;
-
-    /**
-     * Return a new source identical to this one, but with an absolute file
-     * name and no basedir.
-     */
-    Item<Blob> makeAbsolute() const;
-
-    virtual wibble::sys::Buffer loadData() const;
-
-    static Item<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
-    static Item<Blob> decodeMapping(const emitter::memory::Mapping& val);
-};
-
-struct URL : public Source
-{
-	std::string url;
-
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
-	virtual int compare_local(const Source& o) const;
-	virtual bool operator==(const Type& o) const;
-
-    virtual wibble::sys::Buffer loadData() const;
-
-    virtual uint64_t getSize() const;
-
-	static Item<URL> create(const std::string& format, const std::string& url);
-	static Item<URL> decodeMapping(const emitter::memory::Mapping& val);
-};
-
-struct Inline : public Source
-{
-	uint64_t size;
-
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
-
-    virtual uint64_t getSize() const;
-
-	virtual int compare_local(const Source& o) const;
-	virtual bool operator==(const Type& o) const;
-
-    virtual void dropCachedData() const;
-    virtual wibble::sys::Buffer loadData() const;
-
-	static Item<Inline> create(const std::string& format, uint64_t size);
-    static Item<Inline> create(const std::string& format, const wibble::sys::Buffer& buf);
-	static Item<Inline> decodeMapping(const emitter::memory::Mapping& val);
-};
-
-}
 
 }
 }

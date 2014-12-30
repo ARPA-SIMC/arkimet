@@ -135,8 +135,8 @@ void to::test<1>()
 	// Create test metadata
 	Metadata md1;
 	md1.create();
-	md1.source = source::Blob::create("grib", "", "fname", 1, 2);
-	this->fill(md1);
+    md1.source = Source::createBlob("grib", "", "fname", 1, 2);
+    this->fill(md1);
 
 	Metadata md2;
 	md2 = md1;
@@ -207,7 +207,7 @@ void to::test<2>()
 {
     // Create test metadata
     Metadata md;
-    md.source = source::Blob::create("grib", "", "fname", 1, 2);
+    md.source = Source::createBlob("grib", "", "fname", 1, 2);
     this->fill(md);
 
     // Encode it in a buffer 3 times

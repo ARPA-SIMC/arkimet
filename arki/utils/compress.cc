@@ -349,8 +349,7 @@ bool DataCompressor::operator()(Metadata& md)
 			break;
 	}
 
-	Item<types::source::Blob> src = md.source.upcast<types::source::Blob>();
-	unc_ofs += src->size;
+    unc_ofs += md.source->getSize();
 
 	if (count > 0 && (count % groupsize) == 0)
 		endBlock();

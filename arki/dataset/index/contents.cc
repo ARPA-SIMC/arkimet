@@ -492,7 +492,7 @@ void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
     md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
-    md.source = source::Blob::create(
+    md.source = Source::createBlob(
             q.fetchString(1), m_root, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4));
     // md.notes = mdq.fetchItems<types::Note>(5);
@@ -1089,22 +1089,12 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
 {
 	int idx = 0;
 
-	q.bind(++idx, md.source->format);
-	q.bind(++idx, file);
-	q.bind(++idx, ofs);
-	switch (md.source->style())
-	{
-		case Source::BLOB:
-			q.bind(++idx, md.source.upcast<source::Blob>()->size);
-			break;
-		case Source::INLINE:
-			q.bind(++idx, md.source.upcast<source::Inline>()->size);
-			break;
-		default:
-			q.bind(++idx, 0);
-	}
-	//q.bindItems(++idx, md.notes);
-	q.bind(++idx, md.notes_encoded());
+    q.bind(++idx, md.source->format);
+    q.bind(++idx, file);
+    q.bind(++idx, ofs);
+    q.bind(++idx, md.source->getSize());
+    //q.bindItems(++idx, md.notes);
+    q.bind(++idx, md.notes_encoded());
 
 	const int* rt = md.get(types::TYPE_REFTIME)->upcast<types::reftime::Position>()->time->vals;
 	int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);

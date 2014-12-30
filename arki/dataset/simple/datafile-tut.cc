@@ -22,6 +22,7 @@
 #include <arki/dataset/simple/datafile.h>
 #include <arki/utils/files.h>
 #include <arki/metadata.h>
+#include <arki/types/source/blob.h>
 #include <arki/scan/grib.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
@@ -47,7 +48,7 @@ inline size_t filesize(const std::string& fname)
 }
 inline size_t datasize(const Metadata& md)
 {
-	return md.source.upcast<types::source::Blob>()->size;
+    return md.source->getSize();
 }
 }
 

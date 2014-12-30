@@ -23,6 +23,7 @@
 #include "fd.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
 #include "arki/scan/any.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
@@ -238,7 +239,7 @@ Pending Maint::repack(
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata
-        i->source = types::source::Blob::create(i->source->format, rootdir, relname, w_off, buf.size());
+        i->source = types::Source::createBlob(i->source->format, rootdir, relname, w_off, buf.size());
     }
 
     // Close the temp file

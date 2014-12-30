@@ -799,7 +799,7 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 
     Metadata md;
     md.create();
-    md.source = source::Inline::create("grib", size);
+    md.source = Source::createInline("grib", size);
     md.set(origin::GRIB1::create(200, 10, 100));
     md.set(product::GRIB1::create(3, 4, 5));
     md.set(level::GRIB1::create(1, 2));

@@ -23,6 +23,7 @@
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
 #include <arki/types/source.h>
+#include <arki/types/source/blob.h>
 #include <arki/summary.h>
 #include <arki/scan/any.h>
 #include <arki/runtime/io.h>

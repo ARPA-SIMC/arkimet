@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,14 +63,14 @@ struct arki_summary_shar {
 		md1.set(product::GRIB1::create(1, 2, 3));
 		md1.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
 		md1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
-		md1.source = source::Inline::create("grib1", 10);
+        md1.source = Source::createInline("grib1", 10);
 
 		md2.create();
 		md2.set(origin::GRIB1::create(3, 4, 5));
 		md2.set(product::GRIB1::create(2, 3, 4));
 		md2.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
 		md2.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-		md2.source = source::Inline::create("grib1", 20);
+        md2.source = Source::createInline("grib1", 20);
 
 		s.add(md1);
 		s.add(md2);
@@ -226,14 +226,14 @@ void to::test<11>()
 	tmd1.set(origin::GRIB1::create(1, 2, 3));
 	tmd1.set(product::GRIB1::create(1, 2, 3));
 	tmd1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
-	tmd1.source = source::Inline::create("grib1", 10);
+    tmd1.source = Source::createInline("grib1", 10);
 
 	tmd2.create();
 	tmd2.set(origin::GRIB1::create(1, 2, 3));
 	tmd2.set(product::GRIB1::create(1, 2, 3));
 	tmd2.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
 	tmd2.set(run::Minute::create(12, 0));
-	tmd2.source = source::Inline::create("grib1", 15);
+    tmd2.source = Source::createInline("grib1", 15);
 
 	ts.add(tmd1);
 	ts.add(tmd2);

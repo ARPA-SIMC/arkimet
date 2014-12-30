@@ -226,11 +226,10 @@ template<> template<> void to::test<4>()
 	UItem<Source> source = mdc[0].source;
 	ensure_equals(source->style(), Source::INLINE);
 	ensure_equals(source->format, "grib1");
-	UItem<source::Inline> isource = source.upcast<source::Inline>();
-	ensure_equals(isource->size, 7218u);
+    wassert(actual(source->getSize()) == 7218u);
 
-	wibble::sys::Buffer buf = mdc[0].getData();
-	ensure_equals(buf.size(), isource->size);
+    wibble::sys::Buffer buf = mdc[0].getData();
+    ensure_equals(buf.size(), source->getSize());
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
@@ -274,17 +273,15 @@ template<> template<> void to::test<5>()
 	UItem<Source> source = mdc[0].source;
 	ensure_equals(source->style(), Source::INLINE);
 	ensure_equals(source->format, "grib1");
-	UItem<source::Inline> isource = source.upcast<source::Inline>();
-	ensure_equals(isource->size, 7218u);
+    wassert(actual(source->getSize()) == 7218u);
 
-	wibble::sys::Buffer buf = mdc[0].getData();
-	ensure_equals(buf.size(), isource->size);
+    wibble::sys::Buffer buf = mdc[0].getData();
+    wassert(actual(buf.size()) == source->getSize());
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
-	isource = mdc[0].source.upcast<source::Inline>();
-	ensure_equals(isource->size, 7218u);
+    wassert(actual(mdc[0].source->getSize()) == 7218u);
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
@@ -381,7 +378,7 @@ template<> template<> void to::test<7>()
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
                             wibble::sys::Buffer data(buf, len, false);
-                            md.source = types::source::Inline::create("vm2", data);
+                            md.source = types::Source::createInline("vm2", data);
                             md.add_note(types::Note::create("Generated from memory"));
                             md.set(types::reftime::Position::create(types::Time::create(2013, month, day, hour, 0, 0)));
                             md.set(types::area::VM2::create(station));

@@ -27,6 +27,7 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
+#include <arki/types/source/blob.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/utils/files.h>

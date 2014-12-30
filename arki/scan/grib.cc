@@ -590,7 +590,7 @@ void Grib::setSource(Metadata& md)
 	}
 	else
 	{
-		md.source = types::source::Blob::create("grib" + str::fmt(edition), basedir, relname, offset, size);
+		md.source = types::Source::createBlob("grib" + str::fmt(edition), basedir, relname, offset, size);
 		md.setCachedData(wibble::sys::Buffer(vbuf, size));
 	}
 	md.add_note(types::Note::create("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size)));
@@ -619,7 +619,7 @@ void MultiGrib::setSource(Metadata& md)
 
 	tmpfile.flush();
 
-    md.source = types::source::Blob::create("grib" + str::fmt(edition), "", tmpfilename, offset, size);
+    md.source = types::Source::createBlob("grib" + str::fmt(edition), "", tmpfilename, offset, size);
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)

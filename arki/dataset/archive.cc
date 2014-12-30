@@ -28,6 +28,7 @@
 #include <arki/dataset/maintenance.h>
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
+#include <arki/types/source/blob.h>
 #include <arki/matcher.h>
 #include <arki/metadata/collection.h>
 #include <arki/utils/fd.h>

@@ -154,7 +154,7 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.create();
-    md.source = types::source::Blob::create("vm2", basedir, relname, offset, size);
+    md.source = types::Source::createBlob("vm2", basedir, relname, offset, size);
     md.setCachedData(wibble::sys::Buffer(line.c_str(), line.size()));
     md.add_note(types::Note::create("Scanned from " + relname));
     md.set(types::reftime::Position::create(types::Time::create(value.year, value.month, value.mday, value.hour, value.min, value.sec)));

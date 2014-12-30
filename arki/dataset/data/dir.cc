@@ -22,6 +22,7 @@
 #include "dir.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils.h"
 #include "arki/utils/fd.h"
 #include "arki/utils/files.h"
@@ -117,7 +118,7 @@ struct Append : public Transaction
         if (fired) return;
 
         // Set the source information that we are writing in the metadata
-        md.source = types::source::Blob::create(md.source->format, "", absname, pos, size);
+        md.source = types::Source::createBlob(md.source->format, "", absname, pos, size);
 
         fired = true;
     }
@@ -248,7 +249,7 @@ void Writer::append(Metadata& md)
     size_t size = write_file(md, fd, dest);
 
     // Set the source information that we are writing in the metadata
-    md.source = types::source::Blob::create(md.source->format, "", absname, pos, size);
+    md.source = types::Source::createBlob(md.source->format, "", absname, pos, size);
 }
 
 off_t Writer::append(const wibble::sys::Buffer& buf)
@@ -463,7 +464,7 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
         off_t pos = writer->link(str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)));
 
         // Update the source information in the metadata
-        i->source = types::source::Blob::create(source->format, rootdir, relname, pos, source->size);
+        i->source = types::Source::createBlob(source->format, rootdir, relname, pos, source->size);
     }
 
     // Close the temp writer

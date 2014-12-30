@@ -208,7 +208,7 @@ bool Bufr::do_scan(Metadata& md)
 	if (m_inline_data)
 		md.setInlineData("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	else {
-		md.source = types::source::Blob::create("bufr", basedir, relname, rmsg.offset, rmsg.size());
+		md.source = types::Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.size());
 		md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
 	}
 

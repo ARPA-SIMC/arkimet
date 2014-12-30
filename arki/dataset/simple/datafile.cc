@@ -23,6 +23,7 @@
 #include "config.h"
 #include <arki/dataset/simple/datafile.h>
 #include <arki/metadata.h>
+#include <arki/types/source/blob.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/scan/any.h>

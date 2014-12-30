@@ -22,6 +22,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/source.h>
+#include <arki/types/source/blob.h>
 #include <arki/utils/codec.h>
 #include <wibble/sys/fs.h>
 #include <sstream>

@@ -25,6 +25,7 @@
 #include <arki/scan/any.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
+#include <arki/types/source/blob.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
 #include <wibble/exception.h>

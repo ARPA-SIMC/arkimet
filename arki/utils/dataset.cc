@@ -24,6 +24,7 @@
 
 #include "arki/utils/dataset.h"
 #include "arki/dataset/data.h"
+#include "arki/types/source/blob.h"
 
 #include <wibble/sys/signal.h>
 #include <wibble/sys/buffer.h>

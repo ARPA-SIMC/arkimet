@@ -24,6 +24,7 @@
 #include "arki/tests/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
 #include <wibble/sys/fs.h>
@@ -75,7 +76,7 @@ namespace {
 
 inline size_t datasize(const Metadata& md)
 {
-    return md.source.upcast<types::source::Blob>()->size;
+    return md.source->getSize();
 }
 
 void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, Writer* dw, Metadata& md)

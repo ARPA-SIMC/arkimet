@@ -83,20 +83,12 @@ struct MetadataCounter : public metadata::Consumer
 
 	MetadataCounter() : count(0), size(0) {}
 
-	virtual bool operator()(Metadata& md)
-	{
-		++count;
-		switch (md.source->style())
-		{
-			case types::Source::BLOB:
-				size += md.source.upcast<types::source::Blob>()->size;
-				break;
-			case types::Source::INLINE:
-				size += md.source.upcast<types::source::Inline>()->size;
-				break;
-		}
-		return true;
-	}
+    virtual bool operator()(Metadata& md)
+    {
+        ++count;
+        size += md.source->getSize();
+        return true;
+    }
 };
 
 struct BenchmarkInfo

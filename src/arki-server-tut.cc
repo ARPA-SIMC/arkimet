@@ -28,7 +28,7 @@
 #include <arki/summary.h>
 #include <arki/scan/grib.h>
 #include <arki/dispatcher.h>
-#include <arki/types/source.h>
+#include <arki/types/source/blob.h>
 #include <arki/utils.h>
 #include <wibble/string.h>
 #include <wibble/stream/posix.h>

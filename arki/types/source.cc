@@ -1,7 +1,7 @@
 /*
  * types/source - Source information
  *
- * Copyright (C) 2007,2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,22 +20,19 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/source.h>
+#include "source.h"
+#include "source/blob.h"
+#include "source/inline.h"
+#include "source/url.h"
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/lua.h>
 #include <arki/utils/datareader.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <sstream>
-
-#ifdef HAVE_LUA
-extern "C" {
-#include <lauxlib.h>
-#include <lualib.h>
-}
-#endif
 
 #define CODE types::TYPE_SOURCE
 #define TAG "source"
@@ -45,13 +42,6 @@ using namespace std;
 using namespace wibble;
 using namespace arki::utils;
 using namespace arki::utils::codec;
-
-namespace {
-
-// TODO: @WARNING this is NOT thread safe
-static arki::utils::DataReader dataReader;
-
-}
 
 namespace arki {
 namespace types {
@@ -229,309 +219,27 @@ void Source::setCachedData(const wibble::sys::Buffer& buf) const
 
 void Source::flushDataReaders()
 {
-    dataReader.flush();
+    source::dataReader.flush();
 }
 
-namespace source {
-
-Source::Style Blob::style() const { return Source::BLOB; }
-
-void Blob::encodeWithoutEnvelope(Encoder& enc) const
+Item<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
-	Source::encodeWithoutEnvelope(enc);
-	enc.addVarint(filename.size());
-	enc.addString(filename);
-	enc.addVarint(offset);
-	enc.addVarint(size);
+    return source::Blob::create(format, basedir, filename, offset, size);
 }
 
-std::ostream& Blob::writeToOstream(std::ostream& o) const
+Item<Source> Source::createInline(const std::string& format, uint64_t size)
 {
-    return o << formatStyle(style()) << "("
-			 << format << "," << str::joinpath(basedir, filename) << ":" << offset << "+" << size
-			 << ")";
+    return source::Inline::create(format, size);
 }
-void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
+
+Item<Source> Source::createInline(const std::string& format, const wibble::sys::Buffer& buf)
 {
-    Source::serialiseLocal(e, f);
-    e.add("b", basedir);
-    e.add("file", filename);
-    e.add("ofs", offset);
-    e.add("sz", size);
+    return source::Inline::create(format, buf);
 }
-Item<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
+
+Item<Source> Source::createURL(const std::string& format, const std::string& url)
 {
-    const arki::emitter::memory::Node& rd = val["b"];
-    string basedir;
-    if (rd.is_string())
-        basedir = rd.get_string();
-
-    return Blob::create(
-            val["f"].want_string("parsing blob source format"),
-            basedir,
-            val["file"].want_string("parsing blob source filename"),
-            val["ofs"].want_int("parsing blob source offset"),
-            val["sz"].want_int("parsing blob source size"));
-}
-const char* Blob::lua_type_name() const { return "arki.types.source.blob"; }
-
-#ifdef HAVE_LUA
-bool Blob::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "file")
-		lua_pushlstring(L, filename.data(), filename.size());
-	else if (name == "offset")
-		lua_pushnumber(L, offset);
-	else if (name == "size")
-		lua_pushnumber(L, size);
-	else
-		return Source::lua_lookup(L, name);
-	return true;
-}
-#endif
-
-int Blob::compare_local(const Source& o) const
-{
-	// We should be the same kind, so upcast
-	const Blob* v = dynamic_cast<const Blob*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Blob Source, but is a ") + typeid(&o).name() + " instead");
-
-	if (filename < v->filename) return -1;
-	if (filename > v->filename) return 1;
-	if (int res = offset - v->offset) return res;
-	return size - v->size;
-}
-
-bool Blob::operator==(const Type& o) const
-{
-	const Blob* v = dynamic_cast<const Blob*>(&o);
-	if (!v) return false;
-	return format == v->format && filename == v->filename && offset == v->offset && size == v->size;
-}
-
-Item<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
-{
-	Blob* res = new Blob;
-	res->format = format;
-	res->basedir = basedir;
-	res->filename = filename;
-	res->offset = offset;
-	res->size = size;
-	return res;
-}
-
-Item<Blob> Blob::fileOnly() const
-{
-    string pathname = absolutePathname();
-    Item<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
-    if (hasCachedData())
-        res->setCachedData(getCachedData());
-    return res;
-}
-
-Item<Blob> Blob::makeAbsolute() const
-{
-    string pathname = absolutePathname();
-    Item<Blob> res = Blob::create(format, "", pathname, offset, size);
-    if (hasCachedData())
-        res->setCachedData(getCachedData());
-    return res;
-}
-
-std::string Blob::absolutePathname() const
-{
-    if (!filename.empty() && filename[0] == '/')
-        return filename;
-    return str::joinpath(basedir, filename);
-}
-
-wibble::sys::Buffer Blob::loadData() const
-{
-    // Read the data
-    wibble::sys::Buffer buf(size);
-    dataReader.read(absolutePathname(), offset, size, buf.data());
-    return buf;
-}
-
-uint64_t Blob::getSize() const { return size; }
-
-Source::Style URL::style() const { return Source::URL; }
-
-void URL::encodeWithoutEnvelope(Encoder& enc) const
-{
-	Source::encodeWithoutEnvelope(enc);
-	enc.addVarint(url.size());
-	enc.addString(url);
-}
-
-std::ostream& URL::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "("
-			 << format << "," << url
-			 << ")";
-}
-void URL::serialiseLocal(Emitter& e, const Formatter* f) const
-{
-    Source::serialiseLocal(e, f);
-    e.add("url"); e.add(url);
-}
-Item<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return URL::create(
-            val["f"].want_string("parsing url source format"),
-            val["url"].want_string("parsing url source url"));
-}
-
-const char* URL::lua_type_name() const { return "arki.types.source.url"; }
-
-#ifdef HAVE_LUA
-bool URL::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "url")
-		lua_pushlstring(L, url.data(), url.size());
-	else
-		return Source::lua_lookup(L, name);
-	return true;
-}
-#endif
-
-int URL::compare_local(const Source& o) const
-{
-	// We should be the same kind, so upcast
-	const URL* v = dynamic_cast<const URL*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a URL Source, but is a ") + typeid(&o).name() + " instead");
-
-	if (url < v->url) return -1;
-	if (url > v->url) return 1;
-	return 0;
-}
-bool URL::operator==(const Type& o) const
-{
-	const URL* v = dynamic_cast<const URL*>(&o);
-	if (!v) return false;
-	return format == v->format && url == v->url;
-}
-
-Item<URL> URL::create(const std::string& format, const std::string& url)
-{
-	URL* res = new URL;
-	res->format = format;
-	res->url = url;
-	return res;
-}
-
-wibble::sys::Buffer URL::loadData() const
-{
-    throw wibble::exception::Consistency("retrieving data", "retrieving data from URL sources is not yet implemented");
-    //return wibble::sys::Buffer();
-    /*
-    if (m_inline_buf.data())
-        return m_inline_buf;
-    throw wibble::exception::Consistency("retrieving data", "retrieving data from URL sources is not yet implemented");
-    */
-}
-
-uint64_t URL::getSize() const
-{
-    if (m_inline_buf.data())
-        return m_inline_buf.size();
-    else
-        return 0;
-}
-
-Source::Style Inline::style() const { return Source::INLINE; }
-
-void Inline::encodeWithoutEnvelope(Encoder& enc) const
-{
-	Source::encodeWithoutEnvelope(enc);
-	enc.addVarint(size);
-}
-
-std::ostream& Inline::writeToOstream(std::ostream& o) const
-{
-    return o << formatStyle(style()) << "("
-			 << format << "," << size
-			 << ")";
-}
-void Inline::serialiseLocal(Emitter& e, const Formatter* f) const
-{
-    Source::serialiseLocal(e, f);
-    e.add("sz", size);
-}
-Item<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return Inline::create(
-            val["f"].want_string("parsing inline source format"),
-            val["sz"].want_int("parsing inline source size"));
-}
-
-const char* Inline::lua_type_name() const { return "arki.types.source.inline"; }
-
-#ifdef HAVE_LUA
-bool Inline::lua_lookup(lua_State* L, const std::string& name) const
-{
-	if (name == "size")
-		lua_pushnumber(L, size);
-	else
-		return Source::lua_lookup(L, name);
-	return true;
-}
-#endif
-
-int Inline::compare_local(const Source& o) const
-{
-	// We should be the same kind, so upcast
-	const Inline* v = dynamic_cast<const Inline*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			string("second element claims to be a Inline Source, but is a ") + typeid(&o).name() + " instead");
-
-	return size - v->size;
-}
-bool Inline::operator==(const Type& o) const
-{
-	const Inline* v = dynamic_cast<const Inline*>(&o);
-	if (!v) return false;
-	return format == v->format && size == v->size;
-}
-
-Item<Inline> Inline::create(const std::string& format, uint64_t size)
-{
-	Inline* res = new Inline;
-	res->format = format;
-	res->size = size;
-	return res;
-}
-
-Item<Inline> Inline::create(const std::string& format, const wibble::sys::Buffer& buf)
-{
-    Inline* res = new Inline;
-    res->format = format;
-    res->size = buf.size();
-    res->setCachedData(buf);
-    return res;
-}
-
-uint64_t Inline::getSize() const { return size; }
-
-void Inline::dropCachedData() const
-{
-    // Do nothing: the cached data is the only copy we have
-}
-
-wibble::sys::Buffer Inline::loadData() const
-{
-    return wibble::sys::Buffer();
-    //return m_inline_buf;
-}
-
+    return source::URL::create(format, url);
 }
 
 static MetadataType sourceType = MetadataType::create<Source>();

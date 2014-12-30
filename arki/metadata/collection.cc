@@ -21,6 +21,7 @@
  */
 
 #include <arki/metadata/collection.h>
+#include <arki/types/source/blob.h>
 #include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/codec.h>

@@ -245,7 +245,7 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
     // If the source is inline, then the data follows the metadata
     if (source->style() == types::Source::INLINE)
     {
-        size_t size = source.upcast<types::source::Inline>()->size;
+        size_t size = source->getSize();
         wibble::sys::Buffer buf(size);
 
         iotrace::trace_file(filename, 0, size, "read inline data");
@@ -493,20 +493,12 @@ void Metadata::setCachedData(const wibble::sys::Buffer& buf)
 
 size_t Metadata::dataSize() const
 {
-	switch (source->style())
-	{
-		case types::Source::BLOB:
-			return source.upcast<types::source::Blob>()->size;
-		case types::Source::INLINE:
-			return source.upcast<types::source::Inline>()->size;
-		default:
-			return 0;
-	}
+    return source->getSize();
 }
 
 void Metadata::setInlineData(const std::string& format, wibble::sys::Buffer buf)
 {
-    source = types::source::Inline::create(format, buf);
+    source = types::Source::createInline(format, buf);
 }
 
 void Metadata::makeInline()

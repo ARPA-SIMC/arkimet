@@ -24,6 +24,7 @@
 
 #include <arki/metadata/stream.h>
 #include <arki/metadata/consumer.h>
+#include <arki/types/source/inline.h>
 #include <arki/utils/codec.h>
 
 #include <wibble/exception.h>

@@ -22,6 +22,9 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/source.h>
+#include <arki/types/source/blob.h>
+#include <arki/types/source/inline.h>
+#include <arki/types/source/url.h>
 
 #include <sstream>
 #include <iostream>
@@ -40,7 +43,7 @@ TESTGRP(arki_types_source);
 template<> template<>
 void to::test<1>()
 {
-	Item<Source> o = source::Blob::create("test", "", "testfile", 21, 42);
+    Item<Source> o = Source::createBlob("test", "", "testfile", 21, 42);
 	ensure_equals(o->style(), Source::BLOB);
 	const source::Blob* v = o->upcast<source::Blob>();
 	ensure_equals(v->format, "test");
@@ -56,7 +59,7 @@ void to::test<1>()
 	ensure_equals(size, 42u);
 	#endif
 
-	ensure_equals(o, Item<Source>(source::Blob::create("test", "", "testfile", 21, 42)));
+    ensure_equals(o, Source::createBlob("test", "", "testfile", 21, 42));
 
 	ensure(o != source::Blob::create("test", "", "testfile", 22, 43));
 	ensure(o != source::URL::create("test", "testfile"));
@@ -70,13 +73,13 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Item<Source> o = source::URL::create("test", "http://foobar");
+    Item<Source> o = Source::createURL("test", "http://foobar");
 	ensure_equals(o->style(), Source::URL);
 	const source::URL* v = o->upcast<source::URL>();
 	ensure_equals(v->format, "test");
 	ensure_equals(v->url, "http://foobar");
 
-	ensure_equals(o, Item<Source>(source::URL::create("test", "http://foobar")));
+    ensure_equals(o, Source::createURL("test", "http://foobar"));
 
 	ensure(o != source::URL::create("test", "http://foobar/a"));
 	ensure(o != source::Blob::create("test", "", "http://foobar", 1, 2));
@@ -90,13 +93,13 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	Item<Source> o = source::Inline::create("test", 12345);
+    Item<Source> o = Source::createInline("test", 12345);
 	ensure_equals(o->style(), Source::INLINE);
 	const source::Inline* v = o->upcast<source::Inline>();
 	ensure_equals(v->format, "test");
 	ensure_equals(v->size, 12345u);
 
-	ensure_equals(o, Item<Source>(source::Inline::create("test", 12345)));
+    ensure_equals(o, Source::createInline("test", 12345));
 
 	ensure(o != source::Inline::create("test", 12344));
 	ensure(o != source::Blob::create("test", "", "", 0, 12344));
@@ -110,7 +113,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Item<Source> o = source::Blob::create("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
+    Item<Source> o = Source::createBlob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
 	ensure_equals(o->style(), Source::BLOB);
 	const source::Blob* v = o->upcast<source::Blob>();
 	ensure_equals(v->format, "test");

@@ -23,6 +23,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
+#include <arki/libconfig.h>
+
+#ifdef HAVE_LUA
+
 #include <wibble/string.h>
 #include <sstream>
 #include <iosfwd>
@@ -216,5 +220,6 @@ void push_object_copy(lua_State* L, const T& obj, const char* class_name, const 
 }
 }
 
-// vim:set ts=4 sw=4:
+#endif
+
 #endif
