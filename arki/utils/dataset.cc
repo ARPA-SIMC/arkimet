@@ -37,11 +37,9 @@ namespace ds {
 
 bool DataInliner::operator()(Metadata& md)
 {
-	// Read the data
-	wibble::sys::Buffer buf = md.getData();
-	// Change the source as inline
-	md.setInlineData(md.source->format, buf);
-	return next(md);
+    // Read the data and change the source to inline
+    md.makeInline();
+    return next(md);
 }
 
 bool TemporaryDataInliner::operator()(Metadata& md)
