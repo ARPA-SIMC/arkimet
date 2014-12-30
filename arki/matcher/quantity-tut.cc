@@ -37,13 +37,12 @@ using namespace arki::types;
 
 struct arki_matcher_quantity_shar
 {
-	Metadata md;
+    Metadata md;
 
-	arki_matcher_quantity_shar()
-	{
-		md.create();
-		arki::tests::fill(md);
-	}
+    arki_matcher_quantity_shar()
+    {
+        arki::tests::fill(md);
+    }
 };
 
 TESTGRP(arki_matcher_quantity);

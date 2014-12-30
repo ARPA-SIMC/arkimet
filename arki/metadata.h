@@ -60,18 +60,12 @@ struct Metadata : public ItemSet
 protected:
     std::string m_notes;
 
-	void clear();
-
 public:
 	UItem<types::Source> source;
 
-protected:
-	// Empty this Metadata object
-	void reset();
-
 public:
-	Metadata() {}
-	~Metadata();
+    Metadata();
+    ~Metadata();
 
 	std::vector< Item<types::Note> > notes() const;
 	const std::string& notes_encoded() const;
@@ -95,10 +89,8 @@ public:
 	bool operator>(const Metadata& o) const { return compare(o) > 0; }
 	bool operator>=(const Metadata& o) const { return compare(o) >= 0; }
 
-	/**
-	 * Create a new, empty in-memory metadata document
-	 */
-	void create();
+    /// Clear all the contents of this Metadata
+    void clear();
 
 	/**
 	 * Read a metadata document from the given memory buffer

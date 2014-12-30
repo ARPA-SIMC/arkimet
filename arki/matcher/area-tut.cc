@@ -35,14 +35,14 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_matcher_area_shar {
-	Metadata md;
+struct arki_matcher_area_shar
+{
+    Metadata md;
 
-	arki_matcher_area_shar()
-	{
-		md.create();
-		arki::tests::fill(md);
-	}
+    arki_matcher_area_shar()
+    {
+        arki::tests::fill(md);
+    }
 };
 TESTGRP(arki_matcher_area);
 
@@ -239,9 +239,8 @@ void to::test<6>()
 
 	//Matcher m;
 
-	Metadata md;
-	md.create();
-	md.set(types::Area::decodeString("ODIMH5(foo=5,bar=5000,baz=-200,blinda=0,pippo=\"pippo\",pluto=\"12\",aaa=0,zzz=1)"));
+    Metadata md;
+    md.set(types::Area::decodeString("ODIMH5(foo=5,bar=5000,baz=-200,blinda=0,pippo=\"pippo\",pluto=\"12\",aaa=0,zzz=1)"));
 
 	ensure_matches("area:ODIMH5:foo=5", md);
 	ensure_matches("area:ODIMH5:bar=5000", md);
@@ -275,10 +274,9 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-	//Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
-	Metadata md1;
-	md1.create();
-	md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+    //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
+    Metadata md1;
+    md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
 
 	//il valori devono corrispondere
 	ensure_matches("area:ODIMH5:lon=11623600", md1);
@@ -290,11 +288,10 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-#ifdef HAVE_GEOS	
-	//Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
-	Metadata md1;
-	md1.create();
-	md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+#ifdef HAVE_GEOS
+    //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
+    Metadata md1;
+    md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
 
 	//il centro deve starci per forza
 	ensure_matches("area: bbox covers POINT(11.6236 44.4567)", md1);   
@@ -312,11 +309,10 @@ void to::test<8>()
 template<> template<>
 void to::test<9>()
 {
-#ifdef HAVE_GEOS	
-	//Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
-	Metadata md1;
-	md1.create();
-	md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
+#ifdef HAVE_GEOS
+    //Vediamo se la formula per calcolare un ottagono con centro e raggio del radar funziona
+    Metadata md1;
+    md1.set(types::Area::decodeString("ODIMH5(lon=11623600,lat=44456700,radius=100000)"));
 
 	//aggiungere controlli altri punti appena dentro 
 	//TODO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -334,9 +330,8 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
-	Metadata md;
-	md.create();
-	md.set(area::VM2::create(1));
+    Metadata md;
+    md.set(area::VM2::create(1));
 
 	ensure_matches("area:VM2", md);
 	ensure_matches("area:VM2,", md);

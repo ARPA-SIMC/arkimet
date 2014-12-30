@@ -32,12 +32,12 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_matcher_source_shar {
+struct arki_matcher_source_shar
+{
     Metadata md;
 
     arki_matcher_source_shar()
     {
-        md.create();
         arki::tests::fill(md);
     }
 };

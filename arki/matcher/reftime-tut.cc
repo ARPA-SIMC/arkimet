@@ -32,14 +32,14 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_matcher_reftime_shar {
-	Metadata md;
+struct arki_matcher_reftime_shar
+{
+    Metadata md;
 
-	arki_matcher_reftime_shar()
-	{
-		md.create();
-		arki::tests::fill(md);
-	}
+    arki_matcher_reftime_shar()
+    {
+        arki::tests::fill(md);
+    }
 };
 TESTGRP(arki_matcher_reftime);
 
@@ -249,8 +249,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Metadata md;
-	md.create();
+    Metadata md;
 
 	md.set(reftime::Position::create(types::Time::create(2007, 1, 1, 0, 0, 0)));
 	ensure_matches("reftime:>2006", md);

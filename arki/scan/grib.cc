@@ -546,7 +546,7 @@ bool Grib::next(Metadata& md)
 	if (gh == 0)
 		return false;
 
-	md.create();
+    md.clear();
 
 	setSource(md);
 

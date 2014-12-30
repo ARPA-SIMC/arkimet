@@ -153,7 +153,7 @@ bool Vm2::next(Metadata& md)
 
     size_t size = line.size();
 
-    md.create();
+    md.clear();
     md.source = types::Source::createBlob("vm2", basedir, relname, offset, size);
     md.setCachedData(wibble::sys::Buffer(line.c_str(), line.size()));
     md.add_note(types::Note::create("Scanned from " + relname));

@@ -36,14 +36,14 @@ namespace tut {
 using namespace std;
 using namespace arki;
 
-struct arki_report_shar {
+struct arki_report_shar
+{
     Metadata md;
 
     arki_report_shar()
     {
-        md.create();
         arki::tests::fill(md);
-	}
+    }
 };
 TESTGRP(arki_report);
 

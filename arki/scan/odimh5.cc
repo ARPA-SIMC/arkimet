@@ -254,7 +254,7 @@ void OdimH5::close()
 bool OdimH5::next(Metadata& md)
 {
     if (read) return false;
-    md.create();
+    md.clear();
     setSource(md);
 
     /* NOTA: per ora la next estrare un metadato unico per un intero file */

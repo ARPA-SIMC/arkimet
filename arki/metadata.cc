@@ -82,11 +82,8 @@ static std::string encodeItemList(const ITER& begin, const ITER& end)
 	return res;
 }
 
-
-
-Metadata::~Metadata()
-{
-}
+Metadata::Metadata() {}
+Metadata::~Metadata() {}
 
 std::vector< Item<types::Note> > Metadata::notes() const
 {
@@ -132,8 +129,9 @@ void Metadata::add_note(const Item<types::Note>& note)
 	m_notes += note.encode();
 }
 
-void Metadata::reset()
+void Metadata::clear()
 {
+    ItemSet::clear();
     m_vals.clear();
     m_notes.clear();
     source.clear();
@@ -158,11 +156,6 @@ int Metadata::compare(const Metadata& m) const
 	//if (notes < m.notes) return -1;
 	//if (notes > m.notes) return 1;
 	return 0;
-}
-
-void Metadata::create()
-{
-    reset();
 }
 
 bool Metadata::read(istream& in, const std::string& filename, bool readInline)
@@ -212,7 +205,7 @@ void Metadata::read(const wibble::sys::Buffer& buf, unsigned version, const meta
 
 void Metadata::read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& rc)
 {
-    reset();
+    clear();
 
     // Check version and ensure we can decode
     if (version != 0)
@@ -262,7 +255,7 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
 bool Metadata::readYaml(std::istream& in, const std::string& filename)
 {
 	using namespace str;
-	reset();
+	clear();
 
 	YamlStream yamlStream;
 	for (YamlStream::const_iterator i = yamlStream.begin(in);

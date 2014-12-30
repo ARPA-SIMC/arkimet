@@ -798,7 +798,6 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
     testValueBag.set("bar", Value::createInteger(5000));
 
     Metadata md;
-    md.create();
     md.source = Source::createInline("grib", size);
     md.set(origin::GRIB1::create(200, 10, 100));
     md.set(product::GRIB1::create(3, 4, 5));

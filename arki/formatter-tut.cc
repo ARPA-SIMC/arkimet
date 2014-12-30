@@ -45,7 +45,6 @@ struct arki_formatter_shar {
 
     arki_formatter_shar()
     {
-        md.create();
         arki::tests::fill(md);
     }
 };
@@ -69,17 +68,17 @@ void to::test<1>()
 	// str2 contains annotations, so it should be longer
 	ensure(str1.str().size() < str2.str().size());
 
-	// Read back the two metadatas
-	Metadata md1; md1.create();
-	{
-		stringstream str(str1.str(), ios_base::in);
-		md1.readYaml(str, "(test memory buffer)");
-	}
-	Metadata md2; md2.create();
-	{
-		stringstream str(str2.str(), ios_base::in);
-		md2.readYaml(str, "(test memory buffer)");
-	}
+    // Read back the two metadatas
+    Metadata md1;
+    {
+        stringstream str(str1.str(), ios_base::in);
+        md1.readYaml(str, "(test memory buffer)");
+    }
+    Metadata md2;
+    {
+        stringstream str(str2.str(), ios_base::in);
+        md2.readYaml(str, "(test memory buffer)");
+    }
 
 	// Once reparsed, they should have the same content
 	ensure_equals(md, md1);

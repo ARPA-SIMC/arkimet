@@ -34,14 +34,14 @@ using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 
-struct arki_matcher_product_shar {
-	Metadata md;
+struct arki_matcher_product_shar
+{
+    Metadata md;
 
-	arki_matcher_product_shar()
-	{
-		md.create();
-		arki::tests::fill(md);
-	}
+    arki_matcher_product_shar()
+    {
+        arki::tests::fill(md);
+    }
 };
 TESTGRP(arki_matcher_product);
 

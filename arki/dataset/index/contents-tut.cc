@@ -89,7 +89,6 @@ struct arki_dataset_index_contents_shar {
 		testArea.set("pluto", Value::createString("12"));
 		testProddef = testArea;
 
-        md.create();
         md.source = Source::createBlob("grib", "", "antani", 10, 2000);
 		md.set(origin::GRIB1::create(200, 10, 100));
 		md.set(product::GRIB1::create(3, 4, 5));
@@ -104,7 +103,6 @@ struct arki_dataset_index_contents_shar {
 		md.write(out, "test-md.metadata");
 		out.close();
 
-        md1.create();
         md1.source = Source::createBlob("grib", "", "blinda", 20, 40000);
 		md1.set(origin::GRIB1::create(201, 11, 3));
 		md1.set(product::GRIB1::create(102, 103, 104));
@@ -319,9 +317,8 @@ void to::test<3>()
 	readHang.start();
 	ensure_equals(readHang.waitUntilHung(), 'H');
 
-	// Now try to index another element
-	Metadata md3;
-	md3.create();
+    // Now try to index another element
+    Metadata md3;
     md3.source = Source::createBlob("grib", "", "antani3", 10, 2000);
 	md3.set(origin::GRIB1::create(202, 12, 102));
 	md3.set(product::GRIB1::create(3, 4, 5));
@@ -413,12 +410,11 @@ void to::test<5>()
 
 	test->open();
 	p = test->beginTransaction();
-	
-	// Index some metadata
-	test->index(md, "test-md", 0);
-	test->index(md1, "test-md1", 0);
-	Metadata md2;
-	md2.create();
+
+    // Index some metadata
+    test->index(md, "test-md", 0);
+    test->index(md1, "test-md1", 0);
+    Metadata md2;
 	md2.source = Source::createBlob("grib", "", "antani3", 10, 2000);
 	md2.set(origin::GRIB1::create(202, 12, 102));
 	md2.set(product::GRIB1::create(3, 4, 5));

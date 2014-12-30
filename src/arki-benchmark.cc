@@ -116,8 +116,7 @@ struct ScanBenchmark : public Benchmark
 		{
 			using namespace wibble::sys;
 
-			Metadata md;
-			md.create();
+            Metadata md;
 
 			static const size_t iterations = 5;
 
@@ -189,8 +188,7 @@ struct DSBenchmark : public Benchmark
 		{
 			using namespace wibble::sys;
 
-			Metadata md;
-			md.create();
+            Metadata md;
 
 			// Import the files
 			size_t filecount = 0;

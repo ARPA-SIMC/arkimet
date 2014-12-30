@@ -66,9 +66,8 @@ struct arki_dataset_targetfile_shar {
 		stringstream incfg(conf);
 		config.parse(incfg, "(memory)");
 
-		md.create();
-		md.set(reftime::Position::create(types::Time::create(2007, 6, 5, 4, 3, 2)));
-	}
+        md.set(reftime::Position::create(types::Time::create(2007, 6, 5, 4, 3, 2)));
+    }
 };
 TESTGRP(arki_dataset_targetfile);
 

@@ -192,7 +192,7 @@ bool Bufr::do_scan(Metadata& md)
 	auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
 	bulletin->decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
 
-	md.create();
+    md.clear();
 
 #if 0
 	// Detect optional section and handle it

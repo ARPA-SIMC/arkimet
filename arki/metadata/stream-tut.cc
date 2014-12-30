@@ -52,8 +52,6 @@ struct arki_metadata_stream_shar {
 
 	arki_metadata_stream_shar()
 	{
-		md.create();
-
 		testValues.set("foo", Value::createInteger(5));
 		testValues.set("bar", Value::createInteger(5000));
 		testValues.set("baz", Value::createInteger(-200));
@@ -132,9 +130,8 @@ inline bool cmpmd(const Metadata& md1, const Metadata& md2)
 template<> template<>
 void to::test<1>()
 {
-	// Create test metadata
-	Metadata md1;
-	md1.create();
+    // Create test metadata
+    Metadata md1;
     md1.source = Source::createBlob("grib", "", "fname", 1, 2);
     this->fill(md1);
 

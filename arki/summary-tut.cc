@@ -56,20 +56,18 @@ struct arki_summary_shar {
 	Metadata md2;
 	Summary s;
 
-	arki_summary_shar()
-	{
-		md1.create();
-		md1.set(origin::GRIB1::create(1, 2, 3));
-		md1.set(product::GRIB1::create(1, 2, 3));
-		md1.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
-		md1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
+    arki_summary_shar()
+    {
+        md1.set(origin::GRIB1::create(1, 2, 3));
+        md1.set(product::GRIB1::create(1, 2, 3));
+        md1.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
+        md1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
         md1.source = Source::createInline("grib1", 10);
 
-		md2.create();
-		md2.set(origin::GRIB1::create(3, 4, 5));
-		md2.set(product::GRIB1::create(2, 3, 4));
-		md2.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
-		md2.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
+        md2.set(origin::GRIB1::create(3, 4, 5));
+        md2.set(product::GRIB1::create(2, 3, 4));
+        md2.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
+        md2.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
         md2.source = Source::createInline("grib1", 20);
 
 		s.add(md1);
@@ -222,17 +220,15 @@ void to::test<11>()
 	Metadata tmd2;
 	Summary ts;
 
-	tmd1.create();
-	tmd1.set(origin::GRIB1::create(1, 2, 3));
-	tmd1.set(product::GRIB1::create(1, 2, 3));
-	tmd1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
+    tmd1.set(origin::GRIB1::create(1, 2, 3));
+    tmd1.set(product::GRIB1::create(1, 2, 3));
+    tmd1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
     tmd1.source = Source::createInline("grib1", 10);
 
-	tmd2.create();
-	tmd2.set(origin::GRIB1::create(1, 2, 3));
-	tmd2.set(product::GRIB1::create(1, 2, 3));
-	tmd2.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
-	tmd2.set(run::Minute::create(12, 0));
+    tmd2.set(origin::GRIB1::create(1, 2, 3));
+    tmd2.set(product::GRIB1::create(1, 2, 3));
+    tmd2.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
+    tmd2.set(run::Minute::create(12, 0));
     tmd2.source = Source::createInline("grib1", 15);
 
 	ts.add(tmd1);
@@ -329,12 +325,11 @@ void to::test<13>()
 template<> template<>
 void to::test<14>()
 {
-	Metadata md3;
-	md3.create();
-	md3.set(origin::GRIB1::create(5, 6, 7));
-	md3.set(product::GRIB1::create(4, 5, 6));
-	md3.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
-	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
+    Metadata md3;
+    md3.set(origin::GRIB1::create(5, 6, 7));
+    md3.set(product::GRIB1::create(4, 5, 6));
+    md3.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
+    md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
 
 	auto_ptr<summary::Stats> st(new summary::Stats);
 	st->count = 5;

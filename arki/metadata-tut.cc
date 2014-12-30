@@ -67,8 +67,6 @@ struct arki_metadata_shar {
 
 	arki_metadata_shar()
 	{
-		md.create();
-
 		testValues.set("foo", Value::createInteger(5));
 		testValues.set("bar", Value::createInteger(5000));
 		testValues.set("baz", Value::createInteger(-200));

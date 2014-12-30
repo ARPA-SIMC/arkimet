@@ -281,7 +281,7 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     bool found = false;
     while (m_get_current.step())
     {
-        current.create();
+        current.clear();
         build_md(m_get_current, current);
         found = true;
     }
@@ -692,10 +692,9 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
 		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
 		st->reftimeMerger.mergeTime(min_time, max_time);
 
-		// Fill in the metadata fields
-		Metadata md;
-		md.create();
-		int j = 4;
+        // Fill in the metadata fields
+        Metadata md;
+        int j = 4;
 		if (m_uniques)
 		{
 			if (sq.fetchType(j) != SQLITE_NULL)
@@ -804,10 +803,9 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
 		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
 		st->reftimeMerger.mergeTime(min_time, max_time);
 
-		// Fill in the metadata fields
-		Metadata md;
-		md.create();
-		int j = 4;
+        // Fill in the metadata fields
+        Metadata md;
+        int j = 4;
 		if (m_uniques)
 		{
 			if (sq.fetchType(j) != SQLITE_NULL)
