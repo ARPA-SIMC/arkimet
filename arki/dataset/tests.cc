@@ -34,6 +34,9 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/fd.h>
+#include <arki/types/timerange.h>
+#include <arki/types/area.h>
+#include <arki/types/proddef.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <wibble/regexp.h>
@@ -719,6 +722,35 @@ void corrupt_datafile(const std::string& absname)
         throw wibble::exception::Consistency("corrupting " + to_corrupt, "wrote less than 4 bytes");
 }
 
+std::auto_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfgstr, bool empty)
+{
+    // Parse configuration
+    stringstream incfg(cfgstr);
+    ConfigFile cfg;
+    cfg.parse(incfg, "(memory)");
+    wassert(actual(cfg.value("path").empty()).isfalse());
+
+    // Remove the dataset directory if it exists
+    if (empty && sys::fs::isdir(cfg.value("path"))) sys::fs::rmtree(cfg.value("path"));
+
+    auto_ptr<dataset::WritableLocal> ds(dataset::WritableLocal::create(cfg));
+    wassert(actual(ds.get()).istrue());
+    return ds;
+}
+
+std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
+{
+    // Parse configuration
+    stringstream incfg(cfgstr);
+    ConfigFile cfg;
+    cfg.parse(incfg, "(memory)");
+    wassert(actual(cfg.value("path").empty()).isfalse());
+
+    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+    wassert(actual(ds.get()).istrue());
+    return ds;
+}
+
 }
 
 namespace testdata {
@@ -757,6 +789,26 @@ unsigned Fixture::count_dataset_files() const
 unsigned Fixture::selective_days_since() const
 {
     return tests::days_since(selective_cutoff[0], selective_cutoff[1], selective_cutoff[2]);
+}
+
+Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
+{
+    ValueBag testValueBag;
+    testValueBag.set("foo", Value::createInteger(5));
+    testValueBag.set("bar", Value::createInteger(5000));
+
+    Metadata md;
+    md.create();
+    md.source = source::Inline::create("grib", size);
+    md.set(origin::GRIB1::create(200, 10, 100));
+    md.set(product::GRIB1::create(3, 4, 5));
+    md.set(level::GRIB1::create(1, 2));
+    md.set(timerange::GRIB1::create(4, 5, 6, 7));
+    md.set(reftime::Position::create(types::Time::create(2014, month, day, hour, 0, 0)));
+    md.set(area::GRIB::create(testValueBag));
+    md.set(proddef::GRIB::create(testValueBag));
+    md.add_note(types::Note::create("this is a test"));
+    return md;
 }
 
 }

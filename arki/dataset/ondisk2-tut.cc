@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include <sstream>
+#include <fstream>
 #include <iostream>
 
 namespace tut {
@@ -46,6 +47,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk2;
 using namespace arki::utils;
+using namespace arki::tests;
 
 namespace {
 inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
@@ -57,6 +59,10 @@ inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
 struct arki_dataset_ondisk2_shar {
 	ConfigFile config;
 	ConfigFile configAll;
+    testdata::GRIBData tdata_grib;
+    testdata::BUFRData tdata_bufr;
+    testdata::VM2Data tdata_vm2;
+    testdata::ODIMData tdata_odim;
 
 	arki_dataset_ondisk2_shar()
 	{
@@ -782,6 +788,46 @@ void to::test<15>()
         ensure_equals(scan::update_sequence_number(mdc_read[0], usn), true);
         ensure_equals(usn, 2);
     }
+}
+
+// Test a dataset with very large mock files in it
+template<> template<>
+void to::test<16>()
+{
+    // A dataset with hole files
+    string conf =
+        "type = ondisk2\n"
+        "step = daily\n"
+        "unique = reftime\n"
+        "segments = holes\n"
+        "name = testholes\n"
+        "path = testholes\n";
+    auto_ptr<dataset::WritableLocal> writer(make_dataset_writer(conf));
+
+    // Import 24*30*10Mb=7.2Gb of data
+    for (unsigned day = 1; day <= 30; ++day)
+    {
+        for (unsigned hour = 0; hour < 24; ++hour)
+        {
+            Metadata md = testdata::make_large_mock("grib", 10*1024*1024, 12, day, hour);
+            WritableDataset::AcquireResult res = writer->acquire(md);
+            wassert(actual(res) == WritableDataset::ACQ_OK);
+        }
+    }
+    writer->flush();
+    wassert(actual(writer.get()).check_clean());
+
+    // Query it, without data
+    std::auto_ptr<ReadonlyDataset> reader(make_dataset_reader(conf));
+    metadata::Collection mdc;
+    reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
+    wassert(actual(mdc.size()) == 720);
+
+    // Query it, streaming its data to /dev/null
+    ofstream out("/dev/null");
+    dataset::ByteQuery bq;
+    bq.setData(Matcher::parse(""));
+    reader->queryBytes(bq, out);
 }
 
 

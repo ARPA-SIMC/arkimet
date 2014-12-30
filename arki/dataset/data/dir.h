@@ -121,6 +121,17 @@ struct Maint : public data::Maint
     size_t remove(const std::string& absname);
     void truncate(const std::string& absname, size_t offset);
     Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);
+
+protected:
+    virtual std::auto_ptr<dir::Writer> make_writer(const std::string& format, const std::string& relname, const std::string& absname);
+};
+
+struct HoleMaint : public Maint
+{
+    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
+
+protected:
+    virtual std::auto_ptr<dir::Writer> make_writer(const std::string& format, const std::string& relname, const std::string& absname);
 };
 
 class OstreamWriter : public data::OstreamWriter

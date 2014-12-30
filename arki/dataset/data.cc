@@ -313,23 +313,21 @@ struct ForceDirSegmentManager : public BaseSegmentManager
     }
 };
 
-#if 0
 /// Segment manager that always uses hole file segments
-struct HoleFileSegmentManager : public BaseSegmentManager
+struct HoleDirSegmentManager : public BaseSegmentManager
 {
-    HoleFileSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
+    HoleDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
 
     auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
     {
-        return auto_ptr<data::Writer>(new mock::HoleWriter(format, relname, absname, truncate));
+        return auto_ptr<data::Writer>(new dir::HoleWriter(format, relname, absname, truncate));
     }
 
     auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        return auto_ptr<data::Maint>(new mock::HoleMaint);
+        return auto_ptr<data::Maint>(new dir::HoleMaint);
     }
 };
-#endif
 
 }
 
@@ -352,6 +350,8 @@ std::auto_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)
     string root = cfg.value("path");
     if (cfg.value("segments") == "dir")
         return auto_ptr<SegmentManager>(new ForceDirSegmentManager(root));
+    else if (cfg.value("segments") == "holes")
+        return auto_ptr<SegmentManager>(new HoleDirSegmentManager(root));
     else
         return auto_ptr<SegmentManager>(new AutoSegmentManager(root));
 }

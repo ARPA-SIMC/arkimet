@@ -452,7 +452,7 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
     string tmpabsname = absname + ".repack";
 
     // Create a writer for the temp dir
-    auto_ptr<dir::Writer> writer(new dir::Writer(format, tmprelname, tmpabsname, true));
+    auto_ptr<dir::Writer> writer(make_writer(format, tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
@@ -470,6 +470,22 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
     writer.release();
 
     return new Rename(tmpabsname, absname);
+}
+
+auto_ptr<dir::Writer> Maint::make_writer(const std::string& format, const std::string& relname, const std::string& absname)
+{
+    return auto_ptr<dir::Writer>(new dir::Writer(format, relname, absname, true));
+}
+
+FileState HoleMaint::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+{
+    // Force quick, since the file contents are fake
+    return Maint::check(absname, mds, true);
+}
+
+auto_ptr<dir::Writer> HoleMaint::make_writer(const std::string& format, const std::string& relname, const std::string& absname)
+{
+    return auto_ptr<dir::Writer>(new dir::HoleWriter(format, relname, absname, true));
 }
 
 OstreamWriter::OstreamWriter()

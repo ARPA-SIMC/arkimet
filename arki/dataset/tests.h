@@ -203,6 +203,9 @@ struct dataset_tg : public tut::test_group<T>
     }
 };
 
+std::auto_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfg, bool empty=true);
+std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfg);
+
 }
 
 struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
@@ -336,6 +339,8 @@ struct ODIMData : Fixture
         finalise_init();
     }
 };
+
+Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
 
 }
 
