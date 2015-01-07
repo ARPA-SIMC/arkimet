@@ -18,20 +18,17 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include <arki/types/tests.h>
 #include <arki/types/source.h>
 #include <arki/types/source/blob.h>
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
-
-#include <sstream>
-#include <iostream>
+#include <wibble/sys/process.h>
 
 namespace tut {
 using namespace std;
 using namespace wibble::tests;
+using namespace wibble::sys::process;
 using namespace arki;
 using namespace arki::types;
 
@@ -132,10 +129,10 @@ void to::test<6>()
     auto_ptr<Source> decoded = downcast<Source>(types::decode((const unsigned char*)enc.data(), enc.size()));
     wassert(actual(decoded).is_source_blob("test", "", "testfile", 21, 42));
 
-    // Encode to YAML, decode, we keep the root
+    // Encode to YAML, decode, basedir and filename have merged
     enc = wibble::str::fmt(*o);
     decoded = types::Source::decodeString(enc);
-    wassert(actual(decoded).is_source_blob("test", "/tmp", "testfile", 21, 42));
+    wassert(actual(decoded).is_source_blob("test", "", "/tmp/testfile", 21, 42));
 
     // Encode to JSON, decode, we keep the root
     {
@@ -155,12 +152,32 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-    arki::tests::TestGenericType t("source", "INLINE(bufr,10)");
-    t.lower.push_back("INLINE(aaa, 11)");
-    t.lower.push_back("INLINE(bufr, 9)");
-    t.higher.push_back("INLINE(bufr, 11)");
-    t.higher.push_back("INLINE(ccc, 9)");
-    wassert(t);
+    arki::tests::TestGenericType tblob("source", "BLOB(bufr,testfile:100+50)");
+    tblob.lower.push_back("BLOB(aaa,testfile:100+50)");
+    tblob.lower.push_back("BLOB(bufr,festfile:100+50)");
+    tblob.lower.push_back("BLOB(bufr,testfile:99+50)");
+    tblob.lower.push_back("BLOB(bufr,testfile:100+49)");
+    tblob.higher.push_back("BLOB(grib,testfile:100+50)");
+    tblob.higher.push_back("BLOB(bufr,zestfile:100+50)");
+    tblob.higher.push_back("BLOB(bufr,testfile:101+50)");
+    tblob.higher.push_back("BLOB(bufr,testfile:100+51)");
+    tblob.higher.push_back("INLINE(bufr,9)");
+    tblob.higher.push_back("URL(bufr,foo)");
+    wassert(tblob);
+
+    arki::tests::TestGenericType tinline("source", "INLINE(bufr,10)");
+    tinline.lower.push_back("INLINE(aaa, 11)");
+    tinline.lower.push_back("INLINE(bufr, 9)");
+    tinline.higher.push_back("INLINE(bufr, 11)");
+    tinline.higher.push_back("INLINE(ccc, 9)");
+    wassert(tinline);
+
+    arki::tests::TestGenericType turl("source", "URL(bufr,foo)");
+    turl.lower.push_back("URL(aaa,zoo)");
+    turl.lower.push_back("URL(bufr,boo)");
+    turl.higher.push_back("URL(bufr,zoo)");
+    turl.higher.push_back("URL(ccc,foo)");
+    wassert(turl);
 }
 
 }

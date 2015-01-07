@@ -97,6 +97,7 @@ bool Blob::lua_lookup(lua_State* L, const std::string& name) const
 
 int Blob::compare_local(const Source& o) const
 {
+    if (int res = Source::compare_local(o)) return res;
     // We should be the same kind, so upcast
     const Blob* v = dynamic_cast<const Blob*>(&o);
     if (!v)

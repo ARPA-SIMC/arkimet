@@ -76,6 +76,7 @@ bool Inline::lua_lookup(lua_State* L, const std::string& name) const
 
 int Inline::compare_local(const Source& o) const
 {
+    if (int res = Source::compare_local(o)) return res;
     // We should be the same kind, so upcast
     const Inline* v = dynamic_cast<const Inline*>(&o);
     if (!v)

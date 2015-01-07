@@ -77,6 +77,7 @@ bool URL::lua_lookup(lua_State* L, const std::string& name) const
 
 int URL::compare_local(const Source& o) const
 {
+    if (int res = Source::compare_local(o)) return res;
 	// We should be the same kind, so upcast
 	const URL* v = dynamic_cast<const URL*>(&o);
 	if (!v)
