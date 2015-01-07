@@ -57,6 +57,16 @@ int* Table::msoSerLen = 0;
 static int* itemMsoMap = 0;
 static size_t itemMsoMapSize = 0;
 
+bool Row::operator<(const Row& row) const
+{
+    for (unsigned i = 0; i < mso_size; ++i)
+    {
+        if (items[i] < row.items[i]) return true;
+        if (items[i] > row.items[i]) return false;
+    }
+    return false;
+}
+
 bool Row::matches(const Matcher& matcher) const
 {
     if (!matcher.m_impl) return false;
@@ -73,6 +83,28 @@ bool Row::matches(const Matcher& matcher) const
     if (rm != mand.end() && !rm->second->matchItem(*stats.reftimeMerger.makeReftime()))
         return false;
     return true;
+}
+
+void Row::dump(std::ostream& out, unsigned indent) const
+{
+    string head(indent, ' ');
+
+    size_t max_tag = 0;
+    for (unsigned i = 0; i < mso_size; ++i)
+        max_tag = max(max_tag, types::tag(Table::mso[i]).size());
+
+    for (unsigned i = 0; i < mso_size; ++i)
+    {
+        string tag = types::tag(Table::mso[i]);
+        out << head;
+        for (unsigned j = 0; j < max_tag - tag.size(); ++j)
+            out << ' ';
+        out << tag << " ";
+        if (items[i])
+            out << *items[i] << endl;
+        else
+            out << "--" << endl;
+    }
 }
 
 Table::Table()
@@ -177,6 +209,7 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
     using namespace wibble::str;
 
     Row new_row;
+    new_row.set_to_zero();
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
@@ -203,6 +236,7 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
             {
                 new_row.stats = *Stats::decodeString(i->second);
                 merge(new_row);
+                new_row.set_to_zero();
                 break;
             }
             default:
@@ -228,25 +262,39 @@ void Table::ensure_we_can_add_one()
 
 void Table::merge(const Row& row)
 {
+//    cerr << "MERGE " << this << " cur_size: " << row_count << " [" << rows << ", " << (rows + row_count) << ")" << " stats count " << row.stats.count << endl;
+//    row.dump(cerr);
     // Find the insertion point
+    //
+    // This works well even in case rows == 0, since it works in the [0, 0)
+    // range, returning 0 and later matching the append case
     Row* pos = lower_bound(rows, rows + row_count, row);
+
+//    cerr << " INSERTION POINT " << (pos - rows) << endl;
 
     if (pos == rows + row_count)
     {
+//        cerr << " APPEND" << endl;
         // Append
         ensure_we_can_add_one();
-        rows[row_count++] = row;
+        // Use placement new instead of assignment, otherwise the vtable of
+        // stats will not be initialized
+        // FIXME: simplify Stats not to be a type?
+        new(rows + row_count++) Row(row);
     } else if (*pos == row) {
+//        cerr << " MERGE" << endl;
+        // Just merge stats
+        pos->stats.merge(row.stats);
+    } else {
+//        cerr << " INSERT" << endl;
         // Insert
-        unsigned idx = (rows + row_count) - pos;
+        unsigned idx = pos - rows;
         // Use the array position since we may reallocate, invalidating the
         // previous pointer
         ensure_we_can_add_one();
         memmove(rows + idx + 1, rows + idx, row_count - idx);
-        rows[idx] = row;
-    } else {
-        // Just merge stats
-        pos->stats.merge(row.stats);
+        new(rows + idx) Row(row);
+        ++row_count;
     }
     stats.merge(row.stats);
 }
@@ -277,7 +325,7 @@ bool Table::visit(Visitor& visitor) const
         for (size_t i = 0; i < msoSize; ++i)
             visitmd[i] = rows[ri].items[i];
 
-        if (!visitor(visitmd, stats))
+        if (!visitor(visitmd, rows[ri].stats))
             return false;
     }
 
@@ -298,7 +346,7 @@ bool Table::visitFiltered(const Matcher& matcher, Visitor& visitor) const
         for (size_t i = 0; i < msoSize; ++i)
             visitmd[i] = rows[ri].items[i];
 
-        if (!visitor(visitmd, stats))
+        if (!visitor(visitmd, rows[ri].stats))
             return false;
     }
 
@@ -331,10 +379,9 @@ void Table::buildItemMsoMap()
         itemMsoMap[(size_t)mso[i]] = i;
 }
 
-#if 0
 types::Code Visitor::codeForPos(size_t pos)
 {
-    return mso[pos];
+    return Table::mso[pos];
 }
 
 int Visitor::posForCode(types::Code code)
@@ -342,17 +389,6 @@ int Visitor::posForCode(types::Code code)
     if ((size_t)code >= itemMsoMapSize) return -1;
     return itemMsoMap[(size_t)code];
 }
-
-void Node::md_to_tv(const Metadata& md, types::TypeVector& out)
-{
-    for (size_t i = 0; i < Node::msoSize; ++i)
-    {
-        const Type* item = md.get(mso[i]);
-        if (item) out.set(i, item);
-    }
-}
-#endif
-
 
 }
 }

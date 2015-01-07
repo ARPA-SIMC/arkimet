@@ -136,7 +136,10 @@ struct Format3Decoder : public DecoderBase
 {
     Row row;
 
-    Format3Decoder(Table& target) : DecoderBase(target) {}
+    Format3Decoder(Table& target) : DecoderBase(target)
+    {
+        row.set_to_zero();
+    }
 
     void decode(Decoder& dec)
     {

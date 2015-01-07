@@ -52,6 +52,11 @@ struct Row
     Stats stats;
 
     Row() {}
+    Row(const Row& row)
+        : stats(row.stats)
+    {
+        memcpy(items, row.items, sizeof(items));
+    }
     Row(const Metadata& md) : stats(Stats(md)) {}
     Row(const Stats& stats) : stats(stats) {}
 
@@ -67,20 +72,14 @@ struct Row
 
     bool matches(const Matcher& matcher) const;
 
-    bool operator<(const Row& row) const
-    {
-        for (unsigned i = 0; i < mso_size; ++i)
-        {
-            if (items[i] < row.items[i]) return true;
-            if (items[i] > row.items[i]) return false;
-        }
-        return false;
-    }
+    bool operator<(const Row& row) const;
 
     bool operator==(const Row& row) const
     {
         return memcmp(items, row.items, sizeof(items)) == 0;
     }
+
+    void dump(std::ostream& out, unsigned indent = 0) const;
 };
 
 class Table
@@ -105,6 +104,7 @@ public:
     ~Table();
 
     bool empty() const { return row_count == 0; }
+    unsigned size() const { return row_count; }
 
     bool equals(const Table& table) const;
 
