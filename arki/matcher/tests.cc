@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/matcher/tests.h>
+#include "tests.h"
 #include <arki/matcher.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
@@ -36,6 +34,7 @@
 #include <arki/types/quantity.h>
 
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -57,16 +56,16 @@ void fill(Metadata& md)
 	testValues.set("pluto", Value::createString("12"));
 	testValues.set("zzz", Value::createInteger(1));
 
-	md.set(origin::GRIB1::create(1, 2, 3));
-	md.set(product::GRIB1::create(1, 2, 3));
-	md.set(level::GRIB1::create(110, 12, 13));
-	md.set(timerange::GRIB1::create(2, 254u, 22, 23));
-	md.set(area::GRIB::create(testValues));
-	md.set(proddef::GRIB::create(testValues));
-	md.add_note(types::Note::create("test note"));
-	md.set(AssignedDataset::create("dsname", "dsid"));
-	md.set(run::Minute::create(12));
-	md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
+    md.set(Origin::createGRIB1(1, 2, 3));
+    md.set(Product::createGRIB1(1, 2, 3));
+    md.set(Level::createGRIB1(110, 12, 13));
+    md.set(Timerange::createGRIB1(2, 254u, 22, 23));
+    md.set(Area::createGRIB(testValues));
+    md.set(Proddef::createGRIB(testValues));
+    md.add_note(*Note::create("test note"));
+    md.set(AssignedDataset::create("dsname", "dsid"));
+    md.set(Run::createMinute(12));
+    md.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
 
 	/* metadati specifici di odimh5 */
 	md.set(Task::create("task1"));

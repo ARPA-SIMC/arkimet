@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/metadata/collection.h>
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
@@ -36,6 +36,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::metadata;
@@ -64,36 +65,18 @@ void to::test<1>()
 
 	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	UItem<source::Blob> blob = source.upcast<source::Blob>();
-	ensure_equals(blob->absolutePathname(), sys::fs::abspath("inbound/test.grib1"));
-	ensure_equals(blob->offset, 0u);
-	ensure_equals(blob->size, 7218u);
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	mdc.clear();
 
 	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-	source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	blob = source.upcast<source::Blob>();
-	ensure_equals(blob->absolutePathname(), sys::fs::abspath("inbound/test.grib1"));
-	ensure_equals(blob->offset, 7218u);
-	ensure_equals(blob->size, 34960u);
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960u));
 
 	mdc.clear();
 	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-	source = mdc[0].source;
-	ensure_equals(source->style(), Source::BLOB);
-	ensure_equals(source->format, "grib1");
-	blob = source.upcast<source::Blob>();
-	ensure_equals(blob->absolutePathname(), sys::fs::abspath("inbound/test.grib1"));
-	ensure_equals(blob->offset, 42178u);
-	ensure_equals(blob->size, 2234u);
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
 }
 
 // Test querying the summary

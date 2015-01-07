@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/note.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -40,49 +32,24 @@ struct arki_types_note_shar {
 };
 TESTGRP(arki_types_note);
 
-// Check Note, created with current time
+// Check Note, created with arbitrary time
 template<> template<>
 void to::test<1>()
 {
-	Item<Time> pre = Time::createNow();
-	Item<Note> o = Note::create("test");
-	Item<Time> post = Time::createNow();
-	ensure_equals(o->content, "test");
-	ensure(o->time >= pre);
-	ensure(o->time <= post);
-
-	ensure_equals(o, Item<Note>(Note::create(o->time, "test")));
-	ensure(o != Item<Note>(Note::create(o->time, "test1")));
-	ensure(o != Item<Note>(Note::create(Time::create(1800, 1, 2, 3, 4, 5), "test")));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-}
-
-// Check Note, created with arbitrary time
-template<> template<>
-void to::test<2>()
-{
-	Item<Time> time = Time::create(2007, 6, 5, 4, 3, 2);
-	Item<Note> o = Note::create(time, "test");
-	ensure_equals(o->time, time);
-	ensure_equals(o->content, "test");
-
-	ensure_equals(o, Item<Note>(Note::create(time, "test")));
-	ensure(o != Item<Note>(Note::create(time, "test1")));
-	ensure(o != Item<Note>(Note::create(Time::create(2007, 6, 5, 4, 3, 1), "test")));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("note", "[2015-01-03T00:00:00]foo");
+    t.lower.push_back("[2015-01-02T00:00:00]foo");
+    t.lower.push_back("[2015-01-03T00:00:00]bar");
+    t.higher.push_back("[2015-01-03T00:00:00]zab");
+    t.higher.push_back("[2015-01-04T00:00:00]bar");
+    wassert(t);
 }
 
 #ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
-void to::test<3>()
+void to::test<2>()
 {
-	Item<Time> time = Time::create(2007, 6, 5, 4, 3, 2);
-	Item<Note> o = Note::create(time, "test");
+    auto_ptr<Note> o = Note::create(Time(2007, 6, 5, 4, 3, 2), "test");
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -98,8 +65,8 @@ void to::test<3>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 }
 #endif
 

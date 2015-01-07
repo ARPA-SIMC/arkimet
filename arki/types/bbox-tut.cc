@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/bbox.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -44,15 +36,8 @@ TESTGRP(arki_types_bbox);
 template<> template<>
 void to::test<1>()
 {
-	Item<BBox> o = bbox::INVALID::create();
-	ensure_equals(o->style(), BBox::INVALID);
-	const bbox::INVALID* v = o->upcast<bbox::INVALID>();
-	ensure(v);
-
-	ensure_equals(o, Item<BBox>(bbox::INVALID::create()));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("bbox", "INVALID");
+    wassert(t);
 }
 
 #ifdef HAVE_LUA
@@ -60,7 +45,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Item<BBox> o = bbox::INVALID::create();
+    auto_ptr<BBox> o = BBox::createInvalid();
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -69,8 +54,8 @@ void to::test<2>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 }
 #endif
 

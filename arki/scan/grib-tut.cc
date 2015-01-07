@@ -83,7 +83,7 @@ void to::test<1>()
 		ensure_equals(md.notes().size(), 1u);
 	}
 
-    // Check origin
+    // Check contents
     wassert(actual(md).contains("origin", "GRIB1(200, 1, 101)"));
     wassert(actual(md).contains("product", "GRIB1(200, 140, 229)"));
     wassert(actual(md).contains("level", "GRIB1(1, 0)"));

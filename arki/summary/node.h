@@ -196,26 +196,11 @@ struct Node
      */
     void split(size_t pos);
 
-#if 0
-    /**
-     * Obtain a node for the given metadata combination.
-     *
-     * If the node exists, return it. Else, create it in the trie.
-     *
-     * @param m
-     *   A vector of all metadata items in mso order. The vector stops at the
-     *   last defined item, so the last item of the vector is always defined
-     *   unless the vector is empty
-     * @param scanpos
-     *   mso offset for this node
-     * @return
-     *   Node with stats for the given metadata combination
-     */
-    Node* obtain_node(const std::vector< UItem<> >& m, size_t scanpos = 0);
+    /// Get the trie depth (used only for development)
+    unsigned devel_get_max_depth() const;
 
-#endif
-
-    //int compare(const Node& node) const;
+    /// Get the number of nodes in the trie (used only for development)
+    unsigned devel_get_node_count() const;
 
     static void buildMsoSerLen();
     static void buildItemMsoMap();
@@ -227,80 +212,7 @@ private:
     Node& operator=(const Node&);
 };
 
-#if 0
-struct RootNode : public Node
-{
-    /**
-     * Create an empty root node.
-     *
-     * This is not normally used, unless during decoding or for tests.
-     */
-    RootNode();
-
-    /**
-     * New root node initialized from the given metadata.
-     *
-     * This can only be used to create a root node.
-     */
-    RootNode(const Metadata& m);
-
-    /**
-     * New root node initialized from the given metadata and stats.
-     *
-     * This can only be used to create a root node.
-     */
-    RootNode(const Metadata& m, const UItem<Stats>& st);
-
-    /**
-     * New root node initialized from the given metadata and stats.
-     *
-     * @param m
-     *   A vector of all metadata items in mso order. The vector stops at the
-     *   last defined item, so the last item of the vector is always defined
-     *   unless the vector is empty
-     */
-    RootNode(const std::vector< UItem<> >& m, const UItem<Stats>& st = 0);
-
-    /**
-     * Add a metadata item
-     *
-     * This only works if called on the root node, otherwise it gives
-     * unpredictable results.
-     */
-    void add(const Metadata& m);
-
-    /**
-     * Add a metadata item and associated stats
-     *
-     * This only works if called on the root node, otherwise it gives
-     * unpredictable results.
-     */
-    void add(const Metadata& m, const UItem<Stats>& st);
-
-    /**
-     * Add the given metadata and stats to the tree rooted in this node.
-     *
-     * This only works if called on the root node, otherwise it gives
-     * unpredictable results.
-     *
-     * @param m
-     *   A vector of all metadata items in mso order. The vector stops at the
-     *   last defined item, so the last item of the vector is always defined
-     *   unless the vector is empty
-     * @param st
-     *   Stats to add
-     */
-    void add(const std::vector< UItem<> >& m, const UItem<Stats>& st);
-
-    /**
-     * Return a deep copy of this node
-     */
-    RootNode* clone() const;
-};
-#endif
-
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/assigneddataset.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -44,51 +36,23 @@ TESTGRP(arki_types_assigneddataset);
 template<> template<>
 void to::test<1>()
 {
-	Item<Time> pre = Time::createNow();
-	Item<AssignedDataset> o = AssignedDataset::create("testname", "testid");
-	Item<Time> post = Time::createNow();
-	ensure_equals(o->name, "testname");
-	ensure_equals(o->id, "testid");
-	ensure(o->changed >= pre);
-	ensure(o->changed <= post);
-
-	ensure_equals(o, Item<AssignedDataset>(AssignedDataset::create(o->changed, "testname", "testid")));
-	ensure(o != Item<AssignedDataset>(AssignedDataset::create(o->changed, "testname1", "testid")));
-	ensure(o != Item<AssignedDataset>(AssignedDataset::create(o->changed, "testname", "testid1")));
-	// Comparison should not care about the attribution time
-	ensure_equals(o, Item<AssignedDataset>(AssignedDataset::create(Time::create(1800, 1, 2, 3, 4, 5), "testname", "testid")));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-}
-
-// Check AssignedDataset, created with arbitrary time
-template<> template<>
-void to::test<2>()
-{
-	Item<Time> time = Time::create(2007, 6, 5, 4, 3, 2);
-	Item<AssignedDataset> o = AssignedDataset::create(time, "testname", "testid");
-	ensure_equals(o->changed, time);
-	ensure_equals(o->name, "testname");
-	ensure_equals(o->id, "testid");
-
-	ensure_equals(o, Item<AssignedDataset>(AssignedDataset::create(time, "testname", "testid")));
-	ensure(o != Item<AssignedDataset>(AssignedDataset::create(time, "testname1", "testid")));
-	ensure(o != Item<AssignedDataset>(AssignedDataset::create(time, "testname", "testid1")));
-	// Comparison should not care about the attribution time
-	ensure_equals(o, Item<AssignedDataset>(AssignedDataset::create(Time::create(2007, 6, 5, 4, 3, 1), "testname", "testid")));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("assigneddataset", "testname as testid imported on 2015-01-03T00:00:00");
+    // Comparison should not care about the attribution time
+    t.alternates.push_back("testname as testid imported on 2015-01-02T00:00:00");
+    t.alternates.push_back("testname as testid imported on 2015-01-04T00:00:00");
+    t.lower.push_back("pestname as testid imported on 2015-01-03T00:00:00");
+    t.lower.push_back("testname as pestid imported on 2015-01-03T00:00:00");
+    t.higher.push_back("zestname as testid imported on 2015-01-03T00:00:00");
+    t.higher.push_back("testname as zestid imported on 2015-01-03T00:00:00");
+    wassert(t);
 }
 
 #ifdef HAVE_LUA
 // Test Lua functions
 template<> template<>
-void to::test<3>()
+void to::test<2>()
 {
-	Item<Time> time = Time::create(2007, 6, 5, 4, 3, 2);
-	Item<AssignedDataset> o = AssignedDataset::create(time, "testname", "testid");
+    auto_ptr<AssignedDataset> o = AssignedDataset::create(Time(2007, 6, 5, 4, 3, 2), "testname", "testid");
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -105,8 +69,8 @@ void to::test<3>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 }
 #endif
 

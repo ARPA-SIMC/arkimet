@@ -18,8 +18,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/metadata/stream.h>
 #include <arki/metadata.h>
@@ -66,38 +64,15 @@ struct arki_metadata_stream_shar {
 
 	void fill(Metadata& md)
 	{
+        md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
 		md.set(origin::GRIB1::create(1, 2, 3));
 		md.set(product::GRIB1::create(1, 2, 3));
 		md.set(level::GRIB1::create(114, 12, 34));
 		md.set(timerange::GRIB1::create(1, 1, 2, 3));
 		md.set(area::GRIB::create(testValues));
 		md.set(proddef::GRIB::create(testValues));
-		md.add_note(types::Note::create("test note"));
+		md.add_note(*types::Note::create("test note"));
 		md.set(AssignedDataset::create("dsname", "dsid"));
-		// Test POSITION reference times
-		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-	}
-
-#define ensure_matches_fill(x) impl_ensure_matches_fill(wibble::tests::Location(__FILE__, __LINE__, #x), (x))
-	void impl_ensure_matches_fill(const wibble::tests::Location& loc, Metadata& md1)
-	{
-		inner_ensure(md1.get(types::TYPE_ORIGIN).defined());
-		inner_ensure_equals(md1.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(1, 2, 3)));
-		inner_ensure(md1.get(types::TYPE_PRODUCT).defined());
-		inner_ensure_equals(md1.get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(1, 2, 3)));
-		inner_ensure(md1.get(types::TYPE_LEVEL).defined());
-		inner_ensure_equals(md1.get(types::TYPE_LEVEL), Item<>(level::GRIB1::create(114, 12, 34)));
-		inner_ensure(md1.get(types::TYPE_TIMERANGE).defined());
-		inner_ensure_equals(md1.get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(1, 1, 2, 3)));
-		inner_ensure(md1.get(types::TYPE_AREA).defined());
-		inner_ensure_equals(md1.get(types::TYPE_AREA), Item<>(area::GRIB::create(testValues)));
-		inner_ensure(md1.get(types::TYPE_PRODDEF).defined());
-		inner_ensure_equals(md1.get(types::TYPE_PRODDEF), Item<>(proddef::GRIB::create(testValues)));
-		inner_ensure_equals(md1.notes().size(), 1u);
-		inner_ensure_equals((*md1.notes().begin())->content, "test note");
-		inner_ensure_equals(md1.get(types::TYPE_ASSIGNEDDATASET), Item<>(AssignedDataset::create("dsname", "dsid")));
-		inner_ensure(md1.get(types::TYPE_REFTIME).defined());
-		inner_ensure_equals(md1.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1))));
 	}
 };
 TESTGRP(arki_metadata_stream);
@@ -109,14 +84,14 @@ inline bool cmpmd(const Metadata& md1, const Metadata& md2)
 	{
 		cerr << "----- The two metadata differ.  First one:" << endl;
 		md1.writeYaml(cerr);
-		if (md1.source->style() == Source::INLINE)
+		if (md1.source().style() == Source::INLINE)
 		{
 			wibble::sys::Buffer buf = md1.getData();
 			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
 		}
 		cerr << "----- Second one:" << endl;
 		md2.writeYaml(cerr);
-		if (md2.source->style() == Source::INLINE)
+		if (md2.source().style() == Source::INLINE)
 		{
 			wibble::sys::Buffer buf = md2.getData();
 			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
@@ -132,7 +107,7 @@ void to::test<1>()
 {
     // Create test metadata
     Metadata md1;
-    md1.source = Source::createBlob("grib", "", "fname", 1, 2);
+    md1.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     this->fill(md1);
 
 	Metadata md2;
@@ -204,7 +179,7 @@ void to::test<2>()
 {
     // Create test metadata
     Metadata md;
-    md.source = Source::createBlob("grib", "", "fname", 1, 2);
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     this->fill(md);
 
     // Encode it in a buffer 3 times

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #ifndef ARKI_MATCHER_TESTUTILS_H
 #define ARKI_MATCHER_TESTUTILS_H
 
-#include <arki/tests/tests.h>
+#include <arki/metadata/tests.h>
 
 namespace arki {
 struct Metadata;
@@ -32,30 +32,6 @@ void fill(Metadata& md);
 #define ensure_matches(expr, md) arki::tests::impl_ensure_matches(wibble::tests::Location(__FILE__, __LINE__, #expr ", " #md), (expr), (md), true)
 #define ensure_not_matches(expr, md) arki::tests::impl_ensure_matches(wibble::tests::Location(__FILE__, __LINE__, #expr ", " #md), (expr), (md), false)
 void impl_ensure_matches(const wibble::tests::Location& loc, const std::string& expr, const Metadata& md, bool shouldMatch = true);
-
-#if 0
-#define ensure_serialises(x, y) arki::tests::impl_ensure_serialises(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y))
-template<typename T>
-static inline void impl_ensure_serialises(const wibble::tests::Location& loc, const arki::Item<T>& o, ser::Code code)
-{
-    // Binary encoding, without envelope
-    std::string enc = o->encodeWithoutEnvelope();
-    inner_ensure_equals(T::decode((const unsigned char*)enc.data(), enc.size()), o);
-
-	// Binary encoding, with envelope
-    enc = o->encodeWithEnvelope();
-    inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), o);
-
-    const unsigned char* buf = (const unsigned char*)enc.data();
-    size_t len = enc.size();
-    inner_ensure_equals(types::decodeEnvelope(buf, len), code);
-    inner_ensure_equals(o->encodeWithoutEnvelope().size(), len);
-    inner_ensure_equals(T::decode(buf, len), o);
-
-	// String encoding
-    inner_ensure_equals(T::decodeString(wibble::str::fmt(o)), o);
-}
-#endif
 
 }
 }

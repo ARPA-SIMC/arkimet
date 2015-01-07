@@ -247,6 +247,11 @@ struct Type
         if (!a || !b) return false;
         return a->equals(*b);
     }
+    template<typename A, typename B>
+    static inline bool nullable_equals(const std::auto_ptr<A>& a, const std::auto_ptr<B>& b)
+    {
+        return nullable_equals(a.get(), b.get());
+    }
     /**
      * Return the comparison value of a and b, assuming that a null pointer
      * tests smaller than any type.
@@ -257,6 +262,11 @@ struct Type
         if (!a) return -1;
         if (!b) return 1;
         return a->compare(*b);
+    }
+    template<typename A, typename B>
+    static inline bool nullable_compare(const std::auto_ptr<A>& a, const std::auto_ptr<B>& b)
+    {
+        return nullable_compare(a.get(), b.get());
     }
 };
 

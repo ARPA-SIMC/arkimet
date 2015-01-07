@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2014--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,31 +18,11 @@
  * Author: Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
  */
 
-#include "config.h"
-
-#include <arki/types/tests.h>
+#include <arki/metadata/tests.h>
 #include <arki/scan/nc.h>
-#include <arki/types.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <arki/types/run.h>
-#include <arki/types/value.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <arki/scan/any.h>
 #include <wibble/sys/fs.h>
-
-#include <sstream>
-#include <fstream>
-#include <iostream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 namespace tut {
 using namespace std;
@@ -70,28 +50,14 @@ void to::test<1>()
     wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34));
+    wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34));
 
-    // Check area
-    wassert(actual(md.get(types::TYPE_AREA).defined()).istrue());
-    wassert(actual(md.get(types::TYPE_AREA)) == Item<>(area::VM2::create(1)));
+    // Check contents
+    wassert(actual(md).contains("area", "VM2(1)"));
+    wassert(actual(md).contains("product", "VM2(227)"));
+    wassert(actual(md).contains("reftime", "1987-10-31T00:00:00Z"));
 
-    // Check product
-    ensure(md.get(types::TYPE_PRODUCT).defined());
-    ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::VM2::create(227)));
-    // Check reftime
-    ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-    ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(1987,10,31, 0, 0, 0))));
-    // Check value
-    ensure_equals(md.get<types::Value>()->buffer, "1.2,,,000000000");
-
-    // Check that the source can be read properly
-    md.unset(types::TYPE_VALUE);
-    md.dropCachedData();
-    buf = md.getData();
-    ensure_equals(buf.size(), 34u);
-    ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
-
+    // FIXME: work in progress
 }
 
 }

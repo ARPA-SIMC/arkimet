@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,7 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/itemset.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
@@ -41,19 +38,20 @@
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::ItemSet& m)
 {
-        o << "(";
-        for (arki::ItemSet::const_iterator i = m.begin(); i != m.end(); ++i)
-                if (i == m.begin())
-                        o << i->second;
-                else
-                        o << ", " << i->second;
-        o << ")";
-	return o;
+    o << "(";
+    for (arki::ItemSet::const_iterator i = m.begin(); i != m.end(); ++i)
+        if (i == m.begin())
+            o << i->second;
+        else
+            o << ", " << i->second;
+    o << ")";
+    return o;
 }
 }
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -85,56 +83,72 @@ struct arki_itemset_shar {
 		md.set(proddef::GRIB::create(testValues));
 		md.set(AssignedDataset::create("dsname", "dsid"));
 		// Test POSITION reference times
-		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
+		md.set(reftime::Position::create(Time(2006, 5, 4, 3, 2, 1)));
 	}
 };
 TESTGRP(arki_itemset);
 
-#define ensure_stores(T, x, y, z) impl_ensure_stores<T>(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y ", " #z), (x), (y), (z))
 template<typename T>
-static inline void impl_ensure_stores(const wibble::tests::Location& loc, ItemSet& md, const Item<>& val, const Item<>& val1)
+static inline void test_basic_itemset_ops(WIBBLE_TEST_LOCPRM, const std::string& vlower, const std::string& vhigher)
 {
-	// Make sure that val and val1 have the same serialisation code
-	types::Code code = val->serialisationCode();
-	ensure_equals(val1->serialisationCode(), code);
+    types::Code code = types::traits<T>::type_code;
+    ItemSet md;
+    auto_ptr<Type> vlo = decodeString(code, vlower);
+    auto_ptr<Type> vhi = decodeString(code, vhigher);
 
-	// Start empty
-	//inner_ensure_equals(md.size(), 0u);
+    wassert(actual(md.size()) == 0);
+    wassert(actual(md.empty()).istrue());
+    wassert(actual(md.has(code)).isfalse());
 
-	// Add one and check that it works
-	md.set(val);
-	//inner_ensure_equals(md.size(), 1u);
-	inner_ensure_equals(md.get(code), val);
+    // Add one element and check that it can be retrieved
+    md.set(vlo->cloneType());
+    wassert(actual(md.size()) == 1);
+    wassert(actual(md.empty()).isfalse());
+    wassert(actual(md.has(code)).istrue());
+    wassert(actual(vlo) == md.get(code));
 
-	// Test template get
-	Item<T> i = md.get<T>();
-	inner_ensure(i.defined());
-	inner_ensure_equals(i, val);
+    // Test templated get
+    const T* t = md.get<T>();
+    wassert(actual(t).istrue());
+    wassert(actual(vlo) == t);
 
-	// Add the same again and check that things are still fine
-	md.set(val);
-	//inner_ensure_equals(md.size(), 1u);
-	inner_ensure_equals(md.get(code), val);
+    // Add the same again and check that things are still fine
+    md.set(vlo->cloneType());
+    wassert(actual(md.size()) == 1);
+    wassert(actual(md.empty()).isfalse());
+    wassert(actual(md.has(code)).istrue());
+    wassert(actual(vlo) == md.get(code));
 
-	// Test template get
-	i = md.get<T>();
-	inner_ensure(i.defined());
-	inner_ensure_equals(i, val);
+    // Add a different element and check that it gets replaced
+    md.set(vhi->cloneType());
+    wassert(actual(md.size()) == 1);
+    wassert(actual(md.empty()).isfalse());
+    wassert(actual(md.has(code)).istrue());
+    wassert(actual(vhi) == md.get(code));
 
-	ItemSet md1;
-	md1.clear();
-	md1.set(val);
-	inner_ensure_equals(md, md1);
+    // Test equality and comparison between ItemSets
+    ItemSet md1;
+    md1.set(vhi->cloneType());
+    wassert(actual(md == md1).istrue());
+    wassert(actual(md.compare(md1)) == 0);
 
-	// Add a different one and see that we get it
-	md.set(val1);
-	//inner_ensure_equals(md.size(), 1u);
-	inner_ensure_equals(md.get(code), val1);
+    // Set a different item and verify that we do not test equal anymore
+    md.set(vlo->cloneType());
+    wassert(actual(md != md1).istrue());
+    wassert(actual(md.compare(md1)) < 0);
+    wassert(actual(md1.compare(md)) > 0);
 
-	ItemSet md2;
-	md2.clear();
-	md2.set(val1);
-	inner_ensure_equals(md, md2);
+    // Test unset
+    md.unset(code);
+    wassert(actual(md.size()) == 0);
+    wassert(actual(md.empty()).istrue());
+    wassert(actual(md.has(code)).isfalse());
+
+    // Test clear
+    md1.clear();
+    wassert(actual(md.size()) == 0);
+    wassert(actual(md.empty()).istrue());
+    wassert(actual(md.has(code)).isfalse());
 }
 
 /*
@@ -146,32 +160,13 @@ static inline void impl_ensure_stores(const wibble::tests::Location& loc, ItemSe
  * decided to keep them.
  */
 
-// Test GRIB1 origins
+// Test with several item types
 template<> template<>
 void to::test<1>()
 {
-	Item<> val(origin::GRIB1::create(1, 2, 3));
-	Item<> val1(origin::GRIB1::create(2, 3, 4));
-	ensure_stores(types::Origin, md, val, val1);
-}
-
-// Test BUFR origins
-template<> template<>
-void to::test<3>()
-{
-	// Add one and check that it works
-	Item<> val(origin::BUFR::create(1, 2));
-	Item<> val1(origin::BUFR::create(2, 3));
-	ensure_stores(types::Origin, md, val, val1);
-}
-
-// Test Position reference times
-template<> template<>
-void to::test<4>()
-{
-	Item<> val(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-	Item<> val1(reftime::Position::create(types::Time::create(2008, 7, 6, 5, 4, 3)));
-	ensure_stores(types::Reftime, md, val, val1);
+    wruntest(test_basic_itemset_ops<Origin>, "GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)");
+    wruntest(test_basic_itemset_ops<Origin>, "BUFR(1, 2)", "BUFR(2, 3)");
+    wruntest(test_basic_itemset_ops<Reftime>, "2006-05-04T03:02:01Z", "2008-07-06T05:04:03");
 #if 0
 	// Test PERIOD reference times
 	md.reftime.set(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
@@ -198,48 +193,13 @@ void to::test<4>()
 	ensure_equals(tend, Time());
 #endif
 #endif
+    wruntest(test_basic_itemset_ops<Product>, "GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)");
+    wruntest(test_basic_itemset_ops<Product>, "BUFR(1, 2, 3, name=antani)", "GRIB1(1, 2, 3, name=blinda)");
+    wruntest(test_basic_itemset_ops<Level>, "GRIB1(114, 260)", "GRIB1(120,280)");
+    wruntest(test_basic_itemset_ops<Timerange>, "GRIB1(1, 1, 2, 3)", "GRIB1(2, 2, 3, 4)");
 }
 
-// Test GRIB product info
-template<> template<>
-void to::test<5>()
-{
-	Item<> val(product::GRIB1::create(1, 2, 3));
-	Item<> val1(product::GRIB1::create(2, 3, 4));
-	ensure_stores(types::Product, md, val, val1);
-}
-
-// Test BUFR product info
-template<> template<>
-void to::test<6>()
-{
-	ValueBag vb;
-	vb.set("name", Value::createString("antani"));
-	ValueBag vb1;
-	vb1.set("name", Value::createString("blinda"));
-	Item<> val(product::BUFR::create(1, 2, 3, vb));
-	Item<> val1(product::BUFR::create(1, 2, 3, vb1));
-	ensure_stores(types::Product, md, val, val1);
-}
-
-// Test levels
-template<> template<>
-void to::test<7>()
-{
-	Item<> val(level::GRIB1::create(114, 260));
-	Item<> val1(level::GRIB1::create(120, 280));
-	ensure_stores(types::Level, md, val, val1);
-}
-
-// Test time ranges
-template<> template<>
-void to::test<8>()
-{
-	Item<> val(timerange::GRIB1::create(1, 1, 2, 3));
-	Item<> val1(timerange::GRIB1::create(2, 2, 3, 4));
-	ensure_stores(types::Timerange, md, val, val1);
-}
-
+#if 0
 // Test areas
 template<> template<>
 void to::test<9>()
@@ -309,7 +269,6 @@ void to::test<12>()
 	ensure_equals(compareMaps(a, b), 1);
 	ensure_equals(compareMaps(b, a), -1);
 }
+#endif
 
 }
-
-// vim:set ts=4 sw=4:

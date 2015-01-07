@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ void to::test<1>()
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -73,38 +73,18 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
 
-	// Check origin
-	ensure(mdc[0].get(types::TYPE_ORIGIN).defined());
-	ensure_equals(mdc[0].get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(200, 0, 101)));
-
-	// Check product
-	ensure(mdc[0].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[0].get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(200, 140, 229)));
-
-	// Check level
-	ensure(mdc[0].get(types::TYPE_LEVEL).defined());
-	ensure_equals(mdc[0].get(types::TYPE_LEVEL), Item<>(level::GRIB1::create(1, 0)));
-
-	// Check timerange
-	ensure(mdc[0].get(types::TYPE_TIMERANGE).defined());
-	ensure_equals(mdc[0].get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(0, 254, 0, 0)));
-
-    // Check area
+    // Check contents
+    wassert(actual(mdc[0]).contains("origin", "GRIB1(200, 1, 101)"));
+    wassert(actual(mdc[0]).contains("product", "GRIB1(200, 140, 229)"));
+    wassert(actual(mdc[0]).contains("level", "GRIB1(1, 0)"));
+    wassert(actual(mdc[0]).contains("timerange", "GRIB1(0, 254, 0, 0)"));
     wassert(actual(mdc[0]).contains("area", "GRIB(Ni=97,Nj=73,latfirst=40000000,latlast=46000000,lonfirst=12000000,lonlast=20000000,type=0)"));
-
-    // Check proddef
     wassert(actual(mdc[0]).contains("proddef", "GRIB(tod=1)"));
-
-	// Check reftime
-	ensure_equals(mdc[0].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(mdc[0].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2007, 7, 8, 13, 0, 0))));
-
-    // Check run
+    wassert(actual(mdc[0]).contains("reftime", "2007-07-08T13:00:00Z"));
     wassert(actual(mdc[0]).contains("run", "MINUTE(13:00)"));
 
-
     // Check the source info
-    wassert(actual(mdc[1].source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -112,39 +92,18 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 34956, 4), "7777");
 
-	// Check origin
-	ensure(mdc[1].get(types::TYPE_ORIGIN).defined());
-	ensure_equals(mdc[1].get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(80, 255, 100)));
-
-	// Check product
-	ensure(mdc[1].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[1].get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(80, 2, 2)));
-
-	// Check level
-	ensure(mdc[1].get(types::TYPE_LEVEL).defined());
-	ensure_equals(mdc[1].get(types::TYPE_LEVEL), Item<>(level::GRIB1::create(102, 0)));
-
-	// Check timerange
-	ensure(mdc[1].get(types::TYPE_TIMERANGE).defined());
-	ensure_equals(mdc[1].get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(1, 254, 0, 0)));
-
-    // Check area
-    wassert(actual(mdc[1]).contains("area", "GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
-
-    // Check proddef
+    // Check contents
+    wassert(actual(mdc[1]).contains("origin", "GRIB1(80, 255, 100)"));
+    wassert(actual(mdc[1]).contains("product", "GRIB1(80, 2, 2)"));
+    wassert(actual(mdc[1]).contains("level", "GRIB1(102, 0)"));
+    wassert(actual(mdc[1]).contains("timerange", "GRIB1(1, 254, 0, 0)"));
+    wassert(actual(mdc[1]).contains("area", "area:GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
     wassert(actual(mdc[1]).contains("proddef", "GRIB(tod=1)"));
-
-	// Check reftime
-	ensure_equals(mdc[1].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(mdc[1].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2007, 7, 7, 0, 0, 0))));
-
-	// Check run
-	ensure_equals(mdc[1].get(types::TYPE_RUN).upcast<Run>()->style(), Run::MINUTE);
-	ensure_equals(mdc[1].get(types::TYPE_RUN), Item<>(run::Minute::create(0)));
-
+    wassert(actual(mdc[1]).contains("reftime", "2007-07-07T00:00:00Z"));
+    wassert(actual(mdc[1]).contains("run", "MINUTE(0)"));
 
     // Check the source info
-    wassert(actual(mdc[2].source).sourceblob_is("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -152,22 +111,15 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "GRIB");
 	ensure_equals(string((const char*)buf.data() + 2230, 4), "7777");
 
+    // Check contents
     wassert(actual(mdc[2]).contains("origin", "GRIB1(98, 0, 129)"));
     wassert(actual(mdc[2]).contains("product", "GRIB1(98, 128, 129)"));
-
-	// Check level
-	ensure(mdc[2].get(types::TYPE_LEVEL).defined());
-	ensure_equals(mdc[2].get(types::TYPE_LEVEL), Item<>(level::GRIB1::create(100, 1000)));
-
-	// Check timerange
-	ensure(mdc[2].get(types::TYPE_TIMERANGE).defined());
-	ensure_equals(mdc[2].get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(0, 254, 0, 0)));
-
-    // Check area
-    wassert(actual(mdc[2]).contains("area", "GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
+    wassert(actual(mdc[2]).contains("level", "GRIB1(100, 1000)"));
+    wassert(actual(mdc[2]).contains("timerange", "GRIB1(0, 254, 0, 0)"));
+    wassert(actual(mdc[2]).contains("area", "area:GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
     wassert(actual(mdc[2]).contains("proddef", "GRIB(tod=1)"));
-    wassert(actual(mdc[2]).contains("reftime", "2007-10-09 00:00:00"));
-    wassert(actual(mdc[2]).contains("run", "MINUTE(00:00)"));
+    wassert(actual(mdc[2]).contains("reftime", "2007-10-09T00:00:00Z"));
+    wassert(actual(mdc[2]).contains("run", "MINUTE(0)"));
 #endif
 }
 
@@ -186,7 +138,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -194,26 +146,19 @@ void to::test<2>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 190, 4), "7777");
 
-	// Check origin
-	ensure(mdc[0].get(types::TYPE_ORIGIN).defined());
-	ensure_equals(mdc[0].get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ValueBag vb;
-	vb.set("t", Value::createString("synop"));
-	ensure(mdc[0].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[0].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
-
-	// Check reftime
-	ensure_equals(mdc[0].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(mdc[0].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2005, 12, 1, 18, 0, 0))));
+    // Check contents
+    wassert(actual(mdc[0]).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(mdc[0]).contains("product", "BUFR(0, 255, 1, t=synop)"));
+    wassert(actual(mdc[0]).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    wassert(actual(mdc[0]).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(mdc[0]).contains("reftime", "2005-12-01Z18:00:00Z"));
 
 	// Check run
 	ensure(not mdc[0].has(types::TYPE_RUN));
 
 
     // Check the source info
-    wassert(actual(mdc[1].source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -221,24 +166,19 @@ void to::test<2>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
 
-	// Check origin
-	ensure(mdc[1].get(types::TYPE_ORIGIN).defined());
-	ensure_equals(mdc[1].get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ensure(mdc[1].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[1].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
-
-	// Check reftime
-	ensure_equals(mdc[1].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(mdc[1].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
+    // Check contents
+    wassert(actual(mdc[0]).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(mdc[0]).contains("product", "BUFR(0, 255, 1, t=synop)"));
+    //wassert(actual(mdc[0]).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(mdc[0]).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(mdc[0]).contains("reftime", "2004-11-30Z12:00:00Z"));
 
 	// Check run
 	ensure(not mdc[1].has(types::TYPE_RUN));
 
 
     // Check the source info
-    wassert(actual(mdc[2].source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -246,17 +186,12 @@ void to::test<2>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
 
-	// Check origin
-	ensure(mdc[2].get(types::TYPE_ORIGIN).defined());
-	ensure_equals(mdc[2].get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ensure(mdc[2].get(types::TYPE_PRODUCT).defined());
-	ensure_equals(mdc[2].get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3, vb)));
-
-	// Check reftime
-	ensure_equals(mdc[2].get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(mdc[2].get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
+    // Check contents
+    wassert(actual(mdc[2]).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(mdc[2]).contains("product", "BUFR(0, 255, 3, t=synop)"));
+    //wassert(actual(mdc[2]).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(mdc[2]).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(mdc[2]).contains("reftime", "2004-11-30Z12:00:00Z"));
 
 	// Check run
 	ensure(not mdc[2].has(types::TYPE_RUN));

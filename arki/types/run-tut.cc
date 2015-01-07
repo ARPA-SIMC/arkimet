@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,16 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/run.h>
-#include <arki/matcher.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -45,23 +36,15 @@ TESTGRP(arki_types_run);
 template<> template<>
 void to::test<1>()
 {
-	Item<Run> o = run::Minute::create(12);
-	ensure_equals(o->style(), Run::MINUTE);
-	const run::Minute* v = o->upcast<run::Minute>();
-	ensure(v);
-
-	ensure_equals(o, Item<Run>(run::Minute::create(12)));
-	ensure_equals(o, Item<Run>(run::Minute::create(12, 0)));
-
-	ensure(o != run::Minute::create(12, 1));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "MINUTE,12:00");
-	Matcher m = Matcher::parse("run:" + o->exactQuery());
-	ensure(m(o));
+    tests::TestGenericType t("run", "MINUTE(12:00)");
+    t.alternates.push_back("MINUTE(12)");
+    t.lower.push_back("MINUTE(00)");
+    t.lower.push_back("MINUTE(11)");
+    t.lower.push_back("MINUTE(11:00)");
+    t.higher.push_back("MINUTE(12:01)");
+    t.higher.push_back("MINUTE(13)");
+    t.exact_query = "MINUTE,12:00";
+    wassert(t);
 }
 
 // Test Lua functions
@@ -69,7 +52,7 @@ template<> template<>
 void to::test<2>()
 {
 #ifdef HAVE_LUA
-	Item<Run> o = run::Minute::create(12, 30);
+    auto_ptr<Run> o = Run::createMinute(12, 30);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -82,20 +65,9 @@ void to::test<2>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 #endif
 }
 
-// Check comparisons
-template<> template<>
-void to::test<3>()
-{
-    wassert(actual(run::Minute::create(12, 30)).compares(
-                    run::Minute::create(13, 00),
-                    run::Minute::create(13, 00)));
 }
-
-}
-
-// vim:set ts=4 sw=4:

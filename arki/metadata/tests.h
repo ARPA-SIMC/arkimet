@@ -24,66 +24,22 @@
 #include <arki/metadata.h>
 
 namespace arki {
+class Metadata;
+
 namespace tests {
-
-struct TestMetadataContains
-{
-    const Metadata& actual;
-    const std::string& field;
-    const std::string& expected;
-    bool inverted;
-    TestMetadataContains(const Metadata& actual, const std::string& field, const std::string& expected, bool inverted=false)
-        : actual(actual), field(field), expected(expected), inverted(inverted) {}
-
-    TestMetadataContains operator!() { return TestMetadataContains(actual, field, expected, !inverted); }
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct TestMetadataSimilar
-{
-    const Metadata& actual;
-    const Metadata& expected;
-    bool inverted;
-    TestMetadataSimilar(const Metadata& actual, const Metadata& expected, bool inverted=false)
-        : actual(actual), expected(expected), inverted(inverted) {}
-
-    TestMetadataSimilar operator!() { return TestMetadataSimilar(actual, expected, !inverted); }
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct TestMetadataIsset
-{
-    const Metadata& actual;
-    const std::string& field;
-    bool inverted;
-    TestMetadataIsset(const Metadata& actual, const std::string& field, bool inverted=false)
-        : actual(actual), field(field), inverted(inverted) {}
-
-    TestMetadataIsset operator!() { return TestMetadataIsset(actual, field, !inverted); }
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
 
 struct ActualMetadata : public wibble::tests::Actual<Metadata>
 {
     ActualMetadata(const Metadata& s) : Actual<Metadata>(s) {}
 
     /// Check that a metadata field has the expected value
-    TestMetadataContains contains(const std::string& field, const std::string& expected)
-    {
-        return TestMetadataContains(actual, field, expected);
-    }
+    std::auto_ptr<ArkiCheck> contains(const std::string& field, const std::string& expected);
 
     /// Check that the two metadata are the same, except for source and notes
-    TestMetadataSimilar is_similar(const Metadata& expected)
-    {
-        return TestMetadataSimilar(actual, expected);
-    }
+    std::auto_ptr<ArkiCheck> is_similar(const Metadata& expected);
 
     /// Check that the metadata does contain an item of the given type
-    TestMetadataIsset is_set(const std::string& field)
-    {
-        return TestMetadataIsset(actual, field);
-    }
+    std::auto_ptr<ArkiCheck> is_set(const std::string& field);
 };
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,19 +21,9 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/quantity.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
-
-/*============================================================================*/
 
 using namespace std;
 using namespace wibble::tests;
@@ -48,33 +38,23 @@ TESTGRP(arki_types_quantity);
 
 template<> template<> void to::test<1>()
 {
-	Item<Quantity> o = Quantity::create("a,b,c");
-	//ensure_equals(o->task, "a,b,c");
-
-	ensure_equals(o, Item<Quantity>(Quantity::create("a,b,c")));
-	ensure(o != Item<Quantity>(Quantity::create("a")));
-	ensure(o != Item<Quantity>(Quantity::create("a,a")));
-	ensure(o != Item<Quantity>(Quantity::create("b")));
-	ensure(o != Item<Quantity>(Quantity::create("c")));
-	ensure(o != Item<Quantity>(Quantity::create("1,b,c")));
-	ensure(o != Item<Quantity>(Quantity::create("a,1,c")));
-	ensure(o != Item<Quantity>(Quantity::create("a,b,1")));
-	ensure(o != Item<Quantity>(Quantity::create("a,b,1")));
-	ensure(o != Item<Quantity>(Quantity::create("1,2,3")));
-}
-
-template<> template<> void to::test<2>()
-{
-	Item<Quantity> o = Quantity::create("a,b,c");
-	//ensure_equals(o->task, "a,b,c");
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("quantity", "a,b,c");
+    t.lower.push_back("a");
+    t.lower.push_back("a,a");
+    t.lower.push_back("1,b,c");
+    t.lower.push_back("a,1,c");
+    t.lower.push_back("a,b,1");
+    t.lower.push_back("1,2,3");
+    t.higher.push_back("b");
+    t.higher.push_back("c");
+    t.higher.push_back("c,d");
+    t.higher.push_back("c,d,e");
+    wassert(t);
 }
 
 #ifdef HAVE_LUA
 // Test Lua functions
-template<> template<> void to::test<3>()
+template<> template<> void to::test<2>()
 {
 	//TODO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 	//Item<Quantity> o = Quantity::create("a,b,c");
@@ -90,41 +70,4 @@ template<> template<> void to::test<3>()
 }
 #endif
 
-/*============================================================================*/
-
 }
-
-// vim:set ts=4 sw=4:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

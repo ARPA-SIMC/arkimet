@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -137,7 +138,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	md.set(reftime::Period::create(types::Time::create(2007, 1, 2, 3, 4, 5), types::Time::create(2007, 2, 3, 4, 5, 6)));
+    md.set(Reftime::createPeriod(Time(2007, 1, 2, 3, 4, 5), Time(2007, 2, 3, 4, 5, 6)));
 
 	ensure_matches("reftime:>=2007", md);
 	ensure_matches("reftime:<=2007", md);
@@ -227,7 +228,7 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	md.set(reftime::Period::create(types::Time::create(2007, 1, 2, 3, 4, 5), types::Time::create()));
+    md.set(Reftime::createPeriod(Time(2007, 1, 2, 3, 4, 5), Time()));
 
 	ensure_matches("reftime:>=2007", md);
 	ensure_matches("reftime:<=2007", md);
@@ -251,9 +252,9 @@ void to::test<4>()
 {
     Metadata md;
 
-	md.set(reftime::Position::create(types::Time::create(2007, 1, 1, 0, 0, 0)));
-	ensure_matches("reftime:>2006", md);
-	//ensure_equals(Matcher::parse("reftime:>2006").toString(), "reftime:>2006-12-31 23:59:59");
+    md.set(Reftime::createPosition(Time(2007, 1, 1, 0, 0, 0)));
+    ensure_matches("reftime:>2006", md);
+    //ensure_equals(Matcher::parse("reftime:>2006").toString(), "reftime:>2006-12-31 23:59:59");
 }
 
 // Try matching times
@@ -328,9 +329,8 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-	Matcher m;
-
-	md.set(reftime::Period::create(types::Time::create(2007, 1, 2, 9, 0, 0), types::Time::create(2007, 1, 2, 15, 0, 0)));
+    Matcher m;
+    md.set(Reftime::createPeriod(Time(2007, 1, 2, 9, 0, 0), Time(2007, 1, 2, 15, 0, 0)));
 
 	ensure_not_matches("reftime:==00:00:00", md);
 	ensure_matches("reftime:==12:00:00", md);
@@ -351,9 +351,8 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-	Matcher m;
-
-	md.set(reftime::Period::create(types::Time::create(2007, 1, 2, 21, 0, 0), types::Time::create(2007, 1, 3, 3, 0, 0)));
+    Matcher m;
+    md.set(Reftime::createPeriod(Time(2007, 1, 2, 21, 0, 0), Time(2007, 1, 3, 3, 0, 0)));
 
 	ensure_matches("reftime:==00:00:00", md);
 	ensure_not_matches("reftime:==12:00:00", md);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,11 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/metadata/collection.h>
 #include <arki/sort.h>
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
-
 #include <wibble/string.h>
 
 #include <sstream>
@@ -41,7 +38,9 @@ static ostream& operator<<(ostream& out, const vector<int>& v)
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
+using namespace arki::types;
 
 struct arki_sort_shar {
     arki_sort_shar()
@@ -55,21 +54,21 @@ TESTGRP(arki_sort);
 namespace {
 void produce(int hour, int minute, int run, metadata::Consumer& c)
 {
-	Metadata md;
-	md.set(types::reftime::Position::create(types::Time::create(2008, 7, 6, hour, minute, 0)));
-	md.set(types::run::Minute::create(run));
-	c(md);
+    Metadata md;
+    md.set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
+    md.set(Run::createMinute(run));
+    c(md);
 }
 
 vector<int> mdvals(const Metadata& md)
 {
-	UItem<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
-	UItem<types::run::Minute> run = md.get(types::TYPE_RUN).upcast<types::run::Minute>();
-	vector<int> res;
-	res.push_back(rt->time->vals[3]);
-	res.push_back(rt->time->vals[4]);
-	res.push_back(run->minute()/60);
-	return res;
+    const reftime::Position* rt = dynamic_cast<const reftime::Position*>(md.get<Reftime>());
+    const run::Minute* run = dynamic_cast<const run::Minute*>(md.get<Run>());
+    vector<int> res;
+    res.push_back(rt->time.vals[3]);
+    res.push_back(rt->time.vals[4]);
+    res.push_back(run->minute()/60);
+    return res;
 }
 
 vector<int> mdvals(int h, int m, int r)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,11 +17,9 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
-#include <arki/tests/tests.h>
-#include <arki/metadata.h>
+#include "metadata.h"
+#include <arki/types/tests.h>
+#include <arki/tests/lua.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/types/level.h>
@@ -42,12 +40,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "config.h"
-
-#ifdef HAVE_LUA
-#include <arki/tests/lua.h>
-#endif
-
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 {
@@ -58,6 +50,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -79,41 +72,32 @@ struct arki_metadata_shar {
 		testValues.set("cippo", Value::createString(""));
 	}
 
-	void fill(Metadata& md)
-	{
-		md.set(origin::GRIB1::create(1, 2, 3));
-		md.set(product::GRIB1::create(1, 2, 3));
-		md.set(level::GRIB1::create(114, 12, 34));
-		md.set(timerange::GRIB1::create(1, 1, 2, 3));
-		md.set(area::GRIB::create(testValues));
-		md.set(proddef::GRIB::create(testValues));
-		md.add_note(types::Note::create("test note"));
-		md.set(AssignedDataset::create("dsname", "dsid"));
-		// Test POSITION reference times
-		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-	}
+    void fill(Metadata& md)
+    {
+        md.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
+        md.set(Origin::createGRIB1(1, 2, 3));
+        md.set(Product::createGRIB1(1, 2, 3));
+        md.set(Level::createGRIB1(114, 12, 34));
+        md.set(Timerange::createGRIB1(1, 1, 2, 3));
+        md.set(Area::createGRIB(testValues));
+        md.set(Proddef::createGRIB(testValues));
+        md.set(AssignedDataset::create("dsname", "dsid"));
+        md.add_note(*types::Note::create("test note"));
+    }
 
-#define ensure_matches_fill(x) impl_ensure_matches_fill(wibble::tests::Location(__FILE__, __LINE__, #x), (x))
-	void impl_ensure_matches_fill(const wibble::tests::Location& loc, Metadata& md1)
-	{
-		inner_ensure(md1.get(types::TYPE_ORIGIN).defined());
-		inner_ensure_equals(md1.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(1, 2, 3)));
-		inner_ensure(md1.get(types::TYPE_PRODUCT).defined());
-		inner_ensure_equals(md1.get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(1, 2, 3)));
-		inner_ensure(md1.get(types::TYPE_LEVEL).defined());
-		inner_ensure_equals(md1.get(types::TYPE_LEVEL), Item<>(level::GRIB1::create(114, 12, 34)));
-		inner_ensure(md1.get(types::TYPE_TIMERANGE).defined());
-		inner_ensure_equals(md1.get(types::TYPE_TIMERANGE), Item<>(timerange::GRIB1::create(1, 1, 2, 3)));
-		inner_ensure(md1.get(types::TYPE_AREA).defined());
-		inner_ensure_equals(md1.get(types::TYPE_AREA), Item<>(area::GRIB::create(testValues)));
-		inner_ensure(md1.get(types::TYPE_PRODDEF).defined());
-		inner_ensure_equals(md1.get(types::TYPE_PRODDEF), Item<>(proddef::GRIB::create(testValues)));
-		inner_ensure_equals(md1.notes().size(), 1u);
-		inner_ensure_equals((*md1.notes().begin())->content, "test note");
-		inner_ensure_equals(md1.get(types::TYPE_ASSIGNEDDATASET), Item<>(AssignedDataset::create("dsname", "dsid")));
-		inner_ensure(md1.get(types::TYPE_REFTIME).defined());
-		inner_ensure_equals(md1.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1))));
-	}
+    void ensure_md_matches_prefill(WIBBLE_TEST_LOCPRM, const Metadata& md)
+    {
+        wassert(actual(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1))) == md.get<Reftime>());
+        wassert(actual(Origin::createGRIB1(1, 2, 3)) == md.get<Origin>());
+        wassert(actual(Product::createGRIB1(1, 2, 3)) == md.get<Product>());
+        wassert(actual(Level::createGRIB1(114, 12, 34)) == md.get<Level>());
+        wassert(actual(Timerange::createGRIB1(1, 1, 2, 3)) == md.get<Timerange>());
+        wassert(actual(Area::createGRIB(testValues)) == md.get<Area>());
+        wassert(actual(Proddef::createGRIB(testValues)) == md.get<Proddef>());
+        wassert(actual(AssignedDataset::create("dsname", "dsid")) == md.get<AssignedDataset>());
+        wassert(actual(md.notes().size()) == 1);
+        wassert(actual((*md.notes().begin()).content) == "test note");
+    }
 };
 TESTGRP(arki_metadata);
 
@@ -122,14 +106,14 @@ TESTGRP(arki_metadata);
 template<> template<>
 void to::test<1>()
 {
-    md.source = Source::createBlob("grib", "", "fname", 1, 2);
-	ensure_equals(md.source->style(), Source::BLOB);
-	ensure_equals(md.source->format, "grib");
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
+    wassert(actual(md.source().style()) == Source::BLOB);
+    wassert(actual(md.source().format) == "grib");
 
-	UItem<source::Blob> blob = md.source.upcast<source::Blob>();
-	ensure_equals(blob->filename, "fname");
-	ensure_equals(blob->offset, 1u);
-	ensure_equals(blob->size, 2u);
+    const source::Blob& blob = md.sourceBlob();
+    wassert(actual(blob.filename) == "fname");
+    wassert(actual(blob.offset) == 1u);
+    wassert(actual(blob.size) == 2u);
 }
 
 #if 0
@@ -148,43 +132,37 @@ static void dump(const char* name, const std::string& str)
 template<> template<>
 void to::test<2>()
 {
-	md.source = Source::createBlob("grib", "", "fname", 1, 2);
-	fill(md);
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
+    fill(md);
 
-	string encoded = md.encode();
-	stringstream stream(encoded, ios_base::in);
+    string encoded = md.encodeBinary();
+    stringstream stream(encoded, ios_base::in);
 
 	Metadata md1;
 	md1.read(stream, "(test memory buffer)");
 
-    ensure_equals(md1.source, Source::createBlob("grib", "", "fname", 1, 2));
-	ensure_equals(md1.source->format, "grib");
-	ensure_matches_fill(md1);
+    wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
+    wassert(actual(md1.source().format) == "grib");
+    wruntest(ensure_md_matches_prefill, md1);
 
 
-	// Test PERIOD reference times
-	md.set(reftime::Period::create(
-		types::Time::create(2007, 6, 5, 4, 3, 2),
-		types::Time::create(2008, 7, 6, 5, 4, 3)));
+    // Test PERIOD reference times
+    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
-	encoded = md.encode();
-	stringstream stream1(encoded, ios_base::in);
+    encoded = md.encodeBinary();
+    stringstream stream1(encoded, ios_base::in);
 
 	Metadata md2;
 	md2.read(stream1, "(test memory buffer)");
 
-	ensure(md2.get(types::TYPE_REFTIME).defined());
-	ensure_equals(md2.get(types::TYPE_REFTIME),
-		Item<>(reftime::Period::create(
-			types::Time::create(2007, 6, 5, 4, 3, 2),
-			types::Time::create(2008, 7, 6, 5, 4, 3))));
+    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 }
 
 // Test Yaml encoding and decoding
 template<> template<>
 void to::test<3>()
 {
-    md.source = Source::createBlob("grib", "", "fname", 1, 2);
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
 
 	stringstream output;
@@ -194,15 +172,12 @@ void to::test<3>()
 	Metadata md1;
 	md1.readYaml(stream, "(test memory buffer)");
 
-    ensure_equals(md1.source, Source::createBlob("grib", "", "fname", 1, 2));
-	ensure_equals(md1.source->format, "grib");
-	ensure_matches_fill(md1);
+    wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
+    wassert(actual(md1.source().format) == "grib");
+    wruntest(ensure_md_matches_prefill, md1);
 
-
-	// Test PERIOD reference times
-	md.set(reftime::Period::create(
-		types::Time::create(2007, 6, 5, 4, 3, 2),
-		types::Time::create(2008, 7, 6, 5, 4, 3)));
+    // Test PERIOD reference times
+    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
 	stringstream output1;
 	md.writeYaml(output1);
@@ -211,18 +186,14 @@ void to::test<3>()
 	Metadata md2;
 	md2.readYaml(stream1, "(test memory buffer)");
 
-	ensure(md2.get(types::TYPE_REFTIME).defined());
-	ensure_equals(md2.get(types::TYPE_REFTIME),
-		Item<>(reftime::Period::create(
-			types::Time::create(2007, 6, 5, 4, 3, 2),
-			types::Time::create(2008, 7, 6, 5, 4, 3))));
+    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 }
 
 // Test JSON encoding and decoding
 template<> template<>
 void to::test<4>()
 {
-    md.source = Source::createBlob("grib", "", "fname", 1, 2);
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
 
     // Serialise to JSON;
@@ -238,15 +209,13 @@ void to::test<4>()
     Metadata md1;
     md1.read(parsed.root().want_mapping("parsing metadata"));
 
-    ensure_equals(md1.source, Source::createBlob("grib", "", "fname", 1, 2));
-    ensure_equals(md1.source->format, "grib");
-    ensure_matches_fill(md1);
+    wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
+    wassert(actual(md1.source().format) == "grib");
+    wruntest(ensure_md_matches_prefill, md1);
 
 
     // Test PERIOD reference times
-    md.set(reftime::Period::create(
-                types::Time::create(2007, 6, 5, 4, 3, 2),
-                types::Time::create(2008, 7, 6, 5, 4, 3)));
+    md.set(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
     // Serialise to JSON
     stringstream output1;
@@ -261,11 +230,7 @@ void to::test<4>()
     Metadata md2;
     md2.read(parsed1.root().want_mapping("parsing metadata"));
 
-    ensure(md2.get(types::TYPE_REFTIME).defined());
-    ensure_equals(md2.get(types::TYPE_REFTIME),
-            Item<>(reftime::Period::create(
-                    types::Time::create(2007, 6, 5, 4, 3, 2),
-                    types::Time::create(2008, 7, 6, 5, 4, 3))));
+    wassert(actual(Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3))) == md2.get<Reftime>());
 }
 
 // Test encoding and decoding with inline data
@@ -305,7 +270,7 @@ template<> template<>
 void to::test<7>()
 {
 #ifdef HAVE_LUA
-    md.source = Source::createBlob("grib", "", "fname", 1, 2);
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
 
 	tests::Lua test(
@@ -341,7 +306,7 @@ void to::test<8>()
 {
 	const char* tmpfile = "testmd.tmp";
 	fill(md);
-    md.source = Source::createBlob("grib", "", "fname", 1, 2);
+    md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
 
 	// Encode
 	int out = open(tmpfile, O_WRONLY | O_CREAT, 0666);

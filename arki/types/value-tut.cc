@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,15 +21,7 @@
 #include <arki/types/tests.h>
 #include <arki/types/value.h>
 #include <arki/utils/codec.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -45,53 +37,30 @@ TESTGRP(arki_types_value);
 template<> template<>
 void to::test<1>()
 {
-    using namespace utils::codec;
-    Item<Value> o = Value::create("ciao");
-
-    string encoded;
-    Encoder enc(encoded);
-    o->encodeWithoutEnvelope(enc);
-    ensure_equals(encoded.size(), 4);
-    ensure_equals(encoded, "ciao");
-
-    ensure_equals(o, Item<Value>(Value::create("ciao")));
-
-    ensure(o != Value::create("cia"));
-    ensure(o != Value::create("ciap"));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("value", "ciao");
+    t.lower.push_back("cia");
+    t.higher.push_back("ciap");
+    wassert(t);
 }
 
 // Check binary value
 template<> template<>
 void to::test<2>()
 {
-    using namespace utils::codec;
-    Item<Value> o = Value::create("ciao♥");
-
-    ensure_equals(o, Item<Value>(Value::create("ciao♥")));
-
-    ensure(o != Value::create("ciao"));
-    ensure(o != Value::create("cia♥"));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("value", "ciao♥");
+    t.lower.push_back("ciao");
+    t.higher.push_back("cia♥");
+    wassert(t);
 }
 
 // Check binary value with zeros
 template<> template<>
 void to::test<3>()
 {
-    using namespace utils::codec;
-    Item<Value> o = Value::create(string("ci\0ao", 5));
-
-    ensure_equals(o, Item<Value>(Value::create(string("ci\0ao", 5))));
-
-    ensure(o != Value::create("ciao"));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("value", "ci\0ao");
+    t.lower.push_back("ci");
+    t.higher.push_back("cia♥");
+    wassert(t);
 }
 
 // Test Lua functions
@@ -119,15 +88,4 @@ void to::test<4>()
 #endif
 }
 
-// Check comparisons
-template<> template<>
-void to::test<5>()
-{
-    wassert(actual(Value::create("ciao")).compares(
-                Value::create("ciap"),
-                Value::create("ciap")));
 }
-
-}
-
-// vim:set ts=4 sw=4:

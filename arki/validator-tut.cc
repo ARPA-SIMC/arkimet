@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 
 struct arki_validator_shar {
     arki_validator_shar()
@@ -104,32 +105,32 @@ void to::test<2>()
     validators::DailyImport v;
     vector<string> errors;
     localtime_r(&ts, &t);
-    md.set(types::reftime::Position::create(types::Time::create(t)));
+    md.set(Reftime::createPosition(Time(t)));
     ensure_no_errors();
 
     // 12 hours into the future
     ts = ts_now + 3600 * 12;
     localtime_r(&ts, &t);
-    md.set(types::reftime::Position::create(types::Time::create(t)));
+    md.set(Reftime::createPosition(Time(t)));
     ensure_no_errors();
 
     // 6 days into the past
     ts = ts_now - 3600 * 24 * 6;
     localtime_r(&ts, &t);
-    md.set(types::reftime::Position::create(types::Time::create(t)));
+    md.set(Reftime::createPosition(Time(t)));
     ensure_no_errors();
 
     // 2 days into the future
     ts = ts_now + 3600 * 24 * 2;
     localtime_r(&ts, &t);
-    md.set(types::reftime::Position::create(types::Time::create(t)));
+    md.set(Reftime::createPosition(Time(t)));
     ensure_errors(1u);
 
     // 8 days into the past
     errors.clear();
     ts = ts_now - 3600 * 24 * 8;
     localtime_r(&ts, &t);
-    md.set(types::reftime::Position::create(types::Time::create(t)));
+    md.set(Reftime::createPosition(Time(t)));
     ensure_errors(1u);
 }
 

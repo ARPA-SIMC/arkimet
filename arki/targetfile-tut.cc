@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/tests/tests.h>
 #include <arki/targetfile.h>
@@ -65,9 +63,9 @@ struct arki_targetfile_shar {
 		md.set(timerange::GRIB1::create(0, 0, 0, 0));
 		md.set(area::GRIB::create(testValues));
 		md.set(proddef::GRIB::create(testValues));
-		md.add_note(types::Note::create("test note"));
+		md.add_note(*types::Note::create("test note"));
 		md.set(run::Minute::create(12));
-		md.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
+		md.set(reftime::Position::create(types::Time(2007, 1, 2, 3, 4, 5)));
 	}
 };
 TESTGRP(arki_targetfile);

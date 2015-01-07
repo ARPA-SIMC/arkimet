@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,19 +21,9 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/task.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
-
-/*============================================================================*/
 
 using namespace std;
 using namespace wibble::tests;
@@ -48,28 +38,18 @@ TESTGRP(arki_types_task);
 
 template<> template<> void to::test<1>()
 {
-	Item<Task> o = Task::create("task");
-	ensure_equals(o->task, "task");
-
-	ensure_equals(o, Item<Task>(Task::create("task")));
-	ensure(o != Item<Task>(Task::create("baaa")));
-	ensure(o != Item<Task>(Task::create("")));
-}
-
-template<> template<> void to::test<2>()
-{
-	Item<Task> o = Task::create("task");
-	ensure_equals(o->task, "task");
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    tests::TestGenericType t("task", "task");
+    t.lower.push_back("");
+    t.lower.push_back("pask");
+    t.higher.push_back("zask");
+    wassert(t);
 }
 
 #ifdef HAVE_LUA
 // Test Lua functions
-template<> template<> void to::test<3>()
+template<> template<> void to::test<2>()
 {
-	Item<Task> o = Task::create("task");
+    auto_ptr<Task> o = Task::create("task");
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -78,46 +58,9 @@ template<> template<> void to::test<3>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 }
 #endif
 
-/*============================================================================*/
-
 }
-
-// vim:set ts=4 sw=4:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

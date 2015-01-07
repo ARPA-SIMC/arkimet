@@ -1,7 +1,7 @@
 /*
  * summary/node - Summary node implementation
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,31 +20,12 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/summary/node.h>
+#include "node.h"
+#include "stats.h"
 #include <arki/summary.h>
-#include <arki/summary/stats.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
-#include <arki/utils/codec.h>
-#include <arki/utils/compress.h>
 #include <arki/types/utils.h>
-#if 0
-#include <arki/utils/compress.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/buffer.h>
-
-#include <fstream>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include "config.h"
-#endif
 
 using namespace std;
 using namespace wibble;
@@ -68,7 +49,7 @@ const types::Code mso[] = {
         types::TYPE_TASK
 
 };
-const size_t Node::msoSize = sizeof(mso) / sizeof(types::Code);
+const size_t Node::msoSize = sizeof(mso) / sizeof(Code);
 int* msoSerLen = 0;
 
 // Reverse mapping
@@ -230,14 +211,6 @@ Node::Node(const Node& o)
         children.push_back((*i)->clone());
 }
 
-#if 0
-Node::Node(const std::vector<Type*>& m, const Stats& st, size_t scanpos)
-{
-    for (vector<Type*>::const_iterator i = m.begin() + scanpos; i != m.end(); ++i)
-        md.push_back((*i)->clone());
-    stats = st.clone();
-}
-#endif
 Node::~Node()
 {
     for (vector<Node*>::iterator i = children.begin();
@@ -264,32 +237,6 @@ bool Node::equals(const Node& node) const
 
     return true;
 }
-
-#if 0
-int Node::compare(const Node& node) const
-{
-    // Compare metadata stripes
-    if (int res = md.size() - node.md.size()) return res;
-    for (size_t i = 0; i < md.size(); ++i)
-    {
-        if (!md[i] && node.md[i]) return -1;
-        if (!md[i] && !node.md[i]) continue;
-        if (md[i] && !node.md[i]) return 1;
-        if (int res = md[i]->compare(node.md[i])) return res;
-    }
-
-    // Compare stats
-    if (int res = stats.compare(node.stats)) return res;
-
-    // Compare children
-    if (int res = children.size() - node.children.size()) return res;
-    vector<Node*>::const_iterator a = children.begin();
-    vector<Node*>::const_iterator b = node.children.begin();
-    for (; a != children.end(); ++a, ++b)
-        if (int res = (*a)->compare(**b)) return res;
-    return 0;
-}
-#endif
 
 void Node::dump(std::ostream& out, size_t depth) const
 {
@@ -469,150 +416,21 @@ auto_ptr<Node> createPopulated(const types::Type* const* items, unsigned items_s
         new_node->md.set(i, items[i]);
 }
 
-#if 0
-Node* Node::obtain_node(const std::vector< UItem<> >& m, size_t scanpos)
+unsigned Node::devel_get_max_depth() const
 {
-    // If the node is completely blank, assign it to m.
-    // This only makes sense when building a tree starting from a blank root
-    // node. It can happen during decoding, or during tests
-    if (md.empty() && children.empty() && !stats.defined())
-    {
-        if (scanpos == 0)
-            md = m;
-        else
-            for (size_t i = scanpos; i < m.size(); ++i)
-                md.push_back(m[i]);
-        return this;
-    }
-
-    // Ensure that we can store it
-    for (size_t i = 0; i < md.size(); ++i)
-    {
-        if (scanpos + i >= m.size())
-        {
-            // m has a subset of our metadata: split.
-            split(i);
-
-            // We are now a new node perfectly representing m
-            return this;
-        }
-        else if (int cmp = m[scanpos + i].compare(md[i]))
-        {
-            // one of m differs from one of our md: split
-            split(i);
-
-            // Create the new node for m
-            Node* n = new Node(m, 0, scanpos + i);
-            if (cmp < 0)
-                // prepend the new node
-                children.insert(children.begin(), n);
-            else
-                // append the new node
-                children.push_back(n);
-
-            // Return the new node for m
-            return n;
-        }
-    }
-
-    // If we are here, then scanpos+md.size() <= m.size()
-    // and foreach(scanpos <= i < md.size()): md[i] == m[i]
-
-    // Perfectly match for md, return this node
-    if (scanpos + md.size() == m.size())
-        return this;
-
-    // If we are here, then m.size() > scanpos+md.size()
-    // and we need to find or create the child to which we delegate the search
-    // FIXME: is it worth replacing with binary search and insertionsort?
-    size_t child_scanpos = scanpos + md.size();
-    for (vector<Node*>::iterator i = children.begin(); i != children.end(); ++i)
-    {
-        int cmp = m[child_scanpos].compare((*i)->md[0]);
-        if (cmp < 0)
-        {
-            // Insert a new node for m at this position
-            Node* n = new Node(m, 0, scanpos + md.size());
-            children.insert(i, n);
-            return n;
-        }
-        else if (cmp == 0)
-            // Delegate to this child
-            return (*i)->obtain_node(m, child_scanpos);
-        // Else keep searching
-    }
-
-    // Append a new node
-    Node* n = new Node(m, 0, scanpos + md.size());
-    children.push_back(n);
-    return n;
+    unsigned max_child_depth = 0;
+    for (vector<Node*>::const_iterator i = children.begin(); i != children.end(); ++i)
+        max_child_depth = max((*i)->devel_get_max_depth(), max_child_depth);
+    return max_child_depth + 1;
 }
 
-RootNode::RootNode(const Metadata& m)
+unsigned Node::devel_get_node_count() const
 {
-    metadata_to_mdvec(m, md);
-    stats = new Stats(m);
+    unsigned count = 1;
+    for (vector<Node*>::const_iterator i = children.begin(); i != children.end(); ++i)
+        count += (*i)->devel_get_node_count();
+    return count;
 }
-RootNode::RootNode(const Metadata& m, const UItem<Stats>& st)
-{
-    metadata_to_mdvec(m, md);
-    stats = st;
-}
-RootNode::RootNode(const std::vector< UItem<> >& m, const UItem<Stats>& st)
-    : Node(m, st)
-{
-}
-
-RootNode* RootNode::clone() const
-{
-    RootNode* n = new RootNode(md, stats);
-    for (vector<Node*>::const_iterator i = children.begin();
-            i != children.end(); ++i)
-        n->children.push_back((*i)->clone());
-    return n;
-}
-
-static UItem<Stats> merge_stats(const UItem<Stats>& s1, const UItem<Stats>& s2)
-{
-    if (!s1.ptr()) return s2;
-    if (!s2.ptr()) return s1;
-    auto_ptr<Stats> res(new Stats);
-    res->merge(*s1);
-    res->merge(*s2);
-    return res.release();
-}
-
-static UItem<Stats> merge_stats(const UItem<Stats>& s1, const Metadata& m)
-{
-    if (!s1.ptr()) return new Stats(m);
-    auto_ptr<Stats> res(new Stats);
-    res->merge(*s1);
-    res->merge(m);
-    return res.release();
-}
-
-void RootNode::add(const Metadata& m)
-{
-    std::vector< UItem<> > mdvec;
-    metadata_to_mdvec(m, mdvec);
-    Node* n = obtain_node(mdvec);
-    n->stats = merge_stats(n->stats, m);
-}
-
-void RootNode::add(const Metadata& m, const UItem<Stats>& st)
-{
-    std::vector< UItem<> > mdvec;
-    metadata_to_mdvec(m, mdvec);
-    add(mdvec, st);
-}
-
-void RootNode::add(const std::vector< UItem<> >& m, const UItem<Stats>& st)
-{
-    Node* n = obtain_node(m);
-    n->stats = merge_stats(n->stats, st);
-}
-
-#endif
 
 }
 }

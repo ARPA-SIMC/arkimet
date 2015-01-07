@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +18,9 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
+#include "libconfig.h"
+#include "bbox.h"
 #include <arki/types/tests.h>
-#include <arki/bbox.h>
 #include <arki/utils/geosdef.h>
 #include <arki/types/area.h>
 
@@ -33,6 +32,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 
 struct arki_bbox_shar {
 };
@@ -44,8 +44,8 @@ void to::test<1>()
 {
 	BBox bbox;
 	ValueBag vb;
-	Item<types::Area> area(types::area::GRIB::create(vb));
-	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
+    auto_ptr<Area> area(Area::createGRIB(vb));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
 
 	ensure(g.get() == 0);
 }
@@ -65,9 +65,9 @@ void to::test<2>()
 	vb.set("lonlast", Value::createInteger(20000000));
 	vb.set("type", Value::createInteger(0));
 
-	Item<types::Area> area(types::area::GRIB::create(vb));
-	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
-	//cerr <<" AREA " << area << endl;
+    auto_ptr<Area> area(Area::createGRIB(vb));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
@@ -108,9 +108,9 @@ void to::test<3>()
 	vb.set("type", Value::createInteger(0));
 	vb.set("utm", Value::createInteger(1));
 
-	Item<types::Area> area(types::area::GRIB::create(vb));
-	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
-	//cerr <<" AREA " << area << endl;
+    auto_ptr<Area> area(Area::createGRIB(vb));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
@@ -153,9 +153,9 @@ void to::test<4>()
 	vb.set("type", Value::createInteger(10));
 	vb.set("rot", Value::createInteger(0));
 
-	Item<types::Area> area(types::area::GRIB::create(vb));
-	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
-	//cerr <<" AREA " << area << endl;
+    auto_ptr<Area> area(Area::createGRIB(vb));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 28u);
@@ -212,9 +212,9 @@ void to::test<5>()
 	vb.set("lonlast", Value::createInteger(22500000));
 	vb.set("type", Value::createInteger(0));
 
-	Item<types::Area> area(types::area::GRIB::create(vb));
-	auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
-	//cerr <<" AREA " << area << endl;
+    auto_ptr<Area> area(Area::createGRIB(vb));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
 	ensure_equals(g->getNumPoints(), 5u);
@@ -250,8 +250,8 @@ void to::test<6>()
     vb.set("x", Value::createInteger(11));
     vb.set("y", Value::createInteger(45));
 
-    Item<types::Area> area(types::area::GRIB::create(vb));
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
+    auto_ptr<Area> area(Area::createGRIB(vb));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);
@@ -281,9 +281,9 @@ void to::test<7>()
 {
 #ifdef HAVE_GEOS
     BBox bbox;
-    Item<types::Area> area = types::Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
+    auto_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
 
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(area));
+    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);

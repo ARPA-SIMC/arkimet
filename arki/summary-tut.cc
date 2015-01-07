@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,38 +18,33 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/tests/tests.h>
-#include <arki/summary.h>
-#include <arki/summary/stats.h>
-#include <arki/metadata.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/source.h>
-#include <arki/types/run.h>
-#include <arki/emitter/json.h>
-#include <arki/emitter/memory.h>
-#include <arki/matcher.h>
-#include <arki/utils.h>
+#include "types/tests.h"
+#include "tests/lua.h"
+#include "summary.h"
+#include "summary/stats.h"
+#include "metadata.h"
+#include "types/origin.h"
+#include "types/product.h"
+#include "types/timerange.h"
+#include "types/reftime.h"
+#include "types/source.h"
+#include "types/run.h"
+#include "emitter/json.h"
+#include "emitter/memory.h"
+#include "matcher.h"
+#include "utils.h"
 
 #include <sstream>
-#include <iostream>
-
-#ifdef HAVE_LUA
-#include <arki/tests/lua.h>
-#endif
 
 #ifdef HAVE_GRIBAPI
-#include <arki/scan/grib.h>
+#include "scan/grib.h"
 #endif
 
 namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace wibble::tests;
 
 struct arki_summary_shar {
 	Metadata md1;
@@ -58,17 +53,17 @@ struct arki_summary_shar {
 
     arki_summary_shar()
     {
-        md1.set(origin::GRIB1::create(1, 2, 3));
-        md1.set(product::GRIB1::create(1, 2, 3));
-        md1.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
-        md1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
-        md1.source = Source::createInline("grib1", 10);
+        md1.set(Origin::createGRIB1(1, 2, 3));
+        md1.set(Product::createGRIB1(1, 2, 3));
+        md1.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+        md1.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+        md1.set_source(Source::createInline("grib1", 10));
 
-        md2.set(origin::GRIB1::create(3, 4, 5));
-        md2.set(product::GRIB1::create(2, 3, 4));
-        md2.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
-        md2.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-        md2.source = Source::createInline("grib1", 20);
+        md2.set(Origin::createGRIB1(3, 4, 5));
+        md2.set(Product::createGRIB1(2, 3, 4));
+        md2.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+        md2.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
+        md2.set_source(Source::createInline("grib1", 20));
 
 		s.add(md1);
 		s.add(md2);
@@ -220,16 +215,16 @@ void to::test<11>()
 	Metadata tmd2;
 	Summary ts;
 
-    tmd1.set(origin::GRIB1::create(1, 2, 3));
-    tmd1.set(product::GRIB1::create(1, 2, 3));
-    tmd1.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
-    tmd1.source = Source::createInline("grib1", 10);
+    tmd1.set(Origin::createGRIB1(1, 2, 3));
+    tmd1.set(Product::createGRIB1(1, 2, 3));
+    tmd1.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+    tmd1.set_source(Source::createInline("grib1", 10));
 
-    tmd2.set(origin::GRIB1::create(1, 2, 3));
-    tmd2.set(product::GRIB1::create(1, 2, 3));
-    tmd2.set(reftime::Position::create(types::Time::create(2007, 1, 2, 3, 4, 5)));
-    tmd2.set(run::Minute::create(12, 0));
-    tmd2.source = Source::createInline("grib1", 15);
+    tmd2.set(Origin::createGRIB1(1, 2, 3));
+    tmd2.set(Product::createGRIB1(1, 2, 3));
+    tmd2.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
+    tmd2.set(Run::createMinute(12, 0));
+    tmd2.set_source(Source::createInline("grib1", 15));
 
 	ts.add(tmd1);
 	ts.add(tmd2);
@@ -326,17 +321,17 @@ template<> template<>
 void to::test<14>()
 {
     Metadata md3;
-    md3.set(origin::GRIB1::create(5, 6, 7));
-    md3.set(product::GRIB1::create(4, 5, 6));
-    md3.set(timerange::GRIB1::create(1, timerange::GRIB1::SECOND, 0, 0));
-    md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
+    md3.set(Origin::createGRIB1(5, 6, 7));
+    md3.set(Product::createGRIB1(4, 5, 6));
+    md3.set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
+    md3.set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
 
-	auto_ptr<summary::Stats> st(new summary::Stats);
-	st->count = 5;
-	st->size = 123456;
-	st->reftimeMerger.mergeTime(Time::create(2008, 7, 6, 5, 4, 3), Time::create(2008, 9, 8, 7, 6, 5));
+    summary::Stats st;
+    st.count = 5;
+    st.size = 123456;
+    st.reftimeMerger.mergeTime(Time(2008, 7, 6, 5, 4, 3), Time(2008, 9, 8, 7, 6, 5));
 
-	s.add(md3, st.release());
+    s.add(md3, st);
 
 	// Check that it contains 2 metadata
 	ensure_equals(s.count(), 7u);
@@ -351,10 +346,10 @@ void to::test<15>()
 
 	ensure_equals(res.size(), 1u);
 
-	ItemSet& is = res[0];
-	ensure_equals(is.size(), 2u);
-	ensure_equals(is.get(types::TYPE_ORIGIN), Item<>(origin::GRIB1::create(1, 2, 3)));
-	ensure_equals(is.get(types::TYPE_PRODUCT), Item<>(product::GRIB1::create(1, 2, 3)));
+    ItemSet& is = res[0];
+    wassert(actual(is.size()) == 2);
+    wassert(actual(Origin::createGRIB1(1, 2, 3)) == is.get(types::TYPE_ORIGIN));
+    wassert(actual(Product::createGRIB1(1, 2, 3)) == is.get(types::TYPE_PRODUCT));
 }
 
 // Test loading an old summary
@@ -406,7 +401,7 @@ void to::test<17>()
     {
         size_t count;
         Counter() : count(0) {}
-        virtual bool operator()(const std::vector< UItem<> >&, const UItem<summary::Stats>&)
+        virtual bool operator()(const std::vector<const Type*>&, const summary::Stats&)
         {
             ++count;
             return true;
