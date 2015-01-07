@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,16 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/area.h>
-#include <arki/matcher.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -45,35 +36,10 @@ TESTGRP(arki_types_area);
 template<> template<>
 void to::test<1>()
 {
-	ValueBag test1;
-	test1.set("uno", Value::createInteger(1));
-	test1.set("due", Value::createInteger(2));
-	test1.set("tre", Value::createInteger(-3));
-	test1.set("supercazzola", Value::createInteger(-1234567));
-	test1.set("pippo", Value::createString("pippo"));
-	test1.set("pluto", Value::createString("12"));
-	test1.set("cippo", Value::createString(""));
-	ValueBag test2;
-	test2.set("dieci", Value::createInteger(10));
-	test2.set("undici", Value::createInteger(11));
-	test2.set("dodici", Value::createInteger(-12));
-
-	Item<Area> o = area::GRIB::create(test1);
-	ensure_equals(o->style(), Area::GRIB);
-	const area::GRIB* v = o->upcast<area::GRIB>();
-	ensure_equals(v->values().size(), 7u);
-	ensure_equals(v->values(), test1);
-
-	ensure_equals(o, Item<Area>(area::GRIB::create(test1)));
-	ensure(o != area::GRIB::create(test2));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
-	Matcher m = Matcher::parse("area:" + o->exactQuery());
-	ensure(m(o));
+    tests::TestGenericType t("area", "GRIB1(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=12,cippo=)");
+    t.lower.push_back("GRIB1(dieci=10,undici=11,dodici=-12)");
+    t.exact_query = "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
+    wassert(t);
 }
 
 // Test Lua functions
@@ -81,10 +47,10 @@ template<> template<>
 void to::test<2>()
 {
 #ifdef HAVE_LUA
-	ValueBag test1;
-	test1.set("uno", Value::createInteger(1));
-	test1.set("pippo", Value::createString("pippo"));
-	Item<Area> o = area::GRIB::create(test1);
+    ValueBag test1;
+    test1.set("uno", Value::createInteger(1));
+    test1.set("pippo", Value::createString("pippo"));
+    auto_ptr<Area> o = Area::createGRIB(test1);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -98,92 +64,44 @@ void to::test<2>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 #endif
 }
 
-// Check comparisons
+// Check two more samples
 template<> template<>
 void to::test<3>()
 {
-	ValueBag test1;
-	test1.set("count", Value::createInteger(1));
-	test1.set("pippo", Value::createString("pippo"));
-	ValueBag test2;
-	test2.set("count", Value::createInteger(2));
-	test2.set("pippo", Value::createString("pippo"));
-    wassert(actual(area::GRIB::create(test1)).compares(
-                area::GRIB::create(test2),
-                area::GRIB::create(test2)));
+    tests::TestGenericType t("area", "GRIB1(count=1,pippo=pippo)");
+    t.higher.push_back("GRIB1(count=2,pippo=pippo)");
+    wassert(t);
 }
 
 // Check ODIMH5
 template<> template<>
 void to::test<4>()
 {
-	ValueBag test1;
-	test1.set("uno", Value::createInteger(1));
-	test1.set("due", Value::createInteger(2));
-	test1.set("tre", Value::createInteger(-3));
-	test1.set("supercazzola", Value::createInteger(-1234567));
-	test1.set("pippo", Value::createString("pippo"));
-	test1.set("pluto", Value::createString("12"));
-	test1.set("cippo", Value::createString(""));
-	ValueBag test2;
-	test2.set("dieci", Value::createInteger(10));
-	test2.set("undici", Value::createInteger(11));
-	test2.set("dodici", Value::createInteger(-12));
-
-	Item<Area> o = area::ODIMH5::create(test1);
-	ensure_equals(o->style(), Area::ODIMH5);
-	const area::ODIMH5* v = o->upcast<area::ODIMH5>();
-	ensure_equals(v->values().size(), 7u);
-	ensure_equals(v->values(), test1);
-
-	ensure_equals(o, Item<Area>(area::ODIMH5::create(test1)));
-	ensure(o != area::ODIMH5::create(test2));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "ODIMH5:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
-	Matcher m = Matcher::parse("area:" + o->exactQuery());
-	ensure(m(o));
+    tests::TestGenericType t("area", "ODIMH5(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=12,cippo=)");
+    t.lower.push_back("ODIMH5(dieci=10,undici=11,dodici=-12)");
+    t.exact_query = "ODIMH5:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
+    wassert(t);
 }
 
 // Check VM2
 template<> template<>
 void to::test<5>()
 {
-	Item<Area> o = area::VM2::create(1);
-	ensure_equals(o->style(), Area::VM2);
-	const area::VM2* v = o->upcast<area::VM2>();
-	ensure_equals(v->station_id(), 1u);
-
-	ensure_equals(o, Item<Area>(area::VM2::create(1)));
-	ensure(o != area::VM2::create(2));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "VM2,1:lat=4460016, lon=1207738, rep=locali");
-	Matcher m = Matcher::parse("area:" + o->exactQuery());
-	ensure(m(o));
+    tests::TestGenericType t("area", "VM2(1)");
+    t.higher.push_back("VM2(2)");
+    t.exact_query = "VM2,1:lat=4460016, lon=1207738, rep=locali";
+    wassert(t);
 
     // Test derived values
     ValueBag vb1 = ValueBag::parse("lon=1207738,lat=4460016,rep=locali");
-    ensure(area::VM2::create(1)->derived_values() == vb1);
+    wassert(actual(area::VM2::create(1)->derived_values() == vb1).istrue());
     ValueBag vb2 = ValueBag::parse("lon=1207738,lat=4460016,rep=NONONO");
-    ensure(area::VM2::create(1)->derived_values() != vb2);
+    wassert(actual(area::VM2::create(1)->derived_values() != vb2).istrue());
 }
 
-
-
-
-
 }
-
-// vim:set ts=4 sw=4:

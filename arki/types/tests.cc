@@ -78,6 +78,15 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
     auto_ptr<Type> item;
     wruntest(check_item, sample, item);
 
+    for (vector<string>::const_iterator i = alternates.begin();
+            i != alternates.end(); ++i)
+    {
+        tinfo() << "current: " << *i << " == " << sample;
+        auto_ptr<Type> aitem;
+        wruntest(check_item, *i, aitem);
+        wassert(actual(item) == aitem);
+    }
+
     // Test equality and comparisons
     for (std::vector<std::string>::const_iterator i = lower.begin();
             i != lower.end(); ++i)

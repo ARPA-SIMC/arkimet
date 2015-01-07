@@ -41,6 +41,8 @@ struct TestGenericType
     std::string tag;
     // Stringified sample to test
     std::string sample;
+    // Alternate items that should all test equals to sample
+    std::vector<std::string> alternates;
     // Optional SQL exactquery to test
     std::string exact_query;
     // List of items that test higher than sample

@@ -45,35 +45,10 @@ TESTGRP(arki_types_proddef);
 template<> template<>
 void to::test<1>()
 {
-	ValueBag test1;
-	test1.set("uno", Value::createInteger(1));
-	test1.set("due", Value::createInteger(2));
-	test1.set("tre", Value::createInteger(-3));
-	test1.set("supercazzola", Value::createInteger(-1234567));
-	test1.set("pippo", Value::createString("pippo"));
-	test1.set("pluto", Value::createString("12"));
-	test1.set("cippo", Value::createString(""));
-	ValueBag test2;
-	test2.set("dieci", Value::createInteger(10));
-	test2.set("undici", Value::createInteger(11));
-	test2.set("dodici", Value::createInteger(-12));
-
-	Item<Proddef> o = proddef::GRIB::create(test1);
-	ensure_equals(o->style(), Proddef::GRIB);
-	const proddef::GRIB* v = o->upcast<proddef::GRIB>();
-	ensure_equals(v->values().size(), 7u);
-	ensure_equals(v->values(), test1);
-
-	ensure_equals(o, Item<Proddef>(proddef::GRIB::create(test1)));
-	ensure(o != proddef::GRIB::create(test2));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1");
-	Matcher m = Matcher::parse("proddef:" + o->exactQuery());
-	ensure(m(o));
+    tests::TestGenericType t("proddef", "GRIB1(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=12,cippo=)");
+    t.lower.push_back("GRIB1(dieci=10,undici=11,dodici=-12)");
+    t.exact_query = "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
+    wassert(t);
 }
 
 // Test Lua functions
@@ -81,10 +56,10 @@ template<> template<>
 void to::test<2>()
 {
 #ifdef HAVE_LUA
-	ValueBag test1;
-	test1.set("uno", Value::createInteger(1));
-	test1.set("pippo", Value::createString("pippo"));
-	Item<Proddef> o = proddef::GRIB::create(test1);
+    ValueBag test1;
+    test1.set("uno", Value::createInteger(1));
+    test1.set("pippo", Value::createString("pippo"));
+    auto_ptr<Proddef> o = Proddef::createGRIB(test1);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -98,26 +73,18 @@ void to::test<2>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 #endif
 }
 
-// Check comparisons
+// Check two more samples
 template<> template<>
 void to::test<3>()
 {
-	ValueBag test1;
-	test1.set("count", Value::createInteger(1));
-	test1.set("pippo", Value::createString("pippo"));
-	ValueBag test2;
-	test2.set("count", Value::createInteger(2));
-	test2.set("pippo", Value::createString("pippo"));
-    wassert(actual(proddef::GRIB::create(test1)).compares(
-                proddef::GRIB::create(test2),
-                proddef::GRIB::create(test2)));
+    tests::TestGenericType t("proddef", "GRIB1(count=1,pippo=pippo)");
+    t.higher.push_back("GRIB1(count=2,pippo=pippo)");
+    wassert(t);
 }
 
 }
-
-// vim:set ts=4 sw=4:
