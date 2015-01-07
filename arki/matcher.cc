@@ -22,7 +22,7 @@
 
 #include "matcher.h"
 #include "matcher/reftime.h"
-#include "itemset.h"
+#include "metadata.h"
 #include "configfile.h"
 #include "utils/lua.h"
 #include <wibble/regexp.h>
@@ -475,7 +475,6 @@ static int arkilua_expanded (lua_State *L)
 	return 1;
 }
 
-#ifdef FIXME_TRYING_TO_TEST
 static int arkilua_match (lua_State *L)
 {
     Matcher m = Matcher::lua_check(L, 1);
@@ -483,12 +482,9 @@ static int arkilua_match (lua_State *L)
     lua_pushboolean(L, m(*md));
     return 1;
 }
-#endif
 
 static const struct luaL_Reg matcherlib [] = {
-#ifdef FIXME_TRYING_TO_TEST
     { "match", arkilua_match },
-#endif
     { "expanded", arkilua_expanded },
     { "__tostring", arkilua_tostring },
     { "__gc", arkilua_gc },

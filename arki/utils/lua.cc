@@ -50,10 +50,8 @@ Lua::Lua(bool load_libs, bool load_arkimet) : L(0)
     if (load_arkimet)
     {
         types::Type::lua_loadlib(L);
-#ifdef FIXME_TRYING_TO_TEST
         Metadata::lua_openlib(L);
         Summary::lua_openlib(L);
-#endif
         Matcher::lua_openlib(L);
     }
 }

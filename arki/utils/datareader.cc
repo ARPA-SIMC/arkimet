@@ -193,7 +193,6 @@ public:
 	}
 };
 
-#ifdef FIXME_TRYING_TO_TEST
 struct IdxZlibFileReader : public Reader
 {
 public:
@@ -287,7 +286,6 @@ public:
         iotrace::trace_file(fname, ofs, size, "read data");
 	}
 };
-#endif
 
 }
 
@@ -322,10 +320,8 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
             else
                 last = new datareader::FileReader(fname);
         }
-#ifdef FIXME_TRYING_TO_TEST
         else if (sys::fs::exists(fname + ".gz.idx"))
             last = new datareader::IdxZlibFileReader(fname);
-#endif
 		else if (sys::fs::exists(fname + ".gz"))
 			last = new datareader::ZlibFileReader(fname);
 		else
