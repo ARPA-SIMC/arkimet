@@ -1,7 +1,7 @@
 /*
  * dataset/gridquery - Lay out a metadata grid and check that metadata fit 
  *
- * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,9 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/dataset/gridquery.h>
+#include "gridquery.h"
 #include <arki/utils/dataset.h>
+#include <arki/utils/lua.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
@@ -32,7 +31,6 @@
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
-#include <arki/utils/lua.h>
 #endif
 
 #include <wibble/regexp.h>
@@ -42,6 +40,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -58,22 +57,21 @@ void GridQuery::add(const Matcher& m)
 		throw wibble::exception::Consistency("resolving " + m.toString(), "there are no data which correspond to the matcher");
 }
 
-void GridQuery::addTime(const Item<types::Time>& rt)
+void GridQuery::addTime(const Time& rt)
 {
-	vector< Item<types::Time> >::iterator lb =
-		lower_bound(times.begin(), times.end(), rt);
+    vector<Time>::iterator lb =
+        lower_bound(times.begin(), times.end(), rt);
 	if (lb == times.end())
 		times.push_back(rt);
 	else if (*lb != rt)
 		times.insert(lb, rt);
 }
 
-void GridQuery::addTimes(const Item<types::Time>& begin, const Item<types::Time>& end, int step)
+void GridQuery::addTimes(const Time& begin, const Time& end, int step)
 {
-	vector< Item<types::Time> > items = types::Time::generate(*begin, *end, step);
-	for (vector< Item<types::Time> >::const_iterator i = items.begin();
-			i != items.end(); ++i)
-		addTime(*i);
+    vector<Time> items = Time::generate(begin, end, step);
+    for (vector<Time>::const_iterator i = items.begin(); i != items.end(); ++i)
+        addTime(*i);
 }
 
 void GridQuery::addFilter(const Matcher& m)
@@ -104,12 +102,12 @@ void GridQuery::consolidate()
 	// Create bitmap of wanted items
 	todolist.resize(wantedidx.size() * times.size(), false);
 
-	// Check that extra filters do not conflict
-	set<types::Code> codes;
-	codes.insert(types::TYPE_REFTIME);
-	for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.dims.begin();
-			i != mdgrid.dims.end(); ++i)
-		codes.insert(i->first);
+    // Check that extra filters do not conflict
+    set<types::Code> codes;
+    codes.insert(TYPE_REFTIME);
+    for (std::map<types::Code, TypeVector>::const_iterator i = mdgrid.dims.begin();
+            i != mdgrid.dims.end(); ++i)
+        codes.insert(i->first);
 	for (vector<Matcher>::const_iterator i = filters.begin();
 			i != filters.end(); ++i)
 	{
@@ -128,6 +126,9 @@ Matcher GridQuery::mergedQuery() const
 	stringstream q;
 	bool added = false;
 
+    throw wibble::exception::Consistency("This is not implemented");
+#if 0
+#warning TODO: disabled at the moment
 	map< types::Code, set< Item<> > > byType;
 	for (std::vector<ItemSet>::const_iterator i = items.begin();
 			i != items.end(); ++i)
@@ -160,6 +161,7 @@ Matcher GridQuery::mergedQuery() const
 		if (i->empty()) continue;
 		q << "; " << i->toString();
 	}
+#endif
 
 	return Matcher::parse(q.str());
 }
@@ -171,9 +173,9 @@ size_t GridQuery::expectedItems() const
 
 bool GridQuery::checkAndMark(const ItemSet& md)
 {
-	// Get the reftime field from md
-	UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
-	if (!rt.defined()) return false;
+    // Get the reftime field from md
+    const reftime::Position* rt = md.get<types::reftime::Position>();
+    if (!rt) return false;
 
 	// Find the wantedidx index
 	int mdidx = mdgrid.index(md);
@@ -183,11 +185,11 @@ bool GridQuery::checkAndMark(const ItemSet& md)
 	if (*i != mdidx) return false;
 	mdidx = i - wantedidx.begin();
 
-	// Find the reftime index
-	std::vector< Item<types::Time> >::const_iterator j =
-		std::lower_bound(times.begin(), times.end(), rt->time);
-	if (*j != rt->time) return false;
-	int rtidx = j - times.begin();
+    // Find the reftime index
+    std::vector<Time>::const_iterator j =
+        std::lower_bound(times.begin(), times.end(), rt->time);
+    if (*j != rt->time) return false;
+    int rtidx = j - times.begin();
 
 	// Find the todolist index
 	int idx = rtidx * wantedidx.size() + mdidx;
@@ -227,11 +229,12 @@ void GridQuery::dump(std::ostream& out) const
 		// Not consolidated
 		out << "GridQuery still being built:" << endl;
 		out << "  Grid dimensions so far:" << endl;
-		for (std::map<types::Code, std::vector< Item<> > >::const_iterator i = mdgrid.dims.begin();
-				i != mdgrid.dims.end(); ++i)
-			out << "    " << types::tag(i->first) << ": "
-		            << str::join(i->second.begin(), i->second.end(), ", ")
-			    << endl;
+        for (std::map<types::Code, TypeVector>::const_iterator i = mdgrid.dims.begin();
+                i != mdgrid.dims.end(); ++i)
+            out << "    " << types::tag(i->first) << ": "
+                // FIXME: this prints pointers
+                << str::join(i->second.begin(), i->second.end(), ", ")
+                << endl;
 		out << "  Combinations so far:" << endl;
 		for (std::vector<ItemSet>::const_iterator i = items.begin();
 				i != items.end(); ++i)
@@ -239,24 +242,23 @@ void GridQuery::dump(std::ostream& out) const
 			out << "    ";
 			dumpItemset(out, *i);
 		}
-		out << "  Times so far:" << endl;
-		for (std::vector< Item<types::Time> >::const_iterator i = times.begin();
-				i != times.end(); ++i)
-			out << "    " << *i << endl;
+        out << "  Times so far:" << endl;
+        for (std::vector<Time>::const_iterator i = times.begin();
+                i != times.end(); ++i)
+            out << "    " << *i << endl;
 	} else {
 		// Consolidated
 		out << "GridQuery fully built:" << endl;
 		out << "  Wanted indices:" << endl;
 		for (size_t i = 0; i < wantedidx.size(); ++i)
 		{
-			std::vector< Item<> > items = mdgrid.expand(wantedidx[i]);
+            TypeVector items(mdgrid.expand(wantedidx[i]));
 			if (i == 0)
 			{
 				// Print titles
 				out << "       ";
-				for (std::vector< Item<> >::const_iterator j = items.begin();
-						j != items.end(); ++j)
-				{
+                for (TypeVector::const_iterator j = items.begin(); j != items.end(); ++j)
+                {
 					if (j != items.begin()) out << "; ";
 					out << types::tag((*j)->serialisationCode());
 				}
@@ -322,10 +324,10 @@ static int arkilua_add(lua_State *L)
 
 static int arkilua_addtime(lua_State *L)
 {
-	GridQuery* gq = GridQuery::lua_check(L, 1);
-	const char* timestr luaL_checkstring(L, 2);
-	gq->addTime(types::Time::createFromSQL(timestr));
-	return 0;
+    GridQuery* gq = GridQuery::lua_check(L, 1);
+    const char* timestr luaL_checkstring(L, 2);
+    gq->addTime(*Time::createFromSQL(timestr));
+    return 0;
 }
 
 static int arkilua_addtimes(lua_State *L)
@@ -334,10 +336,10 @@ static int arkilua_addtimes(lua_State *L)
 	const char* tstart = luaL_checkstring(L, 2);
 	const char* tend = luaL_checkstring(L, 3);
 	int tstep = luaL_checkinteger(L, 4);
-	gq->addTimes(types::Time::createFromSQL(tstart),
-		     types::Time::createFromSQL(tend),
-		     tstep);
-	return 0;
+    gq->addTimes(*Time::createFromSQL(tstart),
+            *Time::createFromSQL(tend),
+            tstep);
+    return 0;
 }
 
 static int arkilua_addfilter(lua_State *L)

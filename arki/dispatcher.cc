@@ -1,7 +1,7 @@
 /*
  * dispatcher - Dispatch data into dataset
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 
@@ -111,13 +112,13 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     hook_pre_dispatch(md);
 
     // Ensure that we have a reference time
-    UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
-    if (!rt.defined())
+    const reftime::Position* rt = md.get<types::reftime::Position>();
+    if (!rt)
     {
         using namespace arki::types;
-        md.add_note(types::Note::create("Validation error: reference time is missing"));
+        md.add_note(*Note::create("Validation error: reference time is missing"));
         // Set today as a dummy reference time, and import into the error dataset
-        md.set(reftime::Position::create(Time::create()));
+        md.set(Reftime::createPosition(*Time::createNow()));
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
@@ -136,7 +137,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
         // Annotate with the validation errors
         for (vector<string>::const_iterator i = errors.begin();
                 i != errors.end(); ++i)
-            md.add_note(types::Note::create("Validation error: " + *i));
+            md.add_note(*Note::create("Validation error: " + *i));
 
         if (!validates_ok)
         {
@@ -152,7 +153,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     try {
         md.getData();
     } catch (std::exception& e) {
-        md.add_note(types::Note::create(
+        md.add_note(*Note::create(
                     string("Failed to read the data associated with the metadata: ") + e.what()));
         result = DISP_NOTWRITTEN;
         goto done;
@@ -189,7 +190,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     // acquire it in the error dataset
     if (found.empty())
     {
-        md.add_note(types::Note::create("Message could not be assigned to any dataset"));
+        md.add_note(*Note::create("Message could not be assigned to any dataset"));
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
@@ -203,7 +204,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
                 msg += *i;
             else
                 msg += ", " + *i;
-        md.add_note(types::Note::create(msg));
+        md.add_note(*Note::create(msg));
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
@@ -294,7 +295,7 @@ void TestDispatcher::hook_pre_dispatch(Metadata& md)
     // Increment the metadata counter, so that we can refer to metadata in the
     // messages
     ++m_count;
-    prefix = "Message " + str::fmt(md.source);
+    prefix = "Message " + str::fmt(md.source());
 }
 
 void TestDispatcher::hook_found_datasets(Metadata& md, vector<string>& found)

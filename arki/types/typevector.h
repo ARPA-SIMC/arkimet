@@ -67,6 +67,12 @@ public:
     /// Set a value, expanding the vector if needed
     void set(size_t pos, const types::Type* val);
 
+    /// Append an item to the vector
+    void push_back(std::auto_ptr<types::Type> val);
+
+    /// Append an item to the vector
+    void push_back(const types::Type& val);
+
     /// Set a value to 0, or do nothing if pos > size()
     void unset(size_t pos);
 

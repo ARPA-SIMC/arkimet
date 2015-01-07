@@ -115,5 +115,15 @@ void TypeVector::split(size_t pos, TypeVector& dest)
     vals.resize(pos);
 }
 
+void TypeVector::push_back(std::auto_ptr<types::Type> val)
+{
+    vals.push_back(val.release());
+}
+
+void TypeVector::push_back(const types::Type& val)
+{
+    vals.push_back(val.clone());
+}
+
 }
 }

@@ -4,7 +4,7 @@
 /*
  * metadatagrid - Index values by a combination of metadata
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
  */
 
 #include <arki/itemset.h>
+#include <arki/types/typevector.h>
 #include <string>
 #include <vector>
 #include <set>
@@ -56,7 +57,7 @@ struct MetadataGrid
      * n-dimensional metadata space, each types::Code is a dimension, the item
      * vector represents the coordinates along that dimension
      */
-    std::map<types::Code, std::vector< Item<> > > dims;
+    std::map<types::Code, types::TypeVector> dims;
     /// Length of each axis of the n-dimensional metadata space
     std::vector<size_t> dim_sizes;
 
@@ -66,8 +67,8 @@ struct MetadataGrid
 	// match a point in the matrix
 	int index(const ItemSet& md) const;
 
-	// Expand an index in its corresponding set of metadata
-	std::vector< Item<> > expand(size_t index) const;
+    // Expand an index in its corresponding set of metadata
+    types::TypeVector expand(size_t index) const;
 
 	// Create the minimal arkimet query that matches at least the whole
 	// data space
@@ -76,8 +77,8 @@ struct MetadataGrid
 	// Clear the metadata grid, starting afresh
 	void clear();
 
-	// Add an item to the grid space
-	void add(const Item<>& item);
+    // Add an item to the grid space
+    void add(const types::Type& item);
 
 	// Add all items from an itemset
 	void add(const ItemSet& is);

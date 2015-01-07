@@ -4,7 +4,7 @@
 /*
  * dataset/gridquery - Lay out a metadata grid and check that metadata fit 
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ protected:
     // Itemsets actually requested (not all elements in the grid are needed)
     std::vector<ItemSet> items;
     // Reference times requested
-    std::vector< Item<types::Time> > times;
+    std::vector<types::Time> times;
     // Sorted list of mdgrid indices requested per every reference time
     std::vector<int> wantedidx;
     /**
@@ -75,10 +75,10 @@ public:
     void add(const Matcher& m);
 
     /// Add a reftime
-    void addTime(const Item<types::Time>& rt);
+    void addTime(const types::Time& rt);
 
     // Add a discrete time sequence (@see types::Time::generate())
-    void addTimes(const Item<types::Time>& begin, const Item<types::Time>& end, int step);
+    void addTimes(const types::Time& begin, const types::Time& end, int step);
 
     /// Add an extra filter expression
     void addFilter(const Matcher& m);

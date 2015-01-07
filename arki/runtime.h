@@ -28,7 +28,7 @@
 #include <arki/runtime/config.h>
 #include <arki/runtime/processor.h>
 #include <arki/metadata.h>
-#include <arki/metadata/collection.h>
+#include <arki/dataset/memory.h>
 #include <arki/matcher.h>
 #include <arki/configfile.h>
 #include <string>
@@ -181,7 +181,7 @@ struct MetadataDispatch : public metadata::Consumer
 {
 	const ConfigFile& cfg;
 	Dispatcher* dispatcher;
-	metadata::Collection results;
+    dataset::Memory results;
 	DatasetProcessor& next;
 	bool ignore_duplicates;
 	bool reportStatus;
