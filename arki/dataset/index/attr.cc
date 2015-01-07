@@ -1,7 +1,7 @@
 /*
  * dataset/index/attr - Generic index for metadata items
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +20,15 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include <arki/dataset/index/attr.h>
+#include <arki/matcher.h>
 #include <arki/utils/codec.h>
 #include <wibble/exception.h>
 #include <sstream>
 
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 using namespace arki::utils::sqlite;
 
 namespace arki {
@@ -55,7 +55,7 @@ int AttrSubIndex::q_select_id(const std::string& blob) const
 	return id;
 }
 
-UItem<> AttrSubIndex::q_select_one(int id) const
+auto_ptr<Type> AttrSubIndex::q_select_one(int id) const
 {
 	if (not m_select_one)
 	{
@@ -67,8 +67,8 @@ UItem<> AttrSubIndex::q_select_one(int id) const
 	m_select_one->reset();
 	m_select_one->bind(1, id);
 
-	// Decode every blob and run the matcher on it
-	UItem<> res;
+    // Decode every blob and run the matcher on it
+    auto_ptr<Type> res;
 	while (m_select_one->step())
 	{
 		const void* buf = m_select_one->fetchBlob(0);
@@ -103,54 +103,74 @@ AttrSubIndex::AttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code code)
 
 AttrSubIndex::~AttrSubIndex()
 {
+    for (map<int, Type*>::iterator i = m_cache.begin(); i != m_cache.end(); ++i)
+        delete i->second;
 	if (m_select_id) delete m_select_id;
 	if (m_select_one) delete m_select_one;
 	if (m_select_all) delete m_select_all;
 	if (m_insert) delete m_insert;
 }
 
+void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
+{
+    string encoded;
+    utils::codec::Encoder enc(encoded);
+    item.encodeWithoutEnvelope(enc);
+    add_to_cache(id, item, encoded);
+}
+
+void AttrSubIndex::add_to_cache(int id, const types::Type& item, const std::string& encoded) const
+{
+    map<int, Type*>::iterator i = m_cache.find(id);
+    if (i == m_cache.end())
+        m_cache.insert(make_pair(id, item.clone()));
+    else
+    {
+        delete i->second;
+        i->second = item.clone();
+    }
+    m_id_cache.insert(make_pair(encoded, id));
+}
+
 int AttrSubIndex::id(const Metadata& md) const
 {
-	UItem<> item = md.get(code);
-	if (!item.defined())
-		return -1;
+    const Type* item = md.get(code);
+    if (!item) return -1;
 
-	// First look up in cache
-	std::map< Item<>, int >::const_iterator i = m_id_cache.find(item);
-	if (i != m_id_cache.end())
-		return i->second;
+    // Encode the item
+    string encoded;
+    utils::codec::Encoder enc(encoded);
+    item->encodeWithoutEnvelope(enc);
+
+    // First look up in cache
+    std::map<string, int>::const_iterator i = m_id_cache.find(encoded);
+    if (i != m_id_cache.end())
+        return i->second;
 
 	// Else, fetch it from the database
-	string encoded;
-	utils::codec::Encoder enc(encoded);
-	item->encodeWithoutEnvelope(enc);
 	int id = q_select_id(encoded);
 
-	// Add it to the cache
-	if (id != -1)
-	{
-		m_cache.insert(make_pair(id, item));
-		m_id_cache.insert(make_pair(item, id));
-	}
-	else
-		throw NotFound();
+    // Add it to the cache
+    if (id != -1)
+        add_to_cache(id, *item, encoded);
+    else
+        throw NotFound();
 
-	return id;
+    return id;
 }
 
 void AttrSubIndex::read(int id, Metadata& md) const
 {
-	std::map< int, UItem<> >::const_iterator i = m_cache.find(id);
-	if (i != m_cache.end())
-	{
-		md.set(i->second);
-		return;
-	}
+    map<int, Type*>::const_iterator i = m_cache.find(id);
+    if (i != m_cache.end())
+    {
+        md.set(i->second->cloneType());
+        return;
+    }
 
-	UItem<> item = q_select_one(id);
-	m_cache.insert(make_pair(id, item));
-	m_id_cache.insert(make_pair(item, id));
-	md.set(item);
+    auto_ptr<Type> item = q_select_one(id);
+    md.set(item);
+    add_to_cache(id, *item);
 }
 
 std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
@@ -170,11 +190,11 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 	{
 		const void* buf = m_select_all->fetchBlob(1);
 		int len = m_select_all->fetchBytes(1);
-		Item<> t = types::decodeInner(code, (const unsigned char*)buf, len);
-		if (m.matchItem(t))
-			ids.push_back(m_select_all->fetch<int>(0));
-	}
-	return ids;
+        auto_ptr<Type> t = types::decodeInner(code, (const unsigned char*)buf, len);
+        if (m.matchItem(*t))
+            ids.push_back(m_select_all->fetch<int>(0));
+    }
+    return ids;
 }
 
 void AttrSubIndex::initDB()
@@ -189,19 +209,18 @@ void AttrSubIndex::initDB()
 
 int AttrSubIndex::insert(const Metadata& md)
 {
-	UItem<> item = md.get(code);
-	if (!item.defined())
-		return -1;
+    const Type* item = md.get(code);
+    if (!item) return -1;
 
-	// Try to serve it from cache if possible
-	std::map<Item<>, int>::const_iterator ci = m_id_cache.find(item);
-	if (ci != m_id_cache.end())
-		return ci->second;
+    // Extract the blob to insert
+    std::string blob;
+    utils::codec::Encoder enc(blob);
+    item->encodeWithoutEnvelope(enc);
 
-	// Extract the blob to insert
-	std::string blob;
-	utils::codec::Encoder enc(blob);
-	item->encodeWithoutEnvelope(enc);
+    // Try to serve it from cache if possible
+    std::map<string, int>::const_iterator ci = m_id_cache.find(blob);
+    if (ci != m_id_cache.end())
+        return ci->second;
 
 	// Check if we already have the blob in the database
 	int id = q_select_id(blob);
@@ -209,9 +228,8 @@ int AttrSubIndex::insert(const Metadata& md)
 		// If not, insert it
 		id = q_insert(blob);
 
-	m_cache.insert(make_pair(id, item));
-	m_id_cache.insert(make_pair(item, id));
-	return id;
+    add_to_cache(id, *item, blob);
+    return id;
 }
 
 

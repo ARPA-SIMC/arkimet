@@ -35,6 +35,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -143,14 +144,13 @@ void SummaryCache::invalidate(const Metadata& md)
     invalidate(rt->time->vals[0], rt->time->vals[1]);
 }
 
-void SummaryCache::invalidate(UItem<types::Time> tmin, UItem<types::Time> tmax)
+void SummaryCache::invalidate(const Time& tmin, const Time& tmax)
 {
     bool deleted = false;
-    while (tmin <= tmax)
+    for (Time t = tmin; t <= tmax; t = t.start_of_next_month())
     {
-        if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", tmin->vals[0], tmin->vals[1]))))
+        if (sys::fs::deleteIfExists(str::joinpath(m_scache_root, str::fmtf("%04d-%02d.summary", t.vals[0], t.vals[1]))))
             deleted = true;
-        tmin = tmin->start_of_next_month();
     }
     if (deleted)
         sys::fs::deleteIfExists(str::joinpath(m_scache_root, "all.summary"));

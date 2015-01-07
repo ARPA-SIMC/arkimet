@@ -26,12 +26,16 @@
 #include <wibble/exception.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/index/base.h>
-#include <arki/matcher.h>
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 
 namespace arki {
+namespace matcher {
+class OR;
+}
+
 namespace dataset {
 namespace index {
 
@@ -54,8 +58,8 @@ protected:
 
 	// Precompiled select one statement
 	mutable utils::sqlite::PrecompiledQuery* m_select_one;
-	// Runs the Item given an ID. Returns an undefined item if not found
-	UItem<> q_select_one(int id) const;
+    // Runs the Item given an ID. Returns an undefined item if not found
+    std::auto_ptr<types::Type> q_select_one(int id) const;
 
 	// Precompiled select all statement
 	mutable utils::sqlite::PrecompiledQuery* m_select_all;
@@ -65,12 +69,15 @@ protected:
 	// Insert the blob in the database and return its new ID
 	int q_insert(const std::string& blob);
 
+    /// Add an element to the cache
+    void add_to_cache(int id, const types::Type& item) const;
+    void add_to_cache(int id, const types::Type& item, const std::string& encoded) const;
 
 	// Parsed item cache
-	mutable std::map< int, UItem<> > m_cache;
+	mutable std::map<int, types::Type*> m_cache;
 
 	// Cache of known IDs
-	mutable std::map< Item<>, int > m_id_cache;
+	mutable std::map<std::string, int> m_id_cache;
 
 public:
 	AttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code serCode);
@@ -94,6 +101,10 @@ public:
 	std::vector<int> query(const matcher::OR& m) const;
 
 	int insert(const Metadata& md);
+
+private:
+    AttrSubIndex(const AttrSubIndex&);
+    AttrSubIndex& operator==(const AttrSubIndex&);
 };
 
 typedef AttrSubIndex RAttrSubIndex;

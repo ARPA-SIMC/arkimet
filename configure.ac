@@ -373,8 +373,8 @@ AM_CONDITIONAL([ASCIIDOC], [test x"$have_asciidoc" = x"yes"])
 dnl Developer only: allow to build/test only part of the library
 AM_CONDITIONAL([DEVEL_DO_CORE], [true])
 AM_CONDITIONAL([DEVEL_DO_TYPES], [true])
-AM_CONDITIONAL([DEVEL_DO_DATASETS], [false])
-AM_CONDITIONAL([DEVEL_DO_RUNTIME], [false])
+AM_CONDITIONAL([DEVEL_DO_DATASETS], [true])
+AM_CONDITIONAL([DEVEL_DO_RUNTIME], [true])
 
 AC_CONFIG_FILES([
 Makefile

@@ -1,7 +1,7 @@
 /*
  * data/dir - Directory based data collection
  *
- * Copyright (C) 2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2014--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -118,7 +119,7 @@ struct Append : public Transaction
         if (fired) return;
 
         // Set the source information that we are writing in the metadata
-        md.source = types::Source::createBlob(md.source->format, "", absname, pos, size);
+        md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
 
         fired = true;
     }
@@ -132,7 +133,7 @@ struct Append : public Transaction
         // guarantee consecutive numbers, so it is just a cosmetic issue. This
         // case should be rare enough that even the cosmetic issue should
         // rarely be noticeable.
-        string target_name = str::joinpath(absname, SequenceFile::data_fname(pos, md.source->format));
+        string target_name = str::joinpath(absname, SequenceFile::data_fname(pos, md.source().format));
         unlink(target_name.c_str());
 
         fired = true;
@@ -249,7 +250,7 @@ void Writer::append(Metadata& md)
     size_t size = write_file(md, fd, dest);
 
     // Set the source information that we are writing in the metadata
-    md.source = types::Source::createBlob(md.source->format, "", absname, pos, size);
+    md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
 }
 
 off_t Writer::append(const wibble::sys::Buffer& buf)
@@ -314,21 +315,21 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
             try {
                 validator->validate(*i);
             } catch (std::exception& e) {
-                string source = str::fmt(i->source);
+                string source = str::fmt(i->source());
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), source.c_str(), e.what());
                 return FILE_TO_RESCAN;
             }
         }
 
-        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+        const source::Blob& source = i->sourceBlob();
 
-        if (source->offset != next_sequence_expected)
+        if (source.offset != next_sequence_expected)
             out_of_order = true;
 
-        set<size_t>::const_iterator ei = expected.find(source->offset);
+        set<size_t>::const_iterator ei = expected.find(source.offset);
         if (ei == expected.end())
         {
-            nag::warning("%s: expected file %zd not found in the file system", absname.c_str(), (size_t)source->offset);
+            nag::warning("%s: expected file %zd not found in the file system", absname.c_str(), (size_t)source.offset);
             return FILE_TO_RESCAN;
         } else
             expected.erase(ei);
@@ -458,13 +459,13 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
     {
-        UItem<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+        const source::Blob& source = i->sourceBlob();
 
         // Make a hardlink in the target directory for the file pointed by *i
-        off_t pos = writer->link(str::joinpath(source->absolutePathname(), SequenceFile::data_fname(source->offset, source->format)));
+        off_t pos = writer->link(str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, source.format)));
 
         // Update the source information in the metadata
-        i->source = types::Source::createBlob(source->format, rootdir, relname, pos, source->size);
+        i->set_source(Source::createBlob(source.format, rootdir, relname, pos, source.size));
     }
 
     // Close the temp writer
@@ -518,10 +519,10 @@ size_t HoleWriter::write_file(const Metadata& md, int fd, const std::string& abs
     utils::fd::HandleWatch hw(absname, fd);
 
     try {
-        if (ftruncate(fd, md.source->getSize()) == -1)
+        if (ftruncate(fd, md.source().getSize()) == -1)
             throw wibble::exception::File(absname, "cannot set file size");
 
-        return md.source->getSize();
+        return md.source().getSize();
     } catch (...) {
         unlink(absname.c_str());
         throw;

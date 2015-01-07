@@ -34,6 +34,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -77,7 +78,7 @@ struct Append : public Transaction
         w.unlock();
 
         // Set the source information that we are writing in the metadata
-        md.source = types::Source::createBlob(md.source->format, "", w.absname, pos, buf.size());
+        md.set_source(Source::createBlob(md.source().format, "", w.absname, pos, buf.size()));
 
         fired = true;
     }
@@ -148,7 +149,7 @@ void Writer::append(Metadata& md)
     unlock();
 
     // Set the source information that we are writing in the metadata
-    md.source = types::Source::createBlob(md.source->format, "", absname, pos, buf.size());
+    md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
 }
 
 off_t Writer::append(const wibble::sys::Buffer& buf)

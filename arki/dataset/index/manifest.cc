@@ -70,9 +70,9 @@ void scan_file(data::SegmentManager& sm, const std::string& root, const std::str
     struct HFSorter : public sort::Compare
     {
         virtual int compare(const Metadata& a, const Metadata& b) const {
-            int res = a.get(types::TYPE_REFTIME).compare(b.get(types::TYPE_REFTIME));
+            int res = Type::nullable_compare(a.get(TYPE_REFTIME), b.get(TYPE_REFTIME));
             if (res == 0)
-                return a.source.compare(b.source);
+                return a.source().compare(b.source());
             return res;
         }
         virtual std::string toString() const {
@@ -488,7 +488,7 @@ public:
 		}
 	}
 
-	void fileTimespan(const std::string& relname, UItem<types::Time>& start_time, UItem<types::Time>& end_time) const
+	void fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const
 	{
 		// Lookup the file (FIXME: reimplement binary search so we
 		// don't need to create a temporary Info)

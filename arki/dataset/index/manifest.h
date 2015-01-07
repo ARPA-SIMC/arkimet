@@ -62,7 +62,7 @@ public:
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
-	virtual void fileTimespan(const std::string& relname, UItem<types::Time>& start_time, UItem<types::Time>& end_time) const = 0;
+	virtual void fileTimespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const = 0;
 	virtual void vacuum() = 0;
 	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
 	virtual void remove(const std::string& relname) = 0;
@@ -82,7 +82,7 @@ public:
      * @returns true if the range has at least one bound (i.e. either with
      * or without are defined), false otherwise
      */
-    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const = 0;
+    virtual bool date_extremes(types::Time& begin, types::Time& end) const = 0;
 
 	void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
 	void querySummary(const Matcher& matcher, Summary& summary);

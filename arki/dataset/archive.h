@@ -4,7 +4,7 @@
 /*
  * dataset/archive - Handle archived data
  *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ public:
      * @returns true if the range has at least one bound (i.e. either with
      * or without are defined), false otherwise
      */
-    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const = 0;
+    virtual bool date_extremes(types::Time& begin, types::Time& end) const = 0;
     /**
      * Output to \a cons the idx-th element of each file
      *
@@ -105,7 +105,7 @@ public:
     virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
-    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+    virtual bool date_extremes(types::Time& begin, types::Time& end) const;
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
@@ -140,7 +140,7 @@ struct OfflineArchive : public Archive
     virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
-    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+    virtual bool date_extremes(types::Time& begin, types::Time& end) const;
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
@@ -208,7 +208,7 @@ public:
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
     virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
-    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+    virtual bool date_extremes(types::Time& begin, types::Time& end) const;
 
 	void acquire(const std::string& relname);
 	void acquire(const std::string& relname, metadata::Collection& mds);

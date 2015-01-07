@@ -141,7 +141,7 @@ size_t OnlineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
     return m_mft->produce_nth(cons, idx);
 }
 
-bool OnlineArchive::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+bool OnlineArchive::date_extremes(Time& begin, Time& end) const
 {
     return m_mft->date_extremes(begin, end);
 }
@@ -303,7 +303,7 @@ size_t OfflineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
     return 0;
 }
 
-bool OfflineArchive::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+bool OfflineArchive::date_extremes(Time& begin, Time& end) const
 {
     return sum.date_extremes(begin, end);
 }
@@ -528,8 +528,8 @@ void Archives::rebuild_summary_cache()
 
 void Archives::querySummary(const Matcher& matcher, Summary& summary)
 {
-    UItem<types::Time> matcher_begin;
-    UItem<types::Time> matcher_end;
+    Time matcher_begin;
+    Time matcher_end;
 
     // Extract date range from matcher
     if (matcher.date_extremes(matcher_begin, matcher_end))
@@ -538,16 +538,16 @@ void Archives::querySummary(const Matcher& matcher, Summary& summary)
         for (map<string, Archive*>::iterator i = m_archives.begin();
                 i != m_archives.end(); ++i)
         {
-            UItem<types::Time> arc_begin;
-            UItem<types::Time> arc_end;
+            Time arc_begin;
+            Time arc_end;
             if (!i->second->date_extremes(arc_begin, arc_end)
                     || types::Time::range_overlaps(matcher_begin, matcher_end, arc_begin, arc_end))
                 i->second->querySummary(matcher, summary);
         }
         if (m_last)
         {
-            UItem<types::Time> arc_begin;
-            UItem<types::Time> arc_end;
+            Time arc_begin;
+            Time arc_end;
             if (!m_last->date_extremes(arc_begin, arc_end)
                     || types::Time::range_overlaps(matcher_begin, matcher_end, arc_begin, arc_end))
                 m_last->querySummary(matcher, summary);
@@ -559,7 +559,7 @@ void Archives::querySummary(const Matcher& matcher, Summary& summary)
     }
 }
 
-bool Archives::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+bool Archives::date_extremes(Time& begin, Time& end) const
 {
     bool res = false;
     for (map<string, Archive*>::const_iterator i = m_archives.begin();

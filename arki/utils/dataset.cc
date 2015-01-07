@@ -1,7 +1,7 @@
 /*
  * utils/dataset - Useful functions for working with datasets
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace utils {
@@ -46,11 +47,11 @@ bool DataInliner::operator()(Metadata& md)
 bool TemporaryDataInliner::operator()(Metadata& md)
 {
     // If we get data already inlined, we can shortcut
-    if (md.source->style() == types::Source::INLINE)
+    if (md.source().style() == types::Source::INLINE)
         return next(md);
 
     // Save the old source
-    UItem<types::Source> oldSource = md.source;
+    auto_ptr<types::Source> old_source(md.source().clone());
 
     // Change the source as inline
     md.makeInline();
@@ -59,10 +60,10 @@ bool TemporaryDataInliner::operator()(Metadata& md)
     bool res = next(md);
 
     // Drop the cached metadata to avoid keeping all query results in memory
-    oldSource->dropCachedData();
+    old_source->dropCachedData();
 
     // Restore the old source
-    md.source = oldSource;
+    md.set_source(old_source);
 
     return res;
 }
@@ -70,17 +71,17 @@ bool TemporaryDataInliner::operator()(Metadata& md)
 bool DataOnly::operator()(Metadata& md)
 {
     if (!writer)
-        writer = dataset::data::OstreamWriter::get(md.source->format);
+        writer = dataset::data::OstreamWriter::get(md.source().format);
     writer->stream(md, out);
     return true;
 }
 
 bool MakeAbsolute::operator()(Metadata& md)
 {
-   Item<types::source::Blob> i = md.source.upcast<types::source::Blob>();
-   if (i.defined())
-       md.source = i->makeAbsolute();
-   return next(md);
+    if (md.has_source())
+        if (const source::Blob* blob = dynamic_cast<const source::Blob*>(&md.source()))
+            md.set_source(upcast<Source>(blob->makeAbsolute()));
+    return next(md);
 }
 
 }

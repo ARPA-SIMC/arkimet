@@ -51,13 +51,15 @@ const types::Code traits<AssignedDataset>::type_code = CODE;
 const size_t traits<AssignedDataset>::type_sersize_bytes = SERSIZELEN;
 const char* traits<AssignedDataset>::type_lua_tag = LUATAG_TYPES ".assigneddataset";
 
-int AssignedDataset::compare(const AssignedDataset& o) const
+int AssignedDataset::compare(const Type& o) const
 {
-	if (name < o.name) return -1;
-	if (name > o.name) return 1;
-	if (id < o.id) return -1;
-	if (id > o.id) return 1;
-	return 0;
+    if (int res = types::CoreType<AssignedDataset>::compare(o)) return res;
+    const AssignedDataset* v = dynamic_cast<const AssignedDataset*>(&o);
+    if (name < v->name) return -1;
+    if (name > v->name) return 1;
+    if (id < v->id) return -1;
+    if (id > v->id) return 1;
+    return 0;
 }
 
 bool AssignedDataset::equals(const Type& o) const

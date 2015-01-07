@@ -39,6 +39,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki;
+using namespace arki::types;
 using namespace arki::dataset::index;
 
 namespace arki {
@@ -78,10 +79,11 @@ struct Adder
 
 std::string IDMaker::id(const Metadata& md) const
 {
-	string res;
-	for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
-		res += md.get(*i).encode();
-	return str::encodeBase64(res);
+    string res;
+    for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
+        if (const Type* t = md.get(*i))
+            res += t->encodeBinary();
+    return str::encodeBase64(res);
 }
 
 std::string fmtin(const std::vector<int>& vals)

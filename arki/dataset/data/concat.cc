@@ -1,7 +1,7 @@
 /*
  * data - Read/write functions for data blobs without envelope
  *
- * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -77,7 +78,7 @@ struct Append : public Transaction
         w.unlock();
 
         // Set the source information that we are writing in the metadata
-        md.source = types::Source::createBlob(md.source->format, "", w.absname, pos, buf.size());
+        md.set_source(Source::createBlob(md.source().format, "", w.absname, pos, buf.size()));
 
         fired = true;
     }
@@ -129,7 +130,7 @@ void Writer::append(Metadata& md)
     unlock();
 
     // Set the source information that we are writing in the metadata
-    md.source = types::Source::createBlob(md.source->format, "", absname, pos, buf.size());
+    md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
 }
 
 off_t Writer::append(const wibble::sys::Buffer& buf)

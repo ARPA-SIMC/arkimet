@@ -1,7 +1,7 @@
 /*
  * data - Base class for unix fd based read/write functions
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -130,18 +131,18 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
             try {
                 validator->validate(*i);
             } catch (std::exception& e) {
-                string source = str::fmt(i->source);
+                string source = str::fmt(i->source());
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), source.c_str(), e.what());
                 return FILE_TO_RESCAN;
             }
         }
 
-        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
+        const source::Blob& source = i->sourceBlob();
 
-        if (source->offset < end_of_last_data_checked || source->offset > end_of_last_data_checked + max_gap)
+        if (source.offset < end_of_last_data_checked || source.offset > end_of_last_data_checked + max_gap)
             has_hole = true;
 
-        end_of_last_data_checked = max(end_of_last_data_checked, (size_t)(source->offset + source->size));
+        end_of_last_data_checked = max(end_of_last_data_checked, (size_t)(source.offset + source.size));
     }
 
     size_t file_size = utils::compress::filesize(absname);
@@ -239,7 +240,7 @@ Pending Maint::repack(
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata
-        i->source = types::Source::createBlob(i->source->format, rootdir, relname, w_off, buf.size());
+        i->set_source(Source::createBlob(i->source().format, rootdir, relname, w_off, buf.size()));
     }
 
     // Close the temp file

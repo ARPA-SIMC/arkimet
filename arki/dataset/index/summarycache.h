@@ -68,7 +68,7 @@ public:
     void invalidate(const Metadata& md);
 
     /// Remove cache contents for all dates from tmin and tmax (inclusive)
-    void invalidate(UItem<types::Time> tmin, UItem<types::Time> tmax);
+    void invalidate(const types::Time& tmin, const types::Time& tmax);
 
     /// Run consistency checks on the summary cache
     bool check(const std::string& dsname, std::ostream& log) const;

@@ -57,7 +57,7 @@ struct AssignedDataset : public types::CoreType<AssignedDataset>
     AssignedDataset(const types::Time& changed, const std::string& name, const std::string& id)
         : changed(changed), name(name), id(id) {}
 
-    int compare(const AssignedDataset& o) const override;
+    int compare(const Type& o) const override;
     bool equals(const Type& o) const override;
 
     /// CODEC functions
