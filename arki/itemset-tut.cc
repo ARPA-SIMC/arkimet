@@ -194,9 +194,9 @@ void to::test<1>()
 #endif
 #endif
     wruntest(test_basic_itemset_ops<Product>, "GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)");
-    wruntest(test_basic_itemset_ops<Product>, "BUFR(1, 2, 3, name=antani)", "GRIB1(1, 2, 3, name=blinda)");
-    wruntest(test_basic_itemset_ops<Level>, "GRIB1(114, 260)", "GRIB1(120,280)");
-    wruntest(test_basic_itemset_ops<Timerange>, "GRIB1(1, 1, 2, 3)", "GRIB1(2, 2, 3, 4)");
+    wruntest(test_basic_itemset_ops<Product>, "BUFR(1, 2, 3, name=antani)", "BUFR(1, 2, 3, name=blinda)");
+    wruntest(test_basic_itemset_ops<Level>, "GRIB1(114, 260, 123)", "GRIB1(120,280,123)");
+    wruntest(test_basic_itemset_ops<Timerange>, "GRIB1(1)", "GRIB1(2, 3y, 4y)");
 }
 
 #if 0
