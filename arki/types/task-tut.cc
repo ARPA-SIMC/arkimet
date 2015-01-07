@@ -39,7 +39,6 @@ TESTGRP(arki_types_task);
 template<> template<> void to::test<1>()
 {
     tests::TestGenericType t("task", "task");
-    t.lower.push_back("");
     t.lower.push_back("pask");
     t.higher.push_back("zask");
     wassert(t);

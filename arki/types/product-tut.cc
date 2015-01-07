@@ -110,8 +110,8 @@ void to::test<4>()
 {
     tests::TestGenericType t("product", "GRIB2(1, 2, 3, 4, 4, 5)");
     t.lower.push_back("GRIB1(1, 2, 3)");
-    t.lower.push_back("GRIB2(1, 2, 3, 4)");
     t.lower.push_back("GRIB2(1, 2, 3, 4, 4, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4)");
     t.higher.push_back("GRIB2(1, 2, 3, 4, 4, 6)");
     t.higher.push_back("GRIB2(2, 3, 4, 5)");
     t.higher.push_back("BUFR(1, 2, 3)");
@@ -126,7 +126,7 @@ void to::test<4>()
     wassert(actual(v->discipline()) == 2u);
     wassert(actual(v->category()) == 3u);
     wassert(actual(v->number()) == 4u);
-    wassert(actual(v->table_version()) == 5u);
+    wassert(actual(v->table_version()) == 4u);
     wassert(actual(v->local_table_version()) == 5u);
 }
 

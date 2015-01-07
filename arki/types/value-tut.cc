@@ -57,7 +57,7 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    tests::TestGenericType t("value", "ci\0ao");
+    tests::TestGenericType t("value", string("ci\0ao", 5));
     t.lower.push_back("ci");
     t.higher.push_back("cia♥");
     wassert(t);

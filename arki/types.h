@@ -299,7 +299,7 @@ struct StyledType : public CoreType<BASE>
     // Default implementations of Type methods
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
     int compare(const Type& o) const override;
-    virtual int compare_local(const BASE& o) const = 0;
+    virtual int compare_local(const BASE& o) const { return style() - o.style(); }
 
     virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 

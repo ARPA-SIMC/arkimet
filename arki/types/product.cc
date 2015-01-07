@@ -374,6 +374,8 @@ const char* GRIB1::lua_type_name() const { return "arki.types.product.grib1"; }
 
 int GRIB1::compare_local(const Product& o) const
 {
+    if (int res = Product::compare_local(o)) return res;
+
 	// We should be the same kind, so upcast
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v)
@@ -507,6 +509,8 @@ const char* GRIB2::lua_type_name() const { return "arki.types.product.grib2"; }
 
 int GRIB2::compare_local(const Product& o) const
 {
+    if (int res = Product::compare_local(o)) return res;
+
 	// We should be the same kind, so upcast
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v)
@@ -652,6 +656,8 @@ const char* BUFR::lua_type_name() const { return "arki.types.product.bufr"; }
 
 int BUFR::compare_local(const Product& o) const
 {
+    if (int res = Product::compare_local(o)) return res;
+
 	// We should be the same kind, so upcast
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v)
@@ -813,6 +819,8 @@ const char* ODIMH5::lua_type_name() const
 
 int ODIMH5::compare_local(const Product& o) const
 {
+    if (int res = Product::compare_local(o)) return res;
+
 	// We should be the same kind, so upcast
 	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
 	if (!v)
@@ -934,6 +942,8 @@ std::string VM2::exactQuery() const
 const char* VM2::lua_type_name() const { return "arki.types.product.vm2"; }
 int VM2::compare_local(const Product& o) const
 {
+    if (int res = Product::compare_local(o)) return res;
+
     const VM2* v = dynamic_cast<const VM2*>(&o);
     if (!v)
         throw wibble::exception::Consistency(
