@@ -1,7 +1,7 @@
 /*
  * dataset/simple/datafile - Handle a data file plus its associated files
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,8 +84,8 @@ void MdBuf::add(const Metadata& md)
     mds.push_back(md);
 
     // Replace the pathname with its basename
-    Item<source::Blob> os = md.source.upcast<source::Blob>();
-    mds.back().source = types::source::Blob::create(os->format, dirname, basename, os->offset, os->size);
+    const source::Blob& os = md.sourceBlob();
+    mds.back().set_source(Source::createBlob(os.format, dirname, basename, os.offset, os.size));
 
     sum.add(md);
     flushed = false;

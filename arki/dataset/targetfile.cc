@@ -40,8 +40,8 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 using namespace wibble;
-namespace rt = arki::types::reftime;
 namespace gd = wibble::grcal::date;
 
 namespace arki {
@@ -49,80 +49,80 @@ namespace dataset {
 
 struct BaseTargetFile : public TargetFile
 {
-	virtual UItem<types::Reftime> reftimeForPath(const std::string& path) const = 0;
+    virtual auto_ptr<Reftime> reftimeForPath(const std::string& path) const = 0;
 
     virtual bool pathMatches(const std::string& path, const matcher::Implementation& m) const
-	{
-		UItem<types::Reftime> rt = reftimeForPath(path);
-		if (!rt.defined()) return false;
-		return m.matchItem(rt);
-	}
+    {
+        auto_ptr<Reftime> rt = reftimeForPath(path);
+        if (!rt.get()) return false;
+        return m.matchItem(*rt);
+    }
 };
 
 struct Yearly : public BaseTargetFile
 {
 	static const char* name() { return "yearly"; }
 
-	UItem<types::Reftime> reftimeForPath(const std::string& path) const
-	{
+    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    {
 		int dummy;
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
-		if (sscanf(path.c_str(), "%02d/%04d", &dummy, &base[0]) != 2)
-			return UItem<types::Reftime>();
+        if (sscanf(path.c_str(), "%02d/%04d", &dummy, &base[0]) != 2)
+            return auto_ptr<Reftime>();
 
-		gd::lowerbound(base, min);
-		gd::upperbound(base, max);
-		return rt::Period::create(types::Time::create(min), types::Time::create(max));
-	}
-	
-	std::string operator()(const Metadata& md)
-	{
-		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
-		char buf[9];
-		snprintf(buf, 9, "%02d/%04d", (*tt)[0]/100, (*tt)[0]);
-		return buf;
-	}
+        gd::lowerbound(base, min);
+        gd::upperbound(base, max);
+        return Reftime::createPeriod(Time(min), Time(max));
+    }
+
+    std::string operator()(const Metadata& md) override
+    {
+        const Time& tt = md.get<reftime::Position>()->time;
+        char buf[9];
+        snprintf(buf, 9, "%02d/%04d", tt.vals[0]/100, tt.vals[0]);
+        return buf;
+    }
 };
 
 struct Monthly : public BaseTargetFile
 {
 	static const char* name() { return "monthly"; }
 
-	UItem<types::Reftime> reftimeForPath(const std::string& path) const
-	{
+    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    {
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
-		if (sscanf(path.c_str(), "%04d/%02d", &base[0], &base[1]) == 0)
-			return UItem<types::Reftime>();
+        if (sscanf(path.c_str(), "%04d/%02d", &base[0], &base[1]) == 0)
+            return auto_ptr<Reftime>();
 
 		gd::lowerbound(base, min);
 		gd::upperbound(base, max);
-		return rt::Period::create(types::Time::create(min), types::Time::create(max));
-	}
-	
-	std::string operator()(const Metadata& md)
-	{
-		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
-		char buf[10];
-		snprintf(buf, 10, "%04d/%02d", (*tt)[0], (*tt)[1]);
-		return buf;
-	}
+        return Reftime::createPeriod(Time(min), Time(max));
+    }
+
+    std::string operator()(const Metadata& md) override
+    {
+        const Time& tt = md.get<reftime::Position>()->time;
+        char buf[10];
+        snprintf(buf, 10, "%04d/%02d", tt.vals[0], tt.vals[1]);
+        return buf;
+    }
 };
 
 struct Biweekly : public BaseTargetFile
 {
 	static const char* name() { return "biweekly"; }
 
-	UItem<types::Reftime> reftimeForPath(const std::string& path) const
-	{
+    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    {
 		int year, month = -1, biweek = -1;
 		int min[6] = { -1, -1, -1, -1, -1, -1 };
 		int max[6] = { -1, -1, -1, -1, -1, -1 };
 		if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &biweek) == 0)
-			return UItem<types::Reftime>();
+			return auto_ptr<Reftime>();
 		min[0] = max[0] = year;
 		min[1] = max[1] = month;
 		switch (biweek)
@@ -133,32 +133,32 @@ struct Biweekly : public BaseTargetFile
 		}
 		gd::lowerbound(min);
 		gd::upperbound(max);
-		return rt::Period::create(types::Time::create(min), types::Time::create(max));
-	}
-	
-	std::string operator()(const Metadata& md)
-	{
-		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
-		char buf[10];
-		snprintf(buf, 10, "%04d/%02d-", (*tt)[0], (*tt)[1]);
-		stringstream res;
-		res << buf;
-		res << ((*tt)[2] > 15 ? 2 : 1);
-		return res.str();
-	}
+        return Reftime::createPeriod(Time(min), Time(max));
+    }
+
+    std::string operator()(const Metadata& md) override
+    {
+        const Time& tt = md.get<reftime::Position>()->time;
+        char buf[10];
+        snprintf(buf, 10, "%04d/%02d-", tt.vals[0], tt.vals[1]);
+        stringstream res;
+        res << buf;
+        res << (tt.vals[2] > 15 ? 2 : 1);
+        return res.str();
+    }
 };
 
 struct Weekly : public BaseTargetFile
 {
 	static const char* name() { return "weekly"; }
 
-	UItem<types::Reftime> reftimeForPath(const std::string& path) const
-	{
+    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    {
 		int year, month = -1, week = -1;
 		int min[6] = { -1, -1, -1, -1, -1, -1 };
 		int max[6] = { -1, -1, -1, -1, -1, -1 };
-		if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &week) == 0)
-			return UItem<types::Reftime>();
+        if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &week) == 0)
+            return auto_ptr<Reftime>();
 		min[0] = max[0] = year;
 		min[1] = max[1] = month;
 		if (week != -1)
@@ -168,45 +168,45 @@ struct Weekly : public BaseTargetFile
 		}
 		gd::lowerbound(min);
 		gd::upperbound(max);
-		return rt::Period::create(types::Time::create(min), types::Time::create(max));
-	}
-	
-	std::string operator()(const Metadata& md)
-	{
-		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
-		char buf[10];
-		snprintf(buf, 10, "%04d/%02d-", (*tt)[0], (*tt)[1]);
-		stringstream res;
-		res << buf;
-		res << ((((*tt)[2]-1) / 7) + 1);
-		return res.str();
-	}
+        return Reftime::createPeriod(Time(min), Time(max));
+    }
+
+    std::string operator()(const Metadata& md) override
+    {
+        const Time& tt = md.get<reftime::Position>()->time;
+        char buf[10];
+        snprintf(buf, 10, "%04d/%02d-", tt.vals[0], tt.vals[1]);
+        stringstream res;
+        res << buf;
+        res << (((tt.vals[2]-1) / 7) + 1);
+        return res.str();
+    }
 };
 
 struct Daily : public BaseTargetFile
 {
 	static const char* name() { return "daily"; }
 
-	UItem<types::Reftime> reftimeForPath(const std::string& path) const
-	{
+    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    {
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
-		if (sscanf(path.c_str(), "%04d/%02d-%02d", &base[0], &base[1], &base[2]) == 0)
-			return UItem<types::Reftime>();
+        if (sscanf(path.c_str(), "%04d/%02d-%02d", &base[0], &base[1], &base[2]) == 0)
+            return auto_ptr<Reftime>();
 
 		gd::lowerbound(base, min);
 		gd::upperbound(base, max);
-		return rt::Period::create(types::Time::create(min), types::Time::create(max));
-	}
-	
-	std::string operator()(const Metadata& md)
-	{
-		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
-		char buf[15];
-		snprintf(buf, 15, "%04d/%02d-%02d", (*tt)[0], (*tt)[1], (*tt)[2]);
-		return buf;
-	}
+        return Reftime::createPeriod(Time(min), Time(max));
+    }
+
+    std::string operator()(const Metadata& md) override
+    {
+        const Time& tt = md.get<reftime::Position>()->time;
+        char buf[15];
+        snprintf(buf, 15, "%04d/%02d-%02d", tt.vals[0], tt.vals[1], tt.vals[2]);
+        return buf;
+    }
 };
 
 struct SingleFile : public BaseTargetFile
@@ -221,42 +221,40 @@ struct SingleFile : public BaseTargetFile
 
 	arki::utils::PersistentCounter<uint64_t> m_counter;
 
-	SingleFile(const ConfigFile& cfg)
-	:m_counter()
-	{
+    SingleFile(const ConfigFile& cfg)
+        :m_counter()
+    {
 		std::string path = cfg.value("path");
 		if (path.empty()) path = ".";
 		path += "/targetfile.singlefile.dat";
 		m_counter.bind(path);
 	}
 
-	virtual ~SingleFile()
-	{
-	}
+    virtual ~SingleFile() {}
 
-	UItem<types::Reftime> reftimeForPath(const std::string& path) const
-	{
+    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    {
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
 		uint64_t counter;	   
 								
 		if (sscanf(path.c_str(), "%04d/%02d/%02d/%02d/%Lu",	&base[0], &base[1], &base[2], &base[3], &counter) == 0)
-			return UItem<types::Reftime>();
+			return auto_ptr<Reftime>();
 
 		gd::lowerbound(base, min);
 		gd::upperbound(base, max);
-		return rt::Period::create(types::Time::create(min), types::Time::create(max));
-	}
+        return Reftime::createPeriod(Time(min), Time(max));
+    }
 
-	std::string operator()(const Metadata& md)
-	{
-		UItem<types::Time> tt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>()->time;
+    std::string operator()(const Metadata& md) override
+    {
+        const Time& tt = md.get<reftime::Position>()->time;
 		uint64_t num = m_counter.inc();
 		char buf[50];
-		snprintf(buf, 50, "%04d/%02d/%02d/%02d/%Lu", (*tt)[0], (*tt)[1], (*tt)[2], (*tt)[3], num);
-		return buf;
-	}
+        snprintf(buf, 50, "%04d/%02d/%02d/%02d/%Lu", tt.vals[0], tt.vals[1], tt.vals[2], tt.vals[3], num);
+        return buf;
+    }
 
 };
 

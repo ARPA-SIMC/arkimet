@@ -236,22 +236,22 @@ public:
 	 */
 	void rebuildSummaryCache();
 
-	/**
-	 * Compute the summary for the given month, and output it to \a
-	 * summary.
-	 *
-	 * Cache the result if possible, so that asking again will be much
-	 * quicker.
-	 */
-	Summary summaryForMonth(int year, int month) const;
+    /**
+     * Compute the summary for the given month, and output it to \a
+     * summary.
+     *
+     * Cache the result if possible, so that asking again will be much
+     * quicker.
+     */
+    void summaryForMonth(int year, int month, Summary& out) const;
 
-	/**
-	 * Compute the summary for all the dataset.
-	 *
-	 * Cache the result if possible, so that asking again will be much
-	 * quicker.
-	 */
-	Summary summaryForAll() const;
+    /**
+     * Compute the summary for all the dataset.
+     *
+     * Cache the result if possible, so that asking again will be much
+     * quicker.
+     */
+    void summaryForAll(Summary& out) const;
 };
 
 class RContents : public Contents

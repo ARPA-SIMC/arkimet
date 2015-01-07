@@ -1,7 +1,7 @@
 /*
  * dataset/simple/writer - Writer for simple datasets with no duplicate checks
  *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,28 +101,28 @@ data::Writer* Writer::file(const Metadata& md, const std::string& format)
 
 WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
-	// TODO: refuse if md is before "archive age"
-    data::Writer* writer = file(md, md.source->format);
+    // TODO: refuse if md is before "archive age"
+    data::Writer* writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
-	// Try appending
-	UItem<types::AssignedDataset> oldads = md.get<types::AssignedDataset>();
-	md.set(types::AssignedDataset::create(m_name, ""));
+    // Try appending
+    const AssignedDataset* oldads = md.get<AssignedDataset>();
+    md.set(AssignedDataset::create(m_name, ""));
 
     try {
         writer->append(md);
         mdbuf->add(md);
         m_mft->acquire(writer->relname, sys::fs::timestamp(mdbuf->pathname, 0), mdbuf->sum);
         return ACQ_OK;
-	} catch (std::exception& e) {
-		// sqlite will take care of transaction consistency
-		if (oldads.defined())
-			md.set(oldads);
-		else
-			md.unset(types::TYPE_ASSIGNEDDATASET);
-		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
-		return ACQ_ERROR;
-	}
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        if (oldads)
+            md.set(*oldads);
+        else
+            md.unset(TYPE_ASSIGNEDDATASET);
+        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        return ACQ_ERROR;
+    }
 
 	// After appending, keep updated info in-memory, and update manifest on
 	// flush when the Datafile structures are deallocated
@@ -158,8 +158,8 @@ struct CheckAge : public maintenance::MaintFileVisitor
 {
 	maintenance::MaintFileVisitor& next;
     const index::Manifest& idx;
-	UItem<types::Time> archive_threshold;
-	UItem<types::Time> delete_threshold;
+    Time archive_threshold;
+    Time delete_threshold;
 
     CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age=-1, int delete_age=-1);
 
@@ -175,37 +175,37 @@ CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archi
 	// Go to the beginning of the day
 	now -= (now % (3600*24));
 
-	if (archive_age != -1)
-	{
-		time_t arc_thr = now - archive_age * 3600 * 24;
-		gmtime_r(&arc_thr, &t);
-		archive_threshold = types::Time::create(t);
-	}
-	if (delete_age != -1)
-	{
-		time_t del_thr = now - delete_age * 3600 * 24;
-		gmtime_r(&del_thr, &t);
-		delete_threshold = types::Time::create(t);
-	}
+    if (archive_age != -1)
+    {
+        time_t arc_thr = now - archive_age * 3600 * 24;
+        gmtime_r(&arc_thr, &t);
+        archive_threshold.set(t);
+    }
+    if (delete_age != -1)
+    {
+        time_t del_thr = now - delete_age * 3600 * 24;
+        gmtime_r(&del_thr, &t);
+        delete_threshold.set(t);
+    }
 }
 
 void CheckAge::operator()(const std::string& file, data::FileState state)
 {
-    if (!archive_threshold.defined() and !delete_threshold.defined())
+    if (!archive_threshold.isValid() and !delete_threshold.isValid())
         next(file, state);
     else
     {
-        UItem<types::Time> start_time;
-        UItem<types::Time> end_time;
+        Time start_time;
+        Time end_time;
         idx.fileTimespan(file, start_time, end_time);
 
         //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
-        if (delete_threshold > end_time)
+        if (delete_threshold.isValid() && delete_threshold > end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
             next(file, state + FILE_TO_DELETE);
         }
-        else if (archive_threshold > end_time)
+        else if (archive_threshold.isValid() && archive_threshold > end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
             next(file, state + FILE_TO_ARCHIVE);
@@ -267,8 +267,8 @@ size_t Writer::repackFile(const std::string& relpath)
     // Strip paths from mds sources
     for (metadata::Collection::iterator i = mdc.begin(); i != mdc.end(); ++i)
     {
-        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
-        i->source = source->fileOnly();
+        const source::Blob& source = i->sourceBlob();
+        i->set_source(upcast<Source>(source.fileOnly()));
     }
 
 	// Prevent reading the still open old file using the new offsets

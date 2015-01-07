@@ -131,6 +131,12 @@ void Metadata::set_source(std::auto_ptr<types::Source> s)
     m_source = s.release();
 }
 
+void Metadata::unset_source()
+{
+    delete m_source;
+    m_source = 0;
+}
+
 std::vector<types::Note> Metadata::notes() const
 {
 	std::vector<types::Note> res;

@@ -1,7 +1,7 @@
 /*
  * dataset/archive - Handle archived data
  *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -168,13 +168,12 @@ void OnlineArchive::acquire(const std::string& relname, metadata::Collection& md
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
 	Summary sum;
-	for (metadata::Collection::iterator i = mds.begin();
-			i != mds.end(); ++i)
-	{
-		Item<source::Blob> s = i->source.upcast<source::Blob>();
-		i->source = s->fileOnly();
-		sum.add(*i);
-	}
+    for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        const source::Blob& s = i->sourceBlob();
+        i->set_source(upcast<Source>(s.fileOnly()));
+        sum.add(*i);
+    }
 
 	// Regenerate .metadata
 	mds.writeAtomically(pathname + ".metadata");
@@ -459,9 +458,8 @@ void Archives::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 		m_last->queryBytes(q, out);
 }
 
-Summary Archives::summary_for_all()
+void Archives::summary_for_all(Summary& out)
 {
-    Summary s;
     string sum_file = str::joinpath(m_scache_root, "archives.summary");
     bool has_cache = true;
     int fd = open(sum_file.c_str(), O_RDONLY);
@@ -475,19 +473,17 @@ Summary Archives::summary_for_all()
     utils::fd::HandleWatch hw(sum_file, fd);
 
     if (has_cache)
-        s.read(fd, sum_file);
+        out.read(fd, sum_file);
     else
     {
         Matcher m;
         // Query the summaries of all archives
         for (map<string, Archive*>::iterator i = m_archives.begin();
                 i != m_archives.end(); ++i)
-            i->second->querySummary(m, s);
+            i->second->querySummary(m, out);
         if (m_last)
-            m_last->querySummary(m, s);
+            m_last->querySummary(m, out);
     }
-
-    return s;
 }
 
 void Archives::rebuild_summary_cache()
@@ -554,7 +550,8 @@ void Archives::querySummary(const Matcher& matcher, Summary& summary)
         }
     } else {
         // Use archive summary cache
-        Summary s = summary_for_all();
+        Summary s;
+        summary_for_all(s);
         s.filter(matcher, summary);
     }
 }

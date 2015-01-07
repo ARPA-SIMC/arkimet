@@ -83,6 +83,8 @@ public:
     const types::source::Blob& sourceBlob() const;
     /// Set a new source, replacing the old one if present
     void set_source(std::auto_ptr<types::Source> s);
+    /// Unsets the source
+    void unset_source();
 
     std::vector<types::Note> notes() const;
     const std::string& notes_encoded() const;

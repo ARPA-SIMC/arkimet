@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -54,11 +55,8 @@ Outbound::~Outbound()
 
 void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 {
-    // Read source information
-    UItem<types::Source> s = md.source;
-
     // Write using data::Writer
-    data::Writer* w = file(md, md.source->format);
+    data::Writer* w = file(md, md.source().format);
     w->append(md);
 }
 
@@ -74,10 +72,10 @@ WritableDataset::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy r
 	try {
 		storeBlob(md, reldest);
 		return ACQ_OK;
-	} catch (std::exception& e) {
-		md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
-		return ACQ_ERROR;
-	}
+    } catch (std::exception& e) {
+        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        return ACQ_ERROR;
+    }
 
 	// This should never be reached, but we throw an exception to avoid a
 	// warning from the compiler
@@ -116,10 +114,10 @@ size_t Outbound::vacuum()
 
 WritableDataset::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-	auto_ptr<TargetFile> tf(TargetFile::create(cfg));
-	string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source->format;
-	out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
-	return ACQ_OK;
+    auto_ptr<TargetFile> tf(TargetFile::create(cfg));
+    string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
+    out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
+    return ACQ_OK;
 }
 
 }

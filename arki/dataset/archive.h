@@ -188,7 +188,7 @@ protected:
 	Archive* lookup(const std::string& name);
 
     void invalidate_summary_cache();
-    Summary summary_for_all();
+    void summary_for_all(Summary& out);
     void rebuild_summary_cache();
 
 public:

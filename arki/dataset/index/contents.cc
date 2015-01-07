@@ -651,8 +651,9 @@ size_t Contents::produce_nth(metadata::Consumer& consumer, size_t idx) const
 void Contents::rebuildSummaryCache()
 {
     scache.invalidate();
-	// Rebuild all summaries
-	summaryForAll();
+    // Rebuild all summaries
+    Summary s;
+    summaryForAll(s);
 }
 
 void Contents::querySummaryFromDB(const std::string& where, Summary& summary) const
@@ -709,28 +710,24 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
     }
 }
 
-Summary Contents::summaryForMonth(int year, int month) const
+void Contents::summaryForMonth(int year, int month, Summary& out) const
 {
-    Summary s;
-    if (!scache.read(s, year, month))
+    if (!scache.read(out, year, month))
 	{
 		int nextyear = year + (month/12);
 		int nextmonth = (month % 12) + 1;
 
-		querySummaryFromDB(
-			 "reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
-		       + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth), s);
+        querySummaryFromDB(
+                "reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
+                + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth), out);
 
-        scache.write(s, year, month);
+        scache.write(out, year, month);
     }
-
-	return s;
 }
 
-Summary Contents::summaryForAll() const
+void Contents::summaryForAll(Summary& out) const
 {
-    Summary s;
-    if (!scache.read(s))
+    if (!scache.read(out))
     {
         // Find the datetime extremes in the database
         Time begin, end;
@@ -744,7 +741,7 @@ Summary Contents::summaryForAll() const
             int month = begin.vals[1];
             while (year < end.vals[0] || (year == end.vals[0] && month <= end.vals[1]))
             {
-                s.add(summaryForMonth(year, month));
+                summaryForMonth(year, month, out);
 
 				// Increment the month
 				month = (month%12) + 1;
@@ -753,10 +750,8 @@ Summary Contents::summaryForAll() const
 			}
 		}
 
-        scache.write(s);
+        scache.write(out);
     }
-
-	return s;
 }
 
 bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
@@ -845,14 +840,15 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
 	if (matcher.m_impl)
 		reftime = matcher.m_impl->get(types::TYPE_REFTIME);
 
-	if (!reftime)
-	{
-		// The matcher does not contain reftime, we can work with a
-		// global summary
-		Summary s = summaryForAll();
-		s.filter(matcher, summary);
-		return true;
-	}
+    if (!reftime)
+    {
+        // The matcher does not contain reftime, we can work with a
+        // global summary
+        Summary s;
+        summaryForAll(s);
+        s.filter(matcher, summary);
+        return true;
+    }
 
     // Get the bounds of the query
     Time begin, end;
@@ -861,7 +857,8 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
     // If the reftime query queries all the time span, use the global index
     if (!begin.isValid() && !end.isValid())
     {
-        Summary s = summaryForAll();
+        Summary s;
+        summaryForAll(s);
         s.filter(matcher, summary);
         return true;
     }
@@ -919,7 +916,8 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
                 begin.vals[3] == 0 && begin.vals[4] == 0 && begin.vals[5] == 0);
         if (starts_at_beginning && endmonth <= end)
         {
-            Summary s = summaryForMonth(begin.vals[0], begin.vals[1]);
+            Summary s;
+            summaryForMonth(begin.vals[0], begin.vals[1], s);
             s.filter(matcher, summary);
         } else if (endmonth <= end) {
             Summary s;

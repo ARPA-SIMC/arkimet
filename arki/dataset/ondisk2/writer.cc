@@ -56,6 +56,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::types;
 
 namespace arki {
 namespace dataset {
@@ -83,7 +84,7 @@ Writer::~Writer()
 
 WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    data::Writer* w = file(md, md.source->format);
+    data::Writer* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
@@ -97,18 +98,18 @@ WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
         md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
+        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
         return ACQ_ERROR_DUPLICATE;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
         return ACQ_ERROR;
     }
 }
 
 WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    data::Writer* w = file(md, md.source->format);
+    data::Writer* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
@@ -126,7 +127,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
         return ACQ_ERROR;
     }
 }
@@ -134,7 +135,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    data::Writer* w = file(md, md.source->format);
+    data::Writer* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
@@ -151,7 +152,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
         return ACQ_ERROR;
     }
 
@@ -187,7 +188,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(types::Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
         return ACQ_ERROR;
     }
 }
@@ -210,15 +211,15 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy rep
 
 void Writer::remove(Metadata& md)
 {
-	Item<types::AssignedDataset> ds = md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
-	if (!ds.defined())
-		throw wibble::exception::Consistency("removing metadata from dataset", "the metadata is not assigned to this dataset");
+    const AssignedDataset* ds = md.get<AssignedDataset>();
+    if (!ds)
+        throw wibble::exception::Consistency("removing metadata from dataset", "the metadata is not assigned to this dataset");
 
-	remove(ds->id);
+    remove(ds->id);
 
-	// reset source and dataset in the metadata
-	md.source.clear();
-	md.unset(types::TYPE_ASSIGNEDDATASET);
+    // reset source and dataset in the metadata
+    md.unset_source();
+    md.unset(TYPE_ASSIGNEDDATASET);
 }
 
 void Writer::remove(const std::string& str_id)
@@ -419,26 +420,26 @@ struct Reindexer : public metadata::Consumer
     Reindexer(index::WContents& idx, const std::string& relfile)
         : idx(idx), relfile(relfile), basename(str::basename(relfile)) {}
 
-	virtual bool operator()(Metadata& md)
-	{
-		Item<types::source::Blob> blob = md.source.upcast<types::source::Blob>();
-		try {
-			int id;
-			if (str::basename(blob->filename) != basename)
-				throw wibble::exception::Consistency(
-					"rescanning " + relfile,
-				       	"metadata points to the wrong file: " + blob->filename);
-			idx.index(md, relfile, blob->offset, &id);
-		} catch (utils::sqlite::DuplicateInsert& di) {
-			throw wibble::exception::Consistency("reindexing " + basename,
-					"data item at offset " + str::fmt(blob->offset) + " has a duplicate elsewhere in the dataset: manual fix is required");
-		} catch (std::exception& e) {
-			// sqlite will take care of transaction consistency
-			throw wibble::exception::Consistency("reindexing " + basename,
-					"failed to reindex data item at offset " + str::fmt(blob->offset) + ": " + e.what());
-		}
-		return true;
-	}
+    virtual bool operator()(Metadata& md)
+    {
+        const source::Blob& blob = md.sourceBlob();
+        try {
+            int id;
+            if (str::basename(blob.filename) != basename)
+                throw wibble::exception::Consistency(
+                        "rescanning " + relfile,
+                        "metadata points to the wrong file: " + blob.filename);
+            idx.index(md, relfile, blob.offset, &id);
+        } catch (utils::sqlite::DuplicateInsert& di) {
+            throw wibble::exception::Consistency("reindexing " + basename,
+                    "data item at offset " + str::fmt(blob.offset) + " has a duplicate elsewhere in the dataset: manual fix is required");
+        } catch (std::exception& e) {
+            // sqlite will take care of transaction consistency
+            throw wibble::exception::Consistency("reindexing " + basename,
+                    "failed to reindex data item at offset " + str::fmt(blob.offset) + ": " + e.what());
+        }
+        return true;
+    }
 };
 
 }
@@ -522,8 +523,8 @@ size_t Writer::repackFile(const std::string& relpath)
     m_idx.reset(relpath);
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
-        Item<types::source::Blob> source = i->source.upcast<types::source::Blob>();
-        m_idx.index(*i, source->filename, source->offset);
+        const source::Blob& source = i->sourceBlob();
+        m_idx.index(*i, source.filename, source.offset);
     }
 
     size_t size_pre = sys::fs::size(pathname);
@@ -585,11 +586,14 @@ size_t Writer::vacuum()
                   + sys::fs::size(m_idx.pathname() + "-journal", 0);
     }
 
-	// Rebuild the cached summaries, if needed
-	if (!sys::fs::exists(str::joinpath(m_path, ".summaries/all.summary")))
-		m_idx.summaryForAll();
+    // Rebuild the cached summaries, if needed
+    if (!sys::fs::exists(str::joinpath(m_path, ".summaries/all.summary")))
+    {
+        Summary s;
+        m_idx.summaryForAll(s);
+    }
 
-	return size_pre > size_post ? size_pre - size_post : 0;
+    return size_pre > size_post ? size_pre - size_post : 0;
 }
 
 WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)

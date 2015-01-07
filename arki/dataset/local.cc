@@ -128,11 +128,11 @@ struct ScanTestFilter : public metadata::Consumer
 
             // Rescan the data
             try {
-                scan::scan(tf.name(), c, md.source->format);
+                scan::scan(tf.name(), c, md.source().format);
             } catch (std::exception& e) {
                 // If scanning now fails, clear c so later we output the offender
                 stringstream sstream;
-                sstream << md.source;
+                sstream << md.source();
                 nag::verbose("%s: scanning failed: %s", sstream.str().c_str(), e.what());
                 c.clear();
             }
@@ -146,7 +146,7 @@ struct ScanTestFilter : public metadata::Consumer
         if (!filter(c[0]))
         {
             stringstream sstream;
-            sstream << md.source;
+            sstream << md.source();
             nag::verbose("%s: does not match filter");
             return next(md);
         }
@@ -288,7 +288,7 @@ const Archives& WritableLocal::archive() const
 
 data::Writer* WritableLocal::file(const Metadata& md, const std::string& format)
 {
-    string relname = (*m_tf)(md) + "." + md.source->format;
+    string relname = (*m_tf)(md) + "." + md.source().format;
     return m_segment_manager->get_writer(format, relname);
 }
 
