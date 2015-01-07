@@ -428,6 +428,17 @@ void to::test<18>()
     ensure(s.count() > 0);
 }
 
+// Test filtering with an empty matcher
+template<> template<>
+void to::test<19>()
+{
+    Summary s1;
+    s.filter(Matcher(), s1);
+    ensure_equals(s1, s);
+    ensure_equals(s1.count(), 2u);
+    ensure_equals(s1.size(), 30u);
+}
+
 }
 
 // vim:set ts=4 sw=4:

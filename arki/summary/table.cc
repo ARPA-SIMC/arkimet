@@ -69,7 +69,7 @@ bool Row::operator<(const Row& row) const
 
 bool Row::matches(const Matcher& matcher) const
 {
-    if (!matcher.m_impl) return false;
+    if (!matcher.m_impl) return true;
 
     const matcher::AND& mand = *matcher.m_impl;
     for (unsigned i = 0; i < mso_size; ++i)

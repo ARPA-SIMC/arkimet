@@ -785,6 +785,4 @@ std::ostream& operator<<(std::ostream& o, const Summary& s)
     return o;
 }
 
-
 }
-// vim:set ts=4 sw=4:
