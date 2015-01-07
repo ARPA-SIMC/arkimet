@@ -36,10 +36,12 @@ TESTGRP(arki_types_timerange);
 template<> template<>
 void to::test<1>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB1(2, 254, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
-    tgt.higher.push_back("GRIB1(2, 254, 3, 4)");
+    tests::TestGenericType tgt("timerange", "GRIB1(2, 2s, 3s)");
+    tgt.lower.push_back("GRIB1(2, 2s, 2s)");
+    tgt.higher.push_back("GRIB1(2, 2s, 4s)");
+    tgt.higher.push_back("GRIB1(2, 3s, 3s)");
+    tgt.higher.push_back("GRIB1(2, 2h, 2h)");
+    tgt.higher.push_back("GRIB1(2, 2y, 2y)");
     tgt.exact_query = "GRIB1, 002, 002s, 003s";
     wassert(tgt);
 
@@ -65,10 +67,10 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
-    tgt.higher.push_back("GRIB1(2, 1, 3, 4)");
-    tgt.higher.push_back("GRIB1(2, 254, 3, 4)");
+    tests::TestGenericType tgt("timerange", "GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB1(2, 3s, 4s)");
+    tgt.higher.push_back("GRIB1(2, 3h, 4h)");
+    tgt.higher.push_back("GRIB1(2, 2y, 3y)");
     tgt.exact_query = "GRIB1, 002, 002h, 003h";
     wassert(tgt);
 
@@ -94,10 +96,12 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB1(2, 4, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 4, 3, 4)");
-    tgt.higher.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.higher.push_back("GRIB1(2, 254, 2, 3)");
+    tests::TestGenericType tgt("timerange", "GRIB1(2, 2y, 3y)");
+    tgt.lower.push_back("GRIB1(2, 2s, 3s)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB1(2, 2y, 2y)");
+    tgt.higher.push_back("GRIB1(2, 2y, 4y)");
+    tgt.higher.push_back("GRIB1(2, 3y, 3y)");
     tgt.exact_query = "GRIB1, 002, 002y, 003y";
     wassert(tgt);
 
@@ -123,10 +127,11 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB1(250, 1, 124, 127)");
-    tgt.lower.push_back("GRIB1(250, 1, 124, 126)");
-    tgt.higher.push_back("GRIB1(250, 4, 124, 127)");
-    tgt.higher.push_back("GRIB1(250, 254, 124, 127)");
+    tests::TestGenericType tgt("timerange", "GRIB1(250, 124h, 127h)");
+    tgt.lower.push_back("GRIB1(250, 125s, 126s)");
+    tgt.lower.push_back("GRIB1(250, 123h, 127h)");
+    tgt.lower.push_back("GRIB1(250, 124h, 126h)");
+    tgt.higher.push_back("GRIB1(250, 124y, 127y)");
     tgt.exact_query = "GRIB1, 250, 124h, 127h";
     wassert(tgt);
 
@@ -142,7 +147,7 @@ void to::test<4>()
     int t, p1, p2;
     bool use_p1, use_p2;
     v->getNormalised(t, u, p1, p2, use_p1, use_p2);
-    wassert(actual(t) == 2);
+    wassert(actual(t) == 250);
     wassert(actual(u) == timerange::SECOND);
     wassert(actual(p1) == 124 * 3600);
     wassert(actual(p2) == 127 * 3600);
@@ -152,10 +157,12 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB2(2, 254, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.higher.push_back("GRIB1(2, 254, 3, 4)");
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 254, 2s, 3s)");
+    tgt.lower.push_back("GRIB1(2, 2y, 3y)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, 1s, 3s)");
+    tgt.lower.push_back("GRIB2(2, 254, 2s, 2s)");
+    tgt.higher.push_back("GRIB2(2, 254, 3s, 4s)");
     tgt.exact_query = "GRIB2,2,254,2,3";
     wassert(tgt);
 
@@ -172,10 +179,16 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB2(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 1, 3, 4)");
-    tgt.higher.push_back("GRIB1(2, 254, 2, 3)");
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 1, 2h, 3h)");
+    tgt.lower.push_back("GRIB1(2, 1s, 3s)");
+    tgt.lower.push_back("GRIB1(2, 2s, 4s)");
+    tgt.lower.push_back("GRIB2(2, 1, 1h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 1, 2h, 2h)");
+    tgt.higher.push_back("GRIB2(2, 254, 3s, 3s)");
+    tgt.higher.push_back("GRIB2(2, 254, 2s, 4s)");
+    tgt.higher.push_back("GRIB2(2, 1, 2h, 4h)");
+    tgt.higher.push_back("GRIB2(2, 1, 3h, 3h)");
+    tgt.higher.push_back("GRIB2(2, 4, 2y, 3y)");
     tgt.exact_query = "GRIB2,2,1,2,3";
     wassert(tgt);
 
@@ -192,10 +205,13 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB2(2, 4, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 4, 3, 4)");
-    tgt.lower.push_back("GRIB1(2, 1, 3, 4)");
-    tgt.higher.push_back("GRIB1(2, 254, 2, 3)");
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 4, 2y, 3y)");
+    tgt.lower.push_back("GRIB1(2, 5y, 5y)");
+    tgt.lower.push_back("GRIB2(2, 1, 1h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 1, 2h, 2h)");
+    tgt.higher.push_back("GRIB2(2, 4, 2y, 4y)");
+    tgt.higher.push_back("GRIB2(2, 4, 3y, 3y)");
+    tgt.higher.push_back("GRIB2(2, 254, 2s, 3s)");
     tgt.exact_query = "GRIB2,2,4,2,3";
     wassert(tgt);
 
@@ -203,7 +219,7 @@ void to::test<7>()
     wassert(actual(o->style()) == Timerange::GRIB2);
     const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
     wassert(actual(v->type()) == 2);
-    wassert(actual(v->unit()) == 4);
+    wassert(actual(v->unit()) == 1);
     wassert(actual(v->p1()) == 2);
     wassert(actual(v->p2()) == 3);
 }
@@ -212,10 +228,16 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB2(2, 1, -2, -3)");
-    tgt.lower.push_back("GRIB1(2, 4, -2, -3)");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.higher.push_back("GRIB1(2, 254, -2, -3)");
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 1, -2h, -3h)");
+    tgt.lower.push_back("GRIB1(2, 2y, 3y)");
+    tgt.lower.push_back("GRIB2(2, 1, -3h, -3h)");
+    tgt.lower.push_back("GRIB2(2, 1, -2h, -4h)");
+    tgt.higher.push_back("GRIB2(2, 1, -1h, -3h)");
+    tgt.higher.push_back("GRIB2(2, 1, -2h, -2h)");
+    tgt.higher.push_back("GRIB2(2, 4, -2y, -3y)");
+    tgt.higher.push_back("GRIB2(2, 4, -2y, -3y)");
+    tgt.higher.push_back("GRIB2(2, 254, -2s, -3s)");
+    tgt.higher.push_back("GRIB2(2, 254, -3s, -3s)");
     tgt.exact_query = "GRIB2,2,1,-2,-3";
     wassert(tgt);
 
@@ -232,10 +254,12 @@ void to::test<8>()
 template<> template<>
 void to::test<9>()
 {
-    tests::TestGenericType tgt("timerange", "GRIB2(250, 1, -2, -3)");
-    tgt.lower.push_back("GRIB1(250, 4, -2, -3)");
-    tgt.lower.push_back("GRIB1(250, 1, 2, 3)");
-    tgt.higher.push_back("GRIB1(250, 254, -2, -3)");
+    tests::TestGenericType tgt("timerange", "GRIB2(250, 1, -2h, -3h)");
+    tgt.lower.push_back("GRIB1(250, -2y, -3y)");
+    tgt.lower.push_back("GRIB2(250, 1, -3h, -3h)");
+    tgt.lower.push_back("GRIB2(250, 1, -2h, -4h)");
+    tgt.higher.push_back("GRIB2(250, 1, 2h, 3h)");
+    tgt.higher.push_back("GRIB2(250, 254, -2s, -3s)");
     tgt.exact_query = "GRIB2,250,1,-2,-3";
     wassert(tgt);
 
@@ -277,16 +301,19 @@ template<> template<>
 void to::test<11>()
 {
     tests::TestGenericType tgt("timerange", "Timedef(6h,2,60m)");
-    tgt.alternates.push_back("360m, 2, 1h");
-    tgt.alternates.push_back("21600s,2,3600s");
+    tgt.alternates.push_back("Timedef(360m, 2, 1h)");
+    tgt.alternates.push_back("Timedef(21600s,2,3600s)");
     tgt.lower.push_back("Timedef(5h,2,60m)");
-    tgt.lower.push_back("Timedef(6h)");
-    tgt.lower.push_back("Timedef(6h,3,60m)");
     tgt.lower.push_back("Timedef(6h,2)");
-    tgt.lower.push_back("Timedef(6h,2,61m)");
-    tgt.lower.push_back("Timedef(6mo,2,60m)");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.higher.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB1(2, -2s, -3s)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
+    // FIXME Undefined statistical analysis type currently sorts higher than
+    // everything else: fix it when it is safe to do so
+    tgt.higher.push_back("Timedef(6h)");
+    tgt.higher.push_back("Timedef(6h,3,60m)");
+    tgt.higher.push_back("Timedef(6h,2,61m)");
+    tgt.higher.push_back("Timedef(6mo,2,60m)");
     tgt.exact_query = "Timedef,6h,2,60m";
     wassert(tgt);
 
@@ -306,13 +333,16 @@ template<> template<>
 void to::test<12>()
 {
     tests::TestGenericType tgt("timerange", "Timedef(1y,2,3mo)");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
     tgt.lower.push_back("Timedef(6h,2)");
     tgt.lower.push_back("Timedef(6h,2,61m)");
     tgt.lower.push_back("Timedef(6mo,2,60m)");
-    tgt.lower.push_back("Timedef(1y)");
-    tgt.lower.push_back("Timedef(1y,3)");
+    tgt.lower.push_back("Timedef(1y,2)");
+    tgt.higher.push_back("Timedef(1y,3)");
+    // FIXME Undefined statistical analysis type currently sorts higher than
+    // everything else: fix it when it is safe to do so
+    tgt.higher.push_back("Timedef(1y)");
     tgt.higher.push_back("Timedef(1y,3,3mo)");
     tgt.higher.push_back("Timedef(1y,2,4mo)");
     tgt.higher.push_back("Timedef(2y,2,3mo)");
@@ -336,16 +366,19 @@ template<> template<>
 void to::test<13>()
 {
     tests::TestGenericType tgt("timerange", "Timedef(1d)");
-    tgt.alternates.push_back("24h");
-    tgt.alternates.push_back("1440m");
-    tgt.alternates.push_back("86400s");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.alternates.push_back("Timedef(24h)");
+    tgt.alternates.push_back("Timedef(1440m)");
+    tgt.alternates.push_back("Timedef(86400s)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
     tgt.lower.push_back("Timedef(6h,2)");
+    // FIXME Undefined statistical analysis type currently sorts higher than
+    // everything else: fix it when it is safe to do so
+    tgt.lower.push_back("Timedef(1d,0)");
+    tgt.lower.push_back("Timedef(1d,0,0s)");
+    tgt.lower.push_back("Timedef(1m)");
     tgt.higher.push_back("Timedef(2d)");
-    tgt.higher.push_back("Timedef(1d,0)");
-    tgt.higher.push_back("Timedef(1d,0,0s)");
-    tgt.higher.push_back("Timedef(1m)");
+    tgt.higher.push_back("Timedef(1mo)");
     tgt.exact_query = "Timedef,1d,-";
     wassert(tgt);
 
@@ -365,17 +398,19 @@ template<> template<>
 void to::test<14>()
 {
     tests::TestGenericType tgt("timerange", "Timedef(2ce)");
-    tgt.alternates.push_back("20de");
-    tgt.alternates.push_back("200y");
-    tgt.alternates.push_back("2400mo");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.alternates.push_back("Timedef(20de)");
+    tgt.alternates.push_back("Timedef(200y)");
+    tgt.alternates.push_back("Timedef(2400mo)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
     tgt.lower.push_back("Timedef(6h,2)");
     tgt.lower.push_back("Timedef(1ce)");
-    tgt.higher.push_back("Timedef(2d)");
-    tgt.higher.push_back("Timedef(1d,0)");
-    tgt.higher.push_back("Timedef(2ce,0");
-    tgt.higher.push_back("Timedef(2ce,0,0s");
+    tgt.lower.push_back("Timedef(2d)");
+    // FIXME Undefined statistical analysis type currently sorts higher than
+    // everything else: fix it when it is safe to do so
+    tgt.lower.push_back("Timedef(2ce,0)");
+    tgt.lower.push_back("Timedef(2ce,0,0s)");
+    tgt.higher.push_back("Timedef(3ce)");
     tgt.exact_query = "Timedef,2ce,-";
     wassert(tgt);
 
@@ -395,12 +430,14 @@ template<> template<>
 void to::test<15>()
 {
     tests::TestGenericType tgt("timerange", "Timedef(6h,2)");
-    tgt.alternates.push_back("350m, 2");
-    tgt.alternates.push_back("21600s,2");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.alternates.push_back("Timedef(360m, 2)");
+    tgt.alternates.push_back("Timedef(21600s,2)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
     tgt.lower.push_back("Timedef(5h,2)");
-    tgt.lower.push_back("Timedef(6h)");
+    // FIXME Undefined statistical analysis type currently sorts higher than
+    // everything else: fix it when it is safe to do so
+    tgt.higher.push_back("Timedef(6h)");
     tgt.higher.push_back("Timedef(6h,3)");
     tgt.higher.push_back("Timedef(6h,2,60m)");
     tgt.higher.push_back("Timedef(2d)");
@@ -423,15 +460,18 @@ template<> template<>
 void to::test<16>()
 {
     tests::TestGenericType tgt("timerange", "Timedef(6no,2)");
-    tgt.alternates.push_back("180y, 2");
-    tgt.alternates.push_back("18de, 2");
-    tgt.alternates.push_back("2160mo, 2");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.alternates.push_back("Timedef(180y, 2)");
+    tgt.alternates.push_back("Timedef(18de, 2)");
+    tgt.alternates.push_back("Timedef(2160mo, 2)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
     tgt.lower.push_back("Timedef(5h,2)");
     tgt.lower.push_back("Timedef(6h)");
+    tgt.lower.push_back("Timedef(5no)");
     tgt.lower.push_back("Timedef(5no,2)");
-    tgt.lower.push_back("Timedef(6no)");
+    // FIXME Undefined statistical analysis type currently sorts higher than
+    // everything else: fix it when it is safe to do so
+    tgt.higher.push_back("Timedef(6no)");
     tgt.higher.push_back("Timedef(6no,3)");
     tgt.higher.push_back("Timedef(6no,2,60d)");
     tgt.exact_query = "Timedef,6no,2,-";
@@ -453,13 +493,15 @@ template<> template<>
 void to::test<17>()
 {
     tests::TestGenericType tgt("timerange", "Timedef(1y,2,3d)");
-    tgt.alternates.push_back("12mo,2,72h");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.alternates.push_back("Timedef(12mo,2,72h)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
     tgt.lower.push_back("Timedef(5h,2)");
     tgt.lower.push_back("Timedef(6h)");
-    tgt.lower.push_back("Timedef(1y)");
     tgt.lower.push_back("Timedef(1y,2)");
+    // FIXME Undefined statistical analysis type currently sorts higher than
+    // everything else: fix it when it is safe to do so
+    tgt.higher.push_back("Timedef(1y)");
     tgt.higher.push_back("Timedef(1y,2,4d)");
     tgt.higher.push_back("Timedef(1y,3,3d)");
     tgt.higher.push_back("Timedef(2y,2,3d)");
@@ -483,20 +525,15 @@ void to::test<17>()
 template<> template<>
 void to::test<18>()
 {
-    tests::TestGenericType tgt("timerange", "BUFR(6, 1)");
-    tgt.alternates.push_back("360,0");
-    tgt.alternates.push_back("21600,254");
-    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
-    tgt.lower.push_back("GRIB1(2, 254, -2, -3)");
-    tgt.lower.push_back("Timedef(5h,2)");
-    tgt.lower.push_back("BUFR(5,1)");
-    tgt.lower.push_back("BUFR(6,0)");
-    tgt.higher.push_back("BUFR(7,1)");
-    tgt.higher.push_back("BUFR(6,2)");
-    tgt.higher.push_back("Timedef(1y,3,3d)");
-    tgt.higher.push_back("Timedef(2y,2,3d)");
+    tests::TestGenericType tgt("timerange", "BUFR(6h)");
+    tgt.lower.push_back("GRIB1(2, 2h, 3h)");
+    tgt.lower.push_back("GRIB2(2, 254, -2s, -3s)");
+    tgt.lower.push_back("BUFR(5h)");
+    tgt.lower.push_back("BUFR(6s)");
+    tgt.higher.push_back("BUFR(7h)");
+    tgt.higher.push_back("BUFR(6mo)");
+    tgt.higher.push_back("Timedef(5h,2)");
     tgt.higher.push_back("Timedef(6no,3)");
-    tgt.higher.push_back("Timedef(6no,2,60d)");
     tgt.exact_query = "BUFR,6h";
     wassert(tgt);
 
