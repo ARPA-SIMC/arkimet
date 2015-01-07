@@ -838,7 +838,8 @@ bool Summary::readYaml(std::istream& in, const std::string& filename)
 
 void Summary::add(const Metadata& md)
 {
-    TypeVector mdvec(md);
+    TypeVector mdvec;
+    Node::md_to_tv(md, mdvec);
     if (!root)
         root = Node::createPopulated(mdvec.raw_items(), mdvec.size(), Stats(md)).release();
     else
@@ -849,7 +850,8 @@ void Summary::add(const Metadata& md, const summary::Stats& s)
 {
     if (!root) root = new Node;
 
-    TypeVector mdvec(md);
+    TypeVector mdvec;
+    Node::md_to_tv(md, mdvec);
     root->merge(mdvec.raw_items(), mdvec.size(), s);
 }
 

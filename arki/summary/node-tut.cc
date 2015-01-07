@@ -40,7 +40,8 @@ struct Adder : public metadata::Consumer
     Adder(Node& root) : root(root) {}
     bool operator()(Metadata& md)
     {
-        TypeVector tv(md);
+        TypeVector tv;
+        Node::md_to_tv(md, tv);
         root.merge(tv.raw_items(), tv.size(), Stats());
         return true;
     }

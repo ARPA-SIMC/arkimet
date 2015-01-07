@@ -93,110 +93,13 @@ int Visitor::posForCode(types::Code code)
     return itemMsoMap[(size_t)code];
 }
 
-namespace {
-
-bool item_equals(const Type* a, const Type* b)
-{
-    if (!a && !b) return true;
-    if (!a || !b) return false;
-    return a->equals(*b);
-}
-
-}
-
-TypeVector::TypeVector() {}
-
-TypeVector::TypeVector(const Metadata& md)
+void Node::md_to_tv(const Metadata& md, types::TypeVector& out)
 {
     for (size_t i = 0; i < Node::msoSize; ++i)
     {
         const Type* item = md.get(mso[i]);
-        if (item) set(i, item);
+        if (item) out.set(i, item);
     }
-}
-
-TypeVector::TypeVector(const TypeVector& o)
-{
-    vals.reserve(o.vals.size());
-    for (const_iterator i = o.begin(); i != o.end(); ++i)
-        vals.push_back(*i ? (*i)->clone() : 0);
-}
-
-TypeVector::~TypeVector()
-{
-    for (vector<Type*>::iterator i = vals.begin(); i != vals.end(); ++i)
-        delete *i;
-}
-
-bool TypeVector::operator==(const TypeVector& o) const
-{
-    if (size() != o.size()) return false;
-    const_iterator a = begin();
-    const_iterator b = o.begin();
-    while (a != end() && b != o.end())
-        if (!item_equals(*a, *b))
-            return false;
-    return true;
-}
-
-void TypeVector::set(size_t pos, std::auto_ptr<types::Type> val)
-{
-    if (pos >= vals.size())
-        vals.resize(pos + 1);
-    else if (vals[pos])
-        delete vals[pos];
-    vals[pos] = val.release();
-}
-
-void TypeVector::set(size_t pos, const Type* val)
-{
-    if (pos >= vals.size())
-        vals.resize(pos + 1);
-    else if (vals[pos])
-        delete vals[pos];
-
-    if (val)
-        vals[pos] = val->clone();
-    else
-        vals[pos] = 0;
-}
-
-void TypeVector::unset(size_t pos)
-{
-    if (pos >= vals.size()) return;
-    delete vals[pos];
-    vals[pos] = 0;
-}
-
-void TypeVector::resize(size_t new_size)
-{
-    if (new_size < size())
-    {
-        // If we are shrinking, we need to deallocate the elements that are left
-        // out
-        for (size_t i = new_size; i < size(); ++i)
-            delete vals[i];
-    }
-
-    // For everything else, just go with the vector default of padding with
-    // zeroes
-    vals.resize(new_size);
-    return;
-
-}
-
-void TypeVector::rtrim()
-{
-    while (!vals.empty() && !vals.back())
-        vals.pop_back();
-}
-
-void TypeVector::split(size_t pos, TypeVector& dest)
-{
-    dest.vals.reserve(dest.size() + size() - pos);
-    for (unsigned i = pos; i < size(); ++i)
-        dest.vals.push_back(vals[i]);
-    vals.resize(pos);
 }
 
 Node::Node() {}
@@ -364,7 +267,7 @@ bool Node::candidate_for_merge(const types::Type* const* items, size_t items_siz
 
     if (md.empty()) return false;
 
-    return item_equals(md[0], items[0]);
+    return Type::nullable_equals(md[0], items[0]);
 }
 
 void Node::merge(const types::Type* const* items, size_t items_size, const Stats& stats)
@@ -372,7 +275,7 @@ void Node::merge(const types::Type* const* items, size_t items_size, const Stats
     // Compute the number of common items
     unsigned common = 0;
     for ( ; common < items_size && common < md.size(); ++common)
-        if (!item_equals(items[common], md[common]))
+        if (!Type::nullable_equals(items[common], md[common]))
             break;
 
     // If no items are in common or only some items are in common, split the
