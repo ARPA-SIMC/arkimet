@@ -369,6 +369,8 @@ void to::test<16>()
     {
         Summary s1;
         s1.add(s);
+        wassert(actual(s.count()) == s1.count());
+        wassert(actual(s.size()) == s1.size());
         ensure(s == s1);
     }
 

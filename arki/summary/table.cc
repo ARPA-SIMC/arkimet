@@ -125,8 +125,12 @@ bool Table::equals(const Table& table) const
     if (row_count != table.row_count) return false;
     for (unsigned ri = 0; ri < row_count; ++ri)
         for (unsigned ci = 0; ci < msoSize; ++ci)
+        {
             if (!Type::nullable_equals(rows[ri].items[ci], table.rows[ri].items[ci]))
                 return false;
+            if (rows[ri].stats != table.rows[ri].stats)
+                return false;
+        }
     return true;
 }
 
@@ -247,16 +251,32 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
     return !in.eof();
 }
 
+static void test_consistency(Row* rows, unsigned size, const char* context)
+{
+    for (unsigned i = 0; i < size; ++i)
+    {
+        for (unsigned j = 0; j < Row::mso_size; ++j)
+        {
+            const Type* t = rows[i].items[j];
+            if (t == 0) continue;
+            if (t->serialisationCode() != Table::mso[j])
+                cerr << "FAIL " << context << endl;
+        }
+    }
+}
+
 void Table::ensure_we_can_add_one()
 {
     if (row_count + 1 >= row_capacity)
     {
+//        test_consistency(rows, row_count, "PRE");
         unsigned new_capacity = row_capacity == 0 ? 16 : row_capacity * 2;
         Row* new_rows = (Row*)realloc(rows, new_capacity * sizeof(Row));
         if (!new_rows)
             throw wibble::exception::System("cannot allocate memory for summary table");
         rows = new_rows;
         row_capacity = new_capacity;
+//        test_consistency(rows, row_count, "POST");
     }
 }
 
@@ -295,6 +315,7 @@ void Table::merge(const Row& row)
         memmove(rows + idx + 1, rows + idx, (row_count - idx) * sizeof(Row));
         new(rows + idx) Row(row);
         ++row_count;
+//        test_consistency(rows, row_count, "POST MEMMOVE");
     }
     stats.merge(row.stats);
 }

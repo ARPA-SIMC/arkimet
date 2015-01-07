@@ -104,6 +104,7 @@ public:
     Summary();
     ~Summary();
 
+#if 0
 	/**
 	 * Check that two Summary contain the same information
 	 */
@@ -113,6 +114,7 @@ public:
 	 * Check that two Summary contain different information
 	 */
 	bool operator!=(const Summary& m) const { return !operator==(m); }
+#endif
 
 	/**
 	 * Create a new, empty in-memory summary document

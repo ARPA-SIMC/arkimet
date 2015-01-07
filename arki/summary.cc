@@ -272,10 +272,12 @@ Summary* Summary::lua_check(lua_State* L, int idx)
 }
 #endif
 
+#if 0
 bool Summary::operator==(const Summary& m) const
 {
     return root->equals(*m.root);
 }
+#endif
 
 void Summary::clear()
 {
