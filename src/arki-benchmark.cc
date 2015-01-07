@@ -86,7 +86,7 @@ struct MetadataCounter : public metadata::Consumer
     virtual bool operator()(Metadata& md)
     {
         ++count;
-        size += md.source->getSize();
+        size += md.source().getSize();
         return true;
     }
 };

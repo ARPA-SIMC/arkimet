@@ -1,7 +1,7 @@
 /*
  * arki-dump - Dump a metadata file
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 using namespace wibble;
 
 namespace wibble {
@@ -110,10 +111,10 @@ static void addToSummary(runtime::Input& in, Summary& s)
 	{
 		if (signature == "MD" || signature == "!D")
 		{
-			md.read(buf, version, in.name());
-			if (md.source->style() == types::Source::INLINE)
-				md.readInlineData(in.stream(), in.name());
-			s.add(md);
+            md.read(buf, version, in.name());
+            if (md.source().style() == Source::INLINE)
+                md.readInlineData(in.stream(), in.name());
+            s.add(md);
 		}
 		else if (signature == "SU")
 		{
@@ -319,10 +320,10 @@ int main(int argc, const char* argv[])
 			{
 				if (signature == "MD" || signature == "!D")
 				{
-					md.read(buf, version, in.name());
-					if (md.source->style() == types::Source::INLINE)
-						md.readInlineData(in.stream(), in.name());
-					writer(md);
+                    md.read(buf, version, in.name());
+                    if (md.source().style() == Source::INLINE)
+                        md.readInlineData(in.stream(), in.name());
+                    writer(md);
 				}
 				else if (signature == "SU")
 				{

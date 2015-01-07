@@ -1,7 +1,7 @@
 /*
  * arki-check - Update dataset summaries
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,6 +96,23 @@ struct Options : public StandardParserWithManpage
             "Output metadata for data in the datasets that cannot be scanned or does not match the dataset filter."
             " Sample the data at position idx (starting from 0) in each file in the dataset."
             " If idx is omitted, it defaults to 0 (the first one)");
+    }
+
+    /**
+     * Parse the config files from the datasets found in the remaining
+     * commandline arguments
+     *
+     * Return true if at least one config file was found in \a opts
+     */
+    bool readDatasetConfig(ConfigFile& cfg)
+    {
+        bool found = false;
+        while (hasNext())
+        {
+            ReadonlyDataset::readConfig(next(), cfg);
+            found = true;
+        }
+        return found;
     }
 };
 
@@ -423,20 +440,19 @@ int main(int argc, const char* argv[])
 			Metadata md;
 			for (size_t count = 1; md.read(input.stream(), input.name()); ++count)
 			{
-				UItem<types::AssignedDataset> ad = md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
-				if (!ad.defined())
-					throw wibble::exception::Consistency(
-							"reading information on data to remove",
-							"the metadata #" + str::fmt(count) + " is not assigned to any dataset");
-				todolist(md);
+                const types::AssignedDataset* ad = md.get<types::AssignedDataset>();
+                if (!ad) throw wibble::exception::Consistency(
+                        "reading information on data to remove",
+                        "the metadata #" + str::fmt(count) + " is not assigned to any dataset");
+                todolist(md);
 			}
 			// Perform removals
 			size_t count = 1;
 			for (metadata::Collection::iterator i = todolist.begin();
 					i != todolist.end(); ++i, ++count)
 			{
-				UItem<types::AssignedDataset> ad = i->get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
-				WritableDataset* ds = pool.get(ad->name);
+                const types::AssignedDataset* ad = md.get<types::AssignedDataset>();
+                WritableDataset* ds = pool.get(ad->name);
 				if (!ds)
 				{
 					cerr << "Message #" << count << " is not in any dataset: skipped" << endl;

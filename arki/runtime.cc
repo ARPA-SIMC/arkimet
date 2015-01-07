@@ -495,17 +495,6 @@ void CommandLine::doneProcessing()
 		processor->end();
 }
 
-bool CommandLine::readDatasetConfig(ConfigFile& cfg)
-{
-    bool found = false;
-    while (hasNext())
-    {
-        ReadonlyDataset::readConfig(next(), cfg);
-        found = true;
-    }
-    return found;
-}
-
 static std::string moveFile(const std::string& source, const std::string& targetdir)
 {
 	string targetFile = str::joinpath(targetdir, str::basename(source));

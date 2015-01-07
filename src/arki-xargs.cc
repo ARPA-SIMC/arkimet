@@ -1,7 +1,7 @@
 /*
  * arki-xargs - Runs a command on every blob of data found in the input files
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 using namespace wibble;
 
 namespace wibble {
@@ -100,8 +101,8 @@ static void process(metadata::Consumer& consumer, runtime::Input& in)
 		// Read the metadata
 		Metadata md;
 		md.read(buf, version, in.name());
-		if (md.source->style() == types::Source::INLINE)
-			md.readInlineData(in.stream(), in.name());
+        if (md.source().style() == Source::INLINE)
+            md.readInlineData(in.stream(), in.name());
 		if (!consumer(md))
 			break;
 	}

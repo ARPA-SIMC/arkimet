@@ -164,14 +164,6 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	 * FIXME: --status, as well as a boolean for moveok/moveko
 	 */
 	void closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful = true);
-
-    /**
-     * Parse the config files from the datasets found in the remaining
-     * commandline arguments
-     *
-     * Return true if at least one config file was found in \a opts
-     */
-    bool readDatasetConfig(ConfigFile& cfg);
 };
 
 /**
