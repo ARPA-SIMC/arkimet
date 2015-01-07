@@ -4,7 +4,7 @@
 /*
  * types/product - Product metadata item
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,10 +65,10 @@ struct Product : public types::StyledType<Product>
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
-	/// CODEC functions
-	static Item<Product> decode(const unsigned char* buf, size_t len);
-	static Item<Product> decodeString(const std::string& val);
-	static Item<Product> decodeMapping(const emitter::memory::Mapping& val);
+    /// CODEC functions
+    static std::auto_ptr<Product> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Product> decodeString(const std::string& val);
+    static std::auto_ptr<Product> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -77,6 +77,19 @@ struct Product : public types::StyledType<Product>
 	static void lua_loadlib(lua_State* L);
 
 	static void init();
+
+    static std::auto_ptr<Product> createGRIB1(unsigned char origin, unsigned char table, unsigned char product);
+    static std::auto_ptr<Product> createGRIB2(
+            unsigned short centre,
+            unsigned char discipline,
+            unsigned char category,
+            unsigned char number,
+            unsigned char table_version=4,
+            unsigned char local_table_version=255);
+    static std::auto_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype);
+    static std::auto_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
+    static std::auto_ptr<Product> createODIMH5(const std::string& obj, const std::string& prod);
+    static std::auto_ptr<Product> createVM2(unsigned variable_id);
 };
 
 
@@ -94,23 +107,24 @@ public:
 	unsigned table() const { return m_table; }
 	unsigned product() const { return m_product; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
 
-	virtual int compare_local(const Product& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Product& o) const override;
+    bool equals(const Type& o) const override;
 
-	bool lua_lookup(lua_State* L, const std::string& name) const;
+    bool lua_lookup(lua_State* L, const std::string& name) const;
 
-	static Item<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
-	static Item<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    GRIB1* clone() const override;
+    static std::auto_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
+    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
-	// Deprecated functions
-	virtual std::vector<int> toIntVector() const;
+    // Deprecated functions
+    std::vector<int> toIntVector() const override;
 };
 
 class GRIB2 : public Product
@@ -131,29 +145,30 @@ public:
     unsigned table_version() const { return m_table_version; }
     unsigned local_table_version() const { return m_local_table_version; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
 
-	virtual int compare_local(const Product& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Product& o) const override;
+    bool equals(const Type& o) const override;
 
-	bool lua_lookup(lua_State* L, const std::string& name) const;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-    static Item<GRIB2> create(
+    GRIB2* clone() const override;
+    static std::auto_ptr<GRIB2> create(
             unsigned short centre,
             unsigned char discipline,
             unsigned char category,
             unsigned char number,
             unsigned char table_version=4,
             unsigned char local_table_version=255);
-	static Item<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::auto_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 
-	// Deprecated functions
-	virtual std::vector<int> toIntVector() const;
+    // Deprecated functions
+    std::vector<int> toIntVector() const override;
 };
 
 class BUFR : public Product
@@ -170,28 +185,29 @@ public:
 	unsigned localsubtype() const { return m_localsubtype; }
 	const ValueBag& values() const { return m_values; }
 
-	// Return a new item with added key,value pairs
-	Item<BUFR> addValues(const ValueBag& newvalues) const;
+    // Add/replace these key,value pairs into m_values
+    void addValues(const ValueBag& newvalues);
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
 
-	virtual int compare_local(const Product& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Product& o) const override;
+    bool equals(const Type& o) const override;
 
-	virtual void lua_register_methods(lua_State* L) const;
-	bool lua_lookup(lua_State* L, const std::string& name) const;
+    void lua_register_methods(lua_State* L) const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	static Item<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
-	static Item<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
-	static Item<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    BUFR* clone() const override;
+    static std::auto_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
+    static std::auto_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
+    static std::auto_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 
-	// Deprecated functions
-	virtual std::vector<int> toIntVector() const;
+    // Deprecated functions
+    std::vector<int> toIntVector() const override;
 };
 
 class ODIMH5 : public Product
@@ -211,56 +227,58 @@ public:
 	/* REMOVED: inline double prodpar1() 	const { return m_prodpar1; } */
 	/* REMOVED: inline double prodpar2() 	const { return m_prodpar2; } */
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
 
-	virtual int compare_local(const Product& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Product& o) const override;
+    bool equals(const Type& o) const override;
 
-	virtual void lua_register_methods(lua_State* L) const;
-	bool lua_lookup(lua_State* L, const std::string& name) const;
+    void lua_register_methods(lua_State* L) const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	static Item<ODIMH5> create(const std::string& obj, const std::string& prod
-		/*REMOVED:, double prodpar1, double prodpar2*/
-		);
-	static Item<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    ODIMH5* clone() const override;
+    static std::auto_ptr<ODIMH5> create(const std::string& obj, const std::string& prod
+            /*REMOVED:, double prodpar1, double prodpar2*/
+    );
+    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 
-	// Deprecated functions
-	virtual std::vector<int> toIntVector() const;
+    // Deprecated functions
+    std::vector<int> toIntVector() const override;
 };
 
 class VM2 : public Product
 {
 protected:
- unsigned m_variable_id;
- mutable std::auto_ptr<ValueBag> m_derived_values;
+    unsigned m_variable_id;
+    mutable std::auto_ptr<ValueBag> m_derived_values;
 
 public:
- virtual ~VM2() {}
+    virtual ~VM2() {}
 
- unsigned variable_id() const { return m_variable_id; }
- const ValueBag& derived_values() const;
+    unsigned variable_id() const { return m_variable_id; }
+    const ValueBag& derived_values() const;
 
- virtual Style style() const;
- virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
- virtual std::ostream& writeToOstream(std::ostream& o) const;
- virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
- virtual std::string exactQuery() const;
- virtual const char* lua_type_name() const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
 
- virtual int compare_local(const Product& o) const;
- virtual bool operator==(const Type& o) const;
+    int compare_local(const Product& o) const override;
+    bool equals(const Type& o) const override;
 
- bool lua_lookup(lua_State* L, const std::string& name) const;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
- static Item<VM2> create(unsigned variable_id);
- static Item<VM2> decodeMapping(const emitter::memory::Mapping& val);
+    VM2* clone() const override;
+    static std::auto_ptr<VM2> create(unsigned variable_id);
+    static std::auto_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
 
- virtual std::vector<int> toIntVector() const;
+    std::vector<int> toIntVector() const override;
 };
 
 }

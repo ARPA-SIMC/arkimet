@@ -4,7 +4,7 @@
 /*
  * metadata/test-generator - Metadata generator to user for tests
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,11 +41,12 @@ namespace test {
  */
 struct Generator
 {
-    typedef std::map<types::Code, std::vector< Item<> > > Samples;
+    typedef std::map<types::Code, std::vector<types::Type*> > Samples;
     Samples samples;
     std::string format;
 
     Generator(const std::string& format = "grib1");
+    ~Generator();
 
     /// @return true if some sample has been set for the given code
     bool has(types::Code code);
@@ -57,7 +58,10 @@ struct Generator
     void add_if_missing(types::Code code, const std::string& val);
 
     /// Add one sample to the sample list
-    void add(Item<> item);
+    void add(const types::Type& item);
+
+    /// Add one sample to the sample list
+    void add(std::auto_ptr<types::Type> item);
 
     /// Add one sample to the sample list, decoding \a val as a Yaml value
     void add(types::Code code, const std::string& val);

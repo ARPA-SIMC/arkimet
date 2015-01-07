@@ -4,7 +4,7 @@
 /*
  * matcher/timerange - Timerange matcher
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,7 @@ namespace matcher {
  */
 struct MatchTimerange : public Implementation
 {
-	//MatchType type() const { return MATCH_TIMERANGE; }
-	std::string name() const;
+    std::string name() const override;
 
     static MatchTimerange* parse(const std::string& pattern);
     static void init();
@@ -47,13 +46,13 @@ struct MatchTimerange : public Implementation
 
 struct MatchTimerangeGRIB1 : public MatchTimerange
 {
-    types::timerange::GRIB1::Unit unit;
+    types::timerange::GRIB1Unit unit;
     bool has_ptype, has_p1, has_p2;
     int ptype, p1, p2;
 
-	MatchTimerangeGRIB1(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchTimerangeGRIB1(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchTimerangeGRIB2 : public MatchTimerange
@@ -63,9 +62,9 @@ struct MatchTimerangeGRIB2 : public MatchTimerange
 	int p1;
 	int p2;
 
-	MatchTimerangeGRIB2(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchTimerangeGRIB2(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchTimerangeBUFR : public MatchTimerange
@@ -74,9 +73,9 @@ struct MatchTimerangeBUFR : public MatchTimerange
 	bool is_seconds;
 	unsigned int value;
 
-	MatchTimerangeBUFR(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchTimerangeBUFR(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 /**
@@ -103,8 +102,8 @@ struct MatchTimerangeTimedef : public MatchTimerange
     bool proc_duration_is_seconds;
 
     MatchTimerangeTimedef(const std::string& pattern);
-    bool matchItem(const Item<>& o) const;
-    std::string toString() const;
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 }

@@ -93,6 +93,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		sort.h \
 		summary.h \
 		summary/node.h \
+		summary/codec.h \
 		summary/stats.h \
 		targetfile.h \
 		tests/tests.h \
@@ -152,9 +153,20 @@ $(top_builddir)/arki/matcher/reftime/reftime-lex.h $(top_builddir)/arki/matcher/
 $(top_builddir)/arki/matcher/reftime/reftime-parse.hh $(top_builddir)/arki/matcher/reftime/reftime-parse.cc: $(srcdir)/matcher/reftime/reftime-parse.yy
 	$(srcdir)/buildbison $<
 
-noinst_LTLIBRARIES = libarkimet-core.la libarkimet-types.la libarkimet-dataset.la
+lib_LTLIBRARIES = libarkimet.la
 
-libarkimet_core_la_SOURCES = \
+# Build these incrementally
+libarkimet_la_SOURCES =
+libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
+libarkimet_la_LIBADD = $(WIBBLE_LIBS)
+tests_arki_test_SOURCES = tests/tut-main.cpp
+
+
+#
+# Core functions
+#
+if DEVEL_DO_CORE
+libarkimet_la_SOURCES += \
 		nag.cc \
 		utils.cc \
 		utils/accounting.cc \
@@ -173,9 +185,41 @@ libarkimet_core_la_SOURCES = \
 		emitter/memory.cc \
 		emitter/json.cc \
 		tests/tests.cc
-libarkimet_core_la_LDFLAGS =
 
-libarkimet_types_la_SOURCES = \
+if IOTRACE
+libarkimet_la_SOURCES += iotrace.cc
+tests_arki_test_SOURCES += iotrace-tut.cc
+endif
+
+tests_arki_test_SOURCES += \
+		tests/tests-tut.cc \
+		utils-tut.cc \
+		utils/accounting-tut.cc \
+		utils/codec-tut.cc \
+		utils/fd-tut.cc \
+		utils/files-tut.cc \
+		utils/intern-tut.cc \
+		utils/pcounter-tut.cc \
+		utils/process-tut.cc \
+		utils/raii-tut.cc \
+		refcounted-tut.cc \
+		configfile-tut.cc \
+		transaction-tut.cc \
+		emitter/memory-tut.cc \
+		emitter/json-tut.cc
+
+if LZO
+AM_CPPFLAGS += $(LZO_CFLAGS)
+libarkimet_la_LDFLAGS += $(LZO_LIBS)
+endif
+
+endif
+
+#
+# Metadata types
+#
+if DEVEL_DO_TYPES
+libarkimet_la_SOURCES += \
 		utils/compress.cc \
 		utils/sqlite.cc \
 		values.cc \
@@ -208,9 +252,10 @@ libarkimet_types_la_SOURCES = \
 		metadata/clusterer.cc \
 		metadata/xargs.cc \
 		metadata/test-generator.cc \
-		summary.cc \
-		summary/node.cc \
 		summary/stats.cc \
+		summary/node.cc \
+		summary/codec.cc \
+		summary.cc \
 		matcher.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
@@ -234,10 +279,130 @@ libarkimet_types_la_SOURCES = \
 		scan/any.cc \
 		scan/dir.cc \
 		types-init.cc
-libarkimet_types_la_LIBADD = libarkimet-core.la
-libarkimet_types_la_LDFLAGS =
 
-libarkimet_dataset_la_SOURCES = \
+tests_arki_test_SOURCES += \
+		utils/datareader-tut.cc \
+		utils/compress-tut.cc \
+		utils/sqlite-tut.cc \
+		values-tut.cc \
+		types-tut.cc \
+		types/tests.cc \
+		types/utils-tut.cc \
+		types/source-tut.cc \
+		types/time-tut.cc \
+		types/reftime-tut.cc \
+		types/origin-tut.cc \
+		types/product-tut.cc \
+		types/level-tut.cc \
+		types/timerange-tut.cc \
+		types/area-tut.cc \
+		types/proddef-tut.cc \
+		types/note-tut.cc \
+		types/assigneddataset-tut.cc \
+		types/bbox-tut.cc \
+		types/run-tut.cc \
+		types/task-tut.cc \
+		types/quantity-tut.cc \
+		types/value-tut.cc \
+		itemset-tut.cc \
+		sort-tut.cc \
+		formatter-tut.cc \
+		validator-tut.cc \
+		bbox-tut.cc \
+		targetfile-tut.cc \
+		metadata-tut.cc \
+		metadata/consumer-tut.cc \
+		metadata/collection-tut.cc \
+		metadata/clusterer-tut.cc \
+		metadata/xargs-tut.cc \
+		metadata/stream-tut.cc \
+		metadata/tests.cc \
+		metadata/test-generator-tut.cc \
+		summary-tut.cc \
+		summary/node-tut.cc \
+		summary/stats-tut.cc \
+		matcher-tut.cc \
+		matcher/tests.cc \
+		matcher/utils-tut.cc \
+		matcher/origin-tut.cc \
+		matcher/product-tut.cc \
+		matcher/level-tut.cc \
+		matcher/timerange-tut.cc \
+		matcher/reftime-tut.cc \
+		matcher/reftime/parser-tut.cc \
+		matcher/area-tut.cc \
+		matcher/proddef-tut.cc \
+		matcher/run-tut.cc \
+		matcher/source-tut.cc \
+		matcher/task-tut.cc \
+		matcher/quantity-tut.cc \
+		scan/any-tut.cc \
+		scan/dir-tut.cc
+
+if GRIBAPI
+nobase_dist_arkiinclude_HEADERS += scan/grib.h
+libarkimet_la_SOURCES += scan/grib.cc
+tests_arki_test_SOURCES += scan/grib-tut.cc
+AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
+libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
+endif
+
+if LUA
+nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
+libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
+tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
+AM_CPPFLAGS += $(LUA_CFLAGS)
+libarkimet_la_LDFLAGS += $(LUA_LIBS)
+endif
+
+if DBALLE
+nobase_dist_arkiinclude_HEADERS += scan/bufr.h
+libarkimet_la_SOURCES += scan/bufr.cc
+libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
+AM_CPPFLAGS += $(DBALLE_CFLAGS)
+tests_arki_test_SOURCES += scan/bufr-tut.cc
+if LUA
+nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
+libarkimet_la_SOURCES += scan/bufrlua.cc
+endif
+endif
+
+if HDF5
+AM_CPPFLAGS += $(HDF5_CFLAGS)
+nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
+libarkimet_la_SOURCES += scan/odimh5.cc
+libarkimet_la_LDFLAGS += $(HDF5_LIBS)
+tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
+endif
+
+if NETCDF
+AM_CPPFLAGS += $(NETCDF_CFLAGS)
+nobase_dist_arkiinclude_HEADERS += scan/nc.h
+libarkimet_la_SOURCES += scan/nc.cc
+libarkimet_la_LDFLAGS += $(NETCDF_LIBS)
+tests_arki_test_SOURCES += scan/nc-tut.cc
+endif
+
+if VM2
+AM_CPPFLAGS += $(VM2_CFLAGS)
+nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
+libarkimet_la_SOURCES += scan/vm2.cc utils/vm2.cc
+libarkimet_la_LDFLAGS += $(VM2_LIBS)
+tests_arki_test_SOURCES += scan/vm2-tut.cc utils/vm2-tut.cc
+endif
+
+if GEOS
+AM_CPPFLAGS += $(GEOS_CFLAGS)
+libarkimet_la_LDFLAGS += $(GEOS_LIBS)
+endif
+
+endif
+
+#
+# Datasets
+#
+if DEVEL_DO_DATASETS
+libarkimet_la_SOURCES += \
 		utils/dataset.cc \
 		targetfile.cc \
 		dataset.cc \
@@ -275,107 +440,9 @@ libarkimet_dataset_la_SOURCES = \
 		metadatagrid.cc \
 		dispatcher.cc \
 		querymacro.cc
-libarkimet_dataset_la_LIBADD = libarkimet-types.la
-libarkimet_dataset_la_LDFLAGS =
 
-lib_LTLIBRARIES = libarkimet.la
-libarkimet_la_SOURCES = \
-		runtime/io.cc \
-		runtime/config.cc \
-		runtime/processor.cc \
-		runtime.cc
-libarkimet_la_LIBADD = libarkimet-dataset.la $(WIBBLE_LIBS)
-libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
-
-if GCOV
-export ARKI_HAS_GCOV=yes
-endif
-
-# Tests
-TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
-check_PROGRAMS = tests/arki-test
-
-check-local:
-	for test in $(check_PROGRAMS); do \
-		$(TESTS_ENVIRONMENT) $$test ; \
-	done
-
-#tests_arki_test_CXXFLAGS = --std=c++11
-tests_arki_test_SOURCES = \
-		tests/tests-tut.cc \
-		utils-tut.cc \
-		utils/accounting-tut.cc \
-		utils/codec-tut.cc \
-		utils/compress-tut.cc \
-		utils/datareader-tut.cc \
-		utils/sqlite-tut.cc \
-		utils/fd-tut.cc \
-		utils/files-tut.cc \
-		utils/h5-tut.cc \
-		utils/intern-tut.cc \
+tests_arki_test_SOURCES += \
 		utils/dataset-tut.cc \
-		utils/pcounter-tut.cc \
-		utils/process-tut.cc \
-		utils/raii-tut.cc \
-		refcounted-tut.cc \
-		configfile-tut.cc \
-		transaction-tut.cc \
-		emitter/memory-tut.cc \
-		emitter/json-tut.cc \
-		values-tut.cc \
-		types-tut.cc \
-		types/utils-tut.cc \
-		types/source-tut.cc \
-		types/time-tut.cc \
-		types/reftime-tut.cc \
-		types/origin-tut.cc \
-		types/product-tut.cc \
-		types/level-tut.cc \
-		types/timerange-tut.cc \
-		types/area-tut.cc \
-		types/proddef-tut.cc \
-		types/note-tut.cc \
-		types/assigneddataset-tut.cc \
-		types/bbox-tut.cc \
-		types/run-tut.cc \
-		types/task-tut.cc \
-		types/quantity-tut.cc \
-		types/value-tut.cc \
-		types/tests.cc \
-		itemset-tut.cc \
-		sort-tut.cc \
-		formatter-tut.cc \
-		validator-tut.cc \
-		bbox-tut.cc \
-		targetfile-tut.cc \
-		metadata-tut.cc \
-		metadata/consumer-tut.cc \
-		metadata/collection-tut.cc \
-		metadata/clusterer-tut.cc \
-		metadata/xargs-tut.cc \
-		metadata/stream-tut.cc \
-		metadata/tests.cc \
-		metadata/test-generator-tut.cc \
-		summary-tut.cc \
-		summary/node-tut.cc \
-		summary/stats-tut.cc \
-		matcher-tut.cc \
-		matcher/tests.cc \
-		matcher/utils-tut.cc \
-		matcher/origin-tut.cc \
-		matcher/product-tut.cc \
-		matcher/level-tut.cc \
-		matcher/timerange-tut.cc \
-		matcher/reftime-tut.cc \
-		matcher/reftime/parser-tut.cc \
-		matcher/area-tut.cc \
-		matcher/proddef-tut.cc \
-		matcher/run-tut.cc \
-		matcher/source-tut.cc \
-		matcher/task-tut.cc \
-		matcher/quantity-tut.cc \
-		scan/any-tut.cc \
-		scan/dir-tut.cc \
 		dataset/data-tut.cc \
 		dataset/data/fd-tut.cc \
 		dataset/data/concat-tut.cc \
@@ -418,92 +485,43 @@ tests_arki_test_SOURCES = \
 		runtime/io-tut.cc \
 		runtime/config-tut.cc \
 		runtime/processor-tut.cc \
-		runtime-tut.cc \
-		tests/tut-main.cpp
-tests_arki_test_LDADD = libarkimet.la $(WIBBLE_LIBS) $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
-
-if IOTRACE
-libarkimet_core_la_SOURCES += iotrace.cc
-tests_arki_test_SOURCES += iotrace-tut.cc
-endif
-
-if GRIBAPI
-nobase_dist_arkiinclude_HEADERS += scan/grib.h
-libarkimet_types_la_SOURCES += scan/grib.cc
-tests_arki_test_SOURCES += scan/grib-tut.cc
-AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
-libarkimet_types_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
-tests_arki_test_LDADD += $(GRIBAPI_LIBS) $(LUA_LIBS)
-endif
-
-if LUA
-nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
-libarkimet_types_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
-tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libarkimet_types_la_LDFLAGS += $(LUA_LIBS)
-tests_arki_test_LDADD += $(LUA_LIBS)
-endif
-
-if DBALLE
-nobase_dist_arkiinclude_HEADERS += scan/bufr.h
-libarkimet_types_la_SOURCES += scan/bufr.cc
-tests_arki_test_SOURCES += scan/bufr-tut.cc
-AM_CPPFLAGS += $(DBALLE_CFLAGS)
-libarkimet_types_la_LDFLAGS += $(DBALLE_LIBS)
-tests_arki_test_LDADD += $(DBALLE_LIBS)
-if LUA
-nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
-libarkimet_types_la_SOURCES += scan/bufrlua.cc
-endif
-endif
+		runtime-tut.cc
 
 if CURL
-nobase_dist_arkiinclude_HEADERS += dataset/http.h
-libarkimet_dataset_la_SOURCES += dataset/http.cc
-tests_arki_test_SOURCES += dataset/http-tut.cc
 AM_CPPFLAGS += @LIBCURL_CPPFLAGS@
-libarkimet_dataset_la_LDFLAGS += @LIBCURL@
-tests_arki_test_LDADD += @LIBCURL@
+nobase_dist_arkiinclude_HEADERS += dataset/http.h
+libarkimet_la_SOURCES += dataset/http.cc
+libarkimet_la_LDFLAGS += @LIBCURL@
+tests_arki_test_SOURCES += dataset/http-tut.cc
 endif
 
-if HDF5
-nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
-libarkimet_types_la_SOURCES += scan/odimh5.cc
-tests_arki_test_SOURCES += scan/odimh5-tut.cc
-AM_CPPFLAGS += $(HDF5_CFLAGS)
-libarkimet_types_la_LDFLAGS += $(HDF5_LIBS)
-tests_arki_test_LDADD += $(HDF5_LIBS)
 endif
 
-if NETCDF
-nobase_dist_arkiinclude_HEADERS += scan/nc.h
-libarkimet_types_la_SOURCES += scan/nc.cc
-tests_arki_test_SOURCES += scan/nc-tut.cc
-AM_CPPFLAGS += $(NETCDF_CFLAGS)
-libarkimet_types_la_LDFLAGS += $(NETCDF_LIBS)
-tests_arki_test_LDADD += $(NETCDF_LIBS)
+#
+# Runtime
+#
+if DEVEL_DO_RUNTIME
+libarkimet_la_SOURCES += \
+		runtime/io.cc \
+		runtime/config.cc \
+		runtime/processor.cc \
+		runtime.cc
 endif
 
-if GEOS
-AM_CPPFLAGS += $(GEOS_CFLAGS)
-libarkimet_la_LDFLAGS += $(GEOS_LIBS)
-tests_arki_test_LDADD += $(GEOS_LIBS)
+if GCOV
+export ARKI_HAS_GCOV=yes
 endif
 
-if LZO
-AM_CPPFLAGS += $(LZO_CFLAGS)
-libarkimet_core_la_LDFLAGS += $(LZO_LIBS)
-tests_arki_test_LDADD += $(LZO_LIBS)
-endif
+# Tests
+TESTS_ENVIRONMENT = $(top_srcdir)/arki/runtest
+check_PROGRAMS = tests/arki-test
 
-if VM2
-nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
-libarkimet_types_la_SOURCES += scan/vm2.cc utils/vm2.cc
-tests_arki_test_SOURCES += scan/vm2-tut.cc utils/vm2-tut.cc
-libarkimet_types_la_LDFLAGS += $(VM2_LIBS)
-AM_CPPFLAGS += $(VM2_CFLAGS)
-endif
+check-local:
+	for test in $(check_PROGRAMS); do \
+		$(TESTS_ENVIRONMENT) $$test ; \
+	done
+
+tests_arki_test_LDADD = libarkimet.la $(WIBBLE_LIBS) $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \

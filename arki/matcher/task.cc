@@ -1,8 +1,7 @@
-
 /*
  * matcher/task - Task matcher
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,8 +31,10 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
-namespace arki { namespace matcher {
+namespace arki {
+namespace matcher {
 
 /*============================================================================*/
 
@@ -45,10 +46,10 @@ MatchTask::MatchTask(const std::string& pattern)
 	task = wibble::str::toupper(args.getString(0, ""));
 }
 
-bool MatchTask::matchItem(const Item<>& o) const
+bool MatchTask::matchItem(const Type& o) const
 {
-	const types::Task* v = dynamic_cast<const types::Task*>(o.ptr());
-	if (!v) return false;
+    const types::Task* v = dynamic_cast<const types::Task*>(&o);
+    if (!v) return false;
 	if (task.size())
 	{
 		std::string utask = wibble::str::toupper(v->task);

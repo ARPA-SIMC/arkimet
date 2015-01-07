@@ -134,50 +134,50 @@ std::string Level::formatStyle(Level::Style s)
 	}
 }
 
-Item<Level> Level::decode(const unsigned char* buf, size_t len)
+auto_ptr<Level> Level::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
 	Style s = (Style)dec.popUInt(1, "level style");
 	switch (s)
 	{
-		case GRIB1: {
-			unsigned char ltype = dec.popUInt(1, "level type");
-			switch (level::GRIB1::getValType(ltype))
-			{
-				case 0:
-					return level::GRIB1::create(ltype);
-				case 1: {
-					unsigned short l1 = dec.popVarint<unsigned short>("GRIB1 level l1");
-					return level::GRIB1::create(ltype, l1);
-				}
-				default: {
-					unsigned char l1 = dec.popUInt(1, "GRIB1 layer l1");
-					unsigned char l2 = dec.popUInt(1, "GRIB1 layer l2");
-					return level::GRIB1::create(ltype, l1, l2);
-				}
-			}
-		}
-		case GRIB2S: {
-			uint8_t type = dec.popUInt(1, "GRIB2S level type");
-			uint8_t scale = dec.popUInt(1, "GRIB2S level scale");
-			uint32_t value = dec.popVarint<uint32_t>("GRIB2S level value");
-			return level::GRIB2S::create(type, scale, value);
-		}
-		case GRIB2D: {
-			uint8_t type1 = dec.popUInt(1, "GRIB2D level type1");
-			uint8_t scale1 = dec.popUInt(1, "GRIB2D level scale1");
-			uint32_t value1 = dec.popVarint<uint32_t>("GRIB2D level value1");
-			uint8_t type2 = dec.popUInt(1, "GRIB2D level type2");
-			uint8_t scale2 = dec.popUInt(1, "GRIB2D level scale2");
-			uint32_t value2 = dec.popVarint<uint32_t>("GRIB2D level value2");
-			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
-		}
-		case ODIMH5: {
-			double min = dec.popDouble("ODIMH5 min");
-			double max = dec.popDouble("ODIMH5 max");
-			return level::ODIMH5::create(min, max);
-		}
+        case GRIB1: {
+            unsigned char ltype = dec.popUInt(1, "level type");
+            switch (level::GRIB1::getValType(ltype))
+            {
+                case 0:
+                    return createGRIB1(ltype);
+                case 1: {
+                    unsigned short l1 = dec.popVarint<unsigned short>("GRIB1 level l1");
+                    return createGRIB1(ltype, l1);
+                }
+                default: {
+                    unsigned char l1 = dec.popUInt(1, "GRIB1 layer l1");
+                    unsigned char l2 = dec.popUInt(1, "GRIB1 layer l2");
+                    return createGRIB1(ltype, l1, l2);
+                }
+            }
+        }
+        case GRIB2S: {
+            uint8_t type = dec.popUInt(1, "GRIB2S level type");
+            uint8_t scale = dec.popUInt(1, "GRIB2S level scale");
+            uint32_t value = dec.popVarint<uint32_t>("GRIB2S level value");
+            return createGRIB2S(type, scale, value);
+        }
+        case GRIB2D: {
+            uint8_t type1 = dec.popUInt(1, "GRIB2D level type1");
+            uint8_t scale1 = dec.popUInt(1, "GRIB2D level scale1");
+            uint32_t value1 = dec.popVarint<uint32_t>("GRIB2D level value1");
+            uint8_t type2 = dec.popUInt(1, "GRIB2D level type2");
+            uint8_t scale2 = dec.popUInt(1, "GRIB2D level scale2");
+            uint32_t value2 = dec.popVarint<uint32_t>("GRIB2D level value2");
+            return createGRIB2D(type1, scale1, value1, type2, scale2, value2);
+        }
+        case ODIMH5: {
+            double min = dec.popDouble("ODIMH5 min");
+            double max = dec.popDouble("ODIMH5 max");
+            return createODIMH5(min, max);
+        }
 		default:
 			throw wibble::exception::Consistency("parsing Level", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2S and GRIB2D");
 	}
@@ -257,71 +257,71 @@ static double getDouble(const char * & start, const char* what)
 	return res;
 }
 
-Item<Level> Level::decodeString(const std::string& val)
+auto_ptr<Level> Level::decodeString(const std::string& val)
 {
 	string inner;
 	Level::Style style = outerParse<Level>(val, inner);
 	switch (style)
 	{
-		case Level::GRIB1: {
-			const char* start = inner.c_str();
+        case Level::GRIB1: {
+            const char* start = inner.c_str();
 
-			int type = getNumber(start, "level type");
-			switch (level::GRIB1::getValType((unsigned char)type))
-			{
-				case 0: return level::GRIB1::create(type);
-				case 1: {
-					int l1 = getNumber(start, "level value");
-					return level::GRIB1::create(type, l1);
-				}
-				default: {
-					int l1 = getNumber(start, "first level value");
-					int l2 = getNumber(start, "second level value");
-					return level::GRIB1::create(type, l1, l2);
-				}
-			}
-		}
+            int type = getNumber(start, "level type");
+            switch (level::GRIB1::getValType((unsigned char)type))
+            {
+                case 0: return createGRIB1(type);
+                case 1: {
+                    int l1 = getNumber(start, "level value");
+                    return createGRIB1(type, l1);
+                }
+                default: {
+                    int l1 = getNumber(start, "first level value");
+                    int l2 = getNumber(start, "second level value");
+                    return createGRIB1(type, l1, l2);
+                }
+            }
+        }
         case Level::GRIB2S: {
             const char* start = inner.c_str();
 
             uint8_t type = getUnsigned<uint8_t>(start, "level type", level::GRIB2S::MISSING_TYPE);
             uint8_t scale = getUnsigned<uint8_t>(start, "scale of level value", level::GRIB2S::MISSING_SCALE);
             uint32_t value = getUnsigned<uint32_t>(start, "level value", level::GRIB2S::MISSING_VALUE);
-            return level::GRIB2S::create(type, scale, value);
+            return createGRIB2S(type, scale, value);
         }
-		case Level::GRIB2D: {
-			const char* start = inner.c_str();
+        case Level::GRIB2D: {
+            const char* start = inner.c_str();
 
-			uint8_t type1 = getUnsigned<uint8_t>(start, "type of first level", level::GRIB2S::MISSING_TYPE);
-			uint32_t scale1 = getUnsigned<uint32_t>(start, "scale of value of first level", level::GRIB2S::MISSING_SCALE);
-			uint32_t value1 = getUnsigned<uint32_t>(start, "value of first level", level::GRIB2S::MISSING_VALUE);
-			uint8_t type2 = getUnsigned<uint8_t>(start, "type of second level", level::GRIB2S::MISSING_TYPE);
-			uint32_t scale2 = getUnsigned<uint32_t>(start, "scale of value of second level", level::GRIB2S::MISSING_SCALE);
-			uint32_t value2 = getUnsigned<uint32_t>(start, "value of second level", level::GRIB2S::MISSING_VALUE);
-			return level::GRIB2D::create(type1, scale1, value1, type2, scale2, value2);
-		}
-		case Level::ODIMH5: {
-			const char* start = inner.c_str();
+            uint8_t type1 = getUnsigned<uint8_t>(start, "type of first level", level::GRIB2S::MISSING_TYPE);
+            uint32_t scale1 = getUnsigned<uint32_t>(start, "scale of value of first level", level::GRIB2S::MISSING_SCALE);
+            uint32_t value1 = getUnsigned<uint32_t>(start, "value of first level", level::GRIB2S::MISSING_VALUE);
+            uint8_t type2 = getUnsigned<uint8_t>(start, "type of second level", level::GRIB2S::MISSING_TYPE);
+            uint32_t scale2 = getUnsigned<uint32_t>(start, "scale of value of second level", level::GRIB2S::MISSING_SCALE);
+            uint32_t value2 = getUnsigned<uint32_t>(start, "value of second level", level::GRIB2S::MISSING_VALUE);
+            return createGRIB2D(type1, scale1, value1, type2, scale2, value2);
+        }
+        case Level::ODIMH5: {
+            const char* start = inner.c_str();
 
-			double min = getDouble(start, "ODIMH5 min level");
-			double max = getDouble(start, "ODIMH5 max level");
-			return level::ODIMH5::create(min, max);
-		}
+            double min = getDouble(start, "ODIMH5 min level");
+            double max = getDouble(start, "ODIMH5 max level");
+            return createODIMH5(min, max);
+        }
 		default:
 			throw wibble::exception::Consistency("parsing Level", "unknown Level style " + formatStyle(style));
 	}
 }
 
-Item<Level> Level::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Level> Level::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Level::GRIB1: return level::GRIB1::decodeMapping(val);
-        case Level::GRIB2S: return level::GRIB2S::decodeMapping(val);
-        case Level::GRIB2D: return level::GRIB2D::decodeMapping(val);
-        case Level::ODIMH5: return level::ODIMH5::decodeMapping(val);
+        case Level::GRIB1: return upcast<Level>(level::GRIB1::decodeMapping(val));
+        case Level::GRIB2S: return upcast<Level>(level::GRIB2S::decodeMapping(val));
+        case Level::GRIB2D: return upcast<Level>(level::GRIB2D::decodeMapping(val));
+        case Level::ODIMH5: return upcast<Level>(level::ODIMH5::decodeMapping(val));
         default:
             throw wibble::exception::Consistency("parsing Level", "unknown Level style " + val.get_string());
     }
@@ -361,8 +361,7 @@ static int arkilua_new_grib2s(lua_State* L)
     else
         val = luaL_checkint(L, 3);
 
-    Item<> res = level::GRIB2S::create(type, scale, val);
-    res->lua_push(L);
+    level::GRIB2S::create(type, scale, val)->lua_push(L);
     return 1;
 }
 
@@ -405,9 +404,8 @@ static int arkilua_new_grib2d(lua_State* L)
     else
         val2 = luaL_checkint(L, 6);
 
-	Item<> res = level::GRIB2D::create(type1, scale1, val1, type2, scale2, val2);
-	res->lua_push(L);
-	return 1;
+    level::GRIB2D::create(type1, scale1, val1, type2, scale2, val2)->lua_push(L);
+    return 1;
 }
 
 static int arkilua_new_odimh5(lua_State* L)
@@ -435,12 +433,37 @@ void Level::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_level", lib);
 }
 
-namespace level {
+auto_ptr<Level> Level::createGRIB1(unsigned char type)
+{
+    return upcast<Level>(level::GRIB1::create(type));
+}
+auto_ptr<Level> Level::createGRIB1(unsigned char type, unsigned short l1)
+{
+    return upcast<Level>(level::GRIB1::create(type, l1));
+}
+auto_ptr<Level> Level::createGRIB1(unsigned char type, unsigned char l1, unsigned char l2)
+{
+    return upcast<Level>(level::GRIB1::create(type, l1, l2));
+}
+auto_ptr<Level> Level::createGRIB2S(uint8_t type, uint8_t scale, uint32_t val)
+{
+    return upcast<Level>(level::GRIB2S::create(type, scale, val));
+}
+auto_ptr<Level> Level::createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
+                                    uint8_t type2, uint8_t scale2, uint32_t val2)
+{
+    return upcast<Level>(level::GRIB2D::create(type1, scale1, val1, type2, scale2, val2));
+}
+auto_ptr<Level> Level::createODIMH5(double value)
+{
+    return upcast<Level>(level::ODIMH5::create(value));
+}
+auto_ptr<Level> Level::createODIMH5(double min, double max)
+{
+    return upcast<Level>(level::ODIMH5::create(min, max));
+}
 
-static TypeCache<GRIB1> cache_grib1;
-static TypeCache<GRIB2S> cache_grib2s;
-static TypeCache<GRIB2D> cache_grib2d;
-static TypeCache<ODIMH5> cache_odimh5;
+namespace level {
 
 Level::Style GRIB1::style() const { return Level::GRIB1; }
 
@@ -492,7 +515,7 @@ void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
             break;
     }
 }
-Item<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     int lt = val["lt"].want_int("parsing GRIB1 level type");
@@ -532,23 +555,32 @@ int GRIB1::compare_local(const Level& o) const
 	return m_l2 - v->m_l2;
 }
 
-bool GRIB1::operator==(const Type& o) const
+bool GRIB1::equals(const Type& o) const
 {
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v) return false;
 	return m_type == v->m_type && m_l1 == v->m_l1 && m_l2 == v->m_l2;
 }
 
-Item<GRIB1> GRIB1::create(unsigned char type)
+GRIB1* GRIB1::clone() const
 {
-	GRIB1* res = new GRIB1;
-	res->m_type = type;
-	res->m_l1 = 0;
-	res->m_l2 = 0;
-	return cache_grib1.intern(res);
+    GRIB1* res = new GRIB1;
+    res->m_type = m_type;
+    res->m_l1 = m_l1;
+    res->m_l2 = m_l2;
+    return res;
 }
 
-Item<GRIB1> GRIB1::create(unsigned char type, unsigned short l1)
+auto_ptr<GRIB1> GRIB1::create(unsigned char type)
+{
+    GRIB1* res = new GRIB1;
+    res->m_type = type;
+    res->m_l1 = 0;
+    res->m_l2 = 0;
+    return auto_ptr<GRIB1>(res);
+}
+
+auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned short l1)
 {
 	GRIB1* res = new GRIB1;
 	res->m_type = type;
@@ -558,10 +590,10 @@ Item<GRIB1> GRIB1::create(unsigned char type, unsigned short l1)
 		default: res->m_l1 = l1; break;
 	}
 	res->m_l2 = 0;
-	return cache_grib1.intern(res);
+    return auto_ptr<GRIB1>(res);
 }
 
-Item<GRIB1> GRIB1::create(unsigned char type, unsigned char l1, unsigned char l2)
+auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char l1, unsigned char l2)
 {
 	GRIB1* res = new GRIB1;
 	res->m_type = type;
@@ -571,7 +603,7 @@ Item<GRIB1> GRIB1::create(unsigned char type, unsigned char l1, unsigned char l2
 		case 1: res->m_l1 = l1; res->m_l2 = 0; break;
 		default: res->m_l1 = l1; res->m_l2 = l2; break;
 	}
-	return cache_grib1.intern(res);
+    return auto_ptr<GRIB1>(res);
 }
 
 int GRIB1::valType() const
@@ -698,7 +730,7 @@ void GRIB2S::serialiseLocal(Emitter& e, const Formatter* f) const
     } else
         e.add("va", m_value);
 }
-Item<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& lt = val["lt"];
@@ -735,7 +767,7 @@ int GRIB2S::compare_local(const Level& o) const
 	return m_value - v->m_value;
 }
 
-bool GRIB2S::operator==(const Type& o) const
+bool GRIB2S::equals(const Type& o) const
 {
 	const GRIB2S* v = dynamic_cast<const GRIB2S*>(&o);
 	if (!v) return false;
@@ -765,13 +797,22 @@ bool GRIB2S::lua_lookup(lua_State* L, const std::string& name) const
     return true;
 }
 
-Item<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned int value)
+GRIB2S* GRIB2S::clone() const
 {
-	GRIB2S* res = new GRIB2S;
-	res->m_type = type;
-	res->m_scale = scale;
-	res->m_value = value;
-	return cache_grib2s.intern(res);
+    GRIB2S* res = new GRIB2S;
+    res->m_type = m_type;
+    res->m_scale = m_scale;
+    res->m_value = m_value;
+    return res;
+}
+
+auto_ptr<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned int value)
+{
+    GRIB2S* res = new GRIB2S;
+    res->m_type = type;
+    res->m_scale = scale;
+    res->m_value = value;
+    return auto_ptr<GRIB2S>(res);
 }
 
 
@@ -864,7 +905,7 @@ void GRIB2D::serialiseLocal(Emitter& e, const Formatter* f) const
         e.add("v2", m_value2);
 
 }
-Item<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& l1 = val["l1"];
@@ -914,7 +955,7 @@ int GRIB2D::compare_local(const Level& o) const
 	return m_value2 - v->m_value2;
 }
 
-bool GRIB2D::operator==(const Type& o) const
+bool GRIB2D::equals(const Type& o) const
 {
 	const GRIB2D* v = dynamic_cast<const GRIB2D*>(&o);
 	if (!v) return false;
@@ -963,18 +1004,30 @@ bool GRIB2D::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-Item<GRIB2D> GRIB2D::create(
-	unsigned char type1, unsigned char scale1, unsigned int value1,
-	unsigned char type2, unsigned char scale2, unsigned int value2)
+GRIB2D* GRIB2D::clone() const
 {
-	GRIB2D* res = new GRIB2D;
-	res->m_type1 = type1;
-	res->m_scale1 = scale1;
-	res->m_value1 = value1;
-	res->m_type2 = type2;
-	res->m_scale2 = scale2;
-	res->m_value2 = value2;
-	return cache_grib2d.intern(res);
+    GRIB2D* res = new GRIB2D;
+    res->m_type1 = m_type1;
+    res->m_scale1 = m_scale1;
+    res->m_value1 = m_value1;
+    res->m_type2 = m_type2;
+    res->m_scale2 = m_scale2;
+    res->m_value2 = m_value2;
+    return res;
+}
+
+auto_ptr<GRIB2D> GRIB2D::create(
+    unsigned char type1, unsigned char scale1, unsigned int value1,
+    unsigned char type2, unsigned char scale2, unsigned int value2)
+{
+    GRIB2D* res = new GRIB2D;
+    res->m_type1 = type1;
+    res->m_scale1 = scale1;
+    res->m_value1 = value1;
+    res->m_type2 = type2;
+    res->m_scale2 = scale2;
+    res->m_value2 = value2;
+    return auto_ptr<GRIB2D>(res);
 }
 
 Level::Style ODIMH5::style() const { return Level::ODIMH5; }
@@ -1002,7 +1055,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("mi", m_min);
     e.add("ma", m_max);
 }
-Item<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return ODIMH5::create(
@@ -1036,7 +1089,7 @@ int ODIMH5::compare_local(const Level& o) const
     // return (m_max - m_min) - (v->m_max - v->m_min);
 }
 
-bool ODIMH5::operator==(const Type& o) const
+bool ODIMH5::equals(const Type& o) const
 {
 	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
 	if (!v) return false;
@@ -1057,36 +1110,34 @@ bool ODIMH5::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-Item<ODIMH5> ODIMH5::create(double val)
+ODIMH5* ODIMH5::clone() const
 {
-	return ODIMH5::create(val, val);
+    ODIMH5* res = new ODIMH5;
+    res->m_max = m_max;
+    res->m_min = m_min;
+    return res;
 }
 
-Item<ODIMH5> ODIMH5::create(double min, double max)
+auto_ptr<ODIMH5> ODIMH5::create(double val)
 {
-	ODIMH5* res = new ODIMH5;
-	res->m_max = max;
-	res->m_min = min;
-	return cache_odimh5.intern(res);
+    return ODIMH5::create(val, val);
 }
 
-
-static void debug_interns()
+auto_ptr<ODIMH5> ODIMH5::create(double min, double max)
 {
-	fprintf(stderr, "level GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
-	fprintf(stderr, "level GRIB2S: sz %zd reused %zd\n", cache_grib2s.size(), cache_grib2s.reused());
-	fprintf(stderr, "level GRIB2D: sz %zd reused %zd\n", cache_grib2d.size(), cache_grib2d.reused());
-	fprintf(stderr, "level ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
+    ODIMH5* res = new ODIMH5;
+    res->m_max = max;
+    res->m_min = min;
+    return auto_ptr<ODIMH5>(res);
 }
 
 }
 
 void Level::init()
 {
-    MetadataType::register_type<Level>(level::debug_interns);
+    MetadataType::register_type<Level>();
 }
 
 }
 }
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:

@@ -61,13 +61,12 @@ bool Stream::checkMetadata()
     metadata::ReadContext rc("http-connection", streamname);
 	md.read((const unsigned char*)buffer.data() + 8, len, version, rc);
 
-	buffer = buffer.substr(len + 8);
-	if (md.source->style() == types::Source::INLINE)
-	{
-		Item<types::source::Inline> inl = md.source.upcast<types::source::Inline>();
-		dataToGet = inl->size;
-		state = DATA;
-		return true;
+    buffer = buffer.substr(len + 8);
+    if (md.source().style() == types::Source::INLINE)
+    {
+        dataToGet = md.source().getSize();
+        state = DATA;
+        return true;
 	} else {
 		consumer(md);
         return true;
@@ -83,7 +82,7 @@ bool Stream::checkData()
     buffer = buffer.substr(dataToGet);
     dataToGet = 0;
     state = METADATA;
-    md.setInlineData(md.source->format, buf);
+    md.setInlineData(md.source().format, buf);
     consumer(md);
     return true;
 }

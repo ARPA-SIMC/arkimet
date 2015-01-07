@@ -43,7 +43,7 @@ protected:
     /// Interval for the current batch
     int cur_interval[6];
     /// Timerange of all the items in the current batch, if split_timerange is true
-    UItem<types::Timerange> last_timerange;
+    types::Timerange* last_timerange;
     /// Actual time span of the current batch
     types::reftime::Collector timespan;
 
@@ -119,6 +119,10 @@ public:
      * batch.
      */
     virtual void flush();
+
+private:
+    Clusterer(const Clusterer&);
+    Clusterer& operator=(const Clusterer&);
 };
 
 }

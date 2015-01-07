@@ -1,8 +1,7 @@
-
 /*
  * matcher/task - Task matcher
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,8 +33,10 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
-namespace arki { namespace matcher {
+namespace arki {
+namespace matcher {
 
 /*============================================================================*/
 
@@ -46,9 +47,9 @@ MatchQuantity::MatchQuantity(const std::string& pattern)
 	arki::types::split(pattern, values);
 }
 
-bool MatchQuantity::matchItem(const Item<>& o) const
+bool MatchQuantity::matchItem(const Type& o) const
 {
-	const types::Quantity* v = dynamic_cast<const types::Quantity*>(o.ptr());
+	const types::Quantity* v = dynamic_cast<const types::Quantity*>(&o);
 	if (!v) return false;
 
 	//se il matche specifica dei valori
@@ -87,5 +88,3 @@ void MatchQuantity::init()
 
 }
 }
-
-// vim:set ts=4 sw=4:

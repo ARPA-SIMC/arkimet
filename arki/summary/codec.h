@@ -1,10 +1,10 @@
-#ifndef ARKI_MATCHER_PRODDEF_H
-#define ARKI_MATCHER_PRODDEF_H
+#ifndef ARKI_SUMMARY_CODEC_H
+#define ARKI_SUMMARY_CODEC_H
 
 /*
- * matcher/proddef - Product definition matcher
+ * summary/codec - Summary I/O implementation
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,34 +23,35 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/matcher.h>
-#include <arki/types/proddef.h>
+#include <arki/types.h>
+#include <arki/summary.h>
+#include <vector>
 
 namespace arki {
-namespace matcher {
+class Metadata;
+class Matcher;
 
-/**
- * Match Proddefs
- */
-struct MatchProddef : public Implementation
+namespace summary {
+struct Stats;
+struct Visitor;
+struct StatsVisitor;
+struct ItemVisitor;
+
+size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, Node& target);
+
+struct EncodingVisitor : public Visitor
 {
-    std::string name() const override;
+    // Encoder we send data to
+    utils::codec::Encoder& enc;
 
-    static MatchProddef* parse(const std::string& pattern);
-    static void init();
-};
+    // Last metadata encoded so far
+    std::vector<const types::Type*> last;
 
-struct MatchProddefGRIB : public MatchProddef
-{
-    ValueBag expr;
+    EncodingVisitor(utils::codec::Encoder& enc);
 
-    MatchProddefGRIB(const std::string& pattern);
-    bool matchItem(const types::Type& o) const override;
-    std::string toString() const override;
+    bool operator()(const std::vector<const types::Type*>& md, const Stats& stats) override;
 };
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

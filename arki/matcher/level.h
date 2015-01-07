@@ -48,9 +48,9 @@ struct MatchLevelGRIB1 : public MatchLevel
 	int l1;
 	int l2;
 
-	MatchLevelGRIB1(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchLevelGRIB1(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchLevelGRIB2S : public MatchLevel
@@ -62,9 +62,9 @@ struct MatchLevelGRIB2S : public MatchLevel
     uint32_t value;
     bool has_value;
 
-	MatchLevelGRIB2S(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchLevelGRIB2S(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchLevelGRIB2D : public MatchLevel
@@ -82,9 +82,9 @@ struct MatchLevelGRIB2D : public MatchLevel
     uint32_t value2;
     bool has_value2;
 
-	MatchLevelGRIB2D(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchLevelGRIB2D(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchLevelODIMH5 : public MatchLevel
@@ -95,9 +95,9 @@ struct MatchLevelODIMH5 : public MatchLevel
 	double range_min;
 	double range_max;
 
-	MatchLevelODIMH5(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchLevelODIMH5(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 

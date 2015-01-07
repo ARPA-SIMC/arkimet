@@ -36,6 +36,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace scan {
@@ -588,12 +589,12 @@ void Grib::setSource(Metadata& md)
 	{
 		md.setInlineData("grib" + str::fmt(edition), wibble::sys::Buffer(vbuf, size));
 	}
-	else
-	{
-		md.source = types::Source::createBlob("grib" + str::fmt(edition), basedir, relname, offset, size);
-		md.setCachedData(wibble::sys::Buffer(vbuf, size));
-	}
-	md.add_note(types::Note::create("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size)));
+    else
+    {
+        md.set_source(Source::createBlob("grib" + str::fmt(edition), basedir, relname, offset, size));
+        md.setCachedData(wibble::sys::Buffer(vbuf, size));
+    }
+    md.add_note(*Note::create("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size)));
 }
 
 void MultiGrib::setSource(Metadata& md)
@@ -619,7 +620,7 @@ void MultiGrib::setSource(Metadata& md)
 
 	tmpfile.flush();
 
-    md.source = types::Source::createBlob("grib" + str::fmt(edition), "", tmpfilename, offset, size);
+    md.set_source(Source::createBlob("grib" + str::fmt(edition), "", tmpfilename, offset, size));
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)
@@ -627,13 +628,13 @@ bool Grib::scanLua(std::vector<int> ids, Metadata& md)
 	for (vector<int>::const_iterator i = ids.begin(); i != ids.end(); ++i)
 	{
 		string error = L->run_function(*i, md);
-		if (!error.empty())
-		{
-			md.add_note(types::Note::create("Scanning failed: " + error));
-			return false;
-		}
-	}
-	return true;
+        if (!error.empty())
+        {
+            md.add_note(*types::Note::create("Scanning failed: " + error));
+            return false;
+        }
+    }
+    return true;
 }
 
 

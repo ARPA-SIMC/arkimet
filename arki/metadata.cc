@@ -1,7 +1,7 @@
 /*
  * metadata - Handle arkimet metadata
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/metadata.h>
+#include "metadata.h"
 #include <arki/metadata/consumer.h>
 #include <arki/types/value.h>
+#include <arki/types/source/blob.h>
 #include <arki/formatter.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/compress.h>
@@ -46,6 +45,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 using namespace arki::utils;
 
 namespace arki {
@@ -82,12 +82,52 @@ static std::string encodeItemList(const ITER& begin, const ITER& end)
 	return res;
 }
 
-Metadata::Metadata() {}
-Metadata::~Metadata() {}
-
-std::vector< Item<types::Note> > Metadata::notes() const
+Metadata::Metadata()
+    : m_source(0)
 {
-	std::vector< Item<types::Note> > res;
+}
+Metadata::Metadata(const Metadata& o)
+    : ItemSet(o), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : 0)
+{
+}
+Metadata::~Metadata()
+{
+    delete m_source;
+}
+Metadata& Metadata::operator=(const Metadata& o)
+{
+    if (this == &o) return *this;
+    ItemSet::operator=(o);
+    delete m_source;
+    m_source = o.m_source ? o.m_source->clone() : 0;
+    m_notes = o.m_notes;
+    return *this;
+}
+
+const Source& Metadata::source() const
+{
+    if (!m_source)
+        throw wibble::exception::Consistency("metadata has no source");
+    return *m_source;
+}
+
+const source::Blob& Metadata::sourceBlob() const
+{
+    if (!m_source) throw wibble::exception::Consistency("metadata has no source");
+    const source::Blob* res = dynamic_cast<source::Blob*>(m_source);
+    if (!res) throw wibble::exception::Consistency("metadata source is not a Blob source");
+    return *res;
+}
+
+void Metadata::set_source(std::auto_ptr<types::Source> s)
+{
+    delete m_source;
+    m_source = s.release();
+}
+
+std::vector<types::Note> Metadata::notes() const
+{
+	std::vector<types::Note> res;
 	const unsigned char* buf = (const unsigned char*)m_notes.data();
 	const unsigned char* end = buf + m_notes.size();
 	for (const unsigned char* cur = buf; cur < end; )
@@ -101,7 +141,7 @@ std::vector< Item<types::Note> > Metadata::notes() const
 			throw wibble::exception::Consistency(
 					"decoding binary encoded notes",
 					"item type is not a note");
-		res.push_back(types::Note::decode(el_start, el_len));
+		res.push_back(*types::Note::decode(el_start, el_len));
 		cur = el_start + el_len;
 	}
 	return res;
@@ -112,10 +152,10 @@ const std::string& Metadata::notes_encoded() const
 	return m_notes;
 }
 
-void Metadata::set_notes(const std::vector< Item<types::Note> >& notes)
+void Metadata::set_notes(const std::vector<types::Note>& notes)
 {
 	m_notes.clear();
-	for (std::vector< Item<types::Note> >::const_iterator i = notes.begin(); i != notes.end(); ++i)
+	for (std::vector<types::Note>::const_iterator i = notes.begin(); i != notes.end(); ++i)
 		add_note(*i);
 }
 
@@ -124,9 +164,9 @@ void Metadata::set_notes_encoded(const std::string& notes)
 	m_notes = notes;
 }
 
-void Metadata::add_note(const Item<types::Note>& note)
+void Metadata::add_note(const types::Note& note)
 {
-	m_notes += note.encode();
+    m_notes += note.encodeBinary();
 }
 
 void Metadata::clear()
@@ -134,28 +174,21 @@ void Metadata::clear()
     ItemSet::clear();
     m_vals.clear();
     m_notes.clear();
-    source.clear();
+    delete m_source;
+    m_source = 0;
 }
 
 bool Metadata::operator==(const Metadata& m) const
 {
     if (!ItemSet::operator==(m)) return false;
-
     if (m_notes != m.m_notes) return false;
-    if (source != m.source) return false;
-    return true;
+    return Type::nullable_equals(m_source, m.m_source);
 }
 
 int Metadata::compare(const Metadata& m) const
 {
-	if (int res = ItemSet::compare(m)) return res;
-	
-	// TODO: replace with source.compare() when ready
-	//if (source < m.source) return -1;
-	//if (source > m.source) return 1;
-	//if (notes < m.notes) return -1;
-	//if (notes > m.notes) return 1;
-	return 0;
+    if (int res = ItemSet::compare(m)) return res;
+    return Type::nullable_compare(m_source, m.m_source);
 }
 
 bool Metadata::read(istream& in, const std::string& filename, bool readInline)
@@ -172,11 +205,11 @@ bool Metadata::read(istream& in, const std::string& filename, bool readInline)
 
 	read(buf, version, filename);
 
-	// If the source is inline, then the data follows the metadata
-	if (readInline && source->style() == types::Source::INLINE)
-		readInlineData(in, filename);
+    // If the source is inline, then the data follows the metadata
+    if (readInline && source().style() == types::Source::INLINE)
+        readInlineData(in, filename);
 
-	return true;
+    return true;
 }
 
 bool Metadata::read(const unsigned char*& buf, size_t& len, const metadata::ReadContext& rc)
@@ -220,14 +253,14 @@ void Metadata::read(const unsigned char* buf, size_t len, unsigned version, cons
 		// Fixme: replace with types::decode when fully available
 		types::Code el_type = types::decodeEnvelope(el_start, el_len);
 
-		switch (el_type)
-		{
-			case types::TYPE_NOTE: m_notes += string((const char*)cur, (el_start + el_len) - cur); break;
-			case types::TYPE_SOURCE: source = types::Source::decodeRelative(el_start, el_len, rc.basedir); break;
-			default:
-				m_vals.insert(make_pair(el_type, types::decodeInner(el_type, el_start, el_len)));
-				break;
-		}
+        switch (el_type)
+        {
+            case types::TYPE_NOTE: m_notes += string((const char*)cur, (el_start + el_len) - cur); break;
+            case types::TYPE_SOURCE: set_source(types::Source::decodeRelative(el_start, el_len, rc.basedir)); break;
+            default:
+                m_vals.insert(make_pair(el_type, types::decodeInner(el_type, el_start, el_len).release()));
+                break;
+        }
 
 		cur = el_start + el_len;
 	}
@@ -236,9 +269,9 @@ void Metadata::read(const unsigned char* buf, size_t len, unsigned version, cons
 void Metadata::readInlineData(std::istream& in, const std::string& filename)
 {
     // If the source is inline, then the data follows the metadata
-    if (source->style() == types::Source::INLINE)
+    if (source().style() == types::Source::INLINE)
     {
-        size_t size = source->getSize();
+        size_t size = source().getSize();
         wibble::sys::Buffer buf(size);
 
         iotrace::trace_file(filename, 0, size, "read inline data");
@@ -248,7 +281,7 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
         if (in.fail())
             throw wibble::exception::File(filename, "reading "+str::fmt(size)+" bytes");
 
-        source->setCachedData(buf);
+        source().setCachedData(buf);
     }
 }
 
@@ -263,21 +296,21 @@ bool Metadata::readYaml(std::istream& in, const std::string& filename)
 	{
 		types::Code type = types::parseCodeName(i->first);
 		string val = trim(i->second);
-		switch (type)
-		{
-			case types::TYPE_NOTE: add_note(types::Note::decodeString(val)); break;
-			case types::TYPE_SOURCE: source = types::Source::decodeString(val); break;
-			default:
-				m_vals.insert(make_pair(type, types::decodeString(type, val)));
-		}
-	}
-	return !in.eof();
+        switch (type)
+        {
+            case types::TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
+            case types::TYPE_SOURCE: set_source(types::Source::decodeString(val)); break;
+            default:
+                m_vals.insert(make_pair(type, types::decodeString(type, val).release()));
+        }
+    }
+    return !in.eof();
 }
 
 void Metadata::write(std::ostream& out, const std::string& filename) const
 {
-	// Prepare the encoded data
-	string encoded = encode();
+    // Prepare the encoded data
+    string encoded = encodeBinary();
 
 	// Write out
 	out.write(encoded.data(), encoded.size());
@@ -285,9 +318,9 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
 		throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
 
     // If the source is inline, then the data follows the metadata
-    if (source->style() == types::Source::INLINE)
+    if (source().style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = source->getCachedData();
+        wibble::sys::Buffer buf = source().getCachedData();
         out.write((const char*)buf.data(), buf.size());
         if (out.fail())
             throw wibble::exception::File(filename, "writing " + str::fmt(buf.size()) + " bytes to the file");
@@ -297,67 +330,42 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
 void Metadata::write(int outfd, const std::string& filename) const
 {
     // Prepare the encoded data
-    string encoded = encode();
+    string encoded = encodeBinary();
 
     // Write out
     utils::fd::write_all(outfd, encoded);
 
     // If the source is inline, then the data follows the metadata
-    if (source->style() == types::Source::INLINE)
+    if (m_source && m_source->style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = source->getCachedData();
+        wibble::sys::Buffer buf = m_source->getCachedData();
         utils::fd::write_all(outfd, buf.data(), buf.size());
     }
 }
 
-template<typename LIST>
-static void writeYamlList(std::ostream& out, const std::string& name, const LIST& l, const Formatter* formatter)
-{
-	if (l.empty()) return;
-	out << name << ": ";
-	if (l.size() == 1)
-		if (formatter)
-			out << *l.begin() << "\t# " << (*formatter)(*l.begin()) << endl;
-		else
-			out << *l.begin() << endl;
-	else
-	{
-		out << endl;
-		for (typename LIST::const_iterator i = l.begin(); i != l.end(); ++i)
-			if (formatter)
-				out << " " << *i << "\t# " << (*formatter)(*i) << endl;
-			else
-				out << " " << *i << endl;
-	}
-}
-template<typename LIST>
-static void writeYamlList(std::ostream& out, const std::string& name, const LIST& l)
-{
-	if (l.empty()) return;
-	out << name << ": ";
-	if (l.size() == 1)
-		out << *l.begin() << endl;
-	else
-	{
-		out << endl;
-		for (typename LIST::const_iterator i = l.begin(); i != l.end(); ++i)
-			out << " " << *i << endl;
-	}
-}
 void Metadata::writeYaml(std::ostream& out, const Formatter* formatter) const
 {
-	if (source.defined())
-		out << "Source: " << source << endl;
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
+    if (m_source) out << "Source: " << *m_source << endl;
+    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
+    {
 		out << str::ucfirst(i->second->tag()) << ": ";
 		i->second->writeToOstream(out);
 		if (formatter)
-			out << "\t# " << (*formatter)(i->second);
+			out << "\t# " << (*formatter)(*i->second);
 		out << endl;
-	}
+    }
 
-	writeYamlList(out, "Note", notes());
+    vector<Note> l(notes());
+    if (l.empty()) return;
+    out << "Note: ";
+    if (l.size() == 1)
+        out << *l.begin() << endl;
+    else
+    {
+        out << endl;
+        for (vector<Note>::const_iterator i = l.begin(); i != l.end(); ++i)
+            out << " " << *i << endl;
+    }
 }
 
 void Metadata::serialise(Emitter& e, const Formatter* f) const
@@ -365,26 +373,24 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
     e.start_mapping();
     e.add("i");
     e.start_list();
-    if (source.defined())
-        source->serialise(e, f);
-    for (const_iterator i = begin(); i != end(); ++i)
+    if (m_source) m_source->serialise(e, f);
+    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
         i->second->serialise(e, f);
     e.end_list();
     e.add("n");
     e.start_list();
-    std::vector< Item<types::Note> > n = notes();
-    for (std::vector< Item<types::Note> >::const_iterator i = n.begin();
-            i != n.end(); ++i)
-        (*i)->serialise(e, f);
+    std::vector<types::Note> n = notes();
+    for (std::vector<types::Note>::const_iterator i = n.begin(); i != n.end(); ++i)
+        i->serialise(e, f);
     e.end_list();
     e.end_mapping();
 
     e.add_break();
 
     // If the source is inline, then the data follows the metadata
-    if (source->style() == types::Source::INLINE)
+    if (m_source && m_source->style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = source->getCachedData();
+        wibble::sys::Buffer buf = m_source->getCachedData();
         e.add_raw(buf);
     }
 }
@@ -397,9 +403,9 @@ void Metadata::read(const emitter::memory::Mapping& val)
     const List& items = val["i"].want_list("parsing metadata item list");
     for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
     {
-        Item<> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
         if (item->serialisationCode() == types::TYPE_SOURCE)
-            source = item.upcast<types::Source>();
+            set_source(downcast<types::Source>(item));
         else
             set(item);
     }
@@ -408,22 +414,21 @@ void Metadata::read(const emitter::memory::Mapping& val)
     const List& notes = val["n"].want_list("parsing metadata notes list");
     for (std::vector<const Node*>::const_iterator i = notes.val.begin(); i != notes.val.end(); ++i)
     {
-        Item<> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
         if (item->serialisationCode() == types::TYPE_NOTE)
-            add_note(item.upcast<types::Note>());
+            add_note(*downcast<types::Note>(item));
     }
 }
 
-string Metadata::encode() const
+string Metadata::encodeBinary() const
 {
-	using namespace utils::codec;
-	// Encode the various information
-	string encoded;
-	for (const_iterator i = begin(); i != end(); ++i)
-		encoded += i->second.encode();
-	encoded += m_notes;
-	if (source.defined())
-		encoded += source.encode();
+    using namespace utils::codec;
+    // Encode the various information
+    string encoded;
+    for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
+        encoded += i->second->encodeBinary();
+    encoded += m_notes;
+    if (m_source) encoded += m_source->encodeBinary();
 
 	string res;
 	Encoder enc(res);
@@ -437,16 +442,15 @@ string Metadata::encode() const
 
 bool Metadata::hasData() const
 {
-    return source.defined() && source->hasCachedData();
+    return m_source && m_source->hasCachedData();
 }
 
 wibble::sys::Buffer Metadata::getData() const
 {
-    if (!source.defined())
-        throw wibble::exception::Consistency("retrieving data", "data source is not defined");
+    if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
 
-    if (source->hasCachedData())
-        return source->getCachedData();
+    if (m_source->hasCachedData())
+        return m_source->getCachedData();
 
     // Se if we have a value set
     wibble::sys::Buffer buf = getDataFromValue();
@@ -455,48 +459,49 @@ wibble::sys::Buffer Metadata::getData() const
     if (!buf.data())
         throw wibble::exception::Consistency("retrieving data", "data is not accessible");
 
-    source->setCachedData(buf);
+    m_source->setCachedData(buf);
     return buf;
 }
 
 wibble::sys::Buffer Metadata::getDataFromFile() const
 {
-    return source->loadData();
+    if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
+    return m_source->loadData();
 }
 
 wibble::sys::Buffer Metadata::getDataFromValue() const
 {
-    UItem<types::Value> value = get<types::Value>();
-    if (!value.defined()) return wibble::sys::Buffer();
-    return arki::scan::reconstruct(source->format, *this, value->buffer);
+    if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
+    const Value* value = get<types::Value>();
+    if (!value) return wibble::sys::Buffer();
+    return arki::scan::reconstruct(m_source->format, *this, value->buffer);
 }
 
 void Metadata::dropCachedData() const
 {
-    if (source.defined())
-        source->dropCachedData();
+    if (m_source) m_source->dropCachedData();
 }
 
 void Metadata::setCachedData(const wibble::sys::Buffer& buf)
 {
-    if (!source.defined())
-        throw wibble::exception::Consistency("setting cached data", "data source is not defined");
-    source->setCachedData(buf);
+    if (!m_source) throw wibble::exception::Consistency("setting cached data", "data source is not defined");
+    m_source->setCachedData(buf);
 }
 
 size_t Metadata::dataSize() const
 {
-    return source->getSize();
+    return m_source ? m_source->getSize() : 0;
 }
 
 void Metadata::setInlineData(const std::string& format, wibble::sys::Buffer buf)
 {
-    source = types::Source::createInline(format, buf);
+    set_source(types::Source::createInline(format, buf));
 }
 
 void Metadata::makeInline()
 {
-	setInlineData(source->format, getData());
+    if (!m_source) throw wibble::exception::Consistency("making source inline", "data source is not defined");
+    setInlineData(m_source->format, getData());
 }
 
 void Metadata::readFile(const std::string& fname, metadata::Consumer& mdc)
@@ -543,7 +548,7 @@ void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, met
             md.read(buf, version, file);
 
             // If the source is inline, then the data follows the metadata
-            if (md.source->style() == types::Source::INLINE)
+            if (md.source().style() == types::Source::INLINE)
                 md.readInlineData(in, file.pathname);
             canceled = !mdc(md);
         }
@@ -585,11 +590,11 @@ void Metadata::flushDataReaders()
 namespace {
 struct LuaIter
 {
-	const Metadata& s;
-	Metadata::const_iterator iter;
+    const Metadata& s;
+    Metadata::const_iterator iter;
 
-	LuaIter(const Metadata& s) : s(s), iter(s.begin()) {}
-	
+    LuaIter(const Metadata& s) : s(s), iter(s.begin()) {}
+
 	// Lua iterator for summaries
 	static int iterate(lua_State* L)
 	{
@@ -657,16 +662,16 @@ static int arkilua_notes(lua_State* L)
 	Metadata* md = Metadata::lua_check(L, 1);
 	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
 
-	// Return a table with all the notes in the metadata
-	std::vector< Item<types::Note> > notes = md->notes();
-	lua_createtable(L, notes.size(), 0);
-	// Set the array elements
-	for (size_t i = 0; i < notes.size(); ++i)
-	{
-		notes[i]->lua_push(L);
-		lua_rawseti(L, -2, i+1);
-	}
-	return 1;
+    // Return a table with all the notes in the metadata
+    std::vector<Note> notes = md->notes();
+    lua_createtable(L, notes.size(), 0);
+    // Set the array elements
+    for (size_t i = 0; i < notes.size(); ++i)
+    {
+        notes[i].lua_push(L);
+        lua_rawseti(L, -2, i+1);
+    }
+    return 1;
 }
 
 static int arkilua_lookup(lua_State* L)
@@ -688,21 +693,21 @@ static int arkilua_lookup(lua_State* L)
 		// utils::lua::dumpstack(L, "postlookup", cerr);
 		return 1;
 	} else if (code == types::TYPE_SOURCE) {
-		// Return the source element
-		if (md->source.defined())
-			md->source->lua_push(L);
-		else
-			lua_pushnil(L);
-		return 1;
-	} else {
-		// Return the metadata item
-		UItem<> item = md->get(code);
-		if (item.defined())
-			item->lua_push(L);
-		else
-			lua_pushnil(L);
-		return 1;
-	}
+        // Return the source element
+        if (md->has_source())
+            md->source().lua_push(L);
+        else
+            lua_pushnil(L);
+        return 1;
+    } else {
+        // Return the metadata item
+        const Type* item = md->get(code);
+        if (item)
+            item->lua_push(L);
+        else
+            lua_pushnil(L);
+        return 1;
+    }
 
 #if 0
 	else if (key == "iter")
@@ -742,14 +747,14 @@ static int arkilua_newindex(lua_State* L)
 	const char* skey = lua_tostring(L, 2);
 	luaL_argcheck(L, skey != NULL, 2, "`string' expected");
 	string key = skey;
-	UItem<> item = types::Type::lua_check(L, 3);
-	luaL_argcheck(L, item.defined(), 3, "arki.type.* expected");
+    Type* item = types::Type::lua_check(L, 3);
+    luaL_argcheck(L, item, 3, "arki.type.* expected");
 
-	if (key == "source")
-	{
-		luaL_argcheck(L, item->serialisationCode() == types::TYPE_SOURCE, 3, "arki.type.source expected");
-		md->source = item.upcast<types::Source>();
-	}
+    if (key == "source")
+    {
+        luaL_argcheck(L, item->serialisationCode() == types::TYPE_SOURCE, 3, "arki.type.source expected");
+        md->set_source(downcast<Source>(item->cloneType()));
+    }
 	else if (key == "notes")
 	{
 		// TODO
@@ -767,28 +772,28 @@ static int arkilua_newindex(lua_State* L)
 		return 1;
 #endif
 	}
-	else
-	{
-		// Get an arbitrary element by name
-		types::Code code = types::parseCodeName(key);
-		if (item->serialisationCode() != code)
-		{
-			string msg = "arki.type." + types::tag(code) + " expected";
-			luaL_argcheck(L, false, 3, msg.c_str());
-		}
-		md->set(item);
-	}
-	return 0;
+    else
+    {
+        // Get an arbitrary element by name
+        types::Code code = types::parseCodeName(key);
+        if (item->serialisationCode() != code)
+        {
+            string msg = "arki.type." + types::tag(code) + " expected";
+            luaL_argcheck(L, false, 3, msg.c_str());
+        }
+        md->set(*item);
+    }
+    return 0;
 }
 
 static int arkilua_set(lua_State* L)
 {
-	Metadata* md = Metadata::lua_check(L, 1);
-	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
-	UItem<> item = types::Type::lua_check(L, 2);
-	luaL_argcheck(L, item.defined(), 2, "arki.type.* expected");
-	md->set(item);
-	return 0;
+    Metadata* md = Metadata::lua_check(L, 1);
+    luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+    Type* item = types::Type::lua_check(L, 2);
+    luaL_argcheck(L, item, 2, "arki.type.* expected");
+    md->set(*item);
+    return 0;
 }
 
 static int arkilua_unset(lua_State* L)
@@ -812,19 +817,19 @@ static int arkilua_data(lua_State* L)
     // Add notes, as a table
     lua_pushstring(L, "notes");
     lua_newtable(L);
-    std::vector< Item<types::Note> > n = md->notes();
+    std::vector<types::Note> n = md->notes();
     for (size_t i = 0; i < n.size(); ++i)
     {
-        n[i]->lua_push(L);
+        n[i].lua_push(L);
         lua_rawseti(L, -2, i+1);
     }
     lua_rawset(L, -3);
 
     // Add source
-    if (md->source.defined())
+    if (md->has_source())
     {
         lua_pushstring(L, "source");
-        md->source->lua_push(L);
+        md->source().lua_push(L);
         lua_rawset(L, -3);
     }
 
@@ -849,14 +854,14 @@ static int arkilua_clear(lua_State* L)
 */
 static int arkilua_tostring(lua_State* L)
 {
-	Metadata* md = Metadata::lua_check(L, 1);
-	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
-	vector<string> bits;
-	for (Metadata::const_iterator i = md->begin(); i != md->end(); ++i)
-		bits.push_back(str::tolower(str::fmt(i->first)) + ": " + str::fmt(i->second));
-	string merged = "{" + str::join(bits.begin(), bits.end(), ", ") + "}";
-	lua_pushlstring(L, merged.data(), merged.size());
-	return 1;
+    Metadata* md = Metadata::lua_check(L, 1);
+    luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+    vector<string> bits;
+    for (Metadata::const_iterator i = md->begin(); i != md->end(); ++i)
+        bits.push_back(str::tolower(str::fmt(i->first)) + ": " + str::fmt(i->second));
+    string merged = "{" + str::join(bits.begin(), bits.end(), ", ") + "}";
+    lua_pushlstring(L, merged.data(), merged.size());
+    return 1;
 }
 
 static int arkilua_eq(lua_State* L)

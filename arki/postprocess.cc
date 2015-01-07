@@ -297,7 +297,7 @@ bool Postprocess::operator()(Metadata& md)
     if (m_child->infd == -1)
         return false;
 
-    string encoded = md.encode();
+    string encoded = md.encodeBinary();
     if (m_child->send(encoded) < encoded.size())
         return false;
 

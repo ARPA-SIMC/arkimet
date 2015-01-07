@@ -23,8 +23,8 @@
 #include <arki/types/tests.h>
 #include <arki/types/source.h>
 #include <arki/types/source/blob.h>
-#include <arki/types/source/inline.h>
-#include <arki/types/source/url.h>
+#include <arki/emitter/json.h>
+#include <arki/emitter/memory.h>
 
 #include <sstream>
 #include <iostream>
@@ -43,13 +43,8 @@ TESTGRP(arki_types_source);
 template<> template<>
 void to::test<1>()
 {
-    Item<Source> o = Source::createBlob("test", "", "testfile", 21, 42);
-	ensure_equals(o->style(), Source::BLOB);
-	const source::Blob* v = o->upcast<source::Blob>();
-	ensure_equals(v->format, "test");
-	ensure_equals(v->filename, "testfile");
-	ensure_equals(v->offset, 21u);
-	ensure_equals(v->size, 42u);
+    auto_ptr<Source> o = Source::createBlob("test", "", "testfile", 21, 42);
+    wassert(actual(o).is_source_blob("test", "", "testfile", 21u, 42u));
 
 	#if 0
 	source.prependPath("/pippo");
@@ -59,11 +54,11 @@ void to::test<1>()
 	ensure_equals(size, 42u);
 	#endif
 
-    ensure_equals(o, Source::createBlob("test", "", "testfile", 21, 42));
-
-	ensure(o != source::Blob::create("test", "", "testfile", 22, 43));
-	ensure(o != source::URL::create("test", "testfile"));
-	ensure(o != source::Inline::create("test", 43));
+    wassert(actual(o) == Source::createBlob("test", "", "testfile", 21, 42));
+    wassert(actual(o) == Source::createBlob("test", "/tmp", "testfile", 21, 42));
+    wassert(actual(o) != Source::createBlob("test", "", "testfile", 22, 43));
+    wassert(actual(o) != Source::createURL("test", "testfile"));
+    wassert(actual(o) != Source::createInline("test", 43));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
@@ -73,17 +68,13 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    Item<Source> o = Source::createURL("test", "http://foobar");
-	ensure_equals(o->style(), Source::URL);
-	const source::URL* v = o->upcast<source::URL>();
-	ensure_equals(v->format, "test");
-	ensure_equals(v->url, "http://foobar");
+    auto_ptr<Source> o = Source::createURL("test", "http://foobar");
+    wassert(actual(o).is_source_url("test", "http://foobar"));
 
-    ensure_equals(o, Source::createURL("test", "http://foobar"));
-
-	ensure(o != source::URL::create("test", "http://foobar/a"));
-	ensure(o != source::Blob::create("test", "", "http://foobar", 1, 2));
-	ensure(o != source::Inline::create("test", 1));
+    wassert(actual(o) == Source::createURL("test", "http://foobar"));
+    wassert(actual(o) != Source::createURL("test", "http://foobar/a"));
+    wassert(actual(o) != Source::createBlob("test", "", "http://foobar", 1, 2));
+    wassert(actual(o) != Source::createInline("test", 1));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
@@ -93,17 +84,13 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    Item<Source> o = Source::createInline("test", 12345);
-	ensure_equals(o->style(), Source::INLINE);
-	const source::Inline* v = o->upcast<source::Inline>();
-	ensure_equals(v->format, "test");
-	ensure_equals(v->size, 12345u);
+    auto_ptr<Source> o = Source::createInline("test", 12345);
+    wassert(actual(o).is_source_inline("test", 12345u));
 
-    ensure_equals(o, Source::createInline("test", 12345));
-
-	ensure(o != source::Inline::create("test", 12344));
-	ensure(o != source::Blob::create("test", "", "", 0, 12344));
-	ensure(o != source::URL::create("test", ""));
+    wassert(actual(o) == Source::createInline("test", 12345));
+    wassert(actual(o) != Source::createInline("test", 12344));
+    wassert(actual(o) != Source::createBlob("test", "", "", 0, 12344));
+    wassert(actual(o) != Source::createURL("test", ""));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
@@ -113,13 +100,8 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    Item<Source> o = Source::createBlob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
-	ensure_equals(o->style(), Source::BLOB);
-	const source::Blob* v = o->upcast<source::Blob>();
-	ensure_equals(v->format, "test");
-	ensure_equals(v->filename, "testfile");
-	ensure_equals(v->offset, 0x8000FFFFffffFFFFLLU);
-	ensure_equals(v->size, 42u);
+    auto_ptr<Source> o = Source::createBlob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
+    wassert(actual(o).is_source_blob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42u));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
@@ -129,36 +111,31 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-    Item<source::Blob> o = source::Blob::create("test", "", "testfile", 21, 42);
-    ensure_equals(o->absolutePathname(), "testfile");
+    auto_ptr<source::Blob> o = source::Blob::create("test", "", "testfile", 21, 42);
+    wassert(actual(o->absolutePathname()) == "testfile");
 
     o = source::Blob::create("test", "/tmp", "testfile", 21, 42);
-    ensure_equals(o->absolutePathname(), "/tmp/testfile");
+    wassert(actual(o->absolutePathname()) == "/tmp/testfile");
 
     o = source::Blob::create("test", "/tmp", "/antani/testfile", 21, 42);
-    ensure_equals(o->absolutePathname(), "/antani/testfile");
+    wassert(actual(o->absolutePathname()) == "/antani/testfile");
 }
 
 // Check Blob and pathnames handling in serialization
 template<> template<>
 void to::test<6>()
 {
-    using namespace types::source;
-
-    Item<Blob> o = source::Blob::create("test", "/tmp", "testfile", 21, 42);
+    auto_ptr<Source> o = Source::createBlob("test", "/tmp", "testfile", 21, 42);
 
     // Encode to binary, decode, we lose the root
-    string enc = o->encodeWithEnvelope();
-    Item<Blob> decoded = types::decode((const unsigned char*)enc.data(), enc.size()).upcast<Blob>();
-
-    ensure_equals(decoded->basedir, string());
-    ensure_equals(decoded->filename, "testfile");
+    string enc = o->encodeBinary();
+    auto_ptr<Source> decoded = downcast<Source>(types::decode((const unsigned char*)enc.data(), enc.size()));
+    wassert(actual(decoded).is_source_blob("test", "", "testfile", 21, 42));
 
     // Encode to YAML, decode, we keep the root
-    enc = wibble::str::fmt(o);
-    decoded = types::Source::decodeString(enc).upcast<Blob>();
-    ensure_equals(decoded->basedir, string());
-    ensure_equals(decoded->filename, "/tmp/testfile");
+    enc = wibble::str::fmt(*o);
+    decoded = types::Source::decodeString(enc);
+    wassert(actual(decoded).is_source_blob("test", "/tmp", "testfile", 21, 42));
 
     // Encode to JSON, decode, we keep the root
     {
@@ -169,12 +146,21 @@ void to::test<6>()
         emitter::Memory parsed;
         emitter::JSON::parse(jbuf, parsed);
 
-        decoded = types::decodeMapping(parsed.root().get_mapping()).upcast<Blob>();
-        ensure_equals(decoded->basedir, string("/tmp"));
-        ensure_equals(decoded->filename, "testfile");
+        decoded = downcast<Source>(types::decodeMapping(parsed.root().get_mapping()));
+        wassert(actual(decoded).is_source_blob("test", "/tmp", "testfile", 21, 42));
     }
 }
 
+// Test basic type ops
+template<> template<>
+void to::test<7>()
+{
+    arki::tests::TestGenericType t("source", "INLINE(bufr,10)");
+    t.lower.push_back("INLINE(aaa, 11)");
+    t.lower.push_back("INLINE(bufr, 9)");
+    t.higher.push_back("INLINE(bufr, 11)");
+    t.higher.push_back("INLINE(ccc, 9)");
+    wassert(t);
 }
 
-// vim:set ts=4 sw=4:
+}

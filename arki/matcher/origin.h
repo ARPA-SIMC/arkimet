@@ -35,8 +35,7 @@ namespace matcher {
  */
 struct MatchOrigin : public Implementation
 {
-	//MatchType type() const { return MATCH_ORIGIN; }
-	std::string name() const;
+    std::string name() const override;
 
     static MatchOrigin* parse(const std::string& pattern);
     static void init();
@@ -49,9 +48,9 @@ struct MatchOriginGRIB1 : public MatchOrigin
 	int subcentre;
 	int process;
 
-	MatchOriginGRIB1(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchOriginGRIB1(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchOriginGRIB2 : public MatchOrigin
@@ -63,9 +62,9 @@ struct MatchOriginGRIB2 : public MatchOrigin
 	int bgprocessid;
 	int processid;
 
-	MatchOriginGRIB2(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchOriginGRIB2(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchOriginBUFR : public MatchOrigin
@@ -74,9 +73,9 @@ struct MatchOriginBUFR : public MatchOrigin
 	int centre;
 	int subcentre;
 
-	MatchOriginBUFR(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchOriginBUFR(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchOriginODIMH5 : public MatchOrigin
@@ -86,9 +85,9 @@ struct MatchOriginODIMH5 : public MatchOrigin
 	std::string RAD;
 	std::string PLC;
 
-	MatchOriginODIMH5(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchOriginODIMH5(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 }

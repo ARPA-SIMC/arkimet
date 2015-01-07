@@ -1,7 +1,7 @@
 /*
  * types/bbox - Bounding box metadata item
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -105,45 +105,51 @@ std::string BBox::formatStyle(BBox::Style s)
 	}
 }
 
-Item<BBox> BBox::decode(const unsigned char* buf, size_t len)
+auto_ptr<BBox> BBox::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	ensureSize(len, 1, "BBox");
 	Style s = (Style)decodeUInt(buf, 1);
-	switch (s)
-	{
-		case INVALID:
-			return bbox::INVALID::create();
-		case POINT:
-			ensureSize(len, 9, "BBox");
-			decodeFloat(buf+1), decodeFloat(buf+5);
-			return bbox::INVALID::create();
-		case BOX:
-			ensureSize(len, 17, "BBox");
-			decodeFloat(buf+1), decodeFloat(buf+5), decodeFloat(buf+9), decodeFloat(buf+13);
-			return bbox::INVALID::create();
-		case HULL: {
-			ensureSize(len, 3, "BBox");
-			size_t pointCount = decodeUInt(buf+1, 2);
-			ensureSize(len, 3+pointCount*8, "BBox");
-			for (size_t i = 0; i < pointCount; ++i)
-				decodeFloat(buf+3+i*8), decodeFloat(buf+3+i*8+4);
-			return bbox::INVALID::create();
-		}
-		default:
-			throw wibble::exception::Consistency("parsing BBox", "style is " + formatStyle(s) + " but we can only decode INVALID and BOX");
-	}
-}
-    
-Item<BBox> BBox::decodeString(const std::string& val)
-{
-	return bbox::INVALID::create();
+    switch (s)
+    {
+        case INVALID:
+            return createInvalid();
+        case POINT:
+            ensureSize(len, 9, "BBox");
+            decodeFloat(buf+1), decodeFloat(buf+5);
+            return createInvalid();
+        case BOX:
+            ensureSize(len, 17, "BBox");
+            decodeFloat(buf+1), decodeFloat(buf+5), decodeFloat(buf+9), decodeFloat(buf+13);
+            return createInvalid();
+        case HULL: {
+            ensureSize(len, 3, "BBox");
+            size_t pointCount = decodeUInt(buf+1, 2);
+            ensureSize(len, 3+pointCount*8, "BBox");
+            for (size_t i = 0; i < pointCount; ++i)
+                decodeFloat(buf+3+i*8), decodeFloat(buf+3+i*8+4);
+            return createInvalid();
+        }
+        default:
+            throw wibble::exception::Consistency("parsing BBox", "style is " + formatStyle(s) + " but we can only decode INVALID and BOX");
+    }
 }
 
-Item<BBox> BBox::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<BBox> BBox::decodeString(const std::string& val)
 {
-	return bbox::INVALID::create();
+    return createInvalid();
 }
+
+auto_ptr<BBox> BBox::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return createInvalid();
+}
+
+auto_ptr<BBox> BBox::createInvalid()
+{
+    return upcast<BBox>(bbox::INVALID::create());
+}
+
 
 namespace bbox {
 
@@ -171,16 +177,21 @@ int INVALID::compare_local(const BBox& o) const
 	return 0;
 }
 
-bool INVALID::operator==(const Type& o) const
+bool INVALID::equals(const Type& o) const
 {
 	const INVALID* v = dynamic_cast<const INVALID*>(&o);
 	if (!v) return false;
 	return true;
 }
 
-Item<INVALID> INVALID::create()
+INVALID* INVALID::clone() const
 {
-	return new INVALID;
+    return new INVALID;
+}
+
+auto_ptr<INVALID> INVALID::create()
+{
+    return auto_ptr<INVALID>(new INVALID);
 }
 
 }

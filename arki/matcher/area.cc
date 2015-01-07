@@ -1,7 +1,7 @@
 /*
  * matcher/area - Area matcher
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace matcher {
@@ -46,11 +47,11 @@ MatchAreaGRIB::MatchAreaGRIB(const std::string& pattern)
 	expr = ValueBag::parse(pattern);
 }
 
-bool MatchAreaGRIB::matchItem(const Item<>& o) const
+bool MatchAreaGRIB::matchItem(const Type& o) const
 {
-	const types::area::GRIB* v = dynamic_cast<const types::area::GRIB*>(o.ptr());
-	if (!v) return false;
-	return v->values().contains(expr);
+    const types::area::GRIB* v = dynamic_cast<const types::area::GRIB*>(&o);
+    if (!v) return false;
+    return v->values().contains(expr);
 }
 
 std::string MatchAreaGRIB::toString() const
@@ -63,11 +64,11 @@ MatchAreaODIMH5::MatchAreaODIMH5(const std::string& pattern)
 	expr = ValueBag::parse(pattern);
 }
 
-bool MatchAreaODIMH5::matchItem(const Item<>& o) const
+bool MatchAreaODIMH5::matchItem(const Type& o) const
 {
-	const types::area::ODIMH5* v = dynamic_cast<const types::area::ODIMH5*>(o.ptr());
-	if (!v) return false;
-	return v->values().contains(expr);
+    const types::area::ODIMH5* v = dynamic_cast<const types::area::ODIMH5*>(&o);
+    if (!v) return false;
+    return v->values().contains(expr);
 }
 
 std::string MatchAreaODIMH5::toString() const
@@ -86,9 +87,9 @@ MatchAreaVM2::MatchAreaVM2(const std::string& pattern)
 #endif
 }
 
-bool MatchAreaVM2::matchItem(const Item<>& o) const
+bool MatchAreaVM2::matchItem(const Type& o) const
 {
-    const types::area::VM2* v = dynamic_cast<const types::area::VM2*>(o.ptr());
+    const types::area::VM2* v = dynamic_cast<const types::area::VM2*>(&o);
     if (!v) return false;
     if (station_id != -1 && (unsigned) station_id != v->station_id()) return false;
     if (!expr.empty() && 
@@ -194,14 +195,14 @@ MatchAreaBBox* MatchAreaBBox::parse(const std::string& pattern)
 	}
 }
 
-bool MatchAreaBBox::matchItem(const Item<>& o) const
+bool MatchAreaBBox::matchItem(const Type& o) const
 {
 	if (geom == 0) return false;
 
-	const types::Area* v = dynamic_cast<const types::Area*>(o.ptr());
-	if (!v) return false;
-	const ARKI_GEOS_GEOMETRY* bbox = v->bbox();
-	if (bbox == 0) return false;
+    const types::Area* v = dynamic_cast<const types::Area*>(&o);
+    if (!v) return false;
+    const ARKI_GEOS_GEOMETRY* bbox = v->bbox();
+    if (bbox == 0) return false;
 
 	return matchGeom(bbox);
 }

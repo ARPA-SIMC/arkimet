@@ -26,47 +26,50 @@
 
 #include <arki/types.h>
 #include <map>
+#include <memory>
 
 namespace arki {
 
 class ItemSet
 {
 protected:
-	std::map< types::Code, Item<> > m_vals;
+    std::map<types::Code, types::Type*> m_vals;
 
 public:
-	typedef std::map< types::Code, Item<> >::const_iterator const_iterator;
+    typedef std::map<types::Code, types::Type*>::const_iterator const_iterator;
 
-	const_iterator begin() const { return m_vals.begin(); }
-	const_iterator end() const { return m_vals.end(); }
+    ItemSet();
+    ItemSet(const ItemSet&);
+    ~ItemSet();
+    ItemSet& operator=(const ItemSet&);
 
-        size_t empty() const { return m_vals.empty(); }
+    const_iterator begin() const { return m_vals.begin(); }
+    const_iterator end() const { return m_vals.end(); }
+    size_t empty() const { return m_vals.empty(); }
+    size_t size() const { return m_vals.size(); }
+    bool has(types::Code code) const { return m_vals.find(code) != m_vals.end(); }
+    const types::Type* get(types::Code code) const;
+    template<typename T>
+    const T* get() const
+    {
+        const types::Type* i = get(types::traits<T>::type_code);
+        if (!i) return 0;
+        return dynamic_cast<const T*>(i);
+    };
 
-        size_t size() const { return m_vals.size(); }
+    /// Set an item
+    void set(const types::Type& i);
 
-	bool has(types::Code code) const { return m_vals.find(code) != m_vals.end(); }
+    void set(std::auto_ptr<types::Type> i);
 
-	UItem<> get(types::Code code) const;
-
-	template<typename T>
-	UItem<T> get() const
-	{
-		UItem<> i = get(types::traits<T>::type_code);
-		return i.upcast<T>();
-	};
-
-	/// Set an item
-	void set(const Item<>& i);
+    template<typename T>
+    void set(std::auto_ptr<T> i) { set(std::auto_ptr<types::Type>(i.release())); }
 
     /// Set an item, from strings. Useful for quickly setting up data in tests.
     void set(const std::string& type, const std::string& val);
 
-	/// Unset an item
-	void unset(types::Code code);
-
-	/// Set an item
-	template<typename T>
-	void set(const Item<T>& i) { set(Item<>(i)); }
+    /// Unset an item
+    void unset(types::Code code);
 
 	/// Remove all items
 	void clear();

@@ -63,15 +63,24 @@ struct Level : public types::StyledType<Level>
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
-	/// CODEC functions
-	static Item<Level> decode(const unsigned char* buf, size_t len);
-	static Item<Level> decodeString(const std::string& val);
-	static Item<Level> decodeMapping(const emitter::memory::Mapping& val);
+    /// CODEC functions
+    static std::auto_ptr<Level> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Level> decodeString(const std::string& val);
+    static std::auto_ptr<Level> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
+
+    static std::auto_ptr<Level> createGRIB1(unsigned char type);
+    static std::auto_ptr<Level> createGRIB1(unsigned char type, unsigned short l1);
+    static std::auto_ptr<Level> createGRIB1(unsigned char type, unsigned char l1, unsigned char l2);
+    static std::auto_ptr<Level> createGRIB2S(uint8_t type, uint8_t scale, uint32_t val);
+    static std::auto_ptr<Level> createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
+                                             uint8_t type2, uint8_t scale2, uint32_t val2);
+    static std::auto_ptr<Level> createODIMH5(double value);
+    static std::auto_ptr<Level> createODIMH5(double min, double max);
 };
 
 namespace level {
@@ -88,32 +97,33 @@ public:
 	unsigned l1() const { return m_l1; }
 	unsigned l2() const { return m_l2; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	/**
-	 * Get information on how l1 and l2 should be treated:
-	 *
-	 * \l 0 means 'l1 and l2 should be ignored'
-	 * \l 1 means 'level, only l1 is to be considered'
-	 * \l 2 means 'layer from l1 to l2'
-	 */
-	int valType() const;
+    /**
+     * Get information on how l1 and l2 should be treated:
+     *
+     * \l 0 means 'l1 and l2 should be ignored'
+     * \l 1 means 'level, only l1 is to be considered'
+     * \l 2 means 'layer from l1 to l2'
+     */
+    int valType() const;
 
-	virtual int compare_local(const Level& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Level& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<GRIB1> create(unsigned char type);
-	static Item<GRIB1> create(unsigned char type, unsigned short l1);
-	static Item<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
-	static Item<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    GRIB1* clone() const override;
+    static std::auto_ptr<GRIB1> create(unsigned char type);
+    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned short l1);
+    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
+    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
-	static int getValType(unsigned char type);
+    static int getValType(unsigned char type);
 };
 
 struct GRIB2 : public Level
@@ -144,19 +154,20 @@ public:
     uint8_t scale() const { return m_scale; }
     uint32_t value() const { return m_value; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	virtual int compare_local(const Level& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Level& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
-	static Item<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
+    GRIB2S* clone() const override;
+    static std::auto_ptr<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
+    static std::auto_ptr<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class GRIB2D : public GRIB2
@@ -177,21 +188,22 @@ public:
 	uint8_t scale2() const { return m_scale2; }
 	uint32_t value2() const { return m_value2; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	virtual int compare_local(const Level& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Level& o) const override;
+    bool equals(const Type& o) const override;
 
-    static Item<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
+    GRIB2D* clone() const override;
+    static std::auto_ptr<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
                                uint8_t type2, uint8_t scale2, uint32_t val2);
 
-	static Item<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
+    static std::auto_ptr<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class ODIMH5 : public Level
@@ -204,20 +216,21 @@ public:
 	double max() const { return m_max; }
 	double min() const { return m_min; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	virtual int compare_local(const Level& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Level& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<ODIMH5> create(double value);
-	static Item<ODIMH5> create(double min, double max);
-	static Item<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    ODIMH5* clone() const override;
+    static std::auto_ptr<ODIMH5> create(double value);
+    static std::auto_ptr<ODIMH5> create(double min, double max);
+    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

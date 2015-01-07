@@ -1,7 +1,7 @@
 /*
  * matcher/timerange - Timerange matcher
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,12 +28,13 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace matcher {
 
 template<typename INT>
-static bool parseValueWithUnit(const std::string& str, INT& val, types::timerange::GRIB1::Unit& u)
+static bool parseValueWithUnit(const std::string& str, INT& val, types::timerange::GRIB1Unit& u)
 {
     if (str.empty()) return false;
 
@@ -48,37 +49,37 @@ static bool parseValueWithUnit(const std::string& str, INT& val, types::timerang
     string unit = str.substr(e-s);
     if (unit == "s")
     {
-        u = types::timerange::GRIB1::SECOND;
+        u = types::timerange::SECOND;
         val = value;
         return true;
     }
     else if (unit == "m")
     {
-        u = types::timerange::GRIB1::SECOND;
+        u = types::timerange::SECOND;
         val = value * 60;
         return true;
     }
     else if (unit == "h")
     {
-        u = types::timerange::GRIB1::SECOND;
+        u = types::timerange::SECOND;
         val = value * 3600;
         return true;
     }
     else if (unit == "d")
     {
-        u = types::timerange::GRIB1::SECOND;
+        u = types::timerange::SECOND;
         val = value * 3600 * 24;
         return true;
     }
     else if (unit == "mo")
     {
-        u = types::timerange::GRIB1::MONTH;
+        u = types::timerange::MONTH;
         val = value;
         return true;
     }
     else if (unit == "y")
     {
-        u = types::timerange::GRIB1::MONTH;
+        u = types::timerange::MONTH;
         val = value * 12;
         return true;
     } else {
@@ -93,7 +94,7 @@ static int parseTimedefValueWithUnit(const std::string& str, bool& is_second)
     using namespace types::timerange;
 
     const char* s = str.c_str();
-    Timedef::Unit unit;
+    timerange::TimedefUnit unit;
     uint32_t val;
     if (!Timedef::timeunit_parse(s, unit, val) || *s)
         throw wibble::exception::Consistency(
@@ -108,17 +109,17 @@ static int parseTimedefValueWithUnit(const std::string& str, bool& is_second)
 std::string MatchTimerange::name() const { return "timerange"; }
 
 MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
-    : unit(types::timerange::GRIB1::SECOND),
+    : unit(types::timerange::SECOND),
       has_ptype(false), has_p1(false), has_p2(false),
       ptype(0), p1(0), p2(0)
 {
-	OptionalCommaList args(pattern);
-	const types::timerange::GRIB1::Unit missingUnit = (types::timerange::GRIB1::Unit)-1;
+    OptionalCommaList args(pattern);
+    const types::timerange::GRIB1Unit missingUnit = (types::timerange::GRIB1Unit)-1;
 
-	if (!args.empty())
-	{
-		types::timerange::GRIB1::Unit first = missingUnit;
-		types::timerange::GRIB1::Unit second = missingUnit;
+    if (!args.empty())
+    {
+        types::timerange::GRIB1Unit first = missingUnit;
+        types::timerange::GRIB1Unit second = missingUnit;
         if (!args[0].empty())
         {
             has_ptype = true;
@@ -131,7 +132,7 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 		if (args.size() == 2)
 		{
 			if (first == missingUnit)
-				unit = types::timerange::GRIB1::SECOND;
+				unit = types::timerange::SECOND;
 			else
 				unit = first;
 			return;
@@ -151,18 +152,18 @@ MatchTimerangeGRIB1::MatchTimerangeGRIB1(const std::string& pattern)
 					"parsing 'timerange' match expression",
 					"the two time values '" + args[1] + "' and '" + args[2] + "' have different units");
 
-		// If both are unset (value is zero), then default to seconds
-		if (unit == missingUnit)
-			unit = types::timerange::GRIB1::SECOND;
-	}
+        // If both are unset (value is zero), then default to seconds
+        if (unit == missingUnit)
+            unit = types::timerange::SECOND;
+    }
 }
 
-bool MatchTimerangeGRIB1::matchItem(const Item<>& o) const
+bool MatchTimerangeGRIB1::matchItem(const Type& o) const
 {
-    const types::timerange::GRIB1* v = dynamic_cast<const types::timerange::GRIB1*>(o.ptr());
+    const types::timerange::GRIB1* v = dynamic_cast<const types::timerange::GRIB1*>(&o);
     if (!v) return false;
     int mtype, mp1, mp2;
-    types::timerange::GRIB1::Unit munit;
+    types::timerange::GRIB1Unit munit;
     bool use_p1, use_p2;
     v->getNormalised(mtype, munit, mp1, mp2, use_p1, use_p2);
     // FIXME: here FAILS for GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2:
@@ -204,8 +205,8 @@ std::string MatchTimerangeGRIB1::toString() const
     const char* u = "s";
     switch (unit)
     {
-        case types::timerange::GRIB1::SECOND: u = "s"; break;
-        case types::timerange::GRIB1::MONTH: u = "mo"; break;
+        case types::timerange::SECOND: u = "s"; break;
+        case types::timerange::MONTH: u = "mo"; break;
     }
 
     if (has_p1 && use_p1)
@@ -230,10 +231,10 @@ MatchTimerangeGRIB2::MatchTimerangeGRIB2(const std::string& pattern)
 	p2 = args.getInt(3, -1);
 }
 
-bool MatchTimerangeGRIB2::matchItem(const Item<>& o) const
+bool MatchTimerangeGRIB2::matchItem(const Type& o) const
 {
-	const types::timerange::GRIB2* v = dynamic_cast<const types::timerange::GRIB2*>(o.ptr());
-	if (!v) return false;
+    const types::timerange::GRIB2* v = dynamic_cast<const types::timerange::GRIB2*>(&o);
+    if (!v) return false;
 	if (type != -1 && (unsigned)type != v->type()) return false;
 	if (unit != -1 && (unsigned)unit != v->unit()) return false;
 	if (p1 >= 0 && p1 != v->p1()) return false;
@@ -259,19 +260,19 @@ MatchTimerangeBUFR::MatchTimerangeBUFR(const std::string& pattern)
 	has_forecast = !args.empty();
 	if (has_forecast)
 	{
-		types::timerange::GRIB1::Unit unit;
-		has_forecast = parseValueWithUnit(args[0], value, unit);
-		is_seconds = unit == types::timerange::GRIB1::SECOND;
+        types::timerange::GRIB1Unit unit;
+        has_forecast = parseValueWithUnit(args[0], value, unit);
+        is_seconds = unit == types::timerange::SECOND;
 	} else {
 		value = 0;
 		is_seconds = true;
 	}
 }
 
-bool MatchTimerangeBUFR::matchItem(const Item<>& o) const
+bool MatchTimerangeBUFR::matchItem(const Type& o) const
 {
-	const types::timerange::BUFR* v = dynamic_cast<const types::timerange::BUFR*>(o.ptr());
-	if (!v) return false;
+    const types::timerange::BUFR* v = dynamic_cast<const types::timerange::BUFR*>(&o);
+    if (!v) return false;
 	if (!has_forecast) return true;
 	if (value == 0) return v->value() == 0;
 	if (is_seconds != v->is_seconds()) return false;
@@ -330,9 +331,9 @@ MatchTimerangeTimedef::MatchTimerangeTimedef(const std::string& pattern)
     }
 }
 
-bool MatchTimerangeTimedef::matchItem(const Item<>& o) const
+bool MatchTimerangeTimedef::matchItem(const Type& o) const
 {
-    const types::Timerange* v = dynamic_cast<const types::Timerange*>(o.ptr());
+    const types::Timerange* v = dynamic_cast<const types::Timerange*>(&o);
     if (!v) return false;
 
     if (has_step)

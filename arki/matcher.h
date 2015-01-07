@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <arki/refcounted.h>
 #include <wibble/exception.h>
 #include <string>
 #include <vector>
@@ -83,8 +84,8 @@ public:
 	/// Matcher name: the name part in "name:expr"
 	virtual std::string name() const = 0;
 
-	/// Match a metadata item
-	virtual bool matchItem(const Item<>& t) const = 0;
+    /// Match a metadata item
+    virtual bool matchItem(const types::Type& t) const = 0;
 
 	/// Format back into a string that can be parsed again
 	virtual std::string toString() const = 0;
@@ -107,14 +108,13 @@ struct OR : public std::vector< refcounted::Pointer<const Implementation> >, pub
 	OR(const std::string& unparsed) : unparsed(unparsed) {}
 	virtual ~OR() {}
 
-	virtual std::string name() const;
-
-	virtual bool matchItem(const Item<>& t) const;
+    std::string name() const override;
+    bool matchItem(const types::Type& t) const override;
 
     // Serialise as "type:original definition"
-    std::string toString() const;
+    std::string toString() const override;
     // Serialise as "type:expanded definition"
-    std::string toStringExpanded() const;
+    std::string toStringExpanded() const override;
     // Serialise as "original definition" only
     std::string toStringValueOnly() const;
     // Serialise as "expanded definition" only
@@ -131,17 +131,17 @@ struct AND : public std::map< types::Code, refcounted::Pointer<const Implementat
 	AND() {}
 	virtual ~AND() {}
 
-	virtual std::string name() const;
+    std::string name() const override;
 
-	virtual bool matchItem(const Item<>& t) const;
-	virtual bool matchMetadata(const Metadata& s) const;
+    bool matchItem(const types::Type& t) const override;
+    bool matchMetadata(const Metadata& s) const;
 
 	const OR* get(types::Code code) const;
 
 	void split(const std::set<types::Code>& codes, AND& with, AND& without) const;
 
-	std::string toString() const;
-	std::string toStringExpanded() const;
+    std::string toString() const override;
+    std::string toStringExpanded() const override;
 
 	static AND* parse(const std::string& pattern);
 };
@@ -266,12 +266,12 @@ struct Matcher
 		return std::string();
 	}
 
-	bool operator()(const Item<>& t) const
-	{
-		if (m_impl) return m_impl->matchItem(t);
-		// An empty matcher always matches
-		return true;
-	}
+    bool operator()(const types::Type& t) const
+    {
+        if (m_impl) return m_impl->matchItem(t);
+        // An empty matcher always matches
+        return true;
+    }
 
 	/// Match a full metadata
 	bool operator()(const Metadata& md) const
@@ -303,13 +303,13 @@ struct Matcher
 
 	void split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const;
 
-	/**
-	 * Compute the date extremes of this matcher
-	 *
-	 * @returns true if the range has at least one bound (i.e. either with
-	 * or without are defined), false otherwise
-	 */
-	bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+    /**
+     * Compute the date extremes of this matcher
+     *
+     * @returns true if the range has at least one bound (i.e. either with
+     * or without are defined), false otherwise
+     */
+    bool date_extremes(types::Time& begin, types::Time& end) const;
 
     /// Format back into a string that can be parsed again
     std::string toString() const
@@ -335,7 +335,7 @@ struct Matcher
     static void register_matcher(const std::string& name, types::Code code, matcher::MatcherType::subexpr_parser parse_func);
 
 	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
+	/// Push to the LUA stack a userdata to access this Matcher
 	void lua_push(lua_State* L);
 
 	/**

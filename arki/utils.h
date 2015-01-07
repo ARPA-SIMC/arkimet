@@ -49,6 +49,7 @@ void createFlagfile(const std::string& pathname);
 /// Create an empty file, failing if it already exists
 void createNewFlagfile(const std::string& pathname);
 
+#if 0
 template<typename A, typename B>
 int compareMaps(const A& m1, const B& m2)
 {
@@ -68,6 +69,7 @@ int compareMaps(const A& m1, const B& m2)
                 return -1;
         return 1;
 }
+#endif
 
 // Save the state of a stream, the RAII way
 class SaveIOState

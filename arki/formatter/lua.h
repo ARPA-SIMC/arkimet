@@ -4,7 +4,7 @@
 /*
  * arki/formatter/lua - Format arkimet values via a LUA script
  *
- * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,11 +35,6 @@ namespace formatter {
 
 class Lua : public Formatter
 {
-	// Cache already formatted items
-	mutable std::map<Item<>, std::string> m_cache;
-
-	virtual std::string compute(const Item<>& v) const;
-
 	template<typename T>
 	std::string invoke(const char* func, const char* type, const T& v) const;
 
@@ -50,7 +45,7 @@ public:
 	Lua();
 	virtual ~Lua();
 
-	virtual std::string operator()(const Item<>& v) const;
+    std::string operator()(const types::Type& v) const override;
 };
 
 }

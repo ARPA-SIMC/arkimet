@@ -47,15 +47,6 @@ TESTGRP(arki_utils);
 template<> template<>
 void to::test<1>()
 {
-	using namespace utils;
-	map<string, UItem<> > a;
-	map<string, UItem<> > b;
-
-	a["antani"] = b["antani"] = types::origin::GRIB1::create(1, 2, 3);
-	a["pippo"] = types::run::Minute::create(12);
-
-	ensure_equals(compareMaps(a, b), 1);
-	ensure_equals(compareMaps(b, a), -1);
 }
 
 }

@@ -46,24 +46,16 @@
 #include "config.h"
 #endif
 
-// #define DEBUG_THIS
-#ifdef DEBUG_THIS
-#warning Debug enabled
-#include <iostream>
-#define codeclog(...) cerr << __VA_ARGS__ << endl
-#else
-#define codeclog(...) do {} while(0)
-#endif
-
 using namespace std;
 using namespace wibble;
 using namespace arki::utils::codec;
+using namespace arki::types;
 
 namespace arki {
 namespace summary {
 
 // Metadata Scan Order
-static const types::Code mso[] = {
+const types::Code mso[] = {
         types::TYPE_ORIGIN,
         types::TYPE_PRODUCT,
         types::TYPE_LEVEL,
@@ -77,7 +69,7 @@ static const types::Code mso[] = {
 
 };
 const size_t Node::msoSize = sizeof(mso) / sizeof(types::Code);
-static int* msoSerLen = 0;
+int* msoSerLen = 0;
 
 // Reverse mapping
 static int* itemMsoMap = 0;
@@ -120,31 +112,132 @@ int Visitor::posForCode(types::Code code)
     return itemMsoMap[(size_t)code];
 }
 
-static void metadata_to_mdvec(const Metadata& md, std::vector< UItem<> >& vec)
+namespace {
+
+bool item_equals(const Type* a, const Type* b)
+{
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return a->equals(*b);
+}
+
+}
+
+TypeVector::TypeVector() {}
+
+TypeVector::TypeVector(const Metadata& md)
 {
     for (size_t i = 0; i < Node::msoSize; ++i)
     {
-        UItem<> item = md.get(mso[i]);
-        if (item.defined())
-        {
-            vec.resize(i + 1);
-            vec[i] = item;
-        }
+        const Type* item = md.get(mso[i]);
+        if (item) set(i, item);
     }
 }
 
-Node::Node()
+TypeVector::TypeVector(const TypeVector& o)
 {
+    vals.reserve(o.vals.size());
+    for (const_iterator i = o.begin(); i != o.end(); ++i)
+        vals.push_back(*i ? (*i)->clone() : 0);
 }
-Node::Node(const std::vector< UItem<> >& m, const UItem<Stats>& st, size_t scanpos)
+
+TypeVector::~TypeVector()
 {
-    if (!scanpos)
-        md = m;
+    for (vector<Type*>::iterator i = vals.begin(); i != vals.end(); ++i)
+        delete *i;
+}
+
+bool TypeVector::operator==(const TypeVector& o) const
+{
+    if (size() != o.size()) return false;
+    const_iterator a = begin();
+    const_iterator b = o.begin();
+    while (a != end() && b != o.end())
+        if (!item_equals(*a, *b))
+            return false;
+    return true;
+}
+
+void TypeVector::set(size_t pos, std::auto_ptr<types::Type> val)
+{
+    if (pos >= vals.size())
+        vals.resize(pos + 1);
+    else if (vals[pos])
+        delete vals[pos];
+    vals[pos] = val.release();
+}
+
+void TypeVector::set(size_t pos, const Type* val)
+{
+    if (pos >= vals.size())
+        vals.resize(pos + 1);
+    else if (vals[pos])
+        delete vals[pos];
+
+    if (val)
+        vals[pos] = val->clone();
     else
-        for (size_t i = scanpos; i < m.size(); ++i)
-            md.push_back(m[i]);
-    stats = st;
+        vals[pos] = 0;
 }
+
+void TypeVector::unset(size_t pos)
+{
+    if (pos >= vals.size()) return;
+    delete vals[pos];
+    vals[pos] = 0;
+}
+
+void TypeVector::resize(size_t new_size)
+{
+    if (new_size < size())
+    {
+        // If we are shrinking, we need to deallocate the elements that are left
+        // out
+        for (size_t i = new_size; i < size(); ++i)
+            delete vals[i];
+    }
+
+    // For everything else, just go with the vector default of padding with
+    // zeroes
+    vals.resize(new_size);
+    return;
+
+}
+
+void TypeVector::rtrim()
+{
+    while (!vals.empty() && !vals.back())
+        vals.pop_back();
+}
+
+void TypeVector::split(size_t pos, TypeVector& dest)
+{
+    dest.vals.reserve(dest.size() + size() - pos);
+    for (unsigned i = pos; i < size(); ++i)
+        dest.vals.push_back(vals[i]);
+    vals.resize(pos);
+}
+
+Node::Node() {}
+
+Node::Node(const Stats& stats) : stats(stats) {}
+
+Node::Node(const Node& o)
+    : md(o.md), stats(o.stats)
+{
+    children.reserve(o.children.size());
+    for (vector<Node*>::const_iterator i = o.children.begin(); i != o.children.end(); ++i)
+        children.push_back((*i)->clone());
+}
+
+#if 0
+Node::Node(const std::vector<Type*>& m, const Stats& st, size_t scanpos)
+{
+    for (vector<Type*>::const_iterator i = m.begin() + scanpos; i != m.end(); ++i)
+        md.push_back((*i)->clone());
+    stats = st.clone();
+}
+#endif
 Node::~Node()
 {
     for (vector<Node*>::iterator i = children.begin();
@@ -152,24 +245,76 @@ Node::~Node()
         delete *i;
 }
 
-bool Node::visitStats(StatsVisitor& visitor) const
-{
-    if (stats)
-        if (!visitor(*stats))
-            return false;
+Node* Node::clone() const { return new Node(*this); }
 
-    for (vector<Node*>::const_iterator i = children.begin();
-            i != children.end(); ++i)
-        if (!(*i)->visitStats(visitor))
-            return false;
+bool Node::equals(const Node& node) const
+{
+    // Compare metadata stripes
+    if (md != node.md) return false;
+
+    // Compare stats
+    if (stats != node.stats) return false;
+
+    // Compare children
+    if (children.size() != node.children.size()) return false;
+    vector<Node*>::const_iterator a = children.begin();
+    vector<Node*>::const_iterator b = node.children.begin();
+    for (; a != children.end(); ++a, ++b)
+        if (!(*a)->equals(**b)) return false;
 
     return true;
+}
+
+#if 0
+int Node::compare(const Node& node) const
+{
+    // Compare metadata stripes
+    if (int res = md.size() - node.md.size()) return res;
+    for (size_t i = 0; i < md.size(); ++i)
+    {
+        if (!md[i] && node.md[i]) return -1;
+        if (!md[i] && !node.md[i]) continue;
+        if (md[i] && !node.md[i]) return 1;
+        if (int res = md[i]->compare(node.md[i])) return res;
+    }
+
+    // Compare stats
+    if (int res = stats.compare(node.stats)) return res;
+
+    // Compare children
+    if (int res = children.size() - node.children.size()) return res;
+    vector<Node*>::const_iterator a = children.begin();
+    vector<Node*>::const_iterator b = node.children.begin();
+    for (; a != children.end(); ++a, ++b)
+        if (int res = (*a)->compare(**b)) return res;
+    return 0;
+}
+#endif
+
+void Node::dump(std::ostream& out, size_t depth) const
+{
+    string head(depth, ' ');
+    out << head << md.size() << " md:" << endl;
+    for (size_t i = 0; i < md.size(); ++i)
+        if (md[i])
+            out << head << *md[i] << endl;
+        else
+            out << head << "--" << endl;
+    out << head << "Stats:" << stats;
+    out << head << children.size() << " children:" << endl;
+    for (vector<Node*>::const_iterator i = children.begin(); i != children.end(); ++i)
+        (*i)->dump(out, depth+1);
 }
 
 bool Node::visitItem(size_t msoidx, ItemVisitor& visitor) const
 {
     if (msoidx < md.size())
-        return visitor(md[msoidx]);
+    {
+        if (md[msoidx])
+            return visitor(*md[msoidx]);
+        else
+            return true;
+    }
 
     for (vector<Node*>::const_iterator i = children.begin();
             i != children.end(); ++i)
@@ -179,25 +324,26 @@ bool Node::visitItem(size_t msoidx, ItemVisitor& visitor) const
     return true;
 }
 
-static inline void mdvec_set(vector< UItem<> >& mdvec, size_t pos, const UItem<>& val)
+static inline void mdvec_set(vector<const Type*>& mdvec, size_t pos, const Type* val)
 {
     if (pos >= mdvec.size())
         mdvec.resize(pos + 1);
     mdvec[pos] = val;
 }
 
-bool Node::visit(Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanpos) const
+bool Node::visit(Visitor& visitor, std::vector<const Type*>& visitmd, size_t scanpos) const
 {
     // Set this node's metadata in visitmd
     for (size_t i = 0; i < md.size(); ++i)
         mdvec_set(visitmd, scanpos + i, md[i]);
 
-    // If we have a stats, emit
-    if (stats)
+    // If we are a leaf node, emit and stop here
+    if (children.empty())
     {
         visitmd.resize(scanpos + md.size());
         if (!visitor(visitmd, stats))
             return false;
+        return true;
     }
 
     // If we have children, visit them
@@ -209,14 +355,7 @@ bool Node::visit(Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanp
     return true;
 }
 
-bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor) const
-{
-    buildItemMsoMap();
-    vector< UItem<> > visitmd;
-    return visitFiltered(matcher, visitor, visitmd);
-}
-
-bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanpos) const
+bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector<const Type*>& visitmd, size_t scanpos) const
 {
     // Check if the matcher is ok with this node; if it's not, return true right away
     if (matcher.m_impl)
@@ -226,27 +365,25 @@ bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< 
         {
             matcher::AND::const_iterator j = mand.find(mso[scanpos + i]);
             if (j == mand.end()) continue;
-            if (!md[i].defined()) return true;
-            if (!j->second->matchItem(md[i])) return true;
+            if (!md[i]) return true;
+            if (!j->second->matchItem(*md[i])) return true;
         }
-        if (stats)
-        {
-            matcher::AND::const_iterator rm = mand.find(types::TYPE_REFTIME);
-            if (rm != mand.end() && !rm->second->matchItem(stats->reftimeMerger.makeReftime()))
-                return true;
-        }
+        matcher::AND::const_iterator rm = mand.find(types::TYPE_REFTIME);
+        if (rm != mand.end() && !rm->second->matchItem(*stats.reftimeMerger.makeReftime()))
+            return true;
     }
 
     // Set this node's metadata in visitmd
     for (size_t i = 0; i < md.size(); ++i)
         mdvec_set(visitmd, scanpos + i, md[i]);
 
-    // If we have a stats, emit
-    if (stats)
+    // If we are a leaf node, emit and stop here
+    if (children.empty())
     {
         visitmd.resize(scanpos + md.size());
         if (!visitor(visitmd, stats))
             return false;
+        return true;
     }
 
     // If we have children, visit them
@@ -259,22 +396,80 @@ bool Node::visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< 
 
 void Node::split(size_t pos)
 {
-    // m has a subset of our metadata: split.
-    Node* n = new Node(md, stats, pos);
+    /// Create a new node with a copy of our stats
+    auto_ptr<Node> new_node(new Node(stats));
 
-    // Move the rest of md to a new child node
-    md.resize(pos);
+    /// Split the metadata between us and the new node
+    md.split(pos, new_node->md);
 
-    // Move our stats to the new child node
-    stats = 0;
-
-    // Move our children to the new child node, and add n as the only
-    // child
-    n->children = children;
+    /// Hand over all children to the new node
+    new_node->children = children;
     children.clear();
-    children.push_back(n);
+
+    /// Keep the new node as the only child
+    children.push_back(new_node.release());
 }
 
+bool Node::candidate_for_merge(const types::Type* const* items, size_t items_size) const
+{
+    if (items_size == 0)
+        return md.empty();
+
+    if (md.empty()) return false;
+
+    return item_equals(md[0], items[0]);
+}
+
+void Node::merge(const types::Type* const* items, size_t items_size, const Stats& stats)
+{
+    // Compute the number of common items
+    unsigned common = 0;
+    for ( ; common < items_size && common < md.size(); ++common)
+        if (!item_equals(items[common], md[common]))
+            break;
+
+    // If no items are in common or only some items are in common, split the
+    // node
+    if (common < md.size())
+        split(common);
+
+    // Now all our items are in common
+
+    // Advance items to the (possibly empty) tail of remaining items
+    items += common;
+    items_size -= common;
+
+    if (items_size == 0 && children.empty())
+    {
+        // We are exactly the same: merge the stats
+        this->stats.merge(stats);
+        return;
+    }
+
+    // Look for a child to merge into
+    for (vector<Node*>::iterator i = children.begin(); i != children.end(); ++i)
+    {
+        if ((*i)->candidate_for_merge(items, items_size))
+        {
+            (*i)->merge(items + common, items_size - common, stats);
+            this->stats.merge(stats);
+            return;
+        }
+    }
+
+    // No children were found to merge into: create a new one
+    children.push_back(createPopulated(items, items_size, stats).release());
+    this->stats.merge(stats);
+}
+
+auto_ptr<Node> createPopulated(const types::Type* const* items, unsigned items_size, const Stats& stats)
+{
+    auto_ptr<Node> new_node(new Node(stats));
+    for (unsigned i = 0; i < items_size; ++i)
+        new_node->md.set(i, items[i]);
+}
+
+#if 0
 Node* Node::obtain_node(const std::vector< UItem<> >& m, size_t scanpos)
 {
     // If the node is completely blank, assign it to m.
@@ -353,53 +548,6 @@ Node* Node::obtain_node(const std::vector< UItem<> >& m, size_t scanpos)
     return n;
 }
 
-Node* Node::clone() const
-{
-    Node* n = new Node(md, stats);
-    for (vector<Node*>::const_iterator i = children.begin();
-            i != children.end(); ++i)
-        n->children.push_back((*i)->clone());
-    return n;
-}
-
-int Node::compare(const Node& node) const
-{
-    // Compare metadata stripes
-    if (int res = md.size() - node.md.size()) return res;
-    for (size_t i = 0; i < md.size(); ++i)
-        if (int res = md[i].compare(node.md[i])) return res;
-
-    // Compare stats
-    if (!stats.defined() && node.stats.defined()) return -1;
-    if (stats.defined() && !node.stats.defined()) return 1;
-    if (stats.defined() && node.stats.defined())
-        if (int res = stats->compare(*node.stats)) return res;
-
-    // Compare children
-    if (int res = children.size() - node.children.size()) return res;
-    vector<Node*>::const_iterator a = children.begin();
-    vector<Node*>::const_iterator b = node.children.begin();
-    for (; a != children.end(); ++a, ++b)
-        if (int res = (*a)->compare(**b)) return res;
-    return 0;
-}
-
-void Node::dump(std::ostream& out, size_t depth) const
-{
-    string head(depth, ' ');
-    out << head << md.size() << " md:" << endl;
-    for (size_t i = 0; i < md.size(); ++i)
-        out << head << md[i] << endl;
-    if (stats.ptr())
-        out << head << "Stats:" << stats;
-    out << head << children.size() << " children:" << endl;
-    for (vector<Node*>::const_iterator i = children.begin(); i != children.end(); ++i)
-        (*i)->dump(out, depth+1);
-}
-
-RootNode::RootNode()
-{
-}
 RootNode::RootNode(const Metadata& m)
 {
     metadata_to_mdvec(m, md);
@@ -422,13 +570,6 @@ RootNode* RootNode::clone() const
             i != children.end(); ++i)
         n->children.push_back((*i)->clone());
     return n;
-}
-
-bool RootNode::visit(Visitor& visitor) const
-{
-    buildItemMsoMap();
-    vector< UItem<> > visitmd;
-    return Node::visit(visitor, visitmd);
 }
 
 static UItem<Stats> merge_stats(const UItem<Stats>& s1, const UItem<Stats>& s2)
@@ -471,302 +612,7 @@ void RootNode::add(const std::vector< UItem<> >& m, const UItem<Stats>& st)
     n->stats = merge_stats(n->stats, st);
 }
 
-namespace {
-
-struct EncodingVisitor : public Visitor
-{
-    // Encoder we send data to
-    utils::codec::Encoder& enc;
-
-    // Last metadata encoded so far
-    vector< UItem<> > last;
-
-    EncodingVisitor(utils::codec::Encoder& enc)
-        : enc(enc)
-    {
-        // Start with all undef
-        last.resize(Node::msoSize);
-    }
-
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats)
-    {
-        vector<types::Code> removed;
-        size_t added_count = 0;
-        string added;
-
-        // Prepare the diff between last and md
-        for (size_t i = 0; i < Node::msoSize; ++i)
-        {
-            bool md_has_it = i < md.size() && md[i].defined();
-            if (!md_has_it && last[i].defined())
-            {
-                // Enqueue an empty codeForPos(i)
-                removed.push_back(codeForPos(i));
-                last[i] = 0;
-            } else if (md_has_it && (!last[i].defined() || md[i] != last[i])) {
-                // Enqueue md[i]
-                ++added_count;
-                added += md[i]->encodeWithEnvelope();
-                last[i] = md[i];
-            }
-        }
-
-        // Encode the list of removed items
-        enc.addVarint(removed.size());
-        for (vector<types::Code>::const_iterator i = removed.begin();
-                i != removed.end(); ++i)
-            enc.addVarint((unsigned)*i);
-
-        // Encode the list of changed/added items
-        enc.addVarint(added_count);
-        enc.addString(added);
-
-        // Encode the stats
-        enc.addString(stats->encodeWithEnvelope());
-
-        return true;
-    }
-};
-
-}
-
-void RootNode::encode(utils::codec::Encoder& enc) const
-{
-    EncodingVisitor visitor(enc);
-    visit(visitor);
-}
-
-namespace {
-
-struct Format1Decoder
-{
-    Visitor& dest;
-    vector< UItem<> > mdvec;
-
-    Format1Decoder(Visitor& dest) : dest(dest) {}
-
-    static UItem<> decodeUItem(size_t msoIdx, const unsigned char*& buf, size_t& len)
-    {
-        using namespace utils::codec;
-        codeclog("Decode metadata item " << msoIdx << " len " << msoSerLen[msoIdx]);
-        size_t itemsizelen = msoSerLen[msoIdx];
-        ensureSize(len, itemsizelen, "Metadata item size");
-        size_t itemsize = decodeUInt(buf, itemsizelen);
-        buf += itemsizelen; len -= itemsizelen;
-        codeclog("  item size " << itemsize);
-
-        if (itemsize)
-        {
-            ensureSize(len, itemsize, "Metadata item");
-            UItem<> res = decodeInner(mso[msoIdx], buf, itemsize);
-            buf += itemsize; len -= itemsize;
-            return res;
-        } else
-            return UItem<>();
-    }
-
-    void decode(const unsigned char*& buf, size_t& len, size_t scanpos = 0)
-    {
-        using namespace utils::codec;
-
-        codeclog("Start decoding scanpos " << scanpos);
-
-        // Decode the metadata stripe length
-        ensureSize(len, 2, "Metadata stripe size");
-        size_t stripelen = decodeUInt(buf, 2);
-        buf += 2; len -= 2;
-
-        codeclog("Stripe size " << stripelen);
-
-        // Decode the metadata stripe
-        mdvec.resize(scanpos + stripelen);
-        for (size_t i = 0; i < stripelen; ++i)
-            mdvec[scanpos + i] = decodeUItem(scanpos + i, buf, len);
-
-        ensureSize(len, 2, "Number of child stripes");
-        size_t childnum = decodeUInt(buf, 2);
-        buf += 2; len -= 2;
-        codeclog("Found " << childnum << " children");
-
-        if (childnum)
-        {
-            // Decode the children
-            for (size_t i = 0; i < childnum; ++i)
-                decode(buf, len, scanpos + stripelen);
-        } else {
-            // Leaf node: decode stats
-            ensureSize(len, 2, "Summary statistics size");
-            size_t statlen = decodeUInt(buf, 2);
-            buf += 2; len -= 2;
-            codeclog("Decoding stats in " << statlen << "b");
-            ensureSize(len, 2, "Summary statistics");
-            UItem<Stats> stats = Stats::decode(buf, statlen);
-            buf += statlen; len -= statlen;
-
-            // Strip undef values at the end of mdvec
-            while (!mdvec.empty() && !mdvec.back().defined())
-                mdvec.pop_back();
-
-            // Produce a (metadata, stats) couple
-            dest(mdvec, stats);
-        }
-    }
-};
-
-struct Format3Decoder
-{
-    Visitor& dest;
-    vector< UItem<> > mdvec;
-
-    Format3Decoder(Visitor& dest) : dest(dest) {}
-
-    void decode(Decoder& dec)
-    {
-        using namespace utils::codec;
-
-        while (dec.len > 0)
-        {
-            // Decode the list of removed items
-            unsigned count_removed = dec.popVarint<unsigned>("number of items to unset");
-            for (unsigned i = 0; i < count_removed; ++i)
-            {
-                types::Code code = (types::Code)dec.popVarint<unsigned>("typecode");
-                int pos = Visitor::posForCode(code);
-                if (pos < 0)
-                    throw wibble::exception::Consistency("parsing summary",
-                            str::fmtf("unsupported typecode found: %d", (int)code));
-                if (mdvec.size() > (unsigned)pos)
-                    mdvec[pos] = 0;
-            }
-
-            // Decode the list of changed/added items
-            unsigned count_added = dec.popVarint<unsigned>("number of items to add/change");
-            for (unsigned i = 0; i < count_added; ++i)
-            {
-                Item<> item = types::decode(dec);
-                int pos = Visitor::posForCode(item->serialisationCode());
-                if (pos < 0)
-                    throw wibble::exception::Consistency("parsing summary",
-                            str::fmtf("unsupported typecode found: %d", (int)item->serialisationCode()));
-                if (mdvec.size() <= (unsigned)pos)
-                    mdvec.resize(pos + 1);
-                mdvec[pos] = item;
-            }
-
-            // Decode the stats
-            Item<Stats> stats = types::decode(dec).upcast<Stats>();
-
-            // Strip undef values at the end of mdvec
-            while (!mdvec.empty() && !mdvec.back().defined())
-                mdvec.pop_back();
-
-            // Produce a (metadata, stats) couple
-            dest(mdvec, stats);
-        }
-    }
-};
-
-struct NodeAdder : public Visitor
-{
-    RootNode& root;
-    size_t count;
-
-    NodeAdder(RootNode& root) : root(root), count(0) {}
-
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats)
-    {
-        ++count;
-        root.add(md, stats);
-        return true;
-    }
-};
-
-}
-
-size_t RootNode::decode1(utils::codec::Decoder& dec)
-{
-    // Stripe size
-    // either: child count + children
-    //     or: 0 + stats
-    // msoSerLen used for number of bytes used for item lenght
-
-    if (dec.len == 0) return 0;
-
-    Node::buildMsoSerLen();
-
-    NodeAdder adder(*this);
-    Format1Decoder decoder(adder);
-    decoder.decode(dec.buf, dec.len);
-
-    return adder.count;
-}
-
-size_t RootNode::decode3(utils::codec::Decoder& dec)
-{
-    // Stripe size
-    // stats size + stats
-    // child size + children
-    // item length encoded using varints
-    if (dec.len == 0) return 0;
-
-    NodeAdder adder(*this);
-    Format3Decoder decoder(adder);
-    decoder.decode(dec);
-
-    return adder.count;
-}
-
-size_t RootNode::decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename)
-{
-    using namespace utils::codec;
-
-    buildItemMsoMap();
-
-    // Check version and ensure we can decode
-    switch (version)
-    {
-        case 1: {
-            // Standard summary
-            Decoder dec(buf);
-            return decode1(dec);
-        }
-        case 2: {
-            // LZO compressed summary
-            if (buf.size() == 0) return 0;
-
-            // Read uncompressed size
-            ensureSize(buf.size(), 4, "uncompressed item size");
-            uint32_t uncsize = decodeUInt((const unsigned char*)buf.data(), 4);
-
-            sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
-            Decoder dec(decomp);
-            return decode1(dec);
-        }
-        case 3: {
-            // Compression type byte, node in new format
-            if (buf.size() == 0) return 0;
-
-            Decoder dec(buf);
-            unsigned compression = dec.popUInt(1, "compression type");
-            switch (compression)
-            {
-                case 0: // Uncompressed
-                    return decode3(dec);
-                case 1: { // LZO compressed
-                    // Read uncompressed size
-                    uint32_t uncsize = dec.popUInt(4, "uncompressed item size");
-                    sys::Buffer decomp = utils::compress::unlzo(dec.buf, dec.len, uncsize);
-                    Decoder uncdec(decomp);
-                    return decode3(uncdec);
-                }
-                default:
-                    throw wibble::exception::Consistency("parsing file " + filename, "file compression type is " + str::fmt(compression) + " but I can only decode 0 (uncompressed) or 1 (LZO)");
-            }
-        }
-        default:
-            throw wibble::exception::Consistency("parsing file " + filename, "version of the file is " + str::fmt(version) + " but I can only decode version 1 or 2");
-    }
-}
+#endif
 
 }
 }

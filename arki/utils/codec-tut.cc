@@ -23,8 +23,6 @@
 #include <wibble/string.h>
 #include <arki/tests/tests.h>
 #include <arki/utils/codec.h>
-#include <arki/types/origin.h>
-#include <arki/types/run.h>
 
 #include <sstream>
 #include <iostream>

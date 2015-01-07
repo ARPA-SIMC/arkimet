@@ -34,6 +34,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace matcher {
@@ -48,10 +49,10 @@ MatchProductGRIB1::MatchProductGRIB1(const std::string& pattern)
 	product = args.getInt(2, -1);
 }
 
-bool MatchProductGRIB1::matchItem(const Item<>& o) const
+bool MatchProductGRIB1::matchItem(const Type& o) const
 {
-	const types::product::GRIB1* v = dynamic_cast<const types::product::GRIB1*>(o.ptr());
-	if (!v) return false;
+    const types::product::GRIB1* v = dynamic_cast<const types::product::GRIB1*>(&o);
+    if (!v) return false;
 	if (origin != -1 && (unsigned)origin != v->origin()) return false;
 	if (table != -1 && (unsigned)table != v->table()) return false;
 	if (product != -1 && (unsigned)product != v->product()) return false;
@@ -79,10 +80,10 @@ MatchProductGRIB2::MatchProductGRIB2(const std::string& pattern)
     local_table_version = args.getInt(5, -1);
 }
 
-bool MatchProductGRIB2::matchItem(const Item<>& o) const
+bool MatchProductGRIB2::matchItem(const Type& o) const
 {
-	const types::product::GRIB2* v = dynamic_cast<const types::product::GRIB2*>(o.ptr());
-	if (!v) return false;
+    const types::product::GRIB2* v = dynamic_cast<const types::product::GRIB2*>(&o);
+    if (!v) return false;
 	if (centre != -1 && (unsigned)centre != v->centre()) return false;
 	if (discipline != -1 && (unsigned)discipline != v->discipline()) return false;
 	if (category != -1 && (unsigned)category != v->category()) return false;
@@ -114,10 +115,10 @@ MatchProductBUFR::MatchProductBUFR(const std::string& pattern)
 	values = ValueBag::parse(args.tail);
 }
 
-bool MatchProductBUFR::matchItem(const Item<>& o) const
+bool MatchProductBUFR::matchItem(const Type& o) const
 {
-	const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(o.ptr());
-	if (!v) return false;
+    const types::product::BUFR* v = dynamic_cast<const types::product::BUFR*>(&o);
+    if (!v) return false;
 	if (type != -1 && (unsigned)type != v->type()) return false;
 	if (subtype != -1 && (unsigned)subtype != v->subtype()) return false;
 	if (localsubtype != -1 && (unsigned)localsubtype != v->localsubtype()) return false;
@@ -155,10 +156,10 @@ MatchProductODIMH5::MatchProductODIMH5(const std::string& pattern)
 	/*REMOVED:prodpar2	= args.getDouble(3, DOUBLENAN); */
 }
 
-bool MatchProductODIMH5::matchItem(const Item<>& o) const
+bool MatchProductODIMH5::matchItem(const Type& o) const
 {
-	const types::product::ODIMH5* v = dynamic_cast<const types::product::ODIMH5*>(o.ptr());
-	if (!v) return false;
+    const types::product::ODIMH5* v = dynamic_cast<const types::product::ODIMH5*>(&o);
+    if (!v) return false;
 	if (obj.size() && 		obj != v->obj()) 	return false;
 	if (prod.size() && 		prod != v->prod()) 	return false;
 	/*REMOVED:if (!isnan(prodpar1) && 	prodpar1 != v->prodpar1()) 	return false; */
@@ -187,10 +188,10 @@ MatchProductVM2::MatchProductVM2(const std::string& pattern)
         idlist = utils::vm2::find_variables(expr);
 #endif
 }
-bool MatchProductVM2::matchItem(const Item<>& o) const
+bool MatchProductVM2::matchItem(const Type& o) const
 {
-	const types::product::VM2* v = dynamic_cast<const types::product::VM2*>(o.ptr());
-	if (!v) return false;
+    const types::product::VM2* v = dynamic_cast<const types::product::VM2*>(&o);
+    if (!v) return false;
 
     if (variable_id != -1 && (unsigned)variable_id != v->variable_id()) return false;
     if (!expr.empty() && 

@@ -100,42 +100,42 @@ void Source::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("f"); e.add(format);
 }
 
-Item<Source> Source::decode(const unsigned char* buf, size_t len)
+auto_ptr<Source> Source::decode(const unsigned char* buf, size_t len)
 {
     return decodeRelative(buf, len, string());
 }
 
-Item<Source> Source::decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir)
+auto_ptr<Source> Source::decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
 	Style s = (Style)dec.popUInt(1, "source style");
 	unsigned int format_len = dec.popUInt(1, "source format length");
 	string format = dec.popString(format_len, "source format name");
-	switch (s)
-	{
-		case BLOB: {
-			unsigned fname_len = dec.popVarint<unsigned>("blob source file name length");
-			string fname = dec.popString(fname_len, "blob source file name");
-			uint64_t offset = dec.popVarint<uint64_t>("blob source offset");
-			uint64_t size = dec.popVarint<uint64_t>("blob source size");
-			return source::Blob::create(format, basedir, fname, offset, size);
-		}
-		case URL: {
-			unsigned fname_len = dec.popVarint<unsigned>("url source file name length");
-			string url = dec.popString(fname_len, "url source url");
-			return source::URL::create(format, url);
-		}
-		case INLINE: {
-			uint64_t size = dec.popVarint<uint64_t>("inline source size");
-			return source::Inline::create(format, size);
-		}
-		default:
-			throw wibble::exception::Consistency("parsing Source", "style " + formatStyle(s) + " but we can only decode BLOB, URL or INLINE");
-	}
+    switch (s)
+    {
+        case BLOB: {
+            unsigned fname_len = dec.popVarint<unsigned>("blob source file name length");
+            string fname = dec.popString(fname_len, "blob source file name");
+            uint64_t offset = dec.popVarint<uint64_t>("blob source offset");
+            uint64_t size = dec.popVarint<uint64_t>("blob source size");
+            return createBlob(format, basedir, fname, offset, size);
+        }
+        case URL: {
+            unsigned fname_len = dec.popVarint<unsigned>("url source file name length");
+            string url = dec.popString(fname_len, "url source url");
+            return createURL(format, url);
+        }
+        case INLINE: {
+            uint64_t size = dec.popVarint<uint64_t>("inline source size");
+            return createInline(format, size);
+        }
+        default:
+            throw wibble::exception::Consistency("parsing Source", "style " + formatStyle(s) + " but we can only decode BLOB, URL or INLINE");
+    }
 }
 
-Item<Source> Source::decodeString(const std::string& val)
+auto_ptr<Source> Source::decodeString(const std::string& val)
 {
 	string inner;
 	Source::Style style = outerParse<Source>(val, inner);
@@ -159,28 +159,26 @@ Item<Source> Source::decodeString(const std::string& val)
 			if (end == string::npos)
 				throw wibble::exception::Consistency("parsing Source", "source \""+inner+"\" should contain \"offset+len\" after the filename");
 
-			return source::Blob::create(format, string(), fname,
-					strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
-					strtoull(inner.substr(end+1).c_str(), 0, 10));
-		}
-		case Source::URL:
-			return source::URL::create(format, inner);
-		case Source::INLINE:
-			return source::Inline::create(format, strtoull(inner.c_str(), 0, 10));
+            return createBlob(format, string(), fname,
+                    strtoull(inner.substr(pos, end-pos).c_str(), 0, 10),
+                    strtoull(inner.substr(end+1).c_str(), 0, 10));
+        }
+        case Source::URL: return createURL(format, inner);
+        case Source::INLINE: return createInline(format, strtoull(inner.c_str(), 0, 10));
 		default:
 			throw wibble::exception::Consistency("parsing Source", "unknown Source style " + str::fmt(style));
 	}
 }
 
-Item<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Source::BLOB: return source::Blob::decodeMapping(val);
-        case Source::URL: return source::URL::decodeMapping(val);
-        case Source::INLINE: return source::Inline::decodeMapping(val);
+        case Source::BLOB: return upcast<Source>(source::Blob::decodeMapping(val));
+        case Source::URL: return upcast<Source>(source::URL::decodeMapping(val));
+        case Source::INLINE: return upcast<Source>(source::Inline::decodeMapping(val));
         default:
             throw wibble::exception::Consistency("parsing Source", "unknown Source style " + val.get_string());
     }
@@ -222,24 +220,24 @@ void Source::flushDataReaders()
     source::dataReader.flush();
 }
 
-Item<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+auto_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
-    return source::Blob::create(format, basedir, filename, offset, size);
+    return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size));
 }
 
-Item<Source> Source::createInline(const std::string& format, uint64_t size)
+auto_ptr<Source> Source::createInline(const std::string& format, uint64_t size)
 {
-    return source::Inline::create(format, size);
+    return upcast<Source>(source::Inline::create(format, size));
 }
 
-Item<Source> Source::createInline(const std::string& format, const wibble::sys::Buffer& buf)
+auto_ptr<Source> Source::createInline(const std::string& format, const wibble::sys::Buffer& buf)
 {
-    return source::Inline::create(format, buf);
+    return upcast<Source>(source::Inline::create(format, buf));
 }
 
-Item<Source> Source::createURL(const std::string& format, const std::string& url)
+auto_ptr<Source> Source::createURL(const std::string& format, const std::string& url)
 {
-    return source::URL::create(format, url);
+    return upcast<Source>(source::URL::create(format, url));
 }
 
 static MetadataType sourceType = MetadataType::create<Source>();

@@ -4,7 +4,7 @@
 /*
  * types/value - Metadata type to store small values
  *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,18 +54,19 @@ struct Value : public types::CoreType<Value>
 {
     std::string buffer;
 
-    virtual bool operator==(const Type& o) const;
-    virtual int compare(const Type& o) const;
-    virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-    virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+    bool equals(const Type& o) const override;
+    int compare(const Type& o) const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
 
     /// CODEC functions
-    static Item<Value> decode(const unsigned char* buf, size_t len);
-    static Item<Value> decodeString(const std::string& val);
-    static Item<Value> decodeMapping(const emitter::memory::Mapping& val);
+    static std::auto_ptr<Value> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Value> decodeString(const std::string& val);
+    static std::auto_ptr<Value> decodeMapping(const emitter::memory::Mapping& val);
 
-    static Item<Value> create(const std::string& buf);
+    Value* clone() const override;
+    static std::auto_ptr<Value> create(const std::string& buf);
 
     static void lua_loadlib(lua_State* L);
 

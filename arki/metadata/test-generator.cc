@@ -1,7 +1,7 @@
 /*
  * metadata/test-generator - Metadata generator to user for tests
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::types;
 
 namespace arki {
 namespace metadata {
@@ -42,14 +43,26 @@ Generator::Generator(const std::string& format)
 {
 }
 
+Generator::~Generator()
+{
+    for (Samples::iterator i = samples.begin(); i != samples.end(); ++i)
+        for (std::vector<types::Type*>::iterator j = i->second.begin(); j != i->second.end(); ++j)
+            delete *j;
+}
+
 bool Generator::has(types::Code code)
 {
     return samples.find(code) != samples.end();
 }
 
-void Generator::add(Item<> item)
+void Generator::add(auto_ptr<types::Type> item)
 {
-    samples[item->serialisationCode()].push_back(item);
+    samples[item->serialisationCode()].push_back(item.release());
+}
+
+void Generator::add(const Type& item)
+{
+    samples[item.serialisationCode()].push_back(item.clone());
 }
 
 void Generator::add(types::Code code, const std::string& val)
@@ -131,9 +144,9 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         Metadata m(md);
 
         // Set run from Reftime
-        Item<types::Reftime> rt = md.get<types::Reftime>();
-        Item<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
-        m.set(types::run::Minute::create(p->time->vals[3], p->time->vals[4]));
+        const types::Reftime* rt = md.get<types::Reftime>();
+        const types::reftime::Position* p = dynamic_cast<const types::reftime::Position*>(rt);
+        m.set(types::run::Minute::create(p->time.vals[3], p->time.vals[4]));
 
         // Set source and inline data
         char buf[5432];
@@ -144,10 +157,9 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         return cons(m);
     }
 
-    for (vector< Item<> >::const_iterator j = i->second.begin();
-            j != i->second.end(); ++j)
+    for (vector<Type*>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
     {
-        md.set(*j);
+        md.set(**j);
         Samples::const_iterator next = i;
         ++next;
         if (!_generate(next, md, cons)) return false;

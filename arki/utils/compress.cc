@@ -349,7 +349,7 @@ bool DataCompressor::operator()(Metadata& md)
 			break;
 	}
 
-    unc_ofs += md.source->getSize();
+    unc_ofs += md.source().getSize();
 
 	if (count > 0 && (count % groupsize) == 0)
 		endBlock();

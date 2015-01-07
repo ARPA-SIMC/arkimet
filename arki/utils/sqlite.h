@@ -173,24 +173,8 @@ public:
 	/// Bind NULL to a query parameter
 	void bindNull(int idx);
 
-	/// Bind a UItem
-	void bindUItem(int idx, const UItem<>& item);
-
-	/// Bind a vector of UItems
-	template<typename TYPE>
-	void bindItems(int idx, const std::vector< Item<TYPE> >& items)
-	{
-		if (items.empty())
-			bindNull(idx);
-		else
-		{
-			std::string str;
-			for (typename std::vector< Item<TYPE> >::const_iterator i = items.begin();
-					i != items.end(); ++i)
-				str += i->encode();
-			bindBlobTransient(idx, str);
-		}
-	}
+    /// Bind a UItem
+    void bindType(int idx, const types::Type& item);
 
 	/**
 	 * Fetch a query row.
@@ -199,10 +183,11 @@ public:
 	 */
 	bool step();
 
-	int fetchType(int column)
-	{
-		return sqlite3_column_type(m_stm, column);
-	}
+    /// Check if an output column is NULL
+    bool isNULL(int column)
+    {
+        return sqlite3_column_type(m_stm, column) == SQLITE_NULL;
+    }
 
 	template<typename T>
 	T fetch(int column)
@@ -233,29 +218,7 @@ public:
 	{
 		return sqlite3_column_bytes(m_stm, column);
 	}
-	UItem<> fetchUItem(int column);
-	std::vector< Item<> > fetchItems(int column);
-
-	template<typename TYPE>
-	std::vector< Item<TYPE> > fetchItems(int column)
-	{
-		const unsigned char* buf = (const unsigned char*)fetchBlob(column);
-		int len = fetchBytes(column);
-		std::vector< Item<TYPE> > res;
-
-		// Parse the various elements
-		const unsigned char* end = buf + len;
-		for (const unsigned char* cur = buf; cur < end; )
-		{
-			const unsigned char* el_start = cur;
-			size_t el_len = end - cur;
-			types::Code el_type = types::decodeEnvelope(el_start, el_len);
-			res.push_back(types::decodeInner(el_type, el_start, el_len).upcast<TYPE>());
-			cur = el_start + el_len;
-		}
-
-		return res;
-	}
+    std::auto_ptr<types::Type> fetchType(int column);
 };
 
 /**

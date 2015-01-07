@@ -4,7 +4,7 @@
 /*
  * types/run - Daily run identification for a periodic data source
  *
- * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,15 +60,16 @@ struct Run : public types::StyledType<Run>
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
-	/// CODEC functions
-	static Item<Run> decode(const unsigned char* buf, size_t len);
-	static Item<Run> decodeString(const std::string& val);
-	static Item<Run> decodeMapping(const emitter::memory::Mapping& val);
+    /// CODEC functions
+    static std::auto_ptr<Run> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Run> decodeString(const std::string& val);
+    static std::auto_ptr<Run> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
+    static std::auto_ptr<Run> createMinute(unsigned int hour, unsigned int minute=0);
 };
 
 namespace run {
@@ -81,19 +82,20 @@ protected:
 public:
 	unsigned minute() const { return m_minute; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	virtual int compare_local(const Run& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Run& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<Minute> create(unsigned int hour, unsigned int minute = 0);
-	static Item<Minute> decodeMapping(const emitter::memory::Mapping& val);
+    Minute* clone() const override;
+    static std::auto_ptr<Minute> create(unsigned int hour, unsigned int minute=0);
+    static std::auto_ptr<Minute> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

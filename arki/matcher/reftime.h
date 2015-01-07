@@ -46,26 +46,26 @@ struct MatchReftime : public Implementation
 	MatchReftime(const std::string& pattern);
 	~MatchReftime();
 
-	//MatchType type() const { return MATCH_REFTIME; }
-	std::string name() const;
+    //MatchType type() const { return MATCH_REFTIME; }
+    std::string name() const override;
 
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
-	std::string sql(const std::string& column) const;
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
+    std::string sql(const std::string& column) const;
 
-	/**
-	 * Get the date extremes matched by this matcher.
-	 *
-	 * The interval includes the two extremes.
-	 *
-	 * There can be further restrictions than this interval (for example,
-	 * restrictions on the time of the day).
-	 *
-	 * @returns The start and end date and time for this matcher.
-	 *   If begin or end are all zeros, it means that the interval is
-	 *   open-ended.
-	 */
-	void dateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+    /**
+     * Get the date extremes matched by this matcher.
+     *
+     * The interval includes the two extremes.
+     *
+     * There can be further restrictions than this interval (for example,
+     * restrictions on the time of the day).
+     *
+     * @returns The start and end date and time for this matcher.
+     *   If begin or end are all zeros, it means that the interval is
+     *   open-ended.
+     */
+    void dateRange(types::Time& begin, types::Time& end) const;
 
     static MatchReftime* parse(const std::string& pattern);
     static void init();

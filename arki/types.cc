@@ -110,7 +110,14 @@ int Type::compare(const Type& o) const
 	return serialisationCode() - o.serialisationCode();
 }
 
-std::string Type::encodeWithEnvelope() const
+bool Type::operator==(const std::string& o) const
+{
+    // Temporarily decode it for comparison
+    std::auto_ptr<Type> other = decodeString(serialisationCode(), o);
+    return operator==(*other);
+}
+
+std::string Type::encodeBinary() const
 {
 	using namespace utils::codec;
 	string contents;
@@ -128,7 +135,7 @@ void Type::serialise(Emitter& e, const Formatter* f) const
 {
     e.start_mapping();
     e.add("t", tag());
-    if (f) e.add("desc", (*f)(this));
+    if (f) e.add("desc", (*f)(*this));
     serialiseLocal(e, f);
     e.end_mapping();
 }
@@ -139,10 +146,10 @@ std::string Type::exactQuery() const
 }
 
 #ifdef HAVE_LUA
-static Item<>* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
+static Type* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
 {
-	// Tweaked version of luaL_checkudata from lauxlib
-	void *p = lua_touserdata(L, idx);
+    // Tweaked version of luaL_checkudata from lauxlib
+    void *p = lua_touserdata(L, idx);
 	// Value is a userdata?
 	if (p != NULL)
 	{
@@ -160,11 +167,11 @@ static Item<>* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
 			if (arkitype != NULL
 			 && strncmp(arkitype, prefix, pfxlen) == 0
 			 && (arkitype[pfxlen] == 0 || arkitype[pfxlen] == '.'))
-			{
-				// remove metatable and type name */
-				lua_pop(L, 2);
-				return (Item<>*)p;
-			}
+            {
+                // remove metatable and type name */
+                lua_pop(L, 2);
+                return *(Type**)p;
+            }
 		}
 	}
 	// TODO: luaL_typerror(L, idx, "arki.types.*");
@@ -174,39 +181,39 @@ static Item<>* lua_check_arkitype(lua_State* L, int idx, const char* prefix)
 }
 static int arkilua_tostring(lua_State* L)
 {
-	UItem<> item = Type::lua_check(L, 1);
-        lua_pushstring(L, wibble::str::fmt(item).c_str());
-        return 1;
+    Type* item = Type::lua_check(L, 1);
+    std::stringstream str;
+    item->writeToOstream(str);
+    lua_pushstring(L, str.str().c_str());
+    return 1;
 }
 static int arkilua_eq(lua_State* L)
 {
-	UItem<> item1 = Type::lua_check(L, 1);
-	UItem<> item2 = Type::lua_check(L, 2);
-        lua_pushboolean(L, item1 == item2);
-        return 1;
+    Type* item1 = Type::lua_check(L, 1);
+    Type* item2 = Type::lua_check(L, 2);
+    lua_pushboolean(L, item1->equals(*item2));
+    return 1;
 }
 static int arkilua_lt(lua_State* L)
 {
-	UItem<> item1 = Type::lua_check(L, 1);
-	UItem<> item2 = Type::lua_check(L, 2);
-        lua_pushboolean(L, item1 < item2);
-        return 1;
+    Type* item1 = Type::lua_check(L, 1);
+    Type* item2 = Type::lua_check(L, 2);
+    lua_pushboolean(L, item1->compare(*item2) < 0);
+    return 1;
 }
 static int arkilua_le(lua_State* L)
 {
-	UItem<> item1 = Type::lua_check(L, 1);
-	UItem<> item2 = Type::lua_check(L, 2);
-        lua_pushboolean(L, item1 <= item2);
-        return 1;
+    Type* item1 = Type::lua_check(L, 1);
+    Type* item2 = Type::lua_check(L, 2);
+    lua_pushboolean(L, item1->compare(*item2) <= 0);
+    return 1;
 }
 static int arkilua_index(lua_State* L)
 {
-	using namespace arki;
-
-	Item<> item = types::Type::lua_check(L, 1);
-        const char* sname = lua_tostring(L, 2);
-        luaL_argcheck(L, sname != NULL, 2, "`string' expected");
-	string key = sname;
+    Type* item = Type::lua_check(L, 1);
+    const char* sname = lua_tostring(L, 2);
+    luaL_argcheck(L, sname != NULL, 2, "`string' expected");
+    string key = sname;
 
 	if (!item->lua_lookup(L, key))
 	{
@@ -221,9 +228,9 @@ static int arkilua_index(lua_State* L)
 
 static int arkilua_gc (lua_State *L)
 {
-	Item<>* ud = lua_check_arkitype(L, 1, "arki.types");
-	ud->~Item<>();
-	return 0;
+    Type* ud = lua_check_arkitype(L, 1, "arki.types");
+    delete ud;
+    return 0;
 }
 
 void Type::lua_register_methods(lua_State* L) const
@@ -252,28 +259,27 @@ bool Type::lua_lookup(lua_State* L, const std::string& name) const
 
 void Type::lua_push(lua_State* L) const
 {
-	// The userdata will be an Item<> created with placement new
-	// so that it will take care of reference counting
-	Item<>* s = (Item<>*)lua_newuserdata(L, sizeof(Item<>));
-	new(s) Item<>(this);
+    // The userdata will be a Type*, holding a clone of this object
+    Type** s = (Type**)lua_newuserdata(L, sizeof(Type*));
+    *s = this->clone();
 
-	// Set the metatable for the userdata
-	if (luaL_newmetatable(L, lua_type_name()))
-	{
-		// If the metatable wasn't previously created, create it now
-                lua_pushstring(L, "__index");
-                lua_pushvalue(L, -2);  /* pushes the metatable */
-                lua_settable(L, -3);  /* metatable.__index = metatable */
+    // Set the metatable for the userdata
+    if (luaL_newmetatable(L, lua_type_name()))
+    {
+        // If the metatable wasn't previously created, create it now
+        lua_pushstring(L, "__index");
+        lua_pushvalue(L, -2);  /* pushes the metatable */
+        lua_settable(L, -3);  /* metatable.__index = metatable */
 
-		lua_register_methods(L);
-	}
+        lua_register_methods(L);
+    }
 
-	lua_setmetatable(L, -2);
+    lua_setmetatable(L, -2);
 }
 
-Item<> Type::lua_check(lua_State* L, int idx, const char* prefix)
+Type* Type::lua_check(lua_State* L, int idx, const char* prefix)
 {
-	return *lua_check_arkitype(L, idx, prefix);
+    return lua_check_arkitype(L, idx, prefix);
 }
 
 void Type::lua_loadlib(lua_State* L)
@@ -301,13 +307,13 @@ types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
 	return code;
 }
 
-Item<> decode(const unsigned char* buf, size_t len)
+auto_ptr<Type> decode(const unsigned char* buf, size_t len)
 {
 	types::Code code = decodeEnvelope(buf, len);
 	return types::MetadataType::get(code)->decode_func(buf, len);
 }
 
-Item<> decode(utils::codec::Decoder& dec)
+auto_ptr<Type> decode(utils::codec::Decoder& dec)
 {
     using namespace utils::codec;
 
@@ -318,30 +324,30 @@ Item<> decode(utils::codec::Decoder& dec)
 
     // Finally decode the element body
     ensureSize(dec.len, size, "element body");
-    Item<> res = decodeInner(code, dec.buf, size);
+    auto_ptr<Type> res = decodeInner(code, dec.buf, size);
     dec.buf += size;
     dec.len -= size;
     return res;
 }
 
-Item<> decodeInner(types::Code code, const unsigned char* buf, size_t len)
+auto_ptr<Type> decodeInner(types::Code code, const unsigned char* buf, size_t len)
 {
 	return types::MetadataType::get(code)->decode_func(buf, len);
 }
 
-Item<> decodeString(types::Code code, const std::string& val)
+auto_ptr<Type> decodeString(types::Code code, const std::string& val)
 {
 	return types::MetadataType::get(code)->string_decode_func(val);
 }
 
-Item<> decodeMapping(const emitter::memory::Mapping& m)
+auto_ptr<Type> decodeMapping(const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
     const std::string& type = m["t"].want_string("decoding item type");
     return decodeMapping(parseCodeName(type), m);
 }
 
-Item<> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
+auto_ptr<Type> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
     return types::MetadataType::get(code)->mapping_decode_func(m);

@@ -21,11 +21,27 @@
 #define ARKI_TEST_UTILS_H
 
 #include <wibble/tests.h>
-#include <wibble/exception.h>
-#include <sstream>
+#include <memory>
 
 namespace arki {
 namespace tests {
+
+struct ArkiCheck
+{
+    virtual ~ArkiCheck() {}
+    virtual void check(WIBBLE_TEST_LOCPRM) const = 0;
+};
+
+}
+}
+
+namespace wibble {
+namespace tests {
+
+static inline void _wassert(WIBBLE_TEST_LOCPRM, std::auto_ptr<arki::tests::ArkiCheck> expr)
+{
+    expr->check(wibble_test_location);
+}
 
 }
 }

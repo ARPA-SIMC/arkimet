@@ -54,7 +54,7 @@ void Inline::serialiseLocal(Emitter& e, const Formatter* f) const
     Source::serialiseLocal(e, f);
     e.add("sz", size);
 }
-Item<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
+std::auto_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Inline::create(
             val["f"].want_string("parsing inline source format"),
@@ -85,28 +85,37 @@ int Inline::compare_local(const Source& o) const
 
     return size - v->size;
 }
-bool Inline::operator==(const Type& o) const
+bool Inline::equals(const Type& o) const
 {
     const Inline* v = dynamic_cast<const Inline*>(&o);
     if (!v) return false;
     return format == v->format && size == v->size;
 }
 
-Item<Inline> Inline::create(const std::string& format, uint64_t size)
+Inline* Inline::clone() const
 {
     Inline* res = new Inline;
     res->format = format;
     res->size = size;
+    if (m_inline_buf.data()) res->setCachedData(m_inline_buf);
     return res;
 }
 
-Item<Inline> Inline::create(const std::string& format, const wibble::sys::Buffer& buf)
+std::auto_ptr<Inline> Inline::create(const std::string& format, uint64_t size)
+{
+    Inline* res = new Inline;
+    res->format = format;
+    res->size = size;
+    return auto_ptr<Inline>(res);
+}
+
+std::auto_ptr<Inline> Inline::create(const std::string& format, const wibble::sys::Buffer& buf)
 {
     Inline* res = new Inline;
     res->format = format;
     res->size = buf.size();
     res->setCachedData(buf);
-    return res;
+    return auto_ptr<Inline>(res);
 }
 
 uint64_t Inline::getSize() const { return size; }

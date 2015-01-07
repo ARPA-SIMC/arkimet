@@ -52,6 +52,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::types;
 
 namespace arki {
 namespace scan {
@@ -146,10 +147,8 @@ struct DirSource : public metadata::Consumer
 
    bool operator()(Metadata& md)
    {
-       Item<types::source::Blob> i = md.source.upcast<types::source::Blob>();
-       //cerr << i << endl;
-       if (i.defined())
-           md.source = types::source::Blob::create(i->format, i->basedir, dirname, pos, i->size);
+       const source::Blob& i = md.sourceBlob();
+       md.set_source(Source::createBlob(i.format, i.basedir, dirname, pos, i.size));
        return next(md);
    }
 };
@@ -364,7 +363,7 @@ bool update_sequence_number(const Metadata& md, int& usn)
 {
 #ifdef HAVE_DBALLE
     // Update Sequence Numbers are only supported by BUFR
-    if (md.source->format != "bufr")
+    if (md.source().format != "bufr")
         return false;
 
     wibble::sys::Buffer data = md.getData();

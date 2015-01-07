@@ -34,59 +34,10 @@ extern "C" {
 }
 
 using namespace std;
+using namespace arki::types;
 
 namespace arki {
 namespace formatter {
-
-#if 0
-static string arkilua_dumptablekeys(lua_State* L, int index)
-{
-	string res;
-	// Start iteration
-	lua_pushnil(L);
-	while (lua_next(L, index) != 0)
-	{
-		if (!res.empty()) res += ", ";
-		// key is at index -2 and we want it to be a string
-		if (lua_type(L, -2) != LUA_TSTRING)
-			res += "<not a string>";
-		else
-			res += lua_tostring(L, -2);
-		lua_pop(L, 1);
-	}
-	return res;
-}
-
-static void arkilua_dumpstack(lua_State* L, const std::string& title, FILE* out)
-{
-	fprintf(out, "%s\n", title.c_str());
-	for (int i = lua_gettop(L); i; --i)
-	{
-		int t = lua_type(L, i);
-		switch (t)
-		{
-			case LUA_TNIL:
-				fprintf(out, " %d: nil\n", i);
-				break;
-			case LUA_TBOOLEAN:
-				fprintf(out, " %d: %s\n", i, lua_toboolean(L, i) ? "true" : "false");
-				break;
-			case LUA_TNUMBER:
-				fprintf(out, " %d: %g\n", i, lua_tonumber(L, i));
-				break;
-			case LUA_TSTRING:
-				fprintf(out, " %d: '%s'\n", i, lua_tostring(L, i));
-				break;
-			case LUA_TTABLE:
-				fprintf(out, " %d: table: '%s'\n", i, arkilua_dumptablekeys(L, i).c_str());
-				break;
-			default:
-				fprintf(out, " %d: <%s>\n", i, lua_typename(L, t));
-				break;
-		}
-	}
-}
-#endif
 
 Lua::Lua() : L(new arki::Lua)
 {
@@ -114,22 +65,10 @@ Lua::~Lua()
 	if (L) delete L;
 }
 
-std::string Lua::operator()(const Item<>& v) const
+std::string Lua::operator()(const Type& v) const
 {
-	std::map<Item<>, std::string>::const_iterator i = m_cache.find(v);
-	if (i != m_cache.end())
-		return i->second;
-
-	string res = compute(v);
-	m_cache.insert(make_pair(v, res));
-	return res;
-}
-	
-
-std::string Lua::compute(const Item<>& v) const
-{
-	string tag = v->tag();
-	string func = "fmt_"+tag;
+    string tag = v.tag();
+    string func = "fmt_" + tag;
 
 	lua_getglobal(*L, func.c_str()); // function to be called
 	//arkilua_dumpstack(L, func, stderr);
@@ -139,10 +78,10 @@ std::string Lua::compute(const Item<>& v) const
 		// formatter
 		lua_pop(*L, 1);
 		return Formatter::operator()(v);
-	}
-	v->lua_push(*L);
-	if (lua_pcall(*L, 1, 1, 0))
-	{
+    }
+    v.lua_push(*L);
+    if (lua_pcall(*L, 1, 1, 0))
+    {
 		string error = "Formatting failed: ";
 		error += lua_tostring(*L, -1);
 		lua_pop(*L, 1);

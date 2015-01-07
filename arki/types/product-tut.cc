@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,23 +20,12 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/product.h>
-#include <arki/matcher.h>
-#include <wibble/string.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
 using namespace wibble::tests;
 
 struct arki_types_product_shar {
@@ -47,104 +36,160 @@ TESTGRP(arki_types_product);
 template<> template<>
 void to::test<1>()
 {
-	Item<Product> o = product::GRIB1::create(1, 2, 3);
-	ensure_equals(o->style(), Product::GRIB1);
-	const product::GRIB1* v = o->upcast<product::GRIB1>();
-	ensure_equals(v->origin(), 1u);
-	ensure_equals(v->table(), 2u);
-	ensure_equals(v->product(), 3u);
+    tests::TestGenericType t("product", "GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB1(1, 1, 1)");
+    t.lower.push_back("GRIB1(1, 2, 2)");
+    t.higher.push_back("GRIB1(1, 2, 4)");
+    t.higher.push_back("GRIB1(2, 3, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4)");
+    t.higher.push_back("BUFR(1, 2, 3)");
+    t.higher.push_back("BUFR(1, 2, 3, name=antani)");
+    t.exact_query = "GRIB1,1,2,3";
+    wassert(t);
 
-	ensure_equals(o, Item<Product>(product::GRIB1::create(1, 2, 3)));
-
-	ensure(o != product::GRIB1::create(2, 3, 4));
-	ensure(o != product::GRIB2::create(1, 2, 3, 4));
-	ensure(o != product::BUFR::create(1, 2, 3));
-	ValueBag vb;
-	vb.set("name", Value::createString("antani"));
-	ensure(o != product::BUFR::create(1, 2, 3, vb));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB1,1,2,3");
-	Matcher m = Matcher::parse("product:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Product> o = Product::createGRIB1(1, 2, 3);
+    wassert(actual(o->style()) == Product::GRIB1);
+    const product::GRIB1* v = dynamic_cast<product::GRIB1*>(o.get());
+    wassert(actual(v->origin()) == 1u);
+    wassert(actual(v->table()) == 2u);
+    wassert(actual(v->product()) == 3u);
 }
 
 // Check GRIB2
 template<> template<>
 void to::test<2>()
 {
-	Item<Product> o = product::GRIB2::create(1, 2, 3, 4);
-	ensure_equals(o->style(), Product::GRIB2);
-	const product::GRIB2* v = o->upcast<product::GRIB2>();
-	ensure_equals(v->centre(), 1u);
-	ensure_equals(v->discipline(), 2u);
-	ensure_equals(v->category(), 3u);
-	ensure_equals(v->number(), 4u);
-    ensure_equals(v->table_version(), 4u);
-    ensure_equals(v->local_table_version(), 255u);
+    tests::TestGenericType t("product", "GRIB2(1, 2, 3, 4)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4, 5)");
+    t.higher.push_back("GRIB2(2, 3, 4, 5)");
+    t.higher.push_back("BUFR(1, 2, 3)");
+    t.higher.push_back("BUFR(1, 2, 3, name=antani)");
+    t.exact_query = "GRIB2,1,2,3,4";
+    wassert(t);
 
-	ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4)));
+    auto_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4);
+    wassert(actual(o->style()) == Product::GRIB2);
+    const product::GRIB2* v = dynamic_cast<product::GRIB2*>(o.get());
+    wassert(actual(v->centre()) == 1u);
+    wassert(actual(v->discipline()) == 2u);
+    wassert(actual(v->category()) == 3u);
+    wassert(actual(v->number()) == 4u);
+    wassert(actual(v->table_version()) == 4u);
+    wassert(actual(v->local_table_version()) == 255u);
+}
 
-	ensure(o != product::GRIB1::create(1, 2, 3));
-	ensure(o != product::GRIB2::create(2, 3, 4, 5));
-	ensure(o != product::BUFR::create(1, 2, 3));
-	ValueBag vb;
-	vb.set("name", Value::createString("antani"));
-	ensure(o != product::BUFR::create(1, 2, 3, vb));
+// Check GRIB2 with different table version
+template<> template<>
+void to::test<3>()
+{
+    tests::TestGenericType t("product", "GRIB2(1, 2, 3, 4, 5)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(1, 2, 3, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4, 6)");
+    t.higher.push_back("GRIB2(2, 3, 4, 5)");
+    t.higher.push_back("BUFR(1, 2, 3)");
+    t.higher.push_back("BUFR(1, 2, 3, name=antani)");
+    t.exact_query = "GRIB2,1,2,3,4,5";
+    wassert(t);
 
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    auto_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 5);
+    wassert(actual(o->style()) == Product::GRIB2);
+    const product::GRIB2* v = dynamic_cast<product::GRIB2*>(o.get());
+    wassert(actual(v->centre()) == 1u);
+    wassert(actual(v->discipline()) == 2u);
+    wassert(actual(v->category()) == 3u);
+    wassert(actual(v->number()) == 4u);
+    wassert(actual(v->table_version()) == 5u);
+    wassert(actual(v->local_table_version()) == 255u);
+}
 
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4");
-	Matcher m = Matcher::parse("product:" + o->exactQuery());
-	ensure(m(o));
+// Check GRIB2 with different table version or local table version
+template<> template<>
+void to::test<4>()
+{
+    tests::TestGenericType t("product", "GRIB2(1, 2, 3, 4, 4, 5)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(1, 2, 3, 4)");
+    t.lower.push_back("GRIB2(1, 2, 3, 4, 4, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4, 4, 6)");
+    t.higher.push_back("GRIB2(2, 3, 4, 5)");
+    t.higher.push_back("BUFR(1, 2, 3)");
+    t.higher.push_back("BUFR(1, 2, 3, name=antani)");
+    t.exact_query = "GRIB2,1,2,3,4,4,5";
+    wassert(t);
+
+    auto_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 4, 5);
+    wassert(actual(o->style()) == Product::GRIB2);
+    const product::GRIB2* v = dynamic_cast<product::GRIB2*>(o.get());
+    wassert(actual(v->centre()) == 1u);
+    wassert(actual(v->discipline()) == 2u);
+    wassert(actual(v->category()) == 3u);
+    wassert(actual(v->number()) == 4u);
+    wassert(actual(v->table_version()) == 5u);
+    wassert(actual(v->local_table_version()) == 5u);
 }
 
 // Check BUFR
 template<> template<>
-void to::test<3>()
+void to::test<5>()
 {
-	ValueBag vb;
-	vb.set("name", Value::createString("antani"));
-	ValueBag vb1;
-	vb1.set("name", Value::createString("antani1"));
+    tests::TestGenericType t("product", "BUFR(1, 2, 3, name=antani)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(2, 3, 4, 5)");
+    t.lower.push_back("BUFR(1, 2, 3)");
+    t.higher.push_back("BUFR(1, 2, 3, name=antani1)");
+    t.higher.push_back("BUFR(1, 2, 3, name1=antani)");
+    t.exact_query = "BUFR,1,2,3:name=antani";
+    wassert(t);
 
-	Item<Product> o = product::BUFR::create(1, 2, 3, vb);
-	ensure_equals(o->style(), Product::BUFR);
-	const product::BUFR* v = o->upcast<product::BUFR>();
-	ensure_equals(v->values(), vb);
+    ValueBag vb;
+    vb.set("name", Value::createString("antani"));
+    auto_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
+    wassert(actual(o->style()) == Product::BUFR);
+    product::BUFR* v = dynamic_cast<product::BUFR*>(o.get());
+    wassert(actual(v->type()) == 1);
+    wassert(actual(v->subtype()) == 2);
+    wassert(actual(v->localsubtype()) == 3);
+    wassert(actual(v->values()) == vb);
 
-	ensure_equals(o, Item<Product>(product::BUFR::create(1, 2, 3, vb)));
+    ValueBag vb2;
+    vb2.set("val", Value::createString("blinda"));
+    v->addValues(vb2);
+    wassert(actual(wibble::str::fmt(*o)) == "BUFR(001, 002, 003, name=antani, val=blinda)");
+}
 
-	ensure(o != product::GRIB1::create(1, 2, 3));
-	ensure(o != product::GRIB2::create(1, 2, 3, 4));
-	ensure(o != product::BUFR::create(1, 2, 3));
-	ensure(o != product::BUFR::create(1, 2, 3, vb1));
+// Check VM2
+template<> template<>
+void to::test<6>()
+{
+    tests::TestGenericType t("product", "VM2(1)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(2, 3, 4, 5)");
+    t.lower.push_back("BUFR(1, 2, 3)");
+    t.lower.push_back("BUFR(1, 2, 3, name=antani)");
+    t.higher.push_back("VM2(2)");
+    t.exact_query = "VM2,1:bcode=B20013, l1=0, l2=0, lt1=256, lt2=258, p1=0, p2=0, tr=254, unit=m";
+    wassert(t);
 
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
+    auto_ptr<Product> o = Product::createVM2(1);
+    wassert(actual(o->style()) == Product::VM2);
+    const product::VM2* v = dynamic_cast<product::VM2*>(o.get());
+    wassert(actual(v->variable_id()) == 1ul);
 
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "BUFR,1,2,3:name=antani");
-	Matcher m = Matcher::parse("product:" + o->exactQuery());
-	ensure(m(o));
-
-	ValueBag vb2;
-	vb2.set("val", Value::createString("blinda"));
-	o = v->addValues(vb2);
-	ensure_equals(str::fmt(o), "BUFR(001, 002, 003, name=antani, val=blinda)");
+    // Test derived values
+    ValueBag vb1 = ValueBag::parse("bcode=B20013,lt1=256,l1=0,lt2=258,l2=0,tr=254,p1=0,p2=0,unit=m");
+    ensure(product::VM2::create(1)->derived_values() == vb1);
+    ValueBag vb2 = ValueBag::parse("bcode=NONONO,lt1=256,l1=0,lt2=258,tr=254,p1=0,p2=0,unit=m");
+    ensure(product::VM2::create(1)->derived_values() != vb2);
 }
 
 // Test Lua functions
 template<> template<>
-void to::test<4>()
+void to::test<7>()
 {
 #ifdef HAVE_LUA
-	Item<Product> o = product::GRIB1::create(1, 2, 3);
+    auto_ptr<Product> o = Product::createGRIB1(1, 2, 3);
 
 	arki::tests::Lua test(
 		"function test(o) \n"
@@ -158,169 +203,14 @@ void to::test<4>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 #endif
-}
-
-// Check comparisons
-template<> template<>
-void to::test<5>()
-{
-	ValueBag vb;
-	vb.set("name", Value::createString("antani"));
-	ValueBag vb1;
-	vb1.set("name", Value::createString("blinda"));
-
-    wassert(actual(product::GRIB1::create(1, 2, 3)).compares(
-                product::GRIB1::create(2, 3, 4),
-                product::GRIB1::create(2, 3, 4)));
-    wassert(actual(product::GRIB2::create(1, 2, 3, 4)).compares(
-                product::GRIB2::create(2, 3, 4, 5),
-                product::GRIB2::create(2, 3, 4, 5)));
-    wassert(actual(product::BUFR::create(1, 2, 3)).compares(
-                product::BUFR::create(1, 2, 4),
-                product::BUFR::create(1, 2, 4)));
-    wassert(actual(product::BUFR::create(1, 2, 3, vb)).compares(
-                product::BUFR::create(1, 2, 3, vb1),
-                product::BUFR::create(1, 2, 3, vb1)));
-    wassert(actual(product::VM2::create(1)).compares(
-                product::VM2::create(2),
-                product::VM2::create(2)));
-}
-
-// Check VM2
-template<> template<>
-void to::test<6>()
-{
-	Item<Product> o = product::VM2::create(1);
-	ensure_equals(o->style(), Product::VM2);
-	const product::VM2* v = o->upcast<product::VM2>();
-	ensure_equals(v->variable_id(), 1ul);
-
-	ensure_equals(o, Item<Product>(product::VM2::create(1)));
-
-	ensure(o != product::VM2::create(2));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "VM2,1:bcode=B20013, l1=0, l2=0, lt1=256, lt2=258, p1=0, p2=0, tr=254, unit=m");
-	Matcher m = Matcher::parse("product:" + o->exactQuery());
-	ensure(m(o));
-
-    // Test derived values
-    ValueBag vb1 = ValueBag::parse("bcode=B20013,lt1=256,l1=0,lt2=258,l2=0,tr=254,p1=0,p2=0,unit=m");
-    ensure(product::VM2::create(1)->derived_values() == vb1);
-    ValueBag vb2 = ValueBag::parse("bcode=NONONO,lt1=256,l1=0,lt2=258,tr=254,p1=0,p2=0,unit=m");
-    ensure(product::VM2::create(1)->derived_values() != vb2);
-}
-
-// Test basic type ops
-template<> template<>
-void to::test<7>()
-{
-    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "GRIB1(1, 2, 3)");
-    t.lower.push_back("GRIB1(1, 1, 1)");
-    t.lower.push_back("GRIB1(1, 2, 2)");
-    t.higher.push_back("GRIB1(1, 2, 4)");
-    t.higher.push_back("GRIB1(2, 3, 4)");
-    t.higher.push_back("GRIB2(1, 2, 3, 4)");
-    t.higher.push_back("BUFR(1, 2, 3, a=b)");
-    wassert(t);
-}
-template<> template<>
-void to::test<8>()
-{
-    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "GRIB2(1, 2, 3, 4)");
-    wassert(t);
-}
-template<> template<>
-void to::test<9>()
-{
-    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "BUFR(1, 2, 3, a=b)");
-    wassert(t);
-}
-template<> template<>
-void to::test<10>()
-{
-    arki::tests::TestGenericType t(types::TYPE_PRODUCT, "VM2(1)");
-    wassert(t);
-}
-
-// Check GRIB2 with different table version
-template<> template<>
-void to::test<11>()
-{
-    Item<Product> o = product::GRIB2::create(1, 2, 3, 4, 5);
-    ensure_equals(o->style(), Product::GRIB2);
-    const product::GRIB2* v = o->upcast<product::GRIB2>();
-    ensure_equals(v->centre(), 1u);
-    ensure_equals(v->discipline(), 2u);
-    ensure_equals(v->category(), 3u);
-    ensure_equals(v->number(), 4u);
-    ensure_equals(v->table_version(), 5u);
-    ensure_equals(v->local_table_version(), 255u);
-
-    ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4, 5)));
-
-    ensure(o != product::GRIB1::create(1, 2, 3));
-    ensure(o != product::GRIB2::create(2, 3, 4, 5));
-    ensure(o != product::GRIB2::create(1, 2, 3, 4));
-    ensure(o != product::GRIB2::create(1, 2, 3, 4, 6));
-    ensure(o != product::BUFR::create(1, 2, 3));
-    ValueBag vb;
-    vb.set("name", Value::createString("antani"));
-    ensure(o != product::BUFR::create(1, 2, 3, vb));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-    // Test generating a matcher expression
-    ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,5");
-    Matcher m = Matcher::parse("product:" + o->exactQuery());
-    ensure(m(o));
-}
-
-// Check GRIB2 with different table version or local table version
-template<> template<>
-void to::test<12>()
-{
-    Item<Product> o = product::GRIB2::create(1, 2, 3, 4, 4, 5);
-    ensure_equals(o->style(), Product::GRIB2);
-    const product::GRIB2* v = o->upcast<product::GRIB2>();
-    ensure_equals(v->centre(), 1u);
-    ensure_equals(v->discipline(), 2u);
-    ensure_equals(v->category(), 3u);
-    ensure_equals(v->number(), 4u);
-    ensure_equals(v->table_version(), 4u);
-    ensure_equals(v->local_table_version(), 5u);
-
-    ensure_equals(o, Item<Product>(product::GRIB2::create(1, 2, 3, 4, 4, 5)));
-
-    ensure(o != product::GRIB1::create(1, 2, 3));
-    ensure(o != product::GRIB2::create(2, 3, 4, 5));
-    ensure(o != product::GRIB2::create(1, 2, 3, 4));
-    ensure(o != product::GRIB2::create(1, 2, 3, 4, 4));
-    ensure(o != product::GRIB2::create(1, 2, 3, 4, 4, 6));
-    ensure(o != product::BUFR::create(1, 2, 3));
-    ValueBag vb;
-    vb.set("name", Value::createString("antani"));
-    ensure(o != product::BUFR::create(1, 2, 3, vb));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-    // Test generating a matcher expression
-    ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,4,5");
-    Matcher m = Matcher::parse("product:" + o->exactQuery());
-    ensure(m(o));
 }
 
 // Test GRIB2 Lua constructor
 template<> template<>
-void to::test<13>()
+void to::test<8>()
 {
 #ifdef HAVE_LUA
     arki::tests::Lua test(

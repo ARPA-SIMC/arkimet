@@ -49,10 +49,10 @@ MatchLevelGRIB1::MatchLevelGRIB1(const std::string& pattern)
 	l2 = args.getInt(2, -1);
 }
 
-bool MatchLevelGRIB1::matchItem(const Item<>& o) const
+bool MatchLevelGRIB1::matchItem(const Type& o) const
 {
-	const types::level::GRIB1* v = dynamic_cast<const types::level::GRIB1*>(o.ptr());
-	if (!v) return false;
+    const types::level::GRIB1* v = dynamic_cast<const types::level::GRIB1*>(&o);
+    if (!v) return false;
 	if (type != -1 && (unsigned)type != v->type()) return false;
 	int ol1 = -1, ol2 = -1;
 	switch (v->valType())
@@ -85,9 +85,9 @@ MatchLevelGRIB2S::MatchLevelGRIB2S(const std::string& pattern)
     value = args.getUnsignedWithMissing(2, level::GRIB2S::MISSING_VALUE, has_value);
 }
 
-bool MatchLevelGRIB2S::matchItem(const Item<>& o) const
+bool MatchLevelGRIB2S::matchItem(const Type& o) const
 {
-    const types::level::GRIB2S* v = dynamic_cast<const types::level::GRIB2S*>(o.ptr());
+    const types::level::GRIB2S* v = dynamic_cast<const types::level::GRIB2S*>(&o);
     if (!v) return false;
     if (has_type && type != v->type()) return false;
     if (has_scale && scale != v->scale()) return false;
@@ -117,9 +117,9 @@ MatchLevelGRIB2D::MatchLevelGRIB2D(const std::string& pattern)
     value2 = args.getUnsignedWithMissing(5, level::GRIB2S::MISSING_VALUE, has_value2);
 }
 
-bool MatchLevelGRIB2D::matchItem(const Item<>& o) const
+bool MatchLevelGRIB2D::matchItem(const Type& o) const
 {
-    const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(o.ptr());
+    const types::level::GRIB2D* v = dynamic_cast<const types::level::GRIB2D*>(&o);
     if (!v) return false;
     if (has_type1 && type1 != v->type1()) return false;
     if (has_scale1 && scale1 != v->scale1()) return false;
@@ -228,10 +228,10 @@ MatchLevelODIMH5::MatchLevelODIMH5(const std::string& pattern)
 	}
 }
 
-bool MatchLevelODIMH5::matchItem(const Item<>& o) const
+bool MatchLevelODIMH5::matchItem(const Type& o) const
 {
-	const types::level::ODIMH5* v = dynamic_cast<const types::level::ODIMH5*>(o.ptr());
-	if (!v) return false;
+    const types::level::ODIMH5* v = dynamic_cast<const types::level::ODIMH5*>(&o);
+    if (!v) return false;
 
 	if (vals.size())
 	{

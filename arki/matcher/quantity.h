@@ -1,11 +1,10 @@
-
 #ifndef ARKI_MATCHER_QUANTITY
 #define ARKI_MATCHER_QUANTITY
 
 /*
  * matcher/quantity - Quantity matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +30,8 @@
 #include <set>
 #include <string>
 
-namespace arki { namespace matcher {
+namespace arki {
+namespace matcher {
 
 /*============================================================================*/
 
@@ -40,14 +40,13 @@ namespace arki { namespace matcher {
  */
 struct MatchQuantity : public Implementation
 {
-	//MatchType type() const { return MATCH_TASK; }
-	std::string name() const;
+    std::string name() const override;
 
-	std::set<std::string> values;
+    std::set<std::string> values;
 
-	MatchQuantity(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchQuantity(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 
     static MatchQuantity* parse(const std::string& pattern);
     static void init();
@@ -55,25 +54,6 @@ struct MatchQuantity : public Implementation
 
 /*============================================================================*/
 
-} }
-
-// vim:set ts=4 sw=4:
+}
+}
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

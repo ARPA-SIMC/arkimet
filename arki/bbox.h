@@ -34,25 +34,24 @@ namespace arki {
 class BBox
 {
 protected:
-	Lua *L;
-	ARKI_GEOS_GEOMETRYFACTORY* gf;
-	unsigned funcCount;
+    Lua *L;
+    ARKI_GEOS_GEOMETRYFACTORY* gf;
+    unsigned funcCount;
 
 public:
-	BBox(const std::string& code = std::string());
-	virtual ~BBox();
+    BBox(const std::string& code = std::string());
+    virtual ~BBox();
 
-	/**
-	 * Compute the bounding box for an area.
-	 *
-	 * The lua code must produce a table called 'bbox' that contains a
-	 * vector of (lat, lon) pairs.
-	 *
-	 * @return the Geometry object with the bounding box, or 0 if the
-	 * computation is unsupported for this area.
-	 */
-	virtual std::auto_ptr<ARKI_GEOS_GEOMETRY> operator()(const Item<types::Area>& v) const;
-	virtual std::auto_ptr<ARKI_GEOS_GEOMETRY> operator()(const types::Area& v) const;
+    /**
+     * Compute the bounding box for an area.
+     *
+     * The lua code must produce a table called 'bbox' that contains a
+     * vector of (lat, lon) pairs.
+     *
+     * @return the Geometry object with the bounding box, or 0 if the
+     * computation is unsupported for this area.
+     */
+    virtual std::auto_ptr<ARKI_GEOS_GEOMETRY> operator()(const types::Area& v) const;
 };
 
 }

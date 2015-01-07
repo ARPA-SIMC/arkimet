@@ -58,6 +58,7 @@
 #include <iostream>
 
 using namespace std;
+using namespace arki::types;
 
 namespace arki {
 namespace scan {
@@ -287,14 +288,14 @@ void OdimH5::setSource(Metadata& md)
         is.read(buff,length);
         is.close();
 
-        md.source = types::Source::createBlob("odimh5", basedir, relname, 0, length);
+        md.set_source(Source::createBlob("odimh5", basedir, relname, 0, length));
         md.setCachedData(wibble::sys::Buffer(buff, length));
     } catch (...) {
         free(buff);
         throw;
     }
 
-	md.add_note(types::Note::create("Scanned from " + relname + ":0+" + wibble::str::fmt(length)));
+    md.add_note(*Note::create("Scanned from " + relname + ":0+" + wibble::str::fmt(length)));
 }
 
 bool OdimH5::scanLua(Metadata& md)
@@ -306,7 +307,7 @@ bool OdimH5::scanLua(Metadata& md)
         std::string error = L->run_function(*i, md);
         if (!error.empty())
         {
-            md.add_note(types::Note::create("Scanning failed: " + error));
+            md.add_note(*Note::create("Scanning failed: " + error));
             return false;
         }
 

@@ -1,7 +1,7 @@
 /*
  * types/product - Product metadata item
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ std::string Product::formatStyle(Product::Style s)
 	}
 }
 
-Item<Product> Product::decode(const unsigned char* buf, size_t len)
+auto_ptr<Product> Product::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
@@ -107,7 +107,7 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
 			uint8_t origin  = dec.popUInt(1, "GRIB1 origin"),
 				table   = dec.popUInt(1, "GRIB1 table"),
 				product = dec.popUInt(1, "GRIB1 product");
-			return product::GRIB1::create(origin, table, product);
+			return createGRIB1(origin, table, product);
 		}
 		case GRIB2: {
 			uint16_t centre     = dec.popUInt(2, "GRIB2 centre");
@@ -118,15 +118,15 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
             if (dec.len > 0) table_version = dec.popUInt(1, "GRIB2 table version");
             uint8_t local_table_version = 255;
             if (dec.len > 0) local_table_version = dec.popUInt(1, "GRIB2 local table version");
-			return product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version);
-		}
+            return createGRIB2(centre, discipline, category, number, table_version, local_table_version);
+        }
 		case BUFR: {
 			uint8_t type         = dec.popUInt(1, "GRIB1 type"),
 				subtype      = dec.popUInt(1, "GRIB1 subtype"),
 				localsubtype = dec.popUInt(1, "GRIB1 localsubtype");
 			ValueBag values = ValueBag::decode(dec.buf, dec.len);
-			return product::BUFR::create(type, subtype, localsubtype, values);
-		}
+            return createBUFR(type, subtype, localsubtype, values);
+        }
 		case ODIMH5: {
 			size_t 			len;
 			std::string 	o;
@@ -141,10 +141,10 @@ Item<Product> Product::decode(const unsigned char* buf, size_t len)
 			/*REMOVED: p1 	= dec.popDouble("ODIMH5 prodpar1"); */
 			/*REMOVED: p2	= dec.popDouble("ODIMH5 prodpar2"); */
 
-			return product::ODIMH5::create(o, p);
-		}
+            return createODIMH5(o, p);
+        }
         case VM2: {
-            return product::VM2::create(dec.popUInt(4, "VM2 variable id"));
+            return createVM2(dec.popUInt(4, "VM2 variable id"));
         }
 		default:
 			throw wibble::exception::Consistency("parsing Product", "style is " + formatStyle(s) + "but we can only decode GRIB1, GRIB2 and BUFR");
@@ -161,31 +161,31 @@ static double parseDouble(const std::string& val)
 }
 */
 
-Item<Product> Product::decodeString(const std::string& val)
+auto_ptr<Product> Product::decodeString(const std::string& val)
 {
 	string inner;
 	Product::Style style = outerParse<Product>(val, inner);
 	switch (style)
 	{
-		//case Product::NONE: return Product();
-		case Product::GRIB1: {
-			NumberList<3> nums(inner, "Product");
-			return product::GRIB1::create(nums.vals[0], nums.vals[1], nums.vals[2]);
-		}
-		case Product::GRIB2: {
+        //case Product::NONE: return Product();
+        case Product::GRIB1: {
+            NumberList<3> nums(inner, "Product");
+            return createGRIB1(nums.vals[0], nums.vals[1], nums.vals[2]);
+        }
+        case Product::GRIB2: {
             NumberList<6, 4> nums(inner, "Product", true);
             unsigned char table_version = nums.found > 4 ? nums.vals[4] : 4;
             unsigned char local_table_version = nums.found > 5 ? nums.vals[5] : 255;
-            return product::GRIB2::create(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3],
+            return createGRIB2(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3],
                     table_version, local_table_version);
-		}
+        }
 		case Product::BUFR: {
 			NumberList<3> nums(inner, "Product", true);
 			inner = str::trim(nums.tail);
 			if (!inner.empty() && inner[0] == ',')
 				inner = str::trim(nums.tail.substr(1));
-			return product::BUFR::create(nums.vals[0], nums.vals[1], nums.vals[2], ValueBag::parse(inner));
-		}
+            return createBUFR(nums.vals[0], nums.vals[1], nums.vals[2], ValueBag::parse(inner));
+        }
 		case Product::ODIMH5: {
 
 			std::vector<std::string> values;
@@ -200,8 +200,8 @@ Item<Product> Product::decodeString(const std::string& val)
 			/*REMOVED: double 		p1	= parseDouble(values[2]); */
 			/*REMOVED: double 		p2	= parseDouble(values[3]); */
 
-			return product::ODIMH5::create(o, p);
-		}
+            return createODIMH5(o, p);
+        }
         case Product::VM2: {
             using wibble::exception::Consistency;
             const char* innerptr = inner.c_str();
@@ -210,24 +210,24 @@ Item<Product> Product::decodeString(const std::string& val)
             if (innerptr == endptr)
                 throw Consistency("parsing" + inner,
                                   "expected a number, but found \"" + inner +"\"");
-            return product::VM2::create(variable_id);
+            return createVM2(variable_id);
         }
 		default:
 			throw wibble::exception::Consistency("parsing Product", "unknown Product style " + formatStyle(style));
 	}
 }
 
-Item<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Product::GRIB1: return product::GRIB1::decodeMapping(val);
-        case Product::GRIB2: return product::GRIB2::decodeMapping(val);
-        case Product::BUFR: return product::BUFR::decodeMapping(val);
-        case Product::ODIMH5: return product::ODIMH5::decodeMapping(val);
-        case Product::VM2: return product::VM2::decodeMapping(val);
+        case Product::GRIB1: return upcast<Product>(product::GRIB1::decodeMapping(val));
+        case Product::GRIB2: return upcast<Product>(product::GRIB2::decodeMapping(val));
+        case Product::BUFR: return upcast<Product>(product::BUFR::decodeMapping(val));
+        case Product::ODIMH5: return upcast<Product>(product::ODIMH5::decodeMapping(val));
+        case Product::VM2: return upcast<Product>(product::VM2::decodeMapping(val));
         default:
             throw wibble::exception::Consistency("parsing Product", "unknown Product style " + val.get_string());
     }
@@ -238,9 +238,8 @@ static int arkilua_new_grib1(lua_State* L)
 	int origin = luaL_checkint(L, 1);
 	int table = luaL_checkint(L, 2);
 	int product = luaL_checkint(L, 3);
-	Item<> res = product::GRIB1::create(origin, table, product);
-	res->lua_push(L);
-	return 1;
+    product::GRIB1::create(origin, table, product)->lua_push(L);
+    return 1;
 }
 
 static int arkilua_new_grib2(lua_State* L)
@@ -251,9 +250,8 @@ static int arkilua_new_grib2(lua_State* L)
 	int number = luaL_checkint(L, 4);
     int table_version = lua_gettop(L) > 4 ? luaL_checkint(L, 5) : 4;
     int local_table_version = lua_gettop(L) > 5 ? luaL_checkint(L, 6) : 255;
-    Item<> res = product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version);
-	res->lua_push(L);
-	return 1;
+    product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version)->lua_push(L);
+    return 1;
 }
 
 static int arkilua_new_bufr(lua_State* L)
@@ -302,13 +300,39 @@ void Product::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_product", lib);
 }
 
-namespace product {
+std::auto_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned char table, unsigned char product)
+{
+    return upcast<Product>(product::GRIB1::create(origin, table, product));
+}
+std::auto_ptr<Product> Product::createGRIB2(
+        unsigned short centre,
+        unsigned char discipline,
+        unsigned char category,
+        unsigned char number,
+        unsigned char table_version,
+        unsigned char local_table_version)
+{
+    return upcast<Product>(product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version));
+}
+std::auto_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype)
+{
+    return upcast<Product>(product::BUFR::create(type, subtype, localsubtype));
+}
+std::auto_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name)
+{
+    return upcast<Product>(product::BUFR::create(type, subtype, localsubtype, name));
+}
+std::auto_ptr<Product> Product::createODIMH5(const std::string& obj, const std::string& prod)
+{
+    return upcast<Product>(product::ODIMH5::create(obj, prod));
+}
+std::auto_ptr<Product> Product::createVM2(unsigned variable_id)
+{
+    return upcast<Product>(product::VM2::create(variable_id));
+}
 
-static TypeCache<GRIB1> cache_grib1;
-static TypeCache<GRIB2> cache_grib2;
-static TypeCache<BUFR> cache_bufr;
-static TypeCache<ODIMH5>	cache_odimh5;
-static TypeCache<VM2> cache_vm2;
+
+namespace product {
 
 Product::Style GRIB1::style() const { return Product::GRIB1; }
 void GRIB1::encodeWithoutEnvelope(Encoder& enc) const
@@ -335,7 +359,7 @@ void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("ta", m_table);
     e.add("pr", m_product);
 }
-Item<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB1::create(
             val["or"].want_int("parsing GRIB1 origin origin"),
@@ -362,20 +386,29 @@ int GRIB1::compare_local(const Product& o) const
 	return m_product - v->m_product;
 }
 
-bool GRIB1::operator==(const Type& o) const
+bool GRIB1::equals(const Type& o) const
 {
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v) return false;
 	return m_origin == v->m_origin && m_table == v->m_table && m_product == v->m_product;
 }
 
-Item<GRIB1> GRIB1::create(unsigned char origin, unsigned char table, unsigned char product)
+GRIB1* GRIB1::clone() const
 {
-	GRIB1* res = new GRIB1;
-	res->m_origin = origin;
-	res->m_table = table;
-	res->m_product = product;
-	return cache_grib1.intern(res);
+    GRIB1* res = new GRIB1;
+    res->m_origin = m_origin;
+    res->m_table = m_table;
+    res->m_product = m_product;
+    return res;
+}
+
+auto_ptr<GRIB1> GRIB1::create(unsigned char origin, unsigned char table, unsigned char product)
+{
+    GRIB1* res = new GRIB1;
+    res->m_origin = origin;
+    res->m_table = table;
+    res->m_product = product;
+    return auto_ptr<GRIB1>(res);
 }
 
 std::vector<int> GRIB1::toIntVector() const
@@ -444,7 +477,7 @@ void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("tv", m_table_version);
     e.add("ltv", m_local_table_version);
 }
-Item<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& tv = val["tv"];
@@ -489,7 +522,7 @@ int GRIB2::compare_local(const Product& o) const
     return m_local_table_version - v->m_local_table_version;
 }
 
-bool GRIB2::operator==(const Type& o) const
+bool GRIB2::equals(const Type& o) const
 {
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v) return false;
@@ -501,16 +534,28 @@ bool GRIB2::operator==(const Type& o) const
         && m_local_table_version == v->m_local_table_version;
 }
 
-Item<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number, unsigned char table_version, unsigned char local_table_version)
+GRIB2* GRIB2::clone() const
 {
-	GRIB2* res = new GRIB2;
-	res->m_centre = centre;
-	res->m_discipline = discipline;
-	res->m_category = category;
-	res->m_number = number;
+    GRIB2* res = new GRIB2;
+    res->m_centre = m_centre;
+    res->m_discipline = m_discipline;
+    res->m_category = m_category;
+    res->m_number = m_number;
+    res->m_table_version = m_table_version;
+    res->m_local_table_version = m_local_table_version;
+    return res;
+}
+
+auto_ptr<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number, unsigned char table_version, unsigned char local_table_version)
+{
+    GRIB2* res = new GRIB2;
+    res->m_centre = centre;
+    res->m_discipline = discipline;
+    res->m_category = category;
+    res->m_number = number;
     res->m_table_version = table_version;
     res->m_local_table_version = local_table_version;
-	return cache_grib2.intern(res);
+    return auto_ptr<GRIB2>(res);
 }
 
 std::vector<int> GRIB2::toIntVector() const
@@ -580,7 +625,7 @@ void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
         m_values.serialise(e);
     }
 }
-Item<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& va = val["va"];
@@ -619,7 +664,7 @@ int BUFR::compare_local(const Product& o) const
 	if (int res = m_localsubtype - v->m_localsubtype) return res;
 	return m_values.compare(v->m_values);
 }
-bool BUFR::operator==(const Type& o) const
+bool BUFR::equals(const Type& o) const
 {
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v) return false;
@@ -629,34 +674,38 @@ bool BUFR::operator==(const Type& o) const
 	    && m_values == v->m_values;
 }
 
-Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
+BUFR* BUFR::clone() const
 {
-	BUFR* res = new BUFR;
-	res->m_type = type;
-	res->m_subtype = subtype;
-	res->m_localsubtype = localsubtype;
-	return cache_bufr.intern(res);
+    BUFR* res = new BUFR;
+    res->m_type = m_type;
+    res->m_subtype = m_subtype;
+    res->m_localsubtype = m_localsubtype;
+    res->m_values = m_values;
+    return res;
 }
 
-Item<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& values)
+auto_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
+{
+    BUFR* res = new BUFR;
+    res->m_type = type;
+    res->m_subtype = subtype;
+    res->m_localsubtype = localsubtype;
+    return auto_ptr<BUFR>(res);
+}
+
+auto_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& values)
 {
 	BUFR* res = new BUFR;
 	res->m_type = type;
 	res->m_subtype = subtype;
 	res->m_localsubtype = localsubtype;
 	res->m_values = values;
-	return cache_bufr.intern(res);
+    return auto_ptr<BUFR>(res);
 }
 
-Item<BUFR> BUFR::addValues(const ValueBag& newvalues) const
+void BUFR::addValues(const ValueBag& newvalues)
 {
-	BUFR* res = new BUFR;
-	res->m_type = m_type;
-	res->m_subtype = m_subtype;
-	res->m_localsubtype = m_localsubtype;
-	res->m_values = m_values;
-	res->m_values.update(newvalues);
-	return cache_bufr.intern(res);
+    m_values.update(newvalues);
 }
 
 std::vector<int> BUFR::toIntVector() const
@@ -681,14 +730,17 @@ bool BUFR::lua_lookup(lua_State* L, const std::string& name) const
 
 static int arkilua_addvalues(lua_State* L)
 {
-	Item<BUFR> b = Type::lua_check<Product>(L, 1).upcast<BUFR>();
-	luaL_checktype(L, 2, LUA_TTABLE);
+    BUFR* b = dynamic_cast<BUFR*>(Type::lua_check<Product>(L, 1));
+    luaL_checktype(L, 2, LUA_TTABLE);
 
-	ValueBag values;
-	values.load_lua_table(L, 2);
+    ValueBag values;
+    values.load_lua_table(L, 2);
 
-	b->addValues(values)->lua_push(L);
-        return 1;
+    // TODO: change the LUA API to allow in-place modification
+    BUFR copy(*b);
+    copy.addValues(values);
+    copy.lua_push(L);
+    return 1;
 }
 
 void BUFR::lua_register_methods(lua_State* L) const
@@ -735,7 +787,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("pr", m_prod);
 }
 
-Item<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return ODIMH5::create(
@@ -775,7 +827,7 @@ int ODIMH5::compare_local(const Product& o) const
 	return 0;
 }
 
-bool ODIMH5::operator==(const Type& o) const
+bool ODIMH5::equals(const Type& o) const
 {
 	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
 	if (!v) return false;
@@ -784,16 +836,24 @@ bool ODIMH5::operator==(const Type& o) const
 		;
 }
 
-Item<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& prod
+ODIMH5* ODIMH5::clone() const
+{
+    ODIMH5* res = new ODIMH5;
+    res->m_obj = m_obj;
+    res->m_prod = m_prod;
+    return res;
+}
+
+auto_ptr<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& prod
 	/*PRODPAR: , double prodpar1, double prodpar2 */
 )
 {
-	ODIMH5* res 	= new ODIMH5;
-	res->m_obj 	= obj;
-	res->m_prod 	= prod;
-	/*REMOVED: res->m_prodpar1 = prodpar1; */
-	/*REMOVED: res->m_prodpar2	= prodpar2; */
-	return cache_odimh5.intern(res);
+    ODIMH5* res = new ODIMH5;
+    res->m_obj = obj;
+    res->m_prod = prod;
+    /*REMOVED: res->m_prodpar1 = prodpar1; */
+    /*REMOVED: res->m_prodpar2  = prodpar2; */
+    return auto_ptr<ODIMH5>(res);
 }
 
 std::vector<int> ODIMH5::toIntVector() const
@@ -882,7 +942,7 @@ int VM2::compare_local(const Product& o) const
     if (m_variable_id == v->m_variable_id) return 0;
     return (m_variable_id > v->m_variable_id ? 1 : -1);
 }
-bool VM2::operator==(const Type& o) const
+bool VM2::equals(const Type& o) const
 {
     const VM2* v = dynamic_cast<const VM2*>(&o);
     if (!v) return false;
@@ -904,13 +964,20 @@ bool VM2::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-Item<VM2> VM2::create(unsigned variable_id)
+VM2* VM2::clone() const
+{
+    VM2* res = new VM2;
+    res->m_variable_id = m_variable_id;
+    return res;
+}
+
+auto_ptr<VM2> VM2::create(unsigned variable_id)
 {
     VM2* res = new VM2;
     res->m_variable_id = variable_id;
-    return cache_vm2.intern(res);
+    return auto_ptr<VM2>(res);
 }
-Item<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
 {
     return VM2::create(val["id"].want_int("parsing VM2 variable id"));
 }
@@ -920,23 +987,13 @@ std::vector<int> VM2::toIntVector() const
 	return vector<int>();
 }
 
-static void debug_interns()
-{
-	fprintf(stderr, "product GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
-	fprintf(stderr, "product GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
-	fprintf(stderr, "product BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
-	fprintf(stderr, "product ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
-    fprintf(stderr, "product VM2: sz %zd reused %zd\n", cache_vm2.size(), cache_odimh5.reused());
-}
-
 }
 
 void Product::init()
 {
-    MetadataType::register_type<Product>(product::debug_interns);
+    MetadataType::register_type<Product>();
 }
 
 }
 }
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:

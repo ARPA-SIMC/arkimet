@@ -68,30 +68,25 @@ struct Stats : public types::CoreType<Stats>
 
     Stats() : count(0), size(0) {}
     Stats(const Metadata& md);
-    Stats(size_t count, unsigned long long size, const types::Reftime* reftime);
 
-    virtual int compare(const Type& o) const;
-    virtual int compare(const Stats& o) const;
-    virtual bool operator==(const Type& o) const;
-    virtual bool operator==(const Stats& o) const;
-
-    bool operator!=(const Stats& i) const { return !operator==(i); }
-    bool operator<(const Stats& i) const { return compare(i) < 0; }
+    int compare(const Type& o) const override;
+    bool equals(const Type& o) const override;
 
     void merge(const Stats& s);
     void merge(const Metadata& md);
-    void merge(size_t count, unsigned long long size, const types::Reftime* reftime);
 
-    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-    std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string toYaml(size_t indent = 0) const;
     void toYaml(std::ostream& out, size_t indent = 0) const;
-    static UItem<Stats> decode(const unsigned char* buf, size_t len);
-    static UItem<Stats> decodeString(const std::string& str);
-    static UItem<Stats> decodeMapping(const emitter::memory::Mapping& val);
+    static std::auto_ptr<Stats> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Stats> decodeString(const std::string& str);
+    static std::auto_ptr<Stats> decodeMapping(const emitter::memory::Mapping& val);
 
-    virtual void lua_push(lua_State* L) const;
+    Stats* clone() const override;
+
+    //void lua_push(lua_State* L) const override;
     static int lua_lookup(lua_State* L);
 };
 

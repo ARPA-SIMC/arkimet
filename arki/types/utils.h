@@ -49,42 +49,6 @@ struct Mapping;
 
 namespace types {
 
-template<typename T>
-class TypeCache
-{
-protected:
-	// TODO: use unordered_set when it becomes available
-	std::set< Item<T> > m_cache;
-	size_t m_reused;
-
-public:
-	TypeCache() : m_reused(0) {}
-
-	size_t size() const { return m_cache.size(); }
-	size_t reused() const { return m_reused; }
-
-	/**
-	 * If \a item exists in the cache, return the cached version.
-	 * Else, enter \a item in the cache and return it
-	 */
-	Item<T> intern(Item<T> item)
-	{
-		typename std::set< Item<T> >::const_iterator i = m_cache.find(item);
-		if (i != m_cache.end())
-		{
-			++m_reused;
-			return *i;
-		}
-		m_cache.insert(item);
-		return item;
-	}
-
-	void uncache(Item<T> item)
-	{
-		m_cache.erase(item);
-	}
-};
-
 /**
  * This class is used to register types with the arkimet metadata type system.
  *
@@ -93,11 +57,11 @@ public:
  */
 struct MetadataType
 {
-	typedef Item<Type> (*item_decoder)(const unsigned char* start, size_t len);
-	typedef Item<Type> (*string_decoder)(const std::string& val);
-	typedef Item<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
-	typedef void (*lua_libloader)(lua_State* L);
-	typedef void (*intern_stats)();
+    typedef std::auto_ptr<Type> (*item_decoder)(const unsigned char* start, size_t len);
+    typedef std::auto_ptr<Type> (*string_decoder)(const std::string& val);
+    typedef std::auto_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
+    typedef void (*lua_libloader)(lua_State* L);
+    typedef void (*intern_stats)();
 
 	types::Code serialisationCode;
 	int serialisationSizeLen;

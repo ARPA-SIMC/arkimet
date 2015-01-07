@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,16 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/origin.h>
-#include <arki/matcher.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -45,79 +36,66 @@ TESTGRP(arki_types_origin);
 template<> template<>
 void to::test<1>()
 {
-	Item<Origin> o = origin::GRIB1::create(1, 2, 3);
-	ensure_equals(o->style(), Origin::GRIB1);
-	const origin::GRIB1* v = o->upcast<origin::GRIB1>();
-	ensure_equals(v->centre(), 1u);
-	ensure_equals(v->subcentre(), 2u);
-	ensure_equals(v->process(), 3u);
+    tests::TestGenericType t("origin", "GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB1(1, 1, 1)");
+    t.lower.push_back("GRIB1(1, 2, 2)");
+    t.higher.push_back("GRIB1(1, 2, 4)");
+    t.higher.push_back("GRIB1(2, 3, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4, 5)");
+    t.higher.push_back("BUFR(1, 2)");
+    t.exact_query = "GRIB1,1,2,3";
+    wassert(t);
 
-	ensure_equals(o, Item<Origin>(origin::GRIB1::create(1, 2, 3)));
-
-	ensure(o != origin::GRIB1::create(2, 3, 4));
-	ensure(o != origin::GRIB2::create(1, 2, 3, 4, 5));
-	ensure(o != origin::BUFR::create(1, 2));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB1,1,2,3");
-	Matcher m = Matcher::parse("origin:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
+    wassert(actual(o->style()) == Origin::GRIB1);
+    const origin::GRIB1* v = dynamic_cast<origin::GRIB1*>(o.get());
+    wassert(actual(v->centre()) == 1u);
+    wassert(actual(v->subcentre()) == 2u);
+    wassert(actual(v->process()) == 3u);
 }
 
 // Check GRIB2
 template<> template<>
 void to::test<2>()
 {
-	Item<Origin> o = origin::GRIB2::create(1, 2, 3, 4, 5);
-	ensure_equals(o->style(), Origin::GRIB2);
-	const origin::GRIB2* v = o->upcast<origin::GRIB2>();
-	ensure_equals(v->centre(), 1u);
-	ensure_equals(v->subcentre(), 2u);
-	ensure_equals(v->processtype(), 3u);
-	ensure_equals(v->bgprocessid(), 4u);
-	ensure_equals(v->processid(), 5u);
+    tests::TestGenericType t("origin", "GRIB2(1, 2, 3, 4, 5)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(1, 2, 3, 4, 4)");
+    t.higher.push_back("GRIB2(1, 2, 3, 4, 6)");
+    t.higher.push_back("GRIB2(2, 3, 4, 5, 6)");
+    t.higher.push_back("BUFR(1, 2)");
+    t.exact_query = "GRIB2,1,2,3,4,5";
+    wassert(t);
 
-	ensure_equals(o, Item<Origin>(origin::GRIB2::create(1, 2, 3, 4, 5)));
-
-	ensure(o != origin::GRIB2::create(2, 3, 4, 5, 6));
-	ensure(o != origin::GRIB1::create(1, 2, 3));
-	ensure(o != origin::BUFR::create(1, 2));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB2,1,2,3,4,5");
-	Matcher m = Matcher::parse("origin:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Origin> o = Origin::createGRIB2(1, 2, 3, 4, 5);
+    wassert(actual(o->style()) == Origin::GRIB2);
+    const origin::GRIB2* v = dynamic_cast<origin::GRIB2*>(o.get());
+    wassert(actual(v->centre()) == 1u);
+    wassert(actual(v->subcentre()) == 2u);
+    wassert(actual(v->processtype()) == 3u);
+    wassert(actual(v->bgprocessid()) == 4u);
+    wassert(actual(v->processid()) == 5u);
 }
 
 // Check BUFR
 template<> template<>
 void to::test<3>()
 {
-	Item<Origin> o = origin::BUFR::create(1, 2);
-	ensure_equals(o->style(), Origin::BUFR);
-	const origin::BUFR* v = o->upcast<origin::BUFR>();
-	ensure_equals(v->centre(), 1u);
-	ensure_equals(v->subcentre(), 2u);
+    tests::TestGenericType t("origin", "BUFR(1, 2)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(1, 2, 3, 4, 5)");
+    t.lower.push_back("BUFR(0, 2)");
+    t.lower.push_back("BUFR(1, 1)");
+    t.higher.push_back("BUFR(1, 3)");
+    t.higher.push_back("BUFR(2, 1)");
+    t.exact_query = "BUFR,1,2";
+    wassert(t);
 
-	ensure_equals(o, Item<Origin>(origin::BUFR::create(1, 2)));
-
-	ensure(o != origin::BUFR::create(2, 3));
-	ensure(o != origin::GRIB1::create(1, 2, 3));
-	ensure(o != origin::GRIB2::create(1, 2, 3, 4, 5));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "BUFR,1,2");
-	Matcher m = Matcher::parse("origin:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Origin> o = Origin::createBUFR(1, 2);
+    wassert(actual(o->style()) == Origin::BUFR);
+    const origin::BUFR* v = dynamic_cast<origin::BUFR*>(o.get());
+    wassert(actual(v->centre()) == 1u);
+    wassert(actual(v->subcentre()) == 2u);
 }
 
 #ifdef HAVE_LUA
@@ -125,7 +103,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Item<Origin> o = origin::GRIB1::create(1, 2, 3);
+    auto_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -139,110 +117,55 @@ void to::test<4>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 }
 #endif
 
-// Check comparisons
+// Check ODIMH5
 template<> template<>
 void to::test<5>()
 {
-    wassert(actual(origin::GRIB1::create(1, 2, 3)).compares(
-                origin::GRIB1::create(2, 3, 4),
-                origin::GRIB1::create(2, 3, 4)));
-}
+    tests::TestGenericType t("origin", "ODIMH5(1, 2, 3)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(1, 2, 3, 4, 5)");
+    t.lower.push_back("BUFR(0, 2)");
+    t.higher.push_back("ODIMH5(1a, 2, 3)");
+    t.higher.push_back("ODIMH5(1, 2a, 3)");
+    t.higher.push_back("ODIMH5(1, 2, 3a)");
+    t.higher.push_back("ODIMH5(1a, 2a, 3a)");
+    t.exact_query = "ODIMH5,1,2,3";
+    wassert(t);
 
-// Check ODIMH5
-template<> template<>
-void to::test<6>()
-{
-	Item<Origin> o = origin::ODIMH5::create("1", "2", "3");
-
-	ensure_equals(o->style(), Origin::ODIMH5);
-
-	const origin::ODIMH5* v = o->upcast<origin::ODIMH5>();
-
-	ensure_equals(v->getWMO(), "1");
-	ensure_equals(v->getRAD(), "2");
-	ensure_equals(v->getPLC(), "3");
-
-	ensure_equals(o, Item<Origin>(origin::ODIMH5::create("1", "2", "3")));
-
-	ensure(o != origin::BUFR::create(2, 3));
-	ensure(o != origin::GRIB1::create(1, 2, 3));
-	ensure(o != origin::GRIB2::create(1, 2, 3, 4, 5));
-	ensure(o != origin::ODIMH5::create("1a", "2", "3"));
-	ensure(o != origin::ODIMH5::create("1", "2a", "3"));
-	ensure(o != origin::ODIMH5::create("1", "2", "3a"));
-	ensure(o != origin::ODIMH5::create("1a", "2a", "3a"));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "ODIMH5,1,2,3");
-	Matcher m = Matcher::parse("origin:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
+    wassert(actual(o->style()) == Origin::ODIMH5);
+    const origin::ODIMH5* v = dynamic_cast<origin::ODIMH5*>(o.get());
+    wassert(actual(v->getWMO()) == "1");
+    wassert(actual(v->getRAD()) == "2");
+    wassert(actual(v->getPLC()) == "3");
 }
 
 // Check ODIMH5 with empty strings
 template<> template<>
-void to::test<7>()
+void to::test<6>()
 {
-    Item<Origin> o = origin::ODIMH5::create("", "2", "3");
-    ensure_equals(o->style(), Origin::ODIMH5);
-
-    const origin::ODIMH5* v = o->upcast<origin::ODIMH5>();
-    ensure_equals(v->getWMO(), "");
-    ensure_equals(v->getRAD(), "2");
-    ensure_equals(v->getPLC(), "3");
-
-    ensure_equals(o, Item<Origin>(origin::ODIMH5::create("", "2", "3")));
-
-    ensure(o != origin::ODIMH5::create("1", "2", "3"));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-    // Test generating a matcher expression
-    ensure_equals(o->exactQuery(), "ODIMH5,,2,3");
-    Matcher m = Matcher::parse("origin:" + o->exactQuery());
-    ensure(m(o));
-}
-
-// Test basic type ops
-template<> template<>
-void to::test<8>()
-{
-    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "GRIB1(1, 2, 3)");
-    t.lower.push_back("GRIB1(1, 1, 1)");
-    t.lower.push_back("GRIB1(1, 2, 2)");
-    t.higher.push_back("GRIB1(1, 2, 4)");
-    t.higher.push_back("GRIB1(2, 3, 4)");
-    t.higher.push_back("GRIB2(1, 2, 3, 4, 5)");
-    t.higher.push_back("BUFR(1, 2)");
+    tests::TestGenericType t("origin", "ODIMH5(, 2, 3)");
+    t.lower.push_back("GRIB1(1, 2, 3)");
+    t.lower.push_back("GRIB2(1, 2, 3, 4, 5)");
+    t.lower.push_back("BUFR(0, 2)");
+    t.higher.push_back("ODIMH5(1a, 2, 3)");
+    t.higher.push_back("ODIMH5(1, 2a, 3)");
+    t.higher.push_back("ODIMH5(1, 2, 3a)");
+    t.higher.push_back("ODIMH5(1a, 2a, 3a)");
+    t.exact_query = "ODIMH5,,2,3";
     wassert(t);
-}
-template<> template<>
-void to::test<9>()
-{
-    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "GRIB2(1, 2, 3, 4, 5)");
-    wassert(t);
-}
-template<> template<>
-void to::test<10>()
-{
-    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "BUFR(1, 2)");
-    wassert(t);
-}
-template<> template<>
-void to::test<11>()
-{
-    arki::tests::TestGenericType t(types::TYPE_ORIGIN, "ODIMH5(,2,3)");
-    wassert(t);
+
+    auto_ptr<Origin> o = Origin::createODIMH5("", "2", "3");
+    wassert(actual(o->style()) == Origin::ODIMH5);
+    const origin::ODIMH5* v = dynamic_cast<origin::ODIMH5*>(o.get());
+    wassert(actual(v->getWMO()) == "");
+    wassert(actual(v->getRAD()) == "2");
+    wassert(actual(v->getPLC()) == "3");
 }
 
 }
-
-// vim:set ts=4 sw=4:

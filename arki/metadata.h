@@ -35,6 +35,12 @@ struct lua_State;
 
 namespace arki {
 
+namespace types {
+namespace source {
+struct Blob;
+}
+}
+
 namespace metadata {
 class Consumer;
 
@@ -59,19 +65,24 @@ struct Metadata : public ItemSet
 {
 protected:
     std::string m_notes;
-
-public:
-	UItem<types::Source> source;
+    types::Source* m_source;
 
 public:
     Metadata();
+    Metadata(const Metadata&);
     ~Metadata();
+    Metadata& operator=(const Metadata&);
 
-	std::vector< Item<types::Note> > notes() const;
-	const std::string& notes_encoded() const;
-	void set_notes(const std::vector< Item<types::Note> >& notes);
-	void set_notes_encoded(const std::string& notes);
-	void add_note(const Item<types::Note>& note);
+    bool has_source() const { return m_source; }
+    const types::Source& source() const;
+    const types::source::Blob& sourceBlob() const;
+    void set_source(std::auto_ptr<types::Source> s);
+
+    std::vector<types::Note> notes() const;
+    const std::string& notes_encoded() const;
+    void set_notes(const std::vector<types::Note>& notes);
+    void set_notes_encoded(const std::string& notes);
+    void add_note(const types::Note& note);
 
 	/**
 	 * Check that two Metadata contain the same information
@@ -176,10 +187,10 @@ public:
     /// Serialise using an emitter
     void serialise(Emitter& e, const Formatter* f=0) const;
 
-	/**
-	 * Encode to a string
-	 */
-	std::string encode() const;
+    /**
+     * Encode to a string
+     */
+    std::string encodeBinary() const;
 
 
 	/**

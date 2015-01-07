@@ -55,7 +55,7 @@ void URL::serialiseLocal(Emitter& e, const Formatter* f) const
     Source::serialiseLocal(e, f);
     e.add("url"); e.add(url);
 }
-Item<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
+std::auto_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
 {
     return URL::create(
             val["f"].want_string("parsing url source format"),
@@ -88,19 +88,27 @@ int URL::compare_local(const Source& o) const
 	if (url > v->url) return 1;
 	return 0;
 }
-bool URL::operator==(const Type& o) const
+bool URL::equals(const Type& o) const
 {
 	const URL* v = dynamic_cast<const URL*>(&o);
 	if (!v) return false;
 	return format == v->format && url == v->url;
 }
 
-Item<URL> URL::create(const std::string& format, const std::string& url)
+URL* URL::clone() const
 {
-	URL* res = new URL;
-	res->format = format;
-	res->url = url;
-	return res;
+    URL* res = new URL;
+    res->format = format;
+    res->url = url;
+    return res;
+}
+
+std::auto_ptr<URL> URL::create(const std::string& format, const std::string& url)
+{
+    URL* res = new URL;
+    res->format = format;
+    res->url = url;
+    return auto_ptr<URL>(res);
 }
 
 wibble::sys::Buffer URL::loadData() const

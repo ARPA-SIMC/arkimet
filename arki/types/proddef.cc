@@ -72,39 +72,39 @@ std::string Proddef::formatStyle(Proddef::Style s)
 	}
 }
 
-Item<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
+auto_ptr<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils::codec;
-	ensureSize(len, 1, "Proddef");
-	Style s = (Style)decodeUInt(buf, 1);
-	switch (s)
-	{
-		case GRIB:
-			return proddef::GRIB::create(ValueBag::decode(buf+1, len-1));
-		default:
-			throw wibble::exception::Consistency("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
-	}
+    using namespace utils::codec;
+    ensureSize(len, 1, "Proddef");
+    Style s = (Style)decodeUInt(buf, 1);
+    switch (s)
+    {
+        case GRIB:
+            return createGRIB(ValueBag::decode(buf+1, len-1));
+        default:
+            throw wibble::exception::Consistency("parsing Proddef", "style is " + formatStyle(s) + " but we can only decode GRIB");
+    }
 }
 
-Item<Proddef> Proddef::decodeString(const std::string& val)
+auto_ptr<Proddef> Proddef::decodeString(const std::string& val)
 {
-	string inner;
-	Proddef::Style style = outerParse<Proddef>(val, inner);
-	switch (style)
-	{
-		case Proddef::GRIB: return proddef::GRIB::create(ValueBag::parse(inner)); 
-		default:
-			throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + formatStyle(style));
-	}
+    string inner;
+    Proddef::Style style = outerParse<Proddef>(val, inner);
+    switch (style)
+    {
+        case Proddef::GRIB: return createGRIB(ValueBag::parse(inner));
+        default:
+            throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + formatStyle(style));
+    }
 }
 
-Item<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Proddef::GRIB: return proddef::GRIB::decodeMapping(val);
+        case Proddef::GRIB: return upcast<Proddef>(proddef::GRIB::decodeMapping(val));
         default:
             throw wibble::exception::Consistency("parsing Proddef", "unknown Proddef style " + val.get_string());
     }
@@ -130,9 +130,12 @@ void Proddef::lua_loadlib(lua_State* L)
 }
 #endif
 
-namespace proddef {
+auto_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
+{
+    return upcast<Proddef>(proddef::GRIB::create(values));
+}
 
-static TypeCache<GRIB> cache_grib;
+namespace proddef {
 
 GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
@@ -153,7 +156,7 @@ void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-Item<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -186,70 +189,34 @@ int GRIB::compare_local(const Proddef& o) const
 	return m_values.compare(v->m_values);
 }
 
-bool GRIB::operator==(const Type& o) const
+bool GRIB::equals(const Type& o) const
 {
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v) return false;
 	return m_values == v->m_values;
 }
 
-Item<GRIB> GRIB::create(const ValueBag& values)
+GRIB* GRIB::clone() const
 {
-	GRIB* res = new GRIB;
-	res->m_values = values;
-	return cache_grib.intern(res);
+    GRIB* res = new GRIB;
+    res->m_values = m_values;
+    return res;
 }
 
-static void debug_interns()
+auto_ptr<GRIB> GRIB::create(const ValueBag& values)
 {
-	fprintf(stderr, "Proddef GRIB: sz %zd reused %zd\n", cache_grib.size(), cache_grib.reused());
+    GRIB* res = new GRIB;
+    res->m_values = values;
+    return auto_ptr<GRIB>(res);
 }
 
 }
 
 void Proddef::init()
 {
-    MetadataType::register_type<Proddef>(proddef::debug_interns);
+    MetadataType::register_type<Proddef>();
 }
 
 }
 }
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:
-
-
-#if 0
-	-- Move to the matcher
-	virtual bool match(const ValueBag& wanted) const
-	{
-		// Both a and b are sorted, so we can iterate them linearly together
-
-		values_t::const_iterator a = values.begin();
-		ValueBag::const_iterator b = wanted.begin();
-
-		while (a != values.end())
-		{
-			// Nothing else wanted anymore
-			if (b == wanted.end())
-				return true;
-			if (a->first < b->first)
-				// This value is not in the match expression
-				++a;
-			else if (b->first < a->first)
-				// This value is wanted but we don't have it
-				return false;
-			else if (*a->second != *b->second)
-				// Same key, check if the value is the same
-				return false;
-			else
-			{
-				// If also the value is the same, move on to the next item
-				++a;
-				++b;
-			}
-		}
-		// We got to the end of a.  If there are still things in b, we don't
-		// match.  If we are also to the end of b, then we matched everything
-		return b == wanted.end();
-	}
-#endif

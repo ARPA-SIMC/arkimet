@@ -1,7 +1,7 @@
 /*
  * matcher/run - Run matcher
  *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace matcher {
@@ -52,12 +53,12 @@ MatchRunMinute::MatchRunMinute(const std::string& pattern)
 			strtoul(pattern.substr(pos + 1).c_str(), 0, 10);
 }
 
-bool MatchRunMinute::matchItem(const Item<>& o) const
+bool MatchRunMinute::matchItem(const Type& o) const
 {
-	const types::run::Minute* v = dynamic_cast<const types::run::Minute*>(o.ptr());
-	if (!v) return false;
-	if (minute >= 0 && (unsigned)minute != v->minute()) return false;
-	return true;
+    const types::run::Minute* v = dynamic_cast<const types::run::Minute*>(&o);
+    if (!v) return false;
+    if (minute >= 0 && (unsigned)minute != v->minute()) return false;
+    return true;
 }
 
 std::string MatchRunMinute::toString() const

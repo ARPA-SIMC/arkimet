@@ -28,6 +28,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace matcher {
@@ -42,10 +43,10 @@ MatchOriginGRIB1::MatchOriginGRIB1(const std::string& pattern)
 	process = args.getInt(2, -1);
 }
 
-bool MatchOriginGRIB1::matchItem(const Item<>& o) const
+bool MatchOriginGRIB1::matchItem(const Type& o) const
 {
-	const types::origin::GRIB1* v = dynamic_cast<const types::origin::GRIB1*>(o.ptr());
-	if (!v) return false;
+    const types::origin::GRIB1* v = dynamic_cast<const types::origin::GRIB1*>(&o);
+    if (!v) return false;
 	if (centre != -1 && (unsigned)centre != v->centre()) return false;
 	if (subcentre != -1 && (unsigned)subcentre != v->subcentre()) return false;
 	if (process != -1 && (unsigned)process != v->process()) return false;
@@ -72,10 +73,10 @@ MatchOriginGRIB2::MatchOriginGRIB2(const std::string& pattern)
 	processid = args.getInt(4, -1);
 }
 
-bool MatchOriginGRIB2::matchItem(const Item<>& o) const
+bool MatchOriginGRIB2::matchItem(const Type& o) const
 {
-	const types::origin::GRIB2* v = dynamic_cast<const types::origin::GRIB2*>(o.ptr());
-	if (!v) return false;
+    const types::origin::GRIB2* v = dynamic_cast<const types::origin::GRIB2*>(&o);
+    if (!v) return false;
 	if (centre      != -1 && (unsigned)centre      != v->centre()) return false;
 	if (subcentre   != -1 && (unsigned)subcentre   != v->subcentre()) return false;
 	if (processtype != -1 && (unsigned)processtype != v->processtype()) return false;
@@ -103,10 +104,10 @@ MatchOriginBUFR::MatchOriginBUFR(const std::string& pattern)
 	subcentre = args.getInt(1, -1);
 }
 
-bool MatchOriginBUFR::matchItem(const Item<>& o) const
+bool MatchOriginBUFR::matchItem(const Type& o) const
 {
-	const types::origin::BUFR* v = dynamic_cast<const types::origin::BUFR*>(o.ptr());
-	if (!v) return false;
+    const types::origin::BUFR* v = dynamic_cast<const types::origin::BUFR*>(&o);
+    if (!v) return false;
 	if (centre != -1 && (unsigned)centre != v->centre()) return false;
 	if (subcentre != -1 && (unsigned)subcentre != v->subcentre()) return false;
 	return true;
@@ -129,10 +130,10 @@ MatchOriginODIMH5::MatchOriginODIMH5(const std::string& pattern)
 	PLC = args.getString(2, "");
 }
 
-bool MatchOriginODIMH5::matchItem(const Item<>& o) const
+bool MatchOriginODIMH5::matchItem(const Type& o) const
 {
-	const types::origin::ODIMH5* v = dynamic_cast<const types::origin::ODIMH5*>(o.ptr());
-	if (!v) return false;
+    const types::origin::ODIMH5* v = dynamic_cast<const types::origin::ODIMH5*>(&o);
+    if (!v) return false;
 	if (WMO.size() && (WMO != v->getWMO())) return false;
 	if (RAD.size() && (RAD != v->getRAD())) return false;
 	if (PLC.size() && (PLC != v->getPLC())) return false;

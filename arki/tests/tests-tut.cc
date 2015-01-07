@@ -23,8 +23,6 @@
 #include <arki/tests/tests.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <arki/types/origin.h>
-#include <arki/types/run.h>
 #include <wibble/sys/fs.h>
 
 #include <sstream>

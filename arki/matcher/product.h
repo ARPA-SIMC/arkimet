@@ -34,8 +34,7 @@ namespace matcher {
  */
 struct MatchProduct : public Implementation
 {
-	//MatchType type() const { return MATCH_PRODUCT; }
-	std::string name() const;
+    std::string name() const override;
 
     static MatchProduct* parse(const std::string& pattern);
     static void init();
@@ -48,9 +47,9 @@ struct MatchProductGRIB1 : public MatchProduct
 	int table;
 	int product;
 
-	MatchProductGRIB1(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchProductGRIB1(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchProductGRIB2 : public MatchProduct
@@ -63,9 +62,9 @@ struct MatchProductGRIB2 : public MatchProduct
     int table_version;
     int local_table_version;
 
-	MatchProductGRIB2(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchProductGRIB2(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchProductBUFR : public MatchProduct
@@ -76,9 +75,9 @@ struct MatchProductBUFR : public MatchProduct
 	int localsubtype;
 	ValueBag values;
 
-	MatchProductBUFR(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchProductBUFR(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchProductODIMH5 : public MatchProduct
@@ -88,9 +87,9 @@ struct MatchProductODIMH5 : public MatchProduct
 	/*REMOVED:double		prodpar1;	// NAN when should be ignored in the match */
 	/*REMOVED:double		prodpar2;	// NAN when should be ignored in the match */
 
-	MatchProductODIMH5(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchProductODIMH5(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchProductVM2 : public MatchProduct
@@ -101,8 +100,8 @@ struct MatchProductVM2 : public MatchProduct
     std::vector<int> idlist;
 
     MatchProductVM2(const std::string& pattern);
-    bool matchItem(const Item<>& o) const;
-    std::string toString() const;
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 }

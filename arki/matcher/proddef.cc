@@ -28,6 +28,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace matcher {
@@ -39,11 +40,11 @@ MatchProddefGRIB::MatchProddefGRIB(const std::string& pattern)
 	expr = ValueBag::parse(pattern);
 }
 
-bool MatchProddefGRIB::matchItem(const Item<>& o) const
+bool MatchProddefGRIB::matchItem(const Type& o) const
 {
-	const types::proddef::GRIB* v = dynamic_cast<const types::proddef::GRIB*>(o.ptr());
-	if (!v) return false;
-	return v->values().contains(expr);
+    const types::proddef::GRIB* v = dynamic_cast<const types::proddef::GRIB*>(&o);
+    if (!v) return false;
+    return v->values().contains(expr);
 }
 
 std::string MatchProddefGRIB::toString() const

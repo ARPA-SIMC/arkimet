@@ -159,11 +159,6 @@ static vector< pair<double, double> > bbox(lua_State* L)
 	}
 }
 
-auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const Item<types::Area>& v) const
-{
-	return (*this)(*v);
-}
-
 std::auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 {
 #ifdef HAVE_GEOS

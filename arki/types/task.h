@@ -4,7 +4,7 @@
 /*
  * types/task - Metadata task (used for OdimH5 /how.task)
  *
- * Copyright (C) 2007--2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,21 +55,22 @@ struct Task : public CoreType<Task>
 
 	Task(const std::string& value) : task(value) {}
 
-	virtual int compare(const Type& o) const;
-	virtual int compare(const Task& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare(const Type& o) const override;
+    bool equals(const Type& o) const override;
 
-	/// CODEC functions
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	static Item<Task> decode(const unsigned char* buf, size_t len);
-	static Item<Task> decodeString(const std::string& val);
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    /// CODEC functions
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    static std::auto_ptr<Task> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Task> decodeString(const std::string& val);
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	/// Create a task
-	static Item<Task> create(const std::string& value);
-	static Item<Task> decodeMapping(const emitter::memory::Mapping& val);
+    Task* clone() const override;
+
+    /// Create a task
+    static std::auto_ptr<Task> create(const std::string& value);
+    static std::auto_ptr<Task> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 

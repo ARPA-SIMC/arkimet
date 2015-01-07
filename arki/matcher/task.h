@@ -5,7 +5,7 @@
 /*
  * matcher/task - Task matcher
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,8 @@
 #include <arki/matcher.h>
 #include <arki/types/task.h>
 
-namespace arki { namespace matcher {
+namespace arki {
+namespace matcher {
 
 /*============================================================================*/
 
@@ -37,14 +38,13 @@ namespace arki { namespace matcher {
  */
 struct MatchTask : public Implementation
 {
-	//MatchType type() const { return MATCH_TASK; }
-	std::string name() const;
+    std::string name() const override;
 
-	std::string task;
+    std::string task;
 
-	MatchTask(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchTask(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 
     static MatchTask* parse(const std::string& pattern);
     static void init();
@@ -52,25 +52,7 @@ struct MatchTask : public Implementation
 
 /*============================================================================*/
 
-} }
+}
+}
 
-// vim:set ts=4 sw=4:
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

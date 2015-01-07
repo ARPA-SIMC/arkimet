@@ -140,7 +140,7 @@ void Xargs::start_batch(const std::string& new_format)
 void Xargs::add_to_batch(Metadata& md, sys::Buffer& buf)
 {
     metadata::Clusterer::add_to_batch(md, buf);
-    arki::dataset::data::OstreamWriter::get(md.source->format)->stream(md, tempfile.fd);
+    arki::dataset::data::OstreamWriter::get(md.source().format)->stream(md, tempfile.fd);
 }
 
 void Xargs::flush_batch()
@@ -203,13 +203,13 @@ int Xargs::run_child()
     child.env.push_back("ARKI_XARGS_FORMAT=" + str::toupper(format));
     child.env.push_back("ARKI_XARGS_COUNT=" + str::fmt(count));
 
-    if (timespan.begin.defined())
+    if (timespan.begin.isValid())
     {
-        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan.begin->toISO8601(' '));
-        if (timespan.end.defined())
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.end->toISO8601(' '));
+        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan.begin.toISO8601(' '));
+        if (timespan.end.isValid())
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.end.toISO8601(' '));
         else
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.begin->toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.begin.toISO8601(' '));
     }
 
     child.fork();

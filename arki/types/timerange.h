@@ -40,6 +40,28 @@ struct Position;
 
 namespace timerange {
 class Timedef;
+
+enum GRIB1Unit {
+    SECOND = 0,
+    MONTH = 1
+};
+
+enum TimedefUnit {
+    UNIT_MINUTE  = 0,
+    UNIT_HOUR    = 1,
+    UNIT_DAY     = 2,
+    UNIT_MONTH   = 3,
+    UNIT_YEAR    = 4,
+    UNIT_DECADE  = 5,
+    UNIT_NORMAL  = 6,
+    UNIT_CENTURY = 7,
+    UNIT_3HOURS  = 10,
+    UNIT_6HOURS  = 11,
+    UNIT_12HOURS = 12,
+    UNIT_SECOND  = 13,
+    UNIT_MISSING = 255
+};
+
 }
 
 template<>
@@ -109,17 +131,26 @@ struct Timerange : public types::StyledType<Timerange>
     virtual bool get_proc_duration(int& duration, bool& is_seconds) const = 0;
 
     /// Create a Timedef equivalent of this time range
-    virtual Item<timerange::Timedef> to_timedef() const;
+    virtual std::auto_ptr<timerange::Timedef> to_timedef() const;
 
-	/// CODEC functions
-	static Item<Timerange> decode(const unsigned char* buf, size_t len);
-	static Item<Timerange> decodeString(const std::string& val);
-	static Item<Timerange> decodeMapping(const emitter::memory::Mapping& val);
+    /// CODEC functions
+    static std::auto_ptr<Timerange> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Timerange> decodeString(const std::string& val);
+    static std::auto_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
+
+    Timerange* clone() const override = 0;
+
+    static std::auto_ptr<Timerange> createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+    static std::auto_ptr<Timerange> createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2);
+    static std::auto_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit=timerange::UNIT_SECOND);
+    static std::auto_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
+                                                  uint8_t stat_type, uint32_t stat_len, timerange::TimedefUnit stat_unit=timerange::UNIT_SECOND);
+    static std::auto_ptr<Timerange> createBUFR(unsigned value = 0, unsigned char unit = 254);
 };
 
 namespace timerange {
@@ -148,30 +179,26 @@ public:
 	unsigned p1() const { return m_p1; }
 	unsigned p2() const { return m_p2; }
 
-	enum Unit {
-		SECOND = 0,
-		MONTH = 1
-	};
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    bool get_forecast_step(int& step, bool& is_seconds) const override;
+    int get_proc_type() const override;
+    bool get_proc_duration(int& duration, bool& is_seconds) const override;
 
-    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
-    virtual int get_proc_type() const;
-    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
+    int compare_local(const Timerange& o) const override;
+    bool equals(const Type& o) const override;
 
-	virtual int compare_local(const Timerange& o) const;
-	virtual bool operator==(const Type& o) const;
+    void getNormalised(int& type, GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const;
 
-    void getNormalised(int& type, Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const;
-
-	static Item<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
-	static Item<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    GRIB1* clone() const override;
+    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
     static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };
 
@@ -187,47 +214,32 @@ public:
 	signed p1() const { return m_p1; }
 	signed p2() const { return m_p2; }
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
-    virtual int get_proc_type() const;
-    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
+    bool get_forecast_step(int& step, bool& is_seconds) const override;
+    int get_proc_type() const override;
+    bool get_proc_duration(int& duration, bool& is_seconds) const override;
 
-	virtual int compare_local(const Timerange& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Timerange& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
-	static Item<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    GRIB2* clone() const override;
+    static std::auto_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
+    static std::auto_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class Timedef : public Timerange
 {
 public:
-    enum Unit {
-        UNIT_MINUTE  = 0,
-        UNIT_HOUR    = 1,
-        UNIT_DAY     = 2,
-        UNIT_MONTH   = 3,
-        UNIT_YEAR    = 4,
-        UNIT_DECADE  = 5,
-        UNIT_NORMAL  = 6,
-        UNIT_CENTURY = 7,
-        UNIT_3HOURS  = 10,
-        UNIT_6HOURS  = 11,
-        UNIT_12HOURS = 12,
-        UNIT_SECOND  = 13,
-        UNIT_MISSING = 255
-    };
-
 protected:
     /// Units for forecast step, or UNIT_MISSING if forecast step is missing
-    Unit m_step_unit;
+    TimedefUnit m_step_unit;
     uint32_t m_step_len;
 
     /// Type of statistical processing, or 255 if missing
@@ -235,42 +247,43 @@ protected:
 
     /// Units for length of statistical processing, or UNIT_MINUTE if length of
     /// statistical processing is missing
-    Unit m_stat_unit;
+    TimedefUnit m_stat_unit;
     uint32_t m_stat_len;
 
 public:
-    Unit step_unit() const { return m_step_unit; }
+    TimedefUnit step_unit() const { return m_step_unit; }
     unsigned step_len() const { return m_step_len; }
     uint8_t stat_type() const { return m_stat_type; }
-    Unit stat_unit() const { return m_stat_unit; }
+    TimedefUnit stat_unit() const { return m_stat_unit; }
     unsigned stat_len() const { return m_stat_len; }
 
-    virtual Style style() const;
-    virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-    virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-    virtual std::string exactQuery() const;
-    virtual const char* lua_type_name() const;
-    virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
-    virtual int get_proc_type() const;
-    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
+    bool get_forecast_step(int& step, bool& is_seconds) const override;
+    int get_proc_type() const override;
+    bool get_proc_duration(int& duration, bool& is_seconds) const override;
 
-    virtual int compare_local(const Timerange& o) const;
-    virtual bool operator==(const Type& o) const;
+    int compare_local(const Timerange& o) const override;
+    bool equals(const Type& o) const override;
 
     /**
      * Given a reftime representing validity time, compute and return its
      * emission time, shifting it by what is represented by this timedef
      */
-    Item<reftime::Position> validity_time_to_emission_time(const Item<reftime::Position>& src) const;
+    std::auto_ptr<reftime::Position> validity_time_to_emission_time(const reftime::Position& src) const;
 
-    static Item<Timedef> create(uint32_t step_len, Unit step_unit=UNIT_SECOND);
-    static Item<Timedef> create(uint32_t step_len, Unit step_unit,
-                              uint8_t stat_type, uint32_t stat_len, Unit stat_unit=UNIT_SECOND);
-    static Item<Timedef> createFromYaml(const std::string& str);
-    static Item<Timedef> decodeMapping(const emitter::memory::Mapping& val);
+    Timedef* clone() const override;
+    static std::auto_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit=UNIT_SECOND);
+    static std::auto_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit,
+                              uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit=UNIT_SECOND);
+    static std::auto_ptr<Timedef> createFromYaml(const std::string& str);
+    static std::auto_ptr<Timedef> decodeMapping(const emitter::memory::Mapping& val);
 
     /**
      * Unit conversion for code table 4.4 GRIB2 indicator of unit of time range
@@ -282,19 +295,19 @@ public:
      * @returns
      *   true if multiplying by timemul gives seconds, false if it gives months
      */
-    static bool timeunit_conversion(Unit unit, int& timemul);
+    static bool timeunit_conversion(TimedefUnit unit, int& timemul);
 
     /**
      * Return the suffix for the given time unit
      *
      * Can return NULL if unit is 255 or an invalid/unsupported value
      */
-    static const char* timeunit_suffix(Unit unit);
+    static const char* timeunit_suffix(TimedefUnit unit);
 
-    static void timeunit_output(Unit unit, uint32_t val, std::ostream& out);
+    static void timeunit_output(TimedefUnit unit, uint32_t val, std::ostream& out);
 
-    static bool timeunit_parse_suffix(const char*& str, Unit& unit);
-    static bool timeunit_parse(const char*& str, Unit& unit, uint32_t& val);
+    static bool timeunit_parse_suffix(const char*& str, TimedefUnit& unit);
+    static bool timeunit_parse(const char*& str, TimedefUnit& unit, uint32_t& val);
 };
 
 class BUFR : public Timerange
@@ -311,23 +324,24 @@ public:
 	unsigned seconds() const;
 	unsigned months() const;
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-    virtual bool get_forecast_step(int& step, bool& is_seconds) const;
-    virtual int get_proc_type() const;
-    virtual bool get_proc_duration(int& duration, bool& is_seconds) const;
+    bool get_forecast_step(int& step, bool& is_seconds) const override;
+    int get_proc_type() const override;
+    bool get_proc_duration(int& duration, bool& is_seconds) const override;
 
-	virtual int compare_local(const Timerange& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Timerange& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<BUFR> create(unsigned value = 0, unsigned char unit = 254);
-	static Item<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    BUFR* clone() const override;
+    static std::auto_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
+    static std::auto_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

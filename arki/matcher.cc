@@ -39,6 +39,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 
@@ -93,7 +94,7 @@ std::string OR::name() const
 	return front()->name();
 }
 
-bool OR::matchItem(const Item<>& t) const
+bool OR::matchItem(const Type& t) const
 {
 	if (empty()) return true;
 
@@ -163,14 +164,14 @@ std::string AND::name() const
 	return "matcher";
 }
 
-bool AND::matchItem(const Item<>& t) const
+bool AND::matchItem(const Type& t) const
 {
-	if (empty()) return true;
+    if (empty()) return true;
 
-	const_iterator i = find(t->serialisationCode());
-	if (i == end()) return true;
+    const_iterator i = find(t.serialisationCode());
+    if (i == end()) return true;
 
-	return i->second->matchItem(t);
+    return i->second->matchItem(t);
 }
 
 template<typename COLL>
@@ -184,15 +185,15 @@ static bool mdmatch(const Implementation& matcher, const COLL& c)
 
 bool AND::matchMetadata(const Metadata& md) const
 {
-	if (empty()) return true;
+    if (empty()) return true;
 
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		UItem<> item = md.get(i->first);
-		if (!item.defined()) return false;
-		if (!i->second->matchItem(item)) return false;
-	}
-	return true;
+    for (const_iterator i = begin(); i != end(); ++i)
+    {
+        const Type* item = md.get(i->first);
+        if (!item) return false;
+        if (!i->second->matchItem(*item)) return false;
+    }
+    return true;
 }
 
 const OR* AND::get(types::Code code) const
@@ -371,12 +372,12 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
 	}
 }
 
-bool Matcher::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+bool Matcher::date_extremes(Time& begin, Time& end) const
 {
 	const matcher::OR* reftime = 0;
 
-	begin.clear(); end.clear();
-	
+    begin.setInvalid(); end.setInvalid();
+
 	if (!m_impl)
 		return false;
 
@@ -389,18 +390,19 @@ bool Matcher::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) 
 	{
 		if (j == reftime->begin())
 			(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
-		else {
-			UItem<types::Time> new_begin;
-			UItem<types::Time> new_end;
-			(*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
-			if (begin.defined() && (!new_begin.defined() || new_begin < begin))
-				begin = new_begin;
-			if (end.defined() && (!new_end.defined() || end < new_end))
-				end = new_end;
+        else
+        {
+            Time new_begin;
+            Time new_end;
+            (*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
+            if (begin.isValid() && (!new_begin.isValid() || new_begin < begin))
+                begin = new_begin;
+            if (end.isValid() && (!new_end.isValid() || end < new_end))
+                end = new_end;
 
-		}
-	}
-	return begin.defined() || end.defined();
+        }
+    }
+    return begin.isValid() || end.isValid();
 }
 
 

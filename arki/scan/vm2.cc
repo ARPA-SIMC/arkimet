@@ -48,6 +48,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace scan {
@@ -154,12 +155,12 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    md.source = types::Source::createBlob("vm2", basedir, relname, offset, size);
+    md.set_source(Source::createBlob("vm2", basedir, relname, offset, size));
     md.setCachedData(wibble::sys::Buffer(line.c_str(), line.size()));
-    md.add_note(types::Note::create("Scanned from " + relname));
-    md.set(types::reftime::Position::create(types::Time::create(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
-    md.set(types::area::VM2::create(value.station_id));
-    md.set(types::product::VM2::create(value.variable_id));
+    md.add_note(*Note::create("Scanned from " + relname));
+    md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
+    md.set(Area::createVM2(value.station_id));
+    md.set(Product::createVM2(value.variable_id));
 
     // Look for the comma before the value starts
     size_t pos = 0;
@@ -176,18 +177,18 @@ wibble::sys::Buffer Vm2::reconstruct(const Metadata& md, const std::string& valu
 {
     stringstream res;
 
-    UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
-    UItem<types::area::VM2> area = md.get<types::Area>().upcast<types::area::VM2>();
-    UItem<types::product::VM2> product = md.get<types::Product>().upcast<types::product::VM2>();
+    const reftime::Position* rt = md.get<reftime::Position>();
+    const area::VM2* area = dynamic_cast<const area::VM2*>(md.get<Area>());
+    const product::VM2* product = dynamic_cast<const product::VM2*>(md.get<Product>());
 
-    res << setfill('0') << setw(4) << rt->time->vals[0]
-        << setfill('0') << setw(2) << rt->time->vals[1]
-        << setfill('0') << setw(2) << rt->time->vals[2]
-        << setfill('0') << setw(2) << rt->time->vals[3]
-        << setfill('0') << setw(2) << rt->time->vals[4];
+    res << setfill('0') << setw(4) << rt->time.vals[0]
+        << setfill('0') << setw(2) << rt->time.vals[1]
+        << setfill('0') << setw(2) << rt->time.vals[2]
+        << setfill('0') << setw(2) << rt->time.vals[3]
+        << setfill('0') << setw(2) << rt->time.vals[4];
 
-    if (rt->time->vals[5] != 0)
-        res << setfill('0') << setw(2) << rt->time->vals[5];
+    if (rt->time.vals[5] != 0)
+        res << setfill('0') << setw(2) << rt->time.vals[5];
 
     res << "," << area->station_id()
         << "," << product->variable_id()

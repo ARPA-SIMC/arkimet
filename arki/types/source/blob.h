@@ -59,17 +59,19 @@ struct Blob : public Source
     uint64_t offset;
     uint64_t size;
 
-    virtual Style style() const;
-    virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-    virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-    virtual const char* lua_type_name() const;
-    virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-    virtual int compare_local(const Source& o) const;
-    virtual bool operator==(const Type& o) const;
+    int compare_local(const Source& o) const override;
+    bool equals(const Type& o) const override;
 
-    virtual uint64_t getSize() const;
+    Blob* clone() const override;
+
+    uint64_t getSize() const override;
 
     /// Return the absolute pathname to the data file
     std::string absolutePathname() const;
@@ -80,18 +82,18 @@ struct Blob : public Source
      *
      * basedir is updated so that we can still reach the data file.
      */
-    Item<Blob> fileOnly() const;
+    std::auto_ptr<Blob> fileOnly() const;
 
     /**
      * Return a new source identical to this one, but with an absolute file
      * name and no basedir.
      */
-    Item<Blob> makeAbsolute() const;
+    std::auto_ptr<Blob> makeAbsolute() const;
 
-    virtual wibble::sys::Buffer loadData() const;
+    wibble::sys::Buffer loadData() const override;
 
-    static Item<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
-    static Item<Blob> decodeMapping(const emitter::memory::Mapping& val);
+    static std::auto_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static std::auto_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

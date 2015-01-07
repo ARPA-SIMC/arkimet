@@ -1,7 +1,7 @@
 /*
  * types/value - Metadata type to store small values
  *
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ const types::Code traits<Value>::type_code = CODE;
 const size_t traits<Value>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Value>::type_lua_tag = LUATAG_TYPES ".run";
 
-bool Value::operator==(const Type& o) const
+bool Value::equals(const Type& o) const
 {
     const Value* v = dynamic_cast<const Value*>(&o);
     if (!v) return false;
@@ -96,46 +96,35 @@ void Value::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va", buffer);
 }
 
-Item<Value> Value::decode(const unsigned char* buf, size_t len)
+auto_ptr<Value> Value::decode(const unsigned char* buf, size_t len)
 {
     return Value::create(string((const char*)buf, len));
 }
 
-Item<Value> Value::decodeString(const std::string& val)
+auto_ptr<Value> Value::decodeString(const std::string& val)
 {
     size_t len;
     return Value::create(str::c_unescape(val, len));
 }
 
-Item<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Value::create(val["va"].want_string("parsing item value encoded in metadata"));
 }
 
-Item<Value> Value::create(const std::string& buf)
+Value* Value::clone() const
 {
-    Value* val;
-    Item<Value> res = val = new Value;
-    val->buffer = buf;
-    return res;;
+    Value* val = new Value;
+    val->buffer = buffer;
+    return val;
 }
 
-#if 0
-static int arkilua_new_minute(lua_State* L)
+auto_ptr<Value> Value::create(const std::string& buf)
 {
-	int nargs = lua_gettop(L);
-	int hour = luaL_checkint(L, 1);
-	if (nargs == 1)
-	{
-		run::Minute::create(hour, 0)->lua_push(L);
-	} else {
-		int minute = luaL_checkint(L, 2);
-		run::Minute::create(hour, minute)->lua_push(L);
-	}
-	return 1;
-    return 0;
+    Value* val = new Value;
+    val->buffer = buf;
+    return auto_ptr<Value>(val);
 }
-#endif
 
 void Value::lua_loadlib(lua_State* L)
 {

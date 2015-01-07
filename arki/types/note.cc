@@ -74,7 +74,7 @@ int Note::compare(const Note& o) const
 	return 0;
 }
 
-bool Note::operator==(const Type& o) const
+bool Note::equals(const Type& o) const
 {
 	const Note* v = dynamic_cast<const Note*>(&o);
 	if (!v) return false;
@@ -83,21 +83,21 @@ bool Note::operator==(const Type& o) const
 
 void Note::encodeWithoutEnvelope(Encoder& enc) const
 {
-	time->encodeWithoutEnvelope(enc);
-	enc.addVarint(content.size());
-	enc.addString(content);
+    time.encodeWithoutEnvelope(enc);
+    enc.addVarint(content.size());
+    enc.addString(content);
 }
 
-Item<Note> Note::decode(const unsigned char* buf, size_t len)
+auto_ptr<Note> Note::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils::codec;
+    using namespace utils::codec;
 
-	ensureSize(len, 5, "note time");
-	Item<Time> t = Time::decode(buf, 5);
-	Decoder dec(buf+5, len-5);
-	size_t msg_len = dec.popVarint<size_t>("note text size");
-	string msg = dec.popString(msg_len, "note text");
-	return Note::create(t, msg);
+    ensureSize(len, 5, "note time");
+    auto_ptr<Time> t = Time::decode(buf, 5);
+    Decoder dec(buf+5, len-5);
+    size_t msg_len = dec.popVarint<size_t>("note text size");
+    string msg = dec.popString(msg_len, "note text");
+    return Note::create(*t, msg);
 }
 
 std::ostream& Note::writeToOstream(std::ostream& o) const
@@ -107,50 +107,55 @@ std::ostream& Note::writeToOstream(std::ostream& o) const
 
 void Note::serialiseLocal(Emitter& e, const Formatter* f) const
 {
-    e.add("ti"); time->serialiseList(e);
+    e.add("ti"); time.serialiseList(e);
     e.add("va", content);
 }
 
-Item<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Note::create(
-            Time::decodeList(val["ti"].want_list("parsing Note time")),
+            *Time::decodeList(val["ti"].want_list("parsing Note time")),
             val["va"].want_string("parsing Note content"));
 }
 
-Item<Note> Note::decodeString(const std::string& val)
+auto_ptr<Note> Note::decodeString(const std::string& val)
 {
-	if (val.empty())
-		throw wibble::exception::Consistency("parsing Note", "string is empty");
-	if (val[0] != '[')
-		throw wibble::exception::Consistency("parsing Note", "string does not start with open square bracket");
-	size_t pos = val.find(']');
-	if (pos == string::npos)
-		throw wibble::exception::Consistency("parsing Note", "no closed square bracket found");
-	return Note::create(Time::createFromISO8601(val.substr(1, pos-1)), val.substr(pos+1));
+    if (val.empty())
+        throw wibble::exception::Consistency("parsing Note", "string is empty");
+    if (val[0] != '[')
+        throw wibble::exception::Consistency("parsing Note", "string does not start with open square bracket");
+    size_t pos = val.find(']');
+    if (pos == string::npos)
+        throw wibble::exception::Consistency("parsing Note", "no closed square bracket found");
+    return Note::create(*Time::createFromISO8601(val.substr(1, pos-1)), val.substr(pos+1));
 }
 
 #ifdef HAVE_LUA
 bool Note::lua_lookup(lua_State* L, const std::string& name) const
 {
-	if (name == "time")
-		time->lua_push(L);
-	else if (name == "content")
-		lua_pushlstring(L, content.data(), content.size());
-	else
-		return CoreType<Note>::lua_lookup(L, name);
-	return true;
+    if (name == "time")
+        time.lua_push(L);
+    else if (name == "content")
+        lua_pushlstring(L, content.data(), content.size());
+    else
+        return CoreType<Note>::lua_lookup(L, name);
+    return true;
 }
 #endif
 
-Item<Note> Note::create(const std::string& content)
+Note* Note::clone() const
 {
-	return new Note(Time::createNow(), content);
+    return new Note(time, content);
 }
 
-Item<Note> Note::create(const Item<types::Time>& time, const std::string& content)
+auto_ptr<Note> Note::create(const std::string& content)
 {
-	return new Note(time, content);
+    return auto_ptr<Note>(new Note(*Time::createNow(), content));
+}
+
+auto_ptr<Note> Note::create(const Time& time, const std::string& content)
+{
+    return auto_ptr<Note>(new Note(time, content));
 }
 
 static MetadataType noteType = MetadataType::create<Note>();

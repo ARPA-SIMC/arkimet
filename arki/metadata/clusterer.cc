@@ -26,19 +26,21 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 using namespace wibble;
 
 namespace arki {
 namespace metadata {
 
 Clusterer::Clusterer()
-    : max_count(0), max_bytes(0), max_interval(0), split_timerange(false)
+    : last_timerange(0), max_count(0), max_bytes(0), max_interval(0), split_timerange(false)
 {
     cur_interval[0] = -1;
 }
 
 Clusterer::~Clusterer()
 {
+    delete last_timerange;
     // Cannot flush here, since flush is virtual and we won't give subclassers
     // a chance to do their own flushing. Flushes must be explicit.
 //    if (!format.empty())
@@ -68,8 +70,8 @@ bool Clusterer::exceeds_interval(Metadata& md) const
 bool Clusterer::exceeds_timerange(Metadata& md) const
 {
     if (not split_timerange) return false;
-    if (not last_timerange.defined()) return false;
-    if (last_timerange == md.get<types::Timerange>()) return false;
+    if (not last_timerange) return false;
+    if (*last_timerange == *md.get<types::Timerange>()) return false;
     return true;
 }
 
@@ -86,9 +88,11 @@ void Clusterer::add_to_batch(Metadata& md, sys::Buffer& buf)
     ++count;
     if (cur_interval[0] == -1 && max_interval != 0)
         md_to_interval(md, cur_interval);
-    timespan.merge(md.get(types::TYPE_REFTIME).upcast<types::Reftime>());
-    if (split_timerange and not last_timerange.defined())
-        last_timerange = md.get<types::Timerange>();
+    const Reftime* rt = md.get<types::Reftime>();
+    if (!rt) return;
+    timespan.merge(*rt);
+    if (split_timerange and not last_timerange)
+        last_timerange = md.get<types::Timerange>()->clone();
 }
 
 void Clusterer::flush_batch()
@@ -100,7 +104,10 @@ void Clusterer::flush_batch()
     cur_interval[0] = -1;
     timespan.clear();
     if (split_timerange)
-        last_timerange.clear();
+    {
+        delete last_timerange;
+        last_timerange = 0;
+    }
 }
 
 void Clusterer::flush()
@@ -113,11 +120,11 @@ bool Clusterer::operator()(Metadata& md)
 {
     sys::Buffer buf = md.getData();
 
-    if (format.empty() || format != md.source->format ||
+    if (format.empty() || format != md.source().format ||
         exceeds_count(md) || exceeds_size(buf) || exceeds_interval(md) || exceeds_timerange(md))
     {
         flush();
-        start_batch(md.source->format);
+        start_batch(md.source().format);
     }
 
     add_to_batch(md, buf);
@@ -127,23 +134,20 @@ bool Clusterer::operator()(Metadata& md)
 
 void Clusterer::md_to_interval(Metadata& md, int* interval) const
 {
-    UItem<types::Reftime> rt = md.get(types::TYPE_REFTIME).upcast<types::Reftime>();
-    if (!rt.defined())
-        throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");
-    UItem<types::Time> t;
+    const Reftime* rt = md.get<Reftime>();
+    if (!rt) throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");
+    Time t;
     switch (rt->style())
     {
-        case types::Reftime::POSITION: t = rt.upcast<types::reftime::Position>()->time; break;
-        case types::Reftime::PERIOD: t = rt.upcast<types::reftime::Period>()->end; break;
+        case types::Reftime::POSITION: t = dynamic_cast<const types::reftime::Position*>(rt)->time; break;
+        case types::Reftime::PERIOD: t = dynamic_cast<const types::reftime::Period*>(rt)->end; break;
         default:
             throw wibble::exception::Consistency("computing time interval", "reference time has invalid style: " + types::Reftime::formatStyle(rt->style()));
     }
     for (unsigned i = 0; i < 6; ++i)
-        interval[i] = i < max_interval ? t->vals[i] : -1;
+        interval[i] = i < max_interval ? t.vals[i] : -1;
 }
 
 
 }
 }
-
-// vim:set ts=4 sw=4:

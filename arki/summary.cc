@@ -24,6 +24,7 @@
 
 #include <arki/summary.h>
 #include <arki/summary/node.h>
+#include <arki/summary/codec.h>
 #include <arki/summary/stats.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
@@ -56,6 +57,8 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils::codec;
+using namespace arki::types;
+using namespace arki::summary;
 
 namespace arki {
 
@@ -98,7 +101,7 @@ struct LuaPusher: public summary::Visitor
     int index;
 
     LuaPusher(lua_State* L) : L(L), index(1) {}
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<summary::Stats>& stats)
+    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
     {
         // Table with the couple
         lua_newtable(L);
@@ -108,7 +111,7 @@ struct LuaPusher: public summary::Visitor
         for (size_t i = 0; i < md.size(); ++i)
         {
             // Name
-            if (md[i].defined())
+            if (md[i])
             {
                 // Key
                 string name = str::tolower(types::formatCode(codeForPos(i)));
@@ -120,7 +123,7 @@ struct LuaPusher: public summary::Visitor
         }
         lua_rawseti(L, -2, 1);
         // Push the stats
-        stats->lua_push(L);
+        stats.lua_push(L);
         lua_rawseti(L, -2, 2);
         // Push the couple into the table we are populating
         lua_rawseti(L, -2, index++);
@@ -329,7 +332,8 @@ bool Summary::operator==(const Summary& m) const
     if (root == 0 && m.root == 0) return true;
     if (root == 0 && m.root != 0) return false;
     if (root != 0 && m.root == 0) return false;
-    return root->compare(*m.root) == 0;
+    return root->equals(*m.root);
+    //return root->compare(*m.root) == 0;
 }
 
 void Summary::clear()
@@ -339,42 +343,12 @@ void Summary::clear()
 }
 
 namespace summary {
-struct StatsCount : public StatsVisitor
-{
-    size_t count;
-    StatsCount() : count(0) {}
-    virtual bool operator()(const Stats& stats)
-    {
-        count += stats.count;
-        return true;
-    }
-};
-struct StatsSize : public StatsVisitor
-{
-    unsigned long long size;
-    StatsSize() : size(0) {}
-    virtual bool operator()(const Stats& stats)
-    {
-        size += stats.size;
-        return true;
-    }
-};
-struct StatsReftime : public StatsVisitor
-{
-    types::reftime::Collector merger;
-
-    virtual bool operator()(const Stats& stats)
-    {
-        merger.merge(stats.reftimeMerger);
-        return true;
-    }
-};
 #ifdef HAVE_GEOS
 struct StatsHull : public ItemVisitor
 {
     ARKI_GEOS_GEOMETRYFACTORY& gf;
     vector<ARKI_GEOS_GEOMETRY*>* geoms;
-    std::set< Item<types::Area> > seen;
+    std::set<string> seen;
 
     StatsHull(ARKI_GEOS_GEOMETRYFACTORY& gf) : gf(gf), geoms(new vector<ARKI_GEOS_GEOMETRY*>) {}
     virtual ~StatsHull()
@@ -387,14 +361,13 @@ struct StatsHull : public ItemVisitor
         }
     }
 
-    virtual bool operator()(const arki::UItem<>& area)
+    virtual bool operator()(const Type& type)
     {
-        if (!area.defined()) return true;
-        Item<types::Area> a = area.upcast<types::Area>();
-        pair<set< Item<types::Area> >::iterator, bool> i = seen.insert(a);
+        const Area& a = *dynamic_cast<const Area*>(&type);
+        pair<set<string>::iterator, bool> i = seen.insert(a.encodeBinary());
         if (i.second)
         {
-            const ARKI_GEOS_GEOMETRY* g = a->bbox();
+            const ARKI_GEOS_GEOMETRY* g = a.bbox();
             //cerr << "Got: " << g << g->getGeometryType() << endl;
             if (!g) return true;
             //cerr << "Adding: " << g->toString() << endl;
@@ -419,17 +392,13 @@ struct StatsHull : public ItemVisitor
 size_t Summary::count() const
 {
     if (!root) return 0;
-    summary::StatsCount counter;
-    root->visitStats(counter);
-    return counter.count;
+    return root->stats.count;
 }
 
 unsigned long long Summary::size() const
 {
     if (!root) return 0;
-    summary::StatsSize counter;
-    root->visitStats(counter);
-    return counter.size;
+    return root->stats.size;
 }
 
 void Summary::dump(std::ostream& out) const
@@ -440,20 +409,16 @@ void Summary::dump(std::ostream& out) const
         root->dump(out);
 }
 
-Item<types::Reftime> Summary::getReferenceTime() const
+auto_ptr<types::Reftime> Summary::getReferenceTime() const
 {
-    summary::StatsReftime counter;
-    if (root)
-        root->visitStats(counter);
-    return counter.merger.makeReftime();
+    if (!root) return reftime::Collector().makeReftime();
+    return root->stats.reftimeMerger.makeReftime();
 }
 
-bool Summary::date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+bool Summary::date_extremes(Time& begin, Time& end) const
 {
-    summary::StatsReftime counter;
-    if (root)
-        root->visitStats(counter);
-    return counter.merger.date_extremes(begin, end);
+    if (!root) return reftime::Collector().date_extremes(begin, end);
+    return root->stats.reftimeMerger.date_extremes(begin, end);
 }
 
 namespace {
@@ -469,15 +434,15 @@ struct ResolveVisitor : public summary::Visitor
             codes.push_back(i->first);
     }
     virtual ~ResolveVisitor() {}
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<summary::Stats>& stats)
+    virtual bool operator()(const std::vector<const Type*>& md, const summary::Stats& stats)
     {
         ItemSet is;
         for (std::vector<types::Code>::const_iterator i = codes.begin();
                 i != codes.end(); ++i)
         {
             int pos = posForCode(*i);
-            if (!md[pos].defined()) return true;
-            is.set(md[pos]);
+            if (!md[pos]) return true;
+            is.set(*md[pos]);
         }
         ++added;
         // Insertion sort, as we expect to have lots of duplicates
@@ -572,29 +537,39 @@ void Summary::read(const wibble::sys::Buffer& buf, unsigned version, const std::
 {
     using namespace summary;
 
+    Node::buildItemMsoMap();
+
+    auto_ptr<Node> new_root;
+    Node* target;
+
     if (root)
-        root->decode(buf, version, filename);
+        target = root;
     else
     {
-        auto_ptr<RootNode> res(new RootNode);
-        if (res->decode(buf, version, filename) > 0)
-            root = res.release();
+        new_root.reset(new Node);
+        target = new_root.get();
     }
+
+    size_t found = summary::decode(buf, version, filename, *target);
+
+    if (!root && found)
+        root = new_root.release();
 }
 
 std::string Summary::encode(bool compressed) const
 {
     using namespace utils::codec;
 
-    /*
-    // Build the serialisation tables if it has not been done yet
-    summary::Node::buildMsoSerLen();
-    */
+    Node::buildMsoSerLen();
 
     // Encode
     string inner;
     Encoder innerenc(inner);
-    if (root) root->encode(innerenc);
+    if (root)
+    {
+        EncodingVisitor visitor(innerenc);
+        visit(visitor);
+    }
 
     // Prepend header
     string res;
@@ -682,26 +657,25 @@ struct YamlPrinter : public Visitor
     const Formatter* f;
 
     YamlPrinter(ostream& out, size_t indent, const Formatter* f = 0) : out(out), indent(indent, ' '), f(f) {}
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats)
+    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
     {
         // Write the metadata items
         out << "SummaryItem:" << endl;
-        for (vector< UItem<> >::const_iterator i = md.begin(); i != md.end(); ++i)
+        for (vector<const Type*>::const_iterator i = md.begin(); i != md.end(); ++i)
         {
-            if (!i->defined()) continue;
-
+            if (!*i) continue;
             out << indent << str::ucfirst((*i)->tag()) << ": ";
             (*i)->writeToOstream(out);
-            if (f) out << "\t# " << (*f)(*i);
+            if (f) out << "\t# " << (*f)(**i);
             out << endl;
         }
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        arki::Item<types::Reftime> reftime(stats->reftimeMerger.makeReftime());
-        out << indent << "Count: " << stats->count << endl;
-        out << indent << "Size: " << stats->size << endl;
-        out << indent << "Reftime: " << reftime << endl;
+        auto_ptr<Reftime> reftime(stats.reftimeMerger.makeReftime());
+        out << indent << "Count: " << stats.count << endl;
+        out << indent << "Size: " << stats.size << endl;
+        out << indent << "Reftime: " << *reftime << endl;
         return true;
     }
 };
@@ -710,13 +684,17 @@ struct YamlPrinter : public Visitor
 bool Summary::visit(summary::Visitor& visitor) const
 {
     if (!root) return true;
-    return root->visit(visitor);
+    Node::buildItemMsoMap();
+    vector<const Type*> visitmd;
+    return root->visit(visitor, visitmd);
 }
 
 bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) const
 {
     if (!root) return true;
-    return root->visitFiltered(matcher, visitor);
+    Node::buildItemMsoMap();
+    vector<const Type*> visitmd;
+    return root->visitFiltered(matcher, visitor, visitmd);
 }
 
 void Summary::writeYaml(std::ostream& out, const Formatter* f) const
@@ -740,22 +718,22 @@ void Summary::serialise(Emitter& e, const Formatter* f) const
 
             Serialiser(Emitter& e, const Formatter* f) : e(e), f(f) {}
 
-            virtual bool operator()(const std::vector< UItem<> >& md, const UItem<summary::Stats>& stats)
+            virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
             {
                 e.start_mapping();
-                for (std::vector< UItem<> >::const_iterator i = md.begin();
+                for (std::vector<const Type*>::const_iterator i = md.begin();
                         i != md.end(); ++i)
                 {
-                    if (!i->defined()) continue;
+                    if (!*i) continue;
                     e.add((*i)->tag());
                     e.start_mapping();
-					if (f) e.add("desc", (*f)(*i));
+                    if (f) e.add("desc", (*f)(**i));
                     (*i)->serialiseLocal(e, f);
                     e.end_mapping();
                 }
-                e.add(stats->tag());
+                e.add(stats.tag());
                 e.start_mapping();
-                stats->serialiseLocal(e, f);
+                stats.serialiseLocal(e, f);
                 e.end_mapping();
                 e.end_mapping();
                 return true;
@@ -776,32 +754,28 @@ void Summary::read(const emitter::memory::Mapping& val)
     for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
     {
         const Mapping& m = (*i)->want_mapping("parsing summary item");
-        std::vector< UItem<> > md;
+        TypeVector md;
         for (size_t pos = 0; pos < summary::Node::msoSize; ++pos)
         {
             types::Code code = summary::Visitor::codeForPos(pos);
             const Node& n = m[types::tag(code)];
             if (n.is_mapping())
-            {
-                md.resize(pos + 1);
-                md[pos] = types::decodeMapping(code, n.get_mapping());
-            }
+                md.set(pos, types::decodeMapping(code, n.get_mapping()));
         }
 
-        UItem<summary::Stats> stats = summary::Stats::decodeMapping(
+        auto_ptr<summary::Stats> stats = summary::Stats::decodeMapping(
                 m["summarystats"].want_mapping("parsing summary item stats"));
-        if (root)
-            root->add(md, stats);
-        else
-            root = new summary::RootNode(md, stats);
+
+        if (!root) root = new summary::Node;
+        root->merge(md.raw_items(), md.size(), *stats);
     }
 }
 
-static vector< UItem<> > decodeItem(const std::string& str)
+static auto_ptr<TypeVector> decodeItem(const std::string& str)
 {
     using namespace str;
 
-    vector< UItem<> > itemmd;
+    auto_ptr<TypeVector> itemmd(new TypeVector);
     stringstream in(str, ios_base::in);
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(in);
@@ -811,9 +785,7 @@ static vector< UItem<> > decodeItem(const std::string& str)
         int pos = summary::Visitor::posForCode(type);
         if (pos < 0)
             throw wibble::exception::Consistency("parsing summary item", "found element of unsupported type " + types::formatCode(type));
-        if ((size_t)pos >= itemmd.size())
-            itemmd.resize(pos + 1);
-        itemmd[pos] = types::decodeString(type, i->second);
+        itemmd->set(pos, types::decodeString(type, i->second));
     }
     return itemmd;
 }
@@ -838,7 +810,7 @@ bool Summary::readYaml(std::istream& in, const std::string& filename)
 
     summary::Node::buildItemMsoMap();
 
-    vector< UItem<> > itemmd;
+    auto_ptr<TypeVector> itemmd;
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
@@ -849,10 +821,10 @@ bool Summary::readYaml(std::istream& in, const std::string& filename)
             case types::TYPE_SUMMARYITEM: itemmd = decodeItem(i->second); break;
             case types::TYPE_SUMMARYSTATS:
             {
-                if (root)
-                    root->add(itemmd, Stats::decodeString(i->second));
+                if (!root)
+                    root = Node::createPopulated(itemmd->raw_items(), itemmd->size(), *Stats::decodeString(i->second)).release();
                 else
-                    root = new RootNode(itemmd, Stats::decodeString(i->second));
+                    root->merge(itemmd->raw_items(), itemmd->size(), *Stats::decodeString(i->second));
                 break;
             }
             default:
@@ -863,61 +835,62 @@ bool Summary::readYaml(std::istream& in, const std::string& filename)
     return !in.eof();
 }
 
+
 void Summary::add(const Metadata& md)
 {
-    if (root)
-        root->add(md);
+    TypeVector mdvec(md);
+    if (!root)
+        root = Node::createPopulated(mdvec.raw_items(), mdvec.size(), Stats(md)).release();
     else
-        root = new summary::RootNode(md);
+        root->merge(mdvec.raw_items(), mdvec.size(), Stats(md));
 }
 
-void Summary::add(const Metadata& md, const UItem<summary::Stats>& s)
+void Summary::add(const Metadata& md, const summary::Stats& s)
 {
-    if (root)
-        root->add(md, s);
-    else
-        root = new summary::RootNode(md, s);
+    if (!root) root = new Node;
+
+    TypeVector mdvec(md);
+    root->merge(mdvec.raw_items(), mdvec.size(), s);
 }
 
 namespace summary {
 struct SummaryMerger : public Visitor
 {
-    RootNode*& root;
+    Node*& root;
 
-    SummaryMerger(RootNode*& root) : root(root) {}
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats)
+    SummaryMerger(Node*& root) : root(root) {}
+    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
     {
-        if (!root)
-            root = new RootNode(md, stats);
-        else
-            root->add(md, stats);
+        if (!root) root = new Node;
+        root->merge(md.data(), md.size(), stats);
         return true;
     }
 };
 struct PruningSummaryMerger : public Visitor
 {
     const set<types::Code> keep_only;
-    RootNode*& root;
+    Node*& root;
 
-    PruningSummaryMerger(const set<types::Code> keep_only, RootNode*& root)
+    PruningSummaryMerger(const set<types::Code> keep_only, Node*& root)
         : keep_only(keep_only), root(root) {}
 
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats)
+    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
     {
-        std::vector< UItem<> > md1;
-        md1.resize(md.size());
+        TypeVector md1;
         for (set<types::Code>::const_iterator i = keep_only.begin();
                 i != keep_only.end(); ++i)
         {
             int pos = posForCode(*i);
             if (pos == -1) continue;
-            md1[pos] = md[pos];
+            md1.set(pos, md[pos]);
         }
 
+        // FIXME: this currently creates an empty node: we need a way to creare
+        // a node with exactly the data we tell it
         if (!root)
-            root = new RootNode(md1, stats);
+            root = Node::createPopulated(md1.raw_items(), md1.size(), stats).release();
         else
-            root->add(md1, stats);
+            root->merge(md1.raw_items(), md1.size(), stats);
         return true;
     }
 };
@@ -928,7 +901,7 @@ void Summary::add(const Summary& s)
     if (s.root)
     {
         summary::SummaryMerger merger(root);
-        s.root->visit(merger);
+        s.visit(merger);
     }
 }
 
@@ -937,7 +910,7 @@ void Summary::add(const Summary& s, const std::set<types::Code>& keep_only)
     if (s.root)
     {
         summary::PruningSummaryMerger merger(keep_only, root);
-        s.root->visit(merger);
+        s.visit(merger);
     }
 }
 
@@ -946,7 +919,7 @@ struct MatchVisitor : public Visitor
 {
     bool res;
     MatchVisitor() : res(false) {}
-    virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats)
+    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
     {
         res = true;
         // Stop iteration
@@ -959,7 +932,7 @@ bool Summary::match(const Matcher& matcher) const
     if (!root && matcher.m_impl) return false;
 
     summary::MatchVisitor visitor;
-    root->visitFiltered(matcher, visitor);
+    visitFiltered(matcher, visitor);
     return visitor.res;
 }
 
@@ -968,7 +941,7 @@ void Summary::filter(const Matcher& matcher, Summary& result) const
     if (root)
     {
         summary::SummaryMerger merger(result.root);
-        root->visitFiltered(matcher, merger);
+        visitFiltered(matcher, merger);
     }
 }
 

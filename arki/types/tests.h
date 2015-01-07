@@ -21,105 +21,93 @@
 #define ARKI_TYPES_TESTUTILS_H
 
 #include <arki/tests/tests.h>
-#include <arki/types.h>
-#include <wibble/string.h>
-#include <arki/emitter/json.h>
-#include <arki/emitter/memory.h>
+#include <vector>
+#include <string>
 
 using namespace arki;
 
 namespace arki {
+
+namespace types {
+class Type;
+}
+
 namespace tests {
 
-struct TestItemSerializes
-{
-    Item<> act;
-    types::Code code;
-
-    TestItemSerializes(const Item<>& actual, types::Code code) : act(actual), code(code) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct TestItemCompares
-{
-    Item<> act;
-    Item<> higher1;
-    Item<> higher2;
-
-    TestItemCompares(const Item<>& actual, const Item<>& higher1, const Item<>& higher2)
-        : act(actual), higher1(higher1), higher2(higher2) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct TestSourceblobIs
-{
-    Item<> act;
-    std::string format;
-    std::string basedir;
-    std::string fname;
-    uint64_t ofs;
-    uint64_t size;
-
-    TestSourceblobIs(
-            const Item<>& actual,
-            const std::string& format,
-            const std::string& basedir,
-            const std::string& fname,
-            uint64_t ofs,
-            uint64_t size)
-        : act(actual), format(format), basedir(basedir), fname(fname), ofs(ofs), size(size) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
+/// Prepackaged set of tests for generic arki types
 struct TestGenericType
 {
-    types::Code code;
+    // Item code
+    std::string tag;
+    // Stringified sample to test
     std::string sample;
+    // Optional SQL exactquery to test
+    std::string exact_query;
+    // List of items that test higher than sample
     std::vector<std::string> lower;
+    // List of items that test lower than sample
     std::vector<std::string> higher;
 
-    TestGenericType(types::Code code, const std::string& sample) : code(code), sample(sample) {}
+    TestGenericType(const std::string& tag, const std::string& sample);
 
     void check(WIBBLE_TEST_LOCPRM) const;
+
+    /// Decode item from encoded, running single-item checks and passing ownership back the caller
+    void check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded, std::auto_ptr<types::Type>& item) const;
 };
 
-template<typename T>
-struct ActualItem : public wibble::tests::Actual< arki::UItem<T> >
+
+class ActualType : public wibble::tests::Actual<const arki::types::Type*>
 {
-    ActualItem<T>(const arki::UItem<T>& actual) : wibble::tests::Actual< arki::UItem<T> >(actual) {}
+public:
+    ActualType(const types::Type* actual) : wibble::tests::Actual<const types::Type*>(actual) {}
+
+    std::auto_ptr<ArkiCheck> operator==(const types::Type* expected) const;
+    std::auto_ptr<ArkiCheck> operator!=(const types::Type* expected) const;
+
+    std::auto_ptr<ArkiCheck> operator==(const types::Type& expected) const { return operator==(&expected); }
+    std::auto_ptr<ArkiCheck> operator!=(const types::Type& expected) const { return operator!=(&expected); }
+    template<typename E> std::auto_ptr<ArkiCheck> operator==(const std::auto_ptr<E>& expected) const { return operator==(expected.get()); }
+    template<typename E> std::auto_ptr<ArkiCheck> operator!=(const std::auto_ptr<E>& expected) const { return operator!=(expected.get()); }
+    std::auto_ptr<ArkiCheck> operator==(const std::string& expected) const;
+    std::auto_ptr<ArkiCheck> operator!=(const std::string& expected) const;
+    /*
+    template<typename E> TestIsLt<A, E> operator<(const E& expected) const { return TestIsLt<A, E>(actual, expected); }
+    template<typename E> TestIsLte<A, E> operator<=(const E& expected) const { return TestIsLte<A, E>(actual, expected); }
+    template<typename E> TestIsGt<A, E> operator>(const E& expected) const { return TestIsGt<A, E>(actual, expected); }
+    template<typename E> TestIsGte<A, E> operator>=(const E& expected) const { return TestIsGte<A, E>(actual, expected); }
+    */
 
     /**
      * Check that a metadata field can be serialized and deserialized in all
      * sorts of ways
      */
-    TestItemSerializes serializes()
-    {
-        return TestItemSerializes(this->actual, this->actual->serialisationCode());
-    }
+    std::auto_ptr<ArkiCheck> serializes() const;
 
     /**
      * Check comparison operators
      */
-    TestItemCompares compares(const arki::Item<T>& higher1, const arki::Item<T>& higher2)
-    {
-        return TestItemCompares(this->actual, higher1, higher2);
-    }
+    std::auto_ptr<ArkiCheck> compares(const types::Type& higher) const;
 
-    /**
-     * Check all components of a source::Blob item
-     */
-    TestSourceblobIs sourceblob_is(
-        const std::string& format,
-        const std::string& basedir,
-        const std::string& fname,
-        uint64_t ofs,
-        uint64_t size)
-    {
-        return TestSourceblobIs(this->actual, format, basedir, fname, ofs, size);
-    }
+    /// Check all components of a source::Blob item
+    std::auto_ptr<ArkiCheck> is_source_blob(
+        const std::string& format, const std::string& basedir, const std::string& fname,
+        uint64_t ofs, uint64_t size);
+
+    /// Check all components of a source::URL item
+    std::auto_ptr<ArkiCheck> is_source_url(const std::string& format, const std::string& url);
+
+    /// Check all components of a source::Inline item
+    std::auto_ptr<ArkiCheck> is_source_inline(const std::string& format, uint64_t size);
+
+    /// Check all components of a Time item
+    std::auto_ptr<ArkiCheck> is_time(int ye, int mo, int da, int ho, int mi, int se);
+
+    /// Check all components of a reftime::Position item
+    std::auto_ptr<ArkiCheck> is_reftime_position(const int (&time)[6]);
+
+    /// Check all components of a reftime::Position item
+    std::auto_ptr<ArkiCheck> is_reftime_period(const int (&begin)[6], const int (&end)[6]);
 };
 
 }
@@ -129,9 +117,11 @@ namespace wibble {
 namespace tests {
 
 template<typename T>
-inline arki::tests::ActualItem<T> actual(const arki::UItem<T>& actual) { return arki::tests::ActualItem<T>(actual); }
+inline arki::tests::ActualType actual(const arki::types::Type& actual) { return arki::tests::ActualType(actual); }
 template<typename T>
-inline arki::tests::ActualItem<T> actual(const arki::Item<T>& actual) { return arki::tests::ActualItem<T>(actual); }
+inline arki::tests::ActualType actual(const arki::types::Type* actual) { return arki::tests::ActualType(actual); }
+template<typename T>
+inline arki::tests::ActualType actual(const std::auto_ptr<T>& actual) { return arki::tests::ActualType(actual.get()); }
 
 }
 }

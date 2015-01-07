@@ -76,23 +76,23 @@ std::string Run::formatStyle(Run::Style s)
 	}
 }
 
-Item<Run> Run::decode(const unsigned char* buf, size_t len)
+auto_ptr<Run> Run::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
 	Style s = (Style)dec.popUInt(1, "run style");
 	switch (s)
 	{
-		case MINUTE: {
-		        unsigned int m = dec.popVarint<unsigned>("run minute");
-			return run::Minute::create(m / 60, m % 60);
-		}
+        case MINUTE: {
+            unsigned int m = dec.popVarint<unsigned>("run minute");
+            return createMinute(m / 60, m % 60);
+        }
 		default:
 			throw wibble::exception::Consistency("parsing Run", "style is " + formatStyle(s) + " but we can only decode MINUTE");
 	}
 }
     
-Item<Run> Run::decodeString(const std::string& val)
+auto_ptr<Run> Run::decodeString(const std::string& val)
 {
 	string inner;
 	Run::Style style = outerParse<Run>(val, inner);
@@ -111,20 +111,20 @@ Item<Run> Run::decodeString(const std::string& val)
 				hour = strtoul(inner.substr(0, sep).c_str(), 0, 10);
 				minute = strtoul(inner.substr(sep+1).c_str(), 0, 10);
 			}
-			return run::Minute::create(hour, minute);
-		}
-		default:
-			throw wibble::exception::Consistency("parsing Run", "unknown Run style " + formatStyle(style));
-	}
+            return createMinute(hour, minute);
+        }
+        default:
+            throw wibble::exception::Consistency("parsing Run", "unknown Run style " + formatStyle(style));
+    }
 }
 
-Item<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Run::MINUTE: return run::Minute::decodeMapping(val);
+        case Run::MINUTE: return upcast<Run>(run::Minute::decodeMapping(val));
         default:
             throw wibble::exception::Consistency("parsing Run", "unknown Run style " + val.get_string());
     }
@@ -153,10 +153,12 @@ void Run::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_run", lib);
 }
 
+auto_ptr<Run> createMinute(unsigned int hour, unsigned int minute)
+{
+    return upcast<Run>(run::Minute::create(hour, minute));
+}
 
 namespace run {
-
-static TypeCache<Minute> cache_minute;
 
 Run::Style Minute::style() const { return Run::MINUTE; }
 
@@ -178,7 +180,7 @@ void Minute::serialiseLocal(Emitter& e, const Formatter* f) const
     Run::serialiseLocal(e, f);
     e.add("va", (int)m_minute);
 }
-Item<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
 {
     unsigned int m = val["va"].want_int("parsing Minute run value");
     return run::Minute::create(m / 60, m % 60);
@@ -217,34 +219,34 @@ int Minute::compare_local(const Run& o) const
 	return m_minute - v->m_minute;
 }
 
-bool Minute::operator==(const Type& o) const
+bool Minute::equals(const Type& o) const
 {
 	const Minute* v = dynamic_cast<const Minute*>(&o);
 	if (!v) return false;
 	return m_minute == v->m_minute;
 }
 
-Item<Minute> Minute::create(unsigned int hour, unsigned int minute)
+Minute* Minute::clone() const
 {
-	Minute* res;
-	Item<Minute> itemres = res = new Minute;
-	res->m_minute = hour * 60 + minute;
-	return cache_minute.intern(itemres);
+    Minute* res = new Minute;
+    res->m_minute = m_minute;
+    return res;
 }
 
-static void debug_interns()
+auto_ptr<Minute> Minute::create(unsigned int hour, unsigned int minute)
 {
-	fprintf(stderr, "Run Minute: sz %zd reused %zd\n", cache_minute.size(), cache_minute.reused());
+    Minute* res = new Minute;
+    res->m_minute = hour * 60 + minute;
+    return auto_ptr<Minute>(res);
 }
 
 }
 
 void Run::init()
 {
-    MetadataType::register_type<Run>(run::debug_interns);
+    MetadataType::register_type<Run>();
 }
 
 }
 }
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:

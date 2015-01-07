@@ -25,6 +25,7 @@
 
 
 #include <arki/types.h>
+#include <arki/summary/stats.h>
 #include <vector>
 
 namespace arki {
@@ -37,10 +38,78 @@ struct Visitor;
 struct StatsVisitor;
 struct ItemVisitor;
 
-struct Node : public refcounted::Base
+extern const types::Code mso[];
+extern int* msoSerLen;
+
+/**
+ * Vector of owned Type pointers.
+ *
+ * FIXME: it would be nice if const_iterator gave pointers to const Type*, but
+ * it seems overkill to implement it now.
+ */
+class TypeVector
 {
-    // Metadata represented here
-    std::vector< UItem<> > md;
+protected:
+    std::vector<types::Type*> vals;
+
+public:
+    typedef std::vector<types::Type*>::const_iterator const_iterator;
+
+    TypeVector();
+    TypeVector(const Metadata& md);
+    TypeVector(const TypeVector& o);
+    ~TypeVector();
+
+    const_iterator begin() const { return vals.begin(); }
+    const_iterator end() const { return vals.end(); }
+    size_t size() const { return vals.size(); }
+    bool empty() const { return vals.empty(); }
+
+    bool operator==(const TypeVector&) const;
+    bool operator!=(const TypeVector& o) const { return !operator==(o); }
+
+    types::Type* operator[](unsigned i) { return vals[i]; }
+    const types::Type* operator[](unsigned i) const { return vals[i]; }
+
+    void resize(size_t new_size);
+
+    /// Set a value, expanding the vector if needed
+    void set(size_t pos, std::auto_ptr<types::Type> val);
+
+    /// Set a value, expanding the vector if needed
+    void set(size_t pos, const types::Type* val);
+
+    /// Set a value to 0, or do nothing if pos > size()
+    void unset(size_t pos);
+
+    /// Remove trailing undefined items
+    void rtrim();
+
+    /**
+     * Split this vector in two at \a pos.
+     *
+     * This vector will be shortened to be exactly of size \a pos.
+     *
+     * Returns a vector with the rest of the items
+     */
+    void split(size_t pos, TypeVector& dest);
+
+    /// Return the raw pointer to the items
+    const types::Type* const* raw_items() const { return vals.data(); }
+
+protected:
+    TypeVector& operator=(const TypeVector&);
+};
+
+struct Node
+{
+    /**
+     * List of metadata items for this node.
+     *
+     * A metadata item can be 0, to represent items that do not have that
+     * metadata.
+     */
+    TypeVector md;
 
     /**
      * Children representing the rest of the metadata.
@@ -58,10 +127,13 @@ struct Node : public refcounted::Base
     /**
      * Statistics about the metadata scanned so far.
      */
-    UItem<Stats> stats;
+    Stats stats;
 
     Node();
+    Node(const Stats& stats);
+    Node(const Node&);
 
+#if 0
     /**
      * New root node initialized from the given metadata and stats.
      *
@@ -72,32 +144,59 @@ struct Node : public refcounted::Base
      * @param scanpos If present, only m[scanpos:] is used for this node.
      */
     Node(const std::vector< UItem<> >& m, const UItem<Stats>& st = 0, size_t scanpos = 0);
+#endif
 
-    virtual ~Node();
+    ~Node();
 
-    // Visit all the contents of this node, notifying visitor of all the full
-    // nodes found
-    bool visit(Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanpos = 0) const;
+    static std::auto_ptr<Node> createPopulated(const types::Type* const* items, unsigned items_size, const Stats& stats);
 
-    // Visit all the stats contained in this node and all subnotes
-    bool visitStats(StatsVisitor& visitor) const;
+    /// Return a deep copy of this node
+    Node* clone() const;
+
+    bool equals(const Node& node) const;
+
+    void dump(std::ostream& out, size_t depth=0) const;
 
     // Notifies the visitor of all the values of the given metadata item.
     // Due to the internal structure, the same item can be notified more than once.
     bool visitItem(size_t msoidx, ItemVisitor& visitor) const;
 
     /**
-     * Visit the whole tree, filtered with a Matcher.
-     *
-     * This method can only be called in the root node, or it will be out of
-     * sync with the metadata positions.
+     * Visit all the contents of this node, notifying visitor of all the full
+     * nodes found
      */
-    bool visitFiltered(const Matcher& matcher, Visitor& visitor) const;
+    bool visit(Visitor& visitor, std::vector<const types::Type*>& visitmd, size_t scanpos = 0) const;
 
-    // Visit all the contents of this node, notifying visitor of all the full
-    // nodes found that match the matcher
-    bool visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector< UItem<> >& visitmd, size_t scanpos = 0) const;
+    /**
+     * Visit all the contents of this node, notifying visitor of all the full
+     * nodes found that match the matcher
+     */
+    bool visitFiltered(const Matcher& matcher, Visitor& visitor, std::vector<const types::Type*>& visitmd, size_t scanpos = 0) const;
 
+    /**
+     * Add statistics about the \a size items in \a items into this node
+     */
+    void merge(const types::Type* const* items, size_t items_size, const Stats& stats);
+
+    /**
+     * Check if this node is a candidate for merging with the given sequence.
+     *
+     * A node is a candidate if both the sequence and its md are empty, or if
+     * they have the first item in common.
+     */
+    bool candidate_for_merge(const types::Type* const* items, size_t items_size) const;
+
+    /**
+     * Split this node in two at the given position.
+     *
+     * This node's md will be truncated to pos.
+     *
+     * This node will end up with only one child, which contains the rest of md
+     * and all the former children and stats.
+     */
+    void split(size_t pos);
+
+#if 0
     /**
      * Obtain a node for the given metadata combination.
      *
@@ -114,32 +213,21 @@ struct Node : public refcounted::Base
      */
     Node* obtain_node(const std::vector< UItem<> >& m, size_t scanpos = 0);
 
-    /**
-     * Split this node in two at the given position.
-     *
-     * This node's md will be truncated to pos.
-     *
-     * This node will end up with only one child, which contains the rest of md
-     * and all the former children and stats.
-     */
-    void split(size_t pos);
+#endif
 
-    /**
-     * Return a deep copy of this node
-     */
-    Node* clone() const;
-
-    int compare(const Node& node) const;
-
-    void dump(std::ostream& out, size_t depth=0) const;
+    //int compare(const Node& node) const;
 
     static void buildMsoSerLen();
     static void buildItemMsoMap();
 
     /// Number of item types that contribute to a summary context
     static const size_t msoSize;
+
+private:
+    Node& operator=(const Node&);
 };
 
+#if 0
 struct RootNode : public Node
 {
     /**
@@ -172,14 +260,6 @@ struct RootNode : public Node
      *   unless the vector is empty
      */
     RootNode(const std::vector< UItem<> >& m, const UItem<Stats>& st = 0);
-
-    /**
-     * Visit the whole tree.
-     *
-     * This method can only be called in the root node, or it will be out of
-     * sync with the metadata positions.
-     */
-    bool visit(Visitor& visitor) const;
 
     /**
      * Add a metadata item
@@ -216,17 +296,8 @@ struct RootNode : public Node
      * Return a deep copy of this node
      */
     RootNode* clone() const;
-
-    /// Encode the whole trie to the given encoder
-    void encode(utils::codec::Encoder& enc) const;
-
-    // Decode formats 1 and 2, return the number of nodes decoded
-    size_t decode1(utils::codec::Decoder& dec);
-    // Decode format 3, return the number of nodes decoded
-    size_t decode3(utils::codec::Decoder& dec);
-
-    size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename);
 };
+#endif
 
 }
 }

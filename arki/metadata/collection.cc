@@ -46,6 +46,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils;
+using namespace arki::types;
 
 namespace arki {
 namespace metadata {
@@ -108,7 +109,7 @@ void Collection::writeTo(std::ostream& out, const std::string& fname) const
 			compressAndWrite(buf, out, fname);
 			buf.clear();
 		}
-		buf += (*this)[i].encode();
+		buf += (*this)[i].encodeBinary();
 	}
 	if (!buf.empty())
 		compressAndWrite(buf, out, fname);
@@ -182,20 +183,20 @@ std::string Collection::ensureContiguousData(const std::string& source) const
 	off_t last_end = 0;
 	for (const_iterator i = begin(); i != end(); ++i)
 	{
-		Item<types::source::Blob> s = i->source.upcast<types::source::Blob>();
-		if (s->offset != (size_t)last_end)
-			throw wibble::exception::Consistency("validating " + source,
-					"metadata element points to data that does not start at the end of the previous element");
-		if (i == begin())
-		{
-			fname = s->absolutePathname();
-		} else {
-			if (fname != s->absolutePathname())
-				throw wibble::exception::Consistency("validating " + source,
-						"metadata element points at another data file (previous: " + fname + ", this: " + s->absolutePathname() + ")");
-		}
-		last_end += s->size;
-	}
+        const source::Blob& s = i->sourceBlob();
+        if (s.offset != (size_t)last_end)
+            throw wibble::exception::Consistency("validating " + source,
+                    "metadata element points to data that does not start at the end of the previous element");
+        if (i == begin())
+        {
+            fname = s.absolutePathname();
+        } else {
+            if (fname != s.absolutePathname())
+                throw wibble::exception::Consistency("validating " + source,
+                        "metadata element points at another data file (previous: " + fname + ", this: " + s.absolutePathname() + ")");
+        }
+        last_end += s.size;
+    }
 	std::auto_ptr<struct stat> st = sys::fs::stat(fname);
 	if (st.get() == NULL)
 		throw wibble::exception::File(fname, "validating data described in " + source);

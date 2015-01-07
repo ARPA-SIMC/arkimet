@@ -20,8 +20,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include <arki/matcher/reftime.h>
 #include <arki/matcher/reftime/parser.h>
 #include <arki/matcher/utils.h>
@@ -30,6 +28,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 using namespace arki::matcher::reftime;
 
 namespace arki {
@@ -54,23 +53,23 @@ MatchReftime::~MatchReftime()
 
 std::string MatchReftime::name() const { return "reftime"; }
 
-bool MatchReftime::matchItem(const Item<>& o) const
+bool MatchReftime::matchItem(const Type& o) const
 {
-	if (const types::reftime::Position* po = dynamic_cast<const types::reftime::Position*>(o.ptr()))
-	{
-		for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-			if (!(*i)->match(po->time->vals))
-				return false;
-		return true;
-	}
-	else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(o.ptr()))
-	{
-		for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-			if (!(*i)->match(pe->begin->vals, pe->end->vals))
-				return false;
-		return true;
-	}
-	return true;
+    if (const types::reftime::Position* po = dynamic_cast<const types::reftime::Position*>(&o))
+    {
+        for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
+            if (!(*i)->match(po->time.vals))
+                return false;
+        return true;
+    }
+    else if (const types::reftime::Period* pe = dynamic_cast<const types::reftime::Period*>(&o))
+    {
+        for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
+            if (!(*i)->match(pe->begin.vals, pe->end.vals))
+                return false;
+        return true;
+    }
+    return true;
 }
 
 std::string MatchReftime::sql(const std::string& column) const
@@ -88,12 +87,12 @@ std::string MatchReftime::sql(const std::string& column) const
 	return res + ")";
 }
 
-void MatchReftime::dateRange(UItem<types::Time>& begin, UItem<types::Time>& end) const
+void MatchReftime::dateRange(types::Time& begin, types::Time& end) const
 {
-	begin.clear();
-	end.clear();
-	for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-		(*i)->restrictDateRange(begin, end);
+    begin.setInvalid();
+    end.setInvalid();
+    for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
+        (*i)->restrictDateRange(begin, end);
 }
 
 std::string MatchReftime::toString() const

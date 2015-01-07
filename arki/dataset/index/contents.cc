@@ -399,16 +399,16 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, UItem<types::Time>& be
 	q1.compile("SELECT MIN(reftime) FROM md");
 	while (q1.step())
 	{
-		if (q1.fetchType(0) != SQLITE_NULL)
-			begin = types::Time::createFromSQL(q1.fetchString(0));
+        if (!q1.isNULL(0))
+            begin = types::Time::createFromSQL(q1.fetchString(0));
 	}
 
 	Query q2("min_date", db);
 	q2.compile("SELECT MAX(reftime) FROM md");
 	while (q2.step())
 	{
-		if (q2.fetchType(0) != SQLITE_NULL)
-			end = types::Time::createFromSQL(q2.fetchString(0));
+        if (!q2.isNULL(0))
+            end = types::Time::createFromSQL(q2.fetchString(0));
 	}
 }
 
@@ -503,19 +503,19 @@ void Contents::build_md(Query& q, Metadata& md) const
     int j = 7;
     if (m_uniques)
     {
-        if (q.fetchType(j) != SQLITE_NULL)
+        if (!q.isNULL(j))
             m_uniques->read(q.fetch<int>(j), md);
         ++j;
     }
     if (m_others)
     {
-        if (q.fetchType(j) != SQLITE_NULL)
+        if (!q.isNULL(j))
             m_others->read(q.fetch<int>(j), md);
         ++j;
     }
     if (m_smallfiles)
     {
-        if (q.fetchType(j) != SQLITE_NULL)
+        if (!q.isNULL(j))
         {
             string data = q.fetchString(j);
             md.set(types::Value::create(data));
@@ -697,15 +697,15 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
         int j = 4;
 		if (m_uniques)
 		{
-			if (sq.fetchType(j) != SQLITE_NULL)
-				m_uniques->read(sq.fetch<int>(j), md);
-			++j;
+            if (!sq.isNULL(j))
+                m_uniques->read(sq.fetch<int>(j), md);
+            ++j;
 		}
 		if (m_others)
 		{
-			if (sq.fetchType(j) != SQLITE_NULL)
-				m_others->read(sq.fetch<int>(j), md);
-			++j;
+            if (!sq.isNULL(j))
+                m_others->read(sq.fetch<int>(j), md);
+            ++j;
 		}
 
 		// Feed the results to the summary
@@ -808,15 +808,15 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
         int j = 4;
 		if (m_uniques)
 		{
-			if (sq.fetchType(j) != SQLITE_NULL)
-				m_uniques->read(sq.fetch<int>(j), md);
-			++j;
+            if (!sq.isNULL(j))
+                m_uniques->read(sq.fetch<int>(j), md);
+            ++j;
 		}
 		if (m_others)
 		{
-			if (sq.fetchType(j) != SQLITE_NULL)
-				m_others->read(sq.fetch<int>(j), md);
-			++j;
+            if (!sq.isNULL(j))
+                m_others->read(sq.fetch<int>(j), md);
+            ++j;
 		}
 
 		// Feed the results to the summary

@@ -57,27 +57,11 @@ const types::Code traits<Time>::type_code = CODE;
 const size_t traits<Time>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Time>::type_lua_tag = LUATAG_TYPES ".time";
 
-Time::Time()
-{
-	memset(vals, 0, 6*sizeof(int));
-}
-Time::Time(int ye, int mo, int da, int ho, int mi, int se)
-{
-	vals[0] = ye;
-	vals[1] = mo;
-	vals[2] = da;
-	vals[3] = ho;
-	vals[4] = mi;
-	vals[5] = se;
-}
-Time::Time(const int (&vals)[6])
-{
-	memcpy(this->vals, vals, 6*sizeof(const int));
-}
-Time::Time(const Time& t)
-{
-	memcpy(this->vals, t.vals, 6*sizeof(const int));
-}
+Time::Time() { setInvalid(); }
+Time::Time(int ye, int mo, int da, int ho, int mi, int se) { set(ye, mo, da, ho, mi, se); }
+Time::Time(const int (&vals)[6]) { set(vals); }
+Time::Time(const Time& t) { set(t.vals); }
+Time::Time(struct tm& t) { set(t); }
 
 Time& Time::operator=(const Time& t)
 {
@@ -85,7 +69,7 @@ Time& Time::operator=(const Time& t)
 	return *this;
 }
 
-bool Time::isNow() const
+bool Time::isValid() const
 {
 	for (unsigned i = 0; i < 6; ++i)
 		if (vals[i]) return false;
@@ -94,8 +78,7 @@ bool Time::isNow() const
 
 int Time::compare(const Type& o) const
 {
-	int res = Type::compare(o);
-	if (res != 0) return res;
+    if (int res = Type::compare(o)) return res;
 
 	// We should be the same kind, so upcast
 	const Time* v = dynamic_cast<const Time*>(&o);
@@ -116,37 +99,34 @@ int Time::compare(const Type& o) const
 	return 0;
 }
 
-Item<types::Time> Time::start_of_month() const
+auto_ptr<Time> Time::start_of_month() const
 {
-    types::Time* t;
-    Item<types::Time> res = t = new Time;
+    auto_ptr<Time> t(new Time);
     t->vals[0] = vals[0];
     t->vals[1] = vals[1];
     t->vals[2] = 1;
     t->vals[3] = t->vals[4] = t->vals[5] = 0;
-    return res;
+    return t;
 }
-Item<types::Time> Time::start_of_next_month() const
+auto_ptr<Time> Time::start_of_next_month() const
 {
-    types::Time* t;
-    Item<types::Time> res = t = new types::Time;
+    auto_ptr<Time> t(new Time);
     t->vals[0] = vals[0] + vals[1] / 12;
     t->vals[1] = (vals[1] % 12) + 1;
     t->vals[2] = 1;
     t->vals[3] = t->vals[4] = t->vals[5] = 0;
-    return res;
+    return t;
 }
-Item<types::Time> Time::end_of_month() const
+auto_ptr<Time> Time::end_of_month() const
 {
-    types::Time* t;
-    Item<types::Time> res = t = new types::Time;
+    auto_ptr<Time> t(new Time);
     t->vals[0] = vals[0];
     t->vals[1] = vals[1];
     t->vals[2] = grcal::date::daysinmonth(vals[0], vals[1]);
     t->vals[3] = 23;
     t->vals[4] = 59;
     t->vals[5] = 59;
-    return res;
+    return t;
 }
 
 std::string Time::toISO8601(char sep) const
@@ -165,34 +145,34 @@ std::string Time::toSQL() const
 	return buf;
 }
 
-Item<Time> Time::decode(const unsigned char* buf, size_t len)
+auto_ptr<Time> Time::decode(const unsigned char* buf, size_t len)
 {
-	using namespace utils::codec;
-	ensureSize(len, 5, "Time");
-	uint32_t a = decodeUInt(buf, 4);
-	uint32_t b = decodeUInt(buf + 4, 1);
-	return Time::create(
-		a >> 18,
-		(a >> 14) & 0xf,
-		(a >> 9) & 0x1f,
-		(a >> 4) & 0x1f,
-		((a & 0xf) << 2) | ((b >> 6) & 0x3),
-		b & 0x3f);
+    using namespace utils::codec;
+    ensureSize(len, 5, "Time");
+    uint32_t a = decodeUInt(buf, 4);
+    uint32_t b = decodeUInt(buf + 4, 1);
+    return Time::create(
+        a >> 18,
+        (a >> 14) & 0xf,
+        (a >> 9) & 0x1f,
+        (a >> 4) & 0x1f,
+        ((a & 0xf) << 2) | ((b >> 6) & 0x3),
+        b & 0x3f);
 }
 
-Item<Time> Time::decodeString(const std::string& val)
+auto_ptr<Time> Time::decodeString(const std::string& val)
 {
-	return Time::createFromISO8601(val);
+    return Time::createFromISO8601(val);
 }
 
-Item<Time> Time::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Time> Time::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     return decodeList(val["v"].want_list("decoding Time value"));
 }
 
-Item<Time> Time::decodeList(const emitter::memory::List& val)
+auto_ptr<Time> Time::decodeList(const emitter::memory::List& val)
 {
     using namespace emitter::memory;
 
@@ -201,11 +181,10 @@ Item<Time> Time::decodeList(const emitter::memory::List& val)
                 "decoding item",
                 str::fmtf("list has %zd elements instead of 6", val.size()));
 
-    Time* res;
-    Item<Time> itemres = res = new Time;
+    auto_ptr<Time> res(new Time);
     for (unsigned i = 0; i < 6; ++i)
         res->vals[i] = val[i].want_int("decoding component of time value");
-    return itemres;
+    return res;
 }
 
 void Time::encodeWithoutEnvelope(Encoder& enc) const
@@ -240,23 +219,18 @@ void Time::serialiseList(Emitter& e) const
     e.end_list();
 }
 
-bool Time::operator==(const Type& o) const
+bool Time::equals(const Type& t) const
 {
-	const Time* v = dynamic_cast<const Time*>(&o);
-	if (!v) return false;
-	return operator==(*v);
-}
-
-bool Time::operator==(const Time& t) const
-{
-	return memcmp(vals, t.vals, 6*sizeof(int)) == 0;
+    const Time* v = dynamic_cast<const Time*>(&t);
+    if (!v) return false;
+    return memcmp(vals, v->vals, 6*sizeof(int)) == 0;
 }
 
 #ifdef HAVE_LUA
 
 static int arkilua_lookup(lua_State *L)
 {
-        Item<Time> item = Type::lua_check(L, 1, "arki.types.time").upcast<Time>();
+    const Time* item = dynamic_cast<const Time*>(Type::lua_check(L, 1, "arki.types.time"));
 	if (lua_type(L, 2) == LUA_TNUMBER) 
 	{
 		// Lua array indices start at 1
@@ -345,38 +319,102 @@ void Time::lua_loadlib(lua_State* L)
 
 #endif
 
-Item<Time> Time::create()
+Time* Time::clone() const
 {
-	return new Time;
+    Time* res = new Time;
+    memcpy(res->vals, vals, 6*sizeof(const int));
+    return res;
 }
 
-Item<Time> Time::create(int ye, int mo, int da, int ho, int mi, int se)
+void Time::setInvalid()
 {
-	return new Time(ye, mo, da, ho, mi, se);
+    memset(vals, 0, 6*sizeof(int));
 }
 
-Item<Time> Time::create(const int (&vals)[6])
+void Time::set(int ye, int mo, int da, int ho, int mi, int se)
 {
-	return new Time(vals);
+    vals[0] = ye;
+    vals[1] = mo;
+    vals[2] = da;
+    vals[3] = ho;
+    vals[4] = mi;
+    vals[5] = se;
 }
 
-Item<Time> Time::create(struct tm& t)
+void Time::set(const int (&vals)[6])
 {
-	Time* res;
-	Item<Time> itemres = res = new Time;
-	res->vals[0] = t.tm_year + 1900;
-	res->vals[1] = t.tm_mon + 1;
-	res->vals[2] = t.tm_mday;
-	res->vals[3] = t.tm_hour;
-	res->vals[4] = t.tm_min;
-	res->vals[5] = t.tm_sec;
-	return itemres;
+    memcpy(this->vals, vals, 6*sizeof(const int));
 }
 
-Item<Time> Time::createFromISO8601(const std::string& str)
+void Time::set(struct tm& t)
 {
-	Time* res;
-	Item<Time> itemres = res = new Time;
+    vals[0] = t.tm_year + 1900;
+    vals[1] = t.tm_mon + 1;
+    vals[2] = t.tm_mday;
+    vals[3] = t.tm_hour;
+    vals[4] = t.tm_min;
+    vals[5] = t.tm_sec;
+}
+
+void Time::setFromISO8601(const std::string& str)
+{
+    int* v = vals;
+    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+    sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+    if (count == 0)
+        throw wibble::exception::Consistency(
+                "Invalid datetime specification: '"+str+"'",
+                "Parsing ISO-8601 string");
+}
+
+void Time::setFromSQL(const std::string& str)
+{
+    int* v = vals;
+    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+    if (count == 0)
+        throw wibble::exception::Consistency(
+                "Invalid datetime specification: '"+str+"'",
+                "Parsing SQL string");
+}
+
+void Time::setNow()
+{
+    time_t timet_now = time(0);
+    struct tm now;
+    gmtime_r(&timet_now, &now);
+    set(now);
+}
+
+auto_ptr<Time> Time::createInvalid()
+{
+    return auto_ptr<Time>(new Time);
+}
+
+auto_ptr<Time> Time::create(int ye, int mo, int da, int ho, int mi, int se)
+{
+    return auto_ptr<Time>(new Time(ye, mo, da, ho, mi, se));
+}
+
+auto_ptr<Time> Time::create(const int (&vals)[6])
+{
+    return auto_ptr<Time>(new Time(vals));
+}
+
+auto_ptr<Time> Time::create(struct tm& t)
+{
+    auto_ptr<Time> res(new Time);
+    res->vals[0] = t.tm_year + 1900;
+    res->vals[1] = t.tm_mon + 1;
+    res->vals[2] = t.tm_mday;
+    res->vals[3] = t.tm_hour;
+    res->vals[4] = t.tm_min;
+    res->vals[5] = t.tm_sec;
+    return res;
+}
+
+auto_ptr<Time> Time::createFromISO8601(const std::string& str)
+{
+    auto_ptr<Time> res(new Time);
 	int* v = res->vals;
 	int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
 	sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
@@ -384,23 +422,22 @@ Item<Time> Time::createFromISO8601(const std::string& str)
 		throw wibble::exception::Consistency(
 			"Invalid datetime specification: '"+str+"'",
 			"Parsing ISO-8601 string");
-	return itemres;
+    return res;
 }
 
-Item<Time> Time::createFromSQL(const std::string& str)
+auto_ptr<Time> Time::createFromSQL(const std::string& str)
 {
-	Time* res;
-	Item<Time> itemres = res = new Time;
+    auto_ptr<Time> res(new Time);
 	int* v = res->vals;
 	int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
 	if (count == 0)
 		throw wibble::exception::Consistency(
 			"Invalid datetime specification: '"+str+"'",
 			"Parsing SQL string");
-	return itemres;
+    return res;
 }
 
-Item<Time> Time::createNow()
+auto_ptr<Time> Time::createNow()
 {
 	time_t timet_now = time(0);
 	struct tm now;
@@ -435,98 +472,33 @@ static int _daysinmonth(int month, int year)
 	}
 }
 
-Item<Time> Time::createDifference(const Item<Time>& a, const Item<Time>& b)
-{
-	int res[6];
-	for (int i = 0; i < 6; ++i)
-		res[i] = a->vals[i];
-
-	// Normalise days and months
-	--res[1];
-	--res[2];
-
-	// Seconds
-	res[5] -= b->vals[5];
-	while (res[5] < 0)
-	{
-		res[5] += 60;
-		--res[4];
-	}
-	// Minutes
-	res[4] -= b->vals[4];
-	while (res[4] < 0)
-	{
-		res[4] += 60;
-		--res[3];
-	}
-	// Hours
-	res[3] -= b->vals[3];
-	while (res[3] < 0)
-	{
-		res[3] += 24;
-		--res[2];
-	}
-	// Days
-	res[2] -= b->vals[2] - 1;
-	while (res[2] < 0)
-	{
-		--res[1];
-		while (res[1] < 0)
-		{
-			--res[0];
-			res[1] += 12;
-		}
-		res[2] += _daysinmonth(res[1]+1, res[0]);
-	}
-	// Months
-	res[1] -= b->vals[1] - 1;
-	while (res[1] < 0)
-	{
-		res[1] += 12;
-		--res[0];
-	}
-	// Years
-	res[0] -= b->vals[0];
-	if (res[0] < 0)
-		return Time::create();
-	else
-		return Time::create(res[0], res[1], res[2], res[3], res[4], res[5]);
-}
-
 bool Time::range_overlaps(
-        const UItem<types::Time>& ts1, const UItem<types::Time>& te1,
-        const UItem<types::Time>& ts2, const UItem<types::Time>& te2)
+        const Time& ts1, const Time& te1,
+        const Time& ts2, const Time& te2)
 {
     // If any of the intervals are open at both ends, they obviously overlap
-    if (!ts1.defined() && !te1.defined())
-        return true;
-    if (!ts2.defined() && !te2.defined())
-        return true;
+    if (!ts1.isValid() && !te1.isValid()) return true;
+    if (!ts2.isValid() && !te2.isValid()) return true;
 
-    if (!ts1.defined())
-        return !ts2.defined() || ts2 <= te1;
-    if (!te1.defined())
-        return !te2.defined() || te2 >= ts1;
+    if (!ts1.isValid()) return !ts2.isValid() || ts2.compare(te1) <= 0;
+    if (!te1.isValid()) return !te2.isValid() || te2.compare(ts1) >= 0;
 
-    if (!ts2.defined())
-        return te2 >= ts1;
-    if (!te2.defined())
-        return ts2 <= te1;
+    if (!ts2.isValid()) return te2.compare(ts1) >= 0;
+    if (!te2.isValid()) return ts2.compare(te1) <= 0;
 
-    return !(te1 < ts2 || ts1 > te2);
+    return !(te1.compare(ts2) < 0 || ts1.compare(te2) > 0);
 }
 
-std::vector< Item<Time> > Time::generate(
-		const types::Time& begin, const types::Time& end, int step)
+std::vector<Time> Time::generate(const types::Time& begin, const types::Time& end, int step)
 {
-	vector< Item<Time> > res;
-	for (Time cur = begin; cur < end; )
-	{
-		res.push_back(Time::create(cur.vals));
-		cur.vals[5] += step;
-		grcal::date::normalise(cur.vals);
-	}
-	return res;
+    vector<Time> res;
+    for (Time cur = begin; cur < end; )
+    {
+        res.push_back(cur);
+        cur.vals[5] += step;
+        grcal::date::normalise(cur.vals);
+    }
+    return res;
 }
 
 

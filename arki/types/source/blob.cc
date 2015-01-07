@@ -64,7 +64,7 @@ void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("ofs", offset);
     e.add("sz", size);
 }
-Item<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
+std::auto_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
 {
     const arki::emitter::memory::Node& rd = val["b"];
     string basedir;
@@ -110,14 +110,14 @@ int Blob::compare_local(const Source& o) const
     return size - v->size;
 }
 
-bool Blob::operator==(const Type& o) const
+bool Blob::equals(const Type& o) const
 {
     const Blob* v = dynamic_cast<const Blob*>(&o);
     if (!v) return false;
     return format == v->format && filename == v->filename && offset == v->offset && size == v->size;
 }
 
-Item<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+Blob* Blob::clone() const
 {
     Blob* res = new Blob;
     res->format = format;
@@ -128,19 +128,30 @@ Item<Blob> Blob::create(const std::string& format, const std::string& basedir, c
     return res;
 }
 
-Item<Blob> Blob::fileOnly() const
+std::auto_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+{
+    Blob* res = new Blob;
+    res->format = format;
+    res->basedir = basedir;
+    res->filename = filename;
+    res->offset = offset;
+    res->size = size;
+    return auto_ptr<Blob>(res);
+}
+
+std::auto_ptr<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
-    Item<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
+    std::auto_ptr<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
     if (hasCachedData())
         res->setCachedData(getCachedData());
     return res;
 }
 
-Item<Blob> Blob::makeAbsolute() const
+std::auto_ptr<Blob> Blob::makeAbsolute() const
 {
     string pathname = absolutePathname();
-    Item<Blob> res = Blob::create(format, "", pathname, offset, size);
+    std::auto_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
     if (hasCachedData())
         res->setCachedData(getCachedData());
     return res;

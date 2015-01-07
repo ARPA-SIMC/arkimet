@@ -4,7 +4,7 @@
 /*
  * types/bbox - Bounding box metadata item
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,28 +70,31 @@ struct BBox : public types::StyledType<BBox>
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
-	/// CODEC functions
-	static Item<BBox> decode(const unsigned char* buf, size_t len);
-	static Item<BBox> decodeString(const std::string& val);
-	static Item<BBox> decodeMapping(const emitter::memory::Mapping& val);
+    /// CODEC functions
+    static std::auto_ptr<BBox> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<BBox> decodeString(const std::string& val);
+    static std::auto_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
 
     // Register this type tree with the type system
     static void init();
+
+    static std::auto_ptr<BBox> createInvalid();
 };
 
 namespace bbox {
 
 struct INVALID : public BBox
 {
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-	virtual const char* lua_type_name() const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    const char* lua_type_name() const override;
 
-	virtual int compare_local(const BBox& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const BBox& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<INVALID> create();
+    INVALID* clone() const override;
+    static std::auto_ptr<INVALID> create();
 };
 
 }

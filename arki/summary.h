@@ -47,7 +47,7 @@ class Matcher;
 class Formatter;
 
 namespace summary {
-struct RootNode;
+struct Node;
 struct Stats;
 }
 
@@ -60,8 +60,8 @@ class LuaIter;
 
 struct Visitor
 {
-	virtual ~Visitor() {}
-	virtual bool operator()(const std::vector< UItem<> >& md, const UItem<Stats>& stats) = 0;
+    virtual ~Visitor() {}
+    virtual bool operator()(const std::vector<const types::Type*>& md, const Stats& stats) = 0;
 
 	/// Return the metadata code for a given md vector position
 	static types::Code codeForPos(size_t pos);
@@ -82,8 +82,8 @@ struct StatsVisitor
 
 struct ItemVisitor
 {
-	virtual ~ItemVisitor() {}
-	virtual bool operator()(const arki::UItem<>& item) = 0;
+    virtual ~ItemVisitor() {}
+    virtual bool operator()(const types::Type& item) = 0;
 };
 
 }
@@ -94,7 +94,7 @@ struct ItemVisitor
 class Summary
 {
 protected:
-    summary::RootNode* root;
+    summary::Node* root;
 
 public:
     Summary();
@@ -231,7 +231,7 @@ public:
 	 * summarisable metadata items are taken from 'md', and the statistics
 	 * from 'st'
 	 */
-	void add(const Metadata& md, const UItem<summary::Stats>& st);
+	void add(const Metadata& md, const summary::Stats& st);
 
 	/**
 	 * Merge a summary into this summary
@@ -260,12 +260,12 @@ public:
 	 */
 	bool visitFiltered(const Matcher& matcher, summary::Visitor& visitor) const;
 
-	/**
-	 * Get the reference time interval covered by the metadata bundle.
-	 *
-	 * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
-	 */
-	Item<types::Reftime> getReferenceTime() const;
+    /**
+     * Get the reference time interval covered by the metadata bundle.
+     *
+     * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
+     */
+    std::auto_ptr<types::Reftime> getReferenceTime() const;
 
     /**
      * Compute the date extremes of this summary
@@ -273,7 +273,7 @@ public:
      * @returns true if the range has at least one bound (i.e. either with
      * or without are defined), false otherwise
      */
-    bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+    bool date_extremes(types::Time& begin, types::Time& end) const;
 
 	/**
 	 * Get the convex hull of the union of all bounding boxes covered by the

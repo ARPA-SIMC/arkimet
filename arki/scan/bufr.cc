@@ -54,6 +54,7 @@ using namespace std;
 using namespace wibble;
 using namespace wreport;
 using namespace dballe;
+using namespace arki::types;
 
 namespace arki {
 namespace scan {
@@ -159,171 +160,195 @@ void Bufr::close()
     }
 }
 
-static void extract_reftime(const dballe::Msg& msg, Metadata& md)
+namespace {
+class Harvest
 {
-	static int srcs[] = { DBA_MSG_YEAR, DBA_MSG_MONTH, DBA_MSG_DAY, DBA_MSG_HOUR, DBA_MSG_MINUTE, DBA_MSG_SECOND };
-	int vals[6];
+protected:
+    Msgs msgs;
 
-	for (unsigned i = 0; i < 6; ++i)
-	{
-		if (const wreport::Var* var = msg.find_by_id(srcs[i]))
-			if (var->isset())
-			{
-				vals[i] = var->enqi();
-				continue;
-			}
-		if (i == 5)
-			// In case of seconds, if no value is found we default to 0
-			vals[i] = 0;
-		else
-			return;
-	}
+public:
+    dballe::msg::Importer& importer;
+    auto_ptr<reftime::Position> reftime;
+    auto_ptr<Origin> origin;
+    auto_ptr<product::BUFR> product;
+    Msg* msg;
 
-	// If we got here, vals is complete
-	md.set(types::reftime::Position::create(types::Time::create(vals)));
+    Harvest(dballe::msg::Importer& importer) : importer(importer), msg(0) {}
+
+    void refine_reftime(const dballe::Msg& msg)
+    {
+        static int srcs[] = { DBA_MSG_YEAR, DBA_MSG_MONTH, DBA_MSG_DAY, DBA_MSG_HOUR, DBA_MSG_MINUTE, DBA_MSG_SECOND };
+        types::Time time;
+
+        for (unsigned i = 0; i < 6; ++i)
+        {
+            if (const wreport::Var* var = msg.find_by_id(srcs[i]))
+                if (var->isset())
+                {
+                    time.vals[i] = var->enqi();
+                    continue;
+                }
+            if (i == 5)
+                // In case of seconds, if no value is found we default to 0
+                time.vals[i] = 0;
+            else
+                return;
+        }
+
+        // If we got here, vals is complete
+        reftime->time = time;
+    }
+
+    void harvest_from_dballe(const Rawmsg& rmsg, Metadata& md)
+    {
+        msg = 0;
+        auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
+        bulletin->decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
+
+#if 0
+        // Detect optional section and handle it
+        switch (msg->opt.bufr.optional_section_length)
+        {
+            case 14: read_info_fixed(msg->opt.bufr.optional_section, md); break;
+            case 11: read_info_mobile(msg->opt.bufr.optional_section, md); break;
+            default: break;
+        }
+#endif
+
+        // Set reference time
+        // FIXME: WRONG! The header date should ALWAYS be ignored
+        reftime = reftime::Position::create(types::Time(
+                bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
+                bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
+
+        // Set origin from the bufr header
+        switch (bulletin->edition)
+        {
+            case 2:
+            case 3:
+            case 4:
+                // No process?
+                origin = Origin::createBUFR(bulletin->centre, bulletin->subcentre);
+                product = product::BUFR::create(bulletin->type, bulletin->subtype, bulletin->localsubtype);
+                break;
+            default:
+                {
+                    std::stringstream str;
+                    str << "edition is " << bulletin->edition << " but I can only handle 3 and 4";
+                    throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
+                }
+        }
+
+        // Default to a generic product unless we find more info later
+        //md.set(types::product::BUFR::create("generic"));
+
+        // Try to decode the data; if we fail, we are done
+        try {
+            // Ignore domain errors, it's ok if we lose some oddball data
+            wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
+
+            bulletin->decode(rmsg);
+        } catch (wreport::error& e) {
+            // We can still try to handle partially decoded files
+
+            // Not if the error was not a parse error
+            if (e.code() != WR_ERR_PARSE) return;
+
+            // Not if we didn't decode just one subset
+            if (bulletin->subsets.size() != 1) return;
+
+            // Not if the subset is empty
+            if (bulletin->subsets[0].empty()) return;
+        } catch (std::exception& e) {
+            return;
+        }
+
+        // If there is more than one subset, we are done
+        if (bulletin->subsets.size() != 1)
+            return;
+
+        // Try to parse as a dba_msg
+        try {
+            // Ignore domain errors, it's ok if we lose some oddball data
+            wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
+
+            importer.from_bulletin(*bulletin, msgs);
+        } catch (std::exception& e) {
+            // If we cannot import it as a Msgs, we are done
+            return;
+        }
+
+        // We decoded a different number of subsets than declared by the BUFR.
+        // How could this happen? Treat it as an obscure BUFR and go no further
+        if (msgs.size() != 1)
+            return;
+
+        msg = msgs[0];
+
+        // Set the product from the msg type
+        ValueBag newvals;
+        newvals.set("t", Value::createString(msg_type_name(msg->type)));
+        product->addValues(newvals);
+
+        // Set reference time from date and time if available
+        refine_reftime(*msg);
+    }
+};
 }
+
 
 bool Bufr::do_scan(Metadata& md)
 {
-	Rawmsg rmsg;
-	if (!file->read(rmsg))
-		return false;
-
-	auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
-	bulletin->decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
-
     md.clear();
 
-#if 0
-	// Detect optional section and handle it
-	switch (msg->opt.bufr.optional_section_length)
-	{
-		case 14: read_info_fixed(msg->opt.bufr.optional_section, md); break;
-		case 11: read_info_mobile(msg->opt.bufr.optional_section, md); break;
-		default: break;
-	}
-#endif
+    Rawmsg rmsg;
+    if (!file->read(rmsg))
+        return false;
 
-	// Set source
-	if (m_inline_data)
-		md.setInlineData("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
-	else {
-		md.source = types::Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.size());
-		md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
-	}
-
-	// Set reference time
-	// FIXME: WRONG! The header date should ALWAYS be ignored
-	md.set(types::reftime::Position::create(new types::Time(
-			bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
-			bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second)));
-
-	// Set origin from the bufr header
-	UItem<types::product::BUFR> product;
-	switch (bulletin->edition)
-	{
-		case 2:
-		case 3:
-		case 4:
-			// No process?
-			md.set(types::origin::BUFR::create(bulletin->centre, bulletin->subcentre));
-			md.set(product = types::product::BUFR::create(bulletin->type, bulletin->subtype, bulletin->localsubtype));
-			break;
-		default:
-		{
-			std::stringstream str;
-			str << "edition is " << bulletin->edition << " but I can only handle 3 and 4";
-			throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
-		}
-	}
-
-	// Default to a generic product unless we find more info later
-	//md.set(types::product::BUFR::create("generic"));
-
-    // Try to decode the data; if we fail, we are done
-    try {
-        // Ignore domain errors, it's ok if we lose some oddball data
-        wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
-
-        bulletin->decode(rmsg);
-    } catch (wreport::error& e) {
-        // We can still try to handle partially decoded files
-
-        // Not if the error was not a parse error
-        if (e.code() != WR_ERR_PARSE) return true;
-
-        // Not if we didn't decode just one subset
-        if (bulletin->subsets.size() != 1) return true;
-
-        // Not if the subset is empty
-        if (bulletin->subsets[0].empty()) return true;
-    } catch (std::exception& e) {
-        return true;
+    // Set source
+    if (m_inline_data)
+        md.set_source(Source::createInline("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size())));
+    else {
+        auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.size());
+        source->setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
+        md.set_source(source);
     }
 
-    // If there is more than one subset, we are done
-    if (bulletin->subsets.size() != 1)
-        return true;
 
-    // Try to parse as a dba_msg
-    Msgs msgs;
-    try {
-        // Ignore domain errors, it's ok if we lose some oddball data
-        wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
+    Harvest harvest(*importer);
+    harvest.harvest_from_dballe(rmsg, md);
 
-        importer->from_bulletin(*bulletin, msgs);
-    } catch (std::exception& e) {
-        // If we cannot import it as a Msgs, we are done
-        return true;
-    }
+    md.set(harvest.reftime);
+    md.set(harvest.origin);
+    md.set(harvest.product);
 
-	// We decoded a different number of subsets than declared by the BUFR.
-	// How could this happen? Treat it as an obscure BUFR and go no further
-	if (msgs.size() != 1)
-		return true;
-
-	// Set the product from the msg type
-	ValueBag newvals;
-	newvals.set("t", Value::createString(msg_type_name(msgs[0]->type)));
-        md.set(product->addValues(newvals));
-
-	// Set reference time from date and time if available
-	extract_reftime(*msgs[0], md);
-
-    if (extras)
+    if (extras && harvest.msg)
     {
         // DB-All.e managed to make sense of the message: hand it down to Lua
         // to extract further metadata
-        extras->scan(*msgs[0], md);
+        extras->scan(*harvest.msg, md);
     }
 
     // Check that the date is a valid date, unset if it is rubbish
-    UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
-    if (rt.defined())
+    const reftime::Position* rt = md.get<types::reftime::Position>();
+    if (rt)
     {
-        if (rt->time->vals[0] <= 0)
+        if (rt->time.vals[0] <= 0)
             md.unset(types::TYPE_REFTIME);
         else
         {
-            int tmpvals[6];
-            memcpy(tmpvals, rt->time->vals, 6 * sizeof(int));
-            wibble::grcal::date::normalise(tmpvals);
-            if (memcmp(rt->time->vals, tmpvals, 6 * sizeof(int)) != 0)
-                md.unset(types::TYPE_REFTIME);
+            types::Time t = rt->time;
+            wibble::grcal::date::normalise(t.vals);
+            if (t != rt->time) md.unset(types::TYPE_REFTIME);
         }
     }
 
     // Convert validity times to emission times
     // If md has a timedef, substract it from the reftime
-    UItem<types::timerange::Timedef> timedef = md.get<types::timerange::Timedef>();
-    if (timedef.defined())
-    {
-        UItem<types::reftime::Position> p = md.get<types::reftime::Position>();
-        if (p.defined())
-        {
-            md.set(timedef->validity_time_to_emission_time(p));
-        }
-    }
+    const timerange::Timedef* timedef = md.get<types::timerange::Timedef>();
+    if (timedef)
+        if (const reftime::Position* p = md.get<types::reftime::Position>())
+            md.set(timedef->validity_time_to_emission_time(*p));
 
     return true;
 }

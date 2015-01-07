@@ -1,7 +1,7 @@
 /*
  * arki/sort - Sorting routines for metadata
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@
 
 using namespace std;
 using namespace wibble;
+using namespace arki::types;
 
 namespace arki {
 namespace sort {
@@ -65,11 +66,11 @@ struct Item
 	}
 	Item(types::Code code, bool reverse) : code(code), reverse(reverse) {}
 
-	int compare(const Metadata& a, const Metadata& b) const
-	{
-		int res = a.get(code).compare(b.get(code));
-		return reverse ? -res : res;
-	}
+    int compare(const Metadata& a, const Metadata& b) const
+    {
+        int res = types::Type::nullable_compare(a.get(code), b.get(code));
+        return reverse ? -res : res;
+    }
 };
 
 /// Serializer for Item
@@ -171,41 +172,32 @@ refcounted::Pointer<Compare> Compare::parse(const std::string& expr)
 	}
 }
 
-void Stream::setEndOfPeriod(const UItem<types::Reftime>& rt)
+void Stream::setEndOfPeriod(const types::Reftime& rt)
 {
-	UItem<types::Time> t;
-	switch (rt->style())
-	{
-		case types::Reftime::POSITION: t = rt.upcast<types::reftime::Position>()->time; break;
-		case types::Reftime::PERIOD: t = rt.upcast<types::reftime::Period>()->end; break;
-		default:
-			throw wibble::exception::Consistency("setting end of period", "reference time has invalid style: " + types::Reftime::formatStyle(rt->style()));
-	}
-	int vals[6];
-	memcpy(vals, t->vals, 6 * sizeof(int));
-	switch (sorter.interval())
-	{
-		case Compare::YEAR: vals[1] = -1;
-		case Compare::MONTH: vals[2] = -1;
-		case Compare::DAY: vals[3] = -1;
-		case Compare::HOUR: vals[4] = -1;
-		case Compare::MINUTE: vals[5] = -1; break;
-		default:
-			throw wibble::exception::Consistency("setting end of period", "interval type has invalid value: " + str::fmt((int)sorter.interval()));
-	}
-	wibble::grcal::date::upperbound(vals);
-	endofperiod = types::reftime::Position::create(types::Time::create(vals));
+    endofperiod = rt.period_begin();
+    switch (sorter.interval())
+    {
+        case Compare::YEAR: endofperiod.vals[1] = -1;
+        case Compare::MONTH: endofperiod.vals[2] = -1;
+        case Compare::DAY: endofperiod.vals[3] = -1;
+        case Compare::HOUR: endofperiod.vals[4] = -1;
+        case Compare::MINUTE: endofperiod.vals[5] = -1; break;
+        default:
+            throw wibble::exception::Consistency("setting end of period", "interval type has invalid value: " + str::fmt((int)sorter.interval()));
+    }
+    wibble::grcal::date::upperbound(endofperiod.vals);
 //cerr << "Set end of period to " << endofperiod << endl;
 }
 
 bool Stream::operator()(Metadata& m)
 {
-	if (hasInterval && (!endofperiod.defined() || m.get(types::TYPE_REFTIME) > endofperiod))
-	{
-		flush();
-		buffer.push_back(m);
-		setEndOfPeriod(m.get(types::TYPE_REFTIME).upcast<types::Reftime>());
-	}
+    const Reftime* rt = m.get<Reftime>();
+    if (hasInterval && (!endofperiod.isValid() || !rt || rt->period_begin() > endofperiod))
+    {
+        flush();
+        buffer.push_back(m);
+        if (rt) setEndOfPeriod(*rt);
+    }
     else
         buffer.push_back(m);
     buffer.back().dropCachedData();

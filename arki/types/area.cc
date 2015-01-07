@@ -109,32 +109,32 @@ const ARKI_GEOS_GEOMETRY* Area::bbox() const
 	return cached_bbox;
 }
 
-Item<Area> Area::decode(const unsigned char* buf, size_t len)
+auto_ptr<Area> Area::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
 	Style s = (Style)dec.popUInt(1, "area");
-	switch (s)
-	{
-		case GRIB:
-			return area::GRIB::create(ValueBag::decode(dec.buf, dec.len));
-		case ODIMH5:
-			return area::ODIMH5::create(ValueBag::decode(dec.buf, dec.len));
+    switch (s)
+    {
+        case GRIB:
+            return createGRIB(ValueBag::decode(dec.buf, dec.len));
+        case ODIMH5:
+            return createODIMH5(ValueBag::decode(dec.buf, dec.len));
         case VM2:
-            return area::VM2::create(dec.popUInt(4, "VM station id"));
-		default:
-			throw wibble::exception::Consistency("parsing Area", "style is " + formatStyle(s) + " but we can only decode GRIB");
-	}
+            return createVM2(dec.popUInt(4, "VM station id"));
+        default:
+            throw wibble::exception::Consistency("parsing Area", "style is " + formatStyle(s) + " but we can only decode GRIB");
+    }
 }
 
-Item<Area> Area::decodeString(const std::string& val)
+auto_ptr<Area> Area::decodeString(const std::string& val)
 {
 	string inner;
 	Area::Style style = outerParse<Area>(val, inner);
-	switch (style)
-	{
-		case Area::GRIB: return area::GRIB::create(ValueBag::parse(inner)); 
-		case Area::ODIMH5: return area::ODIMH5::create(ValueBag::parse(inner)); 
+    switch (style)
+    {
+        case Area::GRIB: return createGRIB(ValueBag::parse(inner));
+        case Area::ODIMH5: return createODIMH5(ValueBag::parse(inner));
         case Area::VM2: {
             using wibble::exception::Consistency;
             const char* innerptr = inner.c_str();
@@ -143,22 +143,22 @@ Item<Area> Area::decodeString(const std::string& val)
             if (innerptr == endptr)
                 throw Consistency("parsing" + inner,
                                   "expected a number, but found \"" + inner +"\"");
-            return area::VM2::create(station_id);
+            return createVM2(station_id);
         }
 		default:
 			throw wibble::exception::Consistency("parsing Area", "unknown Area style " + formatStyle(style));
 	}
 }
 
-Item<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Area::GRIB: return area::GRIB::decodeMapping(val);
-        case Area::ODIMH5: return area::ODIMH5::decodeMapping(val);
-        case Area::VM2: return area::VM2::decodeMapping(val);
+        case Area::GRIB: return upcast<Area>(area::GRIB::decodeMapping(val));
+        case Area::ODIMH5: return upcast<Area>(area::ODIMH5::decodeMapping(val));
+        case Area::VM2: return upcast<Area>(area::VM2::decodeMapping(val));
         default:
             throw wibble::exception::Consistency("parsing Area", "unknown Area style " + val.get_string());
     }
@@ -202,11 +202,20 @@ void Area::lua_loadlib(lua_State* L)
 }
 #endif
 
-namespace area {
+auto_ptr<Area> Area::createGRIB(const ValueBag& values)
+{
+    return upcast<Area>(area::GRIB::create(values));
+}
+auto_ptr<Area> Area::createODIMH5(const ValueBag& values)
+{
+    return upcast<Area>(area::ODIMH5::create(values));
+}
+auto_ptr<Area> Area::createVM2(unsigned station_id)
+{
+    return upcast<Area>(area::VM2::create(station_id));
+}
 
-static TypeCache<GRIB> cache_grib;
-static TypeCache<ODIMH5> cache_odimh5;
-static TypeCache<VM2> cache_vm2;
+namespace area {
 
 GRIB::~GRIB() { /* cache_grib.uncache(this); */ }
 
@@ -227,7 +236,7 @@ void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-Item<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -261,18 +270,25 @@ int GRIB::compare_local(const Area& o) const
 	return m_values.compare(v->m_values);
 }
 
-bool GRIB::operator==(const Type& o) const
+bool GRIB::equals(const Type& o) const
 {
 	const GRIB* v = dynamic_cast<const GRIB*>(&o);
 	if (!v) return false;
 	return m_values == v->m_values;
 }
 
-Item<GRIB> GRIB::create(const ValueBag& values)
+GRIB* GRIB::clone() const
 {
-	GRIB* res = new GRIB;
-	res->m_values = values;
-	return cache_grib.intern(res);
+    GRIB* res = new GRIB;
+    res->m_values = m_values;
+    return res;
+}
+
+auto_ptr<GRIB> GRIB::create(const ValueBag& values)
+{
+    GRIB* res = new GRIB;
+    res->m_values = values;
+    return auto_ptr<GRIB>(res);
 }
 
 ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
@@ -294,7 +310,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-Item<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     return ODIMH5::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -328,18 +344,25 @@ int ODIMH5::compare_local(const Area& o) const
 	return m_values.compare(v->m_values);
 }
 
-bool ODIMH5::operator==(const Type& o) const
+bool ODIMH5::equals(const Type& o) const
 {
 	const ODIMH5* v = dynamic_cast<const ODIMH5*>(&o);
 	if (!v) return false;
 	return m_values == v->m_values;
 }
 
-Item<ODIMH5> ODIMH5::create(const ValueBag& values)
+ODIMH5* ODIMH5::clone() const
 {
-	ODIMH5* res = new ODIMH5;
-	res->m_values = values;
-	return cache_odimh5.intern(res);
+    ODIMH5* res = new ODIMH5;
+    res->m_values = m_values;
+    return res;
+}
+
+auto_ptr<ODIMH5> ODIMH5::create(const ValueBag& values)
+{
+    ODIMH5* res = new ODIMH5;
+    res->m_values = values;
+    return auto_ptr<ODIMH5>(res);
 }
 
 VM2::~VM2() {}
@@ -416,36 +439,36 @@ int VM2::compare_local(const Area& o) const
     return (m_station_id > v->m_station_id ? 1 : -1);
 }
 
-bool VM2::operator==(const Type& o) const
+bool VM2::equals(const Type& o) const
 {
     const VM2* v = dynamic_cast<const VM2*>(&o);
     if (!v) return false;
     return m_station_id == v->m_station_id;
 }
 
-Item<VM2> VM2::create(unsigned station_id)
+VM2* VM2::clone() const
 {
-	VM2* res = new VM2;
-	res->m_station_id = station_id;
-	return cache_vm2.intern(res);
-}
-Item<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
-{
-    return VM2::create(val["id"].want_int("parsing VM2 area station id"));
+    VM2* res = new VM2;
+    res->m_station_id = m_station_id;
+    return res;
 }
 
-static void debug_interns()
+auto_ptr<VM2> VM2::create(unsigned station_id)
 {
-	fprintf(stderr, "Area GRIB: sz %zd reused %zd\n", cache_grib.size(), cache_grib.reused());
-	fprintf(stderr, "Area ODIMH5: sz %zd reused %zd\n", cache_odimh5.size(), cache_odimh5.reused());
-	fprintf(stderr, "Area VM2: sz %zd reused %zd\n", cache_vm2.size(), cache_vm2.reused());
+    VM2* res = new VM2;
+    res->m_station_id = station_id;
+    return auto_ptr<VM2>(res);
+}
+auto_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
+{
+    return VM2::create(val["id"].want_int("parsing VM2 area station id"));
 }
 
 }
 
 void Area::init()
 {
-    MetadataType::register_type<Area>(area::debug_interns);
+    MetadataType::register_type<Area>();
 }
 
 }

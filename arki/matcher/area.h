@@ -4,7 +4,7 @@
 /*
  * matcher/area - Area matcher
  *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,8 +35,7 @@ namespace matcher {
  */
 struct MatchArea : public Implementation
 {
-	//MatchType type() const { return MATCH_AREA; }
-	std::string name() const;
+    std::string name() const override;
 
     static MatchArea* parse(const std::string& pattern);
     static void init();
@@ -46,18 +45,18 @@ struct MatchAreaGRIB : public MatchArea
 {
 	ValueBag expr;
 
-	MatchAreaGRIB(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchAreaGRIB(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchAreaODIMH5 : public MatchArea
 {
 	ValueBag expr;
 
-	MatchAreaODIMH5(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchAreaODIMH5(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 struct MatchAreaVM2 : public MatchArea
@@ -68,8 +67,8 @@ struct MatchAreaVM2 : public MatchArea
     std::vector<int> idlist;
 
     MatchAreaVM2(const std::string& pattern);
-    bool matchItem(const Item<>& o) const;
-    std::string toString() const;
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 #ifdef HAVE_GEOS
@@ -86,36 +85,36 @@ struct MatchAreaBBox : public MatchArea
 	MatchAreaBBox(const std::string& verb, const std::string& geom);
 	~MatchAreaBBox();
 
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
-	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const = 0;
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
+    virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const = 0;
 
 	static MatchAreaBBox* parse(const std::string& pattern);
 };
 
 struct MatchAreaBBoxEquals : public MatchAreaBBox
 {
-	MatchAreaBBoxEquals(const std::string& geom);
-	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
+    MatchAreaBBoxEquals(const std::string& geom);
+    virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const override;
 };
 
 struct MatchAreaBBoxIntersects : public MatchAreaBBox
 {
-	MatchAreaBBoxIntersects(const std::string& geom);
-	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
+    MatchAreaBBoxIntersects(const std::string& geom);
+    virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const override;
 };
 
 #ifdef ARKI_NEW_GEOS
 struct MatchAreaBBoxCovers : public MatchAreaBBox
 {
-	MatchAreaBBoxCovers(const std::string& geom);
-	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
+    MatchAreaBBoxCovers(const std::string& geom);
+    virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const override;
 };
 
 struct MatchAreaBBoxCoveredBy : public MatchAreaBBox
 {
-	MatchAreaBBoxCoveredBy(const std::string& geom);
-	virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const;
+    MatchAreaBBoxCoveredBy(const std::string& geom);
+    virtual bool matchGeom(const ARKI_GEOS_GEOMETRY* val) const override;
 };
 #endif
 

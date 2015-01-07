@@ -21,6 +21,8 @@
 #define ARKI_TESTS_LUA_H
 
 #include <arki/utils/lua.h>
+
+#ifdef HAVE_LUA
 #include <string>
 
 namespace arki {
@@ -65,6 +67,8 @@ struct Lua
 	/// Run the 'test' function and return its result, as a string
 	std::string run();
 };
+
+#endif
 
 }
 }

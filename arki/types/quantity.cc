@@ -68,32 +68,16 @@ int Quantity::compare(const Type& o) const
 			"comparing metadata types",
 			string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
+    std::ostringstream ss1;
+    std::ostringstream ss2;
+
+    writeToOstream(ss1);
+    v->writeToOstream(ss2);
+
+    return ss1.str().compare(ss2.str());
 }
 
-int Quantity::compare(const Quantity& o) const
-{
-	std::ostringstream ss1;
-	std::ostringstream ss2;
-
-	writeToOstream(ss1);
-	o.writeToOstream(ss2);
-
-	return ss1.str().compare(ss2.str());
-	//	bool samevalues = true;
-	//
-	//	//guardo se tutti i valori miei ci sono in O
-	//	for (std::set<std::string>::iterator i=values.begin(); i!=values.end(); i++)
-	//	{
-	//		if (o.values.find(*i) == o.values.end())
-	//			return -1;
-	//	}
-	//
-	//	//se sono qui ci sono tutti
-	//	return values.size() - o.values.size();
-}
-
-bool Quantity::operator==(const Type& o) const
+bool Quantity::equals(const Type& o) const
 {
 	const Quantity* v = dynamic_cast<const Quantity*>(&o);
 	if (!v) return false;
@@ -113,7 +97,7 @@ void Quantity::encodeWithoutEnvelope(Encoder& enc) const
     }
 }
 
-Item<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
+auto_ptr<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 
@@ -148,7 +132,7 @@ void Quantity::serialiseLocal(Emitter& e, const Formatter* f) const
     e.end_list();
 }
 
-Item<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const List& l = val["va"].want_list("parsing Quantity values");
@@ -159,7 +143,7 @@ Item<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
     return Quantity::create(vals);
 }
 
-Item<Quantity> Quantity::decodeString(const std::string& val)
+auto_ptr<Quantity> Quantity::decodeString(const std::string& val)
 {
 	if (val.empty())
 		throw wibble::exception::Consistency("parsing Quantity", "string is empty");
@@ -217,16 +201,21 @@ void Quantity::lua_loadlib(lua_State* L)
 }
 #endif
 
-Item<Quantity> Quantity::create(const std::string& values)
+Quantity* Quantity::clone() const
 {
-	std::set<std::string> vals;
-	split(values, vals);
-	return Quantity::create(vals);
+    return new Quantity(values);
 }
 
-Item<Quantity> Quantity::create(const std::set<std::string>& values)
+auto_ptr<Quantity> Quantity::create(const std::string& values)
 {
-	return new Quantity(values);
+    std::set<std::string> vals;
+    split(values, vals);
+    return Quantity::create(vals);
+}
+
+auto_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
+{
+    return auto_ptr<Quantity>(new Quantity(values));
 }
 
 

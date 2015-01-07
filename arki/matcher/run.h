@@ -4,7 +4,7 @@
 /*
  * matcher/run - Run matcher
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,8 +34,7 @@ namespace matcher {
  */
 struct MatchRun : public Implementation
 {
-	//MatchType type() const { return MATCH_RUN; }
-	std::string name() const;
+    std::string name() const override;
 
     static MatchRun* parse(const std::string& pattern);
     static void init();
@@ -43,12 +42,12 @@ struct MatchRun : public Implementation
 
 struct MatchRunMinute : public MatchRun
 {
-	// This is -1 when it should be ignored in the match
-	int minute;
+    // This is -1 when it should be ignored in the match
+    int minute;
 
-	MatchRunMinute(const std::string& pattern);
-	bool matchItem(const Item<>& o) const;
-	std::string toString() const;
+    MatchRunMinute(const std::string& pattern);
+    bool matchItem(const types::Type& o) const override;
+    std::string toString() const override;
 };
 
 }

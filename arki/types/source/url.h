@@ -33,22 +33,23 @@ struct URL : public Source
 {
     std::string url;
 
-    virtual Style style() const;
-    virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-    virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-    virtual const char* lua_type_name() const;
-    virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-    virtual int compare_local(const Source& o) const;
-    virtual bool operator==(const Type& o) const;
+    int compare_local(const Source& o) const override;
+    bool equals(const Type& o) const override;
+    URL* clone() const override;
 
-    virtual wibble::sys::Buffer loadData() const;
+    wibble::sys::Buffer loadData() const override;
 
-    virtual uint64_t getSize() const;
+    uint64_t getSize() const override;
 
-    static Item<URL> create(const std::string& format, const std::string& url);
-    static Item<URL> decodeMapping(const emitter::memory::Mapping& val);
+    static std::auto_ptr<URL> create(const std::string& format, const std::string& url);
+    static std::auto_ptr<URL> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 

@@ -4,7 +4,7 @@
 /*
  * types/reftime - Vertical reftime or layer
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,70 +68,78 @@ struct Reftime : public StyledType<Reftime>
 	/// Convert a style into its string representation
 	static std::string formatStyle(Style s);
 
-	/// CODEC functions
-	static Item<Reftime> decode(const unsigned char* buf, size_t len);
-	static Item<Reftime> decodeString(const std::string& val);
-	static Item<Reftime> decodeMapping(const emitter::memory::Mapping& val);
+    /// CODEC functions
+    static std::auto_ptr<Reftime> decode(const unsigned char* buf, size_t len);
+    static std::auto_ptr<Reftime> decodeString(const std::string& val);
+    static std::auto_ptr<Reftime> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
+    /// Beginning of the period in this Reftime
+    virtual const Time& period_begin() const = 0;
+    /// End of the period in this Reftime
+    virtual const Time& period_end() const = 0;
+
     // Register this type tree with the type system
     static void init();
+
+    static std::auto_ptr<Reftime> createPosition(const Time& position);
+    static std::auto_ptr<Reftime> createPeriod(const Time& begin, const Time& end);
 };
 
 namespace reftime {
 
 struct Position : public Reftime
 {
-	Item<types::Time> time;
+    Time time;
 
-	Position(const Item<types::Time>& time);
+    Position(const Time& time);
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	virtual int compare_local(const Reftime& o) const;
-	virtual bool operator==(const Type& o) const;
+    int compare_local(const Reftime& o) const override;
+    bool equals(const Type& o) const override;
 
-	static Item<Position> create(const Item<types::Time>& position);
-	static Item<Position> decodeMapping(const emitter::memory::Mapping& val);
+    const Time& period_begin() const override { return time; }
+    const Time& period_end() const override { return time; }
+
+    Position* clone() const override;
+
+    static std::auto_ptr<Position> create(const Time& position);
+    static std::auto_ptr<Position> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 struct Period : public Reftime
 {
-	Item<types::Time> begin;
-	Item<types::Time> end;
+    Time begin;
+    Time end;
 
-	Period(const Item<types::Time>& begin, const Item<types::Time>& end);
+    Period(const Time& begin, const Time& end);
 
-	/**
-	 * Convert the reference time interval in an open ended interval.
-	 *
-	 * If the reference time interval ends sooner than 'seconds' seconds ago,
-	 * then it will be converted into 'now'.
-	 *
-	 * Returns true if the end time has been converted
-	 */
-	bool setEndtimeToNow(int secondsAgo);
+    Style style() const override;
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    std::ostream& writeToOstream(std::ostream& o) const override;
+    void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
+    std::string exactQuery() const override;
+    const char* lua_type_name() const override;
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-	virtual Style style() const;
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual std::ostream& writeToOstream(std::ostream& o) const;
-    virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
-	virtual std::string exactQuery() const;
-	virtual const char* lua_type_name() const;
-	virtual bool lua_lookup(lua_State* L, const std::string& name) const;
+    int compare_local(const Reftime& o) const override;
+    bool equals(const Type& o) const override;
 
-	virtual int compare_local(const Reftime& o) const;
-	virtual bool operator==(const Type& o) const;
+    const Time& period_begin() const override { return begin; }
+    const Time& period_end() const override { return end; }
 
-	static Item<Period> create(const Item<types::Time>& begin, const Item<types::Time>& end);
-	static Item<Period> decodeMapping(const emitter::memory::Mapping& val);
+    Period* clone() const override;
+
+    static std::auto_ptr<Period> create(const Time& begin, const Time& end);
+    static std::auto_ptr<Period> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 struct Collector
@@ -141,25 +149,25 @@ struct Collector
      * Instant if we are an instant;
      * undefined if we are empty
      */
-	UItem<types::Time> begin;
+    Time begin;
     /**
      * End of period if we are a period; else empty
      */
-	UItem<types::Time> end;
+    Time end;
 
 	void clear();
 
 	int compare(const Collector& o) const;
 	bool operator==(const Collector& c) const;
 	bool operator<(const Collector& c) const;
-	
-	/**
-	 * Merge in information from a Reftime
-	 */
-	void mergeTime(const Item<types::Time>& t);
-	void mergeTime(const Item<types::Time>& tbegin, const Item<types::Time>& tend);
-	void merge(const Reftime* rt1);
-	void merge(const Collector& c);
+
+    /**
+     * Merge in information from a Reftime
+     */
+    void mergeTime(const Time& t);
+    void mergeTime(const Time& tbegin, const Time& tend);
+    void merge(const Reftime& rt1);
+    void merge(const Collector& c);
 
     /**
      * Compute the date extremes of this merger
@@ -167,10 +175,10 @@ struct Collector
      * @returns true if the range has at least one bound (i.e. either with
      * or without are defined), false otherwise
      */
-    bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const;
+    bool date_extremes(types::Time& begin, types::Time& end) const;
 
-	/// Create a reftime with the data we have collected
-	Item<Reftime> makeReftime() const;
+    /// Create a reftime with the data we have collected
+    std::auto_ptr<Reftime> makeReftime() const;
 };
 
 }

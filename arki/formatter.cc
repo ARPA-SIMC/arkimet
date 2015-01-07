@@ -1,7 +1,7 @@
 /*
  * formatter - Arkimet prettyprinter
  *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,20 +20,20 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/formatter.h>
-#include <arki/types.h>
-#include <arki/formatter/lua.h>
+#include "formatter.h"
+#include "utils/lua.h"
+#include "types.h"
+#include "formatter/lua.h"
 #include <wibble/string.h>
 
 using namespace std;
+using namespace arki::types;
 
 namespace arki {
 
 Formatter::Formatter() {}
 Formatter::~Formatter() {}
-string Formatter::operator()(const Item<>& v) const { return wibble::str::fmt(v); }
+string Formatter::operator()(const Type& v) const { return wibble::str::fmt(v); }
 
 Formatter* Formatter::create()
 {

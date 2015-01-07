@@ -25,12 +25,13 @@
  */
 
 #include <wibble/exception.h>
-#include <arki/refcounted.h>
-
 #include <string>
 #include <iosfwd>
-#include <map>
-#include <set>
+#include <memory>
+
+#ifndef HAVE_CXX11
+#define override
+#endif
 
 struct lua_State;
 
@@ -43,6 +44,32 @@ struct Buffer;
 namespace arki {
 struct Emitter;
 struct Formatter;
+
+/// dynamic cast between two auto_ptr
+template<typename B, typename A>
+std::auto_ptr<B> downcast(std::auto_ptr<A> orig)
+{
+    if (!orig.get()) return std::auto_ptr<B>();
+
+    // Cast, but leave ownership to orig
+    B* dst = dynamic_cast<B*>(orig.get());
+
+    // If we fail here, orig will clean it
+    if (!dst) throw wibble::exception::BadCastExt<A, B>("cannot cast smart pointer");
+
+    // Release ownership from orig: we still have the pointer in dst
+    orig.release();
+
+    // Transfer ownership to the new auto_ptr and return it
+    return std::auto_ptr<B>(dst);
+}
+
+/// upcast between two auto_ptr
+template<typename B, typename A>
+std::auto_ptr<B> upcast(std::auto_ptr<A> orig)
+{
+    return std::auto_ptr<B>(orig.release());
+}
 
 namespace emitter {
 namespace memory {
@@ -94,114 +121,6 @@ static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return 
 
 }
 
-/**
- * Arkimet metadata item.
- *
- * All metadata items are immutable, and can only be assigned to.
- */
-template< typename TYPE = types::Type >
-struct UItem : public refcounted::Pointer<const TYPE>
-{
-	UItem() : refcounted::Pointer<const TYPE>() {}
-	UItem(const TYPE* ptr) : refcounted::Pointer<const TYPE>(ptr) {}
-	UItem(const UItem<TYPE>& val) : refcounted::Pointer<const TYPE>(val) {}
-	template<typename TYPE1>
-	UItem(const UItem<TYPE1>& val) : refcounted::Pointer<const TYPE>(val) {}
-	~UItem() {}
-
-	/// Check if we have a value or if we are undefined
-	bool defined() const { return this->m_ptr != 0; }
-
-	/// Set the pointer to 0
-	void clear()
-	{
-		if (this->m_ptr && this->m_ptr->unref()) delete this->m_ptr;
-		this->m_ptr = 0;
-	}
-
-	/// Comparison
-	int compare(const UItem<TYPE>& o) const
-	{
-		if (this->m_ptr == 0 && o.m_ptr != 0) return -1;
-		if (this->m_ptr == o.m_ptr) return 0;
-		if (this->m_ptr != 0 && o.m_ptr == 0) return 1;
-		return this->m_ptr->compare(*o.m_ptr);
-	}
-	bool operator<(const UItem<TYPE>& o) const { return compare(o) < 0; }
-	bool operator<=(const UItem<TYPE>& o) const { return compare(o) <= 0; }
-	bool operator>(const UItem<TYPE>& o) const { return compare(o) > 0; }
-	bool operator>=(const UItem<TYPE>& o) const { return compare(o) >= 0; }
-
-	/// Equality
-	bool operator==(const UItem<TYPE>& o) const
-	{
-		if (this->m_ptr == o.m_ptr)
-			return true;
-		if (this->m_ptr == 0 || o.m_ptr == 0)
-			return false;
-		return *this->m_ptr == *o.m_ptr;
-	}
-	bool operator!=(const UItem<TYPE>& o) const { return !operator==(o); }
-
-    /// Equality with strings
-    bool operator==(const std::string& o) const;
-    bool operator!=(const std::string& o) const { return !operator==(o); }
-
-	/// Encoding to compact binary representation
-	std::string encode() const
-	{
-		if (this->m_ptr)
-			return this->m_ptr->encodeWithEnvelope();
-		else
-			return std::string();
-	}
-
-	/// Checked conversion to a more specific Item
-	template<typename TYPE1>
-	UItem<TYPE1> upcast() const
-	{
-		if (!this->m_ptr) return UItem<TYPE1>();
-
-		return UItem<TYPE1>(this->m_ptr->upcast<TYPE1>());
-	}
-};
-
-/// Write as a string to an output stream
-template<typename T>
-std::ostream& operator<<(std::ostream& o, const UItem<T>& i)
-{
-	if (i.defined())
-		return i->writeToOstream(o);
-	else
-		return o << std::string("(none)");
-}
-
-/**
- * Same as UItem, but it cannot contain an undefined value.
- */
-template< typename TYPE = types::Type >
-struct Item : public UItem<TYPE>
-{
-	Item(const TYPE* ptr) : UItem<TYPE>(ptr) {}
-	Item(const Item<TYPE>& val) : UItem<TYPE>(val) {}
-	Item(const UItem<TYPE>& val) : UItem<TYPE>(val) { this->ensureValid(); }
-	template<typename TYPE1>
-	Item(const Item<TYPE1>& val) : UItem<TYPE>(val) {}
-	template<typename TYPE1>
-	Item(const UItem<TYPE1>& val) : UItem<TYPE>(val) { this->ensureValid(); }
-
-protected:
-	Item() : UItem<TYPE>() {}
-};
-
-/// Write as a string to an output stream
-template<typename T>
-std::ostream& operator<<(std::ostream& o, const Item<T>& i)
-{
-	return i->writeToOstream(o);
-}
-
-
 namespace types {
 
 template<typename T>
@@ -210,22 +129,37 @@ class traits;
 /**
  * Base class for implementing arkimet metadata types
  */
-struct Type : public refcounted::Base
+struct Type
 {
 	virtual ~Type() {}
 
-	/// Comparison (<0 if <, 0 if =, >0 if >)
-	virtual int compare(const Type& o) const;
+    /**
+     * Make a copy of this type. The caller will own the newly created object
+     * returned by the function.
+     *
+     * This does not return an auto_ptr to allow to use covariant return types
+     * in implementations. Use cloneType() for a version with explicit memory
+     * ownership of the result.
+     */
+    virtual Type* clone() const = 0;
 
-	bool operator<(const Type& o) const { return compare(o) < 0; }
-	bool operator<=(const Type& o) const { return compare(o) <= 0; }
-	bool operator>(const Type& o) const { return compare(o) > 0; }
-	bool operator>=(const Type& o) const { return compare(o) >= 0; }
+    /// Make a copy of this type
+    std::auto_ptr<Type> cloneType() const { return std::auto_ptr<Type>(clone()); }
 
-	/// Equality
-	virtual bool operator==(const Type& o) const = 0;
+    /// Comparison (<0 if <, 0 if =, >0 if >)
+    virtual int compare(const Type& o) const;
+    bool operator<(const Type& o) const { return compare(o) < 0; }
+    bool operator<=(const Type& o) const { return compare(o) <= 0; }
+    bool operator>(const Type& o) const { return compare(o) > 0; }
+    bool operator>=(const Type& o) const { return compare(o) >= 0; }
 
-	bool operator!=(const Type& o) const { return !operator==(o); }
+    /// Equality
+    virtual bool equals(const Type& t) const = 0;
+    bool operator==(const Type& o) const { return equals(o); }
+    bool operator!=(const Type& o) const { return !equals(o); }
+
+    /// Compare with a stringified version, useful for testing
+    bool operator==(const std::string& o) const;
 
 	/**
 	 * Tag to identify this metadata item.
@@ -247,10 +181,10 @@ struct Type : public refcounted::Base
 	 */
 	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const = 0;
 
-	/**
+    /**
      * Encode to compact binary representation, with identification envelope
-	 */
-	virtual std::string encodeWithEnvelope() const;
+     */
+    virtual std::string encodeBinary() const;
 
 	/// Write as a string to an output stream
 	virtual std::ostream& writeToOstream(std::ostream& o) const = 0;
@@ -265,8 +199,8 @@ struct Type : public refcounted::Base
 	 */
 	virtual std::string exactQuery() const;
 
-	/// Push to the LUA stack a userdata to access this item
-	void lua_push(lua_State* L) const;
+    /// Push to the LUA stack a userdata with a copy of this item
+    void lua_push(lua_State* L) const;
 
 	/**
 	 * Lookup members by name and push them in the Lua stack
@@ -288,30 +222,60 @@ struct Type : public refcounted::Base
 	 */
 	virtual void lua_register_methods(lua_State* L) const;
 
-	/**
+    /**
      * Check that the element at \a idx is a Type userdata
      *
      * @return the Type element, or undefined if the check failed
      */
-	static Item<> lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
+    static Type* lua_check(lua_State* L, int idx, const char* prefix = "arki.types");
 
-	template<typename T>
-	static Item<T> lua_check(lua_State* L, int idx)
-	{
-		return lua_check(L, idx, traits<T>::type_lua_tag).upcast<T>();
-	}
+    template<typename T>
+    static T* lua_check(lua_State* L, int idx)
+    {
+        return dynamic_cast<T*>(lua_check(L, idx, traits<T>::type_lua_tag));
+    }
 
-	static void lua_loadlib(lua_State* L);
+    static void lua_loadlib(lua_State* L);
+
+    /**
+     * Return true of either both pointers are null, or if they are both
+     * non-null and the two types test for equality.
+     */
+    static inline bool nullable_equals(const Type* a, const Type* b)
+    {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
+        return a->equals(*b);
+    }
+    /**
+     * Return the comparison value of a and b, assuming that a null pointer
+     * tests smaller than any type.
+     */
+    static inline int nullable_compare(const Type* a, const Type* b)
+    {
+        if (!a && !b) return 0;
+        if (!a) return -1;
+        if (!b) return 1;
+        return a->compare(*b);
+    }
 };
+
+/// Write as a string to an output stream
+inline std::ostream& operator<<(std::ostream& o, const Type& t)
+{
+    return t.writeToOstream(o);
+}
+
+
 
 template<typename BASE>
 struct CoreType : public Type
 {
-	virtual types::Code serialisationCode() const { return traits<BASE>::type_code; }
-	virtual size_t serialisationSizeLength() const { return traits<BASE>::type_sersize_bytes; }
-	virtual std::string tag() const { return traits<BASE>::type_tag; }
-	virtual const char* lua_type_name() const { return traits<BASE>::type_lua_tag; }
-	static void lua_loadlib(lua_State* L);
+    types::Code serialisationCode() const override { return traits<BASE>::type_code; }
+    size_t serialisationSizeLength() const override { return traits<BASE>::type_sersize_bytes; }
+    std::string tag() const override { return traits<BASE>::type_tag; }
+    const char* lua_type_name() const override { return traits<BASE>::type_lua_tag; }
+    static void lua_loadlib(lua_State* L);
 };
 
 template<typename BASE>
@@ -322,10 +286,10 @@ struct StyledType : public CoreType<BASE>
 	// Get the element style
 	virtual Style style() const = 0;
 
-	// Default implementations of Type methods
-	virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-	virtual int compare(const Type& o) const;
-	virtual int compare_local(const BASE& o) const = 0;
+    // Default implementations of Type methods
+    void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
+    int compare(const Type& o) const override;
+    virtual int compare_local(const BASE& o) const = 0;
 
     virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 
@@ -336,13 +300,13 @@ struct StyledType : public CoreType<BASE>
 
 
 /// Decode an item encoded in binary representation
-Item<> decode(const unsigned char* buf, size_t len);
+std::auto_ptr<Type> decode(const unsigned char* buf, size_t len);
 
 /**
  * Decode an item encoded in binary representation with envelope, from a
  * decoder
  */
-Item<> decode(utils::codec::Decoder& dec);
+std::auto_ptr<Type> decode(utils::codec::Decoder& dec);
 /**
  * Decode the item envelope in buf:len
  *
@@ -351,11 +315,11 @@ Item<> decode(utils::codec::Decoder& dec);
  * After the function returns, the start of the next envelope is at buf+len
  */
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len);
-Item<> decodeInner(types::Code, const unsigned char* buf, size_t len);
-Item<> decodeString(types::Code, const std::string& val);
-Item<> decodeMapping(const emitter::memory::Mapping& m);
+std::auto_ptr<Type> decodeInner(types::Code, const unsigned char* buf, size_t len);
+std::auto_ptr<Type> decodeString(types::Code, const std::string& val);
+std::auto_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
 /// Same as decodeMapping, but does not look for the item type in the mapping
-Item<> decodeMapping(types::Code, const emitter::memory::Mapping& m);
+std::auto_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
 std::string tag(types::Code);
 
 /**
@@ -388,17 +352,6 @@ bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filen
 
 }
 
-template<typename TYPE>
-bool UItem<TYPE>::operator==(const std::string& o) const
-{
-    if (!this->m_ptr && o.empty())
-        return true;
-    if (!this->m_ptr || o.empty())
-        return false;
-    return *this->m_ptr == *decodeString((*this)->serialisationCode(), o);
 }
 
-}
-
-// vim:set ts=4 sw=4:
 #endif

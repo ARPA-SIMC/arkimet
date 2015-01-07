@@ -96,10 +96,10 @@ protected:
 	const Compare& sorter;
 	metadata::Consumer& nextConsumer;
 	bool hasInterval;
-	UItem<types::Reftime> endofperiod;
-	std::vector<Metadata> buffer;
+    types::Time endofperiod;
+    std::vector<Metadata> buffer;
 
-	void setEndOfPeriod(const UItem<types::Reftime>& rt);
+    void setEndOfPeriod(const types::Reftime& rt);
 
 public:
 	Stream(const Compare& sorter, metadata::Consumer& nextConsumer)

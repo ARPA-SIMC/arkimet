@@ -18,18 +18,13 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/tests.h>
-#include <arki/types/reftime.h>
+#include "tests.h"
+#include "reftime.h"
+#include <arki/tests/lua.h>
 #include <arki/matcher.h>
 
 #include <sstream>
 #include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
-#include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;
@@ -45,92 +40,82 @@ TESTGRP(arki_types_reftime);
 template<> template<>
 void to::test<1>()
 {
-	Item<Reftime> o = reftime::Position::create(Time::create(2007, 6, 5, 4, 3, 2));
-	ensure_equals(o->style(), Reftime::POSITION);
-	const reftime::Position* v = o->upcast<reftime::Position>();
-	ensure_equals(v->time, Item<Time>(Time::create(2007, 6, 5, 4, 3, 2)));
+    arki::tests::TestGenericType t("reftime", "2015-01-02T03:04:05Z");
+    t.lower.push_back("2014-01-01T00:00:00");
+    t.higher.push_back("2014-01-03T00:00:00");
+    t.higher.push_back("2014-01-01T00:00:00 to 2014-01-31T00:00:00");
+    t.exact_query = "=2007-06-05T04:03:02Z";
+    wassert(t);
 
-	ensure_equals(o, Item<Reftime>(reftime::Position::create(Time::create(2007, 6, 5, 4, 3, 2))));
-	ensure(o != Item<Reftime>(reftime::Position::create(Time::create(2007, 6, 5, 4, 3, 1))));
+    auto_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
+    wassert(actual(o).is_reftime_position({2007, 6, 5, 4, 3, 2}));
+
+    wassert(actual(o) == Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2)));
+    wassert(actual(o) != Reftime::createPosition(Time(2007, 6, 5, 4, 3, 1)));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "=2007-06-05T04:03:02Z");
-	Matcher m = Matcher::parse("reftime:" + o->exactQuery());
-	ensure(m(o));
 }
 
 // Check Period
 template<> template<>
 void to::test<2>()
 {
-	Item<Reftime> o = reftime::Period::create(
-		Time::create(2007, 6, 5, 4, 3, 2),
-		Time::create(2008, 7, 6, 5, 4, 3));
-	ensure_equals(o->style(), Reftime::PERIOD);
-	const reftime::Period* v = o->upcast<reftime::Period>();
-	ensure_equals(v->begin, Item<Time>(Time::create(2007, 6, 5, 4, 3, 2)));
-	ensure_equals(v->end, Item<Time>(Time::create(2008, 7, 6, 5, 4, 3)));
+    arki::tests::TestGenericType t("reftime", "2015-01-02T00:00:00Z to 2014-01-03T00:00:00Z");
+    t.lower.push_back("2014-01-01T00:00:00");
+    t.lower.push_back("2014-01-10T00:00:00");
+    t.lower.push_back("2014-01-01T00:00:00 to 2014-01-03T12:00:00");
+    t.higher.push_back("2014-01-02T12:00:00 to 2014-01-31T00:00:00");
+#warning This does not look like a query to match a period
+    t.exact_query = "=2007-06-05T04:03:02Z";
+    wassert(t);
 
-	ensure_equals(o, Item<Reftime>(reftime::Period::create(
-		Time::create(2007, 6, 5, 4, 3, 2),
-		Time::create(2008, 7, 6, 5, 4, 3))));
-	ensure(o != reftime::Period::create(
-		Time::create(2007, 6, 5, 4, 3, 3),
-		Time::create(2008, 7, 6, 5, 4, 2)));
+    auto_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
+    wassert(actual(o).is_reftime_period({2007, 6, 5, 4, 3, 2}, {2008, 7, 6, 5, 4, 3}));
+
+    wassert(actual(o) == Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
+    wassert(actual(o) != Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 3), Time(2008, 7, 6, 5, 4, 2)));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "=2007-06-05T04:03:02Z");
-	Matcher m = Matcher::parse("reftime:" + o->exactQuery());
-	ensure(m(o));
 }
 
 // Check collector
 template<> template<>
 void to::test<3>()
 {
-	reftime::Collector c;
-	Item<Time> t1 = Time::create(2007, 6, 5, 4, 3, 2);
-	Item<Time> t2 = Time::create(2008, 7, 6, 5, 4, 3);
-	Item<Time> t3 = Time::create(2007, 7, 6, 5, 4, 3);
-	Item<Time> t4 = Time::create(2009, 8, 7, 6, 5, 4);
-	Item<Time> t5 = Time::create(2009, 7, 6, 5, 4, 3);
-	Item<Time> t6 = Time::create(2010, 9, 8, 7, 6, 5);
+    reftime::Collector c;
+    Time t1(2007, 6, 5, 4, 3, 2);
+    Time t2(2008, 7, 6, 5, 4, 3);
+    Time t3(2007, 7, 6, 5, 4, 3);
+    Time t4(2009, 8, 7, 6, 5, 4);
+    Time t5(2009, 7, 6, 5, 4, 3);
+    Time t6(2010, 9, 8, 7, 6, 5);
 
-	// Merge with position
-	Item<Reftime> o = reftime::Position::create(t1);
-	c.merge(o);
-	ensure_equals(c.begin, t1);
-	ensure(!c.end.defined());
-	//ensure_equals(c.end, t1);
+    // Merge with position
+    c.merge(reftime::Position(t1));
+    wassert(actual(c.begin) == t1);
+    wassert(actual(c.end.isValid()).isfalse());
 
-	// Merge with a second position
-	o = reftime::Position::create(t2);
-	c.merge(o);
-	ensure_equals(c.begin, t1);
-	ensure_equals(c.end, t2);
-	
-	// Merge with a period
-	o = reftime::Period::create(t3, t4);
-	c.merge(o);
-	ensure_equals(c.begin, t1);
-	ensure_equals(c.end, t4);
+    // Merge with a second position
+    c.merge(reftime::Position(t2));
+    wassert(actual(c.begin) == t1);
+    wassert(actual(c.end) == t2);
 
-	// Merge with another collector
-	reftime::Collector c1;
-	o = reftime::Period::create(t5, t6);
-	c1.merge(o);
-	ensure_equals(c1.begin, t5);
-	ensure_equals(c1.end, t6);
+    // Merge with a period
+    c.merge(reftime::Period(t3, t4));
+    wassert(actual(c.begin) == t1);
+    wassert(actual(c.end) == t4);
 
-	c.merge(c1);
-	ensure_equals(c.begin, t1);
-	ensure_equals(c.end, t6);
+    // Merge with another collector
+    reftime::Collector c1;
+    c1.merge(reftime::Period(t5, t6));
+    wassert(actual(c1.begin) == t5);
+    wassert(actual(c1.end) == t6);
+
+    c.merge(c1);
+    wassert(actual(c.begin) == t1);
+    wassert(actual(c.end) == t6);
 }
 
 // Test Lua functions
@@ -138,7 +123,7 @@ template<> template<>
 void to::test<4>()
 {
 #ifdef HAVE_LUA
-	Item<Reftime> o = reftime::Position::create(Time::create(2007, 6, 5, 4, 3, 2));
+    auto_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -156,8 +141,8 @@ void to::test<4>()
 		"end \n"
 	);
 
-	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    test.pusharg(*o);
+    wassert(actual(test.run()) == "");
 #endif
 }
 

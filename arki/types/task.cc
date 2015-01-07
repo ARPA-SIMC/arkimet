@@ -67,15 +67,10 @@ int Task::compare(const Type& o) const
 			"comparing metadata types",
 			string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
 
-	return compare(*v);
+    return task.compare(v->task);
 }
 
-int Task::compare(const Task& o) const
-{
-	return task.compare(o.task);
-}
-
-bool Task::operator==(const Type& o) const
+bool Task::equals(const Type& o) const
 {
 	const Task* v = dynamic_cast<const Task*>(&o);
 	if (!v) return false;
@@ -88,7 +83,7 @@ void Task::encodeWithoutEnvelope(Encoder& enc) const
 	enc.addString(task);
 }
 
-Item<Task> Task::decode(const unsigned char* buf, size_t len)
+auto_ptr<Task> Task::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 
@@ -109,12 +104,12 @@ void Task::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va", task);
 }
 
-Item<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Task::create(val["va"].want_string("parsing Task value"));
 }
 
-Item<Task> Task::decodeString(const std::string& val)
+auto_ptr<Task> Task::decodeString(const std::string& val)
 {
 	if (val.empty())
 		throw wibble::exception::Consistency("parsing Task", "string is empty");
@@ -154,9 +149,14 @@ void Task::lua_loadlib(lua_State* L)
 }
 #endif
 
-Item<Task> Task::create(const std::string& val)
+Task* Task::clone() const
 {
-	return new Task(val);
+    return new Task(task);
+}
+
+auto_ptr<Task> Task::create(const std::string& val)
+{
+    return auto_ptr<Task>(new Task(val));
 }
 
 /*============================================================================*/

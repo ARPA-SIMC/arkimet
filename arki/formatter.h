@@ -4,7 +4,7 @@
 /*
  * formatter - Arkimet prettyprinter
  *
- * Copyright (C) 2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@ protected:
 	Formatter();
 
 public:
-	virtual ~Formatter();
-	virtual std::string operator()(const Item<>& v) const;
+    virtual ~Formatter();
+    virtual std::string operator()(const types::Type& v) const;
 
 	static Formatter* create();
 };

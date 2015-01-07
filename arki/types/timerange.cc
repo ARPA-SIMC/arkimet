@@ -181,27 +181,27 @@ std::string Timerange::formatStyle(Timerange::Style s)
 	}
 }
 
-Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
+auto_ptr<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
 	Style s = (Style)dec.popUInt(1, "timerange");
 	switch (s)
 	{
-		case GRIB1: {
-			uint8_t type = dec.popUInt(1, "GRIB1 type"),
-				unit = dec.popUInt(1, "GRIB1 unit");
-			int8_t  p1   = dec.popSInt(1, "GRIB1 p1"),
-			        p2   = dec.popSInt(1, "GRIB1 p2");
-			return timerange::GRIB1::create(type, unit, p1, p2);
-	        }
-		case GRIB2: {
-			uint8_t type = dec.popUInt(1, "GRIB2 type"),
-				unit = dec.popUInt(1, "GRIB2 unit");
-			int32_t p1   = dec.popSInt(4, "GRIB2 p1"),
-			        p2   = dec.popSInt(4, "GRIB2 p2");
-			return timerange::GRIB2::create(type, unit, p1, p2);
-		}
+        case GRIB1: {
+            uint8_t type = dec.popUInt(1, "GRIB1 type"),
+                unit = dec.popUInt(1, "GRIB1 unit");
+            int8_t  p1   = dec.popSInt(1, "GRIB1 p1"),
+                    p2   = dec.popSInt(1, "GRIB1 p2");
+            return createGRIB1(type, unit, p1, p2);
+            }
+        case GRIB2: {
+            uint8_t type = dec.popUInt(1, "GRIB2 type"),
+                unit = dec.popUInt(1, "GRIB2 unit");
+            int32_t p1   = dec.popSInt(4, "GRIB2 p1"),
+                    p2   = dec.popSInt(4, "GRIB2 p2");
+            return createGRIB2(type, unit, p1, p2);
+        }
         case TIMEDEF: {
             uint8_t step_unit = dec.popUInt(1, "timedef forecast step unit");
             uint32_t step_len = 0;
@@ -216,29 +216,29 @@ Item<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
                 if (stat_unit != 255)
                     stat_len = dec.popVarint<uint32_t>("timedef statistical processing length");
             }
-            return timerange::Timedef::create(step_len, (timerange::Timedef::Unit)step_unit,
-                                            stat_type, stat_len, (timerange::Timedef::Unit)stat_unit);
+            return createTimedef(step_len, (timerange::TimedefUnit)step_unit,
+                                            stat_type, stat_len, (timerange::TimedefUnit)stat_unit);
         }
-		case BUFR: {
-			uint8_t unit   = dec.popUInt(1, "BUFR unit");
-			unsigned value = dec.popVarint<unsigned>("BUFR value");
-			return timerange::BUFR::create(value, unit);
-		}
+        case BUFR: {
+            uint8_t unit   = dec.popUInt(1, "BUFR unit");
+            unsigned value = dec.popVarint<unsigned>("BUFR value");
+            return createBUFR(value, unit);
+        }
 		default:
 			throw wibble::exception::Consistency("parsing Timerange", "style is " + formatStyle(s) + " but we can only decode GRIB1, GRIB2 and BUFR");
 	}
 }
 
-Item<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     switch (style_from_mapping(val))
     {
-        case Timerange::GRIB1: return timerange::GRIB1::decodeMapping(val);
-        case Timerange::GRIB2: return timerange::GRIB2::decodeMapping(val);
-        case Timerange::TIMEDEF: return timerange::Timedef::decodeMapping(val);
-        case Timerange::BUFR: return timerange::BUFR::decodeMapping(val);
+        case Timerange::GRIB1: return upcast<Timerange>(timerange::GRIB1::decodeMapping(val));
+        case Timerange::GRIB2: return upcast<Timerange>(timerange::GRIB2::decodeMapping(val));
+        case Timerange::TIMEDEF: return upcast<Timerange>(timerange::Timedef::decodeMapping(val));
+        case Timerange::BUFR: return upcast<Timerange>(timerange::BUFR::decodeMapping(val));
         default:
             throw wibble::exception::Consistency("parsing Timerange", "unknown Timerange style " + val.get_string());
     }
@@ -282,7 +282,7 @@ static void skipSuffix(const char*& start)
 		++start;
 }
 
-Item<Timerange> Timerange::decodeString(const std::string& val)
+auto_ptr<Timerange> Timerange::decodeString(const std::string& val)
 {
 	string inner;
 	Timerange::Style style = outerParse<Timerange>(val, inner);
@@ -360,22 +360,22 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 
 			switch ((t_enum_GRIB_TIMERANGE)type)
 			{
-				case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
-					if (p1 == -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"p1 not found, but it is required");
-					if (p2 != -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"found an extra p2 when it was not required");
-					return timerange::GRIB1::create(type, parseTimeUnit(p1tu), p1, 0);
-				case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
-					if (p1 != -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"found an extra p1 when it was not required");
-					if (p2 != -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"found an extra p2 when it was not required");
-					return timerange::GRIB1::create(type, 254, 0, 0);
+                case GRIB_TIMERANGE_FORECAST_AT_REFTIME_PLUS_P1:
+                    if (p1 == -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "p1 not found, but it is required");
+                    if (p2 != -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "found an extra p2 when it was not required");
+                    return createGRIB1(type, parseTimeUnit(p1tu), p1, 0);
+                case GRIB_TIMERANGE_ANALYSIS_AT_REFTIME:
+                    if (p1 != -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "found an extra p1 when it was not required");
+                    if (p2 != -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "found an extra p2 when it was not required");
+                    return createGRIB1(type, 254, 0, 0);
 				case GRIB_TIMERANGE_VALID_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
 				case GRIB_TIMERANGE_AVERAGE_IN_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
 				case GRIB_TIMERANGE_ACCUMULATED_INTERVAL_REFTIME_PLUS_P1_REFTIME_PLUS_P2:
@@ -393,84 +393,84 @@ Item<Timerange> Timerange::decodeString(const std::string& val)
 				case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_ACCUMULATIONS:
 				case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_ACCUMULATIONS:
 				case GRIB_TIMERANGE_AVERAGE_OF_DAILY_FORECAST_AVERAGES:
-				case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
-					if (p1 == -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"p1 not found, but it is required");
-					if (p2 == -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"p2 not found, but it is required");
-					if (p1tu != p2tu)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"time unit for p1 (\""+p1tu+"\") is different than time unit of p2 (\""+p2tu+"\")");
-					return timerange::GRIB1::create(type, parseTimeUnit(p1tu), p1, p2);
-				case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2: {
-					if (p1 == -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"p1 not found, but it is required");
-					if (p2 != -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"found an extra p2 when it was not required");
-					p2 = p1 & 0xff;
-					p1 = p1 >> 8;
-					return timerange::GRIB1::create(type, parseTimeUnit(p1tu), p1, p2);
-				}
+                case GRIB_TIMERANGE_AVERAGE_OF_SUCCESSIVE_FORECAST_AVERAGES:
+                    if (p1 == -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "p1 not found, but it is required");
+                    if (p2 == -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "p2 not found, but it is required");
+                    if (p1tu != p2tu)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "time unit for p1 (\""+p1tu+"\") is different than time unit of p2 (\""+p2tu+"\")");
+                    return createGRIB1(type, parseTimeUnit(p1tu), p1, p2);
+                case GRIB_TIMERANGE_VALID_AT_REFTIME_PLUS_P1P2: {
+                    if (p1 == -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "p1 not found, but it is required");
+                    if (p2 != -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "found an extra p2 when it was not required");
+                    p2 = p1 & 0xff;
+                    p1 = p1 >> 8;
+                    return createGRIB1(type, parseTimeUnit(p1tu), p1, p2);
+                }
 				case GRIB_TIMERANGE_VARIANCE_OF_ANALYSES_WITH_REFERENCE_TIME_INTERVALS_P2:
 				case GRIB_TIMERANGE_AVERAGE_OVER_ANALYSES_AT_INTERVALS_OF_P2:
-				case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
-					if (p1 == -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"p1 not found, but it is required");
-					if (p2 != -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"found an extra p2 when it was not required");
-					return timerange::GRIB1::create(type, parseTimeUnit(p1tu), 0, p1);
-				default:
-					// Fallback for unknown types
-					if (p1 == -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"p1 not found, but it is required");
-					if (p2 == -1)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"p2 not found, but it is required");
-					if (p1tu != p2tu)
-						throw wibble::exception::Consistency("parsing TimeRange",
-								"time unit for p1 (\""+p1tu+"\") is different than time unit of p2 (\""+p2tu+"\")");
-					return timerange::GRIB1::create(type, parseTimeUnit(p1tu), p1, p2);
-			}
-		}
-		case Timerange::GRIB2: {
-			const char* start = inner.c_str();
-			int type = getNumber(start, "time range type");
-			int unit = getNumber(start, "unit of time range values");
-			int p1 = getNumber(start, "first time range value");
-			skipSuffix(start);
-			int p2 = getNumber(start, "second time range value");
-			skipSuffix(start);
-			return timerange::GRIB2::create(type, unit, p1, p2);
-		}
+                case GRIB_TIMERANGE_ACCUMULATION_OVER_ANALYSES_AT_INTERVALS_OF_P2:
+                    if (p1 == -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "p1 not found, but it is required");
+                    if (p2 != -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "found an extra p2 when it was not required");
+                    return createGRIB1(type, parseTimeUnit(p1tu), 0, p1);
+                default:
+                    // Fallback for unknown types
+                    if (p1 == -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "p1 not found, but it is required");
+                    if (p2 == -1)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "p2 not found, but it is required");
+                    if (p1tu != p2tu)
+                        throw wibble::exception::Consistency("parsing TimeRange",
+                                "time unit for p1 (\""+p1tu+"\") is different than time unit of p2 (\""+p2tu+"\")");
+                    return createGRIB1(type, parseTimeUnit(p1tu), p1, p2);
+            }
+        }
+        case Timerange::GRIB2: {
+            const char* start = inner.c_str();
+            int type = getNumber(start, "time range type");
+            int unit = getNumber(start, "unit of time range values");
+            int p1 = getNumber(start, "first time range value");
+            skipSuffix(start);
+            int p2 = getNumber(start, "second time range value");
+            skipSuffix(start);
+            return createGRIB2(type, unit, p1, p2);
+        }
         case Timerange::TIMEDEF:
-            return timerange::Timedef::createFromYaml(inner);
-		case Timerange::BUFR: {
-			const char* start = inner.c_str();
-			unsigned value = getNumber(start, "forecast seconds");
-			unsigned unit = parseTimeUnit(start);
-			return timerange::BUFR::create(value, unit);
-		}
+            return upcast<Timerange>(timerange::Timedef::createFromYaml(inner));
+        case Timerange::BUFR: {
+            const char* start = inner.c_str();
+            unsigned value = getNumber(start, "forecast seconds");
+            unsigned unit = parseTimeUnit(start);
+            return createBUFR(value, unit);
+        }
 		default:
 			throw wibble::exception::Consistency("parsing Timerange", "unknown Timerange style " + str::fmt(style));
 	}
 }
 
-Item<timerange::Timedef> Timerange::to_timedef() const
+auto_ptr<timerange::Timedef> Timerange::to_timedef() const
 {
     using namespace timerange;
 
     uint32_t step_len;
-    Timedef::Unit step_unit;
+    TimedefUnit step_unit;
     uint8_t stat_type;
     uint32_t stat_len;
-    Timedef::Unit stat_unit;
+    TimedefUnit stat_unit;
 
     int ival;
     bool is_seconds;
@@ -478,10 +478,10 @@ Item<timerange::Timedef> Timerange::to_timedef() const
     if (get_forecast_step(ival, is_seconds))
     {
         step_len = ival;
-        step_unit = is_seconds ? Timedef::UNIT_SECOND : Timedef::UNIT_MONTH;
+        step_unit = is_seconds ? timerange::UNIT_SECOND : timerange::UNIT_MONTH;
     } else {
         step_len = 0;
-        step_unit = Timedef::UNIT_MISSING;
+        step_unit = timerange::UNIT_MISSING;
     }
 
     if ((ival = get_proc_type()) != -1)
@@ -492,10 +492,10 @@ Item<timerange::Timedef> Timerange::to_timedef() const
     if (get_proc_duration(ival, is_seconds))
     {
         stat_len = ival;
-        stat_unit = is_seconds ? Timedef::UNIT_SECOND : Timedef::UNIT_MONTH;
+        stat_unit = is_seconds ? timerange::UNIT_SECOND : timerange::UNIT_MONTH;
     } else {
         stat_len = 0;
-        stat_unit = Timedef::UNIT_MISSING;
+        stat_unit = timerange::UNIT_MISSING;
     }
 
     return Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
@@ -507,9 +507,8 @@ static int arkilua_new_grib1(lua_State* L)
 	int unit = luaL_checkint(L, 2);
 	int p1 = luaL_checkint(L, 3);
 	int p2 = luaL_checkint(L, 4);
-	Item<> res = timerange::GRIB1::create(type, unit, p1, p2);
-	res->lua_push(L);
-	return 1;
+    timerange::GRIB1::create(type, unit, p1, p2)->lua_push(L);
+    return 1;
 }
 
 static int arkilua_new_grib2(lua_State* L)
@@ -518,19 +517,18 @@ static int arkilua_new_grib2(lua_State* L)
 	int unit = luaL_checkint(L, 2);
 	int p1 = luaL_checkint(L, 3);
 	int p2 = luaL_checkint(L, 4);
-	Item<> res = timerange::GRIB2::create(type, unit, p1, p2);
-	res->lua_push(L);
-	return 1;
+    timerange::GRIB2::create(type, unit, p1, p2)->lua_push(L);
+    return 1;
 }
 
 // Parse a time unit in string or number form
-static timerange::Timedef::Unit arkilua_checkunit(lua_State* L, int pos)
+static timerange::TimedefUnit arkilua_checkunit(lua_State* L, int pos)
 {
     switch (lua_type(L, pos))
     {
         case LUA_TSTRING: {
             const char* str = lua_tostring(L, pos);
-            timerange::Timedef::Unit unit;
+            timerange::TimedefUnit unit;
             if (!timerange::Timedef::timeunit_parse_suffix(str, unit))
                 luaL_argcheck(L, 0, pos, "unit name not valid");
             if (*str) // Trailing garbage in unit
@@ -538,15 +536,15 @@ static timerange::Timedef::Unit arkilua_checkunit(lua_State* L, int pos)
             return unit;
         }
         case LUA_TNUMBER:
-            return (timerange::Timedef::Unit)lua_tointeger(L, pos);
+            return (timerange::TimedefUnit)lua_tointeger(L, pos);
         default:
             luaL_argcheck(L, 0, pos, "unit is not string or number");
-            return timerange::Timedef::UNIT_MISSING; // This should never be reached
+            return timerange::UNIT_MISSING; // This should never be reached
     }
 }
 
 // Parse ("3h") or (3, "h") or (3, 1)
-static int arkilua_checkunit_val(lua_State* L, int pos, timerange::Timedef::Unit& unit, uint32_t& val)
+static int arkilua_checkunit_val(lua_State* L, int pos, timerange::TimedefUnit& unit, uint32_t& val)
 {
     switch (lua_type(L, pos))
     {
@@ -575,10 +573,10 @@ static int arkilua_new_timedef(lua_State* L)
     using namespace timerange;
 
     uint32_t step_len = 0;
-    Timedef::Unit step_unit = Timedef::UNIT_SECOND;
+    TimedefUnit step_unit = timerange::UNIT_SECOND;
     int stat_type = 255;
     uint32_t stat_len = 0;
-    Timedef::Unit stat_unit = Timedef::UNIT_MISSING;
+    TimedefUnit stat_unit = timerange::UNIT_MISSING;
 
     int pos = 1;
 
@@ -596,8 +594,7 @@ static int arkilua_new_timedef(lua_State* L)
             pos += arkilua_checkunit_val(L, pos, stat_unit, stat_len);
     }
 
-    Item<> res = timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit);
-    res->lua_push(L);
+    timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit)->lua_push(L);
     return 1;
 }
 
@@ -623,12 +620,29 @@ void Timerange::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_timerange", lib);
 }
 
-namespace timerange {
+auto_ptr<Timerange> Timerange::createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
+{
+    return upcast<Timerange>(timerange::GRIB1::create(type, unit, p1, p2));
+}
+auto_ptr<Timerange> Timerange::createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2)
+{
+    return upcast<Timerange>(timerange::GRIB2::create(type, unit, p1, p2));
+}
+auto_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit)
+{
+    return upcast<Timerange>(timerange::Timedef::create(step_len, step_unit));
+}
+auto_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
+                                             uint8_t stat_type, uint32_t stat_len, timerange::TimedefUnit stat_unit)
+{
+    return upcast<Timerange>(timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit));
+}
+auto_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char unit)
+{
+    return upcast<Timerange>(timerange::BUFR::create(value, unit));
+}
 
-static TypeCache<GRIB1> cache_grib1;
-static TypeCache<GRIB2> cache_grib2;
-static TypeCache<Timedef> cache_timedef;
-static TypeCache<BUFR> cache_bufr;
+namespace timerange {
 
 Timerange::Style GRIB1::style() const { return Timerange::GRIB1; }
 
@@ -710,7 +724,7 @@ void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("p1", (int)m_p1);
     e.add("p2", (int)m_p2);
 }
-Item<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return GRIB1::create(
@@ -731,9 +745,9 @@ std::string GRIB1::exactQuery() const
 const char* GRIB1::lua_type_name() const { return "arki.types.timerange.grib1"; }
 bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 {
-	int type;
-	timerange::GRIB1::Unit unit;
-	int p1, p2;
+    int type;
+    GRIB1Unit unit;
+    int p1, p2;
     bool use_p1, use_p2;
     getNormalised(type, unit, p1, p2, use_p1, use_p2);
 
@@ -742,8 +756,8 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 	else if (name == "unit")
 		switch (unit)
 		{
-			case timerange::GRIB1::SECOND: lua_pushstring(L, "second"); break;
-			case timerange::GRIB1::MONTH: lua_pushstring(L, "month"); break;
+			case timerange::SECOND: lua_pushstring(L, "second"); break;
+			case timerange::MONTH: lua_pushstring(L, "month"); break;
 			default: lua_pushnil(L); break;
 		}
     else if (name == "p1")
@@ -774,8 +788,8 @@ int GRIB1::compare_local(const Timerange& o) const
 			"comparing metadata types",
 			string("second element claims to be a GRIB1 Timerange, but is a ") + typeid(&o).name() + " instead");
 
-	int atype, ap1, ap2, btype, bp1, bp2;
-	Unit aunit, bunit;
+    int atype, ap1, ap2, btype, bp1, bp2;
+    GRIB1Unit aunit, bunit;
     bool dummy_use_p1, dummy_use_p2;
     getNormalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
     v->getNormalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
@@ -786,13 +800,13 @@ int GRIB1::compare_local(const Timerange& o) const
 	return ap2 - bp2;
 }
 
-bool GRIB1::operator==(const Type& o) const
+bool GRIB1::equals(const Type& o) const
 {
 	const GRIB1* v = dynamic_cast<const GRIB1*>(&o);
 	if (!v) return false;
 
 	int atype, ap1, ap2, btype, bp1, bp2;
-	Unit aunit, bunit;
+	GRIB1Unit aunit, bunit;
     bool dummy_use_p1, dummy_use_p2;
     getNormalised(atype, aunit, ap1, ap2, dummy_use_p1, dummy_use_p2);
     v->getNormalised(btype, bunit, bp1, bp2, dummy_use_p1, dummy_use_p2);
@@ -1052,14 +1066,24 @@ bool GRIB1::get_proc_duration(int& duration, bool& is_seconds) const
     return false;
 }
 
-Item<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
+GRIB1* GRIB1::clone() const
 {
-	GRIB1* res = new GRIB1;
-	res->m_type = type;
-	res->m_unit = unit;
-	res->m_p1 = p1;
-	res->m_p2 = p2;
-	return cache_grib1.intern(res);
+    GRIB1* res = new GRIB1;
+    res->m_type = m_type;
+    res->m_unit = m_unit;
+    res->m_p1 = m_p1;
+    res->m_p2 = m_p2;
+    return res;
+}
+
+auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
+{
+    GRIB1* res = new GRIB1;
+    res->m_type = type;
+    res->m_unit = unit;
+    res->m_p1 = p1;
+    res->m_p2 = p2;
+    return auto_ptr<GRIB1>(res);
 }
 
 bool GRIB1::get_timeunit_conversion(int& timemul) const
@@ -1088,7 +1112,7 @@ bool GRIB1::get_timeunit_conversion(int& timemul) const
     return is_seconds;
 }
 
-void GRIB1::getNormalised(int& otype, Unit& ounit, int& op1, int& op2, bool& use_op1, bool& use_op2) const
+void GRIB1::getNormalised(int& otype, GRIB1Unit& ounit, int& op1, int& op2, bool& use_op1, bool& use_op2) const
 {
     otype = m_type;
 
@@ -1239,7 +1263,7 @@ void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("p1", (int)m_p1);
     e.add("p2", (int)m_p2);
 }
-Item<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return GRIB2::create(
@@ -1293,7 +1317,7 @@ int GRIB2::compare_local(const Timerange& o) const
 	return m_p2 - v->m_p2;
 }
 
-bool GRIB2::operator==(const Type& o) const
+bool GRIB2::equals(const Type& o) const
 {
 	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
 	if (!v) return false;
@@ -1316,14 +1340,24 @@ bool GRIB2::get_proc_duration(int& duration, bool& is_seconds) const
     return false;
 }
 
-Item<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed long p1, signed long p2)
+GRIB2* GRIB2::clone() const
 {
-	GRIB2* res = new GRIB2;
-	res->m_type = type;
-	res->m_unit = unit;
-	res->m_p1 = p1;
-	res->m_p2 = p2;
-	return cache_grib2.intern(res);
+    GRIB2* res = new GRIB2;
+    res->m_type = m_type;
+    res->m_unit = m_unit;
+    res->m_p1 = m_p1;
+    res->m_p2 = m_p2;
+    return res;
+}
+
+auto_ptr<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed long p1, signed long p2)
+{
+    GRIB2* res = new GRIB2;
+    res->m_type = type;
+    res->m_unit = unit;
+    res->m_p1 = p1;
+    res->m_p2 = p2;
+    return auto_ptr<GRIB2>(res);
 }
 
 Timerange::Style Timedef::style() const { return Timerange::TIMEDEF; }
@@ -1368,17 +1402,17 @@ std::ostream& Timedef::writeToOstream(std::ostream& o) const
     return o;
 }
 
-Item<Timedef> Timedef::createFromYaml(const std::string& encoded)
+auto_ptr<Timedef> Timedef::createFromYaml(const std::string& encoded)
 {
     const char* str = encoded.c_str();
 
-    Unit step_unit;
+    TimedefUnit step_unit;
     uint32_t step_len;
     if (!timeunit_parse(str, step_unit, step_len))
         throw wibble::exception::Consistency("parsing Timerange", "cannot parse time range step");
 
     int stat_type;
-    Unit stat_unit = UNIT_MISSING;
+    TimedefUnit stat_unit = UNIT_MISSING;
     uint32_t stat_len = 0;
 
     if (!*str)
@@ -1409,16 +1443,16 @@ void Timedef::serialiseLocal(Emitter& e, const Formatter* f) const
         }
     }
 }
-Item<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     uint32_t step_len = val["sl"].want_int("parsing Timedef forecast step length");
-    Timedef::Unit step_unit = (Timedef::Unit)val["su"].want_int("parsing Timedef forecast step units");
+    TimedefUnit step_unit = (TimedefUnit)val["su"].want_int("parsing Timedef forecast step units");
 
     int stat_type = 255;
     uint32_t stat_len = 0;
-    Timedef::Unit stat_unit = Timedef::UNIT_MISSING;
+    TimedefUnit stat_unit = timerange::UNIT_MISSING;
 
     const Node& pt = val["pt"];
     if (pt.is_int())
@@ -1428,7 +1462,7 @@ Item<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
         const Node& pu = val["pu"];
         if (pu.is_int())
         {
-            stat_unit = (Timedef::Unit)pu.get_int();
+            stat_unit = (TimedefUnit)pu.get_int();
             stat_len = val["pl"].want_int("parsing Timedef length of interval of statistical processing");
         }
     }
@@ -1519,7 +1553,7 @@ int Timedef::compare_local(const Timerange& o) const
     return 0;
 }
 
-bool Timedef::operator==(const Type& o) const
+bool Timedef::equals(const Type& o) const
 {
     const Timedef* v = dynamic_cast<const Timedef*>(&o);
     if (!v) return false;
@@ -1556,7 +1590,7 @@ bool Timedef::operator==(const Type& o) const
     return true;
 }
 
-Item<reftime::Position> Timedef::validity_time_to_emission_time(const Item<reftime::Position>& src) const
+auto_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reftime::Position& src) const
 {
     // Compute our forecast step in seconds
     int secs;
@@ -1568,13 +1602,12 @@ Item<reftime::Position> Timedef::validity_time_to_emission_time(const Item<refti
     // Compute the new time
     int vals[6];
     for (int i = 0; i < 6; ++i)
-        vals[i] = src->time->vals[i];
+        vals[i] = src.time.vals[i];
     vals[5] -= secs;
     grcal::date::normalise(vals);
 
     // Return it
-    Item<types::Time> tres(new types::Time(vals));
-    return Item<reftime::Position>(new reftime::Position(tres));
+    return auto_ptr<reftime::Position>(new reftime::Position(Time(vals)));
 }
 
 bool Timedef::get_forecast_step(int& step, bool& is_seconds) const
@@ -1604,7 +1637,18 @@ bool Timedef::get_proc_duration(int& duration, bool& is_seconds) const
     return true;
 }
 
-Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit)
+Timedef* Timedef::clone() const
+{
+    Timedef* res = new Timedef;
+    res->m_step_len = m_step_len;
+    res->m_step_unit = m_step_unit;
+    res->m_stat_type = m_stat_type;
+    res->m_stat_len = m_stat_len;
+    res->m_stat_unit = m_stat_unit;
+    return res;
+}
+
+auto_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit)
 {
     Timedef* res = new Timedef;
     res->m_step_len = step_len;
@@ -1612,11 +1656,11 @@ Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit)
     res->m_stat_type = 255;
     res->m_stat_len = 0;
     res->m_stat_unit = UNIT_MISSING;
-    return cache_timedef.intern(res);
+    return auto_ptr<Timedef>(res);
 }
 
-Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit,
-                          uint8_t stat_type, uint32_t stat_len, Unit stat_unit)
+auto_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit,
+                          uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit)
 {
     Timedef* res = new Timedef;
     res->m_step_len = step_len;
@@ -1624,10 +1668,10 @@ Item<Timedef> Timedef::create(uint32_t step_len, Unit step_unit,
     res->m_stat_type = stat_type;
     res->m_stat_len = stat_len;
     res->m_stat_unit = stat_unit == UNIT_MISSING ? UNIT_MISSING : stat_len == 0 ? UNIT_SECOND : stat_unit;
-    return cache_timedef.intern(res);
+    return auto_ptr<Timedef>(res);
 }
 
-bool Timedef::timeunit_conversion(Unit unit, int& timemul)
+bool Timedef::timeunit_conversion(TimedefUnit unit, int& timemul)
 {
     bool is_seconds = true;
     timemul = 1;
@@ -1653,12 +1697,12 @@ bool Timedef::timeunit_conversion(Unit unit, int& timemul)
     return is_seconds;
 }
 
-void Timedef::timeunit_output(Unit unit, uint32_t val, std::ostream& out)
+void Timedef::timeunit_output(TimedefUnit unit, uint32_t val, std::ostream& out)
 {
     out << val << timeunit_suffix(unit);
 }
 
-bool Timedef::timeunit_parse_suffix(const char*& str, Unit& unit)
+bool Timedef::timeunit_parse_suffix(const char*& str, TimedefUnit& unit)
 {
     if (!*str) return false;
 
@@ -1719,7 +1763,7 @@ bool Timedef::timeunit_parse_suffix(const char*& str, Unit& unit)
     return false;
 }
 
-bool Timedef::timeunit_parse(const char*& str, Unit& unit, uint32_t& val)
+bool Timedef::timeunit_parse(const char*& str, TimedefUnit& unit, uint32_t& val)
 {
     if (!*str)
         return false;
@@ -1756,7 +1800,7 @@ bool Timedef::timeunit_parse(const char*& str, Unit& unit, uint32_t& val)
     return true;
 }
 
-const char* Timedef::timeunit_suffix(Unit unit)
+const char* Timedef::timeunit_suffix(TimedefUnit unit)
 {
     switch (unit)
     {
@@ -1867,7 +1911,7 @@ void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("un", (int)m_unit);
     e.add("va", (int)m_value);
 }
-Item<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return BUFR::create(
@@ -1923,7 +1967,7 @@ int BUFR::compare_local(const Timerange& o) const
 		return months() - v->months();
 }
 
-bool BUFR::operator==(const Type& o) const
+bool BUFR::equals(const Type& o) const
 {
 	const BUFR* v = dynamic_cast<const BUFR*>(&o);
 	if (!v) return false;
@@ -1953,28 +1997,26 @@ bool BUFR::get_proc_duration(int& duration, bool& is_seconds) const
     return false;
 }
 
-Item<BUFR> BUFR::create(unsigned value, unsigned char unit)
+BUFR* BUFR::clone() const
 {
-	BUFR* res = new BUFR;
-	res->m_value = value;
-	res->m_unit = unit;
-	return cache_bufr.intern(res);
+    BUFR* res = new BUFR;
+    res->m_value = m_value;
+    res->m_unit = m_unit;
+    return res;
 }
-
-
-static void debug_interns()
+auto_ptr<BUFR> BUFR::create(unsigned value, unsigned char unit)
 {
-    fprintf(stderr, "timerange GRIB1: sz %zd reused %zd\n", cache_grib1.size(), cache_grib1.reused());
-    fprintf(stderr, "timerange GRIB2: sz %zd reused %zd\n", cache_grib2.size(), cache_grib2.reused());
-    fprintf(stderr, "timerange Timedef: sz %zd reused %zd\n", cache_timedef.size(), cache_timedef.reused());
-    fprintf(stderr, "timerange BUFR: sz %zd reused %zd\n", cache_bufr.size(), cache_bufr.reused());
+    BUFR* res = new BUFR;
+    res->m_value = value;
+    res->m_unit = unit;
+    return auto_ptr<BUFR>(res);
 }
 
 }
 
 void Timerange::init()
 {
-    MetadataType::register_type<Timerange>(timerange::debug_interns);
+    MetadataType::register_type<Timerange>();
 }
 
 }

@@ -36,6 +36,7 @@
 using namespace std;
 using namespace wibble;
 using namespace arki::utils::codec;
+using namespace arki::types;
 
 namespace arki {
 
@@ -51,13 +52,17 @@ namespace summary {
 Stats::Stats(const Metadata& md)
     : count(1), size(md.dataSize())
 {
-    reftimeMerger.merge(md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>());
+    if (const Reftime* rt = md.get<types::Reftime>())
+        reftimeMerger.merge(*rt);
 }
 
-Stats::Stats(size_t count, unsigned long long size, const types::Reftime* reftime)
-    : count(count), size(size)
+Stats* Stats::clone() const override
 {
-    reftimeMerger.merge(reftime);
+    Stats* res = new Stats;
+    res->count = count;
+    res->size = size;
+    res->reftimeMerger = reftimeMerger;
+    return res;
 }
 
 int Stats::compare(const Type& o) const
@@ -72,26 +77,16 @@ int Stats::compare(const Type& o) const
             "comparing metadata types",
             string("second element claims to be a summary::Stats, but it is a ") + typeid(&o).name() + " instead");
 
-    return compare(*v);
+    if (int res = count - v->count) return res;
+    if (int res = size - v->size) return res;
+    return reftimeMerger.compare(v->reftimeMerger);
 }
 
-int Stats::compare(const Stats& o) const
-{
-    if (int res = count - o.count) return res;
-    if (int res = size - o.size) return res;
-    return reftimeMerger.compare(o.reftimeMerger);
-}
-
-bool Stats::operator==(const Type& o) const
+bool Stats::equals(const Type& o) const
 {
     const Stats* v = dynamic_cast<const Stats*>(&o);
     if (!v) return false;
-    return operator==(*v);
-}
-
-bool Stats::operator==(const Stats& o) const
-{
-    return count == o.count && size == o.size && reftimeMerger == o.reftimeMerger;
+    return count == v->count && size == v->size && reftimeMerger == v->reftimeMerger;
 }
 
 void Stats::merge(const Stats& s)
@@ -101,25 +96,19 @@ void Stats::merge(const Stats& s)
     reftimeMerger.merge(s.reftimeMerger);
 }
 
-void Stats::merge(size_t ocount, unsigned long long osize, const types::Reftime* reftime)
-{
-    count += ocount;
-    size += osize;
-    reftimeMerger.merge(reftime);
-}
-
 void Stats::merge(const Metadata& md)
 {
     ++count;
     size += md.dataSize();
-    reftimeMerger.merge(md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>());
+    if (const Reftime* rt = md.get<types::Reftime>())
+        reftimeMerger.merge(*rt);
 }
 
 void Stats::encodeWithoutEnvelope(Encoder& enc) const
 {
-    arki::Item<types::Reftime> reftime(reftimeMerger.makeReftime());
+    auto_ptr<types::Reftime> reftime(reftimeMerger.makeReftime());
     enc.addUInt(count, 4);
-    enc.addString(reftime.encode());
+    enc.addString(reftime->encodeBinary());
     enc.addULInt(size, 8);
 }
 
@@ -130,24 +119,24 @@ std::ostream& Stats::writeToOstream(std::ostream& o) const
 
 void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
 {
-    if (reftimeMerger.begin)
+    if (reftimeMerger.begin.isValid())
     {
-        if (reftimeMerger.end)
+        if (reftimeMerger.end.isValid())
         {
             // Period: begin--end
-            e.add("b"); reftimeMerger.begin->serialiseList(e);
-            e.add("e"); reftimeMerger.end->serialiseList(e);
+            e.add("b"); reftimeMerger.begin.serialiseList(e);
+            e.add("e"); reftimeMerger.end.serialiseList(e);
         } else {
             // Instant: begin--begin
-            e.add("b"); reftimeMerger.begin->serialiseList(e);
-            e.add("e"); reftimeMerger.begin->serialiseList(e);
+            e.add("b"); reftimeMerger.begin.serialiseList(e);
+            e.add("e"); reftimeMerger.begin.serialiseList(e);
         }
     }
     e.add("c", count);
     e.add("s", size);
 }
 
-UItem<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
+auto_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     auto_ptr<Stats> res(new Stats);
@@ -155,14 +144,14 @@ UItem<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
     res->size = val["s"].want_int("parsing summary stats size");
     if (!val["b"].is_null())
     {
-        Item<types::Time> begin = types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-        Item<types::Time> end = types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
-        if (begin == end)
-            res->reftimeMerger.mergeTime(begin);
+        auto_ptr<types::Time> begin = types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
+        auto_ptr<types::Time> end = types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
+        if (*begin == *end)
+            res->reftimeMerger.mergeTime(*begin);
         else
-            res->reftimeMerger.mergeTime(begin, end);
+            res->reftimeMerger.mergeTime(*begin, *end);
     }
-    return res.release();
+    return res;
 }
 
 std::string Stats::toYaml(size_t indent) const
@@ -174,14 +163,14 @@ std::string Stats::toYaml(size_t indent) const
 
 void Stats::toYaml(std::ostream& out, size_t indent) const
 {
-    arki::Item<types::Reftime> reftime(reftimeMerger.makeReftime());
+    auto_ptr<types::Reftime> reftime(reftimeMerger.makeReftime());
     string ind(indent, ' ');
     out << ind << "Count: " << count << endl;
     out << ind << "Size: " << size << endl;
-    out << ind << "Reftime: " << reftime << endl;
+    out << ind << "Reftime: " << *reftime << endl;
 }
 
-UItem<Stats> Stats::decode(const unsigned char* buf, size_t len)
+auto_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
 {
     using namespace utils::codec;
 
@@ -198,7 +187,7 @@ UItem<Stats> Stats::decode(const unsigned char* buf, size_t len)
     size_t el_len = len;
     types::Code el_type = types::decodeEnvelope(el_start, el_len);
     if (el_type == types::TYPE_REFTIME)
-        res->reftimeMerger.merge(types::Reftime::decode(el_start, el_len));
+        res->reftimeMerger.merge(*types::Reftime::decode(el_start, el_len));
     else
         throw wibble::exception::Consistency("parsing summary stats", "cannot handle element " + str::fmt(el_type));
     len -= el_start + el_len - buf;
@@ -213,10 +202,10 @@ UItem<Stats> Stats::decode(const unsigned char* buf, size_t len)
         buf += 8; len -= 8;
     }
 
-    return res.release();
+    return res;
 }
 
-UItem<Stats> Stats::decodeString(const std::string& str)
+auto_ptr<Stats> Stats::decodeString(const std::string& str)
 {
     using namespace str;
 
@@ -232,9 +221,9 @@ UItem<Stats> Stats::decodeString(const std::string& str)
         else if (name == "size")
             res->size = strtoull(i->second.c_str(), 0, 10);
         else if (name == "reftime")
-            res->reftimeMerger.merge(types::Reftime::decodeString(i->second));
+            res->reftimeMerger.merge(*types::Reftime::decodeString(i->second));
     }
-    return res.release();
+    return res;
 }
 
 #ifdef HAVE_LUA
@@ -259,8 +248,7 @@ int Stats::lua_lookup(lua_State* L)
     }
     else if (name == "reftime")
     {
-        arki::Item<types::Reftime> reftime(v.reftimeMerger.makeReftime());
-        reftime->lua_push(L);
+        v.reftimeMerger.makeReftime()->lua_push(L);
         return 1;
     }
     else
@@ -275,6 +263,7 @@ static int arkilua_lookup_summarystats(lua_State* L)
     lua_pushcclosure(L, Stats::lua_lookup, 2);
     return 1;
 }
+#if 0
 void Stats::lua_push(lua_State* L) const
 {
     // The 'grib' object is a userdata that holds a pointer to this Grib structure
@@ -293,6 +282,7 @@ void Stats::lua_push(lua_State* L) const
 
     lua_setmetatable(L, -2);
 }
+#endif
 #endif
 
 static types::MetadataType summaryStatsType = types::MetadataType::create<summary::Stats>();
