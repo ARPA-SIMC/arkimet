@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,12 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/emitter/memory.h>
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::emitter;
 
@@ -42,7 +40,7 @@ void to::test<1>()
     Memory m;
     m.add_null();
 
-    ensure_equals(m.root().tag(), "null");
+    wassert(actual(m.root().tag()) == "null");
     ensure(m.root().is_null());
 }
 
@@ -53,14 +51,14 @@ void to::test<2>()
     {
         Memory m;
         m.add(true);
-        ensure_equals(m.root().tag(), "bool");
+        wassert(actual(m.root().tag()) == "bool");
         ensure(m.root().is_bool());
         ensure_equals(m.root().get_bool(), true);
     }
     {
         Memory m;
         m.add(false);
-        ensure_equals(m.root().tag(), "bool");
+        wassert(actual(m.root().tag()) == "bool");
         ensure(m.root().is_bool());
         ensure_equals(m.root().get_bool(), false);
     }
@@ -72,7 +70,7 @@ void to::test<3>()
 {
     Memory m;
     m.add(42);
-    ensure_equals(m.root().tag(), "int");
+    wassert(actual(m.root().tag()) == "int");
     ensure(m.root().is_int());
     ensure_equals(m.root().get_int(), 42);
 }
@@ -84,7 +82,7 @@ void to::test<4>()
     {
         Memory m;
         m.add(1.0);
-        ensure_equals(m.root().tag(), "double");
+        wassert(actual(m.root().tag()) == "double");
         ensure(m.root().is_double());
         ensure_equals(m.root().get_double(), 1.0);
     }
@@ -92,7 +90,7 @@ void to::test<4>()
     {
         Memory m;
         m.add(0.1);
-        ensure_equals(m.root().tag(), "double");
+        wassert(actual(m.root().tag()) == "double");
         ensure(m.root().is_double());
         ensure_equals(m.root().get_double(), 0.1);
     }
@@ -105,7 +103,7 @@ void to::test<5>()
     {
         Memory m;
         m.add_string("");
-        ensure_equals(m.root().tag(), "string");
+        wassert(actual(m.root().tag()) == "string");
         ensure(m.root().is_string());
         ensure_equals(m.root().get_string(), "");
     }
@@ -113,7 +111,7 @@ void to::test<5>()
     {
         Memory m;
         m.add("antani");
-        ensure_equals(m.root().tag(), "string");
+        wassert(actual(m.root().tag()) == "string");
         ensure(m.root().is_string());
         ensure_equals(m.root().get_string(), "antani");
     }
@@ -133,7 +131,7 @@ void to::test<6>()
       m.add("tapioca");
     m.end_list();
 
-    ensure_equals(m.root().tag(), "list");
+    wassert(actual(m.root().tag()) == "list");
     ensure(m.root().is_list());
     const memory::List& l = m.root().get_list();
 
@@ -167,7 +165,7 @@ void to::test<7>()
       m.end_mapping();
     m.end_mapping();
 
-    ensure_equals(m.root().tag(), "mapping");
+    wassert(actual(m.root().tag()) == "mapping");
     ensure(m.root().is_mapping());
     const memory::Mapping& i = m.root().get_mapping();
 
@@ -182,5 +180,3 @@ void to::test<7>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

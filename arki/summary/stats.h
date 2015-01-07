@@ -86,8 +86,7 @@ struct Stats : public types::CoreType<Stats>
 
     Stats* clone() const override;
 
-    //void lua_push(lua_State* L) const override;
-    static int lua_lookup(lua_State* L);
+    bool lua_lookup(lua_State* L, const std::string& name) const override;
 };
 
 }

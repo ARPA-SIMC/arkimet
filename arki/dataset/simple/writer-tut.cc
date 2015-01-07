@@ -93,7 +93,7 @@ void to::test<1>()
     ensure_equals(ds->name, "testds");
     ensure_equals(ds->id, "");
 
-    wassert(actual_type(md.source()).is_source_blob("grib1", "", "07-08.grib1", 0, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/2007/07-08.grib1", 0, 7218));
 
 	// Import again works fine
 	res = writer.acquire(md);
@@ -102,7 +102,7 @@ void to::test<1>()
 	ensure_equals(ds->name, "testds");
 	ensure_equals(ds->id, "");
 
-    wassert(actual_type(md.source()).is_source_blob("grib1", "", "07-08.grib1", 7218, 7218));
+    wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/2007/07-08.grib1", 7218, 7218));
 
 	// Flush the changes and check that everything is allright
 	writer.flush();
@@ -158,7 +158,7 @@ void to::test<2>()
         ensure_equals(ds->name, "testds");
         ensure_equals(ds->id, "");
 
-        wassert(actual_type(md.source()).is_source_blob("grib1", "", "2007.grib1", 34960, 7218));
+        wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/20/2007.grib1", 34960, 7218));
     }
 
 	ensure(sys::fs::exists("testds/20/2007.grib1"));

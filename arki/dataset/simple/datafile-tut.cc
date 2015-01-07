@@ -24,6 +24,7 @@
 #include <arki/scan/grib.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
+#include <wibble/sys/process.h>
 
 #include <sstream>
 #include <iostream>
@@ -90,7 +91,7 @@ void to::test<1>()
 		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", "", "inbound/test.grib1", 0, size));
+        wassert(actual_type(md.source()).is_source_blob("grib1", sys::process::getcwd(), "inbound/test.grib1", 0, size));
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -105,7 +106,7 @@ void to::test<1>()
         mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", "", "inbound/test.grib1", totsize, size));
+        wassert(actual_type(md.source()).is_source_blob("grib1", sys::process::getcwd(), "inbound/test.grib1", totsize, size));
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -127,7 +128,7 @@ void to::test<1>()
 		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", "", "inbound/test.grib1", totsize, size));
+        wassert(actual_type(md.source()).is_source_blob("grib1", sys::process::getcwd(), "inbound/test.grib1", totsize, size));
 
         // Metadata and summaries don't get touched
         ensure_equals(sys::fs::inode(mdfname), inomd);

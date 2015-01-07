@@ -169,7 +169,7 @@ void AttrSubIndex::read(int id, Metadata& md) const
     }
 
     auto_ptr<Type> item = q_select_one(id);
-    md.set(item);
+    md.set(item->cloneType());
     add_to_cache(id, *item);
 }
 

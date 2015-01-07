@@ -265,7 +265,7 @@ void to::test<12>()
 		"    for name, val in pairs(item) do \n"
 		"      o = name..':'..tostring(val) \n"
 		"      count = items[o] or 0 \n"
-		"      items[o] = count + stats.count() \n"
+		"      items[o] = count + stats.count \n"
 		"    end \n"
 		"    i = i + 1 \n"
 		"  end \n"

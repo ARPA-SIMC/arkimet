@@ -24,14 +24,9 @@
 #include <arki/metadata.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/lua.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 using namespace std;
 using namespace wibble;
@@ -227,62 +222,16 @@ auto_ptr<Stats> Stats::decodeString(const std::string& str)
 }
 
 #ifdef HAVE_LUA
-int Stats::lua_lookup(lua_State* L)
+bool Stats::lua_lookup(lua_State* L, const std::string& name) const
 {
-    int udataidx = lua_upvalueindex(1);
-    int keyidx = lua_upvalueindex(2);
-    // Fetch the Stats reference from the userdata value
-    luaL_checkudata(L, udataidx, "arki.summarystats");
-    void* userdata = lua_touserdata(L, udataidx);
-    const Stats& v = **(const Stats**)userdata;
-
-    // Get the name to lookup from lua
-    // (we use 2 because 1 is the table, since we are a __index function)
-    luaL_checkstring(L, keyidx);
-    string name = lua_tostring(L, keyidx);
-
     if (name == "count")
-    {
-        lua_pushnumber(L, v.count);
-        return 1;
-    }
+        lua_pushnumber(L, count);
     else if (name == "reftime")
-    {
-        v.reftimeMerger.makeReftime()->lua_push(L);
-        return 1;
-    }
+        reftimeMerger.makeReftime()->lua_push(L);
     else
-    {
-        lua_pushnil(L);
-        return 1;
-    }
+        return types::CoreType<Stats>::lua_lookup(L, name);
+    return true;
 }
-static int arkilua_lookup_summarystats(lua_State* L)
-{
-    // build a closure with the parameters passed, and return it
-    lua_pushcclosure(L, Stats::lua_lookup, 2);
-    return 1;
-}
-#if 0
-void Stats::lua_push(lua_State* L) const
-{
-    // The 'grib' object is a userdata that holds a pointer to this Grib structure
-    const Stats** s = (const Stats**)lua_newuserdata(L, sizeof(const Stats*));
-    *s = this;
-
-    // Set the metatable for the userdata
-    if (luaL_newmetatable(L, "arki.summarystats"));
-    {
-        // If the metatable wasn't previously created, create it now
-        // Set the __index metamethod to the lookup function
-        lua_pushstring(L, "__index");
-        lua_pushcfunction(L, arkilua_lookup_summarystats);
-        lua_settable(L, -3);
-    }
-
-    lua_setmetatable(L, -2);
-}
-#endif
 #endif
 
 static types::MetadataType summaryStatsType = types::MetadataType::create<summary::Stats>();
@@ -290,4 +239,3 @@ static types::MetadataType summaryStatsType = types::MetadataType::create<summar
 }
 }
 #include <arki/types.tcc>
-// vim:set ts=4 sw=4:
