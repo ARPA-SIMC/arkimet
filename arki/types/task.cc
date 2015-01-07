@@ -118,7 +118,6 @@ auto_ptr<Task> Task::decodeString(const std::string& val)
 	//size_t pos = val.find(']');
 	//if (pos == string::npos)
 	//	throw wibble::exception::Consistency("parsing Task", "no closed square bracket found");
-	//return Note::create(Time::createFromISO8601(val.substr(1, pos-1)), val.substr(pos+1));
 	return Task::create(val);
 }
 

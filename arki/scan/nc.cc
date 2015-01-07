@@ -165,7 +165,7 @@ bool NetCDF::next(Metadata& md)
     md.create();
     md.source = types::source::Blob::create("vm2", basedir, relname, offset, size);
     md.setCachedData(wibble::sys::Buffer(line.c_str(), line.size()));
-    md.add_note(types::Note::create("Scanned from " + relname));
+    md.add_note("Scanned from " + relname);
     md.set(types::reftime::Position::create(types::Time::create(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(types::area::VM2::create(value.station_id));
     md.set(types::product::VM2::create(value.variable_id));

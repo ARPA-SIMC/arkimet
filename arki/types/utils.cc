@@ -45,7 +45,7 @@ static const MetadataType** decoders = 0;
 static void default_intern_stats_func() {}
 
 MetadataType::MetadataType(
-		types::Code serialisationCode,
+		types::Code type_code,
 		int serialisationSizeLen,
 		const std::string& tag,
 		item_decoder decode_func,
@@ -53,7 +53,7 @@ MetadataType::MetadataType(
 		mapping_decoder mapping_decode_func,
 		lua_libloader lua_loadlib_func,
 		intern_stats intern_stats_func)
-    : serialisationCode(serialisationCode),
+    : type_code(type_code),
 	  serialisationSizeLen(serialisationSizeLen),
 	  tag(tag),
 	  decode_func(decode_func),
@@ -69,7 +69,7 @@ MetadataType::MetadataType(
 		memset(decoders, 0, decoders_size * sizeof(const MetadataType*));
 	}
 
-	decoders[serialisationCode] = this;
+	decoders[type_code] = this;
 }
 
 MetadataType::~MetadataType()
@@ -77,7 +77,7 @@ MetadataType::~MetadataType()
 	if (!decoders)
 		return;
 	
-	decoders[serialisationCode] = 0;
+	decoders[type_code] = 0;
 }
 
 const MetadataType* MetadataType::get(types::Code code)

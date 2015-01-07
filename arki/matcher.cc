@@ -160,7 +160,7 @@ bool AND::matchItem(const Type& t) const
 {
     if (empty()) return true;
 
-    const_iterator i = find(t.serialisationCode());
+    const_iterator i = find(t.type_code());
     if (i == end()) return true;
 
     return i->second->matchItem(t);

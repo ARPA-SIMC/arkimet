@@ -295,7 +295,7 @@ void OdimH5::setSource(Metadata& md)
         throw;
     }
 
-    md.add_note(*Note::create("Scanned from " + relname + ":0+" + wibble::str::fmt(length)));
+    md.add_note("Scanned from " + relname + ":0+" + wibble::str::fmt(length));
 }
 
 bool OdimH5::scanLua(Metadata& md)
@@ -307,7 +307,7 @@ bool OdimH5::scanLua(Metadata& md)
         std::string error = L->run_function(*i, md);
         if (!error.empty())
         {
-            md.add_note(*Note::create("Scanning failed: " + error));
+            md.add_note("Scanning failed: " + error);
             return false;
         }
     }

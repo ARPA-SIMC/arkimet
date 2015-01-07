@@ -170,7 +170,7 @@ struct Type
 	virtual std::string tag() const = 0;
 
 	/// Serialisation code
-	virtual types::Code serialisationCode() const = 0;
+	virtual types::Code type_code() const = 0;
 
 	/// Length in bytes of the size field when serialising
 	virtual size_t serialisationSizeLength() const = 0;
@@ -281,7 +281,7 @@ inline std::ostream& operator<<(std::ostream& o, const Type& t)
 template<typename BASE>
 struct CoreType : public Type
 {
-    types::Code serialisationCode() const override { return traits<BASE>::type_code; }
+    types::Code type_code() const override { return traits<BASE>::type_code; }
     size_t serialisationSizeLength() const override { return traits<BASE>::type_sersize_bytes; }
     std::string tag() const override { return traits<BASE>::type_tag; }
     const char* lua_type_name() const override { return traits<BASE>::type_lua_tag; }

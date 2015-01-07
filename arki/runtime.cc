@@ -621,7 +621,7 @@ bool MetadataDispatch::operator()(Metadata& md)
             // If dispatching failed, add a big note about it.
             // Analising the notes in the output should be enough to catch this
             // even happening.
-            md.add_note(*Note::create("WARNING: The data has not been imported in ANY dataset"));
+            md.add_note("WARNING: The data has not been imported in ANY dataset");
             ++countNotImported;
             break;
     }

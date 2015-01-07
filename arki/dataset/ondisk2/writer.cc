@@ -98,11 +98,11 @@ WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
         md.set(types::AssignedDataset::create(m_name, str::fmt(id)));
         return ACQ_OK;
     } catch (utils::sqlite::DuplicateInsert& di) {
-        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what()));
+        md.add_note("Failed to store in dataset '"+m_name+"' because the dataset already has the data: " + di.what());
         return ACQ_ERROR_DUPLICATE;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }
 }
@@ -127,7 +127,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }
 }
@@ -152,7 +152,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         // It already exists, so we keep p_df uncommitted and check Update Sequence Numbers
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }
 
@@ -188,7 +188,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
-        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }
 }

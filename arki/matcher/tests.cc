@@ -62,7 +62,7 @@ void fill(Metadata& md)
     md.set(Timerange::createGRIB1(2, 254u, 22, 23));
     md.set(Area::createGRIB(testValues));
     md.set(Proddef::createGRIB(testValues));
-    md.add_note(*Note::create("test note"));
+    md.add_note("test note");
     md.set(AssignedDataset::create("dsname", "dsid"));
     md.set(Run::createMinute(12));
     md.set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));

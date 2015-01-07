@@ -46,7 +46,7 @@ struct TestImpl : public types::Type
     TestImpl* clone() const override = 0;
     bool equals(const Type& o) const override { return false; }
     std::string tag() const override { return string(); }
-    types::Code serialisationCode() const override { return types::TYPE_INVALID; }
+    types::Code type_code() const override { return types::TYPE_INVALID; }
     size_t serialisationSizeLength() const override { return 1; }
     void encodeWithoutEnvelope(utils::codec::Encoder&) const override {}
     std::ostream& writeToOstream(std::ostream& o) const override { return o; }

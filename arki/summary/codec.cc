@@ -164,10 +164,10 @@ struct Format3Decoder : public DecoderBase
             for (unsigned i = 0; i < count_added; ++i)
             {
                 auto_ptr<Type> item = types::decode(dec);
-                int pos = Visitor::posForCode(item->serialisationCode());
+                int pos = Visitor::posForCode(item->type_code());
                 if (pos < 0)
                     throw wibble::exception::Consistency("parsing summary",
-                            str::fmtf("unsupported typecode found: %d", (int)item->serialisationCode()));
+                            str::fmtf("unsupported typecode found: %d", (int)item->type_code()));
                 row.items[pos] = target.intern(pos, item);
             }
 

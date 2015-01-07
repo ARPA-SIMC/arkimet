@@ -253,7 +253,7 @@ void GridQuery::dump(std::ostream& out) const
                 for (TypeVector::const_iterator j = items.begin(); j != items.end(); ++j)
                 {
 					if (j != items.begin()) out << "; ";
-					out << types::tag((*j)->serialisationCode());
+					out << types::tag((*j)->type_code());
 				}
 				out << endl;
 			}

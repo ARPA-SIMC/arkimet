@@ -157,7 +157,7 @@ bool Vm2::next(Metadata& md)
     md.clear();
     md.set_source(Source::createBlob("vm2", basedir, relname, offset, size));
     md.setCachedData(wibble::sys::Buffer(line.c_str(), line.size()));
-    md.add_note(*Note::create("Scanned from " + relname));
+    md.add_note("Scanned from " + relname);
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));
     md.set(Product::createVM2(value.variable_id));

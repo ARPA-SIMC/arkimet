@@ -272,7 +272,7 @@ static void test_consistency(Row* rows, unsigned size, const char* context)
         {
             const Type* t = rows[i].items[j];
             if (t == 0) continue;
-            if (t->serialisationCode() != Table::mso[j])
+            if (t->type_code() != Table::mso[j])
                 cerr << "FAIL " << context << endl;
         }
     }

@@ -63,7 +63,7 @@ struct MetadataType
     typedef void (*lua_libloader)(lua_State* L);
     typedef void (*intern_stats)();
 
-	types::Code serialisationCode;
+	types::Code type_code;
 	int serialisationSizeLen;
 	std::string tag;
 	item_decoder decode_func;
@@ -73,7 +73,7 @@ struct MetadataType
 	intern_stats intern_stats_func;
 	
 	MetadataType(
-		types::Code serialisationCode,
+		types::Code type_code,
 		int serialisationSizeLen,
 		const std::string& tag,
 		item_decoder decode_func,

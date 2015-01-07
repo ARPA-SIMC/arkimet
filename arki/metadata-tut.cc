@@ -82,7 +82,7 @@ struct arki_metadata_shar {
         md.set(Area::createGRIB(testValues));
         md.set(Proddef::createGRIB(testValues));
         md.set(AssignedDataset::create("dsname", "dsid"));
-        md.add_note(*types::Note::create("test note"));
+        md.add_note("test note");
     }
 
     void ensure_md_matches_prefill(WIBBLE_TEST_LOCPRM, const Metadata& md)

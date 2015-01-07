@@ -71,7 +71,7 @@ struct arki_metadata_stream_shar {
 		md.set(timerange::GRIB1::create(1, 1, 2, 3));
 		md.set(area::GRIB::create(testValues));
 		md.set(proddef::GRIB::create(testValues));
-		md.add_note(*types::Note::create("test note"));
+		md.add_note("test note");
 		md.set(AssignedDataset::create("dsname", "dsid"));
 	}
 };

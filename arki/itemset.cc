@@ -62,7 +62,7 @@ const Type* ItemSet::get(Code code) const
 
 void ItemSet::set(const Type& i)
 {
-    Code code = i.serialisationCode();
+    Code code = i.type_code();
     map<Code, Type*>::iterator it = m_vals.find(code);
     if (it == end())
         m_vals.insert(make_pair(code, i.clone()));
@@ -75,7 +75,7 @@ void ItemSet::set(const Type& i)
 
 void ItemSet::set(auto_ptr<Type> i)
 {
-    Code code = i->serialisationCode();
+    Code code = i->type_code();
     map<Code, Type*>::iterator it = m_vals.find(code);
     if (it == m_vals.end())
         m_vals.insert(make_pair(code, i.release()));

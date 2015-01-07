@@ -73,7 +73,7 @@ WritableDataset::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy r
 		storeBlob(md, reldest);
 		return ACQ_OK;
     } catch (std::exception& e) {
-        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }
 

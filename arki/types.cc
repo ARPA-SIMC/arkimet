@@ -107,13 +107,13 @@ std::string formatCode(const Code& c)
 
 int Type::compare(const Type& o) const
 {
-	return serialisationCode() - o.serialisationCode();
+	return type_code() - o.type_code();
 }
 
 bool Type::operator==(const std::string& o) const
 {
     // Temporarily decode it for comparison
-    std::auto_ptr<Type> other = decodeString(serialisationCode(), o);
+    std::auto_ptr<Type> other = decodeString(type_code(), o);
     return operator==(*other);
 }
 
@@ -125,7 +125,7 @@ std::string Type::encodeBinary() const
 	encodeWithoutEnvelope(contentsenc);
 	string res;
 	Encoder enc(res);
-	enc.addVarint((unsigned)serialisationCode());
+	enc.addVarint((unsigned)type_code());
 	enc.addVarint(contents.size());
 	enc.addString(contents);
 	return res;

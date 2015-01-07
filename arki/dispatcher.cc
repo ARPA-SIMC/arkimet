@@ -116,7 +116,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     if (!rt)
     {
         using namespace arki::types;
-        md.add_note(*Note::create("Validation error: reference time is missing"));
+        md.add_note("Validation error: reference time is missing");
         // Set today as a dummy reference time, and import into the error dataset
         md.set(Reftime::createPosition(*Time::createNow()));
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
@@ -137,7 +137,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
         // Annotate with the validation errors
         for (vector<string>::const_iterator i = errors.begin();
                 i != errors.end(); ++i)
-            md.add_note(*Note::create("Validation error: " + *i));
+            md.add_note("Validation error: " + *i);
 
         if (!validates_ok)
         {
@@ -153,8 +153,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     try {
         md.getData();
     } catch (std::exception& e) {
-        md.add_note(*Note::create(
-                    string("Failed to read the data associated with the metadata: ") + e.what()));
+        md.add_note(string("Failed to read the data associated with the metadata: ") + e.what());
         result = DISP_NOTWRITTEN;
         goto done;
     }
@@ -190,7 +189,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
     // acquire it in the error dataset
     if (found.empty())
     {
-        md.add_note(*Note::create("Message could not be assigned to any dataset"));
+        md.add_note("Message could not be assigned to any dataset");
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }
@@ -204,7 +203,7 @@ Dispatcher::Outcome Dispatcher::dispatch(Metadata& md, metadata::Consumer& mdc)
                 msg += *i;
             else
                 msg += ", " + *i;
-        md.add_note(*Note::create(msg));
+        md.add_note(msg);
         result = raw_dispatch_error(md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }

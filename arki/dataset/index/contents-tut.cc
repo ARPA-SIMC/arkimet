@@ -91,7 +91,7 @@ struct arki_dataset_index_contents_shar {
         md1.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
         md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
 		// Index one without notes
-		//md1.notes.push_back(types::Note::create("this is another test"));
+		//md1.notes.push_back("this is another test");
 		out.open("test-md1.metadata");
 		if (out.fail()) throw wibble::exception::File("test-md1.metadata", "opening file");
 		md1.write(out, "test-md1.metadata");

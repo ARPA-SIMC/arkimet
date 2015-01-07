@@ -107,7 +107,7 @@ void MetadataGrid::add(const Type& item)
 {
     // Insertion sort; at the end, everything is already sorted and we
     // avoid inserting lots of duplicate items
-    TypeVector& v = dims[item.serialisationCode()];
+    TypeVector& v = dims[item.type_code()];
     v.sorted_insert(item);
 }
 

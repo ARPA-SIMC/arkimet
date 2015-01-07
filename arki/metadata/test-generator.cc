@@ -57,13 +57,13 @@ bool Generator::has(types::Code code)
 
 void Generator::add(auto_ptr<types::Type> item)
 {
-    Code code = item->serialisationCode();
+    Code code = item->type_code();
     samples[code].push_back(item.release());
 }
 
 void Generator::add(const Type& item)
 {
-    samples[item.serialisationCode()].push_back(item.clone());
+    samples[item.type_code()].push_back(item.clone());
 }
 
 void Generator::add(types::Code code, const std::string& val)

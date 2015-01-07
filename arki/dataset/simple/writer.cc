@@ -120,7 +120,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy rep
             md.set(*oldads);
         else
             md.unset(TYPE_ASSIGNEDDATASET);
-        md.add_note(*Note::create("Failed to store in dataset '"+m_name+"': " + e.what()));
+        md.add_note("Failed to store in dataset '"+m_name+"': " + e.what());
         return ACQ_ERROR;
     }
 

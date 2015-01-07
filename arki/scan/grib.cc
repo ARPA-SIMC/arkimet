@@ -594,7 +594,7 @@ void Grib::setSource(Metadata& md)
         md.set_source(Source::createBlob("grib" + str::fmt(edition), basedir, relname, offset, size));
         md.setCachedData(wibble::sys::Buffer(vbuf, size));
     }
-    md.add_note(*Note::create("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size)));
+    md.add_note("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size));
 }
 
 void MultiGrib::setSource(Metadata& md)
@@ -630,7 +630,7 @@ bool Grib::scanLua(std::vector<int> ids, Metadata& md)
 		string error = L->run_function(*i, md);
         if (!error.empty())
         {
-            md.add_note(*types::Note::create("Scanning failed: " + error));
+            md.add_note("Scanning failed: " + error);
             return false;
         }
     }

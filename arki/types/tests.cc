@@ -60,7 +60,7 @@ void TestGenericType::check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded,
     wassert(actual(item) == encoded);
 
     // Test serialization
-    wassert(actual(item->serialisationCode()) == code);
+    wassert(actual(item->type_code()) == code);
     wassert(actual(item).serializes());
 
     // Test equality to a clone
@@ -325,17 +325,17 @@ auto_ptr<ArkiCheck> ActualType::operator!=(const Type* expected) const
 
 auto_ptr<ArkiCheck> ActualType::operator==(const std::string& expected) const
 {
-    return operator==(types::decodeString(actual->serialisationCode(), expected));
+    return operator==(types::decodeString(actual->type_code(), expected));
 }
 
 auto_ptr<ArkiCheck> ActualType::operator!=(const std::string& expected) const
 {
-    return operator!=(types::decodeString(actual->serialisationCode(), expected));
+    return operator!=(types::decodeString(actual->type_code(), expected));
 }
 
 auto_ptr<ArkiCheck> ActualType::serializes() const
 {
-    return auto_ptr<ArkiCheck>(new TestItemSerializes(this->actual, this->actual->serialisationCode()));
+    return auto_ptr<ArkiCheck>(new TestItemSerializes(this->actual, this->actual->type_code()));
 }
 
 auto_ptr<ArkiCheck> ActualType::compares(const types::Type& higher) const

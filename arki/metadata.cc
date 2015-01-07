@@ -421,7 +421,7 @@ void Metadata::read(const emitter::memory::Mapping& val)
     for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
     {
         auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
-        if (item->serialisationCode() == types::TYPE_SOURCE)
+        if (item->type_code() == types::TYPE_SOURCE)
             set_source(downcast<types::Source>(item));
         else
             set(item);
@@ -432,7 +432,7 @@ void Metadata::read(const emitter::memory::Mapping& val)
     for (std::vector<const Node*>::const_iterator i = notes.val.begin(); i != notes.val.end(); ++i)
     {
         auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
-        if (item->serialisationCode() == types::TYPE_NOTE)
+        if (item->type_code() == types::TYPE_NOTE)
             add_note(*downcast<types::Note>(item));
     }
 }
@@ -769,7 +769,7 @@ static int arkilua_newindex(lua_State* L)
 
     if (key == "source")
     {
-        luaL_argcheck(L, item->serialisationCode() == types::TYPE_SOURCE, 3, "arki.type.source expected");
+        luaL_argcheck(L, item->type_code() == types::TYPE_SOURCE, 3, "arki.type.source expected");
         md->set_source(downcast<Source>(item->cloneType()));
     }
 	else if (key == "notes")
@@ -793,7 +793,7 @@ static int arkilua_newindex(lua_State* L)
     {
         // Get an arbitrary element by name
         types::Code code = types::parseCodeName(key);
-        if (item->serialisationCode() != code)
+        if (item->type_code() != code)
         {
             string msg = "arki.type." + types::tag(code) + " expected";
             luaL_argcheck(L, false, 3, msg.c_str());
