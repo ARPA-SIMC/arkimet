@@ -607,7 +607,10 @@ bool Summary::visit(summary::Visitor& visitor) const
 bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) const
 {
     if (root->empty()) return true;
-    return root->visitFiltered(matcher, visitor);
+    if (!matcher.m_impl)
+        return root->visit(visitor);
+    else
+        return root->visitFiltered(matcher, visitor);
 }
 
 void Summary::writeYaml(std::ostream& out, const Formatter* f) const
