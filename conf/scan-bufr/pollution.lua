@@ -13,8 +13,8 @@ function scan(msg, md)
     if area then md:set(arki_area.grib(area)) end
 
     local proddef = bufr_read_proddef(msg)
-    gems = msg:find('B01214', 257, nil, nil, nil, nil, nil, nil)
-    name = msg:find('B01019', 257, nil, nil, nil, nil, nil, nil)
+    gems = msg:find('B01214', nil, nil, nil, nil, nil, nil, nil)
+    name = msg:find('B01019', nil, nil, nil, nil, nil, nil, nil)
     if gems or name then
         if proddef == nil then proddef = {} end
         if gems then proddef.gems = gems:enqc() end

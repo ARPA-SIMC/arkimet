@@ -1,7 +1,7 @@
 /*
  * scan/bufr - Scan a BUFR file for metadata.
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -313,7 +313,6 @@ bool Bufr::do_scan(Metadata& md)
         source->setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
         md.set_source(source);
     }
-
 
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, md);
