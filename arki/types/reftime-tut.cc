@@ -22,6 +22,7 @@
 #include "reftime.h"
 #include <arki/tests/lua.h>
 #include <arki/matcher.h>
+#include <wibble/string.h>
 
 #include <sstream>
 #include <iostream>
@@ -145,6 +146,14 @@ void to::test<4>()
     test.pusharg(*o);
     wassert(actual(test.run()) == "");
 #endif
+}
+
+// Reproduce bugs
+template<> template<>
+void to::test<5>()
+{
+    auto_ptr<Type> decoded = decodeString(TYPE_REFTIME, "2005-12-01T18:00:00Z");
+    wassert(actual(wibble::str::fmt(*decoded)) == "2005-12-01T18:00:00Z");
 }
 
 }

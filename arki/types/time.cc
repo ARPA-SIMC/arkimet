@@ -397,13 +397,14 @@ auto_ptr<Time> Time::create(struct tm& t)
 auto_ptr<Time> Time::createFromISO8601(const std::string& str)
 {
     auto_ptr<Time> res(new Time);
-	int* v = res->vals;
-	int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
-	sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
-	if (count == 0)
-		throw wibble::exception::Consistency(
-			"Invalid datetime specification: '"+str+"'",
-			"Parsing ISO-8601 string");
+    int* v = res->vals;
+    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+    if (count < 6)
+        count = sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+    if (count < 6)
+        throw wibble::exception::Consistency(
+                "Invalid datetime specification: '"+str+"'",
+                "Parsing ISO-8601 string");
     return res;
 }
 

@@ -187,6 +187,14 @@ void to::test<7>()
     wassert(actual(Time::range_overlaps(t2010, topen, topen, t2005)).isfalse());
 }
 
+// Reproduce bugs
+template<> template<>
+void to::test<8>()
+{
+    auto_ptr<Type> decoded = decodeString(TYPE_TIME, "2005-12-01T18:00:00Z");
+    wassert(actual(wibble::str::fmt(*decoded)) == "2005-12-01T18:00:00Z");
+}
+
 }
 
 // vim:set ts=4 sw=4:

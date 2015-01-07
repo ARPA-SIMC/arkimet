@@ -78,7 +78,7 @@ void to::test<1>()
     wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
     wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(md).contains("reftime", "2005-12-01Z18:00:00Z"));
+    wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -101,7 +101,7 @@ void to::test<1>()
     wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
     //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
+    wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -124,7 +124,7 @@ void to::test<1>()
     wassert(actual(md).contains("product", "BUFR(0, 255, 3, t=synop)"));
     //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
+    wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -163,7 +163,7 @@ void to::test<2>()
     wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
     wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(md).contains("reftime", "2005-12-01Z18:00:00Z"));
+    wassert(actual(md).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -186,7 +186,7 @@ void to::test<2>()
     wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
     //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
+    wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -209,7 +209,7 @@ void to::test<2>()
     wassert(actual(md).contains("product", "BUFR(0, 255, 3, t=synop)"));
     //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
+    wassert(actual(md).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -283,7 +283,7 @@ void to::test<4>()
     wassert(actual(md).contains("product", "BUFR(2, 255, 101, t=temp)"));
     //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(md).contains("reftime", "2010-07-21Z23:00:00Z"));
+    wassert(actual(md).contains("reftime", "2010-07-21T23:00:00Z"));
 
 	// Check area
 	ensure(md.has(types::TYPE_AREA));
@@ -324,7 +324,7 @@ void to::test<5>()
     wassert(actual(md).contains("product", "BUFR(8, 255, 171, t=pollution,p=NO2)"));
     wassert(actual(md).contains("area", "GRIB(lat=4601194, lon=826889)"));
     wassert(actual(md).contains("proddef", "GRIB(gems=IT0002, name=NO_3118_PIEVEVERGONTE)"));
-    wassert(actual(md).contains("reftime", "2010-08-08Z23:00:00Z"));
+    wassert(actual(md).contains("reftime", "2010-08-08T23:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
