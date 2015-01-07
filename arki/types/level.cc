@@ -858,7 +858,7 @@ std::ostream& GRIB2D::writeToOstream(std::ostream& o) const
     if (m_value1 == GRIB2S::MISSING_VALUE)
         o << setfill(' ') << internal << setw(10) << "-" << ",";
     else
-        o << setfill('0') << internal << setw(10) << m_value1 << ",";
+        o << setfill('0') << internal << setw(10) << m_value1 << ", ";
 
     if (m_type2 == GRIB2S::MISSING_TYPE)
         o << setfill(' ') << internal << setw(3) << "-" << ", ";

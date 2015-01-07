@@ -843,7 +843,7 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
     md.set("origin", "GRIB1(200, 10, 100)");
     md.set("product", "GRIB1(3, 4, 5)");
     md.set("level", "GRIB1(1, 2)");
-    md.set("timerange", "GRIB1(4, 5, 6, 7)");
+    md.set("timerange", "GRIB1(4, 5s, 6s)");
     md.set(Reftime::createPosition(Time(2014, month, day, hour, 0, 0)));
     md.set("area", "GRIB(foo=5,bar=5000)");
     md.set("proddef", "GRIB(foo=5,bar=5000)");

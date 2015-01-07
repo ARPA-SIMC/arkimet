@@ -148,7 +148,8 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-	Lua L;
+    WIBBLE_TEST_INFO(tinfo);
+    Lua L;
 
 	// Define 'ensure' function
 	string ensure = "function ensure(val)\n"
@@ -166,13 +167,14 @@ void to::test<8>()
 	{
 		if (!str::endsWith(*d, ".lua")) continue;
 		string fname = str::joinpath(path, *d);
+        tinfo() << "current: " << fname;
 		if (luaL_dofile(L, fname.c_str()))
 		{
 			// Copy the error, so that it will exist after the pop
 			string error = lua_tostring(L, -1);
 			// Pop the error from the stack
 			lua_pop(L, 1);
-			ensure_equals(error, "");
+			wassert(actual(error) == "");
 		}
 	}
 }
