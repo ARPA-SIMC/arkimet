@@ -111,6 +111,12 @@ const Source& Metadata::source() const
     return *m_source;
 }
 
+const types::source::Blob* Metadata::has_source_blob() const
+{
+    if (!m_source) return 0;
+    return dynamic_cast<source::Blob*>(m_source);
+}
+
 const source::Blob& Metadata::sourceBlob() const
 {
     if (!m_source) throw wibble::exception::Consistency("metadata has no source");
@@ -914,7 +920,7 @@ static void arkilua_metadatametatable(lua_State* L)
 
 void Metadata::lua_push(lua_State* L)
 {
-	// The 'metadata' object is a userdata that holds a pointer to this Grib structure
+	// The 'metadata' object is a userdata that holds a pointer to this Metadata structure
 	MetadataUD::create(L, this, false);
 
 	// Set the metatable for the userdata

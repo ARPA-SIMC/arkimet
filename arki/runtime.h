@@ -4,7 +4,7 @@
 /*
  * runtime - Common code used in most arkimet executables
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,9 +37,6 @@
 #include <sys/time.h>
 
 namespace arki {
-
-class Dataset;
-class ReadonlyDataset;
 class Summary;
 class Dispatcher;
 class Formatter;
@@ -167,6 +164,14 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	 * FIXME: --status, as well as a boolean for moveok/moveko
 	 */
 	void closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful = true);
+
+    /**
+     * Parse the config files from the datasets found in the remaining
+     * commandline arguments
+     *
+     * Return true if at least one config file was found in \a opts
+     */
+    bool readDatasetConfig(ConfigFile& cfg);
 };
 
 /**

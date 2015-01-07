@@ -1,7 +1,7 @@
 /*
  * utils-lua - Lua-specific utility functions
  *
- * Copyright (C) 2008--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
 #include <arki/utils/lua.h>
 #include <arki/types.h>
 #include <arki/metadata.h>
@@ -53,8 +50,10 @@ Lua::Lua(bool load_libs, bool load_arkimet) : L(0)
     if (load_arkimet)
     {
         types::Type::lua_loadlib(L);
+#ifdef FIXME_TRYING_TO_TEST
         Metadata::lua_openlib(L);
         Summary::lua_openlib(L);
+#endif
         Matcher::lua_openlib(L);
     }
 }

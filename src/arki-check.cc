@@ -400,7 +400,7 @@ int main(int argc, const char* argv[])
 		// Read the config file(s)
 		ConfigFile cfg;
 		bool foundConfig1 = runtime::parseConfigFiles(cfg, *opts.cfgfiles);
-		bool foundConfig2 = runtime::parseConfigFiles(cfg, opts);
+		bool foundConfig2 = opts.readDatasetConfig(cfg);
 		if (!foundConfig1 && !foundConfig2)
 			throw wibble::exception::BadOption("you need to specify the config file");
 

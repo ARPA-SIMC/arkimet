@@ -1,7 +1,7 @@
 /*
  * runtime - Common code used in most arkimet executables
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -492,6 +492,17 @@ void CommandLine::doneProcessing()
 {
 	if (processor)
 		processor->end();
+}
+
+bool CommandLine::readDatasetConfig(ConfigFile& cfg)
+{
+    bool found = false;
+    while (hasNext())
+    {
+        ReadonlyDataset::readConfig(next(), cfg);
+        found = true;
+    }
+    return found;
 }
 
 static std::string moveFile(const std::string& source, const std::string& targetdir)

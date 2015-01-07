@@ -1,7 +1,7 @@
 /*
  * dataset/index/manifest - Index files with no duplicate checks
  *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -136,9 +136,8 @@ struct FixSource : public metadata::Consumer
 
     bool operator()(Metadata& md)
     {
-        Item<types::source::Blob> i = md.source.upcast<types::source::Blob>();
-        if (i.defined())
-            md.source = types::source::Blob::create(i->format, basedir, str::joinpath(prepend_fname, i->filename), i->offset, i->size);
+        if (const source::Blob* s = md.has_source_blob())
+            md.set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
         return next(md);
     }
 };
@@ -312,10 +311,10 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 	for (metadata::Collection::iterator i = mds.begin();
 			i != mds.end(); ++i)
 	{
-		Item<source::Blob> s = i->source.upcast<source::Blob>();
-		i->source = s->fileOnly();
-		sum.add(*i);
-	}
+        const source::Blob& s = i->sourceBlob();
+        i->set_source(upcast<Source>(s.fileOnly()));
+        sum.add(*i);
+    }
 
 	// Regenerate .metadata
 	mds.writeAtomically(pathname + ".metadata");
@@ -341,8 +340,8 @@ class PlainManifest : public Manifest
 	{
 		std::string file;
 		time_t mtime;
-		UItem<types::Time> start_time;
-		UItem<types::Time> end_time;
+        types::Time start_time;
+        types::Time end_time;
 
 		bool operator<(const Info& i) const
 		{
@@ -361,7 +360,7 @@ class PlainManifest : public Manifest
 
 		void write(ostream& out) const
 		{
-			out << file << ";" << mtime << ";" << start_time->toSQL() << ";" << end_time->toSQL() << endl;
+			out << file << ";" << mtime << ";" << start_time.toSQL() << ";" << end_time.toSQL() << endl;
 		}
 	};
 	vector<Info> info;
@@ -427,11 +426,11 @@ class PlainManifest : public Manifest
 				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
 						"line has only 3 fields");
 
-			item.start_time = Time::createFromSQL(line.substr(beg, end-beg));
-			item.end_time = Time::createFromSQL(line.substr(end+1));
+            item.start_time.setFromSQL(line.substr(beg, end-beg));
+            item.end_time.setFromSQL(line.substr(end+1));
 
-			info.push_back(item);
-		}		
+            info.push_back(item);
+        }
 
 		in.close();
 		dirty = false;
@@ -467,19 +466,19 @@ public:
 	{
 		reread();
 
-		string query;
-		UItem<types::Time> begin;
-		UItem<types::Time> end;
+        string query;
+        Time begin;
+        Time end;
 		if (matcher.date_extremes(begin, end))
 		{
-			// Get files with matching reftime
-			for (vector<Info>::const_iterator i = info.begin();
-					i != info.end(); ++i)
-			{
-				if (begin.defined() && i->end_time < begin) continue;
-				if (end.defined() && i->start_time > end) continue;
-				files.push_back(i->file);
-			}
+            // Get files with matching reftime
+            for (vector<Info>::const_iterator i = info.begin();
+                    i != info.end(); ++i)
+            {
+                if (begin.isValid() && i->end_time < begin) continue;
+                if (end.isValid() && i->start_time > end) continue;
+                files.push_back(i->file);
+            }
 		} else {
 			// No restrictions on reftime: get all files
 			for (vector<Info>::const_iterator i = info.begin();
@@ -488,8 +487,8 @@ public:
 		}
 	}
 
-	void fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const
-	{
+    void fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    {
 		// Lookup the file (FIXME: reimplement binary search so we
 		// don't need to create a temporary Info)
 		Info sample;
@@ -499,21 +498,21 @@ public:
 		{
 			start_time = lb->start_time;
 			end_time = lb->end_time;
-		} else {
-			start_time.clear();
-			end_time.clear();
-		}
-	}
+        } else {
+            start_time.setInvalid();
+            end_time.setInvalid();
+        }
+    }
 
-    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+    bool date_extremes(Time& begin, Time& end) const override
     {
-		for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
-		{
-			if (!begin.defined() || (i->start_time.defined() && i->start_time < begin))
-				begin = i->start_time;
-			if (!end.defined() || (i->end_time.defined() && i->end_time > end))
-				end = i->end_time;
-		}
+        for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
+        {
+            if (!begin.isValid() || (i->start_time.isValid() && i->start_time < begin))
+                begin = i->start_time;
+            if (!end.isValid() || (i->end_time.isValid() && i->end_time > end))
+                end = i->end_time;
+        }
         return !info.empty();
     }
 
@@ -534,28 +533,28 @@ public:
 		item.file = relname;
 		item.mtime = mtime;
 
-		// Add to index
-		Item<types::Reftime> rt = sum.getReferenceTime();
+        // Add to index
+        auto_ptr<Reftime> rt = sum.getReferenceTime();
 
-		string bt;
-		string et;
+        string bt;
+        string et;
 
-		switch (rt->style())
-		{
-			case types::Reftime::POSITION: {
-				UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
-				item.start_time = item.end_time = p->time;
-				break;
-		        }
-			case types::Reftime::PERIOD: {
-			        UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
-				item.start_time = p->begin;
-				item.end_time = p->end;
-			        break;
-		        }
-			default:
-			        throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
-		}
+        switch (rt->style())
+        {
+            case types::Reftime::POSITION: {
+                const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
+                item.start_time = item.end_time = p->time;
+                break;
+            }
+            case types::Reftime::PERIOD: {
+                const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
+                item.start_time = p->begin;
+                item.end_time = p->end;
+                break;
+            }
+            default:
+                throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
+        }
 
 		// Insertion sort; at the end, everything is already sorted and we
 		// avoid inserting lots of duplicate items
@@ -788,23 +787,23 @@ public:
 		initQueries();
 	}
 
-	void fileList(const Matcher& matcher, std::vector<std::string>& files)
-	{
-		string query;
-		UItem<types::Time> begin;
-		UItem<types::Time> end;
+    void fileList(const Matcher& matcher, std::vector<std::string>& files) override
+    {
+        string query;
+        Time begin;
+        Time end;
 		if (matcher.date_extremes(begin, end))
 		{
 			query = "SELECT file FROM files";
 
-			if (begin.defined())
-				query += " WHERE end_time >= '" + begin->toSQL() + "'";
-			if (end.defined())
+			if (begin.isValid())
+				query += " WHERE end_time >= '" + begin.toSQL() + "'";
+			if (end.isValid())
 			{
-				if (begin.defined())
-					query += " AND start_time <= '" + end->toSQL() + "'";
+				if (begin.isValid())
+					query += " AND start_time <= '" + end.toSQL() + "'";
 				else
-					query += " WHERE start_time <= '" + end->toSQL() + "'";
+					query += " WHERE start_time <= '" + end.toSQL() + "'";
 			}
 
 			query += " ORDER BY file";
@@ -821,41 +820,41 @@ public:
 			files.push_back(q.fetchString(0));
 	}
 
-	void fileTimespan(const std::string& relname, UItem<types::Time>& start_time, UItem<types::Time>& end_time) const
-	{
+    void fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    {
 		Query q("sel_file_ts", m_db);
 		q.compile("SELECT start_time, end_time FROM files WHERE file=?");
 		q.bind(1, relname);
 
-		start_time.clear();
-		end_time.clear();
-		while (q.step())
-		{
-			start_time = types::Time::createFromSQL(q.fetchString(0));
-			end_time = types::Time::createFromSQL(q.fetchString(1));
-		}
-	}
+        start_time.setInvalid();
+        end_time.setInvalid();
+        while (q.step())
+        {
+            start_time.setFromSQL(q.fetchString(0));
+            end_time.setFromSQL(q.fetchString(1));
+        }
+    }
 
-    virtual bool date_extremes(UItem<types::Time>& begin, UItem<types::Time>& end) const
+    bool date_extremes(Time& begin, Time& end) const override
     {
 		Query q("sel_date_extremes", m_db);
 		q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
 
         bool found = false;
-        UItem<types::Time> st;
-        UItem<types::Time> et;
+        Time st;
+        Time et;
         while (q.step())
         {
-			st = types::Time::createFromSQL(q.fetchString(0));
-			et = types::Time::createFromSQL(q.fetchString(1));
+            st.setFromSQL(q.fetchString(0));
+            et.setFromSQL(q.fetchString(1));
 
-			if (!begin.defined() || (st.defined() && st < begin))
-				begin = st;
-			if (!end.defined() || (et.defined() && et > end))
-				end = et;
+            if (!begin.isValid() || (st.isValid() && st < begin))
+                begin = st;
+            if (!end.isValid() || (et.isValid() && et > end))
+                end = et;
 
             found = true;
-		}
+        }
         return found;
     }
 
@@ -877,28 +876,28 @@ public:
 
 	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
 	{
-		// Add to index
-		Item<types::Reftime> rt = sum.getReferenceTime();
+        // Add to index
+        auto_ptr<types::Reftime> rt = sum.getReferenceTime();
 
 		string bt;
 		string et;
 
-		switch (rt->style())
-		{
-			case types::Reftime::POSITION: {
-				UItem<types::reftime::Position> p = rt.upcast<types::reftime::Position>();
-				bt = et = p->time->toSQL();
-				break;
-		        }
-			case types::Reftime::PERIOD: {
-			        UItem<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
-			        bt = p->begin->toSQL();
-			        et = p->end->toSQL();
-			        break;
-		        }
-			default:
-			        throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
-		}
+        switch (rt->style())
+        {
+            case types::Reftime::POSITION: {
+                const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
+                bt = et = p->time.toSQL();
+                break;
+            }
+            case types::Reftime::PERIOD: {
+                const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
+                bt = p->begin.toSQL();
+                et = p->end.toSQL();
+                break;
+            }
+            default:
+                    throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
+        }
 
 		m_insert.reset();
 		m_insert.bind(1, relname);

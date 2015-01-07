@@ -23,7 +23,6 @@
 #include "config.h"
 
 #include <arki/runtime/config.h>
-#include <arki/dataset.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/matcher.h>
@@ -250,17 +249,6 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 		// Parse the config file
 		cfg.parse(in, fname);
 	}
-}
-
-bool parseConfigFiles(ConfigFile& cfg, wibble::commandline::Parser& opts)
-{
-	bool found = false;
-	while (opts.hasNext())
-	{
-		ReadonlyDataset::readConfig(opts.next(), cfg);
-		found = true;
-	}
-	return found;
 }
 
 bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files)

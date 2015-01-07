@@ -1,7 +1,7 @@
 /*
  * dataset/index/summarycache - Cache precomputed summaries
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -140,8 +140,8 @@ void SummaryCache::invalidate(int year, int month)
 
 void SummaryCache::invalidate(const Metadata& md)
 {
-    Item<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
-    invalidate(rt->time->vals[0], rt->time->vals[1]);
+    if (const reftime::Position* rt = md.get<reftime::Position>())
+        invalidate(rt->time.vals[0], rt->time.vals[1]);
 }
 
 void SummaryCache::invalidate(const Time& tmin, const Time& tmax)

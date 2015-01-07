@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,8 +45,8 @@ TESTGRP(arki_types_proddef);
 template<> template<>
 void to::test<1>()
 {
-    tests::TestGenericType t("proddef", "GRIB1(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=12,cippo=)");
-    t.lower.push_back("GRIB1(dieci=10,undici=11,dodici=-12)");
+    tests::TestGenericType t("proddef", "GRIB(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
+    t.higher.push_back("GRIB(dieci=10,undici=11,dodici=-12)");
     t.exact_query = "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
     wassert(t);
 }
@@ -63,7 +63,7 @@ void to::test<2>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style ~= 'GRIB' then return 'style is '..o.style..' instead of GRIB1' end \n"
+		"  if o.style ~= 'GRIB' then return 'style is '..o.style..' instead of GRIB' end \n"
 		"  v = o.val \n"
 		"  if v['uno'] ~= 1 then return 'v[\\'uno\\'] is '..v['uno']..' instead of 1' end \n"
 		"  if v['pippo'] ~= 'pippo' then return 'v[\\'pippo\\'] is '..v['pippo']..' instead of \\'pippo\\'' end \n"
@@ -82,8 +82,8 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    tests::TestGenericType t("proddef", "GRIB1(count=1,pippo=pippo)");
-    t.higher.push_back("GRIB1(count=2,pippo=pippo)");
+    tests::TestGenericType t("proddef", "GRIB(count=1,pippo=pippo)");
+    t.higher.push_back("GRIB(count=2,pippo=pippo)");
     wassert(t);
 }
 

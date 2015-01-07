@@ -4,7 +4,7 @@
 /*
  * matcher - Match metadata expressions
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,8 +39,7 @@ struct Time;
 }
 
 
-class Metadata;
-class Summary;
+class ItemSet;
 class ConfigFile;
 
 /**
@@ -134,7 +133,7 @@ struct AND : public std::map< types::Code, refcounted::Pointer<const Implementat
     std::string name() const override;
 
     bool matchItem(const types::Type& t) const override;
-    bool matchMetadata(const Metadata& s) const;
+    bool matchItemSet(const ItemSet& s) const;
 
 	const OR* get(types::Code code) const;
 
@@ -273,21 +272,13 @@ struct Matcher
         return true;
     }
 
-	/// Match a full metadata
-	bool operator()(const Metadata& md) const
-	{
-		if (m_impl) return m_impl->matchMetadata(md);
-		// An empty matcher always matches
-		return true;
-	}
-
-	/**
-	 * Match a summary.
-	 *
-	 * Return true if there is at least a metadata in this summary that is
-	 * potentially matched by the matcher
-	 */
-	bool operator()(const Summary& i) const;
+    /// Match a full ItemSet
+    bool operator()(const ItemSet& md) const
+    {
+        if (m_impl) return m_impl->matchItemSet(md);
+        // An empty matcher always matches
+        return true;
+    }
 
 #if 0
 	/// Match a collection of metadata items
@@ -339,9 +330,9 @@ struct Matcher
 	void lua_push(lua_State* L);
 
 	/**
-	 * Check that the element at \a idx is a Summary userdata
+	 * Check that the element at \a idx is a Matcher userdata
 	 *
-	 * @return the Summary element, or 0 if the check failed
+	 * @return the Matcher element, or 0 if the check failed
 	 */
 	static Matcher lua_check(lua_State* L, int idx);
 

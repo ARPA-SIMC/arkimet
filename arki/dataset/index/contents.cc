@@ -1,7 +1,7 @@
 /*
  * dataset/index/contents - Index for data files and their contents
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -226,13 +226,11 @@ int Contents::id(const Metadata& md) const
 {
 	m_get_id.reset();
 
-	int idx = 0;
-	UItem<> urt = md.get(types::TYPE_REFTIME);
-	if (!urt.defined()) return -1;
-	Item<types::Reftime> rt(urt.upcast<types::Reftime>());
-	if (rt->style() != types::Reftime::POSITION) return -1;
-	string sqltime = rt.upcast<types::reftime::Position>()->time->toSQL();
-	m_get_id.bind(++idx, sqltime);
+    int idx = 0;
+    const reftime::Position* rt = md.get<reftime::Position>();
+    if (!rt) return -1;
+    string sqltime = rt->time.toSQL();
+    m_get_id.bind(++idx, sqltime);
 
 	if (m_uniques)
 	{
@@ -262,11 +260,9 @@ bool Contents::get_current(const Metadata& md, Metadata& current) const
     m_get_current.reset();
 
     int idx = 0;
-    UItem<> urt = md.get(types::TYPE_REFTIME);
-    if (!urt.defined()) return false;
-    Item<types::Reftime> rt(urt.upcast<types::Reftime>());
-    if (rt->style() != types::Reftime::POSITION) return false;
-    string sqltime = rt.upcast<types::reftime::Position>()->time->toSQL();
+    const reftime::Position* rt = md.get<reftime::Position>();
+    if (!rt) return -1;
+    string sqltime = rt->time.toSQL();
     m_get_current.bind(++idx, sqltime);
 
     int id_unique = -1;
@@ -369,29 +365,29 @@ std::string Contents::max_file_reftime(const std::string& relname) const
 }
 
 // Compute the maximum datetime span of the reftime query
-static void datetime_span(const matcher::OR* reftime, UItem<types::Time>& begin, UItem<types::Time>& end)
+static void datetime_span(const matcher::OR* reftime, Time& begin, Time& end)
 {
-	begin.clear();
-	end.clear();
+    begin.setInvalid();
+    end.setInvalid();
 
 	// Start with the interval of the first matcher
 	matcher::OR::const_iterator i = reftime->begin();
 	(*i)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
 
-	// Enlarge with the interval of the following matchers, since they are
-	// all ORed together
-	for (++i; i != reftime->end(); ++i)
-	{
-		UItem<types::Time> b, e;
-		(*i)->upcast<matcher::MatchReftime>()->dateRange(b, e);
-		if (!b.defined() || b < begin)
-			begin = b;
-		if (!e.defined() || (end.defined() && e > end))
-			end = e;
-	}
+    // Enlarge with the interval of the following matchers, since they are
+    // all ORed together
+    for (++i; i != reftime->end(); ++i)
+    {
+        Time b, e;
+        (*i)->upcast<matcher::MatchReftime>()->dateRange(b, e);
+        if (!b.isValid() || b < begin)
+            begin = b;
+        if (!e.isValid() || (end.isValid() && e > end))
+            end = e;
+    }
 }
 
-static void db_time_extremes(utils::sqlite::SQLiteDB& db, UItem<types::Time>& begin, UItem<types::Time>& end)
+static void db_time_extremes(utils::sqlite::SQLiteDB& db, Time& begin, Time& end)
 {
 	// SQLite can compute min and max of an indexed column very fast,
 	// provided that it is the ONLY thing queried.
@@ -400,16 +396,16 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, UItem<types::Time>& be
 	while (q1.step())
 	{
         if (!q1.isNULL(0))
-            begin = types::Time::createFromSQL(q1.fetchString(0));
-	}
+            begin.setFromSQL(q1.fetchString(0));
+    }
 
 	Query q2("min_date", db);
 	q2.compile("SELECT MAX(reftime) FROM md");
 	while (q2.step())
 	{
         if (!q2.isNULL(0))
-            end = types::Time::createFromSQL(q2.fetchString(0));
-	}
+            end.setFromSQL(q2.fetchString(0));
+    }
 }
 
 bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) const
@@ -419,34 +415,34 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 	// Add database constraints
 	if (not m.empty())
 	{
-		if (const matcher::OR* reftime = m.m_impl->get(types::TYPE_REFTIME))
-		{
-			UItem<types::Time> begin, end;
-			datetime_span(reftime, begin, end);
-			if (begin.defined() || end.defined())
-			{
-				// Compare with the reftime bounds in the database
-				UItem<types::Time> db_begin, db_end;
-				db_time_extremes(m_db, db_begin, db_end);
-				if (db_begin.defined() && db_end.defined())
-				{
+        if (const matcher::OR* reftime = m.m_impl->get(types::TYPE_REFTIME))
+        {
+            Time begin, end;
+            datetime_span(reftime, begin, end);
+            if (begin.isValid() || end.isValid())
+            {
+                // Compare with the reftime bounds in the database
+                Time db_begin, db_end;
+                db_time_extremes(m_db, db_begin, db_end);
+                if (db_begin.isValid() && db_end.isValid())
+                {
                     // Intersect the time bounds of the query with the time
                     // bounds of the database
-					if (!begin.defined() || begin < db_begin) begin = db_begin;
-					if (!end.defined() || end > db_end) end = db_end;
-					long long int qrange = grcal::date::duration(begin->vals, end->vals);
-					long long int dbrange = grcal::date::duration(db_begin->vals, db_end->vals);
-					// If the query chooses less than 20%
-					// if the time span, force the use of
-					// the reftime index
-					if (dbrange > 0 && qrange * 100 / dbrange < 20)
-					{
-						query += " INDEXED BY md_idx_reftime";
-						constraints.push_back("reftime BETWEEN \'" + begin->toSQL()
-							    + "\' AND \'" + end->toSQL() + "\'");
-					}
-				}
-			}
+                    if (!begin.isValid() || begin < db_begin) begin = db_begin;
+                    if (!end.isValid() || end > db_end) end = db_end;
+                    long long int qrange = grcal::date::duration(begin.vals, end.vals);
+                    long long int dbrange = grcal::date::duration(db_begin.vals, db_end.vals);
+                    // If the query chooses less than 20%
+                    // if the time span, force the use of
+                    // the reftime index
+                    if (dbrange > 0 && qrange * 100 / dbrange < 20)
+                    {
+                        query += " INDEXED BY md_idx_reftime";
+                        constraints.push_back("reftime BETWEEN \'" + begin.toSQL()
+                                + "\' AND \'" + end.toSQL() + "\'");
+                    }
+                }
+            }
 
 			string constraint = "(";
 			for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
@@ -492,14 +488,14 @@ void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
     md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
-    md.source = Source::createBlob(
+    md.set_source(Source::createBlob(
             q.fetchString(1), m_root, q.fetchString(2),
-            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4));
+            q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
     // md.notes = mdq.fetchItems<types::Note>(5);
     const void* notes_p = q.fetchBlob(5);
     int notes_l = q.fetchBytes(5);
     md.set_notes_encoded(string((const char*)notes_p, notes_l));
-    md.set(reftime::Position::create(Time::createFromSQL(q.fetchString(6))));
+    md.set(Reftime::createPosition(*Time::createFromSQL(q.fetchString(6))));
     int j = 7;
     if (m_uniques)
     {
@@ -684,13 +680,13 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
 
 	while (sq.step())
 	{
-		// Fill in the summary statistics
-		auto_ptr<summary::Stats> st(new summary::Stats);
-		st->count = sq.fetch<size_t>(0);
-		st->size = sq.fetch<unsigned long long>(1);
-		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
-		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
-		st->reftimeMerger.mergeTime(min_time, max_time);
+        // Fill in the summary statistics
+        summary::Stats st;
+        st.count = sq.fetch<size_t>(0);
+        st.size = sq.fetch<unsigned long long>(1);
+        Time min_time; min_time.setFromSQL(sq.fetchString(2));
+        Time max_time; max_time.setFromSQL(sq.fetchString(3));
+        st.reftimeMerger.mergeTime(min_time, max_time);
 
         // Fill in the metadata fields
         Metadata md;
@@ -706,11 +702,11 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
             if (!sq.isNULL(j))
                 m_others->read(sq.fetch<int>(j), md);
             ++j;
-		}
+        }
 
-		// Feed the results to the summary
-		summary.add(md, st.release());
-	}
+        // Feed the results to the summary
+        summary.add(md, st);
+    }
 }
 
 Summary Contents::summaryForMonth(int year, int month) const
@@ -735,20 +731,20 @@ Summary Contents::summaryForAll() const
 {
     Summary s;
     if (!scache.read(s))
-	{
-		// Find the datetime extremes in the database
-		UItem<types::Time> begin, end;
-		db_time_extremes(m_db, begin, end);
+    {
+        // Find the datetime extremes in the database
+        Time begin, end;
+        db_time_extremes(m_db, begin, end);
 
-		// If there is data in the database, get all the involved
-		// monthly summaries
-		if (begin.defined() && end.defined())
-		{
-			int year = begin->vals[0];
-			int month = begin->vals[1];
-			while (year < end->vals[0] || (year == end->vals[0] && month <= end->vals[1]))
-			{
-				s.add(summaryForMonth(year, month));
+        // If there is data in the database, get all the involved
+        // monthly summaries
+        if (begin.isValid() && end.isValid())
+        {
+            int year = begin.vals[0];
+            int month = begin.vals[1];
+            while (year < end.vals[0] || (year == end.vals[0] && month <= end.vals[1]))
+            {
+                s.add(summaryForMonth(year, month));
 
 				// Increment the month
 				month = (month%12) + 1;
@@ -795,13 +791,13 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
 
 	while (sq.step())
 	{
-		// Fill in the summary statistics
-		auto_ptr<summary::Stats> st(new summary::Stats);
-		st->count = sq.fetch<size_t>(0);
-		st->size = sq.fetch<unsigned long long>(1);
-		Item<Time> min_time = Time::createFromSQL(sq.fetchString(2));
-		Item<Time> max_time = Time::createFromSQL(sq.fetchString(3));
-		st->reftimeMerger.mergeTime(min_time, max_time);
+        // Fill in the summary statistics
+        summary::Stats st;
+        st.count = sq.fetch<size_t>(0);
+        st.size = sq.fetch<unsigned long long>(1);
+        Time min_time; min_time.setFromSQL(sq.fetchString(2));
+        Time max_time; max_time.setFromSQL(sq.fetchString(3));
+        st.reftimeMerger.mergeTime(min_time, max_time);
 
         // Fill in the metadata fields
         Metadata md;
@@ -817,29 +813,29 @@ bool Contents::querySummaryFromDB(const Matcher& m, Summary& summary) const
             if (!sq.isNULL(j))
                 m_others->read(sq.fetch<int>(j), md);
             ++j;
-		}
+        }
 
-		// Feed the results to the summary
-		summary.add(md, st.release());
-	}
+        // Feed the results to the summary
+        summary.add(md, st);
+    }
 
-	return true;
+    return true;
 }
 
-static inline bool range_envelopes_full_month(const Item<types::Time>& begin, const Item<types::Time>& end)
+static inline bool range_envelopes_full_month(const Time& begin, const Time& end)
 {
-    bool begins_at_beginning = begin->vals[2] == 1 &&
-        begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0;
+    bool begins_at_beginning = begin.vals[2] == 1 &&
+        begin.vals[3] == 0 && begin.vals[4] == 0 && begin.vals[5] == 0;
     if (begins_at_beginning)
-        return end >= begin->end_of_month();
+        return end >= begin.end_of_month();
 
-    bool ends_at_end = end->vals[2] == grcal::date::daysinmonth(end->vals[0], end->vals[1]) &&
-        end->vals[3] == 23 && end->vals[4] == 59 && end->vals[5] == 59;
+    bool ends_at_end = end.vals[2] == grcal::date::daysinmonth(end.vals[0], end.vals[1]) &&
+        end.vals[3] == 23 && end.vals[4] == 59 && end.vals[5] == 59;
     if (ends_at_end)
-        return begin <= end->start_of_month();
+        return begin <= end.start_of_month();
 
-    return end->vals[0] == begin->vals[0] + begin->vals[1]/12 &&
-        end->vals[1] == (begin->vals[1] % 12) + 1;
+    return end.vals[0] == begin.vals[0] + begin.vals[1]/12 &&
+        end.vals[1] == (begin.vals[1] % 12) + 1;
 }
 
 bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
@@ -858,90 +854,90 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
 		return true;
 	}
 
-	// Get the bounds of the query
-	UItem<types::Time> begin, end;
-	datetime_span(reftime, begin, end);
+    // Get the bounds of the query
+    Time begin, end;
+    datetime_span(reftime, begin, end);
 
-	// If the reftime query queries all the time span, use the global index
-	if (!begin.defined() && !end.defined())
-	{
-		Summary s = summaryForAll();
-		s.filter(matcher, summary);
-		return true;
-	}
+    // If the reftime query queries all the time span, use the global index
+    if (!begin.isValid() && !end.isValid())
+    {
+        Summary s = summaryForAll();
+        s.filter(matcher, summary);
+        return true;
+    }
 
-	// Amend open ends with the bounds from the database
-	UItem<types::Time> db_begin, db_end;
-	db_time_extremes(m_db, db_begin, db_end);
-	// If the database is empty then the result is empty:
-	// we are done
-	if (!db_begin.defined())
-		return true;
-	bool begin_from_db = false;
-	if (!begin.defined() || begin < db_begin)
-	{
-		begin = db_begin;
-		begin_from_db = true;
-	}
-	bool end_from_db = false;
-	if (!end.defined() || end > db_end)
-	{
-		end = db_end;
-		end_from_db = true;
-	}
+    // Amend open ends with the bounds from the database
+    Time db_begin, db_end;
+    db_time_extremes(m_db, db_begin, db_end);
+    // If the database is empty then the result is empty:
+    // we are done
+    if (!db_begin.isValid())
+        return true;
+    bool begin_from_db = false;
+    if (!begin.isValid() || begin < db_begin)
+    {
+        begin = db_begin;
+        begin_from_db = true;
+    }
+    bool end_from_db = false;
+    if (!end.isValid() || end > db_end)
+    {
+        end = db_end;
+        end_from_db = true;
+    }
 
-	// If the interval is under a week, query the DB directly
-	long long int range = grcal::date::duration(begin->vals, end->vals);
-	if (range <= 7 * 24 * 3600)
-		return querySummaryFromDB(matcher, summary);
+    // If the interval is under a week, query the DB directly
+    long long int range = grcal::date::duration(begin.vals, end.vals);
+    if (range <= 7 * 24 * 3600)
+        return querySummaryFromDB(matcher, summary);
 
-	if (begin_from_db)
-	{
-		// Round down to month begin, so we reuse the cached summary if
-		// available
-		begin = begin->start_of_month();
-	}
-	if (end_from_db)
-	{
-		// Round up to month end, so we reuse the cached summary if
-		// available
-		end = end->end_of_month();
-	}
+    if (begin_from_db)
+    {
+        // Round down to month begin, so we reuse the cached summary if
+        // available
+        begin = begin.start_of_month();
+    }
+    if (end_from_db)
+    {
+        // Round up to month end, so we reuse the cached summary if
+        // available
+        end = end.end_of_month();
+    }
 
 	// If the selected interval does not envelope any whole month, query
 	// the DB directly
 	if (!range_envelopes_full_month(begin, end))
 		return querySummaryFromDB(matcher, summary);
 
-	// Query partial month at beginning, middle whole months, partial
-	// month at end. Query whole months at extremes if they are indeed whole
-	while (begin <= end)
-	{
-		Item<types::Time> endmonth = begin->end_of_month();
+    // Query partial month at beginning, middle whole months, partial
+    // month at end. Query whole months at extremes if they are indeed whole
+    while (begin <= end)
+    {
+        Time endmonth = begin.end_of_month();
 
-		bool starts_at_beginning = (begin->vals[2] == 1 &&
-				begin->vals[3] == 0 && begin->vals[4] == 0 && begin->vals[5] == 0);
-		if (starts_at_beginning && endmonth <= end)
-		{
-			Summary s = summaryForMonth(begin->vals[0], begin->vals[1]);
-			s.filter(matcher, summary);
-		} else if (endmonth <= end) {
-			Summary s;
-			querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
-					   " AND reftime < '" + endmonth->toSQL() + "'", s);
-			s.filter(matcher, summary);
-		} else {
-			Summary s;
-			querySummaryFromDB("reftime >= '" + begin->toSQL() + "'"
-					   " AND reftime < '" + end->toSQL() + "'", s);
-			s.filter(matcher, summary);
-		}
+        bool starts_at_beginning = (begin.vals[2] == 1 &&
+                begin.vals[3] == 0 && begin.vals[4] == 0 && begin.vals[5] == 0);
+        if (starts_at_beginning && endmonth <= end)
+        {
+            Summary s = summaryForMonth(begin.vals[0], begin.vals[1]);
+            s.filter(matcher, summary);
+        } else if (endmonth <= end) {
+            Summary s;
+            querySummaryFromDB("reftime >= '" + begin.toSQL() + "'"
+                       " AND reftime < '" + endmonth.toSQL() + "'", s);
+            s.filter(matcher, summary);
+        } else {
+            Summary s;
+            querySummaryFromDB("reftime >= '" + begin.toSQL() + "'"
+                       " AND reftime < '" + end.toSQL() + "'", s);
+            s.filter(matcher, summary);
+        }
 
-		// Advance to the beginning of the next month
-		begin = begin->start_of_next_month();
-	}
+        // Advance to the beginning of the next month
+        begin = begin.start_of_next_month();
+    }
 
-	return true;
+    return true;
 }
 
 bool Contents::checkSummaryCache(std::ostream& log) const
@@ -1087,16 +1083,21 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
 {
 	int idx = 0;
 
-    q.bind(++idx, md.source->format);
+    q.bind(++idx, md.source().format);
     q.bind(++idx, file);
     q.bind(++idx, ofs);
-    q.bind(++idx, md.source->getSize());
+    q.bind(++idx, md.source().getSize());
     //q.bindItems(++idx, md.notes);
     q.bind(++idx, md.notes_encoded());
 
-	const int* rt = md.get(types::TYPE_REFTIME)->upcast<types::reftime::Position>()->time->vals;
-	int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);
-	q.bind(++idx, timebuf, len);
+    if (const reftime::Position* reftime = md.get<reftime::Position>())
+    {
+        const int* rt = reftime->time.vals;
+        int len = snprintf(timebuf, 25, "%04d-%02d-%02d %02d:%02d:%02d", rt[0], rt[1], rt[2], rt[3], rt[4], rt[5]);
+        q.bind(++idx, timebuf, len);
+    } else {
+        q.bindNull(++idx);
+    }
 
 	if (m_uniques)
 	{
@@ -1110,8 +1111,7 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
 	}
     if (m_smallfiles)
     {
-        UItem<types::Value> v = md.get<types::Value>();
-        if (v.defined())
+        if (const types::Value* v = md.get<types::Value>())
         {
             q.bind(++idx, v->buffer);
         } else {
@@ -1181,8 +1181,8 @@ void WContents::remove(int id, std::string& file)
 				"id does not exist in the index");
 
     // Invalidate the summary cache for this month
-    Item<types::Time> rt = types::Time::createFromSQL(reftime);
-    scache.invalidate(rt->vals[0], rt->vals[1]);
+    Time rt; rt.setFromSQL(reftime);
+    scache.invalidate(rt.vals[0], rt.vals[1]);
 
 	// DELETE FROM md WHERE id=?
 	m_delete.reset();
@@ -1199,8 +1199,8 @@ void WContents::reset()
 
 void WContents::reset(const std::string& file)
 {
-	// Get the file date extremes to invalidate the summary cache
-	UItem<types::Time> tmin, tmax;
+    // Get the file date extremes to invalidate the summary cache
+    Time tmin, tmax;
 	{
 		Query sq("file_reftime_extremes", m_db);
 		sq.compile("SELECT MIN(reftime), MAX(reftime) FROM md WHERE file=?");
@@ -1215,9 +1215,9 @@ void WContents::reset(const std::string& file)
 		// to remove it
 		if (fmin.empty())
 			return;
-		tmin = types::Time::createFromSQL(fmin)->start_of_month();
-		tmax = types::Time::createFromSQL(fmax)->start_of_month();
-	}
+        tmin.setFromSQL(fmin); tmin = tmin.start_of_month();
+        tmax.setFromSQL(fmax); tmax = tmax.start_of_month();
+    }
 
 	// Clean the database
 	Query query("reset_datafile", m_db);

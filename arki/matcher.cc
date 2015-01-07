@@ -1,7 +1,7 @@
 /*
  * matcher - Match metadata expressions
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,22 +20,14 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/matcher.h>
-#include <arki/matcher/reftime.h>
-#include <arki/metadata.h>
-#include <arki/summary.h>
-#include <arki/configfile.h>
+#include "matcher.h"
+#include "matcher/reftime.h"
+#include "itemset.h"
+#include "configfile.h"
+#include "utils/lua.h"
 #include <wibble/regexp.h>
 #include <wibble/string.h>
 #include <memory>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
-#include <arki/utils/lua.h>
-#endif
 
 using namespace std;
 using namespace wibble;
@@ -183,14 +175,14 @@ static bool mdmatch(const Implementation& matcher, const COLL& c)
 	return false;
 }
 
-bool AND::matchMetadata(const Metadata& md) const
+bool AND::matchItemSet(const ItemSet& md) const
 {
     if (empty()) return true;
 
     for (const_iterator i = begin(); i != end(); ++i)
     {
         const Type* item = md.get(i->first);
-        if (!item) return false;
+        if (!i->second) return false;
         if (!i->second->matchItem(*item)) return false;
     }
     return true;
@@ -411,13 +403,6 @@ Matcher Matcher::parse(const std::string& pattern)
 	return matcher::AND::parse(pattern);
 }
 
-bool Matcher::operator()(const Summary& i) const
-{
-	if (m_impl) return i.match(*this);
-	// An empty matcher always matches
-	return true;
-}
-
 std::ostream& operator<<(std::ostream& o, const Matcher& m)
 {
 	return o << m.toString();
@@ -490,16 +475,20 @@ static int arkilua_expanded (lua_State *L)
 	return 1;
 }
 
+#ifdef FIXME_TRYING_TO_TEST
 static int arkilua_match (lua_State *L)
 {
-	Matcher m = Matcher::lua_check(L, 1);
-	Metadata* md = Metadata::lua_check(L, 2);
-	lua_pushboolean(L, m(*md));
-	return 1;
+    Matcher m = Matcher::lua_check(L, 1);
+    ItemSet* md = Metadata::lua_check(L, 2);
+    lua_pushboolean(L, m(*md));
+    return 1;
 }
+#endif
 
 static const struct luaL_Reg matcherlib [] = {
+#ifdef FIXME_TRYING_TO_TEST
     { "match", arkilua_match },
+#endif
     { "expanded", arkilua_expanded },
     { "__tostring", arkilua_tostring },
     { "__gc", arkilua_gc },

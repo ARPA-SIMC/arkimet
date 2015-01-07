@@ -36,8 +36,8 @@ TESTGRP(arki_types_area);
 template<> template<>
 void to::test<1>()
 {
-    tests::TestGenericType t("area", "GRIB1(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=12,cippo=)");
-    t.lower.push_back("GRIB1(dieci=10,undici=11,dodici=-12)");
+    tests::TestGenericType t("area", "GRIB(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
+    t.higher.push_back("GRIB(dieci=10,undici=11,dodici=-12)");
     t.exact_query = "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
     wassert(t);
 }
@@ -54,7 +54,7 @@ void to::test<2>()
 
 	tests::Lua test(
 		"function test(o) \n"
-		"  if o.style ~= 'GRIB' then return 'style is '..o.style..' instead of GRIB1' end \n"
+		"  if o.style ~= 'GRIB' then return 'style is '..o.style..' instead of GRIB' end \n"
 		"  v = o.val \n"
 		"  if v['uno'] ~= 1 then return 'v[\\'uno\\'] is '..v['uno']..' instead of 1' end \n"
 		"  if v['pippo'] ~= 'pippo' then return 'v[\\'pippo\\'] is '..v['pippo']..' instead of \\'pippo\\'' end \n"
@@ -73,8 +73,8 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    tests::TestGenericType t("area", "GRIB1(count=1,pippo=pippo)");
-    t.higher.push_back("GRIB1(count=2,pippo=pippo)");
+    tests::TestGenericType t("area", "GRIB(count=1,pippo=pippo)");
+    t.higher.push_back("GRIB(count=2,pippo=pippo)");
     wassert(t);
 }
 
@@ -82,8 +82,8 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    tests::TestGenericType t("area", "ODIMH5(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=12,cippo=)");
-    t.lower.push_back("ODIMH5(dieci=10,undici=11,dodici=-12)");
+    tests::TestGenericType t("area", "ODIMH5(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
+    t.higher.push_back("ODIMH5(dieci=10,undici=11,dodici=-12)");
     t.exact_query = "ODIMH5:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
     wassert(t);
 }

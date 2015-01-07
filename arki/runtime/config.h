@@ -132,13 +132,6 @@ struct Config
 void parseConfigFile(ConfigFile& cfg, const std::string& fileName);
 
 /**
- * Parse the config files from the remaining commandline arguments
- *
- * Return true if at least one config file was found in \a opts
- */
-bool parseConfigFiles(ConfigFile& cfg, wibble::commandline::Parser& opts);
-
-/**
  * Parse the config files indicated by the given commandline option.
  *
  * Return true if at least one config file was found in \a files

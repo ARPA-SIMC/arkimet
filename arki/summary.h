@@ -205,10 +205,13 @@ public:
 	 */
 	std::string encode(bool compressed = false) const;
 
-	/**
-	 * Check if this summary matches the given matcher
-	 */
-	bool match(const Matcher& matcher) const;
+    /**
+     * Check if this summary matches the given matcher
+     *
+     * Return true if there is at least a metadata in this summary that is
+     * potentially matched by the matcher
+     */
+    bool match(const Matcher& matcher) const;
 
 	/**
 	 * Create a new summary with only those items that are matched by the

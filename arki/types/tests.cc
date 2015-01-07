@@ -49,7 +49,7 @@ TestGenericType::TestGenericType(const std::string& tag, const std::string& samp
 void TestGenericType::check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded, std::auto_ptr<types::Type>& item) const
 {
     WIBBLE_TEST_INFO(tinfo);
-    tinfo() << "current: " << *item;
+    tinfo() << "current: " << encoded;
 
     Code code = parseCodeName(tag);
 
@@ -91,7 +91,7 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
     for (std::vector<std::string>::const_iterator i = lower.begin();
             i != lower.end(); ++i)
     {
-        tinfo() << "current: " << *i << " < " << sample;
+        tinfo() << "current (lo): " << *i << " < " << sample;
 
         // Decode and run all single-item tests
         auto_ptr<Type> lower_item;
@@ -107,7 +107,7 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
     for (std::vector<std::string>::const_iterator i = higher.begin();
             i != higher.end(); ++i)
     {
-        tinfo() << "current: " << *i;
+        tinfo() << "current (hi): " << sample << " < " << *i;
 
         // Decode and run all single-item tests
         auto_ptr<Type> higher_item;
@@ -121,10 +121,12 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
     }
 
     if (!exact_query.empty())
+    {
         wassert(actual(item->exactQuery()) == exact_query);
 
-    Matcher m = Matcher::parse(item->tag() + ":" + item->exactQuery());
-    wassert(actual(m(*item)).istrue());
+        Matcher m = Matcher::parse(item->tag() + ":" + item->exactQuery());
+        wassert(actual(m(*item)).istrue());
+    }
 }
 
 
@@ -159,7 +161,7 @@ struct TestItemSerializes : public ArkiCheck
         wassert(actual(decodeInner(code, buf, len)) == act);
 
         // String encoding
-        wassert(actual(types::decodeString(code, wibble::str::fmt(act))) == act);
+        wassert(actual(types::decodeString(code, wibble::str::fmt(*act))) == *act);
 
         // JSON encoding
         {
@@ -251,7 +253,7 @@ struct TestGenericTypeEquals : public ArkiCheck
                 ss << "'" << *b << "'";
             else
                 ss << "(null)";
-            ss << "when it should not be";
+            ss << " when it should not be";
             wibble_test_location.fail_test(ss.str());
         } else {
             if (res) return;
@@ -266,7 +268,7 @@ struct TestGenericTypeEquals : public ArkiCheck
                 ss << "'" << *b << "'";
             else
                 ss << "(null)";
-            ss << "when it should be";
+            ss << " when it should be";
             wibble_test_location.fail_test(ss.str());
         }
     }
@@ -323,12 +325,12 @@ auto_ptr<ArkiCheck> ActualType::operator!=(const Type* expected) const
 
 auto_ptr<ArkiCheck> ActualType::operator==(const std::string& expected) const
 {
-    return operator==(types::decode((const unsigned char*)expected.data(), expected.size()));
+    return operator==(types::decodeString(actual->serialisationCode(), expected));
 }
 
 auto_ptr<ArkiCheck> ActualType::operator!=(const std::string& expected) const
 {
-    return operator!=(types::decode((const unsigned char*)expected.data(), expected.size()));
+    return operator!=(types::decodeString(actual->serialisationCode(), expected));
 }
 
 auto_ptr<ArkiCheck> ActualType::serializes() const

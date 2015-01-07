@@ -74,11 +74,11 @@ struct Time : public types::CoreType<Time>
     /// Some time operations
 
     /// Return the time at the start of this month
-    std::auto_ptr<types::Time> start_of_month() const;
+    Time start_of_month() const;
     /// Return the time at the start of the next month
-    std::auto_ptr<types::Time> start_of_next_month() const;
+    Time start_of_next_month() const;
     /// Return the time at the very end of this month
-    std::auto_ptr<types::Time> end_of_month() const;
+    Time end_of_month() const;
 
 	/// Return the time formatted as a string in ISO-8601 format
 	std::string toISO8601(char sep='T') const;

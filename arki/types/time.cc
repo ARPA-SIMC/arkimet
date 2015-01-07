@@ -1,7 +1,7 @@
 /*
  * types/time - Time
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,9 +71,9 @@ Time& Time::operator=(const Time& t)
 
 bool Time::isValid() const
 {
-	for (unsigned i = 0; i < 6; ++i)
-		if (vals[i]) return false;
-	return true;
+    for (unsigned i = 0; i < 6; ++i)
+        if (vals[i]) return true;
+    return false;
 }
 
 int Time::compare(const Type& o) const
@@ -88,45 +88,27 @@ int Time::compare(const Type& o) const
 			str::fmtf("second element claims to be Type, but is `%s' instead",
 				typeid(&o).name()));
 
-	// "Now" times sort bigger than everything else, so if at least one of the
-	// dates is 'now', reverse the sorting
-	if (vals[0] == 0 || v->vals[0] == 0)
-		return v->vals[0] - vals[0];
-
 	for (unsigned int i = 0; i < 6; ++i)
 		if (int res = vals[i] - v->vals[i]) return res;
 
 	return 0;
 }
 
-auto_ptr<Time> Time::start_of_month() const
+Time Time::start_of_month() const
 {
-    auto_ptr<Time> t(new Time);
-    t->vals[0] = vals[0];
-    t->vals[1] = vals[1];
-    t->vals[2] = 1;
-    t->vals[3] = t->vals[4] = t->vals[5] = 0;
-    return t;
+    return Time(vals[0], vals[1], 1, 0, 0, 0);
 }
-auto_ptr<Time> Time::start_of_next_month() const
+Time Time::start_of_next_month() const
 {
-    auto_ptr<Time> t(new Time);
-    t->vals[0] = vals[0] + vals[1] / 12;
-    t->vals[1] = (vals[1] % 12) + 1;
-    t->vals[2] = 1;
-    t->vals[3] = t->vals[4] = t->vals[5] = 0;
-    return t;
+    return Time(
+            vals[0] + vals[1] / 12,
+            (vals[1] % 12) + 1,
+            1,
+            0, 0, 0);
 }
-auto_ptr<Time> Time::end_of_month() const
+Time Time::end_of_month() const
 {
-    auto_ptr<Time> t(new Time);
-    t->vals[0] = vals[0];
-    t->vals[1] = vals[1];
-    t->vals[2] = grcal::date::daysinmonth(vals[0], vals[1]);
-    t->vals[3] = 23;
-    t->vals[4] = 59;
-    t->vals[5] = 59;
-    return t;
+    return Time(vals[0], vals[1], grcal::date::daysinmonth(vals[0], vals[1]), 23, 59, 59);
 }
 
 std::string Time::toISO8601(char sep) const

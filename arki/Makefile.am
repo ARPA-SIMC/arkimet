@@ -160,12 +160,13 @@ libarkimet_la_SOURCES =
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
 libarkimet_la_LIBADD = $(WIBBLE_LIBS)
 tests_arki_test_SOURCES = tests/tut-main.cpp
+tests_arki_test_LDADD =
 
 
 #
 # Core functions
 #
-if DEVEL_DO_CORE
+if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
 		nag.cc \
 		utils.cc \
@@ -184,47 +185,9 @@ libarkimet_la_SOURCES += \
 		emitter.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
-		runtime/config.cc \
-		runtime/io.cc \
-		tests/tests.cc
-
-if IOTRACE
-libarkimet_la_SOURCES += iotrace.cc
-tests_arki_test_SOURCES += iotrace-tut.cc
-endif
-
-tests_arki_test_SOURCES += \
-		tests/tests-tut.cc \
-		utils-tut.cc \
-		utils/accounting-tut.cc \
-		utils/codec-tut.cc \
-		utils/fd-tut.cc \
-		utils/files-tut.cc \
-		utils/intern-tut.cc \
-		utils/pcounter-tut.cc \
-		utils/process-tut.cc \
-		utils/raii-tut.cc \
-		refcounted-tut.cc \
-		configfile-tut.cc \
-		transaction-tut.cc \
-		emitter/memory-tut.cc \
-		emitter/json-tut.cc
-
-if LZO
-AM_CPPFLAGS += $(LZO_CFLAGS)
-libarkimet_la_LDFLAGS += $(LZO_LIBS)
-endif
-
-endif
-
-#
-# Metadata types
-#
-if DEVEL_DO_TYPES
-libarkimet_la_SOURCES += \
-		utils/compress.cc \
-		utils/sqlite.cc \
+		tests/tests.cc \
 		values.cc \
+		bbox.cc \
 		types.cc \
 		types/utils.cc \
 		types/source.cc \
@@ -247,17 +210,6 @@ libarkimet_la_SOURCES += \
 		types/quantity.cc \
 		types/value.cc \
 		itemset.cc \
-		metadata.cc \
-		metadata/consumer.cc \
-		metadata/collection.cc \
-		metadata/stream.cc \
-		metadata/clusterer.cc \
-		metadata/xargs.cc \
-		metadata/test-generator.cc \
-		summary/stats.cc \
-		summary/node.cc \
-		summary/codec.cc \
-		summary.cc \
 		matcher.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
@@ -273,19 +225,26 @@ libarkimet_la_SOURCES += \
 		matcher/source.cc \
 		matcher/task.cc \
 		matcher/quantity.cc \
-		sort.cc \
-		formatter.cc \
-		validator.cc \
-		bbox.cc \
-		postprocess.cc \
-		scan/any.cc \
-		scan/dir.cc \
+		runtime/config.cc \
+		runtime/io.cc \
 		types-init.cc
 
 tests_arki_test_SOURCES += \
-		utils/datareader-tut.cc \
-		utils/compress-tut.cc \
-		utils/sqlite-tut.cc \
+		tests/tests-tut.cc \
+		utils-tut.cc \
+		utils/accounting-tut.cc \
+		utils/codec-tut.cc \
+		utils/fd-tut.cc \
+		utils/files-tut.cc \
+		utils/intern-tut.cc \
+		utils/pcounter-tut.cc \
+		utils/process-tut.cc \
+		utils/raii-tut.cc \
+		refcounted-tut.cc \
+		configfile-tut.cc \
+		transaction-tut.cc \
+		emitter/memory-tut.cc \
+		emitter/json-tut.cc \
 		values-tut.cc \
 		types-tut.cc \
 		types/tests.cc \
@@ -306,7 +265,71 @@ tests_arki_test_SOURCES += \
 		types/task-tut.cc \
 		types/quantity-tut.cc \
 		types/value-tut.cc \
-		itemset-tut.cc \
+		itemset-tut.cc
+
+if IOTRACE
+libarkimet_la_SOURCES += iotrace.cc
+tests_arki_test_SOURCES += iotrace-tut.cc
+endif
+
+if LZO
+AM_CPPFLAGS += $(LZO_CFLAGS)
+libarkimet_la_LDFLAGS += $(LZO_LIBS)
+endif
+
+if LUA
+nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
+libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc
+tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc tests/lua.cc
+AM_CPPFLAGS += $(LUA_CFLAGS)
+libarkimet_la_LDFLAGS += $(LUA_LIBS)
+tests_arki_test_LDADD += $(LUA_LIBS)
+endif
+
+if GEOS
+AM_CPPFLAGS += $(GEOS_CFLAGS)
+libarkimet_la_LDFLAGS += $(GEOS_LIBS)
+endif
+
+if VM2
+AM_CPPFLAGS += $(VM2_CFLAGS)
+nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
+libarkimet_la_SOURCES += utils/vm2.cc
+libarkimet_la_LDFLAGS += $(VM2_LIBS)
+tests_arki_test_SOURCES += utils/vm2-tut.cc
+endif
+
+endif
+
+#
+# Metadata types
+#
+if DEVEL_DO_METADATA
+libarkimet_la_SOURCES += \
+		utils/datareader-tut.cc \
+		utils/compress.cc \
+		utils/sqlite.cc \
+		metadata.cc \
+		metadata/consumer.cc \
+		metadata/collection.cc \
+		metadata/stream.cc \
+		metadata/clusterer.cc \
+		metadata/xargs.cc \
+		metadata/test-generator.cc \
+		summary/stats.cc \
+		summary/node.cc \
+		summary/codec.cc \
+		summary.cc \
+		sort.cc \
+		formatter.cc \
+		validator.cc \
+		postprocess.cc \
+		scan/any.cc \
+		scan/dir.cc
+
+tests_arki_test_SOURCES += \
+		utils/compress-tut.cc \
+		utils/sqlite-tut.cc \
 		sort-tut.cc \
 		formatter-tut.cc \
 		validator-tut.cc \
@@ -351,11 +374,8 @@ libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
 endif
 
 if LUA
-nobase_dist_arkiinclude_HEADERS += report.h formatter/lua.h utils/lua.h tests/lua.h
-libarkimet_la_SOURCES += formatter/lua.cc utils/lua.cc report.cc
-tests_arki_test_SOURCES += formatter/lua-tut.cc utils/lua-tut.cc report-tut.cc tests/lua.cc
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libarkimet_la_LDFLAGS += $(LUA_LIBS)
+libarkimet_la_SOURCES += report.cc
+tests_arki_test_SOURCES += report-tut.cc
 endif
 
 if DBALLE
@@ -387,16 +407,8 @@ tests_arki_test_SOURCES += scan/nc-tut.cc
 endif
 
 if VM2
-AM_CPPFLAGS += $(VM2_CFLAGS)
-nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
-libarkimet_la_SOURCES += scan/vm2.cc utils/vm2.cc
-libarkimet_la_LDFLAGS += $(VM2_LIBS)
-tests_arki_test_SOURCES += scan/vm2-tut.cc utils/vm2-tut.cc
-endif
-
-if GEOS
-AM_CPPFLAGS += $(GEOS_CFLAGS)
-libarkimet_la_LDFLAGS += $(GEOS_LIBS)
+libarkimet_la_SOURCES += scan/vm2.cc
+tests_arki_test_SOURCES += scan/vm2-tut.cc
 endif
 
 endif
@@ -521,7 +533,7 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD = libarkimet.la $(WIBBLE_LIBS) $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la $(WIBBLE_LIBS) $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \

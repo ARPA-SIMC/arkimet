@@ -262,11 +262,6 @@ auto_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
     return Period::create(*beg, *end);
 }
 
-std::string Period::exactQuery() const
-{
-    return "=" + begin.toISO8601();
-}
-
 const char* Period::lua_type_name() const { return "arki.types.reftime.period"; }
 
 bool Period::lua_lookup(lua_State* L, const std::string& name) const

@@ -674,7 +674,7 @@ bool GRIB1::lua_lookup(lua_State* L, const std::string& name) const
 
 const uint8_t GRIB2S::MISSING_TYPE = 0xff;
 const uint8_t GRIB2S::MISSING_SCALE = 0xff;
-const uint32_t GRIB2S::MISSING_VALUE = 0xFFFFFFFF;
+const uint32_t GRIB2S::MISSING_VALUE = 0xffffffff;
 
 Level::Style GRIB2S::style() const { return Level::GRIB2S; }
 
@@ -752,6 +752,21 @@ std::string GRIB2S::exactQuery() const
 }
 const char* GRIB2S::lua_type_name() const { return "arki.types.level.grib2s"; }
 
+template<typename T>
+static inline int compare_with_missing(const T& a, const T& b, const T& missing)
+{
+    if (a == missing)
+        return b == missing ? 0 : 1;
+    else if (b == missing)
+        return -1;
+    else if (a == b)
+        return 0;
+    else if (a < b)
+        return -1;
+    else
+        return 1;
+}
+
 int GRIB2S::compare_local(const Level& o) const
 {
 	// We should be the same kind, so upcast
@@ -762,9 +777,9 @@ int GRIB2S::compare_local(const Level& o) const
 			string("second element claims to be a GRIB2S Level, but is a ") + typeid(&o).name() + " instead");
 
 	// FIXME: here we can handle uniforming the scales if needed
-	if (int res = m_type - v->m_type) return res;
-	if (int res = m_scale - v->m_scale) return res;
-	return m_value - v->m_value;
+    if (int res = compare_with_missing(m_type, v->m_type, MISSING_TYPE)) return res;
+    if (int res = compare_with_missing(m_scale, v->m_scale, MISSING_SCALE)) return res;
+    return compare_with_missing(m_value, v->m_value, MISSING_VALUE);
 }
 
 bool GRIB2S::equals(const Type& o) const
@@ -947,12 +962,12 @@ int GRIB2D::compare_local(const Level& o) const
 			string("second element claims to be a GRIB2D Level, but is a ") + typeid(&o).name() + " instead");
 
 	// FIXME: here we can handle uniforming the scales if needed
-	if (int res = m_type1 - v->m_type1) return res;
-	if (int res = m_scale1 - v->m_scale1) return res;
-	if (int res = m_value1 - v->m_value1) return res;
-	if (int res = m_type2 - v->m_type2) return res;
-	if (int res = m_scale2 - v->m_scale2) return res;
-	return m_value2 - v->m_value2;
+    if (int res = compare_with_missing(m_type1, v->m_type1, GRIB2S::MISSING_TYPE)) return res;
+    if (int res = compare_with_missing(m_scale1, v->m_scale1, GRIB2S::MISSING_SCALE)) return res;
+    if (int res = compare_with_missing(m_value1, v->m_value1, GRIB2S::MISSING_VALUE)) return res;
+    if (int res = compare_with_missing(m_type2, v->m_type2, GRIB2S::MISSING_TYPE)) return res;
+    if (int res = compare_with_missing(m_scale2, v->m_scale2, GRIB2S::MISSING_SCALE)) return res;
+    return compare_with_missing(m_value2, v->m_value2, GRIB2S::MISSING_VALUE);
 }
 
 bool GRIB2D::equals(const Type& o) const
@@ -1075,6 +1090,13 @@ std::string ODIMH5::exactQuery() const
 }
 const char* ODIMH5::lua_type_name() const { return "arki.types.level.odimh5"; }
 
+static inline int compare_double(double a, double b)
+{
+    if (a < b) return -1;
+    if (b < a) return 1;
+    return 0;
+}
+
 int ODIMH5::compare_local(const Level& o) const
 {
 	// We should be the same kind, so upcast
@@ -1084,9 +1106,8 @@ int ODIMH5::compare_local(const Level& o) const
 			"comparing metadata types",
 			string("second element claims to be a ODIMH5 Level, but is a ") + typeid(&o).name() + " instead");
 
-    if (int res = m_min - v->m_min) return res;
-    return m_max - v->m_max;
-    // return (m_max - m_min) - (v->m_max - v->m_min);
+    if (int res = compare_double(m_min, v->m_min)) return res;
+    return compare_double(m_max, v->m_max);
 }
 
 bool ODIMH5::equals(const Type& o) const

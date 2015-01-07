@@ -73,9 +73,15 @@ public:
     ~Metadata();
     Metadata& operator=(const Metadata&);
 
+    /// Check if a source has been set
     bool has_source() const { return m_source; }
+    /// Return the source if present, else raise an exception
     const types::Source& source() const;
+    /// Return the Blob source if it exists, else 0
+    const types::source::Blob* has_source_blob() const;
+    /// Return the Blob source if possible, else raise an exception
     const types::source::Blob& sourceBlob() const;
+    /// Set a new source, replacing the old one if present
     void set_source(std::auto_ptr<types::Source> s);
 
     std::vector<types::Note> notes() const;

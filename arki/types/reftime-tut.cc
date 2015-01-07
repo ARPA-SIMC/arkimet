@@ -42,9 +42,10 @@ void to::test<1>()
 {
     arki::tests::TestGenericType t("reftime", "2015-01-02T03:04:05Z");
     t.lower.push_back("2014-01-01T00:00:00");
-    t.higher.push_back("2014-01-03T00:00:00");
+    t.higher.push_back("2015-01-03T00:00:00");
+    // Period sort later than Position
     t.higher.push_back("2014-01-01T00:00:00 to 2014-01-31T00:00:00");
-    t.exact_query = "=2007-06-05T04:03:02Z";
+    t.exact_query = "=2015-01-02T03:04:05Z";
     wassert(t);
 
     auto_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
@@ -61,13 +62,13 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    arki::tests::TestGenericType t("reftime", "2015-01-02T00:00:00Z to 2014-01-03T00:00:00Z");
-    t.lower.push_back("2014-01-01T00:00:00");
-    t.lower.push_back("2014-01-10T00:00:00");
-    t.lower.push_back("2014-01-01T00:00:00 to 2014-01-03T12:00:00");
-    t.higher.push_back("2014-01-02T12:00:00 to 2014-01-31T00:00:00");
-#warning This does not look like a query to match a period
-    t.exact_query = "=2007-06-05T04:03:02Z";
+    arki::tests::TestGenericType t("reftime", "2015-01-02T00:00:00Z to 2015-01-03T00:00:00Z");
+    t.lower.push_back("2015-01-01T00:00:00");
+    t.lower.push_back("2015-01-10T00:00:00");
+    t.lower.push_back("2015-01-01T00:00:00 to 2015-01-03T12:00:00");
+    t.higher.push_back("2015-01-02T12:00:00 to 2015-01-31T00:00:00");
+//#warning This does not look like a query to match a period
+//    t.exact_query = "=2007-06-05T04:03:02Z";
     wassert(t);
 
     auto_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
