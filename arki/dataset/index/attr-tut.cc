@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +18,12 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/dataset/index/attr.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
 #include <arki/metadata.h>
+#include <arki/matcher.h>
 
 #include <sstream>
 #include <fstream>
@@ -32,7 +31,9 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
+using namespace arki::types;
 
 struct arki_dataset_index_attr_shar {
 	utils::sqlite::SQLiteDB db;
@@ -50,15 +51,15 @@ TESTGRP(arki_dataset_index_attr);
 template<> template<>
 void to::test<1>()
 {
-	Metadata md;
-	Item<types::Origin> origin(types::origin::GRIB1::create(200, 0, 0));
+    Metadata md;
+    auto_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
 	dataset::index::AttrSubIndex attr(db, types::TYPE_ORIGIN);
 
 	// ID is -1 if it is not in the database
 	ensure_equals(attr.id(md), -1);
 
-	md.set(origin);
+    md.set(*origin);
 
 	// id() is read-only so it throws NotFound when the item does not exist
 	try {
@@ -76,10 +77,10 @@ void to::test<1>()
 
 	ensure_equals(attr.id(md), 1);
 
-	// Retrieve from the database
-	Metadata md1;
-	attr.read(1, md1);
-	ensure_equals(md1.get(types::TYPE_ORIGIN).upcast<types::Origin>(), origin);
+    // Retrieve from the database
+    Metadata md1;
+    attr.read(1, md1);
+    wassert(actual_type(md1.get<types::Origin>()) == origin);
 
 	Matcher m = Matcher::parse("origin:GRIB1,200");
 	const matcher::OR* matcher = m.m_impl->get(types::TYPE_ORIGIN);
@@ -93,13 +94,13 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Metadata md;
-	Item<types::Origin> origin(types::origin::GRIB1::create(200, 0, 0));
+    Metadata md;
+    auto_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
 	// ID is -1 if it is not in the database
 	ensure_equals(dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md), -1);
 
-	md.set(origin);
+    md.set(*origin);
 
 	// id() is read-only so it throws NotFound when the item does not exist
 	try {
@@ -117,10 +118,10 @@ void to::test<2>()
 
 	ensure_equals(dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md), 1);
 
-	// Retrieve from the database
-	Metadata md1;
-	dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).read(1, md1);
-	ensure_equals(md1.get(types::TYPE_ORIGIN).upcast<types::Origin>(), origin);
+    // Retrieve from the database
+    Metadata md1;
+    dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).read(1, md1);
+    wassert(actual_type(md1.get<types::Origin>()) == origin);
 
 	// Query the database
 	Matcher m = Matcher::parse("origin:GRIB1,200");

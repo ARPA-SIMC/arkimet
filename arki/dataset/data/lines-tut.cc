@@ -18,10 +18,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include "lines.h"
-#include "arki/tests/tests.h"
+#include "arki/dataset/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -43,6 +41,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::dataset::data;
 using namespace arki::utils;
+using namespace arki::tests;
 using namespace wibble;
 using namespace wibble::tests;
 
@@ -76,58 +75,7 @@ namespace {
 
 inline size_t datasize(const Metadata& md)
 {
-    return md.source->getSize();
-}
-
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, Writer* dw, Metadata& md)
-{
-    typedef types::source::Blob Blob;
-
-    // Make a snapshot of everything before appending
-    Item<types::Source> orig_source = md.source;
-    size_t data_size = datasize(md);
-    size_t orig_fsize = sys::fs::size(dw->absname, 0);
-
-    // Start the append transaction, nothing happens until commit
-    off_t ofs;
-    Pending p = dw->append(md, &ofs);
-    wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize);
-    wassert(actual(md.source) == orig_source);
-
-    // Commit
-    p.commit();
-
-    // After commit, data is appended
-    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize + data_size + 1);
-
-    // And metadata is updated
-    UItem<Blob> s = md.source.upcast<Blob>();
-    wassert(actual(s->format) == "grib1");
-    wassert(actual(s->offset) == orig_fsize);
-    wassert(actual(s->size) == data_size);
-    wassert(actual(s->filename) == dw->absname);
-}
-
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, Writer* dw, Metadata& md)
-{
-    // Make a snapshot of everything before appending
-    Item<types::Source> orig_source = md.source;
-    size_t orig_fsize = sys::fs::size(dw->absname, 0);
-
-    // Start the append transaction, nothing happens until commit
-    off_t ofs;
-    Pending p = dw->append(md, &ofs);
-    wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
-    wassert(actual(md.source) == orig_source);
-
-    // Rollback
-    p.rollback();
-
-    // After rollback, nothing has changed
-    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
-    wassert(actual(md.source) == orig_source);
+    return md.source().getSize();
 }
 
 }

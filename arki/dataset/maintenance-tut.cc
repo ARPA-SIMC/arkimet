@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2014  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,8 +15,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
-
-#include "config.h"
 
 #include <arki/dataset/tests.h>
 #include <arki/dataset/maintenance.h>
@@ -38,6 +36,7 @@ using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::tests;
+using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
 
@@ -52,14 +51,13 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         cfg.setValue("step", "daily");
     }
 
-    UItem<types::source::Blob> find_imported_second_in_file()
+    const source::Blob& find_imported_second_in_file()
     {
         // Find the imported_result element whose offset is > 0
-        UItem<types::source::Blob> second_in_segment;
         for (int i = 0; i < 3; ++i)
         {
-            second_in_segment = import_results[i].source.upcast<types::source::Blob>();
-            if (second_in_segment->offset > 0)
+            const source::Blob& second_in_segment = import_results[i].sourceBlob();
+            if (second_in_segment.offset > 0)
                 return second_in_segment;
         }
         throw wibble::exception::Consistency("second in file not found");
@@ -223,12 +221,12 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         wruntest(import_all, fixture);
 
         // Find the imported_result element whose offset is > 0
-        UItem<types::source::Blob> second_in_segment = find_imported_second_in_file();
-        wassert(actual(second_in_segment->offset) > 0);
+        const source::Blob& second_in_segment = find_imported_second_in_file();
+        wassert(actual(second_in_segment.offset) > 0);
 
         // Truncate at the position in second_in_segment
-        string truncated_fname = second_in_segment->filename.substr(7);
-        segments().truncate(truncated_fname, second_in_segment->offset);
+        string truncated_fname = second_in_segment.filename.substr(7);
+        segments().truncate(truncated_fname, second_in_segment.offset);
 
         // See that the truncated file is detected
         {
@@ -278,11 +276,11 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         wruntest(import_all_packed, fixture);
 
         // Find the imported_result element whose offset is > 0
-        UItem<types::source::Blob> second_in_segment = find_imported_second_in_file();
-        wassert(actual(second_in_segment->offset) > 0);
+        const source::Blob& second_in_segment = find_imported_second_in_file();
+        wassert(actual(second_in_segment.offset) > 0);
 
         // Corrupt the first datum in the file
-        corrupt_datafile(second_in_segment->absolutePathname());
+        corrupt_datafile(second_in_segment.absolutePathname());
 
         // A quick check has nothing to complain
         {
@@ -304,7 +302,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            s.require_line_contains(": rescanned " + second_in_segment->filename.substr(7));
+            s.require_line_contains(": rescanned " + second_in_segment.filename.substr(7));
             s.require_line_contains(": 1 file rescanned");
             wassert(actual(writer.get()).check(s, true, false));
 
@@ -319,7 +317,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
             LineChecker s;
-            s.require_line_contains(": packed " + second_in_segment->filename.substr(7));
+            s.require_line_contains(": packed " + second_in_segment.filename.substr(7));
             s.require_line_contains(": 1 file packed");
             wassert(actual(writer.get()).repack(s, true));
         }
@@ -335,7 +333,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     void test_deleted_datafile_repack(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
         wruntest(import_all_packed, fixture);
-        string deleted_fname = import_results[0].source.upcast<types::source::Blob>()->filename.substr(7);
+        string deleted_fname = import_results[0].sourceBlob().filename.substr(7);
         unsigned file_count = fixture.count_dataset_files();
         segments().remove(deleted_fname);
 
@@ -377,7 +375,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     void test_deleted_datafile_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
         wruntest(import_all_packed, fixture);
-        string deleted_fname = import_results[0].source.upcast<types::source::Blob>()->filename.substr(7);
+        string deleted_fname = import_results[0].sourceBlob().filename.substr(7);
         unsigned file_count = fixture.count_dataset_files();
         segments().remove(deleted_fname);
 
@@ -662,7 +660,7 @@ template<> template<> void to::test<10>()
 		metadata::Collection mdc;
 		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
-        wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
 	}
 }
 

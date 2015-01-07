@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/dataset/tests.h>
 #include <arki/dataset/archive.h>
@@ -119,10 +117,10 @@ void to::test<1>()
 		ensure(sys::fs::exists("testds/.archive/last/test.grib1.summary"));
 		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
 
-		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
-		ensure_equals(mdc.size(), 3u);
-		ensure_equals(mdc[0].source.upcast<source::Blob>()->filename, "test.grib1");
-	}
+        Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+        ensure_equals(mdc.size(), 3u);
+        ensure_equals(mdc[0].sourceBlob().filename, "test.grib1");
+    }
 
 	ensure_archive_clean("testds/.archive/last", 1, 3);
 
@@ -582,10 +580,9 @@ void to::test<18>()
     }
 
     // Verify that the time range of the first summary is what we expect
-    Item<types::Reftime> rt = s1.getReferenceTime();
-    Item<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
-    ensure_equals(p->begin, types::Time::create(2010, 9, 1, 0, 0, 0));
-    ensure_equals(p->end, types::Time::create(2010, 9, 30, 0, 0, 0));
+    auto_ptr<reftime::Period> p = downcast<reftime::Period>(s1.getReferenceTime());
+    ensure_equals(p->begin, Time(2010, 9, 1, 0, 0, 0));
+    ensure_equals(p->end, Time(2010, 9, 30, 0, 0, 0));
 
     ensure(s1 == s2);
 }
@@ -620,10 +617,9 @@ void to::test<19>()
         iotrace::Collector ioc;
         ds->querySummary(Matcher::parse(""), s);
 
-        Item<types::Reftime> rt = s.getReferenceTime();
-        Item<types::reftime::Period> p = rt.upcast<types::reftime::Period>();
-        ensure_equals(p->begin, types::Time::create(2010, 9, 1, 0, 0, 0));
-        ensure_equals(p->end, types::Time::create(2010, 9, 18, 0, 0, 0));
+        auto_ptr<reftime::Period> p = downcast<reftime::Period>(s.getReferenceTime());
+        ensure_equals(p->begin, Time(2010, 9, 1, 0, 0, 0));
+        ensure_equals(p->end, Time(2010, 9, 18, 0, 0, 0));
     }
 
     // TODO If dir.summary and dir is not missing, check dir contents but don't repair them

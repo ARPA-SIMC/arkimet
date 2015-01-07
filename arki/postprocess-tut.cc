@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/matcher/tests.h>
 #include <arki/postprocess.h>
@@ -133,7 +131,7 @@ void to::test<4>()
             Writer(string& out) : out(out) {}
             bool operator()(Metadata& md)
             {
-                out += md.encode();
+                out += md.encodeBinary();
                 wibble::sys::Buffer data = md.getData();
                 out.append((const char*)data.data(), data.size());
                 return true;

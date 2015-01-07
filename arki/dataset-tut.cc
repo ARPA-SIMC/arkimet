@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/tests/tests.h>
 #include <arki/dataset/tests.h>
@@ -47,6 +45,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 using namespace arki::utils;
 using namespace wibble;
 using namespace wibble::tests;
@@ -244,7 +243,7 @@ struct TestDataset
             Metadata md = td.test_data[i].md;
             wassert(actual(ds->acquire(md)) == WritableDataset::ACQ_OK);
             wassert(actual(str::joinpath(path, td.test_data[i].destfile)).fileexists());
-            wassert(actual(md.source.upcast<types::source::Blob>()->filename).endswith(td.test_data[i].destfile));
+            wassert(actual(md.sourceBlob().filename).endswith(td.test_data[i].destfile));
         }
     }
 
@@ -267,10 +266,10 @@ struct TestDataset
             wassert(actual(mdc.size()) == 1u);
 
             // Check that the result matches what was imported
-            UItem<source::Blob> s1 = td.test_data[i].md.source.upcast<source::Blob>();
-            UItem<source::Blob> s2 = mdc[0].source.upcast<source::Blob>();
-            wassert(actual(s2->format) == s1->format);
-            wassert(actual(s2->size) == s1->size);
+            const source::Blob& s1 = td.test_data[i].md.sourceBlob();
+            const source::Blob& s2 = mdc[0].sourceBlob();
+            wassert(actual(s2.format) == s1.format);
+            wassert(actual(s2.size) == s1.size);
             wassert(actual(mdc[0]).is_similar(td.test_data[i].md));
 
             wassert(actual(td.test_data[i].matcher(mdc[0])).istrue());
@@ -298,8 +297,8 @@ struct TestDataset
 
             wassert(actual(s.count()) == 1u);
 
-            UItem<source::Blob> s1 = td.test_data[i].md.source.upcast<source::Blob>();
-            wassert(actual(s.size()) == s1->size);
+            const source::Blob& s1 = td.test_data[i].md.sourceBlob();
+            wassert(actual(s.size()) == s1.size);
         }
     }
 
@@ -319,7 +318,7 @@ struct TestDataset
             // Write it out and rescan
             sys::fs::writeFile("testdata", os.str());
             metadata::Collection tmp;
-            wassert(actual(scan::scan("testdata", tmp, td.test_data[i].md.source->format)).istrue());
+            wassert(actual(scan::scan("testdata", tmp, td.test_data[i].md.source().format)).istrue());
 
             // Ensure that what we rescanned is what was imported
             wassert(actual(tmp.size()) == 1u);
@@ -343,11 +342,7 @@ struct TestDataset
         // Check that what we got matches the total size of what we imported
         size_t total_size = 0;
         for (unsigned i = 0; i < 3; ++i)
-        {
-            using namespace arki::types;
-            UItem<source::Blob> s1 = td.test_data[i].md.source.upcast<source::Blob>();
-            total_size += s1->size;
-        }
+            total_size += td.test_data[i].md.sourceBlob().size;
         // We use >= and not == because some data sources add extra information
         // to data, like line endings for VM2
         wassert(actual(os.str().size()) >= total_size);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,18 +18,18 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include "aggregate.h"
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>
 #include <arki/metadata.h>
+#include <arki/matcher.h>
 
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::dataset::index;
 using namespace arki::types;
@@ -56,13 +56,13 @@ void to::test<1>()
 	u.initDB(members);
 	u.initQueries();
 
-	Metadata md;
-	Item<types::Origin> origin(types::origin::GRIB1::create(200, 0, 0));
-	Item<types::Product> product(types::product::GRIB1::create(200, 1, 2));
+    Metadata md;
+    auto_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
+    auto_ptr<Type> product(Product::createGRIB1(200, 1, 2));
 
-	ensure_equals(u.get(md), -1);
-	md.set(origin);
-	md.set(product);
+    ensure_equals(u.get(md), -1);
+    md.set(*origin);
+    md.set(*product);
 
 	// ID is -1 if it is not in the database
 	ensure_equals(u.get(md), -1);
@@ -75,11 +75,11 @@ void to::test<1>()
 
 	ensure_equals(u.get(md), 1);
 
-	// Retrieve from the database
-	Metadata md1;
-	u.read(1, md1);
-	ensure_equals(md1.get(types::TYPE_ORIGIN).upcast<types::Origin>(), origin);
-	ensure_equals(md1.get(types::TYPE_PRODUCT).upcast<types::Product>(), product);
+    // Retrieve from the database
+    Metadata md1;
+    u.read(1, md1);
+    wassert(actual_type(md1.get<types::Origin>()) == origin);
+    wassert(actual_type(md1.get<types::Product>()) == product);
 
 	Matcher m = Matcher::parse("origin:GRIB1,200; product:GRIB1,200,1");
 	vector<string> constraints;

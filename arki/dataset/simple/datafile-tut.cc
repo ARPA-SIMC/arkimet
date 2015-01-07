@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2015 Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,8 +15,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
-
-#include "config.h"
 
 #include <arki/dataset/tests.h>
 #include <arki/dataset/simple/datafile.h>
@@ -37,6 +35,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
+using namespace arki::types;
 using namespace arki::dataset::simple;
 using namespace wibble;
 using namespace wibble::tests;
@@ -48,7 +47,7 @@ inline size_t filesize(const std::string& fname)
 }
 inline size_t datasize(const Metadata& md)
 {
-    return md.source->getSize();
+    return md.source().getSize();
 }
 }
 
@@ -83,20 +82,15 @@ void to::test<1>()
     {
         datafile::MdBuf mdbuf("./" + fname);
 
-		// Get a metadata
-		ensure(scanner.next(md));
-		Item<types::Source> origSource = md.source;
-		size_t size = datasize(md);
+        // Get a metadata
+        ensure(scanner.next(md));
+        size_t size = datasize(md);
 
 		// Append the data
 		mdbuf.add(md);
 
         // The new data is there
-        UItem<types::source::Blob> s = md.source.upcast<types::source::Blob>();
-        wassert(actual(s->format) == "grib1");
-        wassert(actual(s->offset) == 0u);
-        wassert(actual(s->size) == size);
-        wassert(actual(s->filename) == "inbound/test.grib1");
+        wassert(actual_type(md.source()).is_source_blob("grib1", "", "inbound/test.grib1", 0, size));
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -104,19 +98,14 @@ void to::test<1>()
 
 		totsize += size;
 
-		// Get another metadata
-		ensure(scanner.next(md));
-		origSource = md.source;
-		size = datasize(md);
+        // Get another metadata
+        ensure(scanner.next(md));
+        size = datasize(md);
 
-		mdbuf.add(md);
+        mdbuf.add(md);
 
         // The new data is there
-        s = md.source.upcast<types::source::Blob>();
-        wassert(actual(s->format) == "grib1");
-        wassert(actual(s->offset) == totsize);
-        wassert(actual(s->size) == size);
-        wassert(actual(s->filename) == "inbound/test.grib1");
+        wassert(actual_type(md.source()).is_source_blob("grib1", "", "inbound/test.grib1", totsize, size));
 
 		// Metadata and summaries don't get touched
 		ensure(!sys::fs::exists(mdfname));
@@ -133,17 +122,12 @@ void to::test<1>()
 
 		// Get another metadata
 		ensure(scanner.next(md));
-		origSource = md.source;
 		size = datasize(md);
 
 		mdbuf.add(md);
 
         // The new data is there
-        s = md.source.upcast<types::source::Blob>();
-        wassert(actual(s->format) == "grib1");
-        wassert(actual(s->offset) == totsize);
-        wassert(actual(s->size) == size);
-        wassert(actual(s->filename) == "inbound/test.grib1");
+        wassert(actual_type(md.source()).is_source_blob("grib1", "", "inbound/test.grib1", totsize, size));
 
         // Metadata and summaries don't get touched
         ensure_equals(sys::fs::inode(mdfname), inomd);

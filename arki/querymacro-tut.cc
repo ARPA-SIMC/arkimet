@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/querymacro.h>
 #include <arki/runtime/config.h>
 #include <arki/configfile.h>
@@ -39,8 +37,10 @@
 
 namespace tut {
 using namespace std;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::utils;
+using namespace arki::types;
 
 struct arki_querymacro_shar {
 	ConfigFile cfg;
@@ -70,22 +70,22 @@ struct arki_querymacro_shar {
 		scan::Grib scanner;
 		scanner.open("inbound/test.grib1");
 
-		dataset::ondisk2::Writer testds(*cfg.section("testds"));
-		vector< Item<types::Time> > times;
-		times.push_back(types::Time::create(2009, 8, 7, 0, 0, 0));
-		times.push_back(types::Time::create(2009, 8, 8, 0, 0, 0));
-		times.push_back(types::Time::create(2009, 8, 9, 0, 0, 0));
-		size_t count = 0;
-		while (scanner.next(md))
-		{
-			for (vector< Item<types::Time> >::const_iterator i = times.begin();
-					i != times.end(); ++i)
-			{
-				md.set(types::reftime::Position::create(*i));
-				ensure(testds.acquire(md) == WritableDataset::ACQ_OK);
-			}
-			++count;
-		}
+        dataset::ondisk2::Writer testds(*cfg.section("testds"));
+        vector<types::Time> times;
+        times.push_back(Time(2009, 8, 7, 0, 0, 0));
+        times.push_back(Time(2009, 8, 8, 0, 0, 0));
+        times.push_back(Time(2009, 8, 9, 0, 0, 0));
+        size_t count = 0;
+        while (scanner.next(md))
+        {
+            for (vector<types::Time>::const_iterator i = times.begin();
+                    i != times.end(); ++i)
+            {
+                md.set(Reftime::createPosition(*i));
+                ensure(testds.acquire(md) == WritableDataset::ACQ_OK);
+            }
+            ++count;
+        }
 		ensure_equals(count, 3u);
 		testds.flush();
 	}
@@ -120,9 +120,9 @@ void to::test<2>()
 	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 9u);
-	ensure(mdc[0].source.defined());
-	ensure(mdc[1].source.defined());
-	ensure(mdc[2].source.defined());
+    ensure(mdc[0].has_source());
+    ensure(mdc[1].has_source());
+    ensure(mdc[2].has_source());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
@@ -139,9 +139,9 @@ void to::test<3>()
 	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 9u);
-	ensure(mdc[0].source.defined());
-	ensure(mdc[1].source.defined());
-	ensure(mdc[2].source.defined());
+    ensure(mdc[0].has_source());
+    ensure(mdc[1].has_source());
+    ensure(mdc[2].has_source());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
@@ -162,8 +162,8 @@ void to::test<4>()
 	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 2u);
-	ensure(mdc[0].source.defined());
-	ensure(mdc[1].source.defined());
+    ensure(mdc[0].has_source());
+    ensure(mdc[1].has_source());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
@@ -184,8 +184,8 @@ void to::test<5>()
 	metadata::Collection mdc;
 	qm.queryData(dq, mdc);
 	ensure_equals(mdc.size(), 2u);
-	ensure(mdc[0].source.defined());
-	ensure(mdc[1].source.defined());
+    ensure(mdc[0].has_source());
+    ensure(mdc[1].has_source());
 
 	Summary s;
 	qm.querySummary(Matcher::parse(""), s);
@@ -209,8 +209,8 @@ void to::test<6>()
 		metadata::Collection mdc;
 		qm.queryData(dq, mdc);
 		ensure_equals(mdc.size(), 2u);
-		ensure(mdc[0].source.defined());
-		ensure(mdc[1].source.defined());
+        ensure(mdc[0].has_source());
+        ensure(mdc[1].has_source());
 
 		Summary s;
 		qm.querySummary(Matcher::parse(""), s);
@@ -228,8 +228,8 @@ void to::test<6>()
 		metadata::Collection mdc;
 		qm.queryData(dq, mdc);
 		ensure_equals(mdc.size(), 2u);
-		ensure(mdc[0].source.defined());
-		ensure(mdc[1].source.defined());
+        ensure(mdc[0].has_source());
+        ensure(mdc[1].has_source());
 
 		Summary s;
 		qm.querySummary(Matcher::parse(""), s);
@@ -277,10 +277,10 @@ void to::test<8>()
 
     qm.queryData(dq, mdc);
     ensure_equals(mdc.size(), 2u);
-    ensure(mdc[0].source.defined());
-    ensure_equals(mdc[0].get(types::TYPE_REFTIME), Item<>(types::Reftime::decodeString("2009-08-08 00:00:00")));
-    ensure(mdc[1].source.defined());
-    ensure_equals(mdc[1].get(types::TYPE_REFTIME), Item<>(types::Reftime::decodeString("2009-08-07 00:00:00")));
+    ensure(mdc[0].has_source());
+    wassert(actual_type(mdc[0].get(TYPE_REFTIME)) == Reftime::decodeString("2009-08-08 00:00:00"));
+    ensure(mdc[1].has_source());
+    wassert(actual_type(mdc[1].get(TYPE_REFTIME)) == Reftime::decodeString("2009-08-07 00:00:00"));
 
     Summary s;
     qm.querySummary(Matcher::parse(""), s);

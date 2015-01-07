@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/dataset/tests.h>
 #include <arki/dataset/simple/writer.h>
@@ -43,9 +41,11 @@ using namespace arki::types;
 using namespace arki::tests;
 using namespace arki::utils;
 
-static inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
+namespace {
+static inline const types::AssignedDataset* getDataset(const Metadata& md)
 {
-	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+    return md.get<AssignedDataset>();
+}
 }
 
 struct arki_dataset_simple_writer_shar : public DatasetTest {
@@ -89,14 +89,11 @@ void to::test<1>()
 			i != md.notes.end(); ++i)
 		cerr << *i << endl;
 	#endif
-	UItem<types::AssignedDataset> ds = getDataset(md);
-	ensure_equals(ds->name, "testds");
-	ensure_equals(ds->id, "");
+    const AssignedDataset* ds = getDataset(md);
+    ensure_equals(ds->name, "testds");
+    ensure_equals(ds->id, "");
 
-    Item<types::source::Blob> source = md.source.upcast<types::source::Blob>();
-    wassert(actual(source->filename).endswith("07-08.grib1"));
-    wassert(actual(source->offset) == 0u);
-    wassert(actual(source->size) == 7218u);
+    wassert(actual_type(md.source()).is_source_blob("grib1", "", "07-08.grib1", 0, 7218));
 
 	// Import again works fine
 	res = writer.acquire(md);
@@ -105,10 +102,7 @@ void to::test<1>()
 	ensure_equals(ds->name, "testds");
 	ensure_equals(ds->id, "");
 
-    source = md.source.upcast<types::source::Blob>();
-    wassert(actual(source->filename).endswith("07-08.grib1"));
-    wassert(actual(source->offset) == 7218u);
-    wassert(actual(source->size) == 7218u);
+    wassert(actual_type(md.source()).is_source_blob("grib1", "", "07-08.grib1", 7218, 7218));
 
 	// Flush the changes and check that everything is allright
 	writer.flush();
@@ -159,16 +153,12 @@ void to::test<2>()
 		WritableDataset::AcquireResult res = writer.acquire(md);
 		ensure_equals(res, WritableDataset::ACQ_OK);
 
-		UItem<types::AssignedDataset> ds = getDataset(md);
-		ensure(ds.defined());
-		ensure_equals(ds->name, "testds");
-		ensure_equals(ds->id, "");
+        const AssignedDataset* ds = getDataset(md);
+        ensure(ds);
+        ensure_equals(ds->name, "testds");
+        ensure_equals(ds->id, "");
 
-        UItem<types::source::Blob> source = md.source.upcast<types::source::Blob>();
-        wassert(actual(source.defined()).istrue());
-        wassert(actual(source->filename).endswith("2007.grib1"));
-        wassert(actual(source->offset) == 34960u);
-        wassert(actual(source->size) == 7218u);
+        wassert(actual_type(md.source()).is_source_blob("grib1", "", "2007.grib1", 34960, 7218));
     }
 
 	ensure(sys::fs::exists("testds/20/2007.grib1"));

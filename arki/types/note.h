@@ -52,6 +52,7 @@ struct Note : public CoreType<Note>
     Time time;
     std::string content;
 
+    Note(const std::string& content) : content(content) { time.setNow(); }
     Note(const Time& time, const std::string& content) : time(time), content(content) {}
 
     int compare(const Type& o) const override;

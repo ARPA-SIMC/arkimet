@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013 ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015 ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,21 +18,12 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/metadata/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/index/contents.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <arki/types/origin.h>
-#include <arki/types/product.h>
-#include <arki/types/level.h>
-#include <arki/types/timerange.h>
-#include <arki/types/reftime.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
 #include <arki/types/source/blob.h>
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
@@ -89,28 +80,28 @@ struct arki_dataset_index_contents_shar {
 		testArea.set("pluto", Value::createString("12"));
 		testProddef = testArea;
 
-        md.source = Source::createBlob("grib", "", "antani", 10, 2000);
-		md.set(origin::GRIB1::create(200, 10, 100));
-		md.set(product::GRIB1::create(3, 4, 5));
-		md.set(level::GRIB1::create(1, 2));
-		md.set(timerange::GRIB1::create(4, 5, 6, 7));
-		md.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-		md.set(area::GRIB::create(testArea));
-		md.set(proddef::GRIB::create(testProddef));
-		md.add_note(types::Note::create("this is a test"));
+        md.set_source(Source::createBlob("grib", "", "antani", 10, 2000));
+        md.set("origin", "GRIB1(200, 10, 100)");
+        md.set("product", "GRIB1(3, 4, 5)");
+        md.set("level", "GRIB1(1, 2)");
+        md.set("timerange", "GRIB1(4, 5, 6, 7)");
+        md.set("reftime", "2006-05-04T03:02:01Z");
+        md.set("area", "foo=5,bar=5000,baz=-200");
+        md.set("proddef", "foo=5,bar=5000,baz=-200");
+        md.add_note("this is a test");
 		ofstream out("test-md.metadata");
 		if (out.fail()) throw wibble::exception::File("test-md.metadata", "opening file");
 		md.write(out, "test-md.metadata");
 		out.close();
 
-        md1.source = Source::createBlob("grib", "", "blinda", 20, 40000);
-		md1.set(origin::GRIB1::create(201, 11, 3));
-		md1.set(product::GRIB1::create(102, 103, 104));
-		md1.set(level::GRIB1::create(1, 3));
-		md1.set(timerange::GRIB1::create(4, 6, 6, 6));
-		md1.set(reftime::Position::create(types::Time::create(2003, 4, 5, 6, 7, 8)));
-		md1.set(area::GRIB::create(testArea));
-		md1.set(proddef::GRIB::create(testProddef));
+        md1.set_source(Source::createBlob("grib", "", "blinda", 20, 40000));
+        md1.set("origin", "GRIB1(201, 11, 3)");
+        md1.set("product", "GRIB1(102, 103, 104)");
+        md1.set("level", "GRIB1(1, 3)");
+        md1.set("timerange", "GRIB1(4, 6, 6, 6)");
+        md1.set("reftime", "2003-04-05T06:07:08Z");
+        md1.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+        md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
 		// Index one without notes
 		//md1.notes.push_back(types::Note::create("this is another test"));
 		out.open("test-md1.metadata");
@@ -157,7 +148,7 @@ void to::test<1>()
 	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
 	ensure_equals(mdc.size(), 1u);
 	ensure_equals(mdc[0].notes().size(), 1u);
-	ensure_equals(mdc[0].notes()[0]->content, "this is a test");
+	ensure_equals(mdc[0].notes()[0].content, "this is a test");
 
 	mdc.clear();
 	test->query(dataset::DataQuery(Matcher::parse("product:GRIB1,3")), mdc);
@@ -233,8 +224,8 @@ void to::test<2>()
 	// See that it changed
 	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1")), mdc);
 	ensure_equals(mdc.size(), 1u);
-	Item<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(blob->filename, "test-md");
+    const source::Blob& blob = mdc[0].sourceBlob();
+    ensure_equals(blob.filename, "test-md");
 
 	p.commit();
 }
@@ -319,15 +310,15 @@ void to::test<3>()
 
     // Now try to index another element
     Metadata md3;
-    md3.source = Source::createBlob("grib", "", "antani3", 10, 2000);
-	md3.set(origin::GRIB1::create(202, 12, 102));
-	md3.set(product::GRIB1::create(3, 4, 5));
-	md3.set(level::GRIB1::create(1, 2));
-	md3.set(timerange::GRIB1::create(4, 5, 6, 7));
-	md3.set(reftime::Position::create(types::Time::create(2006, 5, 4, 3, 2, 1)));
-	md3.set(area::GRIB::create(testArea));
-	md3.set(proddef::GRIB::create(testProddef));
-	md3.add_note(types::Note::create("this is a test"));
+    md3.set_source(Source::createBlob("grib", "", "antani3", 10, 2000));
+    md3.set("origin", "GRIB1(202, 12, 102)");
+    md3.set("product", "GRIB1(3, 4, 5)");
+    md3.set("level", "GRIB1(1, 2)");
+    md3.set("timerange", "GRIB1(4, 5, 6, 7)");
+    md3.set("reftime", "2006-05-04T03:02:01Z");
+    md3.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md3.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    md3.add_note("this is a test");
 	{
 		auto_ptr<WContents> test1 = createIndex<WContents>(cfg);
 		test1->open();
@@ -381,14 +372,14 @@ void to::test<4>()
 
 	ensure_equals(mdc.size(), 2u);
 
-	// Check that the metadata came out fine
-	mdc[0].unset(types::TYPE_ASSIGNEDDATASET);
-	mdc[0].source = md.source;
-	ensure(mdc[0] == md);
+    // Check that the metadata came out fine
+    mdc[0].unset(TYPE_ASSIGNEDDATASET);
+    mdc[0].set_source(auto_ptr<Source>(md.source().clone()));
+    ensure(mdc[0] == md);
 
-	mdc[1].unset(types::TYPE_ASSIGNEDDATASET);
-	mdc[1].source = md1.source;
-	ensure(mdc[1] == md1);
+    mdc[1].unset(TYPE_ASSIGNEDDATASET);
+    mdc[1].set_source(auto_ptr<Source>(md1.source().clone()));
+    ensure(mdc[1] == md1);
 }
 
 // Try a summary query that used to be badly generated
@@ -415,15 +406,15 @@ void to::test<5>()
     test->index(md, "test-md", 0);
     test->index(md1, "test-md1", 0);
     Metadata md2;
-	md2.source = Source::createBlob("grib", "", "antani3", 10, 2000);
-	md2.set(origin::GRIB1::create(202, 12, 102));
-	md2.set(product::GRIB1::create(3, 4, 5));
-	md2.set(level::GRIB1::create(1, 2));
-	md2.set(timerange::GRIB1::create(4, 5, 6, 7));
-	md2.set(reftime::Position::create(types::Time::create(2005, 1, 15, 12, 0, 0)));
-	md2.set(area::GRIB::create(testArea));
-	md2.set(proddef::GRIB::create(testProddef));
-	test->index(md2, "test-md1", 0);
+    md2.set_source(Source::createBlob("grib", "", "antani3", 10, 2000));
+    md2.set("origin", "GRIB1(202, 12, 102)");
+    md2.set("product", "GRIB1(3, 4, 5)");
+    md2.set("level", "GRIB1(1, 2)");
+    md2.set("timerange", "GRIB1(4, 5, 6, 7)");
+    md2.set("reftime", "2005-01-15T12:00:00Z");
+    md2.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+    md2.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
+    test->index(md2, "test-md1", 0);
 
 	p.commit();
 
@@ -454,8 +445,8 @@ template<> template<>
 void to::test<6>()
 {
     // Pretend the data is in a very big file
-    md.source = Source::createBlob("grib", "", "antani", 0x100000000LLU, 2000);
-    md1.source = Source::createBlob("grib", "", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF);
+    md.set_source(Source::createBlob("grib", "", "antani", 0x100000000LLU, 2000));
+    md1.set_source(Source::createBlob("grib", "", "blinda", 0xFFFFffffFFFF0000LLU, 0xFFFF));
 
 	// Remove index if it exists
 	unlink("file1");
@@ -472,25 +463,25 @@ void to::test<6>()
 
 	test->open();
 	p = test->beginTransaction();
-	
-	// Index the two metadata
-	test->index(md, "test-md", md.source.upcast<source::Blob>()->offset);
-	test->index(md1, "test-md1", md1.source.upcast<source::Blob>()->offset);
+
+    // Index the two metadata
+    test->index(md, "test-md", md.sourceBlob().offset);
+    test->index(md1, "test-md1", md1.sourceBlob().offset);
 
 	// Query various kinds of metadata
 	metadata::Collection mdc;
 	test->query(dataset::DataQuery(Matcher::parse("")), mdc);
 
-	Item<source::Blob> s = mdc[0].source.upcast<source::Blob>();
-	ensure_equals(s->offset, 0xFFFFffffFFFF0000LLU);
-	ensure_equals(s->size, 0xFFFFu);
+    const source::Blob& s0 = mdc[0].sourceBlob();
+    ensure_equals(s0.offset, 0xFFFFffffFFFF0000LLU);
+    ensure_equals(s0.size, 0xFFFFu);
 
-	s = mdc[1].source.upcast<source::Blob>();
-	ensure_equals(s->offset, 0x100000000LLU);
-	ensure_equals(s->size, 2000u);
+    const source::Blob& s1 = mdc[1].sourceBlob();
+    ensure_equals(s1.offset, 0x100000000LLU);
+    ensure_equals(s1.size, 2000u);
 
-	// TODO: level, timerange, area, proddef, reftime
-	p.commit();
+    // TODO: level, timerange, area, proddef, reftime
+    p.commit();
 }
 
 // Test smallfiles support
@@ -519,7 +510,7 @@ void to::test<7>()
 
         // Insert a metadata
         Pending p = test->beginTransaction();
-        test->index(src[0], "inbound/test.vm2", src[0].source.upcast<source::Blob>()->offset);
+        test->index(src[0], "inbound/test.vm2", src[0].sourceBlob().offset);
         p.commit();
 
         // Query it back
@@ -528,18 +519,14 @@ void to::test<7>()
 
         // 'value' should not have been preserved
         wassert(actual(mdc.size()) == 1u);
-        UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
-        wassert(actual(source->format) == "vm2");
-        wassert(actual(source->filename) == "inbound/test.vm2");
-        wassert(actual(source->offset) == 0);
-        wassert(actual(source->size) == 34);
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", "", "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
-        wassert(not actual(mdc[0]).is_set("value"));
+        wassert(actual(mdc[0]).is_not_set("value"));
 
         // I/O should happen here
-        mdc[0].source->dropCachedData();
+        mdc[0].source().dropCachedData();
         sys::Buffer buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);
@@ -566,7 +553,7 @@ void to::test<7>()
 
         // Insert a metadata
         Pending p = test->beginTransaction();
-        test->index(src[0], "inbound/test.vm2", src[0].source.upcast<source::Blob>()->offset);
+        test->index(src[0], "inbound/test.vm2", src[0].sourceBlob().offset);
         p.commit();
 
         // Query it back
@@ -575,18 +562,14 @@ void to::test<7>()
 
         // 'value' should have been preserved
         wassert(actual(mdc.size()) == 1u);
-        UItem<types::source::Blob> source = mdc[0].source.upcast<source::Blob>();
-        wassert(actual(source->format) == "vm2");
-        wassert(actual(source->filename) == "inbound/test.vm2");
-        wassert(actual(source->offset) == 0);
-        wassert(actual(source->size) == 34);
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", "", "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
         wassert(actual(mdc[0]).contains("value", "1.2,,,000000000"));
 
         // No I/O should happen here
-        mdc[0].source->dropCachedData();
+        mdc[0].source().dropCachedData();
         sys::Buffer buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 0u);

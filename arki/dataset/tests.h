@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -243,7 +243,7 @@ namespace testdata {
 struct Element
 {
     Metadata md;
-    UItem<types::Time> time;
+    types::Time time;
     std::string destfile;
     Matcher matcher;
 
@@ -251,10 +251,10 @@ struct Element
     {
         using namespace wibble;
 
-        Item<types::reftime::Position> rt = md.get(types::TYPE_REFTIME).upcast<types::reftime::Position>();
+        const types::reftime::Position* rt = md.get<types::reftime::Position>();
         this->md = md;
         this->time = rt->time;
-        this->destfile = str::fmtf("%04d/%02d-%02d.%s", time->vals[0], time->vals[1], time->vals[2], md.source->format.c_str());
+        this->destfile = str::fmtf("%04d/%02d-%02d.%s", time.vals[0], time.vals[1], time.vals[2], md.source().format.c_str());
         this->matcher = Matcher::parse(matcher);
     }
 };
@@ -459,6 +459,9 @@ struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal
 /// Corrupt a datafile by overwriting the first 4 bytes of its first data
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
+
+void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md);
+void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md);
 
 }
 

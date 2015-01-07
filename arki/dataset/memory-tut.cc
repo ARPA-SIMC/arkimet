@@ -38,10 +38,10 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::metadata;
 
-struct arki_metadata_collection_shar {
-    Collection c;
+struct arki_dataset_memory_shar {
+    dataset::Memory c;
 
-    arki_metadata_collection_shar()
+    arki_dataset_memory_shar()
     {
     }
 
@@ -50,7 +50,7 @@ struct arki_metadata_collection_shar {
         scan::scan("inbound/test.grib1", c);
     }
 };
-TESTGRP(arki_metadata_collection);
+TESTGRP(arki_dataset_memory);
 
 // Test querying
 template<> template<>
@@ -58,7 +58,7 @@ void to::test<1>()
 {
     acquireSamples();
 
-    Collection mdc;
+    dataset::Memory mdc;
 
     c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
     ensure_equals(mdc.size(), 1u);

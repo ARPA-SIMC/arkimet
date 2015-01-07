@@ -130,7 +130,6 @@ struct TestMetadataIsset : public ArkiCheck
     TestMetadataIsset(const Metadata& actual, const std::string& field, bool inverted=false)
         : actual(actual), field(field), inverted(inverted) {}
 
-    TestMetadataIsset operator!() { return TestMetadataIsset(actual, field, !inverted); }
     void check(WIBBLE_TEST_LOCPRM) const override
     {
         types::Code code = types::parseCodeName(field.c_str());
@@ -154,6 +153,11 @@ struct TestMetadataIsset : public ArkiCheck
 auto_ptr<ArkiCheck> ActualMetadata::is_set(const std::string& field)
 {
     return auto_ptr<ArkiCheck>(new TestMetadataIsset(actual, field));
+}
+
+auto_ptr<ArkiCheck> ActualMetadata::is_not_set(const std::string& field)
+{
+    return auto_ptr<ArkiCheck>(new TestMetadataIsset(actual, field, true));
 }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/dispatcher.h>
 #include <arki/dataset.h>
@@ -36,6 +34,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 using namespace wibble;
 using namespace wibble::tests;
 
@@ -81,7 +80,7 @@ TESTGRP(arki_dispatcher);
 namespace {
 inline std::string dsname(const Metadata& md)
 {
-	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>()->name;
+    return md.get<AssignedDataset>()->name;
 }
 }
 

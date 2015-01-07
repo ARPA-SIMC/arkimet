@@ -79,6 +79,11 @@ struct Row
         return memcmp(items, row.items, sizeof(items)) == 0;
     }
 
+    bool operator!=(const Row& row) const
+    {
+        return memcmp(items, row.items, sizeof(items)) != 0;
+    }
+
     void dump(std::ostream& out, unsigned indent = 0) const;
 
 private:

@@ -40,6 +40,9 @@ struct ActualMetadata : public wibble::tests::Actual<Metadata>
 
     /// Check that the metadata does contain an item of the given type
     std::auto_ptr<ArkiCheck> is_set(const std::string& field);
+
+    /// Check that the metadata does contain an item of the given type
+    std::auto_ptr<ArkiCheck> is_not_set(const std::string& field);
 };
 
 }

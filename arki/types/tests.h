@@ -118,6 +118,7 @@ public:
 namespace wibble {
 namespace tests {
 
+inline arki::tests::ActualType actual_type(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
 inline arki::tests::ActualType actual_type(const arki::types::Type* actual) { return arki::tests::ActualType(actual); }
 inline arki::tests::ActualType actual(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
 template<typename T>

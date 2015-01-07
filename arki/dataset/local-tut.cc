@@ -42,6 +42,7 @@ using namespace wibble::tests;
 using namespace arki::tests;
 using namespace arki::dataset;
 using namespace arki::utils;
+using namespace arki::types;
 using namespace wibble;
 
 struct arki_dataset_local_base : public DatasetTest {
@@ -184,8 +185,7 @@ template<> template<> void to::test<2>()
 	ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    UItem<Source> source = mdc[0].source;
-    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218));
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
@@ -222,14 +222,11 @@ template<> template<> void to::test<4>()
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// Check that the source record that comes out is ok
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::INLINE);
-	ensure_equals(source->format, "grib1");
-    wassert(actual(source->getSize()) == 7218u);
+    // Check that the source record that comes out is ok
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
 
     wibble::sys::Buffer buf = mdc[0].getData();
-    ensure_equals(buf.size(), source->getSize());
+    ensure_equals(buf.size(), 7218);
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
@@ -269,19 +266,16 @@ template<> template<> void to::test<5>()
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
 
-	// Check that the source record that comes out is ok
-	UItem<Source> source = mdc[0].source;
-	ensure_equals(source->style(), Source::INLINE);
-	ensure_equals(source->format, "grib1");
-    wassert(actual(source->getSize()) == 7218u);
+    // Check that the source record that comes out is ok
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
 
     wibble::sys::Buffer buf = mdc[0].getData();
-    wassert(actual(buf.size()) == source->getSize());
+    wassert(actual(buf.size()) == 7218);
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source->getSize()) == 7218u);
+    wassert(actual(mdc[0].source().getSize()) == 7218u);
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
@@ -378,11 +372,11 @@ template<> template<> void to::test<7>()
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
                             wibble::sys::Buffer data(buf, len, false);
-                            md.source = types::Source::createInline("vm2", data);
-                            md.add_note(types::Note::create("Generated from memory"));
-                            md.set(types::reftime::Position::create(types::Time::create(2013, month, day, hour, 0, 0)));
-                            md.set(types::area::VM2::create(station));
-                            md.set(types::product::VM2::create(varid));
+                            md.set_source(Source::createInline("vm2", data));
+                            md.add_note("Generated from memory");
+                            md.set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
+                            md.set(Area::createVM2(station));
+                            md.set(Product::createVM2(varid));
                             snprintf(buf, 40, "%d,,,000000000", value);
                             md.set(types::Value::create(buf));
                             WritableDataset::AcquireResult res = writer->acquire(md);
@@ -413,8 +407,8 @@ template<> template<> void to::test<7>()
     {
         virtual uint64_t make_key(const Metadata& md) const
         {
-            UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
-            return rt->time->vals[1] * 10000 + rt->time->vals[2] * 100 + rt->time->vals[3];
+            const reftime::Position* rt = md.get<types::reftime::Position>();
+            return rt->time.vals[1] * 10000 + rt->time.vals[2] * 100 + rt->time.vals[3];
         }
     };
 
@@ -422,10 +416,10 @@ template<> template<> void to::test<7>()
     {
         virtual uint64_t make_key(const Metadata& md) const
         {
-            UItem<types::reftime::Position> rt = md.get<types::reftime::Position>();
-            UItem<types::area::VM2> area = md.get(TYPE_AREA).upcast<types::area::VM2>();
-            UItem<types::product::VM2> prod = md.get(TYPE_PRODUCT).upcast<types::product::VM2>();
-            uint64_t dt = rt->time->vals[1] * 10000 + rt->time->vals[2] * 100 + rt->time->vals[3];
+            const reftime::Position* rt = md.get<types::reftime::Position>();
+            const area::VM2* area = dynamic_cast<const area::VM2*>(md.get(TYPE_AREA));
+            const product::VM2* prod = dynamic_cast<const product::VM2*>(md.get(TYPE_PRODUCT));
+            uint64_t dt = rt->time.vals[1] * 10000 + rt->time.vals[2] * 100 + rt->time.vals[3];
             return dt * 100 + area->station_id() * 10 + prod->variable_id();
         }
     };

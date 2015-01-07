@@ -91,6 +91,7 @@ public:
     void set_notes(const std::vector<types::Note>& notes);
     void set_notes_encoded(const std::string& notes);
     void add_note(const types::Note& note);
+    void add_note(const std::string& note);
 
 	/**
 	 * Check that two Metadata contain the same information

@@ -181,6 +181,11 @@ void Metadata::add_note(const types::Note& note)
     m_notes += note.encodeBinary();
 }
 
+void Metadata::add_note(const std::string& note)
+{
+    m_notes += Note(note).encodeBinary();
+}
+
 void Metadata::clear()
 {
     ItemSet::clear();

@@ -81,13 +81,9 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
     Metadata& find_imported_second_in_file()
     {
         // Find the imported_result element whose offset is > 0
-        UItem<types::source::Blob> second_in_segment;
         for (int i = 0; i < 3; ++i)
-        {
-            second_in_segment = import_results[i].source.upcast<types::source::Blob>();
-            if (second_in_segment->offset > 0)
+            if (import_results[i].sourceBlob().offset > 0)
                 return import_results[i];
-        }
         throw wibble::exception::Consistency("second in file not found");
     }
 
@@ -97,8 +93,8 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         wruntest(import_all, fixture);
         Metadata& md = find_imported_second_in_file();
-        UItem<types::source::Blob> second_in_segment = md.source.upcast<types::source::Blob>();
-        holed_fname = second_in_segment->filename.substr(8);
+        const source::Blob& second_in_segment = md.sourceBlob();
+        holed_fname = second_in_segment.filename.substr(8);
 
         {
             // Remove one element
@@ -442,12 +438,12 @@ void to::test<6>()
 		metadata::Collection mdc;
 		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 		ensure_equals(mdc.size(), 1u);
-        wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
 
         mdc.clear();
         reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
         ensure_equals(mdc.size(), 1u);
-        wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -470,7 +466,7 @@ void to::test<6>()
 	metadata::Collection mdc;
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
 
 	// Query the second element and check that it starts after the first one
 	// (there used to be a bug where the rebuild would use the offsets of
@@ -478,7 +474,7 @@ void to::test<6>()
 	mdc.clear();
 	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
 	ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
 
 	// Ensure that we have the summary cache
 	ensure(sys::fs::exists("testdir/.summaries/all.summary"));

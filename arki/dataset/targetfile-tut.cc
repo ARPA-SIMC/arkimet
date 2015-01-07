@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,7 @@ struct arki_dataset_targetfile_shar {
 		stringstream incfg(conf);
 		config.parse(incfg, "(memory)");
 
-        md.set(reftime::Position::create(types::Time::create(2007, 6, 5, 4, 3, 2)));
+        md.set("reftime", "2007-06-05T04:03:02Z");
     }
 };
 TESTGRP(arki_dataset_targetfile);

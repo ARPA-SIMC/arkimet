@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2010--2015  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,10 +16,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/dataset/gridquery.h>
+#include <arki/dataset/memory.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -36,6 +35,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::types;
 
 struct arki_dataset_gridquery_shar {
 	ConfigFile config;
@@ -97,7 +97,7 @@ void to::test<1>()
 {
 	dataset::GridQuery gq(*ds);
 
-	Item<types::Time> t = types::Time::create(2007, 7, 8, 13, 0, 0);
+    Time t(2007, 7, 8, 13, 0, 0);
 
 	// Trivially query only one item
 	gq.add(Matcher::parse("origin:GRIB1,200,0,101;product:GRIB1,200,140,229"));
@@ -137,8 +137,8 @@ void to::test<2>()
 	Metadata md;
 	md.readYaml(md_yaml, "(memory)");
 
-	metadata::Collection ds;
-	ds(md);
+    dataset::Memory ds;
+    ds(md);
 
 	// Build the grid query
 	dataset::GridQuery gq(ds);
@@ -151,8 +151,8 @@ void to::test<2>()
 	}
 	gq.add(Matcher::parse("timerange:c012; level:g00; product:tp"));
 
-	Item<types::Time> t = types::Time::create(2010, 05, 03, 0, 0, 0);
-	gq.addTime(t);
+    Time t(2010, 05, 03, 0, 0, 0);
+    gq.addTime(t);
 
 	gq.consolidate();
 

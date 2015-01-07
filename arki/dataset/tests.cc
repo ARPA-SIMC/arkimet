@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/dataset/tests.h>
+#include "tests.h"
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/dataset/local.h>
@@ -71,10 +69,10 @@ void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& disp
 		for (vector<Metadata>::iterator i = c.begin(); i != c.end(); ++i)
 		{
 			cerr << "Failed dispatch notes:" << endl;
-			std::vector< Item<types::Note> > notes = i->notes();
-			for (std::vector< Item<types::Note> >::const_iterator j = notes.begin();
-					j != notes.end(); ++j)
-				cerr << "   " << *j << endl;
+            std::vector<Note> notes = i->notes();
+            for (std::vector<Note>::const_iterator j = notes.begin();
+                    j != notes.end(); ++j)
+                cerr << "   " << *j << endl;
 		}
 	}
 	inner_ensure_equals(res, Dispatcher::DISP_OK);
@@ -751,6 +749,53 @@ std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
     return ds;
 }
 
+void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md)
+{
+    typedef types::source::Blob Blob;
+
+    // Make a snapshot of everything before appending
+    auto_ptr<Source> orig_source(md.source().clone());
+    size_t data_size = md.dataSize();
+    size_t orig_fsize = sys::fs::size(dw->absname, 0);
+
+    // Start the append transaction, nothing happens until commit
+    off_t ofs;
+    Pending p = dw->append(md, &ofs);
+    wassert(actual((size_t)ofs) == orig_fsize);
+    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize);
+    wassert(actual_type(md.source()) == *orig_source);
+
+    // Commit
+    p.commit();
+
+    // After commit, data is appended
+    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize + data_size);
+
+    // And metadata is updated
+    wassert(actual_type(md.source()).is_source_blob("grib", "", dw->absname, orig_fsize, data_size));
+}
+
+void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md)
+{
+    // Make a snapshot of everything before appending
+    auto_ptr<Source> orig_source(md.source().clone());
+    size_t orig_fsize = sys::fs::size(dw->absname, 0);
+
+    // Start the append transaction, nothing happens until commit
+    off_t ofs;
+    Pending p = dw->append(md, &ofs);
+    wassert(actual((size_t)ofs) == orig_fsize);
+    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
+    wassert(actual_type(md.source()) == *orig_source);
+
+    // Rollback
+    p.rollback();
+
+    // After rollback, nothing has changed
+    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
+    wassert(actual_type(md.source()) == *orig_source);
+}
+
 }
 
 namespace testdata {
@@ -758,7 +803,7 @@ namespace testdata {
 void Fixture::finalise_init()
 {
     // Compute selective_cutoff
-    UItem<types::Time> tmin = test_data[0].time;
+    Time tmin = test_data[0].time;
     //Item<types::Time> tmax = test_data[0].time;
     for (int i = 2; i < 3; ++i)
     {
@@ -766,11 +811,11 @@ void Fixture::finalise_init()
         //tmax = max(tmax, test_data[i].time);
     }
     for (int i = 0; i < 6; ++i)
-        selective_cutoff[i] = tmin->vals[i];
+        selective_cutoff[i] = tmin.vals[i];
     ++selective_cutoff[1];
     wibble::grcal::date::normalise(selective_cutoff);
 
-    Item<Time> cutoff(Time::create(selective_cutoff));
+    Time cutoff(selective_cutoff);
     for (int i = 0; i < 3; ++i)
     {
         fnames.insert(test_data[i].destfile);
@@ -793,20 +838,16 @@ unsigned Fixture::selective_days_since() const
 
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
-    ValueBag testValueBag;
-    testValueBag.set("foo", Value::createInteger(5));
-    testValueBag.set("bar", Value::createInteger(5000));
-
     Metadata md;
-    md.source = Source::createInline("grib", size);
-    md.set(origin::GRIB1::create(200, 10, 100));
-    md.set(product::GRIB1::create(3, 4, 5));
-    md.set(level::GRIB1::create(1, 2));
-    md.set(timerange::GRIB1::create(4, 5, 6, 7));
-    md.set(reftime::Position::create(types::Time::create(2014, month, day, hour, 0, 0)));
-    md.set(area::GRIB::create(testValueBag));
-    md.set(proddef::GRIB::create(testValueBag));
-    md.add_note(types::Note::create("this is a test"));
+    md.set_source(Source::createInline("grib", size));
+    md.set("origin", "GRIB1(200, 10, 100)");
+    md.set("product", "GRIB1(3, 4, 5)");
+    md.set("level", "GRIB1(1, 2)");
+    md.set("timerange", "GRIB1(4, 5, 6, 7)");
+    md.set(Reftime::createPosition(Time(2014, month, day, hour, 0, 0)));
+    md.set("area", "GRIB(foo=5,bar=5000)");
+    md.set("proddef", "GRIB(foo=5,bar=5000)");
+    md.add_note("this is a test");
     return md;
 }
 

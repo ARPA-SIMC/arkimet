@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,8 +15,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
-
-#include "config.h"
 
 #include <arki/dataset/tests.h>
 #include <arki/dataset/ondisk2.h>
@@ -51,9 +49,9 @@ using namespace arki::utils;
 using namespace arki::tests;
 
 namespace {
-inline UItem<types::AssignedDataset> getDataset(const Metadata& md)
+static inline const types::AssignedDataset* getDataset(const Metadata& md)
 {
-	return md.get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
+    return md.get<AssignedDataset>();
 }
 }
 
@@ -196,16 +194,16 @@ void to::test<1>()
 			i != md.notes.end(); ++i)
 		cerr << *i << endl;
 	#endif
-	UItem<types::AssignedDataset> ds = getDataset(mdc[0]);
-	ensure_equals(ds->name, "test200");
-	ensure_equals(ds->id, "1");
+    const AssignedDataset* ds = getDataset(mdc[0]);
+    ensure_equals(ds->name, "test200");
+    ensure_equals(ds->id, "1");
 
-	// See if we catch duplicate imports
-	mdc[0].unset(types::TYPE_ASSIGNEDDATASET);
-	res = d200.acquire(mdc[0]);
-	ensure_equals(res, WritableDataset::ACQ_ERROR_DUPLICATE);
-	ds = mdc[0].get(types::TYPE_ASSIGNEDDATASET).upcast<types::AssignedDataset>();
-	ensure(!ds.defined());
+    // See if we catch duplicate imports
+    mdc[0].unset(TYPE_ASSIGNEDDATASET);
+    res = d200.acquire(mdc[0]);
+    ensure_equals(res, WritableDataset::ACQ_ERROR_DUPLICATE);
+    ds = getDataset(mdc[0]);
+    ensure(!ds);
 
 	// Flush the changes and check that everything is allright
 	d200.flush();
@@ -229,7 +227,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("test200"), "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("test200"), "2007/07-08.grib1", 0, 7218));
 
 	mdc.clear();
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
@@ -255,7 +253,7 @@ void to::test<3>()
 	ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("test80"), "2007/07-07.grib1", 0, 34960));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("test80"), "2007/07-07.grib1", 0, 34960));
 
 	mdc.clear();
 	testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
@@ -281,7 +279,7 @@ void to::test<4>()
 	ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual(mdc[0].source).sourceblob_is("grib1", sys::fs::abspath("test98"), "2007/10-09.grib1", 0, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("test98"), "2007/10-09.grib1", 0, 2234));
 }
 
 // Test replacing an element
@@ -299,15 +297,15 @@ void to::test<5>()
 		ensure_equals(mdc.size(), 1u);
 	}
 
-	// Take note of the original source
-	UItem<source::Blob> blob1 = mdc[0].source.upcast<source::Blob>();
+    // Take note of the original source
+    auto_ptr<source::Blob> blob1(mdc[0].sourceBlob().clone());
 
 	{
 		auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test80")));
 		// Replace it
 		if (testds->acquire(mdc[0], WritableDataset::REPLACE_ALWAYS) != WritableDataset::ACQ_OK)
 		{
-			std::vector< Item<types::Note> > notes = mdc[0].notes();
+            std::vector<Note> notes = mdc[0].notes();
 			for (size_t i = 0; i < notes.size(); ++i)
 				cerr << " md note: " << notes[i] << endl;
 			ensure(false);
@@ -324,8 +322,8 @@ void to::test<5>()
 		ensure_equals(mdc.size(), 1u);
 	}
 
-	// Take note of the original source
-	UItem<source::Blob> blob2 = mdc[0].source.upcast<source::Blob>();
+    // Take note of the original source
+    auto_ptr<source::Blob> blob2(mdc[0].sourceBlob().clone());
 
 	// Ensure that it's on the same file (since the reftime did not change)
 	ensure_equals(blob1->filename, blob2->filename);
@@ -352,10 +350,10 @@ void to::test<6>()
 	}
 
 	// Check that it has a source and metadata element
-	UItem<types::AssignedDataset> ds = getDataset(mdc[0]);
-	Item<types::Time> changeTime = ds->changed;
-	ensure_equals(ds->name, "test200");
-	ensure_equals(mdc[0].source->style(), Source::BLOB);
+    const AssignedDataset* ds = getDataset(mdc[0]);
+    Time changeTime = ds->changed;
+    ensure_equals(ds->name, "test200");
+    wassert(actual(mdc[0].has_source_blob()).istrue());
 
 	{
 		auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test200")));
@@ -366,10 +364,10 @@ void to::test<6>()
 		ensure(!sys::fs::exists("test200/2007/07-08.grib1.needs-pack"));
 	}
 
-	// Check that it does not have a source and metadata element
-	ds = getDataset(mdc[0]);
-	ensure(!ds.defined());
-	ensure(!mdc[0].source.defined());
+    // Check that it does not have a source and metadata element
+    ds = getDataset(mdc[0]);
+    ensure(!ds);
+    wassert(actual(mdc[0].has_source()).isfalse());
 
 	// Try to fetch the element again
 	{
@@ -533,14 +531,14 @@ void to::test<10>()
 		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
 		ensure_equals(mdc.size(), 3u);
 
-		// Make sure we're not getting the deleted element
-		UItem<source::Blob> blob = mdc[0].source.upcast<source::Blob>();
-		ensure(blob->offset > 0);
-		blob = mdc[1].source.upcast<source::Blob>();
-		ensure(blob->offset > 0);
-		blob = mdc[2].source.upcast<source::Blob>();
-		ensure(blob->offset > 0);
-	}
+        // Make sure we're not getting the deleted element
+        const source::Blob& blob0 = mdc[0].sourceBlob();
+        ensure(blob0.offset > 0);
+        const source::Blob& blob1 = mdc[1].sourceBlob();
+        ensure(blob1.offset > 0);
+        const source::Blob& blob2 = mdc[2].sourceBlob();
+        ensure(blob2.offset > 0);
+    }
 
 	// Test querying the summary
 	{
@@ -561,16 +559,16 @@ void to::test<11>()
 	reader.querySummary(Matcher(), summary);
 	ensure_equals(summary.count(), 3u);
 
-	Item<types::Reftime> rt = summary.getReferenceTime();
-	ensure_equals(rt->style(), Reftime::PERIOD);
-	Item<reftime::Period> p = rt.upcast<reftime::Period>();
-	metadata::Collection mdc;
-	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin->toISO8601()), false), mdc);
-	ensure_equals(mdc.size(), 1u);
+    auto_ptr<Reftime> rt = summary.getReferenceTime();
+    ensure_equals(rt->style(), Reftime::PERIOD);
+    auto_ptr<reftime::Period> p = downcast<reftime::Period>(rt);
+    metadata::Collection mdc;
+    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.toISO8601()), false), mdc);
+    ensure_equals(mdc.size(), 1u);
 
-	mdc.clear();
-	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98; reftime:=" + p->end->toISO8601()), false), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98; reftime:=" + p->end.toISO8601()), false), mdc);
+    ensure_equals(mdc.size(), 1u);
 }
 
 // Test querying data using index

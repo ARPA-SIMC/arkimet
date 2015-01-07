@@ -124,13 +124,26 @@ bool Table::equals(const Table& table) const
 {
     if (row_count != table.row_count) return false;
     for (unsigned ri = 0; ri < row_count; ++ri)
+    {
+        Row translated(table.rows[ri].stats);
+        // Translate the row in table to the pointer that we use in *this
         for (unsigned ci = 0; ci < msoSize; ++ci)
         {
-            if (!Type::nullable_equals(rows[ri].items[ci], table.rows[ri].items[ci]))
-                return false;
-            if (rows[ri].stats != table.rows[ri].stats)
-                return false;
+            if (table.rows[ri].items[ci] == 0)
+                translated.items[ci] = 0;
+            else
+            {
+                translated.items[ci] = interns[ci].lookup(*table.rows[ri].items[ci]);
+                if (!translated.items[ci]) return false;
+            }
         }
+
+        // Lookup translated in this table
+        Row* pos = lower_bound(rows, rows + row_count, translated);
+        if (pos == rows + row_count) return false;
+        if (*pos != translated) return false;
+        if (pos->stats != translated.stats) return false;
+    }
     return true;
 }
 
