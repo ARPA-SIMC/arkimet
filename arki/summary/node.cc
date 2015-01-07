@@ -409,7 +409,7 @@ void Node::merge(const types::Type* const* items, size_t items_size, const Stats
     this->stats.merge(stats);
 }
 
-auto_ptr<Node> createPopulated(const types::Type* const* items, unsigned items_size, const Stats& stats)
+auto_ptr<Node> Node::createPopulated(const types::Type* const* items, unsigned items_size, const Stats& stats)
 {
     auto_ptr<Node> new_node(new Node(stats));
     for (unsigned i = 0; i < items_size; ++i)

@@ -35,6 +35,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/index/contents.h \
 		dataset/local.h \
 		dataset/maintenance.h \
+		dataset/memory.h \
 		dataset/merged.h \
 		dataset/ondisk2.h \
 		dataset/ondisk2/reader.h \
@@ -314,7 +315,6 @@ libarkimet_la_SOURCES += \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \
-		metadata/xargs.cc \
 		metadata/test-generator.cc \
 		summary/stats.cc \
 		summary/node.cc \
@@ -338,7 +338,6 @@ tests_arki_test_SOURCES += \
 		metadata/consumer-tut.cc \
 		metadata/collection-tut.cc \
 		metadata/clusterer-tut.cc \
-		metadata/xargs-tut.cc \
 		metadata/stream-tut.cc \
 		metadata/tests.cc \
 		metadata/test-generator-tut.cc \
@@ -371,11 +370,6 @@ libarkimet_la_SOURCES += scan/grib.cc
 tests_arki_test_SOURCES += scan/grib-tut.cc
 AM_CPPFLAGS += $(GRIBAPI_CFLAGS) $(LUA_CFLAGS)
 libarkimet_la_LDFLAGS += $(GRIBAPI_LIBS) $(LUA_LIBS)
-endif
-
-if LUA
-libarkimet_la_SOURCES += report.cc
-tests_arki_test_SOURCES += report-tut.cc
 endif
 
 if DBALLE
@@ -419,6 +413,7 @@ endif
 if DEVEL_DO_DATASETS
 libarkimet_la_SOURCES += \
 		utils/dataset.cc \
+		metadata/xargs.cc \
 		targetfile.cc \
 		dataset.cc \
 		dataset/data.cc \
@@ -427,6 +422,7 @@ libarkimet_la_SOURCES += \
 		dataset/data/lines.cc \
 		dataset/data/dir.cc \
 		dataset/maintenance.cc \
+		dataset/memory.cc \
 		dataset/index/base.cc \
 		dataset/index/attr.cc \
 		dataset/index/manifest.cc \
@@ -459,12 +455,14 @@ libarkimet_la_SOURCES += \
 tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
 		utils/dataset-tut.cc \
+		metadata/xargs-tut.cc \
 		dataset/data-tut.cc \
 		dataset/data/fd-tut.cc \
 		dataset/data/concat-tut.cc \
 		dataset/data/lines-tut.cc \
 		dataset/data/dir-tut.cc \
 		dataset/maintenance-tut.cc \
+		dataset/memory-tut.cc \
 		dataset/index/base-tut.cc \
 		dataset/index/attr-tut.cc \
 		dataset/index/manifest-tut.cc \
@@ -507,6 +505,11 @@ nobase_dist_arkiinclude_HEADERS += dataset/http.h
 libarkimet_la_SOURCES += dataset/http.cc
 libarkimet_la_LDFLAGS += @LIBCURL@
 tests_arki_test_SOURCES += dataset/http-tut.cc
+endif
+
+if LUA
+libarkimet_la_SOURCES += report.cc
+tests_arki_test_SOURCES += report-tut.cc
 endif
 
 endif

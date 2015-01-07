@@ -94,11 +94,11 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	Summary s1;
-	ensure(Matcher::parse("origin:GRIB1,1")(s));
-	s1 = s.filter(Matcher::parse("origin:GRIB1,1")); ensure_equals(s1.count(), 1u);
-	ensure(!Matcher::parse("origin:GRIB1,2")(s));
-	s1 = s.filter(Matcher::parse("origin:GRIB1,2")); ensure_equals(s1.count(), 0u);
+    Summary s1;
+    wassert(actual(s.match(Matcher::parse("origin:GRIB1,1"))).istrue());
+    s1 = s.filter(Matcher::parse("origin:GRIB1,1")); ensure_equals(s1.count(), 1u);
+    wassert(actual(s.match(Matcher::parse("origin:GRIB1,2"))).isfalse());
+    s1 = s.filter(Matcher::parse("origin:GRIB1,2")); ensure_equals(s1.count(), 0u);
 }
 
 // Test matching runs
@@ -112,10 +112,10 @@ void to::test<4>()
 	s.add(md2);
 	Summary s1;
 
-	ensure(Matcher::parse("run:MINUTE,0")(s));
-	s1 = s.filter(Matcher::parse("run:MINUTE,0")); ensure_equals(s1.count(), 1u);
-	ensure(Matcher::parse("run:MINUTE,12")(s));
-	s1 = s.filter(Matcher::parse("run:MINUTE,12")); ensure_equals(s1.count(), 1u);
+    wassert(actual(s.match(Matcher::parse("run:MINUTE,0"))).istrue());
+    s1 = s.filter(Matcher::parse("run:MINUTE,0")); ensure_equals(s1.count(), 1u);
+    wassert(actual(s.match(Matcher::parse("run:MINUTE,12"))).istrue());
+    s1 = s.filter(Matcher::parse("run:MINUTE,12")); ensure_equals(s1.count(), 1u);
 }
 
 // Test filtering

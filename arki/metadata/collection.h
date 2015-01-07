@@ -4,7 +4,7 @@
 /*
  * metadata/collection - In-memory collection of metadata
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Collection : public std::vector<Metadata>, public Consumer, public ReadonlyDataset
+struct Collection : public std::vector<Metadata>, public Consumer
 {
     Collection();
     virtual ~Collection();
@@ -53,9 +53,6 @@ struct Collection : public std::vector<Metadata>, public Consumer, public Readon
 		back().dropCachedData();
 		return true;
 	}
-
-	virtual void queryData(const dataset::DataQuery& q, Consumer& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter

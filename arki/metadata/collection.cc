@@ -1,7 +1,7 @@
 /*
  * metadata/collection - In-memory collection of metadata
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/metadata/collection.h>
+#include "collection.h"
 #include <arki/types/source/blob.h>
-#include <arki/utils/dataset.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/codec.h>
 #include <arki/utils.h>
@@ -130,48 +129,6 @@ void Collection::appendTo(const std::string& fname) const
 		throw wibble::exception::File(fname, "opening file for appending");
 	writeTo(outmd, fname);
 	outmd.close();
-}
-
-void Collection::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
-{
-	// First ask the index.  If it can do something useful, iterate with it
-	//
-	// If the index would just do a linear scan of everything, then instead
-	// scan the directories in sorted order.
-	//
-	// For each directory try to match its summary first, and if it matches
-	// then produce all the contents.
-	metadata::Consumer* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
-	auto_ptr<ds::TemporaryDataInliner> inliner;
-
-	if (q.withData)
-	{
-		inliner.reset(new ds::TemporaryDataInliner(*c));
-		c = inliner.get();
-	}
-
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
-
-	for (std::vector<Metadata>::iterator i = begin();
-			i != end(); ++i)
-		if (q.matcher(*i))
-			if (!(*c)(*i))
-				break;
-}
-
-void Collection::querySummary(const Matcher& matcher, Summary& summary)
-{
-	using namespace wibble::str;
-
-	for (std::vector<Metadata>::iterator i = begin();
-			i != end(); ++i)
-		if (matcher(*i))
-			summary.add(*i);
 }
 
 std::string Collection::ensureContiguousData(const std::string& source) const

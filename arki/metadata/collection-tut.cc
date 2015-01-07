@@ -55,54 +55,9 @@ struct arki_metadata_collection_shar {
 };
 TESTGRP(arki_metadata_collection);
 
-// Test querying
-template<> template<>
-void to::test<1>()
-{
-	acquireSamples();
-
-	Collection mdc;
-
-	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
-
-	mdc.clear();
-
-	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960u));
-
-	mdc.clear();
-	c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
-}
-
-// Test querying the summary
-template<> template<>
-void to::test<2>()
-{
-	acquireSamples();
-	Summary summary;
-	c.querySummary(Matcher::parse("origin:GRIB1,200"), summary);
-	ensure_equals(summary.count(), 1u);
-}
-
-// Test querying the summary by reftime
-template<> template<>
-void to::test<3>()
-{
-	acquireSamples();
-	Summary summary;
-	//system("bash");
-	c.querySummary(Matcher::parse("reftime:>=2007-07"), summary);
-	ensure_equals(summary.count(), 3u);
-}
-
 // Test compression
 template<> template<>
-void to::test<4>()
+void to::test<1>()
 {
 #ifdef HAVE_DBALLE
 	using namespace utils;
@@ -187,7 +142,7 @@ void to::test<4>()
 
 // Test compression when the data don't compress
 template<> template<>
-void to::test<5>()
+void to::test<2>()
 {
 	using namespace utils;
 
