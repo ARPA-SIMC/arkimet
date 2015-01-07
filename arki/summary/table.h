@@ -80,6 +80,9 @@ struct Row
     }
 
     void dump(std::ostream& out, unsigned indent = 0) const;
+
+private:
+    Row& operator=(const Row&);
 };
 
 class Table

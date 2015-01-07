@@ -173,7 +173,6 @@ void to::test<5>()
     row2.set_to_zero();
     wassert(actual(row2 < row1).istrue());
     wassert(actual(row1 == row2).isfalse());
-
 }
 
 //    /// Return the intern version of an item

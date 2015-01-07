@@ -365,7 +365,6 @@ void to::test<16>()
     Summary s;
     s.readFile("inbound/old.summary");
     ensure(s.count() > 0);
-
     // Compare with a summary with different msoSerLen
     {
         Summary s1;

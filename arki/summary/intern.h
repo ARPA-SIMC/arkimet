@@ -68,6 +68,10 @@ public:
      * one instead of cloning a new one
      */
     const types::Type* intern(std::auto_ptr<types::Type> item);
+
+private:
+    TypeIntern(const TypeIntern&);
+    TypeIntern& operator=(const TypeIntern&);
 };
 
 }

@@ -292,7 +292,7 @@ void Table::merge(const Row& row)
         // Use the array position since we may reallocate, invalidating the
         // previous pointer
         ensure_we_can_add_one();
-        memmove(rows + idx + 1, rows + idx, row_count - idx);
+        memmove(rows + idx + 1, rows + idx, (row_count - idx) * sizeof(Row));
         new(rows + idx) Row(row);
         ++row_count;
     }
