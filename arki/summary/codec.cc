@@ -21,7 +21,7 @@
  */
 
 #include "codec.h"
-#include "node.h"
+#include "table.h"
 #include "stats.h"
 #include <arki/summary.h>
 #include <arki/metadata.h>
@@ -50,29 +50,26 @@ namespace {
 
 struct DecoderBase
 {
-    Node& target;
+    Table& target;
     size_t count;
 
-    DecoderBase(Node& target) : target(target), count(0) {}
-
-    void add_to_target(const TypeVector& md, auto_ptr<Stats> stats)
-    {
-        ++count;
-        target.merge(md.raw_items(), md.size(), *stats);
-    }
+    DecoderBase(Table& target) : target(target), count(0) {}
 };
 
 struct Format1Decoder : public DecoderBase
 {
-    TypeVector mdvec;
+    Row row;
 
-    Format1Decoder(Node& target) : DecoderBase(target) {}
+    Format1Decoder(Table& target) : DecoderBase(target)
+    {
+        row.set_to_zero();
+    }
 
-    static auto_ptr<Type> decodeUItem(size_t msoIdx, const unsigned char*& buf, size_t& len)
+    const Type* decodeUItem(size_t msoIdx, const unsigned char*& buf, size_t& len)
     {
         using namespace utils::codec;
         codeclog("Decode metadata item " << msoIdx << " len " << msoSerLen[msoIdx]);
-        size_t itemsizelen = msoSerLen[msoIdx];
+        size_t itemsizelen = Table::msoSerLen[msoIdx];
         ensureSize(len, itemsizelen, "Metadata item size");
         size_t itemsize = decodeUInt(buf, itemsizelen);
         buf += itemsizelen; len -= itemsizelen;
@@ -81,11 +78,11 @@ struct Format1Decoder : public DecoderBase
         if (itemsize)
         {
             ensureSize(len, itemsize, "Metadata item");
-            auto_ptr<Type> res = decodeInner(mso[msoIdx], buf, itemsize);
+            const Type* res = target.intern(msoIdx, decodeInner(Table::mso[msoIdx], buf, itemsize));
             buf += itemsize; len -= itemsize;
             return res;
         } else
-            return auto_ptr<Type>();
+            return 0;
     }
 
     void decode(const unsigned char*& buf, size_t& len, size_t scanpos = 0)
@@ -102,9 +99,8 @@ struct Format1Decoder : public DecoderBase
         codeclog("Stripe size " << stripelen);
 
         // Decode the metadata stripe
-        mdvec.resize(scanpos + stripelen);
         for (size_t i = 0; i < stripelen; ++i)
-            mdvec.set(scanpos + i, decodeUItem(scanpos + i, buf, len));
+            row.items[scanpos + i] = decodeUItem(scanpos + i, buf, len);
 
         ensureSize(len, 2, "Number of child stripes");
         size_t childnum = decodeUInt(buf, 2);
@@ -123,23 +119,24 @@ struct Format1Decoder : public DecoderBase
             buf += 2; len -= 2;
             codeclog("Decoding stats in " << statlen << "b");
             ensureSize(len, 2, "Summary statistics");
-            auto_ptr<Stats> stats = Stats::decode(buf, statlen);
+            row.stats = *Stats::decode(buf, statlen);
             buf += statlen; len -= statlen;
 
-            // Strip undef values at the end of mdvec
-            mdvec.rtrim();
+            // Zero out the remaining items
+            row.set_to_zero(scanpos + stripelen);
 
             // Produce a (metadata, stats) couple
-            add_to_target(mdvec, stats);
+            target.merge(row);
+            ++count;
         }
     }
 };
 
 struct Format3Decoder : public DecoderBase
 {
-    TypeVector mdvec;
+    Row row;
 
-    Format3Decoder(Node& target) : DecoderBase(target) {}
+    Format3Decoder(Table& target) : DecoderBase(target) {}
 
     void decode(Decoder& dec)
     {
@@ -156,7 +153,7 @@ struct Format3Decoder : public DecoderBase
                 if (pos < 0)
                     throw wibble::exception::Consistency("parsing summary",
                             str::fmtf("unsupported typecode found: %d", (int)code));
-                mdvec.unset(pos);
+                row.items[pos] = 0;
             }
 
             // Decode the list of changed/added items
@@ -168,24 +165,22 @@ struct Format3Decoder : public DecoderBase
                 if (pos < 0)
                     throw wibble::exception::Consistency("parsing summary",
                             str::fmtf("unsupported typecode found: %d", (int)item->serialisationCode()));
-                mdvec.set(pos, item);
+                row.items[pos] = target.intern(pos, item);
             }
 
             // Decode the stats
-            auto_ptr<Stats> stats = downcast<Stats>(types::decode(dec));
-
-            // Strip undef values at the end of mdvec
-            mdvec.rtrim();
+            row.stats = *downcast<Stats>(types::decode(dec));
 
             // Produce a (metadata, stats) couple
-            add_to_target(mdvec, stats);
+            target.merge(row);
+            ++count;
         }
     }
 };
 
 }
 
-size_t decode1(utils::codec::Decoder& dec, Node& target)
+size_t decode1(utils::codec::Decoder& dec, Table& target)
 {
     // Stripe size
     // either: child count + children
@@ -194,15 +189,13 @@ size_t decode1(utils::codec::Decoder& dec, Node& target)
 
     if (dec.len == 0) return 0;
 
-    Node::buildMsoSerLen();
-
     Format1Decoder decoder(target);
     decoder.decode(dec.buf, dec.len);
 
     return decoder.count;
 }
 
-size_t decode3(utils::codec::Decoder& dec, Node& target)
+size_t decode3(utils::codec::Decoder& dec, Table& target)
 {
     // Stripe size
     // stats size + stats
@@ -216,7 +209,7 @@ size_t decode3(utils::codec::Decoder& dec, Node& target)
     return decoder.count;
 }
 
-size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, Node& target)
+size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, Table& target)
 {
     using namespace utils::codec;
 
@@ -270,7 +263,7 @@ EncodingVisitor::EncodingVisitor(utils::codec::Encoder& enc)
     : enc(enc)
 {
     // Start with all undef
-    last.resize(Node::msoSize);
+    last.resize(Table::msoSize);
 }
 
 bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats& stats)
@@ -280,7 +273,7 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
     string added;
 
     // Prepare the diff between last and md
-    for (size_t i = 0; i < Node::msoSize; ++i)
+    for (size_t i = 0; i < Table::msoSize; ++i)
     {
         bool md_has_it = i < md.size() && md[i];
         if (!md_has_it && last[i])

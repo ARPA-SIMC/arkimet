@@ -27,6 +27,8 @@
 #include <arki/matcher.h>
 #include <arki/types/utils.h>
 
+#include <iostream> // For debugging
+
 using namespace std;
 using namespace wibble;
 using namespace arki::utils::codec;
@@ -102,7 +104,12 @@ void Node::md_to_tv(const Metadata& md, types::TypeVector& out)
     }
 }
 
-Node::Node() {}
+Node::Node(const types::Type* const* items, unsigned items_size, const Stats& stats)
+    : stats(stats)
+{
+    for (unsigned i = 0; i < items_size; ++i)
+        md.set(i, items[i]);
+}
 
 Node::Node(const Stats& stats) : stats(stats) {}
 
@@ -143,17 +150,23 @@ bool Node::equals(const Node& node) const
 
 void Node::dump(std::ostream& out, size_t depth) const
 {
-    string head(depth, ' ');
-    out << head << md.size() << " md:" << endl;
+    string head(depth * 2, ' ');
+    out << head << "- Node with " << md.size() << " mds" << endl;
     for (size_t i = 0; i < md.size(); ++i)
+    {
+        out << head << "  . md " << tag(mso[depth + i]) << "[" << i << "]: ";
         if (md[i])
-            out << head << *md[i] << endl;
+            out << *md[i] << endl;
         else
-            out << head << "--" << endl;
-    out << head << "Stats:" << stats;
-    out << head << children.size() << " children:" << endl;
-    for (vector<Node*>::const_iterator i = children.begin(); i != children.end(); ++i)
-        (*i)->dump(out, depth+1);
+            out << "--" << endl;
+    }
+    out << stats.toYaml(depth * 2 + 2);
+    if (!children.empty())
+    {
+        out << head << "  " << children.size() << " children:" << endl;
+        for (vector<Node*>::const_iterator i = children.begin(); i != children.end(); ++i)
+            (*i)->dump(out, depth + 1);
+    }
 }
 
 bool Node::visitItem(size_t msoidx, ItemVisitor& visitor) const
@@ -272,16 +285,34 @@ bool Node::candidate_for_merge(const types::Type* const* items, size_t items_siz
 
 void Node::merge(const types::Type* const* items, size_t items_size, const Stats& stats)
 {
+cerr << "MERGE ITEMS " << items_size << " THIS SIZE " << md.size() << endl;
+
     // Compute the number of common items
     unsigned common = 0;
     for ( ; common < items_size && common < md.size(); ++common)
         if (!Type::nullable_equals(items[common], md[common]))
             break;
 
+cerr << " COMMON " << common << endl;
+
+    if (common == md.size() && common == items_size && children.empty())
+    {
+        // All the metadata items match with ours and we are a final node, so
+        // we can merge here
+        cerr << " MERGE HERE" << endl;
+        this->stats.merge(stats);
+        return;
+    }
+
+cerr << " NOT FOR HERE " << common << endl;
+
     // If no items are in common or only some items are in common, split the
     // node
-    if (common < md.size())
+    if (common <= md.size())
+    {
+        cerr << " SPLIT " << common << endl;
         split(common);
+    }
 
     // Now all our items are in common
 
@@ -289,12 +320,7 @@ void Node::merge(const types::Type* const* items, size_t items_size, const Stats
     items += common;
     items_size -= common;
 
-    if (items_size == 0 && children.empty())
-    {
-        // We are exactly the same: merge the stats
-        this->stats.merge(stats);
-        return;
-    }
+cerr << " ADVANCE " << common << " LEFT " << items_size << endl;
 
     // Look for a child to merge into
     for (vector<Node*>::iterator i = children.begin(); i != children.end(); ++i)
@@ -307,16 +333,11 @@ void Node::merge(const types::Type* const* items, size_t items_size, const Stats
         }
     }
 
-    // No children were found to merge into: create a new one
-    children.push_back(createPopulated(items, items_size, stats).release());
-    this->stats.merge(stats);
-}
+    cerr << " FOUND NO CHILD" << endl;
 
-auto_ptr<Node> Node::createPopulated(const types::Type* const* items, unsigned items_size, const Stats& stats)
-{
-    auto_ptr<Node> new_node(new Node(stats));
-    for (unsigned i = 0; i < items_size; ++i)
-        new_node->md.set(i, items[i]);
+    // No children were found to merge into: create a new one
+    children.push_back(new Node(items, items_size, stats));
+    this->stats.merge(stats);
 }
 
 unsigned Node::devel_get_max_depth() const

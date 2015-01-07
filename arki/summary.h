@@ -4,7 +4,7 @@
 /*
  * summary - Handle a summary of a group of summary
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ class Matcher;
 class Formatter;
 
 namespace summary {
-struct Node;
+struct Table;
 struct Stats;
 }
 
@@ -94,14 +94,15 @@ struct ItemVisitor
 class Summary
 {
 protected:
-    summary::Node* root;
+    summary::Table* root;
+
+private:
+    Summary(const Summary& s);
+    Summary& operator=(const Summary& s);
 
 public:
     Summary();
-    Summary(const Summary& s);
     ~Summary();
-
-    Summary& operator=(const Summary& s);
 
 	/**
 	 * Check that two Summary contain the same information
@@ -212,12 +213,6 @@ public:
      * potentially matched by the matcher
      */
     bool match(const Matcher& matcher) const;
-
-	/**
-	 * Create a new summary with only those items that are matched by the
-	 * matcher
-	 */
-	Summary filter(const Matcher& matcher) const;
 
 	/**
 	 * Add to summary those items that are matched by the matcher

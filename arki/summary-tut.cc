@@ -84,10 +84,11 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Summary s1 = s;
-	ensure_equals(s1, s);
-	ensure_equals(s1.count(), 2u);
-	ensure_equals(s1.size(), 30u);
+    Summary s1;
+    s1.add(s);
+    ensure_equals(s1, s);
+    ensure_equals(s1.count(), 2u);
+    ensure_equals(s1.size(), 30u);
 }
 
 // Test matching
@@ -96,9 +97,11 @@ void to::test<3>()
 {
     Summary s1;
     wassert(actual(s.match(Matcher::parse("origin:GRIB1,1"))).istrue());
-    s1 = s.filter(Matcher::parse("origin:GRIB1,1")); ensure_equals(s1.count(), 1u);
+    s.filter(Matcher::parse("origin:GRIB1,1"), s1); ensure_equals(s1.count(), 1u);
+
+    s1.clear();
     wassert(actual(s.match(Matcher::parse("origin:GRIB1,2"))).isfalse());
-    s1 = s.filter(Matcher::parse("origin:GRIB1,2")); ensure_equals(s1.count(), 0u);
+    s.filter(Matcher::parse("origin:GRIB1,2"), s1); ensure_equals(s1.count(), 0u);
 }
 
 // Test matching runs
@@ -110,24 +113,27 @@ void to::test<4>()
 	s.clear();
 	s.add(md1);
 	s.add(md2);
-	Summary s1;
 
+    Summary s1;
     wassert(actual(s.match(Matcher::parse("run:MINUTE,0"))).istrue());
-    s1 = s.filter(Matcher::parse("run:MINUTE,0")); ensure_equals(s1.count(), 1u);
+    s.filter(Matcher::parse("run:MINUTE,0"), s1); ensure_equals(s1.count(), 1u);
+
+    s1.clear();
     wassert(actual(s.match(Matcher::parse("run:MINUTE,12"))).istrue());
-    s1 = s.filter(Matcher::parse("run:MINUTE,12")); ensure_equals(s1.count(), 1u);
+    s.filter(Matcher::parse("run:MINUTE,12"), s1); ensure_equals(s1.count(), 1u);
 }
 
 // Test filtering
 template<> template<>
 void to::test<5>()
 {
-	Summary s1 = s.filter(Matcher::parse("origin:GRIB1,1"));
+    Summary s1;
+    s.filter(Matcher::parse("origin:GRIB1,1"), s1);
 	ensure_equals(s1.count(), 1u);
 	ensure_equals(s1.size(), 10u);
 
-	Summary s2;
-	s.filter(Matcher::parse("origin:GRIB1,1"), s2);
+    Summary s2;
+    s.filter(Matcher::parse("origin:GRIB1,1"), s2);
 	ensure_equals(s2.count(), 1u);
 	ensure_equals(s2.size(), 10u);
 
@@ -199,12 +205,12 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
-	s = Summary();
-	string encoded = s.encode();
-	stringstream stream(encoded, ios_base::in);
-	Summary s1;
-	ensure(s1.read(stream, "(test memory buffer)"));
-	ensure_equals(s1, s);
+    Summary s;
+    string encoded = s.encode();
+    stringstream stream(encoded, ios_base::in);
+    Summary s1;
+    ensure(s1.read(stream, "(test memory buffer)"));
+    ensure_equals(s1, s);
 }
 
 // Test a case of metadata wrongly considered the same

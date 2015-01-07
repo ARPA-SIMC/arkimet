@@ -1,9 +1,4 @@
-#ifndef ARKI_SUMMARY_CODEC_H
-#define ARKI_SUMMARY_CODEC_H
-
 /*
- * summary/codec - Summary I/O implementation
- *
  * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,36 +18,36 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types.h>
-#include <arki/summary.h>
-#include <vector>
+#include <arki/types/tests.h>
+#include <arki/metadata.h>
+#include "table.h"
 
-namespace arki {
-class Metadata;
-class Matcher;
+namespace tut {
+using namespace std;
+using namespace wibble::tests;
+using namespace arki;
+using namespace arki::types;
+using namespace arki::summary;
 
-namespace summary {
-struct Stats;
-struct Visitor;
-struct StatsVisitor;
-struct ItemVisitor;
-struct Table;
-
-size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, Table& target);
-
-struct EncodingVisitor : public Visitor
-{
-    // Encoder we send data to
-    utils::codec::Encoder& enc;
-
-    // Last metadata encoded so far
-    std::vector<const types::Type*> last;
-
-    EncodingVisitor(utils::codec::Encoder& enc);
-
-    bool operator()(const std::vector<const types::Type*>& md, const Stats& stats) override;
+struct arki_summary_table_shar {
+    arki_summary_table_shar()
+    {
+    }
 };
+TESTGRP(arki_summary_table);
+
+// Test basic operations
+template<> template<>
+void to::test<1>()
+{
+    Metadata md;
+    md.set(decodeString(TYPE_ORIGIN, "GRIB1(98, 1, 2)"));
+    md.set(decodeString(TYPE_PRODUCT, "GRIB1(98, 1, 2)"));
+    md.set(decodeString(TYPE_TIMERANGE, "GRIB1(1)"));
+    md.set(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
+
+    Table table;
+    table.merge(md);
+}
 
 }
-}
-#endif

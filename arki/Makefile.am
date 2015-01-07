@@ -93,6 +93,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		scan/dir.h \
 		sort.h \
 		summary.h \
+		summary/intern.h \
+		summary/table.h \
 		summary/node.h \
 		summary/codec.h \
 		summary/stats.h \
@@ -320,6 +322,8 @@ libarkimet_la_SOURCES += \
 		metadata/clusterer.cc \
 		metadata/test-generator.cc \
 		summary/stats.cc \
+		summary/intern.cc \
+		summary/table.cc \
 		summary/node.cc \
 		summary/codec.cc \
 		summary.cc \
@@ -345,6 +349,8 @@ tests_arki_test_SOURCES += \
 		metadata/tests.cc \
 		metadata/test-generator-tut.cc \
 		summary-tut.cc \
+		summary/intern-tut.cc \
+		summary/table-tut.cc \
 		summary/node-tut.cc \
 		summary/stats-tut.cc \
 		matcher-tut.cc \

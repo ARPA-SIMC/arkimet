@@ -70,7 +70,8 @@ struct Node
      */
     Stats stats;
 
-    Node();
+    /// Create a new node with no children and the given metadata and stats
+    Node(const types::Type* const* items, unsigned items_size, const Stats& stats);
     Node(const Stats& stats);
     Node(const Node&);
 
@@ -88,8 +89,6 @@ struct Node
 #endif
 
     ~Node();
-
-    static std::auto_ptr<Node> createPopulated(const types::Type* const* items, unsigned items_size, const Stats& stats);
 
     /// Return a deep copy of this node
     Node* clone() const;
