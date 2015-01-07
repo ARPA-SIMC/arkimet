@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
+ * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include "config.h"
-
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>
@@ -84,14 +82,7 @@ void to::test<2>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    UItem<Source> source = mdc[0].source;
-    ensure_equals(source->style(), Source::BLOB);
-    ensure_equals(source->format, "grib1");
-    UItem<source::Blob> blob = source.upcast<source::Blob>();
-    wassert(actual(blob->basedir).endswith("test200"));
-    wassert(actual(blob->filename).endswith("2007/07-08.grib1"));
-    ensure_equals(blob->offset, 0u);
-    ensure_equals(blob->size, 7218u);
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", "http://localhost:7117/dataset/test200", "2007/07-08.grib1", 0, 7218));
 
     mdc.clear();
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
@@ -204,14 +195,7 @@ void to::test<7>()
     testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
     ensure_equals(mdc.size(), 1u);
     // Check that the source record that comes out is ok
-    UItem<Source> source = mdc[0].source;
-    ensure_equals(source->style(), Source::BLOB);
-    ensure_equals(source->format, "grib1");
-    UItem<source::Blob> blob = source.upcast<source::Blob>();
-    wassert(actual(blob->basedir).endswith("test200"));
-    wassert(actual(blob->filename).endswith("2007/07-08.grib1"));
-    ensure_equals(blob->offset, 0u);
-    ensure_equals(blob->size, 7218u);
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", "http://localhost:7117/dataset/test200", "2007/07-08.grib1", 0, 7218));
 }
 
 // Test querying the summary
@@ -277,7 +261,7 @@ void to::test<10>()
             Writer(string& out) : out(out) {}
             bool operator()(Metadata& md)
             {
-                out += md.encode();
+                out += md.encodeBinary();
                 wibble::sys::Buffer data = md.getData();
                 out.append((const char*)data.data(), data.size());
                 return true;
@@ -328,7 +312,7 @@ void to::test<10>()
     }
 
     // Remove those metadata that contain test-dependent timestamps
-    std::vector< Item<types::Note> > nonotes;
+    std::vector<Note> nonotes;
     mdc1[0].unset(types::TYPE_ASSIGNEDDATASET);
     mdc2[0].unset(types::TYPE_ASSIGNEDDATASET);
     mdc1[0].set_notes(nonotes);
