@@ -24,6 +24,7 @@
  */
 
 #include <arki/types.h>
+#include <arki/types/typeset.h>
 #include <set>
 
 namespace arki {
@@ -38,18 +39,13 @@ namespace summary {
 class TypeIntern
 {
 protected:
-    struct TypeptrLt
-    {
-        inline bool operator()(const types::Type* a, const types::Type* b) const { return *a < *b; }
-    };
-    typedef std::set<const types::Type*, TypeptrLt> container;
-    container known_items;
+    types::TypeSet known_items;
 
 public:
     TypeIntern();
     ~TypeIntern();
 
-    typedef container::const_iterator const_iterator;
+    typedef types::TypeSet::const_iterator const_iterator;
 
     const_iterator begin() const { return known_items.begin(); }
     const_iterator end() const { return known_items.end(); }

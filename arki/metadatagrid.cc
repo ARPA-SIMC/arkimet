@@ -34,6 +34,13 @@ using namespace arki::types;
 
 namespace arki {
 
+namespace {
+struct TypeptrLt
+{
+    inline bool operator()(const types::Type* a, const types::Type* b) const { return *a < *b; }
+};
+}
+
 MetadataGrid::MetadataGrid() {}
 
 int MetadataGrid::index(const ItemSet& md) const
@@ -45,18 +52,10 @@ int MetadataGrid::index(const ItemSet& md) const
     {
         const Type* mdi = md.get(i->first);
         if (!mdi) return -1;
-        throw wibble::exception::Consistency("This is not implemented");
-#if 0
-        // FIXME: compares pointers
-        TypeVector::const_iterator lb =
-            lower_bound(i->second.begin(), i->second.end(), mdi);
-        if (lb == i->second.end())
-            return -1;
-        if (**lb != *mdi)
-            return -1;
-        int idx = lb - i->second.begin();
+        TypeVector::const_iterator j = i->second.sorted_find(*mdi);
+        if (j == i->second.end()) return -1;
+        int idx = j - i->second.begin();
         res += idx * dim_sizes[dim];
-#endif
     }
     return res;
 }
@@ -109,15 +108,7 @@ void MetadataGrid::add(const Type& item)
     // Insertion sort; at the end, everything is already sorted and we
     // avoid inserting lots of duplicate items
     TypeVector& v = dims[item.serialisationCode()];
-    throw wibble::exception::Consistency("This is not implemented");
-#if 0
-    // FIXME: compares pointers
-    TypeVector::iterator lb = lower_bound(v.begin(), v.end(), item);
-    if (lb == v.end())
-        v.push_back(item);
-    else if (*lb != item)
-        v.insert(lb, item);
-#endif
+    v.sorted_insert(item);
 }
 
 void MetadataGrid::add(const ItemSet& is)

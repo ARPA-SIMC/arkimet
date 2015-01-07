@@ -91,6 +91,22 @@ public:
     /// Return the raw pointer to the items
     const types::Type* const* raw_items() const { return vals.data(); }
 
+    /// Assuming that the vector is sorted, finds type using a binary search
+    const_iterator sorted_find(const types::Type& type) const;
+
+    /**
+     * Assuming that the vector is sorted, insert type preserving the sort
+     * order. If the item already exists, it returns false. Else, it performs
+     * the insert and returns true.
+     */
+    bool sorted_insert(const types::Type& type);
+
+    /**
+     * Same as sorted_insert(const Type&) but it uses type instead of cloning
+     * when inserting.
+     */
+    bool sorted_insert(std::auto_ptr<types::Type>& type);
+
 protected:
     TypeVector& operator=(const TypeVector&);
 };

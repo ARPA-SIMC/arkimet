@@ -21,6 +21,7 @@
  */
 
 #include "typevector.h"
+#include <algorithm>
 
 using namespace std;
 using namespace wibble;
@@ -123,6 +124,45 @@ void TypeVector::push_back(std::auto_ptr<types::Type> val)
 void TypeVector::push_back(const types::Type& val)
 {
     vals.push_back(val.clone());
+}
+
+namespace {
+struct TypeptrLt
+{
+    inline bool operator()(const types::Type* a, const types::Type* b) const { return *a < *b; }
+};
+}
+
+TypeVector::const_iterator TypeVector::sorted_find(const Type& type) const
+{
+    const_iterator lb = lower_bound(vals.begin(), vals.end(), &type, TypeptrLt());
+    if (lb == vals.end()) return vals.end();
+    if (**lb != type) return vals.end();
+    return lb;
+}
+
+bool TypeVector::sorted_insert(const Type& item)
+{
+    const_iterator lb = lower_bound(vals.begin(), vals.end(), &item, TypeptrLt());
+    if (lb == vals.end())
+        push_back(item);
+    else if (**lb != item)
+        vals.insert(lb, item.clone());
+    else
+        return false;
+    return true;
+}
+
+bool TypeVector::sorted_insert(std::auto_ptr<types::Type>& item)
+{
+    const_iterator lb = lower_bound(vals.begin(), vals.end(), item.get(), TypeptrLt());
+    if (lb == vals.end())
+        push_back(item);
+    else if (**lb != *item)
+        vals.insert(lb, item.release());
+    else
+        return false;
+    return true;
 }
 
 }

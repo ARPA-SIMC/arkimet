@@ -31,6 +31,7 @@
 #include <arki/summary.h>
 #include <arki/iotrace.h>
 
+#include <wibble/sys/process.h>
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/mutex.h>
 
@@ -63,31 +64,18 @@ struct arki_dataset_index_contents_shar {
 	Metadata md;
 	Metadata md1;
 
-	ValueBag testArea;
-	ValueBag testProddef;
-
     arki_dataset_index_contents_shar()
     {
         iotrace::init();
-		testArea.set("foo", Value::createInteger(5));
-		testArea.set("bar", Value::createInteger(5000));
-		testArea.set("baz", Value::createInteger(-200));
-		testArea.set("moo", Value::createInteger(0x5ffffff));
-		testArea.set("antani", Value::createInteger(-1));
-		testArea.set("blinda", Value::createInteger(0));
-		testArea.set("supercazzola", Value::createInteger(-1234567));
-		testArea.set("pippo", Value::createString("pippo"));
-		testArea.set("pluto", Value::createString("12"));
-		testProddef = testArea;
 
         md.set_source(Source::createBlob("grib", "", "antani", 10, 2000));
         md.set("origin", "GRIB1(200, 10, 100)");
         md.set("product", "GRIB1(3, 4, 5)");
         md.set("level", "GRIB1(1, 2)");
-        md.set("timerange", "GRIB1(4, 5, 6, 7)");
+        md.set("timerange", "GRIB1(4, 5s, 6s)");
         md.set("reftime", "2006-05-04T03:02:01Z");
-        md.set("area", "foo=5,bar=5000,baz=-200");
-        md.set("proddef", "foo=5,bar=5000,baz=-200");
+        md.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
+        md.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
         md.add_note("this is a test");
 		ofstream out("test-md.metadata");
 		if (out.fail()) throw wibble::exception::File("test-md.metadata", "opening file");
@@ -98,7 +86,7 @@ struct arki_dataset_index_contents_shar {
         md1.set("origin", "GRIB1(201, 11, 3)");
         md1.set("product", "GRIB1(102, 103, 104)");
         md1.set("level", "GRIB1(1, 3)");
-        md1.set("timerange", "GRIB1(4, 6, 6, 6)");
+        md1.set("timerange", "GRIB1(4, 6s, 6s)");
         md1.set("reftime", "2003-04-05T06:07:08Z");
         md1.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
         md1.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
@@ -314,7 +302,7 @@ void to::test<3>()
     md3.set("origin", "GRIB1(202, 12, 102)");
     md3.set("product", "GRIB1(3, 4, 5)");
     md3.set("level", "GRIB1(1, 2)");
-    md3.set("timerange", "GRIB1(4, 5, 6, 7)");
+    md3.set("timerange", "GRIB1(4, 5s, 6s)");
     md3.set("reftime", "2006-05-04T03:02:01Z");
     md3.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
     md3.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
@@ -410,7 +398,7 @@ void to::test<5>()
     md2.set("origin", "GRIB1(202, 12, 102)");
     md2.set("product", "GRIB1(3, 4, 5)");
     md2.set("level", "GRIB1(1, 2)");
-    md2.set("timerange", "GRIB1(4, 5, 6, 7)");
+    md2.set("timerange", "GRIB1(4, 5s, 6s)");
     md2.set("reftime", "2005-01-15T12:00:00Z");
     md2.set("area", "GRIB(foo=5,bar=5000,baz=-200)");
     md2.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
@@ -519,7 +507,7 @@ void to::test<7>()
 
         // 'value' should not have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", "", "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::process::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
@@ -562,7 +550,7 @@ void to::test<7>()
 
         // 'value' should have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", "", "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::process::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));

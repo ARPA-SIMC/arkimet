@@ -125,6 +125,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/utils.h \
 		types/value.h \
 		types/typevector.h \
+		types/typeset.h \
 		utils/accounting.h \
 		utils/codec.h \
 		utils/compress.h \
@@ -213,6 +214,7 @@ libarkimet_la_SOURCES += \
 		types/quantity.cc \
 		types/value.cc \
 		types/typevector.cc \
+		types/typeset.cc \
 		itemset.cc \
 		matcher.cc \
 		matcher/utils.cc \
@@ -270,6 +272,7 @@ tests_arki_test_SOURCES += \
 		types/quantity-tut.cc \
 		types/value-tut.cc \
 		types/typevector-tut.cc \
+		types/typeset-tut.cc \
 		itemset-tut.cc
 
 if IOTRACE

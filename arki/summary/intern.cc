@@ -34,31 +34,25 @@ TypeIntern::TypeIntern()
 
 TypeIntern::~TypeIntern()
 {
-    for (container::iterator i = known_items.begin(); i != known_items.end(); ++i)
-        delete *i;
 }
 
 const types::Type* TypeIntern::lookup(const Type& item) const
 {
-    container::const_iterator i = known_items.find(&item);
-    if (i != known_items.end()) return *i;
-    return 0;
+    return known_items.find(item);
 }
 
 const Type* TypeIntern::intern(const Type& item)
 {
-    container::const_iterator i = known_items.find(&item);
-    if (i != known_items.end()) return *i;
-    pair<container::const_iterator, bool> res = known_items.insert(item.clone());
-    return *res.first;
+    const Type* res = known_items.find(item);
+    if (res) return res;
+    return known_items.insert(item);
 }
 
 const types::Type* TypeIntern::intern(std::auto_ptr<types::Type> item)
 {
-    container::const_iterator i = known_items.find(item.get());
-    if (i != known_items.end()) return *i;
-    pair<container::const_iterator, bool> res = known_items.insert(item.release());
-    return *res.first;
+    const Type* res = known_items.find(*item);
+    if (res) return res;
+    return known_items.insert(item);
 }
 
 }

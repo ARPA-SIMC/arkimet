@@ -28,6 +28,7 @@
 #include <arki/summary.h>
 #include <arki/nag.h>
 #include <arki/postprocess.h>
+#include <arki/types/typeset.h>
 
 #ifdef HAVE_LUA
 #include <arki/report.h>
@@ -126,23 +127,16 @@ Matcher GridQuery::mergedQuery() const
 	stringstream q;
 	bool added = false;
 
-    throw wibble::exception::Consistency("This is not implemented");
-#if 0
-#warning TODO: disabled at the moment
-	map< types::Code, set< Item<> > > byType;
-	for (std::vector<ItemSet>::const_iterator i = items.begin();
-			i != items.end(); ++i)
-		for (ItemSet::const_iterator j = i->begin();
-				j != i->end(); ++j)
-			byType[j->first].insert(j->second);
+    map<Code, TypeSet> byType;
+    for (std::vector<ItemSet>::const_iterator i = items.begin(); i != items.end(); ++i)
+        for (ItemSet::const_iterator j = i->begin(); j != i->end(); ++j)
+            byType[j->first].insert(*j->second);
 
-	for (map< types::Code, set< Item<> > >::const_iterator i = byType.begin();
-			i != byType.end(); ++i)
-	{
-		if (added) q << "; ";
-		q << types::tag(i->first) + ":";
-		for (set< Item<> >::const_iterator j = i->second.begin();
-				j != i->second.end(); ++j)
+    for (map<Code, TypeSet>::const_iterator i = byType.begin(); i != byType.end(); ++i)
+    {
+        if (added) q << "; ";
+        q << types::tag(i->first) + ":";
+        for (TypeSet::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
 		{
 			if (j != i->second.begin())
 				q << " or ";
@@ -161,7 +155,6 @@ Matcher GridQuery::mergedQuery() const
 		if (i->empty()) continue;
 		q << "; " << i->toString();
 	}
-#endif
 
 	return Matcher::parse(q.str());
 }
