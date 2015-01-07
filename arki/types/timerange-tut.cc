@@ -36,252 +36,196 @@ TESTGRP(arki_types_timerange);
 template<> template<>
 void to::test<1>()
 {
-	Item<Timerange> o = timerange::GRIB1::create(2, 254, 2, 3);
-	ensure_equals(o->style(), Timerange::GRIB1);
-	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type(), 2u);
-	ensure_equals(v->unit(), 254u);
-	ensure_equals(v->p1(), 2u);
-	ensure_equals(v->p2(), 3u);
+    tests::TestGenericType tgt("timerange", "GRIB1(2, 254, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
+    tgt.higher.push_back("GRIB1(2, 254, 3, 4)");
+    tgt.exact_query = "GRIB1, 002, 002s, 003s";
+    wassert(tgt);
 
-	timerange::GRIB1::Unit u;
-	int t, p1, p2;
+    auto_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
+    wassert(actual(o->style()) == Timerange::GRIB1);
+    const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
+    wassert(actual(v->type()) == 2);
+    wassert(actual(v->unit()) == 254);
+    wassert(actual(v->p1()) == 2);
+    wassert(actual(v->p2()) == 3);
+
+    timerange::GRIB1Unit u;
+    int t, p1, p2;
     bool use_p1, use_p2;
     v->getNormalised(t, u, p1, p2, use_p1, use_p2);
-	ensure_equals(t, 2);
-	ensure_equals(u, timerange::GRIB1::SECOND);
-	ensure_equals(p1, 2);
-	ensure_equals(p2, 3);
-
-	ensure_equals(o, Item<Timerange>(timerange::GRIB1::create(2, 254, 2, 3)));
-
-	ensure(o != timerange::GRIB1::create(2, 254, 3, 4));
-	ensure(o != timerange::GRIB1::create(2, 1, 2, 3));
-	ensure(o != timerange::GRIB1::create(2, 4, 2, 3));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB1, 002, 002s, 003s");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    wassert(actual(t) == 2);
+    wassert(actual(u) == timerange::SECOND);
+    wassert(actual(p1) == 2);
+    wassert(actual(p2) == 3);
 }
 
 // Check GRIB1 with hours
 template<> template<>
 void to::test<2>()
 {
-	Item<Timerange> o = timerange::GRIB1::create(2, 1, 2, 3);
-	ensure_equals(o->style(), Timerange::GRIB1);
-	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type(), 2u);
-	ensure_equals(v->unit(), 1u);
-	ensure_equals(v->p1(), 2u);
-	ensure_equals(v->p2(), 3u);
+    tests::TestGenericType tgt("timerange", "GRIB1(2, 1, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
+    tgt.higher.push_back("GRIB1(2, 1, 3, 4)");
+    tgt.higher.push_back("GRIB1(2, 254, 3, 4)");
+    tgt.exact_query = "GRIB1, 002, 002h, 003h";
+    wassert(tgt);
 
-	timerange::GRIB1::Unit u;
-	int t, p1, p2;
+    auto_ptr<Timerange> o = Timerange::createGRIB1(2, 1, 2, 3);
+    wassert(actual(o->style()) == Timerange::GRIB1);
+    const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
+    wassert(actual(v->type()) == 2);
+    wassert(actual(v->unit()) == 1);
+    wassert(actual(v->p1()) == 2);
+    wassert(actual(v->p2()) == 3);
+
+    timerange::GRIB1Unit u;
+    int t, p1, p2;
     bool use_p1, use_p2;
     v->getNormalised(t, u, p1, p2, use_p1, use_p2);
-	ensure_equals(t, 2);
-	ensure_equals(u, timerange::GRIB1::SECOND);
-	ensure_equals(p1, 2 * 3600);
-	ensure_equals(p2, 3 * 3600);
-
-	ensure_equals(o, Item<Timerange>(timerange::GRIB1::create(2, 1, 2, 3)));
-
-	ensure(o != timerange::GRIB1::create(2, 254, 2, 3));
-	ensure(o != timerange::GRIB1::create(2, 1, 3, 4));
-	ensure(o != timerange::GRIB1::create(2, 4, 2, 3));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB1, 002, 002h, 003h");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    wassert(actual(t) == 2);
+    wassert(actual(u) == timerange::SECOND);
+    wassert(actual(p1) == 2 * 3600);
+    wassert(actual(p2) == 3 * 3600);
 }
 
 // Check GRIB1 with years
 template<> template<>
 void to::test<3>()
 {
-	Item<Timerange> o = timerange::GRIB1::create(2, 4, 2, 3);
-	ensure_equals(o->style(), Timerange::GRIB1);
-	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type(), 2u);
-	ensure_equals(v->unit(), 4u);
-	ensure_equals(v->p1(), 2u);
-	ensure_equals(v->p2(), 3u);
+    tests::TestGenericType tgt("timerange", "GRIB1(2, 4, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 4, 3, 4)");
+    tgt.higher.push_back("GRIB1(2, 1, 2, 3)");
+    tgt.higher.push_back("GRIB1(2, 254, 2, 3)");
+    tgt.exact_query = "GRIB1, 002, 002y, 003y";
+    wassert(tgt);
 
-	timerange::GRIB1::Unit u;
-	int t, p1, p2;
+    auto_ptr<Timerange> o = Timerange::createGRIB1(2, 4, 2, 3);
+    wassert(actual(o->style()) == Timerange::GRIB1);
+    const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
+    wassert(actual(v->type()) == 2);
+    wassert(actual(v->unit()) == 4);
+    wassert(actual(v->p1()) == 2);
+    wassert(actual(v->p2()) == 3);
+
+    timerange::GRIB1Unit u;
+    int t, p1, p2;
     bool use_p1, use_p2;
     v->getNormalised(t, u, p1, p2, use_p1, use_p2);
-	ensure_equals(t, 2);
-	ensure_equals(u, timerange::GRIB1::MONTH);
-	ensure_equals(p1, 2 * 12);
-	ensure_equals(p2, 3 * 12);
-
-	ensure_equals(o, Item<Timerange>(timerange::GRIB1::create(2, 4, 2, 3)));
-
-	ensure(o != timerange::GRIB1::create(2, 4, 3, 4));
-	ensure(o != timerange::GRIB1::create(2, 254, 2, 3));
-	ensure(o != timerange::GRIB1::create(2, 1, 2, 3));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB1, 002, 002y, 003y");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    wassert(actual(t) == 2);
+    wassert(actual(u) == timerange::MONTH);
+    wassert(actual(p1) == 2 * 12);
+    wassert(actual(p2) == 3 * 12);
 }
 
 // Check GRIB1 with unknown values
 template<> template<>
 void to::test<4>()
 {
-	Item<Timerange> o = timerange::GRIB1::create(250, 1, 124, 127);
-	ensure_equals(o->style(), Timerange::GRIB1);
-	const timerange::GRIB1* v = o->upcast<timerange::GRIB1>();
-	ensure_equals(v->type(), 250u);
-	ensure_equals(v->unit(), 1u);
-	ensure_equals(v->p1(), 124u);
-	ensure_equals(v->p2(), 127u);
+    tests::TestGenericType tgt("timerange", "GRIB1(250, 1, 124, 127)");
+    tgt.lower.push_back("GRIB1(250, 1, 124, 126)");
+    tgt.higher.push_back("GRIB1(250, 4, 124, 127)");
+    tgt.higher.push_back("GRIB1(250, 254, 124, 127)");
+    tgt.exact_query = "GRIB1, 250, 124h, 127h";
+    wassert(tgt);
 
-	timerange::GRIB1::Unit u;
-	int t, p1, p2;
+    auto_ptr<Timerange> o = Timerange::createGRIB1(250, 1, 124, 127);
+    wassert(actual(o->style()) == Timerange::GRIB1);
+    const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
+    wassert(actual(v->type()) == 250);
+    wassert(actual(v->unit()) == 1);
+    wassert(actual(v->p1()) == 124);
+    wassert(actual(v->p2()) == 127);
+
+    timerange::GRIB1Unit u;
+    int t, p1, p2;
     bool use_p1, use_p2;
-	v->getNormalised(t, u, p1, p2, use_p1, use_p2);
-	ensure_equals(t, 250);
-	ensure_equals(u, timerange::GRIB1::SECOND);
-	ensure_equals(p1, 124 * 3600);
-	ensure_equals(p2, 127 * 3600);
-
-	ensure_equals(o, Item<Timerange>(timerange::GRIB1::create(250, 1, 124, 127)));
-
-	ensure(o != timerange::GRIB1::create(250, 1, 124, 126));
-	ensure(o != timerange::GRIB1::create(250, 4, 124, 127));
-	ensure(o != timerange::GRIB1::create(250, 254, 124, 127));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB1, 250, 124h, 127h");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    v->getNormalised(t, u, p1, p2, use_p1, use_p2);
+    wassert(actual(t) == 2);
+    wassert(actual(u) == timerange::SECOND);
+    wassert(actual(p1) == 124 * 3600);
+    wassert(actual(p2) == 127 * 3600);
 }
 
 // Check GRIB2 with seconds
 template<> template<>
 void to::test<5>()
 {
-	Item<Timerange> o = timerange::GRIB2::create(2, 254, 2, 3);
-	ensure_equals(o->style(), Timerange::GRIB2);
-	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type(), 2u);
-	ensure_equals(v->unit(), 254u);
-	ensure_equals(v->p1(), 2);
-	ensure_equals(v->p2(), 3);
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 254, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
+    tgt.higher.push_back("GRIB1(2, 254, 3, 4)");
+    tgt.exact_query = "GRIB2,2,254,2,3";
+    wassert(tgt);
 
-	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 254, 2, 3)));
-
-	ensure(o != timerange::GRIB2::create(2, 254, 3, 4));
-	ensure(o != timerange::GRIB2::create(2, 1, 2, 3));
-	ensure(o != timerange::GRIB2::create(2, 4, 2, 3));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB2,2,254,2,3");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 254, 2, 3);
+    wassert(actual(o->style()) == Timerange::GRIB2);
+    const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
+    wassert(actual(v->type()) == 2);
+    wassert(actual(v->unit()) == 254);
+    wassert(actual(v->p1()) == 2);
+    wassert(actual(v->p2()) == 3);
 }
 
 // Check GRIB2 with hours
 template<> template<>
 void to::test<6>()
 {
-	Item<Timerange> o = timerange::GRIB2::create(2, 1, 2, 3);
-	ensure_equals(o->style(), Timerange::GRIB2);
-	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type(), 2u);
-	ensure_equals(v->unit(), 1u);
-	ensure_equals(v->p1(), 2u);
-	ensure_equals(v->p2(), 3u);
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 1, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 4, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 1, 3, 4)");
+    tgt.higher.push_back("GRIB1(2, 254, 2, 3)");
+    tgt.exact_query = "GRIB2,2,1,2,3";
+    wassert(tgt);
 
-	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 1, 2, 3)));
-
-	ensure(o != timerange::GRIB2::create(2, 254, 2, 3));
-	ensure(o != timerange::GRIB2::create(2, 1, 3, 4));
-	ensure(o != timerange::GRIB2::create(2, 4, 2, 3));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB2,2,1,2,3");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
+    wassert(actual(o->style()) == Timerange::GRIB2);
+    const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
+    wassert(actual(v->type()) == 2);
+    wassert(actual(v->unit()) == 1);
+    wassert(actual(v->p1()) == 2);
+    wassert(actual(v->p2()) == 3);
 }
 
 // Check GRIB2 with years
 template<> template<>
 void to::test<7>()
 {
-	Item<Timerange> o = timerange::GRIB2::create(2, 4, 2, 3);
-	ensure_equals(o->style(), Timerange::GRIB2);
-	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type(), 2u);
-	ensure_equals(v->unit(), 4u);
-	ensure_equals(v->p1(), 2u);
-	ensure_equals(v->p2(), 3u);
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 4, 2, 3)");
+    tgt.lower.push_back("GRIB1(2, 4, 3, 4)");
+    tgt.lower.push_back("GRIB1(2, 1, 3, 4)");
+    tgt.higher.push_back("GRIB1(2, 254, 2, 3)");
+    tgt.exact_query = "GRIB2,2,4,2,3";
+    wassert(tgt);
 
-	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 4, 2, 3)));
-
-	ensure(o != timerange::GRIB2::create(2, 4, 3, 4));
-	ensure(o != timerange::GRIB2::create(2, 254, 2, 3));
-	ensure(o != timerange::GRIB2::create(2, 1, 2, 3));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB2,2,4,2,3");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
+    wassert(actual(o->style()) == Timerange::GRIB2);
+    const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
+    wassert(actual(v->type()) == 2);
+    wassert(actual(v->unit()) == 4);
+    wassert(actual(v->p1()) == 2);
+    wassert(actual(v->p2()) == 3);
 }
 
 // Check GRIB2 with negative values
 template<> template<>
 void to::test<8>()
 {
-	Item<Timerange> o = timerange::GRIB2::create(2, 1, -2, -3);
-	ensure_equals(o->style(), Timerange::GRIB2);
-	const timerange::GRIB2* v = o->upcast<timerange::GRIB2>();
-	ensure_equals(v->type(), 2u);
-	ensure_equals(v->unit(), 1u);
-	ensure_equals((int)v->p1(), -2);
-	ensure_equals((int)v->p2(), -3);
+    tests::TestGenericType tgt("timerange", "GRIB2(2, 1, -2, -3)");
+    tgt.lower.push_back("GRIB1(2, 4, -2, -3)");
+    tgt.lower.push_back("GRIB1(2, 1, 2, 3)");
+    tgt.higher.push_back("GRIB1(2, 254, -2, -3)");
+    tgt.exact_query = "GRIB2,2,1,-2,-3";
+    wassert(tgt);
 
-	ensure_equals(o, Item<Timerange>(timerange::GRIB2::create(2, 1, -2, -3)));
-
-	ensure(o != timerange::GRIB2::create(2, 1, 2, 3));
-	ensure(o != timerange::GRIB2::create(2, 4, -2, -3));
-	ensure(o != timerange::GRIB2::create(2, 254, -2, -3));
-
-    // Test encoding/decoding
-    wassert(actual(o).serializes());
-
-	// Test generating a matcher expression
-	ensure_equals(o->exactQuery(), "GRIB2,2,1,-2,-3");
-	Matcher m = Matcher::parse("timerange:" + o->exactQuery());
-	ensure(m(o));
+    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 1, -2, -3);
+    wassert(actual(o->style()) == Timerange::GRIB2);
+    const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
+    wassert(actual(v->type()) == 2);
+    wassert(actual(v->unit()) == 1);
+    wassert(actual((int)v->p1()) == -2);
+    wassert(actual((int)v->p2()) == -3);
 }
 
 // Check GRIB2 with unknown values
