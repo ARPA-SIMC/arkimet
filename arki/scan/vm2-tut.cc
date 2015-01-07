@@ -132,7 +132,7 @@ void to::test<3>()
 
     // Check contents
     wassert(actual(md).contains("area", "VM2(1)"));
-    wassert(actual(md).contains("product", "VM2(227)"));
+    wassert(actual(md).contains("product", "VM2(228)"));
     wassert(actual(md).contains("reftime", "1987-10-31T00:00:30Z"));
     wassert(actual(md).contains("value", ".5,,,000000000"));
 

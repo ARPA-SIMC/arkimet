@@ -17,10 +17,8 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
 #include <arki/metadata/tests.h>
+#include <arki/libconfig.h>
 #include <arki/scan/any.h>
 #include <arki/types.h>
 #include <arki/types/origin.h>
@@ -74,10 +72,10 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data() + 7214, 4), "7777");
 
     // Check contents
-    wassert(actual(mdc[0]).contains("origin", "GRIB1(200, 1, 101)"));
+    wassert(actual(mdc[0]).contains("origin", "GRIB1(200, 0, 101)"));
     wassert(actual(mdc[0]).contains("product", "GRIB1(200, 140, 229)"));
     wassert(actual(mdc[0]).contains("level", "GRIB1(1, 0)"));
-    wassert(actual(mdc[0]).contains("timerange", "GRIB1(0, 254, 0, 0)"));
+    wassert(actual(mdc[0]).contains("timerange", "GRIB1(0, 0s)"));
     wassert(actual(mdc[0]).contains("area", "GRIB(Ni=97,Nj=73,latfirst=40000000,latlast=46000000,lonfirst=12000000,lonlast=20000000,type=0)"));
     wassert(actual(mdc[0]).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(mdc[0]).contains("reftime", "2007-07-08T13:00:00Z"));
@@ -96,8 +94,8 @@ void to::test<1>()
     wassert(actual(mdc[1]).contains("origin", "GRIB1(80, 255, 100)"));
     wassert(actual(mdc[1]).contains("product", "GRIB1(80, 2, 2)"));
     wassert(actual(mdc[1]).contains("level", "GRIB1(102, 0)"));
-    wassert(actual(mdc[1]).contains("timerange", "GRIB1(1, 254, 0, 0)"));
-    wassert(actual(mdc[1]).contains("area", "area:GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
+    wassert(actual(mdc[1]).contains("timerange", "GRIB1(1)"));
+    wassert(actual(mdc[1]).contains("area", "GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
     wassert(actual(mdc[1]).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(mdc[1]).contains("reftime", "2007-07-07T00:00:00Z"));
     wassert(actual(mdc[1]).contains("run", "MINUTE(0)"));
@@ -115,8 +113,8 @@ void to::test<1>()
     wassert(actual(mdc[2]).contains("origin", "GRIB1(98, 0, 129)"));
     wassert(actual(mdc[2]).contains("product", "GRIB1(98, 128, 129)"));
     wassert(actual(mdc[2]).contains("level", "GRIB1(100, 1000)"));
-    wassert(actual(mdc[2]).contains("timerange", "GRIB1(0, 254, 0, 0)"));
-    wassert(actual(mdc[2]).contains("area", "area:GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
+    wassert(actual(mdc[2]).contains("timerange", "GRIB1(0, 0s)"));
+    wassert(actual(mdc[2]).contains("area", "GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
     wassert(actual(mdc[2]).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(mdc[2]).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(mdc[2]).contains("run", "MINUTE(0)"));
@@ -151,7 +149,7 @@ void to::test<2>()
     wassert(actual(mdc[0]).contains("product", "BUFR(0, 255, 1, t=synop)"));
     wassert(actual(mdc[0]).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     wassert(actual(mdc[0]).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(mdc[0]).contains("reftime", "2005-12-01Z18:00:00Z"));
+    wassert(actual(mdc[0]).contains("reftime", "2005-12-01T18:00:00Z"));
 
 	// Check run
 	ensure(not mdc[0].has(types::TYPE_RUN));
@@ -167,11 +165,11 @@ void to::test<2>()
 	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
 
     // Check contents
-    wassert(actual(mdc[0]).contains("origin", "BUFR(98, 0)"));
-    wassert(actual(mdc[0]).contains("product", "BUFR(0, 255, 1, t=synop)"));
-    //wassert(actual(mdc[0]).contains("area", "GRIB(lat=4153000, lon=2070000)"));
-    //wassert(actual(mdc[0]).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(mdc[0]).contains("reftime", "2004-11-30Z12:00:00Z"));
+    wassert(actual(mdc[1]).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(mdc[1]).contains("product", "BUFR(0, 255, 1, t=synop)"));
+    //wassert(actual(mdc[1]).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(mdc[1]).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(mdc[1]).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
 	ensure(not mdc[1].has(types::TYPE_RUN));
@@ -191,7 +189,7 @@ void to::test<2>()
     wassert(actual(mdc[2]).contains("product", "BUFR(0, 255, 3, t=synop)"));
     //wassert(actual(mdc[2]).contains("area", "GRIB(lat=4153000, lon=2070000)"));
     //wassert(actual(mdc[2]).contains("proddef", "GRIB(blo=13, sta=577)"));
-    wassert(actual(mdc[2]).contains("reftime", "2004-11-30Z12:00:00Z"));
+    wassert(actual(mdc[2]).contains("reftime", "2004-11-30T12:00:00Z"));
 
 	// Check run
 	ensure(not mdc[2].has(types::TYPE_RUN));

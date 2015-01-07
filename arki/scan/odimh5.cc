@@ -310,7 +310,6 @@ bool OdimH5::scanLua(Metadata& md)
             md.add_note(*Note::create("Scanning failed: " + error));
             return false;
         }
-
     }
     return true;
 }

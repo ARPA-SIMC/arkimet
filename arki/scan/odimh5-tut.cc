@@ -71,10 +71,10 @@ void to::test<1>()
     wassert(actual(md).contains("origin", "ODIMH5(wmo,rad,plc)"));
     wassert(actual(md).contains("product", "ODIMH5(PVOL,SCAN)"));
     wassert(actual(md).contains("level", "ODIMH5(0,27)"));
-    wassert(actual(md).contains("reftime", "2000-01-02Z03:04:04Z"));
+    wassert(actual(md).contains("reftime", "2000-01-02T03:04:05Z"));
     wassert(actual(md).contains("task", "task"));
     wassert(actual(md).contains("quantity", "ACRR,BRDR,CLASS,DBZH,DBZV,HGHT,KDP,LDR,PHIDP,QIND,RATE,RHOHV,SNR,SQI,TH,TV,UWND,VIL,VRAD,VWND,WRAD,ZDR,ad,ad_dev,chi2,dbz,dbz_dev,dd,dd_dev,def,def_dev,div,div_dev,ff,ff_dev,n,rhohv,rhohv_dev,w,w_dev,z,z_dev"));
-    wassert(actual(md).contains("area", "ODIMH5(lat=44456700,lon=11623600,radius=1000"));
+    wassert(actual(md).contains("area", "ODIMH5(lat=44456700,lon=11623600,radius=1000)"));
 
 	ensure(not scanner.next(md));
 }
@@ -109,10 +109,10 @@ void to::test<2>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,CAPPI)"));
     wassert(actual(md).contains("level", "GRIB1(105,10)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -146,10 +146,10 @@ void to::test<3>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,ETOP)"));
     ensure(!md.get(TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "HGHT"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -183,10 +183,10 @@ void to::test<4>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,NEW:LBM_ARPA)"));
     ensure(!md.get(TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -220,10 +220,10 @@ void to::test<5>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,MAX)"));
     ensure(!md.get(TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -257,10 +257,10 @@ void to::test<6>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,PCAPPI)"));
     wassert(actual(md).contains("level", "GRIB1(105,10)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -293,11 +293,11 @@ void to::test<7>()
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,PPI)"));
-    wassert(actual(md).contains("level", "ODIMH5(10)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("level", "ODIMH5(10, 10)"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -330,12 +330,12 @@ void to::test<8>()
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,RR)"));
-    wassert(actual(md).contains("level", "ODIMH5(10)"));
+    ensure(!md.get(TYPE_LEVEL));
     wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "ACRR"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -369,11 +369,11 @@ void to::test<9>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(COMP,VIL)"));
     wassert(actual(md).contains("level", "GRIB1(106,10,0)"));
-    wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    ensure(!md.get(TYPE_TIMERANGE));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "VIL"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -407,11 +407,11 @@ void to::test<10>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,CAPPI)"));
     wassert(actual(md).contains("level", "GRIB1(105,500)"));
-    wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    ensure(!md.get(TYPE_TIMERANGE));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -445,10 +445,10 @@ void to::test<11>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,ETOP)"));
     ensure(!md.get(TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "HGHT"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -482,10 +482,10 @@ void to::test<12>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,HVMI)"));
     ensure(!md.get(TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -519,10 +519,10 @@ void to::test<13>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,MAX)"));
     ensure(!md.get(TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -556,10 +556,10 @@ void to::test<14>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,PCAPPI)"));
     wassert(actual(md).contains("level", "GRIB1(105,500)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -592,11 +592,11 @@ void to::test<15>()
     // Check contents
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,PPI)"));
-    wassert(actual(md).contains("level", "ODIMH5(0.5)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("level", "ODIMH5(0.5, 0.5)"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -631,10 +631,10 @@ void to::test<16>()
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,RR)"));
     ensure(!md.get(TYPE_LEVEL));
     wassert(actual(md).contains("timerange", "Timedef(0s,1,1h)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "ACRR"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -668,10 +668,10 @@ void to::test<17>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,VIL)"));
     wassert(actual(md).contains("level", "GRIB1(106,10,0)"));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T14:30:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "VIL"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -705,10 +705,10 @@ void to::test<18>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(IMAGE,NEW:LBM_ARPA)"));
     ensure(!md.get(types::TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-03-18Z14:30:00Z"));
+    wassert(actual(md).contains("reftime", "2013-03-18T10:00:00Z"));
     wassert(actual(md).contains("task", "ZLR-BB"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=42314117,lonfirst=8273203,latlast=46912151,lonlast=14987079,type=0)"));
 
 	ensure(not scanner.next(md));
 }
@@ -742,10 +742,10 @@ void to::test<19>()
     wassert(actual(md).contains("origin", "ODIMH5(16144,IY46,itspc)"));
     wassert(actual(md).contains("product", "ODIMH5(XSEC,XSEC)"));
     ensure(!md.get(types::TYPE_LEVEL));
-    wassert(actual(md).contains("reftime", "2013-11-04Z14:10:00Z"));
+    wassert(actual(md).contains("reftime", "2013-11-04T14:10:00Z"));
     wassert(actual(md).contains("task", "XZS"));
     wassert(actual(md).contains("quantity", "DBZH"));
-    wassert(actual(md).contains("area", "ODIMH5(latfirst=44320636,lonfirst=11122189,latlast=44821945,lonlast=12546566,type=0"));
+    wassert(actual(md).contains("area", "GRIB(latfirst=44320636,lonfirst=11122189,latlast=44821945,lonlast=12546566,type=0)"));
 
 	ensure(not scanner.next(md));
 }

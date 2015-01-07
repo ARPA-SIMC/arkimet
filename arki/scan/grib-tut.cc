@@ -84,10 +84,10 @@ void to::test<1>()
 	}
 
     // Check contents
-    wassert(actual(md).contains("origin", "GRIB1(200, 1, 101)"));
+    wassert(actual(md).contains("origin", "GRIB1(200, 0, 101)"));
     wassert(actual(md).contains("product", "GRIB1(200, 140, 229)"));
     wassert(actual(md).contains("level", "GRIB1(1, 0)"));
-    wassert(actual(md).contains("timerange", "GRIB1(0, 254, 0, 0)"));
+    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
     wassert(actual(md).contains("area", "GRIB(Ni=97,Nj=73,latfirst=40000000,latlast=46000000,lonfirst=12000000,lonlast=20000000,type=0)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-07-08T13:00:00Z"));
@@ -109,8 +109,8 @@ void to::test<1>()
     wassert(actual(md).contains("origin", "GRIB1(80, 255, 100)"));
     wassert(actual(md).contains("product", "GRIB1(80, 2, 2)"));
     wassert(actual(md).contains("level", "GRIB1(102, 0)"));
-    wassert(actual(md).contains("timerange", "GRIB1(1, 254, 0, 0)"));
-    wassert(actual(md).contains("area", "area:GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
+    wassert(actual(md).contains("timerange", "GRIB1(1)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-07-07T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
@@ -132,8 +132,8 @@ void to::test<1>()
     wassert(actual(md).contains("origin", "GRIB1(98, 0, 129)"));
     wassert(actual(md).contains("product", "GRIB1(98, 128, 129)"));
     wassert(actual(md).contains("level", "GRIB1(100, 1000)"));
-    wassert(actual(md).contains("timerange", "GRIB1(0, 254, 0, 0)"));
-    wassert(actual(md).contains("area", "area:GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
+    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
@@ -171,8 +171,8 @@ void to::test<2>()
     wassert(actual(md).contains("origin", "GRIB1(200, 0, 101)"));
     wassert(actual(md).contains("product", "GRIB1(200, 140, 229)"));
     wassert(actual(md).contains("level", "GRIB1(1, 0)"));
-    wassert(actual(md).contains("timerange", "GRIB1(0, 254, 0, 0)"));
-    wassert(actual(md).contains("area", "area:GRIB(Ni=97,Nj=73,latfirst=40000000,latlast=46000000,lonfirst=12000000,lonlast=20000000,type=0)"));
+    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=97,Nj=73,latfirst=40000000,latlast=46000000,lonfirst=12000000,lonlast=20000000,type=0)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-07-08T13:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(13:00)"));
@@ -193,8 +193,8 @@ void to::test<2>()
     wassert(actual(md).contains("origin", "GRIB1(80, 255, 100)"));
     wassert(actual(md).contains("product", "GRIB1(80, 2, 2)"));
     wassert(actual(md).contains("level", "GRIB1(102, 0)"));
-    wassert(actual(md).contains("timerange", "GRIB1(1, 254, 0, 0)"));
-    wassert(actual(md).contains("area", "area:GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
+    wassert(actual(md).contains("timerange", "GRIB1(1)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=205,Nj=85,latfirst=30000000,latlast=72000000,lonfirst=-60000000,lonlast=42000000,type=0)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-07-07T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
@@ -215,8 +215,8 @@ void to::test<2>()
     wassert(actual(md).contains("origin", "GRIB1(98, 0, 129)"));
     wassert(actual(md).contains("product", "GRIB1(98, 128, 129)"));
     wassert(actual(md).contains("level", "GRIB1(100, 1000)"));
-    wassert(actual(md).contains("timerange", "GRIB1(0, 254, 0, 0)"));
-    wassert(actual(md).contains("area", "area:GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
+    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=43,Nj=25,latfirst=55500000,latlast=31500000,lonfirst=-11500000,lonlast=30500000,type=0)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=1)"));
     wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
@@ -329,7 +329,7 @@ void to::test<5>()
     wassert(actual(md).contains("product", "GRIB1(200, 2, 33)"));
     wassert(actual(md).contains("level", "GRIB1(110, 1, 2)"));
     wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
-    wassert(actual(md).contains("area", "area:GRIB(Ni=169,Nj=181,latfirst=-21125000,latlast=-9875000,lonfirst=-2937000,lonlast=7563000,latp=-32500000,lonp=10000000,rot=0,type=10)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=169,Nj=181,latfirst=-21125000,latlast=-9875000,lonfirst=-2937000,lonlast=7563000,latp=-32500000,lonp=10000000,rot=0,type=10)"));
     wassert(actual(md).contains("proddef", "GRIB(tod=0)"));
     wassert(actual(md).contains("reftime", "2009-09-02T00:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(0)"));
@@ -366,8 +366,8 @@ void to::test<6>()
     wassert(actual(md).contains("origin", "GRIB1(80, 98, 131)"));
     wassert(actual(md).contains("product", "GRIB1(80, 2, 79)"));
     wassert(actual(md).contains("level", "GRIB1(1)"));
-    wassert(actual(md).contains("timerange", "Timedef(0s, 254, 0s)"));
-    wassert(actual(md).contains("area", "area:GRIB(Ni=231,Nj=265,latfirst=-16125000,latlast=375000,lonfirst=-5125000,lonlast=9250000,latp=-40000000,lonp=10000000,rot=0,type=10)"));
+    wassert(actual(md).contains("timerange", "GRIB1(0, 0s)"));
+    wassert(actual(md).contains("area", "GRIB(Ni=231,Nj=265,latfirst=-16125000,latlast=375000,lonfirst=-5125000,lonlast=9250000,latp=-40000000,lonp=10000000,rot=0,type=10)"));
     wassert(actual(md).contains("proddef", "GRIB(ld=1,mt=9,nn=0,tod=1)"));
     wassert(actual(md).contains("reftime", "2010-08-11T12:00:00Z"));
     wassert(actual(md).contains("run", "MINUTE(12:00)"));
@@ -403,7 +403,7 @@ void to::test<7>()
     wassert(actual(md).contains("origin", "GRIB2(250, 98, 4, 255, 131)"));
     wassert(actual(md).contains("product", "GRIB2(250, 2, 0, 0)"));
     wassert(actual(md).contains("level", "GRIB2S(1, -, -)"));
-    wassert(actual(md).contains("timerange", "Timedef(0, 254, 0)"));
+    wassert(actual(md).contains("timerange", "Timedef(0, 254, 0s)"));
     wassert(actual(md).contains("area", "GRIB(Ni=511,Nj=415,latfirst=-16125000,latlast=9750000,lonfirst=344250000,lonlast=16125000,latp=-40000000,lonp=10000000,rot=0,tn=1)"));
     wassert(actual(md).contains("proddef", "GRIB(mc=ti,mt=0,pf=16,tf=16,tod=4,ty=3)"));
     wassert(actual(md).contains("reftime", "2013-10-22T00:00:00"));
