@@ -184,6 +184,7 @@ libarkimet_la_SOURCES += \
 		emitter.cc \
 		emitter/memory.cc \
 		emitter/json.cc \
+		runtime/config.cc \
 		tests/tests.cc
 
 if IOTRACE
@@ -360,7 +361,7 @@ nobase_dist_arkiinclude_HEADERS += scan/bufr.h
 libarkimet_la_SOURCES += scan/bufr.cc
 libarkimet_la_LDFLAGS += $(DBALLE_LIBS)
 AM_CPPFLAGS += $(DBALLE_CFLAGS)
-tests_arki_test_SOURCES += scan/bufr-tut.cc
+#tests_arki_test_SOURCES += scan/bufr-tut.cc
 if LUA
 nobase_dist_arkiinclude_HEADERS += scan/bufrlua.h
 libarkimet_la_SOURCES += scan/bufrlua.cc
@@ -372,7 +373,7 @@ AM_CPPFLAGS += $(HDF5_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += scan/odimh5.h
 libarkimet_la_SOURCES += scan/odimh5.cc
 libarkimet_la_LDFLAGS += $(HDF5_LIBS)
-tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
+#tests_arki_test_SOURCES += utils/h5-tut.cc scan/odimh5-tut.cc
 endif
 
 if NETCDF
@@ -380,7 +381,7 @@ AM_CPPFLAGS += $(NETCDF_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += scan/nc.h
 libarkimet_la_SOURCES += scan/nc.cc
 libarkimet_la_LDFLAGS += $(NETCDF_LIBS)
-tests_arki_test_SOURCES += scan/nc-tut.cc
+#tests_arki_test_SOURCES += scan/nc-tut.cc
 endif
 
 if VM2
@@ -388,7 +389,7 @@ AM_CPPFLAGS += $(VM2_CFLAGS)
 nobase_dist_arkiinclude_HEADERS += scan/vm2.h utils/vm2.h
 libarkimet_la_SOURCES += scan/vm2.cc utils/vm2.cc
 libarkimet_la_LDFLAGS += $(VM2_LIBS)
-tests_arki_test_SOURCES += scan/vm2-tut.cc utils/vm2-tut.cc
+#tests_arki_test_SOURCES += scan/vm2-tut.cc utils/vm2-tut.cc
 endif
 
 if GEOS
@@ -503,7 +504,6 @@ endif
 if DEVEL_DO_RUNTIME
 libarkimet_la_SOURCES += \
 		runtime/io.cc \
-		runtime/config.cc \
 		runtime/processor.cc \
 		runtime.cc
 endif

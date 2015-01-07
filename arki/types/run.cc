@@ -153,7 +153,7 @@ void Run::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_run", lib);
 }
 
-auto_ptr<Run> createMinute(unsigned int hour, unsigned int minute)
+auto_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 {
     return upcast<Run>(run::Minute::create(hour, minute));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,16 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/timerange.h>
-#include <arki/matcher.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;

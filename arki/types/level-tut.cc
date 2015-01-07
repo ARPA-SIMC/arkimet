@@ -20,16 +20,7 @@
 
 #include <arki/types/tests.h>
 #include <arki/types/level.h>
-#include <arki/matcher.h>
-
-#include <sstream>
-#include <iostream>
-
-#include "config.h"
-
-#ifdef HAVE_LUA
 #include <arki/tests/lua.h>
-#endif
 
 namespace tut {
 using namespace std;

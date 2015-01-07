@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,7 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
-
+#include <arki/metadata/tests.h>
 #include <arki/types/tests.h>
 #include <arki/scan/bufr.h>
 #include <arki/types.h>
@@ -67,7 +65,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -75,25 +73,12 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 190, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ValueBag vb;
-	vb.set("t", Value::createString("synop"));
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2005, 12, 1, 18, 0, 0))));
-
-    // Check area
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4153000, lon=2070000)"));
-
-    // Check proddef
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=13, sta=577)"));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
+    wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(md).contains("reftime", "2005-12-01Z18:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -103,7 +88,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -111,17 +96,12 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
+    //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -131,7 +111,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -139,21 +119,16 @@ void to::test<1>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(0, 255, 3, t=synop)"));
+    //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
-	
+
 
 	// No more bufrs
 	ensure(not scanner.next(md));
@@ -175,7 +150,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 100, 194));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 100, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -183,19 +158,12 @@ void to::test<2>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 190, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ValueBag vb;
-	vb.set("t", Value::createString("synop"));
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2005, 12, 1, 18, 0, 0))));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
+    wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(md).contains("reftime", "2005-12-01Z18:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -205,7 +173,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 394, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 394, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -213,17 +181,12 @@ void to::test<2>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 1, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(0, 255, 1, t=synop)"));
+    //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -233,7 +196,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 714, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 714, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -241,21 +204,15 @@ void to::test<2>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 216, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(0, 255, 3, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2004, 11, 30, 12, 0, 0))));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(0, 255, 3, t=synop)"));
+    //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(md).contains("reftime", "2004-11-30Z12:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
-	
 
 	// No more bufrs
 	ensure(not scanner.next(md));
@@ -313,7 +270,7 @@ void to::test<4>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/C23000.bufr", 0, 2206));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/C23000.bufr", 0, 2206));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -321,19 +278,12 @@ void to::test<4>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 2202, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ValueBag vb;
-	vb.set("t", Value::createString("temp"));
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(2, 255, 101, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2010, 7, 21, 23, 0, 0))));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(2, 255, 101, t=temp)"));
+    //wassert(actual(md).contains("area", "GRIB(lat=4153000, lon=2070000)"));
+    //wassert(actual(md).contains("proddef", "GRIB(blo=13, sta=577)"));
+    wassert(actual(md).contains("reftime", "2010-07-21Z23:00:00Z"));
 
 	// Check area
 	ensure(md.has(types::TYPE_AREA));
@@ -361,7 +311,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source).sourceblob_is("bufr", sys::fs::abspath("."), "inbound/pollution.bufr", 0, 178));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/pollution.bufr", 0, 178));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -369,26 +319,12 @@ void to::test<5>()
 	ensure_equals(string((const char*)buf.data(), 4), "BUFR");
 	ensure_equals(string((const char*)buf.data() + 174, 4), "7777");
 
-	// Check origin
-	ensure(md.get(types::TYPE_ORIGIN).defined());
-	ensure_equals(md.get(types::TYPE_ORIGIN), Item<>(origin::BUFR::create(98, 0)));
-
-	// Check product
-	ValueBag vb;
-	vb.set("t", Value::createString("pollution"));
-	vb.set("p", Value::createString("NO2"));
-	ensure(md.get(types::TYPE_PRODUCT).defined());
-	ensure_equals(md.get(types::TYPE_PRODUCT), Item<>(product::BUFR::create(8, 255, 171, vb)));
-
-	// Check reftime
-	ensure_equals(md.get(types::TYPE_REFTIME).upcast<Reftime>()->style(), Reftime::POSITION);
-	ensure_equals(md.get(types::TYPE_REFTIME), Item<>(reftime::Position::create(types::Time::create(2010, 8, 8, 23, 0, 0))));
-
-    // Check area
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4601194, lon=826889)"));
-
-    // Check proddef
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(gems=IT0002, name=NO_3118_PIEVEVERGONTE)"));
+    // Check contents
+    wassert(actual(md).contains("origin", "BUFR(98, 0)"));
+    wassert(actual(md).contains("product", "BUFR(8, 255, 171, t=pollution,p=NO2)"));
+    wassert(actual(md).contains("area", "GRIB(lat=4601194, lon=826889)"));
+    wassert(actual(md).contains("proddef", "GRIB(gems=IT0002, name=NO_3118_PIEVEVERGONTE)"));
+    wassert(actual(md).contains("reftime", "2010-08-08Z23:00:00Z"));
 
 	// Check run
 	ensure(not md.has(types::TYPE_RUN));
@@ -409,7 +345,7 @@ void to::test<6>()
 
     // Missing datetime info should lead to missing Reftime
     wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>().defined()).isfalse());
+    wassert(actual(md.get<Reftime>()).isfalse());
 }
 
 // Test scanning a ship
@@ -420,8 +356,8 @@ void to::test<7>()
     scan::Bufr scanner;
     scanner.open("inbound/ship.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=-11, y=37, type=mob)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=DHDE)"));
+    wassert(actual(md).contains("area", "GRIB(x=-11, y=37, type=mob)"));
+    wassert(actual(md).contains("proddef", "GRIB(id=DHDE)"));
 }
 
 // Test scanning an amdar
@@ -432,8 +368,8 @@ void to::test<8>()
     scan::Bufr scanner;
     scanner.open("inbound/amdar.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=21, y=64, type=mob)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=EU4444)"));
+    wassert(actual(md).contains("area", "GRIB(x=21, y=64, type=mob)"));
+    wassert(actual(md).contains("proddef", "GRIB(id=EU4444)"));
 }
 
 // Test scanning an airep
@@ -444,8 +380,8 @@ void to::test<9>()
     scan::Bufr scanner;
     scanner.open("inbound/airep.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=-54, y=51, type=mob)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=ACA872)"));
+    wassert(actual(md).contains("area", "GRIB(x=-54, y=51, type=mob)"));
+    wassert(actual(md).contains("proddef", "GRIB(id=ACA872)"));
 }
 
 // Test scanning an acars
@@ -456,8 +392,8 @@ void to::test<10>()
     scan::Bufr scanner;
     scanner.open("inbound/acars.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(x=-88, y=39, type=mob)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=JBNYR3RA)"));
+    wassert(actual(md).contains("area", "GRIB(x=-88, y=39, type=mob)"));
+    wassert(actual(md).contains("proddef", "GRIB(id=JBNYR3RA)"));
 }
 
 // Test scanning a GTS synop
@@ -468,8 +404,8 @@ void to::test<11>()
     scan::Bufr scanner;
     scanner.open("inbound/synop-gts.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4586878, lon=717080)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=6, sta=717)"));
+    wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
+    wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
 }
 
 // Test scanning a message with a different date in the header than in its contents
@@ -480,8 +416,8 @@ void to::test<12>()
     scan::Bufr scanner;
     scanner.open("inbound/synop-gts-different-date-in-header.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(lat=4586878, lon=717080)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(blo=6, sta=717)"));
+    wassert(actual(md).contains("area", "GRIB(lat=4586878, lon=717080)"));
+    wassert(actual(md).contains("proddef", "GRIB(blo=6, sta=717)"));
 }
 
 // Test scanning a message which raises domain errors when interpreted
@@ -492,8 +428,8 @@ void to::test<13>()
     scan::Bufr scanner;
     scanner.open("inbound/interpreted-range.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Area>(), Area::decodeString("GRIB(type=mob, x=10, y=53)"));
-    ensure_equals(md.get<Proddef>(), Proddef::decodeString("GRIB(id=DBBC)"));
+    wassert(actual(md).contains("Area", "GRIB(type=mob, x=10, y=53)"));
+    wassert(actual(md).contains("Proddef", "GRIB(id=DBBC)"));
 }
 
 // Test scanning a temp forecast, to see if we got the right reftime
@@ -505,13 +441,13 @@ void to::test<14>()
     scan::Bufr scanner;
     scanner.open("inbound/tempforecast.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Reftime>(), Reftime::decodeString("2009-02-13 12:00:00"));
+    wassert(actual(md).contains("reftime", "2009-02-13 12:00:00"));
 
     // BUFR has datetime 2013-04-06 00:00:00 (validity time, in this case), timerange 254,259200,0 (+72h)
     // and should be archived with its emission time
     scanner.open("inbound/tempforecast1.bufr");
     ensure(scanner.next(md));
-    ensure_equals(md.get<Reftime>(), Reftime::decodeString("2013-04-03 00:00:00"));
+    wassert(actual(md).contains("reftime", "2013-04-03 00:00:00"));
 }
 
 // Test scanning a bufr with all sorts of wrong dates
@@ -523,22 +459,22 @@ void to::test<15>()
     scanner.open("inbound/wrongdate.bufr");
 
     wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>().defined()).isfalse());
+    wassert(actual(md.get<Reftime>()).isfalse());
 
     wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>().defined()).isfalse());
+    wassert(actual(md.get<Reftime>()).isfalse());
 
     wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>().defined()).isfalse());
+    wassert(actual(md.get<Reftime>()).isfalse());
 
     wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>().defined()).isfalse());
+    wassert(actual(md.get<Reftime>()).isfalse());
 
     wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>().defined()).isfalse());
+    wassert(actual(md.get<Reftime>()).isfalse());
 
     wassert(actual(scanner.next(md)).istrue());
-    wassert(actual(md.get<Reftime>().defined()).isfalse());
+    wassert(actual(md.get<Reftime>()).isfalse());
 
     wassert(actual(scanner.next(md)).isfalse());
 }

@@ -86,10 +86,10 @@ auto_ptr<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
     {
         case POSITION:
             ensureSize(len, 6, "Reftime");
-            return upcast<Reftime>(reftime::Position::create(*Time::decode(buf+1, 5)));
+            return Reftime::createPosition(*Time::decode(buf+1, 5));
         case PERIOD:
             ensureSize(len, 11, "Reftime");
-            return upcast<Reftime>(reftime::Period::create(*Time::decode(buf+1, 5), *Time::decode(buf+6, 5)));
+            return Reftime::createPeriod(*Time::decode(buf+1, 5), *Time::decode(buf+6, 5));
         default:
             throw wibble::exception::Consistency("parsing reference time", "style " + str::fmt(s) + "but we can only decode POSITION and PERIOD");
     }
@@ -111,11 +111,11 @@ auto_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
 auto_ptr<Reftime> Reftime::decodeString(const std::string& val)
 {
     size_t pos = val.find(" to ");
-    if (pos == string::npos) return upcast<Reftime>(reftime::Position::create(*Time::decodeString(val)));
+    if (pos == string::npos) return Reftime::createPosition(*Time::decodeString(val));
 
-    return upcast<Reftime>(reftime::Period::create(
+    return Reftime::createPeriod(
                 *Time::decodeString(val.substr(0, pos)),
-                *Time::decodeString(val.substr(pos + 4))));
+                *Time::decodeString(val.substr(pos + 4)));
 }
 
 static int arkilua_new_position(lua_State* L)
@@ -144,12 +144,12 @@ void Reftime::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_reftime", lib);
 }
 
-std::auto_ptr<Reftime> createPosition(const Time& position)
+std::auto_ptr<Reftime> Reftime::createPosition(const Time& position)
 {
     return upcast<Reftime>(reftime::Position::create(position));
 }
 
-std::auto_ptr<Reftime> createPeriod(const Time& begin, const Time& end)
+std::auto_ptr<Reftime> Reftime::createPeriod(const Time& begin, const Time& end)
 {
     return upcast<Reftime>(reftime::Period::create(begin, end));
 }
