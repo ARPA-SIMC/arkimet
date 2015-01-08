@@ -31,10 +31,10 @@ using namespace arki::dataset;
 using namespace wibble;
 using namespace wibble::tests;
 
-struct arki_data_shar {
+struct arki_dataset_data_shar {
 };
 
-TESTGRP(arki_data);
+TESTGRP(arki_dataset_data);
 
 namespace {
 
