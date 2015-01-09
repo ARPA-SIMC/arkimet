@@ -492,6 +492,14 @@ template<> template<> void to::test<4>()
 // Test accuracy of maintenance scan, on a dataset with a corrupted data file
 template<> template<> void to::test<5>()
 {
+    /**
+     * Here we have inconsistent behaviou across segment types and data types,
+     * because:
+     *  - some formats detect corruption, some formats skip garbage
+     *  - concatenated data in files may skip corrupted data as garbage, but
+     *  directory segments are already split in separate data units and will
+     *  load, instead of skipping, corrupted data
+     */
     wruntest(test_corrupted_datafile, testdata::GRIBData());
     wruntest(test_corrupted_datafile, testdata::BUFRData());
     // TODO: VM2 scanning does not yet deal gracefully with corruption
