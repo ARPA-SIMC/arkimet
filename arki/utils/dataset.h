@@ -51,17 +51,6 @@ struct DataCacher : public metadata::Eater
     bool eat(std::auto_ptr<Metadata> md) override;
 };
 
-/**
- * Inline the data into all metadata, but after the next consumer has finished
- * it restores the previous source, deleting the cached data.
- */
-struct TemporaryDataInliner : public metadata::Consumer
-{
-	metadata::Consumer& next;
-	TemporaryDataInliner(metadata::Consumer& next) : next(next) {}
-	bool operator()(Metadata& md);
-};
-
 struct DataStartHookRunner : public metadata::Eater
 {
     metadata::Eater& next;

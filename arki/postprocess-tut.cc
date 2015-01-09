@@ -22,7 +22,7 @@
 #include <arki/postprocess.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
-#include <arki/scan/grib.h>
+#include <arki/scan/any.h>
 #include <arki/utils/files.h>
 #include <arki/utils/fd.h>
 #include <wibble/sys/fs.h>
@@ -67,15 +67,7 @@ struct arki_postprocess_shar {
 
     void produceGRIB(metadata::Eater& c)
     {
-        scan::Grib scanner;
-        scanner.open("inbound/test.grib1");
-        while (true)
-        {
-            auto_ptr<Metadata> md(new Metadata);
-            if (!scanner.next(*md))
-                break;
-            c.eat(md);
-        }
+        scan::scan("inbound/test.grib1", c);
     }
 };
 TESTGRP(arki_postprocess);
@@ -129,24 +121,20 @@ void to::test<4>()
     // Get the normal data
     string plain;
     {
-        struct Writer : public metadata::Consumer
+        struct Writer : public metadata::Eater
         {
             string& out;
             Writer(string& out) : out(out) {}
-            bool operator()(Metadata& md)
+            bool eat(auto_ptr<Metadata> md) override
             {
-                out += md.encodeBinary();
-                wibble::sys::Buffer data = md.getData();
+                out += md->encodeBinary();
+                wibble::sys::Buffer data = md->getData();
                 out.append((const char*)data.data(), data.size());
                 return true;
             }
         } writer(plain);
 
-        Metadata md;
-        scan::Grib scanner;
-        scanner.open("inbound/test.grib1");
-        while (scanner.next(md))
-            writer(md);
+        scan::scan("inbound/test.grib1", writer);
     }
 
     // Get the postprocessed data
@@ -154,19 +142,8 @@ void to::test<4>()
     Postprocess p("cat");
     p.set_output(postprocessed);
     p.start();
-
-    {
-        Metadata md;
-        scan::Grib scanner;
-        scanner.open("inbound/test.grib1");
-        while (true)
-        {
-            auto_ptr<Metadata> md(new Metadata);
-            if (!scanner.next(*md)) break;
-            p.eat(md);
-        }
-        p.flush();
-    }
+    scan::scan("inbound/test.grib1", p);
+    p.flush();
 
     ensure(plain == postprocessed.str());
 }

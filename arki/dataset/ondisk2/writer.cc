@@ -411,7 +411,7 @@ void Writer::removeAll(std::ostream& log, bool writable)
 
 namespace {
 
-struct Reindexer : public metadata::Consumer
+struct Reindexer : public metadata::Observer
 {
     index::WContents& idx;
 	std::string relfile;
@@ -420,7 +420,7 @@ struct Reindexer : public metadata::Consumer
     Reindexer(index::WContents& idx, const std::string& relfile)
         : idx(idx), relfile(relfile), basename(str::basename(relfile)) {}
 
-    virtual bool operator()(Metadata& md)
+    bool observe(const Metadata& md) override
     {
         const source::Blob& blob = md.sourceBlob();
         try {
@@ -490,7 +490,7 @@ void Writer::rescanFile(const std::string& relpath)
 	for (map<string, Metadata*>::const_iterator i = finddupes.begin();
 			i != finddupes.end(); ++i)
 	{
-		bool res = fixer(*i->second);
+        bool res = fixer.observe(*i->second);
 		assert(res);
 	}
 	// cerr << " REINDEXED " << pathname << endl;

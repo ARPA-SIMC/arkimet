@@ -69,62 +69,6 @@ bool SummarisingEater::eat(auto_ptr<Metadata> md)
     return true;
 }
 
-BinaryPrinter::BinaryPrinter(ostream& out, const std::string& fname)
-    : out(out), fname(fname)
-{
-}
-
-BinaryPrinter::~BinaryPrinter()
-{
-}
-
-bool BinaryPrinter::operator()(Metadata& md)
-{
-    md.write(out, fname);
-    return true;
-}
-
-
-YamlPrinter::YamlPrinter(ostream& out, bool formatted)
-    : out(out), formatter(0)
-{
-    if (formatted)
-        formatter = Formatter::create();
-}
-YamlPrinter::~YamlPrinter()
-{
-    if (formatter) delete formatter;
-}
-
-bool YamlPrinter::operator()(Metadata& md)
-{
-    md.writeYaml(out, formatter);
-    out << endl;
-    return true;
-}
-
-
-JSONPrinter::JSONPrinter(ostream& out, bool formatted)
-    : json(new emitter::JSON(out)), formatter(0)
-{
-    if (formatted)
-        formatter = Formatter::create();
-}
-JSONPrinter::~JSONPrinter()
-{
-    if (formatter) delete formatter;
-    if (json) delete json;
-}
-
-bool JSONPrinter::operator()(Metadata& md)
-{
-    md.serialise(*json, formatter);
-    return true;
-}
-
-
-
-
 #ifdef HAVE_LUA
 
 LuaConsumer::LuaConsumer(lua_State* L, int funcid) : L(L), funcid(funcid) {}
@@ -132,27 +76,6 @@ LuaConsumer::~LuaConsumer()
 {
 	// Unindex the function
 	luaL_unref(L, LUA_REGISTRYINDEX, funcid);
-}
-
-bool LuaConsumer::operator()(Metadata& md)
-{
-	// Get the function
-	lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
-
-	// Push the metadata
-	md.lua_push(L);
-
-	// Call the function
-	if (lua_pcall(L, 1, 1, 0))
-	{
-		string error = lua_tostring(L, -1);
-		lua_pop(L, 1);
-		throw wibble::exception::Consistency("running metadata consumer function", error);
-	}
-
-	int res = lua_toboolean(L, -1);
-	lua_pop(L, 1);
-	return res;
 }
 
 bool LuaConsumer::eat(auto_ptr<Metadata> md)

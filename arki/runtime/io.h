@@ -25,6 +25,7 @@
 
 #include <wibble/commandline/parser.h>
 #include <wibble/stream/posix.h>
+#include <arki/core.h>
 #include <fstream>
 #include <string>
 
@@ -78,7 +79,7 @@ protected:
  *
  * If a file is used, in case it already exists it will be overwritten.
  */
-class Output
+class Output : public arki::Output
 {
 	PosixBufWithHooks posixBuf;
 	std::ostream *m_out;
@@ -107,8 +108,8 @@ public:
      */
     void set_hook(metadata::Hook& hook);
 
-	std::ostream& stream() { return *m_out; }
-	const std::string& name() const { return m_name; }
+    std::ostream& stream() override { return *m_out; }
+    const std::string& name() const override { return m_name; }
 };
 
 /**

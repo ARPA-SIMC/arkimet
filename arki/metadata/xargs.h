@@ -53,9 +53,9 @@ class Xargs : public Clusterer
 protected:
     xargs::Tempfile tempfile;
 
-    virtual void start_batch(const std::string& new_format);
-    virtual void add_to_batch(Metadata& md, wibble::sys::Buffer& buf);
-    virtual void flush_batch();
+    void start_batch(const std::string& new_format) override;
+    void add_to_batch(const Metadata& md, const wibble::sys::Buffer& buf) override;
+    void flush_batch() override;
 
     int run_child();
 

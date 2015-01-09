@@ -42,17 +42,10 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Collection : public std::vector<Metadata>, public Consumer, public Eater, public Observer
+struct Collection : public std::vector<Metadata>, public Eater, public Observer
 {
     Collection();
     virtual ~Collection();
-
-	bool operator()(Metadata& md) override
-	{
-		push_back(md);
-		back().dropCachedData();
-		return true;
-	}
 
     bool observe(const Metadata& md) override
     {
@@ -82,18 +75,6 @@ struct Collection : public std::vector<Metadata>, public Consumer, public Eater,
 	 * Write all metadata to the given output stream
 	 */
 	void writeTo(std::ostream& out, const std::string& fname) const;
-
-	/**
-	 * Send all metadata to a consumer
-	 */
-	bool sendTo(Consumer& out)
-	{
-		for (std::vector<Metadata>::iterator i = begin();
-				i != end(); ++i)
-			if (!out(*i))
-				return false;
-		return true;
-	}
 
     /**
      * Send all metadata to an observer

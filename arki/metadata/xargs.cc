@@ -137,7 +137,7 @@ void Xargs::start_batch(const std::string& new_format)
     tempfile.open();
 }
 
-void Xargs::add_to_batch(Metadata& md, sys::Buffer& buf)
+void Xargs::add_to_batch(const Metadata& md, const sys::Buffer& buf)
 {
     metadata::Clusterer::add_to_batch(md, buf);
     arki::dataset::data::OstreamWriter::get(md.source().format)->stream(md, tempfile.fd);

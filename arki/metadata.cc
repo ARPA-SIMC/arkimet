@@ -106,6 +106,18 @@ Metadata& Metadata::operator=(const Metadata& o)
     return *this;
 }
 
+auto_ptr<Metadata> Metadata::createEmpty()
+{
+    return auto_ptr<Metadata>(new Metadata);
+}
+
+auto_ptr<Metadata> Metadata::createFromYaml(std::istream& in, const std::string& filename)
+{
+    auto_ptr<Metadata> res(createEmpty());
+    res->readYaml(in, filename);
+    return res;
+}
+
 const Source& Metadata::source() const
 {
     if (!m_source)

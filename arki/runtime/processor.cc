@@ -25,8 +25,8 @@
 #include <arki/runtime/processor.h>
 #include <arki/runtime/io.h>
 #include <arki/metadata/consumer.h>
+#include <arki/metadata/printer.h>
 #include <arki/formatter.h>
-#include <arki/emitter/json.h>
 #include <arki/dataset.h>
 #include <arki/dataset/index/base.h>
 #include <arki/targetfile.h>
@@ -40,126 +40,25 @@ using namespace wibble;
 namespace arki {
 namespace runtime {
 
-struct Printer : public metadata::Eater
-{
-    virtual bool operator()(const Summary& s) = 0;
-
-    virtual std::string describe() const = 0;
-
-    static Printer* create(ProcessorMaker& maker, Output& out);
-};
-
-struct YamlPrinter : public Printer
-{
-    Output& out;
-    Formatter* formatter;
-
-    YamlPrinter(Output& out, bool formatted=false)
-        : out(out), formatter(0)
-    {
-        if (formatted)
-            formatter = Formatter::create();
-    }
-    ~YamlPrinter()
-    {
-        if (formatter) delete formatter;
-    }
-
-    string describe() const override { return "yaml"; }
-
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        md->writeYaml(out.stream(), formatter);
-        out.stream() << endl;
-        return true;
-    }
-
-    virtual bool operator()(const Summary& s)
-    {
-        s.writeYaml(out.stream(), formatter);
-        out.stream() << endl;
-        return true;
-    }
-};
-
-struct JSONPrinter : public Printer
-{
-    Output& out;
-    Formatter* formatter;
-    emitter::JSON json;
-
-    JSONPrinter(Output& out, bool formatted=false)
-        : out(out), formatter(0), json(out.stream())
-    {
-        if (formatted)
-            formatter = Formatter::create();
-    }
-    ~JSONPrinter()
-    {
-        if (formatter) delete formatter;
-    }
-
-    string describe() const override { return "json"; }
-
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        md->serialise(json, formatter);
-        return true;
-    }
-
-    virtual bool operator()(const Summary& s)
-    {
-        s.serialise(json, formatter);
-        return true;
-    }
-};
-
-struct BinaryPrinter : public Printer
-{
-    Output& out;
-
-    BinaryPrinter(Output& out)
-        : out(out)
-    {
-    }
-    ~BinaryPrinter()
-    {
-    }
-
-    string describe() const override { return "binary"; }
-
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        md->write(out.stream(), out.name());
-        return true;
-    }
-
-    virtual bool operator()(const Summary& s)
-    {
-        s.write(out.stream(), out.name());
-        return true;
-    }
-};
-
-Printer* Printer::create(ProcessorMaker& maker, Output& out)
+metadata::Printer* createPrinter(ProcessorMaker& maker, Output& out)
 {
     if (maker.json)
-        return new JSONPrinter(out, maker.annotate);
+        return new metadata::JSONPrinter(out, maker.annotate);
     else if (maker.yaml || maker.annotate)
-        return new YamlPrinter(out, maker.annotate);
+        return new metadata::YamlPrinter(out, maker.annotate);
     else
-        return new BinaryPrinter(out);
+        return new metadata::BinaryPrinter(out);
 }
 
 struct DataProcessor : public DatasetProcessor
 {
     Output& output;
-    Printer* printer;
+    metadata::Printer* printer;
     dataset::DataQuery query;
     vector<string> description_attrs;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
-        : output(out), printer(Printer::create(maker, out)), query(q, false)
+        : output(out), printer(createPrinter(maker, out)), query(q, false)
     {
         description_attrs.push_back("query=" + q.toString());
         description_attrs.push_back("printer=" + printer->describe());
@@ -202,13 +101,13 @@ struct SummaryProcessor : public DatasetProcessor
 {
     Output& output;
     Matcher matcher;
-    Printer* printer;
+    metadata::Printer* printer;
     string summary_restrict;
     Summary summary;
     vector<string> description_attrs;
 
     SummaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
-        : output(out), matcher(q), printer(Printer::create(maker, out))
+        : output(out), matcher(q), printer(createPrinter(maker, out))
     {
         description_attrs.push_back("query=" + q.toString());
         if (!maker.summary_restrict.empty())
@@ -248,7 +147,7 @@ struct SummaryProcessor : public DatasetProcessor
 
     void do_output(const Summary& s)
     {
-        (*printer)(s);
+        printer->observe_summary(s);
         output.stream().flush();
     }
 };

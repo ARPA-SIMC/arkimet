@@ -42,26 +42,6 @@ class JSON;
 namespace metadata {
 
 /**
- * Generic interface for metadata consumers, used to handle a stream of
- * metadata, such as after scanning a file, or querying a dataset.
- */
-struct Consumer
-{
-	virtual ~Consumer() {}
-	/**
-	 * Consume a metadata.
-	 *
-	 * If the result is true, then the consumer is happy to accept more
-	 * metadata.  If it's false, then the consume is satisfied and must not be
-	 * sent any more metadata.
-	 */
-	virtual bool operator()(Metadata&) = 0;
-
-	/// Push to the LUA stack a userdata to access this Consumer
-	void lua_push(lua_State* L);
-};
-
-/**
  * Generic interface for metadata observer, used to process a stream of
  * metadata, but leaving their ownership to the caller.
  */
@@ -124,14 +104,13 @@ struct FilteredObserver : public metadata::Observer
 
 
 // Metadata consumer that passes the metadata to a Lua function
-struct LuaConsumer : public Consumer, public Eater
+struct LuaConsumer : public Eater
 {
 	lua_State* L;
 	int funcid;
 
 	LuaConsumer(lua_State* L, int funcid);
 	virtual ~LuaConsumer();
-    bool operator()(Metadata&) override;
     bool eat(std::auto_ptr<Metadata> md) override;
 
 	static std::auto_ptr<LuaConsumer> lua_check(lua_State* L, int idx);
@@ -171,38 +150,6 @@ struct Hook
     virtual void operator()() = 0;
 };
 
-struct BinaryPrinter : public Consumer
-{
-    std::ostream& out;
-    std::string fname;
-
-    BinaryPrinter(std::ostream& out, const std::string& fname=std::string());
-    ~BinaryPrinter();
-
-    bool operator()(Metadata& md);
-};
-
-struct YamlPrinter : public Consumer
-{
-    std::ostream& out;
-    Formatter* formatter;
-
-    YamlPrinter(std::ostream& out, bool formatted);
-    ~YamlPrinter();
-
-    bool operator()(Metadata& md);
-};
-
-struct JSONPrinter : public Consumer
-{
-    emitter::JSON* json;
-    Formatter* formatter;
-
-    JSONPrinter(std::ostream& out, bool formatted);
-    ~JSONPrinter();
-
-    bool operator()(Metadata& md);
-};
 
 }
 }

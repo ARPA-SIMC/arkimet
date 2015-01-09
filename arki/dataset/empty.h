@@ -47,18 +47,18 @@ public:
 	Empty(const ConfigFile& cfg);
 	virtual ~Empty();
 
-	// Nothing to do: the dataset is always empty
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer) {}
-	virtual void querySummary(const Matcher& matcher, Summary& summary) {}
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out) {}
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0) { return 0; }
+    // Nothing to do: the dataset is always empty
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override {}
+    void querySummary(const Matcher& matcher, Summary& summary) override {}
+    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override {}
+    size_t produce_nth(metadata::Eater& cons, size_t idx=0) override { return 0; }
 
 
-	virtual void rescanFile(const std::string& relpath) {}
-	virtual size_t repackFile(const std::string& relpath) { return 0; }
-	virtual size_t removeFile(const std::string& relpath, bool withData=false) { return 0; }
-	virtual void archiveFile(const std::string& relpath) {}
-	virtual size_t vacuum() { return 0; }
+    //void rescanFile(const std::string& relpath) override {}
+    //size_t repackFile(const std::string& relpath) override { return 0; }
+    //size_t removeFile(const std::string& relpath, bool withData=false) override { return 0; }
+    //void archiveFile(const std::string& relpath) override {}
+    //size_t vacuum() override { return 0; }
 };
 
 }

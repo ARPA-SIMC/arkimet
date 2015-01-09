@@ -44,30 +44,6 @@ bool DataCacher::eat(auto_ptr<Metadata> md)
     return next.eat(md);
 }
 
-bool TemporaryDataInliner::operator()(Metadata& md)
-{
-    // If we get data already inlined, we can shortcut
-    if (md.source().style() == types::Source::INLINE)
-        return next(md);
-
-    // Save the old source
-    auto_ptr<types::Source> old_source(md.source().clone());
-
-    // Change the source as inline
-    md.makeInline();
-
-    // Pass it all to the next step in the processing chain
-    bool res = next(md);
-
-    // Drop the cached metadata to avoid keeping all query results in memory
-    // FIXME old_source->dropCachedData();
-
-    // Restore the old source
-    md.set_source(old_source);
-
-    return res;
-}
-
 bool DataOnly::eat(auto_ptr<Metadata> md)
 {
     if (!writer)

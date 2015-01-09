@@ -10,6 +10,7 @@ AM_LDFLAGS = $(EXTRA_LDFLAGS)
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
+		core.h \
 		bbox.h \
 		configfile.h \
 		libconfig.h \
@@ -75,6 +76,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/utils.h \
 		metadata/collection.h \
 		metadata/consumer.h \
+		metadata/printer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadatagrid.h \
@@ -324,6 +326,7 @@ libarkimet_la_SOURCES += \
 		utils/sqlite.cc \
 		metadata.cc \
 		metadata/consumer.cc \
+		metadata/printer.cc \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \

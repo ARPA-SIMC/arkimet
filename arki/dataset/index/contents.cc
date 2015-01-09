@@ -322,9 +322,9 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
         }
 
         // Rebuild the Metadata
-        Metadata md;
-        build_md(mdq, md);
-        mdc(md);
+        auto_ptr<Metadata> md(new Metadata);
+        build_md(mdq, *md);
+        mdc.eat(md);
     }
 
     if (!last_file.empty())
@@ -635,9 +635,9 @@ size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
             while (mdq.step())
             {
                 // Rebuild the Metadata
-                Metadata md;
-                build_md(mdq, md);
-                mdbuf(md);
+                auto_ptr<Metadata> md(new Metadata);
+                build_md(mdq, *md);
+                mdbuf.eat(md);
             }
         }
     }

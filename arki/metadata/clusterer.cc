@@ -47,18 +47,18 @@ Clusterer::~Clusterer()
 //        flush();
 }
 
-bool Clusterer::exceeds_count(Metadata& md) const
+bool Clusterer::exceeds_count(const Metadata& md) const
 {
     return (max_count != 0 && count >= max_count);
 }
 
-bool Clusterer::exceeds_size(sys::Buffer& buf) const
+bool Clusterer::exceeds_size(const sys::Buffer& buf) const
 {
     if (max_bytes == 0 || size == 0) return false;
     return size + buf.size() > max_bytes;
 }
 
-bool Clusterer::exceeds_interval(Metadata& md) const
+bool Clusterer::exceeds_interval(const Metadata& md) const
 {
     if (max_interval == 0) return false;
     if (cur_interval[0] == -1) return false;
@@ -67,7 +67,7 @@ bool Clusterer::exceeds_interval(Metadata& md) const
     return memcmp(cur_interval, candidate, 6*sizeof(int)) != 0;
 }
 
-bool Clusterer::exceeds_timerange(Metadata& md) const
+bool Clusterer::exceeds_timerange(const Metadata& md) const
 {
     if (not split_timerange) return false;
     if (not last_timerange) return false;
@@ -82,7 +82,7 @@ void Clusterer::start_batch(const std::string& new_format)
     size = 0;
 }
 
-void Clusterer::add_to_batch(Metadata& md, sys::Buffer& buf)
+void Clusterer::add_to_batch(const Metadata& md, const sys::Buffer& buf)
 {
     size += buf.size();
     ++count;
@@ -116,23 +116,23 @@ void Clusterer::flush()
         flush_batch();
 }
 
-bool Clusterer::operator()(Metadata& md)
+bool Clusterer::eat(auto_ptr<Metadata> md)
 {
-    sys::Buffer buf = md.getData();
+    sys::Buffer buf = md->getData();
 
-    if (format.empty() || format != md.source().format ||
-        exceeds_count(md) || exceeds_size(buf) || exceeds_interval(md) || exceeds_timerange(md))
+    if (format.empty() || format != md->source().format ||
+        exceeds_count(*md) || exceeds_size(buf) || exceeds_interval(*md) || exceeds_timerange(*md))
     {
         flush();
-        start_batch(md.source().format);
+        start_batch(md->source().format);
     }
 
-    add_to_batch(md, buf);
+    add_to_batch(*md, buf);
 
     return true;
 }
 
-void Clusterer::md_to_interval(Metadata& md, int* interval) const
+void Clusterer::md_to_interval(const Metadata& md, int* interval) const
 {
     const Reftime* rt = md.get<Reftime>();
     if (!rt) throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");

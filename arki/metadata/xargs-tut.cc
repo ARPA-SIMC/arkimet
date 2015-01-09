@@ -41,6 +41,13 @@ struct arki_metadata_xargs_shar {
 };
 TESTGRP(arki_metadata_xargs);
 
+namespace {
+inline auto_ptr<Metadata> wrap(const Metadata& md)
+{
+    return auto_ptr<Metadata>(new Metadata(md));
+}
+}
+
 // Test what happens with children's stdin
 template<> template<>
 void to::test<1>()
@@ -54,7 +61,7 @@ void to::test<1>()
 
     xargs.max_count = 10;
     for (unsigned x = 0; x < 10; ++x)
-        xargs(mdc[0]);
+        xargs.eat(wrap(mdc[0]));
     xargs.flush();
 
     string out = utils::files::read_file("tmp-xargs");
@@ -75,7 +82,7 @@ void to::test<2>()
 
     xargs.max_count = 10;
     for (unsigned x = 0; x < 10; ++x)
-        xargs(mdc[0]);
+        xargs.eat(wrap(mdc[0]));
     xargs.flush();
 
     string out = utils::files::read_file("tmp-xargs");

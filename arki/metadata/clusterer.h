@@ -31,7 +31,7 @@
 namespace arki {
 namespace metadata {
 
-class Clusterer : public metadata::Consumer
+class Clusterer : public metadata::Eater
 {
 protected:
     /// Format of all the items in the current batch
@@ -51,7 +51,7 @@ protected:
      * Fill an int[6] with the datetime information in md, padding with -1 all
      * items not significant according to max_interval
      */
-    void md_to_interval(Metadata& md, int* interval) const;
+    void md_to_interval(const Metadata& md, int* interval) const;
 
     /**
      * Start a new cluster
@@ -66,7 +66,7 @@ protected:
      * Child classes can hook here for processing md and buf as members of the
      * current batch.
      */
-    virtual void add_to_batch(Metadata& md, wibble::sys::Buffer& buf);
+    virtual void add_to_batch(const Metadata& md, const wibble::sys::Buffer& buf);
 
     /**
      * Reset information about the current batch, and start a new one.
@@ -76,18 +76,18 @@ protected:
     virtual void flush_batch();
 
     /// Check if adding the given data would exceed the count limits for the current batch
-    bool exceeds_count(Metadata& md) const;
+    bool exceeds_count(const Metadata& md) const;
 
     /// Check if adding the given data would exceed the size limits for the current batch
-    bool exceeds_size(wibble::sys::Buffer& buf) const;
+    bool exceeds_size(const wibble::sys::Buffer& buf) const;
 
     /// Check if the time of the given data is inside the range acceptable for
     /// the current batch the current batch
-    bool exceeds_interval(Metadata& md) const;
+    bool exceeds_interval(const Metadata& md) const;
 
     /// Check if the timerange of the given data is different than the one of
     /// the current batch
-    bool exceeds_timerange(Metadata& md) const;
+    bool exceeds_timerange(const Metadata& md) const;
 
 public:
     /// Maximum number of data items per batch
@@ -112,7 +112,7 @@ public:
     // a chance to do their own flushing. Flushes must be explicit.
     ~Clusterer();
 
-    virtual bool operator()(Metadata& md);
+    virtual bool eat(std::auto_ptr<Metadata> md) override;
 
     /**
      * Signal that no more data will be sent, and close the current partial

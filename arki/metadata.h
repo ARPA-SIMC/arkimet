@@ -244,6 +244,12 @@ public:
 	 */
 	size_t dataSize() const;
 
+    /// Create an empty Metadata
+    static std::auto_ptr<Metadata> createEmpty();
+
+    /// Read one Metadata from a Yaml stream and return it
+    static std::auto_ptr<Metadata> createFromYaml(std::istream& in, const std::string& filename);
+
     /// Read all metadata from a file into the given consumer
     static void readFile(const std::string& fname, metadata::Eater& mdc);
 

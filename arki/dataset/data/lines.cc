@@ -192,7 +192,7 @@ OstreamWriter::~OstreamWriter()
 {
 }
 
-size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
+size_t OstreamWriter::stream(const Metadata& md, std::ostream& out) const
 {
     wibble::sys::Buffer buf = md.getData();
     sys::sig::ProcMask pm(blocked);
@@ -204,7 +204,7 @@ size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
     return buf.size() + 1;
 }
 
-size_t OstreamWriter::stream(Metadata& md, int out) const
+size_t OstreamWriter::stream(const Metadata& md, int out) const
 {
     wibble::sys::Buffer buf = md.getData();
     sys::sig::ProcMask pm(blocked);

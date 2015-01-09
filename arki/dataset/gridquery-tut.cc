@@ -134,11 +134,9 @@ void to::test<2>()
 		"Area: GRIB(Ni=297, Nj=313, latfirst=-25000000, latlast=-5500000, latp=-32500000, lonfirst=-8500000, lonlast=10000000, lonp=10000000, rot=0, type=10)\n"
 		"Run: MINUTE(00:00)\n"
 	);
-	Metadata md;
-	md.readYaml(md_yaml, "(memory)");
 
     dataset::Memory ds;
-    ds(md);
+    ds.eat(Metadata::createFromYaml(md_yaml, "(memory)"));
 
 	// Build the grid query
 	dataset::GridQuery gq(ds);

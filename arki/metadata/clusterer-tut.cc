@@ -53,6 +53,11 @@ struct ClusterCounter : public metadata::Clusterer
     }
 };
 
+inline auto_ptr<Metadata> wrap(const Metadata& md)
+{
+    return auto_ptr<Metadata>(new Metadata(md));
+}
+
 }
 
 // Test clustering by count
@@ -68,7 +73,7 @@ void to::test<1>()
         clusterer.max_count = 10;
 
         for (unsigned x = 0; x < *i; ++x)
-            clusterer(mdc[0]);
+            clusterer.eat(wrap(mdc[0]));
         clusterer.flush();
 
         wassert(actual(clusterer.clusters_processed) == (*i + 10 - 1) / 10);
@@ -92,7 +97,7 @@ void to::test<2>()
         clusterer.max_bytes = 72180;
 
         for (unsigned x = 0; x < *i; ++x)
-            clusterer(mdc[0]);
+            clusterer.eat(wrap(mdc[0]));
         clusterer.flush();
 
         wassert(actual(clusterer.clusters_processed) == (*i + 10 - 1) / 10);
@@ -103,7 +108,7 @@ void to::test<2>()
         ClusterCounter clusterer;
         clusterer.max_bytes = 1;
 
-        clusterer(mdc[0]);
+        clusterer.eat(wrap(mdc[0]));
         clusterer.flush();
 
         wassert(actual(clusterer.clusters_processed) == 1);
@@ -112,9 +117,9 @@ void to::test<2>()
         ClusterCounter clusterer;
         clusterer.max_bytes = 8000;
 
-        clusterer(mdc[0]);
-        clusterer(mdc[1]);
-        clusterer(mdc[2]);
+        clusterer.eat(wrap(mdc[0]));
+        clusterer.eat(wrap(mdc[1]));
+        clusterer.eat(wrap(mdc[2]));
         clusterer.flush();
 
         wassert(actual(clusterer.clusters_processed) == 3);
@@ -129,7 +134,7 @@ void to::test<3>()
     clusterer.max_interval = 2; // month
 
     for (unsigned i = 0; i < 3; ++i)
-        clusterer(mdc[i]);
+        clusterer.eat(wrap(mdc[i]));
     clusterer.flush();
 
     wassert(actual(clusterer.clusters_processed) == 2u);
@@ -142,9 +147,9 @@ void to::test<4>()
     ClusterCounter clusterer;
     clusterer.split_timerange = true;
 
-    clusterer(mdc[0]);
-    clusterer(mdc[2]);
-    clusterer(mdc[1]);
+    clusterer.eat(wrap(mdc[0]));
+    clusterer.eat(wrap(mdc[1]));
+    clusterer.eat(wrap(mdc[2]));
     clusterer.flush();
 
     wassert(actual(clusterer.clusters_processed) == 2u);
