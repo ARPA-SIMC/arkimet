@@ -263,7 +263,7 @@ struct MDStreamState : public ReqState
 {
 	metadata::Stream mdc;
 
-    MDStreamState(http::CurlEasy& curl, metadata::Consumer& consumer, const std::string& baseurl)
+    MDStreamState(http::CurlEasy& curl, metadata::Eater& consumer, const std::string& baseurl)
         : ReqState(curl), mdc(consumer, baseurl)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
@@ -280,7 +280,7 @@ struct MDStreamState : public ReqState
 };
 
 
-void HTTP::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	using namespace wibble::str;
 
@@ -658,7 +658,7 @@ void HTTPInbound::list(std::vector<std::string>& files)
         files.push_back(*i);
 }
 
-void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
+void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata::Eater& consumer)
 {
     using namespace wibble::str;
 
@@ -722,7 +722,7 @@ void HTTPInbound::testdispatch(const std::string& fname, const std::string& form
         s.throwError("querying inbound/scan from " + url);
 }
 
-void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata::Consumer& consumer)
+void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer)
 {
     using namespace wibble::str;
 

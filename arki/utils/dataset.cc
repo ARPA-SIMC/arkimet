@@ -20,11 +20,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include "arki/utils/dataset.h"
+#include "dataset.h"
 #include "arki/dataset/data.h"
 #include "arki/types/source/blob.h"
+#include "arki/data.h"
 
 #include <wibble/sys/signal.h>
 #include <wibble/sys/buffer.h>
@@ -37,11 +36,12 @@ namespace arki {
 namespace utils {
 namespace ds {
 
-bool DataInliner::operator()(Metadata& md)
+bool DataCacher::eat(auto_ptr<Metadata> md)
 {
-    // Read the data and change the source to inline
-    md.makeInline();
-    return next(md);
+    // Load the data into the cache
+    if (md->has_source_blob())
+        Data::current().prefetch(md->sourceBlob());
+    return next.eat(md);
 }
 
 bool TemporaryDataInliner::operator()(Metadata& md)
@@ -68,23 +68,22 @@ bool TemporaryDataInliner::operator()(Metadata& md)
     return res;
 }
 
-bool DataOnly::operator()(Metadata& md)
+bool DataOnly::eat(auto_ptr<Metadata> md)
 {
     if (!writer)
-        writer = dataset::data::OstreamWriter::get(md.source().format);
-    writer->stream(md, out);
+        writer = dataset::data::OstreamWriter::get(md->source().format);
+    writer->stream(*md, out);
     return true;
 }
 
-bool MakeAbsolute::operator()(Metadata& md)
+bool MakeAbsolute::eat(auto_ptr<Metadata> md)
 {
-    if (md.has_source())
-        if (const source::Blob* blob = dynamic_cast<const source::Blob*>(&md.source()))
-            md.set_source(upcast<Source>(blob->makeAbsolute()));
-    return next(md);
+    if (md->has_source())
+        if (const source::Blob* blob = dynamic_cast<const source::Blob*>(&(md->source())))
+            md->set_source(upcast<Source>(blob->makeAbsolute()));
+    return next.eat(md);
 }
 
 }
 }
 }
-// vim:set ts=4 sw=4:

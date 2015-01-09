@@ -38,6 +38,7 @@ struct Data
     virtual ~Data() {}
 
     virtual void add(const types::source::Blob&, wibble::sys::Buffer buf) = 0;
+    virtual void prefetch(const types::source::Blob&) = 0;
     virtual void drop(const types::source::Blob&) = 0;
     virtual wibble::sys::Buffer read(const types::source::Blob&) = 0;
     virtual wibble::sys::Buffer read(const types::Source&);

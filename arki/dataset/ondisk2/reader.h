@@ -34,10 +34,6 @@ class Metadata;
 class Matcher;
 class Summary;
 
-namespace metadata {
-class Consumer;
-}
-
 namespace dataset {
 class TargetFile;
 
@@ -54,7 +50,7 @@ protected:
 	TargetFile* m_tf;
 
 	// Query only the data in the dataset, without the archives
-	void queryLocalData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+	void queryLocalData(const dataset::DataQuery& q, metadata::Eater& consumer);
 
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
@@ -65,9 +61,9 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
 	/**
 	 * Return true if this dataset has a working index.

@@ -282,12 +282,12 @@ size_t Writer::repackFile(const std::string& relpath)
 	// Write out the new metadata
 	mdc.writeAtomically(pathname + ".metadata");
 
-	// Regenerate the summary. It is unchanged, really, but its timestamp
-	// has become obsolete by now
-	Summary sum;
-	metadata::Summarise mds(sum);
-	mdc.sendTo(mds);
-	sum.writeAtomically(pathname + ".summary");
+    // Regenerate the summary. It is unchanged, really, but its timestamp
+    // has become obsolete by now
+    Summary sum;
+    metadata::SummarisingObserver mds(sum);
+    mdc.sendToObserver(mds);
+    sum.writeAtomically(pathname + ".summary");
 
     // Reindex with the new file information
     time_t mtime = sys::fs::timestamp(pathname);

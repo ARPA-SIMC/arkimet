@@ -4,7 +4,7 @@
 /*
  * dataset/local - Base class for local datasets
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,9 +66,9 @@ public:
 	// Return the dataset path
 	const std::string& path() const { return m_path; }
 
-	// Base implementations that query the archives if they exist
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
+    // Base implementations that query the archives if they exist
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void querySummary(const Matcher& matcher, Summary& summary) override;
 
     /**
      * For each file in the archive, output to \a cons the data at position
@@ -77,7 +77,7 @@ public:
      * @return the number of data produced. If 0, then all files in the archive
      * have less than \a idx data inside.
      */
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
     /**
      * For each file in the archive, rescan the \a idx data in it and and check
@@ -91,7 +91,7 @@ public:
      * @return the number of data scanned at this idx, or 0 if no files in the
      * dataset have at least \a idx elements inside
      */
-    size_t scan_test(metadata::Consumer& cons, size_t idx=0);
+    size_t scan_test(metadata::Eater& cons, size_t idx=0);
 
 	bool hasArchive() const;
 	Archives& archive();

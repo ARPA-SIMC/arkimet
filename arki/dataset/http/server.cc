@@ -1,7 +1,7 @@
 /*
  * dataset/http/server - Server-side remote HTTP dataset access
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/dataset/http/server.h>
 #include <arki/configfile.h>
@@ -65,10 +63,10 @@ void StreamHeaders::sendIfNotFired()
 
 MetadataStreamer::MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
 
-bool MetadataStreamer::operator()(Metadata& md)
+bool MetadataStreamer::eat(auto_ptr<Metadata> md)
 {
     sh.sendIfNotFired();
-    md.write(sh.req.sock, "socket");
+    md->write(sh.req.sock, "socket");
     return true;
 }
 

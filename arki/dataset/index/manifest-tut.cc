@@ -145,9 +145,9 @@ void to::test<6>()
 	std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRW();
 
-	Summary s;
-	metadata::Summarise summarise(s);
-	scan::scan("inbound/test.grib1", summarise);
+    Summary s;
+    metadata::SummarisingEater summarise(s);
+    scan::scan("inbound/test.grib1", summarise);
 
 	m->acquire("a.grib1", 1000010, s);
 	m->acquire("foo/b.grib1", 1000011, s);
@@ -199,12 +199,12 @@ void to::test<8>()
 	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/50.grib1");
 	time_t mtime = sys::fs::timestamp("inbound/test-sorted.grib1");
 
-	// Generate their metadata and summary files
-	metadata::Collection mdc;
-	Summary s;
-	metadata::Summarise summarise(s);
-	scan::scan("inbound/test-sorted.grib1", mdc);
-	mdc.sendTo(summarise);
+    // Generate their metadata and summary files
+    metadata::Collection mdc;
+    Summary s;
+    metadata::SummarisingObserver summarise(s);
+    scan::scan("inbound/test-sorted.grib1", mdc);
+    mdc.sendToObserver(summarise);
 	for (int i = 10; i <= 50; i += 10)
 	{
 		mdc.writeAtomically(str::fmtf("testds/.archive/last/%02d.grib1.metadata", i));

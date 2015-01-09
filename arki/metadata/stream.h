@@ -4,7 +4,7 @@
 /*
  * metadata/stream - Read metadata incrementally from a data stream
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,15 +29,15 @@
 
 namespace arki {
 namespace metadata {
-class Consumer;
+class Eater;
 
 /**
  * Turn a stream of bytes into a stream of metadata
  */
 class Stream
 {
-	Consumer& consumer;
-	Metadata md;
+    Eater& consumer;
+    std::auto_ptr<Metadata> md;
 	std::string streamname;
 	std::string buffer;
 	enum { METADATA, DATA } state;
@@ -48,7 +48,7 @@ class Stream
     bool check();
 
 public:
-	Stream(Consumer& consumer, const std::string& streamname)
+	Stream(Eater& consumer, const std::string& streamname)
 		: consumer(consumer), streamname(streamname), state(METADATA) {}
 
 	/**
@@ -68,5 +68,4 @@ public:
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

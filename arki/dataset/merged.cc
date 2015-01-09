@@ -1,7 +1,7 @@
 /*
  * dataset/merged - Access many datasets at the same time
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,19 +20,16 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include <arki/dataset/merged.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
-
 #include <wibble/string.h>
 #include <wibble/sys/mutex.h>
 #include <wibble/sys/thread.h>
-
+#include <cstring>
 // #include <iostream>
 
 using namespace std;
@@ -42,57 +39,60 @@ namespace arki {
 namespace dataset {
 
 /// Fixed size synchronised queue
-template<typename T>
 class SyncBuffer
 {
 protected:
+    static const int buf_size = 10;
 	sys::Mutex mutex;
 	sys::Condition cond;
-	T* buffer;
+    Metadata* buffer[buf_size];
 	size_t head, tail, size;
 	mutable bool m_done;
 
 public:
-	SyncBuffer(size_t size = 10) : head(0), tail(0), size(size), m_done(false)
-	{
-		buffer = new T[size];
-	}
-	~SyncBuffer()
-	{
-		delete[] buffer;
-	}
+    SyncBuffer() : head(0), tail(0), size(size), m_done(false)
+    {
+        memset(buffer, 0, buf_size * sizeof(Metadata*));
+    }
+    ~SyncBuffer()
+    {
+        for (unsigned i = 0; i < buf_size; ++i)
+            delete buffer[i];
+    }
 
-	void push(const T& val)
-	{
-		sys::MutexLock lock(mutex);
-		while ((head + 1) % size == tail)
-			cond.wait(lock);
-		buffer[head] = val;
-		head = (head + 1) % size;
-		cond.broadcast();
-	}
+    void push(auto_ptr<Metadata> val)
+    {
+        sys::MutexLock lock(mutex);
+        while ((head + 1) % size == tail)
+            cond.wait(lock);
+        buffer[head] = val.release();
+        head = (head + 1) % size;
+        cond.broadcast();
+    }
 
-	void pop()
-	{
-		sys::MutexLock lock(mutex);
-		if (head == tail)
-			throw wibble::exception::Consistency("removing an element from a SyncBuffer", "the buffer is empty");
-		// Reset the item (this will take care, for example, to dereference
-		// refcounted values in the same thread that took them over)
-		buffer[tail] = T();
-		tail = (tail + 1) % size;
-		cond.broadcast();
-	}
+    auto_ptr<Metadata> pop()
+    {
+        sys::MutexLock lock(mutex);
+        if (head == tail)
+            throw wibble::exception::Consistency("removing an element from a SyncBuffer", "the buffer is empty");
+        // Reset the item (this will take care, for example, to dereference
+        // refcounted values in the same thread that took them over)
+        auto_ptr<Metadata> res(buffer[tail]);
+        buffer[tail] = 0;
+        tail = (tail + 1) % size;
+        cond.broadcast();
+        return res;
+    }
 
-	// Get must be done by the same thread that does pop
-	T* get()
-	{
-		sys::MutexLock lock(mutex);
-		while (head == tail && !m_done)
-			cond.wait(lock);
-		if (head == tail && m_done) return 0;
-		return &buffer[tail];
-	}
+    // Get must be done by the same thread that does pop
+    const Metadata* get()
+    {
+        sys::MutexLock lock(mutex);
+        while (head == tail && !m_done)
+            cond.wait(lock);
+        if (head == tail && m_done) return 0;
+        return buffer[tail];
+    }
 
 	bool isDone()
 	{
@@ -117,17 +117,17 @@ private:
 	MetadataReader& operator=(const MetadataReader&);
 
 protected:
-	struct Consumer : public metadata::Consumer
+	struct Consumer : public metadata::Eater
 	{
-		SyncBuffer<Metadata>& buf;
+        SyncBuffer& buf;
 
-		Consumer(SyncBuffer<Metadata>& buf) : buf(buf) {}
+        Consumer(SyncBuffer& buf) : buf(buf) {}
 
-		virtual bool operator()(Metadata& m)
-		{
-			buf.push(m);
-			return true;
-		}
+        bool eat(std::auto_ptr<Metadata> md) override
+        {
+            buf.push(md);
+            return true;
+        }
 	};
 	ReadonlyDataset* dataset;
 	const DataQuery* query;
@@ -150,7 +150,7 @@ protected:
 	}
 
 public:
-	SyncBuffer<Metadata> mdbuf;
+    SyncBuffer mdbuf;
 
 	MetadataReader() : dataset(0), query(0) {}
 
@@ -214,7 +214,7 @@ struct RAIIDeleter
 };
 }
 
-void Merged::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	// Handle the trivial case of only one dataset
 	if (datasets.size() == 1)
@@ -242,23 +242,22 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
 
 	while (true)
 	{
-		Metadata* minmd = 0;
-		int minmd_idx = 0;
+        const Metadata* minmd = 0;
+        int minmd_idx = 0;
 		for (size_t i = 0; i < datasets.size(); ++i)
 		{
-			Metadata* md = readers[i].mdbuf.get();
-			if (!md) continue;
+            const Metadata* md = readers[i].mdbuf.get();
+            if (!md) continue;
 			if (!minmd || sorter->compare(*md, *minmd) < 0)
 			{
 				minmd = md;
 				minmd_idx = i;
 			}
 		}
-		// When there's nothing more to read, we exit
-		if (minmd == 0) break;
-		consumer(*minmd);
-		readers[minmd_idx].mdbuf.pop();
-	}
+        // When there's nothing more to read, we exit
+        if (minmd == 0) break;
+        consumer.eat(readers[minmd_idx].mdbuf.pop());
+    }
 
 	// Collect all the results
 	vector<string> errors;

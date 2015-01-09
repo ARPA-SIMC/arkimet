@@ -387,15 +387,15 @@ template<> template<> void to::test<7>()
     utils::files::removeDontpackFlagfile(cfg.value("path"));
 
     // Query all the dataset and make sure the results are in the right order
-    struct CheckSortOrder : public metadata::Consumer
+    struct CheckSortOrder : public metadata::Eater
     {
         uint64_t last_value;
         unsigned seen;
         CheckSortOrder() : last_value(0), seen(0) {}
         virtual uint64_t make_key(const Metadata& md) const = 0;
-        virtual bool operator()(Metadata& md)
+        bool eat(auto_ptr<Metadata> md) override
         {
-            uint64_t value = make_key(md);
+            uint64_t value = make_key(*md);
             wassert(actual(value) >= last_value);
             last_value = value;
             ++seen;

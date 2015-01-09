@@ -4,7 +4,7 @@
 /*
  * arki/querymacro - Macros implementing special query strategies
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010-2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,8 +61,8 @@ public:
 	 */
 	ReadonlyDataset* dataset(const std::string& name);
 
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void querySummary(const Matcher& matcher, Summary& summary) override;
 };
 
 }

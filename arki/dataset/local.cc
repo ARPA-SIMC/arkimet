@@ -1,7 +1,7 @@
 /*
  * dataset/local - Base class for local datasets
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/dataset/local.h>
 #include <arki/dataset/ondisk2.h>
@@ -82,7 +80,7 @@ const Archives& Local::archive() const
 	return *m_archive;
 }
 
-void Local::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Local::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	if (hasArchive())
 		archive().queryData(q, consumer);
@@ -94,7 +92,7 @@ void Local::querySummary(const Matcher& matcher, Summary& summary)
 		archive().querySummary(matcher, summary);
 }
 
-size_t Local::produce_nth(metadata::Consumer& cons, size_t idx)
+size_t Local::produce_nth(metadata::Eater& cons, size_t idx)
 {
     if (hasArchive())
         return archive().produce_nth(cons, idx);
@@ -102,22 +100,22 @@ size_t Local::produce_nth(metadata::Consumer& cons, size_t idx)
 }
 
 namespace {
-struct ScanTestFilter : public metadata::Consumer
+struct ScanTestFilter : public metadata::Eater
 {
     const Matcher& filter;
-    metadata::Consumer& next;
+    metadata::Eater& next;
 
-    ScanTestFilter(const Matcher& filter, metadata::Consumer& next)
+    ScanTestFilter(const Matcher& filter, metadata::Eater& next)
         : filter(filter), next(next) {}
 
-    bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
         metadata::Collection c;
 
         // Inner scope to run cleanups before we produce anything
         {
             // Get the data
-            sys::Buffer data = md.getData();
+            sys::Buffer data = md->getData();
 
             // Write the raw data to a temp file
             runtime::Tempfile tf;
@@ -128,11 +126,11 @@ struct ScanTestFilter : public metadata::Consumer
 
             // Rescan the data
             try {
-                scan::scan(tf.name(), c, md.source().format);
+                scan::scan(tf.name(), c, md->source().format);
             } catch (std::exception& e) {
                 // If scanning now fails, clear c so later we output the offender
                 stringstream sstream;
-                sstream << md.source();
+                sstream << md->source();
                 nag::verbose("%s: scanning failed: %s", sstream.str().c_str(), e.what());
                 c.clear();
             }
@@ -140,15 +138,15 @@ struct ScanTestFilter : public metadata::Consumer
 
         // Check that collection has 1 element (not 0, not >1)
         if (c.size() != 1)
-            return next(md);
+            return next.eat(md);
 
         // Match on the rescanned, if it fails, output it
         if (!filter(c[0]))
         {
             stringstream sstream;
-            sstream << md.source();
+            sstream << md->source();
             nag::verbose("%s: does not match filter");
-            return next(md);
+            return next.eat(md);
         }
 
         // All fine, ready for the next one
@@ -157,7 +155,7 @@ struct ScanTestFilter : public metadata::Consumer
 };
 }
 
-size_t Local::scan_test(metadata::Consumer& cons, size_t idx)
+size_t Local::scan_test(metadata::Eater& cons, size_t idx)
 {
     std::map<std::string, std::string>::const_iterator i = cfg.find("filter");
     // No point in running a scan_test if there is no filter

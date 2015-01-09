@@ -40,10 +40,6 @@ class Metadata;
 class Matcher;
 class ConfigFile;
 
-namespace metadata {
-class Consumer;
-}
-
 namespace dataset {
 struct DataQuery;
 
@@ -177,7 +173,7 @@ public:
 	/**
 	 * Send the metadata of all data items inside a file to the given consumer
 	 */
-	void scan_file(const std::string& relname, metadata::Consumer& consumer, const std::string& orderBy = "offset") const;
+	void scan_file(const std::string& relname, metadata::Eater& consumer, const std::string& orderBy = "offset") const;
 
 	/**
 	 * Return the maximum reference time found in the given file.
@@ -192,7 +188,7 @@ public:
 	 * @return true if the index could be used for the query, false if the
 	 * query does not use the index and a full scan should be used instead
 	 */
-	bool query(const dataset::DataQuery& q, metadata::Consumer& consumer) const;
+	bool query(const dataset::DataQuery& q, metadata::Eater& consumer) const;
 
 	/**
 	 * Query this index, returning a summary
@@ -219,7 +215,7 @@ public:
 	 */
 	void querySummaryFromDB(const std::string& where, Summary& summary) const;
 
-    size_t produce_nth(metadata::Consumer& consumer, size_t idx) const;
+    size_t produce_nth(metadata::Eater& consumer, size_t idx) const;
 
 	/**
 	 * Run a consistency check on the summary cache, reporting issues
@@ -266,7 +262,7 @@ protected:
 	void initQueries();
 
 	/// Run a query and output to a consumer all the metadata that come out
-	void metadataQuery(const std::string& query, metadata::Consumer& consumer) const;
+	void metadataQuery(const std::string& query, metadata::Eater& consumer) const;
 
 public:
 	RContents(const ConfigFile& cfg);

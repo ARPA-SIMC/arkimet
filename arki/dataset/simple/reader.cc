@@ -84,7 +84,7 @@ bool Reader::is_dataset(const std::string& dir)
     return index::Manifest::exists(dir);
 }
 
-void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Reader::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	Local::queryData(q, consumer);
 	if (!m_mft) return;
@@ -98,7 +98,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 	m_mft->querySummary(matcher, summary);
 }
 
-size_t Reader::produce_nth(metadata::Consumer& cons, size_t idx)
+size_t Reader::produce_nth(metadata::Eater& cons, size_t idx)
 {
     size_t res = Local::produce_nth(cons, idx);
     if (m_mft)

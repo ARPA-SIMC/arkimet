@@ -1,7 +1,7 @@
 /**
  * dataset/test-scenario - Build dataset scenarios for testing arkimet
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/dataset/test-scenario.h>
 #include <arki/dataset/ondisk2.h>
@@ -89,14 +87,14 @@ ConfigFile Scenario::clone(const std::string& newpath) const
 
 namespace {
 
-struct Importer : public metadata::Consumer
+struct Importer : public metadata::Eater
 {
     dataset::WritableLocal& ds;
 
     Importer(dataset::WritableLocal& ds) : ds(ds) {}
-    bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
-        WritableDataset::AcquireResult r = ds.acquire(md);
+        WritableDataset::AcquireResult r = ds.acquire(*md);
         if (r != WritableDataset::ACQ_OK)
             throw wibble::exception::Consistency("building test scenario", "metadata was not imported successfully");
         return true;

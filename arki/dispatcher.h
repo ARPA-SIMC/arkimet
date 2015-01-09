@@ -4,7 +4,7 @@
 /*
  * dispatcher - Dispatch data into dataset
  *
- * Copyright (C) 2007,2008  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,10 +36,6 @@ class ConfigFile;
 class Metadata;
 class Validator;
 
-namespace metadata {
-class Consumer;
-}
-
 class Dispatcher
 {
 protected:
@@ -55,13 +51,13 @@ protected:
     int m_outbound_failures;
 
     /// Hook called at the beginning of the dispatch procedure for a message
-    virtual void hook_pre_dispatch(Metadata& md);
+    virtual void hook_pre_dispatch(const Metadata& md);
 
     /// Hook called with the list of matching datasets for a message
-    virtual void hook_found_datasets(Metadata& md, std::vector<std::string>& found);
+    virtual void hook_found_datasets(const Metadata& md, std::vector<std::string>& found);
 
     /// Hook called to output the final metadata to a consumer
-    virtual void hook_output(Metadata& md, metadata::Consumer& mdc);
+    virtual void hook_output(std::auto_ptr<Metadata> md, metadata::Eater& mdc);
 
     virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
     virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
@@ -110,7 +106,7 @@ public:
      *
      * @returns The outcome of the dispatch.
      */
-    Outcome dispatch(Metadata& md, metadata::Consumer& mdc);
+    Outcome dispatch(std::auto_ptr<Metadata> md, metadata::Eater& mdc);
 
     virtual void flush() = 0;
 };
@@ -119,7 +115,7 @@ public:
  * Infrastructure to dispatch metadata into various datasets
  *
  * The metadata will be edited to reflect the data stored inside the target
- * dataset, and sent to the given metadata::Consumer.
+ * dataset, and sent to the given metadata::Eater.
  *
  * If there are outbound datasets, a different metadata can be sent to
  * the consumer for every output dataset that accepted it.
@@ -140,10 +136,10 @@ protected:
     // Duplicates dataset
     WritableDataset* dsduplicates;
 
-    virtual void hook_output(Metadata& md, metadata::Consumer& mdc);
-    virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md);
-    virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
-    virtual WritableDataset::AcquireResult raw_dispatch_duplicates(Metadata& md);
+    void hook_output(std::auto_ptr<Metadata> md, metadata::Eater& mdc) override;
+    WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
+    WritableDataset::AcquireResult raw_dispatch_error(Metadata& md) override;
+    WritableDataset::AcquireResult raw_dispatch_duplicates(Metadata& md) override;
 
 public:
 	RealDispatcher(const ConfigFile& cfg);
@@ -172,9 +168,9 @@ protected:
     std::string prefix;
     std::map<std::string, std::string> m_seen;
 
-    virtual void hook_pre_dispatch(Metadata& md);
-    virtual void hook_found_datasets(Metadata& md, std::vector<std::string>& found);
-    virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md);
+    void hook_pre_dispatch(const Metadata& md) override;
+    void hook_found_datasets(const Metadata& md, std::vector<std::string>& found) override;
+    WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
 
 public:
 	TestDispatcher(const ConfigFile& cfg, std::ostream& out);

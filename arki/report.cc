@@ -1,7 +1,7 @@
 /*
  * arki/report - Build a report of an arkimet metadata or summary stream
  *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/report.h>
 #include <arki/metadata.h>
@@ -147,13 +145,13 @@ void Report::captureOutput(std::ostream& buf)
 	utils::lua::capturePrintOutput(*L, buf);
 }
 
-bool Report::operator()(Metadata& md)
+bool Report::eat(auto_ptr<Metadata> md)
 {
 	if (!acceptsMetadata()) return true;
 
     lua_getglobal(*L, "_md");
     lua_getglobal(*L, "Report");
-	md.lua_push(*L);
+    md->lua_push(*L);
 	if (lua_pcall(*L, 2, 0, 0))
 	{
 		string error = lua_tostring(*L, -1);

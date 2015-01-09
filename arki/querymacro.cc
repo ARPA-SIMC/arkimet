@@ -1,7 +1,7 @@
 /*
  * arki/querymacro - Macros implementing special query strategies
  *
- * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,10 +70,12 @@ static int arkilua_metadataconsumer(lua_State *L)
 	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
 
 	int considx = lua_upvalueindex(1);
-	metadata::Consumer* cons = (metadata::Consumer*)lua_touserdata(L, considx);
+	metadata::Eater* cons = (metadata::Eater*)lua_touserdata(L, considx);
 
-	lua_pushboolean(L, (*cons)(*md));
-	return 1;
+    // FIXME: make a copy here, until we review memory ownership for this case
+    auto_ptr<Metadata> copy(new Metadata(*md));
+    lua_pushboolean(L, cons->eat(copy));
+    return 1;
 }
 
 static int arkilua_tostring(lua_State *L)
@@ -172,9 +174,9 @@ ReadonlyDataset* Querymacro::dataset(const std::string& name)
 	return i->second;
 }
 
-void Querymacro::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Querymacro::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-  metadata::Consumer *c = &consumer;
+    metadata::Eater *c = &consumer;
 
 	if (funcid_querydata == -1) return;
 
@@ -186,13 +188,7 @@ void Querymacro::queryData(const dataset::DataQuery& q, metadata::Consumer& cons
 	q.lua_push_table(*L, -1);
 
 	// Push consumer C closure
-    auto_ptr<utils::ds::DataInliner> inliner;
     auto_ptr<sort::Stream> sorter;
-    if (q.withData)
-    {
-        inliner.reset(new utils::ds::DataInliner(*c));
-        c = inliner.get();
-    }
     if (q.sorter)
     {
         sorter.reset(new sort::Stream(*q.sorter, *c));

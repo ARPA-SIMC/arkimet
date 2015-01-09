@@ -1,7 +1,7 @@
 /*
  * metadata/test-generator - Metadata generator to user for tests
  *
- * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata.h>
@@ -121,7 +119,7 @@ void Generator::defaults_odimh5()
     add_if_missing(types::TYPE_QUANTITY, "ACRR, BRDR, CLASS, DBZH, DBZV, HGHT, KDP, LDR, PHIDP, QIND, RATE, RHOHV, SNR, SQI, TH, TV, UWND, VIL, VRAD, VWND, WRAD, ZDR, ad, ad_dev, chi2, dbz, dbz_dev, dd, dd_dev, def, def_dev, div, div_dev, ff, ff_dev, n, rhohv, rhohv_dev, w, w_dev, z, z_dev");
 }
 
-void Generator::generate(metadata::Consumer& cons)
+void Generator::generate(metadata::Eater& cons)
 {
     if (format == "grib1")
         defaults_grib1();
@@ -138,24 +136,24 @@ void Generator::generate(metadata::Consumer& cons)
     _generate(samples.begin(), md, cons);
 }
 
-bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metadata::Consumer& cons) const
+bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metadata::Eater& cons) const
 {
     if (i == samples.end())
     {
-        Metadata m(md);
+        auto_ptr<Metadata> m(new Metadata(md));
 
         // Set run from Reftime
         const types::Reftime* rt = md.get<types::Reftime>();
         const types::reftime::Position* p = dynamic_cast<const types::reftime::Position*>(rt);
-        m.set(types::run::Minute::create(p->time.vals[3], p->time.vals[4]));
+        m->set(types::run::Minute::create(p->time.vals[3], p->time.vals[4]));
 
         // Set source and inline data
         char buf[5432];
         memset(buf, 0, 5432);
         wibble::sys::Buffer data(buf, 5432, false);
-        m.setInlineData(format, data);
+        m->setInlineData(format, data);
 
-        return cons(m);
+        return cons.eat(m);
     }
 
     for (vector<Type*>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)

@@ -44,6 +44,16 @@ struct PermanentCache : public Data
         cache[s] = buf;
     }
 
+    void prefetch(const types::source::Blob& s) override
+    {
+        map<source::Blob, sys::Buffer>::const_iterator i = cache.find(s);
+        if (i != cache.end()) return;
+
+        wibble::sys::Buffer buf(s.size);
+        dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
+        cache[s] = buf;
+    }
+
     void drop(const types::source::Blob& s) override
     {
         cache.erase(s);
@@ -69,6 +79,10 @@ struct PermanentCache : public Data
 struct NeverCache : public Data
 {
     void add(const types::source::Blob& s, wibble::sys::Buffer buf) override
+    {
+    }
+
+    void prefetch(const types::source::Blob& s) override
     {
     }
 

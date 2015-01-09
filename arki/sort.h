@@ -4,7 +4,7 @@
 /*
  * arki/sort - Sorting routines for metadata
  *
- * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,30 +88,39 @@ struct STLCompare
 	{
 		return cmp.compare(a, b) < 0;
 	}
+
+    bool operator()(const Metadata* a, const Metadata* b) const
+    {
+        return cmp.compare(*a, *b) < 0;
+    }
 };
 
-class Stream : public metadata::Consumer
+class Stream : public metadata::Eater
 {
 protected:
-	const Compare& sorter;
-	metadata::Consumer& nextConsumer;
-	bool hasInterval;
+    const Compare& sorter;
+    metadata::Eater& nextConsumer;
+    bool hasInterval;
     types::Time endofperiod;
-    std::vector<Metadata> buffer;
+    std::vector<Metadata*> buffer;
 
     void setEndOfPeriod(const types::Reftime& rt);
 
 public:
-	Stream(const Compare& sorter, metadata::Consumer& nextConsumer)
+	Stream(const Compare& sorter, metadata::Eater& nextConsumer)
 		: sorter(sorter), nextConsumer(nextConsumer)
 	{
 		hasInterval = sorter.interval() != Compare::NONE;
 	}
-	~Stream() { flush(); }
+    ~Stream();
 
-	virtual bool operator()(Metadata& m);
+    bool eat(std::auto_ptr<Metadata> md) override;
 
 	void flush();
+
+private:
+    Stream(const Stream&);
+    Stream& operator=(const Stream&);
 };
 
 }

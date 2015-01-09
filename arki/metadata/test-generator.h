@@ -4,7 +4,7 @@
 /*
  * metadata/test-generator - Metadata generator to user for tests
  *
- * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ namespace arki {
 struct Metadata;
 
 namespace metadata {
-struct Consumer;
+struct Eater;
 
 namespace test {
 
@@ -81,9 +81,9 @@ struct Generator
     /**
      * Generate one metadata item for each combination of samples given so far
      */
-    void generate(metadata::Consumer& cons);
+    void generate(metadata::Eater& cons);
 
-    bool _generate(const Samples::const_iterator& i, Metadata& md, metadata::Consumer& cons) const;
+    bool _generate(const Samples::const_iterator& i, Metadata& md, metadata::Eater& cons) const;
 };
 
 

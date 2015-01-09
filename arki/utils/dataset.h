@@ -4,7 +4,7 @@
 /*
  * utils/dataset - Useful functions for working with datasets
  *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,28 +41,14 @@ struct OstreamWriter;
 namespace utils {
 namespace ds {
 
-struct MatcherFilter : public metadata::Consumer
-{
-	const Matcher& matcher;
-	metadata::Consumer& next;
-	MatcherFilter(const Matcher& matcher, metadata::Consumer& next)
-		: matcher(matcher), next(next) {}
-	bool operator()(Metadata& md)
-	{
-		if (!matcher(md))
-			return true;
-		return next(md);
-	}
-};
-
 /**
- * Inline the data into all metadata
+ * Cache the data if the metadata we pass on
  */
-struct DataInliner : public metadata::Consumer
+struct DataCacher : public metadata::Eater
 {
-	metadata::Consumer& next;
-	DataInliner(metadata::Consumer& next) : next(next) {}
-	bool operator()(Metadata& md);
+    metadata::Eater& next;
+    DataCacher(metadata::Eater& next) : next(next) {}
+    bool eat(std::auto_ptr<Metadata> md) override;
 };
 
 /**
@@ -76,49 +62,49 @@ struct TemporaryDataInliner : public metadata::Consumer
 	bool operator()(Metadata& md);
 };
 
-struct DataStartHookRunner : public metadata::Consumer
+struct DataStartHookRunner : public metadata::Eater
 {
-    metadata::Consumer& next;
+    metadata::Eater& next;
     metadata::Hook* data_start_hook;
 
-    DataStartHookRunner(metadata::Consumer& next, metadata::Hook* data_start_hook=0)
+    DataStartHookRunner(metadata::Eater& next, metadata::Hook* data_start_hook=0)
         : next(next), data_start_hook(data_start_hook) {}
 
-    bool operator()(Metadata& md)
+    bool eat(std::auto_ptr<Metadata> md) override
     {
         if (data_start_hook)
         {
             (*data_start_hook)();
             data_start_hook = 0;
         }
-        return next(md);
+        return next.eat(md);
     }
 };
 
 /**
  * Output the data from a metadata stream into an ostream
  */
-struct DataOnly : public metadata::Consumer
+struct DataOnly : public metadata::Eater
 {
     std::ostream& out;
     const dataset::data::OstreamWriter* writer;
 
     DataOnly(std::ostream& out) : out(out), writer(0) {}
 
-    bool operator()(Metadata& md);
+    bool eat(std::auto_ptr<Metadata> md) override;
 };
 
 
 /**
  * Make all source blobs absolute
  */
-struct MakeAbsolute : public metadata::Consumer
+struct MakeAbsolute : public metadata::Eater
 {
-   metadata::Consumer& next;
+    metadata::Eater& next;
 
-   MakeAbsolute(metadata::Consumer& next) : next(next) {}
+    MakeAbsolute(metadata::Eater& next) : next(next) {}
 
-   bool operator()(Metadata& md);
+    bool eat(std::auto_ptr<Metadata> md) override;
 };
 
 }

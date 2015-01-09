@@ -305,4 +305,3 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
 }
 
 }
-// vim:set ts=4 sw=4:

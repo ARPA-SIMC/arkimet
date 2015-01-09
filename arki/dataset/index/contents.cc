@@ -331,7 +331,7 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
         v(last_file, mdc);
 }
 
-void Contents::scan_file(const std::string& relname, metadata::Consumer& consumer, const std::string& orderBy) const
+void Contents::scan_file(const std::string& relname, metadata::Eater& consumer, const std::string& orderBy) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 	if (m_uniques) query += ", m.uniq";
@@ -347,9 +347,9 @@ void Contents::scan_file(const std::string& relname, metadata::Consumer& consume
     while (mdq.step())
     {
         // Rebuild the Metadata
-        Metadata md;
-        build_md(mdq, md);
-        consumer(md);
+        auto_ptr<Metadata> md(new Metadata);
+        build_md(mdq, *md);
+        consumer.eat(md);
     }
 }
 
@@ -520,7 +520,7 @@ void Contents::build_md(Query& q, Metadata& md) const
     }
 }
 
-bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) const
+bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) const
 {
 	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
@@ -583,15 +583,14 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) 
 			}
 
             // Rebuild the Metadata
-            Metadata md;
-            build_md(mdq, md);
-
-			// Buffer the results in memory, to release the database lock as soon as possible
-			mdbuf(md);
-		}
+            auto_ptr<Metadata> md(new Metadata);
+            build_md(mdq, *md);
+            // Buffer the results in memory, to release the database lock as soon as possible
+            mdbuf.eat(md);
+        }
 //fprintf(stderr, "POST %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
-	}
+    }
 //if (tmpfile.get()) system(str::fmtf("ls -la --si %s >&2", tmpfile->name().c_str()).c_str());
 
         // Replay the data from the temporary file
@@ -606,7 +605,7 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) 
 		std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
 
 	// pass it to consumer
-	mdbuf.sendTo(consumer);
+	mdbuf.sendToEater(consumer);
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
@@ -614,7 +613,7 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Consumer& consumer) 
 	return true;
 }
 
-size_t Contents::produce_nth(metadata::Consumer& consumer, size_t idx) const
+size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
 {
     // Buffer results in RAM so we can free the index before starting to read the data
     metadata::Collection mdbuf;
@@ -643,7 +642,7 @@ size_t Contents::produce_nth(metadata::Consumer& consumer, size_t idx) const
         }
     }
     // Pass it to consumer
-    mdbuf.sendTo(consumer);
+    mdbuf.sendToEater(consumer);
 
     return mdbuf.size();
 }

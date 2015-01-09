@@ -34,7 +34,6 @@ class Summary;
 class Matcher;
 
 namespace metadata{
-class Consumer;
 class Collection;
 }
 
@@ -79,7 +78,7 @@ public:
      *
      * @return true if something was produced, else false
      */
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0) = 0;
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0) = 0;
 
     static bool is_archive(const std::string& dir);
     static Archive* create(const std::string& dir, bool writable=false);
@@ -102,11 +101,11 @@ public:
     void openRO();
     void openRW();
 
-    virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+    virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
     virtual bool date_extremes(types::Time& begin, types::Time& end) const;
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
     virtual void acquire(const std::string& relname, metadata::Collection& mds);
@@ -137,11 +136,11 @@ struct OfflineArchive : public Archive
     OfflineArchive(const std::string& fname);
     ~OfflineArchive();
 
-    virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+    virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
     virtual bool date_extremes(types::Time& begin, types::Time& end) const;
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
     virtual void acquire(const std::string& relname, metadata::Collection& mds);
@@ -204,10 +203,10 @@ public:
 
 	const std::string& path() const { return m_dir; }
 
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
     virtual bool date_extremes(types::Time& begin, types::Time& end) const;
 
 	void acquire(const std::string& relname);

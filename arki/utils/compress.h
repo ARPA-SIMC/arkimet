@@ -4,7 +4,7 @@
 /*
  * utils/compress - Compression/decompression utilities
  *
- * Copyright (C) 2010--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -152,7 +152,7 @@ off_t filesize(const std::string& file);
  * It also creates a compressed file index for faster seeking in the compressed
  * file.
  */
-class DataCompressor : public metadata::Consumer
+class DataCompressor : public metadata::Eater, public metadata::Observer
 {
 protected:
 	// Output file name
@@ -183,7 +183,8 @@ public:
 	DataCompressor(const std::string& outfile, size_t groupsize = 512);
 	~DataCompressor();
 
-	virtual bool operator()(Metadata& md);
+    bool eat(std::auto_ptr<Metadata> md) override;
+    bool observe(const Metadata& md) override;
 
 	void flush();
 };

@@ -603,7 +603,7 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 	return success;
 }
 
-bool MetadataDispatch::operator()(Metadata& md)
+bool MetadataDispatch::eat(auto_ptr<Metadata> md)
 {
     // Dispatch to matching dataset
     switch (dispatcher->dispatch(md, results))
@@ -621,7 +621,8 @@ bool MetadataDispatch::operator()(Metadata& md)
             // If dispatching failed, add a big note about it.
             // Analising the notes in the output should be enough to catch this
             // even happening.
-            md.add_note("WARNING: The data has not been imported in ANY dataset");
+            // No point adding the note here: md has already been consumed by 'results'
+            //md->add_note("WARNING: The data has not been imported in ANY dataset");
             ++countNotImported;
             break;
     }

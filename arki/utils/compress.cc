@@ -332,10 +332,15 @@ DataCompressor::~DataCompressor()
 	flush();
 }
 
-bool DataCompressor::operator()(Metadata& md)
+bool DataCompressor::eat(auto_ptr<Metadata> md)
 {
-	// Compress data
-	wibble::sys::Buffer buf = md.getData();
+    return observe(*md);
+}
+
+bool DataCompressor::observe(const Metadata& md)
+{
+    // Compress data
+    wibble::sys::Buffer buf = md.getData();
 	compressor.feedData(buf.data(), buf.size());
 	while (true)
 	{

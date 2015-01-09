@@ -20,11 +20,11 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
+#include "arki/libconfig.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/consumer.h"
 #include "arki/types/source/blob.h"
 #include "arki/configfile.h"
 #include "arki/summary.h"
@@ -126,40 +126,40 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 
 namespace {
 // Tweak Blob sources replacing basedir and prepending a directory to the file name
-struct FixSource : public metadata::Consumer
+struct FixSource : public metadata::Eater
 {
     string basedir;
     string prepend_fname;
-    metadata::Consumer& next;
+    metadata::Eater& next;
 
-    FixSource(metadata::Consumer& next) : next(next) {}
+    FixSource(metadata::Eater& next) : next(next) {}
 
-    bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
-        if (const source::Blob* s = md.has_source_blob())
-            md.set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
-        return next(md);
+        if (const source::Blob* s = md->has_source_blob())
+            md->set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+        return next.eat(md);
     }
 };
 }
 
-void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	vector<string> files;
 	fileList(q.matcher, files);
 
 	// TODO: does it make sense to check with the summary first?
 
-	metadata::Consumer* c = &consumer;
-	// Order matters here, as delete will happen in reverse order
-	auto_ptr<ds::DataInliner> inliner;
+	metadata::Eater* c = &consumer;
+    // Order matters here, as delete will happen in reverse order
+    auto_ptr<ds::DataCacher> cacher;
     refcounted::Pointer<sort::Compare> compare;
 
-	if (q.withData)
-	{
-		inliner.reset(new ds::DataInliner(*c));
-		c = inliner.get();
-	}
+    if (q.withData)
+    {
+        cacher.reset(new ds::DataCacher(*c));
+        c = cacher.get();
+    }
 
     if (q.sorter)
         compare = q.sorter;
@@ -173,7 +173,7 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Consumer& consum
     //ds::MakeAbsolute mkabs(sorter);
     FixSource fs(sorter);
     fs.basedir = absdir;
-    ds::MatcherFilter filter(q.matcher, fs);
+    metadata::FilteredEater filter(q.matcher, fs);
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
         fs.prepend_fname = str::dirname(*i);
@@ -223,20 +223,20 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 }
 
 namespace {
-struct NthFilter : public metadata::Consumer
+struct NthFilter : public metadata::Eater
 {
-    metadata::Consumer& next;
+    metadata::Eater& next;
     size_t idx;
 
-    NthFilter(metadata::Consumer& next, size_t idx)
+    NthFilter(metadata::Eater& next, size_t idx)
         : next(next), idx(idx+1) {}
 
-    bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
         switch (idx)
         {
             case 0: return false;
-            case 1: next(md); --idx; return false;
+            case 1: next.eat(md); --idx; return false;
             default: --idx; return true;
         }
     }
@@ -244,7 +244,7 @@ struct NthFilter : public metadata::Consumer
 };
 }
 
-size_t Manifest::produce_nth(metadata::Consumer& cons, size_t idx)
+size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
 {
     size_t res = 0;
     // List all files

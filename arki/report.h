@@ -4,7 +4,7 @@
 /*
  * arki/report - Build a report of an arkimet metadata or summary stream
  *
- * Copyright (C) 2008--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ namespace arki {
 struct Lua;
 struct Summary;
 
-class Report : public metadata::Consumer
+class Report : public metadata::Eater
 {
 protected:
 	mutable Lua *L;
@@ -62,8 +62,8 @@ public:
 	/// Send Lua's print output to an ostream
 	void captureOutput(std::ostream& buf);
 
-	/// Process a metadata for the report
-	virtual bool operator()(Metadata& md);
+    /// Process a metadata for the report
+    bool eat(std::auto_ptr<Metadata> md) override;
 
 	/// Process a summary for the report
 	virtual bool operator()(Summary& s);

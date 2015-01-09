@@ -4,7 +4,7 @@
 /*
  * dataset/http - Remote HTTP dataset access
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,10 +32,6 @@ namespace arki {
 class ConfigFile;
 class Metadata;
 class Matcher;
-
-namespace metadata {
-class Consumer;
-}
 
 namespace dataset {
 
@@ -102,7 +98,7 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 
@@ -151,13 +147,13 @@ public:
     void list(std::vector<std::string>& files);
 
     /// Scan a previously uploaded file
-    void scan(const std::string& fname, const std::string& format, metadata::Consumer& consumer);
+    void scan(const std::string& fname, const std::string& format, metadata::Eater& consumer);
 
     /// Run a testdispatch on a previously uploaded file
     void testdispatch(const std::string& fname, const std::string& format, std::ostream& out);
 
     /// Run a dispatch on a previously uploaded file
-    void dispatch(const std::string& fname, const std::string& format, metadata::Consumer& consumer);
+    void dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer);
 };
 
 }

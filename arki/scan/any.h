@@ -33,7 +33,7 @@ namespace arki {
 class Metadata;
 
 namespace metadata {
-class Consumer;
+class Eater;
 }
 
 namespace scan {
@@ -47,7 +47,7 @@ namespace scan {
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, metadata::Consumer& c);
+bool scan(const std::string& file, metadata::Eater& c);
 
 /**
  * Alternate version with explicit base dir.
@@ -55,7 +55,7 @@ bool scan(const std::string& file, metadata::Consumer& c);
  * The source information in the metadata will point to \a relname only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c);
+bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c);
 
 /**
  * Scan the given file without format autodetection, sending its metadata to a
@@ -67,7 +67,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Cons
  * @return true if the file has been scanned, false if the file is in a format
  * that is not supported or recognised.
  */
-bool scan(const std::string& file, metadata::Consumer& c, const std::string& format);
+bool scan(const std::string& file, metadata::Eater& c, const std::string& format);
 
 /**
  * Alternate version with explicit base dir.
@@ -75,7 +75,7 @@ bool scan(const std::string& file, metadata::Consumer& c, const std::string& for
  * The source information in the metadata will point to \a relname only, with
  * \a basedir as context.
  */
-bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c, const std::string& format);
+bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c, const std::string& format);
 
 /**
  * Return true if the file looks like a file with data that can be scanned.

@@ -65,8 +65,8 @@ MdBuf::MdBuf(const std::string& pathname)
                 sum.readFile(sumfname);
             else
             {
-                metadata::Summarise s(sum);
-                mds.sendTo(s);
+                metadata::SummarisingObserver s(sum);
+                mds.sendToObserver(s);
             }
         }
     }

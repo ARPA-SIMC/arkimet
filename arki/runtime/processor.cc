@@ -1,7 +1,7 @@
 /*
  * runtime/processor - Run user requested operations on datasets
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ using namespace wibble;
 namespace arki {
 namespace runtime {
 
-struct Printer : public metadata::Consumer
+struct Printer : public metadata::Eater
 {
     virtual bool operator()(const Summary& s) = 0;
 
@@ -65,11 +65,11 @@ struct YamlPrinter : public Printer
         if (formatter) delete formatter;
     }
 
-    virtual string describe() const { return "yaml"; }
+    string describe() const override { return "yaml"; }
 
-    virtual bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
-        md.writeYaml(out.stream(), formatter);
+        md->writeYaml(out.stream(), formatter);
         out.stream() << endl;
         return true;
     }
@@ -99,11 +99,11 @@ struct JSONPrinter : public Printer
         if (formatter) delete formatter;
     }
 
-    virtual string describe() const { return "json"; }
+    string describe() const override { return "json"; }
 
-    virtual bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
-        md.serialise(json, formatter);
+        md->serialise(json, formatter);
         return true;
     }
 
@@ -126,11 +126,11 @@ struct BinaryPrinter : public Printer
     {
     }
 
-    virtual string describe() const { return "binary"; }
+    string describe() const override { return "binary"; }
 
-    virtual bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
-        md.write(out.stream(), out.name());
+        md->write(out.stream(), out.name());
         return true;
     }
 
@@ -430,4 +430,3 @@ std::string ProcessorMaker::verify_option_consistency()
 
 }
 }
-// vim:set ts=4 sw=4:

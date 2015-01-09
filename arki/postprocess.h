@@ -35,7 +35,7 @@ namespace postproc {
 class Child;
 }
 
-class Postprocess : public metadata::Consumer
+class Postprocess : public metadata::Eater
 {
 protected:
     /// Subprocess that filters our data
@@ -92,7 +92,7 @@ public:
     void set_data_start_hook(metadata::Hook* hook);
 
     // Process one metadata
-    virtual bool operator()(Metadata&);
+    bool eat(std::auto_ptr<Metadata> md) override;
 
     // End of processing: flush all pending data
     void flush();

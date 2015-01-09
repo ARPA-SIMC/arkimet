@@ -82,6 +82,12 @@ inline std::string dsname(const Metadata& md)
 {
     return md.get<AssignedDataset>()->name;
 }
+
+inline auto_ptr<Metadata> wrap(const Metadata& md)
+{
+    return auto_ptr<Metadata>(new Metadata(md));
+}
+
 }
 
 // Test simple dispatching
@@ -98,13 +104,13 @@ void to::test<1>()
 	RealDispatcher dispatcher(config);
 	scanner.open("inbound/test.grib1");
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
+	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 	ensure_equals(dsname(mdc.back()), "test200");
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
+	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 	ensure_equals(dsname(mdc.back()), "test80");
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
 	ensure_equals(dsname(mdc.back()), "error");
 	ensure(!scanner.next(md));
 
@@ -140,7 +146,7 @@ void to::test<2>()
 
 	metadata::Collection mdc;
 	RealDispatcher dispatcher(config);
-	ensure_equals(dispatcher.dispatch(source[0], mdc), Dispatcher::DISP_OK);
+    ensure_equals(dispatcher.dispatch(wrap(source[0]), mdc), Dispatcher::DISP_OK);
 	ensure_equals(dsname(mdc.back()), "lami_temp");
 
 	dispatcher.flush();
@@ -159,13 +165,13 @@ void to::test<3>()
     dispatcher.add_validator(fail_always);
     scanner.open("inbound/test.grib1");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
     ensure_equals(dsname(mdc.back()), "error");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
     ensure_equals(dsname(mdc.back()), "error");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
     ensure_equals(dsname(mdc.back()), "error");
     ensure(!scanner.next(md));
     dispatcher.flush();
@@ -182,17 +188,17 @@ void to::test<4>()
     RealDispatcher dispatcher(config);
     metadata::Collection mdc;
 
-    wassert(actual(dispatcher.dispatch(source[0], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[0]), mdc)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(source[1], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[1]), mdc)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(source[2], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[2]), mdc)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(source[3], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[3]), mdc)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(source[4], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[4]), mdc)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(source[5], mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[5]), mdc)) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
 
     dispatcher.flush();

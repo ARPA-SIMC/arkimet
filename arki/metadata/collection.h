@@ -42,17 +42,31 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Collection : public std::vector<Metadata>, public Consumer
+struct Collection : public std::vector<Metadata>, public Consumer, public Eater, public Observer
 {
     Collection();
     virtual ~Collection();
 
-	bool operator()(Metadata& md)
+	bool operator()(Metadata& md) override
 	{
 		push_back(md);
 		back().dropCachedData();
 		return true;
 	}
+
+    bool observe(const Metadata& md) override
+    {
+        push_back(md);
+        back().dropCachedData();
+        return true;
+    }
+
+    bool eat(std::auto_ptr<Metadata> md) override
+    {
+        push_back(*md);
+        back().dropCachedData();
+        return true;
+    }
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter
@@ -80,6 +94,30 @@ struct Collection : public std::vector<Metadata>, public Consumer
 				return false;
 		return true;
 	}
+
+    /**
+     * Send all metadata to an observer
+     */
+    bool sendToObserver(Observer& out) const
+    {
+        for (std::vector<Metadata>::const_iterator i = begin();
+                i != end(); ++i)
+            if (!out.observe(*i))
+                return false;
+        return true;
+    }
+
+    /**
+     * Send a copy of all metadata to an eater
+     */
+    bool sendToEater(Eater& out) const
+    {
+        for (std::vector<Metadata>::const_iterator i = begin();
+                i != end(); ++i)
+            if (!out.eat(std::auto_ptr<Metadata>(new Metadata(*i))))
+                return false;
+        return true;
+    }
 
 	/**
 	 * Ensure that all metadata point to data in the same file and that

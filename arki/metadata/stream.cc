@@ -1,7 +1,7 @@
 /*
  * metadata/stream - Read metadata incrementally from a data stream
  *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/metadata/stream.h>
-#include <arki/metadata/consumer.h>
+#include "stream.h"
+#include "consumer.h"
 #include <arki/types/source/inline.h>
 #include <arki/utils/codec.h>
 
@@ -59,18 +57,19 @@ bool Stream::checkMetadata()
 		return false;
 
     metadata::ReadContext rc("http-connection", streamname);
-	md.read((const unsigned char*)buffer.data() + 8, len, version, rc);
+    md.reset(new Metadata);
+    md->read((const unsigned char*)buffer.data() + 8, len, version, rc);
 
     buffer = buffer.substr(len + 8);
-    if (md.source().style() == types::Source::INLINE)
+    if (md->source().style() == types::Source::INLINE)
     {
-        dataToGet = md.source().getSize();
+        dataToGet = md->source().getSize();
         state = DATA;
         return true;
-	} else {
-		consumer(md);
+    } else {
+        consumer.eat(md);
         return true;
-	}
+    }
 }
 
 bool Stream::checkData()
@@ -82,8 +81,8 @@ bool Stream::checkData()
     buffer = buffer.substr(dataToGet);
     dataToGet = 0;
     state = METADATA;
-    md.setInlineData(md.source().format, buf);
-    consumer(md);
+    md->setInlineData(md->source().format, buf);
+    consumer.eat(md);
     return true;
 }
 
@@ -108,5 +107,3 @@ void Stream::readData(const void* buf, size_t size)
 
 }
 }
-
-// vim:set ts=4 sw=4:

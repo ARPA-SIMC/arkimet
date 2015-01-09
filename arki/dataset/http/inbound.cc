@@ -1,7 +1,7 @@
 /*
  * dataset/http/inbound - Server-side remote inbound HTTP server
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/dataset/http/inbound.h>
 #include <arki/dataset/http/server.h>
@@ -105,7 +103,7 @@ void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::htt
     // Build a dataset to scan the file
     auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
-    struct Simulator : public metadata::Consumer
+    struct Simulator : public metadata::Eater
     {
         TestDispatcher td;
         stringstream str;
@@ -113,7 +111,7 @@ void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::htt
         Simulator(const ConfigFile& cfg)
             : td(cfg, str) {}
 
-        virtual bool operator()(Metadata& md)
+        bool eat(auto_ptr<Metadata> md) override
         {
             metadata::Collection mdc;
             /*Dispatcher::Outcome res =*/ td.dispatch(md, mdc);
@@ -165,16 +163,16 @@ void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::R
 
     MetadataStreamer cons(headers);
 
-    struct Worker : public metadata::Consumer
+    struct Worker : public metadata::Eater
     {
         RealDispatcher d;
-        metadata::Consumer& cons;
+        metadata::Eater& cons;
         bool all_ok;
 
-        Worker(const ConfigFile& cfg, metadata::Consumer& cons)
+        Worker(const ConfigFile& cfg, metadata::Eater& cons)
             : d(cfg), cons(cons), all_ok(true) { }
 
-        virtual bool operator()(Metadata& md)
+        bool eat(auto_ptr<Metadata> md) override
         {
             Dispatcher::Outcome res = d.dispatch(md, cons);
             switch (res)

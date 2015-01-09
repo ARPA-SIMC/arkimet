@@ -47,6 +47,13 @@ struct arki_report_shar
 };
 TESTGRP(arki_report);
 
+namespace {
+inline auto_ptr<Metadata> wrap(const Metadata& md)
+{
+    return auto_ptr<Metadata>(new Metadata(md));
+}
+}
+
 // Test a simple case
 template<> template<>
 void to::test<1>()
@@ -74,7 +81,7 @@ void to::test<1>()
 	ensure_equals(res.str(), "0\t0\n");
 
 	res.str(string());
-	rep(md);
+    rep.eat(wrap(md));
 	rep.report();
 	ensure_equals(res.str(), "1\t0\n");
 

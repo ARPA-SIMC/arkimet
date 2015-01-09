@@ -292,16 +292,16 @@ void Postprocess::start()
     m_child->start();
 }
 
-bool Postprocess::operator()(Metadata& md)
+bool Postprocess::eat(auto_ptr<Metadata> md)
 {
     if (m_child->infd == -1)
         return false;
 
-    string encoded = md.encodeBinary();
+    string encoded = md->encodeBinary();
     if (m_child->send(encoded) < encoded.size())
         return false;
 
-    wibble::sys::Buffer data = md.getData();
+    wibble::sys::Buffer data = md->getData();
     if (m_child->send(data.data(), data.size()) < data.size())
         return false;
 

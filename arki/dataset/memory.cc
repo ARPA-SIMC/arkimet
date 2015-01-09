@@ -33,7 +33,7 @@ namespace dataset {
 Memory::Memory() {}
 Memory::~Memory() {}
 
-void Memory::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Memory::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
     // First ask the index.  If it can do something useful, iterate with it
     //
@@ -42,15 +42,8 @@ void Memory::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
     //
     // For each directory try to match its summary first, and if it matches
     // then produce all the contents.
-    metadata::Consumer* c = &consumer;
+    metadata::Eater* c = &consumer;
     auto_ptr<sort::Stream> sorter;
-    auto_ptr<ds::TemporaryDataInliner> inliner;
-
-    if (q.withData)
-    {
-        inliner.reset(new ds::TemporaryDataInliner(*c));
-        c = inliner.get();
-    }
 
     if (q.sorter)
     {
@@ -61,7 +54,7 @@ void Memory::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer
     for (std::vector<Metadata>::iterator i = begin();
             i != end(); ++i)
         if (q.matcher(*i))
-            if (!(*c)(*i))
+            if (!c->eat(auto_ptr<Metadata>(new Metadata(*i))))
                 break;
 }
 

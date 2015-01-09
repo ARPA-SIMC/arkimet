@@ -81,11 +81,11 @@ struct arki_dataset_merged_shar {
 		RealDispatcher dispatcher(config);
 		scanner.open("inbound/test.grib1");
 		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
+		ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
+		ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+		ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
 		ensure(!scanner.next(md));
 		dispatcher.flush();
 

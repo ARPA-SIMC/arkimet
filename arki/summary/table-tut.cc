@@ -36,13 +36,13 @@ namespace {
 /**
  * Add metadata to Tables
  */
-struct Adder : public metadata::Consumer
+struct Adder : public metadata::Eater
 {
     Table& root;
     Adder(Table& root) : root(root) {}
-    bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
-        root.merge(md);
+        root.merge(*md);
         return true;
     }
 };

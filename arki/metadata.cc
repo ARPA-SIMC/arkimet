@@ -534,13 +534,13 @@ void Metadata::makeInline()
     setInlineData(m_source->format, getData());
 }
 
-void Metadata::readFile(const std::string& fname, metadata::Consumer& mdc)
+void Metadata::readFile(const std::string& fname, metadata::Eater& mdc)
 {
     metadata::ReadContext context(fname);
     readFile(context, mdc);
 }
 
-void Metadata::readFile(const metadata::ReadContext& file, metadata::Consumer& mdc)
+void Metadata::readFile(const metadata::ReadContext& file, metadata::Eater& mdc)
 {
     // Read all the metadata
     std::ifstream in;
@@ -553,13 +553,12 @@ void Metadata::readFile(const metadata::ReadContext& file, metadata::Consumer& m
     in.close();
 }
 
-void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, metadata::Consumer& mdc)
+void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc)
 {
     bool canceled = false;
     wibble::sys::Buffer buf;
     string signature;
     unsigned version;
-    Metadata md;
     while (types::readBundle(in, file.pathname, buf, signature, version))
     {
         if (canceled) continue;
@@ -574,18 +573,19 @@ void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, met
             iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
             Metadata::readGroup(buf, version, file, mdc);
         } else {
+            auto_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            md.read(buf, version, file);
+            md->read(buf, version, file);
 
             // If the source is inline, then the data follows the metadata
-            if (md.source().style() == types::Source::INLINE)
-                md.readInlineData(in, file.pathname);
-            canceled = !mdc(md);
+            if (md->source().style() == types::Source::INLINE)
+                md->readInlineData(in, file.pathname);
+            canceled = !mdc.eat(md);
         }
     }
 }
 
-void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Consumer& mdc)
+void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc)
 {
     // Handle metadata group
     if (version != 0)
@@ -603,12 +603,12 @@ void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const
 	string isig;
 	unsigned iver;
 	bool canceled = false;
-	Metadata md;
-	while (!canceled && types::readBundle(ubuf, len, file.pathname, ibuf, ilen, isig, iver))
-	{
-		md.read(ibuf, ilen, iver, file);
-		canceled = !mdc(md);
-	}
+    while (!canceled && types::readBundle(ubuf, len, file.pathname, ibuf, ilen, isig, iver))
+    {
+        auto_ptr<Metadata> md(new Metadata);
+        md->read(ibuf, ilen, iver, file);
+        canceled = !mdc.eat(md);
+    }
 }
 
 #ifdef HAVE_LUA
@@ -946,6 +946,17 @@ void Metadata::lua_push(lua_State* L)
 	arkilua_metadatametatable(L);
 
 	lua_setmetatable(L, -2);
+}
+
+void Metadata::lua_push(lua_State* L, auto_ptr<Metadata> md)
+{
+    // The 'metadata' object is a userdata that holds a pointer to this Metadata structure
+    MetadataUD::create(L, md.release(), true);
+
+    // Set the metatable for the userdata
+    arkilua_metadatametatable(L);
+
+    lua_setmetatable(L, -2);
 }
 
 Metadata* Metadata::lua_check(lua_State* L, int idx)

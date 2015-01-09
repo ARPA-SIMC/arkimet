@@ -59,7 +59,7 @@ using namespace arki::dataset;
 namespace arki {
 namespace tests {
 
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc)
+void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, auto_ptr<Metadata> md, metadata::Eater& mdc)
 {
 	metadata::Collection c;
 	Dispatcher::Outcome res = dispatcher.dispatch(md, c);
@@ -75,9 +75,8 @@ void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& disp
                 cerr << "   " << *j << endl;
 		}
 	}
-	inner_ensure_equals(res, Dispatcher::DISP_OK);
-	for (vector<Metadata>::iterator i = c.begin(); i != c.end(); ++i)
-		mdc(*i);
+    inner_ensure_equals(res, Dispatcher::DISP_OK);
+    c.sendToEater(mdc);
 }
 
 OutputChecker::OutputChecker() : split(false) {}
@@ -570,22 +569,22 @@ OrderCheck::OrderCheck(const std::string& order)
 OrderCheck::~OrderCheck()
 {
 }
-bool OrderCheck::operator()(Metadata& md)
+bool OrderCheck::eat(auto_ptr<Metadata> md)
 {
     if (!first)
     {
-        if (order->compare(old, md) > 0)
+        if (order->compare(old, *md) > 0)
         {
             stringstream msg;
             old.writeYaml(msg);
             msg << " should come after ";
-            md.writeYaml(msg);
+            md->writeYaml(msg);
             throw wibble::exception::Consistency(
                     "checking order of a metadata stream",
                     msg.str());
         }
     }
-    old = md;
+    old = *md;
     first = false;
     return true;
 }

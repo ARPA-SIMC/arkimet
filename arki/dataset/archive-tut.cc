@@ -575,7 +575,7 @@ void to::test<18>()
     // Query data and summarise the results
     Summary s2;
     {
-        metadata::Summarise sum(s2);
+        metadata::SummarisingEater sum(s2);
         ds->queryData(dataset::DataQuery(Matcher::parse("")), sum);
     }
 

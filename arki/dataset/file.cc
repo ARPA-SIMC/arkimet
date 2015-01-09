@@ -1,7 +1,7 @@
 /*
  * dataset/file - Dataset on a single file
  *
- * Copyright (C) 2008--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
+#include <arki/libconfig.h>
 #include <arki/dataset/file.h>
 #include <arki/metadata/consumer.h>
 #include <arki/configfile.h>
@@ -147,32 +146,25 @@ IfstreamFile::~IfstreamFile()
 	}
 }
 
-void File::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void File::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	scan(q, consumer);
 }
 
 void File::querySummary(const Matcher& matcher, Summary& summary)
 {
-	metadata::Summarise summariser(summary);
-	scan(DataQuery(matcher), summariser);
+    metadata::SummarisingEater summariser(summary);
+    scan(DataQuery(matcher), summariser);
 }
 
 ArkimetFile::ArkimetFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 ArkimetFile::~ArkimetFile() {}
-void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	metadata::Consumer* c = &consumer;
+	metadata::Eater* c = &consumer;
 	// Order matters here, as delete will happen in reverse order
-	auto_ptr<ds::DataInliner> inliner;
 	auto_ptr<sort::Stream> sorter;
 
-	if (q.withData)
-	{
-		inliner.reset(new ds::DataInliner(*c));
-		c = inliner.get();
-	}
-		
 	if (q.sorter)
 	{
 		sorter.reset(new sort::Stream(*q.sorter, *c));
@@ -180,40 +172,35 @@ void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer
 	}
 
 
-	ds::MatcherFilter mf(q.matcher, *c);
-	Metadata::readFile(*m_file, m_pathname, mf);
+    metadata::FilteredEater mf(q.matcher, *c);
+    Metadata::readFile(*m_file, m_pathname, mf);
 
 	if (sorter.get()) sorter->flush();
 }
 
 YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 YamlFile::~YamlFile() {}
-void YamlFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void YamlFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	metadata::Consumer* c = &consumer;
+	metadata::Eater* c = &consumer;
 	// Order matters here, as delete will happen in reverse order
-	auto_ptr<ds::DataInliner> inliner;
 	auto_ptr<sort::Stream> sorter;
 
-	if (q.withData)
-	{
-		inliner.reset(new ds::DataInliner(*c));
-		c = inliner.get();
-	}
-		
 	if (q.sorter)
 	{
 		sorter.reset(new sort::Stream(*q.sorter, *c));
 		c = sorter.get();
 	}
 
-	Metadata md;
-	while (md.readYaml(*m_file, m_pathname))
-	{
-		if (!q.matcher(md))
-			continue;
-		(*c)(md);
-	}
+    while (true)
+    {
+        auto_ptr<Metadata> md(new Metadata);
+        if (!md->readYaml(*m_file, m_pathname))
+            break;
+        if (!q.matcher(*md))
+            continue;
+        c->eat(md);
+    }
 
 	if (sorter.get()) sorter->flush();
 }
@@ -224,25 +211,18 @@ RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
 
 RawFile::~RawFile() {}
 
-void RawFile::scan(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void RawFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	metadata::Consumer* c = &consumer;
-	auto_ptr<ds::DataInliner> inliner;
+	metadata::Eater* c = &consumer;
 	auto_ptr<sort::Stream> sorter;
 
-	if (q.withData)
-	{
-		inliner.reset(new ds::DataInliner(*c));
-		c = inliner.get();
-	}
-		
 	if (q.sorter)
 	{
 		sorter.reset(new sort::Stream(*q.sorter, *c));
 		c = sorter.get();
 	}
 
-	ds::MatcherFilter mf(q.matcher, *c);
+    metadata::FilteredEater mf(q.matcher, *c);
 	scan::scan(m_pathname, mf, m_format);
 }
 

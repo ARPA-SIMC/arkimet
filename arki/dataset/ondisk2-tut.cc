@@ -585,14 +585,14 @@ void to::test<12>()
 }
 
 namespace {
-struct ReadHang : public sys::ChildProcess, public metadata::Consumer
+struct ReadHang : public sys::ChildProcess, public metadata::Eater
 {
 	const ConfigFile& cfg;
 	int commfd;
 
 	ReadHang(const ConfigFile& cfg) : cfg(cfg) {}
 
-	virtual bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
 	{
 		// Notify start of reading
 		cout << "H" << endl;

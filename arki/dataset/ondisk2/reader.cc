@@ -81,23 +81,13 @@ Reader::~Reader()
 	if (m_tf) delete m_tf;
 }
 
-void Reader::queryLocalData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Reader::queryLocalData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	metadata::Consumer* c = &consumer;
-	auto_ptr<ds::DataInliner> inliner;
-
-	if (q.withData)
-	{
-		inliner.reset(new ds::DataInliner(*c));
-		c = inliner.get();
-	}
-
-    //ds::MakeAbsolute mkabs(*c);
-    if (!m_idx || !m_idx->query(q, *c))
-            throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
+    if (!m_idx || !m_idx->query(q, consumer))
+        throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
-void Reader::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Reader::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	// Query the archives first
 	Local::queryData(q, consumer);
@@ -120,7 +110,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
-size_t Reader::produce_nth(metadata::Consumer& cons, size_t idx)
+size_t Reader::produce_nth(metadata::Eater& cons, size_t idx)
 {
     size_t res = Local::produce_nth(cons, idx);
     if (m_idx)

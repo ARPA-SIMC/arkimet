@@ -77,15 +77,15 @@ void to::test<1>()
 	RealDispatcher dispatcher(config);
 	scanner.open("inbound/test.grib1");
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
+	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 	ensure_equals(dispatcher.outboundFailures(), 0u);
 	ensure_equals(mdc.size(), 1u);
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_OK);
+	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 	ensure_equals(dispatcher.outboundFailures(), 0u);
 	ensure_equals(mdc.size(), 2u);
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(md, mdc), Dispatcher::DISP_ERROR);
+	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
 	ensure_equals(dispatcher.outboundFailures(), 0u);
 	ensure_equals(mdc.size(), 3u);
 	ensure(!scanner.next(md));

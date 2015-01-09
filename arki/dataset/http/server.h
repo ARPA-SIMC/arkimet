@@ -4,7 +4,7 @@
 /*
  * dataset/http/server - Server-side remote HTTP dataset access
  *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,13 +64,13 @@ struct StreamHeaders : public metadata::Hook
     void sendIfNotFired();
 };
 
-struct MetadataStreamer : public metadata::Consumer
+struct MetadataStreamer : public metadata::Eater
 {
     StreamHeaders& sh;
 
     MetadataStreamer(StreamHeaders& sh);
 
-    virtual bool operator()(Metadata& md);
+    bool eat(std::auto_ptr<Metadata> md) override;
 };
 
 

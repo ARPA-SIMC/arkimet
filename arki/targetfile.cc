@@ -1,7 +1,7 @@
 /*
  * arki/targetfile - Compute file names out of metadata
  *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-
-#include "config.h"
 
 #include <arki/targetfile.h>
 #include <arki/metadata.h>
@@ -222,22 +220,22 @@ TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const
 }
 
 namespace {
-struct MetadataSpy : public metadata::Consumer
+struct MetadataSpy : public metadata::Eater
 {
-	TargetfileSpy& tfs;
-	metadata::Consumer& next;
+    TargetfileSpy& tfs;
+    metadata::Eater& next;
 
-	MetadataSpy(TargetfileSpy& tfs, metadata::Consumer& next) : tfs(tfs), next(next) {}
+    MetadataSpy(TargetfileSpy& tfs, metadata::Eater& next) : tfs(tfs), next(next) {}
 
-	bool operator()(Metadata& md)
-	{
-		tfs.redirect(md);
-		return next(md);
-	}
+    bool eat(auto_ptr<Metadata> md) override
+    {
+        tfs.redirect(*md);
+        return next.eat(md);
+    }
 };
 }
 
-void TargetfileSpy::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void TargetfileSpy::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	MetadataSpy spy(*this, consumer);
 	ds.queryData(q, spy);

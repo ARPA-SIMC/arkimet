@@ -43,17 +43,30 @@ using namespace arki::utils;
 namespace arki {
 namespace metadata {
 
-bool FilteredConsumer::operator()(Metadata& m)
+bool FilteredEater::eat(auto_ptr<Metadata> md)
 {
-	if (!matcher(m))
-		return true;
-	return next(m);
+    if (!matcher(*md))
+        return true;
+    return next.eat(md);
 }
 
-bool Summarise::operator()(Metadata& md)
+bool FilteredObserver::observe(const Metadata& md) override
 {
-	s.add(md);
-	return true;
+    if (!matcher(md))
+        return true;
+    return next.observe(md);
+}
+
+bool SummarisingObserver::observe(const Metadata& md)
+{
+    s.add(md);
+    return true;
+}
+
+bool SummarisingEater::eat(auto_ptr<Metadata> md)
+{
+    s.add(*md);
+    return true;
 }
 
 BinaryPrinter::BinaryPrinter(ostream& out, const std::string& fname)
@@ -140,6 +153,27 @@ bool LuaConsumer::operator()(Metadata& md)
 	int res = lua_toboolean(L, -1);
 	lua_pop(L, 1);
 	return res;
+}
+
+bool LuaConsumer::eat(auto_ptr<Metadata> md)
+{
+    // Get the function
+    lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
+
+    // Push the metadata, handing it over to Lua's garbage collector
+    Metadata::lua_push(L, md);
+
+    // Call the function
+    if (lua_pcall(L, 1, 1, 0))
+    {
+        string error = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        throw wibble::exception::Consistency("running metadata consumer function", error);
+    }
+
+    int res = lua_toboolean(L, -1);
+    lua_pop(L, 1);
+    return res;
 }
 
 auto_ptr<LuaConsumer> LuaConsumer::lua_check(lua_State* L, int idx)

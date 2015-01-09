@@ -37,7 +37,7 @@ class Metadata;
 class Summary;
 
 namespace metadata {
-class Consumer;
+class Eater;
 class Hook;
 }
 
@@ -164,7 +164,7 @@ public:
 	 * Query the dataset using the given matcher, and sending the results to
 	 * the metadata consumer.
 	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer) = 0;
+	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
 
 	/**
 	 * Add to summary the summary of the data that would be extracted with the

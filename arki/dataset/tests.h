@@ -63,7 +63,7 @@ struct Fixture;
 
 namespace tests {
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, Metadata& md, metadata::Consumer& mdc);
+void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, std::auto_ptr<Metadata> md, metadata::Eater& mdc);
 
 struct OutputChecker : public std::stringstream
 {
@@ -227,7 +227,7 @@ struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
     std::string remaining() const;
 };
 
-struct OrderCheck : public metadata::Consumer
+struct OrderCheck : public metadata::Eater
 {
     refcounted::Pointer<sort::Compare> order;
     Metadata old;
@@ -235,7 +235,7 @@ struct OrderCheck : public metadata::Consumer
 
     OrderCheck(const std::string& order);
     virtual ~OrderCheck();
-    virtual bool operator()(Metadata& md);
+    bool eat(std::auto_ptr<Metadata> md) override;
 };
 
 namespace testdata {

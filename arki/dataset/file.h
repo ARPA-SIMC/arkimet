@@ -4,7 +4,7 @@
 /*
  * dataset/file - Dataset on a single file
  *
- * Copyright (C) 2008,2009  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,10 +32,6 @@ class ConfigFile;
 class Metadata;
 class Matcher;
 
-namespace metadata {
-class Consumer;
-}
-
 namespace dataset {
 
 /**
@@ -52,10 +48,10 @@ public:
 
 	const std::string& pathname() const { return m_pathname; }
 
-	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer) = 0;
+    virtual void scan(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
 
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void querySummary(const Matcher& matcher, Summary& summary) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 
@@ -84,7 +80,7 @@ public:
 	ArkimetFile(const ConfigFile& cfg);
 	virtual ~ArkimetFile();
 
-	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer);
+    void scan(const dataset::DataQuery& q, metadata::Eater& consumer) override;
 };
 
 class YamlFile : public IfstreamFile
@@ -94,7 +90,7 @@ public:
 	YamlFile(const ConfigFile& cfg);
 	virtual ~YamlFile();
 
-	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer);
+    void scan(const dataset::DataQuery& q, metadata::Eater& consumer) override;
 };
 
 class RawFile : public File
@@ -104,7 +100,7 @@ public:
 	RawFile(const ConfigFile& cfg);
 	virtual ~RawFile();
 
-	virtual void scan(const dataset::DataQuery& q, metadata::Consumer& consumer);
+    void scan(const dataset::DataQuery& q, metadata::Eater& consumer) override;
 };
 
 }

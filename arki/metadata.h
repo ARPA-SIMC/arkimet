@@ -42,7 +42,7 @@ struct Blob;
 }
 
 namespace metadata {
-class Consumer;
+class Eater;
 
 struct ReadContext
 {
@@ -244,29 +244,33 @@ public:
 	 */
 	size_t dataSize() const;
 
-	/**
-	 * Read all metadata from a file into the given consumer
-	 */
-	static void readFile(const std::string& fname, metadata::Consumer& mdc);
+    /// Read all metadata from a file into the given consumer
+    static void readFile(const std::string& fname, metadata::Eater& mdc);
 
     /**
      * Read all metadata from a file into the given consumer
      */
-    static void readFile(const metadata::ReadContext& fname, metadata::Consumer& mdc);
+    static void readFile(const metadata::ReadContext& fname, metadata::Eater& mdc);
 
     /**
      * Read all metadata from a file into the given consumer
      */
-    static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Consumer& mdc);
+    static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc);
 
     /**
      * Read a metadata group into the given consumer
      */
-    static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Consumer& mdc);
+    static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc);
 
 	// LUA functions
-	/// Push to the LUA stack a userdata to access this Origin
+	/// Push to the LUA stack a userdata to access this Metadata
 	void lua_push(lua_State* L);
+
+    /**
+     * Push a userdata to access this Metadata, and hand over its ownership to
+     * Lua's garbage collector
+     */
+    static void lua_push(lua_State* L, std::auto_ptr<Metadata> md);
 
 	/**
 	 * Check that the element at \a idx is a Metadata userdata

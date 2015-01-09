@@ -57,13 +57,13 @@ using namespace arki::types;
 namespace arki {
 namespace scan {
 
-static void scan_metadata(const std::string& file, metadata::Consumer& c)
+static void scan_metadata(const std::string& file, metadata::Eater& c)
 {
     //cerr << "Reading cached metadata from " << file << endl;
     Metadata::readFile(file, c);
 }
 
-static bool scan_file(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Consumer& c)
+static bool scan_file(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Eater& c)
 {
     // Scan the file
     if (isCompressed(pathname))
@@ -74,9 +74,12 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
     {
         scan::Grib scanner;
         scanner.open(pathname, basedir, relname);
-        Metadata md;
-        while (scanner.next(md))
-            c(md);
+        while (true)
+        {
+            auto_ptr<Metadata> md(new Metadata);
+            if (!scanner.next(*md)) break;
+            c.eat(md);
+        }
         return true;
     }
 #endif
@@ -84,9 +87,12 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
     if (format == "bufr") {
         scan::Bufr scanner;
         scanner.open(pathname, basedir, relname);
-        Metadata md;
-        while (scanner.next(md))
-            c(md);
+        while (true)
+        {
+            auto_ptr<Metadata> md(new Metadata);
+            if (!scanner.next(*md)) break;
+            c.eat(md);
+        }
         return true;
     }
 #endif
@@ -94,9 +100,12 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
     if ((format == "h5") || (format == "odim") || (format == "odimh5")) {
         scan::OdimH5 scanner;
         scanner.open(pathname, basedir, relname);
-        Metadata md;
-        while (scanner.next(md))
-            c(md);
+        while (true)
+        {
+            auto_ptr<Metadata> md(new Metadata);
+            if (!scanner.next(*md)) break;
+            c.eat(md);
+        }
         return true;
     }
 #endif
@@ -104,9 +113,12 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
     if (format == "vm2") {
         scan::Vm2 scanner;
         scanner.open(pathname, basedir, relname);
-        Metadata md;
-        while (scanner.next(md))
-            c(md);
+        while (true)
+        {
+            auto_ptr<Metadata> md(new Metadata);
+            if (!scanner.next(*md)) break;
+            c.eat(md);
+        }
         return true;
     }
 #endif
@@ -114,9 +126,12 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
     if (format == "nc") {
         scan::NetCDF scanner;
         scanner.open(pathname, basedir, relname);
-        Metadata md;
-        while (scanner.next(md))
-            c(md);
+        while (true)
+        {
+            auto_ptr<Metadata> md(new Metadata);
+            if (!scanner.next(*md)) break;
+            c.eat(md);
+        }
         return true;
     }
 #endif
@@ -132,30 +147,30 @@ static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
 
 namespace {
 
-struct DirSource : public metadata::Consumer
+struct DirSource : public metadata::Eater
 {
-   metadata::Consumer& next;
+   metadata::Eater& next;
    const std::string& dirname;
    size_t pos;
 
-   DirSource(metadata::Consumer& next, const std::string dirname) : next(next), dirname(dirname), pos(0) {}
+   DirSource(metadata::Eater& next, const std::string dirname) : next(next), dirname(dirname), pos(0) {}
 
    void set_pos(size_t pos)
    {
        this->pos = pos;
    }
 
-   bool operator()(Metadata& md)
+   bool eat(auto_ptr<Metadata> md) override
    {
-       const source::Blob& i = md.sourceBlob();
-       md.set_source(Source::createBlob(i.format, i.basedir, dirname, pos, i.size));
-       return next(md);
+       const source::Blob& i = md->sourceBlob();
+       md->set_source(Source::createBlob(i.format, i.basedir, dirname, pos, i.size));
+       return next.eat(md);
    }
 };
 
 }
 
-static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Consumer& c)
+static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Eater& c)
 {
     // Collect all file names in the directory
     vector<std::string> fnames;
@@ -191,7 +206,7 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     return str::tolower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c)
+bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c)
 {
     std::string format = guess_format(basedir, relname);
 
@@ -200,7 +215,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Cons
     return scan(basedir, relname, c, format);
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata::Consumer& c, const std::string& format)
+bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c, const std::string& format)
 {
     // If we scan standard input, assume uncompressed data and do not try to
     // look for an existing .metadata file
@@ -231,7 +246,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Cons
     }
 }
 
-bool scan(const std::string& file, metadata::Consumer& c)
+bool scan(const std::string& file, metadata::Eater& c)
 {
     string basedir;
     string relname;
@@ -239,7 +254,7 @@ bool scan(const std::string& file, metadata::Consumer& c)
     return scan(basedir, relname, c);
 }
 
-bool scan(const std::string& file, metadata::Consumer& c, const std::string& format)
+bool scan(const std::string& file, metadata::Eater& c, const std::string& format)
 {
     string basedir;
     string relname;

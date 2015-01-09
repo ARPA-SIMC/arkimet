@@ -219,7 +219,7 @@ void to::test<2>()
 }
 
 namespace {
-struct ReadHang : public sys::ChildProcess, public metadata::Consumer
+struct ReadHang : public sys::ChildProcess, public metadata::Eater
 {
 	ConfigFile cfg;
 	int commfd;
@@ -230,12 +230,12 @@ struct ReadHang : public sys::ChildProcess, public metadata::Consumer
 		cfg.parse(confstream, "(memory)");
 	}
 
-	virtual bool operator()(Metadata& md)
-	{
-		cout << "H" << endl;
-		usleep(100000);
-		return true;
-	}
+    bool eat(auto_ptr<Metadata> md) override
+    {
+        cout << "H" << endl;
+        usleep(100000);
+        return true;
+    }
 
 	virtual int main()
 	{

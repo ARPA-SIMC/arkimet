@@ -1,7 +1,7 @@
 /*
  * arki/sort - Sorting routines for metadata
  *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -172,6 +172,11 @@ refcounted::Pointer<Compare> Compare::parse(const std::string& expr)
 	}
 }
 
+Stream::~Stream()
+{
+    flush();
+}
+
 void Stream::setEndOfPeriod(const types::Reftime& rt)
 {
     endofperiod = rt.period_begin();
@@ -189,18 +194,17 @@ void Stream::setEndOfPeriod(const types::Reftime& rt)
 //cerr << "Set end of period to " << endofperiod << endl;
 }
 
-bool Stream::operator()(Metadata& m)
+bool Stream::eat(auto_ptr<Metadata> m)
 {
-    const Reftime* rt = m.get<Reftime>();
+    const Reftime* rt = m->get<Reftime>();
     if (hasInterval && (!endofperiod.isValid() || !rt || rt->period_begin() > endofperiod))
     {
         flush();
-        buffer.push_back(m);
+        buffer.push_back(m.release());
         if (rt) setEndOfPeriod(*rt);
     }
     else
-        buffer.push_back(m);
-    buffer.back().dropCachedData();
+        buffer.push_back(m.release());
     return true;
 }
 
@@ -208,10 +212,17 @@ void Stream::flush()
 {
 	if (buffer.empty()) return;
 	std::stable_sort(buffer.begin(), buffer.end(), STLCompare(sorter));
-	for (vector<Metadata>::iterator i = buffer.begin();
-			i != buffer.end(); ++i)
-		nextConsumer(*i);
-	buffer.clear();
+    for (vector<Metadata*>::iterator i = buffer.begin(); i != buffer.end(); ++i)
+    {
+        auto_ptr<Metadata> md(*i);
+        *i = 0;
+        nextConsumer.eat(md);
+    }
+
+    // Delete all leftover metadata, if any
+    for (vector<Metadata*>::iterator i = buffer.begin(); i != buffer.end(); ++i)
+        delete *i;
+    buffer.clear();
 }
 
 }

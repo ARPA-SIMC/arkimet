@@ -4,7 +4,7 @@
 /*
  * dataset/memory - Dataset interface for metadata::Collection
  *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ struct Memory : public metadata::Collection, public ReadonlyDataset
     Memory();
     virtual ~Memory();
 
-    void queryData(const dataset::DataQuery& q, Consumer& consumer) override;
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
 };
 

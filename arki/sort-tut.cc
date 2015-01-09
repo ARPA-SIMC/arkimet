@@ -52,12 +52,12 @@ struct arki_sort_shar {
 TESTGRP(arki_sort);
 
 namespace {
-void produce(int hour, int minute, int run, metadata::Consumer& c)
+void produce(int hour, int minute, int run, metadata::Eater& c)
 {
-    Metadata md;
-    md.set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
-    md.set(Run::createMinute(run));
-    c(md);
+    auto_ptr<Metadata> md(new Metadata);
+    md->set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
+    md->set(Run::createMinute(run));
+    c.eat(md);
 }
 
 vector<int> mdvals(const Metadata& md)

@@ -121,7 +121,7 @@ void OnlineArchive::openRW()
     m_mft->openRW();
 }
 
-void OnlineArchive::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void OnlineArchive::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	m_mft->queryData(q, consumer);
 }
@@ -136,7 +136,7 @@ void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
 	m_mft->querySummary(matcher, summary);
 }
 
-size_t OnlineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
+size_t OnlineArchive::produce_nth(metadata::Eater& cons, size_t idx)
 {
     return m_mft->produce_nth(cons, idx);
 }
@@ -281,7 +281,7 @@ OfflineArchive::~OfflineArchive()
 {
 }
 
-void OfflineArchive::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void OfflineArchive::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
     // If the matcher would match the summary, output some kind of note about it
 }
@@ -296,7 +296,7 @@ void OfflineArchive::querySummary(const Matcher& matcher, Summary& summary)
     sum.filter(matcher, summary);
 }
 
-size_t OfflineArchive::produce_nth(metadata::Consumer& cons, size_t idx)
+size_t OfflineArchive::produce_nth(metadata::Eater& cons, size_t idx)
 {
     // All files are offline, so there is nothing we can produce
     return 0;
@@ -440,7 +440,7 @@ Archive* Archives::lookup(const std::string& name)
 	return i->second;
 }
 
-void Archives::queryData(const dataset::DataQuery& q, metadata::Consumer& consumer)
+void Archives::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	for (map<string, Archive*>::iterator i = m_archives.begin();
 			i != m_archives.end(); ++i)
@@ -565,7 +565,7 @@ bool Archives::date_extremes(Time& begin, Time& end) const
     return res;
 }
 
-size_t Archives::produce_nth(metadata::Consumer& cons, size_t idx)
+size_t Archives::produce_nth(metadata::Eater& cons, size_t idx)
 {
     size_t res = 0;
     for (map<string, Archive*>::iterator i = m_archives.begin();

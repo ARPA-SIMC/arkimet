@@ -167,9 +167,9 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
 {
 	string datafile = ensureContiguousData(source);
 
-	utils::compress::DataCompressor compressor(datafile, groupsize);
-	sendTo(compressor);
-	compressor.flush();
+    utils::compress::DataCompressor compressor(datafile, groupsize);
+    sendToObserver(compressor);
+    compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
 	std::auto_ptr<struct stat> st = sys::fs::stat(datafile);

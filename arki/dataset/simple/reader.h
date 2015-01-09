@@ -4,7 +4,7 @@
 /*
  * dataset/simple/reader - Reader for simple datasets with no duplicate checks
  *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,10 +32,6 @@ namespace arki {
 class ConfigFile;
 class Matcher;
 
-namespace metadata {
-class Consumer;
-}
-
 namespace dataset {
 namespace maintenance {
 class MaintFileVisitor;
@@ -56,9 +52,9 @@ public:
 	Reader(const ConfigFile& cfg);
 	virtual ~Reader();
 
-	virtual void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
+	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
 	void maintenance(maintenance::MaintFileVisitor& v);
 

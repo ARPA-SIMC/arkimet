@@ -4,7 +4,7 @@
 /*
  * dataset/index/manifest - Index files with no duplicate checks
  *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,10 +31,6 @@
 namespace arki {
 class Matcher;
 class Summary;
-
-namespace metadata {
-class Consumer;
-}
 
 namespace dataset {
 
@@ -84,9 +80,9 @@ public:
      */
     virtual bool date_extremes(types::Time& begin, types::Time& end) const = 0;
 
-	void queryData(const dataset::DataQuery& q, metadata::Consumer& consumer);
-	void querySummary(const Matcher& matcher, Summary& summary);
-    virtual size_t produce_nth(metadata::Consumer& cons, size_t idx=0);
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void querySummary(const Matcher& matcher, Summary& summary) override;
+    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
 	void rescanFile(const std::string& dir, const std::string& relpath);
 

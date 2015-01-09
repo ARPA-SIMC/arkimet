@@ -166,10 +166,8 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	void closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful = true);
 };
 
-/**
- * Dispatch metadata
- */
-struct MetadataDispatch : public metadata::Consumer
+/// Dispatch metadata
+struct MetadataDispatch : public metadata::Eater
 {
 	const ConfigFile& cfg;
 	Dispatcher* dispatcher;
@@ -209,8 +207,8 @@ struct MetadataDispatch : public metadata::Consumer
 	 */
 	bool process(ReadonlyDataset& ds, const std::string& name);
 
-	// Note: used only internally, but needs to be public
-	virtual bool operator()(Metadata& md);
+    // Note: used only internally, but needs to be public
+    bool eat(std::auto_ptr<Metadata> md) override;
 
 	// Flush all imports done so far
 	void flush();
