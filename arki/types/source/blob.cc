@@ -141,8 +141,8 @@ std::auto_ptr<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
     std::auto_ptr<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
-    if (hasCachedData())
-        res->setCachedData(getCachedData());
+// TODO    if (hasCachedData())
+// TODO        res->setCachedData(getCachedData());
     return res;
 }
 
@@ -150,8 +150,8 @@ std::auto_ptr<Blob> Blob::makeAbsolute() const
 {
     string pathname = absolutePathname();
     std::auto_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
-    if (hasCachedData())
-        res->setCachedData(getCachedData());
+// TODO    if (hasCachedData())
+// TODO        res->setCachedData(getCachedData());
     return res;
 }
 

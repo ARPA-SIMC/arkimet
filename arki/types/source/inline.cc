@@ -121,11 +121,6 @@ std::auto_ptr<Inline> Inline::create(const std::string& format, const wibble::sy
 
 uint64_t Inline::getSize() const { return size; }
 
-void Inline::dropCachedData() const
-{
-    // Do nothing: the cached data is the only copy we have
-}
-
 }
 }
 }

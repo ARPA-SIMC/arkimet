@@ -24,6 +24,7 @@
 #include <arki/metadata/consumer.h>
 #include <arki/types/value.h>
 #include <arki/types/source/blob.h>
+#include <arki/types/source/inline.h>
 #include <arki/formatter.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/compress.h>
@@ -289,17 +290,17 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
     // If the source is inline, then the data follows the metadata
     if (source().style() == types::Source::INLINE)
     {
-        size_t size = source().getSize();
-        wibble::sys::Buffer buf(size);
+        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+        wibble::sys::Buffer buf(s->size);
 
-        iotrace::trace_file(filename, 0, size, "read inline data");
+        iotrace::trace_file(filename, 0, s->size, "read inline data");
 
         // Read the inline data
-        in.read((char*)buf.data(), size);
+        in.read((char*)buf.data(), s->size);
         if (in.fail())
-            throw wibble::exception::File(filename, "reading "+str::fmt(size)+" bytes");
+            throw wibble::exception::File(filename, "reading "+str::fmt(s->size)+" bytes");
 
-        source().setCachedData(buf);
+        s->setCachedData(buf);
     }
 }
 
@@ -338,7 +339,8 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
     // If the source is inline, then the data follows the metadata
     if (source().style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = source().getCachedData();
+        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+        wibble::sys::Buffer buf = s->getCachedData();
         out.write((const char*)buf.data(), buf.size());
         if (out.fail())
             throw wibble::exception::File(filename, "writing " + str::fmt(buf.size()) + " bytes to the file");
@@ -356,7 +358,8 @@ void Metadata::write(int outfd, const std::string& filename) const
     // If the source is inline, then the data follows the metadata
     if (m_source && m_source->style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = m_source->getCachedData();
+        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+        wibble::sys::Buffer buf = s->getCachedData();
         utils::fd::write_all(outfd, buf.data(), buf.size());
     }
 }
@@ -408,7 +411,8 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
     // If the source is inline, then the data follows the metadata
     if (m_source && m_source->style() == types::Source::INLINE)
     {
-        wibble::sys::Buffer buf = m_source->getCachedData();
+        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
+        wibble::sys::Buffer buf = s->getCachedData();
         e.add_raw(buf);
     }
 }
@@ -458,27 +462,33 @@ string Metadata::encodeBinary() const
 	return res;
 }
 
-bool Metadata::hasData() const
-{
-    return m_source && m_source->hasCachedData();
-}
-
 wibble::sys::Buffer Metadata::getData() const
 {
     if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
 
-    if (m_source->hasCachedData())
-        return m_source->getCachedData();
+    if (source::Unbacked* unbacked = dynamic_cast<source::Unbacked*>(m_source))
+    {
+        if (unbacked->hasCachedData())
+            return unbacked->getCachedData();
 
-    // Se if we have a value set
-    wibble::sys::Buffer buf = getDataFromValue();
-    if (!buf.data())
-        buf = Data::current().read(sourceBlob());
-    if (!buf.data())
-        throw wibble::exception::Consistency("retrieving data", "data is not accessible");
+        // If we have a value, try to reconstruct the data from it
+        wibble::sys::Buffer buf = getDataFromValue();
+        if (!buf.data())
+            throw wibble::exception::Consistency("retrieving data", "data is not accessible");
 
-    m_source->setCachedData(buf);
-    return buf;
+        unbacked->setCachedData(buf);
+
+        return buf;
+    } else {
+        // TODO: check caches before trying reconstruction?
+
+        // If we have a value, try to reconstruct the data from it before doing I/O
+        wibble::sys::Buffer buf = getDataFromValue();
+        if (buf.data()) return buf;
+
+        // Else, load it
+        return Data::current().read(sourceBlob());
+    }
 }
 
 wibble::sys::Buffer Metadata::getDataFromValue() const
@@ -491,13 +501,21 @@ wibble::sys::Buffer Metadata::getDataFromValue() const
 
 void Metadata::dropCachedData() const
 {
-    if (m_source) m_source->dropCachedData();
+    // TODO: this will have to disappear
+    if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
+        Data::current().drop(*blob);
 }
 
 void Metadata::setCachedData(const wibble::sys::Buffer& buf)
 {
+    // TODO: this should be removed, and taken care of by the loader code that
+    // knows which source is generating and how it should be handled
     if (!m_source) throw wibble::exception::Consistency("setting cached data", "data source is not defined");
-    m_source->setCachedData(buf);
+
+    if (source::Unbacked* unbacked = dynamic_cast<source::Unbacked*>(m_source))
+        unbacked->setCachedData(buf);
+    else
+        Data::current().add(sourceBlob(), buf);
 }
 
 size_t Metadata::dataSize() const

@@ -27,6 +27,7 @@
 namespace arki {
 
 namespace types {
+class Source;
 namespace source {
 class Blob;
 }
@@ -39,6 +40,8 @@ struct Data
     virtual void add(const types::source::Blob&, wibble::sys::Buffer buf) = 0;
     virtual void drop(const types::source::Blob&) = 0;
     virtual wibble::sys::Buffer read(const types::source::Blob&) = 0;
+    virtual wibble::sys::Buffer read(const types::Source&);
+    virtual bool is_cached(const types::source::Blob&) const = 0;
 
     /// Get the Data instance that is currently active
     static Data& current();

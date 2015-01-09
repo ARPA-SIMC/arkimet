@@ -52,12 +52,6 @@ struct traits<Source>
  */
 struct Source : public types::StyledType<Source>
 {
-protected:
-    /**
-     * Inline data, or cached version of previously read data
-     */
-    mutable wibble::sys::Buffer m_inline_buf;
-
 public:
     std::string format;
 
@@ -86,33 +80,6 @@ public:
 
     /// Return the size of the data, or 0 if it is unknown
     virtual uint64_t getSize() const = 0;
-
-    // Management functions for inline or cached data
-
-    /**
-     * Returns true if data is available without having to load it (either
-     * inline or cached)
-     */
-    bool hasCachedData() const;
-
-    /**
-     * Returns the cached data, if present. Returns an empty buffer if not.
-     */
-    wibble::sys::Buffer getCachedData() const;
-
-    /**
-     * If the source is not inline, but the data are cached in memory, drop
-     * them.
-     *
-     * Data for non-inline metadata can be cached in memory by a
-     * setCachedData() call.
-     */
-    virtual void dropCachedData() const;
-
-    /**
-     * Set cached data for non-inline sources
-     */
-    void setCachedData(const wibble::sys::Buffer& buf) const;
 
     Source* clone() const = 0;
 

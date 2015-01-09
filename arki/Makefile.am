@@ -115,6 +115,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/reftime.h \
 		types/run.h \
 		types/source.h \
+		types/source/unbacked.h \
 		types/source/blob.h \
 		types/source/inline.h \
 		types/source/url.h \
@@ -196,6 +197,7 @@ libarkimet_la_SOURCES += \
 		types.cc \
 		types/utils.cc \
 		types/source.cc \
+		types/source/unbacked.cc \
 		types/source/blob.cc \
 		types/source/inline.cc \
 		types/source/url.cc \

@@ -215,12 +215,6 @@ public:
     wibble::sys::Buffer getDataFromValue() const;
 
     /**
-     * Returns true if data is available without having to load it (either
-     * inline or cached)
-     */
-    bool hasData() const;
-
-    /**
      * If the source is not inline, but the data are cached in memory, drop
      * them.
      *

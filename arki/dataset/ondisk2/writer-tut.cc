@@ -875,23 +875,25 @@ template<> template<> void to::test<14>()
 {
     clean_and_import(&cfg, "inbound/test.vm2");
 
-    // Delete something
+    // Read everything
     metadata::Collection mdc_imported;
     {
         auto_ptr<ReadonlyDataset> reader(makeReader());
         reader->queryData(DataQuery(), mdc_imported);
     }
+
+    // Take note of all the data
+    vector<sys::Buffer> orig_data;
+    orig_data.reserve(mdc_imported.size());
+    for (unsigned i = 0; i < mdc_imported.size(); ++i)
+        orig_data.push_back(mdc_imported[i].getData());
+
+    // Delete every second item
     {
         auto_ptr<WritableLocal> writer(makeLocalWriter());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
-        {
             if (i % 2 == 0)
                 writer->remove(mdc_imported[i]);
-            else
-                // Load data now, since the file is going to change later
-                // during packing
-                mdc_imported[i].getData();
-        }
     }
 
     // Ensure the archive has items to pack
@@ -937,8 +939,8 @@ template<> template<> void to::test<14>()
     }
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
     wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
-    wassert(actual(mdc_packed[0].getData()) == mdc_imported[1].getData());
-    wassert(actual(mdc_packed[1].getData()) == mdc_imported[3].getData());
+    wassert(actual(mdc_packed[0].getData()) == orig_data[1]);
+    wassert(actual(mdc_packed[1].getData()) == orig_data[3]);
 }
 
 

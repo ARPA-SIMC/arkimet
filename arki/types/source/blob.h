@@ -34,8 +34,6 @@ struct DataReader;
 namespace types {
 namespace source {
 
-extern arki::utils::DataReader dataReader;
-
 struct Blob : public Source
 {
     /**

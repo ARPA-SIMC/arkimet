@@ -105,7 +105,7 @@ const Validator& validator() { return bufr_validator; }
 }
 
 
-Bufr::Bufr(bool inlineData) : file(0), importer(0), m_inline_data(inlineData), extras(0)
+Bufr::Bufr() : file(0), importer(0), extras(0)
 {
 	msg::Importer::Options opts;
 	opts.simplified = true;
@@ -306,12 +306,12 @@ bool Bufr::do_scan(Metadata& md)
         return false;
 
     // Set source
-    if (m_inline_data)
+    if (false)
         md.set_source(Source::createInline("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size())));
     else {
         auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.size());
-        source->setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
         md.set_source(source);
+        md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
     }
 
     Harvest harvest(*importer);

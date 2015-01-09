@@ -53,7 +53,6 @@ protected:
 	grib_context* context;
 	grib_handle* gh;
 	GribLua* L;
-	bool m_inline_data;
 	std::vector<int> grib1_funcs;
 	std::vector<int> grib2_funcs;
 
@@ -83,9 +82,7 @@ protected:
 	static int arkilua_lookup_gribd(lua_State* L);
 
 public:
-	Grib(bool inlineData = false,
-		const std::string& grib1code = std::string(),
-		const std::string& grib2code = std::string());
+	Grib(const std::string& grib1code = std::string(), const std::string& grib2code = std::string());
 	virtual ~Grib();
 
 	/**

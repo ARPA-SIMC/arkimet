@@ -23,13 +23,13 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/source.h>
+#include <arki/types/source/unbacked.h>
 
 namespace arki {
 namespace types {
 namespace source {
 
-struct Inline : public Source
+struct Inline : public Unbacked
 {
     uint64_t size;
 
@@ -46,8 +46,6 @@ struct Inline : public Source
     bool equals(const Type& o) const override;
 
     Inline* clone() const override;
-
-    void dropCachedData() const override;
 
     static std::auto_ptr<Inline> create(const std::string& format, uint64_t size);
     static std::auto_ptr<Inline> create(const std::string& format, const wibble::sys::Buffer& buf);

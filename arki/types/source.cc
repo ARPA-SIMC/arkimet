@@ -195,26 +195,6 @@ bool Source::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-bool Source::hasCachedData() const
-{
-    return m_inline_buf.data() != 0;
-}
-
-wibble::sys::Buffer Source::getCachedData() const
-{
-    return m_inline_buf;
-}
-
-void Source::dropCachedData() const
-{
-    m_inline_buf = wibble::sys::Buffer();
-}
-
-void Source::setCachedData(const wibble::sys::Buffer& buf) const
-{
-    m_inline_buf = buf;
-}
-
 auto_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size));

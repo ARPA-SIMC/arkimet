@@ -60,7 +60,7 @@ bool TemporaryDataInliner::operator()(Metadata& md)
     bool res = next(md);
 
     // Drop the cached metadata to avoid keeping all query results in memory
-    old_source->dropCachedData();
+    // FIXME old_source->dropCachedData();
 
     // Restore the old source
     md.set_source(old_source);

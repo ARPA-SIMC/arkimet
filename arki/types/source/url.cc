@@ -101,6 +101,7 @@ URL* URL::clone() const
     URL* res = new URL;
     res->format = format;
     res->url = url;
+    if (m_inline_buf.data()) res->setCachedData(m_inline_buf);
     return res;
 }
 

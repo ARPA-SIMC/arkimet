@@ -57,7 +57,6 @@ class Bufr
     std::string relname;
     dballe::File* file;
     dballe::msg::Importer* importer;
-    bool m_inline_data;
     std::map<int, std::string> to_rep_memo;
     bufr::BufrLua* extras;
 
@@ -68,7 +67,7 @@ class Bufr
     bool do_scan(Metadata& md);
 
 public:
-	Bufr(bool inlineData = false);
+	Bufr();
 	~Bufr();
 
 	/**

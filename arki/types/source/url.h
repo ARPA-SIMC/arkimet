@@ -23,13 +23,13 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/source.h>
+#include <arki/types/source/unbacked.h>
 
 namespace arki {
 namespace types {
 namespace source {
 
-struct URL : public Source
+struct URL : public Unbacked
 {
     std::string url;
 

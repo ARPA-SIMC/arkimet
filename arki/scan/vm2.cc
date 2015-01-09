@@ -20,8 +20,9 @@
  * Author: Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
  */
 
-#include "config.h"
 #include <arki/scan/vm2.h>
+#include <arki/types/source/blob.h>
+#include <arki/data.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <arki/utils/files.h>
@@ -155,8 +156,9 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    md.set_source(Source::createBlob("vm2", basedir, relname, offset, size));
-    md.setCachedData(wibble::sys::Buffer(line.c_str(), line.size()));
+    auto_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size));
+    Data::current().add(*source, wibble::sys::Buffer(line.c_str(), line.size()));
+    md.set_source(upcast<Source>(source));
     md.add_note("Scanned from " + relname);
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));

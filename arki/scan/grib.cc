@@ -458,15 +458,15 @@ int Grib::arkilua_lookup_gribd(lua_State* L)
 	return 1;
 }
 
-Grib::Grib(bool inlineData, const std::string& grib1code, const std::string& grib2code)
-	: in(0), context(0), gh(0), L(new GribLua(this)), m_inline_data(inlineData)
+Grib::Grib(const std::string& grib1code, const std::string& grib2code)
+	: in(0), context(0), gh(0), L(new GribLua(this))
 {
 	// Get a grib_api context
 	context = grib_context_get_default();
 	if (!context)
 		throw wibble::exception::Consistency("getting grib_api default context", "default context is not available");
 
-	if (m_inline_data)
+	if (false)
 	{
 		// If we inline the data, we can also do multigrib
 		grib_multi_support_on(context);
@@ -585,7 +585,7 @@ void Grib::setSource(Metadata& md)
     off_t offset = ftello(in);
     offset -= size;
 
-	if (m_inline_data)
+	if (false)
 	{
 		md.setInlineData("grib" + str::fmt(edition), wibble::sys::Buffer(vbuf, size));
 	}

@@ -21,6 +21,7 @@
  */
 
 #include "data.h"
+#include "types/source/unbacked.h"
 #include "types/source/blob.h"
 #include "utils/datareader.h"
 #include <map>
@@ -58,6 +59,11 @@ struct PermanentCache : public Data
         cache[s] = buf;
         return buf;
     }
+
+    bool is_cached(const types::source::Blob& s) const override
+    {
+        return cache.find(s) != cache.end();
+    }
 };
 
 struct NeverCache : public Data
@@ -76,8 +82,26 @@ struct NeverCache : public Data
         dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
         return buf;
     }
+
+    bool is_cached(const types::source::Blob& s) const override
+    {
+        return false;
+    }
 };
 
+sys::Buffer Data::read(const Source& source)
+{
+    switch (source.style())
+    {
+        case Source::BLOB:
+            return read(*dynamic_cast<const source::Blob*>(&source));
+        case Source::URL:
+        case Source::INLINE:
+            return dynamic_cast<const source::Unbacked*>(&source)->getCachedData();
+        default:
+            throw wibble::exception::Consistency("reading data", "reading data from source style " + Source::formatStyle(source.style()) + " is not supported");
+    }
+}
 
 Data& Data::current()
 {

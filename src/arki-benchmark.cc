@@ -110,7 +110,7 @@ struct ScanBenchmark : public Benchmark
 		SCANNER scanner;
 
 		SubBenchmark(const std::string& name, const vector<string>& files)
-			: Benchmark(name), files(files), scanner(false) {}
+			: Benchmark(name), files(files), scanner() {}
 
 		virtual void main()
 		{
@@ -175,7 +175,12 @@ struct DSBenchmark : public Benchmark
 		SCANNER scanner;
 
 		Importer(DSBenchmark& b, const std::string& name, const vector<string>& files)
-			: Benchmark(name), b(b), ds(0), files(files), scanner(true)
+			: Benchmark(name), b(b), ds(0), files(files), scanner()
+              // FIXME: it used to be scanner(true) to request inline data; it
+              // should not matter now since we use caches, but since this code
+              // is old and unused and at the moment I'm not sure anymore what
+              // it should do, I at least annotate that I removed the 'true' to
+              // make it compile.
 		{
 			ds = WritableDataset::create(b.cfg);
 		}

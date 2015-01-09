@@ -61,6 +61,26 @@ struct Consumer
 	void lua_push(lua_State* L);
 };
 
+/**
+ * Generic interface for metadata observer, used to process a stream of
+ * metadata, but leaving their ownership to the caller.
+ */
+struct Observer
+{
+    virtual ~Observer() {}
+    /**
+     * Observer a metadata, without changing it.
+     *
+     * If the result is true, then the observer is happy to continue observing
+     * more metadata. If it's false, then the observer is satisfied and must
+     * not be sent any more metadata.
+     */
+    virtual bool observe(const Metadata&) = 0;
+
+    /// Push to the LUA stack a userdata to access this Consumer
+    void lua_push(lua_State* L);
+};
+
 // Pass through metadata to a consumer if it matches a Matcher expression
 struct FilteredConsumer : public Consumer
 {
