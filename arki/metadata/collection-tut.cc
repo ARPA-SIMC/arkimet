@@ -16,10 +16,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include "config.h"
-
+#include <arki/libconfig.h>
 #include <arki/types/tests.h>
 #include <arki/metadata/collection.h>
+#include <arki/data.h>
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
 #include <arki/types/source.h>
@@ -83,9 +83,9 @@ void to::test<1>()
 	c.compressDataFile(127, "temp BUFR " + tf.name());
 	// Remove the original file
 	tf.unlink();
-	Metadata::flushDataReaders();
-	for (Collection::iterator i = c.begin(); i != c.end(); ++i)
-		i->dropCachedData();
+    Data::flushDataReaders();
+    for (Collection::iterator i = c.begin(); i != c.end(); ++i)
+        i->dropCachedData();
 
 	// Ensure that all data can still be read
 	utils::acct::gzip_data_read_count.reset();
@@ -102,9 +102,9 @@ void to::test<1>()
 	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 0u);
 	ensure_equals(utils::acct::gzip_idx_reposition_count.val(), 1u);
 
-	Metadata::flushDataReaders();
-	for (Collection::iterator i = c.begin(); i != c.end(); ++i)
-		i->dropCachedData();
+    Data::flushDataReaders();
+    for (Collection::iterator i = c.begin(); i != c.end(); ++i)
+        i->dropCachedData();
 
 	// Try to read backwards to avoid sequential reads
 	utils::acct::gzip_data_read_count.reset();
@@ -120,9 +120,9 @@ void to::test<1>()
 	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 12446264u);
 	ensure_equals(utils::acct::gzip_idx_reposition_count.val(), 9u);
 
-	Metadata::flushDataReaders();
-	for (Collection::iterator i = c.begin(); i != c.end(); ++i)
-		i->dropCachedData();
+    Data::flushDataReaders();
+    for (Collection::iterator i = c.begin(); i != c.end(); ++i)
+        i->dropCachedData();
 
 	// Read each other one
 	utils::acct::gzip_data_read_count.reset();

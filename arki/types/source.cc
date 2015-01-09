@@ -215,11 +215,6 @@ void Source::setCachedData(const wibble::sys::Buffer& buf) const
     m_inline_buf = buf;
 }
 
-void Source::flushDataReaders()
-{
-    source::dataReader.flush();
-}
-
 auto_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size));

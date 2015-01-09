@@ -112,17 +112,6 @@ std::auto_ptr<URL> URL::create(const std::string& format, const std::string& url
     return auto_ptr<URL>(res);
 }
 
-wibble::sys::Buffer URL::loadData() const
-{
-    throw wibble::exception::Consistency("retrieving data", "retrieving data from URL sources is not yet implemented");
-    //return wibble::sys::Buffer();
-    /*
-    if (m_inline_buf.data())
-        return m_inline_buf;
-    throw wibble::exception::Consistency("retrieving data", "retrieving data from URL sources is not yet implemented");
-    */
-}
-
 uint64_t URL::getSize() const
 {
     if (m_inline_buf.data())

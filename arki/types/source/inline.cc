@@ -126,13 +126,6 @@ void Inline::dropCachedData() const
     // Do nothing: the cached data is the only copy we have
 }
 
-wibble::sys::Buffer Inline::loadData() const
-{
-    return wibble::sys::Buffer();
-    //return m_inline_buf;
-}
-
-
 }
 }
 }

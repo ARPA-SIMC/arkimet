@@ -208,12 +208,6 @@ public:
 	wibble::sys::Buffer getData() const;
 
     /**
-     * Read the raw blob data described by this metadata, forcing loading it
-     * from file. Returns a 0-length buffer when not possible
-     */
-    wibble::sys::Buffer getDataFromFile() const;
-
-    /**
      * Read the raw blob data described by this metadata, forcing
      * reconstructing it from the Value metadata.
      * Returns a 0-length buffer when not possible
@@ -275,19 +269,6 @@ public:
      * Read a metadata group into the given consumer
      */
     static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Consumer& mdc);
-
-	/**
-	 * Flush open data readers.
-	 *
-	 * Metadata uses a persistent data reader to read data, which keeps the
-	 * last file opened and buffered to speed up reading multiple data
-	 * items from the same file. This function tells the data reader to
-	 * close its open files.
-	 *
-	 * It is useful for testing cases when data files are moved or
-	 * compressed.
-	 */
-	static void flushDataReaders();
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Origin

@@ -20,13 +20,12 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
 #include <arki/dataset/simple/writer.h>
 #include <arki/dataset/index/manifest.h>
 #include <arki/dataset/simple/datafile.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/data.h>
+#include <arki/data.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/source/blob.h>
 #include <arki/summary.h>
@@ -52,10 +51,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
 
 using namespace std;
 using namespace wibble;
@@ -271,8 +266,8 @@ size_t Writer::repackFile(const std::string& relpath)
         i->set_source(upcast<Source>(source.fileOnly()));
     }
 
-	// Prevent reading the still open old file using the new offsets
-	Metadata::flushDataReaders();
+    // Prevent reading the still open old file using the new offsets
+    Data::flushDataReaders();
 
 	// Remove existing cached metadata, since we scramble their order
 	sys::fs::deleteIfExists(pathname + ".metadata");

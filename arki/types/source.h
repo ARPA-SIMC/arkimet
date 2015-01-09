@@ -110,30 +110,9 @@ public:
     virtual void dropCachedData() const;
 
     /**
-     * Read the raw blob data described by this metadata.
-     *
-     * This does not read or set the cached data buffer. It returns an empty
-     * buffer if the data is not accessible.
-     */
-    virtual wibble::sys::Buffer loadData() const = 0;
-
-    /**
      * Set cached data for non-inline sources
      */
     void setCachedData(const wibble::sys::Buffer& buf) const;
-
-    /**
-     * Flush open data readers.
-     *
-     * A persistent data reader is used to read data, in order to keep the last
-     * file opened and buffered to speed up reading multiple data items from
-     * the same file. This function tells the data reader to close its open
-     * files.
-     *
-     * It is useful for testing cases when data files are moved or
-     * compressed.
-     */
-    static void flushDataReaders();
 
     Source* clone() const = 0;
 

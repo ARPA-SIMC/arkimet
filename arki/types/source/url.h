@@ -44,8 +44,6 @@ struct URL : public Source
     bool equals(const Type& o) const override;
     URL* clone() const override;
 
-    wibble::sys::Buffer loadData() const override;
-
     uint64_t getSize() const override;
 
     static std::auto_ptr<URL> create(const std::string& format, const std::string& url);

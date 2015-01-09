@@ -42,6 +42,20 @@ struct Data
 
     /// Get the Data instance that is currently active
     static Data& current();
+
+
+    /**
+     * Flush open data readers.
+     *
+     * A persistent data reader is used to read data, in order to keep the last
+     * file opened and buffered to speed up reading multiple data items from
+     * the same file. This function tells the data reader to close its open
+     * files.
+     *
+     * It is useful for testing cases when data files are moved or
+     * compressed.
+     */
+    static void flushDataReaders();
 };
 
 }

@@ -25,7 +25,7 @@
 #include <arki/utils/lua.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include <arki/utils/datareader.h>
+#include <arki/data.h>
 
 using namespace std;
 using namespace wibble;
@@ -35,9 +35,6 @@ using namespace arki::utils::codec;
 namespace arki {
 namespace types {
 namespace source {
-
-// TODO: @WARNING this is NOT thread safe
-arki::utils::DataReader dataReader;
 
 Source::Style Blob::style() const { return Source::BLOB; }
 
@@ -163,14 +160,6 @@ std::string Blob::absolutePathname() const
     if (!filename.empty() && filename[0] == '/')
         return filename;
     return str::joinpath(basedir, filename);
-}
-
-wibble::sys::Buffer Blob::loadData() const
-{
-    // Read the data
-    wibble::sys::Buffer buf(size);
-    dataReader.read(absolutePathname(), offset, size, buf.data());
-    return buf;
 }
 
 uint64_t Blob::getSize() const { return size; }

@@ -90,8 +90,6 @@ struct Blob : public Source
      */
     std::auto_ptr<Blob> makeAbsolute() const;
 
-    wibble::sys::Buffer loadData() const override;
-
     static std::auto_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::auto_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };

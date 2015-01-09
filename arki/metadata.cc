@@ -32,6 +32,7 @@
 #include <arki/emitter/memory.h>
 #include <arki/iotrace.h>
 #include <arki/scan/any.h>
+#include <arki/data.h>
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -472,18 +473,12 @@ wibble::sys::Buffer Metadata::getData() const
     // Se if we have a value set
     wibble::sys::Buffer buf = getDataFromValue();
     if (!buf.data())
-        buf = getDataFromFile();
+        buf = Data::current().read(sourceBlob());
     if (!buf.data())
         throw wibble::exception::Consistency("retrieving data", "data is not accessible");
 
     m_source->setCachedData(buf);
     return buf;
-}
-
-wibble::sys::Buffer Metadata::getDataFromFile() const
-{
-    if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
-    return m_source->loadData();
 }
 
 wibble::sys::Buffer Metadata::getDataFromValue() const
@@ -596,11 +591,6 @@ void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const
 		md.read(ibuf, ilen, iver, file);
 		canceled = !mdc(md);
 	}
-}
-
-void Metadata::flushDataReaders()
-{
-    types::Source::flushDataReaders();
 }
 
 #ifdef HAVE_LUA

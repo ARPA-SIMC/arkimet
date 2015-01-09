@@ -20,14 +20,14 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
+#include <arki/libconfig.h>
 #include <arki/scan/any.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/types/source/blob.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
+#include <arki/data.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
@@ -320,7 +320,7 @@ void Validator::validate(const Metadata& md) const
 {
     sys::Buffer buf = md.getDataFromValue();
     if (buf.data()) validate(buf.data(), buf.size());
-    buf = md.getDataFromFile();
+    buf = Data::current().read(md.sourceBlob());
     if (buf.data())
         validate(buf.data(), buf.size());
     else

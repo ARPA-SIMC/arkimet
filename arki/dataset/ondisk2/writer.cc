@@ -20,11 +20,11 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
 #include <arki/dataset/ondisk2/writer.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/data.h>
+#include <arki/data.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/source/blob.h>
 #include <arki/configfile.h>
@@ -536,8 +536,8 @@ size_t Writer::repackFile(const std::string& relpath)
 		if (unlink(mdpathname.c_str()) < 0)
 			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
 
-	// Prevent reading the still open old file using the new offsets
-	Metadata::flushDataReaders();
+    // Prevent reading the still open old file using the new offsets
+    Data::flushDataReaders();
 
     // Commit the changes in the file system
     p_repack.commit();

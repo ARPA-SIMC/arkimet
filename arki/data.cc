@@ -60,15 +60,39 @@ struct PermanentCache : public Data
     }
 };
 
+struct NeverCache : public Data
+{
+    void add(const types::source::Blob& s, wibble::sys::Buffer buf) override
+    {
+    }
+
+    void drop(const types::source::Blob& s) override
+    {
+    }
+
+    wibble::sys::Buffer read(const types::source::Blob& s) override
+    {
+        wibble::sys::Buffer buf(s.size);
+        dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
+        return buf;
+    }
+};
+
 
 Data& Data::current()
 {
     static Data* m_current = 0;
 
     if (m_current == 0)
-        m_current = new PermanentCache;
+        m_current = new NeverCache;
 
     return *m_current;
 }
+
+void Data::flushDataReaders()
+{
+    dataReader.flush();
+}
+
 
 }

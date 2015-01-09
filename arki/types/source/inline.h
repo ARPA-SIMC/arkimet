@@ -48,7 +48,6 @@ struct Inline : public Source
     Inline* clone() const override;
 
     void dropCachedData() const override;
-    wibble::sys::Buffer loadData() const override;
 
     static std::auto_ptr<Inline> create(const std::string& format, uint64_t size);
     static std::auto_ptr<Inline> create(const std::string& format, const wibble::sys::Buffer& buf);
