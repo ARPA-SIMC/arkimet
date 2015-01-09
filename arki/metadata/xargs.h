@@ -54,7 +54,7 @@ protected:
     xargs::Tempfile tempfile;
 
     void start_batch(const std::string& new_format) override;
-    void add_to_batch(const Metadata& md, const wibble::sys::Buffer& buf) override;
+    void add_to_batch(Metadata& md, const wibble::sys::Buffer& buf) override;
     void flush_batch() override;
 
     int run_child();

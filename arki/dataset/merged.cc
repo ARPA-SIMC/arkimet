@@ -50,7 +50,7 @@ protected:
 	mutable bool m_done;
 
 public:
-    SyncBuffer() : head(0), tail(0), size(size), m_done(false)
+    SyncBuffer() : head(0), tail(0), size(buf_size), m_done(false)
     {
         memset(buffer, 0, buf_size * sizeof(Metadata*));
     }

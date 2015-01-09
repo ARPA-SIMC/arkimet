@@ -37,7 +37,7 @@ struct arki_summary_stats_shar {
     {
         md.set(Reftime::createPosition(Time(2009, 8, 7, 6, 5, 4)));
         sys::Buffer buf;
-        md.setInlineData("grib1", buf);
+        md.set_source_inline("grib1", buf);
     }
 };
 TESTGRP(arki_summary_stats);

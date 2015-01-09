@@ -204,7 +204,7 @@ void to::test<8>()
     Summary s;
     metadata::SummarisingObserver summarise(s);
     scan::scan("inbound/test-sorted.grib1", mdc);
-    mdc.sendToObserver(summarise);
+    mdc.send_to_observer(summarise);
 	for (int i = 10; i <= 50; i += 10)
 	{
 		mdc.writeAtomically(str::fmtf("testds/.archive/last/%02d.grib1.metadata", i));

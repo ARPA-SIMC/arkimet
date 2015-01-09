@@ -66,7 +66,7 @@ protected:
      * Child classes can hook here for processing md and buf as members of the
      * current batch.
      */
-    virtual void add_to_batch(const Metadata& md, const wibble::sys::Buffer& buf);
+    virtual void add_to_batch(Metadata& md, const wibble::sys::Buffer& buf);
 
     /**
      * Reset information about the current batch, and start a new one.

@@ -76,17 +76,17 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct MetadataCounter : public metadata::Consumer
+struct MetadataCounter : public metadata::Eater
 {
 	size_t count;
 	off_t size;
 
 	MetadataCounter() : count(0), size(0) {}
 
-    virtual bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
         ++count;
-        size += md.source().getSize();
+        size += md->data_size();
         return true;
     }
 };

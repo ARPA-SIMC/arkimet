@@ -82,7 +82,7 @@ void Clusterer::start_batch(const std::string& new_format)
     size = 0;
 }
 
-void Clusterer::add_to_batch(const Metadata& md, const sys::Buffer& buf)
+void Clusterer::add_to_batch(Metadata& md, const sys::Buffer& buf)
 {
     size += buf.size();
     ++count;

@@ -19,8 +19,9 @@
  */
 
 #include <arki/tests/tests.h>
-#include <arki/metadata/clusterer.h>
-#include <arki/metadata/collection.h>
+#include <arki/metadata.h>
+#include "clusterer.h"
+#include "collection.h"
 #include <arki/scan/any.h>
 
 namespace tut {
@@ -148,8 +149,8 @@ void to::test<4>()
     clusterer.split_timerange = true;
 
     clusterer.eat(wrap(mdc[0]));
-    clusterer.eat(wrap(mdc[1]));
     clusterer.eat(wrap(mdc[2]));
+    clusterer.eat(wrap(mdc[1]));
     clusterer.flush();
 
     wassert(actual(clusterer.clusters_processed) == 2u);

@@ -136,7 +136,7 @@ void to::test<2>()
 	);
 
     dataset::Memory ds;
-    ds.eat(Metadata::createFromYaml(md_yaml, "(memory)"));
+    ds.eat(Metadata::create_from_yaml(md_yaml, "(memory)"));
 
 	// Build the grid query
 	dataset::GridQuery gq(ds);

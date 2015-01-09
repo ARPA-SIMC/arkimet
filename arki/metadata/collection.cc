@@ -94,21 +94,51 @@ static void compressAndWrite(const std::string& buf, std::ostream& out, const st
 }
 
 Collection::Collection() {}
-Collection::~Collection() {}
+Collection::~Collection()
+{
+    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+        delete *i;
+}
+
+void Collection::clear()
+{
+    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+        delete *i;
+    vals.clear();
+}
+
+void Collection::pop_back()
+{
+    if (empty()) return;
+    delete vals.back();
+    vals.pop_back();
+}
+
+bool Collection::observe(const Metadata& md)
+{
+    return eat(Metadata::create_copy(md));
+}
+
+bool Collection::eat(auto_ptr<Metadata> md)
+{
+    md->drop_cached_data();
+    vals.push_back(md.release());
+    return true;
+}
 
 void Collection::writeTo(std::ostream& out, const std::string& fname) const
 {
 	static const size_t blocksize = 256;
 
 	string buf;
-	for (size_t i = 0; i < size(); ++i)
+	for (size_t i = 0; i < vals.size(); ++i)
 	{
 		if (i > 0 && (i % blocksize) == 0)
 		{
 			compressAndWrite(buf, out, fname);
 			buf.clear();
 		}
-		buf += (*this)[i].encodeBinary();
+		buf += vals[i]->encodeBinary();
 	}
 	if (!buf.empty())
 		compressAndWrite(buf, out, fname);
@@ -138,13 +168,13 @@ std::string Collection::ensureContiguousData(const std::string& source) const
 
 	string fname;
 	off_t last_end = 0;
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-        const source::Blob& s = i->sourceBlob();
+    for (vector<Metadata*>::const_iterator i = vals.begin(); i != vals.end(); ++i)
+    {
+        const source::Blob& s = (*i)->sourceBlob();
         if (s.offset != (size_t)last_end)
             throw wibble::exception::Consistency("validating " + source,
                     "metadata element points to data that does not start at the end of the previous element");
-        if (i == begin())
+        if (i == vals.begin())
         {
             fname = s.absolutePathname();
         } else {
@@ -168,7 +198,8 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
 	string datafile = ensureContiguousData(source);
 
     utils::compress::DataCompressor compressor(datafile, groupsize);
-    sendToObserver(compressor);
+    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
+        compressor.add((*i)->getData());
     compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
@@ -181,9 +212,72 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
 	// TODO: delete uncompressed version
 }
 
+void Collection::add_to_summary(Summary& out) const
+{
+    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
+        out.add(**i);
+}
+
+bool Collection::send_to_observer(Observer& out) const
+{
+    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
+        if (!out.observe(**i))
+            return false;
+    return true;
+}
+
+bool Collection::copy_to_eater(Eater& out) const
+{
+    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
+        if (!out.eat(Metadata::create_copy(**i)))
+            return false;
+    return true;
+}
+
+namespace {
+struct ClearOnEnd
+{
+    vector<Metadata*>& vals;
+    ClearOnEnd(vector<Metadata*>& vals) : vals(vals) {}
+    ~ClearOnEnd()
+    {
+        for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+            delete *i;
+        vals.clear();
+    }
+};
+}
+
+bool Collection::move_to_eater(Eater& out)
+{
+    // Ensure that at the end of this method we clear vals, deallocating all
+    // leftovers
+    ClearOnEnd coe(vals);
+
+    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+    {
+        // Move the pointer to an auto_ptr
+        auto_ptr<Metadata> md(*i);
+        *i = 0;
+        // Pass it on to the eater
+        if (!out.eat(md))
+            return false;
+    }
+    return true;
+}
+
+void Collection::strip_source_paths()
+{
+    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+    {
+        const source::Blob& source = (*i)->sourceBlob();
+        (*i)->set_source(upcast<Source>(source.fileOnly()));
+    }
+}
+
 void Collection::sort(const sort::Compare& cmp)
 {
-	std::sort(begin(), end(), sort::STLCompare(cmp));
+    std::sort(vals.begin(), vals.end(), sort::STLCompare(cmp));
 }
 
 void Collection::sort(const std::string& cmp)

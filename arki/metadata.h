@@ -64,14 +64,22 @@ class Formatter;
 struct Metadata : public ItemSet
 {
 protected:
+    /// Annotations, kept binary-serialized to string
     std::string m_notes;
+
+    /// Source of this data
     types::Source* m_source;
+
+    /// Inline data, or cached version of previously read data
+    wibble::sys::Buffer m_data;
 
 public:
     Metadata();
     Metadata(const Metadata&);
     ~Metadata();
     Metadata& operator=(const Metadata&);
+
+    Metadata* clone() const;
 
     /// Check if a source has been set
     bool has_source() const { return m_source; }
@@ -83,6 +91,8 @@ public:
     const types::source::Blob& sourceBlob() const;
     /// Set a new source, replacing the old one if present
     void set_source(std::auto_ptr<types::Source> s);
+    /// Set the source of this metadata as Inline, with the given data
+    void set_source_inline(const std::string& format, wibble::sys::Buffer buf);
     /// Unsets the source
     void unset_source();
 
@@ -202,53 +212,51 @@ public:
     std::string encodeBinary() const;
 
 
-	/**
-	 * Read the raw blob data described by this metadata.
-	 */
-	wibble::sys::Buffer getData() const;
+    /// Get the raw data described by this metadata
+    wibble::sys::Buffer getData();
 
     /**
-     * Read the raw blob data described by this metadata, forcing
-     * reconstructing it from the Value metadata.
-     * Returns a 0-length buffer when not possible
+     * Set cached data for non-inline sources, so that getData() won't have
+     * to read it again.
      */
-    wibble::sys::Buffer getDataFromValue() const;
+    void set_cached_data(const wibble::sys::Buffer& buf);
 
     /**
      * If the source is not inline, but the data are cached in memory, drop
      * them.
      *
      * Data for non-inline metadata can be cached in memory, for example,
-     * by a getData() call or a setCachedData() call.
+     * by a getData() call or a set_cached_data() call.
      */
-    void dropCachedData() const;
+    void drop_cached_data();
 
-	/**
-	 * Set cached data for non-inline sources, so that getData() won't have
-	 * to read it again.
-	 */
-	void setCachedData(const wibble::sys::Buffer& buf);
+    /// Read the data and inline them in the metadata
+    void makeInline();
 
-	/**
-	 * Set the inline data for the metadata
-	 */
-	void setInlineData(const std::string& format, wibble::sys::Buffer buf);
+    /// Return the size of the data, if known, else returns 0
+    size_t data_size() const;
 
-	/**
-	 * Read the data and inline them in the metadata
-	 */
-	void makeInline();
-
-	/**
-	 * Return the size of the data, if known
-	 */
-	size_t dataSize() const;
+    /**
+     * Flush open data readers.
+     *
+     * A persistent data reader is used to read data, in order to keep the last
+     * file opened and buffered to speed up reading multiple data items from
+     * the same file. This function tells the data reader to close its open
+     * files.
+     *
+     * It is useful for testing cases when data files are moved or
+     * compressed.
+     */
+    static void flushDataReaders();
 
     /// Create an empty Metadata
-    static std::auto_ptr<Metadata> createEmpty();
+    static std::auto_ptr<Metadata> create_empty();
+
+    /// Create a copy of a Metadata
+    static std::auto_ptr<Metadata> create_copy(const Metadata& md);
 
     /// Read one Metadata from a Yaml stream and return it
-    static std::auto_ptr<Metadata> createFromYaml(std::istream& in, const std::string& filename);
+    static std::auto_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
 
     /// Read all metadata from a file into the given consumer
     static void readFile(const std::string& fname, metadata::Eater& mdc);

@@ -307,11 +307,11 @@ bool Bufr::do_scan(Metadata& md)
 
     // Set source
     if (false)
-        md.set_source(Source::createInline("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size())));
+        md.set_source_inline("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
     else {
         auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.size());
         md.set_source(source);
-        md.setCachedData(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
+        md.set_cached_data(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
     }
 
     Harvest harvest(*importer);

@@ -23,14 +23,13 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
-#include <arki/dataset.h>
 #include <vector>
 #include <string>
 #include <iosfwd>
 
 namespace arki {
+struct Metadata;
 struct Summary;
 
 namespace sort {
@@ -42,24 +41,35 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-struct Collection : public std::vector<Metadata>, public Eater, public Observer
+class Collection : public Eater, public Observer
 {
+protected:
+    std::vector<Metadata*> vals;
+
+public:
     Collection();
     virtual ~Collection();
 
-    bool observe(const Metadata& md) override
-    {
-        push_back(md);
-        back().dropCachedData();
-        return true;
-    }
+    void clear();
+    bool empty() const { return vals.empty(); }
+    size_t size() const { return vals.size(); }
+    const Metadata& operator[](unsigned idx) const { return *vals[idx]; }
+    Metadata& operator[](unsigned idx) { return *vals[idx]; }
 
-    bool eat(std::auto_ptr<Metadata> md) override
-    {
-        push_back(*md);
-        back().dropCachedData();
-        return true;
-    }
+    typedef std::vector<Metadata*>::const_iterator const_iterator;
+    const_iterator begin() const { return vals.begin(); }
+    const_iterator end() const { return vals.end(); }
+
+    const Metadata& back() const { return *vals.back(); }
+
+    /// Remove the last element
+    void pop_back();
+
+    /// Append a copy of md
+    bool observe(const Metadata& md) override;
+
+    /// Append md
+    bool eat(std::auto_ptr<Metadata> md) override;
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter
@@ -76,29 +86,32 @@ struct Collection : public std::vector<Metadata>, public Eater, public Observer
 	 */
 	void writeTo(std::ostream& out, const std::string& fname) const;
 
+    /// Add all metadata to a summary
+    void add_to_summary(Summary& out) const;
+
     /**
      * Send all metadata to an observer
      */
-    bool sendToObserver(Observer& out) const
-    {
-        for (std::vector<Metadata>::const_iterator i = begin();
-                i != end(); ++i)
-            if (!out.observe(*i))
-                return false;
-        return true;
-    }
+    bool send_to_observer(Observer& out) const;
 
     /**
      * Send a copy of all metadata to an eater
      */
-    bool sendToEater(Eater& out) const
-    {
-        for (std::vector<Metadata>::const_iterator i = begin();
-                i != end(); ++i)
-            if (!out.eat(std::auto_ptr<Metadata>(new Metadata(*i))))
-                return false;
-        return true;
-    }
+    bool copy_to_eater(Eater& out) const;
+
+    /**
+     * Send all metadata to an eater, emptying this Collection
+     */
+    bool move_to_eater(Eater& out);
+
+    /**
+     * Strip paths from sources in all Metadata, to make them all refer to a
+     * filename only.
+     *
+     * This is useful to prepare a Metadata bundle for being written next to
+     * the file(s) that it describes.
+     */
+    void strip_source_paths();
 
 	/**
 	 * Ensure that all metadata point to data in the same file and that

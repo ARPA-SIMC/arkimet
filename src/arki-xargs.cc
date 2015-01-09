@@ -34,6 +34,7 @@
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
 #include <wibble/sys/exec.h>
+#include <wibble/sys/process.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -88,24 +89,10 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-static void process(metadata::Consumer& consumer, runtime::Input& in)
+static void process(metadata::Eater& consumer, runtime::Input& in)
 {
-	wibble::sys::Buffer buf;
-	string signature;
-	unsigned version;
-
-	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
-	{
-		if (signature != "MD") continue;
-
-		// Read the metadata
-		Metadata md;
-		md.read(buf, version, in.name());
-        if (md.source().style() == Source::INLINE)
-            md.readInlineData(in.stream(), in.name());
-		if (!consumer(md))
-			break;
-	}
+    metadata::ReadContext rc(sys::process::getcwd(), in.name());
+    Metadata::readFile(in.stream(), rc, consumer);
 }
 
 int main(int argc, const char* argv[])

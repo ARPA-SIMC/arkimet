@@ -111,7 +111,7 @@ void to::test<3>()
     produceGRIB(p);
     p.flush();
 
-    ensure_equals(str.str(), "45027\n");
+    ensure_equals(str.str(), "44964\n");
 }
 
 // Test actually sending some data
@@ -127,6 +127,7 @@ void to::test<4>()
             Writer(string& out) : out(out) {}
             bool eat(auto_ptr<Metadata> md) override
             {
+                md->makeInline();
                 out += md->encodeBinary();
                 wibble::sys::Buffer data = md->getData();
                 out.append((const char*)data.data(), data.size());
@@ -145,7 +146,7 @@ void to::test<4>()
     scan::scan("inbound/test.grib1", p);
     p.flush();
 
-    ensure(plain == postprocessed.str());
+    wassert(actual(plain) == postprocessed.str());
 }
 
 // Try to shift a sizeable chunk of data to the postprocessor
@@ -161,7 +162,7 @@ void to::test<5>()
         produceGRIB(p);
     p.flush();
 
-    ensure_equals(str.str(), "5763456\n");
+    ensure_equals(str.str(), "5755392\n");
 }
 
 // Try to shift a sizeable chunk of data out of the postprocessor

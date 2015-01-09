@@ -570,9 +570,8 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
                 // reftime first.
 				if (mdbuf.size() > 8192)
 				{
-					// If we pile up too many metadata, write them out
-					if (q.sorter)
-						std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
+                    // If we pile up too many metadata, write them out
+                    if (q.sorter) mdbuf.sort(*q.sorter);
 					if (tmpfile.get() == 0)
 						tmpfile.reset(new runtime::Tempfile);
 					mdbuf.writeTo(tmpfile->stream(), tmpfile->name());
@@ -593,19 +592,19 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
     }
 //if (tmpfile.get()) system(str::fmtf("ls -la --si %s >&2", tmpfile->name().c_str()).c_str());
 
-        // Replay the data from the temporary file
-        if (tmpfile.get() != 0)
-        {
-            metadata::ReadContext rc(tmpfile->name(), m_root);
-            Metadata::readFile(rc, consumer);
-        }
+    // If we had buffered some sorted metadata to a temporary file, replay them
+    // now
+    if (tmpfile.get() != 0)
+    {
+        metadata::ReadContext rc(tmpfile->name(), m_root);
+        Metadata::readFile(rc, consumer);
+    }
 
-	// Sort and output the rest
-	if (q.sorter)
-		std::sort(mdbuf.begin(), mdbuf.end(), sort::STLCompare(*q.sorter));
+    // Sort and output the rest
+    if (q.sorter) mdbuf.sort(*q.sorter);
 
-	// pass it to consumer
-	mdbuf.sendToEater(consumer);
+    // pass it to consumer
+    mdbuf.move_to_eater(consumer);
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
@@ -641,10 +640,14 @@ size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
             }
         }
     }
-    // Pass it to consumer
-    mdbuf.sendToEater(consumer);
 
-    return mdbuf.size();
+    // Take note of the size, since mdbuf is about to be destroyed
+    size_t res = mdbuf.size();
+
+    // Pass it to consumer
+    mdbuf.move_to_eater(consumer);
+
+    return res;
 }
 
 void Contents::rebuildSummaryCache()
@@ -1083,7 +1086,7 @@ void WContents::bindInsertParams(Query& q, const Metadata& md, const std::string
     q.bind(++idx, md.source().format);
     q.bind(++idx, file);
     q.bind(++idx, ofs);
-    q.bind(++idx, md.source().getSize());
+    q.bind(++idx, md.data_size());
     //q.bindItems(++idx, md.notes);
     q.bind(++idx, md.notes_encoded());
 

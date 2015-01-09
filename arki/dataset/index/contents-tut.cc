@@ -514,7 +514,7 @@ void to::test<7>()
         wassert(actual(mdc[0]).is_not_set("value"));
 
         // I/O should happen here
-        mdc[0].dropCachedData();
+        mdc[0].drop_cached_data();
         sys::Buffer buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);
@@ -557,7 +557,7 @@ void to::test<7>()
         wassert(actual(mdc[0]).contains("value", "1.2,,,000000000"));
 
         // No I/O should happen here
-        mdc[0].dropCachedData();
+        mdc[0].drop_cached_data();
         sys::Buffer buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 0u);

@@ -205,11 +205,6 @@ auto_ptr<Source> Source::createInline(const std::string& format, uint64_t size)
     return upcast<Source>(source::Inline::create(format, size));
 }
 
-auto_ptr<Source> Source::createInline(const std::string& format, const wibble::sys::Buffer& buf)
-{
-    return upcast<Source>(source::Inline::create(format, buf));
-}
-
 auto_ptr<Source> Source::createURL(const std::string& format, const std::string& url)
 {
     return upcast<Source>(source::URL::create(format, url));

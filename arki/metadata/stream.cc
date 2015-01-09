@@ -63,7 +63,7 @@ bool Stream::checkMetadata()
     buffer = buffer.substr(len + 8);
     if (md->source().style() == types::Source::INLINE)
     {
-        dataToGet = md->source().getSize();
+        dataToGet = md->data_size();
         state = DATA;
         return true;
     } else {
@@ -81,7 +81,7 @@ bool Stream::checkData()
     buffer = buffer.substr(dataToGet);
     dataToGet = 0;
     state = METADATA;
-    md->setInlineData(md->source().format, buf);
+    md->set_source_inline(md->source().format, buf);
     consumer.eat(md);
     return true;
 }

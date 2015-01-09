@@ -80,7 +80,7 @@ protected:
      * Write the data in md to a file. Delete the file in case of errors. Close fd
      * in any case. Return the size of the data that has been written.
      */
-    virtual size_t write_file(const Metadata& md, int fd, const std::string& absname);
+    virtual size_t write_file(Metadata& md, int fd, const std::string& absname);
 
 public:
     Writer(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false);
@@ -109,7 +109,7 @@ public:
 class HoleWriter : public Writer
 {
 protected:
-    virtual size_t write_file(const Metadata& md, int fd, const std::string& absname);
+    size_t write_file(Metadata& md, int fd, const std::string& absname) override;
 
 public:
     HoleWriter(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false);

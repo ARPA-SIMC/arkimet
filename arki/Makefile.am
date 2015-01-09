@@ -58,7 +58,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		validator.h \
 		iotrace.h \
 		itemset.h \
-		data.h \
 		matcher/area.h \
 		matcher.h \
 		matcher/level.h \
@@ -117,7 +116,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/reftime.h \
 		types/run.h \
 		types/source.h \
-		types/source/unbacked.h \
 		types/source/blob.h \
 		types/source/inline.h \
 		types/source/url.h \
@@ -199,7 +197,6 @@ libarkimet_la_SOURCES += \
 		types.cc \
 		types/utils.cc \
 		types/source.cc \
-		types/source/unbacked.cc \
 		types/source/blob.cc \
 		types/source/inline.cc \
 		types/source/url.cc \
@@ -221,7 +218,6 @@ libarkimet_la_SOURCES += \
 		types/typevector.cc \
 		types/typeset.cc \
 		itemset.cc \
-		data.cc \
 		matcher.cc \
 		matcher/utils.cc \
 		matcher/origin.cc \
@@ -279,8 +275,7 @@ tests_arki_test_SOURCES += \
 		types/value-tut.cc \
 		types/typevector-tut.cc \
 		types/typeset-tut.cc \
-		itemset-tut.cc \
-		data-tut.cc
+		itemset-tut.cc
 
 if IOTRACE
 libarkimet_la_SOURCES += iotrace.cc

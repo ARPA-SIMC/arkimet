@@ -27,6 +27,7 @@
 #include <wibble/sys/fs.h>
 #include <wibble/string.h>
 #include <arki/configfile.h>
+#include <arki/metadata/printer.h>
 #include <arki/datasetpool.h>
 #include <arki/dataset/local.h>
 #include <arki/metadata/consumer.h>
@@ -207,24 +208,6 @@ struct SkipDataset : public std::exception
     virtual const char* what() const throw() { return msg.c_str(); }
 };
 
-struct Printer : public metadata::Consumer
-{
-	ostream& out;
-	string outname;
-	int processed;
-
-	Printer(ostream& out, const string& outname)
-		: out(out), outname(outname), processed(0) {}
-	~Printer() {}
-
-	virtual bool operator()(Metadata& md)
-	{
-		md.write(out, outname);
-		++processed;
-		return true;
-	}
-};
-
 struct Worker
 {
 	~Worker() {}
@@ -300,26 +283,27 @@ struct RemoveAller : public WorkerOnWritable
 	}
 };
 
-struct Counter : public metadata::Consumer
+struct Counter : public metadata::Eater
 {
-    metadata::Consumer& next;
+    metadata::Eater& next;
     size_t count;
 
-    Counter(metadata::Consumer& next) : next(next), count(0) {}
+    Counter(metadata::Eater& next) : next(next), count(0) {}
 
-    bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
         ++count;
-        return next(md);
+        return next.eat(md);
     }
 };
 
 struct ScanTest : public Worker
 {
+    runtime::Output out; // Default output to stdout
     metadata::BinaryPrinter printer;
     size_t idx;
 
-    ScanTest(size_t idx=0) : printer(cout), idx(idx) {}
+    ScanTest(size_t idx=0) : printer(out), idx(idx) {}
 
     virtual void process(const ConfigFile& cfg)
     {
@@ -437,21 +421,22 @@ int main(int argc, const char* argv[])
 			runtime::Input input(opts.op_remove->stringValue());
 			// Collect metadata to delete
 			metadata::Collection todolist;
-			Metadata md;
-			for (size_t count = 1; md.read(input.stream(), input.name()); ++count)
+			for (size_t count = 1; ; ++count)
 			{
-                const types::AssignedDataset* ad = md.get<types::AssignedDataset>();
+                auto_ptr<Metadata> md(new Metadata);
+                if (!md->read(input.stream(), input.name())) break;
+                const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
                 if (!ad) throw wibble::exception::Consistency(
                         "reading information on data to remove",
                         "the metadata #" + str::fmt(count) + " is not assigned to any dataset");
-                todolist(md);
+                todolist.eat(md);
 			}
 			// Perform removals
 			size_t count = 1;
-			for (metadata::Collection::iterator i = todolist.begin();
+			for (metadata::Collection::const_iterator i = todolist.begin();
 					i != todolist.end(); ++i, ++count)
 			{
-                const types::AssignedDataset* ad = md.get<types::AssignedDataset>();
+                const types::AssignedDataset* ad = (*i)->get<types::AssignedDataset>();
                 WritableDataset* ds = pool.get(ad->name);
 				if (!ds)
 				{
@@ -459,7 +444,7 @@ int main(int argc, const char* argv[])
 					continue;
 				}
 				try {
-					ds->remove(*i);
+                    ds->remove(**i);
 				} catch (std::exception& e) {
 					cerr << "Message #" << count << ": " << e.what() << endl;
 				}

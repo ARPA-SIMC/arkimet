@@ -35,8 +35,10 @@
 #include <arki/scan/any.h>
 #include <arki/configfile.h>
 #include <arki/utils/files.h>
+#include <arki/utils/accounting.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
+#include <wibble/stream/posix.h>
 
 #include <memory>
 #include <sstream>
@@ -221,6 +223,7 @@ struct TestDataset
     ConfigFile config;
     ConfigFile* cfgtest;
     std::string path;
+    bool smallfiles;
 
     TestDataset(const testdata::Fixture& td, const std::string& conf)
         : td(td)
@@ -229,6 +232,8 @@ struct TestDataset
         config.parse(incfg, "(memory)");
         cfgtest = config.section("test");
         path = cfgtest->value("path");
+        smallfiles = ConfigFile::boolValue(cfgtest->value("smallfiles")) ||
+            (td.format == "vm2" && cfgtest->value("type") == "simple");
     }
 
     void test_import(WIBBLE_TEST_LOCPRM)
@@ -251,10 +256,15 @@ struct TestDataset
     {
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
+        acct::plain_data_read_count.reset();
+
         // Query everything, we should get 3 results
         metadata::Collection mdc;
         ds->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
         wassert(actual(mdc.size()) == 3);
+
+        // No data should have been read in this query
+        wassert(actual(acct::plain_data_read_count.val()) == 0);
 
         for (unsigned i = 0; i < 3; ++i)
         {
@@ -273,7 +283,17 @@ struct TestDataset
             wassert(actual(mdc[0]).is_similar(td.test_data[i].md));
 
             wassert(actual(td.test_data[i].matcher(mdc[0])).istrue());
+
+            // Check that the data can be loaded
+            wibble::sys::Buffer data = mdc[0].getData();
+            wassert(actual(data.size()) == s1.size);
         }
+
+        // 3 data items should have been read
+        if (smallfiles)
+            wassert(actual(acct::plain_data_read_count.val()) == 0);
+        else
+            wassert(actual(acct::plain_data_read_count.val()) == 3);
     }
 
     void test_querysummary(WIBBLE_TEST_LOCPRM)
@@ -357,6 +377,34 @@ struct TestDataset
         sys::fs::unlink("tempdata");
     }
 
+    void test_postprocess(WIBBLE_TEST_LOCPRM)
+    {
+        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+
+        // Do a simple export first, to get the exact metadata that would come
+        // out
+        metadata::Collection mdc;
+        ds->queryData(dataset::DataQuery(td.test_data[0].matcher, false), mdc);
+        wassert(actual(mdc.size()) == 1u);
+
+        // Then do a postprocessed queryBytes
+
+        // Send the script error to stderr. Use dup() because PosixBuf will
+        // close its file descriptor at destruction time
+        stream::PosixBuf pb(dup(2));
+        ostream os(&pb);
+        dataset::ByteQuery bq;
+        bq.setPostprocess(td.test_data[0].matcher, "testcountbytes");
+        ds->queryBytes(bq, os);
+
+        // Verify that the data that was output was exactly as long as the
+        // encoded metadata and its data
+        string out = sys::fs::readFile("testcountbytes.out");
+        auto_ptr<Metadata> copy(mdc[0].clone());
+        copy->makeInline();
+        wassert(actual(out) == str::fmtf("%d\n", copy->encodeBinary().size() + copy->data_size()));
+    }
+
     void test_locked(WIBBLE_TEST_LOCPRM)
     {
         // Lock a dataset for writing
@@ -378,6 +426,7 @@ struct TestDataset
         wruntest(test_querysummary);
         wruntest(test_querybytes);
         wruntest(test_querybytes_integrity);
+        wruntest(test_postprocess);
         wruntest(test_locked);
     }
 };

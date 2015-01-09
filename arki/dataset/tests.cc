@@ -66,17 +66,17 @@ void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& disp
 	// If dispatch fails, print the notes
 	if (res != Dispatcher::DISP_OK)
 	{
-		for (vector<Metadata>::iterator i = c.begin(); i != c.end(); ++i)
+		for (vector<Metadata*>::const_iterator i = c.begin(); i != c.end(); ++i)
 		{
 			cerr << "Failed dispatch notes:" << endl;
-            std::vector<Note> notes = i->notes();
+            std::vector<Note> notes = (*i)->notes();
             for (std::vector<Note>::const_iterator j = notes.begin();
                     j != notes.end(); ++j)
                 cerr << "   " << *j << endl;
 		}
 	}
     inner_ensure_equals(res, Dispatcher::DISP_OK);
-    c.sendToEater(mdc);
+    c.move_to_eater(mdc);
 }
 
 OutputChecker::OutputChecker() : split(false) {}
@@ -754,7 +754,7 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, M
 
     // Make a snapshot of everything before appending
     auto_ptr<Source> orig_source(md.source().clone());
-    size_t data_size = md.dataSize();
+    size_t data_size = md.data_size();
     size_t orig_fsize = sys::fs::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit

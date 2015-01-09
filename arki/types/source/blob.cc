@@ -25,7 +25,6 @@
 #include <arki/utils/lua.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include <arki/data.h>
 
 using namespace std;
 using namespace wibble;
@@ -117,13 +116,7 @@ bool Blob::equals(const Type& o) const
 
 Blob* Blob::clone() const
 {
-    Blob* res = new Blob;
-    res->format = format;
-    res->basedir = basedir;
-    res->filename = filename;
-    res->offset = offset;
-    res->size = size;
-    return res;
+    return new Blob(*this);
 }
 
 std::auto_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
@@ -141,8 +134,6 @@ std::auto_ptr<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
     std::auto_ptr<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
-// TODO    if (hasCachedData())
-// TODO        res->setCachedData(getCachedData());
     return res;
 }
 
@@ -150,8 +141,6 @@ std::auto_ptr<Blob> Blob::makeAbsolute() const
 {
     string pathname = absolutePathname();
     std::auto_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
-// TODO    if (hasCachedData())
-// TODO        res->setCachedData(getCachedData());
     return res;
 }
 
@@ -161,8 +150,6 @@ std::string Blob::absolutePathname() const
         return filename;
     return str::joinpath(basedir, filename);
 }
-
-uint64_t Blob::getSize() const { return size; }
 
 }
 }

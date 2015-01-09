@@ -1,7 +1,7 @@
 /*
  * types/source - Source information
  *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -95,11 +95,7 @@ bool Inline::equals(const Type& o) const
 
 Inline* Inline::clone() const
 {
-    Inline* res = new Inline;
-    res->format = format;
-    res->size = size;
-    if (m_inline_buf.data()) res->setCachedData(m_inline_buf);
-    return res;
+    return new Inline(*this);
 }
 
 std::auto_ptr<Inline> Inline::create(const std::string& format, uint64_t size)
@@ -109,17 +105,6 @@ std::auto_ptr<Inline> Inline::create(const std::string& format, uint64_t size)
     res->size = size;
     return auto_ptr<Inline>(res);
 }
-
-std::auto_ptr<Inline> Inline::create(const std::string& format, const wibble::sys::Buffer& buf)
-{
-    Inline* res = new Inline;
-    res->format = format;
-    res->size = buf.size();
-    res->setCachedData(buf);
-    return auto_ptr<Inline>(res);
-}
-
-uint64_t Inline::getSize() const { return size; }
 
 }
 }

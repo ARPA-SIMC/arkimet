@@ -129,15 +129,15 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
         if (validator)
         {
             try {
-                validator->validate(*i);
+                validator->validate(**i);
             } catch (std::exception& e) {
-                string source = str::fmt(i->source());
+                string source = str::fmt((*i)->source());
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), source.c_str(), e.what());
                 return FILE_TO_RESCAN;
             }
         }
 
-        const source::Blob& source = i->sourceBlob();
+        const source::Blob& source = (*i)->sourceBlob();
 
         if (source.offset < end_of_last_data_checked || source.offset > end_of_last_data_checked + max_gap)
             has_hole = true;
@@ -231,16 +231,16 @@ Pending Maint::repack(
     auto_ptr<data::Writer> writer(make_repack_writer(tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
-    for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
-        wibble::sys::Buffer buf = i->getData();
+        wibble::sys::Buffer buf = (*i)->getData();
         // Validate it
         validator.validate(buf.data(), buf.size());
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata
-        i->set_source(Source::createBlob(i->source().format, rootdir, relname, w_off, buf.size()));
+        (*i)->set_source(Source::createBlob((*i)->source().format, rootdir, relname, w_off, buf.size()));
     }
 
     // Close the temp file

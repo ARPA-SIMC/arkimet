@@ -124,7 +124,7 @@ struct Validator
 	virtual void validate(const void* buf, size_t size) const = 0;
 
     // Validate data pointed by a Metadata
-    virtual void validate(const Metadata& md) const;
+    virtual void validate(Metadata& md) const;
 
 	/**
 	 * Get the validator for a given file name
@@ -147,7 +147,7 @@ struct Validator
  *   true if the update sequence number could be found, else false
  *
  */
-bool update_sequence_number(const Metadata& md, int& usn);
+bool update_sequence_number(Metadata& md, int& usn);
 
 }
 }

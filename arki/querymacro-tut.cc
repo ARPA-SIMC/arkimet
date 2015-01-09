@@ -24,7 +24,6 @@
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <arki/data.h>
 #include <arki/summary.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/sort.h>
@@ -252,8 +251,9 @@ void to::test<7>()
     metadata::Collection mdc;
     qm.queryData(dq, mdc);
     ensure_equals(mdc.size(), 2u);
-    wassert(actual(Data::current().is_cached(mdc[0].sourceBlob())).istrue());
-    wassert(actual(Data::current().is_cached(mdc[1].sourceBlob())).istrue());
+    // Ensure that data is reachable
+    wassert(actual(mdc[0].getData().size()) == mdc[0].data_size());
+    wassert(actual(mdc[1].getData().size()) == mdc[1].data_size());
 
     Summary s;
     qm.querySummary(Matcher::parse(""), s);

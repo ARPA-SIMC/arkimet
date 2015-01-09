@@ -19,8 +19,9 @@
  */
 
 #include <arki/tests/tests.h>
-#include <arki/metadata/xargs.h>
-#include <arki/metadata/collection.h>
+#include "arki/metadata.h"
+#include "xargs.h"
+#include "collection.h"
 #include <arki/scan/any.h>
 #include <arki/utils/files.h>
 #include <wibble/sys/fs.h>

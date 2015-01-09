@@ -51,10 +51,9 @@ void Memory::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
         c = sorter.get();
     }
 
-    for (std::vector<Metadata>::iterator i = begin();
-            i != end(); ++i)
-        if (q.matcher(*i))
-            if (!c->eat(auto_ptr<Metadata>(new Metadata(*i))))
+    for (const_iterator i = begin(); i != end(); ++i)
+        if (q.matcher(**i))
+            if (!c->eat(Metadata::create_copy(**i)))
                 break;
 }
 
@@ -62,10 +61,9 @@ void Memory::querySummary(const Matcher& matcher, Summary& summary)
 {
     using namespace wibble::str;
 
-    for (std::vector<Metadata>::iterator i = begin();
-            i != end(); ++i)
-        if (matcher(*i))
-            summary.add(*i);
+    for (const_iterator i = begin(); i != end(); ++i)
+        if (matcher(**i))
+            summary.add(**i);
 }
 
 

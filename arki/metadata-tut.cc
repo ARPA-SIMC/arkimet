@@ -244,7 +244,7 @@ void to::test<5>()
 	((char*)buf.data())[2] = 'a';
 	((char*)buf.data())[3] = 'o';
 
-	md.setInlineData("test", buf);
+    md.set_source_inline("test", buf);
 
 	// Encode
 	stringstream output;

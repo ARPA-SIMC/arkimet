@@ -220,7 +220,7 @@ Writer::~Writer()
 {
 }
 
-size_t Writer::write_file(const Metadata& md, int fd, const std::string& absname)
+size_t Writer::write_file(Metadata& md, int fd, const std::string& absname)
 {
     utils::fd::HandleWatch hw(absname, fd);
 
@@ -313,15 +313,15 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
         if (validator)
         {
             try {
-                validator->validate(*i);
+                validator->validate(**i);
             } catch (std::exception& e) {
-                string source = str::fmt(i->source());
+                string source = str::fmt((*i)->source());
                 nag::warning("%s: validation failed at %s: %s", absname.c_str(), source.c_str(), e.what());
                 return FILE_TO_RESCAN;
             }
         }
 
-        const source::Blob& source = i->sourceBlob();
+        const source::Blob& source = (*i)->sourceBlob();
 
         if (source.offset != next_sequence_expected)
             out_of_order = true;
@@ -457,15 +457,15 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
     auto_ptr<dir::Writer> writer(make_writer(format, tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
-    for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
-        const source::Blob& source = i->sourceBlob();
+        const source::Blob& source = (*i)->sourceBlob();
 
         // Make a hardlink in the target directory for the file pointed by *i
         off_t pos = writer->link(str::joinpath(source.absolutePathname(), SequenceFile::data_fname(source.offset, source.format)));
 
         // Update the source information in the metadata
-        i->set_source(Source::createBlob(source.format, rootdir, relname, pos, source.size));
+        (*i)->set_source(Source::createBlob(source.format, rootdir, relname, pos, source.size));
     }
 
     // Close the temp writer
@@ -514,15 +514,15 @@ HoleWriter::HoleWriter(const std::string& format, const std::string& relname, co
 {
 }
 
-size_t HoleWriter::write_file(const Metadata& md, int fd, const std::string& absname)
+size_t HoleWriter::write_file(Metadata& md, int fd, const std::string& absname)
 {
     utils::fd::HandleWatch hw(absname, fd);
 
     try {
-        if (ftruncate(fd, md.source().getSize()) == -1)
+        if (ftruncate(fd, md.data_size()) == -1)
             throw wibble::exception::File(absname, "cannot set file size");
 
-        return md.source().getSize();
+        return md.data_size();
     } catch (...) {
         unlink(absname.c_str());
         throw;

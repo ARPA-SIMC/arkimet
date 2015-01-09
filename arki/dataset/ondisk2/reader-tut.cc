@@ -57,8 +57,8 @@ void to::test<1>()
     auto_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
     ensure(reader->hasWorkingIndex());
 
-	// Use dup() because PosixBuf will close its file descriptor at destruction
-	// time
+    // Send the script error to stderr. Use dup() because PosixBuf will
+    // close its file descriptor at destruction time
 	stream::PosixBuf pb(dup(2));
 	ostream os(&pb);
 	dataset::ByteQuery bq;

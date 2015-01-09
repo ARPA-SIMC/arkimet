@@ -587,12 +587,12 @@ void Grib::setSource(Metadata& md)
 
 	if (false)
 	{
-		md.setInlineData("grib" + str::fmt(edition), wibble::sys::Buffer(vbuf, size));
+        md.set_source_inline("grib" + str::fmt(edition), wibble::sys::Buffer(vbuf, size));
 	}
     else
     {
         md.set_source(Source::createBlob("grib" + str::fmt(edition), basedir, relname, offset, size));
-        md.setCachedData(wibble::sys::Buffer(vbuf, size));
+        md.set_cached_data(wibble::sys::Buffer(vbuf, size));
     }
     md.add_note("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size));
 }

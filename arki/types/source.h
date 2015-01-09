@@ -52,7 +52,6 @@ struct traits<Source>
  */
 struct Source : public types::StyledType<Source>
 {
-public:
     std::string format;
 
 	/// Style values
@@ -78,14 +77,10 @@ public:
 
     virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
-    /// Return the size of the data, or 0 if it is unknown
-    virtual uint64_t getSize() const = 0;
-
     Source* clone() const = 0;
 
     static std::auto_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
     static std::auto_ptr<Source> createInline(const std::string& format, uint64_t size);
-    static std::auto_ptr<Source> createInline(const std::string& format, const wibble::sys::Buffer& buf);
     static std::auto_ptr<Source> createURL(const std::string& format, const std::string& url);
 };
 

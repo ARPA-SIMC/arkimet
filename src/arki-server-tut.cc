@@ -255,14 +255,15 @@ void to::test<10>()
         cfg.setValue("postprocess", "cat,echo,say,checkfiles,error,outthenerr");
         auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
 
-        struct Writer : public metadata::Consumer
+        struct Writer : public metadata::Eater
         {
             string& out;
             Writer(string& out) : out(out) {}
-            bool operator()(Metadata& md)
+            bool eat(auto_ptr<Metadata> md) override
             {
-                out += md.encodeBinary();
-                wibble::sys::Buffer data = md.getData();
+                md->makeInline();
+                out += md->encodeBinary();
+                wibble::sys::Buffer data = md->getData();
                 out.append((const char*)data.data(), data.size());
                 return true;
             }

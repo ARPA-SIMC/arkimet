@@ -26,6 +26,7 @@
 #include <wibble/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
+#include <arki/metadata/printer.h>
 #include <arki/matcher.h>
 #include <arki/dataset/http.h>
 #include <arki/summary.h>
@@ -123,27 +124,11 @@ static void addToSummary(runtime::Input& in, Summary& s)
 		}
 		else if (signature == "MG")
 		{
-			metadata::Summarise sum(s);
-			Metadata::readGroup(buf, version, in.name(), sum);
+            metadata::SummarisingEater sum(s);
+            Metadata::readGroup(buf, version, in.name(), sum);
 		}
 	}
 }
-
-struct YamlWriter : public metadata::Consumer
-{
-	runtime::Output& out;
-	Formatter* formatter;
-
-	YamlWriter(runtime::Output& out, Formatter* formatter) : out(out), formatter(formatter) {}
-
-	bool operator()(Metadata& md)
-	{
-		md.writeYaml(out.stream(), formatter);
-		out.stream() << endl;
-		return true;
-	}
-};
-
 
 int main(int argc, const char* argv[])
 {
@@ -304,10 +289,7 @@ int main(int argc, const char* argv[])
 		}
 		else
 		{
-			Formatter* formatter = 0;
-			if (opts.annotate->boolValue())
-				formatter = Formatter::create();
-			YamlWriter writer(out, formatter);
+            metadata::YamlPrinter writer(out, opts.annotate->boolValue());
 
 			Metadata md;
 			Summary summary;
@@ -323,13 +305,12 @@ int main(int argc, const char* argv[])
                     md.read(buf, version, in.name());
                     if (md.source().style() == Source::INLINE)
                         md.readInlineData(in.stream(), in.name());
-                    writer(md);
+                    writer.observe(md);
 				}
 				else if (signature == "SU")
 				{
-					summary.read(buf, version, in.name());
-					summary.writeYaml(out.stream(), formatter);
-					out.stream() << endl;
+                    summary.read(buf, version, in.name());
+                    writer.observe_summary(summary);
 				}
 				else if (signature == "MG")
 				{

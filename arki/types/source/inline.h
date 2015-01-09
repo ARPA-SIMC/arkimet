@@ -4,7 +4,7 @@
 /*
  * types/source - Source information
  *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,13 +23,13 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/source/unbacked.h>
+#include <arki/types/source.h>
 
 namespace arki {
 namespace types {
 namespace source {
 
-struct Inline : public Unbacked
+struct Inline : public Source
 {
     uint64_t size;
 
@@ -40,15 +40,12 @@ struct Inline : public Unbacked
     const char* lua_type_name() const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
-    uint64_t getSize() const override;
-
     int compare_local(const Source& o) const override;
     bool equals(const Type& o) const override;
 
     Inline* clone() const override;
 
     static std::auto_ptr<Inline> create(const std::string& format, uint64_t size);
-    static std::auto_ptr<Inline> create(const std::string& format, const wibble::sys::Buffer& buf);
     static std::auto_ptr<Inline> decodeMapping(const emitter::memory::Mapping& val);
 };
 

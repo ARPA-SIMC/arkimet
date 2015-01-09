@@ -64,7 +64,7 @@ void to::test<1>()
 
     // Check that the source can be read properly
     md.unset(TYPE_VALUE);
-    md.dropCachedData();
+    md.drop_cached_data();
     buf = md.getData();
     ensure_equals(buf.size(), 34u);
     ensure_equals(string((const char*)buf.data(), 34), "198710310000,1,227,1.2,,,000000000");
@@ -138,7 +138,7 @@ void to::test<3>()
 
     // Check that the source can be read properly
     md.unset(TYPE_VALUE);
-    md.dropCachedData();
+    md.drop_cached_data();
     buf = md.getData();
     ensure_equals(buf.size(), 35u);
     ensure_equals(string((const char*)buf.data(), 35), "19871031000030,1,228,.5,,,000000000");

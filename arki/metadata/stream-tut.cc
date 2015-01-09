@@ -78,7 +78,7 @@ struct arki_metadata_stream_shar {
 TESTGRP(arki_metadata_stream);
 
 
-inline bool cmpmd(const Metadata& md1, const Metadata& md2)
+inline bool cmpmd(Metadata& md1, Metadata& md2)
 {
 	if (md1 != md2)
 	{
@@ -114,7 +114,7 @@ void to::test<1>()
 	md2 = md1;
 	md2.set(origin::BUFR::create(1, 2));
 
-	md1.setInlineData("test", wibble::sys::Buffer("this is a test", 14));
+    md1.set_source_inline("test", wibble::sys::Buffer("this is a test", 14));
 
 	// Encode everything in a buffer
 	stringstream str;

@@ -167,13 +167,9 @@ void OnlineArchive::acquire(const std::string& relname, metadata::Collection& md
 
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
-	Summary sum;
-    for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
-    {
-        const source::Blob& s = i->sourceBlob();
-        i->set_source(upcast<Source>(s.fileOnly()));
-        sum.add(*i);
-    }
+    mds.strip_source_paths();
+    Summary sum;
+    mds.add_to_summary(sum);
 
 	// Regenerate .metadata
 	mds.writeAtomically(pathname + ".metadata");

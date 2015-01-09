@@ -64,10 +64,7 @@ MdBuf::MdBuf(const std::string& pathname)
             if (sys::fs::timestamp(pathname, 0) <= sys::fs::timestamp(sumfname, 0))
                 sum.readFile(sumfname);
             else
-            {
-                metadata::SummarisingObserver s(sum);
-                mds.sendToObserver(s);
-            }
+                mds.add_to_summary(sum);
         }
     }
 }
@@ -81,13 +78,13 @@ void MdBuf::add(const Metadata& md)
 {
     using namespace arki::types;
 
-    mds.push_back(md);
+    const source::Blob& os = md.sourceBlob();
 
     // Replace the pathname with its basename
-    const source::Blob& os = md.sourceBlob();
-    mds.back().set_source(Source::createBlob(os.format, dirname, basename, os.offset, os.size));
-
-    sum.add(md);
+    auto_ptr<Metadata> copy(md.clone());
+    copy->set_source(Source::createBlob(os.format, dirname, basename, os.offset, os.size));
+    sum.add(*copy);
+    mds.eat(copy);
     flushed = false;
 }
 

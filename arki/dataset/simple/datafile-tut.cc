@@ -48,7 +48,7 @@ inline size_t filesize(const std::string& fname)
 }
 inline size_t datasize(const Metadata& md)
 {
-    return md.source().getSize();
+    return md.data_size();
 }
 }
 

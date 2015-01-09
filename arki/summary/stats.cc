@@ -45,7 +45,7 @@ const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats"
 namespace summary {
 
 Stats::Stats(const Metadata& md)
-    : count(1), size(md.dataSize())
+    : count(1), size(md.data_size())
 {
     if (const Reftime* rt = md.get<types::Reftime>())
         reftimeMerger.merge(*rt);
@@ -94,7 +94,7 @@ void Stats::merge(const Stats& s)
 void Stats::merge(const Metadata& md)
 {
     ++count;
-    size += md.dataSize();
+    size += md.data_size();
     if (const Reftime* rt = md.get<types::Reftime>())
         reftimeMerger.merge(*rt);
 }

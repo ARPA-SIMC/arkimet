@@ -152,7 +152,7 @@ off_t filesize(const std::string& file);
  * It also creates a compressed file index for faster seeking in the compressed
  * file.
  */
-class DataCompressor : public metadata::Eater, public metadata::Observer
+class DataCompressor : public metadata::Eater
 {
 protected:
 	// Output file name
@@ -184,7 +184,8 @@ public:
 	~DataCompressor();
 
     bool eat(std::auto_ptr<Metadata> md) override;
-    bool observe(const Metadata& md) override;
+
+    void add(wibble::sys::Buffer buf);
 
 	void flush();
 };

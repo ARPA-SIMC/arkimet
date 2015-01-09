@@ -41,16 +41,6 @@ struct OstreamWriter;
 namespace utils {
 namespace ds {
 
-/**
- * Cache the data if the metadata we pass on
- */
-struct DataCacher : public metadata::Eater
-{
-    metadata::Eater& next;
-    DataCacher(metadata::Eater& next) : next(next) {}
-    bool eat(std::auto_ptr<Metadata> md) override;
-};
-
 struct DataStartHookRunner : public metadata::Eater
 {
     metadata::Eater& next;

@@ -27,7 +27,6 @@
 #include <arki/types/source/blob.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
-#include <arki/data.h>
 #include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <sstream>
@@ -331,15 +330,10 @@ void compress(const std::string& file, size_t groupsize)
 	// TODO: delete uncompressed version
 }
 
-void Validator::validate(const Metadata& md) const
+void Validator::validate(Metadata& md) const
 {
-    sys::Buffer buf = md.getDataFromValue();
-    if (buf.data()) validate(buf.data(), buf.size());
-    buf = Data::current().read(md.sourceBlob());
-    if (buf.data())
-        validate(buf.data(), buf.size());
-    else
-        throw wibble::exception::Consistency("validating data", "data is not accessible");
+    sys::Buffer buf = md.getData();
+    validate(buf.data(), buf.size());
 }
 
 const Validator& Validator::by_filename(const std::string& filename)
@@ -374,7 +368,7 @@ const Validator& Validator::by_filename(const std::string& filename)
 	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
 }
 
-bool update_sequence_number(const Metadata& md, int& usn)
+bool update_sequence_number(Metadata& md, int& usn)
 {
 #ifdef HAVE_DBALLE
     // Update Sequence Numbers are only supported by BUFR

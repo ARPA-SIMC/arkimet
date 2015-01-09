@@ -277,7 +277,7 @@ void Postprocess::validate(const map<string, string>& cfg)
     if (m_child->cmd.args.empty())
         throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command is empty");
     string scriptname = str::basename(m_child->cmd.args[0]);
-    if (!cfg.empty() && allowed.find(scriptname) == allowed.end())
+    if (i != cfg.end() && allowed.find(scriptname) == allowed.end())
     {
         throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command " + m_command + " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(allowed.begin(), allowed.end()) + ")");
     }
@@ -296,6 +296,10 @@ bool Postprocess::eat(auto_ptr<Metadata> md)
 {
     if (m_child->infd == -1)
         return false;
+
+    // Make the data inline, so that the reader on the other side, knows that
+    // we are sending that as well
+    md->makeInline();
 
     string encoded = md->encodeBinary();
     if (m_child->send(encoded) < encoded.size())

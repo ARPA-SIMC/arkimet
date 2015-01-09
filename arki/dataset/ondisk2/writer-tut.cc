@@ -757,8 +757,8 @@ void to::test<12>()
     {
         // Import files
         Writer writer(cfg);
-        for (metadata::Collection::iterator i = mdc.begin(); i != mdc.end(); ++i)
-            wassert(actual(writer.acquire(*i)) == WritableDataset::ACQ_OK);
+        for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
+            wassert(actual(writer.acquire(**i)) == WritableDataset::ACQ_OK);
     }
 
     // Append one of the GRIBs to the wrong file
@@ -818,8 +818,8 @@ void to::test<13>()
     {
         // Import files
         Writer writer(cfg);
-        for (metadata::Collection::iterator i = mdc.begin(); i != mdc.end(); ++i)
-            wassert(actual(writer.acquire(*i)) == WritableDataset::ACQ_OK);
+        for (metadata::Collection::const_iterator i = mdc.begin(); i != mdc.end(); ++i)
+            wassert(actual(writer.acquire(**i)) == WritableDataset::ACQ_OK);
     }
 
     // Append one of the GRIBs to the wrong file

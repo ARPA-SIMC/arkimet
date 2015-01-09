@@ -24,7 +24,6 @@
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/archive.h>
 #include <arki/dataset/data.h>
-#include <arki/data.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/source/blob.h>
 #include <arki/configfile.h>
@@ -471,25 +470,25 @@ void Writer::rescanFile(const std::string& relpath)
 	// the duplicates except the last one as deleted
 	index::IDMaker id_maker(m_idx.unique_codes());
 
-	map<string, Metadata*> finddupes;
-	for (metadata::Collection::iterator i = mds.begin(); i != mds.end(); ++i)
-	{
-		string id = id_maker.id(*i);
-		if (id.empty())
-			continue;
-		map<string, Metadata*>::iterator dup = finddupes.find(id);
-		if (dup == finddupes.end())
-			finddupes.insert(make_pair(id, &(*i)));
-		else
-			dup->second = &(*i);
+    map<string, const Metadata*> finddupes;
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        string id = id_maker.id(**i);
+        if (id.empty())
+            continue;
+        map<string, const Metadata*>::iterator dup = finddupes.find(id);
+        if (dup == finddupes.end())
+            finddupes.insert(make_pair(id, *i));
+        else
+            dup->second = *i;
 	}
 	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
 	// Send the remaining metadata to the reindexer
 	Reindexer fixer(m_idx, relpath);
-	for (map<string, Metadata*>::const_iterator i = finddupes.begin();
-			i != finddupes.end(); ++i)
-	{
+    for (map<string, const Metadata*>::const_iterator i = finddupes.begin();
+            i != finddupes.end(); ++i)
+    {
         bool res = fixer.observe(*i->second);
 		assert(res);
 	}
@@ -523,8 +522,8 @@ size_t Writer::repackFile(const std::string& relpath)
     m_idx.reset(relpath);
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
-        const source::Blob& source = i->sourceBlob();
-        m_idx.index(*i, source.filename, source.offset);
+        const source::Blob& source = (*i)->sourceBlob();
+        m_idx.index(**i, source.filename, source.offset);
     }
 
     size_t size_pre = sys::fs::size(pathname);
@@ -537,7 +536,7 @@ size_t Writer::repackFile(const std::string& relpath)
 			throw wibble::exception::System("removing obsolete metadata file " + mdpathname);
 
     // Prevent reading the still open old file using the new offsets
-    Data::flushDataReaders();
+    Metadata::flushDataReaders();
 
     // Commit the changes in the file system
     p_repack.commit();

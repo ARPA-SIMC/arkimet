@@ -305,8 +305,8 @@ class OstreamWriter
 public:
     virtual ~OstreamWriter();
 
-    virtual size_t stream(const Metadata& md, std::ostream& out) const = 0;
-    virtual size_t stream(const Metadata& md, int out) const = 0;
+    virtual size_t stream(Metadata& md, std::ostream& out) const = 0;
+    virtual size_t stream(Metadata& md, int out) const = 0;
 
     /**
      * Returns a pointer to a static instance of the appropriate OstreamWriter

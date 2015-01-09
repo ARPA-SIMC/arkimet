@@ -277,7 +277,7 @@ template<> template<> void to::test<5>()
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08"), true), mdc);
 	ensure_equals(mdc.size(), 1u);
-    wassert(actual(mdc[0].source().getSize()) == 7218u);
+    wassert(actual(mdc[0].data_size()) == 7218u);
 
 	mdc.clear();
 	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
@@ -374,7 +374,7 @@ template<> template<> void to::test<7>()
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
                             wibble::sys::Buffer data(buf, len, false);
-                            md.set_source(Source::createInline("vm2", data));
+                            md.set_source_inline("vm2", data);
                             md.add_note("Generated from memory");
                             md.set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
                             md.set(Area::createVM2(station));

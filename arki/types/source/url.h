@@ -23,13 +23,13 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <arki/types/source/unbacked.h>
+#include <arki/types/source.h>
 
 namespace arki {
 namespace types {
 namespace source {
 
-struct URL : public Unbacked
+struct URL : public Source
 {
     std::string url;
 
@@ -43,8 +43,6 @@ struct URL : public Unbacked
     int compare_local(const Source& o) const override;
     bool equals(const Type& o) const override;
     URL* clone() const override;
-
-    uint64_t getSize() const override;
 
     static std::auto_ptr<URL> create(const std::string& format, const std::string& url);
     static std::auto_ptr<URL> decodeMapping(const emitter::memory::Mapping& val);

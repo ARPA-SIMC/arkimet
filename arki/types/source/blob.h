@@ -69,8 +69,6 @@ struct Blob : public Source
 
     Blob* clone() const override;
 
-    uint64_t getSize() const override;
-
     /// Return the absolute pathname to the data file
     std::string absolutePathname() const;
 

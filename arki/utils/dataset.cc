@@ -23,7 +23,6 @@
 #include "dataset.h"
 #include "arki/dataset/data.h"
 #include "arki/types/source/blob.h"
-#include "arki/data.h"
 
 #include <wibble/sys/signal.h>
 #include <wibble/sys/buffer.h>
@@ -35,14 +34,6 @@ using namespace arki::types;
 namespace arki {
 namespace utils {
 namespace ds {
-
-bool DataCacher::eat(auto_ptr<Metadata> md)
-{
-    // Load the data into the cache
-    if (md->has_source_blob())
-        Data::current().prefetch(md->sourceBlob());
-    return next.eat(md);
-}
 
 bool DataOnly::eat(auto_ptr<Metadata> md)
 {

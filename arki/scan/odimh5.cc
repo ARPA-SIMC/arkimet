@@ -289,7 +289,7 @@ void OdimH5::setSource(Metadata& md)
         is.close();
 
         md.set_source(Source::createBlob("odimh5", basedir, relname, 0, length));
-        md.setCachedData(wibble::sys::Buffer(buff, length));
+        md.set_cached_data(wibble::sys::Buffer(buff, length));
     } catch (...) {
         free(buff);
         throw;

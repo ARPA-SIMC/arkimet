@@ -334,13 +334,13 @@ DataCompressor::~DataCompressor()
 
 bool DataCompressor::eat(auto_ptr<Metadata> md)
 {
-    return observe(*md);
+    add(md->getData());
+    return true;
 }
 
-bool DataCompressor::observe(const Metadata& md)
+void DataCompressor::add(wibble::sys::Buffer buf)
 {
     // Compress data
-    wibble::sys::Buffer buf = md.getData();
 	compressor.feedData(buf.data(), buf.size());
 	while (true)
 	{
@@ -360,8 +360,6 @@ bool DataCompressor::observe(const Metadata& md)
 		endBlock();
 
 	++count;
-
-	return true;
 }
 
 void DataCompressor::endBlock(bool final)

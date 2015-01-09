@@ -17,6 +17,7 @@
  */
 #include <arki/types/tests.h>
 #include "memory.h"
+#include <arki/metadata.h>
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
 #include <arki/types/source.h>

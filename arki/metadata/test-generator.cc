@@ -151,7 +151,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         char buf[5432];
         memset(buf, 0, 5432);
         wibble::sys::Buffer data(buf, 5432, false);
-        m->setInlineData(format, data);
+        m->set_source_inline(format, data);
 
         return cons.eat(m);
     }

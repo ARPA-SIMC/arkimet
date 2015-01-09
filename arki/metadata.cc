@@ -21,19 +21,19 @@
  */
 
 #include "metadata.h"
-#include <arki/metadata/consumer.h>
-#include <arki/types/value.h>
-#include <arki/types/source/blob.h>
-#include <arki/types/source/inline.h>
-#include <arki/formatter.h>
-#include <arki/utils/codec.h>
-#include <arki/utils/compress.h>
-#include <arki/utils/fd.h>
-#include <arki/emitter.h>
-#include <arki/emitter/memory.h>
-#include <arki/iotrace.h>
-#include <arki/scan/any.h>
-#include <arki/data.h>
+#include "metadata/consumer.h"
+#include "types/value.h"
+#include "types/source/blob.h"
+#include "types/source/inline.h"
+#include "formatter.h"
+#include "utils/codec.h"
+#include "utils/compress.h"
+#include "utils/fd.h"
+#include "emitter.h"
+#include "emitter/memory.h"
+#include "iotrace.h"
+#include "scan/any.h"
+#include "utils/datareader.h"
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
@@ -53,6 +53,10 @@ using namespace arki::utils;
 namespace arki {
 
 namespace metadata {
+
+// TODO: @WARNING this is NOT thread safe
+arki::utils::DataReader dataReader;
+
 
 ReadContext::ReadContext() {}
 
@@ -89,7 +93,7 @@ Metadata::Metadata()
 {
 }
 Metadata::Metadata(const Metadata& o)
-    : ItemSet(o), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : 0)
+    : ItemSet(o), m_notes(o.m_notes), m_source(o.m_source ? o.m_source->clone() : 0), m_data(o.m_data)
 {
 }
 Metadata::~Metadata()
@@ -103,17 +107,28 @@ Metadata& Metadata::operator=(const Metadata& o)
     delete m_source;
     m_source = o.m_source ? o.m_source->clone() : 0;
     m_notes = o.m_notes;
+    m_data = o.m_data;
     return *this;
 }
 
-auto_ptr<Metadata> Metadata::createEmpty()
+Metadata* Metadata::clone() const
+{
+    return new Metadata(*this);
+}
+
+auto_ptr<Metadata> Metadata::create_empty()
 {
     return auto_ptr<Metadata>(new Metadata);
 }
 
-auto_ptr<Metadata> Metadata::createFromYaml(std::istream& in, const std::string& filename)
+auto_ptr<Metadata> Metadata::create_copy(const Metadata& md)
 {
-    auto_ptr<Metadata> res(createEmpty());
+    return auto_ptr<Metadata>(md.clone());
+}
+
+auto_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
+{
+    auto_ptr<Metadata> res(create_empty());
     res->readYaml(in, filename);
     return res;
 }
@@ -143,6 +158,12 @@ void Metadata::set_source(std::auto_ptr<types::Source> s)
 {
     delete m_source;
     m_source = s.release();
+}
+
+void Metadata::set_source_inline(const std::string& format, wibble::sys::Buffer buf)
+{
+    m_data = buf;
+    set_source(Source::createInline(format, buf.size()));
 }
 
 void Metadata::unset_source()
@@ -312,7 +333,7 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
         if (in.fail())
             throw wibble::exception::File(filename, "reading "+str::fmt(s->size)+" bytes");
 
-        s->setCachedData(buf);
+        m_data = buf;
     }
 }
 
@@ -349,13 +370,13 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
 		throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
 
     // If the source is inline, then the data follows the metadata
-    if (source().style() == types::Source::INLINE)
+    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
-        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
-        wibble::sys::Buffer buf = s->getCachedData();
-        out.write((const char*)buf.data(), buf.size());
+        if (s->size != m_data.size())
+            throw wibble::exception::Consistency("writing metadata to " + filename, str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
+        out.write((const char*)m_data.data(), m_data.size());
         if (out.fail())
-            throw wibble::exception::File(filename, "writing " + str::fmt(buf.size()) + " bytes to the file");
+            throw wibble::exception::File(filename, "writing " + str::fmt(m_data.size()) + " bytes to the file");
     }
 }
 
@@ -368,11 +389,11 @@ void Metadata::write(int outfd, const std::string& filename) const
     utils::fd::write_all(outfd, encoded);
 
     // If the source is inline, then the data follows the metadata
-    if (m_source && m_source->style() == types::Source::INLINE)
+    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
-        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
-        wibble::sys::Buffer buf = s->getCachedData();
-        utils::fd::write_all(outfd, buf.data(), buf.size());
+        if (s->size != m_data.size())
+            throw wibble::exception::Consistency("writing metadata to " + filename, str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
+        utils::fd::write_all(outfd, m_data.data(), m_data.size());
     }
 }
 
@@ -421,11 +442,11 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
     e.add_break();
 
     // If the source is inline, then the data follows the metadata
-    if (m_source && m_source->style() == types::Source::INLINE)
+    if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
-        source::Inline* s = dynamic_cast<source::Inline*>(m_source);
-        wibble::sys::Buffer buf = s->getCachedData();
-        e.add_raw(buf);
+        if (s->size != m_data.size())
+            throw wibble::exception::Consistency("writing metadata to JSON", str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
+        e.add_raw(m_data);
     }
 }
 
@@ -474,77 +495,86 @@ string Metadata::encodeBinary() const
 	return res;
 }
 
-wibble::sys::Buffer Metadata::getData() const
+
+wibble::sys::Buffer Metadata::getData()
 {
+    // First thing, try and return it from cache
+    if (m_data.size()) return m_data;
+
+    // If we don't have it in cache, try reconstructing it from the Value metadata
+    if (const Value* value = get<types::Value>())
+        m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
+    if (m_data.size()) return m_data;
+
+    // If we don't have it in cache and we don't have a source, we cannot know
+    // how to load it: give up
     if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
 
-    if (source::Unbacked* unbacked = dynamic_cast<source::Unbacked*>(m_source))
+    // Load it according to source
+    switch (m_source->style())
     {
-        if (unbacked->hasCachedData())
-            return unbacked->getCachedData();
-
-        // If we have a value, try to reconstruct the data from it
-        wibble::sys::Buffer buf = getDataFromValue();
-        if (!buf.data())
+        case Source::INLINE:
+        case Source::URL:
             throw wibble::exception::Consistency("retrieving data", "data is not accessible");
-
-        unbacked->setCachedData(buf);
-
-        return buf;
-    } else {
-        // TODO: check caches before trying reconstruction?
-
-        // If we have a value, try to reconstruct the data from it before doing I/O
-        wibble::sys::Buffer buf = getDataFromValue();
-        if (buf.data()) return buf;
-
-        // Else, load it
-        return Data::current().read(sourceBlob());
+        case Source::BLOB:
+        {
+            // Do not directly use m_data so that if dataReader.read throws an
+            // exception, m_data remains empty.
+            const source::Blob& s = sourceBlob();
+            wibble::sys::Buffer buf(s.size);
+            metadata::dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
+            m_data = buf;
+            return m_data;
+        }
+        default:
+            throw wibble::exception::Consistency("retrieving data", "unsupported source style");
     }
 }
 
-wibble::sys::Buffer Metadata::getDataFromValue() const
+void Metadata::drop_cached_data()
 {
-    if (!m_source) throw wibble::exception::Consistency("retrieving data", "data source is not defined");
-    const Value* value = get<types::Value>();
-    if (!value) return wibble::sys::Buffer();
-    return arki::scan::reconstruct(m_source->format, *this, value->buffer);
-}
-
-void Metadata::dropCachedData() const
-{
-    // TODO: this will have to disappear
     if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
-        Data::current().drop(*blob);
+        m_data = wibble::sys::Buffer();
 }
 
-void Metadata::setCachedData(const wibble::sys::Buffer& buf)
+void Metadata::set_cached_data(const wibble::sys::Buffer& buf)
 {
-    // TODO: this should be removed, and taken care of by the loader code that
-    // knows which source is generating and how it should be handled
-    if (!m_source) throw wibble::exception::Consistency("setting cached data", "data source is not defined");
-
-    if (source::Unbacked* unbacked = dynamic_cast<source::Unbacked*>(m_source))
-        unbacked->setCachedData(buf);
-    else
-        Data::current().add(sourceBlob(), buf);
-}
-
-size_t Metadata::dataSize() const
-{
-    return m_source ? m_source->getSize() : 0;
-}
-
-void Metadata::setInlineData(const std::string& format, wibble::sys::Buffer buf)
-{
-    set_source(types::Source::createInline(format, buf));
+    m_data = buf;
 }
 
 void Metadata::makeInline()
 {
     if (!m_source) throw wibble::exception::Consistency("making source inline", "data source is not defined");
-    setInlineData(m_source->format, getData());
+    set_source_inline(m_source->format, getData());
 }
+
+size_t Metadata::data_size() const
+{
+    if (m_data.size()) return m_data.size();
+    if (!m_source) return 0;
+
+    // Query according to source
+    switch (m_source->style())
+    {
+        case Source::INLINE:
+            return dynamic_cast<const source::Inline*>(m_source)->size;
+        case Source::URL:
+            // URL does not know about sizes
+            return 0;
+        case Source::BLOB:
+            return dynamic_cast<const source::Blob*>(m_source)->size;
+        default:
+            // An unsupported source type should make more noise than a 0
+            // return type
+            throw wibble::exception::Consistency("retrieving data", "unsupported source style");
+    }
+}
+
+void Metadata::flushDataReaders()
+{
+    metadata::dataReader.flush();
+}
+
 
 void Metadata::readFile(const std::string& fname, metadata::Eater& mdc)
 {

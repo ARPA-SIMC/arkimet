@@ -67,7 +67,7 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct Printer : public metadata::Consumer
+struct Printer : public metadata::Eater
 {
     virtual void flush() {}
 
@@ -76,9 +76,9 @@ struct Printer : public metadata::Consumer
 
 struct BinaryPrinter : public Printer
 {
-    virtual bool operator()(Metadata& md)
+    bool eat(auto_ptr<Metadata> md) override
     {
-        md.write(cout, "(stdout)");
+        md->write(cout, "(stdout)");
         return true;
     }
 };

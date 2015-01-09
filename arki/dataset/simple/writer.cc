@@ -25,7 +25,6 @@
 #include <arki/dataset/simple/datafile.h>
 #include <arki/dataset/maintenance.h>
 #include <arki/dataset/data.h>
-#include <arki/data.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/source/blob.h>
 #include <arki/summary.h>
@@ -260,14 +259,10 @@ size_t Writer::repackFile(const std::string& relpath)
     Pending p_repack = m_segment_manager->repack(relpath, mdc);
 
     // Strip paths from mds sources
-    for (metadata::Collection::iterator i = mdc.begin(); i != mdc.end(); ++i)
-    {
-        const source::Blob& source = i->sourceBlob();
-        i->set_source(upcast<Source>(source.fileOnly()));
-    }
+    mdc.strip_source_paths();
 
     // Prevent reading the still open old file using the new offsets
-    Data::flushDataReaders();
+    Metadata::flushDataReaders();
 
 	// Remove existing cached metadata, since we scramble their order
 	sys::fs::deleteIfExists(pathname + ".metadata");
@@ -285,8 +280,7 @@ size_t Writer::repackFile(const std::string& relpath)
     // Regenerate the summary. It is unchanged, really, but its timestamp
     // has become obsolete by now
     Summary sum;
-    metadata::SummarisingObserver mds(sum);
-    mdc.sendToObserver(mds);
+    mdc.add_to_summary(sum);
     sum.writeAtomically(pathname + ".summary");
 
     // Reindex with the new file information

@@ -688,7 +688,7 @@ struct InboundHandler : public LocalHandler
             res << "Contents of " << *file << ":" << endl;
             res << "<pre>" << endl;
 
-            struct Printer : public metadata::Consumer
+            struct Printer : public metadata::Eater
             {
                 ostream& str;
                 Formatter* f;
@@ -696,9 +696,9 @@ struct InboundHandler : public LocalHandler
                 Printer(ostream& str) : str(str), f(Formatter::create()) { }
                 ~Printer() { delete f; }
 
-                virtual bool operator()(Metadata& md)
+                bool eat(auto_ptr<Metadata> md) override
                 {
-                    md.writeYaml(str, f);
+                    md->writeYaml(str, f);
                     str << endl;
                     return true;
                 }
@@ -735,7 +735,7 @@ struct InboundHandler : public LocalHandler
 
             stringstream res;
 
-            struct Simulator : public metadata::Consumer
+            struct Simulator : public metadata::Eater
             {
                 TestDispatcher td;
                 ostream& str;
@@ -745,10 +745,10 @@ struct InboundHandler : public LocalHandler
                     : td(cfg, str), str(str), f(Formatter::create()) { }
                 ~Simulator() { delete f; }
 
-                virtual bool operator()(Metadata& md)
+                bool eat(auto_ptr<Metadata> md) override
                 {
                     str << "<dt><pre>" << endl;
-                    md.writeYaml(str, f);
+                    md->writeYaml(str, f);
                     str << "</pre></dt><dd><pre>" << endl;
                     metadata::Collection mdc;
                     Dispatcher::Outcome res = td.dispatch(md, mdc);

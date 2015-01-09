@@ -76,7 +76,7 @@ namespace {
 
 inline size_t datasize(const Metadata& md)
 {
-    return md.source().getSize();
+    return md.data_size();
 }
 
 }

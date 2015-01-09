@@ -150,16 +150,9 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 
 	// TODO: does it make sense to check with the summary first?
 
-	metadata::Eater* c = &consumer;
+    metadata::Eater* c = &consumer;
     // Order matters here, as delete will happen in reverse order
-    auto_ptr<ds::DataCacher> cacher;
     refcounted::Pointer<sort::Compare> compare;
-
-    if (q.withData)
-    {
-        cacher.reset(new ds::DataCacher(*c));
-        c = cacher.get();
-    }
 
     if (q.sorter)
         compare = q.sorter;
@@ -308,12 +301,11 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
 	Summary sum;
-	for (metadata::Collection::iterator i = mds.begin();
-			i != mds.end(); ++i)
-	{
-        const source::Blob& s = i->sourceBlob();
-        i->set_source(upcast<Source>(s.fileOnly()));
-        sum.add(*i);
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        const source::Blob& s = (*i)->sourceBlob();
+        (*i)->set_source(upcast<Source>(s.fileOnly()));
+        sum.add(**i);
     }
 
 	// Regenerate .metadata

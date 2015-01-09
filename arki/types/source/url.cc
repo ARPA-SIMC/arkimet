@@ -98,11 +98,7 @@ bool URL::equals(const Type& o) const
 
 URL* URL::clone() const
 {
-    URL* res = new URL;
-    res->format = format;
-    res->url = url;
-    if (m_inline_buf.data()) res->setCachedData(m_inline_buf);
-    return res;
+    return new URL(*this);
 }
 
 std::auto_ptr<URL> URL::create(const std::string& format, const std::string& url)
@@ -111,14 +107,6 @@ std::auto_ptr<URL> URL::create(const std::string& format, const std::string& url
     res->format = format;
     res->url = url;
     return auto_ptr<URL>(res);
-}
-
-uint64_t URL::getSize() const
-{
-    if (m_inline_buf.data())
-        return m_inline_buf.size();
-    else
-        return 0;
 }
 
 }
