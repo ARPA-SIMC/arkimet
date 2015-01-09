@@ -499,12 +499,12 @@ string Metadata::encodeBinary() const
 wibble::sys::Buffer Metadata::getData()
 {
     // First thing, try and return it from cache
-    if (m_data.size()) return m_data;
+    if (m_data.data()) return m_data;
 
     // If we don't have it in cache, try reconstructing it from the Value metadata
     if (const Value* value = get<types::Value>())
         m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
-    if (m_data.size()) return m_data;
+    if (m_data.data()) return m_data;
 
     // If we don't have it in cache and we don't have a source, we cannot know
     // how to load it: give up
@@ -550,7 +550,7 @@ void Metadata::makeInline()
 
 size_t Metadata::data_size() const
 {
-    if (m_data.size()) return m_data.size();
+    if (m_data.data()) return m_data.size();
     if (!m_source) return 0;
 
     // Query according to source
