@@ -78,7 +78,13 @@ struct Options : public StandardParserWithManpage
 // Read a command from the user
 string read_command(const std::string& prompt)
 {
+#ifdef HAVE_LIBREADLINE
     char* rl_answer = readline(prompt.c_str());
+#else
+	printf("%s", prompt.c_str());
+	char buf[512];
+    char* rl_answer = fgets(buf, 512, stdin);
+#endif
     if (!rl_answer) return "\\q";
     string answer = rl_answer;
     free(rl_answer);
