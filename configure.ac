@@ -115,7 +115,7 @@ if test x"$with_wibble" = x"system"; then
 	PKG_CHECK_MODULES([WIBBLE], [libwibble >= 1.1])
 elif test x"$with_wibble" = x"embedded"; then
 	WIBBLE_LIBS="`pwd`/embedded/wibble/wibble/libwibble.la"
-	WIBBLE_CFLAGS="-I`pwd`/embedded/wibble"]
+	WIBBLE_CFLAGS="-I`pwd`/embedded/wibble"
 elif test x"$with_wibble" = x"no"; then
 	AC_MSG_FAILURE([--without-wibble was given, but wibble is essential in building arkimet])
 else
