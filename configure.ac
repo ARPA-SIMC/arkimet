@@ -229,9 +229,18 @@ PKG_CHECK_MODULES([HDF5], [hdf5-serial], [have_hdf5=yes], [have_hdf5=no])
 if test $have_hdf5 = yes
 then
     PKG_CHECK_MODULES([HDF5],[hdf5-serial])
-    AC_DEFINE([HAVE_HDF5], 1, [hdf5 format enabled])
 else
-    AC_MSG_WARN([compiling without libhdf5])
+    AX_LIB_HDF5
+    if test "$with_hdf5" = yes
+    then
+        have_hdf5=yes
+    else
+        AC_MSG_WARN([compiling without libhdf5])
+    fi
+fi
+if test $have_hdf5 = yes
+then
+    AC_DEFINE([HAVE_HDF5], 1, [hdf5 format enabled])
 fi
 
 AM_CONDITIONAL([HDF5], [test x"$have_hdf5" = x"yes"])
