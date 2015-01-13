@@ -143,7 +143,7 @@ TypeVector::const_iterator TypeVector::sorted_find(const Type& type) const
 
 bool TypeVector::sorted_insert(const Type& item)
 {
-    const_iterator lb = lower_bound(vals.begin(), vals.end(), &item, TypeptrLt());
+    vector<Type*>::iterator lb = lower_bound(vals.begin(), vals.end(), &item, TypeptrLt());
     if (lb == vals.end())
         push_back(item);
     else if (**lb != item)
@@ -155,7 +155,7 @@ bool TypeVector::sorted_insert(const Type& item)
 
 bool TypeVector::sorted_insert(std::auto_ptr<types::Type>& item)
 {
-    const_iterator lb = lower_bound(vals.begin(), vals.end(), item.get(), TypeptrLt());
+    vector<Type*>::iterator lb = lower_bound(vals.begin(), vals.end(), item.get(), TypeptrLt());
     if (lb == vals.end())
         push_back(item);
     else if (**lb != *item)
