@@ -463,6 +463,11 @@ struct TestReftimePositionIs : public TestSpecificTypeBase<reftime::Position>
     }
 };
 
+std::auto_ptr<ArkiCheck> ActualType::is_reftime_position(const Time& time)
+{
+    return auto_ptr<ArkiCheck>(new TestReftimePositionIs(this->actual, time));
+}
+
 std::auto_ptr<ArkiCheck> ActualType::is_reftime_position(const int (&time)[6])
 {
     return auto_ptr<ArkiCheck>(new TestReftimePositionIs(this->actual, Time(time)));
@@ -489,6 +494,10 @@ std::auto_ptr<ArkiCheck> ActualType::is_reftime_period(const int (&begin)[6], co
     return auto_ptr<ArkiCheck>(new TestReftimePeriodIs(this->actual, Time(begin), Time(end)));
 }
 
+std::auto_ptr<ArkiCheck> ActualType::is_reftime_period(const Time& begin, const Time& end)
+{
+    return auto_ptr<ArkiCheck>(new TestReftimePeriodIs(this->actual, begin, end));
+}
 
 }
 }

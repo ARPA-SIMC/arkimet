@@ -5,7 +5,6 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = conf embedded arki src doc test
 
 man_MANS = \
-	arki-config.1 \
 	arki-dump.1 \
 	arki-gzip.1 \
 	arki-query.1 \
@@ -15,6 +14,10 @@ man_MANS = \
 	arki-scan.1 \
 	arki-server.1 \
 	arki-xargs.1
+
+if READLINE
+man_MANS += arki-config.1
+endif
 
 if DBALLE
 man_MANS += arki-bufr-prepare.1

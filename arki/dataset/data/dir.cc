@@ -315,8 +315,9 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
             try {
                 validator->validate(**i);
             } catch (std::exception& e) {
-                string source = str::fmt((*i)->source());
-                nag::warning("%s: validation failed at %s: %s", absname.c_str(), source.c_str(), e.what());
+                stringstream out;
+                out << (*i)->source();
+                nag::warning("%s: validation failed at %s: %s", absname.c_str(), out.str().c_str(), e.what());
                 return FILE_TO_RESCAN;
             }
         }

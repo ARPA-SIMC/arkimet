@@ -10,6 +10,7 @@ AM_LDFLAGS = $(EXTRA_LDFLAGS)
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
+		defs.h \
 		core.h \
 		bbox.h \
 		configfile.h \

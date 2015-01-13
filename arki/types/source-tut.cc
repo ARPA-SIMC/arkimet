@@ -130,7 +130,9 @@ void to::test<6>()
     wassert(actual(decoded).is_source_blob("test", "", "testfile", 21, 42));
 
     // Encode to YAML, decode, basedir and filename have merged
-    enc = wibble::str::fmt(*o);
+    stringstream tmp;
+    tmp << *o;
+    enc = tmp.str();
     decoded = types::Source::decodeString(enc);
     wassert(actual(decoded).is_source_blob("test", "", "/tmp/testfile", 21, 42));
 

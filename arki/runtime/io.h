@@ -25,6 +25,7 @@
 
 #include <wibble/commandline/parser.h>
 #include <wibble/stream/posix.h>
+#include <arki/defs.h>
 #include <arki/core.h>
 #include <fstream>
 #include <string>

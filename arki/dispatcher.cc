@@ -291,7 +291,9 @@ void TestDispatcher::hook_pre_dispatch(const Metadata& md)
     // Increment the metadata counter, so that we can refer to metadata in the
     // messages
     ++m_count;
-    prefix = "Message " + str::fmt(md.source());
+	stringstream out;
+	out << "Message " << md.source();
+    prefix = out.str().c_str();
 }
 
 void TestDispatcher::hook_found_datasets(const Metadata& md, vector<string>& found)

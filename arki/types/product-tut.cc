@@ -156,7 +156,9 @@ void to::test<5>()
     ValueBag vb2;
     vb2.set("val", Value::createString("blinda"));
     v->addValues(vb2);
-    wassert(actual(wibble::str::fmt(*o)) == "BUFR(001, 002, 003, name=antani, val=blinda)");
+	stringstream tmp;
+	tmp << *o;
+    wassert(actual(tmp.str()) == "BUFR(001, 002, 003, name=antani, val=blinda)");
 }
 
 // Check VM2

@@ -21,8 +21,10 @@
 #define ARKI_TYPES_TESTUTILS_H
 
 #include <arki/tests/tests.h>
+#include <arki/types/time.h>
 #include <vector>
 #include <string>
+#include <stdint.h>
 
 using namespace arki;
 
@@ -109,7 +111,13 @@ public:
     std::auto_ptr<ArkiCheck> is_reftime_position(const int (&time)[6]);
 
     /// Check all components of a reftime::Position item
+    std::auto_ptr<ArkiCheck> is_reftime_position(const types::Time&);
+
+    /// Check all components of a reftime::Position item
     std::auto_ptr<ArkiCheck> is_reftime_period(const int (&begin)[6], const int (&end)[6]);
+
+    /// Check all components of a reftime::Position item
+    std::auto_ptr<ArkiCheck> is_reftime_period(const types::Time&, const types::Time&);
 };
 
 }

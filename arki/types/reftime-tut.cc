@@ -50,7 +50,7 @@ void to::test<1>()
     wassert(t);
 
     auto_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
-    wassert(actual(o).is_reftime_position({2007, 6, 5, 4, 3, 2}));
+    wassert(actual(o).is_reftime_position(Time(2007, 6, 5, 4, 3, 2)));
 
     wassert(actual(o) == Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2)));
     wassert(actual(o) != Reftime::createPosition(Time(2007, 6, 5, 4, 3, 1)));
@@ -73,7 +73,7 @@ void to::test<2>()
     wassert(t);
 
     auto_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
-    wassert(actual(o).is_reftime_period({2007, 6, 5, 4, 3, 2}, {2008, 7, 6, 5, 4, 3}));
+    wassert(actual(o).is_reftime_period(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
     wassert(actual(o) == Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
     wassert(actual(o) != Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 3), Time(2008, 7, 6, 5, 4, 2)));

@@ -26,6 +26,7 @@
 #include <memory>
 #include <string>
 #include <iosfwd>
+#include <arki/defs.h>
 
 struct lua_State;
 

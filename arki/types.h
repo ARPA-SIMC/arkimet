@@ -25,13 +25,10 @@
  */
 
 #include <wibble/exception.h>
+#include <arki/defs.h>
 #include <string>
 #include <iosfwd>
 #include <memory>
-
-#ifndef HAVE_CXX11
-#define override
-#endif
 
 struct lua_State;
 

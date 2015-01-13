@@ -128,7 +128,7 @@ template<> template<>
 void to::test<5>()
 {
 #ifdef HAVE_LUA
-	Item<Time> o = Time::create(1, 2, 3, 4, 5, 6);
+    auto_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -151,7 +151,7 @@ void to::test<5>()
 	);
 
 	test.pusharg(*o);
-	ensure_equals(test.run(), "");
+    wassert(actual(test.run()) == "");
 #endif
 }
 
