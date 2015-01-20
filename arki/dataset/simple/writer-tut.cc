@@ -189,13 +189,13 @@ void to::test<3>()
 
 	setup();
 
-	// Query now is ok, but empty
-	{
-		auto_ptr<Reader> reader(makeSimpleReader());
-		metadata::Collection mdc;
-		reader->queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 0u);
-	}
+    // Query now is ok, but empty
+    {
+        auto_ptr<Reader> reader(makeSimpleReader());
+        metadata::Collection mdc;
+        reader->queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 0u);
+    }
 
 	// Maintenance should show one file to index
 	{
@@ -270,13 +270,13 @@ void to::test<4>()
 	setup();
 	ensure(sys::fs::exists("testds/" + idxfname()));
 
-	// Query is ok
-	{
-		dataset::simple::Reader reader(cfg);
-		metadata::Collection mdc;
-		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
-	}
+    // Query is ok
+    {
+        dataset::simple::Reader reader(cfg);
+        metadata::Collection mdc;
+        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 3u);
+    }
 
 	// Maintenance should show one file to rescan
 	{
@@ -332,13 +332,13 @@ void to::test<4>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// And repack should have changed nothing
-	{
-		dataset::simple::Reader reader(cfg);
-		metadata::Collection mdc;
-		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
-	}
+    // And repack should have changed nothing
+    {
+        dataset::simple::Reader reader(cfg);
+        metadata::Collection mdc;
+        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 3u);
+    }
 	ensure(sys::fs::exists("testds/2007/07-08.grib1"));
 	ensure(!sys::fs::exists("testds/2007/07-08.grib1.metadata"));
 	ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
@@ -363,13 +363,13 @@ void to::test<5>()
 	setup();
 	ensure(sys::fs::exists("testds/" + idxfname()));
 
-	// Query is ok
-	{
-		dataset::simple::Reader reader(cfg);
-		metadata::Collection mdc;
-		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
-	}
+    // Query is ok
+    {
+        dataset::simple::Reader reader(cfg);
+        metadata::Collection mdc;
+        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 3u);
+    }
 
 	// Maintenance should show one file to rescan
 	{
@@ -425,13 +425,13 @@ void to::test<5>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// And repack should have changed nothing
-	{
-		dataset::simple::Reader reader(cfg);
-		metadata::Collection mdc;
-		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
-	}
+    // And repack should have changed nothing
+    {
+        dataset::simple::Reader reader(cfg);
+        metadata::Collection mdc;
+        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 3u);
+    }
 	ensure(sys::fs::exists("testds/2007/07-08.grib1"));
 	ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
 	ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
@@ -478,17 +478,17 @@ void to::test<6>()
 	// Try removing summary and metadata
 	setup.removemd();
 
-	// Cannot query anymore
-	{
-		metadata::Collection mdc;
-		Reader reader(cfg);
-		try {
-			reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-			ensure(false);
-		} catch (std::exception& e) {
-			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
-		}
-	}
+    // Cannot query anymore
+    {
+        metadata::Collection mdc;
+        Reader reader(cfg);
+        try {
+            reader.queryData(dataset::DataQuery(Matcher()), mdc);
+            ensure(false);
+        } catch (std::exception& e) {
+            ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
+        }
+    }
 
 	// Maintenance should show one file to rescan
 	{
@@ -547,17 +547,17 @@ void to::test<6>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// And repack should have changed nothing
-	{
-		metadata::Collection mdc;
-		Reader reader(cfg);
-		try {
-			reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-			ensure(false);
-		} catch (std::exception& e) {
-			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
-		}
-	}
+    // And repack should have changed nothing
+    {
+        metadata::Collection mdc;
+        Reader reader(cfg);
+        try {
+            reader.queryData(dataset::DataQuery(Matcher()), mdc);
+            ensure(false);
+        } catch (std::exception& e) {
+            ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
+        }
+    }
 	ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
 	ensure(sys::fs::exists("testds/2007/07-08.grib1.gz"));
 	ensure(sys::fs::exists("testds/2007/07-08.grib1.gz.idx"));
@@ -583,13 +583,13 @@ void to::test<7>()
 	setup();
 	ensure(sys::fs::exists("testds/" + idxfname()));
 
-	// Query is ok
-	{
-		dataset::simple::Reader reader(cfg);
-		metadata::Collection mdc;
-		reader.queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 2u);
-	}
+    // Query is ok
+    {
+        dataset::simple::Reader reader(cfg);
+        metadata::Collection mdc;
+        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 2u);
+    }
 
 	// Maintenance should show one file to rescan
 	{

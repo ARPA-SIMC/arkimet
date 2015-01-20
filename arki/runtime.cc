@@ -565,9 +565,8 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 	setStartTime();
 	results.clear();
 
-	dataset::DataQuery dq(Matcher(), true);
 	try {
-		ds.queryData(dq, *this);
+		ds.queryData(dataset::DataQuery(Matcher()), *this);
 	} catch (std::exception& e) {
 		// FIXME: this is a quick experiment: a better message can
 		// print some of the stats to document partial imports

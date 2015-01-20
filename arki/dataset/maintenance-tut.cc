@@ -180,7 +180,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
             metadata::Counter counter;
-            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
+            reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
             wassert(actual(counter.count) == 3);
         }
     }
@@ -265,7 +265,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
             metadata::Counter counter;
-            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
+            reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
             wassert(actual(counter.count) == 2);
         }
     }
@@ -666,7 +666,7 @@ template<> template<> void to::test<10>()
 		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
 		metadata::Collection mdc;
-		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
 		ensure_equals(mdc.size(), 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
 	}

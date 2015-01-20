@@ -247,7 +247,6 @@ void to::test<7>()
             );
 
     dataset::DataQuery dq;
-    dq.withData = true;
     metadata::Collection mdc;
     qm.queryData(dq, mdc);
     ensure_equals(mdc.size(), 2u);

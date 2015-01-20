@@ -431,10 +431,10 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 {
 	impl_ensure_maint_clean(loc, filecount, wcfg);
 
-	auto_ptr<dataset::Local> reader(makeLocalReader(wcfg));
-	metadata::Collection mdc;
-	reader->queryData(dataset::DataQuery(Matcher(), false), mdc);
-	inner_ensure_equals(mdc.size(), resultcount);
+    auto_ptr<dataset::Local> reader(makeLocalReader(wcfg));
+    metadata::Collection mdc;
+    reader->queryData(dataset::DataQuery(Matcher()), mdc);
+    inner_ensure_equals(mdc.size(), resultcount);
 
 	if (filecount > 0)
 		inner_ensure(sys::fs::exists(str::joinpath(reader->path(), idxfname())));

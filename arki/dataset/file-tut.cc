@@ -80,12 +80,12 @@ void to::test<3>()
 	ensure_equals(s->value("type"), "file");
 	ensure_equals(s->value("format"), "grib");
 
-	// Scan it to be sure it can be read
-	auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
-	dataset::DataQuery q(Matcher::parse(""), true);
-	metadata::Collection mdc;
-	ds->queryData(q, mdc);
-	ensure_equals(mdc.size(), 3u);
+    // Scan it to be sure it can be read
+    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
+    dataset::DataQuery q(Matcher::parse(""));
+    metadata::Collection mdc;
+    ds->queryData(q, mdc);
+    ensure_equals(mdc.size(), 3u);
 }
 
 template<> template<>
@@ -103,12 +103,10 @@ void to::test<4>()
 
     // Scan it to be sure it can be read
     auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
-    dataset::DataQuery q(Matcher::parse(""), true);
+    dataset::DataQuery q(Matcher::parse(""));
     metadata::Collection mdc;
     ds->queryData(q, mdc);
     ensure_equals(mdc.size(), 1u);
 }
 
 }
-
-// vim:set ts=4 sw=4:

@@ -159,7 +159,7 @@ QueryDataParams::QueryDataParams()
 void QueryDataParams::set_into(DataQuery& dq) const
 {
     dq.matcher = Matcher::parse(*matcher);
-    dq.withData = *withdata == "true";
+    //dq.withData = *withdata == "true";
     if (!sorter->empty())
         dq.sorter = sort::Compare::parse(*sorter);
 }

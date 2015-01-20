@@ -81,10 +81,10 @@ template<> template<> void to::test<1>()
 	{
 		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
-		metadata::Counter counter;
-		reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
-		ensure_equals(counter.count, 3u);
-	}
+        metadata::Counter counter;
+        reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
+        ensure_equals(counter.count, 3u);
+    }
 
 	// Check if files to archive are detected
 	{
@@ -166,10 +166,10 @@ template<> template<> void to::test<1>()
 	{
 		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
-		metadata::Counter counter;
-		reader->queryData(dataset::DataQuery(Matcher::parse(""), false), counter);
-		ensure_equals(counter.count, 3u);
-	}
+        metadata::Counter counter;
+        reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
+        ensure_equals(counter.count, 3u);
+    }
 }
 
 // Test querying the datasets
@@ -180,20 +180,20 @@ template<> template<> void to::test<2>()
 	clean_and_import();
 	std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
-	metadata::Collection mdc;
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
+    metadata::Collection mdc;
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218));
 
-	mdc.clear();
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    ensure_equals(mdc.size(), 1u);
 
-	mdc.clear();
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    ensure_equals(mdc.size(), 1u);
 }
 
 // Test querying with data only
@@ -218,9 +218,9 @@ template<> template<> void to::test<4>()
 	clean_and_import();
 	std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
-	metadata::Collection mdc;
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
-	ensure_equals(mdc.size(), 1u);
+    metadata::Collection mdc;
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
@@ -229,13 +229,13 @@ template<> template<> void to::test<4>()
     wibble::sys::Buffer buf = mdc[0].getData();
     ensure_equals(buf.size(), 7218);
 
-	mdc.clear();
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    ensure_equals(mdc.size(), 1u);
 
-	mdc.clear();
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), true), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    ensure_equals(mdc.size(), 1u);
 }
 
 // Test querying with archived data
@@ -260,12 +260,12 @@ template<> template<> void to::test<5>()
 	std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 	metadata::Collection mdc;
 
-	reader->queryData(dataset::DataQuery(Matcher::parse(""), true), mdc);
-	ensure_equals(mdc.size(), 3u);
-	mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
+    ensure_equals(mdc.size(), 3u);
+    mdc.clear();
 
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
-	ensure_equals(mdc.size(), 1u);
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
@@ -274,18 +274,18 @@ template<> template<> void to::test<5>()
     wibble::sys::Buffer buf = mdc[0].getData();
     wassert(actual(buf.size()) == 7218);
 
-	mdc.clear();
-	reader->queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08"), true), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08")), mdc);
+    ensure_equals(mdc.size(), 1u);
     wassert(actual(mdc[0].data_size()) == 7218u);
 
-	mdc.clear();
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    ensure_equals(mdc.size(), 1u);
 
-	mdc.clear();
-	reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), true), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    ensure_equals(mdc.size(), 1u);
 
 	// Query bytes
 	stringstream out;
@@ -337,9 +337,9 @@ template<> template<> void to::test<6>()
 
 	std::auto_ptr<ReadonlyDataset> reader(makeReader());
 
-	metadata::Collection mdc;
-	reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
-	ensure(mdc.empty());
+    metadata::Collection mdc;
+    reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
+    ensure(mdc.empty());
 
 	Summary s;
 	reader->querySummary(Matcher::parse(""), s);
@@ -429,14 +429,14 @@ template<> template<> void to::test<7>()
     {
         std::auto_ptr<ReadonlyDataset> reader(makeReader());
         CheckReftimeSortOrder cso;
-        reader->queryData(dataset::DataQuery(Matcher::parse(""), false), cso);
+        reader->queryData(dataset::DataQuery(Matcher::parse("")), cso);
         wassert(actual(cso.seen) == 16128);
     }
 
     {
         std::auto_ptr<ReadonlyDataset> reader(makeReader());
         CheckAllSortOrder cso;
-        dataset::DataQuery dq(Matcher::parse(""), false);
+        dataset::DataQuery dq(Matcher::parse(""));
         dq.sorter = sort::Compare::parse("reftime,area,product");
         reader->queryData(dq, cso);
         wassert(actual(cso.seen) == 16128);

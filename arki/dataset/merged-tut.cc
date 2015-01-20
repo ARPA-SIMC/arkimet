@@ -107,9 +107,9 @@ TESTGRP(arki_dataset_merged);
 template<> template<>
 void to::test<1>()
 {
-	metadata::Collection mdc;
-	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
-	ensure_equals(mdc.size(), 3u);
+    metadata::Collection mdc;
+    ds.queryData(dataset::DataQuery(Matcher()), mdc);
+    ensure_equals(mdc.size(), 3u);
 
 #if 0
 	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));

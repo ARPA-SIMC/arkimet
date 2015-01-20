@@ -40,12 +40,12 @@ TESTGRP(arki_dataset_empty);
 template<> template<>
 void to::test<1>()
 {
-	ConfigFile cfg;
-	dataset::Empty ds(cfg);
+    ConfigFile cfg;
+    dataset::Empty ds(cfg);
 
-	metadata::Collection mdc;
-	ds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1 or BUFR or GRIB2"), false), mdc);
-	ensure_equals(mdc.size(), 0u);
+    metadata::Collection mdc;
+    ds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1 or BUFR or GRIB2")), mdc);
+    ensure_equals(mdc.size(), 0u);
 }
 
 }

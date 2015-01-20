@@ -260,7 +260,7 @@ struct TestDataset
 
         // Query everything, we should get 3 results
         metadata::Collection mdc;
-        ds->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc);
+        ds->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
         wassert(actual(mdc.size()) == 3);
 
         // No data should have been read in this query
@@ -272,7 +272,7 @@ struct TestDataset
 
             // Check that what we imported can be queried
             metadata::Collection mdc;
-            ds->queryData(dataset::DataQuery(td.test_data[i].matcher, false), mdc);
+            ds->queryData(dataset::DataQuery(td.test_data[i].matcher), mdc);
             wassert(actual(mdc.size()) == 1u);
 
             // Check that the result matches what was imported
@@ -384,7 +384,7 @@ struct TestDataset
         // Do a simple export first, to get the exact metadata that would come
         // out
         metadata::Collection mdc;
-        ds->queryData(dataset::DataQuery(td.test_data[0].matcher, false), mdc);
+        ds->queryData(dataset::DataQuery(td.test_data[0].matcher), mdc);
         wassert(actual(mdc.size()) == 1u);
 
         // Then do a postprocessed queryBytes

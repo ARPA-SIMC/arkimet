@@ -58,13 +58,13 @@ struct DataProcessor : public DatasetProcessor
     vector<string> description_attrs;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
-        : output(out), printer(createPrinter(maker, out)), query(q, false)
+        : output(out), printer(createPrinter(maker, out)), query(q)
     {
         description_attrs.push_back("query=" + q.toString());
         description_attrs.push_back("printer=" + printer->describe());
         if (maker.data_inline)
             description_attrs.push_back("data_inline=true");
-        query.withData = maker.data_inline;
+        //query.withData = maker.data_inline;
 
         if (!maker.sort.empty())
         {

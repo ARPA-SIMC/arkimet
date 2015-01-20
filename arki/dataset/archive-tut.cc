@@ -54,7 +54,7 @@ void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_
 	inner_ensure(c.isClean());
 
 	metadata::Collection mdc;
-	ds.queryData(dataset::DataQuery(Matcher(), false), mdc);
+	ds.queryData(dataset::DataQuery(Matcher()), mdc);
 	inner_ensure_equals(mdc.size(), resultcount);
 }
 
@@ -144,12 +144,12 @@ void to::test<2>()
 		system("cp inbound/test.grib1 testds/.archive/last/");
 	}
 
-	// Query now is ok
-	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-		metadata::Collection mdc;
-		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 0u);
+    // Query now is ok
+    {
+        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        metadata::Collection mdc;
+        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 0u);
 
 		// Maintenance should show one file to index
 		arc->maintenance(c);
@@ -206,12 +206,12 @@ void to::test<3>()
 		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
 	}
 
-	// Query now is ok
-	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-		metadata::Collection mdc;
-		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
+    // Query now is ok
+    {
+        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        metadata::Collection mdc;
+        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 3u);
 
 		// Maintenance should show one file to rescan
 		arc->maintenance(c);
@@ -269,11 +269,11 @@ void to::test<4>()
 	}
 
 	// Query now is ok
-	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-		metadata::Collection mdc;
-		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 3u);
+    {
+        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        metadata::Collection mdc;
+        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 3u);
 
 		// Maintenance should show one file to rescan
 		arc->maintenance(c);
@@ -333,13 +333,13 @@ void to::test<5>()
 		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
 	}
 
-	// Query now is ok
-	{
-		metadata::Collection mdc;
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-		arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
-		ensure_equals(mdc.size(), 9u);
-	}
+    // Query now is ok
+    {
+        metadata::Collection mdc;
+        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        ensure_equals(mdc.size(), 9u);
+    }
 
 	// Maintenance should show one file to rescan
 	{
@@ -429,7 +429,7 @@ void to::test<6>()
 		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 		metadata::Collection mdc;
 		try {
-			arc->queryData(dataset::DataQuery(Matcher(), false), mdc);
+			arc->queryData(dataset::DataQuery(Matcher()), mdc);
 			ensure(false);
 		} catch (std::exception& e) {
 			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));

@@ -91,13 +91,12 @@ namespace dataset {
 
 struct DataQuery
 {
-	Matcher matcher;
-	bool withData;
-	refcounted::Pointer<sort::Compare> sorter;
+    Matcher matcher;
+    refcounted::Pointer<sort::Compare> sorter;
 
-	DataQuery();
-	DataQuery(const Matcher& matcher, bool withData=false);
-	~DataQuery();
+    DataQuery();
+    DataQuery(const Matcher& matcher);
+    ~DataQuery();
 
 	void lua_from_table(lua_State* L, int idx);
 	void lua_push_table(lua_State* L, int idx) const;
@@ -118,36 +117,32 @@ struct ByteQuery : public DataQuery
 
 	ByteQuery() : type(BQ_DATA), data_start_hook(0) {}
 
-	void setData(const Matcher& m)
-	{
-		type = BQ_DATA;
-		matcher = m;
-		withData = true;
-	}
+    void setData(const Matcher& m)
+    {
+        type = BQ_DATA;
+        matcher = m;
+    }
 
-	void setPostprocess(const Matcher& m, const std::string& procname)
-	{
-		type = BQ_POSTPROCESS;
-		matcher = m;
-		withData = true;
-		param = procname;
-	}
+    void setPostprocess(const Matcher& m, const std::string& procname)
+    {
+        type = BQ_POSTPROCESS;
+        matcher = m;
+        param = procname;
+    }
 
-	void setRepMetadata(const Matcher& m, const std::string& repname)
-	{
-		type = BQ_REP_METADATA;
-		matcher = m;
-		withData = false;
-		param = repname;
-	}
+    void setRepMetadata(const Matcher& m, const std::string& repname)
+    {
+        type = BQ_REP_METADATA;
+        matcher = m;
+        param = repname;
+    }
 
-	void setRepSummary(const Matcher& m, const std::string& repname)
-	{
-		type = BQ_REP_SUMMARY;
-		matcher = m;
-		withData = false;
-		param = repname;
-	}
+    void setRepSummary(const Matcher& m, const std::string& repname)
+    {
+        type = BQ_REP_SUMMARY;
+        matcher = m;
+        param = repname;
+    }
 };
 
 }

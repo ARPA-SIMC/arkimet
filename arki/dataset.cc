@@ -57,8 +57,8 @@ namespace arki {
 
 namespace dataset {
 
-DataQuery::DataQuery() : matcher(0), withData(false) {}
-DataQuery::DataQuery(const Matcher& matcher, bool withData) : matcher(matcher), withData(withData), sorter(0) {}
+DataQuery::DataQuery() : matcher(0) {}
+DataQuery::DataQuery(const Matcher& matcher) : matcher(matcher), sorter(0) {}
 DataQuery::~DataQuery() {}
 
 }
@@ -138,11 +138,6 @@ void DataQuery::lua_from_table(lua_State* L, int idx)
 	matcher = Matcher::lua_check(L, -1);
 	lua_pop(L, 1);
 
-	lua_pushstring(L, "withdata");
-	lua_gettable(L, 2);
-	withData = lua_toboolean(L, -1);
-	lua_pop(L, 1);
-
 	lua_pushstring(L, "sorter");
 	lua_gettable(L, 2);
 	const char* str_sorter = lua_tostring(L, -1);
@@ -163,11 +158,6 @@ void DataQuery::lua_push_table(lua_State* L, int idx) const
 	lua_pushstring(L, "matcher");
 	str = matcher.toString();
 	lua_pushstring(L, str.c_str());
-	lua_settable(L, idx);
-
-	// table["withdata"] = this->withData
-	lua_pushstring(L, "withdata");
-	lua_pushboolean(L, withData);
 	lua_settable(L, idx);
 
 	// table["sorter"] = this->sorter

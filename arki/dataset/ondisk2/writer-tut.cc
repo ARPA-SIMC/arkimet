@@ -277,7 +277,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         metadata::Collection mdc_pre;
         {
             std::auto_ptr<ReadonlyDataset> reader(makeReader());
-            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc_pre);
+            reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc_pre);
             wassert(actual(mdc_pre.size()) == 3);
         }
 
@@ -310,7 +310,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         metadata::Collection mdc_post;
         {
             std::auto_ptr<ReadonlyDataset> reader(makeReader());
-            reader->queryData(dataset::DataQuery(Matcher::parse(""), false), mdc_post);
+            reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc_post);
             wassert(actual(mdc_post.size()) == 3);
         }
 
@@ -428,18 +428,18 @@ void to::test<6>()
 
     wassert(actual(sys::fs::size("testdir/foo/bar/test.grib1")) == 44412*2);
 
-	{
-		// Test querying: reindexing should have chosen the last version of
-		// duplicate items
-		Reader reader(cfg);
-		ensure(reader.hasWorkingIndex());
-		metadata::Collection mdc;
-		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
-		ensure_equals(mdc.size(), 1u);
+    {
+        // Test querying: reindexing should have chosen the last version of
+        // duplicate items
+        Reader reader(cfg);
+        ensure(reader.hasWorkingIndex());
+        metadata::Collection mdc;
+        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+        ensure_equals(mdc.size(), 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
 
         mdc.clear();
-        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
         ensure_equals(mdc.size(), 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
     }
@@ -458,20 +458,20 @@ void to::test<6>()
 
     wassert(actual(sys::fs::size("testdir/foo/bar/test.grib1")) == 44412);
 
-	// Test querying, and see that things have moved to the beginning
-	Reader reader(cfg);
-	ensure(reader.hasWorkingIndex());
-	metadata::Collection mdc;
-	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
+    // Test querying, and see that things have moved to the beginning
+    Reader reader(cfg);
+    ensure(reader.hasWorkingIndex());
+    metadata::Collection mdc;
+    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    ensure_equals(mdc.size(), 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
 
-	// Query the second element and check that it starts after the first one
-	// (there used to be a bug where the rebuild would use the offsets of
-	// the metadata instead of the data)
-	mdc.clear();
-	reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
-	ensure_equals(mdc.size(), 1u);
+    // Query the second element and check that it starts after the first one
+    // (there used to be a bug where the rebuild would use the offsets of
+    // the metadata instead of the data)
+    mdc.clear();
+    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    ensure_equals(mdc.size(), 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
 
 	// Ensure that we have the summary cache
@@ -532,15 +532,15 @@ void to::test<8>()
 {
 	acquireSamples();
 
-	// Compress one data file
-	{
-		metadata::Collection mdc;
-		Reader reader(cfg);
-		reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
-		ensure_equals(mdc.size(), 1u);
-		mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
-		sys::fs::deleteIfExists("testdir/2007/07-08.grib1");
-	}
+    // Compress one data file
+    {
+        metadata::Collection mdc;
+        Reader reader(cfg);
+        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+        ensure_equals(mdc.size(), 1u);
+        mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
+        sys::fs::deleteIfExists("testdir/2007/07-08.grib1");
+    }
 
 	// The dataset should still be clean
 	{
