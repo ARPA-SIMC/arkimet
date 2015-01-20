@@ -57,8 +57,8 @@ namespace arki {
 
 namespace dataset {
 
-DataQuery::DataQuery() : matcher(0) {}
-DataQuery::DataQuery(const Matcher& matcher) : matcher(matcher), sorter(0) {}
+DataQuery::DataQuery() : matcher(0), with_data(false) {}
+DataQuery::DataQuery(const Matcher& matcher, bool with_data) : matcher(matcher), with_data(with_data), sorter(0) {}
 DataQuery::~DataQuery() {}
 
 }

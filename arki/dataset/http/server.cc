@@ -113,6 +113,8 @@ void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
 {
     using namespace wibble::net::http;
 
+    pmaker.server_side = true;
+
     // Configure the ProcessorMaker with the request
     if (style->empty() || *style == "metadata") {
         ;
@@ -159,7 +161,7 @@ QueryDataParams::QueryDataParams()
 void QueryDataParams::set_into(DataQuery& dq) const
 {
     dq.matcher = Matcher::parse(*matcher);
-    //dq.withData = *withdata == "true";
+    dq.with_data = *withdata == "true";
     if (!sorter->empty())
         dq.sorter = sort::Compare::parse(*sorter);
 }
@@ -294,6 +296,7 @@ void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, wibble::n
     MetadataStreamer cons(headers);
     DataQuery dq;
     parms.set_into(dq);
+// TODO: hook here something that makes absolute BLOB sources or Inline sources depending on sq.with_data
     ds.queryData(dq, cons);
 
     // If we had empty output, headers were not sent: catch up

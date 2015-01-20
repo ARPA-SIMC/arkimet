@@ -89,7 +89,7 @@ void init()
 HandledByCommandLineParser::HandledByCommandLineParser(int status) : status(status) {}
 HandledByCommandLineParser::~HandledByCommandLineParser() {}
 
-std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query)
+std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
 {
     auto_ptr<ReadonlyDataset> ds;
     string baseurl = dataset::HTTP::allSameRemoteServer(cfg);
@@ -106,6 +106,8 @@ std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const 
         cfg.setValue("type", "remote");
         cfg.setValue("path", baseurl);
         cfg.setValue("qmacro", query);
+        if (!url.empty())
+            cfg.setValue("url", url);
         ds.reset(ReadonlyDataset::create(cfg));
     }
     return ds;

@@ -91,11 +91,23 @@ namespace dataset {
 
 struct DataQuery
 {
+    /// Matcher used to select data
     Matcher matcher;
+
+    /**
+     * Hint for the dataset backend to let them know that we also want the data
+     * and not just the metadata.
+     *
+     * This is currently only used by the HTTP client dataset, which will only
+     * download data from the server if this option is set.
+     */
+    bool with_data;
+
+    /// Optional compare function to define a custom ordering of the result
     refcounted::Pointer<sort::Compare> sorter;
 
     DataQuery();
-    DataQuery(const Matcher& matcher);
+    DataQuery(const Matcher& matcher, bool with_data=false);
     ~DataQuery();
 
 	void lua_from_table(lua_State* L, int idx);

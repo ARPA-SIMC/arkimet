@@ -54,7 +54,7 @@ struct TargetFileProcessor : public DatasetProcessor
     Output& output;
     std::vector<std::string> description_attrs;
 
-    TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, Output& output);
+    TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, arki::Output& output);
     virtual ~TargetFileProcessor();
 
     virtual std::string describe() const;
@@ -70,6 +70,7 @@ struct ProcessorMaker
     bool annotate;
     bool data_only;
     bool data_inline;
+    bool server_side;
     std::string postprocess;
     std::string report;
 
@@ -79,7 +80,9 @@ struct ProcessorMaker
     metadata::Hook* data_start_hook;
 
     ProcessorMaker()
-        : summary(false), yaml(false), json(false), annotate(false), data_only(false), data_inline(false), data_start_hook(0)
+        : summary(false), yaml(false), json(false), annotate(false),
+          data_only(false), data_inline(false), server_side(false),
+          data_start_hook(0)
     {
     }
 

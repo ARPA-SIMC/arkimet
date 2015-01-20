@@ -74,9 +74,7 @@ struct DataOnly : public metadata::Eater
 };
 
 
-/**
- * Make all source blobs absolute
- */
+/// Make all source blobs absolute
 struct MakeAbsolute : public metadata::Eater
 {
     metadata::Eater& next;
@@ -85,6 +83,32 @@ struct MakeAbsolute : public metadata::Eater
 
     bool eat(std::auto_ptr<Metadata> md) override;
 };
+
+/// Make all sources URLs
+struct MakeURL : public metadata::Eater
+{
+    std::string url;
+    metadata::Eater& next;
+
+    MakeURL(metadata::Eater& next, const std::string& url) : next(next), url(url) {}
+
+    bool eat(std::auto_ptr<Metadata> md) override;
+};
+
+/// Make all metadata inline sources, loading data if needed
+struct MakeInline : public metadata::Eater
+{
+    metadata::Eater& next;
+
+    MakeInline(metadata::Eater& next) : next(next) {}
+
+    bool eat(std::auto_ptr<Metadata> md) override
+    {
+        md->makeInline();
+        return next.eat(md);
+    }
+};
+
 
 }
 }

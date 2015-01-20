@@ -51,19 +51,6 @@ metadata::Printer* createPrinter(ProcessorMaker& maker, arki::Output& out)
         return new metadata::BinaryPrinter(out);
 }
 
-struct Inliner : public metadata::Eater
-{
-    metadata::Eater& next;
-
-    Inliner(metadata::Eater& next) : next(next) {}
-
-    bool eat(auto_ptr<Metadata> md) override
-    {
-        md->makeInline();
-        return next.eat(md);
-    }
-};
-
 struct DataProcessor : public DatasetProcessor
 {
     arki::Output& output;
@@ -71,14 +58,18 @@ struct DataProcessor : public DatasetProcessor
     dataset::DataQuery query;
     vector<string> description_attrs;
     bool data_inline;
+    bool server_side;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out, bool data_inline=false)
-        : output(out), printer(createPrinter(maker, out)), query(q), data_inline(data_inline)
+        : output(out), printer(createPrinter(maker, out)), query(q),
+          data_inline(data_inline), server_side(maker.server_side)
     {
         description_attrs.push_back("query=" + q.toString());
         description_attrs.push_back("printer=" + printer->describe());
         if (data_inline)
             description_attrs.push_back("data_inline=true");
+        if (maker.server_side)
+            description_attrs.push_back("server_side=true");
         if (!maker.sort.empty())
         {
             description_attrs.push_back("sort=" + maker.sort);
@@ -103,8 +94,18 @@ struct DataProcessor : public DatasetProcessor
     {
         if (data_inline)
         {
-            Inliner inliner(*printer);
+            utils::ds::MakeInline inliner(*printer);
             ds.queryData(query, inliner);
+        } else if (server_side) {
+            map<string, string>::const_iterator iurl = ds.cfg.find("url");
+            if (iurl == ds.cfg.end())
+            {
+                utils::ds::MakeAbsolute absoluter(*printer);
+                ds.queryData(query, absoluter);
+            } else {
+                utils::ds::MakeURL urler(*printer, iurl->second);
+                ds.queryData(query, urler);
+            }
         } else {
             utils::ds::MakeAbsolute absoluter(*printer);
             ds.queryData(query, absoluter);

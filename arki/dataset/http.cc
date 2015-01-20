@@ -304,8 +304,8 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 		postdata += urlencode(";MISCHIEF");
 		m_mischief = false;
 	}
-    //if (q.withData)
-    //  postdata += "&style=inline";
+    if (q.with_data)
+      postdata += "&style=inline";
 #else
 	string url = joinpath(m_baseurl, "querydata");
 	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
@@ -325,8 +325,8 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 		postdata += urlencode(";MISCHIEF");
 		m_mischief = false;
 	}
-    //if (q.withData)
-    //    postdata += "&withdata=true";
+    if (q.with_data)
+        postdata += "&withdata=true";
 #endif
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());

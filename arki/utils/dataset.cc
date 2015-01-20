@@ -51,6 +51,12 @@ bool MakeAbsolute::eat(auto_ptr<Metadata> md)
     return next.eat(md);
 }
 
+bool MakeURL::eat(std::auto_ptr<Metadata> md)
+{
+    md->set_source(Source::createURL(md->source().format, url));
+    return next.eat(md);
+}
+
 }
 }
 }

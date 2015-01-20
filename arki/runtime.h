@@ -51,7 +51,7 @@ class MetadataDispatch;
  */
 void init();
 
-std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query);
+std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url=std::string());
 
 /**
  * Exception raised when the command line parser has handled the current

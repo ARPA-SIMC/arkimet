@@ -169,7 +169,11 @@ struct Request : public net::http::Request
 
     auto_ptr<ReadonlyDataset> get_dataset(const ConfigFile& cfg)
     {
-        return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(cfg));
+        ConfigFile localcfg(cfg);
+        string url(server_name);
+        url += script_name;
+        localcfg.setValue("url", url);
+        return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(localcfg));
     }
 
     void log_action(const std::string& action)
@@ -391,7 +395,7 @@ struct RootQueryHandler : public LocalHandler
         if (macroname.empty())
             throw error400("root-level query without qmacro parameter");
         auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
-                req.arki_conf, macroname, *params.query);
+                req.arki_conf, macroname, *params.query, req.server_name);
 
         // params.query contains the qmacro query body; we need to clear the
         // query so do_query gets an empty match expression

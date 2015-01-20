@@ -70,7 +70,7 @@ void to::test<1>()
     ensure_equals(config.section("error")->value("server"), "http://localhost:7117");
 }
 
-// Test querying the datasets
+// Test querying the datasets, metadata only
 template<> template<>
 void to::test<2>()
 {
@@ -82,7 +82,7 @@ void to::test<2>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", "http://localhost:7117/dataset/test200", "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
 
     mdc.clear();
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
@@ -93,9 +93,29 @@ void to::test<2>()
     ensure_equals(mdc.size(), 0u);
 }
 
-// Test querying the summary
+// Test querying the datasets, with inline data
 template<> template<>
 void to::test<3>()
+{
+    dataset::HTTP::readConfig("http://localhost:7117", config);
+    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    metadata::Collection mdc;
+
+    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
+    ensure_equals(mdc.size(), 1u);
+
+    // Check that the source record that comes out is ok
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
+    wassert(actual(mdc[0].getData().size()) == 7218);
+
+    mdc.clear();
+    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
+    ensure_equals(mdc.size(), 0u);
+}
+
+// Test querying the summary
+template<> template<>
+void to::test<4>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
     auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
@@ -107,7 +127,7 @@ void to::test<3>()
 
 // Test querying with postprocessing
 template<> template<>
-void to::test<4>()
+void to::test<5>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
     auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
@@ -124,7 +144,7 @@ void to::test<4>()
 
 // Test the server giving an error
 template<> template<>
-void to::test<5>()
+void to::test<6>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
     auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
@@ -168,7 +188,7 @@ void to::test<5>()
 
 // Test expanding a query
 template<> template<>
-void to::test<6>()
+void to::test<7>()
 {
     ensure_equals(dataset::HTTP::expandMatcher("origin:GRIB1,200;product:t", "http://localhost:7117"),
           "origin:GRIB1,200; product:GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167 or GRIB1,200,200,11 or GRIB2,200,0,200,11");
@@ -182,7 +202,7 @@ void to::test<6>()
 
 // Test querying the datasets via macro
 template<> template<>
-void to::test<7>()
+void to::test<8>()
 {
     ConfigFile cfg;
     cfg.setValue("name", "noop");
@@ -195,12 +215,12 @@ void to::test<7>()
     testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
     ensure_equals(mdc.size(), 1u);
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", "http://localhost:7117/dataset/test200", "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
 }
 
 // Test querying the summary
 template<> template<>
-void to::test<8>()
+void to::test<9>()
 {
     ConfigFile cfg;
     cfg.setValue("name", "noop");
@@ -216,7 +236,7 @@ void to::test<8>()
 
 // Test a postprocessor that outputs data and then exits with error
 template<> template<>
-void to::test<9>()
+void to::test<10>()
 {
     ConfigFile cfg;
     dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
@@ -239,7 +259,7 @@ void to::test<9>()
 // Test data integrity of postprocessed queries through a server (used to fail
 // after offset 0xc00)
 template<> template<>
-void to::test<10>()
+void to::test<11>()
 {
     using namespace arki::dataset;
 
@@ -342,5 +362,3 @@ void to::test<10>()
 
 
 }
-
-// vim:set ts=4 sw=4:
