@@ -80,7 +80,7 @@ bool Row::matches(const Matcher& matcher) const
         if (!j->second->matchItem(*items[i])) return false;
     }
     matcher::AND::const_iterator rm = mand.find(types::TYPE_REFTIME);
-    if (rm != mand.end() && !rm->second->matchItem(*stats.reftimeMerger.makeReftime()))
+    if (rm != mand.end() && !rm->second->matchItem(*stats.make_reftime()))
         return false;
     return true;
 }

@@ -178,7 +178,7 @@ public:
     void refine_reftime(const dballe::Msg& msg)
     {
         static int srcs[] = { DBA_MSG_YEAR, DBA_MSG_MONTH, DBA_MSG_DAY, DBA_MSG_HOUR, DBA_MSG_MINUTE, DBA_MSG_SECOND };
-        types::Time time;
+        types::Time time(0, 0, 0);
 
         for (unsigned i = 0; i < 6; ++i)
         {

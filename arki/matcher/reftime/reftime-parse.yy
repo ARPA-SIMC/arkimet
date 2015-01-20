@@ -191,18 +191,18 @@ Unexpected: UNEXPECTED		{ state.unexpected = string() + $1; }
 		 					{ state.unexpected += $2; }
 		 ;
 
-DateExpr : GE Absolute		{ $$ = new DateGE($2); }
-         | GT Absolute		{ $$ = new DateGT($2); }
-		 | LE Absolute		{ $$ = new DateLE($2); }
-		 | LT Absolute		{ $$ = new DateLT($2); }
-		 | EQ Absolute		{ $$ = new DateEQ($2); }
+DateExpr : GE Absolute		{ $$ = DTMatch::createGE($2); }
+         | GT Absolute		{ $$ = DTMatch::createGT($2); }
+		 | LE Absolute		{ $$ = DTMatch::createLE($2); }
+		 | LT Absolute		{ $$ = DTMatch::createLT($2); }
+		 | EQ Absolute		{ $$ = DTMatch::createEQ($2); }
 		 ;
 
-TimeExpr : GE Daytime		{ $$ = new TimeGE($2); }
-         | GT Daytime		{ $$ = new TimeGT($2); }
-		 | LE Daytime		{ $$ = new TimeLE($2); }
-		 | LT Daytime		{ $$ = new TimeLT($2); }
-		 | EQ Daytime		{ $$ = new TimeEQ($2); }
+TimeExpr : GE Daytime		{ $$ = DTMatch::createTimeGE($2); }
+         | GT Daytime		{ $$ = DTMatch::createTimeGT($2); }
+		 | LE Daytime		{ $$ = DTMatch::createTimeLE($2); }
+		 | LT Daytime		{ $$ = DTMatch::createTimeLT($2); }
+		 | EQ Daytime		{ $$ = DTMatch::createTimeEQ($2); }
 		 ;
 
 Interval : INTERVAL						{ init_interval($$, $1.val, $1.idx); }

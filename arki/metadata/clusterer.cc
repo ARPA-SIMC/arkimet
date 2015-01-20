@@ -90,7 +90,7 @@ void Clusterer::add_to_batch(Metadata& md, const sys::Buffer& buf)
         md_to_interval(md, cur_interval);
     const Reftime* rt = md.get<types::Reftime>();
     if (!rt) return;
-    timespan.merge(*rt);
+    rt->expand_date_range(timespan_begin, timespan_end);
     if (split_timerange and not last_timerange)
         last_timerange = md.get<types::Timerange>()->clone();
 }
@@ -102,7 +102,8 @@ void Clusterer::flush_batch()
     count = 0;
     size = 0;
     cur_interval[0] = -1;
-    timespan.clear();
+    timespan_begin.reset(0);
+    timespan_end.reset(0);
     if (split_timerange)
     {
         delete last_timerange;
@@ -136,14 +137,7 @@ void Clusterer::md_to_interval(const Metadata& md, int* interval) const
 {
     const Reftime* rt = md.get<Reftime>();
     if (!rt) throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");
-    Time t;
-    switch (rt->style())
-    {
-        case types::Reftime::POSITION: t = dynamic_cast<const types::reftime::Position*>(rt)->time; break;
-        case types::Reftime::PERIOD: t = dynamic_cast<const types::reftime::Period*>(rt)->end; break;
-        default:
-            throw wibble::exception::Consistency("computing time interval", "reference time has invalid style: " + types::Reftime::formatStyle(rt->style()));
-    }
+    Time t(rt->period_end());
     for (unsigned i = 0; i < 6; ++i)
         interval[i] = i < max_interval ? t.vals[i] : -1;
 }

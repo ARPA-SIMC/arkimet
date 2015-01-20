@@ -179,25 +179,25 @@ Stream::~Stream()
 
 void Stream::setEndOfPeriod(const types::Reftime& rt)
 {
-    endofperiod = rt.period_begin();
+    endofperiod.reset(new Time(rt.period_begin()));
     switch (sorter.interval())
     {
-        case Compare::YEAR: endofperiod.vals[1] = -1;
-        case Compare::MONTH: endofperiod.vals[2] = -1;
-        case Compare::DAY: endofperiod.vals[3] = -1;
-        case Compare::HOUR: endofperiod.vals[4] = -1;
-        case Compare::MINUTE: endofperiod.vals[5] = -1; break;
+        case Compare::YEAR: endofperiod->vals[1] = -1;
+        case Compare::MONTH: endofperiod->vals[2] = -1;
+        case Compare::DAY: endofperiod->vals[3] = -1;
+        case Compare::HOUR: endofperiod->vals[4] = -1;
+        case Compare::MINUTE: endofperiod->vals[5] = -1; break;
         default:
             throw wibble::exception::Consistency("setting end of period", "interval type has invalid value: " + str::fmt((int)sorter.interval()));
     }
-    wibble::grcal::date::upperbound(endofperiod.vals);
+    wibble::grcal::date::upperbound(endofperiod->vals);
 //cerr << "Set end of period to " << endofperiod << endl;
 }
 
 bool Stream::eat(auto_ptr<Metadata> m)
 {
     const Reftime* rt = m->get<Reftime>();
-    if (hasInterval && (!endofperiod.isValid() || !rt || rt->period_begin() > endofperiod))
+    if (hasInterval && (!endofperiod.get() || !rt || rt->period_begin() > *endofperiod))
     {
         flush();
         buffer.push_back(m.release());

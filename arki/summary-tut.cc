@@ -335,7 +335,8 @@ void to::test<14>()
     summary::Stats st;
     st.count = 5;
     st.size = 123456;
-    st.reftimeMerger.mergeTime(Time(2008, 7, 6, 5, 4, 3), Time(2008, 9, 8, 7, 6, 5));
+    st.begin = Time(2008, 7, 6, 5, 4, 3);
+    st.end = Time(2008, 9, 8, 7, 6, 5);
 
     s.add(md3, st);
 
@@ -437,6 +438,19 @@ void to::test<19>()
     ensure_equals(s1, s);
     ensure_equals(s1.count(), 2u);
     ensure_equals(s1.size(), 30u);
+}
+
+// Test loading and saving summaries that summarise data where
+// 0000-00-00T00:00:00Z is a valid timestamp
+template<> template<>
+void to::test<20>()
+{
+    Summary s;
+    s.readFile("inbound/00-00.bufr.summary");
+    auto_ptr<types::Reftime> rt = s.getReferenceTime();
+    cerr << *rt << endl;
+
+    s.write(cerr, "stderr");
 }
 
 }

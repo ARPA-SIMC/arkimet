@@ -42,7 +42,6 @@ void to::test<1>()
 {
     Metadata md;
     scan::NetCDF scanner;
-    types::Time reftime;
     wibble::sys::Buffer buf;
 
     scanner.open("inbound/example_1.nc");

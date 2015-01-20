@@ -335,6 +335,11 @@ class PlainManifest : public Manifest
         types::Time start_time;
         types::Time end_time;
 
+        Info(const std::string& file, time_t mtime, const Time& start, const Time& end)
+            : file(file), mtime(mtime), start_time(start), end_time(end)
+        {
+        }
+
 		bool operator<(const Info& i) const
 		{
 			return file < i.file;
@@ -387,8 +392,6 @@ class PlainManifest : public Manifest
 		string line;
 		for (size_t lineno = 1; !in.eof(); ++lineno)
 		{
-			Info item;
-
 			getline(in, line);
 			if (in.fail() && !in.eof())
 				throw wibble::exception::File(pathname, "reading one line");
@@ -402,15 +405,15 @@ class PlainManifest : public Manifest
 				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
 						"line has only 1 field");
 
-			item.file = line.substr(beg, end-beg);
-			
+            string file = line.substr(beg, end-beg);
+
 			beg = end + 1;
 			end = line.find(';', beg);
 			if (end == string::npos)
 				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
 						"line has only 2 fields");
 
-			item.mtime = strtoul(line.substr(beg, end-beg).c_str(), 0, 10);
+            time_t mtime = strtoul(line.substr(beg, end-beg).c_str(), 0, 10);
 
 			beg = end + 1;
 			end = line.find(';', beg);
@@ -418,10 +421,10 @@ class PlainManifest : public Manifest
 				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
 						"line has only 3 fields");
 
-            item.start_time.setFromSQL(line.substr(beg, end-beg));
-            item.end_time.setFromSQL(line.substr(end+1));
-
-            info.push_back(item);
+            info.push_back(Info(
+                        file, mtime,
+                        Time::create_from_SQL(line.substr(beg, end-beg)),
+                        Time::create_from_SQL(line.substr(end+1))));
         }
 
 		in.close();
@@ -454,58 +457,59 @@ public:
         rw = true;
     }
 
-	void fileList(const Matcher& matcher, std::vector<std::string>& files)
-	{
-		reread();
+    void fileList(const Matcher& matcher, std::vector<std::string>& files)
+    {
+        reread();
 
         string query;
-        Time begin;
-        Time end;
-		if (matcher.date_extremes(begin, end))
-		{
+        auto_ptr<Time> begin;
+        auto_ptr<Time> end;
+        if (!matcher.restrict_date_range(begin, end))
+            return;
+
+        if (!begin.get() && !end.get())
+        {
+            // No restrictions on reftime: get all files
+            for (vector<Info>::const_iterator i = info.begin();
+                    i != info.end(); ++i)
+                files.push_back(i->file);
+        } else {
             // Get files with matching reftime
             for (vector<Info>::const_iterator i = info.begin();
                     i != info.end(); ++i)
             {
-                if (begin.isValid() && i->end_time < begin) continue;
-                if (end.isValid() && i->start_time > end) continue;
+                if (begin.get() && i->end_time < *begin) continue;
+                if (end.get() && i->start_time > *end) continue;
                 files.push_back(i->file);
             }
-		} else {
-			// No restrictions on reftime: get all files
-			for (vector<Info>::const_iterator i = info.begin();
-					i != info.end(); ++i)
-				files.push_back(i->file);
-		}
-	}
-
-    void fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
-    {
-		// Lookup the file (FIXME: reimplement binary search so we
-		// don't need to create a temporary Info)
-		Info sample;
-		sample.file = relname;
-		vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
-		if (lb != info.end() && lb->file == relname)
-		{
-			start_time = lb->start_time;
-			end_time = lb->end_time;
-        } else {
-            start_time.setInvalid();
-            end_time.setInvalid();
         }
     }
 
-    bool date_extremes(Time& begin, Time& end) const override
+    bool fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    {
+        // Lookup the file (FIXME: reimplement binary search so we
+        // don't need to create a temporary Info)
+        Info sample(relname, 0, Time(0, 0, 0), Time(0, 0, 0));
+        vector<Info>::const_iterator lb = lower_bound(info.begin(), info.end(), sample);
+        if (lb != info.end() && lb->file == relname)
+        {
+            start_time = lb->start_time;
+            end_time = lb->end_time;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const override
     {
         for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
         {
-            if (!begin.isValid() || (i->start_time.isValid() && i->start_time < begin))
-                begin = i->start_time;
-            if (!end.isValid() || (i->end_time.isValid() && i->end_time > end))
-                end = i->end_time;
+            if (!begin.get() || (i->start_time.isValid() && i->start_time < *begin))
+                begin.reset(new Time(i->start_time));
+            if (!end.get() || (i->end_time.isValid() && i->end_time > *end))
+                end.reset(new Time(i->end_time));
         }
-        return !info.empty();
     }
 
 	void vacuum()
@@ -521,32 +525,10 @@ public:
 	{
 		reread();
 
-		Info item;
-		item.file = relname;
-		item.mtime = mtime;
-
         // Add to index
         auto_ptr<Reftime> rt = sum.getReferenceTime();
 
-        string bt;
-        string et;
-
-        switch (rt->style())
-        {
-            case types::Reftime::POSITION: {
-                const reftime::Position* p = dynamic_cast<const reftime::Position*>(rt.get());
-                item.start_time = item.end_time = p->time;
-                break;
-            }
-            case types::Reftime::PERIOD: {
-                const reftime::Period* p = dynamic_cast<const reftime::Period*>(rt.get());
-                item.start_time = p->begin;
-                item.end_time = p->end;
-                break;
-            }
-            default:
-                throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
-        }
+        Info item(relname, mtime, rt->period_begin(), rt->period_end());
 
 		// Insertion sort; at the end, everything is already sorted and we
 		// avoid inserting lots of duplicate items
@@ -782,27 +764,30 @@ public:
     void fileList(const Matcher& matcher, std::vector<std::string>& files) override
     {
         string query;
-        Time begin;
-        Time end;
-		if (matcher.date_extremes(begin, end))
-		{
-			query = "SELECT file FROM files";
+        auto_ptr<Time> begin;
+        auto_ptr<Time> end;
+        if (!matcher.restrict_date_range(begin, end))
+            return;
 
-			if (begin.isValid())
-				query += " WHERE end_time >= '" + begin.toSQL() + "'";
-			if (end.isValid())
-			{
-				if (begin.isValid())
-					query += " AND start_time <= '" + end.toSQL() + "'";
-				else
-					query += " WHERE start_time <= '" + end.toSQL() + "'";
-			}
+        if (!begin.get() && !end.get())
+        {
+            // No restrictions on reftime: get all files
+            query = "SELECT file FROM files ORDER BY file";
+        } else {
+            query = "SELECT file FROM files";
 
-			query += " ORDER BY file";
-		} else {
-			// No restrictions on reftime: get all files
-			query = "SELECT file FROM files ORDER BY file";
-		}
+            if (begin.get())
+                query += " WHERE end_time >= '" + begin->toSQL() + "'";
+            if (end.get())
+            {
+                if (begin.get())
+                    query += " AND start_time <= '" + end->toSQL() + "'";
+                else
+                    query += " WHERE start_time <= '" + end->toSQL() + "'";
+            }
+
+            query += " ORDER BY file";
+        }
 
 		// cerr << "Query: " << query << endl;
 		
@@ -812,42 +797,37 @@ public:
 			files.push_back(q.fetchString(0));
 	}
 
-    void fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
+    bool fileTimespan(const std::string& relname, Time& start_time, Time& end_time) const override
     {
 		Query q("sel_file_ts", m_db);
 		q.compile("SELECT start_time, end_time FROM files WHERE file=?");
 		q.bind(1, relname);
 
-        start_time.setInvalid();
-        end_time.setInvalid();
+        bool found = false;
         while (q.step())
         {
             start_time.setFromSQL(q.fetchString(0));
             end_time.setFromSQL(q.fetchString(1));
-        }
-    }
-
-    bool date_extremes(Time& begin, Time& end) const override
-    {
-		Query q("sel_date_extremes", m_db);
-		q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
-
-        bool found = false;
-        Time st;
-        Time et;
-        while (q.step())
-        {
-            st.setFromSQL(q.fetchString(0));
-            et.setFromSQL(q.fetchString(1));
-
-            if (!begin.isValid() || (st.isValid() && st < begin))
-                begin = st;
-            if (!end.isValid() || (et.isValid() && et > end))
-                end = et;
-
             found = true;
         }
         return found;
+    }
+
+    void expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const override
+    {
+        Query q("sel_date_extremes", m_db);
+        q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
+
+        while (q.step())
+        {
+            Time st(Time::create_from_SQL(q.fetchString(0)));
+            Time et(Time::create_from_SQL(q.fetchString(1)));
+
+            if (!begin.get() || st < *begin)
+                begin.reset(new Time(st));
+            if (!end.get() || et > *end)
+                end.reset(new Time(st));
+        }
     }
 
 	void vacuum()

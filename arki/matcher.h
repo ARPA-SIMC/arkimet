@@ -295,12 +295,16 @@ struct Matcher
 	void split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const;
 
     /**
-     * Compute the date extremes of this matcher
+     * Restrict date extremes to be no wider than what is matched by this
+     * matcher.
      *
-     * @returns true if the range has at least one bound (i.e. either with
-     * or without are defined), false otherwise
+     * An auto_ptr set to NULL means an open end in the range. Date extremes
+     * are inclusive on both ends.
+     *
+     * @returns true if the matcher has consistent reference time expressions,
+     * false if the match is impossible (like reftime:<2014,>2015)
      */
-    bool date_extremes(types::Time& begin, types::Time& end) const;
+    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
 
     /// Format back into a string that can be parsed again
     std::string toString() const

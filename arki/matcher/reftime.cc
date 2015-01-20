@@ -87,12 +87,12 @@ std::string MatchReftime::sql(const std::string& column) const
 	return res + ")";
 }
 
-void MatchReftime::dateRange(types::Time& begin, types::Time& end) const
+bool MatchReftime::restrict_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
 {
-    begin.setInvalid();
-    end.setInvalid();
     for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
-        (*i)->restrictDateRange(begin, end);
+        if (!(*i)->restrict_date_range(begin, end))
+            return false;
+    return true;
 }
 
 std::string MatchReftime::toString() const

@@ -54,18 +54,18 @@ struct MatchReftime : public Implementation
     std::string sql(const std::string& column) const;
 
     /**
-     * Get the date extremes matched by this matcher.
+     * Restrict a datetime range, returning the new range endpoints in begin
+     * and end.
      *
-     * The interval includes the two extremes.
+     * A NULL auto_ptr means an open end.
+     *
+     * Returns true if the result is a valid interval, false if this match does
+     * not match the given interval at all.
      *
      * There can be further restrictions than this interval (for example,
      * restrictions on the time of the day).
-     *
-     * @returns The start and end date and time for this matcher.
-     *   If begin or end are all zeros, it means that the interval is
-     *   open-ended.
      */
-    void dateRange(types::Time& begin, types::Time& end) const;
+    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
 
     static MatchReftime* parse(const std::string& pattern);
     static void init();

@@ -56,7 +56,6 @@ void to::test<1>()
 {
 	Metadata md;
 	scan::Bufr scanner;
-	types::Time reftime;
 	wibble::sys::Buffer buf;
 
 	scanner.open("inbound/test.bufr");
@@ -141,7 +140,6 @@ void to::test<2>()
 {
 	Metadata md;
 	scan::Bufr scanner;
-	types::Time reftime;
 	wibble::sys::Buffer buf;
 
 	scanner.open("inbound/padded.bufr");
@@ -261,7 +259,6 @@ void to::test<4>()
 {
 	Metadata md;
 	scan::Bufr scanner;
-	types::Time reftime;
 	wibble::sys::Buffer buf;
 
 	scanner.open("inbound/C23000.bufr");
@@ -302,7 +299,6 @@ void to::test<5>()
 {
 	Metadata md;
 	scan::Bufr scanner;
-	types::Time reftime;
 	wibble::sys::Buffer buf;
 
 	scanner.open("inbound/pollution.bufr");

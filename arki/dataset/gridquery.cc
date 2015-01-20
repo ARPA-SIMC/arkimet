@@ -319,7 +319,7 @@ static int arkilua_addtime(lua_State *L)
 {
     GridQuery* gq = GridQuery::lua_check(L, 1);
     const char* timestr luaL_checkstring(L, 2);
-    gq->addTime(*Time::createFromSQL(timestr));
+    gq->addTime(Time::create_from_SQL(timestr));
     return 0;
 }
 
@@ -329,8 +329,8 @@ static int arkilua_addtimes(lua_State *L)
 	const char* tstart = luaL_checkstring(L, 2);
 	const char* tend = luaL_checkstring(L, 3);
 	int tstep = luaL_checkinteger(L, 4);
-    gq->addTimes(*Time::createFromSQL(tstart),
-            *Time::createFromSQL(tend),
+    gq->addTimes(Time::create_from_SQL(tstart),
+            Time::create_from_SQL(tend),
             tstep);
     return 0;
 }

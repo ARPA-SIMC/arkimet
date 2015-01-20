@@ -161,7 +161,7 @@ struct CheckAge : public maintenance::MaintFileVisitor
 };
 
 CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archive_age, int delete_age)
-	: next(next), idx(idx)
+	: next(next), idx(idx), archive_threshold(0, 0, 0), delete_threshold(0, 0, 0)
 {
 	time_t now = time(NULL);
 	struct tm t;
@@ -185,13 +185,14 @@ CheckAge::CheckAge(MaintFileVisitor& next, const index::Manifest& idx, int archi
 
 void CheckAge::operator()(const std::string& file, data::FileState state)
 {
-    if (!archive_threshold.isValid() and !delete_threshold.isValid())
+    if (archive_threshold.vals[0] == 0 and delete_threshold.vals[0] == 0)
         next(file, state);
     else
     {
-        Time start_time;
-        Time end_time;
-        idx.fileTimespan(file, start_time, end_time);
+        Time start_time(0, 0, 0);
+        Time end_time(0, 0, 0);
+        if (!idx.fileTimespan(file, start_time, end_time))
+            next(file, state);
 
         //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
         if (delete_threshold.isValid() && delete_threshold > end_time)

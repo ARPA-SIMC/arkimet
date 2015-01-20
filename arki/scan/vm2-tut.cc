@@ -46,7 +46,6 @@ void to::test<1>()
 {
     Metadata md;
     scan::Vm2 scanner;
-    types::Time reftime;
     wibble::sys::Buffer buf;
 
     scanner.open("inbound/test.vm2");
@@ -117,7 +116,6 @@ void to::test<3>()
 {
     Metadata md;
     scan::Vm2 scanner;
-    types::Time reftime;
     wibble::sys::Buffer buf;
 
     scanner.open("inbound/test.vm2");

@@ -141,9 +141,9 @@ size_t OnlineArchive::produce_nth(metadata::Eater& cons, size_t idx)
     return m_mft->produce_nth(cons, idx);
 }
 
-bool OnlineArchive::date_extremes(Time& begin, Time& end) const
+void OnlineArchive::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
 {
-    return m_mft->date_extremes(begin, end);
+    m_mft->expand_date_range(begin, end);
 }
 
 void OnlineArchive::acquire(const std::string& relname)
@@ -298,9 +298,9 @@ size_t OfflineArchive::produce_nth(metadata::Eater& cons, size_t idx)
     return 0;
 }
 
-bool OfflineArchive::date_extremes(Time& begin, Time& end) const
+void OfflineArchive::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
 {
-    return sum.date_extremes(begin, end);
+    sum.expand_date_range(begin, end);
 }
 
 void OfflineArchive::acquire(const std::string& relname)
@@ -520,45 +520,47 @@ void Archives::rebuild_summary_cache()
 
 void Archives::querySummary(const Matcher& matcher, Summary& summary)
 {
-    Time matcher_begin;
-    Time matcher_end;
+    auto_ptr<Time> matcher_begin;
+    auto_ptr<Time> matcher_end;
+    if (!matcher.restrict_date_range(matcher_begin, matcher_end))
+        // If the matcher is inconsistent, return now
+        return;
 
     // Extract date range from matcher
-    if (matcher.date_extremes(matcher_begin, matcher_end))
+    if (!matcher_begin.get() && !matcher_end.get())
     {
-        // Query only archives that fit that date range
-        for (map<string, Archive*>::iterator i = m_archives.begin();
-                i != m_archives.end(); ++i)
-        {
-            Time arc_begin;
-            Time arc_end;
-            if (!i->second->date_extremes(arc_begin, arc_end)
-                    || types::Time::range_overlaps(matcher_begin, matcher_end, arc_begin, arc_end))
-                i->second->querySummary(matcher, summary);
-        }
-        if (m_last)
-        {
-            Time arc_begin;
-            Time arc_end;
-            if (!m_last->date_extremes(arc_begin, arc_end)
-                    || types::Time::range_overlaps(matcher_begin, matcher_end, arc_begin, arc_end))
-                m_last->querySummary(matcher, summary);
-        }
-    } else {
         // Use archive summary cache
         Summary s;
         summary_for_all(s);
         s.filter(matcher, summary);
+        return;
+    }
+
+    // Query only archives that fit that date range
+    for (map<string, Archive*>::iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
+    {
+        auto_ptr<Time> arc_begin;
+        auto_ptr<Time> arc_end;
+        i->second->expand_date_range(arc_begin, arc_end);
+        if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
+            i->second->querySummary(matcher, summary);
+    }
+    if (m_last)
+    {
+        auto_ptr<Time> arc_begin;
+        auto_ptr<Time> arc_end;
+        m_last->expand_date_range(arc_begin, arc_end);
+        if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
+            m_last->querySummary(matcher, summary);
     }
 }
 
-bool Archives::date_extremes(Time& begin, Time& end) const
+void Archives::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
 {
-    bool res = false;
     for (map<string, Archive*>::const_iterator i = m_archives.begin();
             i != m_archives.end(); ++i)
-        res |= i->second->date_extremes(begin, end);
-    return res;
+        i->second->expand_date_range(begin, end);
 }
 
 size_t Archives::produce_nth(metadata::Eater& cons, size_t idx)

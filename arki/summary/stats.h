@@ -64,9 +64,10 @@ struct Stats : public types::CoreType<Stats>
 {
     size_t count;
     uint64_t size;
-    types::reftime::Collector reftimeMerger;
+    types::Time begin;
+    types::Time end;
 
-    Stats() : count(0), size(0) {}
+    Stats();
     Stats(const Metadata& md);
 
     int compare(const Type& o) const override;
@@ -74,6 +75,8 @@ struct Stats : public types::CoreType<Stats>
 
     void merge(const Stats& s);
     void merge(const Metadata& md);
+
+    std::auto_ptr<types::Reftime> make_reftime() const;
 
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;

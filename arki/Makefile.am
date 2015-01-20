@@ -226,6 +226,7 @@ libarkimet_la_SOURCES += \
 		matcher/level.cc \
 		matcher/timerange.cc \
 		matcher/reftime.cc \
+		matcher/reftime/parser.cc \
 		matcher/reftime/reftime-lex.cc \
 		matcher/reftime/reftime-parse.cc \
 		matcher/area.cc \

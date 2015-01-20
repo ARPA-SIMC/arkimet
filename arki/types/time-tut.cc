@@ -59,7 +59,7 @@ void to::test<1>()
     wassert(actual(o) == Time::createFromISO8601(o->toISO8601()));
 
     // Test deserialisation from SQL
-    wassert(actual(o) == Time::createFromSQL(o->toSQL()));
+    wassert(actual(o) == Time::create_from_SQL(o->toSQL()));
 
     wassert(actual(o).serializes());
 }
@@ -84,7 +84,7 @@ void to::test<2>()
     wassert(actual(o) == Time::createFromISO8601(o->toISO8601()));
 
     // Test deserialisation from SQL
-    wassert(actual(o) == Time::createFromSQL(o->toSQL()));
+    wassert(actual(o) == Time::create_from_SQL(o->toSQL()));
 
     wassert(actual(o).serializes());
 }
@@ -167,24 +167,24 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-    Time topen;
-    Time t2000(2000, 1, 1, 0, 0, 0);
-    Time t2005(2005, 1, 1, 0, 0, 0);
-    Time t2007(2007, 1, 1, 0, 0, 0);
-    Time t2010(2010, 1, 1, 0, 0, 0);
+    auto_ptr<Time> topen;
+    auto_ptr<Time> t2000(new Time(2000, 1, 1, 0, 0, 0));
+    auto_ptr<Time> t2005(new Time(2005, 1, 1, 0, 0, 0));
+    auto_ptr<Time> t2007(new Time(2007, 1, 1, 0, 0, 0));
+    auto_ptr<Time> t2010(new Time(2010, 1, 1, 0, 0, 0));
 
-    wassert(actual(Time::range_overlaps(topen, topen, topen, topen)).istrue());
-    wassert(actual(Time::range_overlaps(topen, topen, t2005, t2010)).istrue());
-    wassert(actual(Time::range_overlaps(t2005, t2010, topen, topen)).istrue());
-    wassert(actual(Time::range_overlaps(t2005, topen, topen, topen)).istrue());
-    wassert(actual(Time::range_overlaps(t2005, topen, t2010, topen)).istrue());
-    wassert(actual(Time::range_overlaps(t2010, topen, t2005, topen)).istrue());
-    wassert(actual(Time::range_overlaps(topen, t2005, topen, t2010)).istrue());
-    wassert(actual(Time::range_overlaps(topen, t2010, topen, t2005)).istrue());
-    wassert(actual(Time::range_overlaps(t2010, topen, topen, t2010)).istrue());
-    wassert(actual(Time::range_overlaps(t2000, t2005, t2007, t2010)).isfalse());
-    wassert(actual(Time::range_overlaps(t2007, t2010, t2000, t2005)).isfalse());
-    wassert(actual(Time::range_overlaps(t2010, topen, topen, t2005)).isfalse());
+    wassert(actual(Time::range_overlaps(topen.get(), topen.get(), topen.get(), topen.get())).istrue());
+    wassert(actual(Time::range_overlaps(topen.get(), topen.get(), t2005.get(), t2010.get())).istrue());
+    wassert(actual(Time::range_overlaps(t2005.get(), t2010.get(), topen.get(), topen.get())).istrue());
+    wassert(actual(Time::range_overlaps(t2005.get(), topen.get(), topen.get(), topen.get())).istrue());
+    wassert(actual(Time::range_overlaps(t2005.get(), topen.get(), t2010.get(), topen.get())).istrue());
+    wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), t2005.get(), topen.get())).istrue());
+    wassert(actual(Time::range_overlaps(topen.get(), t2005.get(), topen.get(), t2010.get())).istrue());
+    wassert(actual(Time::range_overlaps(topen.get(), t2010.get(), topen.get(), t2005.get())).istrue());
+    wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), topen.get(), t2010.get())).istrue());
+    wassert(actual(Time::range_overlaps(t2000.get(), t2005.get(), t2007.get(), t2010.get())).isfalse());
+    wassert(actual(Time::range_overlaps(t2007.get(), t2010.get(), t2000.get(), t2005.get())).isfalse());
+    wassert(actual(Time::range_overlaps(t2010.get(), topen.get(), topen.get(), t2005.get())).isfalse());
 }
 
 // Reproduce bugs

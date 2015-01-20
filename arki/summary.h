@@ -270,12 +270,13 @@ public:
     std::auto_ptr<types::Reftime> getReferenceTime() const;
 
     /**
-     * Compute the date extremes of this summary
+     * Expand the given begin and end ranges to include the datetime extremes
+     * of this summary.
      *
-     * @returns true if the range has at least one bound (i.e. either with
-     * or without are defined), false otherwise
+     * If begin and end are unset, set them to the datetime extremes of this
+     * summary.
      */
-    bool date_extremes(types::Time& begin, types::Time& end) const;
+    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
 
 	/**
 	 * Get the convex hull of the union of all bounding boxes covered by the

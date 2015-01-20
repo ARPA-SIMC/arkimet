@@ -348,17 +348,25 @@ void Summary::dump(std::ostream& out) const
 auto_ptr<types::Reftime> Summary::getReferenceTime() const
 {
     if (root->empty())
-        return reftime::Collector().makeReftime();
+        throw wibble::exception::Consistency("get summary reference time", "summary is empty");
     else
-        return root->stats.reftimeMerger.makeReftime();
+        return root->stats.make_reftime();
 }
 
-bool Summary::date_extremes(Time& begin, Time& end) const
+void Summary::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
 {
     if (root->empty())
-        return reftime::Collector().date_extremes(begin, end);
-    else
-        return root->stats.reftimeMerger.date_extremes(begin, end);
+        return;
+
+    if (!begin.get())
+        begin.reset(new Time(root->stats.begin));
+    else if (*begin > root->stats.begin)
+        *begin = root->stats.begin;
+
+    if (!end.get())
+        end.reset(new Time(root->stats.end));
+    else if (*end < root->stats.end)
+        *end = root->stats.end;
 }
 
 namespace {
@@ -589,7 +597,7 @@ struct YamlPrinter : public Visitor
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        auto_ptr<Reftime> reftime(stats.reftimeMerger.makeReftime());
+        auto_ptr<Reftime> reftime(stats.make_reftime());
         out << indent << "Count: " << stats.count << endl;
         out << indent << "Size: " << stats.size << endl;
         out << indent << "Reftime: " << *reftime << endl;

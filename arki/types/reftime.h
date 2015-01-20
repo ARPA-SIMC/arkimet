@@ -80,9 +80,29 @@ struct Reftime : public StyledType<Reftime>
     /// End of the period in this Reftime
     virtual const Time& period_end() const = 0;
 
+    /**
+     * Expand a datetime range, returning the new range endpoints in begin
+     * and end.
+     *
+     * A NULL auto_ptr signifies the initial state of an invalid range, and
+     * both begin and end will be set to non-NULL as soon as the first
+     * expand_date_range is called on them.
+     */
+    virtual void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const = 0;
+
+    /**
+     * Expand a datetime range, returning the new range endpoints in begin
+     * and end.
+     *
+     * begin and end are assumed to be valid times.
+     */
+    virtual void expand_date_range(types::Time& begin, types::Time& end) const = 0;
+
     // Register this type tree with the type system
     static void init();
 
+    /// If begin == end create a Position reftime, else create a Period reftime
+    static std::auto_ptr<Reftime> create(const Time& begin, const Time& end);
     static std::auto_ptr<Reftime> createPosition(const Time& position);
     static std::auto_ptr<Reftime> createPeriod(const Time& begin, const Time& end);
 };
@@ -111,6 +131,9 @@ struct Position : public Reftime
 
     Position* clone() const override;
 
+    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override;
+    void expand_date_range(types::Time& begin, types::Time& end) const override;
+
     static std::auto_ptr<Position> create(const Time& position);
     static std::auto_ptr<Position> decodeMapping(const emitter::memory::Mapping& val);
 };
@@ -137,47 +160,11 @@ struct Period : public Reftime
 
     Period* clone() const override;
 
+    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override;
+    void expand_date_range(types::Time& begin, types::Time& end) const override;
+
     static std::auto_ptr<Period> create(const Time& begin, const Time& end);
     static std::auto_ptr<Period> decodeMapping(const emitter::memory::Mapping& val);
-};
-
-struct Collector
-{
-    /**
-     * Start of period if we are a period;
-     * Instant if we are an instant;
-     * undefined if we are empty
-     */
-    Time begin;
-    /**
-     * End of period if we are a period; else empty
-     */
-    Time end;
-
-	void clear();
-
-	int compare(const Collector& o) const;
-	bool operator==(const Collector& c) const;
-	bool operator<(const Collector& c) const;
-
-    /**
-     * Merge in information from a Reftime
-     */
-    void mergeTime(const Time& t);
-    void mergeTime(const Time& tbegin, const Time& tend);
-    void merge(const Reftime& rt1);
-    void merge(const Collector& c);
-
-    /**
-     * Compute the date extremes of this merger
-     *
-     * @returns true if the range has at least one bound (i.e. either with
-     * or without are defined), false otherwise
-     */
-    bool date_extremes(types::Time& begin, types::Time& end) const;
-
-    /// Create a reftime with the data we have collected
-    std::auto_ptr<Reftime> makeReftime() const;
 };
 
 }

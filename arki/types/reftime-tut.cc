@@ -82,11 +82,12 @@ void to::test<2>()
     wassert(actual(o).serializes());
 }
 
-// Check collector
+// Check range expansion
 template<> template<>
 void to::test<3>()
 {
-    reftime::Collector c;
+    auto_ptr<Time> begin;
+    auto_ptr<Time> end;
     Time t1(2007, 6, 5, 4, 3, 2);
     Time t2(2008, 7, 6, 5, 4, 3);
     Time t3(2007, 7, 6, 5, 4, 3);
@@ -95,29 +96,19 @@ void to::test<3>()
     Time t6(2010, 9, 8, 7, 6, 5);
 
     // Merge with position
-    c.merge(reftime::Position(t1));
-    wassert(actual(c.begin) == t1);
-    wassert(actual(c.end.isValid()).isfalse());
+    reftime::Position(t1).expand_date_range(begin, end);
+    wassert(actual(begin) == t1);
+    wassert(actual(end) == t1);
 
     // Merge with a second position
-    c.merge(reftime::Position(t2));
-    wassert(actual(c.begin) == t1);
-    wassert(actual(c.end) == t2);
+    reftime::Position(t2).expand_date_range(begin, end);
+    wassert(actual(begin) == t1);
+    wassert(actual(end) == t2);
 
     // Merge with a period
-    c.merge(reftime::Period(t3, t4));
-    wassert(actual(c.begin) == t1);
-    wassert(actual(c.end) == t4);
-
-    // Merge with another collector
-    reftime::Collector c1;
-    c1.merge(reftime::Period(t5, t6));
-    wassert(actual(c1.begin) == t5);
-    wassert(actual(c1.end) == t6);
-
-    c.merge(c1);
-    wassert(actual(c.begin) == t1);
-    wassert(actual(c.end) == t6);
+    reftime::Period(t3, t4).expand_date_range(begin, end);
+    wassert(actual(begin) == t1);
+    wassert(actual(end) == t4);
 }
 
 // Test Lua functions

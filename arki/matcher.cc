@@ -364,37 +364,23 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
 	}
 }
 
-bool Matcher::date_extremes(Time& begin, Time& end) const
+bool Matcher::restrict_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
 {
 	const matcher::OR* reftime = 0;
 
-    begin.setInvalid(); end.setInvalid();
+    // We have nothing to match: we match the open range
+    if (!m_impl) return true;
 
-	if (!m_impl)
-		return false;
+    reftime = m_impl->get(types::TYPE_REFTIME);
 
-	reftime = m_impl->get(types::TYPE_REFTIME);
+    // We have no reftime to match: we match the open range
+    if (!reftime) return true;
 
-	if (!reftime)
-		return false;
+    for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
+        if (!(*j)->upcast<matcher::MatchReftime>()->restrict_date_range(begin, end))
+            return false;
 
-	for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
-	{
-		if (j == reftime->begin())
-			(*j)->upcast<matcher::MatchReftime>()->dateRange(begin, end);
-        else
-        {
-            Time new_begin;
-            Time new_end;
-            (*j)->upcast<matcher::MatchReftime>()->dateRange(new_begin, new_end);
-            if (begin.isValid() && (!new_begin.isValid() || new_begin < begin))
-                begin = new_begin;
-            if (end.isValid() && (!new_end.isValid() || end < new_end))
-                end = new_end;
-
-        }
-    }
-    return begin.isValid() || end.isValid();
+    return true;
 }
 
 

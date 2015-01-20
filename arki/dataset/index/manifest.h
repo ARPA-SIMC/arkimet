@@ -58,7 +58,12 @@ public:
 	virtual void openRO() = 0;
 	virtual void openRW() = 0;
 	virtual void fileList(const Matcher& matcher, std::vector<std::string>& files) = 0;
-	virtual void fileTimespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const = 0;
+    /**
+     * Set start_time and end_time to the reftime span of the given file.
+     *
+     * If the file does not exist in the manifest, return false
+     */
+    virtual bool fileTimespan(const std::string& relname, types::Time& start_time, types::Time& end_time) const = 0;
 	virtual void vacuum() = 0;
 	virtual void acquire(const std::string& relname, time_t mtime, const Summary& sum) = 0;
 	virtual void remove(const std::string& relname) = 0;
@@ -73,12 +78,13 @@ public:
     void invalidate_summary(const std::string& relname);
 
     /**
-     * Compute the date extremes of this manifest
+     * Expand the given begin and end ranges to include the datetime extremes
+     * of this manifest.
      *
-     * @returns true if the range has at least one bound (i.e. either with
-     * or without are defined), false otherwise
+     * If begin and end are unset, set them to the datetime extremes of this
+     * manifest.
      */
-    virtual bool date_extremes(types::Time& begin, types::Time& end) const = 0;
+    virtual void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const = 0;
 
     void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;

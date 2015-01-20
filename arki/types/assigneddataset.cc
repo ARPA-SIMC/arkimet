@@ -152,7 +152,7 @@ AssignedDataset* AssignedDataset::clone() const
 
 auto_ptr<AssignedDataset> AssignedDataset::create(const std::string& name, const std::string& id)
 {
-    return auto_ptr<AssignedDataset>(new AssignedDataset(*Time::createNow(), name, id));
+    return auto_ptr<AssignedDataset>(new AssignedDataset(Time::createNow(), name, id));
 }
 
 auto_ptr<AssignedDataset> AssignedDataset::create(const Time& changed, const std::string& name, const std::string& id)

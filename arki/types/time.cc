@@ -57,7 +57,7 @@ const types::Code traits<Time>::type_code = CODE;
 const size_t traits<Time>::type_sersize_bytes = SERSIZELEN;
 const char* traits<Time>::type_lua_tag = LUATAG_TYPES ".time";
 
-Time::Time() { setInvalid(); }
+Time::Time() {}
 Time::Time(int ye, int mo, int da, int ho, int mi, int se) { set(ye, mo, da, ho, mi, se); }
 Time::Time(const int (&vals)[6]) { set(vals); }
 Time::Time(const Time& t) { set(t.vals); }
@@ -76,6 +76,13 @@ bool Time::isValid() const
     return false;
 }
 
+int Time::compare_raw(const int (&other)[6]) const
+{
+    for (unsigned int i = 0; i < 6; ++i)
+        if (int res = vals[i] - other[i]) return res;
+    return 0;
+}
+
 int Time::compare(const Type& o) const
 {
     if (int res = Type::compare(o)) return res;
@@ -88,10 +95,7 @@ int Time::compare(const Type& o) const
 			str::fmtf("second element claims to be Type, but is `%s' instead",
 				typeid(&o).name()));
 
-	for (unsigned int i = 0; i < 6; ++i)
-		if (int res = vals[i] - v->vals[i]) return res;
-
-	return 0;
+    return compare_raw(v->vals);
 }
 
 Time Time::start_of_month() const
@@ -269,8 +273,8 @@ static int arkilua_new_time(lua_State* L)
 
 static int arkilua_new_now(lua_State* L)
 {
-	Time::createNow()->lua_push(L);
-	return 1;
+    Time::createNow().lua_push(L);
+    return 1;
 }
 
 static int arkilua_new_iso8601(lua_State* L)
@@ -282,9 +286,9 @@ static int arkilua_new_iso8601(lua_State* L)
 
 static int arkilua_new_sql(lua_State* L)
 {
-	const char* str = luaL_checkstring(L, 1);
-	Time::createFromSQL(str)->lua_push(L);
-	return 1;
+    const char* str = luaL_checkstring(L, 1);
+    Time::create_from_SQL(str).lua_push(L);
+    return 1;
 }
 
 void Time::lua_loadlib(lua_State* L)
@@ -369,7 +373,9 @@ void Time::setNow()
 
 auto_ptr<Time> Time::createInvalid()
 {
-    return auto_ptr<Time>(new Time);
+    auto_ptr<Time> res(new Time);
+    res->setInvalid();
+    return res;
 }
 
 auto_ptr<Time> Time::create(int ye, int mo, int da, int ho, int mi, int se)
@@ -408,24 +414,24 @@ auto_ptr<Time> Time::createFromISO8601(const std::string& str)
     return res;
 }
 
-auto_ptr<Time> Time::createFromSQL(const std::string& str)
+Time Time::create_from_SQL(const std::string& str)
 {
-    auto_ptr<Time> res(new Time);
-	int* v = res->vals;
-	int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
-	if (count == 0)
-		throw wibble::exception::Consistency(
-			"Invalid datetime specification: '"+str+"'",
-			"Parsing SQL string");
+    Time res;
+    int* v = res.vals;
+    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+    if (count == 0)
+        throw wibble::exception::Consistency(
+                "Invalid datetime specification: '"+str+"'",
+                "Parsing SQL string");
     return res;
 }
 
-auto_ptr<Time> Time::createNow()
+Time Time::createNow()
 {
-	time_t timet_now = time(0);
-	struct tm now;
-	gmtime_r(&timet_now, &now);
-	return create(now);
+    time_t timet_now = time(0);
+    struct tm now;
+    gmtime_r(&timet_now, &now);
+    return Time(now);
 }
 
 static int _daysinmonth(int month, int year)
@@ -456,20 +462,20 @@ static int _daysinmonth(int month, int year)
 }
 
 bool Time::range_overlaps(
-        const Time& ts1, const Time& te1,
-        const Time& ts2, const Time& te2)
+        const Time* ts1, const Time* te1,
+        const Time* ts2, const Time* te2)
 {
     // If any of the intervals are open at both ends, they obviously overlap
-    if (!ts1.isValid() && !te1.isValid()) return true;
-    if (!ts2.isValid() && !te2.isValid()) return true;
+    if (!ts1 && !te1) return true;
+    if (!ts2 && !te2) return true;
 
-    if (!ts1.isValid()) return !ts2.isValid() || ts2.compare(te1) <= 0;
-    if (!te1.isValid()) return !te2.isValid() || te2.compare(ts1) >= 0;
+    if (!ts1) return !ts2 || ts2->compare(*te1) <= 0;
+    if (!te1) return !te2 || te2->compare(*ts1) >= 0;
 
-    if (!ts2.isValid()) return te2.compare(ts1) >= 0;
-    if (!te2.isValid()) return ts2.compare(te1) <= 0;
+    if (!ts2) return te2->compare(*ts1) >= 0;
+    if (!te2) return ts2->compare(*te1) <= 0;
 
-    return !(te1.compare(ts2) < 0 || ts1.compare(te2) > 0);
+    return !(te1->compare(*ts2) < 0 || ts1->compare(*te2) > 0);
 }
 
 std::vector<Time> Time::generate(const types::Time& begin, const types::Time& end, int step)

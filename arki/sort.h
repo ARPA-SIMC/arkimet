@@ -101,14 +101,14 @@ protected:
     const Compare& sorter;
     metadata::Eater& nextConsumer;
     bool hasInterval;
-    types::Time endofperiod;
+    std::auto_ptr<types::Time> endofperiod;
     std::vector<Metadata*> buffer;
 
     void setEndOfPeriod(const types::Reftime& rt);
 
 public:
-	Stream(const Compare& sorter, metadata::Eater& nextConsumer)
-		: sorter(sorter), nextConsumer(nextConsumer)
+    Stream(const Compare& sorter, metadata::Eater& nextConsumer)
+        : sorter(sorter), nextConsumer(nextConsumer)
 	{
 		hasInterval = sorter.interval() != Compare::NONE;
 	}

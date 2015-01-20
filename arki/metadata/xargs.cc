@@ -203,13 +203,13 @@ int Xargs::run_child()
     child.env.push_back("ARKI_XARGS_FORMAT=" + str::toupper(format));
     child.env.push_back("ARKI_XARGS_COUNT=" + str::fmt(count));
 
-    if (timespan.begin.isValid())
+    if (timespan_begin.get())
     {
-        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan.begin.toISO8601(' '));
-        if (timespan.end.isValid())
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.end.toISO8601(' '));
+        child.env.push_back("ARKI_XARGS_TIME_START=" + timespan_begin->toISO8601(' '));
+        if (timespan_end.get())
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_end->toISO8601(' '));
         else
-            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan.begin.toISO8601(' '));
+            child.env.push_back("ARKI_XARGS_TIME_END=" + timespan_begin->toISO8601(' '));
     }
 
     child.fork();

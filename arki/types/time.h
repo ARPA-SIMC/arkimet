@@ -53,13 +53,16 @@ struct traits<Time>
  *
  * If all the time components are 0, it is to be interpreted as 'now'.
  */
-struct Time : public types::CoreType<Time>
+class Time : public types::CoreType<Time>
 {
-	int vals[6];
-
-    /// An invalid time, with all values set to 0
+protected:
+    /// An uninitialized time
     Time();
-    Time(int ye, int mo, int da, int ho, int mi, int se);
+
+public:
+    int vals[6];
+
+    Time(int ye, int mo, int da, int ho=0, int mi=0, int se=0);
     Time(const int (&vals)[6]);
     Time(const Time& t);
     Time(struct tm& t);
@@ -68,6 +71,7 @@ struct Time : public types::CoreType<Time>
 
 	Time& operator=(const Time& t);
 
+    int compare_raw(const int (&vals)[6]) const;
     int compare(const Type& o) const override;
     bool equals(const Type& t) const override;
 
@@ -125,10 +129,10 @@ struct Time : public types::CoreType<Time>
     static std::auto_ptr<Time> createFromISO8601(const std::string& str);
 
     /// Create a Time object from a string in SQL format
-    static std::auto_ptr<Time> createFromSQL(const std::string& str);
+    static Time create_from_SQL(const std::string& str);
 
     /// Create a Time object with the current time
-    static std::auto_ptr<Time> createNow();
+    static Time createNow();
 
     /**
      * Generate a sequence of Position reftime values.
@@ -151,8 +155,8 @@ struct Time : public types::CoreType<Time>
      * @param te2 end of the second range
      */
     static bool range_overlaps(
-            const Time& ts1, const Time& te1,
-            const Time& ts2, const Time& te2);
+            const Time* ts1, const Time* te1,
+            const Time* ts2, const Time* te2);
 
 
 	static void lua_loadlib(lua_State* L);

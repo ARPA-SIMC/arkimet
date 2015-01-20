@@ -115,7 +115,7 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
         using namespace arki::types;
         md->add_note("Validation error: reference time is missing");
         // Set today as a dummy reference time, and import into the error dataset
-        md->set(Reftime::createPosition(*Time::createNow()));
+        md->set(Reftime::createPosition(Time::createNow()));
         result = raw_dispatch_error(*md) == WritableDataset::ACQ_OK ? DISP_ERROR : DISP_NOTWRITTEN;
         goto done;
     }

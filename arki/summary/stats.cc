@@ -44,20 +44,25 @@ const char* traits<summary::Stats>::type_lua_tag = LUATAG_TYPES ".summary.stats"
 
 namespace summary {
 
+Stats::Stats()
+    : count(0), size(0), begin(0, 0, 0), end(0, 0, 0)
+{
+}
+
 Stats::Stats(const Metadata& md)
-    : count(1), size(md.data_size())
+    : count(1), size(md.data_size()), begin(0, 0, 0), end(0, 0, 0)
 {
     if (const Reftime* rt = md.get<types::Reftime>())
-        reftimeMerger.merge(*rt);
+    {
+        begin = rt->period_begin();
+        end = rt->period_end();
+    } else
+        throw wibble::exception::Consistency("summarising metadata", "missing reference time");
 }
 
 Stats* Stats::clone() const override
 {
-    Stats* res = new Stats;
-    res->count = count;
-    res->size = size;
-    res->reftimeMerger = reftimeMerger;
-    return res;
+    return new Stats(*this);
 }
 
 int Stats::compare(const Type& o) const
@@ -74,34 +79,59 @@ int Stats::compare(const Type& o) const
 
     if (int res = count - v->count) return res;
     if (int res = size - v->size) return res;
-    return reftimeMerger.compare(v->reftimeMerger);
+    if (int res = begin.compare(v->begin)) return res;
+    return end.compare(v->end);
 }
 
 bool Stats::equals(const Type& o) const
 {
     const Stats* v = dynamic_cast<const Stats*>(&o);
     if (!v) return false;
-    return count == v->count && size == v->size && reftimeMerger == v->reftimeMerger;
+    return count == v->count && size == v->size && begin == v->begin && end == v->end;
 }
 
 void Stats::merge(const Stats& s)
 {
+    if (s.count == 0)
+        return;
+
+    if (count == 0)
+    {
+        begin = s.begin;
+        end = s.end;
+    } else {
+        if (begin > s.begin) begin = s.begin;
+        if (end < s.end) end = s.end;
+    }
     count += s.count;
     size += s.size;
-    reftimeMerger.merge(s.reftimeMerger);
 }
 
 void Stats::merge(const Metadata& md)
 {
+    if (const Reftime* rt = md.get<types::Reftime>())
+    {
+        if (count == 0)
+        {
+            begin = rt->period_begin();
+            end = rt->period_end();
+        } else
+            rt->expand_date_range(begin, end);
+    }
+    else
+        throw wibble::exception::Consistency("summarising metadata", "missing reference time");
     ++count;
     size += md.data_size();
-    if (const Reftime* rt = md.get<types::Reftime>())
-        reftimeMerger.merge(*rt);
+}
+
+std::auto_ptr<types::Reftime> Stats::make_reftime() const
+{
+    return Reftime::create(begin, end);
 }
 
 void Stats::encodeWithoutEnvelope(Encoder& enc) const
 {
-    auto_ptr<types::Reftime> reftime(reftimeMerger.makeReftime());
+    auto_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.addUInt(count, 4);
     enc.addString(reftime->encodeBinary());
     enc.addULInt(size, 8);
@@ -114,18 +144,10 @@ std::ostream& Stats::writeToOstream(std::ostream& o) const
 
 void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
 {
-    if (reftimeMerger.begin.isValid())
+    if (count > 0)
     {
-        if (reftimeMerger.end.isValid())
-        {
-            // Period: begin--end
-            e.add("b"); reftimeMerger.begin.serialiseList(e);
-            e.add("e"); reftimeMerger.end.serialiseList(e);
-        } else {
-            // Instant: begin--begin
-            e.add("b"); reftimeMerger.begin.serialiseList(e);
-            e.add("e"); reftimeMerger.begin.serialiseList(e);
-        }
+        e.add("b"); begin.serialiseList(e);
+        e.add("e"); end.serialiseList(e);
     }
     e.add("c", count);
     e.add("s", size);
@@ -137,14 +159,10 @@ auto_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
     auto_ptr<Stats> res(new Stats);
     res->count = val["c"].want_int("parsing summary stats count");
     res->size = val["s"].want_int("parsing summary stats size");
-    if (!val["b"].is_null())
+    if (res->count)
     {
-        auto_ptr<types::Time> begin = types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
-        auto_ptr<types::Time> end = types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
-        if (*begin == *end)
-            res->reftimeMerger.mergeTime(*begin);
-        else
-            res->reftimeMerger.mergeTime(*begin, *end);
+        res->begin = *types::Time::decodeList(val["b"].want_list("parsing summary stats begin"));
+        res->end = *types::Time::decodeList(val["e"].want_list("parsing summary stats end"));
     }
     return res;
 }
@@ -158,7 +176,7 @@ std::string Stats::toYaml(size_t indent) const
 
 void Stats::toYaml(std::ostream& out, size_t indent) const
 {
-    auto_ptr<types::Reftime> reftime(reftimeMerger.makeReftime());
+    auto_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     string ind(indent, ' ');
     out << ind << "Count: " << count << endl;
     out << ind << "Size: " << size << endl;
@@ -182,7 +200,11 @@ auto_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
     size_t el_len = len;
     types::Code el_type = types::decodeEnvelope(el_start, el_len);
     if (el_type == types::TYPE_REFTIME)
-        res->reftimeMerger.merge(*types::Reftime::decode(el_start, el_len));
+    {
+        auto_ptr<Reftime> rt(Reftime::decode(el_start, el_len));
+        res->begin = rt->period_begin();
+        res->end = rt->period_end();
+    }
     else
         throw wibble::exception::Consistency("parsing summary stats", "cannot handle element " + str::fmt(el_type));
     len -= el_start + el_len - buf;
@@ -216,7 +238,11 @@ auto_ptr<Stats> Stats::decodeString(const std::string& str)
         else if (name == "size")
             res->size = strtoull(i->second.c_str(), 0, 10);
         else if (name == "reftime")
-            res->reftimeMerger.merge(*types::Reftime::decodeString(i->second));
+        {
+            auto_ptr<Reftime> rt(Reftime::decodeString(i->second));
+            res->begin = rt->period_begin();
+            res->end = rt->period_end();
+        }
     }
     return res;
 }
@@ -227,7 +253,7 @@ bool Stats::lua_lookup(lua_State* L, const std::string& name) const
     if (name == "count")
         lua_pushnumber(L, count);
     else if (name == "reftime")
-        reftimeMerger.makeReftime()->lua_push(L);
+        Reftime::create(begin, end)->lua_push(L);
     else
         return types::CoreType<Stats>::lua_lookup(L, name);
     return true;

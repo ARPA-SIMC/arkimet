@@ -144,6 +144,14 @@ void Reftime::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_reftime", lib);
 }
 
+std::auto_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
+{
+    if (begin == end)
+        return upcast<Reftime>(reftime::Position::create(begin));
+    else
+        return upcast<Reftime>(reftime::Period::create(begin, end));
+}
+
 std::auto_ptr<Reftime> Reftime::createPosition(const Time& position)
 {
     return upcast<Reftime>(reftime::Position::create(position));
@@ -217,6 +225,21 @@ bool Position::equals(const Type& o) const
 	const Position* v = dynamic_cast<const Position*>(&o);
 	if (!v) return false;
 	return time == v->time;
+}
+
+void Position::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const
+{
+    if (!begin.get() || *begin > time)
+        begin.reset(new Time(time));
+
+    if (!end.get() || *end < time)
+        end.reset(new Time(time));
+}
+
+void Position::expand_date_range(types::Time& begin, types::Time& end) const
+{
+    if (begin > time) begin = time;
+    if (end < time) end = time;
 }
 
 Position* Position::clone() const
@@ -295,6 +318,21 @@ bool Period::equals(const Type& o) const
 	return begin == v->begin && end == v->end;
 }
 
+void Period::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const
+{
+    if (!begin.get() || *begin > this->begin)
+        begin.reset(new Time(this->begin));
+
+    if (!end.get() || *end < this->end)
+        end.reset(new Time(this->end));
+}
+
+void Period::expand_date_range(types::Time& begin, types::Time& end) const
+{
+    if (begin > this->begin) begin = this->begin;
+    if (end < this->end) end = this->end;
+}
+
 Period* Period::clone() const
 {
     return new Period(begin, end);
@@ -303,128 +341,6 @@ Period* Period::clone() const
 auto_ptr<Period> Period::create(const Time& begin, const Time& end)
 {
     return auto_ptr<Period>(new Period(begin, end));
-}
-
-void Collector::clear()
-{
-    begin.setInvalid();
-    end.setInvalid();
-}
-
-int Collector::compare(const Collector& c) const
-{
-	if (int res = begin.compare(c.begin)) return res;
-	return end.compare(c.end);
-}
-bool Collector::operator==(const Collector& c) const
-{
-	return begin == c.begin && end == c.end;
-}
-bool Collector::operator<(const Collector& c) const
-{
-	if (int res = begin.compare(c.begin)) return res < 0;
-	return end.compare(c.end) < 0;
-}
-
-void Collector::mergeTime(const Time& t)
-{
-    // If we're empty, just copy
-    if (!begin.isValid())
-    {
-        begin = t;
-        return;
-    }
-
-    // If if it's the same as 'begin', we're done
-    // (this catches the case where end is not defined, and we get the same
-    // as begin)
-    if (begin == t)
-        return;
-
-    // Now we know we have to be an interval, so if we are not an interval
-    // already, we become it
-    if (!end.isValid())
-        end = begin;
-
-    if (t < begin)
-        begin = t;
-    else if (end < t)
-        end = t;
-}
-
-void Collector::mergeTime(const Time& tbegin, const Time& tend)
-{
-    // If we're empty, just copy
-    if (!begin.isValid())
-    {
-        begin = tbegin;
-        end = tend;
-        return;
-    }
-
-    // We have to be an interval, so if we are not an interval already, we
-    // become it
-    if (!end.isValid())
-        end = begin;
-
-    if (tbegin < begin)
-        begin = tbegin;
-    if (end < tend)
-        end = tend;
-}
-
-void Collector::merge(const Reftime& rt)
-{
-    if (const Position* po = dynamic_cast<const Position*>(&rt))
-        mergeTime(po->time);
-    else if (const Period* pe = dynamic_cast<const Period*>(&rt))
-        mergeTime(pe->begin, pe->end);
-    else
-        throw wibble::exception::Consistency(
-                "merging reference times",
-                string("unsupported reference time to merge: ") + typeid(&rt).name());
-}
-
-void Collector::merge(const Collector& c)
-{
-    if (!c.begin.isValid())
-        return;
-    else if (!c.end.isValid())
-        mergeTime(c.begin);
-    else
-        mergeTime(c.begin, c.end);
-}
-
-auto_ptr<Reftime> Collector::makeReftime() const
-{
-    if (!begin.isValid())
-        throw wibble::exception::Consistency(
-                "merging reference times",
-                "no data has been given to merge");
-
-    if (!end.isValid() || begin == end)
-        return upcast<Reftime>(Position::create(begin));
-
-    return upcast<Reftime>(Period::create(begin, end));
-}
-
-bool Collector::date_extremes(Time& begin, Time& end) const
-{
-    if (!this->begin.isValid())
-    {
-        begin.setInvalid();
-        end.setInvalid();
-        return false;
-    }
-    if (!begin.isValid() || this->begin < begin)
-        begin = this->begin;
-
-    if (!this->end.isValid())
-        end.setInvalid();
-    if (!end.isValid() || this->end > end)
-        end = this->end;
-
-    return true;
 }
 
 }

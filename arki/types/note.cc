@@ -150,7 +150,7 @@ Note* Note::clone() const
 
 auto_ptr<Note> Note::create(const std::string& content)
 {
-    return auto_ptr<Note>(new Note(*Time::createNow(), content));
+    return auto_ptr<Note>(new Note(content));
 }
 
 auto_ptr<Note> Note::create(const Time& time, const std::string& content)

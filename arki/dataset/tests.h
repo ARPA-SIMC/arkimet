@@ -247,6 +247,8 @@ struct Element
     std::string destfile;
     Matcher matcher;
 
+    Element() : time(0, 0, 0) {}
+
     void set(const Metadata& md, const std::string& matcher)
     {
         using namespace wibble;
