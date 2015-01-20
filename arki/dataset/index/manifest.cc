@@ -826,7 +826,7 @@ public:
             if (!begin.get() || st < *begin)
                 begin.reset(new Time(st));
             if (!end.get() || et > *end)
-                end.reset(new Time(st));
+                end.reset(new Time(et));
         }
     }
 

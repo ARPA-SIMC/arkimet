@@ -193,14 +193,12 @@ void CheckAge::operator()(const std::string& file, data::FileState state)
         Time end_time(0, 0, 0);
         if (!idx.fileTimespan(file, start_time, end_time))
             next(file, state);
-
-        //cerr << "TEST " << maxdate << " WITH " << delete_threshold << " AND " << archive_threshold << endl;
-        if (delete_threshold.isValid() && delete_threshold > end_time)
+        else if (delete_threshold.vals[0] != 0 && delete_threshold > end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be deleted", file.c_str());
             next(file, state + FILE_TO_DELETE);
         }
-        else if (archive_threshold.isValid() && archive_threshold > end_time)
+        else if (archive_threshold.vals[0] != 0 && archive_threshold > end_time)
         {
             nag::verbose("CheckAge: %s is old enough to be archived", file.c_str());
             next(file, state + FILE_TO_ARCHIVE);
