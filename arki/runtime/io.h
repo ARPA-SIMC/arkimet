@@ -120,7 +120,7 @@ public:
  *
  * By default, the temporary file will be deleted when the object is deleted.
  */
-class Tempfile
+class Tempfile : public arki::Output
 {
 	wibble::stream::PosixBuf posixBuf;
 	std::ostream *m_out;
@@ -137,8 +137,8 @@ public:
 	/// Unlink the file right now
 	void unlink();
 
-	std::ostream& stream() { return *m_out; }
-	const std::string& name() const { return m_name; }
+    std::ostream& stream() override { return *m_out; }
+    const std::string& name() const override { return m_name; }
 };
 
 }

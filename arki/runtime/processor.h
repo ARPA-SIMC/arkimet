@@ -30,13 +30,13 @@ namespace arki {
 
 class ReadonlyDataset;
 class Matcher;
+class Output;
 
 namespace metadata {
 struct Hook;
 }
 
 namespace runtime {
-class Output;
 
 struct DatasetProcessor
 {
@@ -84,7 +84,7 @@ struct ProcessorMaker
     }
 
     /// Create the processor maker for this configuration
-    std::auto_ptr<DatasetProcessor> make(Matcher& query, Output& out);
+    std::auto_ptr<DatasetProcessor> make(Matcher query, arki::Output& out);
 
     /**
      * Consistency check on the maker configuration.

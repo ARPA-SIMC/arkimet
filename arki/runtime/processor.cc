@@ -32,6 +32,7 @@
 #include <arki/targetfile.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
+#include <arki/utils/dataset.h>
 #include <wibble/string.h>
 
 using namespace std;
@@ -40,7 +41,7 @@ using namespace wibble;
 namespace arki {
 namespace runtime {
 
-metadata::Printer* createPrinter(ProcessorMaker& maker, Output& out)
+metadata::Printer* createPrinter(ProcessorMaker& maker, arki::Output& out)
 {
     if (maker.json)
         return new metadata::JSONPrinter(out, maker.annotate);
@@ -50,22 +51,34 @@ metadata::Printer* createPrinter(ProcessorMaker& maker, Output& out)
         return new metadata::BinaryPrinter(out);
 }
 
+struct Inliner : public metadata::Eater
+{
+    metadata::Eater& next;
+
+    Inliner(metadata::Eater& next) : next(next) {}
+
+    bool eat(auto_ptr<Metadata> md) override
+    {
+        md->makeInline();
+        return next.eat(md);
+    }
+};
+
 struct DataProcessor : public DatasetProcessor
 {
-    Output& output;
+    arki::Output& output;
     metadata::Printer* printer;
     dataset::DataQuery query;
     vector<string> description_attrs;
+    bool data_inline;
 
-    DataProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
-        : output(out), printer(createPrinter(maker, out)), query(q)
+    DataProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out, bool data_inline=false)
+        : output(out), printer(createPrinter(maker, out)), query(q), data_inline(data_inline)
     {
         description_attrs.push_back("query=" + q.toString());
         description_attrs.push_back("printer=" + printer->describe());
-        if (maker.data_inline)
+        if (data_inline)
             description_attrs.push_back("data_inline=true");
-        //query.withData = maker.data_inline;
-
         if (!maker.sort.empty())
         {
             description_attrs.push_back("sort=" + maker.sort);
@@ -88,7 +101,14 @@ struct DataProcessor : public DatasetProcessor
 
     virtual void process(ReadonlyDataset& ds, const std::string& name)
     {
-        ds.queryData(query, *printer);
+        if (data_inline)
+        {
+            Inliner inliner(*printer);
+            ds.queryData(query, inliner);
+        } else {
+            utils::ds::MakeAbsolute absoluter(*printer);
+            ds.queryData(query, absoluter);
+        }
     }
 
     virtual void end()
@@ -99,14 +119,14 @@ struct DataProcessor : public DatasetProcessor
 
 struct SummaryProcessor : public DatasetProcessor
 {
-    Output& output;
+    arki::Output& output;
     Matcher matcher;
     metadata::Printer* printer;
     string summary_restrict;
     Summary summary;
     vector<string> description_attrs;
 
-    SummaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
+    SummaryProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out)
         : output(out), matcher(q), printer(createPrinter(maker, out))
     {
         description_attrs.push_back("query=" + q.toString());
@@ -155,11 +175,11 @@ struct SummaryProcessor : public DatasetProcessor
 
 struct BinaryProcessor : public DatasetProcessor
 {
-	Output& out;
+    arki::Output& out;
 	dataset::ByteQuery query;
     vector<string> description_attrs;
 
-	BinaryProcessor(ProcessorMaker& maker, Matcher& q, Output& out)
+	BinaryProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out)
 		: out(out)
 	{
         description_attrs.push_back("query=" + q.toString());
@@ -215,7 +235,7 @@ struct BinaryProcessor : public DatasetProcessor
 };
 
 
-TargetFileProcessor::TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, Output& output)
+TargetFileProcessor::TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, arki::Output& output)
 		: next(next), pattern(pattern), output(output)
 {
     description_attrs.push_back("pattern=" + pattern);
@@ -237,14 +257,19 @@ std::string TargetFileProcessor::describe() const
 
 void TargetFileProcessor::process(ReadonlyDataset& ds, const std::string& name)
 {
-		TargetfileSpy spy(ds, output, pattern);
-		next->process(spy, name);
+    if (runtime::Output* out = dynamic_cast<runtime::Output*>(&output))
+    {
+        TargetfileSpy spy(ds, *out, pattern);
+        next->process(spy, name);
+    } else {
+        throw wibble::exception::Consistency("setting up targetfile", "programming error: output is not a runtime::Output");
+    }
 }
 
 void TargetFileProcessor::end() { next->end(); }
 
 
-std::auto_ptr<DatasetProcessor> ProcessorMaker::make(Matcher& query, Output& out)
+std::auto_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, arki::Output& out)
 {
     if (data_only || !postprocess.empty()
 #ifdef HAVE_LUA
@@ -255,7 +280,7 @@ std::auto_ptr<DatasetProcessor> ProcessorMaker::make(Matcher& query, Output& out
     else if (summary)
         return auto_ptr<DatasetProcessor>(new SummaryProcessor(*this, query, out));
     else
-        return auto_ptr<DatasetProcessor>(new DataProcessor(*this, query, out));
+        return auto_ptr<DatasetProcessor>(new DataProcessor(*this, query, out, data_inline));
 }
 
 std::string ProcessorMaker::verify_option_consistency()
