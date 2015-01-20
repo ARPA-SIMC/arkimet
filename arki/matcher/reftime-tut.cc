@@ -324,6 +324,7 @@ void to::test<6>()
 {
 	// 2007-01-02 03:04:05
 	ensure_matches("reftime:>2007-01-02 00:04:05%3h", md);
+	ensure_matches("reftime:<2007-01-02 06:04:05%3h", md);
 	ensure_not_matches("reftime:>2007-01-02 00:04:05%6h", md);
 	ensure_equals(sql(Matcher::parse("reftime:>2007-01-02 00:04:05%6h"), "foo"), "(foo>'2007-01-02 00:04:05' AND (TIME(foo)=='00:04:05' OR TIME(foo)=='06:04:05' OR TIME(foo)=='12:04:05' OR TIME(foo)=='18:04:05'))");
 }

@@ -76,6 +76,46 @@ struct DateLE : public DTMatch
         return true;
     }
 };
+
+DTMatch* DTMatch::createLE(const int* tt)
+{
+    auto_ptr<DateLE> res(new DateLE);
+    date::upperbound(tt, res->ref);
+    res->tbase = dtime::lowerbound_sec(tt + 3);
+    return res.release();
+}
+
+struct DateLT : public DTMatch
+{
+    int ref[6];
+    bool match(const int* tt) const { return date::duration(tt, ref) > 0; }
+    bool match(const int* begin, const int* end) const { return date::duration(begin, ref) > 0; }
+    string sql(const std::string& column) const { return column+"<"+tosql(ref); }
+    string toString() const { return "<"+date::tostring(ref); }
+    int timebase() const { return dtime::lowerbound_sec(ref+3); }
+    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    {
+        if (begin.get() && begin->compare_raw(ref) >= 0)
+            return false;
+
+        if (!end.get() || end->compare_raw(ref) >= 0)
+        {
+            end.reset(new types::Time(ref));
+            --(end->vals[5]);
+            date::normalise(end->vals);
+        }
+
+        return true;
+    }
+};
+
+DTMatch* DTMatch::createLT(const int* tt)
+{
+    auto_ptr<DateLT> res(new DateLT);
+    date::lowerbound(tt, res->ref);
+    return res.release();
+}
+
 struct DateGE : public DTMatch
 {
     int ref[6];
@@ -84,7 +124,7 @@ struct DateGE : public DTMatch
     bool match(const int* begin, const int* end) const { return isnow(end) || date::duration(ref, end) >= 0; }
     string sql(const std::string& column) const { return column+">="+tosql(ref); }
     string toString() const { return ">="+date::tostring(ref); }
-    int timebase() const { return dtime::lowerbound_sec(ref+3); }
+    int timebase() const { return tbase; }
     bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
     {
         if (end.get() && end->compare_raw(ref) < 0)
@@ -96,6 +136,48 @@ struct DateGE : public DTMatch
         return true;
     }
 };
+
+DTMatch* DTMatch::createGE(const int* tt)
+{
+    auto_ptr<DateGE> res(new DateGE);
+    date::lowerbound(tt, res->ref);
+    res->tbase = dtime::lowerbound_sec(tt + 3);
+    return res.release();
+}
+
+struct DateGT : public DTMatch
+{
+    int ref[6];
+    int tbase;
+    bool match(const int* tt) const { return date::duration(ref, tt) > 0; }
+    bool match(const int* begin, const int* end) const { return isnow(end) || date::duration(ref, end) > 0; }
+    string sql(const std::string& column) const { return column+">"+tosql(ref); }
+    string toString() const { return ">"+date::tostring(ref); }
+    int timebase() const { return tbase; }
+    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    {
+        if (end.get() && end->compare_raw(ref) <= 0)
+            return false;
+
+        if (!begin.get() || begin->compare_raw(ref) <= 0)
+        {
+            begin.reset(new types::Time(ref));
+            ++(begin->vals[5]);
+            date::normalise(begin->vals);
+        }
+
+        return true;
+    }
+};
+
+DTMatch* DTMatch::createGT(const int* tt)
+{
+    auto_ptr<DateGT> res(new DateGT);
+    date::upperbound(tt, res->ref);
+    res->tbase = dtime::lowerbound_sec(tt + 3);
+    return res.release();
+}
+
 struct DateEQ : public DTMatch
 {
     int geref[6];
@@ -135,6 +217,15 @@ struct DateEQ : public DTMatch
         return true;
     }
 };
+
+DTMatch* DTMatch::createEQ(const int* tt)
+{
+    auto_ptr<DateEQ> res(new DateEQ);
+    date::lowerbound(tt, res->geref);
+    date::upperbound(tt, res->leref);
+    return res.release();
+}
+
 
 struct TimeLE : public DTMatch
 {
@@ -334,46 +425,6 @@ static inline int timesecs(int val, int idx)
         case 5: return val;
         default: return 0;
     }
-}
-
-DTMatch* DTMatch::createLE(const int* tt)
-{
-    auto_ptr<DateLE> res(new DateLE);
-    date::upperbound(tt, res->ref);
-    res->tbase = dtime::lowerbound_sec(tt + 3);
-    return res.release();
-}
-DTMatch* DTMatch::createLT(const int* tt)
-{
-    auto_ptr<DateLE> res(new DateLE);
-    date::lowerbound(tt, res->ref);
-    --(res->ref[5]);
-    date::normalise(res->ref);
-    res->tbase = dtime::lowerbound_sec(tt + 3);
-    return res.release();
-}
-DTMatch* DTMatch::createGE(const int* tt)
-{
-    auto_ptr<DateGE> res(new DateGE);
-    date::lowerbound(tt, res->ref);
-    res->tbase = dtime::lowerbound_sec(tt + 3);
-    return res.release();
-}
-DTMatch* DTMatch::createGT(const int* tt)
-{
-    auto_ptr<DateGE> res(new DateGE);
-    date::upperbound(tt, res->ref);
-    ++(res->ref[5]);
-    date::normalise(res->ref);
-    res->tbase = dtime::lowerbound_sec(tt + 3);
-    return res.release();
-}
-DTMatch* DTMatch::createEQ(const int* tt)
-{
-    auto_ptr<DateEQ> res(new DateEQ);
-    date::lowerbound(tt, res->geref);
-    date::upperbound(tt, res->leref);
-    return res.release();
 }
 
 DTMatch* DTMatch::createTimeLE(const int* tt) { return new TimeLE(tt); }

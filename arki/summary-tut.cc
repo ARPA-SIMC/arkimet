@@ -447,10 +447,18 @@ void to::test<20>()
 {
     Summary s;
     s.readFile("inbound/00-00.bufr.summary");
-    auto_ptr<types::Reftime> rt = s.getReferenceTime();
-    cerr << *rt << endl;
 
-    s.write(cerr, "stderr");
+    // Check that ranges are computed correctly even with all zeroes
+    auto_ptr<types::Reftime> rt = s.getReferenceTime();
+    wassert(actual(rt->period_begin()) == Time(0, 0, 0, 0, 0, 0));
+    wassert(actual(rt->period_end()) == Time(0, 0, 0, 0, 0, 14));
+
+    // Check that serialization does not throw exceptions
+    stringstream out_yaml;
+    out_yaml << *rt << endl;
+
+    stringstream out_bin;
+    s.write(out_bin, "memory");
 }
 
 }

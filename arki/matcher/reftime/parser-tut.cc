@@ -73,6 +73,12 @@ void to::test<1>()
 	ensure_equals(p.res[0]->timebase(), 3*3600+4*60+5);
 	ensure_equals(p.res[1]->toString(), "%3h");
 
+	p.parse("<2007-01-02 03:04:05%3h");
+	ensure_equals(p.res.size(), 2u);
+	ensure_equals(p.res[0]->toString(), "<2007-01-02 03:04:05");
+	ensure_equals(p.res[0]->timebase(), 3*3600+4*60+5);
+	ensure_equals(p.res[1]->toString(), "%3h");
+
 	p.parse("==12:00:00");
 	ensure_equals(p.res.size(), 1u);
 	ensure_equals(p.res[0]->toString(), "==12:00:00");
