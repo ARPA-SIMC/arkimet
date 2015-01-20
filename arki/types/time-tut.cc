@@ -42,10 +42,9 @@ TESTGRP(arki_types_time);
 template<> template<>
 void to::test<1>()
 {
-    auto_ptr<Time> o = Time::createInvalid();
+    auto_ptr<Time> o(new Time(0, 0, 0));
     wassert(actual(o).is_time(0, 0, 0, 0, 0, 0));
-    wassert(actual(o->isValid()).isfalse());
-    wassert(actual(o) == Time::createInvalid());
+    wassert(actual(o) == Time(0, 0, 0));
     wassert(actual(o) == Time::create(0, 0, 0, 0, 0, 0));
     wassert(actual(o) != Time::create(1789, 7, 14, 12, 0, 0));
 

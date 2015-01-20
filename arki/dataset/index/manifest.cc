@@ -505,9 +505,9 @@ public:
     {
         for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
         {
-            if (!begin.get() || (i->start_time.isValid() && i->start_time < *begin))
+            if (!begin.get() || i->start_time < *begin)
                 begin.reset(new Time(i->start_time));
-            if (!end.get() || (i->end_time.isValid() && i->end_time > *end))
+            if (!end.get() || i->end_time > *end)
                 end.reset(new Time(i->end_time));
         }
     }

@@ -67,8 +67,6 @@ public:
     Time(const Time& t);
     Time(struct tm& t);
 
-    bool isValid() const;
-
 	Time& operator=(const Time& t);
 
     int compare_raw(const int (&vals)[6]) const;
@@ -105,16 +103,12 @@ public:
 
     Time* clone() const override;
 
-    void setInvalid();
     void set(int ye, int mo, int da, int ho, int mi, int se);
     void set(const int (&vals)[6]);
     void set(struct tm& t);
     void setFromISO8601(const std::string& str);
     void setFromSQL(const std::string& str);
     void setNow();
-
-    /// Construct a "now" time of (0, 0, 0, 0, 0, 0)
-    static std::auto_ptr<Time> createInvalid();
 
     /// Construct a Time for the given date
     static std::auto_ptr<Time> create(int ye, int mo, int da, int ho, int mi, int se);

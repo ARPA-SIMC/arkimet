@@ -69,13 +69,6 @@ Time& Time::operator=(const Time& t)
 	return *this;
 }
 
-bool Time::isValid() const
-{
-    for (unsigned i = 0; i < 6; ++i)
-        if (vals[i]) return true;
-    return false;
-}
-
 int Time::compare_raw(const int (&other)[6]) const
 {
     for (unsigned int i = 0; i < 6; ++i)
@@ -312,11 +305,6 @@ Time* Time::clone() const
     return res;
 }
 
-void Time::setInvalid()
-{
-    memset(vals, 0, 6*sizeof(int));
-}
-
 void Time::set(int ye, int mo, int da, int ho, int mi, int se)
 {
     vals[0] = ye;
@@ -369,13 +357,6 @@ void Time::setNow()
     struct tm now;
     gmtime_r(&timet_now, &now);
     set(now);
-}
-
-auto_ptr<Time> Time::createInvalid()
-{
-    auto_ptr<Time> res(new Time);
-    res->setInvalid();
-    return res;
 }
 
 auto_ptr<Time> Time::create(int ye, int mo, int da, int ho, int mi, int se)
