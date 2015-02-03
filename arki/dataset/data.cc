@@ -107,8 +107,9 @@ namespace {
 struct BaseSegmentManager : public SegmentManager
 {
     std::string root;
+    bool mockdata;
 
-    BaseSegmentManager(const std::string& root) : root(root) {}
+    BaseSegmentManager(const std::string& root, bool mockdata=false) : root(root), mockdata(mockdata) {}
 
     Reader* get_reader(const std::string& relname)
     {
@@ -137,15 +138,27 @@ struct BaseSegmentManager : public SegmentManager
 
         if (S_ISDIR(st->st_mode))
         {
-            new_writer.reset(new dir::Writer(format, relname, absname, truncate));
+            if (mockdata)
+                new_writer.reset(new dir::HoleWriter(format, relname, absname, truncate));
+            else
+                new_writer.reset(new dir::Writer(format, relname, absname, truncate));
         } else {
             if (format == "grib" || format == "grib1" || format == "grib2")
             {
-                new_writer.reset(new concat::Writer(relname, absname, truncate));
+                if (mockdata)
+                    new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
+                else
+                    new_writer.reset(new concat::Writer(relname, absname, truncate));
             } else if (format == "bufr") {
-                new_writer.reset(new concat::Writer(relname, absname, truncate));
+                if (mockdata)
+                    new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
+                else
+                    new_writer.reset(new concat::Writer(relname, absname, truncate));
             } else if (format == "vm2") {
-                new_writer.reset(new lines::Writer(relname, absname, truncate));
+                if (mockdata)
+                    throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
+                else
+                    new_writer.reset(new lines::Writer(relname, absname, truncate));
             } else {
                 throw wibble::exception::Consistency(
                         "getting writer for " + format + " file " + relname,
@@ -166,15 +179,27 @@ struct BaseSegmentManager : public SegmentManager
 
         if (S_ISDIR(st->st_mode))
         {
-            new_maint.reset(new dir::Maint);
+            if (mockdata)
+                new_maint.reset(new dir::HoleMaint);
+            else
+                new_maint.reset(new dir::Maint);
         } else {
             if (format == "grib" || format == "grib1" || format == "grib2")
             {
-                new_maint.reset(new concat::Maint);
+                if (mockdata)
+                    new_maint.reset(new concat::HoleMaint);
+                else
+                    new_maint.reset(new concat::Maint);
             } else if (format == "bufr") {
-                new_maint.reset(new concat::Maint);
+                if (mockdata)
+                    new_maint.reset(new concat::HoleMaint);
+                else
+                    new_maint.reset(new concat::Maint);
             } else if (format == "vm2") {
-                new_maint.reset(new lines::Maint);
+                if (mockdata)
+                    throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
+                else
+                    new_maint.reset(new lines::Maint);
             } else {
                 throw wibble::exception::Consistency(
                         "preparing maintenance for " + format + " file " + relname,
@@ -245,10 +270,8 @@ struct BaseSegmentManager : public SegmentManager
 /// Segment manager that picks the right readers/writers based on file types
 struct AutoSegmentManager : public BaseSegmentManager
 {
-    bool mockdata;
-
     AutoSegmentManager(const std::string& root, bool mockdata=false)
-        : BaseSegmentManager(root), mockdata(mockdata) {}
+        : BaseSegmentManager(root, mockdata) {}
 
     auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
     {

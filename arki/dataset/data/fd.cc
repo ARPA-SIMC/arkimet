@@ -186,7 +186,8 @@ Pending Maint::repack(
         const std::string& rootdir,
         const std::string& relname,
         metadata::Collection& mds,
-        data::Writer* make_repack_writer(const std::string&, const std::string&))
+        data::Writer* make_repack_writer(const std::string&, const std::string&),
+        bool skip_validation)
 {
     struct Rename : public Transaction
     {
@@ -237,7 +238,8 @@ Pending Maint::repack(
         // Read the data
         wibble::sys::Buffer buf = (*i)->getData();
         // Validate it
-        validator.validate(buf.data(), buf.size());
+        if (!skip_validation)
+            validator.validate(buf.data(), buf.size());
         // Append it to the new file
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata

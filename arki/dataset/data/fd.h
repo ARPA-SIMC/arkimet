@@ -60,11 +60,20 @@ struct Maint : public data::Maint
     void truncate(const std::string& absname, size_t offset);
     FileState check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
+    /**
+     * If skip_validation is true, repack will skip validating the data that is
+     * being read.
+     *
+     * This is only used during tests to support repacking files with mock data
+     * inside. The files are made of filesystem holes, so the data that is read
+     * from them is always zeroes.
+     */
     static Pending repack(
             const std::string& rootdir,
             const std::string& relname,
             metadata::Collection& mds,
-            data::Writer* make_repack_writer(const std::string&, const std::string&));
+            data::Writer* make_repack_writer(const std::string&, const std::string&),
+            bool skip_validation=false);
 };
 
 }

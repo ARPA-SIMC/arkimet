@@ -180,7 +180,7 @@ static data::Writer* make_repack_hole_writer(const std::string& relname, const s
 }
 Pending HoleMaint::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) override
 {
-    return fd::Maint::repack(rootdir, relname, mds, make_repack_hole_writer);
+    return fd::Maint::repack(rootdir, relname, mds, make_repack_hole_writer, true);
 }
 
 OstreamWriter::OstreamWriter()
