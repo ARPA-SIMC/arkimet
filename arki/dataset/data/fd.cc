@@ -244,6 +244,9 @@ Pending Maint::repack(
         off_t w_off = writer->append(buf);
         // Update the source information in the metadata
         (*i)->set_source(Source::createBlob((*i)->source().format, rootdir, relname, w_off, buf.size()));
+        // Drop the cached data, to prevent ending up with the whole segment
+        // sitting in memory
+        (*i)->drop_cached_data();
     }
 
     // Close the temp file
