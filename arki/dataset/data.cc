@@ -245,7 +245,10 @@ struct BaseSegmentManager : public SegmentManager
 /// Segment manager that picks the right readers/writers based on file types
 struct AutoSegmentManager : public BaseSegmentManager
 {
-    AutoSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
+    bool mockdata;
+
+    AutoSegmentManager(const std::string& root, bool mockdata=false)
+        : BaseSegmentManager(root), mockdata(mockdata) {}
 
     auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
     {
@@ -254,13 +257,25 @@ struct AutoSegmentManager : public BaseSegmentManager
 
         if (format == "grib" || format == "grib1" || format == "grib2")
         {
-            new_writer.reset(new concat::Writer(relname, absname, truncate));
+            if (mockdata)
+                throw wibble::exception::Consistency("mockdata single-file segments not implemented");
+            else
+                new_writer.reset(new concat::Writer(relname, absname, truncate));
         } else if (format == "bufr") {
-            new_writer.reset(new concat::Writer(relname, absname, truncate));
+            if (mockdata)
+                throw wibble::exception::Consistency("mockdata single-file segments not implemented");
+            else
+                new_writer.reset(new concat::Writer(relname, absname, truncate));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            new_writer.reset(new dir::Writer(format, relname, absname, truncate));
+            if (mockdata)
+                new_writer.reset(new dir::HoleWriter(format, relname, absname, truncate));
+            else
+                new_writer.reset(new dir::Writer(format, relname, absname, truncate));
         } else if (format == "vm2") {
-            new_writer.reset(new lines::Writer(relname, absname, truncate));
+            if (mockdata)
+                throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
+            else
+                new_writer.reset(new lines::Writer(relname, absname, truncate));
         } else {
             throw wibble::exception::Consistency(
                     "getting writer for " + format + " file " + relname,
@@ -357,7 +372,7 @@ std::auto_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)
             return auto_ptr<SegmentManager>(new ForceDirSegmentManager(root));
     }
     else
-        return auto_ptr<SegmentManager>(new AutoSegmentManager(root));
+        return auto_ptr<SegmentManager>(new AutoSegmentManager(root, mockdata));
 }
 
 

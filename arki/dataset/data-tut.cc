@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,10 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include "config.h"
-
-#include <arki/tests/tests.h>
+#include <arki/dataset/tests.h>
+#include <arki/configfile.h>
+#include <arki/metadata.h>
+#include <wibble/sys/fs.h>
 #include "data.h"
 #include "data/lines.h"
 
@@ -86,17 +87,66 @@ void to::test<1>()
     wassert(actual(cache.get("gnu") == gnu).istrue());
 }
 
+namespace {
+struct TestSegments
+{
+    ConfigFile cfg;
+    std::string pathname;
+    //const testdata::Fixture& td;
+
+    /**
+     * cfg_segments can be:
+     *  - dir: directory segments
+     *  - (nothing): AutoSegmentManager
+     */
+    TestSegments(const std::string& cfg_segments=std::string())
+         : pathname("testsegment")
+    {
+        if (sys::fs::isdir(pathname))
+            sys::fs::rmtree(pathname);
+        else
+            sys::fs::deleteIfExists(pathname);
+
+        cfg.setValue("path", pathname);
+        if (!cfg_segments.empty())
+            cfg.setValue("segments", cfg_segments);
+    }
+
+    void test_repack(WIBBLE_TEST_LOCPRM)
+    {
+        ConfigFile cfg1(cfg);
+        cfg1.setValue("mockdata", "true");
+        auto_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(cfg1));
+
+        // Import 2 gigabytes of data in a single segment
+        metadata::Collection mds;
+        data::Writer* w = segment_manager->get_writer("test.grib");
+        for (unsigned i = 0; i < 2048; ++i)
+        {
+            auto_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));
+            w->append(*md);
+            md->drop_cached_data();
+            mds.eat(md);
+        }
+
+        // Repack it
+        segment_manager->repack("test.grib", mds);
+    }
+};
+}
+
 template<> template<>
 void to::test<2>()
 {
-#if 0
+    TestSegments ts;
+    wruntest(ts.test_repack);
+}
 
-    Writer w1 = Writer::get("grib", "test-data-writer");
-    Writer w2 = Writer::get("grib", "test-data-writer");
-
-    // Check that the implementation is reused
-    wassert(actual(w1._implementation()) == w2._implementation());
-#endif
+template<> template<>
+void to::test<3>()
+{
+    TestSegments ts("dir");
+    wruntest(ts.test_repack);
 }
 
 }

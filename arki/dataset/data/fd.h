@@ -50,7 +50,7 @@ public:
     void lock();
     void unlock();
     off_t wrpos();
-    void write(const wibble::sys::Buffer& buf);
+    virtual void write(const wibble::sys::Buffer& buf);
     void truncate(off_t pos);
 };
 
