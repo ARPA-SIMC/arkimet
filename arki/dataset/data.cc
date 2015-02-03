@@ -348,10 +348,14 @@ std::auto_ptr<SegmentManager> SegmentManager::get(const std::string& root)
 std::auto_ptr<SegmentManager> SegmentManager::get(const ConfigFile& cfg)
 {
     string root = cfg.value("path");
+    bool mockdata = cfg.value("mockdata") == "true";
     if (cfg.value("segments") == "dir")
-        return auto_ptr<SegmentManager>(new ForceDirSegmentManager(root));
-    else if (cfg.value("segments") == "holes")
-        return auto_ptr<SegmentManager>(new HoleDirSegmentManager(root));
+    {
+        if (mockdata)
+            return auto_ptr<SegmentManager>(new HoleDirSegmentManager(root));
+        else
+            return auto_ptr<SegmentManager>(new ForceDirSegmentManager(root));
+    }
     else
         return auto_ptr<SegmentManager>(new AutoSegmentManager(root));
 }

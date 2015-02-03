@@ -798,7 +798,8 @@ void to::test<16>()
         "type = ondisk2\n"
         "step = daily\n"
         "unique = reftime\n"
-        "segments = holes\n"
+        "segments = dir\n"
+        "mockdata = true\n"
         "name = testholes\n"
         "path = testholes\n";
     auto_ptr<dataset::WritableLocal> writer(make_dataset_writer(conf));
