@@ -43,9 +43,9 @@ class Writer : public fd::Writer
 public:
     Writer(const std::string& relname, const std::string& absname, bool truncate=false);
 
-    virtual void append(Metadata& md);
-    virtual off_t append(const wibble::sys::Buffer& buf);
-    virtual Pending append(Metadata& md, off_t* ofs);
+    void append(Metadata& md) override;
+    off_t append(const wibble::sys::Buffer& buf) override;
+    Pending append(Metadata& md, off_t* ofs) override;
 };
 
 class Maint : public fd::Maint
@@ -63,8 +63,8 @@ public:
     OstreamWriter();
     virtual ~OstreamWriter();
 
-    virtual size_t stream(Metadata& md, std::ostream& out) const;
-    virtual size_t stream(Metadata& md, int out) const;
+    size_t stream(Metadata& md, std::ostream& out) const override;
+    size_t stream(Metadata& md, int out) const override;
 };
 
 }
