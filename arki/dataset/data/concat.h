@@ -48,10 +48,24 @@ public:
     Pending append(Metadata& md, off_t* ofs) override;
 };
 
+class HoleWriter : public Writer
+{
+public:
+    HoleWriter(const std::string& relname, const std::string& absname, bool truncate=false)
+        : Writer(relname, absname, truncate) {}
+
+    void write(const wibble::sys::Buffer& buf) override;
+};
+
 class Maint : public fd::Maint
 {
-    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
-    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);
+    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true) override;
+    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) override;
+};
+
+class HoleMaint : public Maint
+{
+    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) override;
 };
 
 class OstreamWriter : public data::OstreamWriter

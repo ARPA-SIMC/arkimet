@@ -258,12 +258,12 @@ struct AutoSegmentManager : public BaseSegmentManager
         if (format == "grib" || format == "grib1" || format == "grib2")
         {
             if (mockdata)
-                throw wibble::exception::Consistency("mockdata single-file segments not implemented");
+                new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
             else
                 new_writer.reset(new concat::Writer(relname, absname, truncate));
         } else if (format == "bufr") {
             if (mockdata)
-                throw wibble::exception::Consistency("mockdata single-file segments not implemented");
+                new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
             else
                 new_writer.reset(new concat::Writer(relname, absname, truncate));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
@@ -291,13 +291,25 @@ struct AutoSegmentManager : public BaseSegmentManager
 
         if (format == "grib" || format == "grib1" || format == "grib2")
         {
-            new_maint.reset(new concat::Maint);
+            if (mockdata)
+                new_maint.reset(new concat::HoleMaint);
+            else
+                new_maint.reset(new concat::Maint);
         } else if (format == "bufr") {
-            new_maint.reset(new concat::Maint);
+            if (mockdata)
+                new_maint.reset(new concat::HoleMaint);
+            else
+                new_maint.reset(new concat::Maint);
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            new_maint.reset(new dir::Maint);
+            if (mockdata)
+                new_maint.reset(new dir::HoleMaint);
+            else
+                new_maint.reset(new dir::Maint);
         } else if (format == "vm2") {
-            new_maint.reset(new lines::Maint);
+            if (mockdata)
+                throw wibble::exception::Consistency("mockdata single-file line-based maintenance not implemented");
+            else
+                new_maint.reset(new lines::Maint);
         } else {
             throw wibble::exception::Consistency(
                     "preparing maintenance for " + format + " file " + relname,

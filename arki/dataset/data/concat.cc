@@ -147,6 +147,19 @@ Pending Writer::append(Metadata& md, off_t* ofs)
     return res;
 }
 
+void HoleWriter::write(const wibble::sys::Buffer& buf) override
+{
+    // Get the current file size
+    off_t pos = ::lseek(fd, 0, SEEK_END);
+    if (pos == (off_t)-1)
+        throw wibble::exception::File(absname, "getting file size");
+
+    // Enlarge its apparent size to include the size of buf
+    int res = ftruncate(fd, pos + buf.size());
+    if (res < 0)
+        throw wibble::exception::File(absname, "adding " + str::fmt(buf.size()) + " bytes to the apparent file size");
+}
+
 FileState Maint::check(const std::string& absname, const metadata::Collection& mds, bool quick)
 {
     return fd::Maint::check(absname, mds, 0, quick);
@@ -159,6 +172,15 @@ static data::Writer* make_repack_writer(const std::string& relname, const std::s
 Pending Maint::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
 {
     return fd::Maint::repack(rootdir, relname, mds, make_repack_writer);
+}
+
+static data::Writer* make_repack_hole_writer(const std::string& relname, const std::string& absname)
+{
+    return new concat::HoleWriter(relname, absname, true);
+}
+Pending HoleMaint::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) override
+{
+    return fd::Maint::repack(rootdir, relname, mds, make_repack_hole_writer);
 }
 
 OstreamWriter::OstreamWriter()
