@@ -28,6 +28,8 @@
 #include <arki/dispatcher.h>
 #include <arki/types/source/blob.h>
 #include <arki/utils.h>
+#include <arki/runtime/io.h>
+#include <arki/runtime/processor.h>
 #include <wibble/string.h>
 #include <wibble/stream/posix.h>
 
@@ -111,6 +113,19 @@ void to::test<3>()
     mdc.clear();
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
     ensure_equals(mdc.size(), 0u);
+
+    // Try again, but let ProcessorMaker build the query
+    runtime::Tempfile output;
+    runtime::ProcessorMaker pm;
+    pm.data_inline = true;
+    auto_ptr<runtime::DatasetProcessor> proc = pm.make(Matcher::parse("origin:GRIB1,200"), output);
+    proc->process(*testds, "test200");
+    proc->end();
+    mdc.clear();
+    Metadata::readFile(output.name(), mdc);
+    wassert(actual(mdc.size()) == 1);
+    wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
+    wassert(actual(mdc[0].getData().size()) == 7218);
 }
 
 // Test querying the summary
