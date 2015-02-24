@@ -61,7 +61,7 @@ struct DataProcessor : public DatasetProcessor
     bool server_side;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out, bool data_inline=false)
-        : output(out), printer(createPrinter(maker, out)), query(q),
+        : output(out), printer(createPrinter(maker, out)), query(q, data_inline),
           data_inline(data_inline), server_side(maker.server_side)
     {
         description_attrs.push_back("query=" + q.toString());

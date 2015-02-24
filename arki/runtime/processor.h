@@ -70,6 +70,8 @@ struct ProcessorMaker
     bool annotate;
     bool data_only;
     bool data_inline;
+    // True if we are running in arki-server and we are running the server side
+    // of a remote query
     bool server_side;
     std::string postprocess;
     std::string report;
