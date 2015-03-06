@@ -51,6 +51,7 @@
 #include <arki/nag.h>
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
+#include <arki/emitter/json.h>
 #include <wibble/net/server.h>
 #include <wibble/net/http.h>
 //#include <arki/utils/lua.h>
@@ -441,6 +442,13 @@ struct RootSummaryHandler : public LocalHandler
             sum.writeYaml(res);
             req.send_result(res.str(), "text/x-yaml", macroname + "-summary.yaml");
         }
+        else if (*style == "json")
+        {
+            stringstream res;
+            emitter::JSON json(res);
+            sum.serialise(json);
+            req.send_result(res.str(), "application/json", macroname + "-summary.json");
+        }
         else
         {
             string res = sum.encode(true);
@@ -509,6 +517,7 @@ struct DatasetHandler : public LocalHandler
         res << "    <select name='style'>" << endl;
         res << "      <option value='data'>Data</option>" << endl;
         res << "      <option value='yaml'>Human-readable metadata</option>" << endl;
+        res << "      <option value='json'>JSON metadata</option>" << endl;
         res << "      <option value='inline'>Binary metadata and data</option>" << endl;
         res << "      <option value='md'>Binary metadata</option>" << endl;
         res << "    </select>" << endl;
