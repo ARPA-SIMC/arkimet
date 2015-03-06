@@ -26,6 +26,7 @@
 #include <arki/sort.h>
 #include <arki/utils.h>
 #include <arki/runtime.h>
+#include <arki/emitter/json.h>
 
 using namespace std;
 using namespace wibble;
@@ -120,6 +121,8 @@ void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
         ;
     } else if (*style == "yaml") {
         pmaker.yaml = true;
+    } else if (*style == "json") {
+        pmaker.json = true;
     } else if (*style == "inline") {
         pmaker.data_inline = true;
     } else if (*style == "data") {
@@ -222,6 +225,13 @@ void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::ht
         sum.writeYaml(res);
         req.send_result(res.str(), "text/x-yaml", dsname + "-summary.yaml");
     }
+    else if (*parms.style == "json")
+    {
+        stringstream res;
+        emitter::JSON json(res);
+        sum.serialise(json);
+        req.send_result(res.str(), "application/json", dsname + "-summary.json");
+    }
     else
     {
         string res = sum.encode(true);
@@ -252,6 +262,11 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
     {
         headers.content_type = "text/x-yaml";
         headers.ext = "yaml";
+    }
+    else if (pmaker.json)
+    {
+        headers.content_type = "application/json";
+        headers.ext = "json";
     } else if (!pmaker.report.empty()) {
         headers.content_type = "text/plain";
         headers.ext = "txt";
