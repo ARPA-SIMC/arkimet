@@ -292,10 +292,8 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 		postdata = "query=" + urlencode(q.matcher.toStringExpanded());
 	else
 		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
-	if (q.sorter)
-	{
-		postdata += ";sort=" + urlencode(q.sorter->toString());
-	}
+    if (q.sorter)
+        postdata += "&sort=" + urlencode(q.sorter->toString());
 	if (m_mischief)
 	{
 		postdata += urlencode(";MISCHIEF");
