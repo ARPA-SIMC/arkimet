@@ -177,26 +177,11 @@ public:
 
     void refine_reftime(const dballe::Msg& msg)
     {
-        static int srcs[] = { DBA_MSG_YEAR, DBA_MSG_MONTH, DBA_MSG_DAY, DBA_MSG_HOUR, DBA_MSG_MINUTE, DBA_MSG_SECOND };
-        types::Time time(0, 0, 0);
-
-        for (unsigned i = 0; i < 6; ++i)
-        {
-            if (const wreport::Var* var = msg.find_by_id(srcs[i]))
-                if (var->isset())
-                {
-                    time.vals[i] = var->enqi();
-                    continue;
-                }
-            if (i == 5)
-                // In case of seconds, if no value is found we default to 0
-                time.vals[i] = 0;
-            else
-                return;
-        }
-
-        // If we got here, vals is complete
-        reftime->time = time;
+        Datetime dt = msg.datetime();
+        if (dt.is_missing()) return;
+        reftime->time = types::Time(
+                dt.date.year, dt.date.month, dt.date.day,
+                dt.time.hour, dt.time.minute, dt.time.second);
     }
 
     void harvest_from_dballe(const Rawmsg& rmsg, Metadata& md)

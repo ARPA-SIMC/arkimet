@@ -152,12 +152,16 @@ protected:
                 const Msg& m = *msgs[0];
 
                 // Update reference time
-                if (const Var* var = m.get_year_var()) newmsg->rep_year = var->enqi();
-                if (const Var* var = m.get_month_var()) newmsg->rep_month = var->enqi();
-                if (const Var* var = m.get_day_var()) newmsg->rep_day = var->enqi();
-                if (const Var* var = m.get_hour_var()) newmsg->rep_hour = var->enqi();
-                if (const Var* var = m.get_minute_var()) newmsg->rep_minute = var->enqi();
-                if (const Var* var = m.get_second_var()) newmsg->rep_second = var->enqi();
+                const Datetime& dt = m.datetime();
+                if (!dt.is_missing())
+                {
+                    newmsg->rep_year = dt.date.year;
+                    newmsg->rep_month = dt.date.month;
+                    newmsg->rep_day = dt.date.day;
+                    newmsg->rep_hour = dt.time.hour;
+                    newmsg->rep_minute = dt.time.minute;
+                    newmsg->rep_second = dt.time.second;
+                }
             } catch (wreport::error& e) {
                 // Don't bother with updating reference time if
                 // we cannot understand the layout of this BUFR
