@@ -180,8 +180,8 @@ public:
         Datetime dt = msg.datetime();
         if (dt.is_missing()) return;
         reftime->time = types::Time(
-                dt.date.year, dt.date.month, dt.date.day,
-                dt.time.hour, dt.time.minute, dt.time.second);
+                dt.year, dt.month, dt.day,
+                dt.hour, dt.minute, dt.second);
     }
 
     void harvest_from_dballe(const Rawmsg& rmsg, Metadata& md)

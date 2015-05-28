@@ -155,12 +155,12 @@ protected:
                 const Datetime& dt = m.datetime();
                 if (!dt.is_missing())
                 {
-                    newmsg->rep_year = dt.date.year;
-                    newmsg->rep_month = dt.date.month;
-                    newmsg->rep_day = dt.date.day;
-                    newmsg->rep_hour = dt.time.hour;
-                    newmsg->rep_minute = dt.time.minute;
-                    newmsg->rep_second = dt.time.second;
+                    newmsg->rep_year = dt.year;
+                    newmsg->rep_month = dt.month;
+                    newmsg->rep_day = dt.day;
+                    newmsg->rep_hour = dt.hour;
+                    newmsg->rep_minute = dt.minute;
+                    newmsg->rep_second = dt.second;
                 }
             } catch (wreport::error& e) {
                 // Don't bother with updating reference time if
