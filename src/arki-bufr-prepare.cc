@@ -25,9 +25,7 @@
 #include <arki/runtime.h>
 #include <arki/nag.h>
 #include <arki/scan/bufr.h>
-
-#include <dballe/core/rawmsg.h>
-#include <dballe/core/file.h>
+#include <dballe/file.h>
 #include <wreport/bulletin.h>
 #include <dballe/msg/msgs.h>
 #include <dballe/msg/codec.h>
@@ -127,7 +125,7 @@ protected:
             return rc->second;
     }
 
-    void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
+    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
     {
         // Create new message with the same info as the old one
         auto_ptr<BufrBulletin> newmsg(BufrBulletin::create());
@@ -146,8 +144,7 @@ protected:
 
             // Parse into dba_msg
             try {
-                Msgs msgs;
-                importer.from_bulletin(*newmsg, msgs);
+                Msgs msgs = importer.from_bulletin(*newmsg);
                 const Msg& m = *msgs[0];
 
                 // Update reference time
@@ -167,7 +164,7 @@ protected:
             }
 
             // Write out the message
-            Rawmsg newrmsg;
+            string newrmsg;
             newmsg->encode(newrmsg);
             outfile.write(newrmsg);
         }
@@ -187,26 +184,25 @@ public:
     void process(const std::string& filename, File& outfile)
     {
         // Use .release() so the code is the same even with the new C++11's dballe
-        auto_ptr<File> file(File::create(BUFR, filename.c_str(), "r").release());
-        auto_ptr<msg::Importer> importer(msg::Importer::create(BUFR).release());
+        auto_ptr<File> file(File::create(File::BUFR, filename.c_str(), "r").release());
+        auto_ptr<msg::Importer> importer(msg::Importer::create(File::BUFR).release());
 
-        Rawmsg rmsg;
-        while (file->read(rmsg))
+        while (BinaryMessage rmsg = file->read())
         {
             // Decode message
             auto_ptr<BufrBulletin> msg(BufrBulletin::create());
             bool decoded;
             try {
-                msg->decode(rmsg, rmsg.file.c_str(), rmsg.offset);
+                msg->decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
                 decoded = true;
             } catch (std::exception& e) {
                 nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",
-                    rmsg.file.c_str(), rmsg.offset, rmsg.index, e.what());
+                    rmsg.pathname.c_str(), rmsg.offset, rmsg.index, e.what());
                 decoded = false;
             }
 
             if ((!decoded || msg->subsets.size() == 1u) && !override_usn_active)
-                outfile.write(rmsg);
+                outfile.write(rmsg.data);
             else
                 splitmsg(rmsg, *msg, *importer, outfile);
         }
@@ -231,9 +227,9 @@ int main(int argc, const char* argv[])
 
         auto_ptr<File> outfile;
         if (opts.outfile->isSet())
-            outfile.reset(File::create(BUFR, opts.outfile->stringValue().c_str(), "wb").release());
+            outfile.reset(File::create(File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
         else
-            outfile.reset(File::create(BUFR, "(stdout)", "wb").release());
+            outfile.reset(File::create(File::BUFR, "(stdout)", "wb").release());
 
         if (!opts.hasNext())
         {
@@ -255,5 +251,3 @@ int main(int argc, const char* argv[])
         return 1;
     }
 }
-
-// vim:set ts=4 sw=4:

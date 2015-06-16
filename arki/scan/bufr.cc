@@ -24,10 +24,10 @@
 
 #include <arki/scan/bufr.h>
 #include <arki/utils/files.h>
+#include <dballe/file.h>
 #include <dballe/msg/msgs.h>
 #include <dballe/msg/codec.h>
 #include <dballe/core/csv.h>
-#include <dballe/core/file.h>
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
 #include <arki/metadata.h>
@@ -108,7 +108,7 @@ Bufr::Bufr() : file(0), importer(0), extras(0)
 {
 	msg::Importer::Options opts;
 	opts.simplified = true;
-	importer = msg::Importer::create(BUFR, opts).release();
+	importer = msg::Importer::create(File::BUFR, opts).release();
 
 #ifdef HAVE_LUA
 	extras = new bufr::BufrLua;
@@ -139,11 +139,9 @@ void Bufr::open(const std::string& filename, const std::string& basedir, const s
     this->basedir = basedir;
     this->relname = relname;
     if (filename == "-")
-    {
-        file = File::create(BUFR, "(stdin)", "r").release();
-    } else {
-        file = File::create(BUFR, filename.c_str(), "r").release();
-    }
+        file = File::create(File::BUFR, stdin, false, "standard input").release();
+    else
+        file = File::create(File::BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
@@ -182,11 +180,11 @@ public:
                 dt.hour, dt.minute, dt.second);
     }
 
-    void harvest_from_dballe(const Rawmsg& rmsg, Metadata& md)
+    void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
     {
         msg = 0;
         auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
-        bulletin->decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
+        bulletin->decode_header(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
 
 #if 0
         // Detect optional section and handle it
@@ -230,7 +228,7 @@ public:
             // Ignore domain errors, it's ok if we lose some oddball data
             wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
 
-            bulletin->decode(rmsg);
+            bulletin->decode(rmsg.data);
         } catch (wreport::error& e) {
             // We can still try to handle partially decoded files
 
@@ -255,7 +253,7 @@ public:
             // Ignore domain errors, it's ok if we lose some oddball data
             wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
 
-            importer.from_bulletin(*bulletin, msgs);
+            msgs = importer.from_bulletin(*bulletin);
         } catch (std::exception& e) {
             // If we cannot import it as a Msgs, we are done
             return;
@@ -284,17 +282,16 @@ bool Bufr::do_scan(Metadata& md)
 {
     md.clear();
 
-    Rawmsg rmsg;
-    if (!file->read(rmsg))
-        return false;
+    BinaryMessage rmsg = file->read();
+    if (!rmsg) return false;
 
     // Set source
     if (false)
-        md.set_source_inline("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
+        md.set_source_inline("bufr", wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
     else {
-        auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.size());
+        auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size());
         md.set_source(source);
-        md.set_cached_data(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
+        md.set_cached_data(wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
     }
 
     Harvest harvest(*importer);
