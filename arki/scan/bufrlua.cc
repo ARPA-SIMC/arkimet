@@ -93,9 +93,10 @@ int BufrLua::get_scan_func(MsgType type)
 	return scan_funcs[type] = id;
 }
 
-void BufrLua::scan(Msg& msg, Metadata& md)
+void BufrLua::scan(Message& message, Metadata& md)
 {
-	int funcid = get_scan_func(msg.type);
+    Msg& msg = Msg::downcast(message);
+    int funcid = get_scan_func(msg.type);
 
 	// If we do not have a scan function for this message type, we are done
 	if (funcid == -1) return;

@@ -27,7 +27,7 @@
 #include <arki/scan/bufr.h>
 #include <dballe/file.h>
 #include <wreport/bulletin.h>
-#include <dballe/msg/msgs.h>
+#include <dballe/message.h>
 #include <dballe/msg/codec.h>
 
 #include <arpa/inet.h>
@@ -109,22 +109,6 @@ protected:
         dst.load_tables();
     }
 
-    int extract_rep_cod(const Msg& msg)
-    {
-        const char* rep_memo = NULL;
-        if (const Var* var = msg.get_rep_memo_var())
-            rep_memo = var->value();
-        else
-            rep_memo = Msg::repmemo_from_type(msg.type);
-
-        // Convert rep_memo to rep_cod
-        std::map<std::string, int>::const_iterator rc = to_rep_cod.find(rep_memo);
-        if (rc == to_rep_cod.end())
-            return 0;
-        else
-            return rc->second;
-    }
-
     void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
     {
         // Create new message with the same info as the old one
@@ -144,11 +128,10 @@ protected:
 
             // Parse into dba_msg
             try {
-                Msgs msgs = importer.from_bulletin(*newmsg);
-                const Msg& m = *msgs[0];
+                Messages msgs = importer.from_bulletin(*newmsg);
 
                 // Update reference time
-                const Datetime& dt = m.datetime();
+                const Datetime& dt = msgs[0].get_datetime();
                 if (!dt.is_missing())
                 {
                     newmsg->rep_year = dt.year;

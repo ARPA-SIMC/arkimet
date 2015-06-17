@@ -25,7 +25,7 @@
 #include <arki/scan/bufr.h>
 #include <arki/utils/files.h>
 #include <dballe/file.h>
-#include <dballe/msg/msgs.h>
+#include <dballe/message.h>
 #include <dballe/msg/codec.h>
 #include <dballe/core/csv.h>
 #include <wreport/bulletin.h>
@@ -160,20 +160,20 @@ namespace {
 class Harvest
 {
 protected:
-    Msgs msgs;
+    Messages msgs;
 
 public:
     dballe::msg::Importer& importer;
     auto_ptr<reftime::Position> reftime;
     auto_ptr<Origin> origin;
     auto_ptr<product::BUFR> product;
-    Msg* msg;
+    Message* msg;
 
     Harvest(dballe::msg::Importer& importer) : importer(importer), msg(0) {}
 
-    void refine_reftime(const dballe::Msg& msg)
+    void refine_reftime(const Message& msg)
     {
-        Datetime dt = msg.datetime();
+        Datetime dt = msg.get_datetime();
         if (dt.is_missing()) return;
         reftime->time = types::Time(
                 dt.year, dt.month, dt.day,
@@ -264,11 +264,11 @@ public:
         if (msgs.size() != 1)
             return;
 
-        msg = msgs[0];
+        msg = &msgs[0];
 
         // Set the product from the msg type
         ValueBag newvals;
-        newvals.set("t", Value::createString(msg_type_name(msg->type)));
+        newvals.set("t", Value::createString(msg_type_name(Msg::downcast(*msg).type)));
         product->addValues(newvals);
 
         // Set reference time from date and time if available
