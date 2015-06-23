@@ -57,7 +57,6 @@ class Bufr
     std::string relname;
     dballe::File* file;
     dballe::msg::Importer* importer;
-    std::map<int, std::string> to_rep_memo;
     bufr::BufrLua* extras;
 
 	void read_info_base(char* buf, ValueBag& area);
@@ -93,9 +92,6 @@ public:
 	 *   false if there are no more BUFR messages in the file
 	 */
 	bool next(Metadata& md);
-
-	static std::map<std::string, int> read_map_to_rep_cod(const std::string& fname = std::string());
-	static std::map<int, std::string> read_map_to_rep_memo(const std::string& fname = std::string());
 
     /// Return the update sequence number for a BUFR
     static int update_sequence_number(const std::string& buf);

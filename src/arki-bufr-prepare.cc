@@ -74,7 +74,6 @@ struct Options : public StandardParserWithManpage
 class Copier
 {
 protected:
-    std::map<std::string, int> to_rep_cod;
     bool override_usn_active;
     int override_usn_value;
 
@@ -177,7 +176,6 @@ protected:
 public:
     Copier() : override_usn_active(false)
     {
-        to_rep_cod = scan::Bufr::read_map_to_rep_cod();
     }
 
     void override_usn(int value)

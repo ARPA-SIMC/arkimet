@@ -24,7 +24,6 @@
 
 #include <arki/scan/bufr.h>
 #include <arki/utils/files.h>
-#include <dballe/msg/repinfo.h>
 #include <dballe/msg/msgs.h>
 #include <dballe/msg/codec.h>
 #include <dballe/core/csv.h>
@@ -111,7 +110,6 @@ Bufr::Bufr() : file(0), importer(0), extras(0)
 	opts.simplified = true;
 	importer = msg::Importer::create(BUFR, opts).release();
 
-	to_rep_memo = read_map_to_rep_memo();
 #ifdef HAVE_LUA
 	extras = new bufr::BufrLua;
 #endif
@@ -342,89 +340,10 @@ bool Bufr::next(Metadata& md)
     return do_scan(md);
 }
 
-namespace {
-	struct fill_to_repmemo
-	{
-		std::map<int, std::string>& dest;
-		fill_to_repmemo(std::map<int, std::string>& dest) : dest(dest) {}
-		void operator()(int cod, const std::string& memo)
-		{
-			dest.insert(make_pair(cod, memo));
-		}
-	};
-	struct fill_to_repcod
-	{
-		std::map<std::string, int>& dest;
-		fill_to_repcod(std::map<std::string, int>& dest) : dest(dest) {}
-		void operator()(int cod, const std::string& memo)
-		{
-			dest.insert(make_pair(memo, cod));
-		}
-	};
-}
-
 static inline void inplace_tolower(std::string& buf)
 {
 	for (std::string::iterator i = buf.begin(); i != buf.end(); ++i)
 		*i = tolower(*i);
-}
-
-template<typename T>
-static void read_repinfo(const std::string& fname, T& consumer)
-{
-	FILE* in;
-	const char* name;
-
-	if (fname.empty())
-		name = repinfo_default_filename();
-	else
-		name = fname.c_str();
-
-
-	// Open the input CSV file
-	in = fopen(name, "r");
-	if (in == NULL)
-		throw wibble::exception::File(name, "opening file");
-
-	// Close it on exit
-	struct HandleCloser {
-		FILE* fd;
-		HandleCloser(FILE* fd) : fd(fd) {}
-		~HandleCloser() { fclose(fd); }
-	} closer(in);
-
-	// Read the CSV file
-	vector<string> columns;
-	for (int line = 0; csv_read_next(in, columns); ++line)
-	{
-		int id;
-
-		if (columns.size() != 6)
-			error_parse::throwf(name, line, "Expected 6 columns, got %zd", columns.size());
-
-		// Lowercase all rep_memos
-		inplace_tolower(columns[1]);
-		id = strtol(columns[0].c_str(), 0, 10);
-
-		// Hand it to consumer
-		consumer(id, columns[1]);
-	}
-}
-
-std::map<std::string, int> Bufr::read_map_to_rep_cod(const std::string& fname)
-{
-	std::map<std::string, int> res;
-	fill_to_repcod consumer(res);
-	read_repinfo(fname, consumer);
-	return res;
-}
-
-std::map<int, std::string> Bufr::read_map_to_rep_memo(const std::string& fname)
-{
-	std::map<int, std::string> res;
-	fill_to_repmemo consumer(res);
-	read_repinfo(fname, consumer);
-	return res;
 }
 
 int Bufr::update_sequence_number(const std::string& buf)
@@ -436,4 +355,3 @@ int Bufr::update_sequence_number(const std::string& buf)
 
 }
 }
-// vim:set ts=4 sw=4:
