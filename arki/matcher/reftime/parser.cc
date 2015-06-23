@@ -345,7 +345,7 @@ struct TimeExact : public DTMatch
     set<int> times;
     // Set to true when we're not followed by a time to which we provide an interval
     bool lead;
-    TimeExact(const set<int>& times, bool lead = false) : times(times), lead(lead)
+    TimeExact(const set<int>& times, bool lead=false) : times(times), lead(lead)
     {
         //fprintf(stderr, "CREATED %zd times lead %d\n", times.size(), lead);
     }
@@ -394,7 +394,12 @@ struct TimeExact : public DTMatch
     {
         //fprintf(stderr, "STOS %zd %d\n", times.size(), lead);
         if (times.size() == 1)
-            return "==" + dtime::tostring(*times.begin());
+        {
+            if (lead)
+                return "==" + dtime::tostring(*times.begin());
+            else
+                return "% 24";
+        }
         else
         {
             set<int>::const_iterator i = times.begin();
@@ -433,22 +438,22 @@ DTMatch* DTMatch::createTimeGE(const int* tt) { return new TimeGE(tt); }
 DTMatch* DTMatch::createTimeGT(const int* tt) { return new TimeGT(tt); }
 DTMatch* DTMatch::createTimeEQ(const int* tt) { return new TimeEQ(tt); }
 
-void Parser::add(int val, int idx, DTMatch* base)
+void Parser::add_step(int val, int idx, DTMatch* base)
 {
-    //fprintf(stderr, "ADD %d %d %s\n", val, idx, base ? base->toString().c_str() : "NONE");
+    //fprintf(stderr, "ADD STEP %d %d %s\n", val, idx, base ? base->toString().c_str() : "NONE");
 
+    // Compute all the hh:mm:ss points we want in every day that gets matched,
+    // expressed as seconds from midnight.
     set<int> times;
     int timebase = base ? base->timebase() : 0;
     times.insert(timebase);
-
     int repetition = timesecs(val, idx);
-
     for (int tstep = timebase + repetition; tstep < 3600*24; tstep += repetition)
         times.insert(tstep);
     for (int tstep = timebase - repetition; tstep >= 0; tstep -= repetition)
         times.insert(tstep);
 
-    res.push_back(new TimeExact(times, base == 0));
+    res.push_back(new TimeExact(times, base==0));
 }
 
 }

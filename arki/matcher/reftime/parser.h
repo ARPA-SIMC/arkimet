@@ -106,7 +106,7 @@ struct Parser
 		res.push_back(t);
 	}
 
-    void add(int val, int idx, DTMatch* base=0);
+    void add_step(int val, int idx, DTMatch* base=0);
 
 	void mknow(int* vals)
 	{

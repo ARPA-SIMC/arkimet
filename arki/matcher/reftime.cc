@@ -100,9 +100,14 @@ std::string MatchReftime::toString() const
 	string res;
 	for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
 	{
-		if (!res.empty() && (*i)->isLead())
-			res += ",";
-		res += (*i)->toString();
+        if (!res.empty())
+        {
+           if ((*i)->isLead())
+               res += ",";
+           else
+               res += " ";
+        }
+        res += (*i)->toString();
 	}
 	return res;
 }

@@ -36,6 +36,7 @@
 namespace tut {
 using namespace std;
 using namespace wibble;
+using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -115,7 +116,8 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	ensure_equals(Matcher::parse("origin:GRIB1,1,,3 or BUFR,1").toString(), "origin:GRIB1,1,,3 or BUFR,1");
+    wassert(actual(Matcher::parse("origin:GRIB1,1,,3 or BUFR,1").toString()) == "origin:GRIB1,1,,3 or BUFR,1");
+    wassert(actual(Matcher::parse("reftime:>2015-06-01 09:00:00 % 24h").toStringExpanded()) == "reftime:>2015-06-01 09:00:00 % 24");
 	//ensure_equals(Matcher::parse("reftime:>=2007-01-02 03:04").toString(), "reftime:>=2007-01-02 03:04:00");
 	//ensure_equals(Matcher::parse("area:GRIB:foo=5,bar=5000,pippo=\"pippo\"").toString(), "area:GRIB:bar=5000, foo=5, pippo=pippo");
 

@@ -170,10 +170,10 @@ void interval_ago(int* dst, time_t& now, const int* val)
 %%
 
 Input	: DateExpr			{ state.add($1); }
-        | DateExpr STEP		{ state.add($1); state.add($2.val, $2.idx, $1); }
+        | DateExpr STEP		{ state.add($1); state.add_step($2.val, $2.idx, $1); }
         | TimeExpr			{ state.add($1); }
-        | TimeExpr STEP		{ state.add($1); state.add($2.val, $2.idx, $1); }
-        | STEP				{ state.add($1.val, $1.idx); }
+        | TimeExpr STEP		{ state.add($1); state.add_step($2.val, $2.idx, $1); }
+        | STEP				{ state.add_step($1.val, $1.idx); }
 		| Input COMMA Input {}
 		| error Unexpected  {
 								string msg = "before '";
