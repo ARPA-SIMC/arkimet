@@ -78,27 +78,27 @@ protected:
     void copy_base_msg(BufrBulletin& dst, const BufrBulletin& src)
     {
         // Copy message attributes
-        dst.type = src.type;
-        dst.subtype = src.subtype;
-        dst.localsubtype = src.localsubtype;
-        dst.edition = src.edition;
         dst.master_table_number = src.master_table_number;
+        dst.data_category = src.data_category;
+        dst.data_subcategory = src.data_subcategory;
+        dst.data_subcategory_local = src.data_subcategory_local;
+        dst.originating_centre = src.originating_centre;
+        dst.originating_subcentre = src.originating_subcentre;
+        if (override_usn_active)
+            dst.update_sequence_number = override_usn_value;
+        else
+            dst.update_sequence_number = src.update_sequence_number;
         dst.rep_year = src.rep_year;
         dst.rep_month = src.rep_month;
         dst.rep_day = src.rep_day;
         dst.rep_hour = src.rep_hour;
         dst.rep_minute = src.rep_minute;
         dst.rep_second = src.rep_second;
-        dst.centre = src.centre;
-        dst.subcentre = src.subcentre;
-        dst.master_table = src.master_table;
-        dst.local_table = src.local_table;
+        dst.edition_number = src.edition_number;
+        dst.master_table_version_number = src.master_table_version_number;
+        dst.master_table_version_number_local = src.master_table_version_number_local;
         // Do not compress, since it only makes sense for multisubset messages
         dst.compression = 0;
-        if (override_usn_active)
-            dst.update_sequence_number = override_usn_value;
-        else
-            dst.update_sequence_number = src.update_sequence_number;
 
         // FIXME: the original optional section is lost
 
@@ -112,7 +112,7 @@ protected:
     void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
     {
         // Create new message with the same info as the old one
-        auto_ptr<BufrBulletin> newmsg(BufrBulletin::create());
+        auto newmsg(BufrBulletin::create());
         copy_base_msg(*newmsg, msg);
 
         // Loop over subsets
@@ -147,8 +147,7 @@ protected:
             }
 
             // Write out the message
-            string newrmsg;
-            newmsg->encode(newrmsg);
+            string newrmsg = newmsg->encode();
             outfile.write(newrmsg);
         }
     }
@@ -173,10 +172,10 @@ public:
         while (BinaryMessage rmsg = file->read())
         {
             // Decode message
-            auto_ptr<BufrBulletin> msg(BufrBulletin::create());
+            unique_ptr<BufrBulletin> msg;
             bool decoded;
             try {
-                msg->decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
+                msg = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
                 decoded = true;
             } catch (std::exception& e) {
                 nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",

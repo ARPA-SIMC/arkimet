@@ -183,8 +183,7 @@ public:
     void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
     {
         msg = 0;
-        auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
-        bulletin->decode_header(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
+        auto bulletin = BufrBulletin::decode_header(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
 
 #if 0
         // Detect optional section and handle it
@@ -203,19 +202,19 @@ public:
                 bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 
         // Set origin from the bufr header
-        switch (bulletin->edition)
+        switch (bulletin->edition_number)
         {
             case 2:
             case 3:
             case 4:
                 // No process?
-                origin = Origin::createBUFR(bulletin->centre, bulletin->subcentre);
-                product = product::BUFR::create(bulletin->type, bulletin->subtype, bulletin->localsubtype);
+                origin = Origin::createBUFR(bulletin->originating_centre, bulletin->originating_subcentre);
+                product = product::BUFR::create(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local);
                 break;
             default:
                 {
                     std::stringstream str;
-                    str << "edition is " << bulletin->edition << " but I can only handle 3 and 4";
+                    str << "edition is " << bulletin->edition_number << " but I can only handle 3 and 4";
                     throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
                 }
         }
@@ -228,7 +227,7 @@ public:
             // Ignore domain errors, it's ok if we lose some oddball data
             wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
 
-            bulletin->decode(rmsg.data);
+            bulletin = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
         } catch (wreport::error& e) {
             // We can still try to handle partially decoded files
 
@@ -345,8 +344,7 @@ static inline void inplace_tolower(std::string& buf)
 
 int Bufr::update_sequence_number(const std::string& buf)
 {
-    auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
-    bulletin->decode_header(buf);
+    auto bulletin = BufrBulletin::decode_header(buf);
     return bulletin->update_sequence_number;
 }
 
