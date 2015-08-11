@@ -4,5 +4,6 @@ Packaging files for Fedora
 
 Please note:
 
-- the spec file might not match the current trunk version, check the Release version (it matches the svn revision of the source code)
+- the spec file might not match the current version, it is intended as a starting point for rpm packaging
+- the "Requires" section includes dependencies for a full-feature version of arkimet, it's possible to tailor dependecies suiting different operational needs
 - the init scripts are based on the old System V runlevels, a rewrite for Systemd would be nice

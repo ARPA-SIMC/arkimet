@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.75
-Release: 2876%{dist}
+Version: 0.80
+Release: 3167%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/sim/?arkimet‎
@@ -9,8 +9,8 @@ Source0: %{name}-%{version}.tar.gz
 Source1: %{name}.init
 Source2: %{name}.default
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 2.0, flex, bison, meteo-vm2-devel, hdf5-devel, libwibble-devel
-Requires: hdf5, meteo-vm2, grib_api-1.10.0, libwibble-devel
+BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 2.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, libwibble-devel
+Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, libwibble-devel
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
 
@@ -62,11 +62,12 @@ install -bD -m0755 %{SOURCE2} %{buildroot}%{_sysconfdir}/default/arki-server
 %{_sysconfdir}/arkimet/scan-grib2/*
 %{_sysconfdir}/arkimet/scan-odimh5/*
 %{_sysconfdir}/arkimet/targetfile/*
+%{_sysconfdir}/arkimet/vm2/*
 %{_bindir}/*
 %{_sysconfdir}/rc.d/init.d/%{name}
 %config(noreplace) %{_sysconfdir}/default/arki-server
 %doc %{_mandir}/man1/*
-%doc README TODO NEWS
+%doc README TODO
 %doc %{_docdir}/arkimet/*
 
 %files -n arkimet-devel
@@ -97,6 +98,12 @@ else
 fi
 
 %changelog
+* Wed Feb  4 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.80-3153%{dist}
+- fixed arki-scan out of memory bug
+
+* Wed Jan 21 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.80-3146%{dist}
+- fixed large query bug
+
 * Thu Mar 20 2014 Emanuele Di Giacomo <edigiacomo@arpa.emr.it> - 0.75-2876%{dist}
 - libwibble-devel dependency (--enable-wibble-standalone in configure)
 - VM2 derived values in serialization
