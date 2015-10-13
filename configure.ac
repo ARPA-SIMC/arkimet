@@ -41,6 +41,13 @@ AC_ARG_ENABLE([gcov],
     [],
     [enable_gcov="no"])
 
+AC_ARG_ENABLE([geos],
+    [AS_HELP_STRING(
+        [--enable-geos],
+        [build with geos support])],
+    [],
+    [enable_geos="yes"])
+
 if test x$enable_gcov = xyes
 then
 	AM_DISABLE_SHARED
@@ -260,23 +267,28 @@ LIBCURL_CHECK_CONFIG([], [], [have_curl=yes], [have_curl=no])
 AM_CONDITIONAL([CURL], [test x"$have_curl" = x"yes"])
 
 dnl Check for Geos
-have_geos=yes
-AC_PATH_PROG(GEOS_CONFIG, geos-config, NOTFOUND)
-if test $GEOS_CONFIG = NOTFOUND
+if test x$enable_geos = xyes
 then
-	AC_MSG_WARN([geos-config not found])
-	have_geos=no
+    have_geos=yes
+    AC_PATH_PROG(GEOS_CONFIG, geos-config, NOTFOUND)
+    if test $GEOS_CONFIG = NOTFOUND
+    then
+        AC_MSG_WARN([geos-config not found])
+        have_geos=no
+    else
+        GEOS_VERSION=`geos-config --version | cut -d. -f1`
+        GEOS_CFLAGS=`geos-config --cflags`
+        GEOS_LIBS=`geos-config --libs`
+        AC_SUBST(GEOS_CFLAGS)
+        AC_SUBST(GEOS_LIBS)
+    fi
+    if test x$have_geos = xyes
+    then
+        AC_DEFINE([HAVE_GEOS], 1, [GEOS is available])
+        AC_DEFINE_UNQUOTED([GEOS_VERSION], $GEOS_VERSION, [GEOS version number])
+    fi
 else
-	GEOS_VERSION=`geos-config --version | cut -d. -f1`
-	GEOS_CFLAGS=`geos-config --cflags`
-	GEOS_LIBS=`geos-config --libs`
-	AC_SUBST(GEOS_CFLAGS)
-	AC_SUBST(GEOS_LIBS)
-fi
-if test x$have_geos = xyes
-then
-	AC_DEFINE([HAVE_GEOS], 1, [GEOS is available])
-	AC_DEFINE_UNQUOTED([GEOS_VERSION], $GEOS_VERSION, [GEOS version number])
+    have_geos=no
 fi
 AM_CONDITIONAL([GEOS], [test x"$have_geos" = x"yes"])
 
