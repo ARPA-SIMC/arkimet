@@ -24,6 +24,7 @@
  */
 
 #include <arki/utils/lua.h>
+#include <dballe/message.h>
 #include <dballe/msg/msg.h>
 #include <map>
 #include <string>
@@ -55,7 +56,7 @@ public:
 	 * (for example there is no scanning function, or something odd is
 	 * found in the message), scanning stops.
 	 */
-	void scan(dballe::Msg& msg, Metadata& md);
+	void scan(dballe::Message& msg, Metadata& md);
 };
 
 }

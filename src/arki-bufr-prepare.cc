@@ -25,11 +25,9 @@
 #include <arki/runtime.h>
 #include <arki/nag.h>
 #include <arki/scan/bufr.h>
-
-#include <dballe/core/rawmsg.h>
-#include <dballe/core/file.h>
+#include <dballe/file.h>
 #include <wreport/bulletin.h>
-#include <dballe/msg/msgs.h>
+#include <dballe/message.h>
 #include <dballe/msg/codec.h>
 
 #include <arpa/inet.h>
@@ -80,27 +78,27 @@ protected:
     void copy_base_msg(BufrBulletin& dst, const BufrBulletin& src)
     {
         // Copy message attributes
-        dst.type = src.type;
-        dst.subtype = src.subtype;
-        dst.localsubtype = src.localsubtype;
-        dst.edition = src.edition;
         dst.master_table_number = src.master_table_number;
+        dst.data_category = src.data_category;
+        dst.data_subcategory = src.data_subcategory;
+        dst.data_subcategory_local = src.data_subcategory_local;
+        dst.originating_centre = src.originating_centre;
+        dst.originating_subcentre = src.originating_subcentre;
+        if (override_usn_active)
+            dst.update_sequence_number = override_usn_value;
+        else
+            dst.update_sequence_number = src.update_sequence_number;
         dst.rep_year = src.rep_year;
         dst.rep_month = src.rep_month;
         dst.rep_day = src.rep_day;
         dst.rep_hour = src.rep_hour;
         dst.rep_minute = src.rep_minute;
         dst.rep_second = src.rep_second;
-        dst.centre = src.centre;
-        dst.subcentre = src.subcentre;
-        dst.master_table = src.master_table;
-        dst.local_table = src.local_table;
+        dst.edition_number = src.edition_number;
+        dst.master_table_version_number = src.master_table_version_number;
+        dst.master_table_version_number_local = src.master_table_version_number_local;
         // Do not compress, since it only makes sense for multisubset messages
         dst.compression = 0;
-        if (override_usn_active)
-            dst.update_sequence_number = override_usn_value;
-        else
-            dst.update_sequence_number = src.update_sequence_number;
 
         // FIXME: the original optional section is lost
 
@@ -111,26 +109,10 @@ protected:
         dst.load_tables();
     }
 
-    int extract_rep_cod(const Msg& msg)
-    {
-        const char* rep_memo = NULL;
-        if (const Var* var = msg.get_rep_memo_var())
-            rep_memo = var->value();
-        else
-            rep_memo = Msg::repmemo_from_type(msg.type);
-
-        // Convert rep_memo to rep_cod
-        std::map<std::string, int>::const_iterator rc = to_rep_cod.find(rep_memo);
-        if (rc == to_rep_cod.end())
-            return 0;
-        else
-            return rc->second;
-    }
-
-    void splitmsg(const Rawmsg& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
+    void splitmsg(const BinaryMessage& rmsg, const BufrBulletin& msg, msg::Importer& importer, File& outfile)
     {
         // Create new message with the same info as the old one
-        auto_ptr<BufrBulletin> newmsg(BufrBulletin::create());
+        auto newmsg(BufrBulletin::create());
         copy_base_msg(*newmsg, msg);
 
         // Loop over subsets
@@ -146,12 +128,10 @@ protected:
 
             // Parse into dba_msg
             try {
-                Msgs msgs;
-                importer.from_bulletin(*newmsg, msgs);
-                const Msg& m = *msgs[0];
+                Messages msgs = importer.from_bulletin(*newmsg);
 
                 // Update reference time
-                const Datetime& dt = m.datetime();
+                const Datetime& dt = msgs[0].get_datetime();
                 if (!dt.is_missing())
                 {
                     newmsg->rep_year = dt.year;
@@ -167,8 +147,7 @@ protected:
             }
 
             // Write out the message
-            Rawmsg newrmsg;
-            newmsg->encode(newrmsg);
+            string newrmsg = newmsg->encode();
             outfile.write(newrmsg);
         }
     }
@@ -187,26 +166,25 @@ public:
     void process(const std::string& filename, File& outfile)
     {
         // Use .release() so the code is the same even with the new C++11's dballe
-        auto_ptr<File> file(File::create(BUFR, filename.c_str(), "r").release());
-        auto_ptr<msg::Importer> importer(msg::Importer::create(BUFR).release());
+        auto_ptr<File> file(File::create(File::BUFR, filename.c_str(), "r").release());
+        auto_ptr<msg::Importer> importer(msg::Importer::create(File::BUFR).release());
 
-        Rawmsg rmsg;
-        while (file->read(rmsg))
+        while (BinaryMessage rmsg = file->read())
         {
             // Decode message
-            auto_ptr<BufrBulletin> msg(BufrBulletin::create());
+            unique_ptr<BufrBulletin> msg;
             bool decoded;
             try {
-                msg->decode(rmsg, rmsg.file.c_str(), rmsg.offset);
+                msg = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
                 decoded = true;
             } catch (std::exception& e) {
                 nag::warning("%s:%ld: BUFR #%d failed to decode: %s. Passing it through unmodified.",
-                    rmsg.file.c_str(), rmsg.offset, rmsg.index, e.what());
+                    rmsg.pathname.c_str(), rmsg.offset, rmsg.index, e.what());
                 decoded = false;
             }
 
             if ((!decoded || msg->subsets.size() == 1u) && !override_usn_active)
-                outfile.write(rmsg);
+                outfile.write(rmsg.data);
             else
                 splitmsg(rmsg, *msg, *importer, outfile);
         }
@@ -231,9 +209,9 @@ int main(int argc, const char* argv[])
 
         auto_ptr<File> outfile;
         if (opts.outfile->isSet())
-            outfile.reset(File::create(BUFR, opts.outfile->stringValue().c_str(), "wb").release());
+            outfile.reset(File::create(File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
         else
-            outfile.reset(File::create(BUFR, "(stdout)", "wb").release());
+            outfile.reset(File::create(File::BUFR, "(stdout)", "wb").release());
 
         if (!opts.hasNext())
         {
@@ -255,5 +233,3 @@ int main(int argc, const char* argv[])
         return 1;
     }
 }
-
-// vim:set ts=4 sw=4:

@@ -50,7 +50,7 @@ public:
     virtual Pending append(Metadata& md, off_t* ofs);
 };
 
-class Maint : public fd::Maint
+struct Maint : public fd::Maint
 {
     FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
     Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);

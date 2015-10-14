@@ -60,6 +60,9 @@ namespace data {
 class Reader;
 class Writer;
 
+/**
+ * State of a file in a dataset, as one or more of the FILE_* flags
+ */
 struct FileState
 {
     unsigned value;
@@ -87,6 +90,7 @@ struct FileState
 
     }
 
+    /// Return a text description of this file state
     std::string to_string() const;
 };
 
@@ -242,6 +246,10 @@ public:
     virtual ~Reader();
 };
 
+/**
+ * Interface for managing data files in a dataset (implementation of write
+ * access).
+ */
 struct Writer
 {
     struct Payload
@@ -288,6 +296,10 @@ struct Writer
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
 };
 
+/**
+ * Interface for managing data files in a dataset (implementation of
+ * maintenance operations).
+ */
 struct Maint
 {
     virtual ~Maint();

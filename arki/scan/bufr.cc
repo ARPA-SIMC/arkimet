@@ -24,10 +24,10 @@
 
 #include <arki/scan/bufr.h>
 #include <arki/utils/files.h>
-#include <dballe/msg/msgs.h>
+#include <dballe/file.h>
+#include <dballe/message.h>
 #include <dballe/msg/codec.h>
 #include <dballe/core/csv.h>
-#include <dballe/core/file.h>
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
 #include <arki/metadata.h>
@@ -108,7 +108,7 @@ Bufr::Bufr() : file(0), importer(0), extras(0)
 {
 	msg::Importer::Options opts;
 	opts.simplified = true;
-	importer = msg::Importer::create(BUFR, opts).release();
+	importer = msg::Importer::create(File::BUFR, opts).release();
 
 #ifdef HAVE_LUA
 	extras = new bufr::BufrLua;
@@ -139,11 +139,9 @@ void Bufr::open(const std::string& filename, const std::string& basedir, const s
     this->basedir = basedir;
     this->relname = relname;
     if (filename == "-")
-    {
-        file = File::create(BUFR, "(stdin)", "r").release();
-    } else {
-        file = File::create(BUFR, filename.c_str(), "r").release();
-    }
+        file = File::create(File::BUFR, stdin, false, "standard input").release();
+    else
+        file = File::create(File::BUFR, filename.c_str(), "r").release();
 }
 
 void Bufr::close()
@@ -162,31 +160,30 @@ namespace {
 class Harvest
 {
 protected:
-    Msgs msgs;
+    Messages msgs;
 
 public:
     dballe::msg::Importer& importer;
     auto_ptr<reftime::Position> reftime;
     auto_ptr<Origin> origin;
     auto_ptr<product::BUFR> product;
-    Msg* msg;
+    Message* msg;
 
     Harvest(dballe::msg::Importer& importer) : importer(importer), msg(0) {}
 
-    void refine_reftime(const dballe::Msg& msg)
+    void refine_reftime(const Message& msg)
     {
-        Datetime dt = msg.datetime();
+        Datetime dt = msg.get_datetime();
         if (dt.is_missing()) return;
         reftime->time = types::Time(
                 dt.year, dt.month, dt.day,
                 dt.hour, dt.minute, dt.second);
     }
 
-    void harvest_from_dballe(const Rawmsg& rmsg, Metadata& md)
+    void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
     {
         msg = 0;
-        auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
-        bulletin->decode_header(rmsg, rmsg.file.c_str(), rmsg.offset);
+        auto bulletin = BufrBulletin::decode_header(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
 
 #if 0
         // Detect optional section and handle it
@@ -205,19 +202,19 @@ public:
                 bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 
         // Set origin from the bufr header
-        switch (bulletin->edition)
+        switch (bulletin->edition_number)
         {
             case 2:
             case 3:
             case 4:
                 // No process?
-                origin = Origin::createBUFR(bulletin->centre, bulletin->subcentre);
-                product = product::BUFR::create(bulletin->type, bulletin->subtype, bulletin->localsubtype);
+                origin = Origin::createBUFR(bulletin->originating_centre, bulletin->originating_subcentre);
+                product = product::BUFR::create(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local);
                 break;
             default:
                 {
                     std::stringstream str;
-                    str << "edition is " << bulletin->edition << " but I can only handle 3 and 4";
+                    str << "edition is " << bulletin->edition_number << " but I can only handle 3 and 4";
                     throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
                 }
         }
@@ -230,7 +227,7 @@ public:
             // Ignore domain errors, it's ok if we lose some oddball data
             wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
 
-            bulletin->decode(rmsg);
+            bulletin = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
         } catch (wreport::error& e) {
             // We can still try to handle partially decoded files
 
@@ -255,7 +252,7 @@ public:
             // Ignore domain errors, it's ok if we lose some oddball data
             wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
 
-            importer.from_bulletin(*bulletin, msgs);
+            msgs = importer.from_bulletin(*bulletin);
         } catch (std::exception& e) {
             // If we cannot import it as a Msgs, we are done
             return;
@@ -266,11 +263,11 @@ public:
         if (msgs.size() != 1)
             return;
 
-        msg = msgs[0];
+        msg = &msgs[0];
 
         // Set the product from the msg type
         ValueBag newvals;
-        newvals.set("t", Value::createString(msg_type_name(msg->type)));
+        newvals.set("t", Value::createString(msg_type_name(Msg::downcast(*msg).type)));
         product->addValues(newvals);
 
         // Set reference time from date and time if available
@@ -284,17 +281,16 @@ bool Bufr::do_scan(Metadata& md)
 {
     md.clear();
 
-    Rawmsg rmsg;
-    if (!file->read(rmsg))
-        return false;
+    BinaryMessage rmsg = file->read();
+    if (!rmsg) return false;
 
     // Set source
     if (false)
-        md.set_source_inline("bufr", wibble::sys::Buffer(rmsg.data(), rmsg.size()));
+        md.set_source_inline("bufr", wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
     else {
-        auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.size());
+        auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size());
         md.set_source(source);
-        md.set_cached_data(wibble::sys::Buffer(rmsg.data(), rmsg.size()));
+        md.set_cached_data(wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
     }
 
     Harvest harvest(*importer);
@@ -348,8 +344,7 @@ static inline void inplace_tolower(std::string& buf)
 
 int Bufr::update_sequence_number(const std::string& buf)
 {
-    auto_ptr<BufrBulletin> bulletin(BufrBulletin::create());
-    bulletin->decode_header(buf);
+    auto bulletin = BufrBulletin::decode_header(buf);
     return bulletin->update_sequence_number;
 }
 

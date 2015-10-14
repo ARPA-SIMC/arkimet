@@ -1,15 +1,17 @@
 Summary: Archive for weather information
 Name: arkimet
-Version: 0.80
-Release: 3167%{dist}
+Version: 0.81
+Release: 1%{dist}
 License: GPL
 Group: Applications/Meteo
 URL: http://www.arpa.emr.it/sim/?arkimet‎
 Source0: %{name}-%{version}.tar.gz
 Source1: %{name}.init
 Source2: %{name}.default
+Patch0: %{name}.wibble-embedded-cppflags-fix.patch
+Patch1: %{name}.wibble-remove-posix-ifdef.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 2.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel, libwibble-devel
+BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel
 Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, libwibble-devel
 Requires(preun): /sbin/chkconfig, /sbin/service
 Requires(post): /sbin/chkconfig, /sbin/service
@@ -32,9 +34,11 @@ Group:    Applications/Meteo
 
 %prep
 %setup -q
+%patch0
+%patch1
 
 %build
-%configure --enable-wibble-standalone
+%configure --with-wibble=embedded
 make
 #make check
 
@@ -98,6 +102,10 @@ else
 fi
 
 %changelog
+* Tue Oct 13 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.81-1%{dist}
+- Ported to wreport 3
+- Fixed argument passing, that caused use of a deallocated string
+
 * Wed Feb  4 2015 Daniele Branchini <dbranchini@arpa.emr.it> - 0.80-3153%{dist}
 - fixed arki-scan out of memory bug
 

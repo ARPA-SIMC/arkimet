@@ -152,7 +152,7 @@ struct DirSource : public metadata::Eater
    const std::string& dirname;
    size_t pos;
 
-   DirSource(metadata::Eater& next, const std::string dirname) : next(next), dirname(dirname), pos(0) {}
+   DirSource(metadata::Eater& next, const std::string& dirname) : next(next), dirname(dirname), pos(0) {}
 
    void set_pos(size_t pos)
    {

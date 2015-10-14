@@ -1,0 +1,10 @@
+--- embedded/wibble/wibble/Makefile.am.orig	2015-10-13 14:30:25.702050295 +0200
++++ embedded/wibble/wibble/Makefile.am	2015-10-13 14:33:33.598891434 +0200
+@@ -1,6 +1,6 @@
+ SUBDIRS = .
+ 
+-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir)
++AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) -I$(srcdir)/.. -I$(builddir)/..
+ 
+ if WIBBLE_STANDALONE
+ AM_CPPFLAGS += -DWIBBLE_COMPILE_TESTSUITE -DTEST_DIR=\"`pwd`/$(top_builddir)/wibble/tests/work/\"
