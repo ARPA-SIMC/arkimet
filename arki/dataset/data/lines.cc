@@ -45,13 +45,13 @@ namespace {
 
 struct Append : public Transaction
 {
-    Writer& w;
+    Segment& w;
     Metadata& md;
     bool fired;
     wibble::sys::Buffer buf;
     off_t pos;
 
-    Append(Writer& w, Metadata& md) : w(w), md(md), fired(false)
+    Append(Segment& w, Metadata& md) : w(w), md(md), fired(false)
     {
         // Get the data blob to append
         buf = md.getData();
@@ -88,7 +88,7 @@ struct Append : public Transaction
         if (fired) return;
 
         // If we had a problem, attempt to truncate the file to the original size
-        w.truncate(pos);
+        w.fdtruncate(pos);
 
         w.unlock();
         fired = true;
@@ -99,12 +99,12 @@ struct Append : public Transaction
 
 
 
-Writer::Writer(const std::string& relname, const std::string& absname, bool truncate)
-    : fd::Writer(relname, absname, truncate)
+Segment::Segment(const std::string& relname, const std::string& absname)
+    : fd::Segment(relname, absname)
 {
 }
 
-void Writer::write(const wibble::sys::Buffer& buf)
+void Segment::write(const wibble::sys::Buffer& buf)
 {
     struct iovec todo[2] = {
         { (void*)buf.data(), buf.size() },
@@ -123,8 +123,10 @@ void Writer::write(const wibble::sys::Buffer& buf)
         throw wibble::exception::File(absname, "flushing write");
 }
 
-void Writer::append(Metadata& md)
+void Segment::append(Metadata& md)
 {
+    open();
+
     // Get the data blob to append
     sys::Buffer buf = md.getData();
 
@@ -139,7 +141,7 @@ void Writer::append(Metadata& md)
         write(buf);
     } catch (...) {
         // If we had a problem, attempt to truncate the file to the original size
-        truncate(pos);
+        fdtruncate(pos);
 
         unlock();
 
@@ -152,33 +154,40 @@ void Writer::append(Metadata& md)
     md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
 }
 
-off_t Writer::append(const wibble::sys::Buffer& buf)
+off_t Segment::append(const wibble::sys::Buffer& buf)
 {
+    open();
+
     off_t pos = wrpos();
     write(buf);
     return pos;
 }
 
-Pending Writer::append(Metadata& md, off_t* ofs)
+Pending Segment::append(Metadata& md, off_t* ofs)
 {
+    open();
+
     Append* res = new Append(*this, md);
     *ofs = res->pos;
     return res;
 }
 
-FileState Maint::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+FileState Segment::check(const metadata::Collection& mds, bool quick)
 {
-    return fd::Maint::check(absname, mds, 2, quick);
+    return fd::Segment::check(mds, 2, quick);
 }
 
-static data::Writer* make_repack_writer(const std::string& relname, const std::string& absname)
+static data::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
 {
-    return new lines::Writer(relname, absname, true);
+    auto_ptr<lines::Segment> res(new lines::Segment(relname, absname));
+    res->truncate_and_open();
+    return res.release();
 }
 
-Pending Maint::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
+Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
 {
-    return fd::Maint::repack(rootdir, relname, mds, make_repack_writer);
+    close();
+    return fd::Segment::repack(rootdir, relname, mds, make_repack_segment);
 }
 
 OstreamWriter::OstreamWriter()

@@ -37,7 +37,7 @@ namespace simple {
 namespace datafile {
 
 /// Accumulate metadata and summaries while writing
-struct MdBuf : public data::Writer::Payload
+struct MdBuf : public data::Segment::Payload
 {
     std::string pathname;
     std::string dirname;

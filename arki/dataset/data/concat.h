@@ -38,34 +38,28 @@ namespace dataset {
 namespace data {
 namespace concat {
 
-class Writer : public fd::Writer
+class Segment : public fd::Segment
 {
 public:
-    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
+    Segment(const std::string& relname, const std::string& absname);
 
     void append(Metadata& md) override;
     off_t append(const wibble::sys::Buffer& buf) override;
     Pending append(Metadata& md, off_t* ofs) override;
+
+    FileState check(const metadata::Collection& mds, bool quick=true) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 };
 
-class HoleWriter : public Writer
+class HoleSegment : public Segment
 {
 public:
-    HoleWriter(const std::string& relname, const std::string& absname, bool truncate=false)
-        : Writer(relname, absname, truncate) {}
+    HoleSegment(const std::string& relname, const std::string& absname)
+        : Segment(relname, absname) {}
 
     void write(const wibble::sys::Buffer& buf) override;
-};
 
-class Maint : public fd::Maint
-{
-    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true) override;
-    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) override;
-};
-
-class HoleMaint : public Maint
-{
-    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 };
 
 class OstreamWriter : public data::OstreamWriter

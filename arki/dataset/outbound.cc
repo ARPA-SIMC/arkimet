@@ -56,7 +56,7 @@ Outbound::~Outbound()
 void Outbound::storeBlob(Metadata& md, const std::string& reldest)
 {
     // Write using data::Writer
-    data::Writer* w = file(md, md.source().format);
+    data::Segment* w = file(md, md.source().format);
     w->append(md);
 }
 

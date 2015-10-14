@@ -53,7 +53,7 @@ protected:
     index::Manifest* m_mft;
 
     /// Return a (shared) instance of the Datafile for the given relative pathname
-    data::Writer* file(const Metadata& md, const std::string& format);
+    data::Segment* file(const Metadata& md, const std::string& format);
 
 public:
 	Writer(const ConfigFile& cfg);

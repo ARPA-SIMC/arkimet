@@ -38,8 +38,7 @@ struct Archives;
 
 namespace data {
 class SegmentManager;
-class Reader;
-class Writer;
+class Segment;
 }
 
 namespace maintenance {
@@ -125,10 +124,10 @@ protected:
     data::SegmentManager* m_segment_manager;
 
     /**
-     * Return an instance of the Writer for the file where the given metadata
+     * Return an instance of the Segment for the file where the given metadata
      * should be written
      */
-    data::Writer* file(const Metadata& md, const std::string& format);
+    data::Segment* file(const Metadata& md, const std::string& format);
 
 public:
 	WritableLocal(const ConfigFile& cfg);

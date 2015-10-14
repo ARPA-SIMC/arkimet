@@ -98,14 +98,14 @@ bool add_file(const std::string& absname, const wibble::sys::Buffer& buf)
 
 struct Append : public Transaction
 {
+    const dir::Segment& segment;
     bool fired;
     Metadata& md;
-    string absname;
     size_t pos;
     size_t size;
 
-    Append(Metadata& md, std::string& absname, size_t pos, size_t size)
-        : fired(false), md(md), absname(absname), pos(pos), size(size)
+    Append(const dir::Segment& segment, Metadata& md, size_t pos, size_t size)
+        : segment(segment), fired(false), md(md), pos(pos), size(size)
     {
     }
 
@@ -119,7 +119,7 @@ struct Append : public Transaction
         if (fired) return;
 
         // Set the source information that we are writing in the metadata
-        md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
+        md.set_source(Source::createBlob(md.source().format, "", segment.absname, pos, size));
 
         fired = true;
     }
@@ -133,7 +133,7 @@ struct Append : public Transaction
         // guarantee consecutive numbers, so it is just a cosmetic issue. This
         // case should be rare enough that even the cosmetic issue should
         // rarely be noticeable.
-        string target_name = str::joinpath(absname, SequenceFile::data_fname(pos, md.source().format));
+        string target_name = str::joinpath(segment.absname, SequenceFile::data_fname(pos, segment.format));
         unlink(target_name.c_str());
 
         fired = true;
@@ -149,8 +149,7 @@ SequenceFile::SequenceFile(const std::string& dirname)
 
 SequenceFile::~SequenceFile()
 {
-    if (fd != -1)
-        close(fd);
+    close();
 }
 
 void SequenceFile::open()
@@ -158,6 +157,13 @@ void SequenceFile::open()
     fd = ::open(pathname.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
     if (fd == -1)
         throw wibble::exception::File(pathname, "cannot open sequence file");
+}
+
+void SequenceFile::close()
+{
+    if (fd != -1)
+        ::close(fd);
+    fd = -1;
 }
 
 std::pair<std::string, size_t> SequenceFile::next(const std::string& format)
@@ -205,10 +211,18 @@ std::string SequenceFile::data_fname(size_t pos, const std::string& format)
     return str::fmtf("%06zd.%s", pos, format.c_str());
 }
 
-Writer::Writer(const std::string& format, const std::string& relname, const std::string& absname, bool truncate)
-    : data::Writer(relname, absname), format(format), seqfile(absname)
+Segment::Segment(const std::string& format, const std::string& relname, const std::string& absname)
+    : data::Segment(relname, absname), format(format), seqfile(absname)
 {
-    if (truncate && sys::fs::exists(absname)) sys::fs::rmtree(absname);
+}
+
+Segment::~Segment()
+{
+}
+
+void Segment::open()
+{
+    if (seqfile.fd != -1) return;
 
     // Ensure that the directory 'absname' exists
     wibble::sys::fs::mkpath(absname);
@@ -216,11 +230,12 @@ Writer::Writer(const std::string& format, const std::string& relname, const std:
     seqfile.open();
 }
 
-Writer::~Writer()
+void Segment::close()
 {
+    seqfile.close();
 }
 
-size_t Writer::write_file(Metadata& md, int fd, const std::string& absname)
+size_t Segment::write_file(Metadata& md, int fd, const std::string& absname)
 {
     utils::fd::HandleWatch hw(absname, fd);
 
@@ -241,8 +256,10 @@ size_t Writer::write_file(Metadata& md, int fd, const std::string& absname)
     }
 }
 
-void Writer::append(Metadata& md)
+void Segment::append(Metadata& md)
 {
+    open();
+
     string dest;
     size_t pos;
     int fd;
@@ -253,24 +270,28 @@ void Writer::append(Metadata& md)
     md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
 }
 
-off_t Writer::append(const wibble::sys::Buffer& buf)
+off_t Segment::append(const wibble::sys::Buffer& buf)
 {
-    throw wibble::exception::Consistency("dir::Writer::append not implemented");
+    throw wibble::exception::Consistency("dir::Segment::append not implemented");
 }
 
-Pending Writer::append(Metadata& md, off_t* ofs)
+Pending Segment::append(Metadata& md, off_t* ofs)
 {
+    open();
+
     string dest;
     size_t pos;
     int fd;
     seqfile.open_next(format, dest, pos, fd);
     size_t size = write_file(md, fd, dest);
     *ofs = pos;
-    return new Append(md, absname, pos, size);
+    return new Append(*this, md, pos, size);
 }
 
-off_t Writer::link(const std::string& srcabsname)
+off_t Segment::link(const std::string& srcabsname)
 {
+    open();
+
     size_t pos;
     while (true)
     {
@@ -286,8 +307,10 @@ off_t Writer::link(const std::string& srcabsname)
     return pos;
 }
 
-FileState Maint::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+FileState Segment::check(const metadata::Collection& mds, bool quick)
 {
+    close();
+
     size_t next_sequence_expected(0);
     const scan::Validator* validator(0);
     bool out_of_order(false);
@@ -295,6 +318,10 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
 
     if (!quick)
         validator = &scan::Validator::by_filename(absname.c_str());
+
+    // Deal with segments that just do not exist
+    if (!sys::fs::exists(absname))
+        return FILE_TO_RESCAN;
 
     // List the dir elements we know about
     set<size_t> expected;
@@ -354,8 +381,10 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
     }
 }
 
-size_t Maint::remove(const std::string& absname)
+size_t Segment::remove()
 {
+    close();
+
     std::string format = utils::require_format(absname);
 
     size_t size = 0;
@@ -369,11 +398,15 @@ size_t Maint::remove(const std::string& absname)
         if (unlink(pathname.c_str()) < 0)
             throw wibble::exception::System("removing " + pathname);
     }
+    // Also remove the directory if it is empty
+    rmdir(absname.c_str());
     return size;
 }
 
-void Maint::truncate(const std::string& absname, size_t offset)
+void Segment::truncate(size_t offset)
 {
+    close();
+
     utils::files::PreserveFileTimes pft(absname);
 
     // Truncate dir segment
@@ -391,8 +424,10 @@ void Maint::truncate(const std::string& absname, size_t offset)
     }
 }
 
-Pending Maint::repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds)
+Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
 {
+    close();
+
     struct Rename : public Transaction
     {
         std::string tmpabsname;
@@ -455,7 +490,7 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
     string tmpabsname = absname + ".repack";
 
     // Create a writer for the temp dir
-    auto_ptr<dir::Writer> writer(make_writer(format, tmprelname, tmpabsname));
+    auto_ptr<dir::Segment> writer(make_segment(format, tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -475,20 +510,24 @@ Pending Maint::repack(const std::string& rootdir, const std::string& relname, me
     return new Rename(tmpabsname, absname);
 }
 
-auto_ptr<dir::Writer> Maint::make_writer(const std::string& format, const std::string& relname, const std::string& absname)
+auto_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
-    return auto_ptr<dir::Writer>(new dir::Writer(format, relname, absname, true));
+    if (sys::fs::exists(absname)) sys::fs::rmtree(absname);
+    auto_ptr<dir::Segment> res(new dir::Segment(format, relname, absname));
+    return res;
 }
 
-FileState HoleMaint::check(const std::string& absname, const metadata::Collection& mds, bool quick)
+FileState HoleSegment::check(const metadata::Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
-    return Maint::check(absname, mds, true);
+    return Segment::check(mds, true);
 }
 
-auto_ptr<dir::Writer> HoleMaint::make_writer(const std::string& format, const std::string& relname, const std::string& absname)
+auto_ptr<dir::Segment> HoleSegment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
-    return auto_ptr<dir::Writer>(new dir::HoleWriter(format, relname, absname, true));
+    if (sys::fs::exists(absname)) sys::fs::rmtree(absname);
+    auto_ptr<dir::Segment> res(new dir::HoleSegment(format, relname, absname));
+    return res;
 }
 
 OstreamWriter::OstreamWriter()
@@ -510,12 +549,12 @@ size_t OstreamWriter::stream(Metadata& md, int out) const
     throw wibble::exception::Consistency("dir::OstreamWriter::stream not implemented");
 }
 
-HoleWriter::HoleWriter(const std::string& format, const std::string& relname, const std::string& absname, bool truncate)
-    : Writer(format, relname, absname, truncate)
+HoleSegment::HoleSegment(const std::string& format, const std::string& relname, const std::string& absname)
+    : Segment(format, relname, absname)
 {
 }
 
-size_t HoleWriter::write_file(Metadata& md, int fd, const std::string& absname)
+size_t HoleSegment::write_file(Metadata& md, int fd, const std::string& absname)
 {
     utils::fd::HandleWatch hw(absname, fd);
 

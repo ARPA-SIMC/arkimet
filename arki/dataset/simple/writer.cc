@@ -85,9 +85,9 @@ Writer::~Writer()
 	if (m_mft) delete m_mft;
 }
 
-data::Writer* Writer::file(const Metadata& md, const std::string& format)
+data::Segment* Writer::file(const Metadata& md, const std::string& format)
 {
-    data::Writer* writer = WritableLocal::file(md, format);
+    data::Segment* writer = WritableLocal::file(md, format);
     if (!writer->payload)
         writer->payload = new datafile::MdBuf(writer->absname);
     return writer;
@@ -96,7 +96,7 @@ data::Writer* Writer::file(const Metadata& md, const std::string& format)
 WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy replace)
 {
     // TODO: refuse if md is before "archive age"
-    data::Writer* writer = file(md, md.source().format);
+    data::Segment* writer = file(md, md.source().format);
     datafile::MdBuf* mdbuf = static_cast<datafile::MdBuf*>(writer->payload);
 
     // Try appending

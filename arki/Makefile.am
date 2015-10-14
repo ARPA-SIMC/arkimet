@@ -21,6 +21,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		dataset/data/concat.h \
 		dataset/data/lines.h \
 		dataset/data/dir.h \
+		dataset/data/tests.h \
 		dataset/discard.h \
 		dataset/empty.h \
 		dataset/file.h \
@@ -471,6 +472,7 @@ tests_arki_test_SOURCES += \
 		utils/dataset-tut.cc \
 		metadata/xargs-tut.cc \
 		dataset/data-tut.cc \
+		dataset/data/tests.cc \
 		dataset/data/fd-tut.cc \
 		dataset/data/concat-tut.cc \
 		dataset/data/lines-tut.cc \

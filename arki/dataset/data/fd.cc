@@ -27,6 +27,7 @@
 #include "arki/scan/any.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
+#include "arki/utils.h"
 #include "arki/nag.h"
 #include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
@@ -46,25 +47,44 @@ namespace dataset {
 namespace data {
 namespace fd {
 
-Writer::Writer(const std::string& relname, const std::string& absname, bool truncate)
-    : data::Writer(relname, absname), fd(-1)
+Segment::Segment(const std::string& relname, const std::string& absname)
+    : data::Segment(relname, absname), fd(-1)
 {
-    // Open the data file
-    if (truncate)
-        fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    else
-        fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(absname, "opening file for appending data");
 }
 
-Writer::~Writer()
+Segment::~Segment()
+{
+    close();
+}
+
+void Segment::open()
+{
+    if (fd != -1) return;
+
+    // Open the data file
+    fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (fd == -1)
+        throw wibble::exception::File(absname, "cannot open file for appending data");
+}
+
+void Segment::truncate_and_open()
+{
+    if (fd != -1) return;
+
+    // Open the data file
+    fd = ::open(absname.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd == -1)
+        throw wibble::exception::File(absname, "cannot truncate and open file for appending data");
+}
+
+void Segment::close()
 {
     //if (fdatasync(fd_dst) != 0) throw wibble::exception::File(dst, "flushing data to file");
-    if (fd != -1) close(fd);
+    if (fd != -1) ::close(fd);
+    fd = -1;
 }
 
-void Writer::lock()
+void Segment::lock()
 {
     struct flock lock;
     lock.l_type = F_WRLCK;
@@ -76,7 +96,7 @@ void Writer::lock()
         throw wibble::exception::System("locking the file " + absname + " for writing");
 }
 
-void Writer::unlock()
+void Segment::unlock()
 {
     struct flock lock;
     lock.l_type = F_UNLCK;
@@ -86,7 +106,7 @@ void Writer::unlock()
     fcntl(fd, F_SETLK, &lock);
 }
 
-off_t Writer::wrpos()
+off_t Segment::wrpos()
 {
     // Get the write position in the data file
     off_t size = lseek(fd, 0, SEEK_END);
@@ -95,13 +115,15 @@ off_t Writer::wrpos()
     return size;
 }
 
-void Writer::truncate(off_t pos)
+void Segment::fdtruncate(off_t pos)
 {
+    open();
+
     if (ftruncate(fd, pos) == -1)
         nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", absname.c_str(), pos);
 }
 
-void Writer::write(const wibble::sys::Buffer& buf)
+void Segment::write(const wibble::sys::Buffer& buf)
 {
     // Prevent caching (ignore function result)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
@@ -115,18 +137,16 @@ void Writer::write(const wibble::sys::Buffer& buf)
         throw wibble::exception::File(absname, "flushing write");
 }
 
-FileState Maint::check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap, bool quick)
+FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool quick)
 {
-    size_t end_of_last_data_checked(0);
-    const scan::Validator* validator(0);
-    bool has_hole(false);
+    close();
 
+    // Check the data if requested
     if (!quick)
-        validator = &scan::Validator::by_filename(absname.c_str());
-
-    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
-        if (validator)
+        const scan::Validator* validator = &scan::Validator::by_filename(absname.c_str());
+
+        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
         {
             try {
                 validator->validate(**i);
@@ -137,15 +157,29 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
                 return FILE_TO_RESCAN;
             }
         }
-
-        const source::Blob& source = (*i)->sourceBlob();
-
-        if (source.offset < end_of_last_data_checked || source.offset > end_of_last_data_checked + max_gap)
-            has_hole = true;
-
-        end_of_last_data_checked = max(end_of_last_data_checked, (size_t)(source.offset + source.size));
     }
 
+    // Create the list of data (offset, size) sorted by offset
+    vector< pair<off_t, size_t> > spans;
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        const source::Blob& source = (*i)->sourceBlob();
+        spans.push_back(make_pair(source.offset, source.size));
+    }
+    std::sort(spans.begin(), spans.end());
+
+    // Check for overlaps
+    size_t end_of_last_data_checked = 0;
+    for (vector< pair<off_t, size_t> >::const_iterator i = spans.begin(); i != spans.end(); ++i)
+    {
+        // If an item begins after the end of another, they overlap and the file needs rescanning
+        if (i->first < end_of_last_data_checked)
+            return FILE_TO_RESCAN;
+
+        end_of_last_data_checked = i->first + i->second;
+    }
+
+    // Check for truncation
     size_t file_size = utils::compress::filesize(absname);
     if (file_size < end_of_last_data_checked)
     {
@@ -154,8 +188,21 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
     }
 
     // Check if file_size matches the expected file size
+    bool has_hole = false;
     if (file_size > end_of_last_data_checked + max_gap)
         has_hole = true;
+
+    // Check for holes or elements out of order
+    end_of_last_data_checked = 0;
+    for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
+    {
+        const source::Blob& source = (*i)->sourceBlob();
+
+        if (source.offset < end_of_last_data_checked || source.offset > end_of_last_data_checked + max_gap)
+            has_hole = true;
+
+        end_of_last_data_checked = max(end_of_last_data_checked, (size_t)(source.offset + source.size));
+    }
 
     // Take note of files with holes
     if (has_hole)
@@ -167,26 +214,33 @@ FileState Maint::check(const std::string& absname, const metadata::Collection& m
     }
 }
 
-size_t Maint::remove(const std::string& absname)
+size_t Segment::remove()
 {
+    close();
+
     size_t size = sys::fs::size(absname);
     if (unlink(absname.c_str()) < 0)
         throw wibble::exception::System("removing " + absname);
     return size;
 }
 
-void Maint::truncate(const std::string& absname, size_t offset)
+void Segment::truncate(size_t offset)
 {
+    close();
+
+    if (!sys::fs::exists(absname))
+        utils::createFlagfile(absname);
+
     utils::files::PreserveFileTimes pft(absname);
     if (::truncate(absname.c_str(), offset) < 0)
         throw wibble::exception::File(absname, str::fmtf("Truncating file at %zd", offset));
 }
 
-Pending Maint::repack(
+Pending Segment::repack(
         const std::string& rootdir,
         const std::string& relname,
         metadata::Collection& mds,
-        data::Writer* make_repack_writer(const std::string&, const std::string&),
+        data::Segment* make_repack_segment(const std::string&, const std::string&),
         bool skip_validation)
 {
     struct Rename : public Transaction
@@ -230,7 +284,7 @@ Pending Maint::repack(
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
     // Create a writer for the temp file
-    auto_ptr<data::Writer> writer(make_repack_writer(tmprelname, tmpabsname));
+    auto_ptr<data::Segment> writer(make_repack_segment(tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)

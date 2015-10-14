@@ -51,6 +51,9 @@ struct SequenceFile
      */
     void open();
 
+    /// Close the sequence file
+    void close();
+
     /**
      * Increment the sequence and get the pathname of the file corresponding
      * to the new value, and the corresponding 'offset', that is, the file
@@ -70,12 +73,13 @@ struct SequenceFile
     static std::string data_fname(size_t pos, const std::string& format);
 };
 
-class Writer : public data::Writer
+class Segment : public data::Segment
 {
-protected:
+public:
     std::string format;
     SequenceFile seqfile;
 
+protected:
     /**
      * Write the data in md to a file. Delete the file in case of errors. Close fd
      * in any case. Return the size of the data that has been written.
@@ -83,12 +87,16 @@ protected:
     virtual size_t write_file(Metadata& md, int fd, const std::string& absname);
 
 public:
-    Writer(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false);
-    ~Writer();
+    Segment(const std::string& format, const std::string& relname, const std::string& absname);
+    ~Segment();
 
-    virtual void append(Metadata& md);
-    virtual off_t append(const wibble::sys::Buffer& buf);
-    virtual Pending append(Metadata& md, off_t* ofs);
+    void open();
+    void close();
+
+    void append(Metadata& md) override;
+    off_t append(const wibble::sys::Buffer& buf) override;
+    Pending append(Metadata& md, off_t* ofs) override;
+
     /**
      * Append a hardlink to the data pointed by md.
      *
@@ -99,6 +107,14 @@ public:
      * @returns the offset in the segment at which md was appended
      */
     off_t link(const std::string& absname);
+
+    FileState check(const metadata::Collection& mds, bool quick=true) override;
+    size_t remove() override;
+    void truncate(size_t offset) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
+
+protected:
+    virtual std::auto_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname);
 };
 
 /**
@@ -106,32 +122,18 @@ public:
  * original size but that take up no blocks in the file system. This is used
  * only for testing.
  */
-class HoleWriter : public Writer
+class HoleSegment : public Segment
 {
 protected:
     size_t write_file(Metadata& md, int fd, const std::string& absname) override;
 
 public:
-    HoleWriter(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false);
-};
+    HoleSegment(const std::string& format, const std::string& relname, const std::string& absname);
 
-struct Maint : public data::Maint
-{
-    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
-    size_t remove(const std::string& absname);
-    void truncate(const std::string& absname, size_t offset);
-    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);
+    FileState check(const metadata::Collection& mds, bool quick=true) override;
 
 protected:
-    virtual std::auto_ptr<dir::Writer> make_writer(const std::string& format, const std::string& relname, const std::string& absname);
-};
-
-struct HoleMaint : public Maint
-{
-    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
-
-protected:
-    virtual std::auto_ptr<dir::Writer> make_writer(const std::string& format, const std::string& relname, const std::string& absname);
+    std::auto_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname) override;
 };
 
 class OstreamWriter : public data::OstreamWriter
@@ -143,8 +145,8 @@ public:
     OstreamWriter();
     virtual ~OstreamWriter();
 
-    virtual size_t stream(Metadata& md, std::ostream& out) const;
-    virtual size_t stream(Metadata& md, int out) const;
+    size_t stream(Metadata& md, std::ostream& out) const override;
+    size_t stream(Metadata& md, int out) const override;
 };
 
 

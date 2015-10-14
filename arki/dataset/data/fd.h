@@ -38,27 +38,28 @@ namespace dataset {
 namespace data {
 namespace fd {
 
-class Writer : public data::Writer
+class Segment : public data::Segment
 {
 protected:
     int fd;
 
 public:
-    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
-    ~Writer();
+    Segment(const std::string& relname, const std::string& absname);
+    ~Segment();
 
+    void open();
+    void truncate_and_open();
+    void close();
     void lock();
     void unlock();
     off_t wrpos();
     virtual void write(const wibble::sys::Buffer& buf);
-    void truncate(off_t pos);
-};
+    void fdtruncate(off_t pos);
 
-struct Maint : public data::Maint
-{
-    size_t remove(const std::string& absname);
-    void truncate(const std::string& absname, size_t offset);
-    FileState check(const std::string& absname, const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
+    size_t remove();
+    void truncate(size_t offset);
+
+    virtual FileState check(const metadata::Collection& mds, unsigned max_gap=0, bool quick=true);
 
     /**
      * If skip_validation is true, repack will skip validating the data that is
@@ -72,7 +73,7 @@ struct Maint : public data::Maint
             const std::string& rootdir,
             const std::string& relname,
             metadata::Collection& mds,
-            data::Writer* make_repack_writer(const std::string&, const std::string&),
+            data::Segment* make_repack_segment(const std::string&, const std::string&),
             bool skip_validation=false);
 };
 

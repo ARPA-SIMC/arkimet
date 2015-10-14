@@ -1,7 +1,7 @@
 /*
  * data - Read/write functions for data blobs
  *
- * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
+ * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,20 +53,14 @@ std::string FileState::to_string() const
     return str::join(res.begin(), res.end(), ",");
 }
 
-Reader::~Reader() {}
-
-Writer::Writer(const std::string& relname, const std::string& absname)
+Segment::Segment(const std::string& relname, const std::string& absname)
     : relname(relname), absname(absname), payload(0)
 {
 }
 
-Writer::~Writer()
+Segment::~Segment()
 {
     if (payload) delete payload;
-}
-
-Maint::~Maint()
-{
 }
 
 OstreamWriter::~OstreamWriter()
@@ -111,111 +105,15 @@ struct BaseSegmentManager : public SegmentManager
 
     BaseSegmentManager(const std::string& root, bool mockdata=false) : root(root), mockdata(mockdata) {}
 
-    Reader* get_reader(const std::string& relname)
+    Segment* get_segment(const std::string& relname) override
     {
-        return get_reader(utils::get_format(relname), relname);
+        return get_segment(utils::get_format(relname), relname);
     }
 
-    Reader* get_reader(const std::string& format, const std::string& relname)
-    {
-        // TODO: readers not yet implemented
-        return 0;
-    }
-
-    Writer* get_writer(const std::string& relname)
-    {
-        return get_writer(utils::get_format(relname), relname);
-    }
-
-    // Create the appropriate Writer for a segment that already exists. Returns
-    // 0 if the segment does not exist.
-    auto_ptr<data::Writer> create_writer_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
-    {
-        std::auto_ptr<struct stat> st = sys::fs::stat(absname);
-        auto_ptr<data::Writer> new_writer;
-        if (!st.get())
-            return new_writer;
-
-        if (S_ISDIR(st->st_mode))
-        {
-            if (mockdata)
-                new_writer.reset(new dir::HoleWriter(format, relname, absname, truncate));
-            else
-                new_writer.reset(new dir::Writer(format, relname, absname, truncate));
-        } else {
-            if (format == "grib" || format == "grib1" || format == "grib2")
-            {
-                if (mockdata)
-                    new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
-                else
-                    new_writer.reset(new concat::Writer(relname, absname, truncate));
-            } else if (format == "bufr") {
-                if (mockdata)
-                    new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
-                else
-                    new_writer.reset(new concat::Writer(relname, absname, truncate));
-            } else if (format == "vm2") {
-                if (mockdata)
-                    throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
-                else
-                    new_writer.reset(new lines::Writer(relname, absname, truncate));
-            } else {
-                throw wibble::exception::Consistency(
-                        "getting writer for " + format + " file " + relname,
-                        "format not supported");
-            }
-        }
-        return new_writer;
-    }
-
-    // Create the appropriate Maint for a segment that already exists. Retursn
-    // 0 if the segment does not exist.
-    auto_ptr<data::Maint> create_maint_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
-    {
-        std::auto_ptr<struct stat> st = sys::fs::stat(absname);
-        auto_ptr<data::Maint> new_maint;
-        if (!st.get())
-            return new_maint;
-
-        if (S_ISDIR(st->st_mode))
-        {
-            if (mockdata)
-                new_maint.reset(new dir::HoleMaint);
-            else
-                new_maint.reset(new dir::Maint);
-        } else {
-            if (format == "grib" || format == "grib1" || format == "grib2")
-            {
-                if (mockdata)
-                    new_maint.reset(new concat::HoleMaint);
-                else
-                    new_maint.reset(new concat::Maint);
-            } else if (format == "bufr") {
-                if (mockdata)
-                    new_maint.reset(new concat::HoleMaint);
-                else
-                    new_maint.reset(new concat::Maint);
-            } else if (format == "vm2") {
-                if (mockdata)
-                    throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
-                else
-                    new_maint.reset(new lines::Maint);
-            } else {
-                throw wibble::exception::Consistency(
-                        "preparing maintenance for " + format + " file " + relname,
-                        "format not supported");
-            }
-        }
-        return new_maint;
-    }
-
-    virtual auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false) = 0;
-    virtual auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
-
-    Writer* get_writer(const std::string& format, const std::string& relname)
+    Segment* get_segment(const std::string& format, const std::string& relname) override
     {
         // Try to reuse an existing instance
-        Writer* res = writers.get(relname);
+        Segment* res = segments.get(relname);
         if (res) return res;
 
         // Ensure that the directory for 'relname' exists
@@ -230,40 +128,83 @@ struct BaseSegmentManager : public SegmentManager
                     "cannot update compressed data files: please manually uncompress it first");
 
         // Else we need to create an appropriate one
-        auto_ptr<data::Writer> new_writer(create_writer_for_format(format, relname, absname));
-        return writers.add(new_writer);
+        auto_ptr<data::Segment> new_writer(create_for_format(format, relname, absname));
+        return segments.add(new_writer);
     }
+
+    // Instantiate the right Segment implementation for a segment that already
+    // exists. Returns 0 if the segment does not exist.
+    auto_ptr<data::Segment> create_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
+    {
+        std::auto_ptr<struct stat> st = sys::fs::stat(absname);
+        auto_ptr<data::Segment> res;
+        if (!st.get())
+            return res;
+
+        if (S_ISDIR(st->st_mode))
+        {
+            if (mockdata)
+                res.reset(new dir::HoleSegment(format, relname, absname));
+            else
+                res.reset(new dir::Segment(format, relname, absname));
+        } else {
+            if (format == "grib" || format == "grib1" || format == "grib2")
+            {
+                if (mockdata)
+                    res.reset(new concat::HoleSegment(relname, absname));
+                else
+                    res.reset(new concat::Segment(relname, absname));
+            } else if (format == "bufr") {
+                if (mockdata)
+                    res.reset(new concat::HoleSegment(relname, absname));
+                else
+                    res.reset(new concat::Segment(relname, absname));
+            } else if (format == "vm2") {
+                if (mockdata)
+                    throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
+                else
+                    res.reset(new lines::Segment(relname, absname));
+            } else {
+                throw wibble::exception::Consistency(
+                        "getting segment for " + format + " file " + relname,
+                        "format not supported");
+            }
+        }
+        return res;
+    }
+
+    virtual auto_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname) = 0;
 
     Pending repack(const std::string& relname, metadata::Collection& mds)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
-        return maint->repack(root, relname, mds);
+        auto_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        return maint->repack(root, mds);
     }
 
     FileState check(const std::string& relname, const metadata::Collection& mds, bool quick=true)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
-        return maint->check(absname, mds, quick);
+        auto_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        return maint->check(mds, quick);
     }
 
     size_t remove(const std::string& relname)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
-        return maint->remove(absname);
+        auto_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        return maint->remove();
     }
 
     void truncate(const std::string& relname, size_t offset)
     {
         string format = utils::get_format(relname);
         string absname = str::joinpath(root, relname);
-        auto_ptr<data::Maint> maint(create_maint_for_format(format, relname, absname));
-        return maint->truncate(absname, offset);
+        auto_ptr<data::Segment> maint(create_for_format(format, relname, absname));
+        return maint->truncate(offset);
     }
 };
 
@@ -273,74 +214,39 @@ struct AutoSegmentManager : public BaseSegmentManager
     AutoSegmentManager(const std::string& root, bool mockdata=false)
         : BaseSegmentManager(root, mockdata) {}
 
-    auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    auto_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        auto_ptr<data::Writer> new_writer(create_writer_for_existing_segment(format, relname, absname, truncate));
-        if (new_writer.get()) return new_writer;
+        auto_ptr<data::Segment> res(create_for_existing_segment(format, relname, absname));
+        if (res.get()) return res;
 
         if (format == "grib" || format == "grib1" || format == "grib2")
         {
             if (mockdata)
-                new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
+                res.reset(new concat::HoleSegment(relname, absname));
             else
-                new_writer.reset(new concat::Writer(relname, absname, truncate));
+                res.reset(new concat::Segment(relname, absname));
         } else if (format == "bufr") {
             if (mockdata)
-                new_writer.reset(new concat::HoleWriter(relname, absname, truncate));
+                res.reset(new concat::HoleSegment(relname, absname));
             else
-                new_writer.reset(new concat::Writer(relname, absname, truncate));
+                res.reset(new concat::Segment(relname, absname));
         } else if (format == "odimh5" || format == "h5" || format == "odim") {
             if (mockdata)
-                new_writer.reset(new dir::HoleWriter(format, relname, absname, truncate));
+                res.reset(new dir::HoleSegment(format, relname, absname));
             else
-                new_writer.reset(new dir::Writer(format, relname, absname, truncate));
+                res.reset(new dir::Segment(format, relname, absname));
         } else if (format == "vm2") {
             if (mockdata)
                 throw wibble::exception::Consistency("mockdata single-file line-based segments not implemented");
             else
-                new_writer.reset(new lines::Writer(relname, absname, truncate));
+                res.reset(new lines::Segment(relname, absname));
         } else {
             throw wibble::exception::Consistency(
                     "getting writer for " + format + " file " + relname,
                     "format not supported");
         }
-        return new_writer;
+        return res;
     }
-
-    auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname)
-    {
-        auto_ptr<data::Maint> new_maint(create_maint_for_existing_segment(format, relname, absname));
-        if (new_maint.get()) return new_maint;
-
-        if (format == "grib" || format == "grib1" || format == "grib2")
-        {
-            if (mockdata)
-                new_maint.reset(new concat::HoleMaint);
-            else
-                new_maint.reset(new concat::Maint);
-        } else if (format == "bufr") {
-            if (mockdata)
-                new_maint.reset(new concat::HoleMaint);
-            else
-                new_maint.reset(new concat::Maint);
-        } else if (format == "odimh5" || format == "h5" || format == "odim") {
-            if (mockdata)
-                new_maint.reset(new dir::HoleMaint);
-            else
-                new_maint.reset(new dir::Maint);
-        } else if (format == "vm2") {
-            if (mockdata)
-                throw wibble::exception::Consistency("mockdata single-file line-based maintenance not implemented");
-            else
-                new_maint.reset(new lines::Maint);
-        } else {
-            throw wibble::exception::Consistency(
-                    "preparing maintenance for " + format + " file " + relname,
-                    "format not supported");
-        }
-        return new_maint;
-    }
-
 };
 
 /// Segment manager that always picks directory segments
@@ -348,18 +254,11 @@ struct ForceDirSegmentManager : public BaseSegmentManager
 {
     ForceDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
 
-    auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    auto_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        auto_ptr<data::Writer> new_writer(create_writer_for_existing_segment(format, relname, absname, truncate));
-        if (new_writer.get()) return new_writer;
-        return auto_ptr<data::Writer>(new dir::Writer(format, relname, absname, truncate));
-    }
-
-    auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname)
-    {
-        auto_ptr<data::Maint> new_maint(create_maint_for_existing_segment(format, relname, absname));
-        if (new_maint.get()) return new_maint;
-        return auto_ptr<data::Maint>(new dir::Maint);
+        auto_ptr<data::Segment> res(create_for_existing_segment(format, relname, absname));
+        if (res.get()) return res;
+        return auto_ptr<data::Segment>(new dir::Segment(format, relname, absname));
     }
 };
 
@@ -368,14 +267,9 @@ struct HoleDirSegmentManager : public BaseSegmentManager
 {
     HoleDirSegmentManager(const std::string& root) : BaseSegmentManager(root) {}
 
-    auto_ptr<data::Writer> create_writer_for_format(const std::string& format, const std::string& relname, const std::string& absname, bool truncate=false)
+    auto_ptr<data::Segment> create_for_format(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        return auto_ptr<data::Writer>(new dir::HoleWriter(format, relname, absname, truncate));
-    }
-
-    auto_ptr<data::Maint> create_maint_for_format(const std::string& format, const std::string& relname, const std::string& absname)
-    {
-        return auto_ptr<data::Maint>(new dir::HoleMaint);
+        return auto_ptr<data::Segment>(new dir::HoleSegment(format, relname, absname));
     }
 };
 
@@ -387,7 +281,7 @@ SegmentManager::~SegmentManager()
 
 void SegmentManager::flush_writers()
 {
-    writers.clear();
+    segments.clear();
 }
 
 std::auto_ptr<SegmentManager> SegmentManager::get(const std::string& root)

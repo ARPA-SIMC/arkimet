@@ -284,10 +284,10 @@ const Archives& WritableLocal::archive() const
 	return *m_archive;
 }
 
-data::Writer* WritableLocal::file(const Metadata& md, const std::string& format)
+data::Segment* WritableLocal::file(const Metadata& md, const std::string& format)
 {
     string relname = (*m_tf)(md) + "." + md.source().format;
-    return m_segment_manager->get_writer(format, relname);
+    return m_segment_manager->get_segment(format, relname);
 }
 
 void WritableLocal::flush()

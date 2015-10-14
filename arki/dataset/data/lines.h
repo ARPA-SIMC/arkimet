@@ -38,22 +38,19 @@ namespace dataset {
 namespace data {
 namespace lines {
 
-class Writer : public fd::Writer
+class Segment : public fd::Segment
 {
 public:
-    Writer(const std::string& relname, const std::string& absname, bool truncate=false);
+    Segment(const std::string& relname, const std::string& absname);
 
-    void write(const wibble::sys::Buffer& buf);
+    void write(const wibble::sys::Buffer& buf) override;
 
-    virtual void append(Metadata& md);
-    virtual off_t append(const wibble::sys::Buffer& buf);
-    virtual Pending append(Metadata& md, off_t* ofs);
-};
+    void append(Metadata& md) override;
+    off_t append(const wibble::sys::Buffer& buf) override;
+    Pending append(Metadata& md, off_t* ofs) override;
 
-struct Maint : public fd::Maint
-{
-    FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true);
-    Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds);
+    FileState check(const metadata::Collection& mds, bool quick=true) override;
+    Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 };
 
 class OstreamWriter : public data::OstreamWriter
@@ -65,8 +62,8 @@ public:
     OstreamWriter();
     virtual ~OstreamWriter();
 
-    virtual size_t stream(Metadata& md, std::ostream& out) const;
-    virtual size_t stream(Metadata& md, int out) const;
+    size_t stream(Metadata& md, std::ostream& out) const override;
+    size_t stream(Metadata& md, int out) const override;
 };
 
 }

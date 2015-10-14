@@ -83,7 +83,7 @@ Writer::~Writer()
 
 WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 {
-    data::Writer* w = file(md, md.source().format);
+    data::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
@@ -108,7 +108,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_never(Metadata& md)
 
 WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 {
-    data::Writer* w = file(md, md.source().format);
+    data::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();
@@ -134,7 +134,7 @@ WritableDataset::AcquireResult Writer::acquire_replace_always(Metadata& md)
 WritableDataset::AcquireResult Writer::acquire_replace_higher_usn(Metadata& md)
 {
     // Try to acquire without replacing
-    data::Writer* w = file(md, md.source().format);
+    data::Segment* w = file(md, md.source().format);
     off_t ofs;
 
     Pending p_idx = m_idx.beginTransaction();

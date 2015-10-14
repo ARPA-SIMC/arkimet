@@ -462,8 +462,8 @@ struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
 
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md);
+void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md, int append_amount_adjust=0);
+void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md);
 
 }
 

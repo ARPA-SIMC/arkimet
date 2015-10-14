@@ -748,7 +748,7 @@ std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
     return ds;
 }
 
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md, int append_amount_adjust)
 {
     typedef types::source::Blob Blob;
 
@@ -774,7 +774,7 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, M
     wassert(actual_type(md.source()).is_source_blob("grib1", "", dw->absname, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Writer* dw, Metadata& md)
+void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     auto_ptr<Source> orig_source(md.source().clone());

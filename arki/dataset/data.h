@@ -57,8 +57,7 @@ static const unsigned FILE_TO_DEINDEX = 1 << 5; /// File does not exist but has 
 static const unsigned FILE_ARCHIVED   = 1 << 6; /// File is in the archive
 
 namespace data {
-class Reader;
-class Writer;
+class Segment;
 
 /**
  * State of a file in a dataset, as one or more of the FILE_* flags
@@ -190,18 +189,15 @@ public:
 class SegmentManager
 {
 protected:
-    impl::Cache<Reader> readers;
-    impl::Cache<Writer> writers;
+    impl::Cache<Segment> segments;
 
 public:
     virtual ~SegmentManager();
 
     void flush_writers();
 
-    virtual Reader* get_reader(const std::string& relname) = 0;
-    virtual Reader* get_reader(const std::string& format, const std::string& relname) = 0;
-    virtual Writer* get_writer(const std::string& relname) = 0;
-    virtual Writer* get_writer(const std::string& format, const std::string& relname) = 0;
+    virtual Segment* get_segment(const std::string& relname) = 0;
+    virtual Segment* get_segment(const std::string& format, const std::string& relname) = 0;
 
     /**
      * Repack the file relname, so that it contains only the data in mds, in
@@ -237,32 +233,32 @@ public:
     static std::auto_ptr<SegmentManager> get(const ConfigFile& cfg);
 };
 
-struct Reader
+/**
+ * Interface for managing a dataset segment.
+ *
+ * A dataset segment is a group of data elements stored on disk. It can be a
+ * file with all data elements appended one after the other, for formats like
+ * BUFR or GRIB that support it; it can be a text file with one data item per
+ * line, for line based formats like VM2, or it can be a tar file or a
+ * directory with each data item in a different file, for formats like HDF5
+ * that cannot be trivially concatenated in the same file.
+ */
+struct Segment
 {
 public:
     std::string relname;
     std::string absname;
 
-    virtual ~Reader();
-};
-
-/**
- * Interface for managing data files in a dataset (implementation of write
- * access).
- */
-struct Writer
-{
+    // TODO: document
     struct Payload
     {
         virtual ~Payload() {}
     };
-
-    std::string relname;
-    std::string absname;
     Payload* payload;
 
-    Writer(const std::string& relname, const std::string& absname);
-    virtual ~Writer();
+    Segment(const std::string& relname, const std::string& absname);
+    virtual ~Segment();
+
 
     /**
      * Append the data, updating md's source information.
@@ -294,24 +290,15 @@ struct Writer
      * the file.
      */
     virtual Pending append(Metadata& md, off_t* ofs) = 0;
+
+    virtual FileState check(const metadata::Collection& mds, bool quick=true) = 0;
+    virtual size_t remove() = 0;
+    virtual void truncate(size_t offset) = 0;
+    virtual Pending repack(const std::string& rootdir, metadata::Collection& mds) = 0;
 };
 
 /**
- * Interface for managing data files in a dataset (implementation of
- * maintenance operations).
- */
-struct Maint
-{
-    virtual ~Maint();
-
-    virtual FileState check(const std::string& absname, const metadata::Collection& mds, bool quick=true) = 0;
-    virtual size_t remove(const std::string& absname) = 0;
-    virtual void truncate(const std::string& absname, size_t offset) = 0;
-    virtual Pending repack(const std::string& rootdir, const std::string& relname, metadata::Collection& mds) = 0;
-};
-
-/**
- * Functor class with format-specific serialization routines
+ * Interface for writing metadata and data to output streams.
  */
 class OstreamWriter
 {
