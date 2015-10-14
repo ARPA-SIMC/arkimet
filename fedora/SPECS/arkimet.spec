@@ -1,15 +1,15 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 0.81
-Release: 1%{dist}
+Release: 1
 License: GPL
 Group: Applications/Meteo
-URL: http://www.arpa.emr.it/sim/?arkimet‎
-Source0: %{name}-%{version}.tar.gz
-Source1: %{name}.init
-Source2: %{name}.default
-Patch0: %{name}.wibble-embedded-cppflags-fix.patch
-Patch1: %{name}.wibble-remove-posix-ifdef.patch
+URL: https://github.com/arpa-simc/%{name}
+Source0: https://github.com/arpa-simc/%{name}/archive/v%{version}-%{release}.tar.gz#/%{name}-%{version}-%{release}.tar.gz
+Source1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.init
+Source2: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.default
+Patch0: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.wibble-embedded-cppflags-fix.patch
+Patch1: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/SOURCES/%{name}.wibble-remove-posix-ifdef.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildRequires: doxygen, libdballe-devel >= 5.19, lua-devel >= 5.1, grib_api-devel, sqlite-devel >= 3.6, curl-devel, geos-devel, pkgconfig, readline-devel, lzo-devel, libwreport-devel >= 3.0, flex, bison, meteo-vm2-devel >= 0.12, hdf5-devel
 Requires: hdf5, meteo-vm2 >= 0.12, grib_api-1.10.0, libwibble-devel
@@ -33,12 +33,12 @@ Group:    Applications/Meteo
  Description to be written.
 
 %prep
-%setup -q
-%patch0
-%patch1
+%setup -q -n %{name}-%{version}-%{release}
 
 %build
 sh autogen.sh
+%patch0
+%patch1
 %configure --with-wibble=embedded
 make
 #make check
