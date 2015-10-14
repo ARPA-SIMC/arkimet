@@ -32,6 +32,7 @@ arki-%.1: src/arki-% doc/mhooks-%
 EXTRA_DIST = \
 	     README \
 	     README.Cineca \
-	     update-tags
+	     update-tags \
+	     autogen.sh
 
 CLEANFILES = $(man_MANS)

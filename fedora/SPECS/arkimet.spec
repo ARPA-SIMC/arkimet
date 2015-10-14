@@ -38,6 +38,7 @@ Group:    Applications/Meteo
 %patch1
 
 %build
+sh autogen.sh
 %configure --with-wibble=embedded
 make
 #make check
