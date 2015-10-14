@@ -34,11 +34,11 @@ Group:    Applications/Meteo
 
 %prep
 %setup -q -n %{name}-%{version}-%{release}
-
-%build
 sh autogen.sh
 %patch0
 %patch1
+
+%build
 %configure --with-wibble=embedded
 make
 #make check
