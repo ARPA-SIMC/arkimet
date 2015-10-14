@@ -1,7 +1,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 0.81
-Release: 1
+Release: 2
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
