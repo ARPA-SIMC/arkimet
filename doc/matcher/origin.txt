@@ -37,6 +37,8 @@ ensure_not_matches(sample, "origin:GRIB2,98,1,,2")
 -- BUFR
 -- Syntax: origin:BUFR,centre,subcentre
 -- Any of centre or subcentre can be omitted; if omitted, any value will match
+-- centre: originating centre (see Common Code table C-11)
+-- subcentre: originating subcentre (see Common Code table C-12)
 
 sample:set(arki_origin.bufr(98, 0))
 
