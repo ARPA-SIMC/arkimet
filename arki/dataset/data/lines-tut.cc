@@ -62,10 +62,10 @@ struct arki_data_lines_shar {
      * return the data::Segment so that we manage the writer lifetime, but also
      * the underlying implementation so we can test it.
      */
-    auto_ptr<lines::Segment> make_w(const std::string& relname)
+    unique_ptr<lines::Segment> make_w(const std::string& relname)
     {
         string absname = sys::fs::abspath(relname);
-        return auto_ptr<lines::Segment>(new lines::Segment(relname, absname));
+        return unique_ptr<lines::Segment>(new lines::Segment(relname, absname));
     }
 };
 
@@ -86,7 +86,7 @@ void to::test<1>()
 {
     wassert(!actual(fname).fileexists());
     {
-        auto_ptr<lines::Segment> dw(make_w(fname));
+        unique_ptr<lines::Segment> dw(make_w(fname));
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -119,7 +119,7 @@ template<> template<>
 void to::test<2>()
 {
     {
-        auto_ptr<lines::Segment> dw(make_w(fname));
+        unique_ptr<lines::Segment> dw(make_w(fname));
 
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
@@ -158,7 +158,7 @@ void to::test<4>()
 {
     wassert(!actual(fname).fileexists());
     {
-        auto_ptr<lines::Segment> dw(make_w(fname));
+        unique_ptr<lines::Segment> dw(make_w(fname));
         sys::Buffer buf("ciao", 4);
         ensure_equals(dw->append(buf), 0);
         ensure_equals(dw->append(buf), 5);

@@ -96,18 +96,18 @@ void Value::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va", buffer);
 }
 
-auto_ptr<Value> Value::decode(const unsigned char* buf, size_t len)
+unique_ptr<Value> Value::decode(const unsigned char* buf, size_t len)
 {
     return Value::create(string((const char*)buf, len));
 }
 
-auto_ptr<Value> Value::decodeString(const std::string& val)
+unique_ptr<Value> Value::decodeString(const std::string& val)
 {
     size_t len;
     return Value::create(str::c_unescape(val, len));
 }
 
-auto_ptr<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Value> Value::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Value::create(val["va"].want_string("parsing item value encoded in metadata"));
 }
@@ -119,11 +119,11 @@ Value* Value::clone() const
     return val;
 }
 
-auto_ptr<Value> Value::create(const std::string& buf)
+unique_ptr<Value> Value::create(const std::string& buf)
 {
     Value* val = new Value;
     val->buffer = buf;
-    return auto_ptr<Value>(val);
+    return unique_ptr<Value>(val);
 }
 
 void Value::lua_loadlib(lua_State* L)

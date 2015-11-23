@@ -76,16 +76,16 @@ struct Stats : public types::CoreType<Stats>
     void merge(const Stats& s);
     void merge(const Metadata& md);
 
-    std::auto_ptr<types::Reftime> make_reftime() const;
+    std::unique_ptr<types::Reftime> make_reftime() const;
 
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     std::string toYaml(size_t indent = 0) const;
     void toYaml(std::ostream& out, size_t indent = 0) const;
-    static std::auto_ptr<Stats> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Stats> decodeString(const std::string& str);
-    static std::auto_ptr<Stats> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Stats> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Stats> decodeString(const std::string& str);
+    static std::unique_ptr<Stats> decodeMapping(const emitter::memory::Mapping& val);
 
     Stats* clone() const override;
 

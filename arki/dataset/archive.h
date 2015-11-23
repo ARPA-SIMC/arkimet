@@ -73,7 +73,7 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * manifest.
      */
-    virtual void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const = 0;
+    virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
     /**
      * Output to \a cons the idx-th element of each file
      *
@@ -105,7 +105,7 @@ public:
     virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
-    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override;
+    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
@@ -140,7 +140,7 @@ struct OfflineArchive : public Archive
     virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
     virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
-    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override;
+    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 
     virtual void acquire(const std::string& relname);
@@ -208,7 +208,7 @@ public:
 	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
 	virtual void querySummary(const Matcher& matcher, Summary& summary);
     virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
-    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
+    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 
 	void acquire(const std::string& relname);
 	void acquire(const std::string& relname, metadata::Collection& mds);

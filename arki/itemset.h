@@ -60,10 +60,10 @@ public:
     /// Set an item
     void set(const types::Type& i);
 
-    void set(std::auto_ptr<types::Type> i);
+    void set(std::unique_ptr<types::Type> i);
 
     template<typename T>
-    void set(std::auto_ptr<T> i) { set(std::auto_ptr<types::Type>(i.release())); }
+    void set(std::unique_ptr<T> i) { set(std::unique_ptr<types::Type>(i.release())); }
 
     /// Set an item, from strings. Useful for quickly setting up data in tests.
     void set(const std::string& type, const std::string& val);

@@ -67,7 +67,7 @@ bool Stream::checkMetadata()
         state = DATA;
         return true;
     } else {
-        consumer.eat(md);
+        consumer.eat(move(md));
         return true;
     }
 }
@@ -82,7 +82,7 @@ bool Stream::checkData()
     dataToGet = 0;
     state = METADATA;
     md->set_source_inline(md->source().format, buf);
-    consumer.eat(md);
+    consumer.eat(move(md));
     return true;
 }
 

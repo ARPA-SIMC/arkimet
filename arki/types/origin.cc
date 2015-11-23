@@ -92,7 +92,7 @@ std::string Origin::formatStyle(Origin::Style s)
 	}
 }
 
-auto_ptr<Origin> Origin::decode(const unsigned char* buf, size_t len)
+unique_ptr<Origin> Origin::decode(const unsigned char* buf, size_t len)
 {
     using namespace utils::codec;
     ensureSize(len, 1, "Origin");
@@ -133,7 +133,7 @@ auto_ptr<Origin> Origin::decode(const unsigned char* buf, size_t len)
 	}
 }
 
-auto_ptr<Origin> Origin::decodeString(const std::string& val)
+unique_ptr<Origin> Origin::decodeString(const std::string& val)
 {
 	string inner;
 	Origin::Style style = outerParse<Origin>(val, inner);
@@ -172,7 +172,7 @@ auto_ptr<Origin> Origin::decodeString(const std::string& val)
 	}
 }
 
-auto_ptr<Origin> Origin::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Origin> Origin::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -236,20 +236,20 @@ void Origin::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_origin", lib);
 }
 
-auto_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process)
+unique_ptr<Origin> Origin::createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
     return upcast<Origin>(origin::GRIB1::create(centre, subcentre, process));
 }
-auto_ptr<Origin> Origin::createGRIB2(unsigned short centre, unsigned short subcentre,
+unique_ptr<Origin> Origin::createGRIB2(unsigned short centre, unsigned short subcentre,
                                              unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
 {
     return upcast<Origin>(origin::GRIB2::create(centre, subcentre, processtype, bgprocessid, processid));
 }
-auto_ptr<Origin> Origin::createBUFR(unsigned char centre, unsigned char subcentre)
+unique_ptr<Origin> Origin::createBUFR(unsigned char centre, unsigned char subcentre)
 {
     return upcast<Origin>(origin::BUFR::create(centre, subcentre));
 }
-auto_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc)
+unique_ptr<Origin> Origin::createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc)
 {
     return upcast<Origin>(origin::ODIMH5::create(wmo, rad, plc));
 }
@@ -284,7 +284,7 @@ void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("sc", m_subcentre);
     e.add("pr", m_process);
 }
-auto_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB1::create(
             val["ce"].want_int("parsing GRIB1 origin centre"),
@@ -340,13 +340,13 @@ GRIB1* GRIB1::clone() const
     return res;
 }
 
-auto_ptr<GRIB1> GRIB1::create(unsigned char centre, unsigned char subcentre, unsigned char process)
+unique_ptr<GRIB1> GRIB1::create(unsigned char centre, unsigned char subcentre, unsigned char process)
 {
     GRIB1* res = new GRIB1;
     res->m_centre = centre;
     res->m_subcentre = subcentre;
     res->m_process = process;
-    return auto_ptr<GRIB1>(res);
+    return unique_ptr<GRIB1>(res);
 }
 
 std::vector<int> GRIB1::toIntVector() const
@@ -392,7 +392,7 @@ void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("bi", m_bgprocessid);
     e.add("pi", m_processid);
 }
-auto_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB2::create(
             val["ce"].want_int("parsing GRIB1 origin centre"),
@@ -459,7 +459,7 @@ GRIB2* GRIB2::clone() const
     return res;
 }
 
-auto_ptr<GRIB2> GRIB2::create(
+unique_ptr<GRIB2> GRIB2::create(
 			  unsigned short centre, unsigned short subcentre,
 			  unsigned char processtype, unsigned char bgprocessid, unsigned char processid)
 {
@@ -469,7 +469,7 @@ auto_ptr<GRIB2> GRIB2::create(
     res->m_processtype = processtype;
     res->m_bgprocessid = bgprocessid;
     res->m_processid = processid;
-    return auto_ptr<GRIB2>(res);
+    return unique_ptr<GRIB2>(res);
 }
 
 std::vector<int> GRIB2::toIntVector() const
@@ -508,7 +508,7 @@ void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("ce", m_centre);
     e.add("sc", m_subcentre);
 }
-auto_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 {
     return BUFR::create(
             val["ce"].want_int("parsing BUFR origin centre"),
@@ -560,12 +560,12 @@ BUFR* BUFR::clone() const
     return res;
 }
 
-auto_ptr<BUFR> BUFR::create(unsigned char centre, unsigned char subcentre)
+unique_ptr<BUFR> BUFR::create(unsigned char centre, unsigned char subcentre)
 {
     BUFR* res = new BUFR;
     res->m_centre = centre;
     res->m_subcentre = subcentre;
-    return auto_ptr<BUFR>(res);
+    return unique_ptr<BUFR>(res);
 }
 
 std::vector<int> BUFR::toIntVector() const
@@ -604,7 +604,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("rad", m_RAD);
     e.add("plc", m_PLC);
 }
-auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     return ODIMH5::create(
             val["wmo"].want_string("parsing ODIMH5 origin WMO"),
@@ -660,13 +660,13 @@ ODIMH5* ODIMH5::clone() const
     return res;
 }
 
-auto_ptr<ODIMH5> ODIMH5::create(const std::string& wmo, const std::string& rad, const std::string& plc)
+unique_ptr<ODIMH5> ODIMH5::create(const std::string& wmo, const std::string& rad, const std::string& plc)
 {
     ODIMH5* res = new ODIMH5;
     res->m_WMO = wmo;
     res->m_RAD = rad;
     res->m_PLC = plc;
-    return auto_ptr<ODIMH5>(res);
+    return unique_ptr<ODIMH5>(res);
 }
 
 std::vector<int> ODIMH5::toIntVector() const

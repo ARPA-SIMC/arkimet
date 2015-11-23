@@ -83,7 +83,7 @@ void to::test<2>()
 	// Opening a missing manifest read only fails
 	{
 		ensure(!Manifest::exists("testds/.archive/last/" + idxfname()));
-		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 		try {
 			m->openRO();
 			ensure(false);
@@ -94,11 +94,11 @@ void to::test<2>()
 
 	// But an empty dataset
 	{
-		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 		m->openRW();
 	}
 
-	std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRO();
 
 	vector<string> files;
@@ -115,13 +115,13 @@ void to::test<4>()
 {
 	// Opening a missing manifest read-write creates a new one
 	ensure(!sys::fs::exists("testds/.archive/last/" + idxfname()));
-	std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRW();
 	m->flush();
 	ensure(sys::fs::exists("testds/.archive/last/" + idxfname()));
 
     MaintenanceCollector c;
-    auto_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
+    unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
     m->check(*sm, c);
 	ensure_equals(c.fileStates.size(), 0u);
 	ensure_equals(c.remaining(), string());
@@ -142,7 +142,7 @@ void to::test<6>()
 	system("mkdir testds/.archive/last/foo");
 	system("cp inbound/test.grib1 testds/.archive/last/foo/b.grib1");
 
-	std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 	m->openRW();
 
     Summary s;
@@ -213,7 +213,7 @@ void to::test<8>()
 
 	// Build index
 	{
-		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 		m->openRW();
 		m->acquire("10.grib1", mtime, s);
 		//m->acquire("20.grib1", mtime, s);
@@ -224,10 +224,10 @@ void to::test<8>()
 
 	// Check and messily fix
 	{
-		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 		IndexingCollector c(*m, s, mtime);
 		m->openRW();
-        auto_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
+        unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
         m->check(*sm, c);
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_TO_INDEX), 2u);
@@ -238,10 +238,10 @@ void to::test<8>()
 
 	// Check again, everything should be fine
 	{
-		std::auto_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+		std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
 		MaintenanceCollector c;
 		m->openRO();
-        auto_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
+        unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
         m->check(*sm, c);
 		ensure_equals(c.fileStates.size(), 5u);
 		ensure_equals(c.count(COUNTED_OK), 5u);

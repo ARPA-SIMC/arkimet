@@ -46,7 +46,7 @@ void to::test<1>()
     t.exact_query = "GRIB1,1";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB1(1);
+    unique_ptr<Level> o = Level::createGRIB1(1);
     wassert(actual(o->style()) == Level::GRIB1);
     const level::GRIB1* v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 1u);
@@ -67,7 +67,7 @@ void to::test<2>()
     t.exact_query = "GRIB1,103,132";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB1(103, 132);
+    unique_ptr<Level> o = Level::createGRIB1(103, 132);
     wassert(actual(o->style()) == Level::GRIB1);
     const level::GRIB1* v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 103);
@@ -92,7 +92,7 @@ void to::test<3>()
     t.exact_query = "GRIB1,103,13200";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB1(103, 13200);
+    unique_ptr<Level> o = Level::createGRIB1(103, 13200);
     wassert(actual(o->style()) == Level::GRIB1);
     const level::GRIB1* v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 103);
@@ -115,7 +115,7 @@ void to::test<4>()
     t.exact_query = "GRIB1,104,132,231";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB1(104, 132, 231);
+    unique_ptr<Level> o = Level::createGRIB1(104, 132, 231);
     wassert(actual(o->style()) == Level::GRIB1);
     const level::GRIB1* v = dynamic_cast<level::GRIB1*>(o.get());
     wassert(actual(v->type()) == 104);
@@ -139,7 +139,7 @@ void to::test<5>()
     t.exact_query = "GRIB2S,100,100,500";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB2S(100, 100, 500);
+    unique_ptr<Level> o = Level::createGRIB2S(100, 100, 500);
     wassert(actual(o->style()) == Level::GRIB2S);
     const level::GRIB2S* v = dynamic_cast<level::GRIB2S*>(o.get());
     wassert(actual(v->type()) == 100);
@@ -162,7 +162,7 @@ void to::test<6>()
     t.exact_query = "GRIB2S,-,-,-";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB2S(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
+    unique_ptr<Level> o = Level::createGRIB2S(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
     wassert(actual(o->style()) == Level::GRIB2S);
     const level::GRIB2S* v = dynamic_cast<level::GRIB2S*>(o.get());
     wassert(actual(v->type()) == level::GRIB2S::MISSING_TYPE);
@@ -186,7 +186,7 @@ void to::test<7>()
     t.exact_query = "GRIB2D,100,100,500,100,100,1000";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB2D(100, 100, 500, 100, 100, 1000);
+    unique_ptr<Level> o = Level::createGRIB2D(100, 100, 500, 100, 100, 1000);
     wassert(actual(o->style()) == Level::GRIB2D);
     const level::GRIB2D* v = dynamic_cast<level::GRIB2D*>(o.get());
     wassert(actual(v->type1()) == 100);
@@ -217,7 +217,7 @@ void to::test<8>()
     t.exact_query = "GRIB2D,-,-,-,-,-,-";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createGRIB2D(
+    unique_ptr<Level> o = Level::createGRIB2D(
             level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
             level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
     wassert(actual(o->style()) == Level::GRIB2D);
@@ -245,7 +245,7 @@ void to::test<9>()
     t.exact_query = "ODIMH5,range 10.123 20.123";
     wassert(t);
 
-    auto_ptr<Level> o = Level::createODIMH5(10.123, 20.123);
+    unique_ptr<Level> o = Level::createODIMH5(10.123, 20.123);
     wassert(actual(o->style()) == Level::ODIMH5);
     const level::ODIMH5* v = dynamic_cast<level::ODIMH5*>(o.get());
     wassert(actual(v->max()) == 20.123);
@@ -257,7 +257,7 @@ template<> template<>
 void to::test<10>()
 {
 #ifdef HAVE_LUA
-    auto_ptr<Level> o = Level::createGRIB1(104, 132, 231);
+    unique_ptr<Level> o = Level::createGRIB1(104, 132, 231);
 
     tests::Lua test(
         "function test(o) \n"

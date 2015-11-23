@@ -1,25 +1,3 @@
-/*
- * metadata/collection - In-memory collection of metadata
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "collection.h"
 #include <arki/types/source/blob.h>
 #include <arki/utils/compress.h>
@@ -119,7 +97,7 @@ bool Collection::observe(const Metadata& md)
     return eat(Metadata::create_copy(md));
 }
 
-bool Collection::eat(auto_ptr<Metadata> md)
+bool Collection::eat(unique_ptr<Metadata>&& md)
 {
     md->drop_cached_data();
     vals.push_back(md.release());
@@ -184,7 +162,7 @@ std::string Collection::ensureContiguousData(const std::string& source) const
         }
         last_end += s.size;
     }
-	std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+	std::unique_ptr<struct stat> st = sys::fs::stat(fname);
 	if (st.get() == NULL)
 		throw wibble::exception::File(fname, "validating data described in " + source);
 	if (st->st_size != last_end)
@@ -203,7 +181,7 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
     compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
-	std::auto_ptr<struct stat> st = sys::fs::stat(datafile);
+	std::unique_ptr<struct stat> st = sys::fs::stat(datafile);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;
@@ -256,11 +234,11 @@ bool Collection::move_to_eater(Eater& out)
 
     for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
     {
-        // Move the pointer to an auto_ptr
-        auto_ptr<Metadata> md(*i);
+        // Move the pointer to an unique_ptr
+        unique_ptr<Metadata> md(*i);
         *i = 0;
         // Pass it on to the eater
-        if (!out.eat(md))
+        if (!out.eat(move(md)))
             return false;
     }
     return true;
@@ -344,4 +322,3 @@ void AtomicWriter::rollback()
 
 }
 }
-// vim:set ts=4 sw=4:

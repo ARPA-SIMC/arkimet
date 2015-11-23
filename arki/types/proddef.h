@@ -60,16 +60,16 @@ struct Proddef : public types::StyledType<Proddef>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Proddef> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Proddef> decodeString(const std::string& val);
-    static std::auto_ptr<Proddef> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Proddef> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Proddef> decodeString(const std::string& val);
+    static std::unique_ptr<Proddef> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<Proddef> createGRIB(const ValueBag& values);
+    static std::unique_ptr<Proddef> createGRIB(const ValueBag& values);
 };
 
 namespace proddef {
@@ -96,8 +96,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB* clone() const override;
-    static std::auto_ptr<GRIB> create(const ValueBag& values);
-    static std::auto_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB> create(const ValueBag& values);
+    static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

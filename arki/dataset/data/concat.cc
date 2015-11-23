@@ -153,7 +153,7 @@ Pending Segment::append(Metadata& md, off_t* ofs)
     return res;
 }
 
-void HoleSegment::write(const wibble::sys::Buffer& buf) override
+void HoleSegment::write(const wibble::sys::Buffer& buf)
 {
     // Get the current file size
     off_t pos = ::lseek(fd, 0, SEEK_END);
@@ -173,7 +173,7 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
 
 static data::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
 {
-    auto_ptr<concat::Segment> res(new concat::Segment(relname, absname));
+    unique_ptr<concat::Segment> res(new concat::Segment(relname, absname));
     res->truncate_and_open();
     return res.release();
 }
@@ -184,11 +184,11 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
 
 static data::Segment* make_repack_hole_segment(const std::string& relname, const std::string& absname)
 {
-    auto_ptr<concat::Segment> res(new concat::HoleSegment(relname, absname));
+    unique_ptr<concat::Segment> res(new concat::HoleSegment(relname, absname));
     res->truncate_and_open();
     return res.release();
 }
-Pending HoleSegment::repack(const std::string& rootdir, metadata::Collection& mds) override
+Pending HoleSegment::repack(const std::string& rootdir, metadata::Collection& mds)
 {
     close();
     return fd::Segment::repack(rootdir, relname, mds, make_repack_hole_segment, true);

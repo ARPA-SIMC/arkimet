@@ -116,19 +116,19 @@ Metadata* Metadata::clone() const
     return new Metadata(*this);
 }
 
-auto_ptr<Metadata> Metadata::create_empty()
+unique_ptr<Metadata> Metadata::create_empty()
 {
-    return auto_ptr<Metadata>(new Metadata);
+    return unique_ptr<Metadata>(new Metadata);
 }
 
-auto_ptr<Metadata> Metadata::create_copy(const Metadata& md)
+unique_ptr<Metadata> Metadata::create_copy(const Metadata& md)
 {
-    return auto_ptr<Metadata>(md.clone());
+    return unique_ptr<Metadata>(md.clone());
 }
 
-auto_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
+unique_ptr<Metadata> Metadata::create_from_yaml(std::istream& in, const std::string& filename)
 {
-    auto_ptr<Metadata> res(create_empty());
+    unique_ptr<Metadata> res(create_empty());
     res->readYaml(in, filename);
     return res;
 }
@@ -154,7 +154,7 @@ const source::Blob& Metadata::sourceBlob() const
     return *res;
 }
 
-void Metadata::set_source(std::auto_ptr<types::Source> s)
+void Metadata::set_source(std::unique_ptr<types::Source>&& s)
 {
     delete m_source;
     m_source = s.release();
@@ -458,20 +458,20 @@ void Metadata::read(const emitter::memory::Mapping& val)
     const List& items = val["i"].want_list("parsing metadata item list");
     for (std::vector<const Node*>::const_iterator i = items.val.begin(); i != items.val.end(); ++i)
     {
-        auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        unique_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
         if (item->type_code() == types::TYPE_SOURCE)
-            set_source(downcast<types::Source>(item));
+            set_source(move(downcast<types::Source>(move(item))));
         else
-            set(item);
+            set(move(item));
     }
 
     // Parse notes
     const List& notes = val["n"].want_list("parsing metadata notes list");
     for (std::vector<const Node*>::const_iterator i = notes.val.begin(); i != notes.val.end(); ++i)
     {
-        auto_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
+        unique_ptr<types::Type> item = types::decodeMapping((*i)->want_mapping("parsing metadata item"));
         if (item->type_code() == types::TYPE_NOTE)
-            add_note(*downcast<types::Note>(item));
+            add_note(*downcast<types::Note>(move(item)));
     }
 }
 
@@ -615,14 +615,14 @@ void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, met
             iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
             Metadata::readGroup(buf, version, file, mdc);
         } else {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
             md->read(buf, version, file);
 
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::INLINE)
                 md->readInlineData(in, file.pathname);
-            canceled = !mdc.eat(md);
+            canceled = !mdc.eat(move(md));
         }
     }
 }
@@ -647,9 +647,9 @@ void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const
 	bool canceled = false;
     while (!canceled && types::readBundle(ubuf, len, file.pathname, ibuf, ilen, isig, iver))
     {
-        auto_ptr<Metadata> md(new Metadata);
+        unique_ptr<Metadata> md(new Metadata);
         md->read(ibuf, ilen, iver, file);
-        canceled = !mdc.eat(md);
+        canceled = !mdc.eat(move(md));
     }
 }
 
@@ -990,7 +990,7 @@ void Metadata::lua_push(lua_State* L)
 	lua_setmetatable(L, -2);
 }
 
-void Metadata::lua_push(lua_State* L, auto_ptr<Metadata> md)
+void Metadata::lua_push(lua_State* L, unique_ptr<Metadata>&& md)
 {
     // The 'metadata' object is a userdata that holds a pointer to this Metadata structure
     MetadataUD::create(L, md.release(), true);

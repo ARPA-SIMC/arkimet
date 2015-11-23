@@ -72,7 +72,7 @@ std::string Proddef::formatStyle(Proddef::Style s)
 	}
 }
 
-auto_ptr<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
+unique_ptr<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
 {
     using namespace utils::codec;
     ensureSize(len, 1, "Proddef");
@@ -86,7 +86,7 @@ auto_ptr<Proddef> Proddef::decode(const unsigned char* buf, size_t len)
     }
 }
 
-auto_ptr<Proddef> Proddef::decodeString(const std::string& val)
+unique_ptr<Proddef> Proddef::decodeString(const std::string& val)
 {
     string inner;
     Proddef::Style style = outerParse<Proddef>(val, inner);
@@ -98,7 +98,7 @@ auto_ptr<Proddef> Proddef::decodeString(const std::string& val)
     }
 }
 
-auto_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Proddef> Proddef::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -130,7 +130,7 @@ void Proddef::lua_loadlib(lua_State* L)
 }
 #endif
 
-auto_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
+unique_ptr<Proddef> Proddef::createGRIB(const ValueBag& values)
 {
     return upcast<Proddef>(proddef::GRIB::create(values));
 }
@@ -156,7 +156,7 @@ void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-auto_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -203,11 +203,11 @@ GRIB* GRIB::clone() const
     return res;
 }
 
-auto_ptr<GRIB> GRIB::create(const ValueBag& values)
+unique_ptr<GRIB> GRIB::create(const ValueBag& values)
 {
     GRIB* res = new GRIB;
     res->m_values = values;
-    return auto_ptr<GRIB>(res);
+    return unique_ptr<GRIB>(res);
 }
 
 }

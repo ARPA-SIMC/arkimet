@@ -66,9 +66,9 @@ struct Product : public types::StyledType<Product>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Product> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Product> decodeString(const std::string& val);
-    static std::auto_ptr<Product> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Product> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Product> decodeString(const std::string& val);
+    static std::unique_ptr<Product> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -78,18 +78,18 @@ struct Product : public types::StyledType<Product>
 
 	static void init();
 
-    static std::auto_ptr<Product> createGRIB1(unsigned char origin, unsigned char table, unsigned char product);
-    static std::auto_ptr<Product> createGRIB2(
+    static std::unique_ptr<Product> createGRIB1(unsigned char origin, unsigned char table, unsigned char product);
+    static std::unique_ptr<Product> createGRIB2(
             unsigned short centre,
             unsigned char discipline,
             unsigned char category,
             unsigned char number,
             unsigned char table_version=4,
             unsigned char local_table_version=255);
-    static std::auto_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype);
-    static std::auto_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
-    static std::auto_ptr<Product> createODIMH5(const std::string& obj, const std::string& prod);
-    static std::auto_ptr<Product> createVM2(unsigned variable_id);
+    static std::unique_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype);
+    static std::unique_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
+    static std::unique_ptr<Product> createODIMH5(const std::string& obj, const std::string& prod);
+    static std::unique_ptr<Product> createVM2(unsigned variable_id);
 };
 
 
@@ -120,8 +120,8 @@ public:
     bool lua_lookup(lua_State* L, const std::string& name) const;
 
     GRIB1* clone() const override;
-    static std::auto_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
-    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> create(unsigned char origin, unsigned char table, unsigned char product);
+    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -158,14 +158,14 @@ public:
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     GRIB2* clone() const override;
-    static std::auto_ptr<GRIB2> create(
+    static std::unique_ptr<GRIB2> create(
             unsigned short centre,
             unsigned char discipline,
             unsigned char category,
             unsigned char number,
             unsigned char table_version=4,
             unsigned char local_table_version=255);
-    static std::auto_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -202,9 +202,9 @@ public:
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     BUFR* clone() const override;
-    static std::auto_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
-    static std::auto_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
-    static std::auto_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype);
+    static std::unique_ptr<BUFR> create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
+    static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -241,10 +241,10 @@ public:
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     ODIMH5* clone() const override;
-    static std::auto_ptr<ODIMH5> create(const std::string& obj, const std::string& prod
+    static std::unique_ptr<ODIMH5> create(const std::string& obj, const std::string& prod
             /*REMOVED:, double prodpar1, double prodpar2*/
     );
-    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -254,7 +254,7 @@ class VM2 : public Product
 {
 protected:
     unsigned m_variable_id;
-    mutable std::auto_ptr<ValueBag> m_derived_values;
+    mutable std::unique_ptr<ValueBag> m_derived_values;
 
 public:
     virtual ~VM2() {}
@@ -275,8 +275,8 @@ public:
     bool lua_lookup(lua_State* L, const std::string& name) const override;
 
     VM2* clone() const override;
-    static std::auto_ptr<VM2> create(unsigned variable_id);
-    static std::auto_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<VM2> create(unsigned variable_id);
+    static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
 
     std::vector<int> toIntVector() const override;
 };

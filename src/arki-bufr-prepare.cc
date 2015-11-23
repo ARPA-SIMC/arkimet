@@ -166,8 +166,8 @@ public:
     void process(const std::string& filename, File& outfile)
     {
         // Use .release() so the code is the same even with the new C++11's dballe
-        auto_ptr<File> file(File::create(File::BUFR, filename.c_str(), "r").release());
-        auto_ptr<msg::Importer> importer(msg::Importer::create(File::BUFR).release());
+        unique_ptr<File> file(File::create(File::BUFR, filename.c_str(), "r").release());
+        unique_ptr<msg::Importer> importer(msg::Importer::create(File::BUFR).release());
 
         while (BinaryMessage rmsg = file->read())
         {
@@ -207,7 +207,7 @@ int main(int argc, const char* argv[])
         if (opts.force_usn->isSet())
             copier.override_usn(opts.force_usn->intValue());
 
-        auto_ptr<File> outfile;
+        unique_ptr<File> outfile;
         if (opts.outfile->isSet())
             outfile.reset(File::create(File::BUFR, opts.outfile->stringValue().c_str(), "wb").release());
         else

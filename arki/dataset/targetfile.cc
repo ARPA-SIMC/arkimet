@@ -49,11 +49,11 @@ namespace dataset {
 
 struct BaseTargetFile : public TargetFile
 {
-    virtual auto_ptr<Reftime> reftimeForPath(const std::string& path) const = 0;
+    virtual unique_ptr<Reftime> reftimeForPath(const std::string& path) const = 0;
 
     virtual bool pathMatches(const std::string& path, const matcher::Implementation& m) const
     {
-        auto_ptr<Reftime> rt = reftimeForPath(path);
+        unique_ptr<Reftime> rt = reftimeForPath(path);
         if (!rt.get()) return false;
         return m.matchItem(*rt);
     }
@@ -63,14 +63,14 @@ struct Yearly : public BaseTargetFile
 {
 	static const char* name() { return "yearly"; }
 
-    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
     {
 		int dummy;
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
         if (sscanf(path.c_str(), "%02d/%04d", &dummy, &base[0]) != 2)
-            return auto_ptr<Reftime>();
+            return unique_ptr<Reftime>();
 
         gd::lowerbound(base, min);
         gd::upperbound(base, max);
@@ -90,13 +90,13 @@ struct Monthly : public BaseTargetFile
 {
 	static const char* name() { return "monthly"; }
 
-    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
     {
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
         if (sscanf(path.c_str(), "%04d/%02d", &base[0], &base[1]) == 0)
-            return auto_ptr<Reftime>();
+            return unique_ptr<Reftime>();
 
 		gd::lowerbound(base, min);
 		gd::upperbound(base, max);
@@ -116,13 +116,13 @@ struct Biweekly : public BaseTargetFile
 {
 	static const char* name() { return "biweekly"; }
 
-    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
     {
 		int year, month = -1, biweek = -1;
 		int min[6] = { -1, -1, -1, -1, -1, -1 };
 		int max[6] = { -1, -1, -1, -1, -1, -1 };
 		if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &biweek) == 0)
-			return auto_ptr<Reftime>();
+			return unique_ptr<Reftime>();
 		min[0] = max[0] = year;
 		min[1] = max[1] = month;
 		switch (biweek)
@@ -152,13 +152,13 @@ struct Weekly : public BaseTargetFile
 {
 	static const char* name() { return "weekly"; }
 
-    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
     {
 		int year, month = -1, week = -1;
 		int min[6] = { -1, -1, -1, -1, -1, -1 };
 		int max[6] = { -1, -1, -1, -1, -1, -1 };
         if (sscanf(path.c_str(), "%04d/%02d-%d", &year, &month, &week) == 0)
-            return auto_ptr<Reftime>();
+            return unique_ptr<Reftime>();
 		min[0] = max[0] = year;
 		min[1] = max[1] = month;
 		if (week != -1)
@@ -187,13 +187,13 @@ struct Daily : public BaseTargetFile
 {
 	static const char* name() { return "daily"; }
 
-    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
     {
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
 		int max[6];
         if (sscanf(path.c_str(), "%04d/%02d-%02d", &base[0], &base[1], &base[2]) == 0)
-            return auto_ptr<Reftime>();
+            return unique_ptr<Reftime>();
 
 		gd::lowerbound(base, min);
 		gd::upperbound(base, max);
@@ -232,7 +232,7 @@ struct SingleFile : public BaseTargetFile
 
     virtual ~SingleFile() {}
 
-    auto_ptr<Reftime> reftimeForPath(const std::string& path) const override
+    unique_ptr<Reftime> reftimeForPath(const std::string& path) const override
     {
 		int base[6] = { -1, -1, -1, -1, -1, -1 };
 		int min[6];
@@ -240,7 +240,7 @@ struct SingleFile : public BaseTargetFile
 		uint64_t counter;	   
 								
 		if (sscanf(path.c_str(), "%04d/%02d/%02d/%02d/%Lu",	&base[0], &base[1], &base[2], &base[3], &counter) == 0)
-			return auto_ptr<Reftime>();
+			return unique_ptr<Reftime>();
 
 		gd::lowerbound(base, min);
 		gd::upperbound(base, max);

@@ -449,7 +449,7 @@ void to::test<20>()
     s.readFile("inbound/00-00.bufr.summary");
 
     // Check that ranges are computed correctly even with all zeroes
-    auto_ptr<types::Reftime> rt = s.getReferenceTime();
+    unique_ptr<types::Reftime> rt = s.getReferenceTime();
     wassert(actual(rt->period_begin()) == Time(0, 0, 0, 0, 0, 0));
     wassert(actual(rt->period_end()) == Time(0, 0, 0, 0, 0, 14));
 

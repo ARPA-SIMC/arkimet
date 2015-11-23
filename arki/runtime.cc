@@ -89,9 +89,9 @@ void init()
 HandledByCommandLineParser::HandledByCommandLineParser(int status) : status(status) {}
 HandledByCommandLineParser::~HandledByCommandLineParser() {}
 
-std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
+std::unique_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url)
 {
-    auto_ptr<ReadonlyDataset> ds;
+    unique_ptr<ReadonlyDataset> ds;
     string baseurl = dataset::HTTP::allSameRemoteServer(cfg);
     if (baseurl.empty())
     {
@@ -429,7 +429,7 @@ void CommandLine::setupProcessing()
 		output = new Output(*outfile);
 
     // Create the core processor
-    auto_ptr<DatasetProcessor> p = pmaker.make(query, *output);
+    unique_ptr<DatasetProcessor> p = pmaker.make(query, *output);
     processor = p.release();
 
     // If targetfile is requested, wrap with the targetfile processor
@@ -513,12 +513,12 @@ static std::string moveFile(const ReadonlyDataset& ds, const std::string& target
 		return string();
 }
 
-std::auto_ptr<ReadonlyDataset> CommandLine::openSource(ConfigFile& info)
+std::unique_ptr<ReadonlyDataset> CommandLine::openSource(ConfigFile& info)
 {
 	if (movework && movework->isSet() && info.value("type") == "file")
 		info.setValue("path", moveFile(info.value("path"), movework->stringValue()));
 
-	return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(info));
+	return unique_ptr<ReadonlyDataset>(ReadonlyDataset::create(info));
 }
 
 bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
@@ -529,7 +529,7 @@ bool CommandLine::processSource(ReadonlyDataset& ds, const std::string& name)
 	return true;
 }
 
-void CommandLine::closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful)
+void CommandLine::closeSource(std::unique_ptr<ReadonlyDataset> ds, bool successful)
 {
 	if (successful && moveok && moveok->isSet())
 	{
@@ -604,10 +604,10 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 	return success;
 }
 
-bool MetadataDispatch::eat(auto_ptr<Metadata> md)
+bool MetadataDispatch::eat(unique_ptr<Metadata>&& md)
 {
     // Dispatch to matching dataset
-    switch (dispatcher->dispatch(md, results))
+    switch (dispatcher->dispatch(move(md), results))
     {
         case Dispatcher::DISP_OK:
             ++countSuccessful;

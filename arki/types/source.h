@@ -69,19 +69,19 @@ struct Source : public types::StyledType<Source>
 
     /// CODEC functions
     virtual void encodeWithoutEnvelope(utils::codec::Encoder& enc) const;
-    static std::auto_ptr<Source> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Source> decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir);
-    static std::auto_ptr<Source> decodeString(const std::string& val);
-    static std::auto_ptr<Source> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Source> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Source> decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir);
+    static std::unique_ptr<Source> decodeString(const std::string& val);
+    static std::unique_ptr<Source> decodeMapping(const emitter::memory::Mapping& val);
     virtual void serialiseLocal(Emitter& e, const Formatter* f=0) const;
 
     virtual bool lua_lookup(lua_State* L, const std::string& name) const;
 
     Source* clone() const = 0;
 
-    static std::auto_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
-    static std::auto_ptr<Source> createInline(const std::string& format, uint64_t size);
-    static std::auto_ptr<Source> createURL(const std::string& format, const std::string& url);
+    static std::unique_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);
+    static std::unique_ptr<Source> createURL(const std::string& format, const std::string& url);
 };
 
 }

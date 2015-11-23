@@ -63,10 +63,10 @@ struct arki_data_concat_shar {
      * return the data::Writer so that we manage the writer lifetime, but also
      * the underlying implementation so we can test it.
      */
-    auto_ptr<concat::Segment> make_w(const std::string& relname)
+    unique_ptr<concat::Segment> make_w(const std::string& relname)
     {
         string absname = sys::fs::abspath(relname);
-        return auto_ptr<concat::Segment>(new concat::Segment(relname, absname));
+        return unique_ptr<concat::Segment>(new concat::Segment(relname, absname));
     }
 };
 
@@ -87,7 +87,7 @@ void to::test<1>()
 {
     wassert(!actual(fname).fileexists());
     {
-        auto_ptr<concat::Segment> w(make_w(fname));
+        unique_ptr<concat::Segment> w(make_w(fname));
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -120,7 +120,7 @@ template<> template<>
 void to::test<2>()
 {
     {
-        auto_ptr<concat::Segment> dw(make_w(fname));
+        unique_ptr<concat::Segment> dw(make_w(fname));
 
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
@@ -159,7 +159,7 @@ void to::test<4>()
 {
     wassert(!actual(fname).fileexists());
     {
-        auto_ptr<concat::Segment> dw(make_w(fname));
+        unique_ptr<concat::Segment> dw(make_w(fname));
         sys::Buffer buf("ciao", 4);
         wassert(actual(dw->append(buf)) == 0);
         wassert(actual(dw->append(buf)) == 4);

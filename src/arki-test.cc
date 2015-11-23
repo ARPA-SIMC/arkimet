@@ -98,7 +98,7 @@ int main(int argc, const char* argv[])
             cout << "Dataset config:" << endl;
             ConfigFile* dsconfig = cfg.sectionBegin()->second;
             dsconfig->output(cout, "stdout");
-            auto_ptr<WritableDataset> ds(WritableDataset::create(*dsconfig));
+            unique_ptr<WritableDataset> ds(WritableDataset::create(*dsconfig));
             Pending p = ds->test_writelock();
             printf("Press ENTER to unlock %s and quit...", dspath.c_str());
             fflush(stdout);

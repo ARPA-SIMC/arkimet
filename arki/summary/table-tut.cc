@@ -40,7 +40,7 @@ struct Adder : public metadata::Eater
 {
     Table& root;
     Adder(Table& root) : root(root) {}
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         root.merge(*md);
         return true;
@@ -176,7 +176,7 @@ void to::test<5>()
 }
 
 //    /// Return the intern version of an item
-//    const types::Type* intern(unsigned pos, std::auto_ptr<types::Type> item);
+//    const types::Type* intern(unsigned pos, std::unique_ptr<types::Type> item);
 //
 //    /// Merge a row into the table
 //    void merge(const Metadata& md, const Stats& st);

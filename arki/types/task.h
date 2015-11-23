@@ -60,8 +60,8 @@ struct Task : public CoreType<Task>
 
     /// CODEC functions
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
-    static std::auto_ptr<Task> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Task> decodeString(const std::string& val);
+    static std::unique_ptr<Task> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Task> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -69,8 +69,8 @@ struct Task : public CoreType<Task>
     Task* clone() const override;
 
     /// Create a task
-    static std::auto_ptr<Task> create(const std::string& value);
-    static std::auto_ptr<Task> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Task> create(const std::string& value);
+    static std::unique_ptr<Task> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 

@@ -218,7 +218,7 @@ public:
 	{
 		return sqlite3_column_bytes(m_stm, column);
 	}
-    std::auto_ptr<types::Type> fetchType(int column);
+    std::unique_ptr<types::Type> fetchType(int column);
 };
 
 /**

@@ -49,7 +49,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    auto_ptr<Note> o = Note::create(Time(2007, 6, 5, 4, 3, 2), "test");
+    unique_ptr<Note> o = Note::create(Time(2007, 6, 5, 4, 3, 2), "test");
 
 	tests::Lua test(
 		"function test(o) \n"

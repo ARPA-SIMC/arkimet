@@ -220,7 +220,7 @@ TempUnzip::TempUnzip(const std::string& fname)
 	gunzip(rdfd, gzfname, wrfd, fname);
 
 	// Set the same timestamp as the compressed file
-	std::auto_ptr<struct stat> st = sys::fs::stat(gzfname);
+	std::unique_ptr<struct stat> st = sys::fs::stat(gzfname);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;
@@ -283,7 +283,7 @@ void SeekIndex::read(int fd, const std::string& fname)
 off_t filesize(const std::string& file)
 {
 	// First try the uncompressed version
-	std::auto_ptr<struct stat> st = wibble::sys::fs::stat(file);
+	std::unique_ptr<struct stat> st = wibble::sys::fs::stat(file);
 	if (st.get() != NULL)
 		return st->st_size;
 
@@ -332,7 +332,7 @@ DataCompressor::~DataCompressor()
 	flush();
 }
 
-bool DataCompressor::eat(auto_ptr<Metadata> md)
+bool DataCompressor::eat(unique_ptr<Metadata>&& md)
 {
     add(md->getData());
     return true;

@@ -81,7 +81,7 @@ void to::test<3>()
 	ensure_equals(s->value("format"), "grib");
 
     // Scan it to be sure it can be read
-    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
+    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
     dataset::DataQuery q(Matcher::parse(""));
     metadata::Collection mdc;
     ds->queryData(q, mdc);
@@ -102,7 +102,7 @@ void to::test<4>()
     ensure_equals(s->value("format"), "arkimet");
 
     // Scan it to be sure it can be read
-    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
+    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
     dataset::DataQuery q(Matcher::parse(""));
     metadata::Collection mdc;
     ds->queryData(q, mdc);

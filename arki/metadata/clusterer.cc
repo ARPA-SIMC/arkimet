@@ -117,7 +117,7 @@ void Clusterer::flush()
         flush_batch();
 }
 
-bool Clusterer::eat(auto_ptr<Metadata> md)
+bool Clusterer::eat(unique_ptr<Metadata>&& md)
 {
     sys::Buffer buf = md->getData();
 

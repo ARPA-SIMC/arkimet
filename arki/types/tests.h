@@ -57,7 +57,7 @@ struct TestGenericType
     void check(WIBBLE_TEST_LOCPRM) const;
 
     /// Decode item from encoded, running single-item checks and passing ownership back the caller
-    void check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded, std::auto_ptr<types::Type>& item) const;
+    void check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded, std::unique_ptr<types::Type>& item) const;
 };
 
 
@@ -66,15 +66,15 @@ class ActualType : public wibble::tests::Actual<const arki::types::Type*>
 public:
     ActualType(const types::Type* actual) : wibble::tests::Actual<const types::Type*>(actual) {}
 
-    std::auto_ptr<ArkiCheck> operator==(const types::Type* expected) const;
-    std::auto_ptr<ArkiCheck> operator!=(const types::Type* expected) const;
+    std::unique_ptr<ArkiCheck> operator==(const types::Type* expected) const;
+    std::unique_ptr<ArkiCheck> operator!=(const types::Type* expected) const;
 
-    std::auto_ptr<ArkiCheck> operator==(const types::Type& expected) const { return operator==(&expected); }
-    std::auto_ptr<ArkiCheck> operator!=(const types::Type& expected) const { return operator!=(&expected); }
-    template<typename E> std::auto_ptr<ArkiCheck> operator==(const std::auto_ptr<E>& expected) const { return operator==(expected.get()); }
-    template<typename E> std::auto_ptr<ArkiCheck> operator!=(const std::auto_ptr<E>& expected) const { return operator!=(expected.get()); }
-    std::auto_ptr<ArkiCheck> operator==(const std::string& expected) const;
-    std::auto_ptr<ArkiCheck> operator!=(const std::string& expected) const;
+    std::unique_ptr<ArkiCheck> operator==(const types::Type& expected) const { return operator==(&expected); }
+    std::unique_ptr<ArkiCheck> operator!=(const types::Type& expected) const { return operator!=(&expected); }
+    template<typename E> std::unique_ptr<ArkiCheck> operator==(const std::unique_ptr<E>& expected) const { return operator==(expected.get()); }
+    template<typename E> std::unique_ptr<ArkiCheck> operator!=(const std::unique_ptr<E>& expected) const { return operator!=(expected.get()); }
+    std::unique_ptr<ArkiCheck> operator==(const std::string& expected) const;
+    std::unique_ptr<ArkiCheck> operator!=(const std::string& expected) const;
     /*
     template<typename E> TestIsLt<A, E> operator<(const E& expected) const { return TestIsLt<A, E>(actual, expected); }
     template<typename E> TestIsLte<A, E> operator<=(const E& expected) const { return TestIsLte<A, E>(actual, expected); }
@@ -86,38 +86,38 @@ public:
      * Check that a metadata field can be serialized and deserialized in all
      * sorts of ways
      */
-    std::auto_ptr<ArkiCheck> serializes() const;
+    std::unique_ptr<ArkiCheck> serializes() const;
 
     /**
      * Check comparison operators
      */
-    std::auto_ptr<ArkiCheck> compares(const types::Type& higher) const;
+    std::unique_ptr<ArkiCheck> compares(const types::Type& higher) const;
 
     /// Check all components of a source::Blob item
-    std::auto_ptr<ArkiCheck> is_source_blob(
+    std::unique_ptr<ArkiCheck> is_source_blob(
         const std::string& format, const std::string& basedir, const std::string& fname,
         uint64_t ofs, uint64_t size);
 
     /// Check all components of a source::URL item
-    std::auto_ptr<ArkiCheck> is_source_url(const std::string& format, const std::string& url);
+    std::unique_ptr<ArkiCheck> is_source_url(const std::string& format, const std::string& url);
 
     /// Check all components of a source::Inline item
-    std::auto_ptr<ArkiCheck> is_source_inline(const std::string& format, uint64_t size);
+    std::unique_ptr<ArkiCheck> is_source_inline(const std::string& format, uint64_t size);
 
     /// Check all components of a Time item
-    std::auto_ptr<ArkiCheck> is_time(int ye, int mo, int da, int ho, int mi, int se);
+    std::unique_ptr<ArkiCheck> is_time(int ye, int mo, int da, int ho, int mi, int se);
 
     /// Check all components of a reftime::Position item
-    std::auto_ptr<ArkiCheck> is_reftime_position(const int (&time)[6]);
+    std::unique_ptr<ArkiCheck> is_reftime_position(const int (&time)[6]);
 
     /// Check all components of a reftime::Position item
-    std::auto_ptr<ArkiCheck> is_reftime_position(const types::Time&);
+    std::unique_ptr<ArkiCheck> is_reftime_position(const types::Time&);
 
     /// Check all components of a reftime::Position item
-    std::auto_ptr<ArkiCheck> is_reftime_period(const int (&begin)[6], const int (&end)[6]);
+    std::unique_ptr<ArkiCheck> is_reftime_period(const int (&begin)[6], const int (&end)[6]);
 
     /// Check all components of a reftime::Position item
-    std::auto_ptr<ArkiCheck> is_reftime_period(const types::Time&, const types::Time&);
+    std::unique_ptr<ArkiCheck> is_reftime_period(const types::Time&, const types::Time&);
 };
 
 }
@@ -130,7 +130,7 @@ inline arki::tests::ActualType actual_type(const arki::types::Type& actual) { re
 inline arki::tests::ActualType actual_type(const arki::types::Type* actual) { return arki::tests::ActualType(actual); }
 inline arki::tests::ActualType actual(const arki::types::Type& actual) { return arki::tests::ActualType(&actual); }
 template<typename T>
-inline arki::tests::ActualType actual(const std::auto_ptr<T>& actual) { return arki::tests::ActualType(actual.get()); }
+inline arki::tests::ActualType actual(const std::unique_ptr<T>& actual) { return arki::tests::ActualType(actual.get()); }
 
 }
 }

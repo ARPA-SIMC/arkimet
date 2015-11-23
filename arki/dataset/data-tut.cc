@@ -61,16 +61,16 @@ void to::test<1>()
 
     // Add returns the item we added
     TestItem* foo = new TestItem("foo");
-    wassert(actual(cache.add(auto_ptr<TestItem>(foo)) == foo).istrue());
+    wassert(actual(cache.add(unique_ptr<TestItem>(foo)) == foo).istrue());
 
     // Get returns foo
     wassert(actual(cache.get("foo") == foo).istrue());
 
     // Add two more items
     TestItem* bar = new TestItem("bar");
-    wassert(actual(cache.add(auto_ptr<TestItem>(bar)) == bar).istrue());
+    wassert(actual(cache.add(unique_ptr<TestItem>(bar)) == bar).istrue());
     TestItem* baz = new TestItem("baz");
-    wassert(actual(cache.add(auto_ptr<TestItem>(baz)) == baz).istrue());
+    wassert(actual(cache.add(unique_ptr<TestItem>(baz)) == baz).istrue());
 
     // With max_size=3, the cache should hold them all
     wassert(actual(cache.get("foo") == foo).istrue());
@@ -79,7 +79,7 @@ void to::test<1>()
 
     // Add an extra item: the last recently used was foo, which gets popped
     TestItem* gnu = new TestItem("gnu");
-    wassert(actual(cache.add(auto_ptr<TestItem>(gnu)) == gnu).istrue());
+    wassert(actual(cache.add(unique_ptr<TestItem>(gnu)) == gnu).istrue());
 
     // Foo is not in cache anymore, bar baz and gnu are
     wassert(actual(cache.get("foo") == 0).istrue());
@@ -117,18 +117,18 @@ struct TestSegments
     {
         ConfigFile cfg1(cfg);
         cfg1.setValue("mockdata", "true");
-        auto_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(cfg1));
+        unique_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(cfg1));
 
         // Import 2 gigabytes of data in a single segment
         metadata::Collection mds;
         data::Segment* w = segment_manager->get_segment("test.grib");
         for (unsigned i = 0; i < 2048; ++i)
         {
-            auto_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));
+            unique_ptr<Metadata> md(new Metadata(testdata::make_large_mock("grib", 1024*1024, i / (30 * 24), (i/24) % 30, i % 24)));
             w->append(*md);
             wassert(actual(md->source().style()) == Source::BLOB);
             md->drop_cached_data();
-            mds.eat(md);
+            mds.eat(move(md));
         }
 
         // Repack it

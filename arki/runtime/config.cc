@@ -219,7 +219,7 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 		fname.resize(fname.size() - 1);
 
     // Check if it's a file or a directory
-    std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+    std::unique_ptr<struct stat> st = sys::fs::stat(fname);
     if (st.get() == 0)
         throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
 	if (S_ISDIR(st->st_mode))
@@ -343,7 +343,7 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 #ifdef CONF_DIR
     // Else, CONF_DIR is tried.
     string name = string(CONF_DIR) + "/match-alias.conf";
-    auto_ptr<struct stat> st = wibble::sys::fs::stat(name);
+    unique_ptr<struct stat> st = wibble::sys::fs::stat(name);
     if (st.get())
     {
         parseConfigFile(cfg, name);

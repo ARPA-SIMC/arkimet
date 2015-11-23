@@ -63,7 +63,7 @@ public:
 	void captureOutput(std::ostream& buf);
 
     /// Process a metadata for the report
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
 	/// Process a summary for the report
 	virtual bool operator()(Summary& s);

@@ -83,9 +83,9 @@ inline std::string dsname(const Metadata& md)
     return md.get<AssignedDataset>()->name;
 }
 
-inline auto_ptr<Metadata> wrap(const Metadata& md)
+inline unique_ptr<Metadata> wrap(const Metadata& md)
 {
-    return auto_ptr<Metadata>(new Metadata(md));
+    return unique_ptr<Metadata>(new Metadata(md));
 }
 
 }
@@ -104,13 +104,13 @@ void to::test<1>()
 	RealDispatcher dispatcher(config);
 	scanner.open("inbound/test.grib1");
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
+	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 	ensure_equals(dsname(mdc.back()), "test200");
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
+	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
 	ensure_equals(dsname(mdc.back()), "test80");
 	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(auto_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
+	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
 	ensure_equals(dsname(mdc.back()), "error");
 	ensure(!scanner.next(md));
 

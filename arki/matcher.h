@@ -298,13 +298,13 @@ struct Matcher
      * Restrict date extremes to be no wider than what is matched by this
      * matcher.
      *
-     * An auto_ptr set to NULL means an open end in the range. Date extremes
+     * An unique_ptr set to NULL means an open end in the range. Date extremes
      * are inclusive on both ends.
      *
      * @returns true if the matcher has consistent reference time expressions,
      * false if the match is impossible (like reftime:<2014,>2015)
      */
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
+    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 
     /// Format back into a string that can be parsed again
     std::string toString() const

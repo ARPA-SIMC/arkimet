@@ -60,7 +60,7 @@ Pending& Pending::operator=(const Pending& p)
 
     trans = p.trans;
 
-    // Force the source pointer to 0 (auto_ptr style)
+    // Force the source pointer to 0 (unique_ptr style)
     const_cast<Pending*>(&p)->trans = 0;
 
     return *this;

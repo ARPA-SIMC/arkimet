@@ -45,8 +45,8 @@ protected:
     /// Timerange of all the items in the current batch, if split_timerange is true
     types::Timerange* last_timerange;
     /// Actual time span of the current batch
-    std::auto_ptr<types::Time> timespan_begin;
-    std::auto_ptr<types::Time> timespan_end;
+    std::unique_ptr<types::Time> timespan_begin;
+    std::unique_ptr<types::Time> timespan_end;
 
     /**
      * Fill an int[6] with the datetime information in md, padding with -1 all
@@ -113,7 +113,7 @@ public:
     // a chance to do their own flushing. Flushes must be explicit.
     ~Clusterer();
 
-    virtual bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
     /**
      * Signal that no more data will be sent, and close the current partial

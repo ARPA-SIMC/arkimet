@@ -67,7 +67,7 @@ void InboundServer::do_scan(const InboundParams& parms, wibble::net::http::Reque
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
     // Response header generator
     StreamHeaders headers(req, str::basename(*parms.file));
@@ -101,7 +101,7 @@ void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::htt
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
     struct Simulator : public metadata::Eater
     {
@@ -111,10 +111,10 @@ void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::htt
         Simulator(const ConfigFile& cfg)
             : td(cfg, str) {}
 
-        bool eat(auto_ptr<Metadata> md) override
+        bool eat(unique_ptr<Metadata>&& md) override
         {
             metadata::Collection mdc;
-            /*Dispatcher::Outcome res =*/ td.dispatch(md, mdc);
+            /*Dispatcher::Outcome res =*/ td.dispatch(move(md), mdc);
             /*
             switch (res)
             {
@@ -155,7 +155,7 @@ void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::R
         info->setValue("format", *parms.format);
 
     // Build a dataset to scan the file
-    auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+    unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
     // Response header generator
     StreamHeaders headers(req, str::basename(*parms.file));
@@ -172,9 +172,9 @@ void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::R
         Worker(const ConfigFile& cfg, metadata::Eater& cons)
             : d(cfg), cons(cons), all_ok(true) { }
 
-        bool eat(auto_ptr<Metadata> md) override
+        bool eat(unique_ptr<Metadata>&& md) override
         {
-            Dispatcher::Outcome res = d.dispatch(md, cons);
+            Dispatcher::Outcome res = d.dispatch(move(md), cons);
             switch (res)
             {
                 case Dispatcher::DISP_OK:

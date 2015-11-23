@@ -93,7 +93,7 @@ struct arki_dataset_archive_shar : public DatasetTest {
 #define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 	void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
 	{
-		auto_ptr<Archive> arc(Archive::create(dir));
+		unique_ptr<Archive> arc(Archive::create(dir));
 		arki::tests::impl_ensure_dataset_clean(loc, *arc, filecount, resultcount);
 		inner_ensure(sys::fs::exists(str::joinpath(dir, arcidxfname())));
 	}
@@ -106,7 +106,7 @@ void to::test<1>()
 {
 	metadata::Collection mdc;
 	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 
 		// Acquire
 		system("cp inbound/test.grib1 testds/.archive/last/");
@@ -126,7 +126,7 @@ void to::test<1>()
 
     // Check that querying the dataset gives results sorted by reftime
     {
-        auto_ptr<Archive> arc(Archive::create("testds/.archive/last", false));
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last", false));
         OnlineArchive* a = dynamic_cast<OnlineArchive*>(arc.get());
         ensure(a);
         OrderCheck oc("reftime");
@@ -140,13 +140,13 @@ void to::test<2>()
 {
 	MaintenanceCollector c;
 	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
 	}
 
     // Query now is ok
     {
-        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
         metadata::Collection mdc;
         arc->queryData(dataset::DataQuery(Matcher()), mdc);
         ensure_equals(mdc.size(), 0u);
@@ -194,7 +194,7 @@ void to::test<3>()
 {
 	MaintenanceCollector c;
 	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
 		arc->acquire("test.grib1");
 		arc->flush();
@@ -208,7 +208,7 @@ void to::test<3>()
 
     // Query now is ok
     {
-        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
         metadata::Collection mdc;
         arc->queryData(dataset::DataQuery(Matcher()), mdc);
         ensure_equals(mdc.size(), 3u);
@@ -257,7 +257,7 @@ void to::test<4>()
 {
 	MaintenanceCollector c;
 	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
 		arc->acquire("test.grib1");
 		arc->flush();
@@ -270,7 +270,7 @@ void to::test<4>()
 
 	// Query now is ok
     {
-        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
         metadata::Collection mdc;
         arc->queryData(dataset::DataQuery(Matcher()), mdc);
         ensure_equals(mdc.size(), 3u);
@@ -317,7 +317,7 @@ template<> template<>
 void to::test<5>()
 {
 	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/1.grib1");
 		system("cp inbound/test.grib1 testds/.archive/last/2.grib1");
 		system("cp inbound/test.grib1 testds/.archive/last/3.grib1");
@@ -336,14 +336,14 @@ void to::test<5>()
     // Query now is ok
     {
         metadata::Collection mdc;
-        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
         arc->queryData(dataset::DataQuery(Matcher()), mdc);
         ensure_equals(mdc.size(), 9u);
     }
 
 	// Maintenance should show one file to rescan
 	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		MaintenanceCollector c;
 		arc->maintenance(c);
 		ensure_equals(c.fileStates.size(), 3u);
@@ -397,7 +397,7 @@ void to::test<6>()
 	MaintenanceCollector c;
 	{
 		// Import a file
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 		system("cp inbound/test.grib1 testds/.archive/last/");
 		arc->acquire("test.grib1");
 		arc->flush();
@@ -426,7 +426,7 @@ void to::test<6>()
 
 	// Cannot query anymore
 	{
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 		metadata::Collection mdc;
 		try {
 			arc->queryData(dataset::DataQuery(Matcher()), mdc);
@@ -480,7 +480,7 @@ void to::test<7>()
 	// Import a file in a secondary archive
 	{
 		system("mkdir testds/.archive/foo");
-		auto_ptr<Archive> arc(Archive::create("testds/.archive/foo", true));
+		unique_ptr<Archive> arc(Archive::create("testds/.archive/foo", true));
 		system("cp inbound/test.grib1 testds/.archive/foo/");
 		arc->acquire("test.grib1");
 	}
@@ -496,7 +496,7 @@ void to::test<8>()
     using namespace arki::dataset;
 
     {
-        auto_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 
         // Acquire
         system("cp inbound/test.grib1 testds/.archive/last/");
@@ -508,7 +508,7 @@ void to::test<8>()
     metadata::Collection mdc;
 
     {
-        auto_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 
         mdc.clear();
         ensure_equals(arc->produce_nth(mdc, 0), 1u);;
@@ -528,7 +528,7 @@ void to::test<8>()
     }
 
     {
-        auto_ptr<Archives> arc(new Archives("testds", "testds/.archive"));
+        unique_ptr<Archives> arc(new Archives("testds", "testds/.archive"));
 
         mdc.clear();
         ensure_equals(arc->produce_nth(mdc, 0), 1u);;
@@ -566,7 +566,7 @@ void to::test<18>()
 
     const test::Scenario& scen = test::Scenario::get("ondisk2-archived");
 
-    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
+    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
 
     // Query summary
     Summary s1;
@@ -580,7 +580,7 @@ void to::test<18>()
     }
 
     // Verify that the time range of the first summary is what we expect
-    auto_ptr<reftime::Period> p = downcast<reftime::Period>(s1.getReferenceTime());
+    unique_ptr<reftime::Period> p = downcast<reftime::Period>(s1.getReferenceTime());
     ensure_equals(p->begin, Time(2010, 9, 1, 0, 0, 0));
     ensure_equals(p->end, Time(2010, 9, 30, 0, 0, 0));
 
@@ -596,7 +596,7 @@ void to::test<19>()
 
     // If dir.summary exists, don't complain if dir is missing
     {
-        auto_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
+        unique_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
         MaintenanceCollector c;
         a->maintenance(c);
         ensure(c.isClean());
@@ -604,7 +604,7 @@ void to::test<19>()
 
     // Querying dir uses dir.summary if dir is missing
     {
-        auto_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
+        unique_ptr<Archive> a(Archive::create(str::joinpath(scen.path, ".archive/offline")));
         Summary s;
         a->querySummary(Matcher::parse(""), s);
         ensure(s.count() > 0);
@@ -612,12 +612,12 @@ void to::test<19>()
 
     // Query the summary of the whole dataset and ensure it also spans .archive/offline
     {
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(scen.cfg));
         Summary s;
         iotrace::Collector ioc;
         ds->querySummary(Matcher::parse(""), s);
 
-        auto_ptr<reftime::Period> p = downcast<reftime::Period>(s.getReferenceTime());
+        unique_ptr<reftime::Period> p = downcast<reftime::Period>(s.getReferenceTime());
         ensure_equals(p->begin, Time(2010, 9, 1, 0, 0, 0));
         ensure_equals(p->end, Time(2010, 9, 18, 0, 0, 0));
     }
@@ -628,7 +628,7 @@ void to::test<19>()
     // If dir.summary exists, don't complain if dir is missing or if there are
     // problems inside dir
     {
-        auto_ptr<WritableDataset> ds(WritableDataset::create(scen.cfg));
+        unique_ptr<WritableDataset> ds(WritableDataset::create(scen.cfg));
         // TODO: maintenance
     }
 }
@@ -642,7 +642,7 @@ void to::test<20>()
     const test::Scenario& scen = test::Scenario::get("ondisk2-manyarchivestates");
 
     // Check that archive cache works
-    auto_ptr<ReadonlyDataset> d(ReadonlyDataset::create(scen.cfg));
+    unique_ptr<ReadonlyDataset> d(ReadonlyDataset::create(scen.cfg));
     Summary s;
 
     // Access the datasets so we don't count manifest reads in the iostats below
@@ -658,7 +658,7 @@ void to::test<20>()
 
     // Rebuild the cache
     {
-        auto_ptr<Archives> a(new Archives(scen.path, str::joinpath(scen.path, ".archive"), false));
+        unique_ptr<Archives> a(new Archives(scen.path, str::joinpath(scen.path, ".archive"), false));
         a->vacuum();
     }
 

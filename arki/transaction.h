@@ -45,7 +45,7 @@ public:
  * Otherwise, if either rollback is called or the object is destroyed, the
  * operation will be undone.
  *
- * Copy and assignment have auto_ptr-like semantics
+ * Copy and assignment have unique_ptr-like semantics
  */
 struct Pending
 {

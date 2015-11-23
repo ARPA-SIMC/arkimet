@@ -73,7 +73,7 @@ void ItemSet::set(const Type& i)
     }
 }
 
-void ItemSet::set(auto_ptr<Type> i)
+void ItemSet::set(unique_ptr<Type> i)
 {
     Code code = i->type_code();
     map<Code, Type*>::iterator it = m_vals.find(code);

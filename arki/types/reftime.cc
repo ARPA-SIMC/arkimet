@@ -77,7 +77,7 @@ std::string Reftime::formatStyle(Reftime::Style s)
 	}
 }
 
-auto_ptr<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
+unique_ptr<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	ensureSize(len, 1, "Reftime");
@@ -95,7 +95,7 @@ auto_ptr<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
     }
 }
 
-auto_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -108,7 +108,7 @@ auto_ptr<Reftime> Reftime::decodeMapping(const emitter::memory::Mapping& val)
     }
 }
 
-auto_ptr<Reftime> Reftime::decodeString(const std::string& val)
+unique_ptr<Reftime> Reftime::decodeString(const std::string& val)
 {
     size_t pos = val.find(" to ");
     if (pos == string::npos) return Reftime::createPosition(*Time::decodeString(val));
@@ -144,7 +144,7 @@ void Reftime::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_reftime", lib);
 }
 
-std::auto_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
+std::unique_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
 {
     if (begin == end)
         return upcast<Reftime>(reftime::Position::create(begin));
@@ -152,12 +152,12 @@ std::auto_ptr<Reftime> Reftime::create(const Time& begin, const Time& end)
         return upcast<Reftime>(reftime::Period::create(begin, end));
 }
 
-std::auto_ptr<Reftime> Reftime::createPosition(const Time& position)
+std::unique_ptr<Reftime> Reftime::createPosition(const Time& position)
 {
     return upcast<Reftime>(reftime::Position::create(position));
 }
 
-std::auto_ptr<Reftime> Reftime::createPeriod(const Time& begin, const Time& end)
+std::unique_ptr<Reftime> Reftime::createPeriod(const Time& begin, const Time& end)
 {
     return upcast<Reftime>(reftime::Period::create(begin, end));
 }
@@ -186,9 +186,9 @@ void Position::serialiseLocal(Emitter& e, const Formatter* f) const
     time.serialiseList(e);
 }
 
-auto_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Position> Position::decodeMapping(const emitter::memory::Mapping& val)
 {
-    auto_ptr<Time> time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
+    unique_ptr<Time> time = Time::decodeList(val["ti"].want_list("parsing position reftime time"));
     return Position::create(*time);
 }
 
@@ -227,7 +227,7 @@ bool Position::equals(const Type& o) const
 	return time == v->time;
 }
 
-void Position::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const
+void Position::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const
 {
     if (!begin.get() || *begin > time)
         begin.reset(new Time(time));
@@ -247,9 +247,9 @@ Position* Position::clone() const
     return new Position(time);
 }
 
-auto_ptr<Position> Position::create(const Time& time)
+unique_ptr<Position> Position::create(const Time& time)
 {
-    return auto_ptr<Position>(new Position(time));
+    return unique_ptr<Position>(new Position(time));
 }
 
 Period::Period(const Time& begin, const Time& end)
@@ -278,10 +278,10 @@ void Period::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("e"); end.serialiseList(e);
 }
 
-auto_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Period> Period::decodeMapping(const emitter::memory::Mapping& val)
 {
-    auto_ptr<Time> beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
-    auto_ptr<Time> end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
+    unique_ptr<Time> beg = Time::decodeList(val["b"].want_list("parsing period reftime begin"));
+    unique_ptr<Time> end = Time::decodeList(val["e"].want_list("parsing period reftime end"));
     return Period::create(*beg, *end);
 }
 
@@ -318,7 +318,7 @@ bool Period::equals(const Type& o) const
 	return begin == v->begin && end == v->end;
 }
 
-void Period::expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const
+void Period::expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const
 {
     if (!begin.get() || *begin > this->begin)
         begin.reset(new Time(this->begin));
@@ -338,9 +338,9 @@ Period* Period::clone() const
     return new Period(begin, end);
 }
 
-auto_ptr<Period> Period::create(const Time& begin, const Time& end)
+unique_ptr<Period> Period::create(const Time& begin, const Time& end)
 {
-    return auto_ptr<Period>(new Period(begin, end));
+    return unique_ptr<Period>(new Period(begin, end));
 }
 
 }

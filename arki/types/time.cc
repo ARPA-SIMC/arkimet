@@ -124,7 +124,7 @@ std::string Time::toSQL() const
 	return buf;
 }
 
-auto_ptr<Time> Time::decode(const unsigned char* buf, size_t len)
+unique_ptr<Time> Time::decode(const unsigned char* buf, size_t len)
 {
     using namespace utils::codec;
     ensureSize(len, 5, "Time");
@@ -139,19 +139,19 @@ auto_ptr<Time> Time::decode(const unsigned char* buf, size_t len)
         b & 0x3f);
 }
 
-auto_ptr<Time> Time::decodeString(const std::string& val)
+unique_ptr<Time> Time::decodeString(const std::string& val)
 {
     return Time::createFromISO8601(val);
 }
 
-auto_ptr<Time> Time::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Time> Time::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
     return decodeList(val["v"].want_list("decoding Time value"));
 }
 
-auto_ptr<Time> Time::decodeList(const emitter::memory::List& val)
+unique_ptr<Time> Time::decodeList(const emitter::memory::List& val)
 {
     using namespace emitter::memory;
 
@@ -160,7 +160,7 @@ auto_ptr<Time> Time::decodeList(const emitter::memory::List& val)
                 "decoding item",
                 str::fmtf("list has %zd elements instead of 6", val.size()));
 
-    auto_ptr<Time> res(new Time);
+    unique_ptr<Time> res(new Time);
     for (unsigned i = 0; i < 6; ++i)
         res->vals[i] = val[i].want_int("decoding component of time value");
     return res;
@@ -359,19 +359,19 @@ void Time::setNow()
     set(now);
 }
 
-auto_ptr<Time> Time::create(int ye, int mo, int da, int ho, int mi, int se)
+unique_ptr<Time> Time::create(int ye, int mo, int da, int ho, int mi, int se)
 {
-    return auto_ptr<Time>(new Time(ye, mo, da, ho, mi, se));
+    return unique_ptr<Time>(new Time(ye, mo, da, ho, mi, se));
 }
 
-auto_ptr<Time> Time::create(const int (&vals)[6])
+unique_ptr<Time> Time::create(const int (&vals)[6])
 {
-    return auto_ptr<Time>(new Time(vals));
+    return unique_ptr<Time>(new Time(vals));
 }
 
-auto_ptr<Time> Time::create(struct tm& t)
+unique_ptr<Time> Time::create(struct tm& t)
 {
-    auto_ptr<Time> res(new Time);
+    unique_ptr<Time> res(new Time);
     res->vals[0] = t.tm_year + 1900;
     res->vals[1] = t.tm_mon + 1;
     res->vals[2] = t.tm_mday;
@@ -381,9 +381,9 @@ auto_ptr<Time> Time::create(struct tm& t)
     return res;
 }
 
-auto_ptr<Time> Time::createFromISO8601(const std::string& str)
+unique_ptr<Time> Time::createFromISO8601(const std::string& str)
 {
-    auto_ptr<Time> res(new Time);
+    unique_ptr<Time> res(new Time);
     int* v = res->vals;
     int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
     if (count < 6)

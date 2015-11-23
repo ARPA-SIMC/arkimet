@@ -42,7 +42,7 @@ BinaryPrinter::~BinaryPrinter()
 {
 }
 
-bool BinaryPrinter::eat(auto_ptr<Metadata> md)
+bool BinaryPrinter::eat(unique_ptr<Metadata>&& md)
 {
     md->write(out.stream(), out.name());
     return true;
@@ -54,7 +54,7 @@ bool BinaryPrinter::observe(const Metadata& md)
     return true;
 }
 
-bool BinaryPrinter::eat_summary(std::auto_ptr<Summary> s)
+bool BinaryPrinter::eat_summary(std::unique_ptr<Summary> s)
 {
     s->write(out.stream(), out.name());
     return true;
@@ -78,7 +78,7 @@ YamlPrinter::~YamlPrinter()
     delete formatter;
 }
 
-bool YamlPrinter::eat(auto_ptr<Metadata> md)
+bool YamlPrinter::eat(unique_ptr<Metadata>&& md)
 {
     md->writeYaml(out.stream(), formatter);
     out.stream() << endl;
@@ -92,7 +92,7 @@ bool YamlPrinter::observe(const Metadata& md)
     return true;
 }
 
-bool YamlPrinter::eat_summary(auto_ptr<Summary> s)
+bool YamlPrinter::eat_summary(unique_ptr<Summary> s)
 {
     s->writeYaml(out.stream(), formatter);
     out.stream() << endl;
@@ -119,7 +119,7 @@ JSONPrinter::~JSONPrinter()
     delete json;
 }
 
-bool JSONPrinter::eat(auto_ptr<Metadata> md)
+bool JSONPrinter::eat(unique_ptr<Metadata>&& md)
 {
     md->serialise(*json, formatter);
     return true;
@@ -131,7 +131,7 @@ bool JSONPrinter::observe(const Metadata& md)
     return true;
 }
 
-bool JSONPrinter::eat_summary(auto_ptr<Summary> s)
+bool JSONPrinter::eat_summary(unique_ptr<Summary> s)
 {
     s->serialise(*json, formatter);
     return true;

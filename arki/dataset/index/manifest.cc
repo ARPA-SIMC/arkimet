@@ -83,7 +83,7 @@ void scan_file(data::SegmentManager& sm, const std::string& root, const std::str
     string absname = str::joinpath(root, relname);
 
     // If the data file is compressed, create a temporary uncompressed copy
-    auto_ptr<utils::compress::TempUnzip> tu;
+    unique_ptr<utils::compress::TempUnzip> tu;
     if (!quick && scan::isCompressed(absname))
         tu.reset(new utils::compress::TempUnzip(absname));
 
@@ -134,11 +134,11 @@ struct FixSource : public metadata::Eater
 
     FixSource(metadata::Eater& next) : next(next) {}
 
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         if (const source::Blob* s = md->has_source_blob())
             md->set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
-        return next.eat(md);
+        return next.eat(move(md));
     }
 };
 }
@@ -224,12 +224,12 @@ struct NthFilter : public metadata::Eater
     NthFilter(metadata::Eater& next, size_t idx)
         : next(next), idx(idx+1) {}
 
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         switch (idx)
         {
             case 0: return false;
-            case 1: next.eat(md); --idx; return false;
+            case 1: next.eat(move(md)); --idx; return false;
             default: --idx; return true;
         }
     }
@@ -278,7 +278,7 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 	string pathname = str::joinpath(dir, relpath);
 
 	// Temporarily uncompress the file for scanning
-	auto_ptr<utils::compress::TempUnzip> tu;
+	unique_ptr<utils::compress::TempUnzip> tu;
 	if (scan::isCompressed(pathname))
 		tu.reset(new utils::compress::TempUnzip(pathname));
 
@@ -462,8 +462,8 @@ public:
         reread();
 
         string query;
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
             return;
 
@@ -501,7 +501,7 @@ public:
         }
     }
 
-    void expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const override
+    void expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const override
     {
         for (vector<Info>::const_iterator i = info.begin(); i != info.end(); ++i)
         {
@@ -526,7 +526,7 @@ public:
 		reread();
 
         // Add to index
-        auto_ptr<Reftime> rt = sum.getReferenceTime();
+        unique_ptr<Reftime> rt = sum.getReferenceTime();
 
         Info item(relname, mtime, rt->period_begin(), rt->period_end());
 
@@ -764,8 +764,8 @@ public:
     void fileList(const Matcher& matcher, std::vector<std::string>& files) override
     {
         string query;
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         if (!matcher.restrict_date_range(begin, end))
             return;
 
@@ -813,7 +813,7 @@ public:
         return found;
     }
 
-    void expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const override
+    void expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const override
     {
         Query q("sel_date_extremes", m_db);
         q.compile("SELECT MIN(start_time), MAX(end_time) FROM files");
@@ -849,7 +849,7 @@ public:
 	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
 	{
         // Add to index
-        auto_ptr<types::Reftime> rt = sum.getReferenceTime();
+        unique_ptr<types::Reftime> rt = sum.getReferenceTime();
 
 		string bt;
 		string et;
@@ -981,21 +981,21 @@ bool Manifest::exists(const std::string& dir)
 	       manifest::SqliteManifest::exists(dir);
 }
 
-std::auto_ptr<Manifest> Manifest::create(const std::string& dir, const ConfigFile* cfg)
+std::unique_ptr<Manifest> Manifest::create(const std::string& dir, const ConfigFile* cfg)
 {
     std::string value;
     if (cfg) value = cfg->value("index_type");
     if (value.empty())
     {
         if (manifest::mft_force_sqlite || manifest::SqliteManifest::exists(dir))
-            return auto_ptr<Manifest>(new manifest::SqliteManifest(dir));
+            return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
         else
-            return auto_ptr<Manifest>(new manifest::PlainManifest(dir));
+            return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
     }
     else if (value == "plain")
-        return auto_ptr<Manifest>(new manifest::PlainManifest(dir));
+        return unique_ptr<Manifest>(new manifest::PlainManifest(dir));
     else if (value == "sqlite")
-        return auto_ptr<Manifest>(new manifest::SqliteManifest(dir));
+        return unique_ptr<Manifest>(new manifest::SqliteManifest(dir));
     else
         throw wibble::exception::Consistency("unsupported index_type " + value);
 }

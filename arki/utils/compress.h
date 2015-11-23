@@ -183,7 +183,7 @@ public:
 	DataCompressor(const std::string& outfile, size_t groupsize = 512);
 	~DataCompressor();
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
     void add(wibble::sys::Buffer buf);
 

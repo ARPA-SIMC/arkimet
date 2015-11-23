@@ -59,7 +59,7 @@ protected:
 	// Precompiled select one statement
 	mutable utils::sqlite::PrecompiledQuery* m_select_one;
     // Runs the Item given an ID. Returns an undefined item if not found
-    std::auto_ptr<types::Type> q_select_one(int id) const;
+    std::unique_ptr<types::Type> q_select_one(int id) const;
 
 	// Precompiled select all statement
 	mutable utils::sqlite::PrecompiledQuery* m_select_all;

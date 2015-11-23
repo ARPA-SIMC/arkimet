@@ -54,9 +54,9 @@ struct ClusterCounter : public metadata::Clusterer
     }
 };
 
-inline auto_ptr<Metadata> wrap(const Metadata& md)
+inline unique_ptr<Metadata> wrap(const Metadata& md)
 {
-    return auto_ptr<Metadata>(new Metadata(md));
+    return unique_ptr<Metadata>(new Metadata(md));
 }
 
 }

@@ -52,12 +52,12 @@ using namespace arki::utils;
 
 // Create a dataset index gived its configuration
 template<typename INDEX>
-static inline auto_ptr<INDEX> createIndex(const std::string& config)
+static inline unique_ptr<INDEX> createIndex(const std::string& config)
 {
 	stringstream confstream(config);
 	ConfigFile cfg;
 	cfg.parse(confstream, "(memory)");
-	return auto_ptr<INDEX>(new INDEX(cfg));
+	return unique_ptr<INDEX>(new INDEX(cfg));
 }
 
 struct arki_dataset_index_contents_shar {
@@ -104,7 +104,7 @@ TESTGRP(arki_dataset_index_contents);
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<WContents> test = createIndex<WContents>(
+	unique_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = :memory:\n"
@@ -150,7 +150,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	auto_ptr<WContents> test = createIndex<WContents>(
+	unique_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = :memory:\n"
@@ -230,7 +230,7 @@ struct ReadHang : public sys::ChildProcess, public metadata::Eater
 		cfg.parse(confstream, "(memory)");
 	}
 
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         cout << "H" << endl;
         usleep(100000);
@@ -282,7 +282,7 @@ void to::test<3>()
 
 	// Create the index and index two metadata
 	{
-		auto_ptr<WContents> test1 = createIndex<WContents>(cfg);
+		unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
 		test1->open();
 
 		Pending p = test1->beginTransaction();
@@ -308,7 +308,7 @@ void to::test<3>()
     md3.set("proddef", "GRIB(foo=5,bar=5000,baz=-200)");
     md3.add_note("this is a test");
 	{
-		auto_ptr<WContents> test1 = createIndex<WContents>(cfg);
+		unique_ptr<WContents> test1 = createIndex<WContents>(cfg);
 		test1->open();
 		Pending p = test1->beginTransaction();
 		test1->index(md3, "test-md1", 0);
@@ -326,7 +326,7 @@ void to::test<4>()
 	// Remove index if it exists
 	unlink("file1");
 
-	auto_ptr<WContents> test = createIndex<WContents>(
+	unique_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = file1\n"
@@ -362,11 +362,11 @@ void to::test<4>()
 
     // Check that the metadata came out fine
     mdc[0].unset(TYPE_ASSIGNEDDATASET);
-    mdc[0].set_source(auto_ptr<Source>(md.source().clone()));
+    mdc[0].set_source(unique_ptr<Source>(md.source().clone()));
     ensure(mdc[0] == md);
 
     mdc[1].unset(TYPE_ASSIGNEDDATASET);
-    mdc[1].set_source(auto_ptr<Source>(md1.source().clone()));
+    mdc[1].set_source(unique_ptr<Source>(md1.source().clone()));
     ensure(mdc[1] == md1);
 }
 
@@ -377,7 +377,7 @@ void to::test<5>()
 	// Remove index if it exists
 	unlink("file1");
 
-	auto_ptr<WContents> test = createIndex<WContents>(
+	unique_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = \n"
 		"indexfile = file1\n"
@@ -439,7 +439,7 @@ void to::test<6>()
 	// Remove index if it exists
 	unlink("file1");
 
-	auto_ptr<WContents> test = createIndex<WContents>(
+	unique_ptr<WContents> test = createIndex<WContents>(
 		"type = ondisk2\n"
 		"path = .\n"
 		"indexfile = file1\n"
@@ -486,7 +486,7 @@ void to::test<7>()
         iotrace::Collector collector;
 
         // An index without large files
-        auto_ptr<WContents> test = createIndex<WContents>(
+        unique_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
                 "path = .\n"
                 "indexfile = file1\n"
@@ -528,7 +528,7 @@ void to::test<7>()
         iotrace::Collector collector;
 
         // An index without large files
-        auto_ptr<WContents> test = createIndex<WContents>(
+        unique_ptr<WContents> test = createIndex<WContents>(
                 "type = ondisk2\n"
                 "path = .\n"
                 "indexfile = file1\n"

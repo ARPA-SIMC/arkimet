@@ -84,7 +84,7 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * manifest.
      */
-    virtual void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const = 0;
+    virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
 
     void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
@@ -93,7 +93,7 @@ public:
 	void rescanFile(const std::string& dir, const std::string& relpath);
 
 	static bool exists(const std::string& dir);
-    static std::auto_ptr<Manifest> create(const std::string& dir, const ConfigFile* cfg=0);
+    static std::unique_ptr<Manifest> create(const std::string& dir, const ConfigFile* cfg=0);
 
 	static bool get_force_sqlite();
 	static void set_force_sqlite(bool val);

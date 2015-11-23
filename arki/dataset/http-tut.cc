@@ -36,9 +36,9 @@ using namespace std;
 using namespace arki;
 
 namespace {
-inline auto_ptr<Metadata> wrap(const Metadata& md)
+inline unique_ptr<Metadata> wrap(const Metadata& md)
 {
-    return auto_ptr<Metadata>(new Metadata(md));
+    return unique_ptr<Metadata>(new Metadata(md));
 }
 }
 
@@ -162,7 +162,7 @@ void to::test<1>()
 		ensure_equals(HTTP::allSameRemoteServer(cfg), "");
 	}
 #if 0
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 	MetadataCollector mdc;
 
 	testds->query(Matcher::parse("origin:GRIB1,200"), false, mdc);

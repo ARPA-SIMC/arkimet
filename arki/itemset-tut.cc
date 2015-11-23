@@ -93,8 +93,8 @@ static inline void test_basic_itemset_ops(WIBBLE_TEST_LOCPRM, const std::string&
 {
     types::Code code = types::traits<T>::type_code;
     ItemSet md;
-    auto_ptr<Type> vlo = decodeString(code, vlower);
-    auto_ptr<Type> vhi = decodeString(code, vhigher);
+    unique_ptr<Type> vlo = decodeString(code, vlower);
+    unique_ptr<Type> vhi = decodeString(code, vhigher);
 
     wassert(actual(md.size()) == 0);
     wassert(actual(md.empty()).istrue());

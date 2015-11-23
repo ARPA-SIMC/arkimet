@@ -80,13 +80,13 @@ Archive* Archive::create(const std::string& dir, bool writable)
 
         if (index::Manifest::exists(dir))
         {
-            auto_ptr<OnlineArchive> res(new OnlineArchive(dir));
+            unique_ptr<OnlineArchive> res(new OnlineArchive(dir));
             res->openRO();
             return res.release();
         } else
             return new OfflineArchive(dir + ".summary");
     } else {
-        auto_ptr<OnlineArchive> res(new OnlineArchive(dir));
+        unique_ptr<OnlineArchive> res(new OnlineArchive(dir));
         if (writable)
             res->openRW();
         else
@@ -109,14 +109,14 @@ OnlineArchive::~OnlineArchive()
 
 void OnlineArchive::openRO()
 {
-    auto_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
     m_mft = mft.release();
     m_mft->openRO();
 }
 
 void OnlineArchive::openRW()
 {
-    auto_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(m_dir);
     m_mft = mft.release();
     m_mft->openRW();
 }
@@ -141,7 +141,7 @@ size_t OnlineArchive::produce_nth(metadata::Eater& cons, size_t idx)
     return m_mft->produce_nth(cons, idx);
 }
 
-void OnlineArchive::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+void OnlineArchive::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
     m_mft->expand_date_range(begin, end);
 }
@@ -208,7 +208,7 @@ struct ToArchiveState : public maintenance::MaintFileVisitor
 
 void OnlineArchive::maintenance(maintenance::MaintFileVisitor& v)
 {
-    auto_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(m_dir));
+    unique_ptr<data::SegmentManager> segment_manager(data::SegmentManager::get(m_dir));
     ToArchiveState tas(v);
     m_mft->check(*segment_manager, tas);
     m_mft->flush();
@@ -298,7 +298,7 @@ size_t OfflineArchive::produce_nth(metadata::Eater& cons, size_t idx)
     return 0;
 }
 
-void OfflineArchive::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+void OfflineArchive::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
     sum.expand_date_range(begin, end);
 }
@@ -395,7 +395,7 @@ void Archives::rescan_archives()
     for (set<string>::const_iterator i = names.begin();
             i != names.end(); ++i)
     {
-        auto_ptr<Archive> a(Archive::create(str::joinpath(m_dir, *i), !m_read_only));
+        unique_ptr<Archive> a(Archive::create(str::joinpath(m_dir, *i), !m_read_only));
         if (a.get())
         {
             if (*i == "last")
@@ -520,8 +520,8 @@ void Archives::rebuild_summary_cache()
 
 void Archives::querySummary(const Matcher& matcher, Summary& summary)
 {
-    auto_ptr<Time> matcher_begin;
-    auto_ptr<Time> matcher_end;
+    unique_ptr<Time> matcher_begin;
+    unique_ptr<Time> matcher_end;
     if (!matcher.restrict_date_range(matcher_begin, matcher_end))
         // If the matcher is inconsistent, return now
         return;
@@ -540,23 +540,23 @@ void Archives::querySummary(const Matcher& matcher, Summary& summary)
     for (map<string, Archive*>::iterator i = m_archives.begin();
             i != m_archives.end(); ++i)
     {
-        auto_ptr<Time> arc_begin;
-        auto_ptr<Time> arc_end;
+        unique_ptr<Time> arc_begin;
+        unique_ptr<Time> arc_end;
         i->second->expand_date_range(arc_begin, arc_end);
         if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
             i->second->querySummary(matcher, summary);
     }
     if (m_last)
     {
-        auto_ptr<Time> arc_begin;
-        auto_ptr<Time> arc_end;
+        unique_ptr<Time> arc_begin;
+        unique_ptr<Time> arc_end;
         m_last->expand_date_range(arc_begin, arc_end);
         if (Time::range_overlaps(matcher_begin.get(), matcher_end.get(), arc_begin.get(), arc_end.get()))
             m_last->querySummary(matcher, summary);
     }
 }
 
-void Archives::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+void Archives::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
     for (map<string, Archive*>::const_iterator i = m_archives.begin();
             i != m_archives.end(); ++i)

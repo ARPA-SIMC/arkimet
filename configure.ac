@@ -69,7 +69,7 @@ AM_PROG_CC_STDC
 AC_HEADER_STDC
 
 dnl Use c++11
-AX_CXX_COMPILE_STDCXX_11(noext,optional)
+AX_CXX_COMPILE_STDCXX_11(noext)
 
 dnl Check that exceptions are working
 dnl AC_CHECK_CXX_EH

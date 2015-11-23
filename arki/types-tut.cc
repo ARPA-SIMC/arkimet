@@ -73,13 +73,13 @@ struct ImplASub : public ImplA
 template<> template<>
 void to::test<1>()
 {
-    auto_ptr<ImplA> top(new ImplA);
-    auto_ptr<ImplASub> sub(new ImplASub);
+    unique_ptr<ImplA> top(new ImplA);
+    unique_ptr<ImplASub> sub(new ImplASub);
 
-    auto_ptr<ImplA> from_sub(upcast<ImplA>(sub));
+    unique_ptr<ImplA> from_sub(upcast<ImplA>(move(sub)));
     wassert(actual(from_sub.get()).istrue());
 
-    auto_ptr<ImplASub> back_to_top(downcast<ImplASub>(from_sub));
+    unique_ptr<ImplASub> back_to_top(downcast<ImplASub>(move(from_sub)));
     wassert(actual(back_to_top.get()).istrue());
 }
 

@@ -45,7 +45,7 @@ void to::test<1>()
     tgt.exact_query = "GRIB1, 002, 002s, 003s";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
+    unique_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB1);
     const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
     wassert(actual(v->type()) == 2);
@@ -74,7 +74,7 @@ void to::test<2>()
     tgt.exact_query = "GRIB1, 002, 002h, 003h";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB1(2, 1, 2, 3);
+    unique_ptr<Timerange> o = Timerange::createGRIB1(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB1);
     const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
     wassert(actual(v->type()) == 2);
@@ -105,7 +105,7 @@ void to::test<3>()
     tgt.exact_query = "GRIB1, 002, 002y, 003y";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB1(2, 4, 2, 3);
+    unique_ptr<Timerange> o = Timerange::createGRIB1(2, 4, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB1);
     const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
     wassert(actual(v->type()) == 2);
@@ -135,7 +135,7 @@ void to::test<4>()
     tgt.exact_query = "GRIB1, 250, 124h, 127h";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB1(250, 1, 124, 127);
+    unique_ptr<Timerange> o = Timerange::createGRIB1(250, 1, 124, 127);
     wassert(actual(o->style()) == Timerange::GRIB1);
     const timerange::GRIB1* v = dynamic_cast<timerange::GRIB1*>(o.get());
     wassert(actual(v->type()) == 250);
@@ -166,7 +166,7 @@ void to::test<5>()
     tgt.exact_query = "GRIB2,2,254,2,3";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 254, 2, 3);
+    unique_ptr<Timerange> o = Timerange::createGRIB2(2, 254, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB2);
     const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
     wassert(actual(v->type()) == 2);
@@ -192,7 +192,7 @@ void to::test<6>()
     tgt.exact_query = "GRIB2,2,1,2,3";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
+    unique_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB2);
     const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
     wassert(actual(v->type()) == 2);
@@ -215,7 +215,7 @@ void to::test<7>()
     tgt.exact_query = "GRIB2,2,4,2,3";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
+    unique_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB2);
     const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
     wassert(actual(v->type()) == 2);
@@ -241,7 +241,7 @@ void to::test<8>()
     tgt.exact_query = "GRIB2,2,1,-2,-3";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB2(2, 1, -2, -3);
+    unique_ptr<Timerange> o = Timerange::createGRIB2(2, 1, -2, -3);
     wassert(actual(o->style()) == Timerange::GRIB2);
     const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
     wassert(actual(v->type()) == 2);
@@ -263,7 +263,7 @@ void to::test<9>()
     tgt.exact_query = "GRIB2,250,1,-2,-3";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createGRIB2(250, 1, -2, -3);
+    unique_ptr<Timerange> o = Timerange::createGRIB2(250, 1, -2, -3);
     wassert(actual(o->style()) == Timerange::GRIB2);
     const timerange::GRIB2* v = dynamic_cast<timerange::GRIB2*>(o.get());
     wassert(actual(v->type()) == 250);
@@ -276,8 +276,8 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
-    auto_ptr<Timerange> o1 = Timerange::createGRIB2(11, 1, 3, 3);
-    auto_ptr<Timerange> o2 = Timerange::createGRIB2(11, 1, 3, 6);
+    unique_ptr<Timerange> o1 = Timerange::createGRIB2(11, 1, 3, 3);
+    unique_ptr<Timerange> o2 = Timerange::createGRIB2(11, 1, 3, 6);
     const timerange::GRIB2* v1 = dynamic_cast<timerange::GRIB2*>(o1.get());
     const timerange::GRIB2* v2 = dynamic_cast<timerange::GRIB2*>(o2.get());
     wassert(actual(v1->type()) == 11u);
@@ -317,7 +317,7 @@ void to::test<11>()
     tgt.exact_query = "Timedef,6h,2,60m";
     wassert(tgt);
 
-    auto_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2,60m");
+    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2,60m");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
     wassert(actual(v->step_unit()) == timerange::UNIT_HOUR);
     wassert(actual(v->step_len()) == 6u);
@@ -349,7 +349,7 @@ void to::test<12>()
     tgt.exact_query = "Timedef,1y,2,3mo";
     wassert(tgt);
 
-    auto_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1y,2,3mo");
+    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1y,2,3mo");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
     wassert(actual(v->step_unit()) == timerange::UNIT_YEAR);
     wassert(actual(v->step_len()) == 1u);
@@ -382,7 +382,7 @@ void to::test<13>()
     tgt.exact_query = "Timedef,1d,-";
     wassert(tgt);
 
-    auto_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1d");
+    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1d");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
     wassert(actual(v->step_unit()) == timerange::UNIT_DAY);
     wassert(actual(v->step_len()) == 1u);
@@ -414,7 +414,7 @@ void to::test<14>()
     tgt.exact_query = "Timedef,2ce,-";
     wassert(tgt);
 
-    auto_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("2ce");
+    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("2ce");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
     wassert(actual(v->step_unit()) == timerange::UNIT_CENTURY);
     wassert(actual(v->step_len()) == 2u);
@@ -444,7 +444,7 @@ void to::test<15>()
     tgt.exact_query = "Timedef,6h,2,-";
     wassert(tgt);
 
-    auto_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2");
+    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
     wassert(actual(v->step_unit()) == timerange::UNIT_HOUR);
     wassert(actual(v->step_len()) == 6u);
@@ -477,7 +477,7 @@ void to::test<16>()
     tgt.exact_query = "Timedef,6no,2,-";
     wassert(tgt);
 
-    auto_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6no,2");
+    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6no,2");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
     wassert(actual(v->step_unit()) == timerange::UNIT_NORMAL);
     wassert(actual(v->step_len()) == 6u);
@@ -510,7 +510,7 @@ void to::test<17>()
     tgt.exact_query = "Timedef,1y,2,3d";
     wassert(tgt);
 
-    auto_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1y,2,3d");
+    unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1y,2,3d");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
     wassert(actual(v->step_unit()) == timerange::UNIT_YEAR);
     wassert(actual(v->step_len()) == 1u);
@@ -537,7 +537,7 @@ void to::test<18>()
     tgt.exact_query = "BUFR,6h";
     wassert(tgt);
 
-    auto_ptr<Timerange> o = Timerange::createBUFR(6, 1);
+    unique_ptr<Timerange> o = Timerange::createBUFR(6, 1);
     const timerange::BUFR* v = dynamic_cast<timerange::BUFR*>(o.get());
     wassert(actual(v->style()) == Timerange::BUFR);
     wassert(actual(v->unit()) == 1);
@@ -550,7 +550,7 @@ template<> template<>
 void to::test<19>()
 {
 #ifdef HAVE_LUA
-    auto_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
+    unique_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -579,7 +579,7 @@ void to::test<20>()
 
     {
         // GRIB1, forecast at +60min
-        auto_ptr<Timerange> tr(Timerange::createGRIB1(0, 0, 60, 0));
+        unique_ptr<Timerange> tr(Timerange::createGRIB1(0, 0, 60, 0));
 
         ensure(tr->get_forecast_step(val, issec));
         ensure_equals(val, 3600);
@@ -594,7 +594,7 @@ void to::test<20>()
 
     {
         // GRIB1, average between rt+1h and rt+3h
-        auto_ptr<Timerange> tr(Timerange::createGRIB1(3, 1, 1, 3));
+        unique_ptr<Timerange> tr(Timerange::createGRIB1(3, 1, 1, 3));
 
         ensure(tr->get_forecast_step(val, issec));
         ensure_equals(val, 3 * 3600);
@@ -614,9 +614,9 @@ void to::test<21>()
 {
     using namespace timerange;
     using namespace reftime;
-    auto_ptr<Timedef> v = Timedef::createFromYaml("6h");
-    auto_ptr<Position> p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
-    auto_ptr<Position> p1 = v->validity_time_to_emission_time(*p);
+    unique_ptr<Timedef> v = Timedef::createFromYaml("6h");
+    unique_ptr<Position> p = downcast<Position>(Reftime::decodeString("2009-02-13 12:00:00"));
+    unique_ptr<Position> p1 = v->validity_time_to_emission_time(*p);
     ensure_equals(p1->time.vals[0], 2009);
     ensure_equals(p1->time.vals[1], 2);
     ensure_equals(p1->time.vals[2], 13);

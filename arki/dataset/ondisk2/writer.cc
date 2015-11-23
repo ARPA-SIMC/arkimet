@@ -448,7 +448,7 @@ void Writer::rescanFile(const std::string& relpath)
     string pathname = str::joinpath(m_path, relpath);
 
     // Temporarily uncompress the file for scanning
-    auto_ptr<utils::compress::TempUnzip> tu;
+    unique_ptr<utils::compress::TempUnzip> tu;
     if (scan::isCompressed(pathname))
         tu.reset(new utils::compress::TempUnzip(pathname));
 

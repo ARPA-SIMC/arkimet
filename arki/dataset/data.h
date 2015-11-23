@@ -162,7 +162,7 @@ public:
      * @returns the element itself, just for the convenience of being able to
      * type "return cache.add(Value::create());"
      */
-    T* add(std::auto_ptr<T> val)
+    T* add(std::unique_ptr<T> val)
     {
         // Delete the last element if the cache is full
         if (items[max_size - 1])
@@ -227,10 +227,10 @@ public:
     virtual void truncate(const std::string& relname, size_t offset) = 0;
 
     /// Create a SegmentManager using default options
-    static std::auto_ptr<SegmentManager> get(const std::string& root);
+    static std::unique_ptr<SegmentManager> get(const std::string& root);
 
     /// Create a new SegmentManager given a dataset's configuration
-    static std::auto_ptr<SegmentManager> get(const ConfigFile& cfg);
+    static std::unique_ptr<SegmentManager> get(const ConfigFile& cfg);
 };
 
 /**

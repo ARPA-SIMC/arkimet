@@ -1,33 +1,11 @@
 #ifndef ARKI_UTILS_CODEC_H
 #define ARKI_UTILS_CODEC_H
 
-/*
- * utils/codec - Encoding/decoding utilities
- *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/utils.h>
 #include <wibble/exception.h>
 #include <wibble/string.h>
-#include <stdint.h>
 #include <string>
+#include <type_traits>
+#include <cstdint>
 
 namespace wibble {
 namespace sys {
@@ -58,8 +36,8 @@ static inline void ensureSize(size_t len, size_t req, const char* what)
 template<typename T, typename BTYPE>
 size_t decodeVarint(const BTYPE* genbuf, unsigned int size, T& val)
 {
-	// Only work with unsigned
-	ARKI_STATIC_ASSERT(((T)(-1)) > 0);
+    // Only work with unsigned
+    static_assert(std::is_unsigned<T>(), "target integer must be unsigned");
 
 	// Accept whatever pointer, but case to uint8_t*
 	const uint8_t* buf = (const uint8_t*)genbuf;
@@ -167,8 +145,8 @@ public:
 	template<typename T>
 	Encoder& addU(T val, unsigned bytes)
 	{
-		// Only work with unsigned
-		ARKI_STATIC_ASSERT(((T)(-1)) > 0);
+        // Only work with unsigned
+        static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
 
 		unsigned char data[bytes];
 		for (unsigned int i = 0; i < bytes; ++i)
@@ -181,8 +159,8 @@ public:
 	template<typename T>
 	Encoder& addVarint(T val)
 	{
-		// Only work with unsigned
-		ARKI_STATIC_ASSERT(((T)(-1)) > 0);
+        // Only work with unsigned
+        static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
 
 		// Varint idea taken from Google's protocol buffers, and code based on
 		// protbuf's varint implementation
@@ -346,5 +324,4 @@ struct Decoder
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

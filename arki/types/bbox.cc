@@ -105,7 +105,7 @@ std::string BBox::formatStyle(BBox::Style s)
 	}
 }
 
-auto_ptr<BBox> BBox::decode(const unsigned char* buf, size_t len)
+unique_ptr<BBox> BBox::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	ensureSize(len, 1, "BBox");
@@ -135,17 +135,17 @@ auto_ptr<BBox> BBox::decode(const unsigned char* buf, size_t len)
     }
 }
 
-auto_ptr<BBox> BBox::decodeString(const std::string& val)
+unique_ptr<BBox> BBox::decodeString(const std::string& val)
 {
     return createInvalid();
 }
 
-auto_ptr<BBox> BBox::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<BBox> BBox::decodeMapping(const emitter::memory::Mapping& val)
 {
     return createInvalid();
 }
 
-auto_ptr<BBox> BBox::createInvalid()
+unique_ptr<BBox> BBox::createInvalid()
 {
     return upcast<BBox>(bbox::INVALID::create());
 }
@@ -189,9 +189,9 @@ INVALID* INVALID::clone() const
     return new INVALID;
 }
 
-auto_ptr<INVALID> INVALID::create()
+unique_ptr<INVALID> INVALID::create()
 {
-    return auto_ptr<INVALID>(new INVALID);
+    return unique_ptr<INVALID>(new INVALID);
 }
 
 }

@@ -52,7 +52,7 @@ template<> template<>
 void to::test<1>()
 {
     Metadata md;
-    auto_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
+    unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
 	dataset::index::AttrSubIndex attr(db, types::TYPE_ORIGIN);
 
@@ -95,7 +95,7 @@ template<> template<>
 void to::test<2>()
 {
     Metadata md;
-    auto_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
+    unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
 
 	// ID is -1 if it is not in the database
 	ensure_equals(dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).id(md), -1);

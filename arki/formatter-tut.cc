@@ -54,7 +54,7 @@ TESTGRP(arki_formatter);
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<Formatter> formatter(Formatter::create());
+	unique_ptr<Formatter> formatter(Formatter::create());
 
 	stringstream str1;
 	md.writeYaml(str1);

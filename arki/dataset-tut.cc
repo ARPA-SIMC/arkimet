@@ -129,91 +129,91 @@ TESTGRP(arki_dataset);
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("error")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<2>()
 {
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("error")));
+	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("error")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<3>()
 {
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("duplicates")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<4>()
 {
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("duplicates")));
+	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("duplicates")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<5>()
 {
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("outbound")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<6>()
 {
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("outbound")));
+	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("outbound")));
 	ensure(dynamic_cast<dataset::Outbound*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<7>()
 {
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("discard")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Empty*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<8>()
 {
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("discard")));
+	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("discard")));
 	ensure(dynamic_cast<dataset::Discard*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<9>()
 {
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("simple")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<10>()
 {
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("simple")));
+	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("simple")));
 	ensure(dynamic_cast<dataset::simple::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<11>()
 {
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("ondisk2")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Reader*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<12>()
 {
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("ondisk2")));
+	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("ondisk2")));
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
 template<> template<>
 void to::test<13>()
 {
-	auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test")));
+	unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test")));
 	ensure(dynamic_cast<dataset::ondisk2::Writer*>(testds.get()) != 0);
 }
 
@@ -241,7 +241,7 @@ struct TestDataset
         // Clear everything
         if (sys::fs::isdir(path)) sys::fs::rmtree(path);
 
-        auto_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
+        unique_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
         for (unsigned i = 0; i < 3; ++i)
         {
@@ -254,7 +254,7 @@ struct TestDataset
 
     void test_querydata(WIBBLE_TEST_LOCPRM)
     {
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
         acct::plain_data_read_count.reset();
 
@@ -298,7 +298,7 @@ struct TestDataset
 
     void test_querysummary(WIBBLE_TEST_LOCPRM)
     {
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
         // Query summary of everything
         {
@@ -324,7 +324,7 @@ struct TestDataset
 
     void test_querybytes(WIBBLE_TEST_LOCPRM)
     {
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
         for (unsigned i = 0; i < 3; ++i)
         {
@@ -351,7 +351,7 @@ struct TestDataset
 
     void test_querybytes_integrity(WIBBLE_TEST_LOCPRM)
     {
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
         // Query everything
         dataset::ByteQuery bq;
@@ -379,7 +379,7 @@ struct TestDataset
 
     void test_postprocess(WIBBLE_TEST_LOCPRM)
     {
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
         // Do a simple export first, to get the exact metadata that would come
         // out
@@ -400,7 +400,7 @@ struct TestDataset
         // Verify that the data that was output was exactly as long as the
         // encoded metadata and its data
         string out = sys::fs::readFile("testcountbytes.out");
-        auto_ptr<Metadata> copy(mdc[0].clone());
+        unique_ptr<Metadata> copy(mdc[0].clone());
         copy->makeInline();
         wassert(actual(out) == str::fmtf("%d\n", copy->encodeBinary().size() + copy->data_size()));
     }
@@ -408,11 +408,11 @@ struct TestDataset
     void test_locked(WIBBLE_TEST_LOCPRM)
     {
         // Lock a dataset for writing
-        auto_ptr<WritableDataset> wds(WritableDataset::create(*cfgtest));
+        unique_ptr<WritableDataset> wds(WritableDataset::create(*cfgtest));
         Pending p = wds->test_writelock();
 
         // Try to read from it, it should still work with WAL
-        auto_ptr<ReadonlyDataset> rds(ReadonlyDataset::create(*cfgtest));
+        unique_ptr<ReadonlyDataset> rds(ReadonlyDataset::create(*cfgtest));
         dataset::ByteQuery bq;
         bq.setData(Matcher());
         std::stringstream os;

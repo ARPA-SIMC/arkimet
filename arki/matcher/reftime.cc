@@ -87,7 +87,7 @@ std::string MatchReftime::sql(const std::string& column) const
 	return res + ")";
 }
 
-bool MatchReftime::restrict_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+bool MatchReftime::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
     for (vector<DTMatch*>::const_iterator i = tests.begin(); i < tests.end(); ++i)
         if (!(*i)->restrict_date_range(begin, end))

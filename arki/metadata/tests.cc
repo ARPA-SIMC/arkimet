@@ -51,7 +51,7 @@ struct TestMetadataContains : public ArkiCheck
             wibble_test_location.fail_test(ss.str());
         }
 
-        auto_ptr<Type> expected_field = decodeString(code, expected);
+        unique_ptr<Type> expected_field = decodeString(code, expected);
         if (!inverted)
         {
             if (Type::nullable_equals(actual_field, expected_field.get())) return;
@@ -67,9 +67,9 @@ struct TestMetadataContains : public ArkiCheck
     }
 };
 
-auto_ptr<ArkiCheck> ActualMetadata::contains(const std::string& field, const std::string& expected)
+unique_ptr<ArkiCheck> ActualMetadata::contains(const std::string& field, const std::string& expected)
 {
-    return auto_ptr<ArkiCheck>(new TestMetadataContains(actual, field, expected));
+    return unique_ptr<ArkiCheck>(new TestMetadataContains(actual, field, expected));
 }
 
 
@@ -117,9 +117,9 @@ struct TestMetadataSimilar : public ArkiCheck
     }
 };
 
-auto_ptr<ArkiCheck> ActualMetadata::is_similar(const Metadata& expected)
+unique_ptr<ArkiCheck> ActualMetadata::is_similar(const Metadata& expected)
 {
-    return auto_ptr<ArkiCheck>(new TestMetadataSimilar(actual, expected));
+    return unique_ptr<ArkiCheck>(new TestMetadataSimilar(actual, expected));
 }
 
 struct TestMetadataIsset : public ArkiCheck
@@ -150,14 +150,14 @@ struct TestMetadataIsset : public ArkiCheck
     }
 };
 
-auto_ptr<ArkiCheck> ActualMetadata::is_set(const std::string& field)
+unique_ptr<ArkiCheck> ActualMetadata::is_set(const std::string& field)
 {
-    return auto_ptr<ArkiCheck>(new TestMetadataIsset(actual, field));
+    return unique_ptr<ArkiCheck>(new TestMetadataIsset(actual, field));
 }
 
-auto_ptr<ArkiCheck> ActualMetadata::is_not_set(const std::string& field)
+unique_ptr<ArkiCheck> ActualMetadata::is_not_set(const std::string& field)
 {
-    return auto_ptr<ArkiCheck>(new TestMetadataIsset(actual, field, true));
+    return unique_ptr<ArkiCheck>(new TestMetadataIsset(actual, field, true));
 }
 
 }

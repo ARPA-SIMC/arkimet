@@ -81,7 +81,7 @@ inline const matcher::Implementation& mimpl(const Matcher& m)
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("yearly")));
+	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("yearly")));
 
 	ensure_equals((*tf)(md), "20/2007");
 	ensure(tf->pathMatches("20/2007.test", mimpl(Matcher::parse("reftime:>2006"))));
@@ -93,7 +93,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("monthly")));
+	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("monthly")));
 
 	ensure_equals((*tf)(md), "2007/06");
 }
@@ -101,7 +101,7 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("biweekly")));
+	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("biweekly")));
 
 	ensure_equals((*tf)(md), "2007/06-1");
 }
@@ -109,7 +109,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("weekly")));
+	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("weekly")));
 
 	ensure_equals((*tf)(md), "2007/06-1");
 }
@@ -117,7 +117,7 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("daily")));
+	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("daily")));
 
 	ensure_equals((*tf)(md), "2007/06-05");
 }
@@ -125,7 +125,7 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	auto_ptr<TargetFile> tf(TargetFile::create(*config.section("singlefile")));
+	unique_ptr<TargetFile> tf(TargetFile::create(*config.section("singlefile")));
 
 	ensure_equals((*tf)(md), "2007/06/05/04/1");
 }

@@ -148,14 +148,14 @@ int main(int argc, const char* argv[])
 					i != cfg.sectionEnd(); ++i)
 			{
 				// Instantiate the dataset
-				auto_ptr<ReadonlyDataset> d(ReadonlyDataset::create(*i->second));
+				unique_ptr<ReadonlyDataset> d(ReadonlyDataset::create(*i->second));
 				// Get the summary
 				Summary sum;
 				d->querySummary(Matcher(), sum);
 
 #ifdef HAVE_GEOS
 				// Compute bounding box, and store the WKT in bounding
-				auto_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
+				unique_ptr<ARKI_GEOS_GEOMETRY> bbox = sum.getConvexHull(gf);
 				if (bbox.get())
 					i->second->setValue("bounding", bbox->toString());
 #endif

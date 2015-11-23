@@ -32,8 +32,8 @@ int main(int argc,const char* argv[])
     std::cout << "Usage: example [regression] | [list] | [ group] [test]" << std::endl;
     std::cout << "       List all groups: example list" << std::endl;
     std::cout << "       Run all tests: example regression" << std::endl;
-    std::cout << "       Run one group: example std::auto_ptr" << std::endl;
-    std::cout << "       Run one test: example std::auto_ptr 3" << std::endl;;
+    std::cout << "       Run one group: example std::unique_ptr" << std::endl;
+    std::cout << "       Run one test: example std::unique_ptr 3" << std::endl;;
   }
 
   // std::cout << "\nFAILURE and EXCEPTION in these tests are FAKE ;)\n\n";

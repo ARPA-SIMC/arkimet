@@ -63,8 +63,8 @@ struct Quantity : public CoreType<Quantity>
 
     /// CODEC functions
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
-    static std::auto_ptr<Quantity> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Quantity> decodeString(const std::string& val);
+    static std::unique_ptr<Quantity> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Quantity> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -72,9 +72,9 @@ struct Quantity : public CoreType<Quantity>
     Quantity* clone() const override;
 
     /// Create a task
-    static std::auto_ptr<Quantity> create(const std::string& values);
-    static std::auto_ptr<Quantity> create(const std::set<std::string>& values);
-    static std::auto_ptr<Quantity> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Quantity> create(const std::string& values);
+    static std::unique_ptr<Quantity> create(const std::set<std::string>& values);
+    static std::unique_ptr<Quantity> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 

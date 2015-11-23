@@ -46,7 +46,7 @@ namespace tests {
 
 TestGenericType::TestGenericType(const std::string& tag, const std::string& sample) : tag(tag), sample(sample) {}
 
-void TestGenericType::check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded, std::auto_ptr<types::Type>& item) const
+void TestGenericType::check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded, std::unique_ptr<types::Type>& item) const
 {
     WIBBLE_TEST_INFO(tinfo);
     tinfo() << "current: " << encoded;
@@ -64,7 +64,7 @@ void TestGenericType::check_item(WIBBLE_TEST_LOCPRM, const std::string& encoded,
     wassert(actual(item).serializes());
 
     // Test equality to a clone
-    auto_ptr<Type> clone(item->cloneType());
+    unique_ptr<Type> clone(item->cloneType());
     wassert(actual(item) == clone);
 }
 
@@ -75,14 +75,14 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
     tinfo() << "current: " << sample;
 
     // Decode and run all single-item tests
-    auto_ptr<Type> item;
+    unique_ptr<Type> item;
     wruntest(check_item, sample, item);
 
     for (vector<string>::const_iterator i = alternates.begin();
             i != alternates.end(); ++i)
     {
         tinfo() << "current: " << *i << " == " << sample;
-        auto_ptr<Type> aitem;
+        unique_ptr<Type> aitem;
         wruntest(check_item, *i, aitem);
         wassert(actual(item) == aitem);
     }
@@ -94,7 +94,7 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
         tinfo() << "current (lo): " << *i << " < " << sample;
 
         // Decode and run all single-item tests
-        auto_ptr<Type> lower_item;
+        unique_ptr<Type> lower_item;
         wruntest(check_item, *i, lower_item);
 
         // Check equality with different items
@@ -110,7 +110,7 @@ void TestGenericType::check(WIBBLE_TEST_LOCPRM) const
         tinfo() << "current (hi): " << sample << " < " << *i;
 
         // Decode and run all single-item tests
-        auto_ptr<Type> higher_item;
+        unique_ptr<Type> higher_item;
         wruntest(check_item, *i, higher_item);
 
         // Check equality with different items
@@ -151,7 +151,7 @@ struct TestItemSerializes : public ArkiCheck
         enc = act->encodeBinary();
         // Rewritten in the next two lines due to, it seems, a bug in old gccs
         // inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), act);
-        auto_ptr<Type> decoded = types::decode((const unsigned char*)enc.data(), enc.size());
+        unique_ptr<Type> decoded = types::decode((const unsigned char*)enc.data(), enc.size());
         wassert(actual(decoded) == act);
 
         const unsigned char* buf = (const unsigned char*)enc.data();
@@ -172,7 +172,7 @@ struct TestItemSerializes : public ArkiCheck
             emitter::Memory parsed;
             emitter::JSON::parse(jbuf, parsed);
             wassert(actual(parsed.root().is_mapping()).istrue());
-            auto_ptr<Type> iparsed = types::decodeMapping(parsed.root().get_mapping());
+            unique_ptr<Type> iparsed = types::decodeMapping(parsed.root().get_mapping());
             wassert(actual(iparsed) == act);
         }
     }
@@ -231,7 +231,7 @@ struct TestGenericTypeEquals : public ArkiCheck
     TestGenericTypeEquals(const types::Type* a, const types::Type& b, bool inverted=false)
         : a(a ? a->clone() : 0), b(b.clone()), inverted(inverted) {}
     template<typename T>
-    TestGenericTypeEquals(const types::Type* a, const std::auto_ptr<T>& b, bool inverted=false)
+    TestGenericTypeEquals(const types::Type* a, const std::unique_ptr<T>& b, bool inverted=false)
         : a(a ? a->clone() : 0), b(b.get() ? b->clone() : 0), inverted(inverted) {}
     ~TestGenericTypeEquals() { delete a; delete b; }
 
@@ -313,34 +313,34 @@ private:
 };
 
 
-auto_ptr<ArkiCheck> ActualType::operator==(const Type* expected) const
+unique_ptr<ArkiCheck> ActualType::operator==(const Type* expected) const
 {
-    return auto_ptr<ArkiCheck>(new TestGenericTypeEquals(actual, expected));
+    return unique_ptr<ArkiCheck>(new TestGenericTypeEquals(actual, expected));
 }
 
-auto_ptr<ArkiCheck> ActualType::operator!=(const Type* expected) const
+unique_ptr<ArkiCheck> ActualType::operator!=(const Type* expected) const
 {
-    return auto_ptr<ArkiCheck>(new TestGenericTypeEquals(actual, expected, true));
+    return unique_ptr<ArkiCheck>(new TestGenericTypeEquals(actual, expected, true));
 }
 
-auto_ptr<ArkiCheck> ActualType::operator==(const std::string& expected) const
+unique_ptr<ArkiCheck> ActualType::operator==(const std::string& expected) const
 {
     return operator==(types::decodeString(actual->type_code(), expected));
 }
 
-auto_ptr<ArkiCheck> ActualType::operator!=(const std::string& expected) const
+unique_ptr<ArkiCheck> ActualType::operator!=(const std::string& expected) const
 {
     return operator!=(types::decodeString(actual->type_code(), expected));
 }
 
-auto_ptr<ArkiCheck> ActualType::serializes() const
+unique_ptr<ArkiCheck> ActualType::serializes() const
 {
-    return auto_ptr<ArkiCheck>(new TestItemSerializes(this->actual, this->actual->type_code()));
+    return unique_ptr<ArkiCheck>(new TestItemSerializes(this->actual, this->actual->type_code()));
 }
 
-auto_ptr<ArkiCheck> ActualType::compares(const types::Type& higher) const
+unique_ptr<ArkiCheck> ActualType::compares(const types::Type& higher) const
 {
-    return auto_ptr<ArkiCheck>(new TestItemCompares(this->actual, higher));
+    return unique_ptr<ArkiCheck>(new TestItemCompares(this->actual, higher));
 }
 
 struct TestSourceBlobIs : public TestSpecificTypeBase<source::Blob>
@@ -373,14 +373,14 @@ struct TestSourceBlobIs : public TestSpecificTypeBase<source::Blob>
     }
 };
 
-std::auto_ptr<ArkiCheck> ActualType::is_source_blob(
+std::unique_ptr<ArkiCheck> ActualType::is_source_blob(
     const std::string& format,
     const std::string& basedir,
     const std::string& fname,
     uint64_t ofs,
     uint64_t size)
 {
-    return auto_ptr<ArkiCheck>(new TestSourceBlobIs(this->actual, format, basedir, fname, ofs, size));
+    return unique_ptr<ArkiCheck>(new TestSourceBlobIs(this->actual, format, basedir, fname, ofs, size));
 }
 
 struct TestSourceURLIs : public TestSpecificTypeBase<source::URL>
@@ -399,9 +399,9 @@ struct TestSourceURLIs : public TestSpecificTypeBase<source::URL>
     }
 };
 
-std::auto_ptr<ArkiCheck> ActualType::is_source_url(const std::string& format, const std::string& url)
+std::unique_ptr<ArkiCheck> ActualType::is_source_url(const std::string& format, const std::string& url)
 {
-    return auto_ptr<ArkiCheck>(new TestSourceURLIs(this->actual, format, url));
+    return unique_ptr<ArkiCheck>(new TestSourceURLIs(this->actual, format, url));
 }
 
 struct TestSourceInlineIs : public TestSpecificTypeBase<source::Inline>
@@ -420,9 +420,9 @@ struct TestSourceInlineIs : public TestSpecificTypeBase<source::Inline>
     }
 };
 
-std::auto_ptr<ArkiCheck> ActualType::is_source_inline(const std::string& format, uint64_t size)
+std::unique_ptr<ArkiCheck> ActualType::is_source_inline(const std::string& format, uint64_t size)
 {
-    return auto_ptr<ArkiCheck>(new TestSourceInlineIs(this->actual, format, size));
+    return unique_ptr<ArkiCheck>(new TestSourceInlineIs(this->actual, format, size));
 }
 
 struct TestTimeIs : public TestSpecificTypeBase<Time>
@@ -444,9 +444,9 @@ struct TestTimeIs : public TestSpecificTypeBase<Time>
     }
 };
 
-std::auto_ptr<ArkiCheck> ActualType::is_time(int ye, int mo, int da, int ho, int mi, int se)
+std::unique_ptr<ArkiCheck> ActualType::is_time(int ye, int mo, int da, int ho, int mi, int se)
 {
-    return auto_ptr<ArkiCheck>(new TestTimeIs(this->actual, Time(ye, mo, da, ho, mi, se)));
+    return unique_ptr<ArkiCheck>(new TestTimeIs(this->actual, Time(ye, mo, da, ho, mi, se)));
 }
 
 struct TestReftimePositionIs : public TestSpecificTypeBase<reftime::Position>
@@ -463,14 +463,14 @@ struct TestReftimePositionIs : public TestSpecificTypeBase<reftime::Position>
     }
 };
 
-std::auto_ptr<ArkiCheck> ActualType::is_reftime_position(const Time& time)
+std::unique_ptr<ArkiCheck> ActualType::is_reftime_position(const Time& time)
 {
-    return auto_ptr<ArkiCheck>(new TestReftimePositionIs(this->actual, time));
+    return unique_ptr<ArkiCheck>(new TestReftimePositionIs(this->actual, time));
 }
 
-std::auto_ptr<ArkiCheck> ActualType::is_reftime_position(const int (&time)[6])
+std::unique_ptr<ArkiCheck> ActualType::is_reftime_position(const int (&time)[6])
 {
-    return auto_ptr<ArkiCheck>(new TestReftimePositionIs(this->actual, Time(time)));
+    return unique_ptr<ArkiCheck>(new TestReftimePositionIs(this->actual, Time(time)));
 }
 
 struct TestReftimePeriodIs : public TestSpecificTypeBase<reftime::Period>
@@ -489,14 +489,14 @@ struct TestReftimePeriodIs : public TestSpecificTypeBase<reftime::Period>
     }
 };
 
-std::auto_ptr<ArkiCheck> ActualType::is_reftime_period(const int (&begin)[6], const int (&end)[6])
+std::unique_ptr<ArkiCheck> ActualType::is_reftime_period(const int (&begin)[6], const int (&end)[6])
 {
-    return auto_ptr<ArkiCheck>(new TestReftimePeriodIs(this->actual, Time(begin), Time(end)));
+    return unique_ptr<ArkiCheck>(new TestReftimePeriodIs(this->actual, Time(begin), Time(end)));
 }
 
-std::auto_ptr<ArkiCheck> ActualType::is_reftime_period(const Time& begin, const Time& end)
+std::unique_ptr<ArkiCheck> ActualType::is_reftime_period(const Time& begin, const Time& end)
 {
-    return auto_ptr<ArkiCheck>(new TestReftimePeriodIs(this->actual, begin, end));
+    return unique_ptr<ArkiCheck>(new TestReftimePeriodIs(this->actual, begin, end));
 }
 
 }

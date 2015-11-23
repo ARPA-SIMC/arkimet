@@ -57,8 +57,8 @@ void to::test<1>()
 	u.initQueries();
 
     Metadata md;
-    auto_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
-    auto_ptr<Type> product(Product::createGRIB1(200, 1, 2));
+    unique_ptr<Type> origin(Origin::createGRIB1(200, 0, 0));
+    unique_ptr<Type> product(Product::createGRIB1(200, 1, 2));
 
     ensure_equals(u.get(md), -1);
     md.set(*origin);

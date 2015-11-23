@@ -61,7 +61,7 @@ struct Generator
     void add(const types::Type& item);
 
     /// Add one sample to the sample list
-    void add(std::auto_ptr<types::Type> item);
+    void add(std::unique_ptr<types::Type> item);
 
     /// Add one sample to the sample list, decoding \a val as a Yaml value
     void add(types::Code code, const std::string& val);

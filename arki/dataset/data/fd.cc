@@ -284,7 +284,7 @@ Pending Segment::repack(
     const scan::Validator& validator = scan::Validator::by_filename(absname);
 
     // Create a writer for the temp file
-    auto_ptr<data::Segment> writer(make_repack_segment(tmprelname, tmpabsname));
+    unique_ptr<data::Segment> writer(make_repack_segment(tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)

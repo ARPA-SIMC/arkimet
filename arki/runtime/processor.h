@@ -89,7 +89,7 @@ struct ProcessorMaker
     }
 
     /// Create the processor maker for this configuration
-    std::auto_ptr<DatasetProcessor> make(Matcher query, arki::Output& out);
+    std::unique_ptr<DatasetProcessor> make(Matcher query, arki::Output& out);
 
     /**
      * Consistency check on the maker configuration.

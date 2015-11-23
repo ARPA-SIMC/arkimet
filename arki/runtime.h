@@ -51,7 +51,7 @@ class MetadataDispatch;
  */
 void init();
 
-std::auto_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url=std::string());
+std::unique_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, const std::string& qmacroname, const std::string& query, const std::string& url=std::string());
 
 /**
  * Exception raised when the command line parser has handled the current
@@ -145,7 +145,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	 *
 	 * @return the pointer to the datasource, or 0 for no more datasets
 	 */
-	std::auto_ptr<ReadonlyDataset> openSource(ConfigFile& info);
+	std::unique_ptr<ReadonlyDataset> openSource(ConfigFile& info);
 
 	/**
 	 * Process one data source
@@ -163,7 +163,7 @@ struct CommandLine : public wibble::commandline::StandardParserWithManpage
 	 * FIXME: put something that contains a status report instead, for
 	 * FIXME: --status, as well as a boolean for moveok/moveko
 	 */
-	void closeSource(std::auto_ptr<ReadonlyDataset> ds, bool successful = true);
+	void closeSource(std::unique_ptr<ReadonlyDataset> ds, bool successful = true);
 };
 
 /// Dispatch metadata
@@ -208,7 +208,7 @@ struct MetadataDispatch : public metadata::Eater
 	bool process(ReadonlyDataset& ds, const std::string& name);
 
     // Note: used only internally, but needs to be public
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
 	// Flush all imports done so far
 	void flush();

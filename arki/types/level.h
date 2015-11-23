@@ -64,23 +64,23 @@ struct Level : public types::StyledType<Level>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Level> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Level> decodeString(const std::string& val);
-    static std::auto_ptr<Level> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Level> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Level> decodeString(const std::string& val);
+    static std::unique_ptr<Level> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<Level> createGRIB1(unsigned char type);
-    static std::auto_ptr<Level> createGRIB1(unsigned char type, unsigned short l1);
-    static std::auto_ptr<Level> createGRIB1(unsigned char type, unsigned char l1, unsigned char l2);
-    static std::auto_ptr<Level> createGRIB2S(uint8_t type, uint8_t scale, uint32_t val);
-    static std::auto_ptr<Level> createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
+    static std::unique_ptr<Level> createGRIB1(unsigned char type);
+    static std::unique_ptr<Level> createGRIB1(unsigned char type, unsigned short l1);
+    static std::unique_ptr<Level> createGRIB1(unsigned char type, unsigned char l1, unsigned char l2);
+    static std::unique_ptr<Level> createGRIB2S(uint8_t type, uint8_t scale, uint32_t val);
+    static std::unique_ptr<Level> createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
                                              uint8_t type2, uint8_t scale2, uint32_t val2);
-    static std::auto_ptr<Level> createODIMH5(double value);
-    static std::auto_ptr<Level> createODIMH5(double min, double max);
+    static std::unique_ptr<Level> createODIMH5(double value);
+    static std::unique_ptr<Level> createODIMH5(double min, double max);
 };
 
 namespace level {
@@ -118,10 +118,10 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB1* clone() const override;
-    static std::auto_ptr<GRIB1> create(unsigned char type);
-    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned short l1);
-    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
-    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> create(unsigned char type);
+    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned short l1);
+    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char l1, unsigned char l2);
+    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
     static int getValType(unsigned char type);
 };
@@ -166,8 +166,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2S* clone() const override;
-    static std::auto_ptr<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
-    static std::auto_ptr<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2S> create(uint8_t type, uint8_t scale, uint32_t val);
+    static std::unique_ptr<GRIB2S> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class GRIB2D : public GRIB2
@@ -200,10 +200,10 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2D* clone() const override;
-    static std::auto_ptr<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
+    static std::unique_ptr<GRIB2D> create(uint8_t type1, uint8_t scale1, uint32_t val1,
                                uint8_t type2, uint8_t scale2, uint32_t val2);
 
-    static std::auto_ptr<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2D> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class ODIMH5 : public Level
@@ -228,9 +228,9 @@ public:
     bool equals(const Type& o) const override;
 
     ODIMH5* clone() const override;
-    static std::auto_ptr<ODIMH5> create(double value);
-    static std::auto_ptr<ODIMH5> create(double min, double max);
-    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> create(double value);
+    static std::unique_ptr<ODIMH5> create(double min, double max);
+    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

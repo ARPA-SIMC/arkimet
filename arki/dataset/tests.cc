@@ -1,23 +1,3 @@
-/**
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "tests.h"
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
@@ -59,10 +39,10 @@ using namespace arki::dataset;
 namespace arki {
 namespace tests {
 
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, auto_ptr<Metadata> md, metadata::Eater& mdc)
+void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, unique_ptr<Metadata> md, metadata::Eater& mdc)
 {
-	metadata::Collection c;
-	Dispatcher::Outcome res = dispatcher.dispatch(md, c);
+    metadata::Collection c;
+    Dispatcher::Outcome res = dispatcher.dispatch(move(md), c);
 	// If dispatch fails, print the notes
 	if (res != Dispatcher::DISP_OK)
 	{
@@ -381,7 +361,7 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
 	if (!wcfg) wcfg = &cfg;
 
 	{
-		std::auto_ptr<WritableDataset> writer(makeWriter(wcfg));
+		std::unique_ptr<WritableDataset> writer(makeWriter(wcfg));
 
 		if (wibble::str::endsWith(testfile, ".vm2")) {
 			scan::Vm2 scanner;
@@ -420,7 +400,7 @@ void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& te
 
 void DatasetTest::impl_ensure_maint_clean(WIBBLE_TEST_LOCPRM, size_t filecount, const ConfigFile* wcfg)
 {
-    auto_ptr<dataset::WritableLocal> writer(makeLocalWriter(wcfg));
+    unique_ptr<dataset::WritableLocal> writer(makeLocalWriter(wcfg));
     arki::tests::MaintenanceResults expected(true, filecount);
     expected.by_type[COUNTED_OK] = filecount;
     wassert(actual(writer.get()).maintenance(expected));
@@ -431,7 +411,7 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 {
 	impl_ensure_maint_clean(loc, filecount, wcfg);
 
-    auto_ptr<dataset::Local> reader(makeLocalReader(wcfg));
+    unique_ptr<dataset::Local> reader(makeLocalReader(wcfg));
     metadata::Collection mdc;
     reader->queryData(dataset::DataQuery(Matcher()), mdc);
     inner_ensure_equals(mdc.size(), resultcount);
@@ -444,7 +424,7 @@ void DatasetTest::import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixtur
 {
     clean();
 
-    std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+    std::unique_ptr<WritableLocal> writer(makeLocalWriter());
     for (int i = 0; i < 3; ++i)
     {
         import_results[i] = fixture.test_data[i].md;
@@ -461,7 +441,7 @@ void DatasetTest::import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture&
 
     // Pack the dataset in case something imported data out of order
     {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        unique_ptr<WritableLocal> writer(makeLocalWriter());
         LineChecker checker;
         checker.ignore_regexp(": packed ");
         checker.ignore_regexp(": [0-9]+ files? packed");
@@ -569,7 +549,7 @@ OrderCheck::OrderCheck(const std::string& order)
 OrderCheck::~OrderCheck()
 {
 }
-bool OrderCheck::eat(auto_ptr<Metadata> md)
+bool OrderCheck::eat(unique_ptr<Metadata>&& md)
 {
     if (!first)
     {
@@ -719,7 +699,7 @@ void corrupt_datafile(const std::string& absname)
         throw wibble::exception::Consistency("corrupting " + to_corrupt, "wrote less than 4 bytes");
 }
 
-std::auto_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfgstr, bool empty)
+std::unique_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfgstr, bool empty)
 {
     // Parse configuration
     stringstream incfg(cfgstr);
@@ -730,12 +710,12 @@ std::auto_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfg
     // Remove the dataset directory if it exists
     if (empty && sys::fs::isdir(cfg.value("path"))) sys::fs::rmtree(cfg.value("path"));
 
-    auto_ptr<dataset::WritableLocal> ds(dataset::WritableLocal::create(cfg));
+    unique_ptr<dataset::WritableLocal> ds(dataset::WritableLocal::create(cfg));
     wassert(actual(ds.get()).istrue());
     return ds;
 }
 
-std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
+std::unique_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
 {
     // Parse configuration
     stringstream incfg(cfgstr);
@@ -743,7 +723,7 @@ std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
     cfg.parse(incfg, "(memory)");
     wassert(actual(cfg.value("path").empty()).isfalse());
 
-    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
     wassert(actual(ds.get()).istrue());
     return ds;
 }
@@ -753,7 +733,7 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, 
     typedef types::source::Blob Blob;
 
     // Make a snapshot of everything before appending
-    auto_ptr<Source> orig_source(md.source().clone());
+    unique_ptr<Source> orig_source(md.source().clone());
     size_t data_size = md.data_size();
     size_t orig_fsize = sys::fs::size(dw->absname, 0);
 
@@ -777,7 +757,7 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, 
 void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
-    auto_ptr<Source> orig_source(md.source().clone());
+    unique_ptr<Source> orig_source(md.source().clone());
     size_t orig_fsize = sys::fs::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
@@ -854,4 +834,3 @@ Metadata make_large_mock(const std::string& format, size_t size, unsigned month,
 }
 
 }
-// vim:set ts=4 sw=4:

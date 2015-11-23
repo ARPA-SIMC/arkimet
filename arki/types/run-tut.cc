@@ -52,7 +52,7 @@ template<> template<>
 void to::test<2>()
 {
 #ifdef HAVE_LUA
-    auto_ptr<Run> o = Run::createMinute(12, 30);
+    unique_ptr<Run> o = Run::createMinute(12, 30);
 
 	tests::Lua test(
 		"function test(o) \n"

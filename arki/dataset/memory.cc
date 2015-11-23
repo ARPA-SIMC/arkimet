@@ -43,7 +43,7 @@ void Memory::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
     // For each directory try to match its summary first, and if it matches
     // then produce all the contents.
     metadata::Eater* c = &consumer;
-    auto_ptr<sort::Stream> sorter;
+    unique_ptr<sort::Stream> sorter;
 
     if (q.sorter)
     {

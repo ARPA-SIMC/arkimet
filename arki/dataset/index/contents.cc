@@ -322,9 +322,9 @@ void Contents::scan_files(maintenance::IndexFileVisitor& v) const
         }
 
         // Rebuild the Metadata
-        auto_ptr<Metadata> md(new Metadata);
+        unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md);
-        mdc.eat(md);
+        mdc.eat(move(md));
     }
 
     if (!last_file.empty())
@@ -347,9 +347,9 @@ void Contents::scan_file(const std::string& relname, metadata::Eater& consumer, 
     while (mdq.step())
     {
         // Rebuild the Metadata
-        auto_ptr<Metadata> md(new Metadata);
+        unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md);
-        consumer.eat(md);
+        consumer.eat(move(md));
     }
 }
 
@@ -364,7 +364,7 @@ std::string Contents::max_file_reftime(const std::string& relname) const
 	return res;
 }
 
-static void db_time_extremes(utils::sqlite::SQLiteDB& db, auto_ptr<Time>& begin, auto_ptr<Time>& end)
+static void db_time_extremes(utils::sqlite::SQLiteDB& db, unique_ptr<Time>& begin, unique_ptr<Time>& end)
 {
     // SQLite can compute min and max of an indexed column very fast,
     // provided that it is the ONLY thing queried.
@@ -390,8 +390,8 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 	// Add database constraints
 	if (not m.empty())
 	{
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         if (!m.restrict_date_range(begin, end))
             // The matcher matches an impossible datetime span: convert it
             // into an impossible clause that evaluates quickly
@@ -402,8 +402,8 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
         else
         {
             // Compare with the reftime bounds in the database
-            auto_ptr<Time> db_begin;
-            auto_ptr<Time> db_end;
+            unique_ptr<Time> db_begin;
+            unique_ptr<Time> db_end;
             db_time_extremes(m_db, db_begin, db_end);
             if (db_begin.get() && db_end.get())
             {
@@ -532,7 +532,7 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
 
 	metadata::Collection mdbuf;
 	string last_fname;
-	auto_ptr<runtime::Tempfile> tmpfile;
+	unique_ptr<runtime::Tempfile> tmpfile;
 
 	// Limited scope for mdq, so we finalize the query before starting to
 	// emit results
@@ -569,10 +569,10 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
 			}
 
             // Rebuild the Metadata
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             build_md(mdq, *md);
             // Buffer the results in memory, to release the database lock as soon as possible
-            mdbuf.eat(md);
+            mdbuf.eat(move(md));
         }
 //fprintf(stderr, "POST %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
@@ -621,9 +621,9 @@ size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
             while (mdq.step())
             {
                 // Rebuild the Metadata
-                auto_ptr<Metadata> md(new Metadata);
+                unique_ptr<Metadata> md(new Metadata);
                 build_md(mdq, *md);
-                mdbuf.eat(md);
+                mdbuf.eat(move(md));
             }
         }
     }
@@ -718,8 +718,8 @@ void Contents::summaryForAll(Summary& out) const
     if (!scache.read(out))
     {
         // Find the datetime extremes in the database
-        auto_ptr<Time> begin;
-        auto_ptr<Time> end;
+        unique_ptr<Time> begin;
+        unique_ptr<Time> end;
         db_time_extremes(m_db, begin, end);
 
         // If there is data in the database, get all the involved
@@ -824,8 +824,8 @@ static inline bool range_envelopes_full_month(const Time& begin, const Time& end
 bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
 {
     // Check if the matcher discriminates on reference times
-    auto_ptr<Time> begin;
-    auto_ptr<Time> end;
+    unique_ptr<Time> begin;
+    unique_ptr<Time> end;
     if (!matcher.restrict_date_range(begin, end))
         return true; // If the matcher contains an impossible reftime, return right away
 
@@ -840,8 +840,8 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
     }
 
     // Amend open ends with the bounds from the database
-    auto_ptr<Time> db_begin;
-    auto_ptr<Time> db_end;
+    unique_ptr<Time> db_begin;
+    unique_ptr<Time> db_end;
     db_time_extremes(m_db, db_begin, db_end);
     // If the database is empty then the result is empty:
     // we are done

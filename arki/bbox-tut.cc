@@ -44,8 +44,8 @@ void to::test<1>()
 {
 	BBox bbox;
 	ValueBag vb;
-    auto_ptr<Area> area(Area::createGRIB(vb));
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<Area> area(Area::createGRIB(vb));
+    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
 
 	ensure(g.get() == 0);
 }
@@ -65,8 +65,8 @@ void to::test<2>()
 	vb.set("lonlast", Value::createInteger(20000000));
 	vb.set("type", Value::createInteger(0));
 
-    auto_ptr<Area> area(Area::createGRIB(vb));
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<Area> area(Area::createGRIB(vb));
+    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -76,7 +76,7 @@ void to::test<2>()
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
 	ensure_equals(cs->getAt(0).x, 12.00);
 	ensure_equals(cs->getAt(0).y, 40.00);
 	ensure_equals(cs->getAt(1).x, 12.00);
@@ -108,8 +108,8 @@ void to::test<3>()
 	vb.set("type", Value::createInteger(0));
 	vb.set("utm", Value::createInteger(1));
 
-    auto_ptr<Area> area(Area::createGRIB(vb));
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<Area> area(Area::createGRIB(vb));
+    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -119,7 +119,7 @@ void to::test<3>()
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
 	ensure_similar(cs->getAt(0).x,  3.3241, 0.0001); // 7.7876   These are the values computed
 	ensure_similar(cs->getAt(0).y, 43.6864, 0.0001); // 43.8211  with the old BB algorithm
 	ensure_similar(cs->getAt(1).x,  8.8445, 0.0001); // 7.7876   that however only produced
@@ -153,8 +153,8 @@ void to::test<4>()
 	vb.set("type", Value::createInteger(10));
 	vb.set("rot", Value::createInteger(0));
 
-    auto_ptr<Area> area(Area::createGRIB(vb));
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<Area> area(Area::createGRIB(vb));
+    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -164,7 +164,7 @@ void to::test<4>()
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
 	ensure_similar(cs->getAt( 0).x,  6.0124, 0.0001); ensure_similar(cs->getAt( 0).y, 35.4723, 0.0001);
 	ensure_similar(cs->getAt( 1).x,  8.1280, 0.0001); ensure_similar(cs->getAt( 1).y, 35.5524, 0.0001);
 	ensure_similar(cs->getAt( 2).x, 10.2471, 0.0001); ensure_similar(cs->getAt( 2).y, 35.5746, 0.0001);
@@ -212,8 +212,8 @@ void to::test<5>()
 	vb.set("lonlast", Value::createInteger(22500000));
 	vb.set("type", Value::createInteger(0));
 
-    auto_ptr<Area> area(Area::createGRIB(vb));
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<Area> area(Area::createGRIB(vb));
+    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
 	ensure(g.get() != 0);
@@ -223,7 +223,7 @@ void to::test<5>()
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
 	ensure_equals(cs->getAt(0).x,  2.40000);
 	ensure_equals(cs->getAt(0).y, 49.20000);
 	ensure_equals(cs->getAt(1).x,  2.40000);
@@ -250,8 +250,8 @@ void to::test<6>()
     vb.set("x", Value::createInteger(11));
     vb.set("y", Value::createInteger(45));
 
-    auto_ptr<Area> area(Area::createGRIB(vb));
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<Area> area(Area::createGRIB(vb));
+    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);
@@ -261,7 +261,7 @@ void to::test<6>()
     //ensure(g->isRectangle());
     ensure_equals(g->getDimension(), 2);
 
-    auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
     ensure_equals(cs->getAt(0).x, 11.0);
     ensure_equals(cs->getAt(0).y, 45.0);
     ensure_equals(cs->getAt(1).x, 11.0);
@@ -281,9 +281,9 @@ void to::test<7>()
 {
 #ifdef HAVE_GEOS
     BBox bbox;
-    auto_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
+    unique_ptr<Area> area = Area::decodeString("GRIB(fe=0, fn=0, latfirst=4852500, latlast=5107500, lonfirst=402500, lonlast=847500, tn=32768, utm=1, zone=32)");
 
-    auto_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
+    unique_ptr<ARKI_GEOS_GEOMETRY> g(bbox(*area));
     //cerr <<" AREA " << area << endl;
 
     ensure(g.get() != 0);
@@ -293,7 +293,7 @@ void to::test<7>()
     //ensure(g->isRectangle());
     ensure_equals(g->getDimension(), 2);
 
-    auto_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
     ensure_equals(floor(cs->getAt(0).x * 1000), 13996);
     ensure_equals(floor(cs->getAt(0).y * 1000), 43718);
     ensure_equals(floor(cs->getAt(1).x * 1000), 19453);

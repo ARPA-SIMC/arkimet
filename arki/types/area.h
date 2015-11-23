@@ -69,9 +69,9 @@ struct Area : public types::StyledType<Area>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Area> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Area> decodeString(const std::string& val);
-    static std::auto_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Area> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Area> decodeString(const std::string& val);
+    static std::unique_ptr<Area> decodeMapping(const emitter::memory::Mapping& val);
 
 	/// Return the geographical bounding box
 	const ARKI_GEOS_GEOMETRY* bbox() const;
@@ -81,9 +81,9 @@ struct Area : public types::StyledType<Area>
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<Area> createGRIB(const ValueBag& values);
-    static std::auto_ptr<Area> createODIMH5(const ValueBag& values);
-    static std::auto_ptr<Area> createVM2(unsigned station_id);
+    static std::unique_ptr<Area> createGRIB(const ValueBag& values);
+    static std::unique_ptr<Area> createODIMH5(const ValueBag& values);
+    static std::unique_ptr<Area> createVM2(unsigned station_id);
 };
 
 namespace area {
@@ -110,8 +110,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB* clone() const override;
-    static std::auto_ptr<GRIB> create(const ValueBag& values);
-    static std::auto_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB> create(const ValueBag& values);
+    static std::unique_ptr<GRIB> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class ODIMH5 : public Area
@@ -136,15 +136,15 @@ public:
     bool equals(const Type& o) const override;
 
     ODIMH5* clone() const override;
-    static std::auto_ptr<ODIMH5> create(const ValueBag& values);
-    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> create(const ValueBag& values);
+    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class VM2 : public Area
 {
 protected:
     unsigned m_station_id;
-    mutable std::auto_ptr<ValueBag> m_derived_values;
+    mutable std::unique_ptr<ValueBag> m_derived_values;
 
 public:
     virtual ~VM2();
@@ -164,8 +164,8 @@ public:
     bool equals(const Type& o) const override;
 
     VM2* clone() const override;
-    static std::auto_ptr<VM2> create(unsigned station_id);
-    static std::auto_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<VM2> create(unsigned station_id);
+    static std::unique_ptr<VM2> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 

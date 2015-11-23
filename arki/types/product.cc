@@ -96,7 +96,7 @@ std::string Product::formatStyle(Product::Style s)
 	}
 }
 
-auto_ptr<Product> Product::decode(const unsigned char* buf, size_t len)
+unique_ptr<Product> Product::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
@@ -161,7 +161,7 @@ static double parseDouble(const std::string& val)
 }
 */
 
-auto_ptr<Product> Product::decodeString(const std::string& val)
+unique_ptr<Product> Product::decodeString(const std::string& val)
 {
 	string inner;
 	Product::Style style = outerParse<Product>(val, inner);
@@ -217,7 +217,7 @@ auto_ptr<Product> Product::decodeString(const std::string& val)
 	}
 }
 
-auto_ptr<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Product> Product::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -300,11 +300,11 @@ void Product::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_product", lib);
 }
 
-std::auto_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned char table, unsigned char product)
+std::unique_ptr<Product> Product::createGRIB1(unsigned char origin, unsigned char table, unsigned char product)
 {
     return upcast<Product>(product::GRIB1::create(origin, table, product));
 }
-std::auto_ptr<Product> Product::createGRIB2(
+std::unique_ptr<Product> Product::createGRIB2(
         unsigned short centre,
         unsigned char discipline,
         unsigned char category,
@@ -314,19 +314,19 @@ std::auto_ptr<Product> Product::createGRIB2(
 {
     return upcast<Product>(product::GRIB2::create(centre, discipline, category, number, table_version, local_table_version));
 }
-std::auto_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype)
+std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype)
 {
     return upcast<Product>(product::BUFR::create(type, subtype, localsubtype));
 }
-std::auto_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name)
+std::unique_ptr<Product> Product::createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name)
 {
     return upcast<Product>(product::BUFR::create(type, subtype, localsubtype, name));
 }
-std::auto_ptr<Product> Product::createODIMH5(const std::string& obj, const std::string& prod)
+std::unique_ptr<Product> Product::createODIMH5(const std::string& obj, const std::string& prod)
 {
     return upcast<Product>(product::ODIMH5::create(obj, prod));
 }
-std::auto_ptr<Product> Product::createVM2(unsigned variable_id)
+std::unique_ptr<Product> Product::createVM2(unsigned variable_id)
 {
     return upcast<Product>(product::VM2::create(variable_id));
 }
@@ -359,7 +359,7 @@ void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("ta", m_table);
     e.add("pr", m_product);
 }
-auto_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB1::create(
             val["or"].want_int("parsing GRIB1 origin origin"),
@@ -404,13 +404,13 @@ GRIB1* GRIB1::clone() const
     return res;
 }
 
-auto_ptr<GRIB1> GRIB1::create(unsigned char origin, unsigned char table, unsigned char product)
+unique_ptr<GRIB1> GRIB1::create(unsigned char origin, unsigned char table, unsigned char product)
 {
     GRIB1* res = new GRIB1;
     res->m_origin = origin;
     res->m_table = table;
     res->m_product = product;
-    return auto_ptr<GRIB1>(res);
+    return unique_ptr<GRIB1>(res);
 }
 
 std::vector<int> GRIB1::toIntVector() const
@@ -479,7 +479,7 @@ void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("tv", m_table_version);
     e.add("ltv", m_local_table_version);
 }
-auto_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& tv = val["tv"];
@@ -550,7 +550,7 @@ GRIB2* GRIB2::clone() const
     return res;
 }
 
-auto_ptr<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number, unsigned char table_version, unsigned char local_table_version)
+unique_ptr<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, unsigned char category, unsigned char number, unsigned char table_version, unsigned char local_table_version)
 {
     GRIB2* res = new GRIB2;
     res->m_centre = centre;
@@ -559,7 +559,7 @@ auto_ptr<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline, u
     res->m_number = number;
     res->m_table_version = table_version;
     res->m_local_table_version = local_table_version;
-    return auto_ptr<GRIB2>(res);
+    return unique_ptr<GRIB2>(res);
 }
 
 std::vector<int> GRIB2::toIntVector() const
@@ -629,7 +629,7 @@ void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
         m_values.serialise(e);
     }
 }
-auto_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& va = val["va"];
@@ -690,23 +690,23 @@ BUFR* BUFR::clone() const
     return res;
 }
 
-auto_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
+unique_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype)
 {
     BUFR* res = new BUFR;
     res->m_type = type;
     res->m_subtype = subtype;
     res->m_localsubtype = localsubtype;
-    return auto_ptr<BUFR>(res);
+    return unique_ptr<BUFR>(res);
 }
 
-auto_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& values)
+unique_ptr<BUFR> BUFR::create(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& values)
 {
 	BUFR* res = new BUFR;
 	res->m_type = type;
 	res->m_subtype = subtype;
 	res->m_localsubtype = localsubtype;
 	res->m_values = values;
-    return auto_ptr<BUFR>(res);
+    return unique_ptr<BUFR>(res);
 }
 
 void BUFR::addValues(const ValueBag& newvalues)
@@ -793,7 +793,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("pr", m_prod);
 }
 
-auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return ODIMH5::create(
@@ -852,7 +852,7 @@ ODIMH5* ODIMH5::clone() const
     return res;
 }
 
-auto_ptr<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& prod
+unique_ptr<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& prod
 	/*PRODPAR: , double prodpar1, double prodpar2 */
 )
 {
@@ -861,7 +861,7 @@ auto_ptr<ODIMH5> ODIMH5::create(const std::string& obj, const std::string& prod
     res->m_prod = prod;
     /*REMOVED: res->m_prodpar1 = prodpar1; */
     /*REMOVED: res->m_prodpar2  = prodpar2; */
-    return auto_ptr<ODIMH5>(res);
+    return unique_ptr<ODIMH5>(res);
 }
 
 std::vector<int> ODIMH5::toIntVector() const
@@ -981,13 +981,13 @@ VM2* VM2::clone() const
     return res;
 }
 
-auto_ptr<VM2> VM2::create(unsigned variable_id)
+unique_ptr<VM2> VM2::create(unsigned variable_id)
 {
     VM2* res = new VM2;
     res->m_variable_id = variable_id;
-    return auto_ptr<VM2>(res);
+    return unique_ptr<VM2>(res);
 }
-auto_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
 {
     return VM2::create(val["id"].want_int("parsing VM2 variable id"));
 }

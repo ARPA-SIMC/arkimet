@@ -41,12 +41,12 @@ TESTGRP(arki_values);
 template<> template<>
 void to::test<1>()
 {
-	std::auto_ptr<Value> vi1(Value::createInteger(-1));
-	std::auto_ptr<Value> vi2(Value::createInteger(-1));
-	std::auto_ptr<Value> vi3(Value::createInteger(1));
-	std::auto_ptr<Value> vs1(Value::createString("antani"));
-	std::auto_ptr<Value> vs2(Value::createString("antani"));
-	std::auto_ptr<Value> vs3(Value::createString("blinda"));
+	std::unique_ptr<Value> vi1(Value::createInteger(-1));
+	std::unique_ptr<Value> vi2(Value::createInteger(-1));
+	std::unique_ptr<Value> vi3(Value::createInteger(1));
+	std::unique_ptr<Value> vs1(Value::createString("antani"));
+	std::unique_ptr<Value> vs2(Value::createString("antani"));
+	std::unique_ptr<Value> vs3(Value::createString("blinda"));
 
 	ensure_equals(*vi1, *vi1);
 	ensure_equals(*vi1, *vi2);
@@ -70,27 +70,27 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	std::auto_ptr<Value> zero(Value::createInteger(0));
-	std::auto_ptr<Value> one(Value::createInteger(1));
-	std::auto_ptr<Value> minusOne(Value::createInteger(-1));
-	std::auto_ptr<Value> u6bit(Value::createInteger(30));
-	std::auto_ptr<Value> s6bit(Value::createInteger(-31));
-	std::auto_ptr<Value> onemillion(Value::createInteger(1000000));
-	std::auto_ptr<Value> bignegative(Value::createInteger(-1234567));
-	std::auto_ptr<Value> empty(Value::createString(""));
-	std::auto_ptr<Value> onechar(Value::createString("a"));
-	std::auto_ptr<Value> numstr(Value::createString("12"));
-	std::auto_ptr<Value> longname(Value::createString("thisIsAVeryLongNameButFitsIn64byesBecauseIts55BytesLong"));
-	std::auto_ptr<Value> escaped(Value::createString("\"\\\'pippo"));
+	std::unique_ptr<Value> zero(Value::createInteger(0));
+	std::unique_ptr<Value> one(Value::createInteger(1));
+	std::unique_ptr<Value> minusOne(Value::createInteger(-1));
+	std::unique_ptr<Value> u6bit(Value::createInteger(30));
+	std::unique_ptr<Value> s6bit(Value::createInteger(-31));
+	std::unique_ptr<Value> onemillion(Value::createInteger(1000000));
+	std::unique_ptr<Value> bignegative(Value::createInteger(-1234567));
+	std::unique_ptr<Value> empty(Value::createString(""));
+	std::unique_ptr<Value> onechar(Value::createString("a"));
+	std::unique_ptr<Value> numstr(Value::createString("12"));
+	std::unique_ptr<Value> longname(Value::createString("thisIsAVeryLongNameButFitsIn64byesBecauseIts55BytesLong"));
+	std::unique_ptr<Value> escaped(Value::createString("\"\\\'pippo"));
 	// Not 6 bits, but 1 byte
-	std::auto_ptr<Value> fourtythree(Value::createInteger(43));
-	std::auto_ptr<Value> minusfourtythree(Value::createInteger(-43));
+	std::unique_ptr<Value> fourtythree(Value::createInteger(43));
+	std::unique_ptr<Value> minusfourtythree(Value::createInteger(-43));
 	// 2 bytes
-	std::auto_ptr<Value> tenthousand(Value::createInteger(10000));
-	std::auto_ptr<Value> minustenthousand(Value::createInteger(-10000));
+	std::unique_ptr<Value> tenthousand(Value::createInteger(10000));
+	std::unique_ptr<Value> minustenthousand(Value::createInteger(-10000));
 
 #define TESTENC(var, encsize) do { \
-		std::auto_ptr<Value> v; \
+		std::unique_ptr<Value> v; \
 		string enc; \
 		size_t decsize; \
 		Encoder e(enc); \
@@ -129,7 +129,7 @@ void to::test<3>()
 {
 	ValueBag v1;
 	ValueBag v2;
-	auto_ptr<Value> val;
+	unique_ptr<Value> val;
 
 	v1.set("test1", Value::createInteger(1));
 	v1.set("test2", Value::createInteger(1000000));

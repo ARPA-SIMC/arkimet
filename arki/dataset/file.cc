@@ -1,25 +1,3 @@
-/*
- * dataset/file - Dataset on a single file
- *
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/libconfig.h>
 #include <arki/dataset/file.h>
 #include <arki/metadata/consumer.h>
@@ -163,7 +141,7 @@ void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	metadata::Eater* c = &consumer;
 	// Order matters here, as delete will happen in reverse order
-	auto_ptr<sort::Stream> sorter;
+	unique_ptr<sort::Stream> sorter;
 
 	if (q.sorter)
 	{
@@ -184,7 +162,7 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	metadata::Eater* c = &consumer;
 	// Order matters here, as delete will happen in reverse order
-	auto_ptr<sort::Stream> sorter;
+	unique_ptr<sort::Stream> sorter;
 
 	if (q.sorter)
 	{
@@ -194,12 +172,12 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 
     while (true)
     {
-        auto_ptr<Metadata> md(new Metadata);
+        unique_ptr<Metadata> md(new Metadata);
         if (!md->readYaml(*m_file, m_pathname))
             break;
         if (!q.matcher(*md))
             continue;
-        c->eat(md);
+        c->eat(move(md));
     }
 
 	if (sorter.get()) sorter->flush();
@@ -214,7 +192,7 @@ RawFile::~RawFile() {}
 void RawFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
 	metadata::Eater* c = &consumer;
-	auto_ptr<sort::Stream> sorter;
+	unique_ptr<sort::Stream> sorter;
 
 	if (q.sorter)
 	{
@@ -228,4 +206,3 @@ void RawFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
 
 }
 }
-// vim:set ts=4 sw=4:

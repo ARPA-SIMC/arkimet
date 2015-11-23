@@ -50,7 +50,7 @@ void to::test<2>()
     ValueBag test1;
     test1.set("uno", Value::createInteger(1));
     test1.set("pippo", Value::createString("pippo"));
-    auto_ptr<Area> o = Area::createGRIB(test1);
+    unique_ptr<Area> o = Area::createGRIB(test1);
 
 	tests::Lua test(
 		"function test(o) \n"

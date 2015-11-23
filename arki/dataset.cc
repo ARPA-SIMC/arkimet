@@ -189,7 +189,7 @@ static int arkilua_queryData(lua_State *L)
 	dq.lua_from_table(L, 2);
 
 	// Create metadata consumer proxy
-	std::auto_ptr<metadata::LuaConsumer> mdc = metadata::LuaConsumer::lua_check(L, 3);
+	std::unique_ptr<metadata::LuaConsumer> mdc = metadata::LuaConsumer::lua_check(L, 3);
 
 	// Run the query
 	rd->queryData(dq, *mdc);

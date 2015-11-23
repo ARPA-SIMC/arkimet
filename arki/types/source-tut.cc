@@ -40,7 +40,7 @@ TESTGRP(arki_types_source);
 template<> template<>
 void to::test<1>()
 {
-    auto_ptr<Source> o = Source::createBlob("test", "", "testfile", 21, 42);
+    unique_ptr<Source> o = Source::createBlob("test", "", "testfile", 21, 42);
     wassert(actual(o).is_source_blob("test", "", "testfile", 21u, 42u));
 
 	#if 0
@@ -65,7 +65,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    auto_ptr<Source> o = Source::createURL("test", "http://foobar");
+    unique_ptr<Source> o = Source::createURL("test", "http://foobar");
     wassert(actual(o).is_source_url("test", "http://foobar"));
 
     wassert(actual(o) == Source::createURL("test", "http://foobar"));
@@ -81,7 +81,7 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    auto_ptr<Source> o = Source::createInline("test", 12345);
+    unique_ptr<Source> o = Source::createInline("test", 12345);
     wassert(actual(o).is_source_inline("test", 12345u));
 
     wassert(actual(o) == Source::createInline("test", 12345));
@@ -97,7 +97,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    auto_ptr<Source> o = Source::createBlob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
+    unique_ptr<Source> o = Source::createBlob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
     wassert(actual(o).is_source_blob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42u));
 
     // Test encoding/decoding
@@ -108,7 +108,7 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-    auto_ptr<source::Blob> o = source::Blob::create("test", "", "testfile", 21, 42);
+    unique_ptr<source::Blob> o = source::Blob::create("test", "", "testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "testfile");
 
     o = source::Blob::create("test", "/tmp", "testfile", 21, 42);
@@ -122,11 +122,11 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-    auto_ptr<Source> o = Source::createBlob("test", "/tmp", "testfile", 21, 42);
+    unique_ptr<Source> o = Source::createBlob("test", "/tmp", "testfile", 21, 42);
 
     // Encode to binary, decode, we lose the root
     string enc = o->encodeBinary();
-    auto_ptr<Source> decoded = downcast<Source>(types::decode((const unsigned char*)enc.data(), enc.size()));
+    unique_ptr<Source> decoded = downcast<Source>(types::decode((const unsigned char*)enc.data(), enc.size()));
     wassert(actual(decoded).is_source_blob("test", "", "testfile", 21, 42));
 
     // Encode to YAML, decode, basedir and filename have merged

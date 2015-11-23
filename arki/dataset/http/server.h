@@ -70,7 +70,7 @@ struct MetadataStreamer : public metadata::Eater
 
     MetadataStreamer(StreamHeaders& sh);
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
 

@@ -159,7 +159,7 @@ static vector< pair<double, double> > bbox(lua_State* L)
 	}
 }
 
-std::auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
+std::unique_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 {
 #ifdef HAVE_GEOS
 	// Set the area information as the 'area' global
@@ -178,21 +178,21 @@ std::auto_ptr<ARKI_GEOS_GEOMETRY> BBox::operator()(const types::Area& v) const
 		switch (points.size())
 		{
 			case 0:
-				return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
+				return unique_ptr<ARKI_GEOS_GEOMETRY>();
 			case 1:
-				return auto_ptr<ARKI_GEOS_GEOMETRY>(
+				return unique_ptr<ARKI_GEOS_GEOMETRY>(
 						gf->createPoint(Coordinate(points[0].second, points[0].first)));
 			default:
 				CoordinateArraySequence cas;
 				for (size_t i = 0; i < points.size(); ++i)
 					cas.add(Coordinate(points[i].second, points[i].first));
-				auto_ptr<LinearRing> lr(gf->createLinearRing(cas));
-				return auto_ptr<ARKI_GEOS_GEOMETRY>(
+				unique_ptr<LinearRing> lr(gf->createLinearRing(cas));
+				return unique_ptr<ARKI_GEOS_GEOMETRY>(
 						gf->createPolygon(*lr, vector<Geometry*>()));
 		}
 	}
 #else
-	return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
+	return unique_ptr<ARKI_GEOS_GEOMETRY>(0);
 #endif
 }
 

@@ -61,12 +61,12 @@ struct Value : public types::CoreType<Value>
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
 
     /// CODEC functions
-    static std::auto_ptr<Value> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Value> decodeString(const std::string& val);
-    static std::auto_ptr<Value> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Value> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Value> decodeString(const std::string& val);
+    static std::unique_ptr<Value> decodeMapping(const emitter::memory::Mapping& val);
 
     Value* clone() const override;
-    static std::auto_ptr<Value> create(const std::string& buf);
+    static std::unique_ptr<Value> create(const std::string& buf);
 
     static void lua_loadlib(lua_State* L);
 

@@ -56,7 +56,7 @@ bool TypeVector::operator==(const TypeVector& o) const
     return true;
 }
 
-void TypeVector::set(size_t pos, std::auto_ptr<types::Type> val)
+void TypeVector::set(size_t pos, std::unique_ptr<types::Type> val)
 {
     if (pos >= vals.size())
         vals.resize(pos + 1);
@@ -116,7 +116,7 @@ void TypeVector::split(size_t pos, TypeVector& dest)
     vals.resize(pos);
 }
 
-void TypeVector::push_back(std::auto_ptr<types::Type> val)
+void TypeVector::push_back(std::unique_ptr<types::Type>&& val)
 {
     vals.push_back(val.release());
 }
@@ -153,11 +153,11 @@ bool TypeVector::sorted_insert(const Type& item)
     return true;
 }
 
-bool TypeVector::sorted_insert(std::auto_ptr<types::Type>& item)
+bool TypeVector::sorted_insert(std::unique_ptr<types::Type>&& item)
 {
     vector<Type*>::iterator lb = lower_bound(vals.begin(), vals.end(), item.get(), TypeptrLt());
     if (lb == vals.end())
-        push_back(item);
+        push_back(move(item));
     else if (**lb != *item)
         vals.insert(lb, item.release());
     else

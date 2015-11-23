@@ -72,10 +72,10 @@ struct arki_data_dir_shar {
      * return the data::Writer so that we manage the writer lifetime, but also
      * the underlying implementation so we can test it.
      */
-    auto_ptr<dir::Segment> make_w(const std::string& relname)
+    unique_ptr<dir::Segment> make_w(const std::string& relname)
     {
         string absname = sys::fs::abspath(relname);
-        return auto_ptr<dir::Segment>(new dir::Segment("grib", relname, absname));
+        return unique_ptr<dir::Segment>(new dir::Segment("grib", relname, absname));
     }
 };
 
@@ -89,7 +89,7 @@ void to::test<1>()
 
     wassert(!actual(fname).fileexists());
     {
-        auto_ptr<dir::Segment> w(make_w(fname));
+        unique_ptr<dir::Segment> w(make_w(fname));
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -100,7 +100,7 @@ void to::test<1>()
             Metadata& md = mdc[0];
 
             // Make a snapshot of everything before appending
-            auto_ptr<types::Source> orig_source(md.source().clone());
+            unique_ptr<types::Source> orig_source(md.source().clone());
             size_t data_size = md.data_size();
 
             // Start the append transaction, the file is written
@@ -122,7 +122,7 @@ void to::test<1>()
             Metadata& md = mdc[1];
 
             // Make a snapshot of everything before appending
-            auto_ptr<types::Source> orig_source(md.source().clone());
+            unique_ptr<types::Source> orig_source(md.source().clone());
             size_t data_size = md.data_size();
 
             // Start the append transaction, the file is written
@@ -145,7 +145,7 @@ void to::test<1>()
             Metadata& md = mdc[2];
 
             // Make a snapshot of everything before appending
-            auto_ptr<types::Source> orig_source(md.source().clone());
+            unique_ptr<types::Source> orig_source(md.source().clone());
             size_t data_size = md.data_size();
 
             // Start the append transaction, the file is written

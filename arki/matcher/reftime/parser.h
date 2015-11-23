@@ -62,12 +62,12 @@ struct DTMatch
      * Restrict a datetime range, returning the new range endpoints in begin
      * and end.
      *
-     * A NULL auto_ptr means an open end.
+     * A NULL unique_ptr means an open end.
      *
      * Returns true if the result is a valid interval, false if this match does
      * not match the given interval at all.
      */
-    virtual bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const {}
+    virtual bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const {}
 
     static DTMatch* createLE(const int* tt);
     static DTMatch* createLT(const int* tt);

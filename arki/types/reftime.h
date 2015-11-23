@@ -69,9 +69,9 @@ struct Reftime : public StyledType<Reftime>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Reftime> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Reftime> decodeString(const std::string& val);
-    static std::auto_ptr<Reftime> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Reftime> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Reftime> decodeString(const std::string& val);
+    static std::unique_ptr<Reftime> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -84,11 +84,11 @@ struct Reftime : public StyledType<Reftime>
      * Expand a datetime range, returning the new range endpoints in begin
      * and end.
      *
-     * A NULL auto_ptr signifies the initial state of an invalid range, and
+     * A NULL unique_ptr signifies the initial state of an invalid range, and
      * both begin and end will be set to non-NULL as soon as the first
      * expand_date_range is called on them.
      */
-    virtual void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const = 0;
+    virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
 
     /**
      * Expand a datetime range, returning the new range endpoints in begin
@@ -102,9 +102,9 @@ struct Reftime : public StyledType<Reftime>
     static void init();
 
     /// If begin == end create a Position reftime, else create a Period reftime
-    static std::auto_ptr<Reftime> create(const Time& begin, const Time& end);
-    static std::auto_ptr<Reftime> createPosition(const Time& position);
-    static std::auto_ptr<Reftime> createPeriod(const Time& begin, const Time& end);
+    static std::unique_ptr<Reftime> create(const Time& begin, const Time& end);
+    static std::unique_ptr<Reftime> createPosition(const Time& position);
+    static std::unique_ptr<Reftime> createPeriod(const Time& begin, const Time& end);
 };
 
 namespace reftime {
@@ -131,11 +131,11 @@ struct Position : public Reftime
 
     Position* clone() const override;
 
-    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override;
+    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     void expand_date_range(types::Time& begin, types::Time& end) const override;
 
-    static std::auto_ptr<Position> create(const Time& position);
-    static std::auto_ptr<Position> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Position> create(const Time& position);
+    static std::unique_ptr<Position> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 struct Period : public Reftime
@@ -160,11 +160,11 @@ struct Period : public Reftime
 
     Period* clone() const override;
 
-    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override;
+    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     void expand_date_range(types::Time& begin, types::Time& end) const override;
 
-    static std::auto_ptr<Period> create(const Time& begin, const Time& end);
-    static std::auto_ptr<Period> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Period> create(const Time& begin, const Time& end);
+    static std::unique_ptr<Period> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

@@ -88,12 +88,12 @@ void Note::encodeWithoutEnvelope(Encoder& enc) const
     enc.addString(content);
 }
 
-auto_ptr<Note> Note::decode(const unsigned char* buf, size_t len)
+unique_ptr<Note> Note::decode(const unsigned char* buf, size_t len)
 {
     using namespace utils::codec;
 
     ensureSize(len, 5, "note time");
-    auto_ptr<Time> t = Time::decode(buf, 5);
+    unique_ptr<Time> t = Time::decode(buf, 5);
     Decoder dec(buf+5, len-5);
     size_t msg_len = dec.popVarint<size_t>("note text size");
     string msg = dec.popString(msg_len, "note text");
@@ -111,14 +111,14 @@ void Note::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va", content);
 }
 
-auto_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Note> Note::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Note::create(
             *Time::decodeList(val["ti"].want_list("parsing Note time")),
             val["va"].want_string("parsing Note content"));
 }
 
-auto_ptr<Note> Note::decodeString(const std::string& val)
+unique_ptr<Note> Note::decodeString(const std::string& val)
 {
     if (val.empty())
         throw wibble::exception::Consistency("parsing Note", "string is empty");
@@ -148,14 +148,14 @@ Note* Note::clone() const
     return new Note(time, content);
 }
 
-auto_ptr<Note> Note::create(const std::string& content)
+unique_ptr<Note> Note::create(const std::string& content)
 {
-    return auto_ptr<Note>(new Note(content));
+    return unique_ptr<Note>(new Note(content));
 }
 
-auto_ptr<Note> Note::create(const Time& time, const std::string& content)
+unique_ptr<Note> Note::create(const Time& time, const std::string& content)
 {
-    return auto_ptr<Note>(new Note(time, content));
+    return unique_ptr<Note>(new Note(time, content));
 }
 
 static MetadataType noteType = MetadataType::create<Note>();

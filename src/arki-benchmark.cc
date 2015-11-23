@@ -83,7 +83,7 @@ struct MetadataCounter : public metadata::Eater
 
 	MetadataCounter() : count(0), size(0) {}
 
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         ++count;
         size += md->data_size();

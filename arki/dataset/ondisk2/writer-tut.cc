@@ -102,7 +102,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         }
 
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
             expected.by_type[COUNTED_TO_PACK] = 1;
@@ -127,7 +127,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         removed_fname = fixture.test_data[0].destfile;
 
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_OK] = fixture.count_dataset_files() - 1;
             expected.by_type[COUNTED_TO_INDEX] = 1;
@@ -143,7 +143,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test packing has something to report
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             s.require_line_contains(": " + holed_fname + " should be packed");
             s.require_line_contains(": 1 file should be packed");
@@ -152,7 +152,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             s.require_line_contains(": packed " + holed_fname);
             s.require_line_contains(": 1 file packed");
@@ -175,7 +175,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test packing has something to report
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             s.require_line_contains(": " + removed_fname + " should be deleted");
             s.require_line_contains(": 1 file should be deleted");
@@ -184,7 +184,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             s.require_line_contains(": deleted " + removed_fname);
             s.require_line_contains(": 1 file deleted");
@@ -207,7 +207,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test check has something to report
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             s.require_line_contains(": " + holed_fname + " should be packed");
             s.require_line_contains(": 1 file should be packed");
@@ -216,13 +216,13 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Check refuses to potentially lose data, so it does nothing in this case
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             wassert(actual(writer.get()).check_clean(true));
         }
 
         // In the end, we are stil left with one file to pack
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             arki::tests::MaintenanceResults expected(false, 2);
             expected.by_type[COUNTED_OK] = 1;
             expected.by_type[COUNTED_TO_PACK] = 1;
@@ -243,7 +243,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         {
             // Test packing has something to report
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             s.require_line_contains(": " + removed_fname + " should be rescanned");
             s.require_line_contains(": 1 file should be rescanned");
@@ -252,7 +252,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // Perform packing and check that things are still ok afterwards
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             s.require_line_contains(": rescanned " + removed_fname);
             s.require_line_contains(": 1 file rescanned");
@@ -276,7 +276,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         // Query everything when the dataset is in a clean state
         metadata::Collection mdc_pre;
         {
-            std::auto_ptr<ReadonlyDataset> reader(makeReader());
+            std::unique_ptr<ReadonlyDataset> reader(makeReader());
             reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc_pre);
             wassert(actual(mdc_pre.size()) == 3);
         }
@@ -285,7 +285,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // All files are found as files to be indexed
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             arki::tests::MaintenanceResults expected(false, fixture.count_dataset_files());
             expected.by_type[COUNTED_TO_INDEX] = fixture.count_dataset_files();
             wassert(actual(writer.get()).maintenance(expected));
@@ -293,7 +293,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
 
         // A check rebuilds the index
         {
-            std::auto_ptr<WritableLocal> writer(makeLocalWriter());
+            std::unique_ptr<WritableLocal> writer(makeLocalWriter());
             LineChecker s;
             for (set<string>::const_iterator i = fixture.fnames.begin();
                     i != fixture.fnames.end(); ++i)
@@ -309,7 +309,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         // still there
         metadata::Collection mdc_post;
         {
-            std::auto_ptr<ReadonlyDataset> reader(makeReader());
+            std::unique_ptr<ReadonlyDataset> reader(makeReader());
             reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc_post);
             wassert(actual(mdc_post.size()) == 3);
         }
@@ -878,7 +878,7 @@ template<> template<> void to::test<14>()
     // Read everything
     metadata::Collection mdc_imported;
     {
-        auto_ptr<ReadonlyDataset> reader(makeReader());
+        unique_ptr<ReadonlyDataset> reader(makeReader());
         reader->queryData(DataQuery(), mdc_imported);
     }
 
@@ -890,7 +890,7 @@ template<> template<> void to::test<14>()
 
     // Delete every second item
     {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        unique_ptr<WritableLocal> writer(makeLocalWriter());
         for (unsigned i = 0; i < mdc_imported.size(); ++i)
             if (i % 2 == 0)
                 writer->remove(mdc_imported[i]);
@@ -898,7 +898,7 @@ template<> template<> void to::test<14>()
 
     // Ensure the archive has items to pack
     {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        unique_ptr<WritableLocal> writer(makeLocalWriter());
         arki::tests::MaintenanceResults expected(false, 2);
         expected.by_type[COUNTED_TO_PACK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
@@ -908,7 +908,7 @@ template<> template<> void to::test<14>()
 
     // Perform packing and check that things are still ok afterwards
     {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        unique_ptr<WritableLocal> writer(makeLocalWriter());
         OutputChecker s;
         writer->repack(s, true);
         s.ensure_line_contains(": packed 1987/10-31.vm2");
@@ -923,7 +923,7 @@ template<> template<> void to::test<14>()
 
     // Ensure the archive is now clean
     {
-        auto_ptr<WritableLocal> writer(makeLocalWriter());
+        unique_ptr<WritableLocal> writer(makeLocalWriter());
         arki::tests::MaintenanceResults expected(true, 2);
         expected.by_type[COUNTED_OK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
@@ -934,7 +934,7 @@ template<> template<> void to::test<14>()
     // Ensure that the data hasn't been corrupted
     metadata::Collection mdc_packed;
     {
-        auto_ptr<ReadonlyDataset> reader(makeReader());
+        unique_ptr<ReadonlyDataset> reader(makeReader());
         reader->queryData(DataQuery(), mdc_packed);
     }
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));

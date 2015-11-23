@@ -54,7 +54,7 @@ template<> template<>
 void to::test<1>()
 {
     const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
-    auto_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
+    unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
     ensure(reader->hasWorkingIndex());
 
     // Send the script error to stderr. Use dup() because PosixBuf will
@@ -79,7 +79,7 @@ void to::test<2>()
     // Empty the summary cache
     system("rm testds/.summaries/*");
 
-    auto_ptr<ondisk2::Reader> reader(new ondisk2::Reader(cfg));
+    unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(cfg));
 
 	Summary s;
 	reader->querySummary(Matcher::parse("reftime:=2007"), s);
@@ -110,7 +110,7 @@ template<> template<>
 void to::test<3>()
 {
     const test::Scenario& s = test::Scenario::get("ondisk2-testgrib1");
-    auto_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
+    unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
 
     {
         metadata::Collection mdc;

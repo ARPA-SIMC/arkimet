@@ -142,7 +142,7 @@ struct Stats : public dataset::ondisk::Visitor
 
 	size_t fsize(const std::string& pathname)
 	{
-		auto_ptr<struct stat> s = fs::stat(pathname);
+		unique_ptr<struct stat> s = fs::stat(pathname);
 		if (s.get() == 0)
 			return 0;
 		else
@@ -219,7 +219,7 @@ struct WorkerOnWritable : public Worker
 {
     virtual void process(const ConfigFile& cfg)
     {
-        auto_ptr<dataset::WritableLocal> ds;
+        unique_ptr<dataset::WritableLocal> ds;
         try {
             ds.reset(dataset::WritableLocal::create(cfg));
         } catch (std::exception& e) {
@@ -290,10 +290,10 @@ struct Counter : public metadata::Eater
 
     Counter(metadata::Eater& next) : next(next), count(0) {}
 
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         ++count;
-        return next.eat(md);
+        return next.eat(move(md));
     }
 };
 
@@ -307,7 +307,7 @@ struct ScanTest : public Worker
 
     virtual void process(const ConfigFile& cfg)
     {
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
         Counter counter(printer);
         if (dataset::Local* ld = dynamic_cast<dataset::Local*>(ds.get()))
         {
@@ -386,7 +386,7 @@ int main(int argc, const char* argv[])
 
 		set<string> dirs;
 
-		auto_ptr<Worker> worker;
+		unique_ptr<Worker> worker;
 
         size_t actionCount = 0;
         if (opts.stats->isSet()) ++actionCount;
@@ -423,13 +423,13 @@ int main(int argc, const char* argv[])
 			metadata::Collection todolist;
 			for (size_t count = 1; ; ++count)
 			{
-                auto_ptr<Metadata> md(new Metadata);
+                unique_ptr<Metadata> md(new Metadata);
                 if (!md->read(input.stream(), input.name())) break;
                 const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
                 if (!ad) throw wibble::exception::Consistency(
                         "reading information on data to remove",
                         "the metadata #" + str::fmt(count) + " is not assigned to any dataset");
-                todolist.eat(md);
+                todolist.eat(move(md));
 			}
 			// Perform removals
 			size_t count = 1;

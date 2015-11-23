@@ -43,14 +43,14 @@ using namespace arki::utils;
 namespace arki {
 namespace metadata {
 
-bool FilteredEater::eat(auto_ptr<Metadata> md)
+bool FilteredEater::eat(unique_ptr<Metadata>&& md)
 {
     if (!matcher(*md))
         return true;
-    return next.eat(md);
+    return next.eat(move(md));
 }
 
-bool FilteredObserver::observe(const Metadata& md) override
+bool FilteredObserver::observe(const Metadata& md)
 {
     if (!matcher(md))
         return true;
@@ -63,7 +63,7 @@ bool SummarisingObserver::observe(const Metadata& md)
     return true;
 }
 
-bool SummarisingEater::eat(auto_ptr<Metadata> md)
+bool SummarisingEater::eat(unique_ptr<Metadata>&& md)
 {
     s.add(*md);
     return true;
@@ -78,13 +78,13 @@ LuaConsumer::~LuaConsumer()
 	luaL_unref(L, LUA_REGISTRYINDEX, funcid);
 }
 
-bool LuaConsumer::eat(auto_ptr<Metadata> md)
+bool LuaConsumer::eat(unique_ptr<Metadata>&& md)
 {
     // Get the function
     lua_rawgeti(L, LUA_REGISTRYINDEX, funcid);
 
     // Push the metadata, handing it over to Lua's garbage collector
-    Metadata::lua_push(L, md);
+    Metadata::lua_push(L, move(md));
 
     // Call the function
     if (lua_pcall(L, 1, 1, 0))
@@ -99,7 +99,7 @@ bool LuaConsumer::eat(auto_ptr<Metadata> md)
     return res;
 }
 
-auto_ptr<LuaConsumer> LuaConsumer::lua_check(lua_State* L, int idx)
+unique_ptr<LuaConsumer> LuaConsumer::lua_check(lua_State* L, int idx)
 {
 	luaL_checktype(L, idx, LUA_TFUNCTION);
 
@@ -108,7 +108,7 @@ auto_ptr<LuaConsumer> LuaConsumer::lua_check(lua_State* L, int idx)
 	int funcid = luaL_ref(L, LUA_REGISTRYINDEX);
 
 	// Create a consumer using the function
-	return auto_ptr<LuaConsumer>(new LuaConsumer(L, funcid));
+	return unique_ptr<LuaConsumer>(new LuaConsumer(L, funcid));
 }
 
 #endif

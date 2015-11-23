@@ -114,7 +114,7 @@ size_t Outbound::vacuum()
 
 WritableDataset::AcquireResult Outbound::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-    auto_ptr<TargetFile> tf(TargetFile::create(cfg));
+    unique_ptr<TargetFile> tf(TargetFile::create(cfg));
     string dest = cfg.value("path") + "/" + (*tf)(md) + "." + md.source().format;
     out << "Assigning to dataset " << cfg.value("name") << " in file " << dest << endl;
     return ACQ_OK;

@@ -1,25 +1,3 @@
-/*
- * dispatcher - Dispatch data into dataset
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "dispatcher.h"
 #include "configfile.h"
 #include "metadata/consumer.h"
@@ -94,14 +72,14 @@ void Dispatcher::hook_found_datasets(const Metadata& md, vector<string>& found)
 {
 }
 
-void Dispatcher::hook_output(auto_ptr<Metadata> md, metadata::Eater& mdc)
+void Dispatcher::hook_output(unique_ptr<Metadata> md, metadata::Eater& mdc)
 {
 }
 
 WritableDataset::AcquireResult Dispatcher::raw_dispatch_error(Metadata& md) { return raw_dispatch_dataset("error", md); }
 WritableDataset::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md) { return raw_dispatch_dataset("duplicates", md); }
 
-Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater& mdc)
+Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata::Eater& mdc)
 {
     Dispatcher::Outcome result;
     vector<string> found;
@@ -161,7 +139,7 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
         if (i->second(*md))
         {
             // Operate on a copy
-            auto_ptr<Metadata> md1(new Metadata(*md));
+            unique_ptr<Metadata> md1(new Metadata(*md));
             // File it to the outbound dataset right away
             if (raw_dispatch_dataset(i->first, *md1) != WritableDataset::ACQ_OK)
             {
@@ -172,7 +150,7 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
                 ++m_outbound_failures;
             }
             if (m_can_continue)
-                m_can_continue = mdc.eat(md1);
+                m_can_continue = mdc.eat(move(md1));
         }
 
     // See how many proper datasets match this metadata
@@ -225,7 +203,7 @@ Dispatcher::Outcome Dispatcher::dispatch(auto_ptr<Metadata> md, metadata::Eater&
     }
 
 done:
-    hook_output(md, mdc);
+    hook_output(move(md), mdc);
     return result;
 }
 
@@ -249,10 +227,10 @@ RealDispatcher::~RealDispatcher()
 	// a reference to the version inside the DatasetPool cache
 }
 
-void RealDispatcher::hook_output(auto_ptr<Metadata> md, metadata::Eater& mdc)
+void RealDispatcher::hook_output(unique_ptr<Metadata> md, metadata::Eater& mdc)
 {
     if (m_can_continue)
-        m_can_continue = mdc.eat(md);
+        m_can_continue = mdc.eat(move(md));
 }
 
 WritableDataset::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)
@@ -328,4 +306,3 @@ void TestDispatcher::flush()
 }
 
 }
-// vim:set ts=4 sw=4:

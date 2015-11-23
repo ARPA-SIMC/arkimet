@@ -42,7 +42,7 @@ TESTGRP(arki_types_time);
 template<> template<>
 void to::test<1>()
 {
-    auto_ptr<Time> o(new Time(0, 0, 0));
+    unique_ptr<Time> o(new Time(0, 0, 0));
     wassert(actual(o).is_time(0, 0, 0, 0, 0, 0));
     wassert(actual(o) == Time(0, 0, 0));
     wassert(actual(o) == Time::create(0, 0, 0, 0, 0, 0));
@@ -67,7 +67,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    auto_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
+    unique_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
     wassert(actual(o).is_time(1, 2, 3, 4, 5, 6));
 
     wassert(actual(o) == Time::create(1, 2, 3, 4, 5, 6));
@@ -93,7 +93,7 @@ template<> template<>
 void to::test<3>()
 {
 #if 0
-    auto_ptr<Time> t = Time::createDifference(Time(2007, 6, 5, 4, 3, 2), Time(2006, 5, 4, 3, 2, 1));
+    unique_ptr<Time> t = Time::createDifference(Time(2007, 6, 5, 4, 3, 2), Time(2006, 5, 4, 3, 2, 1));
     wasssert(actual(t) == Time::create(1, 1, 1, 1, 1, 1));
 
     t = Time::createDifference(Time(2007, 3, 1, 0, 0, 0), Time(2007, 2, 28, 0, 0, 0));
@@ -127,7 +127,7 @@ template<> template<>
 void to::test<5>()
 {
 #ifdef HAVE_LUA
-    auto_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
+    unique_ptr<Time> o = Time::create(1, 2, 3, 4, 5, 6);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -166,11 +166,11 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-    auto_ptr<Time> topen;
-    auto_ptr<Time> t2000(new Time(2000, 1, 1, 0, 0, 0));
-    auto_ptr<Time> t2005(new Time(2005, 1, 1, 0, 0, 0));
-    auto_ptr<Time> t2007(new Time(2007, 1, 1, 0, 0, 0));
-    auto_ptr<Time> t2010(new Time(2010, 1, 1, 0, 0, 0));
+    unique_ptr<Time> topen;
+    unique_ptr<Time> t2000(new Time(2000, 1, 1, 0, 0, 0));
+    unique_ptr<Time> t2005(new Time(2005, 1, 1, 0, 0, 0));
+    unique_ptr<Time> t2007(new Time(2007, 1, 1, 0, 0, 0));
+    unique_ptr<Time> t2010(new Time(2010, 1, 1, 0, 0, 0));
 
     wassert(actual(Time::range_overlaps(topen.get(), topen.get(), topen.get(), topen.get())).istrue());
     wassert(actual(Time::range_overlaps(topen.get(), topen.get(), t2005.get(), t2010.get())).istrue());
@@ -190,7 +190,7 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-    auto_ptr<Type> decoded = decodeString(TYPE_TIME, "2005-12-01T18:00:00Z");
+    unique_ptr<Type> decoded = decodeString(TYPE_TIME, "2005-12-01T18:00:00Z");
     wassert(actual(wibble::str::fmt(*decoded)) == "2005-12-01T18:00:00Z");
 }
 

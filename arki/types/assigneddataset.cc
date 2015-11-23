@@ -77,11 +77,11 @@ void AssignedDataset::encodeWithoutEnvelope(Encoder& enc) const
 
 //////////////////////////////////////
 
-auto_ptr<AssignedDataset> AssignedDataset::decode(const unsigned char* buf, size_t len)
+unique_ptr<AssignedDataset> AssignedDataset::decode(const unsigned char* buf, size_t len)
 {
     using namespace utils::codec;
     ensureSize(len, 8, "AssignedDataset");
-    auto_ptr<Time> changed = Time::decode(buf, 5);
+    unique_ptr<Time> changed = Time::decode(buf, 5);
     Decoder dec(buf + 5, len - 5);
     size_t name_len = dec.popUInt(1, "length of dataset name");
     string name = dec.popString(name_len, "dataset name");
@@ -102,7 +102,7 @@ void AssignedDataset::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("id", id);
 }
 
-auto_ptr<AssignedDataset> AssignedDataset::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<AssignedDataset> AssignedDataset::decodeMapping(const emitter::memory::Mapping& val)
 {
     return AssignedDataset::create(
             *Time::decodeList(val["ti"].want_list("parsing AssignedDataset time")),
@@ -111,7 +111,7 @@ auto_ptr<AssignedDataset> AssignedDataset::decodeMapping(const emitter::memory::
 }
 
 
-auto_ptr<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
+unique_ptr<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
 {
 	size_t pos = val.find(" as ");
 	if (pos == string::npos)
@@ -125,7 +125,7 @@ auto_ptr<AssignedDataset> AssignedDataset::decodeString(const std::string& val)
 			"string \"" + val + "\" does not contain \" imported on \" after the dataset name");
 	string id = val.substr(pos, idpos - pos);
 	pos = idpos + 13;
-    auto_ptr<Time> changed = Time::decodeString(val.substr(pos));
+    unique_ptr<Time> changed = Time::decodeString(val.substr(pos));
 
     return AssignedDataset::create(*changed, name, id);
 }
@@ -150,14 +150,14 @@ AssignedDataset* AssignedDataset::clone() const
     return new AssignedDataset(changed, name, id);
 }
 
-auto_ptr<AssignedDataset> AssignedDataset::create(const std::string& name, const std::string& id)
+unique_ptr<AssignedDataset> AssignedDataset::create(const std::string& name, const std::string& id)
 {
-    return auto_ptr<AssignedDataset>(new AssignedDataset(Time::createNow(), name, id));
+    return unique_ptr<AssignedDataset>(new AssignedDataset(Time::createNow(), name, id));
 }
 
-auto_ptr<AssignedDataset> AssignedDataset::create(const Time& changed, const std::string& name, const std::string& id)
+unique_ptr<AssignedDataset> AssignedDataset::create(const Time& changed, const std::string& name, const std::string& id)
 {
-    return auto_ptr<AssignedDataset>(new AssignedDataset(changed, name, id));
+    return unique_ptr<AssignedDataset>(new AssignedDataset(changed, name, id));
 }
 
 static MetadataType assigneddatasetType = MetadataType::create<AssignedDataset>();

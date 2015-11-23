@@ -97,7 +97,7 @@ void Quantity::encodeWithoutEnvelope(Encoder& enc) const
     }
 }
 
-auto_ptr<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
+unique_ptr<Quantity> Quantity::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 
@@ -132,7 +132,7 @@ void Quantity::serialiseLocal(Emitter& e, const Formatter* f) const
     e.end_list();
 }
 
-auto_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const List& l = val["va"].want_list("parsing Quantity values");
@@ -143,7 +143,7 @@ auto_ptr<Quantity> Quantity::decodeMapping(const emitter::memory::Mapping& val)
     return Quantity::create(vals);
 }
 
-auto_ptr<Quantity> Quantity::decodeString(const std::string& val)
+unique_ptr<Quantity> Quantity::decodeString(const std::string& val)
 {
 	if (val.empty())
 		throw wibble::exception::Consistency("parsing Quantity", "string is empty");
@@ -206,16 +206,16 @@ Quantity* Quantity::clone() const
     return new Quantity(values);
 }
 
-auto_ptr<Quantity> Quantity::create(const std::string& values)
+unique_ptr<Quantity> Quantity::create(const std::string& values)
 {
     std::set<std::string> vals;
     split(values, vals);
     return Quantity::create(vals);
 }
 
-auto_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
+unique_ptr<Quantity> Quantity::create(const std::set<std::string>& values)
 {
-    return auto_ptr<Quantity>(new Quantity(values));
+    return unique_ptr<Quantity>(new Quantity(values));
 }
 
 

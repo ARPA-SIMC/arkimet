@@ -54,10 +54,10 @@ TESTGRP(arki_sort);
 namespace {
 void produce(int hour, int minute, int run, metadata::Eater& c)
 {
-    auto_ptr<Metadata> md(new Metadata);
+    unique_ptr<Metadata> md(new Metadata);
     md->set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
     md->set(Run::createMinute(run));
-    c.eat(md);
+    c.eat(move(md));
 }
 
 vector<int> mdvals(const Metadata& md)

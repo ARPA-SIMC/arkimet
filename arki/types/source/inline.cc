@@ -54,7 +54,7 @@ void Inline::serialiseLocal(Emitter& e, const Formatter* f) const
     Source::serialiseLocal(e, f);
     e.add("sz", size);
 }
-std::auto_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Inline> Inline::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Inline::create(
             val["f"].want_string("parsing inline source format"),
@@ -98,12 +98,12 @@ Inline* Inline::clone() const
     return new Inline(*this);
 }
 
-std::auto_ptr<Inline> Inline::create(const std::string& format, uint64_t size)
+std::unique_ptr<Inline> Inline::create(const std::string& format, uint64_t size)
 {
     Inline* res = new Inline;
     res->format = format;
     res->size = size;
-    return auto_ptr<Inline>(res);
+    return unique_ptr<Inline>(res);
 }
 
 }

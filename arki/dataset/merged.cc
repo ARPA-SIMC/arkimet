@@ -60,7 +60,7 @@ public:
             delete buffer[i];
     }
 
-    void push(auto_ptr<Metadata> val)
+    void push(unique_ptr<Metadata> val)
     {
         sys::MutexLock lock(mutex);
         while ((head + 1) % size == tail)
@@ -70,14 +70,14 @@ public:
         cond.broadcast();
     }
 
-    auto_ptr<Metadata> pop()
+    unique_ptr<Metadata> pop()
     {
         sys::MutexLock lock(mutex);
         if (head == tail)
             throw wibble::exception::Consistency("removing an element from a SyncBuffer", "the buffer is empty");
         // Reset the item (this will take care, for example, to dereference
         // refcounted values in the same thread that took them over)
-        auto_ptr<Metadata> res(buffer[tail]);
+        unique_ptr<Metadata> res(buffer[tail]);
         buffer[tail] = 0;
         tail = (tail + 1) % size;
         cond.broadcast();
@@ -123,9 +123,9 @@ protected:
 
         Consumer(SyncBuffer& buf) : buf(buf) {}
 
-        bool eat(std::auto_ptr<Metadata> md) override
+        bool eat(std::unique_ptr<Metadata>&& md) override
         {
-            buf.push(md);
+            buf.push(move(md));
             return true;
         }
 	};

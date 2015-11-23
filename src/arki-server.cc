@@ -163,18 +163,18 @@ struct Request : public net::http::Request
         return *cfg;
     }
 
-    auto_ptr<ReadonlyDataset> get_dataset(const std::string& dsname)
+    unique_ptr<ReadonlyDataset> get_dataset(const std::string& dsname)
     {
         return get_dataset(get_config(dsname));
     }
 
-    auto_ptr<ReadonlyDataset> get_dataset(const ConfigFile& cfg)
+    unique_ptr<ReadonlyDataset> get_dataset(const ConfigFile& cfg)
     {
         ConfigFile localcfg(cfg);
         string url(server_name);
         url += script_name;
         localcfg.setValue("url", url);
-        return auto_ptr<ReadonlyDataset>(ReadonlyDataset::create(localcfg));
+        return unique_ptr<ReadonlyDataset>(ReadonlyDataset::create(localcfg));
     }
 
     void log_action(const std::string& action)
@@ -206,11 +206,11 @@ struct HandlerMap : public LocalHandler
 
     void add(const std::string& name, LocalHandler* handler)
     {
-        add(name, auto_ptr<LocalHandler>(handler));
+        add(name, unique_ptr<LocalHandler>(handler));
     }
 
     // Add a local handler for the given script name
-    void add(const std::string& name, std::auto_ptr<LocalHandler> handler)
+    void add(const std::string& name, std::unique_ptr<LocalHandler> handler)
     {
         std::map<string, LocalHandler*>::iterator i = handlers.find(name);
         if (i == handlers.end())
@@ -395,7 +395,7 @@ struct RootQueryHandler : public LocalHandler
         string macroname = str::trim(*qmacro);
         if (macroname.empty())
             throw error400("root-level query without qmacro parameter");
-        auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+        unique_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
                 req.arki_conf, macroname, *params.query, req.server_name);
 
         // params.query contains the qmacro query body; we need to clear the
@@ -423,7 +423,7 @@ struct RootSummaryHandler : public LocalHandler
 
         string macroname = str::trim(*qmacro);
 
-        auto_ptr<ReadonlyDataset> ds;
+        unique_ptr<ReadonlyDataset> ds;
         if (macroname.empty())
             // Create a merge dataset with all we have
             ds.reset(new dataset::AutoMerged(req.arki_conf));
@@ -539,7 +539,7 @@ struct DatasetHandler : public LocalHandler
         if (action.empty())
             action = "index";
 
-        auto_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
+        unique_ptr<ReadonlyDataset> ds = req.get_dataset(dsname);
 
         if (action == "index")
             do_index(*ds, dsname, req);
@@ -694,7 +694,7 @@ struct InboundHandler : public LocalHandler
             ConfigFile cfg;
             dataset::File::readConfig(str::joinpath(dir, *file), cfg);
             const ConfigFile *info = cfg.sectionBegin()->second;
-            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+            unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
             stringstream res;
             res << "<html><body>" << endl;
@@ -709,7 +709,7 @@ struct InboundHandler : public LocalHandler
                 Printer(ostream& str) : str(str), f(Formatter::create()) { }
                 ~Printer() { delete f; }
 
-                bool eat(auto_ptr<Metadata> md) override
+                bool eat(unique_ptr<Metadata>&& md) override
                 {
                     md->writeYaml(str, f);
                     str << endl;
@@ -744,7 +744,7 @@ struct InboundHandler : public LocalHandler
             ConfigFile cfg;
             dataset::File::readConfig(str::joinpath(dir, *file), cfg);
             const ConfigFile *info = cfg.sectionBegin()->second;
-            auto_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
+            unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
             stringstream res;
 
@@ -758,13 +758,13 @@ struct InboundHandler : public LocalHandler
                     : td(cfg, str), str(str), f(Formatter::create()) { }
                 ~Simulator() { delete f; }
 
-                bool eat(auto_ptr<Metadata> md) override
+                bool eat(unique_ptr<Metadata>&& md) override
                 {
                     str << "<dt><pre>" << endl;
                     md->writeYaml(str, f);
                     str << "</pre></dt><dd><pre>" << endl;
                     metadata::Collection mdc;
-                    Dispatcher::Outcome res = td.dispatch(md, mdc);
+                    Dispatcher::Outcome res = td.dispatch(move(md), mdc);
                     str << "</pre>" << endl;
                     switch (res)
                     {
@@ -972,7 +972,7 @@ struct HTTP : public net::TCPServer
         req.server_name = server_name;
         req.server_port = port;
 
-        auto_ptr<ChildServer> handler(new ChildServer(log, req));
+        unique_ptr<ChildServer> handler(new ChildServer(log, req));
         pid_t pid = handler->fork();
         children[pid] = handler.release();
     }

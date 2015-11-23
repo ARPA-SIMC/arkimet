@@ -45,9 +45,9 @@ void to::test<1>()
     wassert(actual(v.begin() == v.end()).istrue());
 
     // Add a null and a valid entry
-    auto_ptr<Type> type(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
+    unique_ptr<Type> type(decodeString(TYPE_REFTIME, "2015-01-05T12:00:00Z"));
     const Type* sample = type.get();
-    wassert(actual(v.insert(type) == sample).istrue());
+    wassert(actual(v.insert(move(type)) == sample).istrue());
     wassert(actual(type.get()).isfalse());
     wassert(actual(v.empty()).isfalse());
     wassert(actual(v.size()) == 1);

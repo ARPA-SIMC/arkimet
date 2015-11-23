@@ -51,7 +51,7 @@ public:
      * @return the Geometry object with the bounding box, or 0 if the
      * computation is unsupported for this area.
      */
-    virtual std::auto_ptr<ARKI_GEOS_GEOMETRY> operator()(const types::Area& v) const;
+    virtual std::unique_ptr<ARKI_GEOS_GEOMETRY> operator()(const types::Area& v) const;
 };
 
 }

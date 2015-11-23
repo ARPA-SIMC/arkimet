@@ -61,15 +61,15 @@ struct Run : public types::StyledType<Run>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Run> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Run> decodeString(const std::string& val);
-    static std::auto_ptr<Run> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Run> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Run> decodeString(const std::string& val);
+    static std::unique_ptr<Run> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
     // Register this type tree with the type system
     static void init();
-    static std::auto_ptr<Run> createMinute(unsigned int hour, unsigned int minute=0);
+    static std::unique_ptr<Run> createMinute(unsigned int hour, unsigned int minute=0);
 };
 
 namespace run {
@@ -94,8 +94,8 @@ public:
     bool equals(const Type& o) const override;
 
     Minute* clone() const override;
-    static std::auto_ptr<Minute> create(unsigned int hour, unsigned int minute=0);
-    static std::auto_ptr<Minute> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Minute> create(unsigned int hour, unsigned int minute=0);
+    static std::unique_ptr<Minute> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

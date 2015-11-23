@@ -220,7 +220,7 @@ template<> template<>
 void to::test<2>()
 {
 	acquireSamples();
-	auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 	metadata::Collection mdc;
 
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
@@ -243,7 +243,7 @@ template<> template<>
 void to::test<3>()
 {
     acquireSamples();
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
     metadata::Collection mdc;
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
     ensure_equals(mdc.size(), 0u);
@@ -265,7 +265,7 @@ template<> template<>
 void to::test<4>()
 {
     acquireSamples();
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test98")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test98")));
     metadata::Collection mdc;
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
     ensure_equals(mdc.size(), 0u);
@@ -290,7 +290,7 @@ void to::test<5>()
 
 	metadata::Collection mdc;
 	{
-		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
 
         // Fetch an element
         testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
@@ -298,10 +298,10 @@ void to::test<5>()
     }
 
     // Take note of the original source
-    auto_ptr<source::Blob> blob1(mdc[0].sourceBlob().clone());
+    unique_ptr<source::Blob> blob1(mdc[0].sourceBlob().clone());
 
 	{
-		auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test80")));
+		unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test80")));
 		// Replace it
 		if (testds->acquire(mdc[0], WritableDataset::REPLACE_ALWAYS) != WritableDataset::ACQ_OK)
 		{
@@ -314,7 +314,7 @@ void to::test<5>()
 	}
 
     {
-        auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+        unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
 
         // Fetch the element again
         mdc.clear();
@@ -323,7 +323,7 @@ void to::test<5>()
     }
 
     // Take note of the original source
-    auto_ptr<source::Blob> blob2(mdc[0].sourceBlob().clone());
+    unique_ptr<source::Blob> blob2(mdc[0].sourceBlob().clone());
 
 	// Ensure that it's on the same file (since the reftime did not change)
 	ensure_equals(blob1->filename, blob2->filename);
@@ -342,7 +342,7 @@ void to::test<6>()
 	acquireSamples();
 	metadata::Collection mdc;
 	{
-		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
         // Fetch an element
         testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
@@ -356,7 +356,7 @@ void to::test<6>()
     wassert(actual(mdc[0].has_source_blob()).istrue());
 
 	{
-		auto_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test200")));
+		unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test200")));
 		ensure(!sys::fs::exists("test200/2007/07-08.grib1.needs-pack"));
 		// Remove it
 		testds->remove(mdc[0]);
@@ -371,7 +371,7 @@ void to::test<6>()
 
     // Try to fetch the element again
     {
-        auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+        unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
         mdc.clear();
         testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
         ensure_equals(mdc.size(), 0u);
@@ -380,7 +380,7 @@ void to::test<6>()
 #if 0
 	// Try to fetch all other elements
 	{
-		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 		mdc.clear();
 		testds->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
 		ensure_equals(mdc.size(), 2u);
@@ -390,7 +390,7 @@ void to::test<6>()
 
 	// Try to fetch the element again
 	{
-		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 		mdc.clear();
 		testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
 		ensure_equals(mdc.size(), 0u);
@@ -398,7 +398,7 @@ void to::test<6>()
 
 	// Try to fetch all other elements
 	{
-		auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 		mdc.clear();
 		testds->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
 		ensure_equals(mdc.size(), 2u);
@@ -559,9 +559,9 @@ void to::test<11>()
 	reader.querySummary(Matcher(), summary);
 	ensure_equals(summary.count(), 3u);
 
-    auto_ptr<Reftime> rt = summary.getReferenceTime();
+    unique_ptr<Reftime> rt = summary.getReferenceTime();
     ensure_equals(rt->style(), Reftime::PERIOD);
-    auto_ptr<reftime::Period> p = downcast<reftime::Period>(rt);
+    unique_ptr<reftime::Period> p = downcast<reftime::Period>(move(rt));
     metadata::Collection mdc;
     reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.toISO8601())), mdc);
     ensure_equals(mdc.size(), 1u);
@@ -592,7 +592,7 @@ struct ReadHang : public sys::ChildProcess, public metadata::Eater
 
 	ReadHang(const ConfigFile& cfg) : cfg(cfg) {}
 
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
 	{
 		// Notify start of reading
 		cout << "H" << endl;
@@ -780,7 +780,7 @@ void to::test<15>()
     // Try to query the element and see if it is the right one
     {
         metadata::Collection mdc_read;
-        auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("testbufr")));
+        unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("testbufr")));
         testds->queryData(dataset::DataQuery(Matcher::parse("origin:BUFR")), mdc_read);
         ensure_equals(mdc_read.size(), 1u);
         int usn;
@@ -802,7 +802,7 @@ void to::test<16>()
         "mockdata = true\n"
         "name = testholes\n"
         "path = testholes\n";
-    auto_ptr<dataset::WritableLocal> writer(make_dataset_writer(conf));
+    unique_ptr<dataset::WritableLocal> writer(make_dataset_writer(conf));
 
     // Import 24*30*10Mb=7.2Gb of data
     for (unsigned day = 1; day <= 30; ++day)
@@ -818,7 +818,7 @@ void to::test<16>()
     wassert(actual(writer.get()).check_clean());
 
     // Query it, without data
-    std::auto_ptr<ReadonlyDataset> reader(make_dataset_reader(conf));
+    std::unique_ptr<ReadonlyDataset> reader(make_dataset_reader(conf));
     metadata::Collection mdc;
     reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
     wassert(actual(mdc.size()) == 720);

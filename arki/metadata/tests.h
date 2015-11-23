@@ -33,16 +33,16 @@ struct ActualMetadata : public wibble::tests::Actual<Metadata>
     ActualMetadata(const Metadata& s) : Actual<Metadata>(s) {}
 
     /// Check that a metadata field has the expected value
-    std::auto_ptr<ArkiCheck> contains(const std::string& field, const std::string& expected);
+    std::unique_ptr<ArkiCheck> contains(const std::string& field, const std::string& expected);
 
     /// Check that the two metadata are the same, except for source and notes
-    std::auto_ptr<ArkiCheck> is_similar(const Metadata& expected);
+    std::unique_ptr<ArkiCheck> is_similar(const Metadata& expected);
 
     /// Check that the metadata does contain an item of the given type
-    std::auto_ptr<ArkiCheck> is_set(const std::string& field);
+    std::unique_ptr<ArkiCheck> is_set(const std::string& field);
 
     /// Check that the metadata does contain an item of the given type
-    std::auto_ptr<ArkiCheck> is_not_set(const std::string& field);
+    std::unique_ptr<ArkiCheck> is_not_set(const std::string& field);
 };
 
 }

@@ -37,7 +37,7 @@ namespace metadata {
 
 struct Printer : public Eater, public Observer
 {
-    virtual bool eat_summary(std::auto_ptr<Summary> s) = 0;
+    virtual bool eat_summary(std::unique_ptr<Summary> s) = 0;
     virtual bool observe_summary(const Summary& s) = 0;
 
     virtual std::string describe() const = 0;
@@ -53,9 +53,9 @@ struct BinaryPrinter : public Printer
 
     std::string describe() const override { return "binary"; }
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
     bool observe(const Metadata& md) override;
-    bool eat_summary(std::auto_ptr<Summary> s) override;
+    bool eat_summary(std::unique_ptr<Summary> s) override;
     bool observe_summary(const Summary& s) override;
 };
 
@@ -69,9 +69,9 @@ struct YamlPrinter : public Printer
 
     std::string describe() const override { return "yaml"; }
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
     bool observe(const Metadata& md) override;
-    bool eat_summary(std::auto_ptr<Summary> s) override;
+    bool eat_summary(std::unique_ptr<Summary> s) override;
     bool observe_summary(const Summary& s) override;
 };
 
@@ -85,9 +85,9 @@ struct JSONPrinter : public Printer
 
     std::string describe() const override { return "json"; }
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
     bool observe(const Metadata& md) override;
-    bool eat_summary(std::auto_ptr<Summary> s) override;
+    bool eat_summary(std::unique_ptr<Summary> s) override;
     bool observe_summary(const Summary& s) override;
 };
 

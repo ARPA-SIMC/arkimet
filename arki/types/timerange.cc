@@ -25,6 +25,7 @@
 #include <wibble/grcal/grcal.h>
 #include <arki/types/timerange.h>
 #include <arki/types/utils.h>
+#include <arki/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -181,7 +182,7 @@ std::string Timerange::formatStyle(Timerange::Style s)
 	}
 }
 
-auto_ptr<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
+unique_ptr<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
@@ -229,7 +230,7 @@ auto_ptr<Timerange> Timerange::decode(const unsigned char* buf, size_t len)
 	}
 }
 
-auto_ptr<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Timerange> Timerange::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -282,7 +283,7 @@ static void skipSuffix(const char*& start)
 		++start;
 }
 
-auto_ptr<Timerange> Timerange::decodeString(const std::string& val)
+unique_ptr<Timerange> Timerange::decodeString(const std::string& val)
 {
 	string inner;
 	Timerange::Style style = outerParse<Timerange>(val, inner);
@@ -462,7 +463,7 @@ auto_ptr<Timerange> Timerange::decodeString(const std::string& val)
 	}
 }
 
-auto_ptr<timerange::Timedef> Timerange::to_timedef() const
+unique_ptr<timerange::Timedef> Timerange::to_timedef() const
 {
     using namespace timerange;
 
@@ -620,24 +621,24 @@ void Timerange::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_timerange", lib);
 }
 
-auto_ptr<Timerange> Timerange::createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
+unique_ptr<Timerange> Timerange::createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
 {
     return upcast<Timerange>(timerange::GRIB1::create(type, unit, p1, p2));
 }
-auto_ptr<Timerange> Timerange::createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2)
+unique_ptr<Timerange> Timerange::createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2)
 {
     return upcast<Timerange>(timerange::GRIB2::create(type, unit, p1, p2));
 }
-auto_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit)
+unique_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit)
 {
     return upcast<Timerange>(timerange::Timedef::create(step_len, step_unit));
 }
-auto_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
+unique_ptr<Timerange> Timerange::createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
                                              uint8_t stat_type, uint32_t stat_len, timerange::TimedefUnit stat_unit)
 {
     return upcast<Timerange>(timerange::Timedef::create(step_len, step_unit, stat_type, stat_len, stat_unit));
 }
-auto_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char unit)
+unique_ptr<Timerange> Timerange::createBUFR(unsigned value, unsigned char unit)
 {
     return upcast<Timerange>(timerange::BUFR::create(value, unit));
 }
@@ -724,7 +725,7 @@ void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("p1", (int)m_p1);
     e.add("p2", (int)m_p2);
 }
-auto_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return GRIB1::create(
@@ -1076,14 +1077,14 @@ GRIB1* GRIB1::clone() const
     return res;
 }
 
-auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
+unique_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2)
 {
     GRIB1* res = new GRIB1;
     res->m_type = type;
     res->m_unit = unit;
     res->m_p1 = p1;
     res->m_p2 = p2;
-    return auto_ptr<GRIB1>(res);
+    return unique_ptr<GRIB1>(res);
 }
 
 bool GRIB1::get_timeunit_conversion(int& timemul) const
@@ -1263,7 +1264,7 @@ void GRIB2::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("p1", (int)m_p1);
     e.add("p2", (int)m_p2);
 }
-auto_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return GRIB2::create(
@@ -1350,14 +1351,14 @@ GRIB2* GRIB2::clone() const
     return res;
 }
 
-auto_ptr<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed long p1, signed long p2)
+unique_ptr<GRIB2> GRIB2::create(unsigned char type, unsigned char unit, signed long p1, signed long p2)
 {
     GRIB2* res = new GRIB2;
     res->m_type = type;
     res->m_unit = unit;
     res->m_p1 = p1;
     res->m_p2 = p2;
-    return auto_ptr<GRIB2>(res);
+    return unique_ptr<GRIB2>(res);
 }
 
 Timerange::Style Timedef::style() const { return Timerange::TIMEDEF; }
@@ -1402,7 +1403,7 @@ std::ostream& Timedef::writeToOstream(std::ostream& o) const
     return o;
 }
 
-auto_ptr<Timedef> Timedef::createFromYaml(const std::string& encoded)
+unique_ptr<Timedef> Timedef::createFromYaml(const std::string& encoded)
 {
     const char* str = encoded.c_str();
 
@@ -1443,7 +1444,7 @@ void Timedef::serialiseLocal(Emitter& e, const Formatter* f) const
         }
     }
 }
-auto_ptr<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Timedef> Timedef::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -1590,7 +1591,7 @@ bool Timedef::equals(const Type& o) const
     return true;
 }
 
-auto_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reftime::Position& src) const
+unique_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reftime::Position& src) const
 {
     // Compute our forecast step in seconds
     int secs;
@@ -1607,7 +1608,7 @@ auto_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reftim
     grcal::date::normalise(vals);
 
     // Return it
-    return auto_ptr<reftime::Position>(new reftime::Position(Time(vals)));
+    return unique_ptr<reftime::Position>(new reftime::Position(Time(vals)));
 }
 
 bool Timedef::get_forecast_step(int& step, bool& is_seconds) const
@@ -1648,7 +1649,7 @@ Timedef* Timedef::clone() const
     return res;
 }
 
-auto_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit)
+unique_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit)
 {
     Timedef* res = new Timedef;
     res->m_step_len = step_len;
@@ -1656,10 +1657,10 @@ auto_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit)
     res->m_stat_type = 255;
     res->m_stat_len = 0;
     res->m_stat_unit = UNIT_MISSING;
-    return auto_ptr<Timedef>(res);
+    return unique_ptr<Timedef>(res);
 }
 
-auto_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit,
+unique_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit,
                           uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit)
 {
     Timedef* res = new Timedef;
@@ -1668,7 +1669,7 @@ auto_ptr<Timedef> Timedef::create(uint32_t step_len, TimedefUnit step_unit,
     res->m_stat_type = stat_type;
     res->m_stat_len = stat_len;
     res->m_stat_unit = stat_unit == UNIT_MISSING ? UNIT_MISSING : stat_len == 0 ? UNIT_SECOND : stat_unit;
-    return auto_ptr<Timedef>(res);
+    return unique_ptr<Timedef>(res);
 }
 
 bool Timedef::timeunit_conversion(TimedefUnit unit, int& timemul)
@@ -1911,7 +1912,7 @@ void BUFR::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("un", (int)m_unit);
     e.add("va", (int)m_value);
 }
-auto_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return BUFR::create(
@@ -2004,12 +2005,12 @@ BUFR* BUFR::clone() const
     res->m_unit = m_unit;
     return res;
 }
-auto_ptr<BUFR> BUFR::create(unsigned value, unsigned char unit)
+unique_ptr<BUFR> BUFR::create(unsigned value, unsigned char unit)
 {
     BUFR* res = new BUFR;
     res->m_value = value;
     res->m_unit = unit;
-    return auto_ptr<BUFR>(res);
+    return unique_ptr<BUFR>(res);
 }
 
 }

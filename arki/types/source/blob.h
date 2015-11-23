@@ -78,16 +78,16 @@ struct Blob : public Source
      *
      * basedir is updated so that we can still reach the data file.
      */
-    std::auto_ptr<Blob> fileOnly() const;
+    std::unique_ptr<Blob> fileOnly() const;
 
     /**
      * Return a new source identical to this one, but with an absolute file
      * name and no basedir.
      */
-    std::auto_ptr<Blob> makeAbsolute() const;
+    std::unique_ptr<Blob> makeAbsolute() const;
 
-    static std::auto_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
-    static std::auto_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Blob> create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Blob> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

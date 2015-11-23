@@ -49,7 +49,7 @@ void to::test<1>()
     t.exact_query = "=2015-01-02T03:04:05Z";
     wassert(t);
 
-    auto_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
+    unique_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
     wassert(actual(o).is_reftime_position(Time(2007, 6, 5, 4, 3, 2)));
 
     wassert(actual(o) == Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2)));
@@ -72,7 +72,7 @@ void to::test<2>()
 //    t.exact_query = "=2007-06-05T04:03:02Z";
     wassert(t);
 
-    auto_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
+    unique_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
     wassert(actual(o).is_reftime_period(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
 
     wassert(actual(o) == Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));
@@ -86,8 +86,8 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    auto_ptr<Time> begin;
-    auto_ptr<Time> end;
+    unique_ptr<Time> begin;
+    unique_ptr<Time> end;
     Time t1(2007, 6, 5, 4, 3, 2);
     Time t2(2008, 7, 6, 5, 4, 3);
     Time t3(2007, 7, 6, 5, 4, 3);
@@ -116,7 +116,7 @@ template<> template<>
 void to::test<4>()
 {
 #ifdef HAVE_LUA
-    auto_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
+    unique_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -143,7 +143,7 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-    auto_ptr<Type> decoded = decodeString(TYPE_REFTIME, "2005-12-01T18:00:00Z");
+    unique_ptr<Type> decoded = decodeString(TYPE_REFTIME, "2005-12-01T18:00:00Z");
     wassert(actual(wibble::str::fmt(*decoded)) == "2005-12-01T18:00:00Z");
 }
 

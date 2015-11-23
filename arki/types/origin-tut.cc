@@ -46,7 +46,7 @@ void to::test<1>()
     t.exact_query = "GRIB1,1,2,3";
     wassert(t);
 
-    auto_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
+    unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Origin::GRIB1);
     const origin::GRIB1* v = dynamic_cast<origin::GRIB1*>(o.get());
     wassert(actual(v->centre()) == 1u);
@@ -67,7 +67,7 @@ void to::test<2>()
     t.exact_query = "GRIB2,1,2,3,4,5";
     wassert(t);
 
-    auto_ptr<Origin> o = Origin::createGRIB2(1, 2, 3, 4, 5);
+    unique_ptr<Origin> o = Origin::createGRIB2(1, 2, 3, 4, 5);
     wassert(actual(o->style()) == Origin::GRIB2);
     const origin::GRIB2* v = dynamic_cast<origin::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
@@ -91,7 +91,7 @@ void to::test<3>()
     t.exact_query = "BUFR,1,2";
     wassert(t);
 
-    auto_ptr<Origin> o = Origin::createBUFR(1, 2);
+    unique_ptr<Origin> o = Origin::createBUFR(1, 2);
     wassert(actual(o->style()) == Origin::BUFR);
     const origin::BUFR* v = dynamic_cast<origin::BUFR*>(o.get());
     wassert(actual(v->centre()) == 1u);
@@ -103,7 +103,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    auto_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
+    unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
 
 	tests::Lua test(
 		"function test(o) \n"
@@ -137,7 +137,7 @@ void to::test<5>()
     t.exact_query = "ODIMH5,1,2,3";
     wassert(t);
 
-    auto_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
+    unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
     wassert(actual(o->style()) == Origin::ODIMH5);
     const origin::ODIMH5* v = dynamic_cast<origin::ODIMH5*>(o.get());
     wassert(actual(v->getWMO()) == "1");
@@ -160,7 +160,7 @@ void to::test<6>()
     t.exact_query = "ODIMH5,,2,3";
     wassert(t);
 
-    auto_ptr<Origin> o = Origin::createODIMH5("", "2", "3");
+    unique_ptr<Origin> o = Origin::createODIMH5("", "2", "3");
     wassert(actual(o->style()) == Origin::ODIMH5);
     const origin::ODIMH5* v = dynamic_cast<origin::ODIMH5*>(o.get());
     wassert(actual(v->getWMO()) == "");

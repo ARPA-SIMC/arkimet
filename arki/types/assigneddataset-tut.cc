@@ -52,7 +52,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    auto_ptr<AssignedDataset> o = AssignedDataset::create(Time(2007, 6, 5, 4, 3, 2), "testname", "testid");
+    unique_ptr<AssignedDataset> o = AssignedDataset::create(Time(2007, 6, 5, 4, 3, 2), "testname", "testid");
 
 	tests::Lua test(
 		"function test(o) \n"

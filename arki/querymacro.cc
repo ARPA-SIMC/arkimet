@@ -73,8 +73,8 @@ static int arkilua_metadataconsumer(lua_State *L)
 	metadata::Eater* cons = (metadata::Eater*)lua_touserdata(L, considx);
 
     // FIXME: make a copy here, until we review memory ownership for this case
-    auto_ptr<Metadata> copy(new Metadata(*md));
-    lua_pushboolean(L, cons->eat(copy));
+    unique_ptr<Metadata> copy(new Metadata(*md));
+    lua_pushboolean(L, cons->eat(move(copy)));
     return 1;
 }
 
@@ -188,7 +188,7 @@ void Querymacro::queryData(const dataset::DataQuery& q, metadata::Eater& consume
 	q.lua_push_table(*L, -1);
 
 	// Push consumer C closure
-    auto_ptr<sort::Stream> sorter;
+    unique_ptr<sort::Stream> sorter;
     if (q.sorter)
     {
         sorter.reset(new sort::Stream(*q.sorter, *c));

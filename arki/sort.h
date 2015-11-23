@@ -101,7 +101,7 @@ protected:
     const Compare& sorter;
     metadata::Eater& nextConsumer;
     bool hasInterval;
-    std::auto_ptr<types::Time> endofperiod;
+    std::unique_ptr<types::Time> endofperiod;
     std::vector<Metadata*> buffer;
 
     void setEndOfPeriod(const types::Reftime& rt);
@@ -114,7 +114,7 @@ public:
 	}
     ~Stream();
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
 	void flush();
 

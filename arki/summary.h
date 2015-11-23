@@ -267,7 +267,7 @@ public:
      *
      * Note: an end period of (0, 0, 0, 0, 0, 0) means "now".
      */
-    std::auto_ptr<types::Reftime> getReferenceTime() const;
+    std::unique_ptr<types::Reftime> getReferenceTime() const;
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes
@@ -276,13 +276,13 @@ public:
      * If begin and end are unset, set them to the datetime extremes of this
      * summary.
      */
-    void expand_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const;
+    void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 
 	/**
 	 * Get the convex hull of the union of all bounding boxes covered by the
 	 * metadata bundle.
 	 */
-	std::auto_ptr<ARKI_GEOS_GEOMETRY> getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const;
+	std::unique_ptr<ARKI_GEOS_GEOMETRY> getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const;
 
 	/**
 	 * Return all the unique combination of metadata items that are found

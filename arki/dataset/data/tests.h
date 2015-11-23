@@ -31,10 +31,10 @@ struct SegmentTest
     virtual void run(WIBBLE_TEST_LOCPRM) = 0;
 
     /// Create a segment with no data on disk
-    std::auto_ptr<dataset::data::Segment> make_empty_segment();
+    std::unique_ptr<dataset::data::Segment> make_empty_segment();
 
     /// Create a segment importing all mdc into it
-    std::auto_ptr<dataset::data::Segment> make_full_segment();
+    std::unique_ptr<dataset::data::Segment> make_full_segment();
 
     void append_all();
 };

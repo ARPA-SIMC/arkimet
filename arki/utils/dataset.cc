@@ -35,7 +35,7 @@ namespace arki {
 namespace utils {
 namespace ds {
 
-bool DataOnly::eat(auto_ptr<Metadata> md)
+bool DataOnly::eat(unique_ptr<Metadata>&& md)
 {
     if (!writer)
         writer = dataset::data::OstreamWriter::get(md->source().format);
@@ -43,18 +43,18 @@ bool DataOnly::eat(auto_ptr<Metadata> md)
     return true;
 }
 
-bool MakeAbsolute::eat(auto_ptr<Metadata> md)
+bool MakeAbsolute::eat(unique_ptr<Metadata>&& md)
 {
     if (md->has_source())
         if (const source::Blob* blob = dynamic_cast<const source::Blob*>(&(md->source())))
             md->set_source(upcast<Source>(blob->makeAbsolute()));
-    return next.eat(md);
+    return next.eat(move(md));
 }
 
-bool MakeURL::eat(std::auto_ptr<Metadata> md)
+bool MakeURL::eat(std::unique_ptr<Metadata>&& md)
 {
     md->set_source(Source::createURL(md->source().format, url));
-    return next.eat(md);
+    return next.eat(move(md));
 }
 
 }

@@ -1,28 +1,6 @@
 #ifndef ARKI_DISPATCHER_H
 #define ARKI_DISPATCHER_H
 
-/*
- * dispatcher - Dispatch data into dataset
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/datasetpool.h>
 #include <arki/dataset.h>
 #include <arki/metadata.h>
@@ -57,7 +35,7 @@ protected:
     virtual void hook_found_datasets(const Metadata& md, std::vector<std::string>& found);
 
     /// Hook called to output the final metadata to a consumer
-    virtual void hook_output(std::auto_ptr<Metadata> md, metadata::Eater& mdc);
+    virtual void hook_output(std::unique_ptr<Metadata> md, metadata::Eater& mdc);
 
     virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
     virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
@@ -106,7 +84,7 @@ public:
      *
      * @returns The outcome of the dispatch.
      */
-    Outcome dispatch(std::auto_ptr<Metadata> md, metadata::Eater& mdc);
+    Outcome dispatch(std::unique_ptr<Metadata>&& md, metadata::Eater& mdc);
 
     virtual void flush() = 0;
 };
@@ -136,7 +114,7 @@ protected:
     // Duplicates dataset
     WritableDataset* dsduplicates;
 
-    void hook_output(std::auto_ptr<Metadata> md, metadata::Eater& mdc) override;
+    void hook_output(std::unique_ptr<Metadata> md, metadata::Eater& mdc) override;
     WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
     WritableDataset::AcquireResult raw_dispatch_error(Metadata& md) override;
     WritableDataset::AcquireResult raw_dispatch_duplicates(Metadata& md) override;
@@ -183,6 +161,4 @@ public:
 };
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

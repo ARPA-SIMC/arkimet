@@ -1,25 +1,3 @@
-/*
- * arki-query - Query datasets using a matcher expression
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <wibble/exception.h>
@@ -83,11 +61,11 @@ int main(int argc, const char* argv[])
 			dataset::Merged merger;
 			size_t dscount = opts.inputInfo.sectionSize();
 			
-			// Create an auto_ptr array to take care of memory management
-			// It used to be just: auto_ptr<ReadonlyDataset> datasets[dscount];
+			// Create an unique_ptr array to take care of memory management
+			// It used to be just: unique_ptr<ReadonlyDataset> datasets[dscount];
 			// but xlC does not seem to like it
-			auto_ptr<ReadonlyDataset>* datasets = new auto_ptr<ReadonlyDataset>[dscount];
-			RAIIArrayDeleter< auto_ptr<ReadonlyDataset> > datasets_mman(datasets);
+			unique_ptr<ReadonlyDataset>* datasets = new unique_ptr<ReadonlyDataset>[dscount];
+			RAIIArrayDeleter< unique_ptr<ReadonlyDataset> > datasets_mman(datasets);
 
 			// Instantiate the datasets and add them to the merger
 			int idx = 0;
@@ -106,11 +84,11 @@ int main(int argc, const char* argv[])
 			// Perform the query
 			all_successful = opts.processSource(merger, names);
 
-			for (size_t i = 0; i < dscount; ++i)
-				opts.closeSource(datasets[i], all_successful);
-		} else if (opts.qmacro->isSet()) {
+            for (size_t i = 0; i < dscount; ++i)
+                opts.closeSource(move(datasets[i]), all_successful);
+        } else if (opts.qmacro->isSet()) {
             // Create the virtual qmacro dataset
-			auto_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
+			unique_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
                     opts.inputInfo, 
                     opts.qmacro->stringValue(),
                     opts.strquery);
@@ -122,13 +100,13 @@ int main(int argc, const char* argv[])
 			for (ConfigFile::const_section_iterator i = opts.inputInfo.sectionBegin();
 					i != opts.inputInfo.sectionEnd(); ++i)
 			{
-				auto_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
+				unique_ptr<ReadonlyDataset> ds = opts.openSource(*i->second);
 				nag::verbose("Processing %s...", i->second->value("path").c_str());
 				bool success = opts.processSource(*ds, i->second->value("path"));
-				opts.closeSource(ds, success);
-				if (!success) all_successful = false;
-			}
-		}
+                opts.closeSource(move(ds), success);
+                if (!success) all_successful = false;
+            }
+        }
 
 		opts.doneProcessing();
 
@@ -146,5 +124,3 @@ int main(int argc, const char* argv[])
 		return 1;
 	}
 }
-
-// vim:set ts=4 sw=4:

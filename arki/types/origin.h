@@ -65,9 +65,9 @@ struct Origin : public types::StyledType<Origin>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<Origin> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Origin> decodeString(const std::string& val);
-    static std::auto_ptr<Origin> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Origin> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Origin> decodeString(const std::string& val);
+    static std::unique_ptr<Origin> decodeMapping(const emitter::memory::Mapping& val);
 
 	// Deprecated functions
 	virtual std::vector<int> toIntVector() const = 0;
@@ -78,11 +78,11 @@ struct Origin : public types::StyledType<Origin>
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<Origin> createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process);
-    static std::auto_ptr<Origin> createGRIB2(unsigned short centre, unsigned short subcentre,
+    static std::unique_ptr<Origin> createGRIB1(unsigned char centre, unsigned char subcentre, unsigned char process);
+    static std::unique_ptr<Origin> createGRIB2(unsigned short centre, unsigned short subcentre,
                                              unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
-    static std::auto_ptr<Origin> createBUFR(unsigned char centre, unsigned char subcentre);
-    static std::auto_ptr<Origin> createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc);
+    static std::unique_ptr<Origin> createBUFR(unsigned char centre, unsigned char subcentre);
+    static std::unique_ptr<Origin> createODIMH5(const std::string& wmo, const std::string& rad, const std::string& plc);
 };
 
 namespace origin {
@@ -113,8 +113,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB1* clone() const override;
-    static std::auto_ptr<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
-    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> create(unsigned char centre, unsigned char subcentre, unsigned char process);
+    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -150,9 +150,9 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2* clone() const override;
-    static std::auto_ptr<GRIB2> create(unsigned short centre, unsigned short subcentre,
+    static std::unique_ptr<GRIB2> create(unsigned short centre, unsigned short subcentre,
             unsigned char processtype, unsigned char bgprocessid, unsigned char processid);
-    static std::auto_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -182,8 +182,8 @@ public:
     bool equals(const Type& o) const override;
 
     BUFR* clone() const override;
-    static std::auto_ptr<BUFR> create(unsigned char centre, unsigned char subcentre);
-    static std::auto_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> create(unsigned char centre, unsigned char subcentre);
+    static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;
@@ -215,8 +215,8 @@ public:
     bool equals(const Type& o) const override;
 
     ODIMH5* clone() const override;
-    static std::auto_ptr<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
-    static std::auto_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<ODIMH5> create(const std::string& wmo, const std::string& rad, const std::string& plc);
+    static std::unique_ptr<ODIMH5> decodeMapping(const emitter::memory::Mapping& val);
 
     // Deprecated functions
     std::vector<int> toIntVector() const override;

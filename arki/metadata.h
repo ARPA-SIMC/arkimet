@@ -90,7 +90,7 @@ public:
     /// Return the Blob source if possible, else raise an exception
     const types::source::Blob& sourceBlob() const;
     /// Set a new source, replacing the old one if present
-    void set_source(std::auto_ptr<types::Source> s);
+    void set_source(std::unique_ptr<types::Source>&& s);
     /// Set the source of this metadata as Inline, with the given data
     void set_source_inline(const std::string& format, wibble::sys::Buffer buf);
     /// Unsets the source
@@ -250,13 +250,13 @@ public:
     static void flushDataReaders();
 
     /// Create an empty Metadata
-    static std::auto_ptr<Metadata> create_empty();
+    static std::unique_ptr<Metadata> create_empty();
 
     /// Create a copy of a Metadata
-    static std::auto_ptr<Metadata> create_copy(const Metadata& md);
+    static std::unique_ptr<Metadata> create_copy(const Metadata& md);
 
     /// Read one Metadata from a Yaml stream and return it
-    static std::auto_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
+    static std::unique_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
 
     /// Read all metadata from a file into the given consumer
     static void readFile(const std::string& fname, metadata::Eater& mdc);
@@ -284,7 +284,7 @@ public:
      * Push a userdata to access this Metadata, and hand over its ownership to
      * Lua's garbage collector
      */
-    static void lua_push(lua_State* L, std::auto_ptr<Metadata> md);
+    static void lua_push(lua_State* L, std::unique_ptr<Metadata>&& md);
 
 	/**
 	 * Check that the element at \a idx is a Metadata userdata

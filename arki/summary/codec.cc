@@ -163,12 +163,12 @@ struct Format3Decoder : public DecoderBase
             unsigned count_added = dec.popVarint<unsigned>("number of items to add/change");
             for (unsigned i = 0; i < count_added; ++i)
             {
-                auto_ptr<Type> item = types::decode(dec);
+                unique_ptr<Type> item = types::decode(dec);
                 int pos = Visitor::posForCode(item->type_code());
                 if (pos < 0)
                     throw wibble::exception::Consistency("parsing summary",
                             str::fmtf("unsupported typecode found: %d", (int)item->type_code()));
-                row.items[pos] = target.intern(pos, item);
+                row.items[pos] = target.intern(pos, move(item));
             }
 
             // Decode the stats

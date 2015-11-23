@@ -64,7 +64,7 @@ void StreamHeaders::sendIfNotFired()
 
 MetadataStreamer::MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
 
-bool MetadataStreamer::eat(auto_ptr<Metadata> md)
+bool MetadataStreamer::eat(unique_ptr<Metadata>&& md)
 {
     sh.sendIfNotFired();
     md->write(sh.req.sock, "socket");
@@ -290,7 +290,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
             pmaker.data_start_hook = &headers;
 
         // Create the dataset processor for this query
-        auto_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
+        unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
 
         // Process the dataset producing the output
         p->process(ds, dsname);

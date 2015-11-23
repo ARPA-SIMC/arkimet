@@ -47,7 +47,7 @@ void to::test<1>()
     t.exact_query = "GRIB1,1,2,3";
     wassert(t);
 
-    auto_ptr<Product> o = Product::createGRIB1(1, 2, 3);
+    unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Product::GRIB1);
     const product::GRIB1* v = dynamic_cast<product::GRIB1*>(o.get());
     wassert(actual(v->origin()) == 1u);
@@ -68,7 +68,7 @@ void to::test<2>()
     t.exact_query = "GRIB2,1,2,3,4";
     wassert(t);
 
-    auto_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4);
+    unique_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4);
     wassert(actual(o->style()) == Product::GRIB2);
     const product::GRIB2* v = dynamic_cast<product::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
@@ -93,7 +93,7 @@ void to::test<3>()
     t.exact_query = "GRIB2,1,2,3,4,5";
     wassert(t);
 
-    auto_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 5);
+    unique_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 5);
     wassert(actual(o->style()) == Product::GRIB2);
     const product::GRIB2* v = dynamic_cast<product::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
@@ -119,7 +119,7 @@ void to::test<4>()
     t.exact_query = "GRIB2,1,2,3,4,4,5";
     wassert(t);
 
-    auto_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 4, 5);
+    unique_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 4, 5);
     wassert(actual(o->style()) == Product::GRIB2);
     const product::GRIB2* v = dynamic_cast<product::GRIB2*>(o.get());
     wassert(actual(v->centre()) == 1u);
@@ -145,7 +145,7 @@ void to::test<5>()
 
     ValueBag vb;
     vb.set("name", Value::createString("antani"));
-    auto_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
+    unique_ptr<Product> o = Product::createBUFR(1, 2, 3, vb);
     wassert(actual(o->style()) == Product::BUFR);
     product::BUFR* v = dynamic_cast<product::BUFR*>(o.get());
     wassert(actual(v->type()) == 1);
@@ -174,7 +174,7 @@ void to::test<6>()
     t.exact_query = "VM2,1:bcode=B20013, l1=0, l2=0, lt1=256, lt2=258, p1=0, p2=0, tr=254, unit=m";
     wassert(t);
 
-    auto_ptr<Product> o = Product::createVM2(1);
+    unique_ptr<Product> o = Product::createVM2(1);
     wassert(actual(o->style()) == Product::VM2);
     const product::VM2* v = dynamic_cast<product::VM2*>(o.get());
     wassert(actual(v->variable_id()) == 1ul);
@@ -191,7 +191,7 @@ template<> template<>
 void to::test<7>()
 {
 #ifdef HAVE_LUA
-    auto_ptr<Product> o = Product::createGRIB1(1, 2, 3);
+    unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
 
 	arki::tests::Lua test(
 		"function test(o) \n"

@@ -131,12 +131,12 @@ struct Timerange : public types::StyledType<Timerange>
     virtual bool get_proc_duration(int& duration, bool& is_seconds) const = 0;
 
     /// Create a Timedef equivalent of this time range
-    virtual std::auto_ptr<timerange::Timedef> to_timedef() const;
+    virtual std::unique_ptr<timerange::Timedef> to_timedef() const;
 
     /// CODEC functions
-    static std::auto_ptr<Timerange> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Timerange> decodeString(const std::string& val);
-    static std::auto_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Timerange> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Timerange> decodeString(const std::string& val);
+    static std::unique_ptr<Timerange> decodeMapping(const emitter::memory::Mapping& val);
 
 	static void lua_loadlib(lua_State* L);
 
@@ -145,12 +145,12 @@ struct Timerange : public types::StyledType<Timerange>
 
     Timerange* clone() const override = 0;
 
-    static std::auto_ptr<Timerange> createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
-    static std::auto_ptr<Timerange> createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2);
-    static std::auto_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit=timerange::UNIT_SECOND);
-    static std::auto_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
+    static std::unique_ptr<Timerange> createGRIB1(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+    static std::unique_ptr<Timerange> createGRIB2(unsigned char type, unsigned char unit, signed long p1, signed long p2);
+    static std::unique_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit=timerange::UNIT_SECOND);
+    static std::unique_ptr<Timerange> createTimedef(uint32_t step_len, timerange::TimedefUnit step_unit,
                                                   uint8_t stat_type, uint32_t stat_len, timerange::TimedefUnit stat_unit=timerange::UNIT_SECOND);
-    static std::auto_ptr<Timerange> createBUFR(unsigned value = 0, unsigned char unit = 254);
+    static std::unique_ptr<Timerange> createBUFR(unsigned value = 0, unsigned char unit = 254);
 };
 
 namespace timerange {
@@ -197,8 +197,8 @@ public:
     void getNormalised(int& type, GRIB1Unit& unit, int& p1, int& p2, bool& use_op1, bool& use_op2) const;
 
     GRIB1* clone() const override;
-    static std::auto_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
-    static std::auto_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB1> create(unsigned char type, unsigned char unit, unsigned char p1, unsigned char p2);
+    static std::unique_ptr<GRIB1> decodeMapping(const emitter::memory::Mapping& val);
     static void arg_significance(unsigned type, bool& use_p1, bool& use_p2);
 };
 
@@ -230,8 +230,8 @@ public:
     bool equals(const Type& o) const override;
 
     GRIB2* clone() const override;
-    static std::auto_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
-    static std::auto_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<GRIB2> create(unsigned char type, unsigned char unit, signed long p1, signed long p2);
+    static std::unique_ptr<GRIB2> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 class Timedef : public Timerange
@@ -276,14 +276,14 @@ public:
      * Given a reftime representing validity time, compute and return its
      * emission time, shifting it by what is represented by this timedef
      */
-    std::auto_ptr<reftime::Position> validity_time_to_emission_time(const reftime::Position& src) const;
+    std::unique_ptr<reftime::Position> validity_time_to_emission_time(const reftime::Position& src) const;
 
     Timedef* clone() const override;
-    static std::auto_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit=UNIT_SECOND);
-    static std::auto_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit,
+    static std::unique_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit=UNIT_SECOND);
+    static std::unique_ptr<Timedef> create(uint32_t step_len, TimedefUnit step_unit,
                               uint8_t stat_type, uint32_t stat_len, TimedefUnit stat_unit=UNIT_SECOND);
-    static std::auto_ptr<Timedef> createFromYaml(const std::string& str);
-    static std::auto_ptr<Timedef> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Timedef> createFromYaml(const std::string& str);
+    static std::unique_ptr<Timedef> decodeMapping(const emitter::memory::Mapping& val);
 
     /**
      * Unit conversion for code table 4.4 GRIB2 indicator of unit of time range
@@ -340,8 +340,8 @@ public:
     bool equals(const Type& o) const override;
 
     BUFR* clone() const override;
-    static std::auto_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
-    static std::auto_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BUFR> create(unsigned value = 0, unsigned char unit = 254);
+    static std::unique_ptr<BUFR> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

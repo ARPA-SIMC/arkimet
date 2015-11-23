@@ -57,9 +57,9 @@ namespace types {
  */
 struct MetadataType
 {
-    typedef std::auto_ptr<Type> (*item_decoder)(const unsigned char* start, size_t len);
-    typedef std::auto_ptr<Type> (*string_decoder)(const std::string& val);
-    typedef std::auto_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
+    typedef std::unique_ptr<Type> (*item_decoder)(const unsigned char* start, size_t len);
+    typedef std::unique_ptr<Type> (*string_decoder)(const std::string& val);
+    typedef std::unique_ptr<Type> (*mapping_decoder)(const emitter::memory::Mapping& val);
     typedef void (*lua_libloader)(lua_State* L);
     typedef void (*intern_stats)();
 

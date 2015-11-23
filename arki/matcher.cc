@@ -128,7 +128,7 @@ std::string OR::toStringValueOnlyExpanded() const
 
 OR* OR::parse(const MatcherType& mt, const std::string& pattern)
 {
-	auto_ptr<OR> res(new OR(pattern));
+	unique_ptr<OR> res(new OR(pattern));
 
 	// Fetch the alias database for this type
 	const Aliases* aliases = MatcherAliasDatabase::get(mt.name);
@@ -238,7 +238,7 @@ void AND::split(const std::set<types::Code>& codes, AND& with, AND& without) con
 
 AND* AND::parse(const std::string& pattern)
 {
-	auto_ptr<AND> res(new AND);
+	unique_ptr<AND> res(new AND);
 
 	// Split on newlines or semicolons
 	wibble::Tokenizer tok(pattern, "[^\n;]+", REG_EXTENDED);
@@ -313,7 +313,7 @@ void Aliases::add(const MatcherType& type, const ConfigFile& entries)
 		for (vector< pair<string, string> >::const_iterator i = aliases.begin();
 				i != aliases.end(); ++i)
 		{
-			auto_ptr<OR> val;
+			unique_ptr<OR> val;
 
 			// If instantiation fails, try it again later
 			try {
@@ -364,7 +364,7 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
 	}
 }
 
-bool Matcher::restrict_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+bool Matcher::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
 	const matcher::OR* reftime = 0;
 

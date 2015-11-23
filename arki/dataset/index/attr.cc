@@ -55,7 +55,7 @@ int AttrSubIndex::q_select_id(const std::string& blob) const
 	return id;
 }
 
-auto_ptr<Type> AttrSubIndex::q_select_one(int id) const
+unique_ptr<Type> AttrSubIndex::q_select_one(int id) const
 {
 	if (not m_select_one)
 	{
@@ -68,7 +68,7 @@ auto_ptr<Type> AttrSubIndex::q_select_one(int id) const
 	m_select_one->bind(1, id);
 
     // Decode every blob and run the matcher on it
-    auto_ptr<Type> res;
+    unique_ptr<Type> res;
 	while (m_select_one->step())
 	{
 		const void* buf = m_select_one->fetchBlob(0);
@@ -168,7 +168,7 @@ void AttrSubIndex::read(int id, Metadata& md) const
         return;
     }
 
-    auto_ptr<Type> item = q_select_one(id);
+    unique_ptr<Type> item = q_select_one(id);
     md.set(item->cloneType());
     add_to_cache(id, *item);
 }
@@ -190,7 +190,7 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 	{
 		const void* buf = m_select_all->fetchBlob(1);
 		int len = m_select_all->fetchBytes(1);
-        auto_ptr<Type> t = types::decodeInner(code, (const unsigned char*)buf, len);
+        unique_ptr<Type> t = types::decodeInner(code, (const unsigned char*)buf, len);
         if (m.matchItem(*t))
             ids.push_back(m_select_all->fetch<int>(0));
     }

@@ -90,10 +90,10 @@ public:
 
     /// CODEC functions
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
-    static std::auto_ptr<Time> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Time> decodeString(const std::string& val);
-    static std::auto_ptr<Time> decodeMapping(const emitter::memory::Mapping& val);
-    static std::auto_ptr<Time> decodeList(const emitter::memory::List& val);
+    static std::unique_ptr<Time> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Time> decodeString(const std::string& val);
+    static std::unique_ptr<Time> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Time> decodeList(const emitter::memory::List& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     void serialiseList(Emitter& e) const;
@@ -111,16 +111,16 @@ public:
     void setNow();
 
     /// Construct a Time for the given date
-    static std::auto_ptr<Time> create(int ye, int mo, int da, int ho, int mi, int se);
+    static std::unique_ptr<Time> create(int ye, int mo, int da, int ho, int mi, int se);
 
     /// Construct a Time for the given date, as an array of 6 ints
-    static std::auto_ptr<Time> create(const int (&vals)[6]);
+    static std::unique_ptr<Time> create(const int (&vals)[6]);
 
     /// Construct a Time from a struct tm
-    static std::auto_ptr<Time> create(struct tm& t);
+    static std::unique_ptr<Time> create(struct tm& t);
 
     /// Create a Time object from a string in ISO-8601 format
-    static std::auto_ptr<Time> createFromISO8601(const std::string& str);
+    static std::unique_ptr<Time> createFromISO8601(const std::string& str);
 
     /// Create a Time object from a string in SQL format
     static Time create_from_SQL(const std::string& str);

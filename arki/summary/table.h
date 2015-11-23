@@ -117,7 +117,7 @@ public:
     bool equals(const Table& table) const;
 
     /// Return the intern version of an item
-    const types::Type* intern(unsigned pos, std::auto_ptr<types::Type> item);
+    const types::Type* intern(unsigned pos, std::unique_ptr<types::Type>&& item);
 
     /// Merge a row into the table
     void merge(const Metadata& md);

@@ -61,8 +61,8 @@ struct Note : public CoreType<Note>
 
     /// CODEC functions
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
-    static std::auto_ptr<Note> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<Note> decodeString(const std::string& val);
+    static std::unique_ptr<Note> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<Note> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
     bool lua_lookup(lua_State* L, const std::string& name) const override;
@@ -70,11 +70,11 @@ struct Note : public CoreType<Note>
     Note* clone() const override;
 
     /// Create a note with the current time
-    static std::auto_ptr<Note> create(const std::string& content);
+    static std::unique_ptr<Note> create(const std::string& content);
 
     /// Create a note with the given time and content
-    static std::auto_ptr<Note> create(const Time& time, const std::string& content);
-    static std::auto_ptr<Note> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Note> create(const Time& time, const std::string& content);
+    static std::unique_ptr<Note> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

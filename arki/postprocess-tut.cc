@@ -125,7 +125,7 @@ void to::test<4>()
         {
             string& out;
             Writer(string& out) : out(out) {}
-            bool eat(auto_ptr<Metadata> md) override
+            bool eat(unique_ptr<Metadata>&& md) override
             {
                 md->makeInline();
                 out += md->encodeBinary();

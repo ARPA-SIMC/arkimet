@@ -67,7 +67,7 @@ Reader::Reader(const ConfigFile& cfg)
 
     if (index::Manifest::exists(m_path))
     {
-        auto_ptr<index::Manifest> mft = index::Manifest::create(m_path);
+        unique_ptr<index::Manifest> mft = index::Manifest::create(m_path);
 
 		m_mft = mft.release();
 		m_mft->openRO();

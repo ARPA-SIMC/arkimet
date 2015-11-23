@@ -143,19 +143,19 @@ MatchArea* MatchArea::parse(const std::string& pattern)
 }
 
 #ifdef HAVE_GEOS
-static auto_ptr<ARKI_GEOS_GEOMETRY> parseBBox(const ARKI_GEOS_GEOMETRYFACTORY& gf, const std::string sb)
+static unique_ptr<ARKI_GEOS_GEOMETRY> parseBBox(const ARKI_GEOS_GEOMETRYFACTORY& gf, const std::string sb)
 {
 	using namespace ARKI_GEOS_IO_NS;
 
 	WKTReader reader(&gf);
-	return auto_ptr<ARKI_GEOS_GEOMETRY>(reader.read(sb));
+	return unique_ptr<ARKI_GEOS_GEOMETRY>(reader.read(sb));
 }
 
 MatchAreaBBox::MatchAreaBBox(const std::string& verb, const std::string& geom)
 	: gf(0), geom(0), verb(verb)
 {
 	gf = new ARKI_GEOS_GEOMETRYFACTORY();
-	std::auto_ptr<ARKI_GEOS_GEOMETRY> g = parseBBox(*gf, geom);
+	std::unique_ptr<ARKI_GEOS_GEOMETRY> g = parseBBox(*gf, geom);
 	this->geom = g.release();
 	geom_str = geom;
 }

@@ -60,7 +60,7 @@ void Blob::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("ofs", offset);
     e.add("sz", size);
 }
-std::auto_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<Blob> Blob::decodeMapping(const emitter::memory::Mapping& val)
 {
     const arki::emitter::memory::Node& rd = val["b"];
     string basedir;
@@ -119,7 +119,7 @@ Blob* Blob::clone() const
     return new Blob(*this);
 }
 
-std::auto_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     Blob* res = new Blob;
     res->format = format;
@@ -127,20 +127,20 @@ std::auto_ptr<Blob> Blob::create(const std::string& format, const std::string& b
     res->filename = filename;
     res->offset = offset;
     res->size = size;
-    return auto_ptr<Blob>(res);
+    return unique_ptr<Blob>(res);
 }
 
-std::auto_ptr<Blob> Blob::fileOnly() const
+std::unique_ptr<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
-    std::auto_ptr<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
+    std::unique_ptr<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
     return res;
 }
 
-std::auto_ptr<Blob> Blob::makeAbsolute() const
+std::unique_ptr<Blob> Blob::makeAbsolute() const
 {
     string pathname = absolutePathname();
-    std::auto_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
+    std::unique_ptr<Blob> res = Blob::create(format, "", pathname, offset, size);
     return res;
 }
 

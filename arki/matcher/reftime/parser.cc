@@ -65,7 +65,7 @@ struct DateLE : public DTMatch
     string sql(const std::string& column) const { return column+"<="+tosql(ref); }
     string toString() const { return "<="+date::tostring(ref); }
     int timebase() const { return tbase; }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override
     {
         if (begin.get() && begin->compare_raw(ref) > 0)
             return false;
@@ -79,7 +79,7 @@ struct DateLE : public DTMatch
 
 DTMatch* DTMatch::createLE(const int* tt)
 {
-    auto_ptr<DateLE> res(new DateLE);
+    unique_ptr<DateLE> res(new DateLE);
     date::upperbound(tt, res->ref);
     res->tbase = dtime::lowerbound_sec(tt + 3);
     return res.release();
@@ -93,7 +93,7 @@ struct DateLT : public DTMatch
     string sql(const std::string& column) const { return column+"<"+tosql(ref); }
     string toString() const { return "<"+date::tostring(ref); }
     int timebase() const { return dtime::lowerbound_sec(ref+3); }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override
     {
         if (begin.get() && begin->compare_raw(ref) >= 0)
             return false;
@@ -111,7 +111,7 @@ struct DateLT : public DTMatch
 
 DTMatch* DTMatch::createLT(const int* tt)
 {
-    auto_ptr<DateLT> res(new DateLT);
+    unique_ptr<DateLT> res(new DateLT);
     date::lowerbound(tt, res->ref);
     return res.release();
 }
@@ -125,7 +125,7 @@ struct DateGE : public DTMatch
     string sql(const std::string& column) const { return column+">="+tosql(ref); }
     string toString() const { return ">="+date::tostring(ref); }
     int timebase() const { return tbase; }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override
     {
         if (end.get() && end->compare_raw(ref) < 0)
             return false;
@@ -139,7 +139,7 @@ struct DateGE : public DTMatch
 
 DTMatch* DTMatch::createGE(const int* tt)
 {
-    auto_ptr<DateGE> res(new DateGE);
+    unique_ptr<DateGE> res(new DateGE);
     date::lowerbound(tt, res->ref);
     res->tbase = dtime::lowerbound_sec(tt + 3);
     return res.release();
@@ -154,7 +154,7 @@ struct DateGT : public DTMatch
     string sql(const std::string& column) const { return column+">"+tosql(ref); }
     string toString() const { return ">"+date::tostring(ref); }
     int timebase() const { return tbase; }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override
     {
         if (end.get() && end->compare_raw(ref) <= 0)
             return false;
@@ -172,7 +172,7 @@ struct DateGT : public DTMatch
 
 DTMatch* DTMatch::createGT(const int* tt)
 {
-    auto_ptr<DateGT> res(new DateGT);
+    unique_ptr<DateGT> res(new DateGT);
     date::upperbound(tt, res->ref);
     res->tbase = dtime::lowerbound_sec(tt + 3);
     return res.release();
@@ -200,7 +200,7 @@ struct DateEQ : public DTMatch
         return ">="+date::tostring(geref)+",<="+date::tostring(leref);
     }
     int timebase() const { return dtime::lowerbound_sec(geref+3); }
-    bool restrict_date_range(std::auto_ptr<types::Time>& begin, std::auto_ptr<types::Time>& end) const override
+    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override
     {
         if (begin.get() && begin->compare_raw(leref) > 0)
             return false;
@@ -220,7 +220,7 @@ struct DateEQ : public DTMatch
 
 DTMatch* DTMatch::createEQ(const int* tt)
 {
-    auto_ptr<DateEQ> res(new DateEQ);
+    unique_ptr<DateEQ> res(new DateEQ);
     date::lowerbound(tt, res->geref);
     date::upperbound(tt, res->leref);
     return res.release();

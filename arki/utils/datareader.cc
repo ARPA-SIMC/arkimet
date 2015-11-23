@@ -312,7 +312,7 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
 		flush();
 
         // Open the new file
-        std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+        std::unique_ptr<struct stat> st = sys::fs::stat(fname);
         if (st.get())
         {
             if (S_ISDIR(st->st_mode))

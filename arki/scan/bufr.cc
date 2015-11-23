@@ -164,9 +164,9 @@ protected:
 
 public:
     dballe::msg::Importer& importer;
-    auto_ptr<reftime::Position> reftime;
-    auto_ptr<Origin> origin;
-    auto_ptr<product::BUFR> product;
+    unique_ptr<reftime::Position> reftime;
+    unique_ptr<Origin> origin;
+    unique_ptr<product::BUFR> product;
     Message* msg;
 
     Harvest(dballe::msg::Importer& importer) : importer(importer), msg(0) {}
@@ -288,17 +288,17 @@ bool Bufr::do_scan(Metadata& md)
     if (false)
         md.set_source_inline("bufr", wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
     else {
-        auto_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size());
-        md.set_source(source);
+        unique_ptr<Source> source = Source::createBlob("bufr", basedir, relname, rmsg.offset, rmsg.data.size());
+        md.set_source(move(source));
         md.set_cached_data(wibble::sys::Buffer(rmsg.data.data(), rmsg.data.size()));
     }
 
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, md);
 
-    md.set(harvest.reftime);
-    md.set(harvest.origin);
-    md.set(harvest.product);
+    md.set(move(harvest.reftime));
+    md.set(move(harvest.origin));
+    md.set(move(harvest.product));
 
     if (extras && harvest.msg)
     {

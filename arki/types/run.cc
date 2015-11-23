@@ -25,6 +25,7 @@
 #include <wibble/regexp.h>
 #include <arki/types/run.h>
 #include <arki/types/utils.h>
+#include <arki/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
@@ -76,7 +77,7 @@ std::string Run::formatStyle(Run::Style s)
 	}
 }
 
-auto_ptr<Run> Run::decode(const unsigned char* buf, size_t len)
+unique_ptr<Run> Run::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
@@ -92,7 +93,7 @@ auto_ptr<Run> Run::decode(const unsigned char* buf, size_t len)
 	}
 }
     
-auto_ptr<Run> Run::decodeString(const std::string& val)
+unique_ptr<Run> Run::decodeString(const std::string& val)
 {
 	string inner;
 	Run::Style style = outerParse<Run>(val, inner);
@@ -118,7 +119,7 @@ auto_ptr<Run> Run::decodeString(const std::string& val)
     }
 }
 
-auto_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Run> Run::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -153,7 +154,7 @@ void Run::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_run", lib);
 }
 
-auto_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
+unique_ptr<Run> Run::createMinute(unsigned int hour, unsigned int minute)
 {
     return upcast<Run>(run::Minute::create(hour, minute));
 }
@@ -180,7 +181,7 @@ void Minute::serialiseLocal(Emitter& e, const Formatter* f) const
     Run::serialiseLocal(e, f);
     e.add("va", (int)m_minute);
 }
-auto_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Minute> Minute::decodeMapping(const emitter::memory::Mapping& val)
 {
     unsigned int m = val["va"].want_int("parsing Minute run value");
     return run::Minute::create(m / 60, m % 60);
@@ -233,11 +234,11 @@ Minute* Minute::clone() const
     return res;
 }
 
-auto_ptr<Minute> Minute::create(unsigned int hour, unsigned int minute)
+unique_ptr<Minute> Minute::create(unsigned int hour, unsigned int minute)
 {
     Minute* res = new Minute;
     res->m_minute = hour * 60 + minute;
-    return auto_ptr<Minute>(res);
+    return unique_ptr<Minute>(res);
 }
 
 }

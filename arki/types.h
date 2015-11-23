@@ -42,11 +42,11 @@ namespace arki {
 struct Emitter;
 struct Formatter;
 
-/// dynamic cast between two auto_ptr
+/// dynamic cast between two unique_ptr
 template<typename B, typename A>
-std::auto_ptr<B> downcast(std::auto_ptr<A> orig)
+std::unique_ptr<B> downcast(std::unique_ptr<A> orig)
 {
-    if (!orig.get()) return std::auto_ptr<B>();
+    if (!orig.get()) return std::unique_ptr<B>();
 
     // Cast, but leave ownership to orig
     B* dst = dynamic_cast<B*>(orig.get());
@@ -57,15 +57,15 @@ std::auto_ptr<B> downcast(std::auto_ptr<A> orig)
     // Release ownership from orig: we still have the pointer in dst
     orig.release();
 
-    // Transfer ownership to the new auto_ptr and return it
-    return std::auto_ptr<B>(dst);
+    // Transfer ownership to the new unique_ptr and return it
+    return std::unique_ptr<B>(dst);
 }
 
-/// upcast between two auto_ptr
+/// upcast between two unique_ptr
 template<typename B, typename A>
-std::auto_ptr<B> upcast(std::auto_ptr<A> orig)
+std::unique_ptr<B> upcast(std::unique_ptr<A> orig)
 {
-    return std::auto_ptr<B>(orig.release());
+    return std::unique_ptr<B>(orig.release());
 }
 
 namespace emitter {
@@ -134,14 +134,14 @@ struct Type
      * Make a copy of this type. The caller will own the newly created object
      * returned by the function.
      *
-     * This does not return an auto_ptr to allow to use covariant return types
+     * This does not return an unique_ptr to allow to use covariant return types
      * in implementations. Use cloneType() for a version with explicit memory
      * ownership of the result.
      */
     virtual Type* clone() const = 0;
 
     /// Make a copy of this type
-    std::auto_ptr<Type> cloneType() const { return std::auto_ptr<Type>(clone()); }
+    std::unique_ptr<Type> cloneType() const { return std::unique_ptr<Type>(clone()); }
 
     /// Comparison (<0 if <, 0 if =, >0 if >)
     virtual int compare(const Type& o) const;
@@ -245,7 +245,7 @@ struct Type
         return a->equals(*b);
     }
     template<typename A, typename B>
-    static inline bool nullable_equals(const std::auto_ptr<A>& a, const std::auto_ptr<B>& b)
+    static inline bool nullable_equals(const std::unique_ptr<A>& a, const std::unique_ptr<B>& b)
     {
         return nullable_equals(a.get(), b.get());
     }
@@ -261,7 +261,7 @@ struct Type
         return a->compare(*b);
     }
     template<typename A, typename B>
-    static inline bool nullable_compare(const std::auto_ptr<A>& a, const std::auto_ptr<B>& b)
+    static inline bool nullable_compare(const std::unique_ptr<A>& a, const std::unique_ptr<B>& b)
     {
         return nullable_compare(a.get(), b.get());
     }
@@ -307,13 +307,13 @@ struct StyledType : public CoreType<BASE>
 
 
 /// Decode an item encoded in binary representation
-std::auto_ptr<Type> decode(const unsigned char* buf, size_t len);
+std::unique_ptr<Type> decode(const unsigned char* buf, size_t len);
 
 /**
  * Decode an item encoded in binary representation with envelope, from a
  * decoder
  */
-std::auto_ptr<Type> decode(utils::codec::Decoder& dec);
+std::unique_ptr<Type> decode(utils::codec::Decoder& dec);
 /**
  * Decode the item envelope in buf:len
  *
@@ -322,11 +322,11 @@ std::auto_ptr<Type> decode(utils::codec::Decoder& dec);
  * After the function returns, the start of the next envelope is at buf+len
  */
 types::Code decodeEnvelope(const unsigned char*& buf, size_t& len);
-std::auto_ptr<Type> decodeInner(types::Code, const unsigned char* buf, size_t len);
-std::auto_ptr<Type> decodeString(types::Code, const std::string& val);
-std::auto_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
+std::unique_ptr<Type> decodeInner(types::Code, const unsigned char* buf, size_t len);
+std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
+std::unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m);
 /// Same as decodeMapping, but does not look for the item type in the mapping
-std::auto_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
+std::unique_ptr<Type> decodeMapping(types::Code, const emitter::memory::Mapping& m);
 std::string tag(types::Code);
 
 /**

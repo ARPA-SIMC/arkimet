@@ -63,7 +63,7 @@ struct Fixture;
 
 namespace tests {
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, std::auto_ptr<Metadata> md, metadata::Eater& mdc);
+void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata::Eater& mdc);
 
 struct OutputChecker : public std::stringstream
 {
@@ -203,8 +203,8 @@ struct dataset_tg : public tut::test_group<T>
     }
 };
 
-std::auto_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfg, bool empty=true);
-std::auto_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfg);
+std::unique_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& cfg, bool empty=true);
+std::unique_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfg);
 
 }
 
@@ -235,7 +235,7 @@ struct OrderCheck : public metadata::Eater
 
     OrderCheck(const std::string& order);
     virtual ~OrderCheck();
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
 namespace testdata {

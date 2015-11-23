@@ -490,7 +490,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
     string tmpabsname = absname + ".repack";
 
     // Create a writer for the temp dir
-    auto_ptr<dir::Segment> writer(make_segment(format, tmprelname, tmpabsname));
+    unique_ptr<dir::Segment> writer(make_segment(format, tmprelname, tmpabsname));
 
     // Fill the temp file with all the data in the right order
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
@@ -510,10 +510,10 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
     return new Rename(tmpabsname, absname);
 }
 
-auto_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
+unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::fs::exists(absname)) sys::fs::rmtree(absname);
-    auto_ptr<dir::Segment> res(new dir::Segment(format, relname, absname));
+    unique_ptr<dir::Segment> res(new dir::Segment(format, relname, absname));
     return res;
 }
 
@@ -523,10 +523,10 @@ FileState HoleSegment::check(const metadata::Collection& mds, bool quick)
     return Segment::check(mds, true);
 }
 
-auto_ptr<dir::Segment> HoleSegment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
+unique_ptr<dir::Segment> HoleSegment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
     if (sys::fs::exists(absname)) sys::fs::rmtree(absname);
-    auto_ptr<dir::Segment> res(new dir::HoleSegment(format, relname, absname));
+    unique_ptr<dir::Segment> res(new dir::HoleSegment(format, relname, absname));
     return res;
 }
 

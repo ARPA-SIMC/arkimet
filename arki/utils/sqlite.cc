@@ -190,11 +190,11 @@ void Query::bindType(int idx, const types::Type& item)
     bindTransient(idx, item.encodeBinary());
 }
 
-auto_ptr<types::Type> Query::fetchType(int column)
+unique_ptr<types::Type> Query::fetchType(int column)
 {
     const unsigned char* buf = (const unsigned char*)fetchBlob(column);
     int len = fetchBytes(column);
-    if (len == 0) return auto_ptr<types::Type>();
+    if (len == 0) return unique_ptr<types::Type>();
 
     const unsigned char* el_start = buf;
     size_t el_len = len;

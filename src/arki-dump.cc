@@ -247,7 +247,7 @@ int main(int argc, const char* argv[])
 
 			// Get the bounding box
 			ARKI_GEOS_GEOMETRYFACTORY gf;
-			std::auto_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
+			std::unique_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
 
 			// Open the output file
 			runtime::Output out(*opts.outfile);

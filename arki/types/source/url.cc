@@ -55,7 +55,7 @@ void URL::serialiseLocal(Emitter& e, const Formatter* f) const
     Source::serialiseLocal(e, f);
     e.add("url"); e.add(url);
 }
-std::auto_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
+std::unique_ptr<URL> URL::decodeMapping(const emitter::memory::Mapping& val)
 {
     return URL::create(
             val["f"].want_string("parsing url source format"),
@@ -101,12 +101,12 @@ URL* URL::clone() const
     return new URL(*this);
 }
 
-std::auto_ptr<URL> URL::create(const std::string& format, const std::string& url)
+std::unique_ptr<URL> URL::create(const std::string& format, const std::string& url)
 {
     URL* res = new URL;
     res->format = format;
     res->url = url;
-    return auto_ptr<URL>(res);
+    return unique_ptr<URL>(res);
 }
 
 }

@@ -38,7 +38,7 @@ struct ArkiCheck
 namespace wibble {
 namespace tests {
 
-static inline void _wassert(WIBBLE_TEST_LOCPRM, std::auto_ptr<arki::tests::ArkiCheck> expr)
+static inline void _wassert(WIBBLE_TEST_LOCPRM, std::unique_ptr<arki::tests::ArkiCheck> expr)
 {
     expr->check(wibble_test_location);
 }

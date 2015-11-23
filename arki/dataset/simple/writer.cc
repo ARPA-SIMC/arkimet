@@ -74,7 +74,7 @@ Writer::Writer(const ConfigFile& cfg)
     if (!index::Manifest::exists(m_path))
         files::createDontpackFlagfile(m_path);
 
-    auto_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
+    unique_ptr<index::Manifest> mft = index::Manifest::create(m_path, &cfg);
 	m_mft = mft.release();
 	m_mft->openRW();
 }

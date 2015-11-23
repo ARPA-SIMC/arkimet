@@ -114,7 +114,7 @@ public:
     Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 
 protected:
-    virtual std::auto_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname);
+    virtual std::unique_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname);
 };
 
 /**
@@ -133,7 +133,7 @@ public:
     FileState check(const metadata::Collection& mds, bool quick=true) override;
 
 protected:
-    std::auto_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname) override;
+    std::unique_ptr<dir::Segment> make_segment(const std::string& format, const std::string& relname, const std::string& absname) override;
 };
 
 class OstreamWriter : public data::OstreamWriter

@@ -79,7 +79,7 @@ template<> template<> void to::test<1>()
 
 	// Test that querying returns all items
 	{
-		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+		std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
         metadata::Counter counter;
         reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
@@ -88,7 +88,7 @@ template<> template<> void to::test<1>()
 
 	// Check if files to archive are detected
 	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 
 		MaintenanceCollector c;
 		writer->maintenance(c);
@@ -102,7 +102,7 @@ template<> template<> void to::test<1>()
 
 	// Perform packing and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": archived 2007/07-07.grib1");
@@ -136,7 +136,7 @@ template<> template<> void to::test<1>()
 
 	// Maintenance should now show a normal situation
 	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		MaintenanceCollector c;
 		writer->maintenance(c);
 		ensure_equals(c.count(COUNTED_OK), 1u);
@@ -147,7 +147,7 @@ template<> template<> void to::test<1>()
 
 	// Perform full maintenance and check that things are still ok afterwards
 	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		stringstream s;
 		s.str(std::string());
 		writer->check(s, true, true);
@@ -164,7 +164,7 @@ template<> template<> void to::test<1>()
 
 	// Test that querying returns all items
 	{
-		std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+		std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
         metadata::Counter counter;
         reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
@@ -178,7 +178,7 @@ template<> template<> void to::test<2>()
 	using namespace arki::types;
 
 	clean_and_import();
-	std::auto_ptr<ReadonlyDataset> reader(makeReader());
+	std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
     metadata::Collection mdc;
     reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
@@ -200,7 +200,7 @@ template<> template<> void to::test<2>()
 template<> template<> void to::test<3>()
 {
 	clean_and_import();
-	std::auto_ptr<ReadonlyDataset> reader(makeReader());
+	std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
 	std::stringstream os;
 	dataset::ByteQuery bq;
@@ -216,7 +216,7 @@ template<> template<> void to::test<4>()
 	using namespace arki::types;
 
 	clean_and_import();
-	std::auto_ptr<ReadonlyDataset> reader(makeReader());
+	std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
     metadata::Collection mdc;
     reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
@@ -247,7 +247,7 @@ template<> template<> void to::test<5>()
 	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
 	clean_and_import(&cfg);
 	{
-		auto_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
+		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;
 		writer->repack(s, true);
 		s.ensure_line_contains(": archived 2007/07-07.grib1");
@@ -257,7 +257,7 @@ template<> template<> void to::test<5>()
 		s.ensure_all_lines_seen();
 	}
 
-	std::auto_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+	std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 	metadata::Collection mdc;
 
     reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
@@ -335,7 +335,7 @@ template<> template<> void to::test<6>()
 	system("rm -rf testds");
 	system("mkdir testds");
 
-	std::auto_ptr<ReadonlyDataset> reader(makeReader());
+	std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
     metadata::Collection mdc;
     reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
@@ -359,7 +359,7 @@ template<> template<> void to::test<7>()
 
     clean();
     {
-        std::auto_ptr<WritableDataset> writer(makeWriter());
+        std::unique_ptr<WritableDataset> writer(makeWriter());
 
         // Reverse order of import, so we can check if things get sorted properly when querying
         for (int month = 12; month >= 1; --month)
@@ -395,7 +395,7 @@ template<> template<> void to::test<7>()
         unsigned seen;
         CheckSortOrder() : last_value(0), seen(0) {}
         virtual uint64_t make_key(const Metadata& md) const = 0;
-        bool eat(auto_ptr<Metadata> md) override
+        bool eat(unique_ptr<Metadata>&& md) override
         {
             uint64_t value = make_key(*md);
             wassert(actual(value) >= last_value);
@@ -427,14 +427,14 @@ template<> template<> void to::test<7>()
     };
 
     {
-        std::auto_ptr<ReadonlyDataset> reader(makeReader());
+        std::unique_ptr<ReadonlyDataset> reader(makeReader());
         CheckReftimeSortOrder cso;
         reader->queryData(dataset::DataQuery(Matcher::parse("")), cso);
         wassert(actual(cso.seen) == 16128);
     }
 
     {
-        std::auto_ptr<ReadonlyDataset> reader(makeReader());
+        std::unique_ptr<ReadonlyDataset> reader(makeReader());
         CheckAllSortOrder cso;
         dataset::DataQuery dq(Matcher::parse(""));
         dq.sorter = sort::Compare::parse("reftime,area,product");

@@ -92,7 +92,7 @@ public:
     void set_data_start_hook(metadata::Hook* hook);
 
     // Process one metadata
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
     // End of processing: flush all pending data
     void flush();

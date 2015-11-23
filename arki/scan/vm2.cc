@@ -155,9 +155,9 @@ bool Vm2::next(Metadata& md)
     size_t size = line.size();
 
     md.clear();
-    auto_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size));
+    unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size));
     md.set_cached_data(wibble::sys::Buffer(line.c_str(), line.size()));
-    md.set_source(upcast<Source>(source));
+    md.set_source(upcast<Source>(move(source)));
     md.add_note("Scanned from " + relname);
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
     md.set(Area::createVM2(value.station_id));

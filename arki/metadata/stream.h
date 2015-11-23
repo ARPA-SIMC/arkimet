@@ -37,7 +37,7 @@ class Eater;
 class Stream
 {
     Eater& consumer;
-    std::auto_ptr<Metadata> md;
+    std::unique_ptr<Metadata> md;
 	std::string streamname;
 	std::string buffer;
 	enum { METADATA, DATA } state;

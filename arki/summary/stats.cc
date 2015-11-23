@@ -60,7 +60,7 @@ Stats::Stats(const Metadata& md)
         throw wibble::exception::Consistency("summarising metadata", "missing reference time");
 }
 
-Stats* Stats::clone() const override
+Stats* Stats::clone() const
 {
     return new Stats(*this);
 }
@@ -124,14 +124,14 @@ void Stats::merge(const Metadata& md)
     size += md.data_size();
 }
 
-std::auto_ptr<types::Reftime> Stats::make_reftime() const
+std::unique_ptr<types::Reftime> Stats::make_reftime() const
 {
     return Reftime::create(begin, end);
 }
 
 void Stats::encodeWithoutEnvelope(Encoder& enc) const
 {
-    auto_ptr<types::Reftime> reftime(Reftime::create(begin, end));
+    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     enc.addUInt(count, 4);
     enc.addString(reftime->encodeBinary());
     enc.addULInt(size, 8);
@@ -153,10 +153,10 @@ void Stats::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("s", size);
 }
 
-auto_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Stats> Stats::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
-    auto_ptr<Stats> res(new Stats);
+    unique_ptr<Stats> res(new Stats);
     res->count = val["c"].want_int("parsing summary stats count");
     res->size = val["s"].want_int("parsing summary stats size");
     if (res->count)
@@ -176,18 +176,18 @@ std::string Stats::toYaml(size_t indent) const
 
 void Stats::toYaml(std::ostream& out, size_t indent) const
 {
-    auto_ptr<types::Reftime> reftime(Reftime::create(begin, end));
+    unique_ptr<types::Reftime> reftime(Reftime::create(begin, end));
     string ind(indent, ' ');
     out << ind << "Count: " << count << endl;
     out << ind << "Size: " << size << endl;
     out << ind << "Reftime: " << *reftime << endl;
 }
 
-auto_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
+unique_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
 {
     using namespace utils::codec;
 
-    auto_ptr<Stats> res(new Stats);
+    unique_ptr<Stats> res(new Stats);
 
     // First decode the count
     if (len < 4)
@@ -201,7 +201,7 @@ auto_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
     types::Code el_type = types::decodeEnvelope(el_start, el_len);
     if (el_type == types::TYPE_REFTIME)
     {
-        auto_ptr<Reftime> rt(Reftime::decode(el_start, el_len));
+        unique_ptr<Reftime> rt(Reftime::decode(el_start, el_len));
         res->begin = rt->period_begin();
         res->end = rt->period_end();
     }
@@ -222,11 +222,11 @@ auto_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
     return res;
 }
 
-auto_ptr<Stats> Stats::decodeString(const std::string& str)
+unique_ptr<Stats> Stats::decodeString(const std::string& str)
 {
     using namespace str;
 
-    auto_ptr<Stats> res(new Stats);
+    unique_ptr<Stats> res(new Stats);
     stringstream in(str, ios_base::in);
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(in);
@@ -239,7 +239,7 @@ auto_ptr<Stats> Stats::decodeString(const std::string& str)
             res->size = strtoull(i->second.c_str(), 0, 10);
         else if (name == "reftime")
         {
-            auto_ptr<Reftime> rt(Reftime::decodeString(i->second));
+            unique_ptr<Reftime> rt(Reftime::decodeString(i->second));
             res->begin = rt->period_begin();
             res->end = rt->period_end();
         }

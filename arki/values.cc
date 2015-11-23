@@ -28,6 +28,7 @@
 #include <arki/utils/codec.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include <memory>
 #include <cstdlib>
 #include <cctype>
 #include <cstdio>
@@ -678,7 +679,7 @@ ValueBag ValueBag::parse(const std::string& str)
 
 		// Parse the value
 		size_t lenParsed;
-		auto_ptr<Value> val(Value::parse(str.substr(cur), lenParsed));
+		unique_ptr<Value> val(Value::parse(str.substr(cur), lenParsed));
 
 		// Set the value
 		if (val.get())

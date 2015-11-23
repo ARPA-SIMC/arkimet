@@ -49,14 +49,14 @@ struct DataStartHookRunner : public metadata::Eater
     DataStartHookRunner(metadata::Eater& next, metadata::Hook* data_start_hook=0)
         : next(next), data_start_hook(data_start_hook) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override
+    bool eat(std::unique_ptr<Metadata>&& md) override
     {
         if (data_start_hook)
         {
             (*data_start_hook)();
             data_start_hook = 0;
         }
-        return next.eat(md);
+        return next.eat(move(md));
     }
 };
 
@@ -70,7 +70,7 @@ struct DataOnly : public metadata::Eater
 
     DataOnly(std::ostream& out) : out(out), writer(0) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
 
@@ -81,18 +81,18 @@ struct MakeAbsolute : public metadata::Eater
 
     MakeAbsolute(metadata::Eater& next) : next(next) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
 /// Make all sources URLs
 struct MakeURL : public metadata::Eater
 {
-    std::string url;
     metadata::Eater& next;
+    std::string url;
 
     MakeURL(metadata::Eater& next, const std::string& url) : next(next), url(url) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
 /// Make all metadata inline sources, loading data if needed
@@ -102,10 +102,10 @@ struct MakeInline : public metadata::Eater
 
     MakeInline(metadata::Eater& next) : next(next) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override
+    bool eat(std::unique_ptr<Metadata>&& md) override
     {
         md->makeInline();
-        return next.eat(md);
+        return next.eat(move(md));
     }
 };
 

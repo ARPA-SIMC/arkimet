@@ -56,7 +56,7 @@ struct Eater
      * more metadata. If it's false, then the observer is satisfied and must
      * not be sent any more metadata.
      */
-    virtual bool eat(std::auto_ptr<Metadata> md) = 0;
+    virtual bool eat(std::unique_ptr<Metadata>&& md) = 0;
 
     /// Push to the LUA stack a userdata to access this Consumer
     void lua_push(lua_State* L);
@@ -90,7 +90,7 @@ struct FilteredEater : public metadata::Eater
     FilteredEater(const Matcher& matcher, metadata::Eater& next)
         : matcher(matcher), next(next) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
 /// Pass through metadata to a consumer if it matches a Matcher expression
@@ -112,9 +112,9 @@ struct LuaConsumer : public Eater
 
 	LuaConsumer(lua_State* L, int funcid);
 	virtual ~LuaConsumer();
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
-	static std::auto_ptr<LuaConsumer> lua_check(lua_State* L, int idx);
+	static std::unique_ptr<LuaConsumer> lua_check(lua_State* L, int idx);
 };
 
 struct SummarisingObserver : public Observer
@@ -130,7 +130,7 @@ struct SummarisingEater : public Eater
     Summary& s;
     SummarisingEater(Summary& s) : s(s) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
 struct Counter : public Observer, Eater
@@ -139,7 +139,7 @@ struct Counter : public Observer, Eater
 
 	Counter() : count(0) {}
 
-    bool eat(std::auto_ptr<Metadata> md) override { ++count; return true; }
+    bool eat(std::unique_ptr<Metadata>&& md) override { ++count; return true; }
     bool observe(const Metadata& md) override { ++count; return true; }
 };
 

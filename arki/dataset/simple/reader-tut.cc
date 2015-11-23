@@ -63,7 +63,7 @@ TESTGRP(arki_dataset_simple_reader);
 template<> template<>
 void to::test<1>()
 {
-	auto_ptr<simple::Reader> reader(makeSimpleReader());
+	unique_ptr<simple::Reader> reader(makeSimpleReader());
 
 	// Use dup() because PosixBuf will close its file descriptor at destruction
 	// time

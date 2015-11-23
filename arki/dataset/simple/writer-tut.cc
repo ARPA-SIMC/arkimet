@@ -191,7 +191,7 @@ void to::test<3>()
 
     // Query now is ok, but empty
     {
-        auto_ptr<Reader> reader(makeSimpleReader());
+        unique_ptr<Reader> reader(makeSimpleReader());
         metadata::Collection mdc;
         reader->queryData(dataset::DataQuery(Matcher()), mdc);
         ensure_equals(mdc.size(), 0u);

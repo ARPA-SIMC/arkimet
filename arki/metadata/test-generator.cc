@@ -53,7 +53,7 @@ bool Generator::has(types::Code code)
     return samples.find(code) != samples.end();
 }
 
-void Generator::add(auto_ptr<types::Type> item)
+void Generator::add(unique_ptr<types::Type> item)
 {
     Code code = item->type_code();
     samples[code].push_back(item.release());
@@ -140,7 +140,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
 {
     if (i == samples.end())
     {
-        auto_ptr<Metadata> m(new Metadata(md));
+        unique_ptr<Metadata> m(new Metadata(md));
 
         // Set run from Reftime
         const types::Reftime* rt = md.get<types::Reftime>();
@@ -153,7 +153,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         wibble::sys::Buffer data(buf, 5432, false);
         m->set_source_inline(format, data);
 
-        return cons.eat(m);
+        return cons.eat(move(m));
     }
 
     for (vector<Type*>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)

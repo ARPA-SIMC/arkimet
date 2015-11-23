@@ -102,7 +102,7 @@ ValidatorRepository::~ValidatorRepository()
         delete i->second;
 }
 
-void ValidatorRepository::add(std::auto_ptr<Validator> v)
+void ValidatorRepository::add(std::unique_ptr<Validator> v)
 {
     iterator i = find(v->name);
     if (i == end())
@@ -123,7 +123,7 @@ const ValidatorRepository& ValidatorRepository::get()
     if (!instance)
     {
         instance = new ValidatorRepository;
-        instance->add(auto_ptr<Validator>(new validators::DailyImport));
+        instance->add(unique_ptr<Validator>(new validators::DailyImport));
     }
     return *instance;
 }

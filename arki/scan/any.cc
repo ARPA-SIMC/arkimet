@@ -75,9 +75,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            c.eat(move(md));
         }
         return true;
     }
@@ -88,9 +88,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            c.eat(move(md));
         }
         return true;
     }
@@ -101,9 +101,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            c.eat(move(md));
         }
         return true;
     }
@@ -114,9 +114,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            c.eat(move(md));
         }
         return true;
     }
@@ -127,9 +127,9 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         scanner.open(pathname, basedir, relname);
         while (true)
         {
-            auto_ptr<Metadata> md(new Metadata);
+            unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(md);
+            c.eat(move(md));
         }
         return true;
     }
@@ -159,11 +159,11 @@ struct DirSource : public metadata::Eater
        this->pos = pos;
    }
 
-   bool eat(auto_ptr<Metadata> md) override
+   bool eat(unique_ptr<Metadata>&& md) override
    {
        const source::Blob& i = md->sourceBlob();
        md->set_source(Source::createBlob(i.format, i.basedir, dirname, pos, i.size));
-       return next.eat(md);
+       return next.eat(move(md));
    }
 };
 
@@ -223,7 +223,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
-    auto_ptr<struct stat> st_file = sys::fs::stat(pathname);
+    unique_ptr<struct stat> st_file = sys::fs::stat(pathname);
     if (!st_file.get())
         st_file = sys::fs::stat(pathname + ".gz");
     if (!st_file.get())
@@ -231,7 +231,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
 
     // stat the metadata file, if it exists
     string md_pathname = pathname + ".metadata";
-    auto_ptr<struct stat> st_md = sys::fs::stat(md_pathname);
+    unique_ptr<struct stat> st_md = sys::fs::stat(md_pathname);
 
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
@@ -320,7 +320,7 @@ void compress(const std::string& file, size_t groupsize)
 	compressor.flush();
 
 	// Set the same timestamp as the uncompressed file
-	std::auto_ptr<struct stat> st = sys::fs::stat(file);
+	std::unique_ptr<struct stat> st = sys::fs::stat(file);
 	struct utimbuf times;
 	times.actime = st->st_atime;
 	times.modtime = st->st_mtime;

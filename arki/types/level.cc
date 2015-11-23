@@ -22,6 +22,7 @@
 
 #include <wibble/exception.h>
 #include <wibble/string.h>
+#include <arki/utils.h>
 #include <arki/types/level.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
@@ -134,7 +135,7 @@ std::string Level::formatStyle(Level::Style s)
 	}
 }
 
-auto_ptr<Level> Level::decode(const unsigned char* buf, size_t len)
+unique_ptr<Level> Level::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
@@ -257,7 +258,7 @@ static double getDouble(const char * & start, const char* what)
 	return res;
 }
 
-auto_ptr<Level> Level::decodeString(const std::string& val)
+unique_ptr<Level> Level::decodeString(const std::string& val)
 {
 	string inner;
 	Level::Style style = outerParse<Level>(val, inner);
@@ -312,7 +313,7 @@ auto_ptr<Level> Level::decodeString(const std::string& val)
 	}
 }
 
-auto_ptr<Level> Level::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Level> Level::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -433,32 +434,32 @@ void Level::lua_loadlib(lua_State* L)
     utils::lua::add_global_library(L, "arki_level", lib);
 }
 
-auto_ptr<Level> Level::createGRIB1(unsigned char type)
+unique_ptr<Level> Level::createGRIB1(unsigned char type)
 {
     return upcast<Level>(level::GRIB1::create(type));
 }
-auto_ptr<Level> Level::createGRIB1(unsigned char type, unsigned short l1)
+unique_ptr<Level> Level::createGRIB1(unsigned char type, unsigned short l1)
 {
     return upcast<Level>(level::GRIB1::create(type, l1));
 }
-auto_ptr<Level> Level::createGRIB1(unsigned char type, unsigned char l1, unsigned char l2)
+unique_ptr<Level> Level::createGRIB1(unsigned char type, unsigned char l1, unsigned char l2)
 {
     return upcast<Level>(level::GRIB1::create(type, l1, l2));
 }
-auto_ptr<Level> Level::createGRIB2S(uint8_t type, uint8_t scale, uint32_t val)
+unique_ptr<Level> Level::createGRIB2S(uint8_t type, uint8_t scale, uint32_t val)
 {
     return upcast<Level>(level::GRIB2S::create(type, scale, val));
 }
-auto_ptr<Level> Level::createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
+unique_ptr<Level> Level::createGRIB2D(uint8_t type1, uint8_t scale1, uint32_t val1,
                                     uint8_t type2, uint8_t scale2, uint32_t val2)
 {
     return upcast<Level>(level::GRIB2D::create(type1, scale1, val1, type2, scale2, val2));
 }
-auto_ptr<Level> Level::createODIMH5(double value)
+unique_ptr<Level> Level::createODIMH5(double value)
 {
     return upcast<Level>(level::ODIMH5::create(value));
 }
-auto_ptr<Level> Level::createODIMH5(double min, double max)
+unique_ptr<Level> Level::createODIMH5(double min, double max)
 {
     return upcast<Level>(level::ODIMH5::create(min, max));
 }
@@ -515,7 +516,7 @@ void GRIB1::serialiseLocal(Emitter& e, const Formatter* f) const
             break;
     }
 }
-auto_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     int lt = val["lt"].want_int("parsing GRIB1 level type");
@@ -571,16 +572,16 @@ GRIB1* GRIB1::clone() const
     return res;
 }
 
-auto_ptr<GRIB1> GRIB1::create(unsigned char type)
+unique_ptr<GRIB1> GRIB1::create(unsigned char type)
 {
     GRIB1* res = new GRIB1;
     res->m_type = type;
     res->m_l1 = 0;
     res->m_l2 = 0;
-    return auto_ptr<GRIB1>(res);
+    return unique_ptr<GRIB1>(res);
 }
 
-auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned short l1)
+unique_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned short l1)
 {
 	GRIB1* res = new GRIB1;
 	res->m_type = type;
@@ -590,10 +591,10 @@ auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned short l1)
 		default: res->m_l1 = l1; break;
 	}
 	res->m_l2 = 0;
-    return auto_ptr<GRIB1>(res);
+    return unique_ptr<GRIB1>(res);
 }
 
-auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char l1, unsigned char l2)
+unique_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char l1, unsigned char l2)
 {
 	GRIB1* res = new GRIB1;
 	res->m_type = type;
@@ -603,7 +604,7 @@ auto_ptr<GRIB1> GRIB1::create(unsigned char type, unsigned char l1, unsigned cha
 		case 1: res->m_l1 = l1; res->m_l2 = 0; break;
 		default: res->m_l1 = l1; res->m_l2 = l2; break;
 	}
-    return auto_ptr<GRIB1>(res);
+    return unique_ptr<GRIB1>(res);
 }
 
 int GRIB1::valType() const
@@ -730,7 +731,7 @@ void GRIB2S::serialiseLocal(Emitter& e, const Formatter* f) const
     } else
         e.add("va", m_value);
 }
-auto_ptr<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB2S> GRIB2S::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& lt = val["lt"];
@@ -821,13 +822,13 @@ GRIB2S* GRIB2S::clone() const
     return res;
 }
 
-auto_ptr<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned int value)
+unique_ptr<GRIB2S> GRIB2S::create(unsigned char type, unsigned char scale, unsigned int value)
 {
     GRIB2S* res = new GRIB2S;
     res->m_type = type;
     res->m_scale = scale;
     res->m_value = value;
-    return auto_ptr<GRIB2S>(res);
+    return unique_ptr<GRIB2S>(res);
 }
 
 
@@ -920,7 +921,7 @@ void GRIB2D::serialiseLocal(Emitter& e, const Formatter* f) const
         e.add("v2", m_value2);
 
 }
-auto_ptr<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB2D> GRIB2D::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     const Node& l1 = val["l1"];
@@ -1031,7 +1032,7 @@ GRIB2D* GRIB2D::clone() const
     return res;
 }
 
-auto_ptr<GRIB2D> GRIB2D::create(
+unique_ptr<GRIB2D> GRIB2D::create(
     unsigned char type1, unsigned char scale1, unsigned int value1,
     unsigned char type2, unsigned char scale2, unsigned int value2)
 {
@@ -1042,7 +1043,7 @@ auto_ptr<GRIB2D> GRIB2D::create(
     res->m_type2 = type2;
     res->m_scale2 = scale2;
     res->m_value2 = value2;
-    return auto_ptr<GRIB2D>(res);
+    return unique_ptr<GRIB2D>(res);
 }
 
 Level::Style ODIMH5::style() const { return Level::ODIMH5; }
@@ -1070,7 +1071,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("mi", m_min);
     e.add("ma", m_max);
 }
-auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
     return ODIMH5::create(
@@ -1139,17 +1140,17 @@ ODIMH5* ODIMH5::clone() const
     return res;
 }
 
-auto_ptr<ODIMH5> ODIMH5::create(double val)
+unique_ptr<ODIMH5> ODIMH5::create(double val)
 {
     return ODIMH5::create(val, val);
 }
 
-auto_ptr<ODIMH5> ODIMH5::create(double min, double max)
+unique_ptr<ODIMH5> ODIMH5::create(double min, double max)
 {
     ODIMH5* res = new ODIMH5;
     res->m_max = max;
     res->m_min = min;
-    return auto_ptr<ODIMH5>(res);
+    return unique_ptr<ODIMH5>(res);
 }
 
 }

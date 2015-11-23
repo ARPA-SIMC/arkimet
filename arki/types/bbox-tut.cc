@@ -45,7 +45,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    auto_ptr<BBox> o = BBox::createInvalid();
+    unique_ptr<BBox> o = BBox::createInvalid();
 
 	tests::Lua test(
 		"function test(o) \n"

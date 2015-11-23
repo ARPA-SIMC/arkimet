@@ -101,7 +101,7 @@ const ARKI_GEOS_GEOMETRY* Area::bbox() const
 		// Create the bbox generator if missing
 		if (!area::bbox) area::bbox = new BBox();
 
-		std::auto_ptr<ARKI_GEOS_GEOMETRY> res = (*area::bbox)(*this);
+		std::unique_ptr<ARKI_GEOS_GEOMETRY> res = (*area::bbox)(*this);
 		if (res.get())
 			cached_bbox = res.release();
 	}
@@ -109,7 +109,7 @@ const ARKI_GEOS_GEOMETRY* Area::bbox() const
 	return cached_bbox;
 }
 
-auto_ptr<Area> Area::decode(const unsigned char* buf, size_t len)
+unique_ptr<Area> Area::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
@@ -127,7 +127,7 @@ auto_ptr<Area> Area::decode(const unsigned char* buf, size_t len)
     }
 }
 
-auto_ptr<Area> Area::decodeString(const std::string& val)
+unique_ptr<Area> Area::decodeString(const std::string& val)
 {
 	string inner;
 	Area::Style style = outerParse<Area>(val, inner);
@@ -150,7 +150,7 @@ auto_ptr<Area> Area::decodeString(const std::string& val)
 	}
 }
 
-auto_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Area> Area::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -202,15 +202,15 @@ void Area::lua_loadlib(lua_State* L)
 }
 #endif
 
-auto_ptr<Area> Area::createGRIB(const ValueBag& values)
+unique_ptr<Area> Area::createGRIB(const ValueBag& values)
 {
     return upcast<Area>(area::GRIB::create(values));
 }
-auto_ptr<Area> Area::createODIMH5(const ValueBag& values)
+unique_ptr<Area> Area::createODIMH5(const ValueBag& values)
 {
     return upcast<Area>(area::ODIMH5::create(values));
 }
-auto_ptr<Area> Area::createVM2(unsigned station_id)
+unique_ptr<Area> Area::createVM2(unsigned station_id)
 {
     return upcast<Area>(area::VM2::create(station_id));
 }
@@ -236,7 +236,7 @@ void GRIB::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-auto_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<GRIB> GRIB::decodeMapping(const emitter::memory::Mapping& val)
 {
     return GRIB::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -284,11 +284,11 @@ GRIB* GRIB::clone() const
     return res;
 }
 
-auto_ptr<GRIB> GRIB::create(const ValueBag& values)
+unique_ptr<GRIB> GRIB::create(const ValueBag& values)
 {
     GRIB* res = new GRIB;
     res->m_values = values;
-    return auto_ptr<GRIB>(res);
+    return unique_ptr<GRIB>(res);
 }
 
 ODIMH5::~ODIMH5() { /* cache_odimh5.uncache(this); */ }
@@ -310,7 +310,7 @@ void ODIMH5::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va");
     m_values.serialise(e);
 }
-auto_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 {
     return ODIMH5::create(ValueBag::parse(val["va"].get_mapping()));
 }
@@ -358,11 +358,11 @@ ODIMH5* ODIMH5::clone() const
     return res;
 }
 
-auto_ptr<ODIMH5> ODIMH5::create(const ValueBag& values)
+unique_ptr<ODIMH5> ODIMH5::create(const ValueBag& values)
 {
     ODIMH5* res = new ODIMH5;
     res->m_values = values;
-    return auto_ptr<ODIMH5>(res);
+    return unique_ptr<ODIMH5>(res);
 }
 
 VM2::~VM2() {}
@@ -453,13 +453,13 @@ VM2* VM2::clone() const
     return res;
 }
 
-auto_ptr<VM2> VM2::create(unsigned station_id)
+unique_ptr<VM2> VM2::create(unsigned station_id)
 {
     VM2* res = new VM2;
     res->m_station_id = station_id;
-    return auto_ptr<VM2>(res);
+    return unique_ptr<VM2>(res);
 }
-auto_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<VM2> VM2::decodeMapping(const emitter::memory::Mapping& val)
 {
     return VM2::create(val["id"].want_int("parsing VM2 area station id"));
 }

@@ -48,7 +48,7 @@ template<> template<> void to::test<1>()
 // Test Lua functions
 template<> template<> void to::test<2>()
 {
-    auto_ptr<Task> o = Task::create("task");
+    unique_ptr<Task> o = Task::create("task");
 
 	tests::Lua test(
 		"function test(o) \n"

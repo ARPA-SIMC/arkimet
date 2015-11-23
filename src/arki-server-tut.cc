@@ -77,7 +77,7 @@ template<> template<>
 void to::test<2>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
     metadata::Collection mdc;
 
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
@@ -100,7 +100,7 @@ template<> template<>
 void to::test<3>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
     metadata::Collection mdc;
 
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
@@ -118,7 +118,7 @@ void to::test<3>()
     runtime::Tempfile output;
     runtime::ProcessorMaker pm;
     pm.data_inline = true;
-    auto_ptr<runtime::DatasetProcessor> proc = pm.make(Matcher::parse("origin:GRIB1,200"), output);
+    unique_ptr<runtime::DatasetProcessor> proc = pm.make(Matcher::parse("origin:GRIB1,200"), output);
     proc->process(*testds, "test200");
     proc->end();
     mdc.clear();
@@ -133,7 +133,7 @@ template<> template<>
 void to::test<4>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
     Summary summary;
     testds->querySummary(Matcher::parse("origin:GRIB1,200"), summary);
@@ -145,7 +145,7 @@ template<> template<>
 void to::test<5>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
     ensure(dynamic_cast<dataset::HTTP*>(testds.get()) != 0);
 
@@ -162,7 +162,7 @@ template<> template<>
 void to::test<6>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
     dataset::HTTP* htd = dynamic_cast<dataset::HTTP*>(testds.get());
     ensure(htd != 0);
@@ -224,7 +224,7 @@ void to::test<8>()
     cfg.setValue("type", "remote");
     cfg.setValue("path", "http://localhost:7117");
     cfg.setValue("qmacro", "test200");
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
     metadata::Collection mdc;
 
     testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
@@ -242,7 +242,7 @@ void to::test<9>()
     cfg.setValue("type", "remote");
     cfg.setValue("path", "http://localhost:7117");
     cfg.setValue("qmacro", "test200");
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
 
     Summary summary;
     testds->querySummary(Matcher(), summary);
@@ -255,7 +255,7 @@ void to::test<10>()
 {
     ConfigFile cfg;
     dataset::HTTP::readConfig("http://localhost:7117/dataset/test200", cfg);
-    auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("test200")));
+    unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("test200")));
 
     // Querying it should get the partial output and no error
     stringstream str;
@@ -288,13 +288,13 @@ void to::test<11>()
         cfg.setValue("step", "daily");
         cfg.setValue("filter", "origin:GRIB1,80");
         cfg.setValue("postprocess", "cat,echo,say,checkfiles,error,outthenerr");
-        auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
+        unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
 
         struct Writer : public metadata::Eater
         {
             string& out;
             Writer(string& out) : out(out) {}
-            bool eat(auto_ptr<Metadata> md) override
+            bool eat(unique_ptr<Metadata>&& md) override
             {
                 md->makeInline();
                 out += md->encodeBinary();
@@ -312,7 +312,7 @@ void to::test<11>()
     stringstream postprocessed;
     {
         dataset::HTTP::readConfig("http://localhost:7117", config);
-        auto_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
+        unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
         ensure(dynamic_cast<dataset::HTTP*>(testds.get()) != 0);
 
         dataset::ByteQuery bq;

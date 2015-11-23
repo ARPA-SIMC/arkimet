@@ -44,8 +44,8 @@ struct URL : public Source
     bool equals(const Type& o) const override;
     URL* clone() const override;
 
-    static std::auto_ptr<URL> create(const std::string& format, const std::string& url);
-    static std::auto_ptr<URL> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<URL> create(const std::string& format, const std::string& url);
+    static std::unique_ptr<URL> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 

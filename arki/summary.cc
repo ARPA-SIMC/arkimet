@@ -47,6 +47,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace wibble;
@@ -152,7 +153,7 @@ static int arkilua_filter(lua_State* L)
         s->filter(m, *s1);
         return 0;
     } else {
-        auto_ptr<Summary> new_summary(new Summary);
+        unique_ptr<Summary> new_summary(new Summary);
         s->filter(m, *new_summary);
         SummaryUD::create(L, new_summary.release(), true);
         return 1;
@@ -317,14 +318,14 @@ struct StatsHull : public ItemVisitor
         return true;
     }
 
-    auto_ptr<ARKI_GEOS_GEOMETRY> makeBBox()
+    unique_ptr<ARKI_GEOS_GEOMETRY> makeBBox()
     {
         if (geoms->empty())
-            return auto_ptr<ARKI_GEOS_GEOMETRY>(0);
+            return unique_ptr<ARKI_GEOS_GEOMETRY>();
 
-        auto_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms));
+        unique_ptr<ARKI_GEOS_NS::GeometryCollection> gc(gf.createGeometryCollection(geoms));
         geoms = 0;
-        return auto_ptr<ARKI_GEOS_GEOMETRY>(gc->convexHull());
+        return unique_ptr<ARKI_GEOS_GEOMETRY>(gc->convexHull());
     }
 };
 #endif
@@ -345,7 +346,7 @@ void Summary::dump(std::ostream& out) const
     root->dump(out);
 }
 
-auto_ptr<types::Reftime> Summary::getReferenceTime() const
+unique_ptr<types::Reftime> Summary::getReferenceTime() const
 {
     if (root->empty())
         throw wibble::exception::Consistency("get summary reference time", "summary is empty");
@@ -353,7 +354,7 @@ auto_ptr<types::Reftime> Summary::getReferenceTime() const
         return root->stats.make_reftime();
 }
 
-void Summary::expand_date_range(auto_ptr<Time>& begin, auto_ptr<Time>& end) const
+void Summary::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
     if (root->empty())
         return;
@@ -425,14 +426,14 @@ size_t Summary::resolveMatcher(const Matcher& matcher, std::vector<ItemSet>& res
     return visitor.added;
 }
 
-std::auto_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const
+std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFACTORY& gf) const
 {
 #ifdef HAVE_GEOS
     summary::StatsHull merger(gf);
     root->visitItem(summary::Visitor::posForCode(types::TYPE_AREA), merger);
     return merger.makeBBox();
 #else
-    return std::auto_ptr<ARKI_GEOS_GEOMETRY>(0);
+    return std::unique_ptr<ARKI_GEOS_GEOMETRY>(0);
 #endif
 }
 
@@ -597,7 +598,7 @@ struct YamlPrinter : public Visitor
 
         // Write the stats
         out << "SummaryStats:" << endl;
-        auto_ptr<Reftime> reftime(stats.make_reftime());
+        unique_ptr<Reftime> reftime(stats.make_reftime());
         out << indent << "Count: " << stats.count << endl;
         out << indent << "Size: " << stats.size << endl;
         out << indent << "Reftime: " << *reftime << endl;

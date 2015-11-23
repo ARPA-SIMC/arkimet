@@ -147,9 +147,9 @@ bool Table::equals(const Table& table) const
     return true;
 }
 
-const types::Type* Table::intern(unsigned pos, std::auto_ptr<types::Type> item)
+const types::Type* Table::intern(unsigned pos, std::unique_ptr<types::Type>&& item)
 {
-    return interns[pos].intern(item);
+    return interns[pos].intern(move(item));
 }
 
 void Table::merge(const Metadata& md)
@@ -205,7 +205,7 @@ void Table::merge(const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
 
-    auto_ptr<summary::Stats> stats = summary::Stats::decodeMapping(
+    unique_ptr<summary::Stats> stats = summary::Stats::decodeMapping(
             m["summarystats"].want_mapping("parsing summary item stats"));
     Row new_row(*stats);
     new_row.set_to_zero();

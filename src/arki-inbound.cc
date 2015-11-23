@@ -71,21 +71,21 @@ struct Printer : public metadata::Eater
 {
     virtual void flush() {}
 
-    static auto_ptr<Printer> create(wibble::commandline::Options& opts);
+    static unique_ptr<Printer> create(wibble::commandline::Options& opts);
 };
 
 struct BinaryPrinter : public Printer
 {
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         md->write(cout, "(stdout)");
         return true;
     }
 };
 
-auto_ptr<Printer> Printer::create(wibble::commandline::Options& opts)
+unique_ptr<Printer> Printer::create(wibble::commandline::Options& opts)
 {
-    return auto_ptr<Printer>(new BinaryPrinter);
+    return unique_ptr<Printer>(new BinaryPrinter);
 }
 
 int main(int argc, const char* argv[])
@@ -114,7 +114,7 @@ int main(int argc, const char* argv[])
                     i != files.end(); ++i)
                 cout << *i << endl;
         } else if (opts.do_scan->isSet()) {
-            auto_ptr<Printer> printer = Printer::create(opts);
+            unique_ptr<Printer> printer = Printer::create(opts);
 
             while (opts.hasNext())
             {
@@ -142,7 +142,7 @@ int main(int argc, const char* argv[])
                 inbound.testdispatch(fname, format, cout);
             }
         } else if (opts.do_import->isSet()) {
-            auto_ptr<Printer> printer = Printer::create(opts);
+            unique_ptr<Printer> printer = Printer::create(opts);
 
             while (opts.hasNext())
             {

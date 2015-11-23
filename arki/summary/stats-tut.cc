@@ -48,7 +48,7 @@ void to::test<1>()
 {
     using namespace arki::summary;
 
-    auto_ptr<Stats> st(new Stats);
+    unique_ptr<Stats> st(new Stats);
     wassert(actual(st->count) == 0);
     wassert(actual(st->size) == 0);
     wassert(actual(*st) == Stats());
@@ -57,7 +57,7 @@ void to::test<1>()
     wassert(actual(st->count) == 1);
     wassert(actual(st->size) == 0);
 
-    auto_ptr<Stats> st1(new Stats);
+    unique_ptr<Stats> st1(new Stats);
     st1->merge(md);
     st1->merge(md);
 
@@ -70,7 +70,7 @@ void to::test<2>()
 {
     using namespace arki::summary;
 
-    auto_ptr<Stats> st(new Stats);
+    unique_ptr<Stats> st(new Stats);
     st->merge(md);
     wassert(actual(st).serializes());
 }
@@ -81,7 +81,7 @@ void to::test<3>()
 {
     using namespace arki::summary;
 
-    auto_ptr<Stats> st(new Stats);
+    unique_ptr<Stats> st(new Stats);
     st->merge(md);
     st->count = 0x7FFFffffUL;
     st->size = 0x7FFFffffFFFFffffUL;

@@ -83,7 +83,7 @@ void Task::encodeWithoutEnvelope(Encoder& enc) const
 	enc.addString(task);
 }
 
-auto_ptr<Task> Task::decode(const unsigned char* buf, size_t len)
+unique_ptr<Task> Task::decode(const unsigned char* buf, size_t len)
 {
 	using namespace utils::codec;
 
@@ -104,12 +104,12 @@ void Task::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("va", task);
 }
 
-auto_ptr<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Task> Task::decodeMapping(const emitter::memory::Mapping& val)
 {
     return Task::create(val["va"].want_string("parsing Task value"));
 }
 
-auto_ptr<Task> Task::decodeString(const std::string& val)
+unique_ptr<Task> Task::decodeString(const std::string& val)
 {
 	if (val.empty())
 		throw wibble::exception::Consistency("parsing Task", "string is empty");
@@ -153,9 +153,9 @@ Task* Task::clone() const
     return new Task(task);
 }
 
-auto_ptr<Task> Task::create(const std::string& val)
+unique_ptr<Task> Task::create(const std::string& val)
 {
-    return auto_ptr<Task>(new Task(val));
+    return unique_ptr<Task>(new Task(val));
 }
 
 /*============================================================================*/

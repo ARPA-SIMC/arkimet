@@ -92,7 +92,7 @@ struct Importer : public metadata::Eater
     dataset::WritableLocal& ds;
 
     Importer(dataset::WritableLocal& ds) : ds(ds) {}
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         WritableDataset::AcquireResult r = ds.acquire(*md);
         if (r != WritableDataset::ACQ_OK)
@@ -121,7 +121,7 @@ struct Ondisk2Scenario : public Scenario
         dataset::ondisk2::TestOverrideCurrentDateForMaintenance od(t_start + 3600*24*(curday-1));
 
         // Pack and archive
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
         stringstream packlog;
         ds->repack(packlog, true);
         if (packlog.str().find(str::fmtf("%d files archived", expected_archived)) == string::npos)
@@ -170,7 +170,7 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
 
         Importer importer(*ds);
         scan::scan("inbound/test.grib1", importer);
@@ -204,7 +204,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
 
         // Import several metadata items
         metadata::test::Generator gen("grib1");
@@ -257,7 +257,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         Ondisk2Scenario::build();
 
         // Generate a dataset with archived data
-        auto_ptr<WritableLocal> ds(WritableLocal::create(cfg));
+        unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
 
         // Import several metadata items
         metadata::test::Generator gen("grib1");

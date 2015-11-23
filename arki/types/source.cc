@@ -100,12 +100,12 @@ void Source::serialiseLocal(Emitter& e, const Formatter* f) const
     e.add("f"); e.add(format);
 }
 
-auto_ptr<Source> Source::decode(const unsigned char* buf, size_t len)
+unique_ptr<Source> Source::decode(const unsigned char* buf, size_t len)
 {
     return decodeRelative(buf, len, string());
 }
 
-auto_ptr<Source> Source::decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir)
+unique_ptr<Source> Source::decodeRelative(const unsigned char* buf, size_t len, const std::string& basedir)
 {
 	using namespace utils::codec;
 	Decoder dec(buf, len);
@@ -135,7 +135,7 @@ auto_ptr<Source> Source::decodeRelative(const unsigned char* buf, size_t len, co
     }
 }
 
-auto_ptr<Source> Source::decodeString(const std::string& val)
+unique_ptr<Source> Source::decodeString(const std::string& val)
 {
 	string inner;
 	Source::Style style = outerParse<Source>(val, inner);
@@ -170,7 +170,7 @@ auto_ptr<Source> Source::decodeString(const std::string& val)
 	}
 }
 
-auto_ptr<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
+unique_ptr<Source> Source::decodeMapping(const emitter::memory::Mapping& val)
 {
     using namespace emitter::memory;
 
@@ -195,17 +195,17 @@ bool Source::lua_lookup(lua_State* L, const std::string& name) const
 }
 #endif
 
-auto_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
+unique_ptr<Source> Source::createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size)
 {
     return upcast<Source>(source::Blob::create(format, basedir, filename, offset, size));
 }
 
-auto_ptr<Source> Source::createInline(const std::string& format, uint64_t size)
+unique_ptr<Source> Source::createInline(const std::string& format, uint64_t size)
 {
     return upcast<Source>(source::Inline::create(format, size));
 }
 
-auto_ptr<Source> Source::createURL(const std::string& format, const std::string& url)
+unique_ptr<Source> Source::createURL(const std::string& format, const std::string& url)
 {
     return upcast<Source>(source::URL::create(format, url));
 }

@@ -113,7 +113,7 @@ int Type::compare(const Type& o) const
 bool Type::operator==(const std::string& o) const
 {
     // Temporarily decode it for comparison
-    std::auto_ptr<Type> other = decodeString(type_code(), o);
+    std::unique_ptr<Type> other = decodeString(type_code(), o);
     return operator==(*other);
 }
 
@@ -307,13 +307,13 @@ types::Code decodeEnvelope(const unsigned char*& buf, size_t& len)
 	return code;
 }
 
-auto_ptr<Type> decode(const unsigned char* buf, size_t len)
+unique_ptr<Type> decode(const unsigned char* buf, size_t len)
 {
 	types::Code code = decodeEnvelope(buf, len);
 	return types::MetadataType::get(code)->decode_func(buf, len);
 }
 
-auto_ptr<Type> decode(utils::codec::Decoder& dec)
+unique_ptr<Type> decode(utils::codec::Decoder& dec)
 {
     using namespace utils::codec;
 
@@ -324,30 +324,30 @@ auto_ptr<Type> decode(utils::codec::Decoder& dec)
 
     // Finally decode the element body
     ensureSize(dec.len, size, "element body");
-    auto_ptr<Type> res = decodeInner(code, dec.buf, size);
+    unique_ptr<Type> res = decodeInner(code, dec.buf, size);
     dec.buf += size;
     dec.len -= size;
     return res;
 }
 
-auto_ptr<Type> decodeInner(types::Code code, const unsigned char* buf, size_t len)
+unique_ptr<Type> decodeInner(types::Code code, const unsigned char* buf, size_t len)
 {
 	return types::MetadataType::get(code)->decode_func(buf, len);
 }
 
-auto_ptr<Type> decodeString(types::Code code, const std::string& val)
+unique_ptr<Type> decodeString(types::Code code, const std::string& val)
 {
 	return types::MetadataType::get(code)->string_decode_func(val);
 }
 
-auto_ptr<Type> decodeMapping(const emitter::memory::Mapping& m)
+unique_ptr<Type> decodeMapping(const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
     const std::string& type = m["t"].want_string("decoding item type");
     return decodeMapping(parseCodeName(type), m);
 }
 
-auto_ptr<Type> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
+unique_ptr<Type> decodeMapping(types::Code code, const emitter::memory::Mapping& m)
 {
     using namespace emitter::memory;
     return types::MetadataType::get(code)->mapping_decode_func(m);

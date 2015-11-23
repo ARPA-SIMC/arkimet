@@ -48,9 +48,9 @@ struct arki_report_shar
 TESTGRP(arki_report);
 
 namespace {
-inline auto_ptr<Metadata> wrap(const Metadata& md)
+inline unique_ptr<Metadata> wrap(const Metadata& md)
 {
-    return auto_ptr<Metadata>(new Metadata(md));
+    return unique_ptr<Metadata>(new Metadata(md));
 }
 }
 
@@ -98,7 +98,7 @@ void to::test<2>()
 {
     ConfigFile cfg;
     dataset::File::readConfig("inbound/test.grib1", cfg);
-    auto_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.section("test.grib1")));
+    unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfg.section("test.grib1")));
 
     // Scan it to be sure it can be read
     dataset::ByteQuery q;

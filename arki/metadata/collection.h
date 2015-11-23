@@ -69,7 +69,7 @@ public:
     bool observe(const Metadata& md) override;
 
     /// Append md
-    bool eat(std::auto_ptr<Metadata> md) override;
+    bool eat(std::unique_ptr<Metadata>&& md) override;
 
 	/**
 	 * Write all the metadata to a file, atomically, using AtomicWriter

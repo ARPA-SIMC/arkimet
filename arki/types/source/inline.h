@@ -45,8 +45,8 @@ struct Inline : public Source
 
     Inline* clone() const override;
 
-    static std::auto_ptr<Inline> create(const std::string& format, uint64_t size);
-    static std::auto_ptr<Inline> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<Inline> create(const std::string& format, uint64_t size);
+    static std::unique_ptr<Inline> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 

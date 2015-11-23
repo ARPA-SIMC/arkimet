@@ -71,14 +71,14 @@ struct BBox : public types::StyledType<BBox>
 	static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::auto_ptr<BBox> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<BBox> decodeString(const std::string& val);
-    static std::auto_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<BBox> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<BBox> decodeString(const std::string& val);
+    static std::unique_ptr<BBox> decodeMapping(const emitter::memory::Mapping& val);
 
     // Register this type tree with the type system
     static void init();
 
-    static std::auto_ptr<BBox> createInvalid();
+    static std::unique_ptr<BBox> createInvalid();
 };
 
 namespace bbox {
@@ -94,7 +94,7 @@ struct INVALID : public BBox
     bool equals(const Type& o) const override;
 
     INVALID* clone() const override;
-    static std::auto_ptr<INVALID> create();
+    static std::unique_ptr<INVALID> create();
 };
 
 }

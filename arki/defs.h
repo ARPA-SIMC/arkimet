@@ -24,10 +24,6 @@
  */
 #include <arki/libconfig.h>
 
-#ifndef HAVE_CXX11
-#define override
-#endif
-
 namespace arki {
 }
 

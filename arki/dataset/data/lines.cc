@@ -179,7 +179,7 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
 
 static data::Segment* make_repack_segment(const std::string& relname, const std::string& absname)
 {
-    auto_ptr<lines::Segment> res(new lines::Segment(relname, absname));
+    unique_ptr<lines::Segment> res(new lines::Segment(relname, absname));
     res->truncate_and_open();
     return res.release();
 }

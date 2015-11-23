@@ -1,47 +1,15 @@
 #ifndef ARKI_UTILS_H
 #define ARKI_UTILS_H
 
-/*
- * utils - General utility functions
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <sstream>
 #include <string>
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <wibble/sys/fs.h>
-#include <stdint.h>
+#include <cstdint>
 
 namespace arki {
 namespace utils {
-
-// static_assert implementation (taken from boost)
-// It relies on sizeof(incomplete_type) generating an error message containing
-// the name of the incomplete type.
-template <bool x> struct STATIC_ASSERTION_FAILURE;
-template <> struct STATIC_ASSERTION_FAILURE<true> { enum { value = 1 }; };
-template<int x> struct static_assert_test{};
-#define ARKI_STATIC_ASSERT( B ) \
-	typedef ::arki::utils::static_assert_test<\
-		sizeof(::arki::utils::STATIC_ASSERTION_FAILURE<(bool)(B)>)> arki_utils_static_assert_typedef_ ## __LINE__
 
 /// Create an empty file, succeeding if it already exists
 void createFlagfile(const std::string& pathname);
@@ -123,5 +91,4 @@ std::string require_format(const std::string& fname);
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif

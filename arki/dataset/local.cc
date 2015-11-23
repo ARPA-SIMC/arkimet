@@ -108,7 +108,7 @@ struct ScanTestFilter : public metadata::Eater
     ScanTestFilter(const Matcher& filter, metadata::Eater& next)
         : filter(filter), next(next) {}
 
-    bool eat(auto_ptr<Metadata> md) override
+    bool eat(unique_ptr<Metadata>&& md) override
     {
         metadata::Collection c;
 
@@ -138,7 +138,7 @@ struct ScanTestFilter : public metadata::Eater
 
         // Check that collection has 1 element (not 0, not >1)
         if (c.size() != 1)
-            return next.eat(md);
+            return next.eat(move(md));
 
         // Match on the rescanned, if it fails, output it
         if (!filter(c[0]))
@@ -146,7 +146,7 @@ struct ScanTestFilter : public metadata::Eater
             stringstream sstream;
             sstream << md->source();
             nag::verbose("%s: does not match filter");
-            return next.eat(md);
+            return next.eat(move(md));
         }
 
         // All fine, ready for the next one
@@ -186,7 +186,7 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
 		fname.resize(fname.size() - 1);
 
 	// Check if it's a file or a directory
-	std::auto_ptr<struct stat> st = sys::fs::stat(fname);
+	std::unique_ptr<struct stat> st = sys::fs::stat(fname);
 	if (st.get() == 0)
 		throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
 	if (S_ISDIR(st->st_mode))
@@ -265,7 +265,7 @@ bool WritableLocal::hasArchive() const
 {
 	string arcdir = str::joinpath(m_path, ".archive");
 	return sys::fs::exists(arcdir);
-	//std::auto_ptr<struct stat> st = sys::fs::stat(arcdir);
+	//std::unique_ptr<struct stat> st = sys::fs::stat(arcdir);
 	//if (!st.get())
 		//return false;
 }
@@ -369,7 +369,7 @@ void WritableLocal::repack(std::ostream& log, bool writable)
 		return;
 	}
 
-	auto_ptr<maintenance::Agent> repacker;
+	unique_ptr<maintenance::Agent> repacker;
 
 	if (writable)
 		// No safeguard against a deleted index: we catch that in the

@@ -62,8 +62,8 @@ struct AssignedDataset : public types::CoreType<AssignedDataset>
 
     /// CODEC functions
     void encodeWithoutEnvelope(utils::codec::Encoder& enc) const override;
-    static std::auto_ptr<AssignedDataset> decode(const unsigned char* buf, size_t len);
-    static std::auto_ptr<AssignedDataset> decodeString(const std::string& val);
+    static std::unique_ptr<AssignedDataset> decode(const unsigned char* buf, size_t len);
+    static std::unique_ptr<AssignedDataset> decodeString(const std::string& val);
     std::ostream& writeToOstream(std::ostream& o) const override;
     void serialiseLocal(Emitter& e, const Formatter* f=0) const override;
 
@@ -73,12 +73,12 @@ struct AssignedDataset : public types::CoreType<AssignedDataset>
     AssignedDataset* clone() const override;
 
     /// Create a attributed dataset definition with the current time
-    static std::auto_ptr<AssignedDataset> create(const std::string& name, const std::string& id);
+    static std::unique_ptr<AssignedDataset> create(const std::string& name, const std::string& id);
 
     /// Create a attributed dataset definition with the givem time
-    static std::auto_ptr<AssignedDataset> create(const types::Time& time, const std::string& name, const std::string& id);
+    static std::unique_ptr<AssignedDataset> create(const types::Time& time, const std::string& name, const std::string& id);
 
-    static std::auto_ptr<AssignedDataset> decodeMapping(const emitter::memory::Mapping& val);
+    static std::unique_ptr<AssignedDataset> decodeMapping(const emitter::memory::Mapping& val);
 };
 
 }

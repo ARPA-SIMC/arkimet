@@ -145,7 +145,7 @@ void Report::captureOutput(std::ostream& buf)
 	utils::lua::capturePrintOutput(*L, buf);
 }
 
-bool Report::eat(auto_ptr<Metadata> md)
+bool Report::eat(unique_ptr<Metadata>&& md)
 {
 	if (!acceptsMetadata()) return true;
 
