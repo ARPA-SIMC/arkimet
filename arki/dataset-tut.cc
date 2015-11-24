@@ -1,43 +1,23 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/tests/tests.h>
-#include <arki/dataset/tests.h>
-#include <arki/metadata/tests.h>
-#include <arki/dataset.h>
-#include <arki/dataset/ondisk2.h>
-#include <arki/dataset/outbound.h>
-#include <arki/dataset/discard.h>
-#include <arki/dataset/empty.h>
-#include <arki/dataset/simple/reader.h>
-#include <arki/dataset/simple/writer.h>
-#include <arki/metadata/collection.h>
-#include <arki/summary.h>
-#include <arki/types/source.h>
-#include <arki/types/source/blob.h>
-#include <arki/scan/any.h>
-#include <arki/configfile.h>
-#include <arki/utils/files.h>
-#include <arki/utils/accounting.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include "arki/tests/tests.h"
+#include "arki/dataset/tests.h"
+#include "arki/metadata/tests.h"
+#include "arki/dataset.h"
+#include "arki/dataset/ondisk2.h"
+#include "arki/dataset/outbound.h"
+#include "arki/dataset/discard.h"
+#include "arki/dataset/empty.h"
+#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/simple/writer.h"
+#include "arki/metadata/collection.h"
+#include "arki/summary.h"
+#include "arki/types/source.h"
+#include "arki/types/source/blob.h"
+#include "arki/scan/any.h"
+#include "arki/configfile.h"
+#include "arki/utils/files.h"
+#include "arki/utils/accounting.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <wibble/stream/posix.h>
 
 #include <memory>
@@ -49,7 +29,6 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
-using namespace wibble;
 using namespace wibble::tests;
 
 struct arki_dataset_shar {
@@ -239,7 +218,7 @@ struct TestDataset
     void test_import(WIBBLE_TEST_LOCPRM)
     {
         // Clear everything
-        if (sys::fs::isdir(path)) sys::fs::rmtree(path);
+        if (sys::isdir(path)) sys::rmtree(path);
 
         unique_ptr<WritableDataset> ds(WritableDataset::create(*cfgtest));
 
@@ -336,7 +315,7 @@ struct TestDataset
             ds->queryBytes(bq, os);
 
             // Write it out and rescan
-            sys::fs::writeFile("testdata", os.str());
+            sys::write_file("testdata", os.str());
             metadata::Collection tmp;
             wassert(actual(scan::scan("testdata", tmp, td.test_data[i].md.source().format)).istrue());
 
@@ -368,13 +347,13 @@ struct TestDataset
         wassert(actual(os.str().size()) >= total_size);
 
         // Write the results to disk
-        sys::fs::writeFile("tempdata", os.str());
+        sys::write_file("tempdata", os.str());
 
         // Check that they can be scanned again
         metadata::Collection mdc;
         wassert(actual(scan::scan("tempdata", mdc, td.format)).istrue());
 
-        sys::fs::unlink("tempdata");
+        sys::unlink("tempdata");
     }
 
     void test_postprocess(WIBBLE_TEST_LOCPRM)
@@ -391,7 +370,7 @@ struct TestDataset
 
         // Send the script error to stderr. Use dup() because PosixBuf will
         // close its file descriptor at destruction time
-        stream::PosixBuf pb(dup(2));
+        wibble::stream::PosixBuf pb(dup(2));
         ostream os(&pb);
         dataset::ByteQuery bq;
         bq.setPostprocess(td.test_data[0].matcher, "testcountbytes");
@@ -399,10 +378,12 @@ struct TestDataset
 
         // Verify that the data that was output was exactly as long as the
         // encoded metadata and its data
-        string out = sys::fs::readFile("testcountbytes.out");
+        string out = sys::read_file("testcountbytes.out");
         unique_ptr<Metadata> copy(mdc[0].clone());
         copy->makeInline();
-        wassert(actual(out) == str::fmtf("%d\n", copy->encodeBinary().size() + copy->data_size()));
+        char buf[32];
+        snprintf(buf, 32, "%d\n", copy->encodeBinary().size() + copy->data_size());
+        wassert(actual(out) == buf);
     }
 
     void test_locked(WIBBLE_TEST_LOCPRM)
@@ -838,5 +819,3 @@ void to::test<37>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

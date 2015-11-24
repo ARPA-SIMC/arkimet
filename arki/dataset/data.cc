@@ -29,7 +29,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/utils.h"
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/sys/fs.h>
 
 using namespace std;

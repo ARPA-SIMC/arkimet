@@ -26,7 +26,7 @@
 #include <arki/types.h>
 #include <arki/types/time.h>
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/grcal/grcal.h>
 #include <string>
 #include <ctime>

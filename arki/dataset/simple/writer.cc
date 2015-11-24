@@ -1,58 +1,31 @@
-/*
- * dataset/simple/writer - Writer for simple datasets with no duplicate checks
- *
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/dataset/simple/writer.h>
-#include <arki/dataset/index/manifest.h>
-#include <arki/dataset/simple/datafile.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/dataset/data.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/source/blob.h>
-#include <arki/summary.h>
-#include <arki/types/reftime.h>
-#include <arki/matcher.h>
-#include <arki/metadata/collection.h>
-#include <arki/utils/files.h>
-#include <arki/utils/dataset.h>
-#include <arki/scan/any.h>
-#include <arki/postprocess.h>
-#include <arki/sort.h>
-#include <arki/nag.h>
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-
+#include "arki/dataset/simple/writer.h"
+#include "arki/dataset/index/manifest.h"
+#include "arki/dataset/simple/datafile.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/dataset/data.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/types/source/blob.h"
+#include "arki/summary.h"
+#include "arki/types/reftime.h"
+#include "arki/matcher.h"
+#include "arki/metadata/collection.h"
+#include "arki/utils/files.h"
+#include "arki/utils/dataset.h"
+#include "arki/scan/any.h"
+#include "arki/postprocess.h"
+#include "arki/sort.h"
+#include "arki/nag.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <fstream>
 #include <ctime>
 #include <cstdio>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -62,12 +35,12 @@ namespace dataset {
 namespace simple {
 
 Writer::Writer(const ConfigFile& cfg)
-	: WritableLocal(cfg), m_mft(0)
+    : WritableLocal(cfg), m_mft(0)
 {
-	m_name = cfg.value("name");
+    m_name = cfg.value("name");
 
-	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_path);
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
@@ -106,7 +79,7 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy rep
     try {
         writer->append(md);
         mdbuf->add(md);
-        m_mft->acquire(writer->relname, sys::fs::timestamp(mdbuf->pathname, 0), mdbuf->sum);
+        m_mft->acquire(writer->relname, sys::timestamp(mdbuf->pathname, 0), mdbuf->sum);
         return ACQ_OK;
     } catch (std::exception& e) {
         // sqlite will take care of transaction consistency
@@ -142,7 +115,7 @@ struct Deleter : public maintenance::MaintFileVisitor
         if (writable)
         {
             log << name << ": deleting file " << file << endl;
-            sys::fs::deleteIfExists(file);
+            sys::unlink_ifexists(file);
         } else
             log << name << ": would delete file " << file << endl;
     }
@@ -234,12 +207,12 @@ void Writer::flush()
 
 void Writer::rescanFile(const std::string& relpath)
 {
-	// Delete cached info to force a full rescan
-	string pathname = str::joinpath(m_path, relpath);
-	sys::fs::deleteIfExists(pathname + ".metadata");
-	sys::fs::deleteIfExists(pathname + ".summary");
+    // Delete cached info to force a full rescan
+    string pathname = str::joinpath(m_path, relpath);
+    sys::unlink_ifexists(pathname + ".metadata");
+    sys::unlink_ifexists(pathname + ".summary");
 
-	m_mft->rescanFile(m_path, relpath);
+    m_mft->rescanFile(m_path, relpath);
 }
 
 
@@ -263,15 +236,15 @@ size_t Writer::repackFile(const std::string& relpath)
     // Prevent reading the still open old file using the new offsets
     Metadata::flushDataReaders();
 
-	// Remove existing cached metadata, since we scramble their order
-	sys::fs::deleteIfExists(pathname + ".metadata");
-	sys::fs::deleteIfExists(pathname + ".summary");
+    // Remove existing cached metadata, since we scramble their order
+    sys::unlink_ifexists(pathname + ".metadata");
+    sys::unlink_ifexists(pathname + ".summary");
 
-    size_t size_pre = sys::fs::size(pathname);
+    size_t size_pre = sys::size(pathname);
 
     p_repack.commit();
 
-    size_t size_post = sys::fs::size(pathname);
+    size_t size_post = sys::size(pathname);
 
 	// Write out the new metadata
 	mdc.writeAtomically(pathname + ".metadata");
@@ -283,7 +256,7 @@ size_t Writer::repackFile(const std::string& relpath)
     sum.writeAtomically(pathname + ".summary");
 
     // Reindex with the new file information
-    time_t mtime = sys::fs::timestamp(pathname);
+    time_t mtime = sys::timestamp(pathname);
     m_mft->acquire(relpath, mtime, sum);
 
 	return size_pre - size_post;
@@ -355,5 +328,3 @@ WritableDataset::AcquireResult Writer::testAcquire(const ConfigFile& cfg, const 
 }
 }
 }
-
-// vim:set ts=4 sw=4:

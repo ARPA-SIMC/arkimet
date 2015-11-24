@@ -24,7 +24,7 @@
 
 #include <arki/emitter/json.h>
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/sys/buffer.h>
 #include <cctype>
 #include <cmath>

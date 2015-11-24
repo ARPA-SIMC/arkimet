@@ -34,6 +34,10 @@ class Metadata;
 class Matcher;
 class Summary;
 
+namespace types {
+class AssignedDataset;
+}
+
 namespace dataset {
 namespace maintenance {
 class MaintFileVisitor;
@@ -57,6 +61,9 @@ protected:
     AcquireResult acquire_replace_never(Metadata& md);
     AcquireResult acquire_replace_always(Metadata& md);
     AcquireResult acquire_replace_higher_usn(Metadata& md);
+
+    /// Make an assigneddataset entry for this dataset with the given database ID
+    std::unique_ptr<types::AssignedDataset> make_assigneddataset(int id);
 
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'

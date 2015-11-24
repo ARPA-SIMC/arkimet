@@ -26,7 +26,7 @@
 #include <arki/utils/geosdef.h>
 #include <arki/runtime/config.h>
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <memory>
 
 using namespace ARKI_GEOS_NS;

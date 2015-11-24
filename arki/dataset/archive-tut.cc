@@ -1,39 +1,17 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/dataset/tests.h>
-#include <arki/dataset/archive.h>
-#include <arki/dataset/ondisk2/writer.h>
-#include <arki/dataset/test-scenario.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/types/source/blob.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/utils/files.h>
-#include <arki/iotrace.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-
-using namespace wibble;
+#include "arki/dataset/tests.h"
+#include "arki/dataset/archive.h"
+#include "arki/dataset/ondisk2/writer.h"
+#include "arki/dataset/test-scenario.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/utils/files.h"
+#include "arki/iotrace.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 
 namespace arki {
 namespace tests {
@@ -63,7 +41,6 @@ void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::dataset;
 using namespace arki::tests;
@@ -91,12 +68,12 @@ struct arki_dataset_archive_shar : public DatasetTest {
 	}
 
 #define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-	void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
-	{
-		unique_ptr<Archive> arc(Archive::create(dir));
-		arki::tests::impl_ensure_dataset_clean(loc, *arc, filecount, resultcount);
-		inner_ensure(sys::fs::exists(str::joinpath(dir, arcidxfname())));
-	}
+    void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
+    {
+        unique_ptr<Archive> arc(Archive::create(dir));
+        arki::tests::impl_ensure_dataset_clean(loc, *arc, filecount, resultcount);
+        inner_ensure(sys::exists(str::joinpath(dir, arcidxfname())));
+    }
 };
 TESTGRP(arki_dataset_archive);
 
@@ -108,14 +85,14 @@ void to::test<1>()
 	{
 		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
 
-		// Acquire
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc->acquire("test.grib1");
-		arc->flush();
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1"));
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1.metadata"));
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1.summary"));
-		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
+        // Acquire
+        system("cp inbound/test.grib1 testds/.archive/last/");
+        arc->acquire("test.grib1");
+        arc->flush();
+        ensure(sys::exists("testds/.archive/last/test.grib1"));
+        ensure(sys::exists("testds/.archive/last/test.grib1.metadata"));
+        ensure(sys::exists("testds/.archive/last/test.grib1.summary"));
+        ensure(sys::exists("testds/.archive/last/" + arcidxfname()));
 
         Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
         ensure_equals(mdc.size(), 3u);
@@ -192,19 +169,19 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	MaintenanceCollector c;
-	{
-		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc->acquire("test.grib1");
-		arc->flush();
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1"));
-		ensure(!sys::fs::exists("testds/.archive/last/test.grib1.metadata"));
-		ensure(!sys::fs::exists("testds/.archive/last/test.grib1.summary"));
-		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
-	}
+    MaintenanceCollector c;
+    {
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+        system("cp inbound/test.grib1 testds/.archive/last/");
+        arc->acquire("test.grib1");
+        arc->flush();
+        sys::unlink_ifexists("testds/.archive/last/test.grib1.metadata");
+        sys::unlink_ifexists("testds/.archive/last/test.grib1.summary");
+        ensure(sys::exists("testds/.archive/last/test.grib1"));
+        ensure(!sys::exists("testds/.archive/last/test.grib1.metadata"));
+        ensure(!sys::exists("testds/.archive/last/test.grib1.summary"));
+        ensure(sys::exists("testds/.archive/last/" + arcidxfname()));
+    }
 
     // Query now is ok
     {
@@ -255,18 +232,18 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	MaintenanceCollector c;
-	{
-		unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
-		system("cp inbound/test.grib1 testds/.archive/last/");
-		arc->acquire("test.grib1");
-		arc->flush();
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1"));
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1.metadata"));
-		ensure(!sys::fs::exists("testds/.archive/last/test.grib1.summary"));
-		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
-	}
+    MaintenanceCollector c;
+    {
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last", true));
+        system("cp inbound/test.grib1 testds/.archive/last/");
+        arc->acquire("test.grib1");
+        arc->flush();
+        sys::unlink_ifexists("testds/.archive/last/test.grib1.summary");
+        ensure(sys::exists("testds/.archive/last/test.grib1"));
+        ensure(sys::exists("testds/.archive/last/test.grib1.metadata"));
+        ensure(!sys::exists("testds/.archive/last/test.grib1.summary"));
+        ensure(sys::exists("testds/.archive/last/" + arcidxfname()));
+    }
 
 	// Query now is ok
     {
@@ -326,12 +303,12 @@ void to::test<5>()
 		arc->acquire("3.grib1");
 		arc->flush();
 
-		sys::fs::deleteIfExists("testds/.archive/last/2.grib1.metadata");
-		ensure(sys::fs::exists("testds/.archive/last/2.grib1"));
-		ensure(!sys::fs::exists("testds/.archive/last/2.grib1.metadata"));
-		ensure(sys::fs::exists("testds/.archive/last/2.grib1.summary"));
-		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
-	}
+        sys::unlink_ifexists("testds/.archive/last/2.grib1.metadata");
+        ensure(sys::exists("testds/.archive/last/2.grib1"));
+        ensure(!sys::exists("testds/.archive/last/2.grib1.metadata"));
+        ensure(sys::exists("testds/.archive/last/2.grib1.summary"));
+        ensure(sys::exists("testds/.archive/last/" + arcidxfname()));
+    }
 
     // Query now is ok
     {
@@ -402,27 +379,27 @@ void to::test<6>()
 		arc->acquire("test.grib1");
 		arc->flush();
 
-		// Compress it
-		metadata::Collection mdc;
-		Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
-		ensure_equals(mdc.size(), 3u);
-		mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
-		sys::fs::deleteIfExists("testds/.archive/last/test.grib1");
+        // Compress it
+        metadata::Collection mdc;
+        Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+        ensure_equals(mdc.size(), 3u);
+        mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
+        sys::unlink_ifexists("testds/.archive/last/test.grib1");
 
-		ensure(!sys::fs::exists("testds/.archive/last/test.grib1"));
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1.gz"));
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1.gz.idx"));
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1.metadata"));
-		ensure(sys::fs::exists("testds/.archive/last/test.grib1.summary"));
-		ensure(sys::fs::exists("testds/.archive/last/" + arcidxfname()));
-	}
+        ensure(!sys::exists("testds/.archive/last/test.grib1"));
+        ensure(sys::exists("testds/.archive/last/test.grib1.gz"));
+        ensure(sys::exists("testds/.archive/last/test.grib1.gz.idx"));
+        ensure(sys::exists("testds/.archive/last/test.grib1.metadata"));
+        ensure(sys::exists("testds/.archive/last/test.grib1.summary"));
+        ensure(sys::exists("testds/.archive/last/" + arcidxfname()));
+    }
 
-	// Everything is still ok
-	ensure_archive_clean("testds/.archive/last", 1, 3);
+    // Everything is still ok
+    ensure_archive_clean("testds/.archive/last", 1, 3);
 
-	// Try removing summary and metadata
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.metadata");
-	sys::fs::deleteIfExists("testds/.archive/last/test.grib1.summary");
+    // Try removing summary and metadata
+    sys::unlink_ifexists("testds/.archive/last/test.grib1.metadata");
+    sys::unlink_ifexists("testds/.archive/last/test.grib1.summary");
 
 	// Cannot query anymore
 	{
@@ -432,7 +409,7 @@ void to::test<6>()
 			arc->queryData(dataset::DataQuery(Matcher()), mdc);
 			ensure(false);
 		} catch (std::exception& e) {
-			ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
+			ensure(str::startswith(e.what(), "file needs to be manually decompressed before scanning."));
 		}
 
 		// Maintenance should show one file to rescan
@@ -649,7 +626,7 @@ void to::test<20>()
     d->querySummary(Matcher(), s);
 
     // Query once without cache, it should scan all the archives
-    sys::fs::deleteIfExists(str::joinpath(scen.path, ".summaries/archives.summary"));
+    sys::unlink_ifexists(str::joinpath(scen.path, ".summaries/archives.summary"));
     {
         iotrace::Collector ioc;
         d->querySummary(Matcher(), s);

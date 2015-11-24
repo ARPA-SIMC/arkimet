@@ -24,7 +24,7 @@
  */
 
 #include <arki/matcher.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <vector>
 #include <string>
 #include <stdint.h>

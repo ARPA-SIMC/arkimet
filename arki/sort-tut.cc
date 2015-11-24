@@ -23,7 +23,7 @@
 #include <arki/sort.h>
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 #include <sstream>
 #include <iostream>

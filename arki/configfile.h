@@ -1,49 +1,26 @@
 #ifndef ARKI_CONFIGFILE_H
 #define ARKI_CONFIGFILE_H
 
-/*
- * configfile - Read ini-style config files
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <map>
 #include <string>
 #include <iosfwd>
-#include <wibble/exception.h>
+#include <stdexcept>
 
 namespace arki {
 
-class ConfigFileParseError : public wibble::exception::Generic
+class ConfigFileParseError : public std::runtime_error
 {
 protected:
-	std::string m_name;
-	int m_line;
-	std::string m_error;
+    std::string m_name;
+    int m_line;
+    std::string m_error;
+
+    static std::string describe(const std::string& filename, int line, const std::string& error);
 
 public:
-	ConfigFileParseError(const std::string& filename, int line, const std::string& error)
-		: m_name(filename), m_line(line), m_error(error) {}
-	~ConfigFileParseError() throw () {}
-
-	virtual const char* type() const throw ();
-	virtual std::string desc() const throw ();
+    ConfigFileParseError(const std::string& filename, int line, const std::string& error)
+        : std::runtime_error(describe(filename, line, error)), m_name(filename), m_line(line), m_error(error) {}
+    ~ConfigFileParseError() throw () {}
 };
 
 
@@ -162,10 +139,11 @@ public:
 	 */
 	const FilePos* valueInfo(const std::string& key) const;
 
-	/**
-	 * Set a value.
-	 */
-	void setValue(const std::string& key, const std::string& value);
+    /// Set a value
+    void setValue(const std::string& key, const std::string& value);
+
+    /// Set a value converting any type to a string
+    void setValue(const std::string& key, int value);
 
 	/**
 	 * Retrieve a section from this config file.
@@ -209,6 +187,4 @@ public:
 };
 
 }
-
-// vim:set ts=4 sw=4:
 #endif

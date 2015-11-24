@@ -28,7 +28,7 @@
 
 #include <wibble/exception.h>
 #include <wibble/regexp.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 #include <sstream>
 #include <ctime>

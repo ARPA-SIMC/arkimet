@@ -4,7 +4,7 @@
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 using namespace std;
 using namespace wibble;

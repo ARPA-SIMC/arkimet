@@ -27,7 +27,7 @@
 #include <arki/types/utils.h>
 #include <arki/emitter/memory.h>
 #include <arki/summary.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <algorithm>
 
 using namespace std;

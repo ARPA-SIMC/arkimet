@@ -397,7 +397,7 @@ struct TestFileExists
     bool inverted;
     TestFileExists(const std::string& pathname, bool inverted=false) : pathname(pathname), inverted(inverted) {}
     TestFileExists operator!() { return TestFileExists(pathname, !inverted); }
-    void check(ARKI-UTILS_TEST_LOCPRM) const;
+    void check(ARKI_UTILS_TEST_LOCPRM) const;
 };
 #endif
 

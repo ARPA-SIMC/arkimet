@@ -184,13 +184,13 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 2u);
 	mdc.clear();
 
-	// Remove a nonexisting item and see that it fails
-	string file;
-	try {
-		test->remove(100, file);
-		ensure(false);
-	} catch (wibble::exception::Consistency& e) {
-	}
+    // Remove a nonexisting item and see that it fails
+    string file;
+    try {
+        test->remove(100, file);
+        ensure(false);
+    } catch (std::runtime_error) {
+    }
 
 	// Remove the first item
 	test->remove(id, file);

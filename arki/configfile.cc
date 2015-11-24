@@ -1,50 +1,21 @@
-/*
- * configfile - Read ini-style config files
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include "configfile.h"
-
-#include <wibble/exception.h>
+#include "utils/string.h"
 #include <wibble/regexp.h>
-#include <wibble/string.h>
 #include <cctype>
 #include <sstream>
 #include <cstdio>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 
-const char* ConfigFileParseError::type() const throw ()
+std::string ConfigFileParseError::describe(const std::string& filename, int line, const std::string& error)
 {
-	return "ConfigFileParseError";
-}
-std::string ConfigFileParseError::desc() const throw ()
-{
-	stringstream msg;
-	msg << m_name << ":" << m_line << ":" << m_error;
-	return msg.str();
+    stringstream msg;
+    msg << filename << ":" << line << ":" << error;
+    return msg.str();
 }
 
 ConfigFile::ConfigFile()
@@ -152,7 +123,7 @@ void ConfigFile::parseLine(ConfigFileParserHelper& h, const std::string& line)
 	{
 		string value = h.assignment[3];
 		// Strip leading and trailing spaces on the value
-		value = str::trim(value);
+		value = str::strip(value);
 		// Strip double quotes, if they appear
 		if (value[0] == '"' && value[value.size()-1] == '"')
 			value = value.substr(1, value.size()-2);
@@ -225,7 +196,14 @@ const ConfigFile::FilePos* ConfigFile::valueInfo(const std::string& key) const
 void ConfigFile::setValue(const std::string& key, const std::string& value)
 {
     m_values[key] = value;
-	values_pos.erase(key);
+    values_pos.erase(key);
+}
+
+void ConfigFile::setValue(const std::string& key, int value)
+{
+    std::stringstream ss;
+    ss << value;
+    setValue(key, ss.str());
 }
 
 ConfigFile* ConfigFile::section(const std::string& key) const
@@ -288,6 +266,4 @@ bool ConfigFile::boolValue(const std::string& str, bool def)
 	throw wibble::exception::Consistency("parsing bool value", "value \"" + str + "\" is not supported");
 }
 
-
 }
-// vim:set ts=4 sw=4:

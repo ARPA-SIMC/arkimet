@@ -1,5 +1,5 @@
-#ifndef ARKI-UTILS_STRING_H
-#define ARKI-UTILS_STRING_H
+#ifndef ARKI_UTILS_STRING_H
+#define ARKI_UTILS_STRING_H
 
 /**
  * @author Enrico Zini <enrico@enricozini.org>

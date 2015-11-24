@@ -27,7 +27,7 @@
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>
 
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 using namespace std;
 using namespace wibble;

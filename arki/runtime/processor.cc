@@ -33,7 +33,7 @@
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/utils/dataset.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 using namespace std;
 using namespace wibble;

@@ -27,7 +27,7 @@
 #include <arki/utils/files.h>
 #include <arki/nag.h>
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/regexp.h>
 #include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>

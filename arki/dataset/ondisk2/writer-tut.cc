@@ -1,46 +1,26 @@
-/*
- * Copyright (C) 2007--2014  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
-#include <arki/dataset/ondisk2/test-utils.h>
-#include <arki/dataset/ondisk2/writer.h>
-#include <arki/dataset/ondisk2/reader.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/types/source/blob.h>
-#include <arki/configfile.h>
-#include <arki/scan/grib.h>
-#include <arki/scan/bufr.h>
-#include <arki/scan/any.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/summary.h>
-#include <wibble/sys/fs.h>
-
+#include "arki/dataset/ondisk2/test-utils.h"
+#include "arki/dataset/ondisk2/writer.h"
+#include "arki/dataset/ondisk2/reader.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
+#include "arki/configfile.h"
+#include "arki/scan/grib.h"
+#include "arki/scan/bufr.h"
+#include "arki/scan/any.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
+#include "arki/summary.h"
+#include <wibble/sys/buffer.h>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::tests;
@@ -281,7 +261,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
             wassert(actual(mdc_pre.size()) == 3);
         }
 
-        sys::fs::deleteIfExists("testdir/index.sqlite");
+        sys::unlink_ifexists("testdir/index.sqlite");
 
         // All files are found as files to be indexed
         {
@@ -298,7 +278,9 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
             for (set<string>::const_iterator i = fixture.fnames.begin();
                     i != fixture.fnames.end(); ++i)
                 s.require_line_contains(": rescanned " + *i);
-            s.require_line_contains(str::fmtf(": %zd files rescanned", fixture.fnames.size()));
+            char rebuf[32];
+            snprintf(rebuf, 32, ": %zd files rescanned", fixture.fnames.size());
+            s.require_line_contains(rebuf);
             wassert(actual(writer.get()).check(s, true));
 
             wassert(actual(writer.get()).maintenance_clean(fixture.fnames.size()));
@@ -426,7 +408,7 @@ void to::test<6>()
 	ensure_equals(c.remaining(), "");
 	ensure(not c.isClean());
 
-    wassert(actual(sys::fs::size("testdir/foo/bar/test.grib1")) == 44412*2);
+    wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412*2);
 
     {
         // Test querying: reindexing should have chosen the last version of
@@ -436,12 +418,12 @@ void to::test<6>()
         metadata::Collection mdc;
         reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
         ensure_equals(mdc.size(), 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
 
         mdc.clear();
         reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
         ensure_equals(mdc.size(), 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -456,7 +438,7 @@ void to::test<6>()
 	ensure_equals(c.remaining(), "");
 	ensure(c.isClean());
 
-    wassert(actual(sys::fs::size("testdir/foo/bar/test.grib1")) == 44412);
+    wassert(actual(sys::size("testdir/foo/bar/test.grib1")) == 44412);
 
     // Test querying, and see that things have moved to the beginning
     Reader reader(cfg);
@@ -464,7 +446,7 @@ void to::test<6>()
     metadata::Collection mdc;
     reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
     ensure_equals(mdc.size(), 1u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
 
     // Query the second element and check that it starts after the first one
     // (there used to be a bug where the rebuild would use the offsets of
@@ -472,12 +454,12 @@ void to::test<6>()
     mdc.clear();
     reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
     ensure_equals(mdc.size(), 1u);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
 
-	// Ensure that we have the summary cache
-	ensure(sys::fs::exists("testdir/.summaries/all.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+    // Ensure that we have the summary cache
+    ensure(sys::exists("testdir/.summaries/all.summary"));
+    ensure(sys::exists("testdir/.summaries/2007-07.summary"));
+    ensure(sys::exists("testdir/.summaries/2007-10.summary"));
 }
 
 // Test accuracy of maintenance scan, with index, on dataset with some
@@ -505,24 +487,24 @@ void to::test<7>()
 
 	stringstream s;
 
-	// Perform full maintenance and check that things are still ok afterwards
+    // Perform full maintenance and check that things are still ok afterwards
 
-	// By catting test.grib1 into 07-08.grib1, we create 2 metadata that do
-	// not fit in that file (1 does).
-	// Because they are duplicates of metadata in other files, one cannot
-	// use the order of the data in the file to determine which one is the
-	// newest. The situation cannot be fixed automatically because it is
-	// impossible to determine which of the two duplicates should be thrown
-	// away; therefore, we can only interrupt the maintenance and raise an
-	// exception calling for manual fixing.
-	try {
-		writer.check(s, true, true);
-		ensure(false);
-	} catch (wibble::exception::Consistency& ce) {
-		ensure(true);
-	} catch (...) {
-		ensure(false);
-	}
+    // By catting test.grib1 into 07-08.grib1, we create 2 metadata that do
+    // not fit in that file (1 does).
+    // Because they are duplicates of metadata in other files, one cannot
+    // use the order of the data in the file to determine which one is the
+    // newest. The situation cannot be fixed automatically because it is
+    // impossible to determine which of the two duplicates should be thrown
+    // away; therefore, we can only interrupt the maintenance and raise an
+    // exception calling for manual fixing.
+    try {
+        writer.check(s, true, true);
+        ensure(false);
+    } catch (std::runtime_error) {
+        ensure(true);
+    } catch (...) {
+        ensure(false);
+    }
 }
 
 // Test accuracy of maintenance scan, with index, on dataset with some
@@ -539,7 +521,7 @@ void to::test<8>()
         reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
         ensure_equals(mdc.size(), 1u);
         mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
-        sys::fs::deleteIfExists("testdir/2007/07-08.grib1");
+        sys::unlink_ifexists("testdir/2007/07-08.grib1");
     }
 
 	// The dataset should still be clean
@@ -607,11 +589,11 @@ void to::test<8>()
 		ensure_equals(c.remaining(), "");
 		ensure(c.isClean());
 
-		// Ensure that we have the summary cache
-		ensure(sys::fs::exists("testdir/.summaries/all.summary"));
-		ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-		ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
-	}
+        // Ensure that we have the summary cache
+        ensure(sys::exists("testdir/.summaries/all.summary"));
+        ensure(sys::exists("testdir/.summaries/2007-07.summary"));
+        ensure(sys::exists("testdir/.summaries/2007-10.summary"));
+    }
 }
 
 
@@ -647,27 +629,27 @@ void to::test<9>()
         wassert(actual(s.str()) == "");
     }
 
-	// Ensure that we have the summary cache
-	ensure(sys::fs::exists("testdir/.summaries/all.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
-	ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
+    // Ensure that we have the summary cache
+    ensure(sys::exists("testdir/.summaries/all.summary"));
+    ensure(sys::exists("testdir/.summaries/2007-07.summary"));
+    ensure(sys::exists("testdir/.summaries/2007-10.summary"));
 
 	// Make one summary cache file not writable
 	chmod("testdir/.summaries/all.summary", 0400);
 
-	// Perform check and see that we detect it
-	{
-		stringstream s;
-		writer.check(s, false, true);
-		ensure_equals(s.str(), "testdir: " + sys::fs::abspath("testdir/.summaries/all.summary") + " is not writable.\n");
-	}
+    // Perform check and see that we detect it
+    {
+        stringstream s;
+        writer.check(s, false, true);
+        ensure_equals(s.str(), "testdir: " + sys::abspath("testdir/.summaries/all.summary") + " is not writable.\n");
+    }
 
 	// Fix it
 	{
 		stringstream s;
 		writer.check(s, true, true);
 		ensure_equals(s.str(),
-			"testdir: " + sys::fs::abspath("testdir/.summaries/all.summary") + " is not writable.\n"
+			"testdir: " + sys::abspath("testdir/.summaries/all.summary") + " is not writable.\n"
 			"testdir: rebuilding summary cache.\n");
 	}
 
@@ -883,7 +865,7 @@ template<> template<> void to::test<14>()
     }
 
     // Take note of all the data
-    vector<sys::Buffer> orig_data;
+    vector<wibble::sys::Buffer> orig_data;
     orig_data.reserve(mdc_imported.size());
     for (unsigned i = 0; i < mdc_imported.size(); ++i)
         orig_data.push_back(mdc_imported[i].getData());
@@ -903,7 +885,7 @@ template<> template<> void to::test<14>()
         expected.by_type[COUNTED_TO_PACK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
 
-        ensure(!sys::fs::exists("testdir/.archive"));
+        ensure(!sys::exists("testdir/.archive"));
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -918,8 +900,8 @@ template<> template<> void to::test<14>()
     }
 
     // Check that the files have actually shrunk
-    wassert(actual(wibble::sys::fs::stat("testdir/1987/10-31.vm2")->st_size) == 36);
-    wassert(actual(wibble::sys::fs::stat("testdir/2011/01-01.vm2")->st_size) == 33);
+    wassert(actual(sys::stat("testdir/1987/10-31.vm2")->st_size) == 36);
+    wassert(actual(sys::stat("testdir/2011/01-01.vm2")->st_size) == 33);
 
     // Ensure the archive is now clean
     {
@@ -945,5 +927,3 @@ template<> template<> void to::test<14>()
 
 
 }
-
-// vim:set ts=4 sw=4:

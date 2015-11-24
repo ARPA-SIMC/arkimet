@@ -25,7 +25,7 @@
 #include <arki/datasetpool.h>
 
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 

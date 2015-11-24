@@ -5,7 +5,7 @@
 #include <arki/metadata.h>
 #include <arki/utils/process.h>
 #include <arki/runtime/config.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/regexp.h>
 #include <wibble/operators.h>
 #include <wibble/sys/childprocess.h>

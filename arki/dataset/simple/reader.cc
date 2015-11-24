@@ -1,56 +1,28 @@
-/*
- * dataset/simple/reader - Reader for simple datasets with no duplicate checks
- *
- * Copyright (C) 2009--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/dataset/simple/reader.h>
-#include <arki/dataset/index/manifest.h>
-#include <arki/configfile.h>
-#include <arki/summary.h>
-#include <arki/types/reftime.h>
-#include <arki/matcher.h>
-#include <arki/metadata/collection.h>
-#include <arki/utils/files.h>
-#include <arki/utils/dataset.h>
-#include <arki/utils/compress.h>
-#include <arki/scan/any.h>
-#include <arki/postprocess.h>
-#include <arki/sort.h>
-#include <arki/nag.h>
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-
+#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/index/manifest.h"
+#include "arki/configfile.h"
+#include "arki/summary.h"
+#include "arki/types/reftime.h"
+#include "arki/matcher.h"
+#include "arki/metadata/collection.h"
+#include "arki/utils/files.h"
+#include "arki/utils/dataset.h"
+#include "arki/utils/compress.h"
+#include "arki/scan/any.h"
+#include "arki/postprocess.h"
+#include "arki/sort.h"
+#include "arki/nag.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <fstream>
 #include <ctime>
 #include <cstdio>
-
 #ifdef HAVE_LUA
-#include <arki/report.h>
+#include "arki/report.h"
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -60,10 +32,10 @@ namespace dataset {
 namespace simple {
 
 Reader::Reader(const ConfigFile& cfg)
-	: SegmentedLocal(cfg), m_mft(0)
+    : SegmentedLocal(cfg), m_mft(0)
 {
-	// Create the directory if it does not exist
-	wibble::sys::fs::mkpath(m_path);
+    // Create the directory if it does not exist
+    sys::makedirs(m_path);
 
     if (index::Manifest::exists(m_path))
     {

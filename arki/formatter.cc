@@ -24,7 +24,7 @@
 #include "utils/lua.h"
 #include "types.h"
 #include "formatter/lua.h"
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 using namespace std;
 using namespace arki::types;

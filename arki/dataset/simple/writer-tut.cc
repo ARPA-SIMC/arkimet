@@ -1,39 +1,18 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/dataset/tests.h>
-#include <arki/dataset/simple/writer.h>
-#include <arki/dataset/simple/reader.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/source/blob.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/scan/grib.h>
-#include <arki/utils/files.h>
-#include <wibble/sys/fs.h>
+#include "arki/dataset/tests.h"
+#include "arki/dataset/simple/writer.h"
+#include "arki/dataset/simple/reader.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/types/source/blob.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/scan/grib.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::dataset::simple;
@@ -104,16 +83,16 @@ void to::test<1>()
 
     wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/2007/07-08.grib1", 7218, 7218));
 
-	// Flush the changes and check that everything is allright
-	writer.flush();
-	ensure(sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
-    ensure(sys::fs::timestamp("testds/2007/07-08.grib1") <= sys::fs::timestamp("testds/2007/07-08.grib1.metadata"));
-    ensure(sys::fs::timestamp("testds/2007/07-08.grib1.metadata") <= sys::fs::timestamp("testds/2007/07-08.grib1.summary"));
-    ensure(sys::fs::timestamp("testds/2007/07-08.grib1.summary") <= sys::fs::timestamp("testds/" + idxfname()));
-	ensure(files::hasDontpackFlagfile("testds"));
+    // Flush the changes and check that everything is allright
+    writer.flush();
+    ensure(sys::exists("testds/2007/07-08.grib1"));
+    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::timestamp("testds/2007/07-08.grib1") <= sys::timestamp("testds/2007/07-08.grib1.metadata"));
+    ensure(sys::timestamp("testds/2007/07-08.grib1.metadata") <= sys::timestamp("testds/2007/07-08.grib1.summary"));
+    ensure(sys::timestamp("testds/2007/07-08.grib1.summary") <= sys::timestamp("testds/" + idxfname()));
+    ensure(files::hasDontpackFlagfile("testds"));
 
 	ensure_localds_clean(1, 2);
 }
@@ -161,16 +140,16 @@ void to::test<2>()
         wassert(actual_type(md.source()).is_source_blob("grib1", "", "testds/20/2007.grib1", 34960, 7218));
     }
 
-	ensure(sys::fs::exists("testds/20/2007.grib1"));
-	ensure(sys::fs::exists("testds/20/2007.grib1.metadata"));
-	ensure(sys::fs::exists("testds/20/2007.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
-    ensure(sys::fs::timestamp("testds/20/2007.grib1") <= sys::fs::timestamp("testds/20/2007.grib1.metadata"));
-    ensure(sys::fs::timestamp("testds/20/2007.grib1.metadata") <= sys::fs::timestamp("testds/20/2007.grib1.summary"));
-    ensure(sys::fs::timestamp("testds/20/2007.grib1.summary") <= sys::fs::timestamp("testds/" + idxfname()));
-	
-	// Dataset is fine and clean
-	ensure_localds_clean(1, 2, &cfg);
+    ensure(sys::exists("testds/20/2007.grib1"));
+    ensure(sys::exists("testds/20/2007.grib1.metadata"));
+    ensure(sys::exists("testds/20/2007.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
+    ensure(sys::timestamp("testds/20/2007.grib1") <= sys::timestamp("testds/20/2007.grib1.metadata"));
+    ensure(sys::timestamp("testds/20/2007.grib1.metadata") <= sys::timestamp("testds/20/2007.grib1.summary"));
+    ensure(sys::timestamp("testds/20/2007.grib1.summary") <= sys::timestamp("testds/" + idxfname()));
+
+    // Dataset is fine and clean
+    ensure_localds_clean(1, 2, &cfg);
 }
 
 // Test maintenance scan on non-indexed files
@@ -255,20 +234,20 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	struct Setup {
-		void operator() ()
-		{
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1.metadata");
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
-			ensure(sys::fs::exists("testds/2007/07-08.grib1"));
-			ensure(!sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-			ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
-		}
-	} setup;
+    struct Setup {
+        void operator() ()
+        {
+            sys::unlink_ifexists("testds/2007/07-08.grib1.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
+            ensure(sys::exists("testds/2007/07-08.grib1"));
+            ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
+            ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+        }
+    } setup;
 
-	clean_and_import();
-	setup();
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    clean_and_import();
+    setup();
+    ensure(sys::exists("testds/" + idxfname()));
 
     // Query is ok
     {
@@ -307,19 +286,19 @@ void to::test<4>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// Everything should be fine now
-	ensure_localds_clean(3, 3);
-	ensure(sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // Everything should be fine now
+    ensure_localds_clean(3, 3);
+    ensure(sys::exists("testds/2007/07-08.grib1"));
+    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
 
 
-	// Restart again
-	clean_and_import();
-	setup();
-	files::removeDontpackFlagfile("testds");
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // Restart again
+    clean_and_import();
+    setup();
+    files::removeDontpackFlagfile("testds");
+    ensure(sys::exists("testds/" + idxfname()));
 
 	// Repack here should act as if the dataset were empty
 	{
@@ -339,29 +318,29 @@ void to::test<4>()
         reader.queryData(dataset::DataQuery(Matcher()), mdc);
         ensure_equals(mdc.size(), 3u);
     }
-	ensure(sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/2007/07-08.grib1"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
 }
 
 // Test maintenance scan on missing summary
 template<> template<>
 void to::test<5>()
 {
-	struct Setup {
-		void operator() ()
-		{
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
-			ensure(sys::fs::exists("testds/2007/07-08.grib1"));
-			ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-			ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
-		}
-	} setup;
+    struct Setup {
+        void operator() ()
+        {
+            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
+            ensure(sys::exists("testds/2007/07-08.grib1"));
+            ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
+            ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+        }
+    } setup;
 
-	clean_and_import();
-	setup();
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    clean_and_import();
+    setup();
+    ensure(sys::exists("testds/" + idxfname()));
 
     // Query is ok
     {
@@ -400,19 +379,19 @@ void to::test<5>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// Everything should be fine now
-	ensure_localds_clean(3, 3);
-	ensure(sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // Everything should be fine now
+    ensure_localds_clean(3, 3);
+    ensure(sys::exists("testds/2007/07-08.grib1"));
+    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
 
 
-	// Restart again
-	clean_and_import();
-	setup();
-	files::removeDontpackFlagfile("testds");
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // Restart again
+    clean_and_import();
+    setup();
+    files::removeDontpackFlagfile("testds");
+    ensure(sys::exists("testds/" + idxfname()));
 
 	// Repack here should act as if the dataset were empty
 	{
@@ -432,10 +411,10 @@ void to::test<5>()
         reader.queryData(dataset::DataQuery(Matcher()), mdc);
         ensure_equals(mdc.size(), 3u);
     }
-	ensure(sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    ensure(sys::exists("testds/2007/07-08.grib1"));
+    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
 }
 
 // Test maintenance scan on compressed archives
@@ -443,34 +422,34 @@ template<> template<>
 void to::test<6>()
 {
 	struct Setup {
-		void operator() ()
-		{
-			// Compress one file
-			metadata::Collection mdc;
-			Metadata::readFile("testds/2007/07-08.grib1.metadata", mdc);
-			ensure_equals(mdc.size(), 1u);
-			mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1.metadata");
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1");
+        void operator() ()
+        {
+            // Compress one file
+            metadata::Collection mdc;
+            Metadata::readFile("testds/2007/07-08.grib1.metadata", mdc);
+            ensure_equals(mdc.size(), 1u);
+            mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib1");
 
-			ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
-			ensure(sys::fs::exists("testds/2007/07-08.grib1.gz"));
-			ensure(sys::fs::exists("testds/2007/07-08.grib1.gz.idx"));
-			ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-			ensure(sys::fs::exists("testds/2007/07-08.grib1.summary"));
-		}
+            ensure(!sys::exists("testds/2007/07-08.grib1"));
+            ensure(sys::exists("testds/2007/07-08.grib1.gz"));
+            ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
+            ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
+            ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+        }
 
-		void removemd()
-		{
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1.metadata");
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
-			ensure(!sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-			ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
-		}
-	} setup;
+        void removemd()
+        {
+            sys::unlink_ifexists("testds/2007/07-08.grib1.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
+            ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
+            ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+        }
+    } setup;
 
-	clean_and_import();
-	setup();
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    clean_and_import();
+    setup();
+    ensure(sys::exists("testds/" + idxfname()));
 
 	// Query is ok
 	ensure_localds_clean(3, 3);
@@ -486,7 +465,7 @@ void to::test<6>()
             reader.queryData(dataset::DataQuery(Matcher()), mdc);
             ensure(false);
         } catch (std::exception& e) {
-            ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
+            ensure(str::startswith(e.what(), "file needs to be manually decompressed before scanning."));
         }
     }
 
@@ -519,22 +498,22 @@ void to::test<6>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// Everything should be fine now
-	ensure_localds_clean(3, 3);
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.gz"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.gz.idx"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // Everything should be fine now
+    ensure_localds_clean(3, 3);
+    ensure(!sys::exists("testds/2007/07-08.grib1"));
+    ensure(sys::exists("testds/2007/07-08.grib1.gz"));
+    ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
+    ensure(sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
 
 
-	// Restart again
-	clean_and_import();
-	setup();
-	files::removeDontpackFlagfile("testds");
-	ensure(sys::fs::exists("testds/" + idxfname()));
-	setup.removemd();
+    // Restart again
+    clean_and_import();
+    setup();
+    files::removeDontpackFlagfile("testds");
+    ensure(sys::exists("testds/" + idxfname()));
+    setup.removemd();
 
 	// Repack here should act as if the dataset were empty
 	{
@@ -555,33 +534,33 @@ void to::test<6>()
             reader.queryData(dataset::DataQuery(Matcher()), mdc);
             ensure(false);
         } catch (std::exception& e) {
-            ensure(str::startsWith(e.what(), "file needs to be manually decompressed before scanning."));
+            ensure(str::startswith(e.what(), "file needs to be manually decompressed before scanning."));
         }
     }
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.gz"));
-	ensure(sys::fs::exists("testds/2007/07-08.grib1.gz.idx"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    ensure(!sys::exists("testds/2007/07-08.grib1"));
+    ensure(sys::exists("testds/2007/07-08.grib1.gz"));
+    ensure(sys::exists("testds/2007/07-08.grib1.gz.idx"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
+    ensure(sys::exists("testds/" + idxfname()));
 }
 
 // Test maintenance scan on dataset with a file indexed but missing
 template<> template<>
 void to::test<7>()
 {
-	struct Setup {
-		void operator() ()
-		{
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1.summary");
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1.metadata");
-			sys::fs::deleteIfExists("testds/2007/07-08.grib1");
-		}
-	} setup;
+    struct Setup {
+        void operator() ()
+        {
+            sys::unlink_ifexists("testds/2007/07-08.grib1.summary");
+            sys::unlink_ifexists("testds/2007/07-08.grib1.metadata");
+            sys::unlink_ifexists("testds/2007/07-08.grib1");
+        }
+    } setup;
 
-	clean_and_import();
-	setup();
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    clean_and_import();
+    setup();
+    ensure(sys::exists("testds/" + idxfname()));
 
     // Query is ok
     {
@@ -620,16 +599,16 @@ void to::test<7>()
 		ensure_equals(s.str(), string()); // Nothing should have happened
 	}
 
-	// Everything should be fine now
-	ensure_localds_clean(2, 2);
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // Everything should be fine now
+    ensure_localds_clean(2, 2);
+    ensure(sys::exists("testds/" + idxfname()));
 
 
-	// Restart again
-	clean_and_import();
-	setup();
-	files::removeDontpackFlagfile("testds");
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // Restart again
+    clean_and_import();
+    setup();
+    files::removeDontpackFlagfile("testds");
+    ensure(sys::exists("testds/" + idxfname()));
 
 	// Repack here should act as if the dataset were empty
 	{
@@ -644,9 +623,9 @@ void to::test<7>()
 			"testds: 1 file removed from index.\n");
 	}
 
-	// And everything else should still be queriable
-	ensure_localds_clean(2, 2);
-	ensure(sys::fs::exists("testds/" + idxfname()));
+    // And everything else should still be queriable
+    ensure_localds_clean(2, 2);
+    ensure(sys::exists("testds/" + idxfname()));
 }
 
 #if 0
@@ -678,6 +657,5 @@ template<> template<> void to::test<11>() { ForceSqlite fs; test<4>(); }
 template<> template<> void to::test<12>() { ForceSqlite fs; test<5>(); }
 template<> template<> void to::test<13>() { ForceSqlite fs; test<6>(); }
 template<> template<> void to::test<14>() { ForceSqlite fs; test<7>(); }
-
 
 }

@@ -1,61 +1,35 @@
-/*
- * runtime - Common code used in most arkimet executables
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/runtime.h>
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
+#include "arki/runtime.h"
+#include "arki/utils/string.h"
+#include "arki/configfile.h"
+#include "arki/summary.h"
+#include "arki/matcher.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/dataset.h"
+#include "arki/dataset/file.h"
+#include "arki/dataset/http.h"
+#include "arki/dataset/index/base.h"
+#include "arki/dispatcher.h"
+#include "arki/targetfile.h"
+#include "arki/formatter.h"
+#include "arki/postprocess.h"
+#include "arki/querymacro.h"
+#include "arki/sort.h"
+#include "arki/nag.h"
+#include "arki/iotrace.h"
+#include "arki/types-init.h"
+#include "arki/validator.h"
+#include "arki/utils/sys.h"
+#ifdef HAVE_LUA
+#include "arki/report.h"
+#endif
 #include <wibble/sys/signal.h>
-#include <wibble/string.h>
-#include <arki/configfile.h>
-#include <arki/summary.h>
-#include <arki/matcher.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/dataset.h>
-#include <arki/dataset/file.h>
-#include <arki/dataset/http.h>
-#include <arki/dataset/index/base.h>
-#include <arki/dispatcher.h>
-#include <arki/targetfile.h>
-#include <arki/formatter.h>
-#include <arki/postprocess.h>
-#include <arki/querymacro.h>
-#include <arki/sort.h>
-#include <arki/nag.h>
-#include <arki/iotrace.h>
-#include <arki/types-init.h>
-#include <arki/validator.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <iostream>
 #include <cstdlib>
-
-#ifdef HAVE_LUA
-#include <arki/report.h>
-#endif
 
 #if __xlC__
 // From glibc
@@ -71,7 +45,6 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace wibble::commandline;
 using namespace arki::utils;
 using namespace arki::types;
@@ -326,19 +299,23 @@ void CommandLine::setupProcessing()
 			input = &cin;
 		}
 
-		// Read the content and scan the related files or dataset directories
-		string line;
-		while (!input->eof())
-		{
-			getline(*input, line);
-			if (input->fail() && !input->eof())
-				throw wibble::exception::File(file, "reading one line");
-			line = str::trim(line);
-			if (line.empty())
-				continue;
-			ReadonlyDataset::readConfig(line, inputInfo);
-		}
-	}
+        // Read the content and scan the related files or dataset directories
+        string line;
+        while (!input->eof())
+        {
+            getline(*input, line);
+            if (input->fail() && !input->eof())
+            {
+                stringstream ss;
+                ss << "cannot read one line from " << file;
+                throw std::system_error(errno, std::system_category(), ss.str());;
+            }
+            line = str::strip(line);
+            if (line.empty())
+                continue;
+            ReadonlyDataset::readConfig(line, inputInfo);
+        }
+    }
 
 	while (hasNext())	// From command line arguments, looking for data files or datasets
 		ReadonlyDataset::readConfig(next(), inputInfo);
@@ -482,13 +459,13 @@ void CommandLine::setupProcessing()
             throw wibble::exception::BadOption("--validate only makes sense with --dispatch or --testdispatch");
     }
 
-	if (postproc_data && postproc_data->isSet())
-	{
-		// Pass files for the postprocessor in the environment
-		string val = str::join(postproc_data->values().begin(), postproc_data->values().end(), ":");
-		setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
-	} else
-		unsetenv("ARKI_POSTPROC_FILES");
+    if (postproc_data && postproc_data->isSet())
+    {
+        // Pass files for the postprocessor in the environment
+        string val = str::join(":", postproc_data->values().begin(), postproc_data->values().end());
+        setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
+    } else
+        unsetenv("ARKI_POSTPROC_FILES");
 }
 
 void CommandLine::doneProcessing()
@@ -638,25 +615,29 @@ void MetadataDispatch::flush()
 
 string MetadataDispatch::summarySoFar() const
 {
-	string timeinfo;
-	if (timerisset(&startTime))
-	{
-		struct timeval now;
-		struct timeval diff;
-		gettimeofday(&now, NULL);
-		timersub(&now, &startTime, &diff);
-		timeinfo = str::fmtf(" in %d.%06d seconds", diff.tv_sec, diff.tv_usec);
-	}
-	if (!countSuccessful && !countNotImported && !countDuplicates && !countInErrorDataset)
-		return "no data processed" + timeinfo;
+    string timeinfo;
+    if (timerisset(&startTime))
+    {
+        struct timeval now;
+        struct timeval diff;
+        gettimeofday(&now, NULL);
+        timersub(&now, &startTime, &diff);
+        char buf[32];
+        snprintf(buf, 32, " in %d.%06d seconds", (int)diff.tv_sec, (int)diff.tv_usec);
+        timeinfo = buf;
+    }
+    if (!countSuccessful && !countNotImported && !countDuplicates && !countInErrorDataset)
+        return "no data processed" + timeinfo;
 
-	if (!countNotImported && !countDuplicates && !countInErrorDataset)
-	{
-		if (countSuccessful == 1)
-			return "everything ok: " + str::fmt(countSuccessful) + " message imported" + timeinfo;
-		else
-			return "everything ok: " + str::fmt(countSuccessful) + " messages imported" + timeinfo;
-	}
+    if (!countNotImported && !countDuplicates && !countInErrorDataset)
+    {
+        stringstream ss;
+        ss << "everything ok: " << countSuccessful << " message";
+        if (countSuccessful != 1)
+            ss << "s";
+        ss << " imported" + timeinfo;
+        return ss.str();
+    }
 
 	stringstream res;
 

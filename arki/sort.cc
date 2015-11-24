@@ -6,7 +6,7 @@
 #include <arki/metadata.h>
 
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
 

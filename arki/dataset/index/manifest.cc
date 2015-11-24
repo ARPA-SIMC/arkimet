@@ -1,25 +1,3 @@
-/*
- * dataset/index/manifest - Index files with no duplicate checks
- *
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "arki/libconfig.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"
@@ -39,10 +17,8 @@
 #include "arki/scan/any.h"
 #include "arki/nag.h"
 #include "arki/iotrace.h"
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 
 #include <unistd.h>
 #include <fstream>
@@ -53,7 +29,6 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -114,9 +89,9 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 	{
 		string pathname = str::joinpath(m_path, *i);
 
-		// Silently skip files that have been deleted
-		if (!sys::fs::access(pathname + ".summary", R_OK))
-			continue;
+        // Silently skip files that have been deleted
+        if (!sys::access(pathname + ".summary", R_OK))
+            continue;
 
 		Summary s;
 		s.readFile(pathname + ".summary");
@@ -161,7 +136,7 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
         // not been sorted before archiving
         compare = sort::Compare::parse("reftime");
 
-    string absdir = sys::fs::abspath(m_path);
+    string absdir = sys::abspath(m_path);
     sort::Stream sorter(*compare, *c);
     //ds::MakeAbsolute mkabs(sorter);
     FixSource fs(sorter);
@@ -192,15 +167,15 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 		// global summary
 		string cache_pathname = str::joinpath(m_path, "summary");
 
-		if (sys::fs::access(cache_pathname, R_OK))
+		if (sys::access(cache_pathname, R_OK))
 		{
 			Summary s;
 			s.readFile(cache_pathname);
 			s.filter(matcher, summary);
-		} else if (sys::fs::access(m_path, W_OK)) {
-			// Rebuild the cache
-			Summary s;
-			querySummaries(Matcher(), s);
+        } else if (sys::access(m_path, W_OK)) {
+            // Rebuild the cache
+            Summary s;
+            querySummaries(Matcher(), s);
 
 			// Save the summary
 			s.writeAtomically(cache_pathname);
@@ -244,7 +219,7 @@ size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
     vector<string> files;
     fileList(Matcher(), files);
 
-    string absdir = sys::fs::abspath(m_path);
+    string absdir = sys::abspath(m_path);
     //ds::MakeAbsolute mkabs(cons);
     FixSource fs(cons);
     fs.basedir = absdir;
@@ -264,12 +239,12 @@ size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
 
 void Manifest::invalidate_summary()
 {
-    sys::fs::deleteIfExists(str::joinpath(m_path, "summary"));
+    sys::unlink_ifexists(str::joinpath(m_path, "summary"));
 }
 
 void Manifest::invalidate_summary(const std::string& relname)
 {
-    sys::fs::deleteIfExists(str::joinpath(m_path, relname) + ".summary");
+    sys::unlink_ifexists(str::joinpath(m_path, relname) + ".summary");
     invalidate_summary();
 }
 
@@ -282,21 +257,25 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 	if (scan::isCompressed(pathname))
 		tu.reset(new utils::compress::TempUnzip(pathname));
 
-	// Read the timestamp
-	time_t mtime = sys::fs::timestamp(pathname);
+    // Read the timestamp
+    time_t mtime = sys::timestamp(pathname);
 
     // Invalidate summary
     invalidate_summary(pathname);
 
-	// Invalidate metadata if older than data
-	time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
-	if (ts_md < mtime)
-		sys::fs::deleteIfExists(pathname + ".metadata");
+    // Invalidate metadata if older than data
+    time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+    if (ts_md < mtime)
+        sys::unlink_ifexists(pathname + ".metadata");
 
-	// Scan the file
-	metadata::Collection mds;
-	if (!scan::scan(pathname, mds))
-		throw wibble::exception::Consistency("rescanning " + pathname, "it does not look like a file we can scan");
+    // Scan the file
+    metadata::Collection mds;
+    if (!scan::scan(pathname, mds))
+    {
+        stringstream ss;
+        ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";
+        throw runtime_error(ss.str());
+    }
 
 	// Iterate the metadata, computing the summary and making the data
 	// paths relative
@@ -365,61 +344,78 @@ class PlainManifest : public Manifest
 	bool dirty;
     bool rw;
 
-	/**
-	 * Reread the MANIFEST file.
-	 *
-	 * @returns true if the MANIFEST file existed, false if not
-	 */
-	bool reread()
-	{
-		string pathname(str::joinpath(m_path, "MANIFEST"));
-		ino_t inode = sys::fs::inode(pathname, 0);
+    /**
+     * Reread the MANIFEST file.
+     *
+     * @returns true if the MANIFEST file existed, false if not
+     */
+    bool reread()
+    {
+        string pathname(str::joinpath(m_path, "MANIFEST"));
+        ino_t inode = sys::inode(pathname, 0);
 
-		if (inode == last_inode) return inode != 0;
+        if (inode == last_inode) return inode != 0;
 
-		info.clear();
-		last_inode = inode;
-		if (last_inode == 0)
-			return false;
+        info.clear();
+        last_inode = inode;
+        if (last_inode == 0)
+            return false;
 
-		std::ifstream in;
-		in.open(pathname.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(pathname, "opening file for reading");
+        std::ifstream in;
+        in.open(pathname.c_str(), ios::in);
+        if (!in.is_open() || in.fail())
+        {
+            stringstream ss;
+            ss << "cannot open file " << pathname << " for reading";
+            throw std::system_error(errno, std::system_category(), ss.str());;
+        }
 
         iotrace::trace_file(pathname, 0, 0, "read MANIFEST");
 
-		string line;
-		for (size_t lineno = 1; !in.eof(); ++lineno)
-		{
-			getline(in, line);
-			if (in.fail() && !in.eof())
-				throw wibble::exception::File(pathname, "reading one line");
+        string line;
+        for (size_t lineno = 1; !in.eof(); ++lineno)
+        {
+            getline(in, line);
+            if (in.fail() && !in.eof())
+            {
+                stringstream ss;
+                ss << "cannot read one line from " << pathname;
+                throw std::system_error(errno, std::system_category(), ss.str());;
+            }
 
-			// Skip empty lines
-			if (line.empty()) continue;
+            // Skip empty lines
+            if (line.empty()) continue;
 
-			size_t beg = 0;
-			size_t end = line.find(';');
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 1 field");
+            size_t beg = 0;
+            size_t end = line.find(';');
+            if (end == string::npos)
+            {
+                stringstream ss;
+                ss << "cannot parse " << pathname << ":" << lineno << ": line has only 1 field";
+                throw runtime_error(ss.str());
+            }
 
             string file = line.substr(beg, end-beg);
 
-			beg = end + 1;
-			end = line.find(';', beg);
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 2 fields");
+            beg = end + 1;
+            end = line.find(';', beg);
+            if (end == string::npos)
+            {
+                stringstream ss;
+                ss << "cannot parse " << pathname << ":" << lineno << ": line has only 2 fields";
+                throw runtime_error(ss.str());
+            }
 
             time_t mtime = strtoul(line.substr(beg, end-beg).c_str(), 0, 10);
 
-			beg = end + 1;
-			end = line.find(';', beg);
-			if (end == string::npos)
-				throw wibble::exception::Consistency("parsing " + pathname + ":" + str::fmt(lineno),
-						"line has only 3 fields");
+            beg = end + 1;
+            end = line.find(';', beg);
+            if (end == string::npos)
+            {
+                stringstream ss;
+                ss << "cannot parse " << pathname << ":" << lineno << ": line has only 3 fields";
+                throw runtime_error(ss.str());
+            }
 
             info.push_back(Info(
                         file, mtime,
@@ -598,8 +594,8 @@ public:
 				string pathname = str::joinpath(m_path, i->file);
 
 				time_t ts_data = scan::timestamp(pathname);
-				time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
-				time_t ts_sum = sys::fs::timestamp(pathname + ".summary", 0);
+				time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+				time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
 				time_t ts_idx = i->mtime;
 
 				if (ts_idx != ts_data ||
@@ -659,18 +655,18 @@ public:
             dirty = false;
         }
 
-        if (rw && ! sys::fs::exists(str::joinpath(m_path, "summary")))
+        if (rw && ! sys::exists(str::joinpath(m_path, "summary")))
         {
             Summary s;
             querySummary(Matcher(), s);
         }
     }
 
-	static bool exists(const std::string& dir)
-	{
-		string pathname(str::joinpath(dir, "MANIFEST"));
-		return wibble::sys::fs::access(pathname, F_OK);
-	}
+    static bool exists(const std::string& dir)
+    {
+        string pathname(str::joinpath(dir, "MANIFEST"));
+        return sys::access(pathname, F_OK);
+    }
 };
 
 
@@ -735,8 +731,8 @@ public:
 		if (m_db.isOpen())
 			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
 
-		if (!wibble::sys::fs::access(pathname, F_OK))
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " does not exist");
+        if (!sys::access(pathname, F_OK))
+            throw wibble::exception::Consistency("opening archive index", "index " + pathname + " does not exist");
 
 		m_db.open(pathname);
 		setupPragmas();
@@ -744,13 +740,17 @@ public:
 		initQueries();
 	}
 
-	void openRW()
-	{
-		string pathname(str::joinpath(m_path, "index.sqlite"));
-		if (m_db.isOpen())
-			throw wibble::exception::Consistency("opening archive index", "index " + pathname + " is already open");
+    void openRW()
+    {
+        string pathname(str::joinpath(m_path, "index.sqlite"));
+        if (m_db.isOpen())
+        {
+            stringstream ss;
+            ss << "archive index " << pathname << "is already open";
+            throw runtime_error(ss.str());
+        }
 
-		bool need_create = !wibble::sys::fs::access(pathname, F_OK);
+        bool need_create = !sys::access(pathname, F_OK);
 
 		m_db.open(pathname);
 		setupPragmas();
@@ -846,13 +846,12 @@ public:
         return Pending(new SqliteTransaction(m_db, true));
     }
 
-	void acquire(const std::string& relname, time_t mtime, const Summary& sum)
-	{
+    void acquire(const std::string& relname, time_t mtime, const Summary& sum)
+    {
         // Add to index
         unique_ptr<types::Reftime> rt = sum.getReferenceTime();
 
-		string bt;
-		string et;
+        string bt, et;
 
         switch (rt->style())
         {
@@ -867,8 +866,11 @@ public:
                 et = p->end.toSQL();
                 break;
             }
-            default:
-                    throw wibble::exception::Consistency("unsupported reference time " + types::Reftime::formatStyle(rt->style()));
+            default: {
+                stringstream ss;
+                ss << "unsupported reference time " << types::Reftime::formatStyle(rt->style());
+                throw runtime_error(ss.str());
+            }
         }
 
 		m_insert.reset();
@@ -916,12 +918,12 @@ public:
 			{
 				disk.pop_back();
 
-				string pathname = str::joinpath(m_path, i->first);
+                string pathname = str::joinpath(m_path, i->first);
 
-				time_t ts_data = scan::timestamp(pathname);
-				time_t ts_md = sys::fs::timestamp(pathname + ".metadata", 0);
-				time_t ts_sum = sys::fs::timestamp(pathname + ".summary", 0);
-				time_t ts_idx = i->second;
+                time_t ts_data = scan::timestamp(pathname);
+                time_t ts_md = sys::timestamp(pathname + ".metadata", 0);
+                time_t ts_sum = sys::timestamp(pathname + ".summary", 0);
+                time_t ts_idx = i->second;
 
 				if (ts_idx != ts_data ||
 				    ts_md < ts_data ||
@@ -956,11 +958,11 @@ public:
 		}
 	}
 
-	static bool exists(const std::string& dir)
-	{
-		string pathname(str::joinpath(dir, "index.sqlite"));
-		return wibble::sys::fs::access(pathname, F_OK);
-	}
+    static bool exists(const std::string& dir)
+    {
+        string pathname(str::joinpath(dir, "index.sqlite"));
+        return sys::access(pathname, F_OK);
+    }
 };
 
 }

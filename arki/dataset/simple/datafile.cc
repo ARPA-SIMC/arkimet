@@ -1,16 +1,13 @@
 #include "config.h"
-#include <arki/dataset/simple/datafile.h>
-#include <arki/metadata.h>
-#include <arki/types/source/blob.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/scan/any.h>
-#include <arki/nag.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-
+#include "arki/dataset/simple/datafile.h"
+#include "arki/metadata.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/scan/any.h"
+#include "arki/nag.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -18,7 +15,6 @@
 #include <cerrno>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 
 namespace arki {
@@ -30,7 +26,7 @@ namespace datafile {
 MdBuf::MdBuf(const std::string& pathname)
     : pathname(pathname), dirname(str::dirname(pathname)), basename(str::basename(pathname)), flushed(true)
 {
-    if (sys::fs::exists(pathname))
+    if (sys::exists(pathname))
     {
         // Read the metadata
         scan::scan(pathname, mds);
@@ -39,7 +35,7 @@ MdBuf::MdBuf(const std::string& pathname)
         if (!mds.empty())
         {
             string sumfname = pathname + ".summary";
-            if (sys::fs::timestamp(pathname, 0) <= sys::fs::timestamp(sumfname, 0))
+            if (sys::timestamp(pathname, 0) <= sys::timestamp(sumfname, 0))
                 sum.readFile(sumfname);
             else
                 mds.add_to_summary(sum);

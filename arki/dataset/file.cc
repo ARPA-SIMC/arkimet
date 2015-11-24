@@ -1,17 +1,16 @@
-#include <arki/libconfig.h>
-#include <arki/dataset/file.h>
-#include <arki/metadata/consumer.h>
-#include <arki/configfile.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/postprocess.h>
-#include <arki/sort.h>
-#include <arki/utils/dataset.h>
-#include <arki/utils/files.h>
-#include <arki/scan/any.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include "arki/libconfig.h"
+#include "arki/dataset/file.h"
+#include "arki/metadata/consumer.h"
+#include "arki/configfile.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/postprocess.h"
+#include "arki/sort.h"
+#include "arki/utils/dataset.h"
+#include "arki/utils/files.h"
+#include "arki/scan/any.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <sys/stat.h>
 
 #ifdef HAVE_LUA
@@ -19,7 +18,6 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 
 namespace arki {
@@ -27,74 +25,83 @@ namespace dataset {
 
 void File::readConfig(const std::string& fname, ConfigFile& cfg)
 {
-	using namespace wibble;
+    ConfigFile section;
 
-	ConfigFile section;
+    if (fname == "-")
+    {
+        // If the input is stdin, make hardcoded assumptions
+        section.setValue("name", "stdin");
+        section.setValue("path", "-");
+        section.setValue("type", "file");
+        section.setValue("format", "arkimet");
+    } else if (str::endswith(fname, ":-")) {
+        // If the input is stdin, make hardcoded assumptions
+        section.setValue("name", "stdin");
+        section.setValue("path", "-");
+        section.setValue("type", "file");
+        section.setValue("format", fname.substr(0, fname.size()-2));
+    } else {
+        section.setValue("type", "file");
+        if (sys::exists(fname))
+        {
+            section.setValue("path", sys::abspath(fname));
+            section.setValue("format", files::format_from_ext(fname, "arkimet"));
+            string name = str::basename(fname);
+            section.setValue("name", name);
+        } else {
+            size_t fpos = fname.find(':');
+            if (fpos == string::npos)
+            {
+                stringstream ss;
+                ss << "dataset file " << fname << " does not exist";
+                throw runtime_error(ss.str());
+            }
+            section.setValue("format", files::normaliseFormat(fname.substr(0, fpos)));
 
-	if (fname == "-")
-	{
-		// If the input is stdin, make hardcoded assumptions
-		section.setValue("name", "stdin");
-		section.setValue("path", "-");
-		section.setValue("type", "file");
-		section.setValue("format", "arkimet");
-	} else if (str::endsWith(fname, ":-")) {
-		// If the input is stdin, make hardcoded assumptions
-		section.setValue("name", "stdin");
-		section.setValue("path", "-");
-		section.setValue("type", "file");
-		section.setValue("format", fname.substr(0, fname.size()-2));
-	} else {
-		section.setValue("type", "file");
-		if (sys::fs::exists(fname))
-		{
-                    section.setValue("path", sys::fs::abspath(fname));
-                    section.setValue("format", files::format_from_ext(fname, "arkimet"));
-                    string name = str::basename(fname);
-                    section.setValue("name", name);
-		} else {
-			size_t fpos = fname.find(':');
-			if (fpos == string::npos)
-				throw wibble::exception::Consistency("examining file " + fname, "file does not exist");
-			section.setValue("format", files::normaliseFormat(fname.substr(0, fpos)));
+            string fname1 = fname.substr(fpos+1);
+            if (!sys::exists(fname1))
+            {
+                stringstream ss;
+                ss << "dataset file " << fname1 << " does not exist";
+                throw runtime_error(ss.str());
+            }
+            section.setValue("path", sys::abspath(fname1));
+            section.setValue("name", str::basename(fname1));
+        }
+    }
 
-			string fname1 = fname.substr(fpos+1);
-			if (!sys::fs::exists(fname1))
-				throw wibble::exception::Consistency("examining file " + fname1, "file does not exist");
-			section.setValue("path", sys::fs::abspath(fname1));
-			section.setValue("name", str::basename(fname1));
-		}
-	}
-
-	// Merge into cfg
-	cfg.mergeInto(section.value("name"), section);
+    // Merge into cfg
+    cfg.mergeInto(section.value("name"), section);
 }
 
 File* File::create(const ConfigFile& cfg)
 {
-	string format = str::tolower(cfg.value("format"));
-	
-	if (format == "arkimet")
-		return new ArkimetFile(cfg);
-	if (format == "yaml")
-		return new YamlFile(cfg);
+    string format = str::lower(cfg.value("format"));
+
+    if (format == "arkimet")
+        return new ArkimetFile(cfg);
+    if (format == "yaml")
+        return new YamlFile(cfg);
 #ifdef HAVE_GRIBAPI
-	if (format == "grib")
-		return new RawFile(cfg);
+    if (format == "grib")
+        return new RawFile(cfg);
 #endif
 #ifdef HAVE_DBALLE
-	if (format == "bufr")
-		return new RawFile(cfg);
+    if (format == "bufr")
+        return new RawFile(cfg);
 #endif
 #ifdef HAVE_HDF5
-	if (format == "odimh5")
-		return new RawFile(cfg);
+    if (format == "odimh5")
+        return new RawFile(cfg);
 #endif
 #ifdef HAVE_VM2
     if (format == "vm2")
         return new RawFile(cfg);
 #endif
-	throw wibble::exception::Consistency("creating a file dataset", "unknown file format \""+format+"\"");
+
+    stringstream ss;
+    ss << "cannot create a dataset for the unknown file format \"" << format << "\"";
+    throw runtime_error(ss.str());
 }
 
 File::File(const ConfigFile& cfg)

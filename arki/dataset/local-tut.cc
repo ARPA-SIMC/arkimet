@@ -1,37 +1,17 @@
-/*
- * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
-
-#include <arki/dataset/tests.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/dataset/local.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/scan/any.h>
-#include <arki/utils/files.h>
-#include <arki/types/area.h>
-#include <arki/types/product.h>
-#include <arki/types/value.h>
-#include <wibble/sys/fs.h>
-
+#include "arki/dataset/tests.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/dataset/local.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/scan/any.h"
+#include "arki/utils/files.h"
+#include "arki/types/area.h"
+#include "arki/types/product.h"
+#include "arki/types/value.h"
+#include "arki/utils/sys.h"
 #include <sstream>
 #include <iostream>
 
@@ -43,7 +23,6 @@ using namespace arki::tests;
 using namespace arki::dataset;
 using namespace arki::utils;
 using namespace arki::types;
-using namespace wibble;
 
 struct arki_dataset_local_base : public DatasetTest {
     arki_dataset_local_base()
@@ -65,17 +44,17 @@ typedef tg::object to;
 // Test moving into archive data that have been compressed
 template<> template<> void to::test<1>()
 {
-	ConfigFile cfg = this->cfg;
-	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
+    ConfigFile cfg = this->cfg;
+    cfg.setValue("archive age", days_since(2007, 9, 1));
 
-	// Import and compress all the files
-	clean_and_import(&cfg);
-	scan::compress("testds/2007/07-07.grib1");
-	scan::compress("testds/2007/07-08.grib1");
-	scan::compress("testds/2007/10-09.grib1");
-	sys::fs::deleteIfExists("testds/2007/07-07.grib1");
-	sys::fs::deleteIfExists("testds/2007/07-08.grib1");
-	sys::fs::deleteIfExists("testds/2007/10-09.grib1");
+    // Import and compress all the files
+    clean_and_import(&cfg);
+    scan::compress("testds/2007/07-07.grib1");
+    scan::compress("testds/2007/07-08.grib1");
+    scan::compress("testds/2007/10-09.grib1");
+    sys::unlink_ifexists("testds/2007/07-07.grib1");
+    sys::unlink_ifexists("testds/2007/07-08.grib1");
+    sys::unlink_ifexists("testds/2007/10-09.grib1");
 
 	// Test that querying returns all items
 	{
@@ -112,27 +91,27 @@ template<> template<> void to::test<1>()
 		s.ensure_all_lines_seen();
 	}
 
-	// Check that the files have been moved to the archive
-	ensure(!sys::fs::exists("testds/.archive/last/2007/07-07.grib1"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.gz"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.gz.idx"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-07.grib1.summary"));
-	ensure(!sys::fs::exists("testds/.archive/last/2007/07-08.grib1"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.gz"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.gz.idx"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
-	ensure(sys::fs::exists("testds/.archive/last/2007/07-08.grib1.summary"));
-	ensure(!sys::fs::exists("testds/2007/07-07.grib1"));
-	ensure(!sys::fs::exists("testds/2007/07-07.grib1.gz"));
-	ensure(!sys::fs::exists("testds/2007/07-07.grib1.gz.idx"));
-	ensure(!sys::fs::exists("testds/2007/07-07.grib1.metadata"));
-	ensure(!sys::fs::exists("testds/2007/07-07.grib1.summary"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.gz"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.gz.idx"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.metadata"));
-	ensure(!sys::fs::exists("testds/2007/07-08.grib1.summary"));
+    // Check that the files have been moved to the archive
+    ensure(!sys::exists("testds/.archive/last/2007/07-07.grib1"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.gz"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.gz.idx"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.metadata"));
+    ensure(sys::exists("testds/.archive/last/2007/07-07.grib1.summary"));
+    ensure(!sys::exists("testds/.archive/last/2007/07-08.grib1"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.gz"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.gz.idx"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.metadata"));
+    ensure(sys::exists("testds/.archive/last/2007/07-08.grib1.summary"));
+    ensure(!sys::exists("testds/2007/07-07.grib1"));
+    ensure(!sys::exists("testds/2007/07-07.grib1.gz"));
+    ensure(!sys::exists("testds/2007/07-07.grib1.gz.idx"));
+    ensure(!sys::exists("testds/2007/07-07.grib1.metadata"));
+    ensure(!sys::exists("testds/2007/07-07.grib1.summary"));
+    ensure(!sys::exists("testds/2007/07-08.grib1"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.gz"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.gz.idx"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.metadata"));
+    ensure(!sys::exists("testds/2007/07-08.grib1.summary"));
 
 	// Maintenance should now show a normal situation
 	{
@@ -185,7 +164,7 @@ template<> template<> void to::test<2>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testds"), "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07-08.grib1", 0, 7218));
 
     mdc.clear();
     reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
@@ -243,9 +222,9 @@ template<> template<> void to::test<5>()
 {
 	using namespace arki::types;
 
-	ConfigFile cfg = this->cfg;
-	cfg.setValue("archive age", str::fmt(days_since(2007, 9, 1)));
-	clean_and_import(&cfg);
+    ConfigFile cfg = this->cfg;
+    cfg.setValue("archive age", days_since(2007, 9, 1));
+    clean_and_import(&cfg);
 	{
 		unique_ptr<WritableLocal> writer(makeLocalWriter(&cfg));
 		OutputChecker s;

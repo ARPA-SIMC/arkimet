@@ -1,5 +1,5 @@
-#ifndef ARKI-UTILS_TESTS_H
-#define ARKI-UTILS_TESTS_H
+#ifndef ARKI_UTILS_TESTS_H
+#define ARKI_UTILS_TESTS_H
 
 /**
  * @author Enrico Zini <enrico@enricozini.org>, Peter Rockai (mornfall) <me@mornfall.net>
@@ -44,7 +44,7 @@ namespace tests {
  * \code
  * test_function(...)
  * {
- *    ARKI-UTILS_TEST_INFO(info);
+ *    ARKI_UTILS_TEST_INFO(info);
  *    for (unsigned i = 0; i < 10; ++i)
  *    {
  *       info() << "Iteration #" << i;
@@ -135,7 +135,7 @@ struct TestFailed : public std::exception
  * Use this to declare a local variable with the given name that will be
  * picked up by tests as extra local info
  */
-#define ARKI-UTILS_TEST_INFO(name) \
+#define ARKI_UTILS_TEST_INFO(name) \
     arki::utils::tests::LocationInfo arki::utils_test_location_info; \
     arki::utils::tests::LocationInfo& name = arki::utils_test_location_info
 

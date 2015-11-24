@@ -28,7 +28,7 @@
 #include "arki/utils/files.h"
 #include "arki/scan/any.h"
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/sys/buffer.h>
 #include <wibble/sys/fs.h>
 #include <cerrno>

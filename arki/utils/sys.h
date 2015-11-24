@@ -1,5 +1,5 @@
-#ifndef ARKI-UTILS_SYS_H
-#define ARKI-UTILS_SYS_H
+#ifndef ARKI_UTILS_SYS_H
+#define ARKI_UTILS_SYS_H
 
 /**
  * @author Enrico Zini <enrico@enricozini.org>

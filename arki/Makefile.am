@@ -146,6 +146,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/process.h \
 		utils/sqlite.h \
 		utils/raii.h \
+                utils/string.h \
+                utils/sys.h \
 		values.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
@@ -188,6 +190,8 @@ libarkimet_la_SOURCES += \
 		utils/pcounter.cc \
 		utils/process.cc \
 		utils/raii.cc \
+		utils/string.cc \
+		utils/sys.cc \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \

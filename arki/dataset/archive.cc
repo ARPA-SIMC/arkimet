@@ -1,47 +1,21 @@
-/*
- * dataset/archive - Handle archived data
- *
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/dataset/archive.h>
-#include <arki/dataset/index/manifest.h>
-#include <arki/dataset/simple/reader.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/summary.h>
-#include <arki/types/reftime.h>
-#include <arki/types/source/blob.h>
-#include <arki/matcher.h>
-#include <arki/metadata/collection.h>
-#include <arki/utils/fd.h>
-#include <arki/utils/files.h>
-#include <arki/utils/dataset.h>
-#include <arki/utils/compress.h>
-#include <arki/scan/any.h>
-#include <arki/nag.h>
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
-
+#include "arki/dataset/archive.h"
+#include "arki/dataset/index/manifest.h"
+#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/summary.h"
+#include "arki/types/reftime.h"
+#include "arki/types/source/blob.h"
+#include "arki/matcher.h"
+#include "arki/metadata/collection.h"
+#include "arki/utils/fd.h"
+#include "arki/utils/files.h"
+#include "arki/utils/dataset.h"
+#include "arki/utils/compress.h"
+#include "arki/scan/any.h"
+#include "arki/nag.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <fstream>
 #include <ctime>
 #include <cstdio>
@@ -50,13 +24,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
 #ifdef HAVE_LUA
-#include <arki/report.h>
+#include "arki/report.h"
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -73,7 +45,7 @@ bool Archive::is_archive(const std::string& dir)
 
 Archive* Archive::create(const std::string& dir, bool writable)
 {
-    if (sys::fs::exists(dir + ".summary"))
+    if (sys::exists(dir + ".summary"))
     {
         // Writable is not allowed on archives that have been archived offline
         if (writable) return 0;
@@ -99,7 +71,7 @@ OnlineArchive::OnlineArchive(const std::string& dir)
 : m_dir(dir), m_mft(0)
 {
     // Create the directory if it does not exist
-    wibble::sys::fs::mkpath(m_dir);
+    sys::makedirs(m_dir);
 }
 
 OnlineArchive::~OnlineArchive()
@@ -231,10 +203,10 @@ void OnlineArchive::remove(const std::string& relname)
 	// and .summary, if they exist
 	string pathname = str::joinpath(m_dir, relname);
 
-	sys::fs::deleteIfExists(pathname + ".summary");
-	sys::fs::deleteIfExists(pathname + ".metadata");
-	//sys::fs::deleteIfExists(pathname);
-	deindex(relname);
+    sys::unlink_ifexists(pathname + ".summary");
+    sys::unlink_ifexists(pathname + ".metadata");
+    //sys::fs::deleteIfExists(pathname);
+    deindex(relname);
 
     m_mft->invalidate_summary();
 }
@@ -255,9 +227,9 @@ void OnlineArchive::rescan(const std::string& relname)
 
 void OnlineArchive::vacuum()
 {
-	if (!m_mft) throw wibble::exception::Consistency("vacuuming " + m_dir, "archive opened in read only mode");
-	// If archive dir is not writable, skip this section
-	if (!sys::fs::exists(m_dir)) return;
+    if (!m_mft) throw wibble::exception::Consistency("vacuuming " + m_dir, "archive opened in read only mode");
+    // If archive dir is not writable, skip this section
+    if (!sys::exists(m_dir)) return;
 
 	m_mft->vacuum();
 
@@ -341,7 +313,7 @@ Archives::Archives(const std::string& root, const std::string& dir, bool read_on
     : m_scache_root(str::joinpath(root, ".summaries")), m_dir(dir), m_read_only(read_only), m_last(0)
 {
     // Create the directory if it does not exist
-    wibble::sys::fs::mkpath(m_dir);
+    sys::makedirs(m_dir);
 
     // Look for other archives other than 'last'
     rescan_archives();
@@ -370,24 +342,23 @@ void Archives::rescan_archives()
     m_archives.clear();
 
     // Look for subdirectories: they are archives
-    sys::fs::Directory d(m_dir);
+    sys::Path d(m_dir);
     set<string> names;
-    for (sys::fs::Directory::const_iterator i = d.begin();
-            i != d.end(); ++i)
+    for (sys::Path::iterator i = d.begin(); i != d.end(); ++i)
     {
         // Skip '.', '..' and hidden files
-        if ((*i)[0] == '.') continue;
+        if (i->d_name[0] == '.') continue;
         if (!i.isdir())
         {
             // Add .summary files
-            string name = *i;
-            if (str::endsWith(name, ".summary"))
+            string name = i->d_name;
+            if (str::endswith(name, ".summary"))
                 names.insert(name.substr(0, name.size() - 8));
         } else {
             // Add directory with a manifest inside
-            string pathname = str::joinpath(m_dir, *i);
+            string pathname = str::joinpath(m_dir, i->d_name);
             if (!m_read_only || Archive::is_archive(pathname))
-                names.insert(*i);
+                names.insert(i->d_name);
         }
     }
 
@@ -502,19 +473,18 @@ void Archives::rebuild_summary_cache()
         m_last->querySummary(m, s);
 
     // Add all summaries in toplevel dirs
-    sys::fs::Directory d(m_dir);
-    for (sys::fs::Directory::const_iterator i = d.begin();
-            i != d.end(); ++i)
+    sys::Path d(m_dir);
+    for (sys::Path::iterator i = d.begin(); i != d.end(); ++i)
     {
         // Skip '.', '..' and hidden files
-        if ((*i)[0] == '.') continue;
-        if (!str::endsWith(*i, ".summary")) continue;
-        s.readFile(str::joinpath(m_dir, *i));
+        if (i->d_name[0] == '.') continue;
+        if (!str::endswith(i->d_name, ".summary")) continue;
+        s.readFile(str::joinpath(m_dir, i->d_name));
     }
 
     // Write back to the cache directory, if allowed
     if (!m_read_only)
-        if (sys::fs::access(m_scache_root, W_OK))
+        if (sys::access(m_scache_root, W_OK))
             s.writeAtomically(sum_file);
 }
 
@@ -576,7 +546,7 @@ size_t Archives::produce_nth(metadata::Eater& cons, size_t idx)
 
 void Archives::invalidate_summary_cache()
 {
-    sys::fs::deleteIfExists(str::joinpath(m_scache_root, "archives.summary"));
+    sys::unlink_ifexists(str::joinpath(m_scache_root, "archives.summary"));
 }
 
 static std::string poppath(std::string& path)

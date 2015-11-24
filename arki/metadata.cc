@@ -34,19 +34,20 @@
 #include "iotrace.h"
 #include "scan/any.h"
 #include "utils/datareader.h"
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include "utils/string.h"
 #include <unistd.h>
 #include <fstream>
 #include <cstdlib>
+#include <cerrno>
+#include <stdexcept>
+#include <wibble/string.h>
+#include <wibble/sys/buffer.h>
 
 #ifdef HAVE_LUA
-#include <arki/utils/lua.h>
+#include "utils/lua.h"
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -74,9 +75,12 @@ ReadContext::ReadContext(const std::string& pathname, const std::string& basedir
 
 static inline void ensureSize(size_t len, size_t req, const char* what)
 {
-	using namespace str;
-	if (len < req)
-		throw wibble::exception::Consistency(string("parsing ") + what, "size is " + fmt(len) + " but we need at least "+fmt(req)+" for the "+what+" style");
+    if (len < req)
+    {
+        stringstream s;
+        s << "cannot parse " << what << ": size is " << len << " but we need at least " << req << " for the " << what << " style";
+        throw runtime_error(s.str());
+    }
 }
 
 template<typename ITER>
@@ -294,8 +298,12 @@ void Metadata::read(const unsigned char* buf, size_t len, unsigned version, cons
 
     // Check version and ensure we can decode
     if (version != 0)
-        throw wibble::exception::Consistency("parsing file " + rc.pathname, "version of the file is " + str::fmt(version) + " but I can only decode version 0");
-	
+    {
+        stringstream s;
+        s << "cannot parse file " << rc.pathname << ": version of the file is " << version << " but I can only decode version 0";
+        throw runtime_error(s.str());
+    }
+
 	// Parse the various elements
 	const unsigned char* end = buf + len;
 	for (const unsigned char* cur = buf; cur < end; )
@@ -331,7 +339,11 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
         // Read the inline data
         in.read((char*)buf.data(), s->size);
         if (in.fail())
-            throw wibble::exception::File(filename, "reading "+str::fmt(s->size)+" bytes");
+        {
+            stringstream ss;
+            ss << "cannot read " << s->size << " bytes from " << filename;
+            throw std::system_error(errno, std::system_category(), ss.str());
+        }
 
         m_data = buf;
     }
@@ -339,15 +351,14 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
 
 bool Metadata::readYaml(std::istream& in, const std::string& filename)
 {
-	using namespace str;
-	clear();
+    clear();
 
-	YamlStream yamlStream;
-	for (YamlStream::const_iterator i = yamlStream.begin(in);
-			i != yamlStream.end(); ++i)
-	{
-		types::Code type = types::parseCodeName(i->first);
-		string val = trim(i->second);
+    wibble::str::YamlStream yamlStream;
+    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
+            i != yamlStream.end(); ++i)
+    {
+        types::Code type = types::parseCodeName(i->first);
+        string val = str::strip(i->second);
         switch (type)
         {
             case types::TYPE_NOTE: add_note(*types::Note::decodeString(val)); break;
@@ -364,19 +375,31 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
     // Prepare the encoded data
     string encoded = encodeBinary();
 
-	// Write out
-	out.write(encoded.data(), encoded.size());
-	if (out.fail())
-		throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
+    // Write out
+    out.write(encoded.data(), encoded.size());
+    if (out.fail())
+    {
+        stringstream ss;
+        ss << "cannot write " << encoded.size() << " bytes to file " << filename;
+        throw std::system_error(errno, std::system_category(), ss.str());;
+    }
 
     // If the source is inline, then the data follows the metadata
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
         if (s->size != m_data.size())
-            throw wibble::exception::Consistency("writing metadata to " + filename, str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
+        {
+            stringstream ss;
+            ss << "cannot write metadata to file " << filename << ": source size " << s->size << " does not match the data size " << m_data.size();
+            throw runtime_error(ss.str());
+        }
         out.write((const char*)m_data.data(), m_data.size());
         if (out.fail())
-            throw wibble::exception::File(filename, "writing " + str::fmt(m_data.size()) + " bytes to the file");
+        {
+            stringstream ss;
+            ss << "cannot write " << m_data.size() << " bytes to file " << filename;
+            throw std::system_error(errno, std::system_category(), ss.str());;
+        }
     }
 }
 
@@ -392,7 +415,11 @@ void Metadata::write(int outfd, const std::string& filename) const
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
         if (s->size != m_data.size())
-            throw wibble::exception::Consistency("writing metadata to " + filename, str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
+        {
+            stringstream ss;
+            ss << "cannot write metadata to file " << filename << ": metadata size " << s->size << " does not match the data size " << m_data.size();
+            throw runtime_error(ss.str());
+        }
         utils::fd::write_all(outfd, m_data.data(), m_data.size());
     }
 }
@@ -402,11 +429,13 @@ void Metadata::writeYaml(std::ostream& out, const Formatter* formatter) const
     if (m_source) out << "Source: " << *m_source << endl;
     for (map<types::Code, types::Type*>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i)
     {
-		out << str::ucfirst(i->second->tag()) << ": ";
-		i->second->writeToOstream(out);
-		if (formatter)
-			out << "\t# " << (*formatter)(*i->second);
-		out << endl;
+        string uc = str::lower(i->second->tag());
+        uc[0] = toupper(uc[0]);
+        out << uc << ": ";
+        i->second->writeToOstream(out);
+        if (formatter)
+            out << "\t# " << (*formatter)(*i->second);
+        out << endl;
     }
 
     vector<Note> l(notes());
@@ -445,7 +474,11 @@ void Metadata::serialise(Emitter& e, const Formatter* f) const
     if (const source::Inline* s = dynamic_cast<const source::Inline*>(m_source))
     {
         if (s->size != m_data.size())
-            throw wibble::exception::Consistency("writing metadata to JSON", str::fmtf("metadata source size %zd does not match the data size %zd", (size_t)s->size, m_data.size()));
+        {
+            stringstream ss;
+            ss << "cannot write metadata to JSON: metadata source size " << s->size << " does not match the data size " << m_data.size();
+            throw runtime_error(ss.str());
+        }
         e.add_raw(m_data);
     }
 }
@@ -631,20 +664,24 @@ void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const
 {
     // Handle metadata group
     if (version != 0)
-        throw wibble::exception::Consistency("parsing file " + file.pathname, "can only decode metadata group version 0 (LZO compressed); found version: " + str::fmt(version));
+    {
+        stringstream ss;
+        ss << "cannot parse file " << file.pathname << ": found version " << version << " but only version 0 (LZO compressed) is supported";
+        throw runtime_error(ss.str());
+    }
 
-	// Read uncompressed size
-	ensureSize(buf.size(), 4, "uncompressed item size");
-	uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
+    // Read uncompressed size
+    ensureSize(buf.size(), 4, "uncompressed item size");
+    uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
 
-	sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
-	const unsigned char* ubuf = (const unsigned char*)decomp.data();
-	size_t len = decomp.size(); 
-	const unsigned char* ibuf;
-	size_t ilen;
-	string isig;
-	unsigned iver;
-	bool canceled = false;
+    wibble::sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
+    const unsigned char* ubuf = (const unsigned char*)decomp.data();
+    size_t len = decomp.size();
+    const unsigned char* ibuf;
+    size_t ilen;
+    string isig;
+    unsigned iver;
+    bool canceled = false;
     while (!canceled && types::readBundle(ubuf, len, file.pathname, ibuf, ilen, isig, iver))
     {
         unique_ptr<Metadata> md(new Metadata);
@@ -662,20 +699,20 @@ struct LuaIter
 
     LuaIter(const Metadata& s) : s(s), iter(s.begin()) {}
 
-	// Lua iterator for summaries
-	static int iterate(lua_State* L)
-	{
-		LuaIter& i = **(LuaIter**)lua_touserdata(L, lua_upvalueindex(1));
-		if (i.iter != i.s.end())
-		{
-			lua_pushstring(L, str::tolower(types::formatCode(i.iter->first)).c_str());
-			i.iter->second->lua_push(L);
-			++i.iter;
-			return 2;
-		}
-		else
-			return 0;  /* no more values to return */
-	}
+    // Lua iterator for summaries
+    static int iterate(lua_State* L)
+    {
+        LuaIter& i = **(LuaIter**)lua_touserdata(L, lua_upvalueindex(1));
+        if (i.iter != i.s.end())
+        {
+            lua_pushstring(L, str::lower(types::formatCode(i.iter->first)).c_str());
+            i.iter->second->lua_push(L);
+            ++i.iter;
+            return 2;
+        }
+        else
+            return 0;  // no more values to return
+    }
 
 	static int gc (lua_State *L) {
 		LuaIter* i = *(LuaIter**)lua_touserdata(L, 1);
@@ -925,8 +962,12 @@ static int arkilua_tostring(lua_State* L)
     luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
     vector<string> bits;
     for (Metadata::const_iterator i = md->begin(); i != md->end(); ++i)
-        bits.push_back(str::tolower(str::fmt(i->first)) + ": " + str::fmt(i->second));
-    string merged = "{" + str::join(bits.begin(), bits.end(), ", ") + "}";
+    {
+        stringstream s;
+        s << str::lower(formatCode(i->first)) << ": " << i->second;
+        bits.push_back(s.str());
+    }
+    string merged = "{" + str::join(", ", bits.begin(), bits.end()) + "}";
     lua_pushlstring(L, merged.data(), merged.size());
     return 1;
 }

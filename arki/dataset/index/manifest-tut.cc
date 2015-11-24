@@ -1,40 +1,18 @@
-/*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/dataset/tests.h>
-#include <arki/dataset/index/manifest.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/summary.h>
-#include <arki/utils/files.h>
-#include <arki/scan/any.h>
-#include <wibble/sys/fs.h>
+#include "arki/dataset/tests.h"
+#include "arki/dataset/index/manifest.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/metadata.h"
+#include "arki/metadata/consumer.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/summary.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
+#include "arki/scan/any.h"
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::tests;
@@ -61,18 +39,18 @@ TESTGRP(arki_dataset_index_manifest);
 template<> template<>
 void to::test<1>()
 {
-	// Empty dirs do not show up as having a manifest
-	ensure(!Manifest::exists("testds/.archive/last"));
+    // Empty dirs do not show up as having a manifest
+    ensure(!Manifest::exists("testds/.archive/last"));
 
-	// An empty MANIFEST file counts as an empty manifest
-	system("touch testds/.archive/last/MANIFEST");
-	ensure(Manifest::exists("testds/.archive/last"));
-	sys::fs::deleteIfExists("testds/.archive/last/MANIFEST");
+    // An empty MANIFEST file counts as an empty manifest
+    system("touch testds/.archive/last/MANIFEST");
+    ensure(Manifest::exists("testds/.archive/last"));
+    sys::unlink_ifexists("testds/.archive/last/MANIFEST");
 
-	// Same if there is a sqlite manifest
-	system("touch testds/.archive/last/index.sqlite");
-	ensure(Manifest::exists("testds/.archive/last"));
-	sys::fs::deleteIfExists("testds/.archive/last/index.sqlite");
+    // Same if there is a sqlite manifest
+    system("touch testds/.archive/last/index.sqlite");
+    ensure(Manifest::exists("testds/.archive/last"));
+    sys::unlink_ifexists("testds/.archive/last/index.sqlite");
 }
 
 
@@ -113,12 +91,12 @@ template<> template<> void to::test<3>() { ForceSqlite fs; test<2>(); }
 template<> template<>
 void to::test<4>()
 {
-	// Opening a missing manifest read-write creates a new one
-	ensure(!sys::fs::exists("testds/.archive/last/" + idxfname()));
-	std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
-	m->openRW();
-	m->flush();
-	ensure(sys::fs::exists("testds/.archive/last/" + idxfname()));
+    // Opening a missing manifest read-write creates a new one
+    ensure(!sys::exists("testds/.archive/last/" + idxfname()));
+    std::unique_ptr<Manifest> m = Manifest::create("testds/.archive/last");
+    m->openRW();
+    m->flush();
+    ensure(sys::exists("testds/.archive/last/" + idxfname()));
 
     MaintenanceCollector c;
     unique_ptr<dataset::data::SegmentManager> sm(dataset::data::SegmentManager::get("testds/.archive/last"));
@@ -181,8 +159,18 @@ struct IndexingCollector : public MaintenanceCollector
     {
         MaintenanceCollector::operator()(file, state);
         int n = atoi(file.c_str());
-        if (n > 10) m.acquire(str::fmtf("%02d.grib1", n - 10), mtime, s);
-        if (n < 50) m.acquire(str::fmtf("%02d.grib1", n + 10), mtime, s);
+
+        char fname[32];
+        if (n > 10)
+        {
+            snprintf(fname, 32, "%02d.grib1", n - 10);
+            m.acquire(fname, mtime, s);
+        }
+        if (n < 50)
+        {
+            snprintf(fname, 32, "%02d.grib1", n + 10);
+            m.acquire(fname, mtime, s);
+        }
     }
 };
 }
@@ -191,13 +179,13 @@ struct IndexingCollector : public MaintenanceCollector
 template<> template<>
 void to::test<8>()
 {
-	// Start with 4 data files
-	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/10.grib1");
-	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/20.grib1");
-	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/30.grib1");
-	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/40.grib1");
-	system("cp -a inbound/test-sorted.grib1 testds/.archive/last/50.grib1");
-	time_t mtime = sys::fs::timestamp("inbound/test-sorted.grib1");
+    // Start with 4 data files
+    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/10.grib1");
+    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/20.grib1");
+    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/30.grib1");
+    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/40.grib1");
+    system("cp -a inbound/test-sorted.grib1 testds/.archive/last/50.grib1");
+    time_t mtime = sys::timestamp("inbound/test-sorted.grib1");
 
     // Generate their metadata and summary files
     metadata::Collection mdc;
@@ -205,11 +193,14 @@ void to::test<8>()
     metadata::SummarisingObserver summarise(s);
     scan::scan("inbound/test-sorted.grib1", mdc);
     mdc.send_to_observer(summarise);
-	for (int i = 10; i <= 50; i += 10)
-	{
-		mdc.writeAtomically(str::fmtf("testds/.archive/last/%02d.grib1.metadata", i));
-		s.writeAtomically(str::fmtf("testds/.archive/last/%02d.grib1.summary", i));
-	}
+    for (int i = 10; i <= 50; i += 10)
+    {
+        char buf[128];
+        snprintf(buf, 128, "testds/.archive/last/%02d.grib1.metadata", i);
+        mdc.writeAtomically(buf);
+        snprintf(buf, 128, "testds/.archive/last/%02d.grib1.summary", i);
+        s.writeAtomically(buf);
+    }
 
 	// Build index
 	{
@@ -252,6 +243,5 @@ void to::test<8>()
 
 // Retest with sqlite
 template<> template<> void to::test<9>() { ForceSqlite fs; test<8>(); }
-
 
 }

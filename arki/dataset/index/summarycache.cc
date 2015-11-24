@@ -25,7 +25,7 @@
 #include <arki/summary.h>
 #include <arki/types/reftime.h>
 #include <arki/utils/fd.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/sys/fs.h>
 #include <cerrno>
 #include <sys/types.h>

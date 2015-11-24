@@ -1,7 +1,7 @@
 #include "tests.h"
 #include <arki/scan/any.h>
 #include <arki/types/source/blob.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/sys/fs.h>
 
 using namespace std;

@@ -26,7 +26,7 @@
 #include "configfile.h"
 #include "utils/lua.h"
 #include <wibble/regexp.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <memory>
 
 using namespace std;

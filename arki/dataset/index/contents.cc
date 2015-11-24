@@ -1,49 +1,24 @@
-/*
- * dataset/index/contents - Index for data files and their contents
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include "contents.h"
-#include <arki/dataset/maintenance.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
-#include <arki/matcher/reftime.h>
-#include <arki/dataset.h>
-#include <arki/types/reftime.h>
-#include <arki/types/source.h>
-#include <arki/types/assigneddataset.h>
-#include <arki/types/value.h>
-#include <arki/summary.h>
-#include <arki/summary/stats.h>
-#include <arki/utils/files.h>
-#include <arki/sort.h>
-#include <arki/nag.h>
-#include <arki/runtime/io.h>
-
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <wibble/string.h>
+#include "arki/dataset/maintenance.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/matcher.h"
+#include "arki/matcher/reftime.h"
+#include "arki/dataset.h"
+#include "arki/types/reftime.h"
+#include "arki/types/source.h"
+#include "arki/types/assigneddataset.h"
+#include "arki/types/value.h"
+#include "arki/summary.h"
+#include "arki/summary/stats.h"
+#include "arki/utils/files.h"
+#include "arki/sort.h"
+#include "arki/nag.h"
+#include "arki/runtime/io.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <wibble/grcal/grcal.h>
 
 #include <sstream>
@@ -53,7 +28,6 @@
 #include <cstdlib>
 
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -85,7 +59,7 @@ static IndexGlobalData igd;
 
 
 Contents::Contents(const ConfigFile& cfg)
-    : m_name(cfg.value("name")), m_root(sys::fs::abspath(cfg.value("path"))),
+    : m_name(cfg.value("name")), m_root(sys::abspath(cfg.value("path"))),
       m_get_id("getid", m_db), m_get_current("getcurrent", m_db),
       m_uniques(0), m_others(0), m_smallfiles(ConfigFile::boolValue(cfg.value("smallfiles"))),
       scache(str::joinpath(m_root, ".summaries"))
@@ -135,9 +109,9 @@ std::set<types::Code> Contents::available_other_tables() const
 	q.compile("SELECT name FROM sqlite_master WHERE type='table'");
 	while (q.step())
 	{
-		string name = q.fetchString(0);
-		if (!str::startsWith(name, "sub_"))
-			continue;
+        string name = q.fetchString(0);
+        if (!str::startswith(name, "sub_"))
+            continue;
 		types::Code code = types::checkCodeName(name.substr(4));
 		if (code != TYPE_INVALID
 		 && unique_members.find(code) == unique_members.end()
@@ -417,8 +391,8 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
                    end.reset(new Time(*db_end));
                 else if (*end > *db_end)
                    *end = *db_end;
-                long long int qrange = grcal::date::duration(begin->vals, end->vals);
-                long long int dbrange = grcal::date::duration(db_begin->vals, db_end->vals);
+                long long int qrange = wibble::grcal::date::duration(begin->vals, end->vals);
+                long long int dbrange = wibble::grcal::date::duration(db_begin->vals, db_end->vals);
                 // If the query chooses less than 20%
                 // if the time span, force the use of
                 // the reftime index
@@ -466,15 +440,15 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
 		return false;
 	*/
 
-	if (!constraints.empty())
-		query += " WHERE " + str::join(constraints.begin(), constraints.end(), " AND ");
-	return true;
+    if (!constraints.empty())
+        query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
+    return true;
 }
 
 void Contents::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
-    md.set(types::AssignedDataset::create(m_name, str::fmt(q.fetch<int>(0))));
+    md.set(types::AssignedDataset::create(m_name, q.fetchString(0)));
     md.set_source(Source::createBlob(
             q.fetchString(1), m_root, q.fetchString(2),
             q.fetch<uint64_t>(3), q.fetch<uint64_t>(4)));
@@ -608,14 +582,15 @@ size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
         fq.compile("SELECT DISTINCT file FROM md ORDER BY file");
         while (fq.step())
         {
-            string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
-            if (m_uniques) query += ", m.uniq";
-            if (m_others) query += ", m.other";
-            if (m_smallfiles) query += ", m.data";
-            query += str::fmtf(" FROM md AS m WHERE m.file=? ORDER BY m.offset LIMIT 1 OFFSET %zd", idx);
+            stringstream query;
+            query << "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+            if (m_uniques) query << ", m.uniq";
+            if (m_others) query << ", m.other";
+            if (m_smallfiles) query << ", m.data";
+            query << " FROM md AS m WHERE m.file=? ORDER BY m.offset LIMIT 1 OFFSET " << idx;
 
             Query mdq("mdq", m_db);
-            mdq.compile(query);
+            mdq.compile(query.str());
             mdq.bindTransient(1, fq.fetchString(0));
 
             while (mdq.step())
@@ -701,13 +676,14 @@ void Contents::querySummaryFromDB(const std::string& where, Summary& summary) co
 void Contents::summaryForMonth(int year, int month, Summary& out) const
 {
     if (!scache.read(out, year, month))
-	{
-		int nextyear = year + (month/12);
-		int nextmonth = (month % 12) + 1;
+    {
+        int nextyear = year + (month/12);
+        int nextmonth = (month % 12) + 1;
 
-        querySummaryFromDB(
-                "reftime >= " + str::fmtf("'%04d-%02d-01 00:00:00'", year, month)
-                + " AND reftime < " + str::fmtf("'%04d-%02d-01 00:00:00'", nextyear, nextmonth), out);
+        char buf[128];
+        snprintf(buf, 128, "reftime >= '%04d-%02d-01 00:00:00' AND reftime < '%04d-%02d-01 00:00:00'",
+                year, month, nextyear, nextmonth);
+        querySummaryFromDB(buf, out);
 
         scache.write(out, year, month);
     }
@@ -812,7 +788,7 @@ static inline bool range_envelopes_full_month(const Time& begin, const Time& end
     if (begins_at_beginning)
         return end >= begin.end_of_month();
 
-    bool ends_at_end = end.vals[2] == grcal::date::daysinmonth(end.vals[0], end.vals[1]) &&
+    bool ends_at_end = end.vals[2] == wibble::grcal::date::daysinmonth(end.vals[0], end.vals[1]) &&
         end.vals[3] == 23 && end.vals[4] == 59 && end.vals[5] == 59;
     if (ends_at_end)
         return begin <= end.start_of_month();
@@ -867,7 +843,7 @@ bool Contents::querySummary(const Matcher& matcher, Summary& summary) const
     }
 
     // If the interval is under a week, query the DB directly
-    long long int range = grcal::date::duration(begin->vals, end->vals);
+    long long int range = wibble::grcal::date::duration(begin->vals, end->vals);
     if (range <= 7 * 24 * 3600)
         return querySummaryFromDB(matcher, summary);
 
@@ -937,16 +913,24 @@ RContents::~RContents()
 
 void RContents::open()
 {
-	if (m_db.isOpen())
-		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
+    if (m_db.isOpen())
+    {
+        stringstream ss;
+        ss << "dataset index " << m_pathname << " is already open";
+        throw runtime_error(ss.str());
+    }
 
-	if (!wibble::sys::fs::access(m_pathname, F_OK))
-		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " does not exist");
-	
-	m_db.open(m_pathname);
-	setupPragmas();
-	
-	initQueries();
+    if (!sys::access(m_pathname, F_OK))
+    {
+        stringstream ss;
+        ss << "dataset index " << m_pathname << " does not exist";
+        throw runtime_error(ss.str());
+    }
+
+    m_db.open(m_pathname);
+    setupPragmas();
+
+    initQueries();
 
     scache.openRO();
 }
@@ -968,10 +952,14 @@ WContents::~WContents()
 
 bool WContents::open()
 {
-	if (m_db.isOpen())
-		throw wibble::exception::Consistency("opening dataset index", "index " + m_pathname + " is already open");
+    if (m_db.isOpen())
+    {
+        stringstream ss;
+        ss << "dataset index " << m_pathname << " is already open";
+        throw runtime_error(ss.str());
+    }
 
-	bool need_create = !wibble::sys::fs::access(m_pathname, F_OK);
+    bool need_create = !sys::access(m_pathname, F_OK);
 
 	m_db.open(m_pathname);
 	setupPragmas();
@@ -1156,10 +1144,12 @@ void WContents::remove(int id, std::string& file)
 		file = fetch_by_id.fetchString(0);
 		reftime = fetch_by_id.fetchString(1);
 	}
-	if (reftime.empty())
-		throw wibble::exception::Consistency(
-				"removing item with id " + str::fmt(id),
-				"id does not exist in the index");
+    if (reftime.empty())
+    {
+        stringstream ss;
+        ss << "cannot remove item with id " << id << " because it does not exist in the index";
+        throw runtime_error(ss.str());
+    }
 
     // Invalidate the summary cache for this month
     Time rt(Time::create_from_SQL(reftime));
@@ -1231,4 +1221,3 @@ void WContents::flush()
 }
 }
 }
-// vim:set ts=4 sw=4:

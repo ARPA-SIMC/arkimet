@@ -40,7 +40,7 @@
 #include <arki/summary.h>
 
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 #ifdef HAVE_LIBCURL
 #include <arki/dataset/http.h>
@@ -119,8 +119,12 @@ void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 #endif
 			break;
 		}
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + str::fmt((int)q.type));
+        default:
+        {
+            stringstream s;
+            s << "unsupported query type: " << (int)q.type;
+            throw wibble::exception::Consistency("querying dataset", s.str());
+        }
 	}
 }
 

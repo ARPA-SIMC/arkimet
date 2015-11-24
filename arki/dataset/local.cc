@@ -1,25 +1,3 @@
-/*
- * dataset/local - Base class for local datasets
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/local.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/simple/writer.h>
@@ -34,15 +12,14 @@
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/collection.h>
 #include <arki/nag.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
+#include <wibble/sys/buffer.h>
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 
 namespace arki {
@@ -62,8 +39,8 @@ Local::~Local()
 
 bool Local::hasArchive() const
 {
-	string arcdir = str::joinpath(m_path, ".archive");
-	return sys::fs::exists(arcdir);
+    string arcdir = str::joinpath(m_path, ".archive");
+    return sys::exists(arcdir);
 }
 
 Archives& Local::archive()
@@ -115,13 +92,17 @@ struct ScanTestFilter : public metadata::Eater
         // Inner scope to run cleanups before we produce anything
         {
             // Get the data
-            sys::Buffer data = md->getData();
+            wibble::sys::Buffer data = md->getData();
 
             // Write the raw data to a temp file
             runtime::Tempfile tf;
             tf.stream().write((const char*)data.data(), data.size());
             if (tf.stream().bad())
-                throw wibble::exception::File(tf.name(), str::fmtf("cannot write %zd bytes to the file", data.size()));
+            {
+                stringstream ss;
+                ss << "cannot write " << data.size() << " bytes to " << tf.name();
+                throw std::system_error(errno, std::system_category(), ss.str());;
+            }
             tf.stream().flush();
 
             // Rescan the data
@@ -171,8 +152,6 @@ size_t Local::scan_test(metadata::Eater& cons, size_t idx)
 
 void Local::readConfig(const std::string& path, ConfigFile& cfg)
 {
-	using namespace wibble;
-
 	if (path == "-")
 	{
 		// Parse the config file from stdin
@@ -185,37 +164,49 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
 	while (!fname.empty() && fname[fname.size() - 1] == '/')
 		fname.resize(fname.size() - 1);
 
-	// Check if it's a file or a directory
-	std::unique_ptr<struct stat> st = sys::fs::stat(fname);
-	if (st.get() == 0)
-		throw wibble::exception::Consistency("reading configuration from " + fname, fname + " does not exist");
-	if (S_ISDIR(st->st_mode))
-	{
-		// If it's a directory, merge in its config file
-		string name = str::basename(fname);
-		string file = str::joinpath(fname, "config");
+    // Check if it's a file or a directory
+    std::unique_ptr<struct stat> st = sys::stat(fname);
+    if (st.get() == 0)
+    {
+        stringstream ss;
+        ss << "cannot read configuration from " << fname << " because it does not exist";
+        throw runtime_error(ss.str());
+    }
+    if (S_ISDIR(st->st_mode))
+    {
+        // If it's a directory, merge in its config file
+        string name = str::basename(fname);
+        string file = str::joinpath(fname, "config");
 
-		ConfigFile section;
-		ifstream in;
-		in.open(file.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(file, "opening config file for reading");
-		// Parse the config file into a new section
-		section.parse(in, file);
-		// Fill in missing bits
-		section.setValue("name", name);
-		section.setValue("path", sys::fs::abspath(fname));
-		// Merge into cfg
-		cfg.mergeInto(name, section);
-	} else {
-		// If it's a file, then it's a merged config file
-		ifstream in;
-		in.open(fname.c_str(), ios::in);
-		if (!in.is_open() || in.fail())
-			throw wibble::exception::File(fname, "opening config file for reading");
-		// Parse the config file
-		cfg.parse(in, fname);
-	}
+        ConfigFile section;
+        ifstream in;
+        in.open(file.c_str(), ios::in);
+        if (!in.is_open() || in.fail())
+        {
+            stringstream ss;
+            ss << "cannot open " << file << " for reading";
+            throw std::system_error(errno, std::system_category(), ss.str());;
+        }
+        // Parse the config file into a new section
+        section.parse(in, file);
+        // Fill in missing bits
+        section.setValue("name", name);
+        section.setValue("path", sys::abspath(fname));
+        // Merge into cfg
+        cfg.mergeInto(name, section);
+    } else {
+        // If it's a file, then it's a merged config file
+        ifstream in;
+        in.open(fname.c_str(), ios::in);
+        if (!in.is_open() || in.fail())
+        {
+            stringstream ss;
+            ss << "cannot open config file " << fname << " for reading";
+            throw std::system_error(errno, std::system_category(), ss.str());;
+        }
+        // Parse the config file
+        cfg.parse(in, fname);
+    }
 }
 
 SegmentedLocal::SegmentedLocal(const ConfigFile& cfg)
@@ -263,11 +254,8 @@ WritableLocal::~WritableLocal()
 
 bool WritableLocal::hasArchive() const
 {
-	string arcdir = str::joinpath(m_path, ".archive");
-	return sys::fs::exists(arcdir);
-	//std::unique_ptr<struct stat> st = sys::fs::stat(arcdir);
-	//if (!st.get())
-		//return false;
+    string arcdir = str::joinpath(m_path, ".archive");
+    return sys::exists(arcdir);
 }
 
 Archives& WritableLocal::archive()
@@ -297,40 +285,50 @@ void WritableLocal::flush()
 
 void WritableLocal::archiveFile(const std::string& relpath)
 {
-	string pathname = str::joinpath(m_path, relpath);
-	string arcrelname = str::joinpath("last", relpath);
-	string arcabsname = str::joinpath(m_path, str::joinpath(".archive", arcrelname));
-	sys::fs::mkFilePath(arcabsname);
-	
-	// Sanity checks: avoid conflicts
-	if (sys::fs::exists(arcabsname))
-		throw wibble::exception::Consistency("archiving " + pathname + " to " + arcabsname,
-				arcabsname + " already exists");
-	string src = pathname;
-	string dst = arcabsname;
-	bool compressed = scan::isCompressed(pathname);
-	if (compressed)
-	{
-		src += ".gz";
-		dst += ".gz";
-		if (sys::fs::exists(dst))
-			throw wibble::exception::Consistency("archiving " + src + " to " + dst,
-					dst + " already exists");
-	}
+    string pathname = str::joinpath(m_path, relpath);
+    string arcrelname = str::joinpath("last", relpath);
+    string arcabsname = str::joinpath(m_path, ".archive", arcrelname);
+    sys::makedirs(str::dirname(arcabsname));
 
-	// Remove stale metadata and summaries that may have been left around
-	sys::fs::deleteIfExists(arcabsname + ".metadata");
-	sys::fs::deleteIfExists(arcabsname + ".summary");
+    // Sanity checks: avoid conflicts
+    if (sys::exists(arcabsname))
+    {
+        stringstream ss;
+        ss << "cannot archive " << pathname << " to " << arcabsname << " because the destination already exists";
+        throw runtime_error(ss.str());
+    }
+    string src = pathname;
+    string dst = arcabsname;
+    bool compressed = scan::isCompressed(pathname);
+    if (compressed)
+    {
+        src += ".gz";
+        dst += ".gz";
+        if (sys::exists(dst))
+        {
+            stringstream ss;
+            ss << "cannot archive " << src << " to " << dst << " because the destination already exists";
+            throw runtime_error(ss.str());
+        }
+    }
 
-	// Move data to archive
-	if (rename(src.c_str(), dst.c_str()) < 0)
-		throw wibble::exception::System("moving " + src + " to " + dst);
-	if (compressed)
-		sys::fs::renameIfExists(pathname + ".gz.idx", arcabsname + ".gz.idx");
+    // Remove stale metadata and summaries that may have been left around
+    sys::unlink_ifexists(arcabsname + ".metadata");
+    sys::unlink_ifexists(arcabsname + ".summary");
 
-	// Move metadata to archive
-    sys::fs::renameIfExists(pathname + ".metadata", arcabsname + ".metadata");
-    sys::fs::renameIfExists(pathname + ".summary", arcabsname + ".summary");
+    // Move data to archive
+    if (rename(src.c_str(), dst.c_str()) < 0)
+    {
+        stringstream ss;
+        ss << "cannot rename " << src << " to " << dst;
+        throw std::system_error(errno, std::system_category(), ss.str());;
+    }
+    if (compressed)
+        sys::rename_ifexists(pathname + ".gz.idx", arcabsname + ".gz.idx");
+
+    // Move metadata to archive
+    sys::rename_ifexists(pathname + ".metadata", arcabsname + ".metadata");
+    sys::rename_ifexists(pathname + ".summary", arcabsname + ".summary");
 
 	// Acquire in the achive
 	archive().acquire(arcrelname);

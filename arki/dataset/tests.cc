@@ -1,22 +1,22 @@
 #include "tests.h"
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/dataset/local.h>
-#include <arki/dataset/ondisk2.h>
-#include <arki/dataset/simple/reader.h>
-#include <arki/dataset/simple/writer.h>
-#include <arki/dataset/index/manifest.h>
-#include <arki/dispatcher.h>
-#include <arki/scan/grib.h>
-#include <arki/scan/vm2.h>
-#include <arki/utils.h>
-#include <arki/utils/files.h>
-#include <arki/utils/fd.h>
-#include <arki/types/timerange.h>
-#include <arki/types/area.h>
-#include <arki/types/proddef.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/dataset/local.h"
+#include "arki/dataset/ondisk2.h"
+#include "arki/dataset/simple/reader.h"
+#include "arki/dataset/simple/writer.h"
+#include "arki/dataset/index/manifest.h"
+#include "arki/dispatcher.h"
+#include "arki/scan/grib.h"
+#include "arki/scan/vm2.h"
+#include "arki/utils.h"
+#include "arki/utils/files.h"
+#include "arki/utils/fd.h"
+#include "arki/types/timerange.h"
+#include "arki/types/area.h"
+#include "arki/types/proddef.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <wibble/regexp.h>
 #include <wibble/grcal/grcal.h>
 #include <algorithm>
@@ -30,7 +30,6 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki::types;
 using namespace arki::utils;
@@ -63,16 +62,16 @@ OutputChecker::OutputChecker() : split(false) {}
 
 void OutputChecker::splitIfNeeded()
 {
-	if (split) return;
-	Splitter splitter("[\n\r]+", REG_EXTENDED);
-	for (Splitter::const_iterator i = splitter.begin(str()); i != splitter.end(); ++i)
-		lines.push_back(" " + *i);
-	split = true;
+    if (split) return;
+    wibble::Splitter splitter("[\n\r]+", REG_EXTENDED);
+    for (wibble::Splitter::const_iterator i = splitter.begin(str()); i != splitter.end(); ++i)
+        lines.push_back(" " + *i);
+    split = true;
 }
 
 std::string OutputChecker::join() const
 {
-	return str::join(lines.begin(), lines.end(), "\n");
+    return str::join("\n", lines.begin(), lines.end());
 }
 
 void OutputChecker::ignore_line_containing(const std::string& needle)
@@ -160,14 +159,14 @@ struct Line : public std::string
 void LineChecker::check(WIBBLE_TEST_LOCPRM, const std::string& s) const
 {
     vector<Line> lines;
-    Splitter splitter("[\n\r]+", REG_EXTENDED);
-    for (Splitter::const_iterator i = splitter.begin(s); i != splitter.end(); ++i)
+    wibble::Splitter splitter("[\n\r]+", REG_EXTENDED);
+    for (wibble::Splitter::const_iterator i = splitter.begin(s); i != splitter.end(); ++i)
         lines.push_back(" " + *i);
 
     // Mark ignored lines as seen
     for (vector<string>::const_iterator i = ignore_regexps.begin(); i != ignore_regexps.end(); ++i)
     {
-        ERegexp re(*i);
+        wibble::ERegexp re(*i);
         for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
             if (re.match(*j))
                 j->seen = true;
@@ -193,7 +192,7 @@ void LineChecker::check(WIBBLE_TEST_LOCPRM, const std::string& s) const
     }
     for (vector<string>::const_iterator i = require_contains_re.begin(); i != require_contains_re.end(); ++i)
     {
-        ERegexp re(*i);
+        wibble::ERegexp re(*i);
         bool found = false;
         for (vector<Line>::iterator j = lines.begin(); j != lines.end(); ++j)
         {
@@ -230,8 +229,8 @@ int days_since(int year, int month, int day)
     // Data are from 07, 08, 10 2007
     int threshold[6] = { year, month, day, 0, 0, 0 };
     int now[6];
-    grcal::date::now(now);
-    long long int duration = grcal::date::duration(threshold, now);
+    wibble::grcal::date::now(now);
+    long long int duration = wibble::grcal::date::duration(threshold, now);
 
     //cerr << str::fmt(duration/(3600*24)) + " days";
     return duration/(3600*24);
@@ -416,8 +415,8 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
     reader->queryData(dataset::DataQuery(Matcher()), mdc);
     inner_ensure_equals(mdc.size(), resultcount);
 
-	if (filecount > 0)
-		inner_ensure(sys::fs::exists(str::joinpath(reader->path(), idxfname())));
+    if (filecount > 0)
+        inner_ensure(sys::exists(str::joinpath(reader->path(), idxfname())));
 }
 
 void DatasetTest::import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
@@ -509,9 +508,11 @@ std::string MaintenanceCollector::remaining() const
             continue;
         if (counts[i] == 0)
             continue;
-        res.push_back(str::fmtf("%s: %zd", names[i], counts[i]));
+        char buf[32];
+        snprintf(buf, 32, "%s: %zd", names[i], counts[i]);
+        res.push_back(buf);
     }
-    return str::join(res.begin(), res.end());
+    return str::join(", ", res.begin(), res.end());
 }
 
 void MaintenanceCollector::dump(std::ostream& out) const
@@ -664,22 +665,22 @@ void corrupt_datafile(const std::string& absname)
     files::PreserveFileTimes pft(absname);
 
     string to_corrupt = absname;
-    if (sys::fs::isdir(absname))
+    if (sys::isdir(absname))
     {
-        // Truncate dir segment
+        // Pick the first element in the dir segment for corruption
         string format = utils::require_format(absname);
-        sys::fs::Directory dir(absname);
+        sys::Path dir(absname);
         unsigned long first = ULONG_MAX;
         string selected;
-        for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+        for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
         {
             if (!i.isreg()) continue;
-            if (*i != ".sequence" && !str::endsWith(*i, format)) continue;
-            unsigned long cur = strtoul((*i).c_str(), 0, 10);
+            if (strcmp(i->d_name, ".sequence") == 0 || !str::endswith(i->d_name, format)) continue;
+            unsigned long cur = strtoul(i->d_name, 0, 10);
             if (cur < first)
             {
                 first = cur;
-                selected = *i;
+                selected = i->d_name;
             }
         }
         if (selected.empty())
@@ -708,7 +709,7 @@ std::unique_ptr<dataset::WritableLocal> make_dataset_writer(const std::string& c
     wassert(actual(cfg.value("path").empty()).isfalse());
 
     // Remove the dataset directory if it exists
-    if (empty && sys::fs::isdir(cfg.value("path"))) sys::fs::rmtree(cfg.value("path"));
+    if (empty && sys::isdir(cfg.value("path"))) sys::rmtree(cfg.value("path"));
 
     unique_ptr<dataset::WritableLocal> ds(dataset::WritableLocal::create(cfg));
     wassert(actual(ds.get()).istrue());
@@ -735,20 +736,20 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, 
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
     size_t data_size = md.data_size();
-    size_t orig_fsize = sys::fs::size(dw->absname, 0);
+    size_t orig_fsize = sys::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw->append(md, &ofs);
     wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize);
+    wassert(actual(sys::size(dw->absname)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 
     // Commit
     p.commit();
 
     // After commit, data is appended
-    wassert(actual(sys::fs::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
+    wassert(actual(sys::size(dw->absname)) == orig_fsize + data_size + append_amount_adjust);
 
     // And metadata is updated
     wassert(actual_type(md.source()).is_source_blob("grib1", "", dw->absname, orig_fsize, data_size));
@@ -758,20 +759,20 @@ void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
-    size_t orig_fsize = sys::fs::size(dw->absname, 0);
+    size_t orig_fsize = sys::size(dw->absname, 0);
 
     // Start the append transaction, nothing happens until commit
     off_t ofs;
     Pending p = dw->append(md, &ofs);
     wassert(actual((size_t)ofs) == orig_fsize);
-    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
+    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 
     // Rollback
     p.rollback();
 
     // After rollback, nothing has changed
-    wassert(actual(sys::fs::size(dw->absname, 0)) == orig_fsize);
+    wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
 }
 
@@ -818,7 +819,7 @@ unsigned Fixture::selective_days_since() const
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
     Metadata md;
-    sys::Buffer buf(size);
+    wibble::sys::Buffer buf(size);
     md.set_source_inline(format, buf);
     md.set("origin", "GRIB1(200, 10, 100)");
     md.set("product", "GRIB1(3, 4, 5)");

@@ -27,7 +27,7 @@
 #include <arki/metadata/consumer.h>
 
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <cstdlib>
 #include <cstring>
 #include <sys/types.h>

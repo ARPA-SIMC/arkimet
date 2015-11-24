@@ -30,7 +30,7 @@
 #include <arki/summary.h>
 #include <arki/sort.h>
 
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 #include <cstdlib>
 #include <sstream>

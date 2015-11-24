@@ -1,38 +1,18 @@
-/*
- * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
-#include <arki/dataset/tests.h>
-#include <arki/dataset/maintenance.h>
-#include <arki/dataset/local.h>
-#include <arki/metadata/collection.h>
-#include <arki/types/source/blob.h>
-#include <arki/utils/files.h>
-#include <arki/nag.h>
-#include <wibble/sys/fs.h>
+#include "arki/dataset/tests.h"
+#include "arki/dataset/maintenance.h"
+#include "arki/dataset/local.h"
+#include "arki/metadata/collection.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
+#include "arki/nag.h"
 #include <wibble/grcal/grcal.h>
-
 #include <cstdlib>
 #include <sys/types.h>
 #include <utime.h>
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::tests;
@@ -118,7 +98,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
     void test_move_to_archive(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
-        cfg.setValue("archive age", str::fmt(fixture.selective_days_since()));
+        cfg.setValue("archive age", fixture.selective_days_since());
         wruntest(import_all, fixture);
 
         // Check if files to archive are detected
@@ -138,7 +118,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
                     i != fixture.fnames_before_cutoff.end(); ++i)
                 s.require_line_contains(": archived " + *i);
             s.require_line_contains(": archive cleaned up");
-            s.require_line_contains_re(str::fmtf(": %zd files? archived", fixture.fnames_before_cutoff.size()));
+            stringstream ss;
+            ss << ": " << fixture.fnames_before_cutoff.size() << " files? archived";
+            s.require_line_contains_re(ss.str());
             wassert(actual(writer.get()).repack(s, true));
         }
 
@@ -187,7 +169,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
     void test_delete_age(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
     {
-        cfg.setValue("delete age", str::fmt(fixture.selective_days_since()));
+        cfg.setValue("delete age", fixture.selective_days_since());
         wruntest(import_all, fixture);
 
         // Check if files to delete are detected
@@ -205,9 +187,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                     i != fixture.fnames_before_cutoff.end(); ++i)
                 s.require_line_contains(": deleted " + *i);
-            s.require_line_contains_re(str::fmtf(": %zd files? deleted, %zd files? removed from index",
-                        fixture.fnames_before_cutoff.size(),
-                        fixture.fnames_before_cutoff.size()));
+            stringstream ss;
+            ss << ": " << fixture.fnames_before_cutoff.size() << " files? deleted, " << fixture.fnames_before_cutoff.size() << " files? removed from index";
+            s.require_line_contains_re(ss.str());
             wassert(actual(writer.get()).repack(s, true));
         }
 
@@ -404,9 +386,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
     {
         unsigned file_count = fixture.count_dataset_files();
         wruntest(import_all_packed, fixture);
-        sys::fs::deleteIfExists("testds/index.sqlite");
-        sys::fs::deleteIfExists("testds/MANIFEST");
-        sys::fs::mkpath("testds/2014/");
+        sys::unlink_ifexists("testds/index.sqlite");
+        sys::unlink_ifexists("testds/MANIFEST");
+        sys::makedirs("testds/2014/");
         system("echo 'GRIB garbage 7777' > testds/2014/01.grib1.tmp");
 
         // See if the files to index are detected in the correct number
@@ -427,7 +409,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             for (set<string>::const_iterator i = fixture.fnames_after_cutoff.begin();
                     i != fixture.fnames_after_cutoff.end(); ++i)
                 s.require_line_contains(": rescanned " + *i);
-            s.require_line_contains(str::fmtf(": %d files rescanned", file_count));
+            stringstream ss;
+            ss << ": " << file_count << " files rescanned";
+            s.require_line_contains(ss.str());
             wassert(actual(writer.get()).check(s, true, true));
 
             wassert(actual(writer.get()).maintenance_clean(file_count));
@@ -646,8 +630,8 @@ template<> template<> void to::test<10>()
 		ensure(not c.isClean());
 	}
 
-    ensure(sys::fs::exists("testds/foo/bar/test.grib1.tmp"));
-    ensure_equals(sys::fs::size("testds/foo/bar/test.grib1"), 44412u);
+    ensure(sys::exists("testds/foo/bar/test.grib1.tmp"));
+    ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
 
 	// Perform packing and check that things are still ok afterwards
 	{
@@ -659,7 +643,7 @@ template<> template<> void to::test<10>()
 	}
 	ensure_maint_clean(1);
 
-    ensure_equals(sys::fs::size("testds/foo/bar/test.grib1"), 44412u);
+    ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
 
 	// Test querying
 	{
@@ -668,7 +652,7 @@ template<> template<> void to::test<10>()
 		metadata::Collection mdc;
 		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
 		ensure_equals(mdc.size(), 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
+        wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
 	}
 }
 
@@ -708,8 +692,8 @@ template<> template<> void to::test<12>()
     // Data are from 07, 08, 10 2007
     int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
     int now[6];
-    grcal::date::now(now);
-    long long int duration = grcal::date::duration(treshold, now);
+    wibble::grcal::date::now(now);
+    long long int duration = wibble::grcal::date::duration(treshold, now);
 
     system("rm -rf testds");
     system("mkdir testds");
@@ -718,7 +702,7 @@ template<> template<> void to::test<12>()
 
     ConfigFile cfg = this->cfg;
     cfg.setValue("step", "yearly");
-    cfg.setValue("delete age", str::fmt(duration/(3600*24)));
+    cfg.setValue("delete age", duration/(3600*24));
 
     // Run maintenance to build the dataset
     {
@@ -766,8 +750,8 @@ template<> template<> void to::test<13>()
     // Data are from 07, 08, 10 2007
     int treshold[6] = { 2008, 1, 1, 0, 0, 0 };
     int now[6];
-    grcal::date::now(now);
-    long long int duration = grcal::date::duration(treshold, now);
+    wibble::grcal::date::now(now);
+    long long int duration = wibble::grcal::date::duration(treshold, now);
 
     system("rm -rf testds");
     system("mkdir testds");
@@ -776,7 +760,7 @@ template<> template<> void to::test<13>()
 
     ConfigFile cfg = this->cfg;
     cfg.setValue("step", "yearly");
-    cfg.setValue("archive age", str::fmt(duration/(3600*24)));
+    cfg.setValue("archive age", duration/(3600*24));
 
     // Run maintenance to build the dataset
     {

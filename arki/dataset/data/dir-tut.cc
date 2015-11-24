@@ -1,32 +1,11 @@
-/*
- * Copyright (C) 2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include "dir.h"
 #include "arki/dataset/data/tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
-#include <wibble/sys/fs.h>
+#include "arki/utils/sys.h"
 #include <sstream>
 
 namespace std {
@@ -52,7 +31,6 @@ using namespace arki;
 using namespace arki::dataset::data;
 using namespace arki::utils;
 using namespace arki::tests;
-using namespace wibble;
 using namespace wibble::tests;
 
 struct arki_data_dir_shar {
@@ -74,7 +52,7 @@ struct arki_data_dir_shar {
      */
     unique_ptr<dir::Segment> make_w(const std::string& relname)
     {
-        string absname = sys::fs::abspath(relname);
+        string absname = sys::abspath(relname);
         return unique_ptr<dir::Segment>(new dir::Segment("grib", relname, absname));
     }
 };
@@ -107,7 +85,7 @@ void to::test<1>()
             off_t ofs;
             Pending p = w->append(md, &ofs);
             wassert(actual((size_t)ofs) == 0);
-            wassert(actual(sys::fs::size(str::joinpath(w->absname, "000000.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->absname, "000000.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit
@@ -129,14 +107,14 @@ void to::test<1>()
             off_t ofs;
             Pending p = w->append(md, &ofs);
             wassert(actual((size_t)ofs) == 1);
-            wassert(actual(sys::fs::size(str::joinpath(w->absname, "000001.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->absname, "000001.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Rollback
             p.rollback();
 
             // After rollback, the file has been deleted
-            wassert(actual(sys::fs::exists(str::joinpath(w->absname, "000001.grib"))).isfalse());
+            wassert(actual(sys::exists(str::joinpath(w->absname, "000001.grib"))).isfalse());
             wassert(actual_type(md.source()) == *orig_source);
         }
 
@@ -153,7 +131,7 @@ void to::test<1>()
             off_t ofs;
             Pending p = w->append(md, &ofs);
             wassert(actual((size_t)ofs) == 2);
-            wassert(actual(sys::fs::size(str::joinpath(w->absname, "000002.grib"))) == data_size);
+            wassert(actual(sys::size(str::joinpath(w->absname, "000002.grib"))) == data_size);
             wassert(actual_type(md.source()) == *orig_source);
 
             // Commit

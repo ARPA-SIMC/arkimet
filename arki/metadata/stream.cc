@@ -27,7 +27,7 @@
 
 #include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 
 using namespace std;
 using namespace wibble;

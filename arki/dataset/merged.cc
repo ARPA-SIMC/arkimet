@@ -26,7 +26,7 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/sys/mutex.h>
 #include <wibble/sys/thread.h>
 #include <cstring>

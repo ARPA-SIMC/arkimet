@@ -26,7 +26,7 @@
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/utils/string.h>
 #include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/files.h>
