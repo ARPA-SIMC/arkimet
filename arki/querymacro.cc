@@ -1,44 +1,20 @@
-/*
- * arki/querymacro - Macros implementing special query strategies
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/querymacro.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
-#include <arki/summary.h>
-#include <arki/dataset/gridquery.h>
-#include <arki/nag.h>
-#include <arki/runtime/config.h>
-#include <arki/runtime/io.h>
-#include <arki/utils/dataset.h>
-#include <arki/utils/lua.h>
-#include <arki/sort.h>
-#include <wibble/exception.h>
-#include <arki/utils/string.h>
+#include "querymacro.h"
+#include "configfile.h"
+#include "metadata.h"
+#include "metadata/consumer.h"
+#include "summary.h"
+#include "dataset/gridquery.h"
+#include "nag.h"
+#include "runtime/config.h"
+#include "runtime/io.h"
+#include "utils/dataset.h"
+#include "utils/lua.h"
+#include "sort.h"
+#include "utils/string.h"
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 
@@ -120,11 +96,11 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	{
 		macroname = name;
 		lua_pushnil(*L);
-	} else {
-		macroname = name.substr(0, pos);
-		string macroargs = str::trim(name.substr(pos + 1));
-		lua_pushstring(*L, macroargs.c_str());
-	}
+    } else {
+        macroname = name.substr(0, pos);
+        string macroargs = str::strip(name.substr(pos + 1));
+        lua_pushstring(*L, macroargs.c_str());
+    }
 	// Load the arguments as a global variable
 	lua_setglobal(*L, "args");
 

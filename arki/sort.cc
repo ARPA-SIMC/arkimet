@@ -15,8 +15,8 @@
 #include <cstring>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace sort {
@@ -54,9 +54,9 @@ struct Item
 /// Serializer for Item
 ostream& operator<<(ostream& out, const Item& i)
 {
-	if (i.reverse) out << "-";
-	out << str::tolower(types::formatCode(i.code));
-	return out;
+    if (i.reverse) out << "-";
+    out << str::lower(types::formatCode(i.code));
+    return out;
 }
 
 /**
@@ -65,16 +65,16 @@ ostream& operator<<(ostream& out, const Item& i)
 class Items : public std::vector<Item>, public Compare
 {
 public:
-	Items(const std::string& expr)
-	{
-		Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
-		for (Splitter::const_iterator i = splitter.begin(expr);
-				i != splitter.end(); ++i)
-			push_back(Item(*i));
-		if (empty())
-			push_back(Item("reftime"));
-	}
-	virtual ~Items() {}
+    Items(const std::string& expr)
+    {
+        wibble::Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
+        for (wibble::Splitter::const_iterator i = splitter.begin(expr);
+                i != splitter.end(); ++i)
+            push_back(Item(*i));
+        if (empty())
+            push_back(Item("reftime"));
+    }
+    virtual ~Items() {}
 
 	virtual int compare(const Metadata& a, const Metadata& b) const
 	{
@@ -86,10 +86,10 @@ public:
 		return 0;
 	}
 
-	virtual std::string toString() const
-	{
-		return str::join(begin(), end(), ",");
-	}
+    virtual std::string toString() const
+    {
+        return str::join(",", begin(), end());
+    }
 };
 
 struct IntervalCompare : public Items
@@ -117,7 +117,11 @@ struct IntervalCompare : public Items
 			case MONTH: return "month:"+Items::toString();
 			case YEAR: return "year:"+Items::toString();
 			default:
-				   throw wibble::exception::Consistency("formatting sort expression", "interval code " + str::fmt((int)m_interval) + " is not valid");
+            {
+                stringstream ss;
+                ss << "cannot format sort expression: interval code " << (int)m_interval << " is not valid";
+                throw std::runtime_error(ss.str());
+            }
 		}
 		return Items::toString();
 	}
@@ -125,16 +129,14 @@ struct IntervalCompare : public Items
 
 static Compare::Interval parseInterval(const std::string& name)
 {
-	using namespace str;
-
-	// TODO: convert into something faster, like a hash lookup or a gperf lookup
-	string nname = trim(tolower(name));
-	if (nname == "minute") return Compare::MINUTE;
-	if (nname == "hour") return Compare::HOUR;
-	if (nname == "day") return Compare::DAY;
-	if (nname == "month") return Compare::MONTH;
-	if (nname == "year") return Compare::YEAR;
-	throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + name + ".  Valid intervals are minute, hour, day, month and year");
+    // TODO: convert into something faster, like a hash lookup or a gperf lookup
+    string nname = str::lower(str::strip(name));
+    if (nname == "minute") return Compare::MINUTE;
+    if (nname == "hour") return Compare::HOUR;
+    if (nname == "day") return Compare::DAY;
+    if (nname == "month") return Compare::MONTH;
+    if (nname == "year") return Compare::YEAR;
+    throw wibble::exception::Consistency("parsing interval name", "unsupported interval: " + name + ".  Valid intervals are minute, hour, day, month and year");
 }
 
 refcounted::Pointer<Compare> Compare::parse(const std::string& expr)
@@ -166,7 +168,11 @@ void Stream::setEndOfPeriod(const types::Reftime& rt)
         case Compare::HOUR: endofperiod->vals[4] = -1;
         case Compare::MINUTE: endofperiod->vals[5] = -1; break;
         default:
-            throw wibble::exception::Consistency("setting end of period", "interval type has invalid value: " + str::fmt((int)sorter.interval()));
+        {
+            stringstream ss;
+            ss << "cannot set end of period: interval type has invalid value: " + (int)sorter.interval();
+            throw std::runtime_error(ss.str());
+        }
     }
     wibble::grcal::date::upperbound(endofperiod->vals);
 //cerr << "Set end of period to " << endofperiod << endl;

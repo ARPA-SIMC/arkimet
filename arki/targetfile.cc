@@ -7,7 +7,6 @@
 #include <arki/utils/string.h>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 

@@ -28,7 +28,7 @@ typedef void (*sighandler_t)(int);
 #endif
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace {
 
@@ -197,8 +197,8 @@ Postprocess::Postprocess(const std::string& command)
     m_child->m_err = &m_errors;
 
     // Parse command into its components
-    Splitter sp("[[:space:]]+", REG_EXTENDED);
-    for (Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
+    wibble::Splitter sp("[[:space:]]+", REG_EXTENDED);
+    for (wibble::Splitter::const_iterator j = sp.begin(m_command); j != sp.end(); ++j)
         m_child->cmd.args.push_back(*j);
     //cerr << "Split \"" << m_command << "\" into: " << str::join(m_child->cmd.args.begin(), m_child->cmd.args.end(), ", ") << endl;
 }
@@ -223,7 +223,7 @@ void Postprocess::set_output(int outfd)
 void Postprocess::set_output(std::ostream& out)
 {
     m_child->m_out = &out;
-    if (stream::PosixBuf* ps = dynamic_cast<stream::PosixBuf*>(out.rdbuf()))
+    if (wibble::stream::PosixBuf* ps = dynamic_cast<wibble::stream::PosixBuf*>(out.rdbuf()))
         m_child->m_nextfd = ps->fd();
 }
 
@@ -245,9 +245,9 @@ void Postprocess::validate(const map<string, string>& cfg)
     map<string, string>::const_iterator i = cfg.find("postprocess");
     if (i != cfg.end())
     {
-        Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
+        wibble::Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
         string pp = i->second;
-        for (Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
+        for (wibble::Splitter::const_iterator j = sp.begin(pp); j != sp.end(); ++j)
             allowed.insert(*j);
     }
 
@@ -257,7 +257,12 @@ void Postprocess::validate(const map<string, string>& cfg)
     string scriptname = str::basename(m_child->cmd.args[0]);
     if (i != cfg.end() && allowed.find(scriptname) == allowed.end())
     {
-        throw wibble::exception::Consistency("initialising postprocessing filter", "postprocess command " + m_command + " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(allowed.begin(), allowed.end()) + ")");
+        stringstream ss;
+        ss << "cannot initialize postprocessing filter: postprocess command "
+           << m_command
+           << " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(", ", allowed.begin(), allowed.end())
+           << ")";
+        throw std::runtime_error(ss.str());
     }
 }
 
@@ -301,9 +306,9 @@ void Postprocess::flush()
     m_child = 0;
     if (res)
     {
-        string msg = "postprocess command \"" + m_command + "\" " + sys::process::formatStatus(res);
+        string msg = "postprocess command \"" + m_command + "\" " + wibble::sys::process::formatStatus(res);
         if (!m_errors.str().empty())
-            msg += "; stderr: " + str::trim(m_errors.str());
+            msg += "; stderr: " + str::strip(m_errors.str());
         throw wibble::exception::Consistency("running postprocessing filter", msg);
     }
 }

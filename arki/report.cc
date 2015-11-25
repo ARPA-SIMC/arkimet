@@ -1,35 +1,14 @@
-/*
- * arki/report - Build a report of an arkimet metadata or summary stream
- *
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/report.h>
-#include <arki/metadata.h>
-#include <arki/summary.h>
-#include <arki/utils/lua.h>
-#include <arki/runtime/config.h>
+#include "report.h"
+#include "metadata.h"
+#include "summary.h"
+#include "utils/lua.h"
+#include "utils/sys.h"
+#include "utils/string.h"
+#include "runtime/config.h"
 #include <wibble/regexp.h>
-#include <wibble/sys/fs.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 
@@ -46,11 +25,11 @@ Report::~Report()
 
 void Report::load(const std::string& params)
 {
-	// Parse params into its components
-	Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
-	vector<string> args;
-	for (Splitter::const_iterator j = sp.begin(params); j != sp.end(); ++j)
-		args.push_back(*j);
+    // Parse params into its components
+    wibble::Splitter sp("[[:space:]]*,[[:space:]]*|[[:space:]]+", REG_EXTENDED);
+    vector<string> args;
+    for (wibble::Splitter::const_iterator j = sp.begin(params); j != sp.end(); ++j)
+        args.push_back(*j);
 
 	if (args.empty())
 		throw wibble::exception::Consistency("initialising report", "report command is empty");

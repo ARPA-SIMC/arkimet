@@ -5,26 +5,29 @@
 #include "dataset.h"
 #include "validator.h"
 #include "types/reftime.h"
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-#include <arki/utils/string.h>
+#include "utils/string.h"
+#include "utils/sys.h"
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 
 static inline Matcher getFilter(const ConfigFile* cfg)
 {
-	try {
-		return Matcher::parse(cfg->value("filter"));
-	} catch (wibble::exception::Generic& e) {
-		const ConfigFile::FilePos* fp = cfg->valueInfo("filter");
-		if (fp)
-			e.addContext("in file " + fp->pathname + ":" + str::fmt(fp->lineno));
-		throw;
-	}
+    try {
+        return Matcher::parse(cfg->value("filter"));
+    } catch (wibble::exception::Generic& e) {
+        const ConfigFile::FilePos* fp = cfg->valueInfo("filter");
+        if (fp)
+        {
+            stringstream ss;
+            ss << "in file " << fp->pathname << ":" << fp->lineno;
+            e.addContext(ss.str());
+        }
+        throw;
+    }
 }
 
 Dispatcher::Dispatcher(const ConfigFile& cfg)

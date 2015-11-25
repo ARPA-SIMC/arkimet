@@ -1,27 +1,4 @@
-/*
- * runtime/processor - Run user requested operations on datasets
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/runtime/processor.h>
 #include <arki/runtime/io.h>
 #include <arki/metadata/consumer.h>
@@ -36,7 +13,7 @@
 #include <arki/utils/string.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace runtime {
@@ -85,7 +62,7 @@ struct DataProcessor : public DatasetProcessor
     virtual std::string describe() const
     {
         string res = "data(";
-        res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+        res += str::join(", ", description_attrs.begin(), description_attrs.end());
         res += ")";
         return res;
     }
@@ -145,7 +122,7 @@ struct SummaryProcessor : public DatasetProcessor
     virtual std::string describe() const
     {
         string res = "summary(";
-        res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+        res += str::join(", ", description_attrs.begin(), description_attrs.end());
         res += ")";
         return res;
     }
@@ -218,7 +195,7 @@ struct BinaryProcessor : public DatasetProcessor
     virtual std::string describe() const
     {
         string res = "binary(";
-        res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+        res += str::join(", ", description_attrs.begin(), description_attrs.end());
         res += ")";
         return res;
     }
@@ -251,7 +228,7 @@ TargetFileProcessor::~TargetFileProcessor()
 std::string TargetFileProcessor::describe() const
 {
     string res = "targetfile(";
-    res += str::join(description_attrs.begin(), description_attrs.end(), ", ");
+    res += str::join(", ", description_attrs.begin(), description_attrs.end());
     res += ")";
     return res;
 }
