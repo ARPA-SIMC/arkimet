@@ -7,7 +7,6 @@
 #include <arki/utils/compress.h>
 #include <arki/utils/sys.h>
 #include <arki/types/utils.h>
-#include <wibble/sys/buffer.h>
 
 // #define DEBUG_THIS
 #ifdef DEBUG_THIS
@@ -198,7 +197,7 @@ size_t decode3(utils::codec::Decoder& dec, Table& target)
     return decoder.count;
 }
 
-size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, Table& target)
+size_t decode(const vector<uint8_t>& buf, unsigned version, const std::string& filename, Table& target)
 {
     using namespace utils::codec;
 

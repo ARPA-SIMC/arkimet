@@ -211,7 +211,7 @@ void to::test<3>()
 	v.validate(fd, 194, 220, "inbound/test.bufr");
 	v.validate(fd, 414, 220, "inbound/test.bufr");
 
-#define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
+#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
 
 	ensure_throws(v.validate(fd, 1, 193, "inbound/test.bufr"));
 	ensure_throws(v.validate(fd, 0, 193, "inbound/test.bufr"));

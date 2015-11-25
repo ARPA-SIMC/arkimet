@@ -1,7 +1,6 @@
 #include "typeset.h"
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
 
 namespace arki {

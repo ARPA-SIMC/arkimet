@@ -17,7 +17,6 @@
 #include <arki/utils/lua.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <wibble/sys/buffer.h>
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -415,7 +414,7 @@ std::unique_ptr<ARKI_GEOS_GEOMETRY> Summary::getConvexHull(ARKI_GEOS_GEOMETRYFAC
 
 bool Summary::read(int fd, const std::string& filename)
 {
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
     string signature;
     unsigned version;
 
@@ -435,7 +434,7 @@ bool Summary::read(int fd, const std::string& filename)
 
 bool Summary::read(std::istream& in, const std::string& filename)
 {
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
     string signature;
     unsigned version;
 
@@ -453,7 +452,7 @@ bool Summary::read(std::istream& in, const std::string& filename)
     return true;
 }
 
-void Summary::read(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename)
+void Summary::read(const std::vector<uint8_t>& buf, unsigned version, const std::string& filename)
 {
     using namespace summary;
     summary::decode(buf, version, filename, *root);

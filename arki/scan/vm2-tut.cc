@@ -4,6 +4,7 @@
 #include <arki/scan/vm2.h>
 #include <arki/scan/any.h>
 #include <arki/utils/sys.h>
+#include <wibble/exception.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

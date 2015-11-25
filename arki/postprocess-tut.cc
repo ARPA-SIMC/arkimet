@@ -151,11 +151,7 @@ void to::test<6>()
     stringstream str;
     Postprocess p("zeroes 4096");
 
-    int fd = ::open(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(fname, "opening/creating file");
-    utils::fd::TempfileHandleWatch hwfd(fname, fd);
-
+    sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
     p.set_output(fd);
     p.start();
 
@@ -163,6 +159,8 @@ void to::test<6>()
     p.flush();
 
     wassert(actual(sys::size(fname)) == 4096*1024);
+
+    sys::unlink(fname);
 }
 
 // Try to shift a sizeable chunk of data to and out of the postprocessor
@@ -173,11 +171,7 @@ void to::test<7>()
     stringstream str;
     Postprocess p("zeroes 4096");
 
-    int fd = ::open(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(fname, "opening/creating file");
-    utils::fd::TempfileHandleWatch hwfd(fname, fd);
-
+    sys::File fd(fname, O_WRONLY | O_CREAT | O_NOCTTY, 0666);
     p.set_output(fd);
     p.start();
 
@@ -186,6 +180,8 @@ void to::test<7>()
     p.flush();
 
     wassert(actual(sys::size(fname)) == 4096*1024);
+
+    sys::unlink(fname);
 }
 
 }

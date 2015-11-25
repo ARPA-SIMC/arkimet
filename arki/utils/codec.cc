@@ -1,25 +1,3 @@
-/*
- * utils/codec - Encoding/decoding utilities
- *
- * Copyright (C) 2007--2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/utils/codec.h>
@@ -49,8 +27,19 @@ Encoder& Encoder::addBuffer(const wibble::sys::Buffer& buf)
     return *this;
 }
 
+Encoder& Encoder::addBuffer(const std::vector<uint8_t>& buf)
+{
+    this->buf.append((const char*)buf.data(), buf.size());
+    return *this;
+}
+
 Decoder::Decoder(const wibble::sys::Buffer& buf, size_t offset)
     : buf((const unsigned char*)buf.data() + offset), len(buf.size() - offset)
+{
+}
+
+Decoder::Decoder(const std::vector<uint8_t>& buf, size_t offset)
+    : buf(buf.data() + offset), len(buf.size() - offset)
 {
 }
 
@@ -58,4 +47,3 @@ Decoder::Decoder(const wibble::sys::Buffer& buf, size_t offset)
 }
 }
 }
-// vim:set ts=4 sw=4:

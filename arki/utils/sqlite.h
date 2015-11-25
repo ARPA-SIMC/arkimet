@@ -5,6 +5,7 @@
 
 #include <arki/transaction.h>
 #include <arki/types.h>
+#include <wibble/exception.h>
 #include <sqlite3.h>
 #include <string>
 #include <sstream>

@@ -107,7 +107,7 @@ void Generator::generate(metadata::Eater& cons)
     else if (format == "odimh5")
         defaults_odimh5();
     else
-        throw wibble::exception::Consistency("generating random messages", "unknown format: " + format);
+        throw std::runtime_error("cannot generate random messages: unknown format: " + format);
 
     Metadata md;
     _generate(samples.begin(), md, cons);

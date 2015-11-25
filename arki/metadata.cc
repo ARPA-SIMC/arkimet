@@ -249,11 +249,11 @@ int Metadata::compare(const Metadata& m) const
 
 bool Metadata::read(istream& in, const std::string& filename, bool readInline)
 {
-	wibble::sys::Buffer buf;
-	string signature;
-	unsigned version;
-	if (!types::readBundle(in, filename, buf, signature, version))
-		return false;
+    vector<uint8_t> buf;
+    string signature;
+    unsigned version;
+    if (!types::readBundle(in, filename, buf, signature, version))
+        return false;
 
 	// Ensure first 2 bytes are MD or !D
 	if (signature != "MD")
@@ -287,9 +287,9 @@ bool Metadata::read(const unsigned char*& buf, size_t& len, const metadata::Read
 	return true;
 }
 
-void Metadata::read(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& rc)
+void Metadata::read(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& rc)
 {
-	read((const unsigned char*)buf.data(), buf.size(), version, rc);
+    read(buf.data(), buf.size(), version, rc);
 }
 
 void Metadata::read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& rc)
@@ -631,7 +631,7 @@ void Metadata::readFile(const metadata::ReadContext& file, metadata::Eater& mdc)
 void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc)
 {
     bool canceled = false;
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
     string signature;
     unsigned version;
     while (types::readBundle(in, file.pathname, buf, signature, version))
@@ -660,7 +660,7 @@ void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, met
     }
 }
 
-void Metadata::readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc)
+void Metadata::readGroup(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc)
 {
     // Handle metadata group
     if (version != 0)

@@ -143,10 +143,8 @@ public:
 	 */
 	void read(const unsigned char* buf, size_t len, unsigned version, const metadata::ReadContext& filename);
 
-	/**
-	 * Decode the metadata, without the outer bundle headers, from the given buffer.
-	 */
-	void read(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& filename);
+    /// Decode the metadata, without the outer bundle headers, from the given buffer.
+    void read(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& filename);
 
     /// Decode from structured data
 	void read(const emitter::memory::Mapping& val);
@@ -274,7 +272,7 @@ public:
     /**
      * Read a metadata group into the given consumer
      */
-    static void readGroup(const wibble::sys::Buffer& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc);
+    static void readGroup(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Metadata

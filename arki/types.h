@@ -1,42 +1,14 @@
 #ifndef ARKI_TYPES_H
 #define ARKI_TYPES_H
 
-/*
- * types - arkimet metadata type system
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- * Author: Guido Billi <guidobilli@gmail.com>
- */
-
-#include <wibble/exception.h>
+/// arkimet metadata type system
 #include <arki/defs.h>
 #include <string>
+#include <vector>
 #include <iosfwd>
 #include <memory>
 
 struct lua_State;
-
-namespace wibble {
-namespace sys {
-struct Buffer;
-}
-}
 
 namespace arki {
 struct Emitter;
@@ -52,7 +24,14 @@ std::unique_ptr<B> downcast(std::unique_ptr<A> orig)
     B* dst = dynamic_cast<B*>(orig.get());
 
     // If we fail here, orig will clean it
-    if (!dst) throw wibble::exception::BadCastExt<A, B>("cannot cast smart pointer");
+    if (!dst)
+    {
+        std::string msg("cannot cast smart pointer from ");
+        msg += typeid(A).name();
+        msg += " to ";
+        msg += typeid(B).name();
+        throw std::runtime_error(std::move(msg));
+    }
 
     // Release ownership from orig: we still have the pointer in dst
     orig.release();
@@ -336,7 +315,7 @@ std::string tag(types::Code);
  * @return
  *   true if a data bundle was read, false on end of file
  */
-bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version);
+bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version);
 
 /**
  * Read a data bundle from a file, returning the signature string, the version
@@ -345,7 +324,7 @@ bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, s
  * @return
  *   true if a data bundle was read, false on end of file
  */
-bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version);
+bool readBundle(std::istream& in, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version);
 
 /**
  * Decode the header of a data bundle from a memory buffer, returning the

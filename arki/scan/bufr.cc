@@ -40,37 +40,55 @@ struct BufrValidator : public Validator
 {
 	virtual ~BufrValidator() {}
 
-	// Validate data found in a file
-	virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
-	{
-		char buf[4];
-		ssize_t res;
-		if (size < 8)
-			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "buffer is shorter than 8 bytes");
-		if ((res = pread(fd, buf, 4, offset)) == -1)
-			throw wibble::exception::System("reading 4 bytes of BUFR header from " + fname);
-		if (res != 4)
-			throw wibble::exception::Consistency("reading 4 bytes of BUFR header from " + fname, "partial read");
-		if (memcmp(buf, "BUFR", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "segment does not start with 'BUFR'");
-		if ((res = pread(fd, buf, 4, offset + size - 4)) == -1)
-			throw wibble::exception::System("reading 4 bytes of BUFR trailer from " + fname);
-		if (res != 4)
-			throw wibble::exception::Consistency("reading 4 bytes of BUFR trailer from " + fname, "partial read");
-		if (memcmp(buf, "7777", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR segment in file " + fname, "segment does not end with 'BUFR'");
-	}
+    // Validate data found in a file
+    virtual void validate(int fd, off_t offset, size_t size, const std::string& fname) const
+    {
+        if (size < 8)
+        {
+            stringstream ss;
+            ss << fname << ":" << offset << ": cannot check BUFR segment: file segment to check is only " << size << " bytes (minimum for a BUFR is 8)";
+            throw runtime_error(ss.str());
+        }
 
-	// Validate a memory buffer
-	virtual void validate(const void* buf, size_t size) const
-	{
-		if (size < 8)
-			throw wibble::exception::Consistency("checking BUFR buffer", "buffer is shorter than 8 bytes");
-		if (memcmp(buf, "BUFR", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR buffer", "buffer does not start with 'BUFR'");
-		if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
-			throw wibble::exception::Consistency("checking BUFR buffer", "buffer does not end with '7777'");
-	}
+        sys::NamedFileDescriptor f(fd, fname);
+        char buf[4];
+        ssize_t res;
+        if ((res = f.pread(buf, 4, offset)) != 4)
+        {
+            stringstream ss;
+            ss << fname << ":" << offset << ": could only read " << res << "/4 bytes of BUFR header";
+            throw runtime_error(ss.str());
+        }
+        if (memcmp(buf, "BUFR", 4) != 0)
+        {
+            stringstream ss;
+            ss << fname << ":" << offset << ": segment does not start with 'BUFR'";
+            throw runtime_error(ss.str());
+        }
+        if ((res = f.pread(buf, 4, offset + size - 4)) != 4)
+        {
+            stringstream ss;
+            ss << fname << ":" << offset << ": could only read " << res << "/4 bytes of BUFR trailer";
+            throw runtime_error(ss.str());
+        }
+        if (memcmp(buf, "7777", 4) != 0)
+        {
+            stringstream ss;
+            ss << fname << ":" << offset << ": segment does not end with '7777'";
+            throw runtime_error(ss.str());
+        }
+    }
+
+    // Validate a memory buffer
+    virtual void validate(const void* buf, size_t size) const
+    {
+        if (size < 8)
+            throw runtime_error("BUFR buffer is shorter than 8 bytes");
+        if (memcmp(buf, "BUFR", 4) != 0)
+            throw runtime_error("BUFR buffer does not start with 'BUFR'");
+        if (memcmp((const char*)buf + size - 4, "7777", 4) != 0)
+            throw runtime_error("BUFR buffer does not end with '7777'");
+    }
 };
 
 static BufrValidator bufr_validator;
@@ -187,12 +205,11 @@ public:
                 origin = Origin::createBUFR(bulletin->originating_centre, bulletin->originating_subcentre);
                 product = product::BUFR::create(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local);
                 break;
-            default:
-                {
-                    std::stringstream str;
-                    str << "edition is " << bulletin->edition_number << " but I can only handle 3 and 4";
-                    throw wibble::exception::Consistency("extracting metadata from BUFR message", str.str());
-                }
+            default: {
+                std::stringstream ss;
+                ss << "cannot extract metadata from BUFR message: edition is " << bulletin->edition_number << " but I can only handle 3 and 4";
+                throw std::runtime_error(ss.str());
+            }
         }
 
         // Default to a generic product unless we find more info later

@@ -465,7 +465,7 @@ void to::test<6>()
             reader.queryData(dataset::DataQuery(Matcher()), mdc);
             ensure(false);
         } catch (std::exception& e) {
-            ensure(str::startswith(e.what(), "file needs to be manually decompressed before scanning."));
+            ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
         }
     }
 
@@ -534,7 +534,7 @@ void to::test<6>()
             reader.queryData(dataset::DataQuery(Matcher()), mdc);
             ensure(false);
         } catch (std::exception& e) {
-            ensure(str::startswith(e.what(), "file needs to be manually decompressed before scanning."));
+            ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
         }
     }
     ensure(!sys::exists("testds/2007/07-08.grib1"));

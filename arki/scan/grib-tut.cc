@@ -254,7 +254,7 @@ void to::test<4>()
 	v.validate(fd, 7218, 34960, "inbound/test.grib1");
 	v.validate(fd, 42178, 2234, "inbound/test.grib1");
 
-#define ensure_throws(x) do { try { x; ensure(false); } catch (wibble::exception::Generic& e) { } } while (0)
+#define ensure_throws(x) do { try { x; ensure(false); } catch (std::exception& e) { } } while (0)
 
 	ensure_throws(v.validate(fd, 1, 7217, "inbound/test.grib1"));
 	ensure_throws(v.validate(fd, 0, 7217, "inbound/test.grib1"));

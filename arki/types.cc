@@ -1,39 +1,12 @@
-/*
- * types - arkimet metadata type system
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- * Author: Guido Billi <guidobilli@gmail.com>
- */
-
 #include "config.h"
-
 #include <arki/types.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/formatter.h>
-
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/buffer.h>
-
 #include <cstring>
 #include <unistd.h>
 
@@ -42,15 +15,15 @@
 #endif
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace types {
 
 Code checkCodeName(const std::string& name)
 {
-	// TODO: convert into something faster, like a hash lookup or a gperf lookup
-	string nname = str::trim(str::tolower(name));
+    // TODO: convert into something faster, like a hash lookup or a gperf lookup
+    string nname = str::strip(str::lower(name));
 	if (nname == "time") return TYPE_TIME;
 	if (nname == "origin") return TYPE_ORIGIN;
 	if (nname == "product") return TYPE_PRODUCT;
@@ -74,10 +47,14 @@ Code checkCodeName(const std::string& name)
 
 Code parseCodeName(const std::string& name)
 {
-	Code res = checkCodeName(name);
-	if (res == TYPE_INVALID)
-		throw wibble::exception::Consistency("parsing yaml data", "unsupported field type: " + name);
-	return res;
+    Code res = checkCodeName(name);
+    if (res == TYPE_INVALID)
+    {
+        string msg("cannot parse yaml data: unsupported field type: ");
+        msg += name;
+        throw std::runtime_error(std::move(msg));
+    }
+    return res;
 }
 
 std::string formatCode(const Code& c)
@@ -101,8 +78,12 @@ std::string formatCode(const Code& c)
 		case TYPE_TASK:	return "TASK";
 		case TYPE_QUANTITY:	return "QUANTITY";
 		case TYPE_VALUE:	return "VALUE";
-		default: return "unknown(" + wibble::str::fmt((int)c) + ")";
-	}
+        default: {
+            stringstream res;
+            res << "unknown(" << (int)c << ")";
+            return res.str();
+        }
+    }
 }
 
 int Type::compare(const Type& o) const
@@ -142,7 +123,9 @@ void Type::serialise(Emitter& e, const Formatter* f) const
 
 std::string Type::exactQuery() const
 {
-	throw wibble::exception::Consistency("creating a query to match " + tag(), "not implemented");
+    stringstream ss;
+    ss << "creating a query to match " << tag() << " is not implemented";
+    return ss.str();
 }
 
 #ifdef HAVE_LUA
@@ -358,49 +341,50 @@ std::string tag(types::Code code)
 	return types::MetadataType::get(code)->tag;
 }
 
-bool readBundle(int fd, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
+bool readBundle(int fd, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version)
 {
-	using namespace utils::codec;
+    using namespace utils::codec;
+    sys::NamedFileDescriptor f(fd, filename);
 
-	// Skip all leading blank bytes
-	char c;
-	while (true)
-	{
-		int res = read(fd, &c, 1);
-		if (res < 0) throw wibble::exception::File(filename, "reading first byte of header");
-		if (res == 0) return false; // EOF
-		if (c) break;
-	}
+    // Skip all leading blank bytes
+    char c;
+    while (true)
+    {
+        int res = f.read(&c, 1);
+        if (res == 0) return false; // EOF
+        if (c) break;
+    }
 
-	// Read the rest of the first 8 bytes
-	unsigned char hdr[8];
-	hdr[0] = c;
-	int res = read(fd, hdr + 1, 7);
-	if (res < 0) throw wibble::exception::File(filename, "reading 7 more bytes");
-	if (res < 7) return false; // EOF
+    // Read the rest of the first 8 bytes
+    unsigned char hdr[8];
+    hdr[0] = c;
+    size_t res = f.read(hdr + 1, 7);
+    if (res < 7) return false; // EOF
 
 	// Read the signature
 	signature.resize(2);
 	signature[0] = hdr[0];
 	signature[1] = hdr[1];
 
-	// Get the version in next 2 bytes
-	version = decodeUInt(hdr+2, 2);
+    // Get the version in next 2 bytes
+    version = decodeUInt(hdr + 2, 2);
 
-	// Get length from next 4 bytes
-	unsigned int len = decodeUInt(hdr+4, 4);
+    // Get length from next 4 bytes
+    unsigned int len = decodeUInt(hdr + 4, 4);
 
-	// Read the metadata body
-	buf.resize(len);
-	res = read(fd, buf.data(), len);
-	if (res < 0)
-		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
-	if ((unsigned)res != len)
-		throw wibble::exception::Consistency("reading " + filename, "read only " + str::fmt(res) + " of " + str::fmt(res) + " bytes: either the file is corrupted or it does not contain arkimet metadata");
+    // Read the metadata body
+    buf.resize(len);
+    res = f.read(buf.data(), len);
+    if ((unsigned)res != len)
+    {
+        stringstream ss;
+        ss << "incomplete read from " << filename << " read only " << res << " of " << len << " bytes: either the file is corrupted or it does not contain arkimet metadata";
+        throw std::runtime_error(ss.str());
+    }
 
-	return true;
+    return true;
 }
-bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buffer& buf, std::string& signature, unsigned& version)
+bool readBundle(std::istream& in, const std::string& filename, std::vector<uint8_t>& buf, std::string& signature, unsigned& version)
 {
 	using namespace utils::codec;
 
@@ -438,15 +422,23 @@ bool readBundle(std::istream& in, const std::string& filename, wibble::sys::Buff
 	// Get length from next 4 bytes
 	unsigned int len = decodeUInt(hdr+4, 4);
 
-	// Read the metadata body
-	buf.resize(len);
-	in.read((char*)buf.data(), len);
-	if (in.fail() && in.eof())
-		throw wibble::exception::Consistency("reading " + filename, "read less than " + str::fmt(len) + " bytes: either the file is corrupted or it does not contain arkimet metadata");
-	if (in.bad())
-		throw wibble::exception::File(filename, "reading " + str::fmt(len) + " bytes");
+    // Read the metadata body
+    buf.resize(len);
+    in.read((char*)buf.data(), len);
+    if (in.fail() && in.eof())
+    {
+        stringstream ss;
+        ss << "incomplete read from " << filename << ": read less than " << len << " bytes: either the file is corrupted or it does not contain arkimet metadata";
+        throw std::runtime_error(ss.str());
+    }
+    if (in.bad())
+    {
+        stringstream ss;
+        ss << "cannot read " << len << " bytes from " << filename;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 
-	return true;
+    return true;
 }
 
 bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filename, const unsigned char*& obuf, size_t& olen, std::string& signature, unsigned& version)
@@ -462,8 +454,12 @@ bool readBundle(const unsigned char*& buf, size_t& len, const std::string& filen
 	if (len == 0)
 		return false;
 
-	if (len < 8)
-		throw wibble::exception::Consistency("parsing " + filename, "partial data encountered: 8 bytes of header needed, " + str::fmt(len) + " found");
+    if (len < 8)
+    {
+        stringstream ss;
+        ss << "cannot parse " << filename << ": partial data encountered: 8 bytes of header needed, " << len << " found";
+        throw std::runtime_error(ss.str());
+    }
 
 	// Read the signature
 	signature.resize(2);

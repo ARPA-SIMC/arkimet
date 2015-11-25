@@ -114,7 +114,7 @@ bool Clusterer::eat(unique_ptr<Metadata>&& md)
 void Clusterer::md_to_interval(const Metadata& md, int* interval) const
 {
     const Reftime* rt = md.get<Reftime>();
-    if (!rt) throw wibble::exception::Consistency("computing time interval", "metadata has no reference time");
+    if (!rt) throw runtime_error("cannot compute time interval: metadata has no reference time");
     Time t(rt->period_end());
     for (unsigned i = 0; i < 6; ++i)
         interval[i] = i < max_interval ? t.vals[i] : -1;

@@ -38,7 +38,7 @@ struct StatsVisitor;
 struct ItemVisitor;
 struct Table;
 
-size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::string& filename, Table& target);
+size_t decode(const std::vector<uint8_t>& buf, unsigned version, const std::string& filename, Table& target);
 
 struct EncodingVisitor : public Visitor
 {

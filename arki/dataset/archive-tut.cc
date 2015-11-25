@@ -408,9 +408,9 @@ void to::test<6>()
 		try {
 			arc->queryData(dataset::DataQuery(Matcher()), mdc);
 			ensure(false);
-		} catch (std::exception& e) {
-			ensure(str::startswith(e.what(), "file needs to be manually decompressed before scanning."));
-		}
+        } catch (std::exception& e) {
+            ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
+        }
 
 		// Maintenance should show one file to rescan
 		c.clear();

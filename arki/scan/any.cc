@@ -8,6 +8,7 @@
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
 #include <sstream>
+#include <algorithm>
 #include <utime.h>
 
 #ifdef HAVE_GRIBAPI
@@ -43,7 +44,7 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
 {
     // Scan the file
     if (isCompressed(pathname))
-        throw wibble::exception::Consistency("scanning " + relname + ".gz", "file needs to be manually decompressed before scanning");
+        throw std::runtime_error("cannot scan " + relname + ".gz: file needs to be manually decompressed before scanning");
 
 #ifdef HAVE_GRIBAPI
     if (format == "grib" || format == "grib1" || format == "grib2")
@@ -204,7 +205,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
     if (!st_file.get())
         st_file = sys::stat(pathname + ".gz");
     if (!st_file.get())
-        throw wibble::exception::File(pathname, "getting file information");
+        throw runtime_error(pathname + " or " + pathname + ".gz not found");
 
     // stat the metadata file, if it exists
     string md_pathname = pathname + ".metadata";
@@ -315,12 +316,12 @@ void Validator::validate(Metadata& md) const
 
 const Validator& Validator::by_filename(const std::string& filename)
 {
-	// Get the file extension
-	size_t pos = filename.rfind('.');
-	if (pos == string::npos)
-		// No extension, we do not know what it is
-		throw wibble::exception::Consistency("looking for a validator for " + filename, "file name has no extension");
-	string ext = str::lower(filename.substr(pos+1));
+    // Get the file extension
+    size_t pos = filename.rfind('.');
+    if (pos == string::npos)
+        // No extension, we do not know what it is
+        throw runtime_error("cannot find a validator for " + filename + ": file name has no extension");
+    string ext = str::lower(filename.substr(pos+1));
 
 #ifdef HAVE_GRIBAPI
 	if (ext == "grib" || ext == "grib1" || ext == "grib2")
@@ -342,7 +343,7 @@ const Validator& Validator::by_filename(const std::string& filename)
    if (ext == "nc")
        return netcdf::validator();
 #endif
-	throw wibble::exception::Consistency("looking for a validator for " + filename, "no validator available");
+    throw runtime_error("cannot find a validator for " + filename + ": no validator available");
 }
 
 bool update_sequence_number(Metadata& md, int& usn)
@@ -369,9 +370,8 @@ wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, c
         return scan::Vm2::reconstruct(md, value);
     }
 #endif
-    throw wibble::exception::Consistency("reconstructing " + format + " data", "format not supported");
+    throw runtime_error("cannot reconstruct " + format + " data: format not supported");
 }
 
 }
 }
-// vim:set ts=4 sw=4:
