@@ -2,6 +2,7 @@
 #include <arki/types/source/blob.h>
 #include <arki/utils/compress.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/sys.h>
 #include <arki/utils.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
@@ -21,7 +22,6 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -162,13 +162,13 @@ std::string Collection::ensureContiguousData(const std::string& source) const
         }
         last_end += s.size;
     }
-	std::unique_ptr<struct stat> st = sys::fs::stat(fname);
-	if (st.get() == NULL)
-		throw wibble::exception::File(fname, "validating data described in " + source);
-	if (st->st_size != last_end)
-		throw wibble::exception::Consistency("validating " + source,
-				"metadata do not cover the entire data file " + fname);
-	return fname;
+    std::unique_ptr<struct stat> st = sys::stat(fname);
+    if (st.get() == NULL)
+        throw wibble::exception::File(fname, "validating data described in " + source);
+    if (st->st_size != last_end)
+        throw wibble::exception::Consistency("validating " + source,
+                "metadata do not cover the entire data file " + fname);
+    return fname;
 }
 
 void Collection::compressDataFile(size_t groupsize, const std::string& source)
@@ -180,14 +180,14 @@ void Collection::compressDataFile(size_t groupsize, const std::string& source)
         compressor.add((*i)->getData());
     compressor.flush();
 
-	// Set the same timestamp as the uncompressed file
-	std::unique_ptr<struct stat> st = sys::fs::stat(datafile);
-	struct utimbuf times;
-	times.actime = st->st_atime;
-	times.modtime = st->st_mtime;
-	utime((datafile + ".gz").c_str(), &times);
-	utime((datafile + ".gz.idx").c_str(), &times);
-	// TODO: delete uncompressed version
+    // Set the same timestamp as the uncompressed file
+    std::unique_ptr<struct stat> st = sys::stat(datafile);
+    struct utimbuf times;
+    times.actime = st->st_atime;
+    times.modtime = st->st_mtime;
+    utime((datafile + ".gz").c_str(), &times);
+    utime((datafile + ".gz.idx").c_str(), &times);
+    // TODO: delete uncompressed version
 }
 
 void Collection::add_to_summary(Summary& out) const

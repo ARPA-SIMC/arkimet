@@ -1,29 +1,9 @@
-/*
- * metadata/xargs - Cluster a metadata stream and run a progrgam on each batch
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include "xargs.h"
 #include <arki/metadata.h>
 #include <arki/utils/raii.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <arki/dataset/data.h>
-#include <wibble/sys/fs.h>
 #include <wibble/sys/exec.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -32,7 +12,7 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
 extern char **environ;
 
@@ -108,7 +88,7 @@ void Tempfile::close()
     }
 
     // delete the file, if it still exists
-    sys::fs::deleteIfExists(pathname);
+    sys::unlink_ifexists(pathname);
 }
 
 bool Tempfile::is_open() const
@@ -137,7 +117,7 @@ void Xargs::start_batch(const std::string& new_format)
     tempfile.open();
 }
 
-void Xargs::add_to_batch(Metadata& md, const sys::Buffer& buf)
+void Xargs::add_to_batch(Metadata& md, const wibble::sys::Buffer& buf)
 {
     metadata::Clusterer::add_to_batch(md, buf);
     arki::dataset::data::OstreamWriter::get(md.source().format)->stream(md, tempfile.fd);
@@ -161,21 +141,25 @@ void Xargs::flush_batch()
     metadata::Clusterer::flush_batch();
 
     if (res != 0)
-        throw wibble::exception::Consistency("running " + command[0], "process returned exit status " + str::fmt(res));
+    {
+        stringstream ss;
+        ss << "cannot run " << command[0] << ": process returned exit status " << res;
+        throw std::runtime_error(ss.str());
+    }
 }
 
 int Xargs::run_child()
 {
-    struct CustomChild : public sys::Exec
+    struct CustomChild : public wibble::sys::Exec
     {
-        CustomChild(const std::string& pathname) : sys::Exec(pathname) {}
+        CustomChild(const std::string& pathname) : wibble::sys::Exec(pathname) {}
 
         virtual int main()
         {
             // Redirect stdin to /dev/null
             int new_stdin = open("/dev/null", O_RDONLY);
             ::dup2(new_stdin, 0);
-            sys::Exec::main();
+            wibble::sys::Exec::main();
         }
     };
 
@@ -196,12 +180,14 @@ int Xargs::run_child()
     for (char** s = environ; *s; ++s)
     {
         string envstr(*s);
-        if (str::startsWith(envstr, "ARKI_XARGS_")) continue;
+        if (str::startswith(envstr, "ARKI_XARGS_")) continue;
         child.env.push_back(envstr);
     }
     child.env.push_back("ARKI_XARGS_FILENAME=" + string(tempfile.pathname));
-    child.env.push_back("ARKI_XARGS_FORMAT=" + str::toupper(format));
-    child.env.push_back("ARKI_XARGS_COUNT=" + str::fmt(count));
+    child.env.push_back("ARKI_XARGS_FORMAT=" + str::upper(format));
+    char buf[32];
+    snprintf(buf, 32, "ARKI_XARGS_COUNT=%zd", count);
+    child.env.push_back(buf);
 
     if (timespan_begin.get())
     {
@@ -247,7 +233,7 @@ static size_t parse_size(const std::string& str)
 
 static size_t parse_interval(const std::string& str)
 {
-    string name = str::trim(str::tolower(str));
+    string name = str::lower(str::strip(str));
     if (name == "minute") return 5;
     if (name == "hour") return 4;
     if (name == "day") return 3;
@@ -268,5 +254,3 @@ void Xargs::set_interval(const std::string& val)
 
 }
 }
-
-// vim:set ts=4 sw=4:
