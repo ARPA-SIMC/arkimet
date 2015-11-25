@@ -1,35 +1,14 @@
-/*
- * summary/stats - Implementation of a summary stats payload
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/summary/stats.h>
 #include <arki/metadata.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 using namespace arki::utils::codec;
 using namespace arki::types;
 
@@ -191,7 +170,11 @@ unique_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
 
     // First decode the count
     if (len < 4)
-        throw wibble::exception::Consistency("parsing summary stats", "summary stats has size " + str::fmt(len) + " but at least 4 bytes are needed");
+    {
+        stringstream ss;
+        ss << "cannot parse summary stats: size is " << len << " but at least 4 bytes are needed";
+        throw std::runtime_error(ss.str());
+    }
     res->count = decodeUInt(buf, 4);
     buf += 4; len -= 4;
 
@@ -206,7 +189,11 @@ unique_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
         res->end = rt->period_end();
     }
     else
-        throw wibble::exception::Consistency("parsing summary stats", "cannot handle element " + str::fmt(el_type));
+    {
+        stringstream ss;
+        ss << "cannot parse summary stats: cannot handle element " << el_type;
+        throw std::runtime_error(ss.str());
+    }
     len -= el_start + el_len - buf;
     buf = el_start + el_len;
 
@@ -224,15 +211,13 @@ unique_ptr<Stats> Stats::decode(const unsigned char* buf, size_t len)
 
 unique_ptr<Stats> Stats::decodeString(const std::string& str)
 {
-    using namespace str;
-
     unique_ptr<Stats> res(new Stats);
     stringstream in(str, ios_base::in);
-    YamlStream yamlStream;
-    for (YamlStream::const_iterator i = yamlStream.begin(in);
+    wibble::str::YamlStream yamlStream;
+    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
     {
-        string name = tolower(i->first);
+        string name = str::lower(i->first);
         if (name == "count")
             res->count = strtoul(i->second.c_str(), 0, 10);
         else if (name == "size")

@@ -1,25 +1,3 @@
-/*
- * summary/codec - Summary I/O implementation
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "codec.h"
 #include "table.h"
 #include "stats.h"
@@ -27,7 +5,9 @@
 #include <arki/metadata.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/compress.h>
+#include <arki/utils/sys.h>
 #include <arki/types/utils.h>
+#include <wibble/sys/buffer.h>
 
 // #define DEBUG_THIS
 #ifdef DEBUG_THIS
@@ -39,7 +19,7 @@
 #endif
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 using namespace arki::utils::codec;
 using namespace arki::types;
 
@@ -154,8 +134,11 @@ struct Format3Decoder : public DecoderBase
                 types::Code code = (types::Code)dec.popVarint<unsigned>("typecode");
                 int pos = Visitor::posForCode(code);
                 if (pos < 0)
-                    throw wibble::exception::Consistency("parsing summary",
-                            str::fmtf("unsupported typecode found: %d", (int)code));
+                {
+                    stringstream ss;
+                    ss << "cannot parse summary: found unsupported typecode " << (int)code;
+                    throw runtime_error(ss.str());
+                }
                 row.items[pos] = 0;
             }
 
@@ -166,8 +149,11 @@ struct Format3Decoder : public DecoderBase
                 unique_ptr<Type> item = types::decode(dec);
                 int pos = Visitor::posForCode(item->type_code());
                 if (pos < 0)
-                    throw wibble::exception::Consistency("parsing summary",
-                            str::fmtf("unsupported typecode found: %d", (int)item->type_code()));
+                {
+                    stringstream ss;
+                    ss << "cannot parse summary: found unsupported typecode " << (int)item->type_code();
+                    throw runtime_error(ss.str());
+                }
                 row.items[pos] = target.intern(pos, move(item));
             }
 
@@ -232,7 +218,7 @@ size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::strin
             ensureSize(buf.size(), 4, "uncompressed item size");
             uint32_t uncsize = decodeUInt((const unsigned char*)buf.data(), 4);
 
-            sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
+            wibble::sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
             Decoder dec(decomp);
             return decode1(dec, target);
         }
@@ -249,16 +235,24 @@ size_t decode(const wibble::sys::Buffer& buf, unsigned version, const std::strin
                 case 1: { // LZO compressed
                     // Read uncompressed size
                     uint32_t uncsize = dec.popUInt(4, "uncompressed item size");
-                    sys::Buffer decomp = utils::compress::unlzo(dec.buf, dec.len, uncsize);
+                    wibble::sys::Buffer decomp = utils::compress::unlzo(dec.buf, dec.len, uncsize);
                     Decoder uncdec(decomp);
                     return decode3(uncdec, target);
                 }
                 default:
-                    throw wibble::exception::Consistency("parsing file " + filename, "file compression type is " + str::fmt(compression) + " but I can only decode 0 (uncompressed) or 1 (LZO)");
+                {
+                    stringstream ss;
+                    ss << "cannot parse file " << filename << ": file compression type is " << compression << " but I can only decode 0 (uncompressed) or 1 (LZO)";
+                    throw runtime_error(ss.str());
+                }
             }
         }
         default:
-            throw wibble::exception::Consistency("parsing file " + filename, "version of the file is " + str::fmt(version) + " but I can only decode version 1 or 2");
+        {
+            stringstream ss;
+            ss << "cannot parse file " << filename << ": version of the file is " << version << " but I can only decode version 1 or 2";
+            throw runtime_error(ss.str());
+        }
     }
 }
 

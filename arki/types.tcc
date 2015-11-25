@@ -1,28 +1,6 @@
 #ifndef ARKI_TYPES_TCC
 #define ARKI_TYPES_TCC
 
-/*
- * types - arkimet metadata type system
- *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <wibble/exception.h>
@@ -56,13 +34,13 @@ int StyledType<BASE>::compare(const Type& o) const
 	int res = CoreType<BASE>::compare(o);
 	if (res != 0) return res;
 
-	// We should be the same kind, so upcast
-	const BASE* v = dynamic_cast<const BASE*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			str::fmtf("second element claims to be `%s', but is `%s' instead",
-				traits<BASE>::type_tag, typeid(&o).name()));
+    // We should be the same kind, so upcast
+    const BASE* v = dynamic_cast<const BASE*>(&o);
+    if (!v)
+    {
+        std::stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be `" << traits<BASE>::type_tag << "', but it is `" << typeid(&o).name() << "' instead";
+    }
 
 	res = this->style() - v->style();
 	if (res != 0) return res;
@@ -98,6 +76,4 @@ bool StyledType<TYPE>::lua_lookup(lua_State* L, const std::string& name) const
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

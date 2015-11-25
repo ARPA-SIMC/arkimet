@@ -1,25 +1,3 @@
-/*
- * summary - Handle a summary of a group of summary
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/summary.h>
 #include <arki/summary/table.h>
 #include <arki/summary/codec.h>
@@ -37,20 +15,17 @@
 #include <arki/emitter/memory.h>
 #include <arki/iotrace.h>
 #include <arki/utils/lua.h>
-
-#include <wibble/exception.h>
 #include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <wibble/sys/buffer.h>
-
 #include <fstream>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 using namespace arki::utils::codec;
 using namespace arki::types;
 using namespace arki::summary;
@@ -89,7 +64,7 @@ struct LuaPusher: public summary::Visitor
             if (md[i])
             {
                 // Key
-                string name = str::tolower(types::formatCode(codeForPos(i)));
+                string name = str::lower(types::formatCode(codeForPos(i)));
                 lua_pushlstring(L, name.data(), name.size());
                 // Value
                 md[i]->lua_push(L);
@@ -506,7 +481,7 @@ std::string Summary::encode(bool compressed) const
     enc.addUInt(3, 2);
     if (compressed)
     {
-        sys::Buffer comp = utils::compress::lzo(inner.data(), inner.size());
+        wibble::sys::Buffer comp = utils::compress::lzo(inner.data(), inner.size());
         if (comp.size() + 4 >= inner.size())
         {
             // No point in compressing
@@ -543,36 +518,18 @@ void Summary::write(std::ostream& out, const std::string& filename) const
     // Write out
     out.write(encoded.data(), encoded.size());
     if (out.fail())
-        throw wibble::exception::File(filename, "writing " + str::fmt(encoded.size()) + " bytes to the file");
+    {
+        stringstream ss;
+        ss << "cannot write " << encoded.size() << " bytes to the file " << filename;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 }
 
 void Summary::writeAtomically(const std::string& fname)
 {
-    // Write summary to disk
     string enc = encode(true);
-    string tmpfile = fname + ".tmp" + str::fmt(getpid());
-    int fd = open(tmpfile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (fd == -1)
-        throw wibble::exception::File(tmpfile, "creating temporary file for the summary");
-    try {
-        iotrace::trace_file(fname, 0, enc.size(), "write summary");
-        int res = ::write(fd, enc.data(), enc.size());
-        if (res < 0 || (unsigned)res != enc.size())
-            throw wibble::exception::File(tmpfile, "writing " + str::fmt(enc.size()) + " bytes to the file");
-
-        if (close(fd) == -1)
-        {
-            fd = -1;
-            throw wibble::exception::File(tmpfile, "closing file");
-        }
-        fd = -1;
-        if (rename(tmpfile.c_str(), fname.c_str()) == -1)
-            throw wibble::exception::System("Renaming " + tmpfile + " into " + fname);
-    } catch (...) {
-        if (fd != -1)
-            close(fd);
-        throw;
-    }
+    iotrace::trace_file(fname, 0, enc.size(), "write summary");
+    sys::write_file_atomically(fname, enc, 0666);
 }
 
 namespace summary {
@@ -590,7 +547,9 @@ struct YamlPrinter : public Visitor
         for (vector<const Type*>::const_iterator i = md.begin(); i != md.end(); ++i)
         {
             if (!*i) continue;
-            out << indent << str::ucfirst((*i)->tag()) << ": ";
+            string ucfirst(str::lower((*i)->tag()));
+            ucfirst[0] = toupper(ucfirst[0]);
+            out << indent << ucfirst << ": ";
             (*i)->writeToOstream(out);
             if (f) out << "\t# " << (*f)(**i);
             out << endl;
