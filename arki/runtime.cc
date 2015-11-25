@@ -444,7 +444,7 @@ void CommandLine::setupProcessing()
             const ValidatorRepository& vals = ValidatorRepository::get();
 
             // Add validators to dispatcher
-            str::Split splitter(",", validate->stringValue());
+            str::Split splitter(validate->stringValue(), ",");
             for (str::Split::const_iterator iname = splitter.begin();
                     iname != splitter.end(); ++iname)
             {

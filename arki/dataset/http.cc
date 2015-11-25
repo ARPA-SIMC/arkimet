@@ -359,14 +359,14 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 	if (q.sorter)
 		form.addstring("sort", q.sorter->toString());
 
-	const char* toupload = getenv("ARKI_POSTPROC_FILES");
-	if (toupload != NULL)
-	{
-		// Split by ':'
-		str::Split splitter(":", toupload);
-		for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-			form.addfile("postprocfile", *i);
-	}
+    const char* toupload = getenv("ARKI_POSTPROC_FILES");
+    if (toupload != NULL)
+    {
+        // Split by ':'
+        str::Split splitter(toupload, ":");
+        for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
+            form.addfile("postprocfile", *i);
+    }
 	switch (q.type)
 	{
 		case dataset::ByteQuery::BQ_DATA:
@@ -539,7 +539,7 @@ void HTTPInbound::list(std::vector<std::string>& files)
         s.throwError("querying inbound/list from " + url);
 
     // Parse the results
-    str::Split splitter("\n", s.buf.str());
+    str::Split splitter(s.buf.str(), "\n");
     for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
         files.push_back(*i);
 }

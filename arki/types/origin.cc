@@ -1,31 +1,9 @@
-/*
- * types/origin - Originating centre metadata item
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- * Author: Guido Billi <guidobilli@gmail.com>
- */
-
 #include <wibble/exception.h>
 #include <wibble/string.h>
 #include <arki/types/origin.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/utils/lua.h>
@@ -46,7 +24,6 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
-using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -154,7 +131,7 @@ unique_ptr<Origin> Origin::decodeString(const std::string& val)
         }
         case Origin::ODIMH5: {
             std::vector<std::string> values;
-            str::Split split(",", inner);
+            str::Split split(inner, ",");
             for (str::Split::const_iterator i = split.begin(); i != split.end(); ++i)
                 values.push_back(*i);
 
@@ -293,7 +270,9 @@ unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string GRIB1::exactQuery() const
 {
-    return str::fmtf("GRIB1,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_process);
+    char buf[64];
+    snprintf(buf, 64, "GRIB1,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_process);
+    return buf;
 }
 const char* GRIB1::lua_type_name() const { return LUATAG_GRIB1; }
 
@@ -403,7 +382,9 @@ unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string GRIB2::exactQuery() const
 {
-    return str::fmtf("GRIB2,%d,%d,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_processtype, (int)m_bgprocessid, (int)m_processid);
+    char buf[64];
+    snprintf(buf, 64, "GRIB2,%d,%d,%d,%d,%d", (int)m_centre, (int)m_subcentre, (int)m_processtype, (int)m_bgprocessid, (int)m_processid);
+    return buf;
 }
 const char* GRIB2::lua_type_name() const { return LUATAG_GRIB2; }
 
@@ -516,7 +497,9 @@ unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string BUFR::exactQuery() const
 {
-    return str::fmtf("BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
+    char buf[32];
+    snprintf(buf, 32, "BUFR,%d,%d", (int)m_centre, (int)m_subcentre);
+    return buf;
 }
 const char* BUFR::lua_type_name() const { return LUATAG_BUFR; }
 
@@ -613,7 +596,9 @@ unique_ptr<ODIMH5> ODIMH5::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string ODIMH5::exactQuery() const
 {
-    return str::fmtf("ODIMH5,%s,%s,%s", m_WMO.c_str(), m_RAD.c_str(), m_PLC.c_str());
+    stringstream res;
+    res << "ODIMH5," << m_WMO << "," << m_RAD << "," << m_PLC;
+    return res.str();
 }
 const char* ODIMH5::lua_type_name() const { return LUATAG_ODIMH5; }
 
@@ -694,5 +679,3 @@ void Origin::init()
 }
 
 #include <arki/types.tcc>
-
-// vim:set ts=4 sw=4:
