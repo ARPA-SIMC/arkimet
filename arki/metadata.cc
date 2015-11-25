@@ -381,7 +381,7 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
     {
         stringstream ss;
         ss << "cannot write " << encoded.size() << " bytes to file " << filename;
-        throw std::system_error(errno, std::system_category(), ss.str());;
+        throw std::system_error(errno, std::system_category(), ss.str());
     }
 
     // If the source is inline, then the data follows the metadata
@@ -398,7 +398,7 @@ void Metadata::write(std::ostream& out, const std::string& filename) const
         {
             stringstream ss;
             ss << "cannot write " << m_data.size() << " bytes to file " << filename;
-            throw std::system_error(errno, std::system_category(), ss.str());;
+            throw std::system_error(errno, std::system_category(), ss.str());
         }
     }
 }

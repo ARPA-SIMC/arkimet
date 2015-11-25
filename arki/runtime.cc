@@ -308,7 +308,7 @@ void CommandLine::setupProcessing()
             {
                 stringstream ss;
                 ss << "cannot read one line from " << file;
-                throw std::system_error(errno, std::system_category(), ss.str());;
+                throw std::system_error(errno, std::system_category(), ss.str());
             }
             line = str::strip(line);
             if (line.empty())

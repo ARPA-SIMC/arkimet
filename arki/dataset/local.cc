@@ -101,7 +101,7 @@ struct ScanTestFilter : public metadata::Eater
             {
                 stringstream ss;
                 ss << "cannot write " << data.size() << " bytes to " << tf.name();
-                throw std::system_error(errno, std::system_category(), ss.str());;
+                throw std::system_error(errno, std::system_category(), ss.str());
             }
             tf.stream().flush();
 
@@ -185,7 +185,7 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
         {
             stringstream ss;
             ss << "cannot open " << file << " for reading";
-            throw std::system_error(errno, std::system_category(), ss.str());;
+            throw std::system_error(errno, std::system_category(), ss.str());
         }
         // Parse the config file into a new section
         section.parse(in, file);
@@ -202,7 +202,7 @@ void Local::readConfig(const std::string& path, ConfigFile& cfg)
         {
             stringstream ss;
             ss << "cannot open config file " << fname << " for reading";
-            throw std::system_error(errno, std::system_category(), ss.str());;
+            throw std::system_error(errno, std::system_category(), ss.str());
         }
         // Parse the config file
         cfg.parse(in, fname);
@@ -321,7 +321,7 @@ void WritableLocal::archiveFile(const std::string& relpath)
     {
         stringstream ss;
         ss << "cannot rename " << src << " to " << dst;
-        throw std::system_error(errno, std::system_category(), ss.str());;
+        throw std::system_error(errno, std::system_category(), ss.str());
     }
     if (compressed)
         sys::rename_ifexists(pathname + ".gz.idx", arcabsname + ".gz.idx");

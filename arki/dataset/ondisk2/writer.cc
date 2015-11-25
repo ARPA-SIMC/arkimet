@@ -528,7 +528,7 @@ size_t Writer::repackFile(const std::string& relpath)
         {
             stringstream ss;
             ss << "cannot remove obsolete metadata file " << mdpathname;
-            throw std::system_error(errno, std::system_category(), ss.str());;
+            throw std::system_error(errno, std::system_category(), ss.str());
         }
 
     // Prevent reading the still open old file using the new offsets

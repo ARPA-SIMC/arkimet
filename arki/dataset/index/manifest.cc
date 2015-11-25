@@ -367,7 +367,7 @@ class PlainManifest : public Manifest
         {
             stringstream ss;
             ss << "cannot open file " << pathname << " for reading";
-            throw std::system_error(errno, std::system_category(), ss.str());;
+            throw std::system_error(errno, std::system_category(), ss.str());
         }
 
         iotrace::trace_file(pathname, 0, 0, "read MANIFEST");
@@ -380,7 +380,7 @@ class PlainManifest : public Manifest
             {
                 stringstream ss;
                 ss << "cannot read one line from " << pathname;
-                throw std::system_error(errno, std::system_category(), ss.str());;
+                throw std::system_error(errno, std::system_category(), ss.str());
             }
 
             // Skip empty lines
