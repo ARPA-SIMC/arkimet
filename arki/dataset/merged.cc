@@ -1,25 +1,3 @@
-/*
- * dataset/merged - Access many datasets at the same time
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/merged.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -33,7 +11,7 @@
 // #include <iostream>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -43,11 +21,11 @@ class SyncBuffer
 {
 protected:
     static const int buf_size = 10;
-	sys::Mutex mutex;
-	sys::Condition cond;
+    wibble::sys::Mutex mutex;
+    wibble::sys::Condition cond;
     Metadata* buffer[buf_size];
-	size_t head, tail, size;
-	mutable bool m_done;
+    size_t head, tail, size;
+    mutable bool m_done;
 
 public:
     SyncBuffer() : head(0), tail(0), size(buf_size), m_done(false)
@@ -62,7 +40,7 @@ public:
 
     void push(unique_ptr<Metadata> val)
     {
-        sys::MutexLock lock(mutex);
+        wibble::sys::MutexLock lock(mutex);
         while ((head + 1) % size == tail)
             cond.wait(lock);
         buffer[head] = val.release();
@@ -72,7 +50,7 @@ public:
 
     unique_ptr<Metadata> pop()
     {
-        sys::MutexLock lock(mutex);
+        wibble::sys::MutexLock lock(mutex);
         if (head == tail)
             throw wibble::exception::Consistency("removing an element from a SyncBuffer", "the buffer is empty");
         // Reset the item (this will take care, for example, to dereference
@@ -87,30 +65,30 @@ public:
     // Get must be done by the same thread that does pop
     const Metadata* get()
     {
-        sys::MutexLock lock(mutex);
+        wibble::sys::MutexLock lock(mutex);
         while (head == tail && !m_done)
             cond.wait(lock);
         if (head == tail && m_done) return 0;
         return buffer[tail];
     }
 
-	bool isDone()
-	{
-		sys::MutexLock lock(mutex);
-		if (head != tail)
-			return false;
-		return m_done;
-	}
+    bool isDone()
+    {
+        wibble::sys::MutexLock lock(mutex);
+        if (head != tail)
+            return false;
+        return m_done;
+    }
 
-	void done()
-	{
-		sys::MutexLock lock(mutex);
-		m_done = true;
-		cond.broadcast();
-	}
+    void done()
+    {
+        wibble::sys::MutexLock lock(mutex);
+        m_done = true;
+        cond.broadcast();
+    }
 };
 
-class MetadataReader : public sys::Thread
+class MetadataReader : public wibble::sys::Thread
 {
 private:
 	MetadataReader(const MetadataReader&);
@@ -161,7 +139,7 @@ public:
 	}
 };
 
-class SummaryReader : public sys::Thread
+class SummaryReader : public wibble::sys::Thread
 {
 protected:
 	const Matcher* matcher;
@@ -266,7 +244,7 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 			errors.push_back((const char*)res);
 	
 	if (!errors.empty())
-		throw wibble::exception::Consistency("running metadata queries on multiple datasets", str::join(errors.begin(), errors.end(), "; "));
+		throw wibble::exception::Consistency("running metadata queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
 void Merged::querySummary(const Matcher& matcher, Summary& summary)
@@ -301,7 +279,7 @@ void Merged::querySummary(const Matcher& matcher, Summary& summary)
 	}
 	
 	if (!errors.empty())
-		throw wibble::exception::Consistency("running summary queries on multiple datasets", str::join(errors.begin(), errors.end(), "; "));
+		throw wibble::exception::Consistency("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
 void Merged::queryBytes(const dataset::ByteQuery& q, std::ostream& out)

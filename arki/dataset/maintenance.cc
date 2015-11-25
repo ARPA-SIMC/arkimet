@@ -1,25 +1,3 @@
-/*
- * dataset/maintenance - Dataset maintenance utilities
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/dataset/maintenance.h>
@@ -30,15 +8,13 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <arki/scan/any.h>
 #include <arki/sort.h>
 #include <arki/nag.h>
-
-#include <wibble/sys/fs.h>
-
 #include <algorithm>
 #include <ostream>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -52,16 +28,17 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 
 template<typename T>
 static std::string nfiles(const T& val)
 {
-	if (val == 1)
-		return "1 file";
-	else
-		return str::fmt(val) + " files";
+    stringstream ss;
+    if (val == 1)
+        ss << "1 file";
+    else
+        ss << val << " files";
+    return ss.str();
 }
 
 namespace arki {

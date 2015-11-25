@@ -39,6 +39,9 @@ protected:
     /// Absolute path to the summary cache directory
     std::string m_scache_root;
 
+    /// Return the pathname for the summary file for a given year and month
+    std::string summary_pathname(int year, int month) const;
+
 public:
     SummaryCache(const std::string& root);
     ~SummaryCache();

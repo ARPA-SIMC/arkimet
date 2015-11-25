@@ -1,28 +1,7 @@
-/*
- * dataset/gridquery - Lay out a metadata grid and check that metadata fit 
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "gridquery.h"
 #include <arki/utils/dataset.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/string.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/summary.h>
@@ -39,7 +18,6 @@
 // #include <iostream>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -217,16 +195,16 @@ static void dumpItemset(std::ostream& out, const ItemSet& is)
 
 void GridQuery::dump(std::ostream& out) const
 {
-	if (todolist.empty())
-	{
-		// Not consolidated
-		out << "GridQuery still being built:" << endl;
-		out << "  Grid dimensions so far:" << endl;
+    if (todolist.empty())
+    {
+        // Not consolidated
+        out << "GridQuery still being built:" << endl;
+        out << "  Grid dimensions so far:" << endl;
         for (std::map<types::Code, TypeVector>::const_iterator i = mdgrid.dims.begin();
                 i != mdgrid.dims.end(); ++i)
             out << "    " << types::tag(i->first) << ": "
                 // FIXME: this prints pointers
-                << str::join(i->second.begin(), i->second.end(), ", ")
+                << str::join(", ", i->second.begin(), i->second.end())
                 << endl;
 		out << "  Combinations so far:" << endl;
 		for (std::vector<ItemSet>::const_iterator i = items.begin();
@@ -252,13 +230,13 @@ void GridQuery::dump(std::ostream& out) const
 				out << "       ";
                 for (TypeVector::const_iterator j = items.begin(); j != items.end(); ++j)
                 {
-					if (j != items.begin()) out << "; ";
-					out << types::tag((*j)->type_code());
-				}
-				out << endl;
-			}
-			out << "    " << (i+1) << ": " << str::join(items.begin(), items.end(), "; ") << endl;
-		}
+                    if (j != items.begin()) out << "; ";
+                    out << types::tag((*j)->type_code());
+                }
+                out << endl;
+            }
+            out << "    " << (i+1) << ": " << str::join("; ", items.begin(), items.end()) << endl;
+        }
 		out << "  Marked so far:" << endl;
 		for (size_t i = 0; i < times.size(); ++i)
 		{

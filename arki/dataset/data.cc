@@ -1,25 +1,3 @@
-/*
- * data - Read/write functions for data blobs
- *
- * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "data.h"
 #include "data/concat.h"
 #include "data/lines.h"
@@ -28,12 +6,11 @@
 #include "arki/scan/any.h"
 #include "arki/metadata/collection.h"
 #include "arki/utils.h"
-#include <wibble/exception.h>
-#include <arki/utils/string.h>
-#include <wibble/sys/fs.h>
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -50,7 +27,7 @@ std::string FileState::to_string() const
     if (value & FILE_TO_RESCAN)  res.push_back("TO_RESCAN");
     if (value & FILE_TO_DEINDEX) res.push_back("TO_DEINDEX");
     if (value & FILE_ARCHIVED)   res.push_back("ARCHIVED");
-    return str::join(res.begin(), res.end(), ",");
+    return str::join(",", res.begin(), res.end());
 }
 
 Segment::Segment(const std::string& relname, const std::string& absname)
@@ -120,7 +97,7 @@ struct BaseSegmentManager : public SegmentManager
         string absname = str::joinpath(root, relname);
         size_t pos = absname.rfind('/');
         if (pos != string::npos)
-            wibble::sys::fs::mkpath(absname.substr(0, pos));
+            sys::makedirs(absname.substr(0, pos));
 
         // Refuse to write to compressed files
         if (scan::isCompressed(absname))
@@ -136,7 +113,7 @@ struct BaseSegmentManager : public SegmentManager
     // exists. Returns 0 if the segment does not exist.
     unique_ptr<data::Segment> create_for_existing_segment(const std::string& format, const std::string& relname, const std::string& absname)
     {
-        std::unique_ptr<struct stat> st = sys::fs::stat(absname);
+        std::unique_ptr<struct stat> st = sys::stat(absname);
         unique_ptr<data::Segment> res;
         if (!st.get())
             return res;

@@ -1,27 +1,4 @@
-/*
- * dataset/http - Remote HTTP dataset access
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/dataset/http.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -29,14 +6,12 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
-
 #include <arki/utils/string.h>
-
 #include <cstdlib>
 #include <sstream>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -183,7 +158,7 @@ struct ReqState
         ReqState& s = *(ReqState*)stream;
         string header((const char*)ptr, size*nmemb);
         // Look for special headers to get raw exception messages
-        if (str::startsWith(header, "Arkimet-Exception: "))
+        if (str::startswith(header, "Arkimet-Exception: "))
             s.exception_message = header.substr(19);
         return size * nmemb;
     }
@@ -203,12 +178,13 @@ struct ReqState
 
     void throwError(const std::string& context)
     {
-        string msg = str::fmtf("Server gave status %d: ", response_code);
+        stringstream msg;
+        msg << "Server gave status " << response_code << ": ";
         if (!exception_message.empty())
-            msg += exception_message;
+            msg << exception_message;
         else
-            msg += response_error.str();
-        throw wibble::exception::Consistency(context, msg);
+            msg << response_error.str();
+        throw wibble::exception::Consistency(context, msg.str());
     }
 };
 
@@ -479,8 +455,8 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
 	if (content.response_code >= 400)
 		content.throwError("expanding query at " + url);
 
-	content.buf.seekg(0);
-	return str::trim(content.buf.str());
+    content.buf.seekg(0);
+    return str::strip(content.buf.str());
 }
 
 void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)

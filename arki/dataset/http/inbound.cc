@@ -1,25 +1,3 @@
-/*
- * dataset/http/inbound - Server-side remote inbound HTTP server
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/http/inbound.h>
 #include <arki/dataset/http/server.h>
 #include <arki/dataset/file.h>
@@ -29,10 +7,10 @@
 #include <arki/metadata/collection.h>
 #include <arki/configfile.h>
 #include <arki/utils/fd.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 
 namespace arki {
@@ -194,13 +172,13 @@ void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::R
 
     // Delete fname if all was ok
     if (worker.all_ok)
-        sys::fs::unlink(fname);
+        sys::unlink(fname);
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();
 }
 
-static bool can_import(const net::http::Request& req, const ConfigFile& cfg)
+static bool can_import(const wibble::net::http::Request& req, const ConfigFile& cfg)
 {
     // Need "remote import = yes"
     if (!ConfigFile::boolValue(cfg.value("remote import")))

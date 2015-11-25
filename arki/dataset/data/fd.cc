@@ -1,25 +1,3 @@
-/*
- * data - Base class for unix fd based read/write functions
- *
- * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "fd.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -27,11 +5,11 @@
 #include "arki/scan/any.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
-#include <wibble/exception.h>
 #include <wibble/sys/buffer.h>
-#include <wibble/sys/fs.h>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,8 +17,8 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -131,10 +109,18 @@ void Segment::write(const wibble::sys::Buffer& buf)
     // Append the data
     ssize_t res = ::write(fd, buf.data(), buf.size());
     if (res < 0 || (unsigned)res != buf.size())
-        throw wibble::exception::File(absname, "writing " + str::fmt(buf.size()) + " bytes");
+    {
+        stringstream ss;
+        ss << "cannot write " << buf.size() << " bytes to " << absname;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 
     if (fdatasync(fd) < 0)
-        throw wibble::exception::File(absname, "flushing write");
+    {
+        stringstream ss;
+        ss << "cannot flush write to " << absname;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 }
 
 FileState Segment::check(const metadata::Collection& mds, unsigned max_gap, bool quick)
@@ -218,7 +204,7 @@ size_t Segment::remove()
 {
     close();
 
-    size_t size = sys::fs::size(absname);
+    size_t size = sys::size(absname);
     if (unlink(absname.c_str()) < 0)
         throw wibble::exception::System("removing " + absname);
     return size;
@@ -228,12 +214,16 @@ void Segment::truncate(size_t offset)
 {
     close();
 
-    if (!sys::fs::exists(absname))
+    if (!sys::exists(absname))
         utils::createFlagfile(absname);
 
     utils::files::PreserveFileTimes pft(absname);
     if (::truncate(absname.c_str(), offset) < 0)
-        throw wibble::exception::File(absname, str::fmtf("Truncating file at %zd", offset));
+    {
+        stringstream ss;
+        ss << "cannot truncate " << absname << " at " << offset;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 }
 
 Pending Segment::repack(

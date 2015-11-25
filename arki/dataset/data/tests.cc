@@ -2,11 +2,10 @@
 #include <arki/scan/any.h>
 #include <arki/types/source/blob.h>
 #include <arki/utils/string.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki::types;
 using namespace arki::utils;
@@ -16,7 +15,7 @@ namespace arki {
 namespace tests {
 
 SegmentTest::SegmentTest()
-    : format("grib"), relname("testfile.grib"), absname(sys::fs::abspath(relname))
+    : format("grib"), relname("testfile.grib"), absname(sys::abspath(relname))
 {
     // Scan the test data
     scan::scan("inbound/test.grib1", mdc);
@@ -124,11 +123,11 @@ void SegmentRemoveTest::run(WIBBLE_TEST_LOCPRM)
 {
     unique_ptr<data::Segment> segment(make_full_segment());
 
-    wassert(actual(sys::fs::exists(absname)).istrue());
+    wassert(actual(sys::exists(absname)).istrue());
 
     wassert(actual(segment->remove()) >= 44412);
 
-    wassert(actual(sys::fs::exists(absname)).isfalse());
+    wassert(actual(sys::exists(absname)).isfalse());
 }
 
 }

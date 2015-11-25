@@ -1,23 +1,3 @@
-/**
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/dataset/http/test-utils.h>
@@ -29,7 +9,6 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 namespace tests {
@@ -78,7 +57,7 @@ void FakeRequest::reset()
         throw wibble::exception::File(fname, "seeking to start of file");
 }
 
-void FakeRequest::setup_request(net::http::Request& req)
+void FakeRequest::setup_request(wibble::net::http::Request& req)
 {
     reset();
 
@@ -99,7 +78,7 @@ void FakeRequest::read_response()
         throw wibble::exception::File(fname, "seeking to start of response in file");
 
     // Read headers
-    net::mime::Reader reader;
+    wibble::net::mime::Reader reader;
     if (!reader.read_line(fd, response_method))
         throw wibble::exception::Consistency("reading response method", "no headers found");
     if (!reader.read_headers(fd, response_headers))

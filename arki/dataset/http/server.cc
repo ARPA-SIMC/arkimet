@@ -1,41 +1,20 @@
-/*
- * dataset/http/server - Server-side remote HTTP dataset access
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/http/server.h>
 #include <arki/configfile.h>
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/utils.h>
+#include <arki/utils/string.h>
 #include <arki/runtime.h>
 #include <arki/emitter/json.h>
 
 using namespace std;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
 namespace http {
 
-StreamHeaders::StreamHeaders(net::http::Request& req, const std::string& fname)
+StreamHeaders::StreamHeaders(wibble::net::http::Request& req, const std::string& fname)
     : content_type("application/octet-stream"), ext("bin"), fname(fname),
       req(req), fired(false)
 {
@@ -92,7 +71,7 @@ LegacyQueryParams::LegacyQueryParams(const std::string& tmpdir)
     sort = add<ParamSingle>("sort");
 }
 
-static void postprocfiles_to_env(net::http::FileParamMulti& postprocfile)
+static void postprocfiles_to_env(wibble::net::http::FileParamMulti& postprocfile)
 {
     using namespace wibble::net::http;
 
@@ -104,7 +83,7 @@ static void postprocfiles_to_env(net::http::FileParamMulti& postprocfile)
     if (!postproc_files.empty())
     {
         // Pass files for the postprocessor in the environment
-        string val = str::join(postproc_files.begin(), postproc_files.end(), ":");
+        string val = str::join(":", postproc_files.begin(), postproc_files.end());
         setenv("ARKI_POSTPROC_FILES", val.c_str(), 1);
     } else
         unsetenv("ARKI_POSTPROC_FILES");
@@ -143,7 +122,7 @@ void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
     // Validate request
     string errors = pmaker.verify_option_consistency();
     if (!errors.empty())
-        throw net::http::error400(errors);
+        throw wibble::net::http::error400(errors);
 }
 
 QuerySummaryParams::QuerySummaryParams()
@@ -199,7 +178,7 @@ void QueryBytesParams::set_into(ByteQuery& dq) const
 }
 
 
-void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http::Request& req)
+void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, wibble::net::http::Request& req)
 {
     // args = Args()
     // if "json" in args:
@@ -211,7 +190,7 @@ void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http
     req.send_result(res.str(), "text/plain");
 }
 
-void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::http::Request& req)
+void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, wibble::net::http::Request& req)
 {
     using namespace wibble::net::http;
 
@@ -239,7 +218,7 @@ void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::ht
     }
 }
 
-void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::Request& req)
+void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, wibble::net::http::Request& req)
 {
     // Validate query
     Matcher matcher;
@@ -247,7 +226,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
         matcher = Matcher::parse(*parms.query);
     } catch (std::exception& e) {
         req.extra_response_headers["Arkimet-Exception"] = e.what();
-        throw net::http::error400(e.what());
+        throw wibble::net::http::error400(e.what());
     }
 
     // Configure a ProcessorMaker with the request

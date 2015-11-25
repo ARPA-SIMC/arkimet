@@ -1,22 +1,3 @@
-/**
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #ifndef ARKI_DATASET_TESTUTILS_H
 #define ARKI_DATASET_TESTUTILS_H
 
@@ -251,12 +232,12 @@ struct Element
 
     void set(const Metadata& md, const std::string& matcher)
     {
-        using namespace wibble;
-
         const types::reftime::Position* rt = md.get<types::reftime::Position>();
         this->md = md;
         this->time = rt->time;
-        this->destfile = str::fmtf("%04d/%02d-%02d.%s", time.vals[0], time.vals[1], time.vals[2], md.source().format.c_str());
+        char buf[32];
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.vals[0], time.vals[1], time.vals[2], md.source().format.c_str());
+        this->destfile = buf;
         this->matcher = Matcher::parse(matcher);
     }
 };

@@ -1,24 +1,3 @@
-/*
- * data/dir - Directory based data collection
- *
- * Copyright (C) 2014--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include "dir.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -26,13 +5,15 @@
 #include "arki/utils.h"
 #include "arki/utils/fd.h"
 #include "arki/utils/files.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include "arki/scan/any.h"
 #include <wibble/exception.h>
 #include <arki/utils/string.h>
 #include <wibble/sys/buffer.h>
-#include <wibble/sys/fs.h>
 #include <cerrno>
-#include <stdint.h>
+#include <cstring>
+#include <cstdint>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -40,8 +21,8 @@
 #include <fcntl.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -208,7 +189,9 @@ void SequenceFile::open_next(const std::string& format, std::string& absname, si
 
 std::string SequenceFile::data_fname(size_t pos, const std::string& format)
 {
-    return str::fmtf("%06zd.%s", pos, format.c_str());
+    char buf[32];
+    snprintf(buf, 32, "%06zd.%s", pos, format.c_str());
+    return buf;
 }
 
 Segment::Segment(const std::string& format, const std::string& relname, const std::string& absname)
@@ -225,7 +208,7 @@ void Segment::open()
     if (seqfile.fd != -1) return;
 
     // Ensure that the directory 'absname' exists
-    wibble::sys::fs::mkpath(absname);
+    sys::makedirs(absname);
 
     seqfile.open();
 }
@@ -240,7 +223,7 @@ size_t Segment::write_file(Metadata& md, int fd, const std::string& absname)
     utils::fd::HandleWatch hw(absname, fd);
 
     try {
-        sys::Buffer buf = md.getData();
+        wibble::sys::Buffer buf = md.getData();
 
         ssize_t count = pwrite(fd, buf.data(), buf.size(), 0);
         if (count < 0)
@@ -320,17 +303,17 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
         validator = &scan::Validator::by_filename(absname.c_str());
 
     // Deal with segments that just do not exist
-    if (!sys::fs::exists(absname))
+    if (!sys::exists(absname))
         return FILE_TO_RESCAN;
 
     // List the dir elements we know about
     set<size_t> expected;
-    sys::fs::Directory dir(absname);
-    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    sys::Path dir(absname);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
         if (!i.isreg()) continue;
-        if (!str::endsWith(*i, format)) continue;
-        expected.insert((size_t)strtoul((*i).c_str(), 0, 10));
+        if (!str::endswith(i->d_name, format)) continue;
+        expected.insert((size_t)strtoul(i->d_name, 0, 10));
     }
 
     // Check the list of elements we expect for sort order, gaps, and match
@@ -381,6 +364,17 @@ FileState Segment::check(const metadata::Collection& mds, bool quick)
     }
 }
 
+void Segment::foreach_datafile(std::function<void(const char*)> f)
+{
+    sys::Path dir(absname);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (strcmp(i->d_name, ".sequence") != 0 && !str::endswith(i->d_name, format)) continue;
+        f(i->d_name);
+    }
+}
+
 size_t Segment::remove()
 {
     close();
@@ -388,16 +382,11 @@ size_t Segment::remove()
     std::string format = utils::require_format(absname);
 
     size_t size = 0;
-    sys::fs::Directory dir(absname);
-    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        if (!i.isreg()) continue;
-        if (*i != ".sequence" && !str::endsWith(*i, format)) continue;
-        string pathname = str::joinpath(absname, *i);
-        size += sys::fs::size(pathname);
-        if (unlink(pathname.c_str()) < 0)
-            throw wibble::exception::System("removing " + pathname);
-    }
+    foreach_datafile([&](const char* name) {
+        string pathname = str::joinpath(absname, name);
+        size += sys::size(pathname);
+        sys::unlink(pathname);
+    });
     // Also remove the directory if it is empty
     rmdir(absname.c_str());
     return size;
@@ -411,17 +400,13 @@ void Segment::truncate(size_t offset)
 
     // Truncate dir segment
     string format = utils::require_format(absname);
-    sys::fs::Directory dir(absname);
-    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        if (!i.isreg()) continue;
-        if (*i != ".sequence" && !str::endsWith(*i, format)) continue;
-        if (strtoul((*i).c_str(), 0, 10) >= offset)
+    foreach_datafile([&](const char* name) {
+        if (strtoul(name, 0, 10) >= offset)
         {
             //cerr << "UNLINK " << absname << " -- " << *i << endl;
-            sys::fs::unlink(str::joinpath(absname, *i));
+            sys::unlink(str::joinpath(absname, name));
         }
-    }
+    });
 }
 
 Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
@@ -462,7 +447,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
                     + " manually to restore the dataset as it was before the repack)");
 
             // Remove the old data
-            sys::fs::rmtree(tmppos);
+            sys::rmtree(tmppos);
 
             fired = true;
         }
@@ -473,7 +458,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
 
             try
             {
-                sys::fs::rmtree(tmpabsname);
+                sys::rmtree(tmpabsname);
             } catch (std::exception& e) {
                 nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabsname.c_str(), e.what());
             }
@@ -512,7 +497,7 @@ Pending Segment::repack(const std::string& rootdir, metadata::Collection& mds)
 
 unique_ptr<dir::Segment> Segment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
-    if (sys::fs::exists(absname)) sys::fs::rmtree(absname);
+    if (sys::exists(absname)) sys::rmtree(absname);
     unique_ptr<dir::Segment> res(new dir::Segment(format, relname, absname));
     return res;
 }
@@ -525,7 +510,7 @@ FileState HoleSegment::check(const metadata::Collection& mds, bool quick)
 
 unique_ptr<dir::Segment> HoleSegment::make_segment(const std::string& format, const std::string& relname, const std::string& absname)
 {
-    if (sys::fs::exists(absname)) sys::fs::rmtree(absname);
+    if (sys::exists(absname)) sys::rmtree(absname);
     unique_ptr<dir::Segment> res(new dir::HoleSegment(format, relname, absname));
     return res;
 }

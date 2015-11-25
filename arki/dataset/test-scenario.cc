@@ -1,25 +1,3 @@
-/**
- * dataset/test-scenario - Build dataset scenarios for testing arkimet
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/test-scenario.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/archive.h>
@@ -27,13 +5,14 @@
 #include <arki/metadata/consumer.h>
 #include <arki/scan/any.h>
 #include <arki/utils.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <wibble/exception.h>
-#include <wibble/sys/fs.h>
 #include <sstream>
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -42,7 +21,7 @@ namespace test {
 Scenario::Scenario(const std::string& name)
     : name(name), built(false)
 {
-    path = sys::fs::abspath(str::joinpath("scenarios", name));
+    path = sys::abspath(str::joinpath("scenarios", name));
     cfg.setValue("path", path);
     cfg.setValue("name", name);
 }
@@ -51,9 +30,9 @@ Scenario::~Scenario() {}
 void Scenario::build()
 {
     built = true;
-    sys::fs::mkdirIfMissing("scenarios", 0777);
-    if (sys::fs::exists(path))
-        sys::fs::rmtree(path);
+    sys::mkdir_ifmissing("scenarios", 0777);
+    if (sys::exists(path))
+        sys::rmtree(path);
     // TODO: create config file
 }
 
@@ -68,16 +47,20 @@ ConfigFile Scenario::clone(const std::string& newpath) const
                 "cloning scenario " + name + " to " + newpath,
                 "cannot currently clone scenario if the new path contains \"'\"");
 
-    if (sys::fs::exists(newpath))
-        sys::fs::rmtree(newpath);
+    if (sys::exists(newpath))
+        sys::rmtree(newpath);
 
     // TODO: replace "cp -a" with something that doesn't require system
-    string cmd = str::fmtf("cp -a '%s' '%s'", path.c_str(), newpath.c_str());
+    string cmd = "cp -a '" + path + "' '" + newpath + "'";
     int sres = system(cmd.c_str());
     if (sres == -1)
         throw wibble::exception::System("Running command " + cmd);
     if (sres != 0)
-        throw wibble::exception::Consistency("Running command " + cmd, str::fmtf("Command returned %d", sres));
+    {
+        stringstream ss;
+        ss << "command " << cmd << " returned error code " << sres;
+        throw std::runtime_error(ss.str());
+    }
 
     ConfigFile res;
     res.merge(cfg);
@@ -124,10 +107,14 @@ struct Ondisk2Scenario : public Scenario
         unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
         stringstream packlog;
         ds->repack(packlog, true);
-        if (packlog.str().find(str::fmtf("%d files archived", expected_archived)) == string::npos)
-            throw wibble::exception::Consistency(
-                    str::fmtf("checking that only %d files have been archived", expected_archived),
-                    "archive output is: " + packlog.str());
+        char expected[32];
+        snprintf(expected, 32, "%d files archived", expected_archived);
+        if (packlog.str().find(expected) == string::npos)
+        {
+            stringstream ss;
+            ss << "cannot check that only " << expected_archived << " files have been archived: archive output is: " << packlog.str();
+            throw std::runtime_error(ss.str());
+        }
         ds->flush();
     }
 
@@ -209,7 +196,11 @@ struct Ondisk2Archived : public Ondisk2Scenario
         // Import several metadata items
         metadata::test::Generator gen("grib1");
         for (int i = 1; i <= 30; ++i)
-            gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT00:00:00Z", i));
+        {
+            char buf[32];
+            snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+            gen.add(types::TYPE_REFTIME, buf);
+        }
         Importer importer(*ds);
         gen.generate(importer);
         ds->flush();
@@ -262,7 +253,11 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         // Import several metadata items
         metadata::test::Generator gen("grib1");
         for (int i = 1; i <= 18; ++i)
-            gen.add(types::TYPE_REFTIME, str::fmtf("2010-09-%02dT00:00:00Z", i));
+        {
+            char buf[32];
+            snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
+            gen.add(types::TYPE_REFTIME, buf);
+        }
         Importer importer(*ds);
         gen.generate(importer);
         ds->flush();
@@ -278,18 +273,18 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         ds->archive().rescan_archives();
         mvlast("offline");
         // same as ro, but only the toplevel summary is present
-        string ofsum = sys::fs::readFile(str::joinpath(path, ".archive/offline/summary"));
-        sys::fs::writeFile(
+        string ofsum = sys::read_file(str::joinpath(path, ".archive/offline/summary"));
+        sys::write_file(
                 str::joinpath(path, ".archive/offline.summary"),
                 ofsum);
-        sys::fs::rmtree(str::joinpath(path, ".archive/offline"));
+        sys::rmtree(str::joinpath(path, ".archive/offline"));
 
         // Pack and build 'wrongro' archive
         run_repack(9, 3);
         ds->archive().rescan_archives();
         mvlast("wrongro");
         // same as ro, but toplevel summary does not match the data
-        sys::fs::writeFile(
+        sys::write_file(
                 str::joinpath(path, ".archive/wrongro.summary"),
                 ofsum);
 
@@ -298,9 +293,9 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
         ds->archive().rescan_archives();
         mvlast("ro");
         // normal archive dir archived to mounted readonly media with dir.summary at the top
-        sys::fs::writeFile(
+        sys::write_file(
                 str::joinpath(path, ".archive/ro.summary"),
-                sys::fs::readFile(str::joinpath(path, ".archive/ro/summary")));
+                sys::read_file(str::joinpath(path, ".archive/ro/summary")));
 
         // Pack and build 'old' archive
         run_repack(15, 3);

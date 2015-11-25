@@ -1,29 +1,8 @@
-/*
- * data - Read/write functions for data blobs with newline separators
- *
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "lines.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
-#include <wibble/exception.h>
+#include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <wibble/sys/buffer.h>
 #include <wibble/sys/signal.h>
 #include <sys/types.h>
@@ -33,8 +12,8 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -117,7 +96,11 @@ void Segment::write(const wibble::sys::Buffer& buf)
     // Append the data
     ssize_t res = ::writev(fd, todo, 2);
     if (res < 0 || (unsigned)res != buf.size() + 1)
-        throw wibble::exception::File(absname, "writing " + str::fmt(buf.size() + 1) + " bytes");
+    {
+        stringstream ss;
+        ss << "cannot write " << (buf.size() + 1) << " bytes to " << absname;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 
     if (fdatasync(fd) < 0)
         throw wibble::exception::File(absname, "flushing write");
@@ -128,7 +111,7 @@ void Segment::append(Metadata& md)
     open();
 
     // Get the data blob to append
-    sys::Buffer buf = md.getData();
+    wibble::sys::Buffer buf = md.getData();
 
     // Lock the file so that we are the only ones writing to it
     lock();
@@ -204,7 +187,7 @@ OstreamWriter::~OstreamWriter()
 size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 {
     wibble::sys::Buffer buf = md.getData();
-    sys::sig::ProcMask pm(blocked);
+    wibble::sys::sig::ProcMask pm(blocked);
     out.write((const char*)buf.data(), buf.size());
     // Cannot use endl since we don't know how long it is, and we would risk
     // returning the wrong number of bytes written
@@ -216,11 +199,15 @@ size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 size_t OstreamWriter::stream(Metadata& md, int out) const
 {
     wibble::sys::Buffer buf = md.getData();
-    sys::sig::ProcMask pm(blocked);
+    wibble::sys::sig::ProcMask pm(blocked);
 
     ssize_t res = ::write(out, buf.data(), buf.size());
     if (res < 0 || (unsigned)res != buf.size())
-        throw wibble::exception::System("writing " + str::fmt(buf.size()) + " bytes");
+    {
+        stringstream ss;
+        ss << "cannot write " << buf.size() << " bytes";
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 
     res = ::write(out, "\n", 1);
     if (res < 0 || (unsigned)res != 1)
