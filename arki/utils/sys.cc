@@ -268,6 +268,22 @@ size_t FileDescriptor::write(const void* buf, size_t count)
     return res;
 }
 
+size_t FileDescriptor::pread(void* buf, size_t count, off_t offset)
+{
+    ssize_t res = ::pread(fd, buf, count, offset);
+    if (res == -1)
+        throw_error("cannot pread");
+    return res;
+}
+
+size_t FileDescriptor::pwrite(const void* buf, size_t count, off_t offset)
+{
+    ssize_t res = ::pwrite(fd, buf, count, offset);
+    if (res == -1)
+        throw_error("cannot pwrite");
+    return res;
+}
+
 off_t FileDescriptor::lseek(off_t offset, int whence)
 {
     off_t res = ::lseek(fd, offset, whence);

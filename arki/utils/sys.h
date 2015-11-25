@@ -159,6 +159,9 @@ public:
     size_t write(const void* buf, size_t count);
     off_t lseek(off_t offset, int whence=SEEK_SET);
 
+    size_t pread(void* buf, size_t count, off_t offset);
+    size_t pwrite(const void* buf, size_t count, off_t offset);
+
     /**
      * Write all the data in buf, retrying partial writes
      */
@@ -173,7 +176,6 @@ public:
 /**
  * File descriptor with a name
  */
-
 class NamedFileDescriptor : public FileDescriptor
 {
 protected:
