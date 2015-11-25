@@ -252,11 +252,27 @@ void FileDescriptor::fchmod(mode_t mode)
         throw_error("cannot fchmod");
 }
 
+size_t FileDescriptor::read(void* buf, size_t count)
+{
+    ssize_t res = ::read(fd, buf, count);
+    if (res == -1)
+        throw_error("cannot read");
+    return res;
+}
+
 size_t FileDescriptor::write(const void* buf, size_t count)
 {
     ssize_t res = ::write(fd, buf, count);
     if (res == -1)
         throw_error("cannot write");
+    return res;
+}
+
+off_t FileDescriptor::lseek(off_t offset, int whence)
+{
+    off_t res = ::lseek(fd, offset, whence);
+    if (res == (off_t)-1)
+        throw_error("cannot seek");
     return res;
 }
 

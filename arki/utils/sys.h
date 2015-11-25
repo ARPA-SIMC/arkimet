@@ -155,7 +155,9 @@ public:
     void fstat(struct stat& st);
     void fchmod(mode_t mode);
 
+    size_t read(void* buf, size_t count);
     size_t write(const void* buf, size_t count);
+    off_t lseek(off_t offset, int whence=SEEK_SET);
 
     /**
      * Write all the data in buf, retrying partial writes
@@ -190,7 +192,7 @@ public:
 };
 
 /**
- * Wrap a path on the file system opened with O_PATH
+ * Wrap a path on the file system opened with O_PATH.
  */
 struct Path : public NamedFileDescriptor
 {
