@@ -1,25 +1,3 @@
-/*
- * matcher/timerange - Timerange matcher
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/matcher/timerange.h>
@@ -27,8 +5,8 @@
 #include <arki/metadata.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -210,12 +188,20 @@ std::string MatchTimerangeGRIB1::toString() const
     }
 
     if (has_p1 && use_p1)
-        res.add(str::fmtf("%d%s", p1, u));
+    {
+        stringstream ss;
+        ss << p1 << u;
+        res.add(ss.str());
+    }
     else
         res.addUndef();
 
     if (has_p2 && use_p2)
-        res.add(str::fmtf("%d%s", p2, u));
+    {
+        stringstream ss;
+        ss << p2 << u;
+        res.add(ss.str());
+    }
     else
         res.addUndef();
 
@@ -284,8 +270,10 @@ bool MatchTimerangeBUFR::matchItem(const Type& o) const
 
 std::string MatchTimerangeBUFR::toString() const
 {
-	if (!has_forecast) return "BUFR";
-	return str::fmtf("BUFR,%u%s", value, is_seconds ? "s" : "mo");
+    if (!has_forecast) return "BUFR";
+    char buf[32];
+    snprintf(buf, 32, "BUFR,%u%s", value, is_seconds ? "s" : "mo");
+    return buf;
 }
 
 MatchTimerangeTimedef::MatchTimerangeTimedef(const std::string& pattern)
@@ -374,10 +362,13 @@ std::string MatchTimerangeTimedef::toString() const
         {
             res.add("-");
         } else {
+            stringstream ss;
+            ss << step;
             if (step_is_seconds)
-                res.add(str::fmtf("%ds", step));
+                ss << "s";
             else
-                res.add(str::fmtf("%dmo", step));
+                ss << "mo";
+            res.add(ss.str());
         }
     } else
         res.addUndef();
@@ -393,12 +384,14 @@ std::string MatchTimerangeTimedef::toString() const
 
     if (has_proc_duration)
     {
+        stringstream ss;
         if (proc_duration == -1)
-            res.add("-");
+            ss << "-";
         else if (proc_duration_is_seconds)
-            res.add(str::fmtf("%ds", proc_duration));
+            ss << proc_duration << "s";
         else
-            res.add(str::fmtf("%dmo", proc_duration));
+            ss << proc_duration << "mo";
+        res.add(ss.str());
     }
 
     return res.join();
@@ -406,16 +399,16 @@ std::string MatchTimerangeTimedef::toString() const
 
 MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 {
-	size_t beg = 0;
-	size_t pos = pattern.find(',', beg);
-	string name;
-	string rest;
-	if (pos == string::npos)
-		name = str::trim(pattern.substr(beg));
-	else {
-		name = str::trim(pattern.substr(beg, pos-beg));
-		rest = pattern.substr(pos+1);
-	}
+    size_t beg = 0;
+    size_t pos = pattern.find(',', beg);
+    string name;
+    string rest;
+    if (pos == string::npos)
+        name = str::strip(pattern.substr(beg));
+    else {
+        name = str::strip(pattern.substr(beg, pos-beg));
+        rest = pattern.substr(pos+1);
+    }
 
     switch (types::Timerange::parseStyle(name))
     {
@@ -435,5 +428,3 @@ void MatchTimerange::init()
 
 }
 }
-
-// vim:set ts=4 sw=4:

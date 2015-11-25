@@ -1,25 +1,3 @@
-/*
- * matcher/area - Area matcher
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/matcher/area.h>
@@ -34,8 +12,8 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace matcher {
@@ -114,32 +92,32 @@ std::string MatchAreaVM2::toString() const
 
 MatchArea* MatchArea::parse(const std::string& pattern)
 {
-    string p = str::trim(pattern);
+    string p = str::strip(pattern);
     if (strncasecmp(p.c_str(), "grib:", 5) == 0)
     {
-        return new MatchAreaGRIB(str::trim(p.substr(5)));
+        return new MatchAreaGRIB(str::strip(p.substr(5)));
     } 
     else if (strncasecmp(p.c_str(), "odimh5:", 7) == 0)
     {
-        return new MatchAreaODIMH5(str::trim(p.substr(7)));
+        return new MatchAreaODIMH5(str::strip(p.substr(7)));
     }
 #ifdef HAVE_VM2
     else if (strncasecmp(p.c_str(), "vm2", 3) == 0)
     {
         if (strncasecmp(p.c_str(), "vm2,", 4) == 0)
-            return new MatchAreaVM2(str::trim(p.substr(4)));
+            return new MatchAreaVM2(str::strip(p.substr(4)));
         else
-            return new MatchAreaVM2(str::trim(p.substr(3)));
+            return new MatchAreaVM2(str::strip(p.substr(3)));
     }
 #endif
 #ifdef HAVE_GEOS
     else if (strncasecmp(p.c_str(), "bbox ", 5) == 0) 
     {
-        return MatchAreaBBox::parse(str::trim(p.substr(5)));
+        return MatchAreaBBox::parse(str::strip(p.substr(5)));
     }
 #endif
     else
-        throw wibble::exception::Consistency("parsing type of area to match", "unsupported area match: " + str::trim(p.substr(0, 5)));
+        throw wibble::exception::Consistency("parsing type of area to match", "unsupported area match: " + str::strip(p.substr(0, 5)));
 }
 
 #ifdef HAVE_GEOS
@@ -173,10 +151,10 @@ MatchAreaBBox* MatchAreaBBox::parse(const std::string& pattern)
 	string verb;
 	string rest;
 	if (pos == string::npos)
-		verb = str::tolower(str::trim(pattern.substr(beg)));
+		verb = str::lower(str::strip(pattern.substr(beg)));
 	else {
-		verb = str::tolower(str::trim(pattern.substr(beg, pos-beg)));
-		rest = str::trim(pattern.substr(pos+1));
+		verb = str::lower(str::strip(pattern.substr(beg, pos-beg)));
+		rest = str::strip(pattern.substr(pos+1));
 	}
 	
 	if (verb == "equals")
@@ -255,5 +233,3 @@ void MatchArea::init()
 
 }
 }
-
-// vim:set ts=4 sw=4:
