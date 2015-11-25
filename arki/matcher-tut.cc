@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/matcher/tests.h>
@@ -25,9 +5,9 @@
 #include <arki/metadata.h>
 #include <arki/configfile.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <arki/runtime/config.h>
-
-#include <wibble/sys/fs.h>
 
 #include <sstream>
 #include <iostream>
@@ -35,10 +15,10 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 
 struct arki_matcher_shar
 {
@@ -247,23 +227,23 @@ void to::test<9>()
                 lua_pop(L, 1);
 		ensure_equals(error, "");
         }
-	
-	// Run the various lua examples
-	string path = "matcher";
-	sys::fs::Directory dir(path);
-	for (sys::fs::Directory::const_iterator d = dir.begin(); d != dir.end(); ++d)
-	{
-		if (!str::endsWith(*d, ".txt")) continue;
-		string fname = str::joinpath(path, *d);
-		if (luaL_dofile(L, fname.c_str()))
-		{
-			// Copy the error, so that it will exist after the pop
-			string error = lua_tostring(L, -1);
-			// Pop the error from the stack
-			lua_pop(L, 1);
-			ensure_equals(error, "");
-		}
-	}
+
+    // Run the various lua examples
+    string path = "matcher";
+    sys::Path dir(path);
+    for (sys::Path::iterator d = dir.begin(); d != dir.end(); ++d)
+    {
+        if (!str::endswith(d->d_name, ".txt")) continue;
+        string fname = str::joinpath(path, d->d_name);
+        if (luaL_dofile(L, fname.c_str()))
+        {
+            // Copy the error, so that it will exist after the pop
+            string error = lua_tostring(L, -1);
+            // Pop the error from the stack
+            lua_pop(L, 1);
+            ensure_equals(error, "");
+        }
+    }
 }
 
 template<> template<>

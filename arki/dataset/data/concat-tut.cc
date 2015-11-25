@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "concat.h"
 #include "arki/dataset/data/tests.h"
 #include "arki/metadata/tests.h"
@@ -25,14 +5,14 @@
 #include "arki/types/source/blob.h"
 #include "arki/scan/any.h"
 #include "arki/utils/files.h"
-#include <wibble/sys/fs.h>
+#include "arki/utils/sys.h"
 #include <sstream>
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 {
-        m.writeYaml(o);
-            return o;
+    m.writeYaml(o);
+    return o;
 }
 }
 
@@ -43,7 +23,6 @@ using namespace arki::dataset::data;
 using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::tests;
-using namespace wibble;
 using namespace wibble::tests;
 
 struct arki_data_concat_shar {
@@ -65,7 +44,7 @@ struct arki_data_concat_shar {
      */
     unique_ptr<concat::Segment> make_w(const std::string& relname)
     {
-        string absname = sys::fs::abspath(relname);
+        string absname = sys::abspath(relname);
         return unique_ptr<concat::Segment>(new concat::Segment(relname, absname));
     }
 };
@@ -91,7 +70,7 @@ void to::test<1>()
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
-        //wassert(actual(sys::fs::size(fname)) == 0u);
+        //wassert(actual(sys::size(fname)) == 0u);
 
         // Try a successful transaction
         wruntest(test_append_transaction_ok, w.get(), mdc[0]);
@@ -125,7 +104,7 @@ void to::test<2>()
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
         dw->truncate(0x7FFFFFFF);
-        wassert(actual(sys::fs::size(fname)) == 0x7FFFFFFFu);
+        wassert(actual(sys::size(fname)) == 0x7FFFFFFFu);
 
         // Try a successful transaction
         wruntest(test_append_transaction_ok, dw.get(), mdc[0]);
@@ -137,7 +116,7 @@ void to::test<2>()
         wruntest(test_append_transaction_ok, dw.get(), mdc[2]);
     }
 
-    wassert(actual(sys::fs::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]));
+    wassert(actual(sys::size(fname)) == 0x7FFFFFFFu + datasize(mdc[0]) + datasize(mdc[2]));
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros
@@ -160,7 +139,7 @@ void to::test<4>()
     wassert(!actual(fname).fileexists());
     {
         unique_ptr<concat::Segment> dw(make_w(fname));
-        sys::Buffer buf("ciao", 4);
+        wibble::sys::Buffer buf("ciao", 4);
         wassert(actual(dw->append(buf)) == 0);
         wassert(actual(dw->append(buf)) == 4);
     }

@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include <arki/metadata/tests.h>
 #include <arki/types/tests.h>
 #include <arki/scan/bufr.h>
@@ -30,8 +11,8 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/scan/any.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <sstream>
 #include <iostream>
 #include <sys/types.h>
@@ -40,7 +21,6 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
@@ -64,7 +44,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -87,7 +67,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -110,7 +90,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -148,7 +128,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 100, 194));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 100, 194));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -171,7 +151,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 394, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 394, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -194,7 +174,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/padded.bufr", 714, 220));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/padded.bufr", 714, 220));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -267,7 +247,7 @@ void to::test<4>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/C23000.bufr", 0, 2206));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/C23000.bufr", 0, 2206));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -307,7 +287,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/pollution.bufr", 0, 178));
+    wassert(actual(md.source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/pollution.bufr", 0, 178));
 
 	// Check that the source can be read properly
 	buf = md.getData();

@@ -1,28 +1,10 @@
-/*
- * Copyright (C) 2010--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
 
 #include <arki/dataset/http/test-utils.h>
 #include <arki/dataset/http/inbound.h>
 #include <arki/metadata/collection.h>
 #include <arki/types/assigneddataset.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 
 #include <sstream>
 #include <iostream>
@@ -30,7 +12,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
 struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     ConfigFile import_config;
@@ -62,7 +44,7 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     // Run the fake request through the server-side handler
     void do_scan(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         dataset::http::InboundParams params;
@@ -77,7 +59,7 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     // Run the fake request through the server-side handler
     void do_testdispatch(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         dataset::http::InboundParams params;
@@ -92,7 +74,7 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     // Run the fake request through the server-side handler
     void do_dispatch(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         dataset::http::InboundParams params;
@@ -175,7 +157,7 @@ void to::test<3>()
     ensure_equals(mdc[1].get<types::AssignedDataset>()->name, "testds");
     ensure_equals(mdc[2].get<types::AssignedDataset>()->name, "testds");
 
-    ensure(!sys::fs::exists("inbound/copy.grib1"));
+    ensure(!sys::exists("inbound/copy.grib1"));
 }
 
 

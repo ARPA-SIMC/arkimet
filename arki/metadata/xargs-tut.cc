@@ -1,36 +1,16 @@
-/*
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/tests/tests.h>
 #include "arki/metadata.h"
 #include "xargs.h"
 #include "collection.h"
 #include <arki/scan/any.h>
 #include <arki/utils/files.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
+using namespace arki::utils;
 
 struct arki_metadata_xargs_shar {
     metadata::Collection mdc;
@@ -53,7 +33,7 @@ inline unique_ptr<Metadata> wrap(const Metadata& md)
 template<> template<>
 void to::test<1>()
 {
-    sys::fs::deleteIfExists("tmp-xargs");
+    sys::unlink_ifexists("tmp-xargs");
     metadata::Xargs xargs;
     xargs.command.push_back("/bin/sh");
     xargs.command.push_back("-c");
@@ -74,7 +54,7 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    sys::fs::deleteIfExists("tmp-xargs");
+    sys::unlink_ifexists("tmp-xargs");
     metadata::Xargs xargs;
     xargs.command.push_back("/bin/sh");
     xargs.command.push_back("-c");

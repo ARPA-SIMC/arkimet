@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2010--2013  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
 
 #include <arki/dataset/http/test-utils.h>
@@ -29,7 +11,6 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble;
 using namespace wibble::tests;
 
 struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
@@ -49,7 +30,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
     // Run the fake request through a server-side summary handler
     void do_summary(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -66,7 +47,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
     // Run the fake request through a server-side summary handler
     void do_query(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -84,7 +65,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
     // Run the fake request through a server-side summary handler
     void do_queryData(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -102,7 +83,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
     // Run the fake request through a server-side summary handler
     void do_queryBytes(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -120,7 +101,7 @@ struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
     // Run the fake request through a server-side summary handler
     void do_config(arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -152,7 +133,7 @@ struct ServerTest : public arki::tests::DatasetTest
     // Run the fake request through a server-side summary handler
     void do_summary(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -169,7 +150,7 @@ struct ServerTest : public arki::tests::DatasetTest
     // Run the fake request through a server-side summary handler
     void do_query(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -187,7 +168,7 @@ struct ServerTest : public arki::tests::DatasetTest
     // Run the fake request through a server-side summary handler
     void do_queryData(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -205,7 +186,7 @@ struct ServerTest : public arki::tests::DatasetTest
     // Run the fake request through a server-side summary handler
     void do_queryBytes(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side
@@ -223,7 +204,7 @@ struct ServerTest : public arki::tests::DatasetTest
     // Run the fake request through a server-side summary handler
     void do_config(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
     {
-        net::http::Request req;
+        wibble::net::http::Request req;
         r.setup_request(req);
 
         // Handle the request, server side

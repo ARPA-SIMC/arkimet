@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include <arki/dataset/tests.h>
 #include <arki/dataset/ondisk2.h>
 //#include <arki/dataset/ondisk2/maintenance.h>
@@ -30,7 +12,7 @@
 #include <arki/scan/grib.h>
 #include <arki/scan/any.h>
 #include <arki/utils/files.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 #include <wibble/sys/childprocess.h>
 #include <unistd.h>
 
@@ -40,7 +22,6 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
@@ -205,12 +186,12 @@ void to::test<1>()
     ds = getDataset(mdc[0]);
     ensure(!ds);
 
-	// Flush the changes and check that everything is allright
-	d200.flush();
+    // Flush the changes and check that everything is allright
+    d200.flush();
 
-	ensure(sys::fs::exists("test200/2007/07-08.grib1"));
-	ensure(sys::fs::exists("test200/index.sqlite"));
-    ensure(sys::fs::timestamp("test200/2007/07-08.grib1") <= sys::fs::timestamp("test200/index.sqlite"));
+    ensure(sys::exists("test200/2007/07-08.grib1"));
+    ensure(sys::exists("test200/index.sqlite"));
+    ensure(sys::timestamp("test200/2007/07-08.grib1") <= sys::timestamp("test200/index.sqlite"));
 //2	ensure(!hasRebuildFlagfile("test200/2007/07-08.grib1"));
 //2	ensure(!hasIndexFlagfile("test200"));
 }
@@ -227,7 +208,7 @@ void to::test<2>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("test200"), "2007/07-08.grib1", 0, 7218));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test200"), "2007/07-08.grib1", 0, 7218));
 
     mdc.clear();
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
@@ -253,7 +234,7 @@ void to::test<3>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("test80"), "2007/07-07.grib1", 0, 34960));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test80"), "2007/07-07.grib1", 0, 34960));
 
     mdc.clear();
     testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
@@ -279,7 +260,7 @@ void to::test<4>()
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::fs::abspath("test98"), "2007/10-09.grib1", 0, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test98"), "2007/10-09.grib1", 0, 2234));
 }
 
 // Test replacing an element
@@ -355,14 +336,14 @@ void to::test<6>()
     ensure_equals(ds->name, "test200");
     wassert(actual(mdc[0].has_source_blob()).istrue());
 
-	{
-		unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test200")));
-		ensure(!sys::fs::exists("test200/2007/07-08.grib1.needs-pack"));
-		// Remove it
-		testds->remove(mdc[0]);
-		testds->flush();
-		ensure(!sys::fs::exists("test200/2007/07-08.grib1.needs-pack"));
-	}
+    {
+        unique_ptr<WritableDataset> testds(WritableDataset::create(*config.section("test200")));
+        ensure(!sys::exists("test200/2007/07-08.grib1.needs-pack"));
+        // Remove it
+        testds->remove(mdc[0]);
+        testds->flush();
+        ensure(!sys::exists("test200/2007/07-08.grib1.needs-pack"));
+    }
 
     // Check that it does not have a source and metadata element
     ds = getDataset(mdc[0]);
@@ -585,7 +566,7 @@ void to::test<12>()
 }
 
 namespace {
-struct ReadHang : public sys::ChildProcess, public metadata::Eater
+struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
 {
 	const ConfigFile& cfg;
 	int commfd;
@@ -695,13 +676,13 @@ void to::test<14>()
 	scan::Grib scanner;
 	scanner.open("inbound/test.grib1");
 
-	// Import the first two
-	{
-		dataset::ondisk2::Writer all(*config.section("testall"));
-		ensure(scanner.next(md));
-		ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
-	}
-	ensure(sys::fs::exists("testall/20/2007.grib1"));
+    // Import the first two
+    {
+        dataset::ondisk2::Writer all(*config.section("testall"));
+        ensure(scanner.next(md));
+        ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
+    }
+    ensure(sys::exists("testall/20/2007.grib1"));
 
     // Compress what is imported so far
     {
@@ -710,21 +691,21 @@ void to::test<14>()
         reader.queryData(dataset::DataQuery(Matcher::parse("")), mdc);
         ensure_equals(mdc.size(), 1u);
         mdc.compressDataFile(1024, "metadata file testall/20/2007.grib1");
-        sys::fs::deleteIfExists("testall/20/2007.grib1");
+        sys::unlink_ifexists("testall/20/2007.grib1");
     }
-    ensure(!sys::fs::exists("testall/20/2007.grib1"));
+    ensure(!sys::exists("testall/20/2007.grib1"));
 
-	// Import the last data
-	{
-		dataset::ondisk2::Writer all(*config.section("testall"));
-		ensure(scanner.next(md));
-		try {
-			ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
-		} catch (std::exception& e) {
-			ensure(string(e.what()).find("cannot update compressed data files") != string::npos);
-		}
-	}
-	ensure(!sys::fs::exists("testall/20/2007.grib1"));
+    // Import the last data
+    {
+        dataset::ondisk2::Writer all(*config.section("testall"));
+        ensure(scanner.next(md));
+        try {
+            ensure_equals(all.acquire(md), WritableDataset::ACQ_OK);
+        } catch (std::exception& e) {
+            ensure(string(e.what()).find("cannot update compressed data files") != string::npos);
+        }
+    }
+    ensure(!sys::exists("testall/20/2007.grib1"));
 }
 
 // Test Update Sequence Number replacement strategy

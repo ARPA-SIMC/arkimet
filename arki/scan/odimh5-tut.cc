@@ -1,33 +1,12 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/metadata/tests.h>
 #include <arki/scan/odimh5.h>
 #include <arki/metadata.h>
 #include <arki/types.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 
 namespace tut {
 
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
@@ -52,7 +31,7 @@ void to::test<1>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/PVOL_v20.h5", 0, 320696));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/PVOL_v20.h5", 0, 320696));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -90,7 +69,7 @@ void to::test<2>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_CAPPI_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_CAPPI_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -127,7 +106,7 @@ void to::test<3>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_ETOP_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_ETOP_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -164,7 +143,7 @@ void to::test<4>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_LBM_v20.h5", 0, 49057));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_LBM_v20.h5", 0, 49057));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -201,7 +180,7 @@ void to::test<5>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_MAX_v20.h5", 0, 49049));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_MAX_v20.h5", 0, 49049));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -238,7 +217,7 @@ void to::test<6>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PCAPPI_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_PCAPPI_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -275,7 +254,7 @@ void to::test<7>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_PPI_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_PPI_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -312,7 +291,7 @@ void to::test<8>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_RR_v20.h5", 0, 49049));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_RR_v20.h5", 0, 49049));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -350,7 +329,7 @@ void to::test<9>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/COMP_VIL_v20.h5", 0, 49097));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/COMP_VIL_v20.h5", 0, 49097));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -388,7 +367,7 @@ void to::test<10>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_CAPPI_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_CAPPI_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -426,7 +405,7 @@ void to::test<11>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ETOP_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_ETOP_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -463,7 +442,7 @@ void to::test<12>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_HVMI_v20.h5", 0, 68777));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_HVMI_v20.h5", 0, 68777));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -500,7 +479,7 @@ void to::test<13>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_MAX_v20.h5", 0, 49049));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_MAX_v20.h5", 0, 49049));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -537,7 +516,7 @@ void to::test<14>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PCAPPI_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_PCAPPI_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -574,7 +553,7 @@ void to::test<15>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_PPI_v20.h5", 0, 49113));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_PPI_v20.h5", 0, 49113));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -611,7 +590,7 @@ void to::test<16>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_RR_v20.h5", 0, 49049));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_RR_v20.h5", 0, 49049));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -649,7 +628,7 @@ void to::test<17>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_VIL_v20.h5", 0, 49097));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_VIL_v20.h5", 0, 49097));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -686,7 +665,7 @@ void to::test<18>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/IMAGE_ZLR-BB_v20.h5", 0, 62161));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/IMAGE_ZLR-BB_v20.h5", 0, 62161));
 
 	// Check that the source can be read properly
 	buf = md.getData();
@@ -723,7 +702,7 @@ void to::test<19>()
 	ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::fs::abspath("."), "inbound/odimh5/XSEC_v21.h5", 0, 19717));
+    wassert(actual(md.source().cloneType()).is_source_blob("odimh5", sys::abspath("."), "inbound/odimh5/XSEC_v21.h5", 0, 19717));
 
 	// Check that the source can be read properly
 	buf = md.getData();

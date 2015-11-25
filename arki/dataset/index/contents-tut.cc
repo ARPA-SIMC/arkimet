@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2015 ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types/tests.h>
 #include <arki/metadata/tests.h>
 #include <arki/dataset.h>
@@ -30,11 +10,10 @@
 #include <arki/matcher.h>
 #include <arki/summary.h>
 #include <arki/iotrace.h>
-
+#include <arki/utils/sys.h>
 #include <wibble/sys/process.h>
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/mutex.h>
-
 #include <memory>
 #include <sstream>
 #include <fstream>
@@ -43,7 +22,6 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::dataset::index;
@@ -219,7 +197,7 @@ void to::test<2>()
 }
 
 namespace {
-struct ReadHang : public sys::ChildProcess, public metadata::Eater
+struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
 {
 	ConfigFile cfg;
 	int commfd;
@@ -507,7 +485,7 @@ void to::test<7>()
 
         // 'value' should not have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::process::getcwd(), "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", wibble::sys::process::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
@@ -515,7 +493,7 @@ void to::test<7>()
 
         // I/O should happen here
         mdc[0].drop_cached_data();
-        sys::Buffer buf = mdc[0].getData();
+        wibble::sys::Buffer buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);
         wassert(actual(collector.events[0].filename()).endswith("inbound/test.vm2"));
@@ -550,7 +528,7 @@ void to::test<7>()
 
         // 'value' should have been preserved
         wassert(actual(mdc.size()) == 1u);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", sys::process::getcwd(), "inbound/test.vm2", 0, 34));
+        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", wibble::sys::process::getcwd(), "inbound/test.vm2", 0, 34));
         wassert(actual(mdc[0]).contains("product", "VM2(227)"));
         wassert(actual(mdc[0]).contains("reftime", "1987-10-31T00:00:00Z"));
         wassert(actual(mdc[0]).contains("area", "VM2(1)"));
@@ -558,7 +536,7 @@ void to::test<7>()
 
         // No I/O should happen here
         mdc[0].drop_cached_data();
-        sys::Buffer buf = mdc[0].getData();
+        wibble::sys::Buffer buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 0u);
     }

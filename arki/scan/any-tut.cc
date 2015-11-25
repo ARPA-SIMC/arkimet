@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include <arki/metadata/tests.h>
 #include <arki/libconfig.h>
 #include <arki/scan/any.h>
@@ -32,17 +13,17 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/utils/compress.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 
 struct arki_scan_any_shar {
 };
@@ -63,7 +44,7 @@ void to::test<1>()
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 0, 7218));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -82,7 +63,7 @@ void to::test<1>()
     wassert(actual(mdc[0]).contains("run", "MINUTE(13:00)"));
 
     // Check the source info
-    wassert(actual(mdc[1].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 7218, 34960));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 7218, 34960));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -101,7 +82,7 @@ void to::test<1>()
     wassert(actual(mdc[1]).contains("run", "MINUTE(0)"));
 
     // Check the source info
-    wassert(actual(mdc[2].source().cloneType()).is_source_blob("grib1", sys::fs::abspath("."), "inbound/test.grib1", 42178, 2234));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -136,7 +117,7 @@ void to::test<2>()
 	ensure_equals(mdc.size(), 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 0, 194));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 0, 194));
 
 	// Check that the source can be read properly
 	buf = mdc[0].getData();
@@ -156,7 +137,7 @@ void to::test<2>()
 
 
     // Check the source info
-    wassert(actual(mdc[1].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 194, 220));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 194, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[1].getData();
@@ -176,7 +157,7 @@ void to::test<2>()
 
 
     // Check the source info
-    wassert(actual(mdc[2].source().cloneType()).is_source_blob("bufr", sys::fs::abspath("."), "inbound/test.bufr", 414, 220));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("bufr", sys::abspath("."), "inbound/test.bufr", 414, 220));
 
 	// Check that the source can be read properly
 	buf = mdc[2].getData();
@@ -204,9 +185,9 @@ void to::test<3>()
 	system("cat inbound/test.grib1 inbound/test.grib1 inbound/test.grib1 > a.grib1");
 	system("cp a.grib1 b.grib1");
 
-	// Compress
-	scan::compress("b.grib1", 5);
-	sys::fs::deleteIfExists("b.grib1");
+    // Compress
+    scan::compress("b.grib1", 5);
+    sys::unlink_ifexists("b.grib1");
 
 	{
 		utils::compress::TempUnzip tu("b.grib1");

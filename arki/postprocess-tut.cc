@@ -1,36 +1,14 @@
-/*
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/matcher/tests.h>
-#include <arki/postprocess.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/scan/any.h>
-#include <arki/utils/files.h>
-#include <arki/utils/fd.h>
-#include <wibble/sys/fs.h>
-
+#include "matcher/tests.h"
+#include "postprocess.h"
+#include "configfile.h"
+#include "metadata.h"
+#include "scan/any.h"
+#include "utils/files.h"
+#include "utils/fd.h"
+#include "utils/sys.h"
 #include <sstream>
 #include <iostream>
 #include <cstdio>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -39,12 +17,12 @@
 #define STDERR_FILENO 2
 #endif
 
-using namespace wibble;
 using namespace wibble::tests;
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 
 struct arki_postprocess_shar {
     ConfigFile config;
@@ -184,7 +162,7 @@ void to::test<6>()
     produceGRIB(p);
     p.flush();
 
-    wassert(actual(sys::fs::size(fname)) == 4096*1024);
+    wassert(actual(sys::size(fname)) == 4096*1024);
 }
 
 // Try to shift a sizeable chunk of data to and out of the postprocessor
@@ -207,10 +185,7 @@ void to::test<7>()
         produceGRIB(p);
     p.flush();
 
-    wassert(actual(sys::fs::size(fname)) == 4096*1024);
+    wassert(actual(sys::size(fname)) == 4096*1024);
 }
 
-
 }
-
-// vim:set ts=4 sw=4:

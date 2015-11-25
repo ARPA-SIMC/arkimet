@@ -1,36 +1,15 @@
-/*
- * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
- */
-
 #include <arki/metadata/tests.h>
 #include <arki/metadata/collection.h>
 #include <arki/types/value.h>
 #include <arki/scan/vm2.h>
 #include <arki/scan/any.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
@@ -53,7 +32,7 @@ void to::test<1>()
     ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34));
+    wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 0, 34));
 
     // Check contents
     wassert(actual(md).contains("area", "VM2(1)"));
@@ -126,7 +105,7 @@ void to::test<3>()
     ensure(scanner.next(md));
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::fs::abspath("."), "inbound/test.vm2", 35, 35));
+    wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 35, 35));
 
     // Check contents
     wassert(actual(md).contains("area", "VM2(1)"));
@@ -174,9 +153,9 @@ void to::test<5>()
     wassert(actual(mdc.size()) == 3);
 
     // Check the source info
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", sys::fs::abspath("."), "inbound/test-corrupted.vm2", 0, 34));
-    wassert(actual(mdc[1].source().cloneType()).is_source_blob("vm2", sys::fs::abspath("."), "inbound/test-corrupted.vm2", 35, 35));
-    wassert(actual(mdc[2].source().cloneType()).is_source_blob("vm2", sys::fs::abspath("."), "inbound/test-corrupted.vm2", 105, 32));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test-corrupted.vm2", 0, 34));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test-corrupted.vm2", 35, 35));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test-corrupted.vm2", 105, 32));
 
     system("rm inbound/test-corrupted.vm2");
 }

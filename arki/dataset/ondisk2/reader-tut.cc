@@ -1,23 +1,4 @@
-/*
- * Copyright (C) 2007--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
-
 #include <arki/dataset/tests.h>
 #include <arki/dataset/ondisk2.h>
 #include <arki/dataset/test-scenario.h>
@@ -28,19 +9,18 @@
 #include <arki/summary.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
+#include <arki/utils/sys.h>
 #include <arki/iotrace.h>
-#include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
-
 #include <unistd.h>
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::dataset;
+using namespace arki::utils;
 
 struct arki_dataset_ondisk2_reader_shar {
     arki_dataset_ondisk2_reader_shar()
@@ -59,14 +39,14 @@ void to::test<1>()
 
     // Send the script error to stderr. Use dup() because PosixBuf will
     // close its file descriptor at destruction time
-	stream::PosixBuf pb(dup(2));
-	ostream os(&pb);
-	dataset::ByteQuery bq;
-	bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
-	reader->queryBytes(bq, os);
+    wibble::stream::PosixBuf pb(dup(2));
+    ostream os(&pb);
+    dataset::ByteQuery bq;
+    bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
+    reader->queryBytes(bq, os);
 
-	string out = sys::fs::readFile("testcountbytes.out");
-	ensure_equals(out, "7427\n");
+    string out = sys::read_file("testcountbytes.out");
+    ensure_equals(out, "7427\n");
 }
 
 // Test that summary files are not created for all the extent of the query, but
@@ -86,23 +66,23 @@ void to::test<2>()
 	ensure_equals(s.count(), 3u);
 	ensure_equals(s.size(), 44412u);
 
-	// Global summary is not built because we only query specific months
-	ensure(!sys::fs::access("testds/.summaries/all.summary", F_OK));
+    // Global summary is not built because we only query specific months
+    ensure(!sys::access("testds/.summaries/all.summary", F_OK));
 
-	ensure(!sys::fs::access("testds/.summaries/2007-01.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2007-02.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2007-03.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2007-04.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2007-05.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2007-06.summary", F_OK));
-	ensure(sys::fs::access("testds/.summaries/2007-07.summary", F_OK));
-	// Summary caches corresponding to DB holes are still created and used
-	ensure(sys::fs::access("testds/.summaries/2007-08.summary", F_OK));
-	ensure(sys::fs::access("testds/.summaries/2007-09.summary", F_OK));
-	ensure(sys::fs::access("testds/.summaries/2007-10.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2007-11.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2007-12.summary", F_OK));
-	ensure(!sys::fs::access("testds/.summaries/2008-01.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-01.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-02.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-03.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-04.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-05.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-06.summary", F_OK));
+    ensure(sys::access("testds/.summaries/2007-07.summary", F_OK));
+    // Summary caches corresponding to DB holes are still created and used
+    ensure(sys::access("testds/.summaries/2007-08.summary", F_OK));
+    ensure(sys::access("testds/.summaries/2007-09.summary", F_OK));
+    ensure(sys::access("testds/.summaries/2007-10.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-11.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2007-12.summary", F_OK));
+    ensure(!sys::access("testds/.summaries/2008-01.summary", F_OK));
 }
 
 // Test produce_nth

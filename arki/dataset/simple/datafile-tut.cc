@@ -1,29 +1,10 @@
-/*
- * Copyright (C) 2007--2015 Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include <arki/dataset/tests.h>
 #include <arki/dataset/simple/datafile.h>
 #include <arki/utils/files.h>
+#include <arki/utils/sys.h>
 #include <arki/metadata.h>
 #include <arki/types/source/blob.h>
 #include <arki/scan/grib.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
 #include <wibble/sys/process.h>
 
 #include <sstream>
@@ -38,14 +19,9 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::dataset::simple;
-using namespace wibble;
 using namespace wibble::tests;
 
 namespace {
-inline size_t filesize(const std::string& fname)
-{
-	return sys::fs::stat(fname)->st_size;
-}
 inline size_t datasize(const Metadata& md)
 {
     return md.data_size();
@@ -91,11 +67,11 @@ void to::test<1>()
 		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", sys::process::getcwd(), "inbound/test.grib1", 0, size));
+        wassert(actual_type(md.source()).is_source_blob("grib1", wibble::sys::process::getcwd(), "inbound/test.grib1", 0, size));
 
-		// Metadata and summaries don't get touched
-		ensure(!sys::fs::exists(mdfname));
-		ensure(!sys::fs::exists(sumfname));
+        // Metadata and summaries don't get touched
+        ensure(!sys::exists(mdfname));
+        ensure(!sys::exists(sumfname));
 
 		totsize += size;
 
@@ -106,20 +82,20 @@ void to::test<1>()
         mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", sys::process::getcwd(), "inbound/test.grib1", totsize, size));
+        wassert(actual_type(md.source()).is_source_blob("grib1", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
 
-		// Metadata and summaries don't get touched
-		ensure(!sys::fs::exists(mdfname));
-		ensure(!sys::fs::exists(sumfname));
+        // Metadata and summaries don't get touched
+        ensure(!sys::exists(mdfname));
+        ensure(!sys::exists(sumfname));
 
-		totsize += size;
+        totsize += size;
 
-		mdbuf.flush();
-		// Metadata and summaries are now there
-		ensure(sys::fs::exists(mdfname));
-		ensure(sys::fs::exists(sumfname));
-        inomd = sys::fs::inode(mdfname);
-        inosum = sys::fs::inode(sumfname);
+        mdbuf.flush();
+        // Metadata and summaries are now there
+        ensure(sys::exists(mdfname));
+        ensure(sys::exists(sumfname));
+        inomd = sys::inode(mdfname);
+        inosum = sys::inode(sumfname);
 
 		// Get another metadata
 		ensure(scanner.next(md));
@@ -128,16 +104,16 @@ void to::test<1>()
 		mdbuf.add(md);
 
         // The new data is there
-        wassert(actual_type(md.source()).is_source_blob("grib1", sys::process::getcwd(), "inbound/test.grib1", totsize, size));
+        wassert(actual_type(md.source()).is_source_blob("grib1", wibble::sys::process::getcwd(), "inbound/test.grib1", totsize, size));
 
         // Metadata and summaries don't get touched
-        ensure_equals(sys::fs::inode(mdfname), inomd);
-        ensure_equals(sys::fs::inode(sumfname), inosum);
+        ensure_equals(sys::inode(mdfname), inomd);
+        ensure_equals(sys::inode(sumfname), inosum);
     }
 
     // After Datafile is destroyed, metadata and summaries are flushed
-    ensure(sys::fs::inode(mdfname) != inomd);
-    ensure(sys::fs::inode(sumfname) != inosum);
+    ensure(sys::inode(mdfname) != inomd);
+    ensure(sys::inode(sumfname) != inosum);
 }
 
 // Test remove and pack

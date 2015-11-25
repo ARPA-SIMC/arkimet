@@ -1,27 +1,8 @@
-/*
- * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/dataset/tests.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include "data.h"
 #include "data/lines.h"
 
@@ -30,7 +11,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::dataset;
 using namespace arki::types;
-using namespace wibble;
+using namespace arki::utils;
 using namespace wibble::tests;
 
 struct arki_dataset_data_shar {
@@ -103,10 +84,10 @@ struct TestSegments
     TestSegments(const std::string& cfg_segments=std::string())
          : pathname("testsegment")
     {
-        if (sys::fs::isdir(pathname))
-            sys::fs::rmtree(pathname);
+        if (sys::isdir(pathname))
+            sys::rmtree(pathname);
         else
-            sys::fs::deleteIfExists(pathname);
+            sys::unlink_ifexists(pathname);
 
         cfg.setValue("path", pathname);
         if (!cfg_segments.empty())

@@ -1,33 +1,15 @@
-/*
- * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include <arki/libconfig.h>
 #include <arki/types/tests.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/utils.h>
 #include <arki/utils/accounting.h>
+#include <arki/utils/sys.h>
 #include <arki/types/source.h>
 #include <arki/types/source/blob.h>
 #include <arki/summary.h>
 #include <arki/scan/any.h>
 #include <arki/runtime/io.h>
-#include <wibble/sys/fs.h>
 #include <cstring>
 
 #include <sstream>
@@ -35,10 +17,10 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 using namespace arki::metadata;
 
 struct arki_metadata_collection_shar {
@@ -60,14 +42,12 @@ template<> template<>
 void to::test<1>()
 {
 #ifdef HAVE_DBALLE
-	using namespace utils;
+    static const int repeats = 1024;
 
-	static const int repeats = 1024;
-
-	// Create a test file with `repeats` BUFR entries
-	std::string bufr = sys::fs::readFile("inbound/test.bufr");
-	ensure(bufr.size() > 0);
-	bufr = bufr.substr(0, 194);
+    // Create a test file with `repeats` BUFR entries
+    std::string bufr = sys::read_file("inbound/test.bufr");
+    ensure(bufr.size() > 0);
+    bufr = bufr.substr(0, 194);
 
 	runtime::Tempfile tf(".");
 	tf.unlink_on_exit(false);
@@ -91,12 +71,12 @@ void to::test<1>()
 	utils::acct::gzip_data_read_count.reset();
 	utils::acct::gzip_forward_seek_bytes.reset();
 	utils::acct::gzip_idx_reposition_count.reset();
-	for (int i = 0; i < repeats; ++i)
-	{
-		sys::Buffer b = c[i].getData();
-		ensure_equals(b.size(), bufr.size());
-		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
-	}
+    for (int i = 0; i < repeats; ++i)
+    {
+        wibble::sys::Buffer b = c[i].getData();
+        ensure_equals(b.size(), bufr.size());
+        ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
+    }
 	// We read linearly, so there are no seeks or repositions
 	ensure_equals(utils::acct::gzip_data_read_count.val(), (size_t)repeats);
 	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 0u);
@@ -110,12 +90,12 @@ void to::test<1>()
 	utils::acct::gzip_data_read_count.reset();
 	utils::acct::gzip_forward_seek_bytes.reset();
 	utils::acct::gzip_idx_reposition_count.reset();
-	for (int i = repeats-1; i >= 0; --i)
-	{
-		sys::Buffer b = c[i].getData();
-		ensure_equals(b.size(), bufr.size());
-		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
-	}
+    for (int i = repeats-1; i >= 0; --i)
+    {
+        wibble::sys::Buffer b = c[i].getData();
+        ensure_equals(b.size(), bufr.size());
+        ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
+    }
 	ensure_equals(utils::acct::gzip_data_read_count.val(), (size_t)repeats);
 	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 12446264u);
 	ensure_equals(utils::acct::gzip_idx_reposition_count.val(), 9u);
@@ -128,12 +108,12 @@ void to::test<1>()
 	utils::acct::gzip_data_read_count.reset();
 	utils::acct::gzip_forward_seek_bytes.reset();
 	utils::acct::gzip_idx_reposition_count.reset();
-	for (int i = 0; i < repeats; i += 2)
-	{
-		sys::Buffer b = c[i].getData();
-		ensure_equals(b.size(), bufr.size());
-		ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
-	}
+    for (int i = 0; i < repeats; i += 2)
+    {
+        wibble::sys::Buffer b = c[i].getData();
+        ensure_equals(b.size(), bufr.size());
+        ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
+    }
 	ensure_equals(utils::acct::gzip_data_read_count.val(), (size_t)repeats / 2);
 	ensure_equals(utils::acct::gzip_forward_seek_bytes.val(), 194u * 511u);
 	ensure_equals(utils::acct::gzip_idx_reposition_count.val(), 1u);
