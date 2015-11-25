@@ -42,11 +42,11 @@ static std::string tosqlTime(const int& tt)
 
 static std::string tostringInterval(const int& tt)
 {
-    string res;
-    if (tt / 3600) res += str::fmt(tt / 3600) + "h";
-    if ((tt % 3600) / 60) res += str::fmt((tt % 3600) / 60) + "m";
-    if (tt % 60) res += str::fmt(tt % 60) + "s";
-    return res;
+    stringstream res;
+    if (tt / 3600) res << (tt / 3600) << "h";
+    if ((tt % 3600) / 60) res << ((tt % 3600) / 60) << "m";
+    if (tt % 60) res << (tt % 60) << "s";
+    return res.str();
 }
 
 static bool isnow(const int* t)

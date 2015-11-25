@@ -1,26 +1,4 @@
 %{
-/*
- * matcher/reftime/reftime.yy - Parser for reftime expressions
- *
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include "parser.h"
@@ -281,14 +259,15 @@ void Parser::parse(const std::string& str)
 		case 2:
 			// Out of memory
 			throw std::runtime_error("parser out of memory");
-		default:
-			// Should never happen
-			throw wibble::exception::Consistency("Parsing '"+str+"'", "Bison parser function returned unexpected value " + str::fmt(res));
-	}
+        default: {
+            // Should never happen
+            stringstream ss;
+            ss << "cannot parse '" << str << "': Bison parser function returned unexpected value " << res;
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 }
 }
 }
-
-/* vim:set syntax=yacc ts=4 sw=4: */
