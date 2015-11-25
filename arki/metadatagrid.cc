@@ -1,34 +1,10 @@
-/*
- * metadatagrid - Index values by a combination of metadata
- *
- * Copyright (C) 2010--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
-#include <arki/metadatagrid.h>
-#include <arki/metadata.h>
-
+#include "metadatagrid.h"
+#include "metadata.h"
+#include "utils/string.h"
 // #include <iostream>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -92,9 +68,9 @@ std::string MetadataGrid::make_query() const
             for (TypeVector::const_iterator j = si->second.begin();
                     j != si->second.end(); ++j)
                 ors.push_back((*j)->exactQuery());
-        ands.push_back(types::tag(*i) + ":" + str::join(ors.begin(), ors.end(), " or "));
+        ands.push_back(types::tag(*i) + ":" + str::join(" or ", ors.begin(), ors.end()));
     }
-    return str::join(ands.begin(), ands.end(), "; ");
+    return str::join("; ", ands.begin(), ands.end());
 }
 
 void MetadataGrid::clear()

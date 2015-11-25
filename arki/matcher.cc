@@ -1,37 +1,16 @@
-/*
- * matcher - Match metadata expressions
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "matcher.h"
 #include "matcher/reftime.h"
 #include "metadata.h"
 #include "configfile.h"
+#include "utils/string.h"
 #include "utils/lua.h"
 #include <wibble/regexp.h>
 #include <arki/utils/string.h>
 #include <memory>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 
@@ -128,32 +107,32 @@ std::string OR::toStringValueOnlyExpanded() const
 
 OR* OR::parse(const MatcherType& mt, const std::string& pattern)
 {
-	unique_ptr<OR> res(new OR(pattern));
+    unique_ptr<OR> res(new OR(pattern));
 
-	// Fetch the alias database for this type
-	const Aliases* aliases = MatcherAliasDatabase::get(mt.name);
+    // Fetch the alias database for this type
+    const Aliases* aliases = MatcherAliasDatabase::get(mt.name);
 
-	// Split 'patterns' on /\s*or\s*/i
-	Splitter splitter("[ \t]+or[ \t]+", REG_EXTENDED | REG_ICASE);
+    // Split 'patterns' on /\s*or\s*/i
+    wibble::Splitter splitter("[ \t]+or[ \t]+", REG_EXTENDED | REG_ICASE);
 
-	for (Splitter::const_iterator i = splitter.begin(pattern);
-			i != splitter.end(); ++i)
-	{
-		const OR* exprs = aliases ? aliases->get(str::tolower(*i)) : 0;
-		if (exprs)
-			for (OR::const_iterator j = exprs->begin(); j != exprs->end(); ++j)
-				res->push_back(*j);
-		else
-			res->push_back(mt.parse_func(*i));
-	}
+    for (wibble::Splitter::const_iterator i = splitter.begin(pattern);
+            i != splitter.end(); ++i)
+    {
+        const OR* exprs = aliases ? aliases->get(str::lower(*i)) : 0;
+        if (exprs)
+            for (OR::const_iterator j = exprs->begin(); j != exprs->end(); ++j)
+                res->push_back(*j);
+        else
+            res->push_back(mt.parse_func(*i));
+    }
 
-	return res.release();
+    return res.release();
 }
 
 
 std::string AND::name() const
 {
-	return "matcher";
+    return "matcher";
 }
 
 bool AND::matchItem(const Type& t) const
@@ -254,8 +233,8 @@ AND* AND::parse(const std::string& pattern)
 				"parsing matcher subexpression",
 				"subexpression '" + expr + "' does not contain a colon (':')");
 
-		string type = str::tolower(str::trim(expr.substr(0, pos)));
-		string patterns = str::trim(expr.substr(pos+1));
+        string type = str::lower(str::strip(expr.substr(0, pos)));
+        string patterns = str::strip(expr.substr(pos+1));
 
 		MatcherType* mt = MatcherType::find(type);
 		if (mt == 0)
@@ -298,11 +277,11 @@ void Aliases::serialise(ConfigFile& cfg) const
 
 void Aliases::add(const MatcherType& type, const ConfigFile& entries)
 {
-	vector< pair<string, string> > aliases;
-	vector< pair<string, string> > failed;
-	for (ConfigFile::const_iterator i = entries.begin(); i != entries.end(); ++i)
-		aliases.push_back(make_pair(str::tolower(i->first), i->second));
-	
+    vector< pair<string, string> > aliases;
+    vector< pair<string, string> > failed;
+    for (ConfigFile::const_iterator i = entries.begin(); i != entries.end(); ++i)
+        aliases.push_back(make_pair(str::lower(i->first), i->second));
+
 	/*
 	 * Try multiple times to catch aliases referring to other aliases.
 	 * We continue until the number of aliases to parse stops decreasing.
@@ -581,5 +560,3 @@ void MatcherAliasDatabase::debug_dump(std::ostream& out)
 }
 
 }
-
-// vim:set ts=4 sw=4:
