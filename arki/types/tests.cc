@@ -369,7 +369,14 @@ struct TestSourceBlobIs : public TestSpecificTypeBase<source::Blob>
         wassert(actual(item->offset) == ofs);
         wassert(actual(item->size) == size);
         if (!basedir.empty())
-            wassert(actual(item->absolutePathname()) == sys::fs::abspath(str::joinpath(basedir, fname)));
+        {
+            string expected;
+            if (fname[0] == '/')
+                expected = fname;
+            else
+                expected = sys::fs::abspath(str::joinpath(basedir, fname));
+            wassert(actual(item->absolutePathname()) == expected);
+        }
     }
 };
 

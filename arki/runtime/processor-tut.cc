@@ -56,9 +56,9 @@ void to::test<1>()
     Metadata::readFile("pm-out", mdc);
 
     wassert(actual(mdc.size()) == 3);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", "", fs::abspath("test/2007/07-07.grib1"), 0, 34960));
-    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", "", fs::abspath("test/2007/07-08.grib1"), 0, 7218));
-    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", "", fs::abspath("test/2007/10-09.grib1"), 0, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", ".", fs::abspath("test/2007/07-07.grib1"), 0, 34960));
+    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", ".", fs::abspath("test/2007/07-08.grib1"), 0, 7218));
+    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", ".", fs::abspath("test/2007/10-09.grib1"), 0, 2234));
 }
 
 // Export inline data
