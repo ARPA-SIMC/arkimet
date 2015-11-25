@@ -1,35 +1,12 @@
-/*
- * scan/vm2 - Scan a VM2 file for metadata
- *
- * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
- */
-
 #include <arki/scan/vm2.h>
 #include <arki/types/source/blob.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <arki/utils/files.h>
 #include <arki/nag.h>
-#include <wibble/exception.h>
 #include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <wibble/regexp.h>
-#include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
 #include <cstring>
@@ -47,8 +24,8 @@
 #include <meteo-vm2/parser.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -104,14 +81,14 @@ void Vm2::open(const std::string& filename)
 {
     string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void Vm2::open(const std::string& filename, const std::string& basedir, const std::string& relname)
 {
     // Close the previous file if needed
     close();
-    this->filename = sys::fs::abspath(filename);
+    this->filename = sys::abspath(filename);
     this->basedir = basedir;
     this->relname = relname;
     if (relname == "-") {

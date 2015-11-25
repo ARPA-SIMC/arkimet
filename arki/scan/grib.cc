@@ -1,32 +1,11 @@
-/*
- * scan/grib - Scan a GRIB (version 1 or 2) file for metadata
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 #include "grib.h"
 #include <grib_api.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
-#include <wibble/exception.h>
 #include <arki/utils/string.h>
+#include <arki/utils/sys.h>
+#include <wibble/exception.h>
 #include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/files.h>
@@ -35,8 +14,8 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -302,15 +281,23 @@ string GribLua::run_function(int id, Metadata& md)
 }
 
 #define check_grib_error(error, ...) do { \
-        if (error != GRIB_SUCCESS) \
-            throw wibble::exception::Consistency(str::fmtf(__VA_ARGS__), grib_get_error_message(error)); \
+        if (error != GRIB_SUCCESS) { \
+            char buf[256]; \
+            snprintf(buf, 256, __VA_ARGS__); \
+            stringstream ss; \
+            ss << buf << ": " << grib_get_error_message(error); \
+            throw std::runtime_error(ss.str()); \
+        } \
     } while (0)
 
 // Never returns in case of error
 #define arkilua_check_gribapi(L, error, ...) do { \
-        if (error != GRIB_SUCCESS) \
+        if (error != GRIB_SUCCESS) {\
+            char buf[256]; \
+            snprintf(buf, 256, __VA_ARGS__); \
             luaL_error(L, "grib_api error \"%s\" while %s", \
-                        grib_get_error_message(error), str::fmtf(__VA_ARGS__).c_str()); \
+                        grib_get_error_message(error), buf); \
+        } \
     } while (0)
 
 // Lookup a grib value for grib.<fieldname>
@@ -504,7 +491,7 @@ void Grib::open(const std::string& filename)
 {
     string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void Grib::open(const std::string& filename, const std::string& basedir, const std::string& relname)
@@ -558,8 +545,12 @@ bool Grib::next(Metadata& md)
 		case 1: scanGrib1(md); break;
 		case 2: scanGrib2(md); break;
 		default:
-			throw wibble::exception::Consistency("reading grib message", "GRIB edition " + str::fmt(edition) + " is not supported");
-	}
+        {
+            stringstream ss;
+            ss << "cannot read grib message: GRIB edition " << edition << " is not supported";
+            throw std::runtime_error(ss.str());
+        }
+    }
 
 	check_grib_error(grib_handle_delete(gh), "closing GRIB message");
 	gh = 0;
@@ -585,16 +576,20 @@ void Grib::setSource(Metadata& md)
     off_t offset = ftello(in);
     offset -= size;
 
-	if (false)
-	{
-        md.set_source_inline("grib" + str::fmt(edition), wibble::sys::Buffer(vbuf, size));
-	}
+    char gribn[8];
+    snprintf(gribn, 8, "grib%ld", edition);
+    if (false)
+    {
+        md.set_source_inline(gribn, wibble::sys::Buffer(vbuf, size));
+    }
     else
     {
-        md.set_source(Source::createBlob("grib" + str::fmt(edition), basedir, relname, offset, size));
+        md.set_source(Source::createBlob(gribn, basedir, relname, offset, size));
         md.set_cached_data(wibble::sys::Buffer(vbuf, size));
     }
-    md.add_note("Scanned from " + relname + ":" + str::fmt(offset) + "+" + str::fmt(size));
+    stringstream note;
+    note << "Scanned from " << relname << ":" << offset << "+" << size;
+    md.add_note(note.str());
 }
 
 void MultiGrib::setSource(Metadata& md)
@@ -613,14 +608,20 @@ void MultiGrib::setSource(Metadata& md)
     if (tmpfile.fail())
         throw wibble::exception::File(tmpfilename, "reading the current position");
 
-	// Write the data
-	tmpfile.write(buf, size);
-	if (tmpfile.fail())
-		throw wibble::exception::File(tmpfilename, "writing " + str::fmt(size) + " bytes to the file");
+    // Write the data
+    tmpfile.write(buf, size);
+    if (tmpfile.fail())
+    {
+        stringstream ss;
+        ss << "cannot write " << size << " bytes to file " << tmpfilename;
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 
-	tmpfile.flush();
+    tmpfile.flush();
 
-    md.set_source(Source::createBlob("grib" + str::fmt(edition), "", tmpfilename, offset, size));
+    char gribn[8];
+    snprintf(gribn, 8, "grib%ld", edition);
+    md.set_source(Source::createBlob(gribn, "", tmpfilename, offset, size));
 }
 
 bool Grib::scanLua(std::vector<int> ids, Metadata& md)

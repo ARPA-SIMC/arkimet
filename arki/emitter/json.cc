@@ -1,25 +1,3 @@
-/*
- * emitter/json - JSON emitter
- *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/emitter/json.h>
@@ -30,7 +8,6 @@
 #include <cmath>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 namespace emitter {
@@ -196,10 +173,12 @@ static void parse_fixed(std::istream& in, const char* expected)
         int c = in.get();
         if (c != *s)
         {
+            stringstream ss;
             if (c == EOF)
-                throw JSONParseException(str::fmtf("end of file reached looking for %s in %s", s, expected));
+                ss << "end of file reached looking for " << s << " in " << expected;
             else
-                throw JSONParseException(str::fmtf("unexpected character '%c' looking for %s in %s", c, s, expected));
+                ss << "unexpected character '" << (char)c << "' looking for " << s << " in " << expected;
+            throw JSONParseException(ss.str());
         }
         ++s;
     }
@@ -369,7 +348,11 @@ static void parse_value(std::istream& in, Emitter& e)
             parse_spaces(in);
             break;
         default:
-            throw JSONParseException(str::fmtf("unexpected character '%c'", in.peek()));
+        {
+            stringstream ss;
+            ss << "unexpected character '" << (char)in.peek() << "'";
+            throw JSONParseException(ss.str());
+        }
     }
     parse_spaces(in);
 }

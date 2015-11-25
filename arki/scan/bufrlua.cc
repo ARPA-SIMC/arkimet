@@ -1,36 +1,13 @@
-/*
- * scan/bufrlua - Use Lua macros for scanning contents of BUFR messages
- *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/scan/bufrlua.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <arki/utils/string.h>
-#include <wibble/sys/fs.h>
 
 using namespace std;
-using namespace wibble;
 using namespace dballe;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -63,8 +40,8 @@ int BufrLua::get_scan_func(MsgType type)
 	std::map<MsgType, int>::iterator i = scan_funcs.find(type);
 	if (i != scan_funcs.end()) return i->second;
 
-	// Else try to load it
-	string name = str::tolower(msg_type_name(type));
+    // Else try to load it
+    string name = str::lower(msg_type_name(type));
 
     // Load the right bufr scan file
     string fname = runtime::Config::get().dir_scan_bufr.find_file_noerror(name + ".lua");

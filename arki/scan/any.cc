@@ -1,25 +1,3 @@
-/*
- * scan/any - Scan files autodetecting the format
- *
- * Copyright (C) 2009--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/libconfig.h>
 #include <arki/scan/any.h>
 #include <arki/metadata.h>
@@ -27,8 +5,8 @@
 #include <arki/types/source/blob.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <sstream>
 #include <utime.h>
 
@@ -49,7 +27,6 @@
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -173,10 +150,10 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
 {
     // Collect all file names in the directory
     vector<std::string> fnames;
-    sys::fs::Directory dir(pathname);
-    for (sys::fs::Directory::const_iterator di = dir.begin(); di != dir.end(); ++di)
-        if (di.isreg() && str::endsWith(*di, format))
-            fnames.push_back(*di);
+    sys::Path dir(pathname);
+    for (sys::Path::iterator di = dir.begin(); di != dir.end(); ++di)
+        if (di.isreg() && str::endswith(di->d_name, format))
+            fnames.push_back(di->d_name);
 
     // Sort them numerically
     std::sort(fnames.begin(), fnames.end(), dir_segment_fnames_lt);
@@ -202,7 +179,7 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     if (pos == string::npos)
         // No extension, we do not know what it is
         return std::string();
-    return str::tolower(file.substr(pos+1));
+    return str::lower(file.substr(pos+1));
 }
 
 bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c)
@@ -223,15 +200,15 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
-    unique_ptr<struct stat> st_file = sys::fs::stat(pathname);
+    unique_ptr<struct stat> st_file = sys::stat(pathname);
     if (!st_file.get())
-        st_file = sys::fs::stat(pathname + ".gz");
+        st_file = sys::stat(pathname + ".gz");
     if (!st_file.get())
         throw wibble::exception::File(pathname, "getting file information");
 
     // stat the metadata file, if it exists
     string md_pathname = pathname + ".metadata";
-    unique_ptr<struct stat> st_md = sys::fs::stat(md_pathname);
+    unique_ptr<struct stat> st_md = sys::stat(md_pathname);
 
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
@@ -268,7 +245,7 @@ bool canScan(const std::string& file)
 	if (pos == string::npos)
 		// No extension, we do not know what it is
 		return false;
-	string ext = str::tolower(file.substr(pos+1));
+	string ext = str::lower(file.substr(pos+1));
 
 	// Check for known extensions
 #ifdef HAVE_GRIBAPI
@@ -296,21 +273,21 @@ bool canScan(const std::string& file)
 
 bool exists(const std::string& file)
 {
-	if (sys::fs::exists(file)) return true;
-	if (sys::fs::exists(file + ".gz")) return true;
-	return false;
+    if (sys::exists(file)) return true;
+    if (sys::exists(file + ".gz")) return true;
+    return false;
 }
 
 bool isCompressed(const std::string& file)
 {
-    return !sys::fs::exists(file) && sys::fs::exists(file + ".gz");
+    return !sys::exists(file) && sys::exists(file + ".gz");
 }
 
 time_t timestamp(const std::string& file)
 {
-    time_t res = sys::fs::timestamp(file, 0);
+    time_t res = sys::timestamp(file, 0);
     if (res != 0) return res;
-    return sys::fs::timestamp(file + ".gz", 0);
+    return sys::timestamp(file + ".gz", 0);
 }
 
 void compress(const std::string& file, size_t groupsize)
@@ -319,20 +296,20 @@ void compress(const std::string& file, size_t groupsize)
 	scan(file, compressor);
 	compressor.flush();
 
-	// Set the same timestamp as the uncompressed file
-	std::unique_ptr<struct stat> st = sys::fs::stat(file);
-	struct utimbuf times;
-	times.actime = st->st_atime;
-	times.modtime = st->st_mtime;
-	utime((file + ".gz").c_str(), &times);
-	utime((file + ".gz.idx").c_str(), &times);
+    // Set the same timestamp as the uncompressed file
+    std::unique_ptr<struct stat> st = sys::stat(file);
+    struct utimbuf times;
+    times.actime = st->st_atime;
+    times.modtime = st->st_mtime;
+    utime((file + ".gz").c_str(), &times);
+    utime((file + ".gz.idx").c_str(), &times);
 
 	// TODO: delete uncompressed version
 }
 
 void Validator::validate(Metadata& md) const
 {
-    sys::Buffer buf = md.getData();
+    wibble::sys::Buffer buf = md.getData();
     validate(buf.data(), buf.size());
 }
 
@@ -343,7 +320,7 @@ const Validator& Validator::by_filename(const std::string& filename)
 	if (pos == string::npos)
 		// No extension, we do not know what it is
 		throw wibble::exception::Consistency("looking for a validator for " + filename, "file name has no extension");
-	string ext = str::tolower(filename.substr(pos+1));
+	string ext = str::lower(filename.substr(pos+1));
 
 #ifdef HAVE_GRIBAPI
 	if (ext == "grib" || ext == "grib1" || ext == "grib2")
