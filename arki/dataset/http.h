@@ -4,7 +4,7 @@
 /// Remote HTTP dataset access
 
 #include <arki/dataset/local.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <curl/curl.h>
 #include <string>
 

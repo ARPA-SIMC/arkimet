@@ -23,7 +23,7 @@
 #include <arki/dataset/index/attr.h>
 #include <arki/matcher.h>
 #include <arki/utils/codec.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <sstream>
 
 using namespace std;

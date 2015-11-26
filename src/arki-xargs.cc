@@ -29,12 +29,12 @@
 #include <arki/scan/any.h>
 #include <arki/runtime.h>
 
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/exec.h>
-#include <wibble/sys/process.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/commandline/parser.h>
+#include <arki/wibble/string.h>
+#include <arki/wibble/sys/fs.h>
+#include <arki/wibble/sys/exec.h>
+#include <arki/wibble/sys/process.h>
 
 #include <cstdlib>
 #include <cstring>

@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include <arki/emitter/json.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <cctype>
 #include <cmath>

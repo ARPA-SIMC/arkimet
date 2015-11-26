@@ -24,7 +24,7 @@
  */
 
 #include <arki/emitter.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <vector>
 #include <map>
 #include <string>

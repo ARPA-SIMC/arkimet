@@ -20,15 +20,15 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/string.h>
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/formatter.h>
-#include <wibble/grcal/grcal.h>
+#include <arki/wibble/grcal/grcal.h>
 #include "config.h"
 #include <sstream>
 #include <cmath>

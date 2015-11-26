@@ -6,12 +6,13 @@
 #include <arki/nag.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <wibble/regexp.h>
+#include <arki/wibble/regexp.h>
 #include <arki/utils/lua.h>
 #include <arki/scan/any.h>
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <unistd.h>
 
 #include <arki/types/area.h>

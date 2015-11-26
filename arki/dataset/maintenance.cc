@@ -14,6 +14,7 @@
 #include <arki/sort.h>
 #include <arki/nag.h>
 #include <algorithm>
+#include <iostream>
 #include <ostream>
 #include <sys/types.h>
 #include <sys/stat.h>

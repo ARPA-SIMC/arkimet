@@ -21,7 +21,7 @@
  */
 
 #include "h5.h"
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <sstream>
 
 using namespace std;

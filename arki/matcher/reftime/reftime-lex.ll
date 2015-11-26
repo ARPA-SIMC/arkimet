@@ -34,7 +34,7 @@ struct LexInterval {
 #include "reftime-parse.hh"
 
 #include <string>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <ctype.h>
 
 using namespace std;

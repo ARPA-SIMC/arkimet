@@ -8,7 +8,7 @@
 #include "arki/utils.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 
 using namespace std;
 using namespace arki::utils;

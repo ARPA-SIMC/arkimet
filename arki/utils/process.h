@@ -27,7 +27,7 @@
 #include <map>
 #include <vector>
 #include <sstream>
-#include <wibble/sys/childprocess.h>
+#include <arki/wibble/sys/childprocess.h>
 
 namespace arki {
 namespace utils {

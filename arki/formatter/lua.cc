@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include <arki/formatter/lua.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/types.h>
 #include <arki/utils/lua.h>
 #include <arki/runtime/config.h>

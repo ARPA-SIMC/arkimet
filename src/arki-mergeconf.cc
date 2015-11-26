@@ -27,9 +27,9 @@
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include <arki/wibble/commandline/parser.h>
+#include <arki/wibble/string.h>
+#include <arki/wibble/sys/fs.h>
 #include <arki/utils/geosdef.h>
 #include <memory>
 

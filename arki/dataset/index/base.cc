@@ -3,7 +3,7 @@
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/utils/string.h>
-#include <wibble/regexp.h>
+#include <arki/wibble/regexp.h>
 #include <sstream>
 #include <ctime>
 

@@ -7,7 +7,7 @@
 #include <arki/utils.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <sstream>
 
 using namespace std;

@@ -7,6 +7,7 @@
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/postprocess.h>
+#include <algorithm>
 #include <fstream>
 #include <memory>
 #include <sys/types.h>

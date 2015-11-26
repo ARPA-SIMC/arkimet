@@ -59,8 +59,6 @@ void Memory::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 
 void Memory::querySummary(const Matcher& matcher, Summary& summary)
 {
-    using namespace wibble::str;
-
     for (const_iterator i = begin(); i != end(); ++i)
         if (matcher(**i))
             summary.add(**i);

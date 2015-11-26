@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 
 #include <string>
 #include <iosfwd>

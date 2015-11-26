@@ -22,7 +22,7 @@
 
 #include <arki/tests/lua.h>
 #include <arki/utils/lua.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 
 using namespace std;
 using namespace arki;

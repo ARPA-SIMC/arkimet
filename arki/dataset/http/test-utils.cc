@@ -1,8 +1,8 @@
 #include "config.h"
 
 #include <arki/dataset/http/test-utils.h>
-#include <wibble/net/http.h>
-#include <wibble/net/mime.h>
+#include <arki/wibble/net/http.h>
+#include <arki/wibble/net/mime.h>
 
 #include <cstring>
 #include <cstdlib>

@@ -22,8 +22,8 @@
 
 #include "config.h"
 
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/string.h>
 
 #include <arki/metadata.h>
 #include <arki/matcher.h>

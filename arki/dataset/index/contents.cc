@@ -19,7 +19,7 @@
 #include "arki/runtime/io.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <wibble/grcal/grcal.h>
+#include <arki/wibble/grcal/grcal.h>
 
 #include <sstream>
 #include <ctime>

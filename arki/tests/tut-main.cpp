@@ -1,5 +1,5 @@
-#include <wibble/tests/tut.h>
-#include <wibble/tests/tut_reporter.h>
+#include <arki/wibble/tests/tut.h>
+#include <arki/wibble/tests/tut_reporter.h>
 #include <arki/utils/tests.h>
 #include <arki/types-init.h>
 #include <signal.h>

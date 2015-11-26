@@ -1,34 +1,11 @@
-/*
- * utils - General utility functions
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #define _XOPEN_SOURCE 700
 #define _XOPEN_SOURCE_EXTENDED 1
 
 #include <arki/utils.h>
-#include <wibble/sys/fs.h>
-#include <wibble/sys/process.h>
-
+#include <arki/utils/sys.h>
+#include <arki/wibble/sys/process.h>
 #include <fstream>
 #include <cctype>
 #include <cstdlib>
@@ -106,19 +83,19 @@ void hexdump(const char* name, const unsigned char* str, int len)
 
 MoveToTempDir::MoveToTempDir(const std::string& pattern)
 {
-    old_dir = sys::process::getcwd();
+    old_dir = sys::getcwd();
     char buf[pattern.size() + 1];
     memcpy(buf, pattern.c_str(), pattern.size() + 1);
     if (mkdtemp(buf) == NULL)
         throw wibble::exception::System("cannot create temporary directory");
     tmp_dir = buf;
-    sys::process::chdir(tmp_dir);
+    wibble::sys::process::chdir(tmp_dir);
 }
 
 MoveToTempDir::~MoveToTempDir()
 {
-    sys::process::chdir(old_dir);
-    sys::fs::rmtree(tmp_dir);
+    wibble::sys::process::chdir(old_dir);
+    sys::rmtree(tmp_dir);
 }
 
 std::string get_format(const std::string& fname)

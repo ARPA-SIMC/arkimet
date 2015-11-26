@@ -11,9 +11,9 @@
 #include <arki/summary.h>
 #include <arki/iotrace.h>
 #include <arki/utils/sys.h>
-#include <wibble/sys/process.h>
-#include <wibble/sys/childprocess.h>
-#include <wibble/sys/mutex.h>
+#include <arki/wibble/sys/process.h>
+#include <arki/wibble/sys/childprocess.h>
+#include <arki/wibble/sys/mutex.h>
 #include <memory>
 #include <sstream>
 #include <fstream>

@@ -24,7 +24,7 @@
  */
 
 #include <arki/dataset.h>
-#include <wibble/net/http.h>
+#include <arki/wibble/net/http.h>
 #include <string>
 
 namespace wibble {

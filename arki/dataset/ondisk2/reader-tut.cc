@@ -11,7 +11,7 @@
 #include <arki/utils/files.h>
 #include <arki/utils/sys.h>
 #include <arki/iotrace.h>
-#include <wibble/stream/posix.h>
+#include <arki/wibble/stream/posix.h>
 #include <unistd.h>
 #include <sstream>
 #include <iostream>

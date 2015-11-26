@@ -5,12 +5,13 @@
 #include <arki/types/reftime.h>
 #include <arki/metadata.h>
 
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
-#include <wibble/regexp.h>
-#include <wibble/grcal/grcal.h>
+#include <arki/wibble/regexp.h>
+#include <arki/wibble/grcal/grcal.h>
 
 #include <vector>
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 

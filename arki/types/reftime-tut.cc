@@ -22,7 +22,7 @@
 #include "reftime.h"
 #include <arki/tests/lua.h>
 #include <arki/matcher.h>
-#include <wibble/string.h>
+#include <arki/wibble/string.h>
 
 #include <sstream>
 #include <iostream>

@@ -3,8 +3,9 @@
 #include <arki/runtime/config.h>
 #include <arki/metadata/consumer.h>
 
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
+#include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <sys/types.h>

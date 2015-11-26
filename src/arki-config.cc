@@ -22,10 +22,10 @@
 
 #include "config.h"
 
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/commandline/parser.h>
+#include <arki/wibble/string.h>
+#include <arki/wibble/sys/fs.h>
 #include <arki/configfile.h>
 #include <arki/dataset/targetfile.h>
 #include <arki/dataset/index/base.h>

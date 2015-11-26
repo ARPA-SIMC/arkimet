@@ -2,7 +2,7 @@
 #include <arki/scan/nc.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 
 namespace tut {
 using namespace std;
@@ -28,7 +28,7 @@ void to::test<1>()
     wassert(actual(scanner.next(md)).istrue());
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::fs::abspath("."), "inbound/test.vm2", 0, 34));
+    wassert(actual(md.source().cloneType()).is_source_blob("vm2", sys::abspath("."), "inbound/test.vm2", 0, 34));
 
     // Check contents
     wassert(actual(md).contains("area", "VM2(1)"));

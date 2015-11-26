@@ -23,7 +23,7 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/commandline/parser.h>
+#include <arki/wibble/commandline/parser.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/processor.h>

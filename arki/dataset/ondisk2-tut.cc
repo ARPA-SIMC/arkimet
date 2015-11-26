@@ -13,7 +13,7 @@
 #include <arki/scan/any.h>
 #include <arki/utils/files.h>
 #include <arki/utils/sys.h>
-#include <wibble/sys/childprocess.h>
+#include <arki/wibble/sys/childprocess.h>
 #include <unistd.h>
 
 #include <sstream>

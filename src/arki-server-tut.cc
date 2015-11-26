@@ -30,8 +30,8 @@
 #include <arki/utils.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/processor.h>
-#include <wibble/string.h>
-#include <wibble/stream/posix.h>
+#include <arki/wibble/string.h>
+#include <arki/wibble/stream/posix.h>
 
 #include <sstream>
 #include <iostream>

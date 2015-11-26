@@ -21,10 +21,9 @@
  */
 
 #include "config.h"
-
 #include "process.h"
-#include <wibble/sys/childprocess.h>
-#include <wibble/sys/process.h>
+#include <arki/wibble/sys/childprocess.h>
+#include <arki/wibble/sys/process.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>

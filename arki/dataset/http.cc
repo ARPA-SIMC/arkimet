@@ -256,25 +256,23 @@ struct MDStreamState : public ReqState
 
 void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	using namespace wibble::str;
+    m_curl.reset();
 
-	m_curl.reset();
-
-	string url = joinpath(m_baseurl, "query");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata;
-	if (m_qmacro.empty())
-		postdata = "query=" + urlencode(q.matcher.toStringExpanded());
-	else
-		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
+    string url = str::joinpath(m_baseurl, "query");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata;
+    if (m_qmacro.empty())
+        postdata = "query=" + str::encode_url(q.matcher.toStringExpanded());
+    else
+        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(m_name);
     if (q.sorter)
-        postdata += "&sort=" + urlencode(q.sorter->toString());
-	if (m_mischief)
-	{
-		postdata += urlencode(";MISCHIEF");
-		m_mischief = false;
-	}
+        postdata += "&sort=" + str::encode_url(q.sorter->toString());
+    if (m_mischief)
+    {
+        postdata += str::encode_url(";MISCHIEF");
+        m_mischief = false;
+    }
     if (q.with_data)
       postdata += "&style=inline";
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
@@ -296,23 +294,21 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 
 void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 {
-	using namespace wibble::str;
+    m_curl.reset();
 
-	m_curl.reset();
-
-	string url = joinpath(m_baseurl, "summary");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata;
-	if (m_qmacro.empty())
-		postdata = "query=" + urlencode(matcher.toStringExpanded());
-	else
-		postdata = "query=" + urlencode(m_qmacro) + "&qmacro=" + urlencode(m_name);
-	if (m_mischief)
-	{
-		postdata += urlencode(";MISCHIEF");
-		m_mischief = false;
-	}
+    string url = str::joinpath(m_baseurl, "summary");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata;
+    if (m_qmacro.empty())
+        postdata = "query=" + str::encode_url(matcher.toStringExpanded());
+    else
+        postdata = "query=" + str::encode_url(m_qmacro) + "&qmacro=" + str::encode_url(m_name);
+    if (m_mischief)
+    {
+        postdata += str::encode_url(";MISCHIEF");
+        m_mischief = false;
+    }
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
@@ -335,15 +331,13 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 
 void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	using namespace wibble::str;
-
 	m_curl.reset();
 
 	http::CurlForm form;
 
-	string url = joinpath(m_baseurl, "query");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string url = str::joinpath(m_baseurl, "query");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
 	if (m_qmacro.empty())
 	{
 		if (m_mischief)
@@ -384,9 +378,12 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 			form.addstring("style", "rep_summary");
 			form.addstring("command", q.param);
 			break;
-		default:
-			throw wibble::exception::Consistency("querying dataset", "unsupported query type: " + fmt((int)q.type));
-	}
+		default: {
+            stringstream ss;
+            ss << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(ss.str());
+        }
+    }
 	//fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
 	//fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
 	// Set the form info 
@@ -404,17 +401,16 @@ void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 
 void HTTP::readConfig(const std::string& path, ConfigFile& cfg)
 {
-	using namespace wibble::str;
 	using namespace http;
 
 	CurlEasy m_curl;
 	m_curl.reset();
 
-	string url = joinpath(path, "config");
-	SStreamState content(m_curl);
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
-	
+    string url = str::joinpath(path, "config");
+    SStreamState content(m_curl);
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
 		throw http::Exception(code, m_curl.m_errbuf, "Performing query at " + url);
@@ -433,20 +429,19 @@ void HTTP::produce_one_wrong_query()
 
 std::string HTTP::expandMatcher(const std::string& matcher, const std::string& server)
 {
-	using namespace wibble::str;
 	using namespace http;
 
 	CurlEasy m_curl;
 	m_curl.reset();
 
-	string url = joinpath(server, "qexpand");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
-	string postdata = "query=" + urlencode(matcher) + "\n";
-	checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
-	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
-	SStreamState content(m_curl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    string url = str::joinpath(server, "qexpand");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
+    string postdata = "query=" + str::encode_url(matcher) + "\n";
+    checked("setting POST data", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, postdata.c_str()));
+    checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
+    SStreamState content(m_curl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -461,16 +456,15 @@ std::string HTTP::expandMatcher(const std::string& matcher, const std::string& s
 
 void HTTP::getAliasDatabase(const std::string& server, ConfigFile& cfg)
 {
-	using namespace wibble::str;
 	using namespace http;
 
 	CurlEasy m_curl;
 	m_curl.reset();
 
-	string url = joinpath(server, "aliases");
-	checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
-	SStreamState content(m_curl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    string url = str::joinpath(server, "aliases");
+    checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
+    SStreamState content(m_curl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -494,10 +488,10 @@ static string geturlprefix(const std::string& s)
 
 std::string HTTP::allSameRemoteServer(const ConfigFile& cfg)
 {
-	string base;
-	for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
-	{
-		string type = wibble::str::tolower(i->second->value("type"));
+    string base;
+    for (ConfigFile::const_section_iterator i = cfg.sectionBegin(); i != cfg.sectionEnd(); ++i)
+    {
+        string type = str::lower(i->second->value("type"));
 		if (type != "remote") return string();
 		string urlprefix = geturlprefix(i->second->value("path"));
 		if (urlprefix.empty()) return string();
@@ -520,11 +514,9 @@ HTTPInbound::~HTTPInbound()
 
 void HTTPInbound::list(std::vector<std::string>& files)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/list");
+    string url = str::joinpath(m_baseurl, "inbound/list");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting GET method", curl_easy_setopt(m_curl, CURLOPT_HTTPGET, 1));
 
@@ -546,18 +538,16 @@ void HTTPInbound::list(std::vector<std::string>& files)
 
 void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata::Eater& consumer)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/scan");
+    string url = str::joinpath(m_baseurl, "inbound/scan");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
     if (format.empty())
-        postdata = "file=" + urlencode(fname);
+        postdata = "file=" + str::encode_url(fname);
     else
-        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
 
     //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
     //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -578,18 +568,16 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
 
 void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, std::ostream& out)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/testdispatch");
+    string url = str::joinpath(m_baseurl, "inbound/testdispatch");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
     if (format.empty())
-        postdata = "file=" + urlencode(fname);
+        postdata = "file=" + str::encode_url(fname);
     else
-        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
 
     //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
     //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());
@@ -610,18 +598,16 @@ void HTTPInbound::testdispatch(const std::string& fname, const std::string& form
 
 void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer)
 {
-    using namespace wibble::str;
-
     m_curl.reset();
 
-    string url = joinpath(m_baseurl, "inbound/dispatch");
+    string url = str::joinpath(m_baseurl, "inbound/dispatch");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
     string postdata;
     if (format.empty())
-        postdata = "file=" + urlencode(fname);
+        postdata = "file=" + str::encode_url(fname);
     else
-        postdata = "file=" + urlencode(fname) + "&format=" + urlencode(format);
+        postdata = "file=" + str::encode_url(fname) + "&format=" + str::encode_url(format);
 
     //fprintf(stderr, "URL: %s  POSTDATA: %s\n", url.c_str(), postdata.c_str());
     //fprintf(stderr, "POSTDATA \"%s\"", postdata.c_str());

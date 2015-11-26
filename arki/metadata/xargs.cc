@@ -4,7 +4,7 @@
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
 #include <arki/dataset/data.h>
-#include <wibble/sys/exec.h>
+#include <arki/wibble/sys/exec.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>

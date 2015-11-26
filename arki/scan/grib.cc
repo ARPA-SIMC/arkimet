@@ -5,10 +5,10 @@
 #include <arki/runtime/config.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/files.h>
+#include <arki/utils/sys.h>
 #include <arki/scan/any.h>
 #include <cstring>
 #include <unistd.h>

@@ -4,12 +4,12 @@
 #include <arki/runtime/config.h>
 #include <arki/utils/files.h>
 #include <arki/nag.h>
-#include <wibble/exception.h>
 #include <arki/utils/string.h>
-#include <wibble/regexp.h>
-#include <wibble/sys/fs.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/sys.h>
 #include <arki/scan/any.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/regexp.h>
 #include <netcdfcpp.h>
 #include <cstring>
 #include <sstream>
@@ -23,6 +23,7 @@
 #include <arki/types/value.h>
 
 using namespace std;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {

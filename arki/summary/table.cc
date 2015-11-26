@@ -29,6 +29,8 @@
 #include <arki/summary.h>
 #include <arki/utils/string.h>
 #include <algorithm>
+#include <iostream>
+#include <arki/wibble/string.h>
 
 using namespace std;
 using namespace arki::types;

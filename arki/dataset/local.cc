@@ -408,10 +408,10 @@ void WritableLocal::check(std::ostream& log, bool fix, bool quick)
 
 WritableLocal* WritableLocal::create(const ConfigFile& cfg)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type.empty())
-		type = "local";
-	
+    string type = str::lower(cfg.value("type"));
+    if (type.empty())
+        type = "local";
+
 	if (type == "ondisk2" || type == "test")
 		return new dataset::ondisk2::Writer(cfg);
 	if (type == "simple" || type == "error" || type == "duplicates")
@@ -422,10 +422,10 @@ WritableLocal* WritableLocal::create(const ConfigFile& cfg)
 
 WritableLocal::AcquireResult WritableLocal::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type.empty())
-		type = "local";
-	
+    string type = str::lower(cfg.value("type"));
+    if (type.empty())
+        type = "local";
+
 	if (type == "ondisk2" || type == "test")
 		return dataset::ondisk2::Writer::testAcquire(cfg, md, out);
 	if (type == "simple" || type == "error" || type == "duplicates")

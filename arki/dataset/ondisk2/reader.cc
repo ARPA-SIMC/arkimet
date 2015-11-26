@@ -69,15 +69,11 @@ void Reader::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
 {
-	// Query the archives first
-	Local::querySummary(matcher, summary);
-
-	if (!m_idx) return;
-
-	using namespace wibble::str;
-
-	if (!m_idx || !m_idx->querySummary(matcher, summary))
-		throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
+    // Query the archives first
+    Local::querySummary(matcher, summary);
+    if (!m_idx) return;
+    if (!m_idx || !m_idx->querySummary(matcher, summary))
+        throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
 size_t Reader::produce_nth(metadata::Eater& cons, size_t idx)

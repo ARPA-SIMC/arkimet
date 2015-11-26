@@ -1,7 +1,7 @@
 #include "config.h"
 #include "configfile.h"
 #include "utils/string.h"
-#include <wibble/regexp.h>
+#include <arki/wibble/regexp.h>
 #include <cctype>
 #include <sstream>
 #include <cstdio>
@@ -242,21 +242,21 @@ void ConfigFile::output(std::ostream& out, const std::string& fileName, const st
 		if (!i->second.empty())
 			out << i->first << " = " << i->second << endl;
 
-	// Then, the sections
-	for (const_section_iterator i = sectionBegin(); i != sectionEnd(); ++i)
-	{
-		string name = wibble::str::joinpath(secName, i->first);
-		out << endl;
-		out << "[" << name << "]" << endl;
-		i->second->output(out, fileName, name);
-	}
+    // Then, the sections
+    for (const_section_iterator i = sectionBegin(); i != sectionEnd(); ++i)
+    {
+        string name = str::joinpath(secName, i->first);
+        out << endl;
+        out << "[" << name << "]" << endl;
+        i->second->output(out, fileName, name);
+    }
 }
 
 bool ConfigFile::boolValue(const std::string& str, bool def)
 {
-	if (str.empty())
-		return def;
-	string l = wibble::str::tolower(wibble::str::trim(str));
+    if (str.empty())
+        return def;
+    string l = str::lower(str::strip(str));
 	if (l.empty())
 		return false;
 	if (l == "true" || l == "yes" || l == "on" || l == "1")

@@ -22,9 +22,9 @@
 
 #include "config.h"
 
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/commandline/parser.h>
+#include <arki/wibble/string.h>
 #include <arki/utils/lua.h>
 #include <arki/runtime.h>
 

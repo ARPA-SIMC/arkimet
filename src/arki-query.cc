@@ -1,7 +1,7 @@
 #include "config.h"
 
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/commandline/parser.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/dataset/merged.h>

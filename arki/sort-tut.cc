@@ -11,7 +11,7 @@
 namespace std{
 static ostream& operator<<(ostream& out, const vector<int>& v)
 {
-	return out << wibble::str::join(v.begin(), v.end());
+    return out << arki::utils::str::join(", ", v.begin(), v.end());
 }
 }
 

@@ -3,8 +3,8 @@
 
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/string.h>
 
 #include "config.h"
 #ifdef HAVE_LUA

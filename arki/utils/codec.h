@@ -1,8 +1,8 @@
 #ifndef ARKI_UTILS_CODEC_H
 #define ARKI_UTILS_CODEC_H
 
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/string.h>
 #include <string>
 #include <type_traits>
 #include <cstdint>

@@ -23,7 +23,7 @@
 #include <arki/types/source/blob.h>
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
-#include <wibble/sys/process.h>
+#include <arki/wibble/sys/process.h>
 
 namespace tut {
 using namespace std;

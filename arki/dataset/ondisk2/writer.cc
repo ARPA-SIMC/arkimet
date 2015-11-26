@@ -17,7 +17,7 @@
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <wibble/sys/lockfile.h>
+#include <arki/wibble/sys/lockfile.h>
 #include <fstream>
 #include <sstream>
 #include <sys/types.h>
@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
+#include <cassert>
 
 using namespace std;
 using namespace arki::utils;

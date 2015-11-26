@@ -20,8 +20,8 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/string.h>
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>

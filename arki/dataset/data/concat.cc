@@ -4,7 +4,7 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include <wibble/sys/signal.h>
+#include <arki/wibble/sys/signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

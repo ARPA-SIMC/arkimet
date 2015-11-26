@@ -23,7 +23,7 @@
 #include "config.h"
 
 #include <arki/utils/sqlite.h>
-#include <wibble/string.h>
+#include <arki/wibble/string.h>
 #include <sstream>
 #include <unistd.h>
 

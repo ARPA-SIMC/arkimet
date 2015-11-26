@@ -24,8 +24,8 @@
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
-#include <wibble/exception.h>
-#include <wibble/string.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/string.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/lua.h>

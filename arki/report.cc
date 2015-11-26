@@ -5,7 +5,7 @@
 #include "utils/sys.h"
 #include "utils/string.h"
 #include "runtime/config.h"
-#include <wibble/regexp.h>
+#include <arki/wibble/regexp.h>
 
 using namespace std;
 using namespace arki::utils;

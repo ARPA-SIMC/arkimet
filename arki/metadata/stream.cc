@@ -3,7 +3,7 @@
 #include <arki/types/source/inline.h>
 #include <arki/utils/codec.h>
 
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 
 using namespace std;

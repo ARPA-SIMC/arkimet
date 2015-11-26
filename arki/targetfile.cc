@@ -3,7 +3,7 @@
 #include <arki/metadata/consumer.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/io.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 
 using namespace std;

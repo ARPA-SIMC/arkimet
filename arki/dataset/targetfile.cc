@@ -1,16 +1,13 @@
 #include "config.h"
-
 #include "targetfile.h"
-
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/types/reftime.h>
 #include <arki/utils/pcounter.h>
-
-#include <wibble/exception.h>
 #include <arki/utils/string.h>
-#include <wibble/grcal/grcal.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/grcal/grcal.h>
 
 #include <stdint.h>
 #include <sstream>
@@ -19,6 +16,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 namespace gd = wibble::grcal::date;
 
 namespace arki {
@@ -237,7 +235,7 @@ struct SingleFile : public BaseTargetFile
 
 TargetFile* TargetFile::create(const ConfigFile& cfg)
 {
-    string step = wibble::str::tolower(cfg.value("step"));
+    string step = str::lower(cfg.value("step"));
 
 	if (step == Daily::name())
 		return new Daily;

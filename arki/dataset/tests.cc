@@ -17,8 +17,8 @@
 #include "arki/types/proddef.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <wibble/regexp.h>
-#include <wibble/grcal/grcal.h>
+#include <arki/wibble/regexp.h>
+#include <arki/wibble/grcal/grcal.h>
 #include <algorithm>
 #include <fstream>
 #include <cstring>
@@ -362,17 +362,17 @@ void DatasetTest::import(const ConfigFile* wcfg, const std::string& testfile)
 	{
 		std::unique_ptr<WritableDataset> writer(makeWriter(wcfg));
 
-		if (wibble::str::endsWith(testfile, ".vm2")) {
-			scan::Vm2 scanner;
-			scanner.open(testfile);
+        if (str::endswith(testfile, ".vm2")) {
+            scan::Vm2 scanner;
+            scanner.open(testfile);
 
-			Metadata md;
-			while (scanner.next(md))
-			{
-				WritableDataset::AcquireResult res = writer->acquire(md);
-				ensure_equals(res, WritableDataset::ACQ_OK);
-			}
-		} else {
+            Metadata md;
+            while (scanner.next(md))
+            {
+                WritableDataset::AcquireResult res = writer->acquire(md);
+                ensure_equals(res, WritableDataset::ACQ_OK);
+            }
+        } else {
 
 			scan::Grib scanner;
 			scanner.open(testfile);

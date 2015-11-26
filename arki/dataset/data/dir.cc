@@ -8,11 +8,12 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/scan/any.h"
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <cerrno>
 #include <cstring>
 #include <cstdint>
+#include <set>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

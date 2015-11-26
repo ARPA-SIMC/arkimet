@@ -5,7 +5,7 @@
 #include <arki/utils/fd.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <cerrno>
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -5,7 +5,7 @@
 #include <arki/metadata.h>
 #include <arki/types/source/blob.h>
 #include <arki/scan/grib.h>
-#include <wibble/sys/process.h>
+#include <arki/wibble/sys/process.h>
 
 #include <sstream>
 #include <iostream>

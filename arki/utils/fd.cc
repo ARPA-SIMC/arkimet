@@ -21,10 +21,8 @@
  */
 
 #include "config.h"
-
 #include <arki/utils/fd.h>
-#include <wibble/exception.h>
-
+#include <arki/wibble/exception.h>
 #include <sys/stat.h>
 #include <unistd.h>
 

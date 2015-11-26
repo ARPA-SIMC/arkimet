@@ -5,8 +5,8 @@
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/utils/string.h>
-#include <wibble/sys/mutex.h>
-#include <wibble/sys/thread.h>
+#include <arki/wibble/sys/mutex.h>
+#include <arki/wibble/sys/thread.h>
 #include <cstring>
 // #include <iostream>
 
@@ -249,8 +249,6 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 
 void Merged::querySummary(const Matcher& matcher, Summary& summary)
 {
-	using namespace wibble::str;
-
 	// Handle the trivial case of only one dataset
 	if (datasets.size() == 1)
 	{

@@ -22,17 +22,17 @@
 
 #include "config.h"
 
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
-#include <wibble/string.h>
-#include <wibble/sys/process.h>
-#include <wibble/sys/childprocess.h>
-#include <wibble/sys/fs.h>
-#include <wibble/log/stream.h>
-#include <wibble/log/syslog.h>
-#include <wibble/log/file.h>
-#include <wibble/log/ostream.h>
-#include <wibble/log/filters.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/commandline/parser.h>
+#include <arki/wibble/string.h>
+#include <arki/wibble/sys/process.h>
+#include <arki/wibble/sys/childprocess.h>
+#include <arki/wibble/sys/fs.h>
+#include <arki/wibble/log/stream.h>
+#include <arki/wibble/log/syslog.h>
+#include <arki/wibble/log/file.h>
+#include <arki/wibble/log/ostream.h>
+#include <arki/wibble/log/filters.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
@@ -52,8 +52,8 @@
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
 #include <arki/emitter/json.h>
-#include <wibble/net/server.h>
-#include <wibble/net/http.h>
+#include <arki/wibble/net/server.h>
+#include <arki/wibble/net/http.h>
 //#include <arki/utils/lua.h>
 
 #include <string>

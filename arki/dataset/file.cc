@@ -12,6 +12,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <sys/stat.h>
+#include <iostream>
 
 #ifdef HAVE_LUA
 #include <arki/report.h>

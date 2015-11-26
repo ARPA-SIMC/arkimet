@@ -6,10 +6,9 @@
 #include <arki/metadata.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/dataset/data.h>
-
-#include <wibble/exception.h>
 #include <arki/utils/string.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
+#include <arki/wibble/exception.h>
 
 #include <fstream>
 #include <sstream>
@@ -17,6 +16,7 @@
 
 using namespace std;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace dataset {
@@ -42,7 +42,7 @@ WritableDataset::AcquireResult Outbound::acquire(Metadata& md, ReplaceStrategy r
 	string reldest = (*m_tf)(md);
 	string dest = m_path + "/" + reldest;
 
-	wibble::sys::fs::mkFilePath(dest);
+    sys::makedirs(str::dirname(dest));
 
 	md.set(types::AssignedDataset::create(m_name, ""));
 

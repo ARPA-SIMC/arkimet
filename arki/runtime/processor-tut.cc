@@ -1,24 +1,23 @@
 #include "config.h"
-
 #include "processor.h"
 #include "io.h"
 #include <arki/dataset.h>
 #include <arki/dataset/tests.h>
 #include <arki/scan/any.h>
-#include <wibble/sys/fs.h>
+#include <arki/utils/sys.h>
 
 namespace tut {
 using namespace std;
-using namespace wibble::sys;
 using namespace wibble::tests;
 using namespace arki;
 using namespace arki::runtime;
+using namespace arki::utils;
 
 struct arki_processor_shar {
     unique_ptr<ReadonlyDataset> build_dataset()
     {
         tests::DatasetTest dt;
-        if (fs::isdir("test")) fs::rmtree("test");
+        if (sys::isdir("test")) sys::rmtree("test");
         dt.cfg.setValue("type", "ondisk2");
         dt.cfg.setValue("step", "daily");
         dt.cfg.setValue("index", "origin, reftime");
@@ -34,8 +33,8 @@ struct arki_processor_shar {
     {
         unique_ptr<ReadonlyDataset> ds(build_dataset());
 
-        if (fs::exists("pm-out"))
-            fs::unlink("pm-out");
+        if (sys::exists("pm-out"))
+            sys::unlink("pm-out");
 
         runtime::Output out("pm-out");
         unique_ptr<DatasetProcessor> dp(pm.make(matcher, out));
@@ -56,9 +55,9 @@ void to::test<1>()
     Metadata::readFile("pm-out", mdc);
 
     wassert(actual(mdc.size()) == 3);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", ".", fs::abspath("test/2007/07-07.grib1"), 0, 34960));
-    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", ".", fs::abspath("test/2007/07-08.grib1"), 0, 7218));
-    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", ".", fs::abspath("test/2007/10-09.grib1"), 0, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", ".", sys::abspath("test/2007/07-07.grib1"), 0, 34960));
+    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", ".", sys::abspath("test/2007/07-08.grib1"), 0, 7218));
+    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", ".", sys::abspath("test/2007/10-09.grib1"), 0, 2234));
 }
 
 // Export inline data
@@ -93,9 +92,9 @@ void to::test<3>()
     scan::scan("pm-out", mdc, "grib");
 
     wassert(actual(mdc.size()) == 3);
-    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", fs::abspath("."), "pm-out", 0, 34960));
-    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", fs::abspath("."), "pm-out", 34960, 7218));
-    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", fs::abspath("."), "pm-out", 34960 + 7218, 2234));
+    wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 0, 34960));
+    wassert(actual_type(mdc[1].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 34960, 7218));
+    wassert(actual_type(mdc[2].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 34960 + 7218, 2234));
 }
 
 }

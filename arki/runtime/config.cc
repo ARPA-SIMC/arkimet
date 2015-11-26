@@ -4,9 +4,11 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/matcher.h>
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
+#include <algorithm>
+#include <iostream>
 #include <fstream>
 #include <memory>
 #include <unistd.h>

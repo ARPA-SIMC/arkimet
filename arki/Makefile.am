@@ -2,7 +2,7 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(WIBBLE_CFLAGS) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) $(SQLITE3_CFLAGS) -DCONF_DIR=\"$(confdir)\" -DPOSTPROC_DIR=\"$(postprocdir)\" $(ZLIB_CFLAGS)
 AM_CXXFLAGS = $(EXTRA_CXXFLAGS) $(DEVEL_CXXFLAGS)
 AM_LDFLAGS = $(EXTRA_LDFLAGS)
 
@@ -10,6 +10,39 @@ AM_LDFLAGS = $(EXTRA_LDFLAGS)
 arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
+		wibble/exception.h \
+		wibble/exception.tcc \
+		wibble/regexp.h \
+		wibble/string.h \
+		wibble/tests.h \
+		wibble/sys/thread.h \
+		wibble/sys/process.h \
+		wibble/sys/netbuffer.h \
+		wibble/sys/macros.h \
+		wibble/sys/mutex.h \
+		wibble/sys/buffer.h \
+		wibble/sys/childprocess.h \
+		wibble/sys/exec.h \
+		wibble/sys/fs.h \
+		wibble/sys/signal.h \
+		wibble/sys/lockfile.h \
+		wibble/sys/filelock.h \
+		wibble/commandline/core.h \
+		wibble/commandline/doc.h \
+		wibble/commandline/engine.h \
+		wibble/commandline/options.h \
+		wibble/commandline/parser.h \
+		wibble/tests/tut-prereq.h \
+		wibble/tests/tut_reporter.h \
+		wibble/tests/tut-wibble.h \
+		wibble/tests/tut.h \
+		wibble/tests/tut_restartable.h \
+		wibble/text/wordwrap.h \
+		wibble/grcal/grcal.h \
+		wibble/stream/posix.h \
+		wibble/net/mime.h \
+		wibble/net/server.h \
+		wibble/net/http.h \
 		defs.h \
 		core.h \
 		bbox.h \
@@ -169,7 +202,6 @@ lib_LTLIBRARIES = libarkimet.la
 # Build these incrementally
 libarkimet_la_SOURCES =
 libarkimet_la_LDFLAGS = -version-info @LIBARKI_VERSION_INFO@ $(SQLITE3_LDFLAGS) $(ZLIB_LIBS) $(DEVEL_LIBS) -lpthread
-libarkimet_la_LIBADD = $(WIBBLE_LIBS)
 tests_arki_test_SOURCES = tests/tut-main.cpp
 tests_arki_test_LDADD =
 
@@ -179,6 +211,35 @@ tests_arki_test_LDADD =
 #
 if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
+		wibble/exception.cpp \
+		wibble/regexp.cpp \
+		wibble/string.cpp \
+		wibble/tests.cpp \
+		wibble/sys/fs.cpp \
+		wibble/sys/lockfile.cpp \
+		wibble/sys/filelock.cpp \
+		wibble/sys/buffer.cpp \
+		wibble/sys/process.cpp \
+		wibble/sys/childprocess.cpp \
+		wibble/sys/mutex.cpp \
+		wibble/sys/exec.cpp \
+		wibble/sys/thread.cpp \
+		wibble/sys/signal.cpp \
+		wibble/log/file.cpp \
+		wibble/log/stream.cpp \
+		wibble/log/ostream.cpp \
+		wibble/log/syslog.cpp \
+		wibble/log/filters.cpp \
+		wibble/commandline/core.cpp \
+		wibble/commandline/options.cpp \
+		wibble/commandline/doc.cpp \
+		wibble/commandline/parser.cpp \
+		wibble/commandline/engine.cpp \
+		wibble/text/wordwrap.cpp \
+		wibble/grcal/grcal.cpp \
+		wibble/net/mime.cpp \
+		wibble/net/server.cpp \
+		wibble/net/http.cpp \
 		nag.cc \
 		utils.cc \
 		utils/accounting.cc \
@@ -560,7 +621,7 @@ check-local:
 		$(TESTS_ENVIRONMENT) $$test ; \
 	done
 
-tests_arki_test_LDADD += libarkimet.la $(WIBBLE_LIBS) $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
+tests_arki_test_LDADD += libarkimet.la $(SQLITE3_LDFLAGS) $(DEVEL_LIBS) -lpthread
 
 EXTRA_DIST = runtest buildbison buildflex \
 	     matcher/reftime/reftime-lex.ll \

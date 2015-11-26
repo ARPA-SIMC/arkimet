@@ -22,8 +22,8 @@
 
 #include "config.h"
 
-#include <wibble/exception.h>
-#include <wibble/commandline/parser.h>
+#include <arki/wibble/exception.h>
+#include <arki/wibble/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/printer.h>

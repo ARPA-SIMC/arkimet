@@ -1,9 +1,7 @@
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/utils/compress.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
 

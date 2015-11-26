@@ -211,10 +211,10 @@ void ReadonlyDataset::lua_push(lua_State* L)
 
 ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type.empty())
-		type = "local";
-	
+    string type = str::lower(cfg.value("type"));
+    if (type.empty())
+        type = "local";
+
 	if (type == "ondisk2" || type == "test")
 		return new dataset::ondisk2::Reader(cfg);
 	if (type == "simple" || type == "error" || type == "duplicates")
@@ -247,9 +247,9 @@ void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
 
 WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type == "remote")
-		throw wibble::exception::Consistency("creating a dataset", "remote datasets are not writable");
+    string type = str::lower(cfg.value("type"));
+    if (type == "remote")
+        throw wibble::exception::Consistency("creating a dataset", "remote datasets are not writable");
 	if (type == "outbound")
 		return new dataset::Outbound(cfg);
 	if (type == "discard")
@@ -262,9 +262,9 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 
 WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cfg, const Metadata& md, std::ostream& out)
 {
-	string type = wibble::str::tolower(cfg.value("type"));
-	if (type == "remote")
-		throw wibble::exception::Consistency("simulating dataset acquisition", "remote datasets are not writable");
+    string type = str::lower(cfg.value("type"));
+    if (type == "remote")
+        throw wibble::exception::Consistency("simulating dataset acquisition", "remote datasets are not writable");
 	if (type == "outbound")
 		return dataset::Outbound::testAcquire(cfg, md, out);
 	if (type == "discard")

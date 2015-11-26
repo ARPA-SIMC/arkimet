@@ -21,7 +21,7 @@
 
 #include "benchmark.h"
 
-#include <wibble/exception.h>
+#include <arki/wibble/exception.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <ostream>

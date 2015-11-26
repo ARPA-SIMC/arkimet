@@ -6,11 +6,10 @@
 #include <arki/utils/process.h>
 #include <arki/runtime/config.h>
 #include <arki/utils/string.h>
-#include <wibble/regexp.h>
-#include <wibble/operators.h>
-#include <wibble/sys/childprocess.h>
-#include <wibble/sys/process.h>
-#include <wibble/stream/posix.h>
+#include <arki/wibble/regexp.h>
+#include <arki/wibble/sys/childprocess.h>
+#include <arki/wibble/sys/process.h>
+#include <arki/wibble/stream/posix.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -238,7 +237,6 @@ void Postprocess::set_data_start_hook(metadata::Hook* hook)
 
 void Postprocess::validate(const map<string, string>& cfg)
 {
-    using namespace wibble::operators;
     // Build the set of allowed postprocessors
     set<string> allowed;
     map<string, string>::const_iterator i = cfg.find("postprocess");

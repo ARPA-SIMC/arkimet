@@ -20,7 +20,7 @@
 #ifndef ARKI_TEST_UTILS_H
 #define ARKI_TEST_UTILS_H
 
-#include <wibble/tests.h>
+#include <arki/wibble/tests.h>
 #include <memory>
 
 namespace arki {

@@ -4,8 +4,9 @@
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>
 #include <arki/utils/geosdef.h>
-#include <wibble/regexp.h>
+#include <arki/wibble/regexp.h>
 #include <strings.h>
+#include <algorithm>
 
 #ifdef HAVE_VM2
 #include <arki/utils/vm2.h>

@@ -8,12 +8,11 @@
 #include <arki/nag.h>
 #include <arki/postprocess.h>
 #include <arki/types/typeset.h>
-
+#include <algorithm>
 #ifdef HAVE_LUA
 #include <arki/report.h>
 #endif
-
-#include <wibble/regexp.h>
+#include <arki/wibble/regexp.h>
 
 // #include <iostream>
 

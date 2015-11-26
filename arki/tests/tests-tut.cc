@@ -3,11 +3,9 @@
 #include <arki/tests/tests.h>
 #include <arki/utils.h>
 #include <arki/utils/files.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -15,6 +13,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace wibble::tests;
 
 struct arki_tests_shar {

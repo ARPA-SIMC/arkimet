@@ -17,13 +17,11 @@
  */
 
 #include "config.h"
-
 #include <arki/tests/tests.h>
 #include <arki/scan/dir.h>
 #include <arki/utils.h>
-#include <wibble/exception.h>
-#include <wibble/sys/fs.h>
-
+#include <arki/utils/sys.h>
+#include <arki/wibble/exception.h>
 #include <algorithm>
 #include <sstream>
 #include <iostream>
@@ -34,7 +32,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble::sys;
+using namespace arki::utils;
 
 struct arki_scan_dir_shar {
 	arki_scan_dir_shar()

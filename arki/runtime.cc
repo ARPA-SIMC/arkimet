@@ -24,7 +24,7 @@
 #ifdef HAVE_LUA
 #include "arki/report.h"
 #endif
-#include <wibble/sys/signal.h>
+#include <arki/wibble/sys/signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

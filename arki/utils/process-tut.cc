@@ -22,7 +22,7 @@
 
 #include <arki/tests/tests.h>
 #include <arki/utils/process.h>
-#include <wibble/string.h>
+#include <arki/wibble/string.h>
 #include <sstream>
 
 namespace tut {

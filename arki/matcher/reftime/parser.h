@@ -4,7 +4,7 @@
 #include <arki/types.h>
 #include <arki/types/time.h>
 #include <arki/utils/string.h>
-#include <wibble/grcal/grcal.h>
+#include <arki/wibble/grcal/grcal.h>
 #include <string>
 #include <ctime>
 #include <vector>
