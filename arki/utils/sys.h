@@ -150,6 +150,15 @@ public:
      */
     [[noreturn]] virtual void throw_error(const char* desc);
 
+    /**
+     * Throw a runtime_error unrelated from errno.
+     *
+     * This can be overridden by subclasses that may have more information
+     * about the file descriptor, so that they can generate more descriptive
+     * messages.
+     */
+    [[noreturn]] virtual void throw_runtime_error(const char* desc);
+
     void close();
 
     void fstat(struct stat& st);
@@ -162,10 +171,14 @@ public:
     size_t pread(void* buf, size_t count, off_t offset);
     size_t pwrite(const void* buf, size_t count, off_t offset);
 
+    /// Write all the data in buf, retrying partial writes
+    void write_all_or_retry(const void* buf, size_t count);
+
     /**
-     * Write all the data in buf, retrying partial writes
+     * Write all the data in buf, throwing runtime_error in case of a partial
+     * write
      */
-    void write_all(const void* buf, size_t count);
+    void write_all_or_throw(const void* buf, size_t count);
 
     MMap mmap(size_t length, int prot, int flags, off_t offset=0);
 
@@ -188,6 +201,7 @@ public:
     NamedFileDescriptor& operator=(NamedFileDescriptor&&);
 
     [[noreturn]] virtual void throw_error(const char* desc);
+    [[noreturn]] virtual void throw_runtime_error(const char* desc);
 
     /// Return the file pathname
     const std::string& name() const { return pathname; }

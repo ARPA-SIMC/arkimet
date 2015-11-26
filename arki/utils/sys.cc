@@ -232,6 +232,11 @@ void FileDescriptor::throw_error(const char* desc)
     throw std::system_error(errno, std::system_category(), desc);
 }
 
+void FileDescriptor::throw_runtime_error(const char* desc)
+{
+    throw std::runtime_error(desc);
+}
+
 void FileDescriptor::close()
 {
     if (fd == -1) return;
@@ -292,11 +297,18 @@ off_t FileDescriptor::lseek(off_t offset, int whence)
     return res;
 }
 
-void FileDescriptor::write_all(const void* buf, size_t count)
+void FileDescriptor::write_all_or_retry(const void* buf, size_t count)
 {
     size_t written = 0;
     while (written < count)
         written += write((unsigned char*)buf + written, count - written);
+}
+
+void FileDescriptor::write_all_or_throw(const void* buf, size_t count)
+{
+    size_t written = write((unsigned char*)buf, count);
+    if (written < count)
+        throw_runtime_error("partial write");
 }
 
 MMap FileDescriptor::mmap(size_t length, int prot, int flags, off_t offset)
@@ -334,6 +346,11 @@ NamedFileDescriptor& NamedFileDescriptor::operator=(NamedFileDescriptor&& o)
 void NamedFileDescriptor::throw_error(const char* desc)
 {
     throw std::system_error(errno, std::system_category(), pathname + ": " + desc);
+}
+
+void NamedFileDescriptor::throw_runtime_error(const char* desc)
+{
+    throw std::runtime_error(pathname + ": " + desc);
 }
 
 
@@ -640,7 +657,7 @@ std::string read_file(const std::string& file)
 void write_file(const std::string& file, const std::string& data, mode_t mode)
 {
     File out(file, O_WRONLY | O_CREAT, mode);
-    out.write_all(data.data(), data.size());
+    out.write_all_or_retry(data.data(), data.size());
     out.close();
 }
 
@@ -655,7 +672,7 @@ void write_file_atomically(const std::string& file, const std::string& data, mod
     // Set the file permissions, honoring umask
     out.fchmod(mode & ~mask);
 
-    out.write_all(data.data(), data.size());
+    out.write_all_or_retry(data.data(), data.size());
     out.close();
 
     if (rename(out.name().c_str(), file.c_str()) < 0)
