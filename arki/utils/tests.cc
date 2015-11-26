@@ -17,7 +17,7 @@
 using namespace std;
 using namespace arki::utils;
 
-const arki::utils::tests::LocationInfo arki::utils_test_location_info;
+const arki::utils::tests::LocationInfo arki_utils_test_location_info;
 
 namespace arki {
 namespace utils {

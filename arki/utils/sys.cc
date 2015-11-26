@@ -273,6 +273,13 @@ size_t FileDescriptor::read(void* buf, size_t count)
     return res;
 }
 
+void FileDescriptor::read_all_or_throw(void* buf, size_t count)
+{
+    size_t res = read(buf, count);
+    if (res != count)
+        throw_runtime_error("partial read");
+}
+
 size_t FileDescriptor::write(const void* buf, size_t count)
 {
     ssize_t res = ::write(fd, buf, count);
@@ -624,17 +631,35 @@ void Path::rmtree()
  * File
  */
 
+File::File(const std::string& pathname)
+    : NamedFileDescriptor(-1, pathname)
+{
+}
+
 File::File(const std::string& pathname, int flags, mode_t mode)
     : NamedFileDescriptor(-1, pathname)
 {
-    fd = open(pathname.c_str(), flags, mode);
-    if (fd == -1)
-        throw std::system_error(errno, std::system_category(), "cannot open file " + pathname);
+    open(flags, mode);
 }
 
 File::~File()
 {
     if (fd != -1) ::close(fd);
+}
+
+void File::open(int flags, mode_t mode)
+{
+    fd = ::open(pathname.c_str(), flags, mode);
+    if (fd == -1)
+        throw std::system_error(errno, std::system_category(), "cannot open file " + pathname);
+}
+
+bool File::open_ifexists(int flags, mode_t mode)
+{
+    fd = ::open(pathname.c_str(), flags, mode);
+    if (fd != -1) return true;
+    if (errno == ENOENT) return false;
+    throw std::system_error(errno, std::system_category(), "cannot open file " + pathname);
 }
 
 File File::mkstemp(const std::string& prefix)

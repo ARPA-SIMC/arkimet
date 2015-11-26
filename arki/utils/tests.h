@@ -30,7 +30,7 @@ struct LocationInfo;
  * They are here to act as default root nodes to fulfill method signatures when
  * tests are called from outside other tests.
  */
-extern const arki::utils::tests::LocationInfo arki::utils_test_location_info;
+extern const arki::utils::tests::LocationInfo arki_utils_test_location_info;
 
 namespace arki {
 namespace utils {
@@ -136,8 +136,8 @@ struct TestFailed : public std::exception
  * picked up by tests as extra local info
  */
 #define ARKI_UTILS_TEST_INFO(name) \
-    arki::utils::tests::LocationInfo arki::utils_test_location_info; \
-    arki::utils::tests::LocationInfo& name = arki::utils_test_location_info
+    arki::utils::tests::LocationInfo arki_utils_test_location_info; \
+    arki::utils::tests::LocationInfo& name = arki_utils_test_location_info
 
 
 /// Test function that ensures that the actual value is true
@@ -347,10 +347,10 @@ inline ActualFunction actual_function(std::function<void()> actual) { return Act
     do { try { \
         __VA_ARGS__ ; \
     } catch (TestFailed& e) { \
-        e.add_stack_info(__FILE__, __LINE__, #__VA_ARGS__, arki::utils_test_location_info); \
+        e.add_stack_info(__FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
         throw; \
     } catch (std::exception& e) { \
-        throw TestFailed(e, __FILE__, __LINE__, #__VA_ARGS__, arki::utils_test_location_info); \
+        throw TestFailed(e, __FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
     } } while(0)
 
 /// Shortcut to check that a given expression returns true
@@ -370,10 +370,10 @@ inline ActualFunction actual_function(std::function<void()> actual) { return Act
     [&]() { try { \
         return func; \
     } catch (TestFailed& e) { \
-        e.add_stack_info(__FILE__, __LINE__, #func, arki::utils_test_location_info); \
+        e.add_stack_info(__FILE__, __LINE__, #func, arki_utils_test_location_info); \
         throw; \
     } catch (std::exception& e) { \
-        throw TestFailed(e, __FILE__, __LINE__, #func, arki::utils_test_location_info); \
+        throw TestFailed(e, __FILE__, __LINE__, #func, arki_utils_test_location_info); \
     } }()
 
 
