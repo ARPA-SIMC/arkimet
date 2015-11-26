@@ -316,7 +316,7 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 #ifdef CONF_DIR
     // Else, CONF_DIR is tried.
     string name = string(CONF_DIR) + "/match-alias.conf";
-    unique_ptr<struct stat> st = wibble::sys::fs::stat(name);
+    unique_ptr<struct stat> st = sys::stat(name);
     if (st.get())
     {
         parseConfigFile(cfg, name);
@@ -354,20 +354,19 @@ std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::st
 {
 	std::string dirname = rcDirName(nameInConfdir, nameInEnv, dirOption);
 
-	vector<string> files;
-	wibble::sys::fs::Directory dir(dirname);
-	for (wibble::sys::fs::Directory::const_iterator i = dir.begin();
-			i != dir.end(); ++i)
-	{
-		string file = *i;
-		// Skip hidden files
-		if (file[0] == '.') continue;
-		// Skip backup files
-		if (file[file.size() - 1] == '~') continue;
+    vector<string> files;
+    sys::Path dir(dirname);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        string file = i->d_name;
+        // Skip hidden files
+        if (file[0] == '.') continue;
+        // Skip backup files
+        if (file[file.size() - 1] == '~') continue;
         // Skip non-files
         if (!i.isreg()) continue;
-        files.push_back(wibble::str::joinpath(dirname, *i));
-	}
+        files.push_back(str::joinpath(dirname, i->d_name));
+    }
 
 	// Sort the file names
 	std::sort(files.begin(), files.end());

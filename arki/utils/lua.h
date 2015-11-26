@@ -26,8 +26,6 @@
 #include <arki/libconfig.h>
 
 #ifdef HAVE_LUA
-
-#include <wibble/string.h>
 #include <sstream>
 #include <iosfwd>
 
@@ -129,9 +127,11 @@ void dumpstack(lua_State* L, const std::string& title, std::ostream& out);
 template<typename T>
 int tostring(lua_State* L)
 {
-	T& t = **(T**)lua_touserdata(L, 1);
-	lua_pushstring(L, wibble::str::fmt(t).c_str());
-	return 1;
+    T& t = **(T**)lua_touserdata(L, 1);
+    std::stringstream ss;
+    ss << t;
+    lua_pushstring(L, ss.str().c_str());
+    return 1;
 }
 
 /**

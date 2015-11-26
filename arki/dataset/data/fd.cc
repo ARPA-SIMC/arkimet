@@ -9,6 +9,7 @@
 #include "arki/utils/sys.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
+#include <wibble/exception.h>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>

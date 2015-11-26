@@ -25,7 +25,6 @@
 
 #include <arki/dataset.h>
 #include <arki/metadata/consumer.h>
-#include <wibble/exception.h>
 #include <wibble/net/http.h>
 #include <string>
 

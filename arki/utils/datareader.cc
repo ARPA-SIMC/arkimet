@@ -242,13 +242,16 @@ void DataReader::read(const std::string& fname, off_t ofs, size_t size, void* bu
         else if (sys::exists(fname + ".gz"))
             last = new datareader::ZlibFileReader(fname);
         else
-            throw wibble::exception::Consistency("accessing file " + fname, "file does not exist");
+        {
+            stringstream ss;
+            ss << "file " << fname << " not found";
+            throw std::runtime_error(ss.str());
+        }
     }
 
-	// Read the data
-	last->read(ofs, size, buf);
+    // Read the data
+    last->read(ofs, size, buf);
 }
 
 }
 }
-// vim:set ts=4 sw=4:

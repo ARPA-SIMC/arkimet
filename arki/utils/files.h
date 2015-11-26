@@ -91,7 +91,7 @@ void removeDontpackFlagfile(const std::string& dir);
 bool hasDontpackFlagfile(const std::string& dir);
 
 /**
- * Same as wibble::sys::fs::readFile, but if \a file is "-" then reads all from
+ * Same as sys::read_file, but if \a file is "-" then reads all from
  * stdin
  */
 std::string read_file(const std::string &file);

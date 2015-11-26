@@ -23,7 +23,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/exception.h>
 #include <arki/utils/sqlite.h>
 #include <arki/dataset/index/base.h>
 #include <string>

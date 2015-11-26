@@ -23,7 +23,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-#include <wibble/exception.h>
 #include <arki/metadata.h>
 #include <arki/types/origin.h>
 #include <arki/types/product.h>

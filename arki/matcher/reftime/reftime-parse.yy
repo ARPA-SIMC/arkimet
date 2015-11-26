@@ -1,6 +1,5 @@
 %{
 #include "config.h"
-
 #include "parser.h"
 #include <string>
 #include <stdexcept>
@@ -244,17 +243,17 @@ void Parser::parse(const std::string& str)
 			// Parse successful
 			break;
 		case 1: {
-			// Syntax error
-			stringstream err;
-			for (vector<string>::const_iterator i = errors.begin();
-					i != errors.end(); ++i)
-			{
-				if (i != errors.begin())
-					err << "; ";
-				err << *i;
-			}
-
-			throw wibble::exception::Consistency("Parsing '"+str+"'", err.str());
+            // Syntax error
+            stringstream ss;
+            ss << "cannot parse '" << str << "': ";
+            for (vector<string>::const_iterator i = errors.begin();
+                    i != errors.end(); ++i)
+            {
+                if (i != errors.begin())
+                    ss << "; ";
+                ss << *i;
+            }
+            throw std::runtime_error(ss.str());
 		}
 		case 2:
 			// Out of memory

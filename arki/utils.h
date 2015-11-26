@@ -3,9 +3,6 @@
 
 #include <sstream>
 #include <string>
-#include <wibble/exception.h>
-#include <wibble/string.h>
-#include <wibble/sys/fs.h>
 #include <cstdint>
 
 namespace arki {

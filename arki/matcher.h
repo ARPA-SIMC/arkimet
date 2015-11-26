@@ -25,7 +25,6 @@
 
 #include <arki/types.h>
 #include <arki/refcounted.h>
-#include <wibble/exception.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -247,13 +246,13 @@ struct Matcher
 		return *this;
 	}
 
-	/// Use of the underlying pointer
-	const matcher::AND* operator->() const
-	{
-		if (!m_impl)
-			throw wibble::exception::Consistency("accessing matcher", "matcher is empty");
-		return m_impl;
-	}
+    /// Use of the underlying pointer
+    const matcher::AND* operator->() const
+    {
+        if (!m_impl)
+            throw std::runtime_error("cannot access matcher: matcher is empty");
+        return m_impl;
+    }
 
 	/// Numeric tag to identify this matcher type
 	//virtual MatchType type() const = 0;

@@ -50,7 +50,6 @@ extern "C" {
 using namespace std;
 using namespace arki;
 using namespace wibble;
-using namespace wibble::sys;
 
 namespace wibble {
 namespace commandline {

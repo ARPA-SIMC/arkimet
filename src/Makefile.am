@@ -89,6 +89,7 @@ check-local:
 
 test_src_SOURCES = \
 		arki-server-tut.cc \
+		../arki/utils/tests.cc \
 		../arki/types/tests.cc \
 		../arki/tests/tut-main.cpp
 test_src_LDADD = $(all_libs)
