@@ -125,10 +125,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         m->set(types::run::Minute::create(p->time.vals[3], p->time.vals[4]));
 
         // Set source and inline data
-        char buf[5432];
-        memset(buf, 0, 5432);
-        wibble::sys::Buffer data(buf, 5432, false);
-        m->set_source_inline(format, data);
+        m->set_source_inline(format, vector<uint8_t>(5432));
 
         return cons.eat(move(m));
     }
@@ -146,5 +143,3 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
 }
 }
 }
-
-// vim:set ts=4 sw=4:

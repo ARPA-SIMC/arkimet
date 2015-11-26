@@ -4,7 +4,6 @@
 #include <arki/utils/codec.h>
 
 #include <wibble/exception.h>
-#include <wibble/sys/buffer.h>
 #include <arki/utils/string.h>
 
 using namespace std;
@@ -54,11 +53,11 @@ bool Stream::checkData()
     if (buffer.size() < dataToGet)
         return false;
 
-    wibble::sys::Buffer buf(buffer.data(), dataToGet);
+    vector<uint8_t> buf(buffer.data(), buffer.data() + dataToGet);
     buffer = buffer.substr(dataToGet);
     dataToGet = 0;
     state = METADATA;
-    md->set_source_inline(md->source().format, buf);
+    md->set_source_inline(md->source().format, move(buf));
     consumer.eat(move(md));
     return true;
 }

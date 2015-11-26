@@ -10,7 +10,6 @@
 #include "arki/scan/any.h"
 #include <wibble/exception.h>
 #include <arki/utils/string.h>
-#include <wibble/sys/buffer.h>
 #include <cerrno>
 #include <cstring>
 #include <cstdint>
@@ -56,7 +55,7 @@ struct FdLock
 };
 
 /// Write the buffer to a file. If the file already exists, does nothing and returns false
-bool add_file(const std::string& absname, const wibble::sys::Buffer& buf)
+bool add_file(const std::string& absname, const std::vector<uint8_t>& buf)
 {
     int fd = open(absname.c_str(), O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
     if (fd == -1)
@@ -223,7 +222,7 @@ size_t Segment::write_file(Metadata& md, int fd, const std::string& absname)
     utils::fd::HandleWatch hw(absname, fd);
 
     try {
-        wibble::sys::Buffer buf = md.getData();
+        const std::vector<uint8_t>& buf = md.getData();
 
         ssize_t count = pwrite(fd, buf.data(), buf.size(), 0);
         if (count < 0)
@@ -253,7 +252,7 @@ void Segment::append(Metadata& md)
     md.set_source(Source::createBlob(md.source().format, "", absname, pos, size));
 }
 
-off_t Segment::append(const wibble::sys::Buffer& buf)
+off_t Segment::append(const std::vector<uint8_t>& buf)
 {
     throw wibble::exception::Consistency("dir::Segment::append not implemented");
 }

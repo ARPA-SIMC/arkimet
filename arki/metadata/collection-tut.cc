@@ -73,7 +73,7 @@ void to::test<1>()
 	utils::acct::gzip_idx_reposition_count.reset();
     for (int i = 0; i < repeats; ++i)
     {
-        wibble::sys::Buffer b = c[i].getData();
+        const auto& b = c[i].getData();
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
     }
@@ -92,7 +92,7 @@ void to::test<1>()
 	utils::acct::gzip_idx_reposition_count.reset();
     for (int i = repeats-1; i >= 0; --i)
     {
-        wibble::sys::Buffer b = c[i].getData();
+        const auto& b = c[i].getData();
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
     }
@@ -110,7 +110,7 @@ void to::test<1>()
 	utils::acct::gzip_idx_reposition_count.reset();
     for (int i = 0; i < repeats; i += 2)
     {
-        wibble::sys::Buffer b = c[i].getData();
+        const auto& b = c[i].getData();
         ensure_equals(b.size(), bufr.size());
         ensure(memcmp(b.data(), bufr.data(), bufr.size()) == 0);
     }

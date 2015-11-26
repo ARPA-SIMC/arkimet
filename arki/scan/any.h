@@ -1,33 +1,13 @@
 #ifndef ARKI_SCAN_ANY_H
 #define ARKI_SCAN_ANY_H
 
-/*
- * scan/any - Scan files autodetecting the format
- *
- * Copyright (C) 2009--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Format-independent metadata extraction and validation
 
 #include <arki/libconfig.h>
+#include <vector>
 #include <string>
 #include <ctime>
 #include <sys/types.h>
-#include <wibble/sys/buffer.h>
 
 namespace arki {
 class Metadata;
@@ -108,7 +88,7 @@ void compress(const std::string& file, size_t groupsize = 512);
 /**
  * Reconstruct raw data based on a metadata and a value
  */
-wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, const std::string& value);
+std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);
 
 /**
  * Validate data
@@ -151,6 +131,4 @@ bool update_sequence_number(Metadata& md, int& usn);
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

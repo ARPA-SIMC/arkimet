@@ -26,15 +26,12 @@ struct Append : public Transaction
 {
     Segment& w;
     Metadata& md;
-    bool fired;
-    wibble::sys::Buffer buf;
+    bool fired = false;
+    const std::vector<uint8_t>& buf;
     off_t pos;
 
-    Append(Segment& w, Metadata& md) : w(w), md(md), fired(false)
+    Append(Segment& w, Metadata& md) : w(w), md(md), buf(md.getData())
     {
-        // Get the data blob to append
-        buf = md.getData();
-
         // Lock the file so that we are the only ones writing to it
         w.lock();
 
@@ -83,7 +80,7 @@ Segment::Segment(const std::string& relname, const std::string& absname)
 {
 }
 
-void Segment::write(const wibble::sys::Buffer& buf)
+void Segment::write(const std::vector<uint8_t>& buf)
 {
     struct iovec todo[2] = {
         { (void*)buf.data(), buf.size() },
@@ -111,7 +108,7 @@ void Segment::append(Metadata& md)
     open();
 
     // Get the data blob to append
-    wibble::sys::Buffer buf = md.getData();
+    const std::vector<uint8_t>& buf = md.getData();
 
     // Lock the file so that we are the only ones writing to it
     lock();
@@ -137,7 +134,7 @@ void Segment::append(Metadata& md)
     md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
 }
 
-off_t Segment::append(const wibble::sys::Buffer& buf)
+off_t Segment::append(const std::vector<uint8_t>& buf)
 {
     open();
 
@@ -186,7 +183,7 @@ OstreamWriter::~OstreamWriter()
 
 size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 {
-    wibble::sys::Buffer buf = md.getData();
+    const std::vector<uint8_t>& buf = md.getData();
     wibble::sys::sig::ProcMask pm(blocked);
     out.write((const char*)buf.data(), buf.size());
     // Cannot use endl since we don't know how long it is, and we would risk
@@ -198,7 +195,7 @@ size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 
 size_t OstreamWriter::stream(Metadata& md, int out) const
 {
-    wibble::sys::Buffer buf = md.getData();
+    const std::vector<uint8_t>& buf = md.getData();
     wibble::sys::sig::ProcMask pm(blocked);
 
     ssize_t res = ::write(out, buf.data(), buf.size());

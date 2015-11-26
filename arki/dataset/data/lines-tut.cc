@@ -138,7 +138,7 @@ void to::test<4>()
     wassert(!actual(fname).fileexists());
     {
         unique_ptr<lines::Segment> dw(make_w(fname));
-        wibble::sys::Buffer buf("ciao", 4);
+        vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
         ensure_equals(dw->append(buf), 0);
         ensure_equals(dw->append(buf), 5);
     }

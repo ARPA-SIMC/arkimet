@@ -104,9 +104,9 @@ static void addToSummary(runtime::Input& in, Summary& s)
 	Metadata md;
 	Summary summary;
 
-	wibble::sys::Buffer buf;
-	string signature;
-	unsigned version;
+    vector<uint8_t> buf;
+    string signature;
+    unsigned version;
 
 	while (types::readBundle(in.stream(), in.name(), buf, signature, version))
 	{
@@ -294,9 +294,9 @@ int main(int argc, const char* argv[])
 			Metadata md;
 			Summary summary;
 
-			wibble::sys::Buffer buf;
-			string signature;
-			unsigned version;
+            vector<uint8_t> buf;
+            string signature;
+            unsigned version;
 
 			while (types::readBundle(in.stream(), in.name(), buf, signature, version))
 			{

@@ -12,7 +12,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
-#include <wibble/sys/buffer.h>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -29,6 +28,13 @@ using namespace arki::dataset;
 using namespace arki::dataset::ondisk2;
 using namespace arki::dataset::ondisk2::writer;
 using namespace arki::utils;
+
+namespace std {
+static ostream& operator<<(ostream& out, const vector<uint8_t>& buf)
+{
+    return out.write((const char*)buf.data(), buf.size());
+}
+}
 
 namespace tut {
 
@@ -744,7 +750,7 @@ void to::test<12>()
     }
 
     // Append one of the GRIBs to the wrong file
-    wibble::sys::Buffer buf = mdc[1].getData();
+    const auto& buf = mdc[1].getData();
     wassert(actual(buf.size()) == 34960);
     FILE* fd = fopen("testdir/2007/10-09.grib1", "ab");
     wassert(actual(fd != NULL).istrue());
@@ -805,8 +811,8 @@ void to::test<13>()
     }
 
     // Append one of the GRIBs to the wrong file
-    wibble::sys::Buffer buf1 = mdc[1].getData();
-    wibble::sys::Buffer buf2 = mdc[2].getData();
+    const auto& buf1 = mdc[1].getData();
+    const auto& buf2 = mdc[2].getData();
     wassert(actual(buf1.size()) == 34960);
     wassert(actual(buf2.size()) == 2234);
     FILE* fd = fopen("testdir/2007/06-06.grib1", "ab");
@@ -865,7 +871,7 @@ template<> template<> void to::test<14>()
     }
 
     // Take note of all the data
-    vector<wibble::sys::Buffer> orig_data;
+    vector<vector<uint8_t>> orig_data;
     orig_data.reserve(mdc_imported.size());
     for (unsigned i = 0; i < mdc_imported.size(); ++i)
         orig_data.push_back(mdc_imported[i].getData());

@@ -205,7 +205,7 @@ template<> template<> void to::test<4>()
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
 
     // Check that data is accessible
-    wibble::sys::Buffer buf = mdc[0].getData();
+    const auto& buf = mdc[0].getData();
     ensure_equals(buf.size(), 7218);
 
     mdc.clear();
@@ -250,7 +250,7 @@ template<> template<> void to::test<5>()
     //wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 7218));
 
     // Check that data is accessible
-    wibble::sys::Buffer buf = mdc[0].getData();
+    const auto& buf = mdc[0].getData();
     wassert(actual(buf.size()) == 7218);
 
     mdc.clear();
@@ -352,8 +352,7 @@ template<> template<> void to::test<7>()
                             char buf[40];
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
-                            wibble::sys::Buffer data(buf, len, false);
-                            md.set_source_inline("vm2", data);
+                            md.set_source_inline("vm2", vector<uint8_t>(buf, buf+len));
                             md.add_note("Generated from memory");
                             md.set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
                             md.set(Area::createVM2(station));

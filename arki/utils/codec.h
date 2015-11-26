@@ -7,12 +7,6 @@
 #include <type_traits>
 #include <cstdint>
 
-namespace wibble {
-namespace sys {
-class Buffer;
-}
-}
-
 namespace arki {
 namespace utils {
 namespace codec {
@@ -139,7 +133,6 @@ public:
 	Encoder& addString(const char* str) { buf += str; return *this; }
 	Encoder& addString(const char* str, size_t n) { buf.append(str, n); return *this; }
 	Encoder& addString(const std::string& str) { buf += str; return *this; }
-	Encoder& addBuffer(const wibble::sys::Buffer& buf);
 	Encoder& addBuffer(const std::vector<uint8_t>& buf);
 
 	/// Encode an unsigned integer in the given amount of bytes, big endian
@@ -237,7 +230,6 @@ struct Decoder
 
     Decoder(const std::string& str) : buf((const unsigned char*)str.data()), len(str.size()) {}
     Decoder(const unsigned char* buf, size_t len) : buf(buf), len(len) {}
-    Decoder(const wibble::sys::Buffer& buf, size_t offset=0);
     Decoder(const std::vector<uint8_t>& buf, size_t offset=0);
 
 	template<typename T, typename STR>

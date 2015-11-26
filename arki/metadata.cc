@@ -1,25 +1,3 @@
-/*
- * metadata - Handle arkimet metadata
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "metadata.h"
 #include "metadata/consumer.h"
 #include "types/value.h"
@@ -40,8 +18,6 @@
 #include <cstdlib>
 #include <cerrno>
 #include <stdexcept>
-#include <wibble/string.h>
-#include <wibble/sys/buffer.h>
 
 #ifdef HAVE_LUA
 #include "utils/lua.h"
@@ -164,10 +140,10 @@ void Metadata::set_source(std::unique_ptr<types::Source>&& s)
     m_source = s.release();
 }
 
-void Metadata::set_source_inline(const std::string& format, wibble::sys::Buffer buf)
+void Metadata::set_source_inline(const std::string& format, std::vector<uint8_t>&& buf)
 {
-    m_data = buf;
-    set_source(Source::createInline(format, buf.size()));
+    m_data = move(buf);
+    set_source(Source::createInline(format, m_data.size()));
 }
 
 void Metadata::unset_source()
@@ -332,7 +308,8 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
     if (source().style() == types::Source::INLINE)
     {
         source::Inline* s = dynamic_cast<source::Inline*>(m_source);
-        wibble::sys::Buffer buf(s->size);
+        vector<uint8_t> buf;
+        buf.resize(s->size);
 
         iotrace::trace_file(filename, 0, s->size, "read inline data");
 
@@ -345,7 +322,7 @@ void Metadata::readInlineData(std::istream& in, const std::string& filename)
             throw std::system_error(errno, std::system_category(), ss.str());
         }
 
-        m_data = buf;
+        m_data = move(buf);
     }
 }
 
@@ -529,15 +506,15 @@ string Metadata::encodeBinary() const
 }
 
 
-wibble::sys::Buffer Metadata::getData()
+const vector<uint8_t>& Metadata::getData()
 {
     // First thing, try and return it from cache
-    if (m_data.data()) return m_data;
+    if (!m_data.empty()) return m_data;
 
     // If we don't have it in cache, try reconstructing it from the Value metadata
     if (const Value* value = get<types::Value>())
         m_data = arki::scan::reconstruct(m_source->format, *this, value->buffer);
-    if (m_data.data()) return m_data;
+    if (!m_data.empty()) return m_data;
 
     // If we don't have it in cache and we don't have a source, we cannot know
     // how to load it: give up
@@ -554,9 +531,10 @@ wibble::sys::Buffer Metadata::getData()
             // Do not directly use m_data so that if dataReader.read throws an
             // exception, m_data remains empty.
             const source::Blob& s = sourceBlob();
-            wibble::sys::Buffer buf(s.size);
+            vector<uint8_t> buf;
+            buf.resize(s.size);
             metadata::dataReader.read(s.absolutePathname(), s.offset, s.size, buf.data());
-            m_data = buf;
+            m_data = move(buf);
             return m_data;
         }
         default:
@@ -567,23 +545,27 @@ wibble::sys::Buffer Metadata::getData()
 void Metadata::drop_cached_data()
 {
     if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
-        m_data = wibble::sys::Buffer();
+    {
+        m_data.clear();
+        m_data.shrink_to_fit();
+    }
 }
 
-void Metadata::set_cached_data(const wibble::sys::Buffer& buf)
+void Metadata::set_cached_data(std::vector<uint8_t>&& buf)
 {
-    m_data = buf;
+    m_data = move(buf);
 }
 
 void Metadata::makeInline()
 {
     if (!m_source) throw wibble::exception::Consistency("making source inline", "data source is not defined");
-    set_source_inline(m_source->format, getData());
+    getData();
+    set_source(Source::createInline(m_source->format, m_data.size()));
 }
 
 size_t Metadata::data_size() const
 {
-    if (m_data.data()) return m_data.size();
+    if (!m_data.empty()) return m_data.size();
     if (!m_source) return 0;
 
     // Query according to source
@@ -674,7 +656,7 @@ void Metadata::readGroup(const std::vector<uint8_t>& buf, unsigned version, cons
     ensureSize(buf.size(), 4, "uncompressed item size");
     uint32_t uncsize = codec::decodeUInt((const unsigned char*)buf.data(), 4);
 
-    wibble::sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
+    vector<uint8_t> decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
     const unsigned char* ubuf = (const unsigned char*)decomp.data();
     size_t len = decomp.size();
     const unsigned char* ibuf;

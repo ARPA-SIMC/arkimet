@@ -34,9 +34,9 @@ TESTGRP(arki_scan_bufr);
 template<> template<>
 void to::test<1>()
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/test.bufr");
 
@@ -118,9 +118,9 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/padded.bufr");
 
@@ -200,8 +200,8 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	Metadata md;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    vector<uint8_t> buf;
 
 	const scan::Validator& v = scan::bufr::validator();
 
@@ -237,9 +237,9 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/C23000.bufr");
 
@@ -277,9 +277,9 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	Metadata md;
-	scan::Bufr scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Bufr scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/pollution.bufr");
 

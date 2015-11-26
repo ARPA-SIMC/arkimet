@@ -1,7 +1,6 @@
 #include <arki/types/tests.h>
 #include "stats.h"
 #include <arki/metadata.h>
-#include <wibble/sys/buffer.h>
 
 namespace tut {
 using namespace std;
@@ -15,8 +14,7 @@ struct arki_summary_stats_shar {
     arki_summary_stats_shar()
     {
         md.set(Reftime::createPosition(Time(2009, 8, 7, 6, 5, 4)));
-        wibble::sys::Buffer buf;
-        md.set_source_inline("grib1", buf);
+        md.set_source_inline("grib1", vector<uint8_t>());
     }
 };
 TESTGRP(arki_summary_stats);

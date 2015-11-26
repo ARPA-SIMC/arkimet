@@ -27,12 +27,6 @@
 #include <arki/dataset/data/fd.h>
 #include <string>
 
-namespace wibble {
-namespace sys {
-class Buffer;
-}
-}
-
 namespace arki {
 namespace dataset {
 namespace data {
@@ -44,7 +38,7 @@ public:
     Segment(const std::string& relname, const std::string& absname);
 
     void append(Metadata& md) override;
-    off_t append(const wibble::sys::Buffer& buf) override;
+    off_t append(const std::vector<uint8_t>& buf) override;
     Pending append(Metadata& md, off_t* ofs) override;
 
     FileState check(const metadata::Collection& mds, bool quick=true) override;
@@ -57,7 +51,7 @@ public:
     HoleSegment(const std::string& relname, const std::string& absname)
         : Segment(relname, absname) {}
 
-    void write(const wibble::sys::Buffer& buf) override;
+    void write(const std::vector<uint8_t>& buf) override;
 
     Pending repack(const std::string& rootdir, metadata::Collection& mds) override;
 };

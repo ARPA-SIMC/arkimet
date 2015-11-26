@@ -9,7 +9,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils.h"
 #include "arki/nag.h"
-#include <wibble/sys/buffer.h>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -101,7 +100,7 @@ void Segment::fdtruncate(off_t pos)
         nag::warning("truncating %s to previous size %zd (rollback of append operation): %m", absname.c_str(), pos);
 }
 
-void Segment::write(const wibble::sys::Buffer& buf)
+void Segment::write(const std::vector<uint8_t>& buf)
 {
     // Prevent caching (ignore function result)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
@@ -280,7 +279,7 @@ Pending Segment::repack(
     for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
     {
         // Read the data
-        wibble::sys::Buffer buf = (*i)->getData();
+        const auto& buf = (*i)->getData();
         // Validate it
         if (!skip_validation)
             validator.validate(buf.data(), buf.size());

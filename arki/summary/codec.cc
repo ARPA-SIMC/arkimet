@@ -217,7 +217,7 @@ size_t decode(const vector<uint8_t>& buf, unsigned version, const std::string& f
             ensureSize(buf.size(), 4, "uncompressed item size");
             uint32_t uncsize = decodeUInt((const unsigned char*)buf.data(), 4);
 
-            wibble::sys::Buffer decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
+            vector<uint8_t> decomp = utils::compress::unlzo((const unsigned char*)buf.data() + 4, buf.size() - 4, uncsize);
             Decoder dec(decomp);
             return decode1(dec, target);
         }
@@ -234,7 +234,7 @@ size_t decode(const vector<uint8_t>& buf, unsigned version, const std::string& f
                 case 1: { // LZO compressed
                     // Read uncompressed size
                     uint32_t uncsize = dec.popUInt(4, "uncompressed item size");
-                    wibble::sys::Buffer decomp = utils::compress::unlzo(dec.buf, dec.len, uncsize);
+                    vector<uint8_t> decomp = utils::compress::unlzo(dec.buf, dec.len, uncsize);
                     Decoder uncdec(decomp);
                     return decode3(uncdec, target);
                 }

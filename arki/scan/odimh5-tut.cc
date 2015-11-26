@@ -22,9 +22,9 @@ TESTGRP(arki_scan_odimh5);
 template<> template<>
 void to::test<1>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/PVOL_v20.h5");
 
@@ -61,9 +61,9 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_CAPPI_v20.h5");
 	ensure(scanner.next(md));
@@ -98,9 +98,9 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_ETOP_v20.h5");
 	ensure(scanner.next(md));
@@ -135,9 +135,9 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_LBM_v20.h5");
 	ensure(scanner.next(md));
@@ -172,9 +172,9 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_MAX_v20.h5");
 	ensure(scanner.next(md));
@@ -209,9 +209,9 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_PCAPPI_v20.h5");
 	ensure(scanner.next(md));
@@ -246,9 +246,9 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_PPI_v20.h5");
 	ensure(scanner.next(md));
@@ -283,9 +283,9 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_RR_v20.h5");
 	ensure(scanner.next(md));
@@ -321,9 +321,9 @@ void to::test<8>()
 template<> template<>
 void to::test<9>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/COMP_VIL_v20.h5");
 	ensure(scanner.next(md));
@@ -359,9 +359,9 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_CAPPI_v20.h5");
 	ensure(scanner.next(md));
@@ -397,9 +397,9 @@ void to::test<10>()
 template<> template<>
 void to::test<11>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_ETOP_v20.h5");
 	ensure(scanner.next(md));
@@ -434,9 +434,9 @@ void to::test<11>()
 template<> template<>
 void to::test<12>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_HVMI_v20.h5");
 	ensure(scanner.next(md));
@@ -471,9 +471,9 @@ void to::test<12>()
 template<> template<>
 void to::test<13>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_MAX_v20.h5");
 	ensure(scanner.next(md));
@@ -508,9 +508,9 @@ void to::test<13>()
 template<> template<>
 void to::test<14>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_PCAPPI_v20.h5");
 	ensure(scanner.next(md));
@@ -545,9 +545,9 @@ void to::test<14>()
 template<> template<>
 void to::test<15>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_PPI_v20.h5");
 	ensure(scanner.next(md));
@@ -582,9 +582,9 @@ void to::test<15>()
 template<> template<>
 void to::test<16>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_RR_v20.h5");
 	ensure(scanner.next(md));
@@ -620,9 +620,9 @@ void to::test<16>()
 template<> template<>
 void to::test<17>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_VIL_v20.h5");
 	ensure(scanner.next(md));
@@ -657,9 +657,9 @@ void to::test<17>()
 template<> template<>
 void to::test<18>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/IMAGE_ZLR-BB_v20.h5");
 	ensure(scanner.next(md));
@@ -694,9 +694,9 @@ void to::test<18>()
 template<> template<>
 void to::test<19>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/XSEC_v21.h5");
 	ensure(scanner.next(md));
@@ -733,9 +733,9 @@ void to::test<19>()
 template<> template<>
 void to::test<20>()
 {
-	Metadata md;
-	scan::OdimH5 scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::OdimH5 scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/odimh5/empty.h5");
 	ensure(not scanner.next(md));

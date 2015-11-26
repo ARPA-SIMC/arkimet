@@ -4,7 +4,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
-#include <wibble/sys/buffer.h>
 #include <wibble/sys/signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,15 +25,12 @@ struct Append : public Transaction
 {
     Segment& w;
     Metadata& md;
-    bool fired;
-    wibble::sys::Buffer buf;
+    bool fired = false;
+    const std::vector<uint8_t>& buf;
     off_t pos;
 
-    Append(Segment& w, Metadata& md) : w(w), md(md), fired(false)
+    Append(Segment& w, Metadata& md) : w(w), md(md), buf(md.getData())
     {
-        // Get the data blob to append
-        buf = md.getData();
-
         // Lock the file so that we are the only ones writing to it
         w.lock();
 
@@ -88,7 +84,7 @@ void Segment::append(Metadata& md)
     open();
 
     // Get the data blob to append
-    wibble::sys::Buffer buf = md.getData();
+    const std::vector<uint8_t>& buf = md.getData();
 
     // Lock the file so that we are the only ones writing to it
     lock();
@@ -114,7 +110,7 @@ void Segment::append(Metadata& md)
     md.set_source(Source::createBlob(md.source().format, "", absname, pos, buf.size()));
 }
 
-off_t Segment::append(const wibble::sys::Buffer& buf)
+off_t Segment::append(const std::vector<uint8_t>& buf)
 {
     open();
 
@@ -132,7 +128,7 @@ Pending Segment::append(Metadata& md, off_t* ofs)
     return res;
 }
 
-void HoleSegment::write(const wibble::sys::Buffer& buf)
+void HoleSegment::write(const std::vector<uint8_t>& buf)
 {
     // Get the current file size
     off_t pos = ::lseek(fd, 0, SEEK_END);
@@ -190,7 +186,7 @@ OstreamWriter::~OstreamWriter()
 
 size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 {
-    wibble::sys::Buffer buf = md.getData();
+    const std::vector<uint8_t>& buf = md.getData();
     wibble::sys::sig::ProcMask pm(blocked);
     out.write((const char*)buf.data(), buf.size());
     out.flush();
@@ -199,7 +195,7 @@ size_t OstreamWriter::stream(Metadata& md, std::ostream& out) const
 
 size_t OstreamWriter::stream(Metadata& md, int out) const
 {
-    wibble::sys::Buffer buf = md.getData();
+    const std::vector<uint8_t>& buf = md.getData();
     wibble::sys::sig::ProcMask pm(blocked);
 
     ssize_t res = ::write(out, buf.data(), buf.size());

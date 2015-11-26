@@ -480,7 +480,7 @@ std::string Summary::encode(bool compressed) const
     enc.addUInt(3, 2);
     if (compressed)
     {
-        wibble::sys::Buffer comp = utils::compress::lzo(inner.data(), inner.size());
+        vector<uint8_t> comp = utils::compress::lzo(inner.data(), inner.size());
         if (comp.size() + 4 >= inner.size())
         {
             // No point in compressing

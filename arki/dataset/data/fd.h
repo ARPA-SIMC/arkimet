@@ -27,12 +27,6 @@
 #include <arki/dataset/data.h>
 #include <string>
 
-namespace wibble {
-namespace sys {
-class Buffer;
-}
-}
-
 namespace arki {
 namespace dataset {
 namespace data {
@@ -53,7 +47,7 @@ public:
     void lock();
     void unlock();
     off_t wrpos();
-    virtual void write(const wibble::sys::Buffer& buf);
+    virtual void write(const std::vector<uint8_t>& buf);
     void fdtruncate(off_t pos);
 
     size_t remove();

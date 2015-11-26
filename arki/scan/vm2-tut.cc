@@ -26,7 +26,7 @@ void to::test<1>()
 {
     Metadata md;
     scan::Vm2 scanner;
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
     scanner.open("inbound/test.vm2");
     // See how we scan the first vm2
@@ -53,7 +53,7 @@ template<> template<>
 void to::test<2>()
 {
     Metadata md;
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
     const scan::Validator& v = scan::vm2::validator();
 
@@ -96,7 +96,7 @@ void to::test<3>()
 {
     Metadata md;
     scan::Vm2 scanner;
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
     scanner.open("inbound/test.vm2");
     // Skip the first vm2
@@ -127,7 +127,7 @@ template<> template<>
 void to::test<4>()
 {
     const types::Value* value;
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
     metadata::Collection mdc;
     scan::scan("inbound/test.vm2", mdc);
@@ -162,5 +162,3 @@ void to::test<5>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

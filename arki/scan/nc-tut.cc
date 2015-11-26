@@ -21,7 +21,7 @@ void to::test<1>()
 {
     Metadata md;
     scan::NetCDF scanner;
-    wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
     scanner.open("inbound/example_1.nc");
     // See how we scan the first vm2
@@ -39,5 +39,3 @@ void to::test<1>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

@@ -1,33 +1,12 @@
 #ifndef ARKI_SCAN_VM2_H
 #define ARKI_SCAN_VM2_H
 
-/*
- * scan/vm2 - Scan a VM2 file for metadata
- *
- * Copyright (C) 2012--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Emanuele Di Giacomo <edigiacomo@arpa.emr.it>
- */
+/// Scan a VM2 file for metadata
 
 #include <string>
 #include <vector>
 #include <unistd.h>
 #include <fstream>
-#include <wibble/sys/buffer.h>
 
 namespace meteo {
 namespace vm2 {
@@ -85,11 +64,9 @@ public:
 	bool next(Metadata& md);
 
     /// Reconstruct a VM2 based on metadata and a string value
-    static wibble::sys::Buffer reconstruct(const Metadata& md, const std::string& value);
+    static std::vector<uint8_t> reconstruct(const Metadata& md, const std::string& value);
 };
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

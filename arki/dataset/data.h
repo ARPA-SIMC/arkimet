@@ -1,42 +1,17 @@
 #ifndef ARKI_DATASET_DATA_H
 #define ARKI_DATASET_DATA_H
 
-/*
- * data - Read/write functions for data blobs
- *
- * Copyright (C) 2012--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Dataset read/write functions for data blobs
 
 #include <arki/libconfig.h>
 #include <arki/defs.h>
 #include <arki/transaction.h>
 #include <arki/nag.h>
 #include <string>
+#include <vector>
 #include <iosfwd>
 #include <sys/types.h>
 #include <memory>
-
-namespace wibble {
-namespace sys {
-class Buffer;
-}
-}
 
 namespace arki {
 class Metadata;
@@ -280,7 +255,7 @@ public:
      *
      * @return the offset at which the buffer is written
      */
-    virtual off_t append(const wibble::sys::Buffer& buf) = 0;
+    virtual off_t append(const std::vector<uint8_t>& buf) = 0;
 
     /**
      * Append the data, in a transaction, updating md's source information.

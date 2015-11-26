@@ -117,7 +117,7 @@ void Xargs::start_batch(const std::string& new_format)
     tempfile.open();
 }
 
-void Xargs::add_to_batch(Metadata& md, const wibble::sys::Buffer& buf)
+void Xargs::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
 {
     metadata::Clusterer::add_to_batch(md, buf);
     arki::dataset::data::OstreamWriter::get(md.source().format)->stream(md, tempfile.fd);

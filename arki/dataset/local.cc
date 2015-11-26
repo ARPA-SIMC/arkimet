@@ -14,7 +14,6 @@
 #include <arki/nag.h>
 #include <arki/utils/string.h>
 #include <arki/utils/sys.h>
-#include <wibble/sys/buffer.h>
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
@@ -92,7 +91,7 @@ struct ScanTestFilter : public metadata::Eater
         // Inner scope to run cleanups before we produce anything
         {
             // Get the data
-            wibble::sys::Buffer data = md->getData();
+            const auto& data = md->getData();
 
             // Write the raw data to a temp file
             runtime::Tempfile tf;

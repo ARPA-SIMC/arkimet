@@ -563,10 +563,10 @@ void Grib::setSource(Metadata& md)
 	long edition;
 	check_grib_error(grib_get_long(gh, "editionNumber", &edition), "reading edition number");
 
-	// Get the encoded GRIB buffer from the GRIB handle
-	const void* vbuf;
-	size_t size;
-	check_grib_error(grib_get_message(gh, &vbuf, &size), "accessing the encoded GRIB data");
+    // Get the encoded GRIB buffer from the GRIB handle
+    const uint8_t* vbuf;
+    size_t size;
+    check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "accessing the encoded GRIB data");
 
 #if 0  // We cannot use this as long is too small for 64bit file offsets
 	// Get the position in the file of the en of the grib
@@ -580,12 +580,12 @@ void Grib::setSource(Metadata& md)
     snprintf(gribn, 8, "grib%ld", edition);
     if (false)
     {
-        md.set_source_inline(gribn, wibble::sys::Buffer(vbuf, size));
+        md.set_source_inline(gribn, vector<uint8_t>(vbuf, vbuf + size));
     }
     else
     {
         md.set_source(Source::createBlob(gribn, basedir, relname, offset, size));
-        md.set_cached_data(wibble::sys::Buffer(vbuf, size));
+        md.set_cached_data(vector<uint8_t>(vbuf, vbuf + size));
     }
     stringstream note;
     note << "Scanned from " << relname << ":" << offset << "+" << size;

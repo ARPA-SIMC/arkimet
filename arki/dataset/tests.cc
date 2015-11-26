@@ -819,8 +819,7 @@ unsigned Fixture::selective_days_since() const
 Metadata make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
     Metadata md;
-    wibble::sys::Buffer buf(size);
-    md.set_source_inline(format, buf);
+    md.set_source_inline(format, vector<uint8_t>(size));
     md.set("origin", "GRIB1(200, 10, 100)");
     md.set("product", "GRIB1(3, 4, 5)");
     md.set("level", "GRIB1(1, 2)");

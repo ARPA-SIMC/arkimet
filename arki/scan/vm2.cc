@@ -133,7 +133,7 @@ bool Vm2::next(Metadata& md)
 
     md.clear();
     unique_ptr<source::Blob> source(source::Blob::create("vm2", basedir, relname, offset, size));
-    md.set_cached_data(wibble::sys::Buffer(line.c_str(), line.size()));
+    md.set_cached_data(vector<uint8_t>(line.begin(), line.end()));
     md.set_source(upcast<Source>(move(source)));
     md.add_note("Scanned from " + relname);
     md.set(Reftime::createPosition(Time(value.year, value.month, value.mday, value.hour, value.min, value.sec)));
@@ -151,7 +151,7 @@ bool Vm2::next(Metadata& md)
     return true;
 }
 
-wibble::sys::Buffer Vm2::reconstruct(const Metadata& md, const std::string& value)
+vector<uint8_t> Vm2::reconstruct(const Metadata& md, const std::string& value)
 {
     stringstream res;
 
@@ -172,9 +172,9 @@ wibble::sys::Buffer Vm2::reconstruct(const Metadata& md, const std::string& valu
         << "," << product->variable_id()
         << "," << value;
 
-    return wibble::sys::Buffer(res.str().data(), res.str().size());
+    string reconstructed = res.str();
+    return vector<uint8_t>(reconstructed.begin(), reconstructed.end());
 }
 
 }
 }
-// vim:set ts=4 sw=4:

@@ -1,32 +1,11 @@
 #ifndef ARKI_METADATA_CLUSTERER_H
 #define ARKI_METADATA_CLUSTERER_H
 
-/*
- * metadata/clusterer - Process a stream of metadata in batches
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Process a stream of metadata in batches
 
 #include <arki/metadata/consumer.h>
 #include <arki/types/timerange.h>
 #include <arki/types/reftime.h>
-#include <wibble/sys/buffer.h>
 
 namespace arki {
 namespace metadata {
@@ -67,7 +46,7 @@ protected:
      * Child classes can hook here for processing md and buf as members of the
      * current batch.
      */
-    virtual void add_to_batch(Metadata& md, const wibble::sys::Buffer& buf);
+    virtual void add_to_batch(Metadata& md, const std::vector<uint8_t>& buf);
 
     /**
      * Reset information about the current batch, and start a new one.
@@ -80,7 +59,7 @@ protected:
     bool exceeds_count(const Metadata& md) const;
 
     /// Check if adding the given data would exceed the size limits for the current batch
-    bool exceeds_size(const wibble::sys::Buffer& buf) const;
+    bool exceeds_size(const std::vector<uint8_t>& buf) const;
 
     /// Check if the time of the given data is inside the range acceptable for
     /// the current batch the current batch

@@ -30,7 +30,7 @@ bool Clusterer::exceeds_count(const Metadata& md) const
     return (max_count != 0 && count >= max_count);
 }
 
-bool Clusterer::exceeds_size(const wibble::sys::Buffer& buf) const
+bool Clusterer::exceeds_size(const std::vector<uint8_t>& buf) const
 {
     if (max_bytes == 0 || size == 0) return false;
     return size + buf.size() > max_bytes;
@@ -60,7 +60,7 @@ void Clusterer::start_batch(const std::string& new_format)
     size = 0;
 }
 
-void Clusterer::add_to_batch(Metadata& md, const wibble::sys::Buffer& buf)
+void Clusterer::add_to_batch(Metadata& md, const std::vector<uint8_t>& buf)
 {
     size += buf.size();
     ++count;
@@ -97,7 +97,7 @@ void Clusterer::flush()
 
 bool Clusterer::eat(unique_ptr<Metadata>&& md)
 {
-    wibble::sys::Buffer buf = md->getData();
+    const auto& buf = md->getData();
 
     if (format.empty() || format != md->source().format ||
         exceeds_count(*md) || exceeds_size(buf) || exceeds_interval(*md) || exceeds_timerange(*md))

@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include "metadata.h"
 #include <arki/types/tests.h>
 #include <arki/tests/lua.h>
@@ -237,14 +218,9 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	// Here is some data
-	wibble::sys::Buffer buf(4);
-	((char*)buf.data())[0] = 'c';
-	((char*)buf.data())[1] = 'i';
-	((char*)buf.data())[2] = 'a';
-	((char*)buf.data())[3] = 'o';
-
-    md.set_source_inline("test", buf);
+    // Here is some data
+    vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
+    md.set_source_inline("test", vector<uint8_t>(buf));
 
 	// Encode
 	stringstream output;

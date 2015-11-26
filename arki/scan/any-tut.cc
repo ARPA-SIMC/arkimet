@@ -33,11 +33,11 @@ TESTGRP(arki_scan_any);
 template<> template<>
 void to::test<1>()
 {
-	metadata::Collection mdc;
+    metadata::Collection mdc;
 #ifndef HAVE_GRIBAPI
-	ensure(not scan::scan("inbound/test.grib1", mdc));
+    ensure(not scan::scan("inbound/test.grib1", mdc));
 #else
-	wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
 	ensure(scan::scan("inbound/test.grib1", mdc));
 
@@ -106,11 +106,11 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	metadata::Collection mdc;
+    metadata::Collection mdc;
 #ifndef HAVE_DBALLE
-	ensure(not scan::scan("inbound/test.bufr", mdc));
+    ensure(not scan::scan("inbound/test.bufr", mdc));
 #else
-	wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
 	ensure(scan::scan("inbound/test.bufr", mdc));
 

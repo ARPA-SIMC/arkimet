@@ -1,32 +1,6 @@
-/*
- * scan/odimh5 - Scan a ODIMH5 file for metadata
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Guido Billi <guidobilli@gmail.com>
- * Author: Enrico Zini <enrico@enricozini.org>
- */
-
 #include "config.h"
-
 #include <arki/scan/odimh5.h>
-
 #include <arki/metadata.h>
-
 #include <arki/types/origin.h>
 #include <arki/types/reftime.h>
 #include <arki/types/task.h>
@@ -35,19 +9,15 @@
 #include <arki/types/level.h>
 #include <arki/types/area.h>
 #include <arki/types/timerange.h>
-
 #include <arki/runtime/config.h>
-
-#include <wibble/exception.h>
 #include <arki/utils/string.h>
-#include <wibble/sys/fs.h>
-
 #include <arki/utils/files.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/sys.h>
 #include <arki/scan/any.h>
-
 #include <cstring>
 #include <unistd.h>
+#include <fcntl.h>
 #include <fstream>
 #include <vector>
 #include <stdexcept>
@@ -59,6 +29,7 @@
 
 using namespace std;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace scan {
@@ -212,7 +183,7 @@ void OdimH5::open(const std::string& filename)
 {
     std::string basedir, relname;
     utils::files::resolve_path(filename, basedir, relname);
-    open(wibble::sys::fs::abspath(filename), basedir, relname);
+    open(sys::abspath(filename), basedir, relname);
 }
 
 void OdimH5::open(const std::string& filename, const std::string& basedir, const std::string& relname)
@@ -227,7 +198,7 @@ void OdimH5::open(const std::string& filename, const std::string& basedir, const
 
     // Open H5 file
     read = false;
-    if (wibble::sys::fs::stat(filename)->st_size == 0) {
+    if (sys::stat(filename)->st_size == 0) {
         // If the file is empty, don't open it
         read = true;
     } else {
@@ -272,30 +243,23 @@ bool OdimH5::next(Metadata& md)
 
 void OdimH5::setSource(Metadata& md)
 {
-	int length;
-	/* for ODIMH5 files the source is the entire file */
+    // for ODIMH5 files the source is the entire file
+    sys::File in(filename, O_RDONLY);
 
-	std::ifstream is;
-	is.open(filename.c_str(), std::ios::binary );
+    // calculate file size
+    struct stat st;
+    in.fstat(st);
 
-	/* calcualte file size */
-	is.seekg (0, std::ios::end);
-	length = is.tellg();
-	is.seekg (0, std::ios::beg);
+    vector<uint8_t> buf(st.st_size);
+    in.read_all_or_throw(buf.data(), buf.size());
+    in.close();
 
-    char* buff = (char*)malloc(length);
-    try {
-        is.read(buff,length);
-        is.close();
+    stringstream note;
+    note << "Scanned from " << relname << ":0+" << buf.size();
+    md.add_note(note.str());
 
-        md.set_source(Source::createBlob("odimh5", basedir, relname, 0, length));
-        md.set_cached_data(wibble::sys::Buffer(buff, length));
-    } catch (...) {
-        free(buff);
-        throw;
-    }
-
-    md.add_note("Scanned from " + relname + ":0+" + wibble::str::fmt(length));
+    md.set_source(Source::createBlob("odimh5", basedir, relname, 0, buf.size()));
+    md.set_cached_data(move(buf));
 }
 
 bool OdimH5::scanLua(Metadata& md)

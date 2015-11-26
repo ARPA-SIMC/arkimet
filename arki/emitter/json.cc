@@ -3,7 +3,6 @@
 #include <arki/emitter/json.h>
 #include <wibble/exception.h>
 #include <arki/utils/string.h>
-#include <wibble/sys/buffer.h>
 #include <cctype>
 #include <cmath>
 
@@ -115,7 +114,7 @@ void JSON::add_raw(const std::string& val)
     if (out.bad()) throw wibble::exception::System("write failed");
 }
 
-void JSON::add_raw(const wibble::sys::Buffer& val)
+void JSON::add_raw(const std::vector<uint8_t>& val)
 {
     out.write((const char*)val.data(), val.size());
     if (out.bad()) throw wibble::exception::System("write failed");

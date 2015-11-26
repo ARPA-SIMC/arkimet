@@ -132,6 +132,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		types/typeset.h \
 		utils/accounting.h \
 		utils/codec.h \
+		utils/gzip.h \
 		utils/compress.h \
 		utils/datareader.h \
 		utils/dataset.h \
@@ -146,8 +147,8 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/process.h \
 		utils/sqlite.h \
 		utils/raii.h \
-                utils/string.h \
-                utils/sys.h \
+		utils/string.h \
+		utils/sys.h \
 		values.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
@@ -182,6 +183,7 @@ libarkimet_la_SOURCES += \
 		utils.cc \
 		utils/accounting.cc \
 		utils/codec.cc \
+		utils/gzip.cc \
 		utils/datareader.cc \
 		utils/fd.cc \
 		utils/files.cc \
@@ -247,8 +249,10 @@ libarkimet_la_SOURCES += \
 tests_arki_test_SOURCES += \
 		tests/tests-tut.cc \
 		utils-tut.cc \
+		utils/tests.cc \
 		utils/accounting-tut.cc \
 		utils/codec-tut.cc \
+		utils/gzip-test.cc \
 		utils/fd-tut.cc \
 		utils/files-tut.cc \
 		utils/intern-tut.cc \

@@ -80,25 +80,25 @@ TESTGRP(arki_metadata_stream);
 
 inline bool cmpmd(Metadata& md1, Metadata& md2)
 {
-	if (md1 != md2)
-	{
-		cerr << "----- The two metadata differ.  First one:" << endl;
-		md1.writeYaml(cerr);
-		if (md1.source().style() == Source::INLINE)
-		{
-			wibble::sys::Buffer buf = md1.getData();
-			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
-		}
-		cerr << "----- Second one:" << endl;
-		md2.writeYaml(cerr);
-		if (md2.source().style() == Source::INLINE)
-		{
-			wibble::sys::Buffer buf = md2.getData();
-			cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
-		}
-		return false;
-	}
-	return true;
+    if (md1 != md2)
+    {
+        cerr << "----- The two metadata differ.  First one:" << endl;
+        md1.writeYaml(cerr);
+        if (md1.source().style() == Source::INLINE)
+        {
+            const auto& buf = md1.getData();
+            cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
+        }
+        cerr << "----- Second one:" << endl;
+        md2.writeYaml(cerr);
+        if (md2.source().style() == Source::INLINE)
+        {
+            const auto& buf = md2.getData();
+            cerr << "-- Inline data:" << string((const char*)buf.data(), buf.size()) << endl;
+        }
+        return false;
+    }
+    return true;
 }
 
 // Test metadata stream
@@ -114,7 +114,8 @@ void to::test<1>()
 	md2 = md1;
 	md2.set(origin::BUFR::create(1, 2));
 
-    md1.set_source_inline("test", wibble::sys::Buffer("this is a test", 14));
+    const char* teststr = "this is a test";
+    md1.set_source_inline("test", vector<uint8_t>(teststr, teststr + 14));
 
 	// Encode everything in a buffer
 	stringstream str;

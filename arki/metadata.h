@@ -28,7 +28,6 @@
 #include <arki/types.h>
 #include <arki/types/note.h>
 #include <arki/types/source.h>
-#include <wibble/sys/buffer.h>
 #include <string>
 
 struct lua_State;
@@ -71,7 +70,7 @@ protected:
     types::Source* m_source;
 
     /// Inline data, or cached version of previously read data
-    wibble::sys::Buffer m_data;
+    std::vector<uint8_t> m_data;
 
 public:
     Metadata();
@@ -92,7 +91,7 @@ public:
     /// Set a new source, replacing the old one if present
     void set_source(std::unique_ptr<types::Source>&& s);
     /// Set the source of this metadata as Inline, with the given data
-    void set_source_inline(const std::string& format, wibble::sys::Buffer buf);
+    void set_source_inline(const std::string& format, std::vector<uint8_t>&& buf);
     /// Unsets the source
     void unset_source();
 
@@ -211,13 +210,13 @@ public:
 
 
     /// Get the raw data described by this metadata
-    wibble::sys::Buffer getData();
+    const std::vector<uint8_t>& getData();
 
     /**
      * Set cached data for non-inline sources, so that getData() won't have
      * to read it again.
      */
-    void set_cached_data(const wibble::sys::Buffer& buf);
+    void set_cached_data(std::vector<uint8_t>&& buf);
 
     /**
      * If the source is not inline, but the data are cached in memory, drop

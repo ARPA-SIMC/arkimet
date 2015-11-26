@@ -493,7 +493,7 @@ void to::test<7>()
 
         // I/O should happen here
         mdc[0].drop_cached_data();
-        wibble::sys::Buffer buf = mdc[0].getData();
+        const auto& buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 1u);
         wassert(actual(collector.events[0].filename()).endswith("inbound/test.vm2"));
@@ -536,12 +536,10 @@ void to::test<7>()
 
         // No I/O should happen here
         mdc[0].drop_cached_data();
-        wibble::sys::Buffer buf = mdc[0].getData();
+        const auto& buf = mdc[0].getData();
         wassert(actual(string((const char*)buf.data(), buf.size())) == "198710310000,1,227,1.2,,,000000000");
         wassert(actual(collector.events.size()) == 0u);
     }
 }
 
 }
-
-// vim:set ts=4 sw=4:

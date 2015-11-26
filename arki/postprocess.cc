@@ -10,7 +10,6 @@
 #include <wibble/operators.h>
 #include <wibble/sys/childprocess.h>
 #include <wibble/sys/process.h>
-#include <wibble/sys/fs.h>
 #include <wibble/stream/posix.h>
 #include <sys/select.h>
 #include <sys/time.h>
@@ -288,7 +287,7 @@ bool Postprocess::eat(unique_ptr<Metadata>&& md)
     if (m_child->send(encoded) < encoded.size())
         return false;
 
-    wibble::sys::Buffer data = md->getData();
+    const auto& data = md->getData();
     if (m_child->send(data.data(), data.size()) < data.size())
         return false;
 

@@ -54,7 +54,7 @@ struct AtomicWriter
 
 static void compressAndWrite(const std::string& buf, std::ostream& out, const std::string& fname)
 {
-	wibble::sys::Buffer obuf = compress::lzo(buf.data(), buf.size());
+    auto obuf = compress::lzo(buf.data(), buf.size());
 	if (obuf.size() + 8 < buf.size())
 	{
 		// Write a metadata group

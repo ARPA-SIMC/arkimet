@@ -35,9 +35,9 @@ TESTGRP(arki_scan_grib);
 template<> template<>
 void to::test<1>()
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/test.grib1");
 
@@ -125,9 +125,9 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/padded.grib1");
 
@@ -228,12 +228,12 @@ void to::test<3>()
 		"arki.p2 = 1\n"
 		"arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.00 }, { 45.00, 12.00 } }"
 	);
-	wibble::sys::Buffer buf;
+    vector<uint8_t> buf;
 
-	scanner.open("inbound/test.grib1");
+    scanner.open("inbound/test.grib1");
 
-	// See how we scan the first BUFR
-	ensure(scanner.next(md));
+    // See how we scan the first BUFR
+    ensure(scanner.next(md));
 
     // Check the source info
     wassert(actual(md.source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
@@ -243,8 +243,8 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-	Metadata md;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    vector<uint8_t> buf;
 
 	const scan::Validator& v = scan::grib::validator();
 
@@ -279,9 +279,9 @@ void to::test<4>()
 template<> template<>
 void to::test<5>()
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/layer.grib1");
 
@@ -315,9 +315,9 @@ void to::test<5>()
 template<> template<>
 void to::test<6>()
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
 	scanner.open("inbound/proselvo.grib1");
 
@@ -351,9 +351,9 @@ void to::test<6>()
 template<> template<>
 void to::test<7>()
 {
-	Metadata md;
-	scan::Grib scanner;
-	wibble::sys::Buffer buf;
+    Metadata md;
+    scan::Grib scanner;
+    vector<uint8_t> buf;
 
     wrunchecked(scanner.open("inbound/cleps_pf16_HighPriority.grib2"));
 

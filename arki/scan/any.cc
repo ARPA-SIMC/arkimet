@@ -310,7 +310,7 @@ void compress(const std::string& file, size_t groupsize)
 
 void Validator::validate(Metadata& md) const
 {
-    wibble::sys::Buffer buf = md.getData();
+    const auto& buf = md.getData();
     validate(buf.data(), buf.size());
 }
 
@@ -353,7 +353,7 @@ bool update_sequence_number(Metadata& md, int& usn)
     if (md.source().format != "bufr")
         return false;
 
-    wibble::sys::Buffer data = md.getData();
+    const auto& data = md.getData();
     string buf((const char*)data.data(), data.size());
     usn = Bufr::update_sequence_number(buf);
     return true;
@@ -362,7 +362,7 @@ bool update_sequence_number(Metadata& md, int& usn)
 #endif
 }
 
-wibble::sys::Buffer reconstruct(const std::string& format, const Metadata& md, const std::string& value)
+std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value)
 {
 #ifdef HAVE_VM2
     if (format == "vm2")

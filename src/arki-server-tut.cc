@@ -298,7 +298,7 @@ void to::test<11>()
             {
                 md->makeInline();
                 out += md->encodeBinary();
-                wibble::sys::Buffer data = md->getData();
+                const auto& data = md->getData();
                 out.append((const char*)data.data(), data.size());
                 return true;
             }
@@ -369,8 +369,8 @@ void to::test<11>()
     ensure_equals(yaml1, yaml2);
 
     // Compare data
-    wibble::sys::Buffer d1 = mdc1[0].getData();
-    wibble::sys::Buffer d2 = mdc2[0].getData();
+    const auto& d1 = mdc1[0].getData();
+    const auto& d2 = mdc2[0].getData();
 
     ensure(d1 == d2);
 }

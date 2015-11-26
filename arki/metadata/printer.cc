@@ -3,6 +3,7 @@
 #include "arki/summary.h"
 #include "arki/formatter.h"
 #include "arki/emitter/json.h"
+#include <ostream>
 
 using namespace std;
 using namespace arki::utils;

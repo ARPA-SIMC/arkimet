@@ -139,7 +139,7 @@ void to::test<4>()
     wassert(!actual(fname).fileexists());
     {
         unique_ptr<concat::Segment> dw(make_w(fname));
-        wibble::sys::Buffer buf("ciao", 4);
+        vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
         wassert(actual(dw->append(buf)) == 0);
         wassert(actual(dw->append(buf)) == 4);
     }

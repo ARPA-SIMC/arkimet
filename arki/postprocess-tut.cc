@@ -107,7 +107,7 @@ void to::test<4>()
             {
                 md->makeInline();
                 out += md->encodeBinary();
-                wibble::sys::Buffer data = md->getData();
+                const auto& data = md->getData();
                 out.append((const char*)data.data(), data.size());
                 return true;
             }

@@ -264,7 +264,7 @@ struct TestDataset
             wassert(actual(td.test_data[i].matcher(mdc[0])).istrue());
 
             // Check that the data can be loaded
-            wibble::sys::Buffer data = mdc[0].getData();
+            const auto& data = mdc[0].getData();
             wassert(actual(data.size()) == s1.size);
         }
 
