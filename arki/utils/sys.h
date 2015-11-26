@@ -164,6 +164,8 @@ public:
     void fstat(struct stat& st);
     void fchmod(mode_t mode);
 
+    int dup();
+
     size_t read(void* buf, size_t count);
     size_t write(const void* buf, size_t count);
     off_t lseek(off_t offset, int whence=SEEK_SET);

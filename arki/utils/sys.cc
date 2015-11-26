@@ -257,6 +257,14 @@ void FileDescriptor::fchmod(mode_t mode)
         throw_error("cannot fchmod");
 }
 
+int FileDescriptor::dup()
+{
+    int res = ::dup(fd);
+    if (res == -1)
+        throw_error("cannot dup");
+    return res;
+}
+
 size_t FileDescriptor::read(void* buf, size_t count)
 {
     ssize_t res = ::read(fd, buf, count);
