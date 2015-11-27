@@ -1,26 +1,8 @@
-/*
- * net/http - HTTP server utilities
- *
- * Copyright (C) 2010  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
+/// HTTP server utilities
 
-#include <arki/wibble/net/http.h>
+#include <arki/utils/net/http.h>
+#include <arki/utils/string.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/wibble/stream/posix.h>
 #include <sstream>
 #include <ctime>
@@ -31,7 +13,8 @@
 
 using namespace std;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace net {
 namespace http {
 
@@ -60,9 +43,11 @@ void error::send(Request& req)
     req.send_date_header();
     req.send_server_header();
     req.send_extra_response_headers();
-    req.send("Content-Type: text/html; charset=utf-8\r\n");
-    req.send(str::fmtf("Content-Length: %d\r\n", body.str().size()));
-    req.send("\r\n");
+    stringstream ss;
+    ss << "Content-Type: text/html; charset=utf-8\r\n";
+    ss << "Content-Length: " << body.str().size() << "\r\n";
+    ss << "\r\n";
+    req.send(ss.str());
     req.send(body.str());
 }
 
@@ -190,10 +175,10 @@ bool Request::read_method()
     // If we cannot fill some of method, url or version we just let
     // them be, as they have previously been filled with defaults
     // by read_request()
-    Splitter::const_iterator i = space_splitter.begin(cmdline);
+    wibble::Splitter::const_iterator i = space_splitter.begin(cmdline);
     if (i != space_splitter.end())
     {
-        method = str::toupper(*i);
+        method = str::upper(*i);
         ++i;
         if (i != space_splitter.end())
         {
@@ -364,11 +349,13 @@ void Request::send_result(const std::string& content, const std::string& content
     send_date_header();
     send_server_header();
     send_extra_response_headers();
-    send("Content-Type: " + content_type + "\r\n");
+    stringstream ss;
+    ss << "Content-Type: " << content_type << "\r\n";
     if (!filename.empty())
-        send("Content-Disposition: attachment; filename=" + filename + "\r\n");
-    send(str::fmtf("Content-Length: %d\r\n", content.size()));
-    send("\r\n");
+        ss << "Content-Disposition: attachment; filename=" << filename << "\r\n";
+    ss << "Content-Length: " << content.size() << "\r\n";
+    ss << "\r\n";
+    send(ss.str());
     send(content);
 }
 
@@ -445,7 +432,9 @@ bool FileParam::FileInfo::read(
         if (errno != EEXIST)
             throw wibble::exception::File(fname, "creating file");
         // Alter the file name and try again
-        fname = preferred_fname + str::fmtf(".%u", i);
+        char buf[16];
+        snprintf(buf, 16, ".%u", i);
+        fname = preferred_fname + buf;
     }
 
     // Wrap output FD into a stream, which will take care of
@@ -586,7 +575,7 @@ void Params::parse_get_or_post(net::http::Request& req)
 void Params::parse_urlencoded(const std::string& qstring)
 {
     // Split on &
-    str::Split splitter("&", qstring);
+    str::Split splitter(qstring, "&");
     for (str::Split::const_iterator i = splitter.begin();
             i != splitter.end(); ++i)
     {
@@ -597,16 +586,16 @@ void Params::parse_urlencoded(const std::string& qstring)
         if (pos == string::npos)
         {
             // foo=
-            Param* p = obtain_field(str::urldecode(*i));
+            Param* p = obtain_field(str::decode_url(*i));
             if (p != NULL)
                 p->parse(string());
         }
         else
         {
             // foo=bar
-            Param* p = obtain_field(str::urldecode(i->substr(0, pos)));
+            Param* p = obtain_field(str::decode_url(i->substr(0, pos)));
             if (p != NULL)
-                p->parse(str::urldecode(i->substr(pos+1)));
+                p->parse(str::decode_url(i->substr(pos+1)));
         }
     }
 }
@@ -696,9 +685,9 @@ void Params::parse_post(net::http::Request& req)
     {
         // Discard all input
         req.discard_input();
-        throw wibble::exception::Consistency(str::fmtf(
-            "Total size of incoming data (%zdb) exceeds configured maximum (%zdb)",
-            inputsize, conf_max_input_size));
+        char buf[64];
+        snprintf(buf, 64, "Total size of incoming data (%zdb) exceeds configured maximum (%zdb)", inputsize, conf_max_input_size);
+        throw std::runtime_error(buf);
     }
 
     // Get the content type
@@ -722,4 +711,4 @@ void Params::parse_post(net::http::Request& req)
 }
 }
 }
-// vim:set ts=4 sw=4:
+}

@@ -31,8 +31,8 @@
 #include <arki/emitter/json.h>
 #include <arki/utils/sys.h>
 #include <arki/utils/string.h>
-#include <arki/wibble/net/server.h>
-#include <arki/wibble/net/http.h>
+#include <arki/utils/net/server.h>
+#include <arki/utils/net/http.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -56,7 +56,6 @@
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
-using namespace wibble::net;
 
 extern char** environ;
 
@@ -128,7 +127,7 @@ inline std::string str_replace(const std::string& str, char from, char to)
     return res;
 }
 
-struct Request : public wibble::net::http::Request
+struct Request : public net::http::Request
 {
     ostream& log;
     ConfigFile arki_conf;
@@ -140,7 +139,7 @@ struct Request : public wibble::net::http::Request
     {
         const ConfigFile* cfg = arki_conf_remote.section(dsname);
         if (cfg == NULL)
-            throw wibble::net::http::error404();
+            throw net::http::error404();
         return *cfg;
     }
 
@@ -148,7 +147,7 @@ struct Request : public wibble::net::http::Request
     {
         const ConfigFile* cfg = arki_conf.section(dsname);
         if (cfg == NULL)
-            throw wibble::net::http::error404();
+            throw net::http::error404();
         return *cfg;
     }
 
@@ -230,7 +229,7 @@ struct HandlerMap : public LocalHandler
         string head = req.pop_path_info();
         std::map<string, LocalHandler*>::iterator i = handlers.find(head);
         if (i == handlers.end())
-            throw wibble::net::http::error404();
+            throw net::http::error404();
         (*(i->second))(req);
     }
 };
@@ -351,7 +350,7 @@ struct QexpandHandler : public LocalHandler
     {
         req.log_action("expand aliases in query");
 
-        using namespace wibble::net::http;
+        using namespace net::http;
         Params params;
         ParamSingle* query = params.add<ParamSingle>("query");
         params.parse_get_or_post(req);
@@ -367,7 +366,7 @@ struct RootQueryHandler : public LocalHandler
     {
         req.log_action("root-level query");
 
-        using namespace wibble::net::http;
+        using namespace net::http;
 
         // Work in a temporary directory
         utils::MoveToTempDir tempdir("/tmp/arki-server.XXXXXX");
@@ -404,7 +403,7 @@ struct RootSummaryHandler : public LocalHandler
     {
         req.log_action("root-level summary");
 
-        using namespace wibble::net::http;
+        using namespace net::http;
         Params params;
         ParamSingle* style = params.add<ParamSingle>("style");
         ParamSingle* query = params.add<ParamSingle>("query");
@@ -523,7 +522,7 @@ struct DatasetHandler : public LocalHandler
     {
         string dsname = req.pop_path_info();
         if (dsname.empty())
-            throw wibble::net::http::error404();
+            throw net::http::error404();
 
         string action = req.pop_path_info();
         if (action.empty())
@@ -673,7 +672,7 @@ struct InboundHandler : public LocalHandler
         else if (action == "show")
         {
             req.log_action("show contents of file from inbound");
-            using namespace wibble::net::http;
+            using namespace net::http;
 
             // Get the file argument
             Params params;
@@ -717,7 +716,7 @@ struct InboundHandler : public LocalHandler
             req.log_action("simulate import from inbound");
             // Filter configuration to only keep those that have remote import = yes
             // and whose "restrict import" matches
-            using namespace wibble::net::http;
+            using namespace net::http;
 
             ConfigFile importcfg;
             dataset::http::InboundServer::make_import_config(req, req.arki_conf, importcfg);
@@ -831,7 +830,7 @@ struct InboundHandler : public LocalHandler
             srv.do_dispatch(params, req);
         }
         else
-            throw wibble::net::http::error404();
+            throw net::http::error404();
     }
 };
 
@@ -869,8 +868,8 @@ struct ChildServer : public wibble::sys::ChildProcess
                 try {
                     if (!local_handlers.try_do(req))
                         // if (!script_handlers.try_do(req))
-                        throw wibble::net::http::error404();
-                } catch (wibble::net::http::error& e) {
+                        throw net::http::error404();
+                } catch (net::http::error& e) {
                     log << wibble::log::WARN << str_replace(e.what(), '\n', ' ') << endl;
                     if (!req.response_started)
                         e.send(req);
@@ -879,7 +878,7 @@ struct ChildServer : public wibble::sys::ChildProcess
                     if (!req.response_started)
                     {
                         req.extra_response_headers["Arkimet-Exception"] = e.what();
-                        wibble::net::http::error httpe(500, "Server error", e.what());
+                        net::http::error httpe(500, "Server error", e.what());
                         httpe.send(req);
                     }
                 }
@@ -898,7 +897,7 @@ struct ChildServer : public wibble::sys::ChildProcess
     }
 };
 
-struct HTTP : public wibble::net::TCPServer
+struct HTTP : public net::TCPServer
 {
     ostream& log;
     string server_name;

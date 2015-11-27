@@ -19,7 +19,7 @@ namespace http {
 
 InboundParams::InboundParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     file = add<ParamSingle>("file");
     format = add<ParamSingle>("format");
@@ -30,7 +30,7 @@ InboundServer::InboundServer(const ConfigFile& import_config, const std::string&
 {
 }
 
-void InboundServer::do_scan(const InboundParams& parms, wibble::net::http::Request& req)
+void InboundServer::do_scan(const InboundParams& parms, net::http::Request& req)
 {
     // Build the full file name
     string fname = str::joinpath(root, *parms.file);
@@ -58,9 +58,9 @@ void InboundServer::do_scan(const InboundParams& parms, wibble::net::http::Reque
     headers.sendIfNotFired();
 }
 
-void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::http::Request& req)
+void InboundServer::do_testdispatch(const InboundParams& parms, net::http::Request& req)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     bool can_import = import_config.sectionSize() > 0;
     if (!can_import)
@@ -112,9 +112,9 @@ void InboundServer::do_testdispatch(const InboundParams& parms, wibble::net::htt
     req.send_result(simulator.str.str(), "text/plain", str::basename(*parms.file) + ".log");
 }
 
-void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::Request& req)
+void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& req)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     bool can_import = import_config.sectionSize() > 0;
     if (!can_import)
@@ -178,7 +178,7 @@ void InboundServer::do_dispatch(const InboundParams& parms, wibble::net::http::R
     headers.sendIfNotFired();
 }
 
-static bool can_import(const wibble::net::http::Request& req, const ConfigFile& cfg)
+static bool can_import(const net::http::Request& req, const ConfigFile& cfg)
 {
     // Need "remote import = yes"
     if (!ConfigFile::boolValue(cfg.value("remote import")))
@@ -188,7 +188,7 @@ static bool can_import(const wibble::net::http::Request& req, const ConfigFile& 
     return true;
 }
 
-void InboundServer::make_import_config(const wibble::net::http::Request& req, const ConfigFile& src, ConfigFile& dst)
+void InboundServer::make_import_config(const net::http::Request& req, const ConfigFile& src, ConfigFile& dst)
 {
     // Check that the 'error' dataset is importable
     bool has_error = false;

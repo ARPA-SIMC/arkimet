@@ -24,10 +24,12 @@
 #include <string>
 #include <map>
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace net {
 namespace http {
 struct Request;
+}
 }
 }
 }
@@ -51,7 +53,7 @@ struct FakeRequest
     void write_get(const std::string& query);
 
     void reset();
-    void setup_request(wibble::net::http::Request& req);
+    void setup_request(arki::utils::net::http::Request& req);
     void read_response();
 
     void dump_headers(std::ostream& out);

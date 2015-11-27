@@ -44,7 +44,7 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     // Run the fake request through the server-side handler
     void do_scan(arki::tests::FakeRequest& r)
     {
-        wibble::net::http::Request req;
+        net::http::Request req;
         r.setup_request(req);
 
         dataset::http::InboundParams params;
@@ -59,7 +59,7 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     // Run the fake request through the server-side handler
     void do_testdispatch(arki::tests::FakeRequest& r)
     {
-        wibble::net::http::Request req;
+        net::http::Request req;
         r.setup_request(req);
 
         dataset::http::InboundParams params;
@@ -74,7 +74,7 @@ struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     // Run the fake request through the server-side handler
     void do_dispatch(arki::tests::FakeRequest& r)
     {
-        wibble::net::http::Request req;
+        net::http::Request req;
         r.setup_request(req);
 
         dataset::http::InboundParams params;

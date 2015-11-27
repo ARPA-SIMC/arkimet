@@ -1,42 +1,19 @@
-/*
- * net/server - Network server infrastructure
- *
- * Copyright (C) 2010  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
-#include <arki/wibble/net/server.h>
+#include <arki/utils/net/server.h>
+#include <arki/utils/string.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
-
-#ifdef POSIX
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
-
 #include <cstring>
 #include <cerrno>
 
 using namespace std;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace net {
 
 Server::Server() : socktype(SOCK_STREAM), sock(-1), old_signal_actions(0), signal_actions(0)
@@ -62,9 +39,11 @@ void Server::bind(const char* port, const char* host)
     struct addrinfo* res;
     int gaires = getaddrinfo(host, port, &hints, &res);
     if (gaires != 0)
-        throw wibble::exception::Consistency(
-                str::fmtf("resolving hostname %s:%s", host, port),
-                gai_strerror(gaires));
+    {
+        stringstream ss;
+        ss << "cannot resolve hostname " << host << ":" << port << ": " << gai_strerror(gaires);
+        throw std::runtime_error(ss.str());
+    }
 
     for (addrinfo* rp = res; rp != NULL; rp = rp->ai_next)
     {
@@ -106,10 +85,12 @@ void Server::bind(const char* port, const char* host)
     freeaddrinfo(res);
 
     if (sock == -1)
+    {
         // No address succeeded
-        throw wibble::exception::Consistency(
-                str::fmtf("binding to %s:%s", host, port),
-                "could not bind to any of the resolved addresses");
+        stringstream ss;
+        ss << "cannot bind to " << host << ":" << port << ": could not bind to any of the resolved addresses";
+        throw std::runtime_error(ss.str());
+    }
 }
 
 // Set socket to listen, with given backlog
@@ -156,7 +137,11 @@ void TCPServer::signal_install()
 {
     for (size_t i = 0; i < stop_signals.size(); ++i)
         if (sigaction(stop_signals[i], &signal_actions[i], &old_signal_actions[i]) < 0)
-            throw wibble::exception::System("installing handler for signal " + str::fmt(stop_signals[i]));
+        {
+            stringstream ss;
+            ss << "cannot install signal handler for signal " << stop_signals[i];
+            throw std::system_error(errno, std::system_category(), ss.str());
+        }
     TCPServer::last_signal = -1;
 }
 
@@ -164,7 +149,11 @@ void TCPServer::signal_uninstall()
 {
     for (size_t i = 0; i < stop_signals.size(); ++i)
         if (sigaction(stop_signals[i], &old_signal_actions[i], NULL) < 0)
-            throw wibble::exception::System("restoring handler for signal " + str::fmt(stop_signals[i]));
+        {
+            stringstream ss;
+            ss << "cannot restore signal handler for signal " << stop_signals[i];
+            throw std::system_error(errno, std::system_category(), ss.str());
+        }
 }
 
 // Loop accepting connections on the socket, until interrupted by a
@@ -226,6 +215,4 @@ int TCPServer::accept_loop()
 
 }
 }
-
-#endif
-// vim:set ts=4 sw=4:
+}

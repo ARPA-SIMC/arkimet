@@ -1,32 +1,11 @@
-/*
- * arki-shell - Interactive arkimet Lua shell
- *
- * Copyright (C) 2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Interactive arkimet Lua shell
 #include "config.h"
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/commandline/parser.h>
-#include <arki/wibble/string.h>
+#include <arki/utils/commandline/parser.h>
+#include <arki/utils/string.h>
 #include <arki/utils/lua.h>
 #include <arki/runtime.h>
+#include <iostream>
 
 #ifdef HAVE_LIBREADLINE
  #if defined(HAVE_READLINE_READLINE_H)
@@ -49,9 +28,10 @@ extern "C" {
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -73,6 +53,7 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
 
 // Read a command from the user
 string read_command(const std::string& prompt)
@@ -87,7 +68,7 @@ string read_command(const std::string& prompt)
     if (!rl_answer) return "\\q";
     string answer = rl_answer;
     free(rl_answer);
-    return str::trim(answer);
+    return str::strip(answer);
 }
 
 struct Interpreter : public Lua
@@ -179,7 +160,7 @@ struct Shell
 
 int main(int argc, const char* argv[])
 {
-    wibble::commandline::Options opts;
+    commandline::Options opts;
     try {
         if (opts.parse(argc, argv))
             return 0;
@@ -197,8 +178,8 @@ int main(int argc, const char* argv[])
             Shell shell(interpreter);
             shell.main_loop();
         }
-    } catch (wibble::exception::BadOption& e) {
-        cerr << e.desc() << endl;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
     } catch (std::exception& e) {
@@ -208,5 +189,3 @@ int main(int argc, const char* argv[])
 
     return 0;
 }
-
-// vim:set ts=4 sw=4:

@@ -1,14 +1,15 @@
 #include "config.h"
 
 #include <arki/dataset/http/test-utils.h>
-#include <arki/wibble/net/http.h>
-#include <arki/wibble/net/mime.h>
+#include <arki/utils/net/http.h>
+#include <arki/utils/net/mime.h>
 
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
 
 using namespace std;
+using namespace arki::utils;
 
 namespace arki {
 namespace tests {
@@ -57,7 +58,7 @@ void FakeRequest::reset()
         throw wibble::exception::File(fname, "seeking to start of file");
 }
 
-void FakeRequest::setup_request(wibble::net::http::Request& req)
+void FakeRequest::setup_request(net::http::Request& req)
 {
     reset();
 
@@ -78,7 +79,7 @@ void FakeRequest::read_response()
         throw wibble::exception::File(fname, "seeking to start of response in file");
 
     // Read headers
-    wibble::net::mime::Reader reader;
+    net::mime::Reader reader;
     if (!reader.read_line(fd, response_method))
         throw wibble::exception::Consistency("reading response method", "no headers found");
     if (!reader.read_headers(fd, response_headers))

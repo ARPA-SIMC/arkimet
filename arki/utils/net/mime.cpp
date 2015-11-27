@@ -1,31 +1,12 @@
-/*
- * net/mime - MIME utilities
- *
- * Copyright (C) 2010--2011  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
-#include <arki/wibble/net/mime.h>
+#include <arki/utils/net/mime.h>
+#include <arki/utils/string.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <unistd.h>
 
 using namespace std;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace net {
 namespace mime {
 
@@ -81,7 +62,7 @@ bool Reader::read_headers(int sock, std::map<std::string, std::string>& headers)
             if (last_inserted != headers.end())
             {
                 last_inserted->second.append(" ");
-                last_inserted->second.append(str::trim(line));
+                last_inserted->second.append(str::strip(line));
             }
         } else {
             if (header_splitter.match(line))
@@ -100,8 +81,8 @@ bool Reader::read_headers(int sock, std::map<std::string, std::string>& headers)
                 // of the message, by appending each
                 // subsequent field-value to the first,
                 // each separated by a comma.
-                string key = str::tolower(header_splitter[1]);
-                string val = str::trim(header_splitter[2]);
+                string key = str::lower(header_splitter[1]);
+                string val = str::strip(header_splitter[2]);
                 map<string, string>::iterator old = headers.find(key);
                 if (old == headers.end())
                 {
@@ -211,4 +192,4 @@ bool Reader::discard_until_boundary(int sock, const std::string& boundary)
 }
 }
 }
-// vim:set ts=4 sw=4:
+}

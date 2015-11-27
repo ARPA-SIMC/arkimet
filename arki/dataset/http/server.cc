@@ -14,7 +14,7 @@ namespace arki {
 namespace dataset {
 namespace http {
 
-StreamHeaders::StreamHeaders(wibble::net::http::Request& req, const std::string& fname)
+StreamHeaders::StreamHeaders(net::http::Request& req, const std::string& fname)
     : content_type("application/octet-stream"), ext("bin"), fname(fname),
       req(req), fired(false)
 {
@@ -53,7 +53,7 @@ bool MetadataStreamer::eat(unique_ptr<Metadata>&& md)
 
 LegacySummaryParams::LegacySummaryParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     query = add<ParamSingle>("query");
     style = add<ParamSingle>("style");
@@ -61,7 +61,7 @@ LegacySummaryParams::LegacySummaryParams()
 
 LegacyQueryParams::LegacyQueryParams(const std::string& tmpdir)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     conf_fname_blacklist = ":";
     conf_outdir = tmpdir;
@@ -71,9 +71,9 @@ LegacyQueryParams::LegacyQueryParams(const std::string& tmpdir)
     sort = add<ParamSingle>("sort");
 }
 
-static void postprocfiles_to_env(wibble::net::http::FileParamMulti& postprocfile)
+static void postprocfiles_to_env(net::http::FileParamMulti& postprocfile)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     vector<string> postproc_files;
     for (vector<FileParam::FileInfo>::const_iterator i = postprocfile.files.begin();
@@ -91,7 +91,7 @@ static void postprocfiles_to_env(wibble::net::http::FileParamMulti& postprocfile
 
 void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     pmaker.server_side = true;
 
@@ -122,19 +122,19 @@ void LegacyQueryParams::set_into(runtime::ProcessorMaker& pmaker) const
     // Validate request
     string errors = pmaker.verify_option_consistency();
     if (!errors.empty())
-        throw wibble::net::http::error400(errors);
+        throw net::http::error400(errors);
 }
 
 QuerySummaryParams::QuerySummaryParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     matcher = add<ParamSingle>("matcher");
 }
 
 QueryDataParams::QueryDataParams()
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     withdata = add<ParamSingle>("withdata");
     sorter = add<ParamSingle>("sorter");
@@ -150,7 +150,7 @@ void QueryDataParams::set_into(DataQuery& dq) const
 
 QueryBytesParams::QueryBytesParams(const std::string& tmpdir)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     conf_fname_blacklist = ":";
     conf_outdir = tmpdir;
@@ -178,7 +178,7 @@ void QueryBytesParams::set_into(ByteQuery& dq) const
 }
 
 
-void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, net::http::Request& req)
 {
     // args = Args()
     // if "json" in args:
@@ -190,9 +190,9 @@ void ReadonlyDatasetServer::do_config(const ConfigFile& remote_config, wibble::n
     req.send_result(res.str(), "text/plain");
 }
 
-void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, net::http::Request& req)
 {
-    using namespace wibble::net::http;
+    using namespace net::http;
 
     // Query the summary
     Summary sum;
@@ -218,7 +218,7 @@ void ReadonlyDatasetServer::do_summary(const LegacySummaryParams& parms, wibble:
     }
 }
 
-void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::Request& req)
 {
     // Validate query
     Matcher matcher;
@@ -226,7 +226,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, wibble::net
         matcher = Matcher::parse(*parms.query);
     } catch (std::exception& e) {
         req.extra_response_headers["Arkimet-Exception"] = e.what();
-        throw wibble::net::http::error400(e.what());
+        throw net::http::error400(e.what());
     }
 
     // Configure a ProcessorMaker with the request
@@ -282,7 +282,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, wibble::net
     // End of streaming
 }
 
-void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, net::http::Request& req)
 {
     // Response header generator
     StreamHeaders headers(req, dsname);
@@ -297,7 +297,7 @@ void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, wibble::n
     headers.sendIfNotFired();
 }
 
-void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, net::http::Request& req)
 {
     StreamHeaders headers(req, dsname);
     headers.ext = "summary";
@@ -306,7 +306,7 @@ void ReadonlyDatasetServer::do_querySummary(const QuerySummaryParams& parms, wib
     headers.send_result(s.encode());
 }
 
-void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, wibble::net::http::Request& req)
+void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, net::http::Request& req)
 {
     // Response header generator
     StreamHeaders headers(req, dsname);

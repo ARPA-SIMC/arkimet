@@ -1,27 +1,6 @@
-/*
- * arki-bufr-prepare - Prepare BUFR messages for importing into arkimet
- *
- * Copyright (C) 2010--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Prepare BUFR messages for importing into arkimet
 
 #include "config.h"
-
 #include <arki/runtime.h>
 #include <arki/nag.h>
 #include <arki/scan/bufr.h>
@@ -29,17 +8,18 @@
 #include <wreport/bulletin.h>
 #include <dballe/message.h>
 #include <dballe/msg/codec.h>
-
 #include <arpa/inet.h>
 #include <cstring>
+#include <iostream>
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 using namespace wreport;
 using namespace dballe;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -66,6 +46,7 @@ struct Options : public StandardParserWithManpage
     }
 };
 
+}
 }
 }
 
@@ -193,7 +174,7 @@ public:
 
 int main(int argc, const char* argv[])
 {
-    wibble::commandline::Options opts;
+    commandline::Options opts;
     try {
         if (opts.parse(argc, argv))
             return 0;
@@ -224,8 +205,8 @@ int main(int argc, const char* argv[])
         }
 
         return 0;
-    } catch (wibble::exception::BadOption& e) {
-        cerr << e.desc() << endl;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
     } catch (std::exception& e) {

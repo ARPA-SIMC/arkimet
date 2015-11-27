@@ -29,9 +29,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/tests/tut_restartable.h \
 		wibble/grcal/grcal.h \
 		wibble/stream/posix.h \
-		wibble/net/mime.h \
-		wibble/net/server.h \
-		wibble/net/http.h \
 		defs.h \
 		core.h \
 		bbox.h \
@@ -177,6 +174,9 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/commandline/options.h \
 		utils/commandline/parser.h \
 		utils/commandline/wordwrap.h \
+		utils/net/mime.h \
+		utils/net/server.h \
+		utils/net/http.h \
 		values.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
@@ -222,9 +222,6 @@ libarkimet_la_SOURCES += \
 		wibble/log/syslog.cpp \
 		wibble/log/filters.cpp \
 		wibble/grcal/grcal.cpp \
-		wibble/net/mime.cpp \
-		wibble/net/server.cpp \
-		wibble/net/http.cpp \
 		nag.cc \
 		utils.cc \
 		utils/accounting.cc \
@@ -246,6 +243,9 @@ libarkimet_la_SOURCES += \
 		utils/commandline/parser.cpp \
 		utils/commandline/engine.cpp \
 		utils/commandline/wordwrap.cpp \
+		utils/net/mime.cpp \
+		utils/net/server.cpp \
+		utils/net/http.cpp \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \
