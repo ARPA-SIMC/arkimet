@@ -49,13 +49,13 @@ public:
 	/// Add a dataset to the group of datasets to merge
 	void addDataset(ReadonlyDataset& ds);
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the metadata consumer.
+     */
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
 };
 
 /**
@@ -74,5 +74,4 @@ public:
 }
 }
 
-// vim:set ts=4 sw=4:
 #endif
