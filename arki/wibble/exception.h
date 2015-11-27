@@ -228,23 +228,6 @@ public:
 	virtual const char* type() const throw () { return "Interrupted"; }
 };
 
-/// Exception thrown when some system wait is interrupted by a signal
-/**
- * It is a direct child of InterruptedException, and has the very same
- * semantics.
- *
- * \warning Any function throwing WaitInterruptedException must allow to be
- * called again with the same parameters to retry the operation
- */
-class WaitInterrupted : public Interrupted
-{
-public:
-	WaitInterrupted(const std::string& context) throw () :
-		Interrupted(context) {}
-
-	virtual const char* type() const throw () { return "WaitInterrupted"; }
-};
-
 /// Exception thrown when some consistency check fails
 /**
  * It is a direct child of ContextException, and has the very same semantics.
