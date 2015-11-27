@@ -1,9 +1,13 @@
+#ifndef ARKI_UTILS_COMMANDLINE_WORDWRAP_H
+#define ARKI_UTILS_COMMANDLINE_WORDWRAP_H
+
 #include <string>
 
 using namespace std;
 
-namespace wibble {
-namespace text {
+namespace arki {
+namespace utils {
+namespace commandline {
 
 /**
  * Simple string wrapper.
@@ -54,6 +58,5 @@ public:
 
 }
 }
-
-
-// vim:set ts=4 sw=4:
+}
+#endif

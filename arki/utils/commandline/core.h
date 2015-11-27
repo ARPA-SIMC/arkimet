@@ -1,30 +1,19 @@
-#ifndef WIBBLE_COMMANDLINE_CORE_H
-#define WIBBLE_COMMANDLINE_CORE_H
+#ifndef ARKI_UTILS_COMMANDLINE_CORE_H
+#define ARKI_UTILS_COMMANDLINE_CORE_H
 
-#include <arki/wibble/exception.h>
+#include <stdexcept>
 #include <string>
 #include <list>
 #include <set>
 
-namespace wibble {
-
-namespace exception {
-class BadOption : public Consistency
-{
-	std::string m_error;
-
-public:
-	BadOption(const std::string& error, const std::string& context = std::string("parsing commandline options")) throw ()
-		: Consistency(context), m_error(error) {}
-	~BadOption() throw () {}
-
-	virtual const char* type() const throw () { return "BadOption"; }
-	virtual std::string desc() const throw () { return m_error; }
-
-};
-}
-
+namespace arki {
+namespace utils {
 namespace commandline {
+
+struct BadOption : public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
 
 class ArgList : public std::list<std::string>
 {
@@ -77,8 +66,6 @@ public:
 };
 
 }
-
 }
-
-// vim:set ts=4 sw=4:
+}
 #endif

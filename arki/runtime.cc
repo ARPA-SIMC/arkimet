@@ -45,7 +45,6 @@
 #endif
 
 using namespace std;
-using namespace wibble::commandline;
 using namespace arki::utils;
 using namespace arki::types;
 
@@ -87,9 +86,11 @@ std::unique_ptr<ReadonlyDataset> make_qmacro_dataset(const ConfigFile& cfg, cons
 }
 
 CommandLine::CommandLine(const std::string& name, int mansection)
-	: StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
-	  output(0), processor(0), dispatcher(0)
+    : StandardParserWithManpage(name, PACKAGE_VERSION, mansection, PACKAGE_BUGREPORT),
+      output(0), processor(0), dispatcher(0)
 {
+    using namespace arki::utils::commandline;
+
 	infoOpts = createGroup("Options controlling verbosity");
 	debug = infoOpts->add<BoolOption>("debug", 0, "debug", "", "debug output");
 	verbose = infoOpts->add<BoolOption>("verbose", 0, "verbose", "", "verbose output");
@@ -166,6 +167,8 @@ CommandLine::~CommandLine()
 
 void CommandLine::addScanOptions()
 {
+    using namespace arki::utils::commandline;
+
 	files = inputOpts->add<StringOption>("files", 0, "files", "file",
 			"read the list of files to scan from the given file instead of the command line");
 	moveok = inputOpts->add<StringOption>("moveok", 0, "moveok", "directory",
@@ -185,6 +188,8 @@ void CommandLine::addScanOptions()
 
 void CommandLine::addQueryOptions()
 {
+    using namespace arki::utils::commandline;
+
 	cfgfiles = inputOpts->add< VectorOption<String> >("config", 'C', "config", "file",
 		"read configuration about input sources from the given file (can be given more than once)");
 	exprfile = inputOpts->add<StringOption>("file", 'f', "file", "file",
@@ -211,12 +216,12 @@ bool CommandLine::parse(int argc, const char* argv[])
 
 	nag::init(verbose->isSet(), debug->isSet());
 
-	if (postprocess->isSet() && targetfile->isSet())
-        throw wibble::exception::BadOption("--postprocess conflicts with --targetfile");
-	if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
-		throw wibble::exception::BadOption("--upload only makes sense with --postprocess");
+    if (postprocess->isSet() && targetfile->isSet())
+        throw commandline::BadOption("--postprocess conflicts with --targetfile");
+    if (postproc_data && postproc_data->isSet() && !postprocess->isSet())
+        throw commandline::BadOption("--upload only makes sense with --postprocess");
 
-	// Initialize the processor maker
+    // Initialize the processor maker
     pmaker.summary = summary->boolValue();
     pmaker.yaml = yaml->boolValue();
     pmaker.json = json->boolValue();
@@ -231,7 +236,7 @@ bool CommandLine::parse(int argc, const char* argv[])
     // Run here a consistency check on the processor maker configuration
     std::string errors = pmaker.verify_option_consistency();
     if (!errors.empty())
-        throw wibble::exception::BadOption(errors);
+        throw commandline::BadOption(errors);
 	
 	return false;
 }
@@ -254,26 +259,26 @@ void CommandLine::setupProcessing()
         }
     }
 
-	// Parse the matcher query
-	if (exprfile)
-	{
-		if (exprfile->isSet())
-		{
-			// Read the entire file into memory and parse it as an expression
-			strquery = files::read_file(exprfile->stringValue());
-		} else {
-			// Read from the first commandline argument
-			if (!hasNext())
-			{
-				if (exprfile)
-					throw wibble::exception::BadOption("you need to specify a filter expression or use --"+exprfile->longNames[0]);
-				else
-					throw wibble::exception::BadOption("you need to specify a filter expression");
-			}
-			// And parse it as an expression
-			strquery = next();
-		}
-	}
+    // Parse the matcher query
+    if (exprfile)
+    {
+        if (exprfile->isSet())
+        {
+            // Read the entire file into memory and parse it as an expression
+            strquery = files::read_file(exprfile->stringValue());
+        } else {
+            // Read from the first commandline argument
+            if (!hasNext())
+            {
+                if (exprfile)
+                    throw commandline::BadOption("you need to specify a filter expression or use --"+exprfile->longNames[0]);
+                else
+                    throw commandline::BadOption("you need to specify a filter expression");
+            }
+            // And parse it as an expression
+            strquery = next();
+        }
+    }
 
 
 	// Initialise the dataset list
@@ -317,29 +322,29 @@ void CommandLine::setupProcessing()
         }
     }
 
-	while (hasNext())	// From command line arguments, looking for data files or datasets
-		ReadonlyDataset::readConfig(next(), inputInfo);
+    while (hasNext())	// From command line arguments, looking for data files or datasets
+        ReadonlyDataset::readConfig(next(), inputInfo);
 
-	if (inputInfo.sectionSize() == 0)
-		throw wibble::exception::BadOption("you need to specify at least one input file or dataset");
+    if (inputInfo.sectionSize() == 0)
+        throw commandline::BadOption("you need to specify at least one input file or dataset");
 
-	// Filter the dataset list
-	if (restr && restr->isSet())
-	{
-		Restrict rest(restr->stringValue());
-		rest.remove_unallowed(inputInfo);
-		if (inputInfo.sectionSize() == 0)
-			throw wibble::exception::BadOption("no accessible datasets found for the given --restrict value");
-	}
+    // Filter the dataset list
+    if (restr && restr->isSet())
+    {
+        Restrict rest(restr->stringValue());
+        rest.remove_unallowed(inputInfo);
+        if (inputInfo.sectionSize() == 0)
+            throw commandline::BadOption("no accessible datasets found for the given --restrict value");
+    }
 
-	// Some things cannot be done when querying multiple datasets at the same time
-	if (inputInfo.sectionSize() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
-	{
-		if (postprocess->boolValue())
-			throw wibble::exception::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
-		if (report->boolValue())
-			throw wibble::exception::BadOption("reports are not possible when querying more than one dataset at the same time");
-	}
+    // Some things cannot be done when querying multiple datasets at the same time
+    if (inputInfo.sectionSize() > 1 && !dispatcher && !(qmacro && qmacro->isSet()))
+    {
+        if (postprocess->boolValue())
+            throw commandline::BadOption("postprocessing is not possible when querying more than one dataset at the same time");
+        if (report->boolValue())
+            throw commandline::BadOption("reports are not possible when querying more than one dataset at the same time");
+    }
 
 
     // Validate the query with all the servers
@@ -413,13 +418,12 @@ void CommandLine::setupProcessing()
     if (targetfile->isSet())
         processor = new TargetFileProcessor(processor, targetfile->stringValue(), *output);
 
-	// Create the dispatcher if needed
-
-	if (dispatch->isSet() || testdispatch->isSet())
-	{
-		if (dispatch->isSet() && testdispatch->isSet())
-			throw wibble::exception::BadOption("you cannot use --dispatch together with --testdispatch");
-		runtime::readMatcherAliasDatabase();
+    // Create the dispatcher if needed
+    if (dispatch->isSet() || testdispatch->isSet())
+    {
+        if (dispatch->isSet() && testdispatch->isSet())
+            throw commandline::BadOption("you cannot use --dispatch together with --testdispatch");
+        runtime::readMatcherAliasDatabase();
 
 		if (testdispatch->isSet()) {
 			for (vector<string>::const_iterator i = testdispatch->values().begin();
@@ -450,13 +454,13 @@ void CommandLine::setupProcessing()
             {
                 ValidatorRepository::const_iterator i = vals.find(*iname);
                 if (i == vals.end())
-                    throw wibble::exception::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
+                    throw commandline::BadOption("unknown validator '" + *iname + "'. You can get a list using --validate=list.");
                 dispatcher->dispatcher->add_validator(*(i->second));
             }
         }
     } else {
         if (validate && validate->isSet())
-            throw wibble::exception::BadOption("--validate only makes sense with --dispatch or --testdispatch");
+            throw commandline::BadOption("--validate only makes sense with --dispatch or --testdispatch");
     }
 
     if (postproc_data && postproc_data->isSet())

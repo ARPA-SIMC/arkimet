@@ -1,29 +1,7 @@
-/*
- * arki-dump - Dump a metadata file
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Dump arkimet data files
 #include "config.h"
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/metadata/printer.h>
@@ -40,9 +18,10 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -94,7 +73,7 @@ struct Options : public StandardParserWithManpage
 	}
 };
 
-
+}
 }
 }
 
@@ -132,72 +111,72 @@ static void addToSummary(runtime::Input& in, Summary& s)
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
-		runtime::init();
+        runtime::init();
 
-		// Validate command line options
-		if (opts.query->boolValue() && opts.aliases->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --aliases");
-		if (opts.query->boolValue() && opts.config->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --config");
-		if (opts.query->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --from-yaml-data");
-		if (opts.query->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --from-yaml-summary");
-		if (opts.query->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--query conflicts with --annotate");
-		if (opts.query->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--query conflicts with --bbox");
-		if (opts.query->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--query conflicts with --info");
+        // Validate command line options
+        if (opts.query->boolValue() && opts.aliases->boolValue())
+            throw commandline::BadOption("--query conflicts with --aliases");
+        if (opts.query->boolValue() && opts.config->boolValue())
+            throw commandline::BadOption("--query conflicts with --config");
+        if (opts.query->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--query conflicts with --from-yaml-data");
+        if (opts.query->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--query conflicts with --from-yaml-summary");
+        if (opts.query->boolValue() && opts.annotate->boolValue())
+            throw commandline::BadOption("--query conflicts with --annotate");
+        if (opts.query->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--query conflicts with --bbox");
+        if (opts.query->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--query conflicts with --info");
 
-		if (opts.config->boolValue() && opts.aliases->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --aliases");
-		if (opts.config->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --from-yaml-data");
-		if (opts.config->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --from-yaml-summary");
-		if (opts.config->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--config conflicts with --annotate");
-		if (opts.config->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--config conflicts with --bbox");
-		if (opts.config->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--config conflicts with --info");
+        if (opts.config->boolValue() && opts.aliases->boolValue())
+            throw commandline::BadOption("--config conflicts with --aliases");
+        if (opts.config->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--config conflicts with --from-yaml-data");
+        if (opts.config->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--config conflicts with --from-yaml-summary");
+        if (opts.config->boolValue() && opts.annotate->boolValue())
+            throw commandline::BadOption("--config conflicts with --annotate");
+        if (opts.config->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--config conflicts with --bbox");
+        if (opts.config->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--config conflicts with --info");
 
-		if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-data");
-		if (opts.aliases->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --from-yaml-summary");
-		if (opts.aliases->boolValue() && opts.annotate->boolValue())
-			throw wibble::exception::BadOption("--aliases conflicts with --annotate");
-		if (opts.aliases->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--aliases conflicts with --bbox");
-		if (opts.aliases->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--aliases conflicts with --info");
+        if (opts.aliases->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--aliases conflicts with --from-yaml-data");
+        if (opts.aliases->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--aliases conflicts with --from-yaml-summary");
+        if (opts.aliases->boolValue() && opts.annotate->boolValue())
+            throw commandline::BadOption("--aliases conflicts with --annotate");
+        if (opts.aliases->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--aliases conflicts with --bbox");
+        if (opts.aliases->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--aliases conflicts with --info");
 
-		if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-data");
-		if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
-			throw wibble::exception::BadOption("--annotate conflicts with --from-yaml-summary");
-		if (opts.annotate->boolValue() && opts.bbox && opts.bbox->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --bbox");
-		if (opts.annotate->boolValue() && opts.info && opts.info->isSet())
-			throw wibble::exception::BadOption("--annotate conflicts with --info");
+        if (opts.reverse_data->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--from-yaml-data conflicts with --from-yaml-summary");
+        if (opts.annotate->boolValue() && opts.reverse_data->boolValue())
+            throw commandline::BadOption("--annotate conflicts with --from-yaml-data");
+        if (opts.annotate->boolValue() && opts.reverse_summary->boolValue())
+            throw commandline::BadOption("--annotate conflicts with --from-yaml-summary");
+        if (opts.annotate->boolValue() && opts.bbox && opts.bbox->isSet())
+            throw commandline::BadOption("--annotate conflicts with --bbox");
+        if (opts.annotate->boolValue() && opts.info && opts.info->isSet())
+            throw commandline::BadOption("--annotate conflicts with --info");
 
-		if (opts.query->boolValue())
-		{
-			if (!opts.hasNext())
-				throw wibble::exception::BadOption("--query wants the query on the command line");
-			Matcher m = Matcher::parse(opts.next());
-			cout << m.toStringExpanded() << endl;
-			return 0;
-		}
+        if (opts.query->boolValue())
+        {
+            if (!opts.hasNext())
+                throw commandline::BadOption("--query wants the query on the command line");
+            Matcher m = Matcher::parse(opts.next());
+            cout << m.toStringExpanded() << endl;
+            return 0;
+        }
 		
 		if (opts.aliases->boolValue())
 		{
@@ -324,14 +303,12 @@ int main(int argc, const char* argv[])
 		}
 
 		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
 	} catch (std::exception& e) {
 		cerr << e.what() << endl;
 		return 1;
 	}
 }
-
-// vim:set ts=4 sw=4:

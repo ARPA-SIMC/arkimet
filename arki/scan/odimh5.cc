@@ -15,6 +15,7 @@
 #include <arki/utils/lua.h>
 #include <arki/utils/sys.h>
 #include <arki/scan/any.h>
+#include <arki/wibble/exception.h>
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>

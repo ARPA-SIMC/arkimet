@@ -1,9 +1,9 @@
 #include "config.h"
-
 #include <arki/scan/bufrlua.h>
 #include <arki/metadata.h>
 #include <arki/runtime/config.h>
 #include <arki/utils/string.h>
+#include <arki/wibble/exception.h>
 
 using namespace std;
 using namespace dballe;

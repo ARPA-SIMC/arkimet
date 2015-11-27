@@ -1,43 +1,22 @@
-/*
- * arki-mergeconf - Merge arkimet dataset configurations
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Merge arkimet dataset configurations
 #include "config.h"
-
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/runtime.h>
-#include <arki/wibble/commandline/parser.h>
-#include <arki/wibble/string.h>
-#include <arki/wibble/sys/fs.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/utils/geosdef.h>
+#include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <memory>
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -68,13 +47,14 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
         runtime::init();
 
 		ConfigFile cfg;
@@ -91,14 +71,14 @@ int main(int argc, const char* argv[])
 		// Read the config files from the remaining commandline arguments
 		while (opts.hasNext())
 		{
-			string file = opts.next();
-			if (!str::startsWith(file, "http://") &&
-			    !str::startsWith(file, "https://") &&
-			    !sys::fs::access(str::joinpath(file, "config"), F_OK))
-			{
-				cerr << file << " skipped: it does not look like a dataset" << endl;
-				continue;
-			}
+            string file = opts.next();
+            if (!str::startswith(file, "http://") &&
+                !str::startswith(file, "https://") &&
+                !sys::access(str::joinpath(file, "config"), F_OK))
+            {
+                cerr << file << " skipped: it does not look like a dataset" << endl;
+                continue;
+            }
 			try {
 				ReadonlyDataset::readConfig(file, cfg);
 				foundConfig = true;
@@ -107,7 +87,7 @@ int main(int argc, const char* argv[])
 			}
 		}
 		if (!foundConfig)
-			throw wibble::exception::BadOption("you need to specify at least one valid config file or dataset directory");
+			throw commandline::BadOption("you need to specify at least one valid config file or dataset directory");
 
 		// Validate the configuration
 		bool hasErrors = false;
@@ -169,14 +149,12 @@ int main(int argc, const char* argv[])
 		cfg.output(out.stream(), out.name());
 
 		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }
-
-// vim:set ts=4 sw=4:

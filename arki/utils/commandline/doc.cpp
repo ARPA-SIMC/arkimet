@@ -1,7 +1,8 @@
-#include <arki/wibble/commandline/doc.h>
-#include <arki/wibble/text/wordwrap.h>
+#include <arki/utils/commandline/doc.h>
+#include <arki/utils/commandline/wordwrap.h>
 #include <locale.h>
-#include <errno.h>
+#include <cerrno>
+#include <sstream>
 #include <cstdlib>
 #include <set>
 #include <cstdio>
@@ -11,7 +12,8 @@
 
 using namespace std;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 
@@ -47,8 +49,8 @@ void HelpWriter::pad(size_t size)
 
 void HelpWriter::outlist(const std::string& bullet, size_t bulletsize, const std::string& text)
 {
-	text::WordWrap wrapper(text);
-	size_t rightcol = m_width - bulletsize;
+    WordWrap wrapper(text);
+    size_t rightcol = m_width - bulletsize;
 
 	out << bullet;
 	pad(bulletsize - bullet.size());
@@ -65,7 +67,7 @@ void HelpWriter::outlist(const std::string& bullet, size_t bulletsize, const std
 
 void HelpWriter::outstring(const std::string& str)
 {
-	text::WordWrap wrapper(str);
+    WordWrap wrapper(str);
 
 	while (wrapper.hasData())
 	{
@@ -399,8 +401,13 @@ static string readline(FILE* in)
 
 void Manpage::readHooks(const std::string& file)
 {
-	FILE* in = fopen(file.c_str(), "r");
-	if (!in) throw exception::File(file, "opening for reading");
+    FILE* in = fopen(file.c_str(), "r");
+    if (!in)
+    {
+        stringstream ss;
+        ss << "cannot open " << file << " for reading";
+        throw std::system_error(errno, std::system_category(), ss.str());
+    }
 	string section;
 	commandline::Manpage::where placement = commandline::Manpage::BEFORE;
 	string text;
@@ -420,12 +427,12 @@ void Manpage::readHooks(const std::string& file)
 				addHook(section, placement, text);
 				text.clear();
 			}
-			size_t sep = line.find(' ');
-			if (sep == string::npos)
-			{
-				fclose(in);
-				throw exception::Consistency("expected two words in line: " + line);
-			}
+            size_t sep = line.find(' ');
+            if (sep == string::npos)
+            {
+                fclose(in);
+                throw std::runtime_error("expected two words in line: " + line);
+            }
 			section = line.substr(0, sep);
 			string w(line, sep+1);
 			if (w == "before")
@@ -435,10 +442,10 @@ void Manpage::readHooks(const std::string& file)
 				placement = commandline::Manpage::BEGINNING;
 			} else if (w == "end") {
 				placement = commandline::Manpage::END;
-			} else {
-				fclose(in);
-				throw exception::Consistency("expected 'before', 'beginning' or 'end' in line: " + line);
-			}
+            } else {
+                fclose(in);
+                throw std::runtime_error("expected 'before', 'beginning' or 'end' in line: " + line);
+            }
 		}
 	}
 	if (!section.empty())
@@ -448,6 +455,4 @@ void Manpage::readHooks(const std::string& file)
 
 }
 }
-
-
-// vim:set ts=4 sw=4:
+}

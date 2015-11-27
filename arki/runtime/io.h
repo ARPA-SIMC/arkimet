@@ -1,29 +1,9 @@
 #ifndef ARKI_RUNTIME_IO_H
 #define ARKI_RUNTIME_IO_H
 
-/*
- * runtime/io - Common I/O code used in most arkimet executables
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Common I/O code used in most arkimet executables
 
-#include <arki/wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/wibble/stream/posix.h>
 #include <arki/defs.h>
 #include <arki/core.h>
@@ -49,7 +29,7 @@ class Input
 	std::string m_name;
 
 public:
-	Input(wibble::commandline::Parser& opts);
+	Input(arki::utils::commandline::Parser& opts);
 	Input(const std::string& file);
 
 	std::istream& stream() { return *m_in; }
@@ -94,8 +74,8 @@ public:
 	Output(const std::string& fileName);
 	// Output directed to an open file descriptor
 	Output(int fd, const std::string& fname);
-	Output(wibble::commandline::Parser& opts);
-	Output(wibble::commandline::StringOption& opt);
+	Output(arki::utils::commandline::Parser& opts);
+	Output(arki::utils::commandline::StringOption& opt);
 	~Output();
 
 	// Close existing file (if any) and open a new one

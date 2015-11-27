@@ -1,32 +1,40 @@
-#include <arki/wibble/commandline/engine.h>
+#include <arki/utils/commandline/engine.h>
 #include <ostream>
+#include <sstream>
 
 using namespace std;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 void Engine::addWithoutAna(Option* o)
 {
-	const vector<char>& shorts = o->shortNames;
-	for (vector<char>::const_iterator i = shorts.begin(); i != shorts.end(); i++)
-	{
-		map<char, Option*>::iterator j = m_short.find(*i);
-		if (j != m_short.end())
-			throw exception::Consistency("building commandline parser",
-					string("short option ") + *i + " is already mapped to " + j->second->name());
-		m_short[*i] = o;
-	}
+    const vector<char>& shorts = o->shortNames;
+    for (vector<char>::const_iterator i = shorts.begin(); i != shorts.end(); i++)
+    {
+        map<char, Option*>::iterator j = m_short.find(*i);
+        if (j != m_short.end())
+        {
+            stringstream ss;
+            ss << "cannot build command line parser: short option " << *i << " is already mapped to " << j->second->name();
+            throw std::runtime_error(ss.str());
+        }
+        m_short[*i] = o;
+    }
 
-	const vector<string>& longs = o->longNames;
-	for (vector<string>::const_iterator i = longs.begin(); i != longs.end(); i++)
-	{
-		map<string, Option*>::iterator j = m_long.find(*i);
-		if (j != m_long.end())
-			throw exception::Consistency("building commandline parser",
-					string("long option ") + *i + " is already mapped to " + j->second->name());
-		m_long[*i] = o;
-	}
+    const vector<string>& longs = o->longNames;
+    for (vector<string>::const_iterator i = longs.begin(); i != longs.end(); i++)
+    {
+        map<string, Option*>::iterator j = m_long.find(*i);
+        if (j != m_long.end())
+        {
+            stringstream ss;
+            ss << "cannot build command line parser: long option " << *i << " is already mapped to " << j->second->name();
+            throw std::runtime_error(ss.str());
+        }
+        m_long[*i] = o;
+    }
 }
 
 void Engine::addWithoutAna(const std::vector<Option*>& o)
@@ -38,10 +46,10 @@ void Engine::addWithoutAna(const std::vector<Option*>& o)
 
 void Engine::add(const std::string& alias, Engine* o)
 {
-	map<string, Engine*>::iterator a = m_aliases.find(alias);
-	if (a != m_aliases.end())
-		throw exception::Consistency("command " + alias + " has already been set to " + a->second->name());
-	m_aliases[alias] = o;
+    map<string, Engine*>::iterator a = m_aliases.find(alias);
+    if (a != m_aliases.end())
+        throw std::runtime_error("command " + alias + " has already been set to " + a->second->name());
+    m_aliases[alias] = o;
 }
 
 
@@ -187,66 +195,6 @@ Engine* Engine::add(Engine* o)
 }
 
 
-#if 0
-ArgList::iterator OptionEngine::parseConsecutiveSwitches(ArgList& list, ArgList::iterator begin)
-{
-	while (begin != list.end() && list.isSwitch(*begin))
-	{
-		pair<ArgList::iterator, bool> res = parseFirstIfKnown(list, begin);
-
-		if (!res.second)
-		{
-			if ((*begin)[1] != '-')
-				throw exception::BadOption(string("unknown short option ") + *begin);
-			else
-				throw exception::BadOption(string("unknown long option ") + *begin);
-		}
-
-		begin = res.first;
-	}
-
-	return begin;
-}
-#endif
-
-#if 0
-ArgList::iterator Engine::parse(ArgList& list, ArgList::iterator begin)
-{
-	rebuild();
-
-	bool foundNonSwitches = false;
-	ArgList::iterator firstNonSwitch;
-	while (begin != list.end())
-	{
-		// Parse a row of switches
-		begin = parseConsecutiveSwitches(list, begin);
-
-		// End of switches?
-		if (begin == list.end())
-			break;
-
-		// If the end is the "--" marker, take it out of the list as well
-		if (*begin == "--")
-		{
-			list.eraseAndAdvance(begin);
-			break;
-		}
-
-		if (!foundNonSwitches)
-		{
-			// Mark the start of non-switches if we haven't done it already
-			firstNonSwitch = begin;
-			foundNonSwitches = true;
-		}
-
-		// Skip past the non switches
-		while (begin != list.end() && !list.isSwitch(begin))
-			++begin;
-	}
-	return foundNonSwitches ? firstNonSwitch : begin;
-}
-#endif
-
 ArgList::iterator Engine::parse(ArgList& list, ArgList::iterator begin)
 {
 	rebuild();
@@ -266,10 +214,10 @@ ArgList::iterator Engine::parse(ArgList& list, ArgList::iterator begin)
 
 		if (cmd != list.end())
 		{
-			// A command has been found, ensure that we can handle it
-			map<string, Engine*>::iterator a = m_aliases.find(*cmd);
-			if (a == m_aliases.end())
-				throw exception::BadOption("unknown command " + *cmd);
+            // A command has been found, ensure that we can handle it
+            map<string, Engine*>::iterator a = m_aliases.find(*cmd);
+            if (a == m_aliases.end())
+                throw BadOption("unknown command " + *cmd);
 
 			// Remove the command from the list
 			if (cmd == begin)
@@ -297,8 +245,8 @@ ArgList::iterator Engine::parse(ArgList& list, ArgList::iterator begin)
 				}
 				break;
 			}
-			if (list.isSwitch(i))
-				throw exception::BadOption(string("unknown option ") + *i);
+            if (list.isSwitch(i))
+                throw BadOption(string("unknown option ") + *i);
 			else if (no_switches_after_first_arg)
 				// If requested, stop looking for switches
 				// after the first non-switch argument
@@ -364,5 +312,4 @@ void Engine::dump(std::ostream& out, const std::string& pfx)
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}

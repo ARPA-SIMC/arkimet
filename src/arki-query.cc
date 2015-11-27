@@ -1,7 +1,6 @@
 #include "config.h"
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/dataset/merged.h>
@@ -16,8 +15,10 @@
 
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public arki::runtime::CommandLine
@@ -35,6 +36,7 @@ struct Options : public arki::runtime::CommandLine
 
 }
 }
+}
 
 template<typename T>
 struct RAIIArrayDeleter
@@ -46,10 +48,10 @@ struct RAIIArrayDeleter
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
 		runtime::init();
 
@@ -115,10 +117,10 @@ int main(int argc, const char* argv[])
 		else
 			return 2;
 		//return summary.count() > 0 ? 0 : 1;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
 	} catch (std::exception& e) {
 		cerr << e.what() << endl;
 		return 1;

@@ -1,31 +1,8 @@
-/*
- * arki-check - Update dataset summaries
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// arki-check - Maintenance of arkimet dataset
 
 #include "config.h"
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/commandline/parser.h>
-#include <arki/wibble/sys/fs.h>
-#include <arki/wibble/string.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/configfile.h>
 #include <arki/metadata/printer.h>
 #include <arki/datasetpool.h>
@@ -34,7 +11,6 @@
 #include <arki/types/assigneddataset.h>
 #include <arki/nag.h>
 #include <arki/runtime.h>
-
 #include <fstream>
 #include <iostream>
 #include <sys/stat.h>
@@ -44,10 +20,10 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
-using namespace wibble::sys;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -119,83 +95,7 @@ struct Options : public StandardParserWithManpage
 
 }
 }
-
-#if 0
-struct Stats : public dataset::ondisk::Visitor
-{
-	string name;
-
-	// Total
-	size_t totData;
-	size_t totMd;
-	size_t totSum;
-	size_t totIdx;
-
-	// Current dataset
-	size_t curData;
-	size_t curMd;
-	size_t curSum;
-	size_t curIdx;
-
-	Stats() :
-		totData(0), totMd(0), totSum(0), totIdx(0) {}
-
-	size_t fsize(const std::string& pathname)
-	{
-		unique_ptr<struct stat> s = fs::stat(pathname);
-		if (s.get() == 0)
-			return 0;
-		else
-			return s->st_size;
-	}
-
-	virtual void enterDataset(dataset::ondisk::Writer& w)
-	{
-		name = w.path();
-		curData = curMd = curSum = curIdx = 0;
-		curIdx = fsize(str::joinpath(w.path(), "index.sqlite"));
-	}
-	virtual void leaveDataset(dataset::ondisk::Writer&)
-	{
-		printf("%s: %.1fMb data, %.1fMb metadata, %.1fMb summaries, %.1fMb index\n",
-				name.c_str(), curData/1000000.0, curMd / 1000000.0, curSum / 1000000.0, curIdx / 1000000.0);
-
-		double total = curData + curMd + curSum + curIdx;
-		printf("%s: %.1fMb total: %.1f%% data, %.1f%% metadata, %.1f%% summaries, %.1f%% index\n",
-				name.c_str(), total, curData*100/total, curMd * 100 / total, curSum * 100 / total, curIdx * 100 / total);
-
-		totData += curData;
-		totMd += curMd;
-		totSum += curSum;
-		totIdx += curIdx;
-	}
-
-	virtual void enterDirectory(dataset::ondisk::maint::Directory& dir)
-	{
-		curSum += fsize(str::joinpath(dir.fullpath(), "summary"));
-	}
-	virtual void leaveDirectory(dataset::ondisk::maint::Directory& dir)
-	{
-	}
-
-	virtual void visitFile(dataset::ondisk::maint::Datafile& file)
-	{
-		curData += fsize(file.pathname);
-		curMd += fsize(file.pathname + ".metadata");
-		curSum += fsize(file.pathname + ".summary");
-	}
-
-	void stats()
-	{
-		printf("total: %.1fMb data, %.1fMb metadata, %.1fMb summaries, %.1fMb index\n",
-				totData/1000000.0, totMd / 1000000.0, totSum / 1000000.0, totIdx / 1000000.0);
-
-		double total = totData + totMd + totSum + totIdx;
-		printf("total: %.1fMb total: %.1f%% data, %.1f%% metadata, %.1f%% summaries, %.1f%% index\n",
-				total/1000000.0, totData*100/total, totMd * 100 / total, totSum * 100 / total, totIdx * 100 / total);
-	}
-};
-#endif
+}
 
 struct SkipDataset : public std::exception
 {
@@ -375,7 +275,7 @@ struct Statistician : public Worker
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
+    commandline::Options opts;
 	try {
 		if (opts.parse(argc, argv))
 			return 0;
@@ -396,14 +296,14 @@ int main(int argc, const char* argv[])
         if (opts.op_remove->isSet()) ++actionCount;
         if (opts.scantest->isSet()) ++actionCount;
         if (actionCount > 1)
-            throw wibble::exception::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all or --scantest can be given in one invocation");
+            throw commandline::BadOption("only one of --stats, --invalidate, --repack, --remove, --remove-all or --scantest can be given in one invocation");
 
-		// Read the config file(s)
-		ConfigFile cfg;
-		bool foundConfig1 = runtime::parseConfigFiles(cfg, *opts.cfgfiles);
-		bool foundConfig2 = opts.readDatasetConfig(cfg);
-		if (!foundConfig1 && !foundConfig2)
-			throw wibble::exception::BadOption("you need to specify the config file");
+        // Read the config file(s)
+        ConfigFile cfg;
+        bool foundConfig1 = runtime::parseConfigFiles(cfg, *opts.cfgfiles);
+        bool foundConfig2 = opts.readDatasetConfig(cfg);
+        if (!foundConfig1 && !foundConfig2)
+            throw commandline::BadOption("you need to specify the config file");
 
 		// Remove unallowed entries
 		if (opts.restr->isSet())
@@ -412,10 +312,10 @@ int main(int argc, const char* argv[])
 			rest.remove_unallowed(cfg);
 		}
 
-		if (opts.op_remove->isSet())
-		{
-			if (opts.op_remove->stringValue().empty())
-				throw wibble::exception::BadOption("you need to give a file name to --remove");
+        if (opts.op_remove->isSet())
+        {
+            if (opts.op_remove->stringValue().empty())
+                throw commandline::BadOption("you need to give a file name to --remove");
 			WritableDatasetPool pool(cfg);
 			// Read all metadata from the file specified in --remove
 			runtime::Input input(opts.op_remove->stringValue());
@@ -426,9 +326,12 @@ int main(int argc, const char* argv[])
                 unique_ptr<Metadata> md(new Metadata);
                 if (!md->read(input.stream(), input.name())) break;
                 const types::AssignedDataset* ad = md->get<types::AssignedDataset>();
-                if (!ad) throw wibble::exception::Consistency(
-                        "reading information on data to remove",
-                        "the metadata #" + str::fmt(count) + " is not assigned to any dataset");
+                if (!ad)
+                {
+                   stringstream ss;
+                   ss << "cannot read information on data to remove: the metadata #" << count << " is not assigned to any dataset";
+                   throw std::runtime_error(ss.str());
+                }
                 todolist.eat(move(md));
 			}
 			// Perform removals
@@ -484,11 +387,11 @@ int main(int argc, const char* argv[])
             }
 
             worker->done();
-		}
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
+        }
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
 	} catch (std::exception& e) {
 		cerr << e.what() << endl;
 		return 1;
@@ -496,5 +399,3 @@ int main(int argc, const char* argv[])
 
 	return 0;
 }
-
-// vim:set ts=4 sw=4:

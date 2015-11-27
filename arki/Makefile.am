@@ -22,17 +22,11 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/sys/fs.h \
 		wibble/sys/signal.h \
 		wibble/sys/filelock.h \
-		wibble/commandline/core.h \
-		wibble/commandline/doc.h \
-		wibble/commandline/engine.h \
-		wibble/commandline/options.h \
-		wibble/commandline/parser.h \
 		wibble/tests/tut-prereq.h \
 		wibble/tests/tut_reporter.h \
 		wibble/tests/tut-wibble.h \
 		wibble/tests/tut.h \
 		wibble/tests/tut_restartable.h \
-		wibble/text/wordwrap.h \
 		wibble/grcal/grcal.h \
 		wibble/stream/posix.h \
 		wibble/net/mime.h \
@@ -177,6 +171,12 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/raii.h \
 		utils/string.h \
 		utils/sys.h \
+		utils/commandline/core.h \
+		utils/commandline/doc.h \
+		utils/commandline/engine.h \
+		utils/commandline/options.h \
+		utils/commandline/parser.h \
+		utils/commandline/wordwrap.h \
 		values.h
 
 BUILT_SOURCES = $(top_builddir)/arki/matcher/reftime/reftime-lex.h \
@@ -221,12 +221,6 @@ libarkimet_la_SOURCES += \
 		wibble/log/ostream.cpp \
 		wibble/log/syslog.cpp \
 		wibble/log/filters.cpp \
-		wibble/commandline/core.cpp \
-		wibble/commandline/options.cpp \
-		wibble/commandline/doc.cpp \
-		wibble/commandline/parser.cpp \
-		wibble/commandline/engine.cpp \
-		wibble/text/wordwrap.cpp \
 		wibble/grcal/grcal.cpp \
 		wibble/net/mime.cpp \
 		wibble/net/server.cpp \
@@ -246,6 +240,12 @@ libarkimet_la_SOURCES += \
 		utils/raii.cc \
 		utils/string.cc \
 		utils/sys.cc \
+		utils/commandline/core.cpp \
+		utils/commandline/options.cpp \
+		utils/commandline/doc.cpp \
+		utils/commandline/parser.cpp \
+		utils/commandline/engine.cpp \
+		utils/commandline/wordwrap.cpp \
 		configfile.cc \
 		transaction.cc \
 		emitter.cc \

@@ -2,7 +2,6 @@
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
 #include <arki/metadata/consumer.h>
-
 #include <arki/wibble/exception.h>
 #include <arki/utils/string.h>
 #include <iostream>
@@ -14,12 +13,11 @@
 
 using namespace std;
 using namespace arki::utils;
-using namespace wibble::commandline;
 
 namespace arki {
 namespace runtime {
 
-Input::Input(wibble::commandline::Parser& opts)
+Input::Input(commandline::Parser& opts)
 	: m_in(&cin), m_name("(stdin)")
 {
 	if (opts.hasNext())
@@ -85,7 +83,7 @@ Output::Output(const std::string& fileName) : m_out(0), own_stream(true)
 	openFile(fileName);
 }
 
-Output::Output(wibble::commandline::Parser& opts) : m_out(0), own_stream(true)
+Output::Output(commandline::Parser& opts) : m_out(0), own_stream(true)
 {
 	if (opts.hasNext())
 	{
@@ -97,7 +95,7 @@ Output::Output(wibble::commandline::Parser& opts) : m_out(0), own_stream(true)
 		openStdout();
 }
 
-Output::Output(wibble::commandline::StringOption& opt) : m_out(0), own_stream(true)
+Output::Output(commandline::StringOption& opt) : m_out(0), own_stream(true)
 {
 	if (opt.isSet())
 	{

@@ -1,12 +1,13 @@
-#ifndef WIBBLE_COMMANDLINE_DOC_H
-#define WIBBLE_COMMANDLINE_DOC_H
+#ifndef ARKI_UTILS_COMMANDLINE_DOC_H
+#define ARKI_UTILS_COMMANDLINE_DOC_H
 
-#include <arki/wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <string>
 #include <vector>
 #include <ostream>
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 class HelpWriter;
@@ -80,6 +81,5 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}
 #endif

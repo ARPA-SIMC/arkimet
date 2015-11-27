@@ -1,8 +1,6 @@
 #include "config.h"
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
-
+#include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/matcher.h>
 #include <arki/dataset.h>
@@ -15,9 +13,10 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public runtime::CommandLine
@@ -34,14 +33,14 @@ struct Options : public runtime::CommandLine
 
 }
 }
+}
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
 		runtime::init();
 
@@ -77,12 +76,12 @@ int main(int argc, const char* argv[])
 			return 2;
     } catch (runtime::HandledByCommandLineParser& e) {
         return e.status;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }

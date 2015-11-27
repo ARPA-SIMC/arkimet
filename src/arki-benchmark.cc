@@ -1,27 +1,7 @@
-/*
- * arki-benchmark - Run an arkimet import and query benchmark
- *
- * Copyright (C) 2007  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// arki-benchmark - Run an arkimet import and query benchmark
 #include "config.h"
 #include <arki/wibble/exception.h>
-#include <arki/wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/wibble/sys/process.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
@@ -50,7 +30,8 @@ using namespace std;
 using namespace arki;
 using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -73,6 +54,7 @@ struct Options : public StandardParserWithManpage
 	}
 };
 
+}
 }
 }
 
@@ -310,10 +292,10 @@ struct DSBenchmark : public Benchmark
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		// We want predictable results
-		srand(1);
+    commandline::Options opts;
+    try {
+        // We want predictable results
+        srand(1);
 
 		// We don't want buffered stdout
 		if (setvbuf(stdout, NULL, _IOLBF, 0) != 0)
@@ -327,10 +309,10 @@ int main(int argc, const char* argv[])
 		// Benchmark data
 		BenchmarkInfo info;
 
-		// Read the benchmark directory name
-		if (!opts.hasNext())
-			throw wibble::exception::BadOption("you need to specify the directory name");
-		info.dirname = opts.next();
+        // Read the benchmark directory name
+        if (!opts.hasNext())
+            throw commandline::BadOption("you need to specify the directory name");
+        info.dirname = opts.next();
 
         // Change into the benchmark directory
         wibble::sys::process::chdir(info.dirname);
@@ -393,15 +375,13 @@ int main(int argc, const char* argv[])
 		else
 			Benchmark::root()->run();
 
-		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
-	} catch (std::exception& e) {
-		cerr << e.what() << endl;
-		return 1;
-	}
+        return 0;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
+    } catch (std::exception& e) {
+        cerr << e.what() << endl;
+        return 1;
+    }
 }
-
-// vim:set ts=4 sw=4:

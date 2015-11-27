@@ -1,10 +1,11 @@
-#include <arki/wibble/commandline/parser.h>
-#include <arki/wibble/commandline/doc.h>
+#include <arki/utils/commandline/parser.h>
+#include <arki/utils/commandline/doc.h>
 #include <iostream>
 
 using namespace std;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 void StandardParser::outputHelp(std::ostream& out)
@@ -74,13 +75,12 @@ bool StandardParserWithMandatoryCommand::parse(int argc, const char* argv[])
 		commandline::Help help(name(), m_version);
 		if (hasNext())
 		{
-			// Help on a specific command
-			string command = next();
-			if (Engine* e = this->command(command))
-				help.outputHelp(cout, *e);
-			else
-				throw exception::BadOption("unknown command " + command + "; run '" + argv[0] + " help' "
-						"for a list of all the available commands");
+            // Help on a specific command
+            string command = next();
+            if (Engine* e = this->command(command))
+                help.outputHelp(cout, *e);
+            else
+                throw BadOption("unknown command " + command + "; run '" + argv[0] + " help' " "for a list of all the available commands");
 		} else {
 			// General help
 			help.outputHelp(cout, *this);
@@ -93,5 +93,4 @@ bool StandardParserWithMandatoryCommand::parse(int argc, const char* argv[])
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}

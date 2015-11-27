@@ -1,10 +1,11 @@
-#ifndef WIBBLE_COMMANDLINE_PARSER_H
-#define WIBBLE_COMMANDLINE_PARSER_H
+#ifndef ARKI_UTILS_COMMANDLINE_PARSER_H
+#define ARKI_UTILS_COMMANDLINE_PARSER_H
 
-#include <arki/wibble/commandline/engine.h>
+#include <arki/utils/commandline/engine.h>
 #include <iosfwd>
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 /**
@@ -135,6 +136,5 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}
 #endif

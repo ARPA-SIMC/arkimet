@@ -1,13 +1,14 @@
-#ifndef WIBBLE_COMMANDLINE_ENGINE_H
-#define WIBBLE_COMMANDLINE_ENGINE_H
+#ifndef ARKI_UTILS_COMMANDLINE_ENGINE_H
+#define ARKI_UTILS_COMMANDLINE_ENGINE_H
 
-#include <arki/wibble/commandline/options.h>
+#include <arki/utils/commandline/options.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <iosfwd>
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 #if 0
@@ -238,6 +239,5 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}
 #endif

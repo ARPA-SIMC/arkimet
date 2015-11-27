@@ -8,7 +8,7 @@
 #include <arki/runtime.h>
 #include <arki/utils/sys.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/wibble/sys/exec.h>
 #include <iostream>
 #include <cstdlib>
@@ -20,7 +20,8 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -63,6 +64,7 @@ struct Options : public StandardParserWithManpage
 
 }
 }
+}
 
 static void process(metadata::Eater& consumer, runtime::Input& in)
 {
@@ -72,13 +74,13 @@ static void process(metadata::Eater& consumer, runtime::Input& in)
 
 int main(int argc, const char* argv[])
 {
-	wibble::commandline::Options opts;
-	try {
-		if (opts.parse(argc, argv))
-			return 0;
+    commandline::Options opts;
+    try {
+        if (opts.parse(argc, argv))
+            return 0;
 
-		if (!opts.hasNext())
-			throw wibble::exception::BadOption("please specify a command to run");
+        if (!opts.hasNext())
+            throw commandline::BadOption("please specify a command to run");
 
 		vector<string> args;
 		while (opts.hasNext())
@@ -114,15 +116,13 @@ int main(int argc, const char* argv[])
             consumer.flush();
         }
 
-		return 0;
-	} catch (wibble::exception::BadOption& e) {
-		cerr << e.desc() << endl;
-		opts.outputHelp(cerr);
-		return 1;
+        return 0;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
+        opts.outputHelp(cerr);
+        return 1;
 	} catch (std::exception& e) {
 		cerr << e.what() << endl;
 		return 1;
 	}
 }
-
-// vim:set ts=4 sw=4:

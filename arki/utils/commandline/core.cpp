@@ -1,8 +1,9 @@
-#include <arki/wibble/commandline/core.h>
-#include <ctype.h>
-#include <string.h>
+#include <arki/utils/commandline/core.h>
+#include <cctype>
+#include <cstring>
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 bool ArgList::isSwitch(const const_iterator& iter)
@@ -52,5 +53,4 @@ bool ArgList::isSwitch(const char* str)
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}

@@ -1,29 +1,9 @@
 #ifndef ARKI_RUNTIME_H
 #define ARKI_RUNTIME_H
 
-/*
- * runtime - Common code used in most arkimet executables
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Common code used in most arkimet executables
 
-#include <arki/wibble/commandline/parser.h>
+#include <arki/utils/commandline/parser.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/config.h>
 #include <arki/runtime/processor.h>
@@ -69,42 +49,42 @@ struct HandledByCommandLineParser
     ~HandledByCommandLineParser();
 };
 
-struct CommandLine : public wibble::commandline::StandardParserWithManpage
+struct CommandLine : public utils::commandline::StandardParserWithManpage
 {
-	wibble::commandline::OptionGroup* infoOpts;
-	wibble::commandline::OptionGroup* inputOpts;
-	wibble::commandline::OptionGroup* outputOpts;
-	wibble::commandline::OptionGroup* dispatchOpts;
+    utils::commandline::OptionGroup* infoOpts;
+    utils::commandline::OptionGroup* inputOpts;
+    utils::commandline::OptionGroup* outputOpts;
+    utils::commandline::OptionGroup* dispatchOpts;
 
-	wibble::commandline::BoolOption* verbose;
-	wibble::commandline::BoolOption* debug;
-	wibble::commandline::BoolOption* status;
-	wibble::commandline::BoolOption* yaml;
-	wibble::commandline::BoolOption* json;
-	wibble::commandline::BoolOption* annotate;
-	wibble::commandline::BoolOption* dataInline;
-	wibble::commandline::BoolOption* dataOnly;
-	wibble::commandline::BoolOption* summary;
-	wibble::commandline::BoolOption* merged;
-	wibble::commandline::BoolOption* ignore_duplicates;
-	wibble::commandline::StringOption* restr;
-	wibble::commandline::StringOption* exprfile;
-	wibble::commandline::StringOption* qmacro;
-	wibble::commandline::StringOption* outfile;
-	wibble::commandline::StringOption* targetfile;
-	wibble::commandline::StringOption* postprocess;
-	wibble::commandline::StringOption* report;
-	wibble::commandline::StringOption* sort;
-	wibble::commandline::StringOption* files;
-	wibble::commandline::StringOption* moveok;
-	wibble::commandline::StringOption* moveko;
-	wibble::commandline::StringOption* movework;
-	wibble::commandline::StringOption* summary_restrict;
-	wibble::commandline::StringOption* validate;
-	wibble::commandline::VectorOption<wibble::commandline::ExistingFile>* postproc_data;
-	wibble::commandline::VectorOption<wibble::commandline::String>* cfgfiles;
-	wibble::commandline::VectorOption<wibble::commandline::String>* dispatch;
-	wibble::commandline::VectorOption<wibble::commandline::String>* testdispatch;
+    utils::commandline::BoolOption* verbose;
+    utils::commandline::BoolOption* debug;
+    utils::commandline::BoolOption* status;
+    utils::commandline::BoolOption* yaml;
+    utils::commandline::BoolOption* json;
+    utils::commandline::BoolOption* annotate;
+    utils::commandline::BoolOption* dataInline;
+    utils::commandline::BoolOption* dataOnly;
+    utils::commandline::BoolOption* summary;
+    utils::commandline::BoolOption* merged;
+    utils::commandline::BoolOption* ignore_duplicates;
+    utils::commandline::StringOption* restr;
+    utils::commandline::StringOption* exprfile;
+    utils::commandline::StringOption* qmacro;
+    utils::commandline::StringOption* outfile;
+    utils::commandline::StringOption* targetfile;
+    utils::commandline::StringOption* postprocess;
+    utils::commandline::StringOption* report;
+    utils::commandline::StringOption* sort;
+    utils::commandline::StringOption* files;
+    utils::commandline::StringOption* moveok;
+    utils::commandline::StringOption* moveko;
+    utils::commandline::StringOption* movework;
+    utils::commandline::StringOption* summary_restrict;
+    utils::commandline::StringOption* validate;
+    utils::commandline::VectorOption<utils::commandline::ExistingFile>* postproc_data;
+    utils::commandline::VectorOption<utils::commandline::String>* cfgfiles;
+    utils::commandline::VectorOption<utils::commandline::String>* dispatch;
+    utils::commandline::VectorOption<utils::commandline::String>* testdispatch;
 
 	ConfigFile inputInfo;
 	ConfigFile dispatchInfo;

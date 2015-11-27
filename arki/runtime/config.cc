@@ -14,7 +14,6 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble::commandline;
 using namespace arki::utils;
 
 namespace arki {
@@ -226,7 +225,7 @@ void parseConfigFile(ConfigFile& cfg, const std::string& fileName)
 	}
 }
 
-bool parseConfigFiles(ConfigFile& cfg, const wibble::commandline::VectorOption<wibble::commandline::String>& files)
+bool parseConfigFiles(ConfigFile& cfg, const commandline::VectorOption<commandline::String>& files)
 {
        bool found = false;
        for (vector<string>::const_iterator i = files.values().begin();
@@ -294,7 +293,7 @@ void Restrict::remove_unallowed(ConfigFile& cfg)
 		cfg.deleteSection(*i);
 }
 
-void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
+void readMatcherAliasDatabase(commandline::StringOption* file)
 {
 	ConfigFile cfg;
 
@@ -330,7 +329,7 @@ void readMatcherAliasDatabase(wibble::commandline::StringOption* file)
 	// Else, nothing is loaded.
 }
 
-static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dir)
+static std::string rcDirName(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dir)
 {
 	std::string dirname;
 	char* fromEnv = 0;
@@ -352,7 +351,7 @@ static std::string rcDirName(const std::string& nameInConfdir, const std::string
 #endif
 }
 
-std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
 {
 	std::string dirname = rcDirName(nameInConfdir, nameInEnv, dirOption);
 
@@ -376,7 +375,7 @@ std::vector<std::string> rcFiles(const std::string& nameInConfdir, const std::st
 	return files;
 }
 
-std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+std::string readRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
 {
 	vector<string> files = rcFiles(nameInConfdir, nameInEnv, dirOption);
 
@@ -388,7 +387,7 @@ std::string readRcDir(const std::string& nameInConfdir, const std::string& nameI
 	return res;
 }
 
-SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, wibble::commandline::StringOption* dirOption)
+SourceCode readSourceFromRcDir(const std::string& nameInConfdir, const std::string& nameInEnv, commandline::StringOption* dirOption)
 {
 	vector<string> files = rcFiles(nameInConfdir, nameInEnv, dirOption);
 	SourceCode res;

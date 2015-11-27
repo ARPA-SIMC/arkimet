@@ -1,11 +1,12 @@
-#ifndef WIBBLE_COMMANDLINE_OPTIONS_H
-#define WIBBLE_COMMANDLINE_OPTIONS_H
+#ifndef ARKI_UTILS_COMMANDLINE_OPTIONS_H
+#define ARKI_UTILS_COMMANDLINE_OPTIONS_H
 
-#include <arki/wibble/commandline/core.h>
+#include <arki/utils/commandline/core.h>
 #include <string>
 #include <vector>
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 // Types of values for the command line options
@@ -179,15 +180,15 @@ protected:
 			this->usage = "<val>";
 	}
 
-	ArgList::iterator parse(ArgList& list, ArgList::iterator begin)
-	{
-		if (begin == list.end())
-			throw exception::BadOption("option requires an argument");
-		m_value = T::parse(*begin);
-		m_isset = true;
-		// Remove the parsed element
-		return list.eraseAndAdvance(begin);
-	}
+    ArgList::iterator parse(ArgList& list, ArgList::iterator begin)
+    {
+        if (begin == list.end())
+            throw BadOption("option requires an argument");
+        m_value = T::parse(*begin);
+        m_isset = true;
+        // Remove the parsed element
+        return list.eraseAndAdvance(begin);
+    }
 	bool parse(const std::string& param)
 	{
 		m_value = T::parse(param);
@@ -196,7 +197,7 @@ protected:
 	}
     void parse_noarg()
     {
-        throw exception::BadOption("option requires an argument");
+        throw BadOption("option requires an argument");
     }
 
 public:
@@ -241,18 +242,14 @@ protected:
         : Option(name, 0, longName, usage, description)
     {
         if (shortName != 0)
-            throw wibble::exception::Consistency(
-                    "creating option " + name + " with optional value"
-                    "short options with optional values are not allowed");
+            throw std::runtime_error("cannot create option " + name + ": short options with optional values are not allowed");
         if (usage.empty())
             this->usage = "<val>";
     }
 
     ArgList::iterator parse(ArgList& list, ArgList::iterator begin)
     {
-        throw wibble::exception::Consistency(
-                "parsing option with optional value"
-                "short options with optional values are not allowed");
+        throw std::runtime_error("cannot parse option: short options with optional values are not allowed");
     }
     bool parse(const std::string& param)
     {
@@ -324,15 +321,15 @@ protected:
 			this->usage = "<val>";
 	}
 
-	ArgList::iterator parse(ArgList& list, ArgList::iterator begin)
-	{
-		if (begin == list.end())
-			throw exception::BadOption("no string argument found");
-		m_isset = true;
-		m_values.push_back(T::parse(*begin));
-		// Remove the parsed element
-		return list.eraseAndAdvance(begin);
-	}
+    ArgList::iterator parse(ArgList& list, ArgList::iterator begin)
+    {
+        if (begin == list.end())
+            throw BadOption("no string argument found");
+        m_isset = true;
+        m_values.push_back(T::parse(*begin));
+        // Remove the parsed element
+        return list.eraseAndAdvance(begin);
+    }
 	bool parse(const std::string& param)
 	{
 		m_isset = true;
@@ -341,7 +338,7 @@ protected:
 	}
     void parse_noarg()
     {
-        throw exception::BadOption("option requires an argument");
+        throw BadOption("option requires an argument");
     }
 
 public:
@@ -409,6 +406,5 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}
 #endif

@@ -1,10 +1,11 @@
-#include <arki/wibble/text/wordwrap.h>
+#include <arki/utils/commandline/wordwrap.h>
 #include <cstdlib>
 
 using namespace std;
 
-namespace wibble {
-namespace text {
+namespace arki {
+namespace utils {
+namespace commandline {
 
 string WordWrap::get(unsigned int width)
 {
@@ -41,6 +42,4 @@ string WordWrap::get(unsigned int width)
 
 }
 }
-
-
-// vim:set ts=4 sw=4:
+}

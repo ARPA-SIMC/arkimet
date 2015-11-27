@@ -1,6 +1,4 @@
-#include <arki/wibble/sys/macros.h>
-#include <arki/wibble/commandline/options.h>
-#include <arki/wibble/string.h>
+#include <arki/utils/commandline/options.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <errno.h>
@@ -11,16 +9,17 @@
 
 using namespace std;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 bool Bool::parse(const std::string& val)
 {
-	if (val == "true" || val == "t" || val == "1" || val == "yes" || val == "y")
-		return true;
-	if (val == "false" || val == "f" || val == "0" || val == "no" || val == "n")
-		return false;
-	throw exception::BadOption("invalid true/false value: \"" + val + "\"");
+    if (val == "true" || val == "t" || val == "1" || val == "yes" || val == "y")
+        return true;
+    if (val == "false" || val == "f" || val == "0" || val == "no" || val == "n")
+        return false;
+    throw BadOption("invalid true/false value: \"" + val + "\"");
 }
 bool Bool::toBool(const bool& val) { return val; }
 int Bool::toInt(const value_type& val) { return val ? 1 : 0; }
@@ -29,15 +28,15 @@ bool Bool::init_val = false;
 
 int Int::parse(const std::string& val)
 {
-	// Ensure that we're all numeric
-	for (string::const_iterator s = val.begin(); s != val.end(); ++s)
-		if (!isdigit(*s))
-			throw exception::BadOption("value " + val + " must be numeric");
-	return strtoul(val.c_str(), NULL, 10);
+    // Ensure that we're all numeric
+    for (string::const_iterator s = val.begin(); s != val.end(); ++s)
+        if (!isdigit(*s))
+            throw BadOption("value " + val + " must be numeric");
+    return strtoul(val.c_str(), NULL, 10);
 }
 bool Int::toBool(const int& val) { return static_cast<bool>(val); }
 int Int::toInt(const int& val) { return val; }
-std::string Int::toString(const int& val) { return str::fmt(val); }
+std::string Int::toString(const int& val) { return std::to_string(val); }
 int Int::init_val = 0;
 
 std::string String::parse(const std::string& val)
@@ -49,14 +48,12 @@ int String::toInt(const std::string& val) { return strtoul(val.c_str(), NULL, 10
 std::string String::toString(const std::string& val) { return val; }
 std::string String::init_val = std::string();
 
-#ifdef POSIX
 std::string ExistingFile::parse(const std::string& val)
 {
-	if (access(val.c_str(), F_OK) == -1)
-		throw exception::BadOption("file " + val + " must exist");
-	return val;
+    if (access(val.c_str(), F_OK) == -1)
+        throw BadOption("file " + val + " must exist");
+    return val;
 }
-#endif
 std::string ExistingFile::toString(const std::string& val) { return val; }
 std::string ExistingFile::init_val = std::string();
 
@@ -144,5 +141,4 @@ std::string Option::fullUsageForMan() const
 
 }
 }
-
-// vim:set ts=4 sw=4:
+}

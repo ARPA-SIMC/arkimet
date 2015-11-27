@@ -1,8 +1,8 @@
 /// Arkimet server
 #include "config.h"
 #include <arki/wibble/exception.h>
-#include <arki/wibble/commandline/parser.h>
-#include <arki/wibble/string.h>
+#include <arki/utils/commandline/parser.h>
+#include <arki/utils/string.h>
 #include <arki/wibble/sys/process.h>
 #include <arki/wibble/sys/childprocess.h>
 #include <arki/wibble/log/stream.h>
@@ -60,7 +60,8 @@ using namespace wibble::net;
 
 extern char** environ;
 
-namespace wibble {
+namespace arki {
+namespace utils {
 namespace commandline {
 
 struct Options : public StandardParserWithManpage
@@ -111,6 +112,7 @@ struct Options : public StandardParserWithManpage
     }
 };
 
+}
 }
 }
 
@@ -1038,13 +1040,13 @@ struct ServerProcess : public wibble::sys::ChildProcess
 {
     vector<string> restart_argv;
     vector<string> restart_environ;
-    wibble::commandline::Options& opts;
+    commandline::Options& opts;
     ostream log;
     HTTP http;
     LogFilter filter;
     wibble::log::Streambuf logstream;
 
-    ServerProcess(wibble::commandline::Options& opts)
+    ServerProcess(commandline::Options& opts)
         : opts(opts), log(cerr.rdbuf()), http(log)
     {
         http.arki_config = sys::abspath(opts.next());
@@ -1157,7 +1159,7 @@ int main(int argc, const char* argv[])
     // Initialise setproctitle hacks
     wibble::sys::process::initproctitle(argc, (char**)argv);
 
-    wibble::commandline::Options opts;
+    commandline::Options opts;
     try {
         if (opts.parse(argc, argv))
             return 0;
@@ -1165,7 +1167,7 @@ int main(int argc, const char* argv[])
         nag::init(opts.verbose->isSet(), opts.debug->isSet());
 
         if (!opts.hasNext())
-            throw wibble::exception::BadOption("please specify a configuration file");
+            throw commandline::BadOption("please specify a configuration file");
 
         // Build the full path of argv[0]
         restart_argv[0];
@@ -1206,8 +1208,8 @@ int main(int argc, const char* argv[])
         } else {
             return srv.main();
         }
-    } catch (wibble::exception::BadOption& e) {
-        cerr << e.desc() << endl;
+    } catch (commandline::BadOption& e) {
+        cerr << e.what() << endl;
         opts.outputHelp(cerr);
         return 1;
     } catch (std::exception& e) {
