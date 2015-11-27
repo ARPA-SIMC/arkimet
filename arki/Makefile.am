@@ -17,15 +17,12 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/tests.h \
 		wibble/sys/thread.h \
 		wibble/sys/process.h \
-		wibble/sys/netbuffer.h \
 		wibble/sys/macros.h \
 		wibble/sys/mutex.h \
-		wibble/sys/buffer.h \
 		wibble/sys/childprocess.h \
 		wibble/sys/exec.h \
 		wibble/sys/fs.h \
 		wibble/sys/signal.h \
-		wibble/sys/lockfile.h \
 		wibble/sys/filelock.h \
 		wibble/commandline/core.h \
 		wibble/commandline/doc.h \
@@ -216,9 +213,7 @@ libarkimet_la_SOURCES += \
 		wibble/string.cpp \
 		wibble/tests.cpp \
 		wibble/sys/fs.cpp \
-		wibble/sys/lockfile.cpp \
 		wibble/sys/filelock.cpp \
-		wibble/sys/buffer.cpp \
 		wibble/sys/process.cpp \
 		wibble/sys/childprocess.cpp \
 		wibble/sys/mutex.cpp \

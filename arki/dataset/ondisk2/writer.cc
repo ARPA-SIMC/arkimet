@@ -17,7 +17,6 @@
 #include "arki/nag.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <arki/wibble/sys/lockfile.h>
 #include <fstream>
 #include <sstream>
 #include <sys/types.h>

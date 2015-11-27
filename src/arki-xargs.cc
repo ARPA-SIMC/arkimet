@@ -1,41 +1,16 @@
-/*
- * arki-xargs - Runs a command on every blob of data found in the input files
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Runs a command on every blob of data found in the input files
 #include "config.h"
-
 #include <arki/metadata.h>
 #include <arki/metadata/xargs.h>
 #include <arki/types/reftime.h>
 #include <arki/types/timerange.h>
 #include <arki/scan/any.h>
 #include <arki/runtime.h>
-
+#include <arki/utils/sys.h>
 #include <arki/wibble/exception.h>
 #include <arki/wibble/commandline/parser.h>
-#include <arki/wibble/string.h>
-#include <arki/wibble/sys/fs.h>
 #include <arki/wibble/sys/exec.h>
-#include <arki/wibble/sys/process.h>
-
+#include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
@@ -43,7 +18,7 @@
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace wibble {
 namespace commandline {
@@ -91,7 +66,7 @@ struct Options : public StandardParserWithManpage
 
 static void process(metadata::Eater& consumer, runtime::Input& in)
 {
-    metadata::ReadContext rc(sys::process::getcwd(), in.name());
+    metadata::ReadContext rc(sys::getcwd(), in.name());
     Metadata::readFile(in.stream(), rc, consumer);
 }
 

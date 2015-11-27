@@ -1,33 +1,10 @@
-/*
- * arki-server - Arkimet server
- *
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Arkimet server
 #include "config.h"
-
 #include <arki/wibble/exception.h>
 #include <arki/wibble/commandline/parser.h>
 #include <arki/wibble/string.h>
 #include <arki/wibble/sys/process.h>
 #include <arki/wibble/sys/childprocess.h>
-#include <arki/wibble/sys/fs.h>
 #include <arki/wibble/log/stream.h>
 #include <arki/wibble/log/syslog.h>
 #include <arki/wibble/log/file.h>
@@ -52,10 +29,10 @@
 #include <arki/runtime.h>
 #include <arki/runtime/config.h>
 #include <arki/emitter/json.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <arki/wibble/net/server.h>
 #include <arki/wibble/net/http.h>
-//#include <arki/utils/lua.h>
-
 #include <string>
 #include <vector>
 #include <map>
@@ -66,7 +43,6 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -80,7 +56,6 @@
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
-using namespace wibble;
 using namespace wibble::net;
 
 extern char** environ;
@@ -139,7 +114,19 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct Request : public net::http::Request
+inline std::string str_replace(const std::string& str, char from, char to)
+{
+    std::string res;
+    res.reserve(str.size());
+    for (auto i: str)
+        if (i == from)
+            res.append(1, to);
+        else
+            res.append(1, i);
+    return res;
+}
+
+struct Request : public wibble::net::http::Request
 {
     ostream& log;
     ConfigFile arki_conf;
@@ -151,7 +138,7 @@ struct Request : public net::http::Request
     {
         const ConfigFile* cfg = arki_conf_remote.section(dsname);
         if (cfg == NULL)
-            throw net::http::error404();
+            throw wibble::net::http::error404();
         return *cfg;
     }
 
@@ -159,7 +146,7 @@ struct Request : public net::http::Request
     {
         const ConfigFile* cfg = arki_conf.section(dsname);
         if (cfg == NULL)
-            throw net::http::error404();
+            throw wibble::net::http::error404();
         return *cfg;
     }
 
@@ -179,7 +166,8 @@ struct Request : public net::http::Request
 
     void log_action(const std::string& action)
     {
-        sys::process::setproctitle("arki-server worker process: " + action);
+        using namespace wibble;
+        wibble::sys::process::setproctitle("arki-server worker process: " + action);
         log << log::INFO << action << endl;
     }
 };
@@ -240,7 +228,7 @@ struct HandlerMap : public LocalHandler
         string head = req.pop_path_info();
         std::map<string, LocalHandler*>::iterator i = handlers.find(head);
         if (i == handlers.end())
-            throw net::http::error404();
+            throw wibble::net::http::error404();
         (*(i->second))(req);
     }
 };
@@ -392,7 +380,7 @@ struct RootQueryHandler : public LocalHandler
         params.parse_get_or_post(req);
 
         // Build the qmacro dataset
-        string macroname = str::trim(*qmacro);
+        string macroname = str::strip(*qmacro);
         if (macroname.empty())
             throw error400("root-level query without qmacro parameter");
         unique_ptr<ReadonlyDataset> ds = runtime::make_qmacro_dataset(
@@ -421,7 +409,7 @@ struct RootSummaryHandler : public LocalHandler
         ParamSingle* qmacro = params.add<ParamSingle>("qmacro");
         params.parse_get_or_post(req);
 
-        string macroname = str::trim(*qmacro);
+        string macroname = str::strip(*qmacro);
 
         unique_ptr<ReadonlyDataset> ds;
         if (macroname.empty())
@@ -533,7 +521,7 @@ struct DatasetHandler : public LocalHandler
     {
         string dsname = req.pop_path_info();
         if (dsname.empty())
-            throw net::http::error404();
+            throw wibble::net::http::error404();
 
         string action = req.pop_path_info();
         if (action.empty())
@@ -601,14 +589,14 @@ struct DatasetHandler : public LocalHandler
 void list_files(const std::string& root, const std::string& path, vector<string>& files)
 {
     string absdir = str::joinpath(root, path);
-    sys::fs::Directory dir(absdir);
-    for (sys::fs::Directory::const_iterator i = dir.begin(); i != dir.end(); ++i)
+    sys::Path dir(absdir);
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
-        if ((*i)[0] == '.') continue;
+        if (i->d_name[0] == '.') continue;
         if (i.isdir())
-            list_files(root, str::joinpath(path, *i), files);
+            list_files(root, str::joinpath(path, i->d_name), files);
         else
-            files.push_back(str::joinpath(path, *i));
+            files.push_back(str::joinpath(path, i->d_name));
     }
 }
 
@@ -668,7 +656,7 @@ struct InboundHandler : public LocalHandler
                 } else {
                     res << "<td>" << format << "</td>";
                     res << "<td>";
-                    string escaped = str::urlencode(*i);
+                    string escaped = str::encode_url(*i);
                     res << "<a href='/inbound/show?file=" << escaped << "'>[show]</a>";
                     if (can_import)
                         res << " <a href='/inbound/simulate?file=" << escaped << "'>[simulate import]</a>";
@@ -841,11 +829,11 @@ struct InboundHandler : public LocalHandler
             srv.do_dispatch(params, req);
         }
         else
-            throw net::http::error404();
+            throw wibble::net::http::error404();
     }
 };
 
-struct ChildServer : public sys::ChildProcess
+struct ChildServer : public wibble::sys::ChildProcess
 {
     ostream& log;
     Request& req;
@@ -855,7 +843,7 @@ struct ChildServer : public sys::ChildProcess
     // Executed in child thread
     virtual int main()
     {
-        sys::process::setproctitle("arki-server worker process: parsing request");
+        wibble::sys::process::setproctitle("arki-server worker process: parsing request");
         try {
             while (req.read_request())
             {
@@ -879,17 +867,17 @@ struct ChildServer : public sys::ChildProcess
                 try {
                     if (!local_handlers.try_do(req))
                         // if (!script_handlers.try_do(req))
-                        throw net::http::error404();
-                } catch (net::http::error& e) {
-                    log << log::WARN << str::replace(e.what(), '\n', ' ') << endl;
+                        throw wibble::net::http::error404();
+                } catch (wibble::net::http::error& e) {
+                    log << wibble::log::WARN << str_replace(e.what(), '\n', ' ') << endl;
                     if (!req.response_started)
                         e.send(req);
                 } catch (std::exception& e) {
-                    log << log::WARN << str::replace(e.what(), '\n', ' ') << endl;
+                    log << wibble::log::WARN << str_replace(e.what(), '\n', ' ') << endl;
                     if (!req.response_started)
                     {
                         req.extra_response_headers["Arkimet-Exception"] = e.what();
-                        net::http::error httpe(500, "Server error", e.what());
+                        wibble::net::http::error httpe(500, "Server error", e.what());
                         httpe.send(req);
                     }
                 }
@@ -902,13 +890,13 @@ struct ChildServer : public sys::ChildProcess
 
             return 0;
         } catch (std::exception& e) {
-            log << log::ERR << str::replace(e.what(), '\n', ' ') << endl;
+            log << wibble::log::ERR << str_replace(e.what(), '\n', ' ') << endl;
             return 1;
         }
     }
 };
 
-struct HTTP : public net::TCPServer
+struct HTTP : public wibble::net::TCPServer
 {
     ostream& log;
     string server_name;
@@ -928,6 +916,7 @@ struct HTTP : public net::TCPServer
             const std::string& peer_hostaddr,
             const std::string& peer_port)
     {
+        using namespace wibble;
         utils::fd::HandleWatch hw("Client socket", sock);
         log << log::INFO << "Connection from " << peer_hostname << " " << peer_hostaddr << ":" << peer_port << endl;
 
@@ -989,6 +978,7 @@ struct HTTP : public net::TCPServer
                 // Wait for children
                 while (true)
                 {
+                    using namespace wibble;
                     int status;
                     pid_t pid = waitpid(-1, &status, WNOHANG);
                     if (pid == 0)
@@ -1017,25 +1007,25 @@ struct HTTP : public net::TCPServer
     }
 };
 
-struct LogFilter : public log::Sender
+struct LogFilter : public wibble::log::Sender
 {
-    log::Level minLevel;
-    log::Sender* access;
-    log::Sender* error;
+    wibble::log::Level minLevel;
+    wibble::log::Sender* access;
+    wibble::log::Sender* error;
     // Track components purely for memory management purpose
-    vector<log::Sender*> log_components;
+    vector<wibble::log::Sender*> log_components;
 
-    LogFilter() : minLevel(log::INFO), access(0), error(0) {}
+    LogFilter() : minLevel(wibble::log::INFO), access(0), error(0) {}
     ~LogFilter()
     {
-        for (vector<log::Sender*>::iterator i = log_components.begin();
+        for (vector<wibble::log::Sender*>::iterator i = log_components.begin();
                 i != log_components.end(); ++i)
             delete *i;
     }
-    virtual void send(log::Level level, const std::string& msg)
+    virtual void send(wibble::log::Level level, const std::string& msg)
     {
         if (level < minLevel) return;
-        if (level >= log::WARN)
+        if (level >= wibble::log::WARN)
         {
             if (error) error->send(level, msg);
         } else {
@@ -1044,48 +1034,48 @@ struct LogFilter : public log::Sender
     }
 };
 
-struct ServerProcess : public sys::ChildProcess
+struct ServerProcess : public wibble::sys::ChildProcess
 {
     vector<string> restart_argv;
     vector<string> restart_environ;
-    commandline::Options& opts;
+    wibble::commandline::Options& opts;
     ostream log;
     HTTP http;
     LogFilter filter;
-    log::Streambuf logstream;
+    wibble::log::Streambuf logstream;
 
-    ServerProcess(commandline::Options& opts)
+    ServerProcess(wibble::commandline::Options& opts)
         : opts(opts), log(cerr.rdbuf()), http(log)
     {
-        http.arki_config = sys::fs::abspath(opts.next());
+        http.arki_config = sys::abspath(opts.next());
 
-        log::Sender* console = new log::OstreamSender(cerr);
+        wibble::log::Sender* console = new wibble::log::OstreamSender(cerr);
         filter.log_components.push_back(console);
         filter.access = console;
         filter.error = console;
 
         if (opts.quiet->boolValue())
-            filter.minLevel = log::WARN;
+            filter.minLevel = wibble::log::WARN;
         if (opts.syslog->boolValue())
         {
-            log::Sender* syslog = new log::SyslogSender("arki-server", LOG_PID, LOG_DAEMON);
+            wibble::log::Sender* syslog = new wibble::log::SyslogSender("arki-server", LOG_PID, LOG_DAEMON);
             filter.log_components.push_back(syslog);
             filter.access = syslog;
             filter.error = syslog;
         }
         if (opts.accesslog->isSet())
         {
-            log::Sender* accesslog = new log::FileSender(opts.accesslog->stringValue());
+            wibble::log::Sender* accesslog = new wibble::log::FileSender(opts.accesslog->stringValue());
             filter.log_components.push_back(accesslog);
-            log::Sender* ts = new log::Timestamper(accesslog);
+            wibble::log::Sender* ts = new wibble::log::Timestamper(accesslog);
             filter.log_components.push_back(ts);
             filter.access = ts;
         }
         if (opts.errorlog->isSet())
         {
-            log::Sender* errorlog = new log::FileSender(opts.errorlog->stringValue());
+            wibble::log::Sender* errorlog = new wibble::log::FileSender(opts.errorlog->stringValue());
             filter.log_components.push_back(errorlog);
-            log::Sender* ts = new log::Timestamper(errorlog);
+            wibble::log::Sender* ts = new wibble::log::Timestamper(errorlog);
             filter.log_components.push_back(ts);
             filter.error = ts;
         }
@@ -1123,7 +1113,7 @@ struct ServerProcess : public sys::ChildProcess
             // Server main loop
             http.run_server();
         } catch (std::exception& e) {
-            log << log::ERR << str::replace(e.what(), '\n', ' ') << endl;
+            log << wibble::log::ERR << str_replace(e.what(), '\n', ' ') << endl;
             restart();
         }
 
@@ -1132,8 +1122,8 @@ struct ServerProcess : public sys::ChildProcess
 
     void restart()
     {
-        string argv0 = sys::fs::findExecutable(restart_argv[0]);
-        log << log::ERR << "Restarting server " << argv0 << endl;
+        string argv0 = sys::which(restart_argv[0]);
+        log << wibble::log::ERR << "Restarting server " << argv0 << endl;
 
         // Build argument and environment lists
         char* argv[restart_argv.size() + 1];
@@ -1165,7 +1155,7 @@ int main(int argc, const char* argv[])
         restart_environ.push_back(*e);
 
     // Initialise setproctitle hacks
-    sys::process::initproctitle(argc, (char**)argv);
+    wibble::sys::process::initproctitle(argc, (char**)argv);
 
     wibble::commandline::Options opts;
     try {
@@ -1199,7 +1189,7 @@ int main(int argc, const char* argv[])
         ServerProcess srv(opts);
         srv.restart_argv = restart_argv;
         srv.restart_environ = restart_environ;
-        srv.log << log::INFO << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
+        srv.log << wibble::log::INFO << "Listening on " << srv.http.host << ":" << srv.http.port << " for " << srv.http.server_name << endl;
 
         if (opts.runtest->isSet())
         {
@@ -1225,5 +1215,3 @@ int main(int argc, const char* argv[])
         return 1;
     }
 }
-
-// vim:set ts=4 sw=4:

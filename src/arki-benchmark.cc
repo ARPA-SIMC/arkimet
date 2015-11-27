@@ -22,9 +22,7 @@
 #include "config.h"
 #include <arki/wibble/exception.h>
 #include <arki/wibble/commandline/parser.h>
-#include <arki/wibble/string.h>
 #include <arki/wibble/sys/process.h>
-#include <arki/wibble/sys/fs.h>
 #include <arki/configfile.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
@@ -37,6 +35,8 @@
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/utils.h>
+#include <arki/utils/sys.h>
+#include <arki/utils/string.h>
 #include <arki/runtime.h>
 #include "bench/benchmark.h"
 
@@ -48,7 +48,7 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble;
+using namespace arki::utils;
 
 namespace wibble {
 namespace commandline {
@@ -124,8 +124,8 @@ struct ScanBenchmark : public Benchmark
 			for (vector<string>::const_iterator i = files.begin();
 					i != files.end(); ++i)
 			{
-				off_t size = fs::stat(*i)->st_size;
-				int count;
+                off_t size = sys::stat(*i)->st_size;
+                int count;
 				for (size_t j = 0; j < iterations; ++j)
 				{
 					count = 0;
@@ -204,7 +204,7 @@ struct DSBenchmark : public Benchmark
 					i != files.end(); ++i)
 			{
 				++filecount;
-				size += fs::stat(*i)->st_size;
+				size += sys::stat(*i)->st_size;
 				scanner.open(*i);
 				while (scanner.next(md))
 				{
@@ -310,9 +310,6 @@ struct DSBenchmark : public Benchmark
 
 int main(int argc, const char* argv[])
 {
-	using namespace wibble::sys;
-	using namespace wibble::str;
-
 	wibble::commandline::Options opts;
 	try {
 		// We want predictable results
@@ -335,36 +332,36 @@ int main(int argc, const char* argv[])
 			throw wibble::exception::BadOption("you need to specify the directory name");
 		info.dirname = opts.next();
 
-		// Change into the benchmark directory
-		process::chdir(info.dirname);
+        // Change into the benchmark directory
+        wibble::sys::process::chdir(info.dirname);
 
-		// Scan the directory
-		fs::Directory dir(info.dirname);
-		for (fs::Directory::const_iterator i = dir.begin();
-				i != dir.end(); ++i)
-		{
-			size_t pos = (*i).rfind('.');
-			if (pos == string::npos)
-				continue;
-			string ext = (*i).substr(pos+1);
-			if (ext.empty())
-				continue;
-			ext = tolower(ext);
-			if (ext.substr(0, 4) == "grib")
-				info.gribs.push_back(*i);
-			else if (ext == "bufr")
-				info.bufrs.push_back(*i);
-			else if (ext == "query")
-				info.queries.push_back(make_pair(*i, Matcher::parse(sys::fs::readFile(*i))));
-			else
-				continue;
-		}
+        // Scan the directory
+        sys::Path dir(info.dirname);
+        for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+        {
+            string name = i->d_name;
+            size_t pos = name.rfind('.');
+            if (pos == string::npos)
+                continue;
+            string ext = name.substr(pos+1);
+            if (ext.empty())
+                continue;
+            ext = str::lower(ext);
+            if (ext.substr(0, 4) == "grib")
+                info.gribs.push_back(name);
+            else if (ext == "bufr")
+                info.bufrs.push_back(name);
+            else if (ext == "query")
+                info.queries.push_back(make_pair(name, Matcher::parse(sys::read_file(name))));
+            else
+                continue;
+        }
 
-		// Create the scan benchmark
+        // Create the scan benchmark
         Benchmark::root()->addChild(new ScanBenchmark(info));
 
-		// Read the configuration
-		runtime::parseConfigFile(info.cfg, joinpath(info.dirname, "benchmark.conf"));
+        // Read the configuration
+        runtime::parseConfigFile(info.cfg, str::joinpath(info.dirname, "benchmark.conf"));
 
 		// Create the dataset benchmarks
 		for (ConfigFile::section_iterator i = info.cfg.sectionBegin();
