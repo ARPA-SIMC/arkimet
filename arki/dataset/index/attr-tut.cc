@@ -1,30 +1,9 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
-#include <arki/types/tests.h>
-#include <arki/dataset/index/attr.h>
-#include <arki/types.h>
-#include <arki/types/origin.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-
+#include "arki/types/tests.h"
+#include "arki/dataset/index/attr.h"
+#include "arki/types.h"
+#include "arki/types/origin.h"
+#include "arki/metadata.h"
+#include "arki/matcher.h"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -82,12 +61,12 @@ void to::test<1>()
     attr.read(1, md1);
     wassert(actual_type(md1.get<types::Origin>()) == origin);
 
-	Matcher m = Matcher::parse("origin:GRIB1,200");
-	const matcher::OR* matcher = m.m_impl->get(types::TYPE_ORIGIN);
-	ensure(matcher);
-	vector<int> ids = attr.query(*matcher);
-	ensure_equals(ids.size(), 1u);
-	ensure_equals(ids[0], 1);
+    Matcher m = Matcher::parse("origin:GRIB1,200");
+    auto matcher = m.get(types::TYPE_ORIGIN);
+    ensure((bool)matcher);
+    vector<int> ids = attr.query(*matcher);
+    ensure_equals(ids.size(), 1u);
+    ensure_equals(ids[0], 1);
 }
 
 // Same as <1> but instantiates attr every time to always test with a cold cache
@@ -123,13 +102,13 @@ void to::test<2>()
     dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).read(1, md1);
     wassert(actual_type(md1.get<types::Origin>()) == origin);
 
-	// Query the database
-	Matcher m = Matcher::parse("origin:GRIB1,200");
-	const matcher::OR* matcher = m.m_impl->get(types::TYPE_ORIGIN);
-	ensure(matcher);
-	vector<int> ids = dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).query(*matcher);
-	ensure_equals(ids.size(), 1u);
-	ensure_equals(ids[0], 1);
+    // Query the database
+    Matcher m = Matcher::parse("origin:GRIB1,200");
+    auto matcher = m.get(types::TYPE_ORIGIN);
+    ensure((bool)matcher);
+    vector<int> ids = dataset::index::AttrSubIndex(db, types::TYPE_ORIGIN).query(*matcher);
+    ensure_equals(ids.size(), 1u);
+    ensure_equals(ids[0], 1);
 }
 
 template<> template<>

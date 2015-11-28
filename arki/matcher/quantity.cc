@@ -52,9 +52,9 @@ std::string MatchQuantity::toString() const
     return res.join();
 }
 
-MatchQuantity* MatchQuantity::parse(const std::string& pattern)
+unique_ptr<MatchQuantity> MatchQuantity::parse(const std::string& pattern)
 {
-    return new MatchQuantity(pattern);
+    return unique_ptr<MatchQuantity>(new MatchQuantity(pattern));
 }
 
 void MatchQuantity::init()

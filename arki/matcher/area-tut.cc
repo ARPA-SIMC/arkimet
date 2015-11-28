@@ -1,11 +1,10 @@
 #include "config.h"
-
-#include <arki/matcher/tests.h>
-#include <arki/matcher.h>
-#include <arki/metadata.h>
-#include <arki/types/area.h>
-#include <arki/configfile.h>
-
+#include "arki/matcher/tests.h"
+#include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/types/area.h"
+#include "arki/configfile.h"
+#include "arki/wibble/exception.h"
 #include <sstream>
 #include <iostream>
 
@@ -318,18 +317,15 @@ void to::test<10>()
 	ensure_not_matches("area:VM2,2", md);
 	ensure_not_matches("area:GRIB:lon=0,lat=0", md);
 
-	try {
-		ensure_matches("area:VM2,ciccio=riccio", md);
-		ensure(false);
-	} catch (wibble::exception::Consistency& e) {
-		ensure(string(e.what()).find("is not a number") != string::npos);
-	}
+    try {
+        ensure_matches("area:VM2,ciccio=riccio", md);
+        ensure(false);
+    } catch (std::exception& e) {
+        ensure(string(e.what()).find("is not a number") != string::npos);
+    }
     ensure_not_matches("area: VM2:ciccio=riccio", md);
     ensure_not_matches("area: VM2,1:ciccio=riccio", md);
     ensure_matches("area: VM2,1:lon=1207738", md);
 }
 
-
 }
-
-// vim:set ts=4 sw=4:

@@ -37,7 +37,7 @@ struct MatchOrigin : public Implementation
 {
     std::string name() const override;
 
-    static MatchOrigin* parse(const std::string& pattern);
+    static std::unique_ptr<MatchOrigin> parse(const std::string& pattern);
     static void init();
 };
 

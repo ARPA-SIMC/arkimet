@@ -11,6 +11,7 @@
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "arki/wibble/exception.h"
 #include <sys/stat.h>
 #include <iostream>
 

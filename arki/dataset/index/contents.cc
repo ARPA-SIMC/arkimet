@@ -404,17 +404,9 @@ bool Contents::addJoinsAndConstraints(const Matcher& m, std::string& query) cons
                 }
             }
 
-            const matcher::OR* reftime = m.m_impl->get(types::TYPE_REFTIME);
-			string constraint = "(";
-			for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
-			{
-				if (j != reftime->begin())
-					constraint += " OR ";
-				constraint += (*j)->upcast<matcher::MatchReftime>()->sql("reftime");
-			}
-			constraint += ")";
-			constraints.push_back(constraint);
-		}
+            if (auto reftime = m.get(types::TYPE_REFTIME))
+                constraints.push_back(reftime->toReftimeSQL("reftime"));
+        }
 
 		// Join with the aggregate tables and add constraints on aggregate tables
 		if (m_uniques)

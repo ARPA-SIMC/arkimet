@@ -38,13 +38,17 @@ bool OptionalCommaList::has(size_t pos) const
 
 int OptionalCommaList::getInt(size_t pos, int def) const
 {
-	if (!has(pos)) return def;
-	const char* beg = (*this)[pos].c_str();
-	char* end;
-	unsigned long res = strtoul(beg, &end, 10);
-	if ((end-beg) < (*this)[pos].size())
-		throw wibble::exception::Consistency("parsing matcher", "'"+(*this)[pos]+"' is not a number");
-	return res;
+    if (!has(pos)) return def;
+    const char* beg = (*this)[pos].c_str();
+    char* end;
+    unsigned long res = strtoul(beg, &end, 10);
+    if ((end-beg) < (*this)[pos].size())
+    {
+        stringstream ss;
+        ss << "cannot parse matcher: '" << (*this)[pos] << "' is not a number";
+        throw std::runtime_error(ss.str());
+    }
+    return res;
 }
 
 unsigned OptionalCommaList::getUnsigned(size_t pos, unsigned def) const
@@ -147,5 +151,3 @@ const std::string& OptionalCommaList::getString(size_t pos, const std::string& d
 
 }
 }
-
-// vim:set ts=4 sw=4:

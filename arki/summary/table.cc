@@ -1,25 +1,3 @@
-/*
- * summary/intern - Intern table to map types to unique pointers
- *
- * Copyright (C) 2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "table.h"
 #include "intern.h"
 #include <arki/metadata.h>
@@ -71,18 +49,17 @@ bool Row::operator<(const Row& row) const
 
 bool Row::matches(const Matcher& matcher) const
 {
-    if (!matcher.m_impl) return true;
+    if (matcher.empty()) return true;
 
-    const matcher::AND& mand = *matcher.m_impl;
     for (unsigned i = 0; i < mso_size; ++i)
     {
-        matcher::AND::const_iterator j = mand.find(Table::mso[i]);
-        if (j == mand.end()) continue;
+        shared_ptr<matcher::OR> item_matcher = matcher.get(Table::mso[i]);
+        if (!item_matcher) continue;
         if (!items[i]) return false;
-        if (!j->second->matchItem(*items[i])) return false;
+        if (!item_matcher->matchItem(*items[i])) return false;
     }
-    matcher::AND::const_iterator rm = mand.find(types::TYPE_REFTIME);
-    if (rm != mand.end() && !rm->second->matchItem(*stats.make_reftime()))
+    shared_ptr<matcher::OR> reftime_matcher = matcher.get(types::TYPE_REFTIME);
+    if (reftime_matcher && !reftime_matcher->matchItem(*stats.make_reftime()))
         return false;
     return true;
 }

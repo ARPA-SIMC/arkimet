@@ -3,6 +3,7 @@
 #include <arki/matcher/timerange.h>
 #include <arki/matcher/utils.h>
 #include <arki/metadata.h>
+#include <arki/wibble/exception.h>
 
 using namespace std;
 using namespace arki::types;
@@ -61,9 +62,9 @@ static bool parseValueWithUnit(const std::string& str, INT& val, types::timerang
         val = value * 12;
         return true;
     } else {
-        throw wibble::exception::Consistency(
-                "parsing 'timerange' match expression '" + str + "'",
-                "unknown time suffix '" + unit + "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'");
+        stringstream ss;
+        ss << "cannot parse timerange match expression '" << str << "': unknown time suffix '" << unit << "': valid ones are 's', 'm', 'h', 'd', 'mo', 'y'";
+        throw std::runtime_error(ss.str());
     }
 }
 
@@ -397,7 +398,7 @@ std::string MatchTimerangeTimedef::toString() const
     return res.join();
 }
 
-MatchTimerange* MatchTimerange::parse(const std::string& pattern)
+unique_ptr<MatchTimerange> MatchTimerange::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find(',', beg);
@@ -412,12 +413,11 @@ MatchTimerange* MatchTimerange::parse(const std::string& pattern)
 
     switch (types::Timerange::parseStyle(name))
     {
-        case types::Timerange::GRIB1: return new MatchTimerangeGRIB1(rest);
-        case types::Timerange::GRIB2: return new MatchTimerangeGRIB2(rest);
-        case types::Timerange::TIMEDEF: return new MatchTimerangeTimedef(rest);
-        case types::Timerange::BUFR: return new MatchTimerangeBUFR(rest);
-        default:
-                                     throw wibble::exception::Consistency("parsing type of timerange to match", "unsupported timerange style: " + name);
+        case types::Timerange::GRIB1: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB1(rest));
+        case types::Timerange::GRIB2: return unique_ptr<MatchTimerange>(new MatchTimerangeGRIB2(rest));
+        case types::Timerange::TIMEDEF: return unique_ptr<MatchTimerange>(new MatchTimerangeTimedef(rest));
+        case types::Timerange::BUFR: return unique_ptr<MatchTimerange>(new MatchTimerangeBUFR(rest));
+        default: throw std::runtime_error("cannot parse type of timerange to match: unsupported timerange style: " + name);
     }
 }
 

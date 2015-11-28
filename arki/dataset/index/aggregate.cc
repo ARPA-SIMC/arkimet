@@ -125,39 +125,37 @@ int Aggregate::add_constraints(
     size_t found = 0;
     for (Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
     {
-		matcher::AND::const_iterator mi = m.m_impl->find((*i)->code);
-		if (mi == m.m_impl->end())
-			continue;
+        auto mi = m.get((*i)->code);
+        if (!mi) continue;
 
-		// We found something: generate a constraint for it
-		constraints.push_back(
-				prefix + "." + (*i)->name + " " +
-				index::fmtin((*i)->query(*(mi->second->upcast<matcher::OR>()))));
-		++found;
-	}
-	return found;
+        // We found something: generate a constraint for it
+        constraints.push_back(
+                prefix + "." + (*i)->name + " " +
+                index::fmtin((*i)->query(*mi)));
+        ++found;
+    }
+    return found;
 }
 
 std::string Aggregate::make_subquery(const Matcher& m) const
 {
-	if (m.empty()) return std::string();
+    if (m.empty()) return std::string();
 
     // See if the matcher has anything that we can use
     vector<string> constraints;
     for (Attrs::const_iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
     {
-		matcher::AND::const_iterator mi = m.m_impl->find((*i)->code);
-		if (mi == m.m_impl->end())
-			continue;
+        auto mi = m.get((*i)->code);
+        if (!mi) continue;
 
-		// We found something: generate a constraint for it
-		constraints.push_back(
-				(*i)->name + " " +
-				index::fmtin((*i)->query(*(mi->second->upcast<matcher::OR>()))));
-	}
-	if (constraints.empty())
-		return std::string();
-	return "SELECT id FROM " + m_table_name + " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
+        // We found something: generate a constraint for it
+        constraints.push_back(
+                (*i)->name + " " +
+                index::fmtin((*i)->query(*mi)));
+    }
+    if (constraints.empty())
+        return std::string();
+    return "SELECT id FROM " + m_table_name + " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
 }
 
 int Aggregate::obtain(const Metadata& md)

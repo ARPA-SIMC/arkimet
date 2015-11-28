@@ -67,7 +67,7 @@ struct MatchReftime : public Implementation
      */
     bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 
-    static MatchReftime* parse(const std::string& pattern);
+    static std::unique_ptr<MatchReftime> parse(const std::string& pattern);
     static void init();
 };
 

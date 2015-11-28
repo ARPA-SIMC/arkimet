@@ -86,17 +86,15 @@ void GridQuery::consolidate()
     for (std::map<types::Code, TypeVector>::const_iterator i = mdgrid.dims.begin();
             i != mdgrid.dims.end(); ++i)
         codes.insert(i->first);
-	for (vector<Matcher>::const_iterator i = filters.begin();
-			i != filters.end(); ++i)
-	{
-		if (i->empty()) continue;
-		for (matcher::AND::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j)
-		{
-			if (codes.find(j->first) != codes.end())
-				throw wibble::exception::Consistency("consolidating GridQuery", "filters conflict on " + types::tag(j->first));
-			codes.insert(j->first);
-		}
-	}
+    for (vector<Matcher>::const_iterator i = filters.begin(); i != filters.end(); ++i)
+    {
+        if (i->empty()) continue;
+        i->foreach_type([&](types::Code code, const matcher::OR&) {
+            if (codes.find(code) != codes.end())
+                throw wibble::exception::Consistency("consolidating GridQuery", "filters conflict on " + types::tag(code));
+            codes.insert(code);
+        });
+    }
 }
 
 Matcher GridQuery::mergedQuery() const

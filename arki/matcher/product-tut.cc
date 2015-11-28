@@ -1,11 +1,10 @@
 #include "config.h"
-
-#include <arki/matcher/tests.h>
-#include <arki/matcher.h>
-#include <arki/metadata.h>
-#include <arki/types/product.h>
-#include <arki/matcher/product.h>
-
+#include "arki/matcher/tests.h"
+#include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/types/product.h"
+#include "arki/matcher/product.h"
+#include "arki/wibble/exception.h"
 #include <sstream>
 #include <iostream>
 #include <memory>
@@ -72,18 +71,18 @@ void to::test<2>()
 	ensure_not_matches("product:BUFR,1,2,3:name=antani1", md);
 	ensure_not_matches("product:BUFR,1,2,3:enam=antani", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
-	try {
-		ensure_matches("product:BUFR,name=antani", md);
-		ensure(false);
-	} catch (wibble::exception::Consistency& e) {
-		ensure(string(e.what()).find("is not a number") != string::npos);
-	}
-	try {
-		ensure_matches("product:BUFR:0,,2", md);
-		ensure(false);
-	} catch (wibble::exception::Consistency& e) {
-		ensure(string(e.what()).find("key=value") != string::npos);
-	}
+    try {
+        ensure_matches("product:BUFR,name=antani", md);
+        ensure(false);
+    } catch (std::exception& e) {
+        ensure(string(e.what()).find("is not a number") != string::npos);
+    }
+    try {
+        ensure_matches("product:BUFR:0,,2", md);
+        ensure(false);
+    } catch (std::exception& e) {
+        ensure(string(e.what()).find("key=value") != string::npos);
+    }
 }
 // Try matching VM2 product
 template<> template<>
@@ -96,12 +95,12 @@ void to::test<3>()
 	ensure_matches("product:VM2,1", md);
 	ensure_not_matches("product:GRIB1,1,2,3", md);
     ensure_not_matches("product:VM2,2", md);
-	try {
-		ensure_matches("product:VM2,ciccio=riccio", md);
-		ensure(false);
-	} catch (wibble::exception::Consistency& e) {
-		ensure(string(e.what()).find("is not a number") != string::npos);
-	}
+    try {
+        ensure_matches("product:VM2,ciccio=riccio", md);
+        ensure(false);
+    } catch (std::exception& e) {
+        ensure(string(e.what()).find("is not a number") != string::npos);
+    }
     ensure_not_matches("product: VM2:ciccio=riccio", md);
     ensure_not_matches("product: VM2,1:ciccio=riccio", md);
     ensure_matches("product: VM2,1:bcode=B20013", md);

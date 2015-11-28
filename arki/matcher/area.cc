@@ -91,30 +91,30 @@ std::string MatchAreaVM2::toString() const
 }
 
 
-MatchArea* MatchArea::parse(const std::string& pattern)
+unique_ptr<MatchArea> MatchArea::parse(const std::string& pattern)
 {
     string p = str::strip(pattern);
     if (strncasecmp(p.c_str(), "grib:", 5) == 0)
     {
-        return new MatchAreaGRIB(str::strip(p.substr(5)));
+        return unique_ptr<MatchArea>(new MatchAreaGRIB(str::strip(p.substr(5))));
     } 
     else if (strncasecmp(p.c_str(), "odimh5:", 7) == 0)
     {
-        return new MatchAreaODIMH5(str::strip(p.substr(7)));
+        return unique_ptr<MatchArea>(new MatchAreaODIMH5(str::strip(p.substr(7))));
     }
 #ifdef HAVE_VM2
     else if (strncasecmp(p.c_str(), "vm2", 3) == 0)
     {
         if (strncasecmp(p.c_str(), "vm2,", 4) == 0)
-            return new MatchAreaVM2(str::strip(p.substr(4)));
+            return unique_ptr<MatchArea>(new MatchAreaVM2(str::strip(p.substr(4))));
         else
-            return new MatchAreaVM2(str::strip(p.substr(3)));
+            return unique_ptr<MatchArea>(new MatchAreaVM2(str::strip(p.substr(3))));
     }
 #endif
 #ifdef HAVE_GEOS
     else if (strncasecmp(p.c_str(), "bbox ", 5) == 0) 
     {
-        return MatchAreaBBox::parse(str::strip(p.substr(5)));
+        return unique_ptr<MatchArea>(MatchAreaBBox::parse(str::strip(p.substr(5))));
     }
 #endif
     else
@@ -145,33 +145,33 @@ MatchAreaBBox::~MatchAreaBBox()
 	if (geom) delete geom;
 }
 
-MatchAreaBBox* MatchAreaBBox::parse(const std::string& pattern)
+unique_ptr<MatchAreaBBox> MatchAreaBBox::parse(const std::string& pattern)
 {
-	size_t beg = 0;
-	size_t pos = pattern.find(' ', beg);
-	string verb;
-	string rest;
-	if (pos == string::npos)
-		verb = str::lower(str::strip(pattern.substr(beg)));
-	else {
-		verb = str::lower(str::strip(pattern.substr(beg, pos-beg)));
-		rest = str::strip(pattern.substr(pos+1));
-	}
-	
-	if (verb == "equals")
-	{
-		return new MatchAreaBBoxEquals(rest);
-	} else if (verb == "intersects") {
-		return new MatchAreaBBoxIntersects(rest);
+    size_t beg = 0;
+    size_t pos = pattern.find(' ', beg);
+    string verb;
+    string rest;
+    if (pos == string::npos)
+        verb = str::lower(str::strip(pattern.substr(beg)));
+    else {
+        verb = str::lower(str::strip(pattern.substr(beg, pos-beg)));
+        rest = str::strip(pattern.substr(pos+1));
+    }
+
+    if (verb == "equals")
+    {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxEquals(rest));
+    } else if (verb == "intersects") {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxIntersects(rest));
 #ifdef ARKI_NEW_GEOS
-	} else if (verb == "covers") {
-		return new MatchAreaBBoxCovers(rest);
-	} else if (verb == "coveredby") {
-		return new MatchAreaBBoxCoveredBy(rest);
+    } else if (verb == "covers") {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCovers(rest));
+    } else if (verb == "coveredby") {
+        return unique_ptr<MatchAreaBBox>(new MatchAreaBBoxCoveredBy(rest));
 #endif
-	} else {
-		throw wibble::exception::Consistency("parsing type of bbox match", "unsupported match type: " + verb);
-	}
+    } else {
+        throw wibble::exception::Consistency("parsing type of bbox match", "unsupported match type: " + verb);
+    }
 }
 
 bool MatchAreaBBox::matchItem(const Type& o) const

@@ -7,6 +7,7 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include <arki/wibble/grcal/grcal.h>
+#include "arki/wibble/exception.h"
 #include <cstdlib>
 #include <sys/types.h>
 #include <utime.h>

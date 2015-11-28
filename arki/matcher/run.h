@@ -36,7 +36,7 @@ struct MatchRun : public Implementation
 {
     std::string name() const override;
 
-    static MatchRun* parse(const std::string& pattern);
+    static std::unique_ptr<MatchRun> parse(const std::string& pattern);
     static void init();
 };
 

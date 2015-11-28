@@ -156,10 +156,8 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 
 void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 {
-	// Check if the matcher discriminates on reference times
-	const matcher::Implementation* rtmatch = 0;
-	if (matcher.m_impl)
-		rtmatch = matcher.m_impl->get(types::TYPE_REFTIME);
+    // Check if the matcher discriminates on reference times
+    auto rtmatch = matcher.get(types::TYPE_REFTIME);
 
 	if (!rtmatch)
 	{

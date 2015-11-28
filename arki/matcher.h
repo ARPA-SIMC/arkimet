@@ -1,34 +1,14 @@
 #ifndef ARKI_MATCHER_H
 #define ARKI_MATCHER_H
 
-/*
- * matcher - Match metadata expressions
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Metadata match expressions
 #include <arki/types.h>
-#include <arki/refcounted.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <set>
+#include <memory>
+#include <functional>
 
 struct lua_State;
 
@@ -50,20 +30,6 @@ struct MatchedItems : public std::set<int>
 {
 };
 
-#if 0
-/// Match type constants
-enum MatchType
-{
-	MATCH_ORIGIN    =  1,
-	MATCH_PRODUCT   =  2,
-	MATCH_LEVEL     =  4,
-	MATCH_TIMERANGE =  8,
-	MATCH_REFTIME   = 16,
-	MATCH_AREA      = 32,
-	MATCH_PRODDEF   = 64,
-};
-#endif
-
 namespace matcher {
 
 struct MatcherType;
@@ -71,40 +37,43 @@ struct MatcherType;
 /**
  * Base class for implementing arkimet matchers
  */
-class Implementation : public refcounted::Base
+class Implementation
 {
 public:
-	virtual ~Implementation() {}
+    Implementation() {}
+    Implementation(const Implementation&) = delete;
+    Implementation(const Implementation&&) = delete;
+    Implementation& operator=(const Implementation&) = delete;
+    Implementation& operator=(const Implementation&&) = delete;
+    virtual ~Implementation() {}
 
-	/// Numeric tag to identify this matcher type
-	//virtual MatchType type() const = 0;
-
-	/// Matcher name: the name part in "name:expr"
-	virtual std::string name() const = 0;
+    /// Matcher name: the name part in "name:expr"
+    virtual std::string name() const = 0;
 
     /// Match a metadata item
     virtual bool matchItem(const types::Type& t) const = 0;
 
-	/// Format back into a string that can be parsed again
-	virtual std::string toString() const = 0;
+    /// Format back into a string that can be parsed again
+    virtual std::string toString() const = 0;
 
-	/**
-	 * Format back into a string that can be parsed again, with all aliases
-	 * expanded.
-	 */
-	virtual std::string toStringExpanded() const { return toString(); }
-
-	/// Push to the LUA stack a function for this matcher
-	//virtual void lua_push(lua_State* L) const = 0;
+    /**
+     * Format back into a string that can be parsed again, with all aliases
+     * expanded.
+     */
+    virtual std::string toStringExpanded() const { return toString(); }
 };
 
 /// ORed list of matchers, all of the same type, with the same name
-struct OR : public std::vector< refcounted::Pointer<const Implementation> >, public Implementation
+class OR : public Implementation
 {
-	std::string unparsed;
+protected:
+    std::vector<std::shared_ptr<Implementation>> components;
 
-	OR(const std::string& unparsed) : unparsed(unparsed) {}
-	virtual ~OR() {}
+public:
+    std::string unparsed;
+
+    OR(const std::string& unparsed) : unparsed(unparsed) {}
+    virtual ~OR();
 
     std::string name() const override;
     bool matchItem(const types::Type& t) const override;
@@ -118,30 +87,53 @@ struct OR : public std::vector< refcounted::Pointer<const Implementation> >, pub
     // Serialise as "expanded definition" only
     std::string toStringValueOnlyExpanded() const;
 
-	static OR* parse(const MatcherType& type, const std::string& pattern);
+    // If we match Reftime elements, build a SQL query for it. Else, throw an exception.
+    std::string toReftimeSQL(const std::string& column) const;
+
+    /**
+     * Restrict date extremes to be no wider than what is matched by this
+     * matcher.
+     *
+     * An unique_ptr set to NULL means an open end in the range. Date extremes
+     * are inclusive on both ends.
+     *
+     * @returns true if the matcher has consistent reference time expressions,
+     * false if the match is impossible (like reftime:<2014,>2015)
+     */
+    bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
+
+    static std::unique_ptr<OR> parse(const MatcherType& type, const std::string& pattern);
 };
 
 /// ANDed list of matchers.
-struct AND : public std::map< types::Code, refcounted::Pointer<const Implementation> >, public Implementation
+class AND : public Implementation
 {
-	typedef std::map< types::Code, refcounted::Pointer<const Implementation> >::const_iterator const_iterator;
+protected:
+    std::map<types::Code, std::shared_ptr<OR>> components;
 
-	AND() {}
-	virtual ~AND() {}
+public:
+    //typedef std::map< types::Code, refcounted::Pointer<const Implementation> >::const_iterator const_iterator;
+
+    AND() {}
+    virtual ~AND();
+
+    bool empty() const { return components.empty(); }
 
     std::string name() const override;
 
     bool matchItem(const types::Type& t) const override;
     bool matchItemSet(const ItemSet& s) const;
 
-	const OR* get(types::Code code) const;
+    std::shared_ptr<OR> get(types::Code code) const;
 
-	void split(const std::set<types::Code>& codes, AND& with, AND& without) const;
+    void foreach_type(std::function<void(types::Code, const OR&)> dest) const;
+
+    void split(const std::set<types::Code>& codes, AND& with, AND& without) const;
 
     std::string toString() const override;
     std::string toStringExpanded() const override;
 
-	static AND* parse(const std::string& pattern);
+    static std::unique_ptr<AND> parse(const std::string& pattern);
 };
 
 /**
@@ -152,7 +144,7 @@ struct AND : public std::map< types::Code, refcounted::Pointer<const Implementat
  */
 struct MatcherType
 {
-	typedef Implementation* (*subexpr_parser)(const std::string& pattern);
+    typedef std::unique_ptr<Implementation> (*subexpr_parser)(const std::string& pattern);
 
 	std::string name;
 	types::Code code;
@@ -168,15 +160,16 @@ struct MatcherType
 /// Namespace holding all the matcher subexpressions for one type
 class Aliases
 {
-	std::map< std::string, const OR* > db;
+protected:
+    std::map<std::string, std::shared_ptr<OR>> db;
 
 public:
-	~Aliases();
+    ~Aliases();
 
-	const OR* get(const std::string& name) const;
-	void add(const MatcherType& type, const ConfigFile& entries);
-	void reset();
-	void serialise(ConfigFile& cfg) const;
+    std::shared_ptr<OR> get(const std::string& name) const;
+    void add(const MatcherType& type, const ConfigFile& entries);
+    void reset();
+    void serialise(ConfigFile& cfg) const;
 };
 
 }
@@ -200,73 +193,42 @@ public:
  *   origin:GRIB,,21
  *   reftime:>=2007-04-01,<=2007-05-10
  */
-struct Matcher
+class Matcher
 {
-	const matcher::AND* m_impl;
+    std::shared_ptr<matcher::AND> m_impl;
 
-	Matcher() : m_impl(0) {}
-	Matcher(const matcher::AND* impl) : m_impl(impl)
-	{
-		if (m_impl) m_impl->ref();
-	}
-	Matcher(const Matcher& val)
-	{
-		m_impl = val.m_impl;
-		if (m_impl) m_impl->ref();
-	}
-	~Matcher()
-	{
-		if (m_impl && m_impl->unref())
-			delete m_impl;
-	}
+public:
+    Matcher() {}
+    Matcher(std::unique_ptr<matcher::AND>&& impl) : m_impl(move(impl)) {}
+    Matcher(std::shared_ptr<matcher::AND> impl) : m_impl(impl) {}
+    Matcher(const Matcher& val) = default;
+    Matcher(Matcher&& val) = default;
+    ~Matcher() {}
 
-	bool empty() const { return m_impl == 0 || m_impl->empty(); }
+    /// Assignment
+    Matcher& operator=(const Matcher& val) = default;
+    Matcher& operator=(Matcher&& val) = default;
 
-	/// Assignment
-	Matcher& operator=(const Matcher& val)
-	{
-		if (val.m_impl) val.m_impl->ref();
-		if (m_impl && m_impl->unref()) delete m_impl;
-		m_impl = val.m_impl;
-		return *this;
-	}
-	Matcher& operator=(const matcher::AND* val)
-	{
-		if (val) val->ref();
-		if (m_impl && m_impl->unref()) delete m_impl;
-		m_impl = val;
-		return *this;
-	}
-	template<typename TYPE1>
-	Matcher& operator=(TYPE1* val)
-	{
-		if (val) val->ref();
-		if (m_impl && m_impl->unref()) delete m_impl;
-		m_impl = val;
-		return *this;
-	}
+    bool empty() const { return m_impl.get() == 0 || m_impl->empty(); }
 
     /// Use of the underlying pointer
     const matcher::AND* operator->() const
     {
-        if (!m_impl)
+        if (!m_impl.get())
             throw std::runtime_error("cannot access matcher: matcher is empty");
-        return m_impl;
+        return m_impl.get();
     }
 
-	/// Numeric tag to identify this matcher type
-	//virtual MatchType type() const = 0;
-
-	/// Matcher name: the name part in "name:expr"
-	std::string name() const
-	{
-		if (m_impl) return m_impl->name();
-		return std::string();
-	}
+    /// Matcher name: the name part in "name:expr"
+    std::string name() const
+    {
+        if (m_impl.get()) return m_impl->name();
+        return std::string();
+    }
 
     bool operator()(const types::Type& t) const
     {
-        if (m_impl) return m_impl->matchItem(t);
+        if (m_impl.get()) return m_impl->matchItem(t);
         // An empty matcher always matches
         return true;
     }
@@ -274,24 +236,24 @@ struct Matcher
     /// Match a full ItemSet
     bool operator()(const ItemSet& md) const
     {
-        if (m_impl) return m_impl->matchItemSet(md);
+        if (m_impl.get()) return m_impl->matchItemSet(md);
         // An empty matcher always matches
         return true;
     }
 
-#if 0
-	/// Match a collection of metadata items
-	template<typename COLL>
-	bool match(const COLL& s) const
-	{
-		for (typename COLL::const_iterator i = s.begin(); i != s.end(); ++i)
-			if (match(*i))
-				return true;
-		return false;
-	}
-#endif
+    std::shared_ptr<matcher::OR> get(types::Code code) const
+    {
+        if (m_impl) return m_impl->get(code);
+        return nullptr;
+    }
 
-	void split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const;
+    void foreach_type(std::function<void(types::Code, const matcher::OR&)> dest) const
+    {
+        if (!m_impl) return;
+        return m_impl->foreach_type(dest);
+    }
+
+    void split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const;
 
     /**
      * Restrict date extremes to be no wider than what is matched by this

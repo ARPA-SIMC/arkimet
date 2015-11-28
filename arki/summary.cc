@@ -353,8 +353,9 @@ struct ResolveVisitor : public summary::Visitor
 
     ResolveVisitor(std::vector<ItemSet>& result, const Matcher& m) : result(result), added(0)
     {
-        for (matcher::AND::const_iterator i = m.m_impl->begin(); i != m.m_impl->end(); ++i)
-            codes.push_back(i->first);
+        m.foreach_type([&](types::Code code, const matcher::OR&) {
+            codes.push_back(code);
+        });
     }
     virtual ~ResolveVisitor() {}
     virtual bool operator()(const std::vector<const Type*>& md, const summary::Stats& stats)
@@ -574,7 +575,7 @@ bool Summary::visit(summary::Visitor& visitor) const
 bool Summary::visitFiltered(const Matcher& matcher, summary::Visitor& visitor) const
 {
     if (root->empty()) return true;
-    if (!matcher.m_impl)
+    if (matcher.empty())
         return root->visit(visitor);
     else
         return root->visitFiltered(matcher, visitor);
@@ -735,7 +736,7 @@ struct MatchVisitor : public Visitor
 }
 bool Summary::match(const Matcher& matcher) const
 {
-    if (root->empty() && matcher.m_impl) return false;
+    if (root->empty() && !matcher.empty()) return false;
 
     summary::MatchVisitor visitor;
     visitFiltered(matcher, visitor);

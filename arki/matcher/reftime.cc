@@ -89,9 +89,9 @@ std::string MatchReftime::toString() const
 	return res;
 }
 
-MatchReftime* MatchReftime::parse(const std::string& pattern)
+std::unique_ptr<MatchReftime> MatchReftime::parse(const std::string& pattern)
 {
-	return new MatchReftime(pattern);
+    return unique_ptr<MatchReftime>(new MatchReftime(pattern));
 }
 
 

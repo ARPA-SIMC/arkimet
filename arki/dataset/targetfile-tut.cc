@@ -1,31 +1,11 @@
-/*
- * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include "config.h"
-
-#include <arki/tests/tests.h>
-#include <arki/dataset/targetfile.h>
-#include <arki/types/reftime.h>
-#include <arki/configfile.h>
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/utils/pcounter.h>
-
+#include "arki/tests/tests.h"
+#include "arki/dataset/targetfile.h"
+#include "arki/types/reftime.h"
+#include "arki/configfile.h"
+#include "arki/metadata.h"
+#include "arki/matcher.h"
+#include "arki/utils/pcounter.h"
 #include <memory>
 #include <sstream>
 #include <iostream>
@@ -72,9 +52,9 @@ struct arki_dataset_targetfile_shar {
 TESTGRP(arki_dataset_targetfile);
 
 namespace {
-inline const matcher::Implementation& mimpl(const Matcher& m)
+inline const matcher::OR& mimpl(const Matcher& m)
 {
-	return *m.m_impl->get(TYPE_REFTIME);
+    return *m.get(TYPE_REFTIME);
 }
 }
 

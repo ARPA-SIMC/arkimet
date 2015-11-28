@@ -68,7 +68,7 @@ bool LuaConsumer::eat(unique_ptr<Metadata>&& md)
     {
         string error = lua_tostring(L, -1);
         lua_pop(L, 1);
-        throw wibble::exception::Consistency("running metadata consumer function", error);
+        throw std::runtime_error("cannot run metadata consumer function: " + error);
     }
 
     int res = lua_toboolean(L, -1);

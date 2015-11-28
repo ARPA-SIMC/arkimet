@@ -131,7 +131,7 @@ std::string MatchOriginODIMH5::toString() const
 /*============================================================================*/
 
 
-MatchOrigin* MatchOrigin::parse(const std::string& pattern)
+unique_ptr<MatchOrigin> MatchOrigin::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find(',', beg);
@@ -143,15 +143,15 @@ MatchOrigin* MatchOrigin::parse(const std::string& pattern)
         name = str::strip(pattern.substr(beg, pos-beg));
         rest = pattern.substr(pos+1);
     }
-	switch (types::Origin::parseStyle(name))
-	{
-		case types::Origin::GRIB1: return new MatchOriginGRIB1(rest);
-		case types::Origin::GRIB2: return new MatchOriginGRIB2(rest);
-		case types::Origin::BUFR: return new MatchOriginBUFR(rest);
-		case types::Origin::ODIMH5: 	return new MatchOriginODIMH5(rest);
-		default:
-			throw wibble::exception::Consistency("parsing type of origin to match", "unsupported origin style: " + name);
-	}
+    switch (types::Origin::parseStyle(name))
+    {
+        case types::Origin::GRIB1: return unique_ptr<MatchOrigin>(new MatchOriginGRIB1(rest));
+        case types::Origin::GRIB2: return unique_ptr<MatchOrigin>(new MatchOriginGRIB2(rest));
+        case types::Origin::BUFR: return unique_ptr<MatchOrigin>(new MatchOriginBUFR(rest));
+        case types::Origin::ODIMH5: return unique_ptr<MatchOrigin>(new MatchOriginODIMH5(rest));
+        default:
+            throw std::runtime_error("cannot parse type of origin to match: unsupported origin style: " + name);
+    }
 }
 
 void MatchOrigin::init()

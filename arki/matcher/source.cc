@@ -50,7 +50,7 @@ std::string MatchRunMinute::toString() const
 }
 #endif
 
-MatchSource* MatchSource::parse(const std::string& pattern)
+unique_ptr<MatchSource> MatchSource::parse(const std::string& pattern)
 {
 #if 0
     size_t beg = 0;

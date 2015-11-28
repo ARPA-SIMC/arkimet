@@ -97,8 +97,8 @@ WritableDataset::AcquireResult Writer::acquire(Metadata& md, ReplaceStrategy rep
 
 void Writer::remove(Metadata& id)
 {
-	// Nothing to do
-    throw wibble::exception::Consistency("removing data from simple dataset", "dataset does not support removing items");
+    // Nothing to do
+    throw std::runtime_error("cannot remove data from simple dataset: dataset does not support removing items");
 }
 
 namespace {

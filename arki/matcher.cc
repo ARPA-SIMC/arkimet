@@ -7,6 +7,7 @@
 #include <arki/wibble/regexp.h>
 #include <arki/utils/string.h>
 #include <memory>
+#include <cassert>
 
 using namespace std;
 using namespace arki::types;
@@ -58,33 +59,34 @@ std::vector<std::string> MatcherType::matcherNames()
 
 static MatcherAliasDatabase* aliasdb = 0;
 
+OR::~OR() {}
 
 std::string OR::name() const
 {
-	if (empty()) return string();
-	return front()->name();
+    if (components.empty()) return string();
+    return components.front()->name();
 }
 
 bool OR::matchItem(const Type& t) const
 {
-	if (empty()) return true;
+    if (components.empty()) return true;
 
-	for (const_iterator i = begin(); i != end(); ++i)
-		if ((*i)->matchItem(t))
-			return true;
-	return false;
+    for (auto i: components)
+        if (i->matchItem(t))
+            return true;
+    return false;
 }
 
 std::string OR::toString() const
 {
-    if (empty()) return string();
-    return front()->name() + ":" + toStringValueOnly();
+    if (components.empty()) return string();
+    return components.front()->name() + ":" + toStringValueOnly();
 }
 
 std::string OR::toStringExpanded() const
 {
-    if (empty()) return string();
-    return front()->name() + ":" + toStringValueOnlyExpanded();
+    if (components.empty()) return string();
+    return components.front()->name() + ":" + toStringValueOnlyExpanded();
 }
 
 std::string OR::toStringValueOnly() const
@@ -96,16 +98,53 @@ std::string OR::toStringValueOnly() const
 std::string OR::toStringValueOnlyExpanded() const
 {
     string res;
-    for (const_iterator i = begin(); i != end(); ++i)
+    for (auto i: components)
     {
-        if (i != begin())
-            res += " or ";
-        res += (*i)->toString();
+        if (!res.empty()) res += " or ";
+        res += i->toString();
     }
     return res;
 }
 
-OR* OR::parse(const MatcherType& mt, const std::string& pattern)
+bool OR::restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const
+{
+    for (auto i: components)
+    {
+        const matcher::MatchReftime* rt = dynamic_cast<const matcher::MatchReftime*>(i.get());
+        assert(rt != nullptr);
+        if (!rt->restrict_date_range(begin, end))
+            return false;
+    }
+    return true;
+}
+
+std::string OR::toReftimeSQL(const std::string& column) const
+{
+    if (components.size() == 1)
+    {
+        const matcher::MatchReftime* mr = dynamic_cast<const matcher::MatchReftime*>(components[0].get());
+        return mr->sql(column);
+    } else {
+        string res = "(";
+        bool first = true;
+
+        for (const auto& i: components)
+        {
+            const matcher::MatchReftime* mr = dynamic_cast<const matcher::MatchReftime*>(i.get());
+            if (!mr) throw std::runtime_error("arkimet bug: toReftimeSQL called on non-reftime matchers");
+            if (first)
+                first = false;
+            else
+                res += " OR ";
+            res += mr->sql(column);
+        }
+
+        res += ")";
+        return res;
+    }
+}
+
+unique_ptr<OR> OR::parse(const MatcherType& mt, const std::string& pattern)
 {
     unique_ptr<OR> res(new OR(pattern));
 
@@ -118,17 +157,18 @@ OR* OR::parse(const MatcherType& mt, const std::string& pattern)
     for (wibble::Splitter::const_iterator i = splitter.begin(pattern);
             i != splitter.end(); ++i)
     {
-        const OR* exprs = aliases ? aliases->get(str::lower(*i)) : 0;
+        shared_ptr<OR> exprs = aliases ? aliases->get(str::lower(*i)) : nullptr;
         if (exprs)
-            for (OR::const_iterator j = exprs->begin(); j != exprs->end(); ++j)
-                res->push_back(*j);
+            for (auto j: exprs->components)
+                res->components.push_back(j);
         else
-            res->push_back(mt.parse_func(*i));
+            res->components.push_back(mt.parse_func(*i));
     }
 
-    return res.release();
+    return res;
 }
 
+AND::~AND() {}
 
 std::string AND::name() const
 {
@@ -139,8 +179,8 @@ bool AND::matchItem(const Type& t) const
 {
     if (empty()) return true;
 
-    const_iterator i = find(t.type_code());
-    if (i == end()) return true;
+    auto i = components.find(t.type_code());
+    if (i == components.end()) return true;
 
     return i->second->matchItem(t);
 }
@@ -158,66 +198,70 @@ bool AND::matchItemSet(const ItemSet& md) const
 {
     if (empty()) return true;
 
-    for (const_iterator i = begin(); i != end(); ++i)
+    for (const auto& i: components)
     {
-        const Type* item = md.get(i->first);
-        if (!i->second) return false;
-        if (!i->second->matchItem(*item)) return false;
+        const Type* item = md.get(i.first);
+        if (!i.second) return false;
+        if (!i.second->matchItem(*item)) return false;
     }
     return true;
 }
 
-const OR* AND::get(types::Code code) const
+shared_ptr<OR> AND::get(types::Code code) const
 {
-	const_iterator i = find(code);
-	if (i == end()) return 0;
-	return i->second->upcast<OR>();
+    auto i = components.find(code);
+    if (i == components.end()) return nullptr;
+    return i->second;
+}
+
+void AND::foreach_type(std::function<void(types::Code, const OR&)> dest) const
+{
+    for (const auto& i: components)
+        dest(i.first, *i.second);
 }
 
 std::string AND::toString() const
 {
-	if (empty()) return string();
+    if (components.empty()) return string();
 
-	std::string res;
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		if (i != begin())
-			res += "; ";
-		res += i->second->toString();
-	}
-	return res;
+    std::string res;
+    for (const auto& i: components)
+    {
+        if (!res.empty()) res += "; ";
+        res += i.second->toString();
+    }
+    return res;
 }
 
 std::string AND::toStringExpanded() const
 {
-	if (empty()) return string();
+    if (components.empty()) return string();
 
-	std::string res;
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		if (i != begin())
-			res += "; ";
-		res += i->second->toStringExpanded();
-	}
-	return res;
+    std::string res;
+    for (const auto& i: components)
+    {
+        if (!res.empty()) res += "; ";
+        res += i.second->toStringExpanded();
+    }
+    return res;
 }
 
 void AND::split(const std::set<types::Code>& codes, AND& with, AND& without) const
 {
-	for (const_iterator i = begin(); i != end(); ++i)
-	{
-		if (codes.find(i->first) != codes.end())
-		{
-			with.insert(*i);
-		} else {
-			without.insert(*i);
-		}
-	}
+    for (const auto& i: components)
+    {
+        if (codes.find(i.first) != codes.end())
+        {
+            with.components.insert(i);
+        } else {
+            without.components.insert(i);
+        }
+    }
 }
 
-AND* AND::parse(const std::string& pattern)
+unique_ptr<AND> AND::parse(const std::string& pattern)
 {
-	unique_ptr<AND> res(new AND);
+    unique_ptr<AND> res(new AND);
 
 	// Split on newlines or semicolons
 	wibble::Tokenizer tok(pattern, "[^\n;]+", REG_EXTENDED);
@@ -228,51 +272,44 @@ AND* AND::parse(const std::string& pattern)
         string expr = str::strip(*i);
         if (expr.empty()) continue;
         size_t pos = expr.find(':');
-		if (pos == string::npos)
-			throw wibble::exception::Consistency(
-				"parsing matcher subexpression",
-				"subexpression '" + expr + "' does not contain a colon (':')");
+        if (pos == string::npos)
+            throw std::runtime_error("cannot parse matcher subexpression: '" + expr + "' does not contain a colon (':')");
 
         string type = str::lower(str::strip(expr.substr(0, pos)));
         string patterns = str::strip(expr.substr(pos+1));
 
-		MatcherType* mt = MatcherType::find(type);
-		if (mt == 0)
-			throw wibble::exception::Consistency(
-				"parsing matcher subexpression",
-				"unknown match type: '" + type + "'");
+        MatcherType* mt = MatcherType::find(type);
+        if (mt == 0)
+            throw std::runtime_error("cannot parse matcher subexpression: unknown match type: '" + type + "'");
 
-		res->insert(make_pair(mt->code, OR::parse(*mt, patterns)));
-	}
+        res->components.insert(make_pair(mt->code, OR::parse(*mt, patterns)));
+    }
 
-	return res.release();
+    return res;
 }
 
 Aliases::~Aliases()
 {
 	reset();
 }
-const OR* Aliases::get(const std::string& name) const
+
+shared_ptr<OR> Aliases::get(const std::string& name) const
 {
-	std::map< std::string, const OR* >::const_iterator i = db.find(name);
-	if (i == db.end())
-		return 0;
-	return i->second;
+    auto i = db.find(name);
+    if (i == db.end())
+        return nullptr;
+    return i->second;
 }
+
 void Aliases::reset()
 {
-	for (map<string, const OR*>::iterator i = db.begin();
-			i != db.end(); ++i)
-		if (i->second->unref())
-			delete i->second;
-	db.clear();
+    db.clear();
 }
 
 void Aliases::serialise(ConfigFile& cfg) const
 {
-	for (std::map< std::string, const OR* >::const_iterator i = db.begin();
-			i != db.end(); ++i)
-		cfg.setValue(i->first, i->second->toStringValueOnly());
+    for (auto i: db)
+        cfg.setValue(i.first, i.second->toStringValueOnly());
 }
 
 void Aliases::add(const MatcherType& type, const ConfigFile& entries)
@@ -294,26 +331,22 @@ void Aliases::add(const MatcherType& type, const ConfigFile& entries)
 		{
 			unique_ptr<OR> val;
 
-			// If instantiation fails, try it again later
-			try {
-				val.reset(OR::parse(type, i->second));
-			} catch (std::exception& e) {
-				failed.push_back(*i);
-				continue;
-			}
+            // If instantiation fails, try it again later
+            try {
+                val = OR::parse(type, i->second);
+            } catch (std::exception& e) {
+                failed.push_back(*i);
+                continue;
+            }
 
-			val->ref();
-
-			map<string, const OR*>::iterator j = db.find(i->first);
-			if (j == db.end())
-			{
-				db.insert(make_pair(i->first, val.release()));
-			} else {
-				if (j->second->unref())
-					delete j->second;
-				j->second = val.release();
-			}
-		}
+            auto j = db.find(i->first);
+            if (j == db.end())
+            {
+                db.insert(make_pair(i->first, move(val)));
+            } else {
+                j->second = move(val);
+            }
+        }
 		if (!failed.empty() && failed.size() == aliases.size())
 			// If no new aliases were successfully parsed, reparse one of the
 			// failing ones to raise the appropriate exception
@@ -326,26 +359,34 @@ void Aliases::add(const MatcherType& type, const ConfigFile& entries)
 
 void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const
 {
-	if (!m_impl)
-	{
-		with = 0;
-		without = 0;
-	} else {
-		// Create the empty matchers and assign them right away, so we sort out
-		// memory management
-		matcher::AND* awith = new matcher::AND;
-		with = awith;
-		matcher::AND* awithout = new matcher::AND;
-		without = awithout;
-		m_impl->split(codes, *awith, *awithout);
-		if (awith->empty()) with = 0;
-		if (awithout->empty()) without = 0;
-	}
+    if (!m_impl)
+    {
+        with = Matcher();
+        without = Matcher();
+    } else {
+        // Create the empty matchers and assign them right away, so we sort out
+        // memory management
+        unique_ptr<matcher::AND> awith(new matcher::AND);
+        unique_ptr<matcher::AND> awithout(new matcher::AND);
+
+        m_impl->split(codes, *awith, *awithout);
+
+        if (awith->empty())
+            with = Matcher();
+        else
+            with = Matcher(move(awith));
+
+
+        if (awithout->empty())
+            without = Matcher();
+        else
+            without = Matcher(move(awithout));
+    }
 }
 
 bool Matcher::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end) const
 {
-	const matcher::OR* reftime = 0;
+    shared_ptr<matcher::OR> reftime;
 
     // We have nothing to match: we match the open range
     if (!m_impl) return true;
@@ -355,9 +396,8 @@ bool Matcher::restrict_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end
     // We have no reftime to match: we match the open range
     if (!reftime) return true;
 
-    for (matcher::OR::const_iterator j = reftime->begin(); j != reftime->end(); ++j)
-        if (!(*j)->upcast<matcher::MatchReftime>()->restrict_date_range(begin, end))
-            return false;
+    if (!reftime->restrict_date_range(begin, end))
+        return false;
 
     return true;
 }

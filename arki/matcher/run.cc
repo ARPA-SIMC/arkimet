@@ -50,7 +50,7 @@ std::string MatchRunMinute::toString() const
 	return res.str();
 }
 
-MatchRun* MatchRun::parse(const std::string& pattern)
+unique_ptr<MatchRun> MatchRun::parse(const std::string& pattern)
 {
     size_t beg = 0;
     size_t pos = pattern.find(',', beg);
@@ -62,12 +62,11 @@ MatchRun* MatchRun::parse(const std::string& pattern)
         name = str::strip(pattern.substr(beg, pos-beg));
         rest = pattern.substr(pos+1);
     }
-	switch (types::Run::parseStyle(name))
-	{
-		case types::Run::MINUTE: return new MatchRunMinute(rest);
-		default:
-			throw wibble::exception::Consistency("parsing type of run to match", "unsupported run style: " + name);
-	}
+    switch (types::Run::parseStyle(name))
+    {
+        case types::Run::MINUTE: return unique_ptr<MatchRun>(new MatchRunMinute(rest));
+        default: throw runtime_error("cannot parse type of run to match: unsupported run style: " + name);
+    }
 }
 
 void MatchRun::init()
@@ -77,5 +76,3 @@ void MatchRun::init()
 
 }
 }
-
-// vim:set ts=4 sw=4:

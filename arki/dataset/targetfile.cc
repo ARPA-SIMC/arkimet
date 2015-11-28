@@ -26,7 +26,7 @@ struct BaseTargetFile : public TargetFile
 {
     virtual unique_ptr<Reftime> reftimeForPath(const std::string& path) const = 0;
 
-    virtual bool pathMatches(const std::string& path, const matcher::Implementation& m) const
+    bool pathMatches(const std::string& path, const matcher::OR& m) const override
     {
         unique_ptr<Reftime> rt = reftimeForPath(path);
         if (!rt.get()) return false;

@@ -481,21 +481,17 @@ class FilterAction : public Action
 	vector<string> matchers;
 	AnnotatedChoice end;
 
-	string extract_subexpr(const Matcher& m, types::Code c, const std::string& def = std::string())
-	{
-		if (m.m_impl)
-		{
-			matcher::AND::const_iterator i = m.m_impl->find(c);
-			if (i != m.m_impl->end())
-			{
-				string res = i->second->toString();
-				size_t pos = res.find(":");
-				res = str::strip(res.substr(pos+1));
-				return res;
-			}
-		}
-		return def;
-	}
+    string extract_subexpr(const Matcher& m, types::Code c, const std::string& def = std::string())
+    {
+        if (auto matcher = m.get(c))
+        {
+            string res = matcher->toString();
+            size_t pos = res.find(":");
+            res = str::strip(res.substr(pos+1));
+            return res;
+        }
+        return def;
+    }
 
 public:
 	FilterAction(Wizard& state) : Action(state), end("quit", "No more changes to perform")
@@ -639,21 +635,19 @@ public:
         return "filter: Change what kind of data goes in this dataset.";
     }
 
-	string validate_subexpr(const matcher::MatcherType& t, const std::string& expr)
-	{
-		try
-		{
-			matcher::Implementation* i = t.parse_func(expr);
-			if (!i)
-				return "parse error";
-			delete i;
-			return string();
-		} catch (wibble::exception::Generic& g) {
-			return g.desc();
-		} catch (std::exception& e) {
-			return e.what();
-		}
-	}
+    string validate_subexpr(const matcher::MatcherType& t, const std::string& expr)
+    {
+        try
+        {
+            unique_ptr<matcher::Implementation> i = t.parse_func(expr);
+            if (!i) return "parse error";
+            return string();
+        } catch (wibble::exception::Generic& g) {
+            return g.desc();
+        } catch (std::exception& e) {
+            return e.what();
+        }
+    }
 	static const char* rl_prefill_text;
 	static int rl_prefill()
 	{

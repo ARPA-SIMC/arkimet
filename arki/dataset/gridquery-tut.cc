@@ -138,25 +138,23 @@ void to::test<2>()
     dataset::Memory ds;
     ds.eat(Metadata::create_from_yaml(md_yaml, "(memory)"));
 
-	// Build the grid query
-	dataset::GridQuery gq(ds);
+    // Build the grid query
+    dataset::GridQuery gq(ds);
 
-	try {
-		gq.add(Matcher::parse("timerange:c012; level:g00; product:u"));
-		ensure(false);
-	} catch (wibble::exception::Consistency c) {
-		ensure(string(c.what()).find("no data which correspond to the matcher") != string::npos);
-	}
-	gq.add(Matcher::parse("timerange:c012; level:g00; product:tp"));
+    try {
+        gq.add(Matcher::parse("timerange:c012; level:g00; product:u"));
+        ensure(false);
+    } catch (std::exception& c) {
+        ensure(string(c.what()).find("no data which correspond to the matcher") != string::npos);
+    }
+    gq.add(Matcher::parse("timerange:c012; level:g00; product:tp"));
 
     Time t(2010, 05, 03, 0, 0, 0);
     gq.addTime(t);
 
-	gq.consolidate();
+    gq.consolidate();
 
-	ensure_equals(gq.expectedItems(), 1u);
+    ensure_equals(gq.expectedItems(), 1u);
 }
 
 }
-
-// vim:set ts=4 sw=4:

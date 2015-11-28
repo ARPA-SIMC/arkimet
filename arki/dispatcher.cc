@@ -7,6 +7,7 @@
 #include "types/reftime.h"
 #include "utils/string.h"
 #include "utils/sys.h"
+#include "arki/wibble/exception.h"
 
 using namespace std;
 using namespace arki::types;
