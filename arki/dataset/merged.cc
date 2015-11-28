@@ -196,12 +196,12 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
         threads.emplace_back(&MetadataReader::main, &readers[i]);
     }
 
-	// Output items in time-sorted order or in the order asked by q
-	// Note: we assume that every dataset will give us data sorted as q
-	// asks, so here we just merge sorted data
-	refcounted::Pointer<sort::Compare> sorter = q.sorter;
-	if (!sorter)
-		sorter = sort::Compare::parse("");
+    // Output items in time-sorted order or in the order asked by q
+    // Note: we assume that every dataset will give us data sorted as q
+    // asks, so here we just merge sorted data
+    shared_ptr<sort::Compare> sorter = q.sorter;
+    if (!sorter)
+        sorter = sort::Compare::parse("");
 
 	while (true)
 	{

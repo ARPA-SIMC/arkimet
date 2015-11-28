@@ -210,7 +210,7 @@ struct MaintenanceCollector : public dataset::maintenance::MaintFileVisitor
 
 struct OrderCheck : public metadata::Eater
 {
-    refcounted::Pointer<sort::Compare> order;
+    std::shared_ptr<sort::Compare> order;
     Metadata old;
     bool first;
 

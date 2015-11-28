@@ -104,7 +104,7 @@ struct DataQuery
     bool with_data;
 
     /// Optional compare function to define a custom ordering of the result
-    refcounted::Pointer<sort::Compare> sorter;
+    std::shared_ptr<sort::Compare> sorter;
 
     DataQuery();
     DataQuery(const Matcher& matcher, bool with_data=false);

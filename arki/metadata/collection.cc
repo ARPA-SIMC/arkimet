@@ -261,8 +261,8 @@ void Collection::sort(const sort::Compare& cmp)
 
 void Collection::sort(const std::string& cmp)
 {
-	refcounted::Pointer<sort::Compare> c = sort::Compare::parse(cmp);
-	sort(*c);
+    unique_ptr<sort::Compare> c = sort::Compare::parse(cmp);
+    sort(*c);
 }
 
 void Collection::sort()

@@ -64,9 +64,9 @@ vector<int> mdvals(int h, int m, int r)
 template<> template<>
 void to::test<1>()
 {
-	metadata::Collection mdc;
-	refcounted::Pointer<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
-	sort::Stream sorter(*cmp, mdc);
+    metadata::Collection mdc;
+    unique_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
+    sort::Stream sorter(*cmp, mdc);
 
 	produce(0, 0, 10, sorter);
 	produce(0, 1, 9, sorter);
@@ -91,9 +91,9 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	metadata::Collection mdc;
-	refcounted::Pointer<sort::Compare> cmp = sort::Compare::parse("");
-	sort::Stream sorter(*cmp, mdc);
+    metadata::Collection mdc;
+    unique_ptr<sort::Compare> cmp = sort::Compare::parse("");
+    sort::Stream sorter(*cmp, mdc);
 
 	produce(1, 0, 8, sorter);
 	produce(1, 1, 9, sorter);

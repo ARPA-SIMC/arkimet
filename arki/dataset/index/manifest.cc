@@ -127,7 +127,7 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 
     metadata::Eater* c = &consumer;
     // Order matters here, as delete will happen in reverse order
-    refcounted::Pointer<sort::Compare> compare;
+    shared_ptr<sort::Compare> compare;
 
     if (q.sorter)
         compare = q.sorter;
