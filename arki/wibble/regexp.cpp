@@ -92,7 +92,7 @@ bool Regexp::match(const string& str, int flags)
 	}
 }
 
-string Regexp::operator[](int idx) throw (wibble::exception::OutOfRange)
+string Regexp::operator[](int idx)
 {
     if (idx > nmatch)
         throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
@@ -103,21 +103,21 @@ string Regexp::operator[](int idx) throw (wibble::exception::OutOfRange)
 	return string(lastMatch, pmatch[idx].rm_so, pmatch[idx].rm_eo - pmatch[idx].rm_so);
 }
 
-size_t Regexp::matchStart(int idx) throw (wibble::exception::OutOfRange)
+size_t Regexp::matchStart(int idx)
 {
     if (idx > nmatch)
         throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
     return pmatch[idx].rm_so;
 }
 
-size_t Regexp::matchEnd(int idx) throw (wibble::exception::OutOfRange)
+size_t Regexp::matchEnd(int idx)
 {
     if (idx > nmatch)
         throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
     return pmatch[idx].rm_eo;
 }
 
-size_t Regexp::matchLength(int idx) throw (wibble::exception::OutOfRange)
+size_t Regexp::matchLength(int idx)
 {
     if (idx > nmatch)
         throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));

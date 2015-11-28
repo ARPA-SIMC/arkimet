@@ -251,60 +251,6 @@ public:
 	}
 };
 
-struct BadCast : public Consistency
-{
-    BadCast( const std::string &context ) throw()
-        : Consistency( context )
-    {}
-    ~BadCast() throw() {}
-    virtual std::string typeinfo() const throw() { return "unknown types"; }
-    virtual std::string desc() const throw() {
-        return std::string( "bad cast: " ) + typeinfo();
-    }
-};
-
-#ifndef NO_RTTI
-template< typename From, typename To >
-struct BadCastExt : public BadCast
-{
-    BadCastExt( const std::string &error = std::string() ) throw()
-        : BadCast( error )
-    {}
-    ~BadCastExt() throw() {}
-    virtual std::string typeinfo() const throw() { return std::string( "from " )
-                                                       + typeid( From ).name()
-                                                       + " to "
-                                                       + typeid( To ).name(); }
-};
-#endif
-
-/**
- * Exception thrown when some value is out of range
- *
- * Usage:
- * \code
- * if (age < 200)
- *   throw OutOfRange("age", "ensuring that no mere mortal is using the system");
- * \endcode
- */
-class OutOfRange : public Consistency
-{
-protected:
-	std::string m_var_desc;
-
-public:
-	OutOfRange(const std::string& var_desc, const std::string& context) throw ()
-		: Consistency(context), m_var_desc(var_desc) {}
-	~OutOfRange() throw () {}
-
-	virtual const char* type() const throw () { return "OutOfRange"; }
-
-	/// Get a short description of the variable that has been checked
-	virtual std::string var_desc() const throw () { return m_var_desc; }
-
-	virtual std::string desc() const throw () { return m_var_desc + " out of range"; }
-};
-
 /// Base class for system exceptions
 /**
  * This is the base class for exceptions that depend on system events, like

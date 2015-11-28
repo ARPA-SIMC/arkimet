@@ -68,16 +68,16 @@ public:
 	~Regexp() throw ();
 
 	bool match(const std::string& str, int flags = 0) throw (wibble::exception::Regexp);
-	
-        /* Indexing is from 1 for capture matches, like perl's $0,
-           $1... 0 is whole-regexp match, not a capture. TODO
-           the range is miscalculated (an off-by-one, wrt. the
-           counterintuitive match counting). */
-	std::string operator[](int idx) throw (wibble::exception::OutOfRange);
 
-	size_t matchStart(int idx) throw (wibble::exception::OutOfRange);
-	size_t matchEnd(int idx) throw (wibble::exception::OutOfRange);
-	size_t matchLength(int idx) throw (wibble::exception::OutOfRange);
+    /* Indexing is from 1 for capture matches, like perl's $0,
+       $1... 0 is whole-regexp match, not a capture. TODO
+       the range is miscalculated (an off-by-one, wrt. the
+       counterintuitive match counting). */
+    std::string operator[](int idx);
+
+    size_t matchStart(int idx);
+    size_t matchEnd(int idx);
+    size_t matchLength(int idx);
 };
 
 class ERegexp : public Regexp

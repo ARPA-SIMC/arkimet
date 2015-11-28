@@ -106,7 +106,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		nag.h \
 		postprocess.h \
 		querymacro.h \
-		refcounted.h \
 		runtime/config.h \
 		runtime.h \
 		runtime/io.h \
@@ -310,7 +309,6 @@ tests_arki_test_SOURCES += \
 		utils/pcounter-tut.cc \
 		utils/process-tut.cc \
 		utils/raii-tut.cc \
-		refcounted-tut.cc \
 		configfile-tut.cc \
 		transaction-tut.cc \
 		emitter/memory-tut.cc \
