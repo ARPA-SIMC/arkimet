@@ -305,57 +305,6 @@ public:
 	virtual std::string desc() const throw () { return m_var_desc + " out of range"; }
 };
 
-/// Exception thrown when index checking fails
-/**
- * This exception is to be thrown when an index checking fails, providing
- * informations on the acceptable index range and on the offending value.
- * The context should be a description of the index, possibly preceeded by a
- * description of in what context did the index checking happen.
- * 
- * Example:
- * \code
- *  if (age < 18)
- *     throw IndexOutOfRangeException("age", age, 18, 0, "obtaining driver license");
- *
- *  if (i < 0 || i > 100)
- *  	throw IndexOutOfRangeException("percentage of items sold", i, 0, 100, "checking input consistency");
- * \endcode
- */
-template <class C>
-class ValOutOfRange : public OutOfRange
-{
-protected:
-	C m_val;
-	C m_inf;
-	C m_sup;
-
-public:
-	/** Construct the exception; minBound and maxBound are the bounds of the
-	 * valid index range (inclusive).
-	 */
-	ValOutOfRange(const std::string& var_desc, C val, C inf, C sup,
-			const std::string& context) throw ()
-					: OutOfRange(var_desc, context),
-						m_val(val), m_inf(inf), m_sup(sup) {}
-	
-	///@name Methods used to get informations about the index and its bounds
-	//@{
-	/// Get the value that caused the index to go out-of-bounds
-	virtual C val() const throw () { return m_val; }
-	/// Get the minimum allowed value for this index
-	virtual C inf() const throw () { return m_inf; }
-	/// Get the maximum allowed value for this index
-	virtual C sup() const throw () { return m_sup; }
-	//@}
-
-	virtual const char* type() const throw ()
-	{
-		return "ValOutOfRange<>";
-	}
-
-	virtual std::string desc() const throw ();
-};
-
 /// Base class for system exceptions
 /**
  * This is the base class for exceptions that depend on system events, like

@@ -19,7 +19,7 @@
  */
 
 #include <arki/wibble/regexp.h>
-#include <arki/wibble/exception.tcc>
+#include <arki/wibble/string.h>
 
 using namespace std;
 
@@ -94,8 +94,8 @@ bool Regexp::match(const string& str, int flags)
 
 string Regexp::operator[](int idx) throw (wibble::exception::OutOfRange)
 {
-	if (idx > nmatch)
-		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
+    if (idx > nmatch)
+        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
 
 	if (pmatch[idx].rm_so == -1)
 		return string();
@@ -105,23 +105,23 @@ string Regexp::operator[](int idx) throw (wibble::exception::OutOfRange)
 
 size_t Regexp::matchStart(int idx) throw (wibble::exception::OutOfRange)
 {
-	if (idx > nmatch)
-		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
-	return pmatch[idx].rm_so;
+    if (idx > nmatch)
+        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
+    return pmatch[idx].rm_so;
 }
 
 size_t Regexp::matchEnd(int idx) throw (wibble::exception::OutOfRange)
 {
-	if (idx > nmatch)
-		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
-	return pmatch[idx].rm_eo;
+    if (idx > nmatch)
+        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
+    return pmatch[idx].rm_eo;
 }
 
 size_t Regexp::matchLength(int idx) throw (wibble::exception::OutOfRange)
 {
-	if (idx > nmatch)
-		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
-	return pmatch[idx].rm_eo - pmatch[idx].rm_so;
+    if (idx > nmatch)
+        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
+    return pmatch[idx].rm_eo - pmatch[idx].rm_so;
 }
 
 Tokenizer::const_iterator& Tokenizer::const_iterator::operator++()
@@ -167,5 +167,3 @@ Splitter::const_iterator& Splitter::const_iterator::operator++()
 }
 
 }
-
-// vim:set ts=4 sw=4:

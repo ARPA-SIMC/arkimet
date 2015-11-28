@@ -11,7 +11,6 @@ arkiincludedir = $(includedir)/arki
 
 nobase_dist_arkiinclude_HEADERS = \
 		wibble/exception.h \
-		wibble/exception.tcc \
 		wibble/regexp.h \
 		wibble/string.h \
 		wibble/tests.h \
