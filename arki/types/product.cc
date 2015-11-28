@@ -1,30 +1,8 @@
-/*
- * types/product - Product metadata item
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/types/product.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <sstream>
@@ -49,7 +27,6 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
-using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -179,11 +156,11 @@ unique_ptr<Product> Product::decodeString(const std::string& val)
             return createGRIB2(nums.vals[0], nums.vals[1], nums.vals[2], nums.vals[3],
                     table_version, local_table_version);
         }
-		case Product::BUFR: {
-			NumberList<3> nums(inner, "Product", true);
-			inner = str::trim(nums.tail);
-			if (!inner.empty() && inner[0] == ',')
-				inner = str::trim(nums.tail.substr(1));
+        case Product::BUFR: {
+            NumberList<3> nums(inner, "Product", true);
+            inner = str::strip(nums.tail);
+            if (!inner.empty() && inner[0] == ',')
+                inner = str::strip(nums.tail.substr(1));
             return createBUFR(nums.vals[0], nums.vals[1], nums.vals[2], ValueBag::parse(inner));
         }
 		case Product::ODIMH5: {
@@ -192,13 +169,13 @@ unique_ptr<Product> Product::decodeString(const std::string& val)
 
 			split(inner, values, ",");
 
-			if (values.size() != 2)
-				throw std::logic_error("OdimH5 product has not enogh values");
+            if (values.size() != 2)
+                throw std::logic_error("OdimH5 product has not enogh values");
 
-			std::string	o	= wibble::str::trim(values[0]);
-			std::string	p	= wibble::str::trim(values[1]);
-			/*REMOVED: double 		p1	= parseDouble(values[2]); */
-			/*REMOVED: double 		p2	= parseDouble(values[3]); */
+            std::string o   = str::strip(values[0]);
+            std::string p   = str::strip(values[1]);
+            /*REMOVED: double       p1  = parseDouble(values[2]); */
+            /*REMOVED: double       p2  = parseDouble(values[3]); */
 
             return createODIMH5(o, p);
         }
@@ -368,7 +345,7 @@ unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string GRIB1::exactQuery() const
 {
-    return str::fmtf("GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
+    return wibble::str::fmtf("GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
 }
 const char* GRIB1::lua_type_name() const { return "arki.types.product.grib1"; }
 
@@ -495,13 +472,13 @@ unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string GRIB2::exactQuery() const
 {
-    string res = str::fmtf("GRIB2,%d,%d,%d,%d",
+    string res = wibble::str::fmtf("GRIB2,%d,%d,%d,%d",
             (int)m_centre, (int)m_discipline, (int)m_category, (int)m_number);
     if (m_table_version != 4 || m_local_table_version != 255)
     {
-        res += str::fmtf(",%d", (int)m_table_version);
+        res += wibble::str::fmtf(",%d", (int)m_table_version);
         if (m_local_table_version != 255)
-            res += str::fmtf(",%d", (int)m_local_table_version);
+            res += wibble::str::fmtf(",%d", (int)m_local_table_version);
     }
     return res;
 }
@@ -528,11 +505,11 @@ int GRIB2::compare_local(const Product& o) const
 
 bool GRIB2::equals(const Type& o) const
 {
-	const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
-	if (!v) return false;
-	return m_centre == v->m_centre
-	    && m_discipline == v->m_discipline
-	    && m_category == v->m_category
+    const GRIB2* v = dynamic_cast<const GRIB2*>(&o);
+    if (!v) return false;
+    return m_centre == v->m_centre
+        && m_discipline == v->m_discipline
+        && m_category == v->m_category
         && m_number == v->m_number
         && m_table_version == v->m_table_version
         && m_local_table_version == v->m_local_table_version;
@@ -564,14 +541,14 @@ unique_ptr<GRIB2> GRIB2::create(unsigned short centre, unsigned char discipline,
 
 std::vector<int> GRIB2::toIntVector() const
 {
-	vector<int> res;
-	res.push_back(m_centre);
-	res.push_back(m_discipline);
-	res.push_back(m_category);
-	res.push_back(m_number);
+    vector<int> res;
+    res.push_back(m_centre);
+    res.push_back(m_discipline);
+    res.push_back(m_category);
+    res.push_back(m_number);
     res.push_back(m_table_version);
     res.push_back(m_local_table_version);
-	return res;
+    return res;
 }
 bool GRIB2::lua_lookup(lua_State* L, const std::string& name) const
 {
@@ -647,7 +624,7 @@ unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string BUFR::exactQuery() const
 {
-    string res = str::fmtf("BUFR,%u,%u,%u", type(), subtype(), localsubtype());
+    string res = wibble::str::fmtf("BUFR,%u,%u,%u", type(), subtype(), localsubtype());
     if (!m_values.empty())
 	    res += ":" + m_values.toString();
     return res;
@@ -934,7 +911,7 @@ void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
 }
 std::string VM2::exactQuery() const
 {
-    std::string s = str::fmtf("VM2,%lu", m_variable_id);
+    std::string s = wibble::str::fmtf("VM2,%lu", m_variable_id);
     if (!derived_values().empty())
         s += ":" + derived_values().toString();
     return s;

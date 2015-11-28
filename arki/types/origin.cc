@@ -1,5 +1,4 @@
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/types/origin.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
@@ -135,12 +134,12 @@ unique_ptr<Origin> Origin::decodeString(const std::string& val)
             for (str::Split::const_iterator i = split.begin(); i != split.end(); ++i)
                 values.push_back(*i);
 
-			if (values.size()!=3)
-				throw std::logic_error("OdimH5 origin has not enough values");
+            if (values.size()!=3)
+                throw std::logic_error("OdimH5 origin has not enough values");
 
-			values[0] = wibble::str::trim(values[0]);
-			values[1] = wibble::str::trim(values[1]);
-			values[2] = wibble::str::trim(values[2]);
+            values[0] = str::strip(values[0]);
+            values[1] = str::strip(values[1]);
+            values[2] = str::strip(values[2]);
 
             return upcast<Origin>(origin::ODIMH5::create(values[0], values[1], values[2]));
         }

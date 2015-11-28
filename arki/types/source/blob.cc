@@ -23,11 +23,11 @@
 #include "blob.h"
 #include <arki/utils/codec.h>
 #include <arki/utils/lua.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::utils::codec;
 
@@ -133,7 +133,7 @@ std::unique_ptr<Blob> Blob::create(const std::string& format, const std::string&
 std::unique_ptr<Blob> Blob::fileOnly() const
 {
     string pathname = absolutePathname();
-    std::unique_ptr<Blob> res = Blob::create(format, wibble::str::dirname(pathname), wibble::str::basename(filename), offset, size);
+    std::unique_ptr<Blob> res = Blob::create(format, str::dirname(pathname), str::basename(filename), offset, size);
     return res;
 }
 

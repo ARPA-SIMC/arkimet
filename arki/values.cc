@@ -1,31 +1,8 @@
-/*
- * values - Dynamic type system used by some types of arkimet metadata
- *
- * Copyright (C) 2007--2013  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/values.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <memory>
@@ -41,7 +18,6 @@ extern "C" {
 #endif
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::utils::codec;
 
@@ -160,10 +136,12 @@ public:
 			return false;
 		return m_val < vi->m_val;
 	}
-	virtual std::string toString() const
-	{
-		return str::fmt(m_val);
-	}
+    virtual std::string toString() const
+    {
+        stringstream ss;
+        ss << m_val;
+        return ss.str();
+    }
 };
 
 struct Integer : public Common<int>
@@ -226,9 +204,9 @@ struct Integer : public Common<int>
 				nbytes = 2;
 			else if (val & 0x000000ff)
 				nbytes = 1;
-			else
-				throw wibble::exception::Consistency("encoding integer number", "value " + str::fmt(val) + " is too large to be encoded");
-				
+            else
+                throw std::runtime_error("cannot encode integer number: value " + to_string(val) + " is too large to be encoded");
+
 			type |= (nbytes-1);
 			enc.addString((const char*)&type, 1u);
 			enc.addUInt(val, nbytes);
@@ -280,7 +258,7 @@ struct String : public Common<std::string>
 		}
 		else
 			// TODO: if needed, here we implement another string encoding type
-			throw wibble::exception::Consistency("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + str::fmt(m_val.size()) + " characters long");
+			throw wibble::exception::Consistency("encoding short string", "string '"+m_val+"' is too long: the maximum length is 63 characters, but the string is " + to_string(m_val.size()) + " characters long");
 	}
 
 	virtual std::string toString() const
@@ -290,7 +268,7 @@ struct String : public Common<std::string>
 		if (parsesAsNumber(m_val, idummy) || needsQuoting(m_val))
 		{
 			// If it is surrounded by double quotes or it parses as a number, we need to escape it
-			return "\"" + str::c_escape(m_val) + "\"";
+			return "\"" + str::encode_cstring(m_val) + "\"";
 		} else {
 			// Else, we can use the value as it is
 			return m_val;
@@ -340,7 +318,7 @@ Value* Value::decode(const void* buf, size_t len, size_t& used)
 				case value::ENC_NUM_EXTENDED:
 					throw wibble::exception::Consistency("decoding value", "the number value to decode has an extended type, but no extended type is currently implemented");
 				default:
-					throw wibble::exception::Consistency("decoding value", "control flow should never reach here (" __FILE__ ":" + str::fmt(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+					throw wibble::exception::Consistency("decoding value", "control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
 			}
 		}
 		case value::ENC_NAME: {
@@ -352,7 +330,7 @@ Value* Value::decode(const void* buf, size_t len, size_t& used)
 		case value::ENC_EXTENDED:
 			throw wibble::exception::Consistency("decoding value", "the encoded value has an extended type, but no extended type is currently implemented");
 		default:
-			throw wibble::exception::Consistency("decoding value", "control flow should never reach here (" __FILE__ ":" + str::fmt(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
+			throw wibble::exception::Consistency("decoding value", "control flow should never reach here (" __FILE__ ":" + to_string(__LINE__) + "), but the compiler cannot easily know it.  This is here to silence a compiler warning.");
 	}
 }
 
@@ -381,7 +359,7 @@ Value* Value::parse(const std::string& str, size_t& lenParsed)
 
 		// Unescape the string
 		size_t parsed;
-		string res = str::c_unescape(str.substr(begin), parsed);
+		string res = str::decode_cstring(str.substr(begin), parsed);
 
 		lenParsed = skipSpaces(str, begin + parsed);
 		return new value::String(res);
@@ -669,7 +647,7 @@ ValueBag ValueBag::parse(const std::string& str)
 		}
 			
 		// Read the key
-		string key = str::trim(str.substr(begin, cur-begin));
+		string key = str::strip(str.substr(begin, cur-begin));
 
 		// Skip the '=' sign
 		++cur;
@@ -742,17 +720,20 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 	lua_pushnil(L);
 	while (lua_next(L, idx))
 	{
-		// Get key
-		string key;
-		switch (lua_type(L, -2))
-		{
-			case LUA_TNUMBER: key = str::fmt(lua_tointeger(L, -2)); break;
-			case LUA_TSTRING: key = lua_tostring(L, -2); break;
-			default:
-				throw wibble::exception::Consistency("reading Lua table",
-						str::fmtf("key has type %s but only ints and strings are supported",
-							lua_typename(L, lua_type(L, -2))));
-		}
+        // Get key
+        string key;
+        switch (lua_type(L, -2))
+        {
+            case LUA_TNUMBER: key = to_string(lua_tointeger(L, -2)); break;
+            case LUA_TSTRING: key = lua_tostring(L, -2); break;
+            default:
+            {
+                char buf[256];
+                snprintf(buf, 256, "cannot read Lua table: key has type %s but only ints and strings are supported",
+                        lua_typename(L, lua_type(L, -2)));
+                throw std::runtime_error(buf);
+            }
+        }
 		// Get value
 		switch (lua_type(L, -1))
 		{
@@ -762,10 +743,13 @@ void ValueBag::load_lua_table(lua_State* L, int idx)
 			case LUA_TSTRING:
 				set(key, Value::createString(lua_tostring(L, -1)));
 				break;
-			default:
-				throw wibble::exception::Consistency("reading Lua table",
-						str::fmtf("value has type %s but only ints and strings are supported",
-							lua_typename(L, lua_type(L, -1))));
+            default:
+            {
+                char buf[256];
+                snprintf(buf, 256, "cannot read Lua table: value has type %s but only ints and strings are supported",
+                            lua_typename(L, lua_type(L, -1)));
+                throw std::runtime_error(buf);
+            }
 		}
 		lua_pop(L, 1);
 	}
