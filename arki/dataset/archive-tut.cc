@@ -31,9 +31,8 @@ void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_
 	inner_ensure_equals(c.remaining(), string());
 	inner_ensure(c.isClean());
 
-	metadata::Collection mdc;
-	ds.queryData(dataset::DataQuery(Matcher()), mdc);
-	inner_ensure_equals(mdc.size(), resultcount);
+    metadata::Collection mdc(ds, dataset::DataQuery(Matcher()));
+    inner_ensure_equals(mdc.size(), resultcount);
 }
 
 }
@@ -124,8 +123,7 @@ void to::test<2>()
     // Query now is ok
     {
         unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-        metadata::Collection mdc;
-        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(*arc, dataset::DataQuery(Matcher()));
         ensure_equals(mdc.size(), 0u);
 
 		// Maintenance should show one file to index
@@ -186,8 +184,7 @@ void to::test<3>()
     // Query now is ok
     {
         unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-        metadata::Collection mdc;
-        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(*arc, dataset::DataQuery(Matcher()));
         ensure_equals(mdc.size(), 3u);
 
 		// Maintenance should show one file to rescan
@@ -248,8 +245,7 @@ void to::test<4>()
 	// Query now is ok
     {
         unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-        metadata::Collection mdc;
-        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(*arc, dataset::DataQuery(Matcher()));
         ensure_equals(mdc.size(), 3u);
 
 		// Maintenance should show one file to rescan

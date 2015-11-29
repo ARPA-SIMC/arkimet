@@ -156,22 +156,21 @@ template<> template<> void to::test<2>()
 {
 	using namespace arki::types;
 
-	clean_and_import();
-	std::unique_ptr<ReadonlyDataset> reader(makeReader());
+    clean_and_import();
+    std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
-    metadata::Collection mdc;
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "2007/07-08.grib1", 0, 7218));
 
     mdc.clear();
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
 
     mdc.clear();
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
 }
 
@@ -194,11 +193,10 @@ template<> template<> void to::test<4>()
 {
 	using namespace arki::types;
 
-	clean_and_import();
-	std::unique_ptr<ReadonlyDataset> reader(makeReader());
+    clean_and_import();
+    std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
-    metadata::Collection mdc;
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
@@ -209,11 +207,11 @@ template<> template<> void to::test<4>()
     ensure_equals(buf.size(), 7218);
 
     mdc.clear();
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
 
     mdc.clear();
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
 }
 
@@ -236,14 +234,12 @@ template<> template<> void to::test<5>()
 		s.ensure_all_lines_seen();
 	}
 
-	std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
-	metadata::Collection mdc;
-
-    reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
+    std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+    metadata::Collection mdc(*reader, Matcher::parse(""));
     ensure_equals(mdc.size(), 3u);
-    mdc.clear();
 
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    mdc.clear();
+    mdc.add(*reader, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
@@ -254,16 +250,16 @@ template<> template<> void to::test<5>()
     wassert(actual(buf.size()) == 7218);
 
     mdc.clear();
-    reader->queryData(dataset::DataQuery(Matcher::parse("reftime:=2007-07-08")), mdc);
+    mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
     ensure_equals(mdc.size(), 1u);
     wassert(actual(mdc[0].data_size()) == 7218u);
 
     mdc.clear();
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    mdc.add(*reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
 
     mdc.clear();
-    reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
 
 	// Query bytes
@@ -316,8 +312,7 @@ template<> template<> void to::test<6>()
 
 	std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
-    metadata::Collection mdc;
-    reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
+    metadata::Collection mdc(*reader, Matcher());
     ensure(mdc.empty());
 
 	Summary s;

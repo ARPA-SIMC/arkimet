@@ -204,18 +204,18 @@ void to::test<2>()
 	unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 	metadata::Collection mdc;
 
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test200"), "2007/07-08.grib1", 0, 7218));
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 0u);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 0u);
 }
 
@@ -226,18 +226,18 @@ void to::test<3>()
     acquireSamples();
     unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
     metadata::Collection mdc;
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 0u);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("test80"), "2007/07-07.grib1", 0, 34960));
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 0u);
 }
 
@@ -248,15 +248,15 @@ void to::test<4>()
     acquireSamples();
     unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test98")));
     metadata::Collection mdc;
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 0u);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 0u);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
@@ -274,7 +274,7 @@ void to::test<5>()
 		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
 
         // Fetch an element
-        testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+        mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
         ensure_equals(mdc.size(), 1u);
     }
 
@@ -299,7 +299,7 @@ void to::test<5>()
 
         // Fetch the element again
         mdc.clear();
-        testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+        mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
         ensure_equals(mdc.size(), 1u);
     }
 
@@ -326,7 +326,7 @@ void to::test<6>()
 		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
 
         // Fetch an element
-        testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+        mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
     }
 
@@ -354,7 +354,7 @@ void to::test<6>()
     {
         unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
         mdc.clear();
-        testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+        mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 0u);
     }
 
@@ -508,8 +508,7 @@ void to::test<10>()
     // Test querying the dataset
     {
         Reader reader(*config.section("test200"));
-        metadata::Collection mdc;
-        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
 
         // Make sure we're not getting the deleted element
@@ -543,12 +542,11 @@ void to::test<11>()
     unique_ptr<Reftime> rt = summary.getReferenceTime();
     ensure_equals(rt->style(), Reftime::PERIOD);
     unique_ptr<reftime::Period> p = downcast<reftime::Period>(move(rt));
-    metadata::Collection mdc;
-    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.toISO8601())), mdc);
+    metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80; reftime:=" + p->begin.toISO8601()));
     ensure_equals(mdc.size(), 1u);
 
     mdc.clear();
-    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98; reftime:=" + p->end.toISO8601())), mdc);
+    mdc.add(reader, Matcher::parse("origin:GRIB1,98; reftime:=" + p->end.toISO8601()));
     ensure_equals(mdc.size(), 1u);
 }
 
@@ -686,9 +684,8 @@ void to::test<14>()
 
     // Compress what is imported so far
     {
-        metadata::Collection mdc;
         Reader reader(*config.section("testall"));
-        reader.queryData(dataset::DataQuery(Matcher::parse("")), mdc);
+        metadata::Collection mdc(reader, Matcher::parse(""));
         ensure_equals(mdc.size(), 1u);
         mdc.compressDataFile(1024, "metadata file testall/20/2007.grib1");
         sys::unlink_ifexists("testall/20/2007.grib1");
@@ -760,9 +757,8 @@ void to::test<15>()
 
     // Try to query the element and see if it is the right one
     {
-        metadata::Collection mdc_read;
         unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("testbufr")));
-        testds->queryData(dataset::DataQuery(Matcher::parse("origin:BUFR")), mdc_read);
+        metadata::Collection mdc_read(*testds, Matcher::parse("origin:BUFR"));
         ensure_equals(mdc_read.size(), 1u);
         int usn;
         ensure_equals(scan::update_sequence_number(mdc_read[0], usn), true);
@@ -801,7 +797,7 @@ void to::test<16>()
     // Query it, without data
     std::unique_ptr<ReadonlyDataset> reader(make_dataset_reader(conf));
     metadata::Collection mdc;
-    reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
+    mdc.add(*reader, Matcher::parse(""));
     wassert(actual(mdc.size()) == 720);
 
     // Query it, streaming its data to /dev/null

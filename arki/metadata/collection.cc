@@ -7,6 +7,7 @@
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/postprocess.h>
+#include <arki/dataset.h>
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -73,6 +74,12 @@ static void compressAndWrite(const std::string& buf, std::ostream& out, const st
 }
 
 Collection::Collection() {}
+
+Collection::Collection(ReadonlyDataset& ds, const dataset::DataQuery& q)
+{
+    add(ds, q);
+}
+
 Collection::~Collection()
 {
     for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
@@ -91,6 +98,11 @@ void Collection::pop_back()
     if (empty()) return;
     delete vals.back();
     vals.pop_back();
+}
+
+void Collection::add(ReadonlyDataset& ds, const dataset::DataQuery& q)
+{
+    ds.query_data(q, [=](unique_ptr<Metadata> md) { eat(move(md)); return true; });
 }
 
 bool Collection::observe(const Metadata& md)

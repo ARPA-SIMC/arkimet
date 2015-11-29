@@ -238,8 +238,7 @@ struct TestDataset
         acct::plain_data_read_count.reset();
 
         // Query everything, we should get 3 results
-        metadata::Collection mdc;
-        ds->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
+        metadata::Collection mdc(*ds, dataset::DataQuery(Matcher::parse("")));
         wassert(actual(mdc.size()) == 3);
 
         // No data should have been read in this query
@@ -250,8 +249,7 @@ struct TestDataset
             using namespace arki::types;
 
             // Check that what we imported can be queried
-            metadata::Collection mdc;
-            ds->queryData(dataset::DataQuery(td.test_data[i].matcher), mdc);
+            metadata::Collection mdc(*ds, dataset::DataQuery(td.test_data[i].matcher));
             wassert(actual(mdc.size()) == 1u);
 
             // Check that the result matches what was imported
@@ -362,8 +360,7 @@ struct TestDataset
 
         // Do a simple export first, to get the exact metadata that would come
         // out
-        metadata::Collection mdc;
-        ds->queryData(dataset::DataQuery(td.test_data[0].matcher), mdc);
+        metadata::Collection mdc(*ds, dataset::DataQuery(td.test_data[0].matcher));
         wassert(actual(mdc.size()) == 1u);
 
         // Then do a postprocessed queryBytes

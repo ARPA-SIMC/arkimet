@@ -82,9 +82,7 @@ void to::test<3>()
 
     // Scan it to be sure it can be read
     unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
-    dataset::DataQuery q(Matcher::parse(""));
-    metadata::Collection mdc;
-    ds->queryData(q, mdc);
+    metadata::Collection mdc(*ds, Matcher());
     ensure_equals(mdc.size(), 3u);
 }
 
@@ -103,9 +101,7 @@ void to::test<4>()
 
     // Scan it to be sure it can be read
     unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*s));
-    dataset::DataQuery q(Matcher::parse(""));
-    metadata::Collection mdc;
-    ds->queryData(q, mdc);
+    metadata::Collection mdc(*ds, Matcher());
     ensure_equals(mdc.size(), 1u);
 }
 

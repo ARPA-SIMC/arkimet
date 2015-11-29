@@ -53,17 +53,17 @@ void WritableDataset::flush() {}
 
 Pending WritableDataset::test_writelock() { return Pending(); }
 
-void ReadonlyDataset::query_data(const dataset::DataQuery& q, std::function<bool(Metadata&&)> dest)
+void ReadonlyDataset::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
 {
 #warning temporary implementation: make this purely abstract and locally implement the one with the eater instead
     struct ToDest : public metadata::Eater
     {
-        std::function<bool(Metadata&&)> dest;
-        ToDest(std::function<bool(Metadata&&)> dest) : dest(dest) {}
+        std::function<bool(unique_ptr<Metadata>)> dest;
+        ToDest(std::function<bool(unique_ptr<Metadata>)> dest) : dest(dest) {}
 
         bool eat(std::unique_ptr<Metadata>&& md) override
         {
-            return dest(move(*md));
+            return dest(move(md));
         }
     } eater(dest);
     queryData(q, eater);
@@ -131,15 +131,15 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
         case dataset::ByteQuery::BQ_DATA: {
             const dataset::data::OstreamWriter* writer = nullptr;
             bool first = true;
-            query_data(q, [&](Metadata&& md) {
+            query_data(q, [&](unique_ptr<Metadata> md) {
                 if (first)
                 {
                     (*q.data_start_hook)();
                     first = false;
                 }
                 if (!writer)
-                    writer = dataset::data::OstreamWriter::get(md.source().format);
-                writer->stream(md, out);
+                    writer = dataset::data::OstreamWriter::get(md->source().format);
+                writer->stream(*md, out);
                 return true;
             });
             break;

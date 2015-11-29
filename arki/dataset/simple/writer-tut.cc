@@ -171,8 +171,7 @@ void to::test<3>()
     // Query now is ok, but empty
     {
         unique_ptr<Reader> reader(makeSimpleReader());
-        metadata::Collection mdc;
-        reader->queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(*reader, Matcher());
         ensure_equals(mdc.size(), 0u);
     }
 
@@ -252,8 +251,7 @@ void to::test<4>()
     // Query is ok
     {
         dataset::simple::Reader reader(cfg);
-        metadata::Collection mdc;
-        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
 
@@ -314,8 +312,7 @@ void to::test<4>()
     // And repack should have changed nothing
     {
         dataset::simple::Reader reader(cfg);
-        metadata::Collection mdc;
-        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
     ensure(sys::exists("testds/2007/07-08.grib1"));
@@ -345,8 +342,7 @@ void to::test<5>()
     // Query is ok
     {
         dataset::simple::Reader reader(cfg);
-        metadata::Collection mdc;
-        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
 
@@ -407,8 +403,7 @@ void to::test<5>()
     // And repack should have changed nothing
     {
         dataset::simple::Reader reader(cfg);
-        metadata::Collection mdc;
-        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 3u);
     }
     ensure(sys::exists("testds/2007/07-08.grib1"));
@@ -462,7 +457,7 @@ void to::test<6>()
         metadata::Collection mdc;
         Reader reader(cfg);
         try {
-            reader.queryData(dataset::DataQuery(Matcher()), mdc);
+            mdc.add(reader, Matcher());
             ensure(false);
         } catch (std::exception& e) {
             ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
@@ -531,7 +526,7 @@ void to::test<6>()
         metadata::Collection mdc;
         Reader reader(cfg);
         try {
-            reader.queryData(dataset::DataQuery(Matcher()), mdc);
+            mdc.add(reader, Matcher());
             ensure(false);
         } catch (std::exception& e) {
             ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
@@ -565,8 +560,7 @@ void to::test<7>()
     // Query is ok
     {
         dataset::simple::Reader reader(cfg);
-        metadata::Collection mdc;
-        reader.queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(reader, Matcher());
         ensure_equals(mdc.size(), 2u);
     }
 

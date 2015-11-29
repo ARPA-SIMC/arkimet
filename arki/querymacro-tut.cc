@@ -114,12 +114,10 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	Querymacro qm(cfg, "noop", "testds");
+    Querymacro qm(cfg, "noop", "testds");
 
-	dataset::DataQuery dq;
-	metadata::Collection mdc;
-	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 9u);
+    metadata::Collection mdc(qm, Matcher());
+    ensure_equals(mdc.size(), 9u);
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
     ensure(mdc[2].has_source());
@@ -133,12 +131,10 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	Querymacro qm(cfg, "noopcopy", "testds");
+    Querymacro qm(cfg, "noopcopy", "testds");
 
-	dataset::DataQuery dq;
-	metadata::Collection mdc;
-	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 9u);
+    metadata::Collection mdc(qm, Matcher());
+    ensure_equals(mdc.size(), 9u);
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
     ensure(mdc[2].has_source());
@@ -158,10 +154,8 @@ void to::test<4>()
 //			utils::readFile("misc/erse00.expa")
 	);
 
-	dataset::DataQuery dq;
-	metadata::Collection mdc;
-	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 2u);
+    metadata::Collection mdc(qm, Matcher());
+    ensure_equals(mdc.size(), 2u);
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
 
@@ -180,10 +174,8 @@ void to::test<5>()
 //			utils::readFile("misc/erse00.expa")
 	);
 
-	dataset::DataQuery dq;
-	metadata::Collection mdc;
-	qm.queryData(dq, mdc);
-	ensure_equals(mdc.size(), 2u);
+    metadata::Collection mdc(qm, Matcher());
+    ensure_equals(mdc.size(), 2u);
     ensure(mdc[0].has_source());
     ensure(mdc[1].has_source());
 
@@ -205,10 +197,8 @@ void to::test<6>()
 				"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
 		);
 
-		dataset::DataQuery dq;
-		metadata::Collection mdc;
-		qm.queryData(dq, mdc);
-		ensure_equals(mdc.size(), 2u);
+        metadata::Collection mdc(qm, Matcher());
+        ensure_equals(mdc.size(), 2u);
         ensure(mdc[0].has_source());
         ensure(mdc[1].has_source());
 
@@ -224,10 +214,8 @@ void to::test<6>()
 				"add: timerange:GRIB1,1; level:MSL; product:GRIB1,80,2,2\n"
 		);
 
-		dataset::DataQuery dq;
-		metadata::Collection mdc;
-		qm.queryData(dq, mdc);
-		ensure_equals(mdc.size(), 2u);
+        metadata::Collection mdc(qm, Matcher());
+        ensure_equals(mdc.size(), 2u);
         ensure(mdc[0].has_source());
         ensure(mdc[1].has_source());
 
@@ -246,9 +234,7 @@ void to::test<7>()
             "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n"
             );
 
-    dataset::DataQuery dq;
-    metadata::Collection mdc;
-    qm.queryData(dq, mdc);
+    metadata::Collection mdc(qm, Matcher());
     ensure_equals(mdc.size(), 2u);
     // Ensure that data is reachable
     wassert(actual(mdc[0].getData().size()) == mdc[0].data_size());
@@ -270,12 +256,8 @@ void to::test<8>()
             );
 
     dataset::DataQuery dq;
-    metadata::Collection mdc;
-
-    //sort::Stream sorter(*cmp, mdc);
     dq.sorter = sort::Compare::parse("month:-reftime");
-
-    qm.queryData(dq, mdc);
+    metadata::Collection mdc(qm, dq);
     ensure_equals(mdc.size(), 2u);
     ensure(mdc[0].has_source());
     wassert(actual_type(mdc[0].get(TYPE_REFTIME)) == Reftime::decodeString("2009-08-08 00:00:00"));

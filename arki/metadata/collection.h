@@ -31,6 +31,11 @@
 namespace arki {
 struct Metadata;
 struct Summary;
+struct ReadonlyDataset;
+
+namespace dataset {
+struct DataQuery;
+}
 
 namespace sort {
 struct Compare;
@@ -48,6 +53,8 @@ protected:
 
 public:
     Collection();
+    /// Construct a collection filled by the results of query_data
+    Collection(ReadonlyDataset& ds, const dataset::DataQuery& q);
     virtual ~Collection();
 
     void clear();
@@ -64,6 +71,9 @@ public:
 
     /// Remove the last element
     void pop_back();
+
+    /// Append results from a query_data
+    void add(ReadonlyDataset& ds, const dataset::DataQuery& q);
 
     /// Append a copy of md
     bool observe(const Metadata& md) override;

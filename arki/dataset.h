@@ -156,7 +156,7 @@ public:
      * Query the dataset using the given matcher, and sending the results to
      * the given function
      */
-    virtual void query_data(const dataset::DataQuery& q, std::function<bool(Metadata&&)> dest);
+    virtual void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest);
 
 	/**
 	 * Add to summary the summary of the data that would be extracted with the
