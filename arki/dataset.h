@@ -1,28 +1,7 @@
 #ifndef ARKI_DATASET_H
 #define ARKI_DATASET_H
 
-/*
- * dataset - Handle arkimet datasets
- *
- * Copyright (C) 2007--2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
+/// Base interface for arkimet datasets
 #include <arki/matcher.h>
 #include <arki/transaction.h>
 #include <string>
@@ -123,11 +102,11 @@ struct ByteQuery : public DataQuery
 		BQ_REP_SUMMARY = 3
 	};
 
-	std::string param;
-	Type type;
-	metadata::Hook* data_start_hook;
+    std::string param;
+    Type type = BQ_DATA;
+    metadata::Hook* data_start_hook = 0;
 
-	ByteQuery() : type(BQ_DATA), data_start_hook(0) {}
+    ByteQuery() {}
 
     void setData(const Matcher& m)
     {
@@ -167,11 +146,17 @@ public:
 
 	virtual ~ReadonlyDataset() {}
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the metadata consumer.
+     */
+    [[deprecated("use query_data instead")]] virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
+
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the given function
+     */
+    virtual void query_data(const dataset::DataQuery& q, std::function<bool(Metadata&&)> dest);
 
 	/**
 	 * Add to summary the summary of the data that would be extracted with the
@@ -179,12 +164,20 @@ public:
 	 */
 	virtual void querySummary(const Matcher& matcher, Summary& summary) = 0;
 
-	/**
-	 * Query the dataset obtaining a byte stream.
-	 *
-	 * The default implementation in ReadonlyDataset is based on queryData.
-	 */
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    /**
+     * Query the dataset obtaining a byte stream.
+     *
+     * The default implementation in ReadonlyDataset is based on queryData.
+     */
+    [[deprecated("use query_bytes instead")]] virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+
+    /**
+     * Query the dataset obtaining a byte stream, that gets written to a file
+     * descriptor.
+     *
+     * The default implementation in ReadonlyDataset is based on queryData.
+     */
+    virtual void query_bytes(const dataset::ByteQuery& q, int out);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this dataset

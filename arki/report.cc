@@ -121,7 +121,12 @@ void Report::create_lua_object()
 
 void Report::captureOutput(std::ostream& buf)
 {
-	utils::lua::capturePrintOutput(*L, buf);
+    utils::lua::capturePrintOutput(*L, buf);
+}
+
+void Report::captureOutput(int fd)
+{
+    utils::lua::capturePrintOutput(*L, fd);
 }
 
 bool Report::eat(unique_ptr<Metadata>&& md)

@@ -106,9 +106,15 @@ struct ManagedUD
 
 /**
  * Replace the 'print' function inside \a L so that all its output goes to the
- * given ostream.
+ * given ostream
  */
 void capturePrintOutput(lua_State* L, std::ostream& buf);
+
+/**
+ * Replace the 'print' function inside \a L so that all its output goes to the
+ * given file descriptor
+ */
+void capturePrintOutput(lua_State* L, int fd);
 
 /**
  * Create a string with a formatted dump of all the keys of the table at the

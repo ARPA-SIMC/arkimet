@@ -7,6 +7,7 @@
 #include <arki/dataset/outbound.h>
 #include <arki/dataset/discard.h>
 #include <arki/dataset/empty.h>
+#include <arki/dataset/data.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/sort.h>
@@ -51,6 +52,22 @@ WritableDataset::~WritableDataset()
 void WritableDataset::flush() {}
 
 Pending WritableDataset::test_writelock() { return Pending(); }
+
+void ReadonlyDataset::query_data(const dataset::DataQuery& q, std::function<bool(Metadata&&)> dest)
+{
+#warning temporary implementation: make this purely abstract and locally implement the one with the eater instead
+    struct ToDest : public metadata::Eater
+    {
+        std::function<bool(Metadata&&)> dest;
+        ToDest(std::function<bool(Metadata&&)> dest) : dest(dest) {}
+
+        bool eat(std::unique_ptr<Metadata>&& md) override
+        {
+            return dest(move(*md));
+        }
+    } eater(dest);
+    queryData(q, eater);
+}
 
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
@@ -103,6 +120,69 @@ void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
             throw wibble::exception::Consistency("querying dataset", s.str());
         }
 	}
+}
+
+void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
+{
+    using namespace arki::utils;
+
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA: {
+            const dataset::data::OstreamWriter* writer = nullptr;
+            bool first = true;
+            query_data(q, [&](Metadata&& md) {
+                if (first)
+                {
+                    (*q.data_start_hook)();
+                    first = false;
+                }
+                if (!writer)
+                    writer = dataset::data::OstreamWriter::get(md.source().format);
+                writer->stream(md, out);
+                return true;
+            });
+            break;
+        }
+        case dataset::ByteQuery::BQ_POSTPROCESS: {
+            Postprocess postproc(q.param);
+            postproc.set_output(out);
+            postproc.validate(cfg);
+            postproc.set_data_start_hook(q.data_start_hook);
+            postproc.start();
+            queryData(q, postproc);
+            postproc.flush();
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_METADATA: {
+#ifdef HAVE_LUA
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            queryData(q, rep);
+            rep.report();
+#endif
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_SUMMARY: {
+#ifdef HAVE_LUA
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            Summary s;
+            querySummary(q.matcher, s);
+            rep(s);
+            rep.report();
+#endif
+            break;
+        }
+        default:
+        {
+            stringstream s;
+            s << "unsupported query type: " << (int)q.type;
+            throw wibble::exception::Consistency("querying dataset", s.str());
+        }
+    }
 }
 
 #ifdef HAVE_LUA

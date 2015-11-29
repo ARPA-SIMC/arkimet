@@ -62,6 +62,9 @@ public:
 	/// Send Lua's print output to an ostream
 	void captureOutput(std::ostream& buf);
 
+    /// Send Lua's print output to a file descriptor
+    void captureOutput(int out);
+
     /// Process a metadata for the report
     bool eat(std::unique_ptr<Metadata>&& md) override;
 

@@ -280,7 +280,7 @@ class OstreamWriter
 public:
     virtual ~OstreamWriter();
 
-    virtual size_t stream(Metadata& md, std::ostream& out) const = 0;
+    [[deprecated("stream to fd instead")]] virtual size_t stream(Metadata& md, std::ostream& out) const = 0;
     virtual size_t stream(Metadata& md, int out) const = 0;
 
     /**

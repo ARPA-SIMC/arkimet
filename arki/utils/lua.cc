@@ -1,25 +1,5 @@
-/*
- * utils-lua - Lua-specific utility functions
- *
- * Copyright (C) 2008--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
 #include <arki/utils/lua.h>
+#include <arki/utils/sys.h>
 #include <arki/types.h>
 #include <arki/metadata.h>
 #include <arki/summary.h>
@@ -179,6 +159,43 @@ static int lua_ostream_print(lua_State *L)
 	return 0;
 }
 
+// From src/lbaselib.c in lua 5.1
+/*
+** If your system does not support `stdout', you can just remove this function.
+** If you need, you can define your own `print' function, following this
+** model but changing `fputs' to put the strings at a proper place
+** (a console window or a log file, for instance).
+*/
+static int lua_fd_print(lua_State *L)
+{
+    // Access the closure parameters
+    int outidx = lua_upvalueindex(1);
+    int fd = lua_tointeger(L, outidx);
+    int n = lua_gettop(L);  /* number of arguments */
+    int i;
+    lua_getglobal(L, "tostring");
+    stringstream ss;
+    for (i=1; i<=n; i++) {
+        const char *s;
+        lua_pushvalue(L, -1);  /* function to be called */
+        lua_pushvalue(L, i);   /* value to print */
+        lua_call(L, 1, 1);
+        s = lua_tostring(L, -1);  /* get result */
+        if (s == NULL)
+            return luaL_error(L, LUA_QL("tostring") " must return a string to "
+                    LUA_QL("print"));
+        if (i>1) ss << '\t';
+        ss << s;
+        lua_pop(L, 1);  /* pop result */
+    }
+    ss << endl;
+
+    string s = ss.str();
+    sys::FileDescriptor out(fd);
+    out.write_all_or_throw(s.data(), s.size());
+    return 0;
+}
+
 void capturePrintOutput(lua_State* L, std::ostream& buf)
 {
 	// Create a C closure with the print function and the ostream to use
@@ -189,6 +206,16 @@ void capturePrintOutput(lua_State* L, std::ostream& buf)
 
 	// redefine print
 	lua_setglobal(L, "print");
+}
+
+void capturePrintOutput(lua_State* L, int fd)
+{
+    // Create a C closure with the print function and the ostream to use
+    lua_pushinteger(L, fd);
+    lua_pushcclosure(L, lua_fd_print, 1);
+
+    // redefine print
+    lua_setglobal(L, "print");
 }
 
 std::string dumptablekeys(lua_State* L, int index)
