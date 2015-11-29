@@ -71,55 +71,55 @@ void ReadonlyDataset::query_data(const dataset::DataQuery& q, std::function<bool
 
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
-	using namespace arki::utils;
-
-	switch (q.type)
-	{
-		case dataset::ByteQuery::BQ_DATA: {
-			ds::DataOnly dataonly(out);
+    switch (q.type)
+    {
+        case dataset::ByteQuery::BQ_DATA: {
+            ds::DataOnly dataonly(out);
             ds::DataStartHookRunner dshr(dataonly, q.data_start_hook);
-			queryData(q, dshr);
-			break;
-		}
-		case dataset::ByteQuery::BQ_POSTPROCESS: {
-			Postprocess postproc(q.param);
+            query_data(q, [&](unique_ptr<Metadata> md) { return dshr.eat(move(md)); });
+            break;
+        }
+        case dataset::ByteQuery::BQ_POSTPROCESS: {
+            Postprocess postproc(q.param);
             postproc.set_output(out);
             postproc.validate(cfg);
-			postproc.set_data_start_hook(q.data_start_hook);
+            postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
-			queryData(q, postproc);
-			postproc.flush();
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_METADATA: {
+            query_data(q, [&](unique_ptr<Metadata> md) {
+                return postproc.eat(move(md));
+            });
+            postproc.flush();
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_METADATA: {
 #ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			queryData(q, rep);
-			rep.report();
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
+            rep.report();
 #endif
-			break;
-		}
-		case dataset::ByteQuery::BQ_REP_SUMMARY: {
+            break;
+        }
+        case dataset::ByteQuery::BQ_REP_SUMMARY: {
 #ifdef HAVE_LUA
-			Report rep;
-			rep.captureOutput(out);
-			rep.load(q.param);
-			Summary s;
-			querySummary(q.matcher, s);
-			rep(s);
-			rep.report();
+            Report rep;
+            rep.captureOutput(out);
+            rep.load(q.param);
+            Summary s;
+            querySummary(q.matcher, s);
+            rep(s);
+            rep.report();
 #endif
-			break;
-		}
+            break;
+        }
         default:
         {
             stringstream s;
             s << "unsupported query type: " << (int)q.type;
             throw wibble::exception::Consistency("querying dataset", s.str());
         }
-	}
+    }
 }
 
 void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
@@ -150,7 +150,7 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
             postproc.validate(cfg);
             postproc.set_data_start_hook(q.data_start_hook);
             postproc.start();
-            queryData(q, postproc);
+            query_data(q, [&](unique_ptr<Metadata> md) { return postproc.eat(move(md)); });
             postproc.flush();
             break;
         }
@@ -159,7 +159,7 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
             Report rep;
             rep.captureOutput(out);
             rep.load(q.param);
-            queryData(q, rep);
+            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
             rep.report();
 #endif
             break;
@@ -252,10 +252,10 @@ static int arkilua_queryData(lua_State *L)
 	// Create metadata consumer proxy
 	std::unique_ptr<metadata::LuaConsumer> mdc = metadata::LuaConsumer::lua_check(L, 3);
 
-	// Run the query
-	rd->queryData(dq, *mdc);
+    // Run the query
+    rd->query_data(dq, [&](unique_ptr<Metadata> md) { return mdc->eat(move(md)); });
 
-	return 0;
+    return 0;
 }
 
 static int arkilua_querySummary(lua_State *L)

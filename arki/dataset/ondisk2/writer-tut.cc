@@ -263,7 +263,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         metadata::Collection mdc_pre;
         {
             std::unique_ptr<ReadonlyDataset> reader(makeReader());
-            reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc_pre);
+            mdc_pre.add(*reader, Matcher());
             wassert(actual(mdc_pre.size()) == 3);
         }
 
@@ -298,7 +298,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         metadata::Collection mdc_post;
         {
             std::unique_ptr<ReadonlyDataset> reader(makeReader());
-            reader->queryData(dataset::DataQuery(Matcher::parse("")), mdc_post);
+            mdc_post.add(*reader, Matcher());
             wassert(actual(mdc_post.size()) == 3);
         }
 
@@ -421,13 +421,12 @@ void to::test<6>()
         // duplicate items
         Reader reader(cfg);
         ensure(reader.hasWorkingIndex());
-        metadata::Collection mdc;
-        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+        metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
         ensure_equals(mdc.size(), 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 51630, 34960));
 
         mdc.clear();
-        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+        mdc.add(reader, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 44412, 7218));
     }
@@ -449,8 +448,7 @@ void to::test<6>()
     // Test querying, and see that things have moved to the beginning
     Reader reader(cfg);
     ensure(reader.hasWorkingIndex());
-    metadata::Collection mdc;
-    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 0, 34960));
 
@@ -458,7 +456,7 @@ void to::test<6>()
     // (there used to be a bug where the rebuild would use the offsets of
     // the metadata instead of the data)
     mdc.clear();
-    reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    mdc.add(reader, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testdir"), "foo/bar/test.grib1", 34960, 7218));
 
@@ -522,9 +520,8 @@ void to::test<8>()
 
     // Compress one data file
     {
-        metadata::Collection mdc;
         Reader reader(cfg);
-        reader.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+        metadata::Collection mdc(reader, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 1u);
         mdc.compressDataFile(1024, "metadata file testdir/2007/07-08.grib1");
         sys::unlink_ifexists("testdir/2007/07-08.grib1");
@@ -867,7 +864,7 @@ template<> template<> void to::test<14>()
     metadata::Collection mdc_imported;
     {
         unique_ptr<ReadonlyDataset> reader(makeReader());
-        reader->queryData(DataQuery(), mdc_imported);
+        mdc_imported.add(*reader, Matcher());
     }
 
     // Take note of all the data
@@ -923,7 +920,7 @@ template<> template<> void to::test<14>()
     metadata::Collection mdc_packed;
     {
         unique_ptr<ReadonlyDataset> reader(makeReader());
-        reader->queryData(DataQuery(), mdc_packed);
+        mdc_packed.add(*reader, Matcher());
     }
     wassert(actual(mdc_packed[0]).is_similar(mdc_imported[1]));
     wassert(actual(mdc_packed[1]).is_similar(mdc_imported[3]));
