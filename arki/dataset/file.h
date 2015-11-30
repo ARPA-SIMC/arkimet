@@ -43,6 +43,8 @@ protected:
 	std::string m_pathname;
 	std::string m_format;
 
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+
 public:
 	File(const ConfigFile& cfg);
 
@@ -50,7 +52,6 @@ public:
 
     virtual void scan(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
 
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);

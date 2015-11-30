@@ -58,8 +58,8 @@ const Archives& Local::archive() const
 
 void Local::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	if (hasArchive())
-		archive().queryData(q, consumer);
+    if (hasArchive())
+        archive().query_data(q, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
 }
 
 void Local::querySummary(const Matcher& matcher, Summary& summary)

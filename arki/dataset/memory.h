@@ -40,10 +40,13 @@ namespace dataset {
  */
 struct Memory : public metadata::Collection, public ReadonlyDataset
 {
+protected:
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+
+public:
     Memory();
     virtual ~Memory();
 
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
 };
 

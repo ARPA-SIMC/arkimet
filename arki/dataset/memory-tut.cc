@@ -41,20 +41,18 @@ void to::test<1>()
 {
     acquireSamples();
 
-    dataset::Memory mdc;
-
-    c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
+    metadata::Collection mdc(c, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
 
     mdc.clear();
 
-    c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80")), mdc);
+    mdc.add(c, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 7218, 34960u));
 
     mdc.clear();
-    c.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98")), mdc);
+    mdc.add(c, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 42178, 2234));
 }

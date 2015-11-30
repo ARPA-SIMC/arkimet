@@ -43,8 +43,7 @@ void to::test<1>()
     ConfigFile cfg;
     dataset::Empty ds(cfg);
 
-    metadata::Collection mdc;
-    ds.queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1 or BUFR or GRIB2")), mdc);
+    metadata::Collection mdc(ds, Matcher::parse("origin:GRIB1 or BUFR or GRIB2"));
     ensure_equals(mdc.size(), 0u);
 }
 

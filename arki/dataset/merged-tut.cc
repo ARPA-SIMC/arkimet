@@ -107,8 +107,7 @@ TESTGRP(arki_dataset_merged);
 template<> template<>
 void to::test<1>()
 {
-    metadata::Collection mdc;
-    ds.queryData(dataset::DataQuery(Matcher()), mdc);
+    metadata::Collection mdc(ds, Matcher());
     ensure_equals(mdc.size(), 3u);
 
 #if 0

@@ -418,8 +418,7 @@ void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, 
 	impl_ensure_maint_clean(loc, filecount, wcfg);
 
     unique_ptr<dataset::Local> reader(makeLocalReader(wcfg));
-    metadata::Collection mdc;
-    reader->queryData(dataset::DataQuery(Matcher()), mdc);
+    metadata::Collection mdc(*reader, Matcher());
     inner_ensure_equals(mdc.size(), resultcount);
 
     if (filecount > 0)

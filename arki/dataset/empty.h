@@ -42,13 +42,15 @@ namespace dataset {
  */
 class Empty : public Local
 {
+protected:
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override {}
+
 public:
 	// Initialise the dataset with the information from the configurationa in 'cfg'
 	Empty(const ConfigFile& cfg);
 	virtual ~Empty();
 
     // Nothing to do: the dataset is always empty
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override {}
     void querySummary(const Matcher& matcher, Summary& summary) override {}
     void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override {}
     size_t produce_nth(metadata::Eater& cons, size_t idx=0) override { return 0; }

@@ -42,6 +42,8 @@ class Merged : public ReadonlyDataset
 protected:
 	std::vector<ReadonlyDataset*> datasets;
 
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+
 public:
 	Merged();
 	virtual ~Merged();
@@ -49,11 +51,6 @@ public:
 	/// Add a dataset to the group of datasets to merge
 	void addDataset(ReadonlyDataset& ds);
 
-    /**
-     * Query the dataset using the given matcher, and sending the results to
-     * the metadata consumer.
-     */
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
 };

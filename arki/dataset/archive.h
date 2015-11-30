@@ -190,6 +190,7 @@ protected:
     void invalidate_summary_cache();
     void summary_for_all(Summary& out);
     void rebuild_summary_cache();
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
 
 public:
 	Archives(const std::string& root, const std::string& dir, bool read_only = true);
@@ -204,9 +205,8 @@ public:
 
 	const std::string& path() const { return m_dir; }
 
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
+    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
+    void querySummary(const Matcher& matcher, Summary& summary) override;
     virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 

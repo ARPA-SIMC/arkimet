@@ -357,34 +357,6 @@ void to::test<6>()
         mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
         ensure_equals(mdc.size(), 0u);
     }
-
-#if 0
-	// Try to fetch all other elements
-	{
-		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-		mdc.clear();
-		testds->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
-		ensure_equals(mdc.size(), 2u);
-	}
-
-	// TODO: Repack
-
-	// Try to fetch the element again
-	{
-		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-		mdc.clear();
-		testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
-		ensure_equals(mdc.size(), 0u);
-	}
-
-	// Try to fetch all other elements
-	{
-		unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-		mdc.clear();
-		testds->queryData(dataset::DataQuery(Matcher::parse("")), mdc);
-		ensure_equals(mdc.size(), 2u);
-	}
-#endif
 }
 
 // Test reindexing
@@ -585,7 +557,7 @@ struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
     {
         try {
             Reader reader(cfg);
-            reader.queryData(dataset::DataQuery(Matcher()), *this);
+            reader.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return eat(move(md)); });
         } catch (std::exception& e) {
 			cerr << e.what() << endl;
 			cout << "E" << endl;

@@ -49,21 +49,22 @@ protected:
     index::RContents* m_idx;
 	TargetFile* m_tf;
 
-	// Query only the data in the dataset, without the archives
-	void queryLocalData(const dataset::DataQuery& q, metadata::Eater& consumer);
+    // Query only the data in the dataset, without the archives
+    void queryLocalData(const dataset::DataQuery& q, metadata::Eater& consumer);
+
+    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
 
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
 	Reader(const ConfigFile& cfg);
 	virtual ~Reader();
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
-    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
+    /**
+     * Query the dataset using the given matcher, and sending the results to
+     * the metadata consumer.
+     */
+    void querySummary(const Matcher& matcher, Summary& summary) override;
+    size_t produce_nth(metadata::Eater& cons, size_t idx=0) override;
 
 	/**
 	 * Return true if this dataset has a working index.
