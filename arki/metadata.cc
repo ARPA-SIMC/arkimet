@@ -563,6 +563,13 @@ void Metadata::makeInline()
     set_source(Source::createInline(m_source->format, m_data.size()));
 }
 
+void Metadata::make_absolute()
+{
+    if (has_source())
+        if (const source::Blob* blob = dynamic_cast<const source::Blob*>(m_source))
+            set_source(blob->makeAbsolute());
+}
+
 size_t Metadata::data_size() const
 {
     if (!m_data.empty()) return m_data.size();

@@ -18,14 +18,13 @@ string Formatter::operator()(const Type& v) const
     return ss.str();
 }
 
-Formatter* Formatter::create()
+unique_ptr<Formatter> Formatter::create()
 {
 #if HAVE_LUA
-	return new formatter::Lua;
+    return unique_ptr<Formatter>(new formatter::Lua);
 #else
-	return new Formatter;
+    return unique_ptr<Formatter>(new Formatter);
 #endif
 }
 
 }
-// vim:set ts=4 sw=4:

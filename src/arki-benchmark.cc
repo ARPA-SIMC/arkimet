@@ -58,21 +58,6 @@ struct Options : public StandardParserWithManpage
 }
 }
 
-struct MetadataCounter : public metadata::Eater
-{
-	size_t count;
-	off_t size;
-
-	MetadataCounter() : count(0), size(0) {}
-
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
-        ++count;
-        size += md->data_size();
-        return true;
-    }
-};
-
 struct BenchmarkInfo
 {
 	ConfigFile cfg;
@@ -239,19 +224,20 @@ struct DSBenchmark : public Benchmark
 			if (ds) delete ds;
 		}
 
-		virtual void main()
-		{
-			MetadataCounter mdc;
-			dataset::DataQuery dq(query, withData);
-			ds->queryData(dq, mdc);
+        void main() override
+        {
+            dataset::DataQuery dq(query, withData);
+            unsigned count = 0;
+            size_t size = 0;
+            ds->query_data(dq, [&](unique_ptr<Metadata> md) { ++count; size += md->data_size(); return true; });
 
-			double user, system, total;
-			elapsed(user, system, total);
-			double mps = mdc.count / total;
-			double kbps = mdc.size / total / 1000;
-			double avgsize = mdc.count > 0 ? (mdc.size / mdc.count) : 0;
-			timing("query: %dm, %.0fmps, %.0fbpm, %.0fKbps",
-					mdc.count, mps, avgsize, kbps);
+            double user, system, total;
+            elapsed(user, system, total);
+            double mps = count / total;
+            double kbps = size / total / 1000;
+            double avgsize = count > 0 ? (size / count) : 0;
+            timing("query: %dm, %.0fmps, %.0fbpm, %.0fKbps",
+                    count, mps, avgsize, kbps);
 
 			Summary summary;
 			ds->querySummary(query, summary);

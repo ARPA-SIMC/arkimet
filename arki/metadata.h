@@ -230,6 +230,9 @@ public:
     /// Read the data and inline them in the metadata
     void makeInline();
 
+    /// Make all source blobs absolute
+    void make_absolute();
+
     /// Return the size of the data, if known, else returns 0
     size_t data_size() const;
 

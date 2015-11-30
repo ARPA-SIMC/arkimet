@@ -46,6 +46,8 @@ namespace tests {
 #define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata::Eater& mdc);
 
+unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq);
+
 struct OutputChecker : public std::stringstream
 {
 	std::vector<std::string> lines;

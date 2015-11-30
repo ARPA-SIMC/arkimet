@@ -84,35 +84,7 @@ struct MakeAbsolute : public metadata::Eater
     bool eat(std::unique_ptr<Metadata>&& md) override;
 };
 
-/// Make all sources URLs
-struct MakeURL : public metadata::Eater
-{
-    metadata::Eater& next;
-    std::string url;
-
-    MakeURL(metadata::Eater& next, const std::string& url) : next(next), url(url) {}
-
-    bool eat(std::unique_ptr<Metadata>&& md) override;
-};
-
-/// Make all metadata inline sources, loading data if needed
-struct MakeInline : public metadata::Eater
-{
-    metadata::Eater& next;
-
-    MakeInline(metadata::Eater& next) : next(next) {}
-
-    bool eat(std::unique_ptr<Metadata>&& md) override
-    {
-        md->makeInline();
-        return next.eat(move(md));
-    }
-};
-
-
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

@@ -162,9 +162,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
 
-            metadata::Counter counter;
-            reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
-            wassert(actual(counter.count) == 3);
+            unsigned count = 0;
+            reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
+            wassert(actual(count) == 3);
         }
     }
 
@@ -247,9 +247,9 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         {
             std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
-            metadata::Counter counter;
-            reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
-            wassert(actual(counter.count) == 2);
+            unsigned count = 0;
+            reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
+            wassert(actual(count) == 2);
         }
     }
 
@@ -646,15 +646,13 @@ template<> template<> void to::test<10>()
 
     ensure_equals(sys::size("testds/foo/bar/test.grib1"), 44412u);
 
-	// Test querying
-	{
-		std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
-
-		metadata::Collection mdc;
-		reader->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
-		ensure_equals(mdc.size(), 1u);
+    // Test querying
+    {
+        std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+        metadata::Collection mdc(*reader, Matcher::parse("origin:GRIB1,200"));
+        ensure_equals(mdc.size(), 1u);
         wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("testds"), "foo/bar/test.grib1", 34960, 7218));
-	}
+    }
 }
 
 // Ensure that if repacking changes the data file timestamp, it reindexes it properly

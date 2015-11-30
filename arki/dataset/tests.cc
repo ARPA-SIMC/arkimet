@@ -38,6 +38,13 @@ using namespace arki::dataset;
 namespace arki {
 namespace tests {
 
+unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq)
+{
+    unsigned count = 0;
+    ds.query_data(dq, [&](unique_ptr<Metadata>) { ++count; return true; });
+    return count;
+}
+
 void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, unique_ptr<Metadata> md, metadata::Eater& mdc)
 {
     metadata::Collection c;

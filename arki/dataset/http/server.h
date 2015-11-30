@@ -45,16 +45,6 @@ struct StreamHeaders : public metadata::Hook
     void sendIfNotFired();
 };
 
-struct MetadataStreamer : public metadata::Eater
-{
-    StreamHeaders& sh;
-
-    MetadataStreamer(StreamHeaders& sh);
-
-    bool eat(std::unique_ptr<Metadata>&& md) override;
-};
-
-
 /// Parameters used by the legacy /summary/ interface
 struct LegacySummaryParams : public arki::utils::net::http::Params
 {

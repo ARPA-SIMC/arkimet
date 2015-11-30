@@ -308,9 +308,8 @@ void to::test<5>()
 
     // Query now is ok
     {
-        metadata::Collection mdc;
         unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-        arc->queryData(dataset::DataQuery(Matcher()), mdc);
+        metadata::Collection mdc(*arc, Matcher());
         ensure_equals(mdc.size(), 9u);
     }
 
@@ -397,13 +396,13 @@ void to::test<6>()
     sys::unlink_ifexists("testds/.archive/last/test.grib1.metadata");
     sys::unlink_ifexists("testds/.archive/last/test.grib1.summary");
 
-	// Cannot query anymore
-	{
-		unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
-		metadata::Collection mdc;
-		try {
-			arc->queryData(dataset::DataQuery(Matcher()), mdc);
-			ensure(false);
+    // Cannot query anymore
+    {
+        unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
+        metadata::Collection mdc;
+        try {
+            mdc.add(*arc, Matcher());
+            ensure(false);
         } catch (std::exception& e) {
             ensure(str::endswith(e.what(), "file needs to be manually decompressed before scanning"));
         }
@@ -549,7 +548,7 @@ void to::test<18>()
     Summary s2;
     {
         metadata::SummarisingEater sum(s2);
-        ds->queryData(dataset::DataQuery(Matcher::parse("")), sum);
+        ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return sum.eat(move(md)); });
     }
 
     // Verify that the time range of the first summary is what we expect

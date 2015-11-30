@@ -49,7 +49,7 @@ YamlPrinter::YamlPrinter(Output& out, bool formatted)
     : out(out), formatter(0)
 {
     if (formatted)
-        formatter = Formatter::create();
+        formatter = Formatter::create().release();
 }
 YamlPrinter::~YamlPrinter()
 {
@@ -89,7 +89,7 @@ JSONPrinter::JSONPrinter(Output& out, bool formatted)
     : formatter(0), json(new emitter::JSON(out.stream()))
 {
     if (formatted)
-        formatter = Formatter::create();
+        formatter = Formatter::create().release();
 }
 JSONPrinter::~JSONPrinter()
 {

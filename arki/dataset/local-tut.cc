@@ -56,13 +56,11 @@ template<> template<> void to::test<1>()
     sys::unlink_ifexists("testds/2007/07-08.grib1");
     sys::unlink_ifexists("testds/2007/10-09.grib1");
 
-	// Test that querying returns all items
-	{
-		std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
-
-        metadata::Counter counter;
-        reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
-        ensure_equals(counter.count, 3u);
+    // Test that querying returns all items
+    {
+        std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+        unsigned count = count_results(*reader, Matcher());
+        ensure_equals(count, 3u);
     }
 
 	// Check if files to archive are detected
@@ -141,13 +139,10 @@ template<> template<> void to::test<1>()
 		ensure(c.isClean());
 	}
 
-	// Test that querying returns all items
-	{
-		std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
-
-        metadata::Counter counter;
-        reader->queryData(dataset::DataQuery(Matcher::parse("")), counter);
-        ensure_equals(counter.count, 3u);
+    // Test that querying returns all items
+    {
+        std::unique_ptr<ReadonlyDataset> reader(makeReader(&cfg));
+        ensure_equals(count_results(*reader, Matcher()), 3u);
     }
 }
 
@@ -402,7 +397,7 @@ template<> template<> void to::test<7>()
     {
         std::unique_ptr<ReadonlyDataset> reader(makeReader());
         CheckReftimeSortOrder cso;
-        reader->queryData(dataset::DataQuery(Matcher::parse("")), cso);
+        reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
         wassert(actual(cso.seen) == 16128);
     }
 
@@ -411,7 +406,7 @@ template<> template<> void to::test<7>()
         CheckAllSortOrder cso;
         dataset::DataQuery dq(Matcher::parse(""));
         dq.sorter = sort::Compare::parse("reftime,area,product");
-        reader->queryData(dq, cso);
+        reader->query_data(dq, [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
         wassert(actual(cso.seen) == 16128);
     }
 }

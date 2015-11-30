@@ -545,20 +545,20 @@ MetadataDispatch::~MetadataDispatch()
 
 bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 {
-	setStartTime();
-	results.clear();
+    setStartTime();
+    results.clear();
 
-	try {
-		ds.queryData(dataset::DataQuery(Matcher()), *this);
-	} catch (std::exception& e) {
-		// FIXME: this is a quick experiment: a better message can
-		// print some of the stats to document partial imports
-		//cerr << i->second->value("path") << ": import FAILED: " << e.what() << endl;
-		nag::warning("import FAILED: %s", e.what());
-		// Still process what we've got so far
-		next.process(results, name);
-		throw;
-	}
+    try {
+        ds.query_data(Matcher(), [&](unique_ptr<Metadata> md) { return this->eat(move(md)); });
+    } catch (std::exception& e) {
+        // FIXME: this is a quick experiment: a better message can
+        // print some of the stats to document partial imports
+        //cerr << i->second->value("path") << ": import FAILED: " << e.what() << endl;
+        nag::warning("import FAILED: %s", e.what());
+        // Still process what we've got so far
+        next.process(results, name);
+        throw;
+    }
 
 	// Process the resulting annotated metadata as a dataset
 	next.process(results, name);

@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2007--2015  Enrico Zini <enrico@enricozini.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- */
-
 #include <arki/types/tests.h>
 #include <arki/dataset.h>
 #include <arki/dataset/http.h>
@@ -78,20 +60,18 @@ void to::test<2>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-    metadata::Collection mdc;
-
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+    metadata::Collection mdc(*testds, Matcher::parse("origin:GRIB1,200"));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), false), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,80"));
     ensure_equals(mdc.size(), 0u);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,98"), false), mdc);
+    mdc.add(*testds, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 0u);
 }
 
@@ -101,9 +81,7 @@ void to::test<3>()
 {
     dataset::HTTP::readConfig("http://localhost:7117", config);
     unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test200")));
-    metadata::Collection mdc;
-
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true), mdc);
+    metadata::Collection mdc(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), true));
     ensure_equals(mdc.size(), 1u);
 
     // Check that the source record that comes out is ok
@@ -111,7 +89,7 @@ void to::test<3>()
     wassert(actual(mdc[0].getData().size()) == 7218);
 
     mdc.clear();
-    testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true), mdc);
+    mdc.add(*testds, dataset::DataQuery(Matcher::parse("origin:GRIB1,80"), true));
     ensure_equals(mdc.size(), 0u);
 
     // Try again, but let ProcessorMaker build the query
@@ -171,7 +149,7 @@ void to::test<6>()
     metadata::Collection mdc;
     htd->produce_one_wrong_query();
     try {
-        testds->queryData(dataset::DataQuery(Matcher::parse("origin:GRIB1,200"), false), mdc);
+        mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
         ensure(false);
     } catch (std::exception& e) {
         ensure_not_contains(e.what(), "<html>");
@@ -225,9 +203,7 @@ void to::test<8>()
     cfg.setValue("path", "http://localhost:7117");
     cfg.setValue("qmacro", "test200");
     unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(cfg));
-    metadata::Collection mdc;
-
-    testds->queryData(dataset::DataQuery(Matcher(), false), mdc);
+    metadata::Collection mdc(*testds, Matcher());
     ensure_equals(mdc.size(), 1u);
     // Check that the source record that comes out is ok
     wassert(actual_type(mdc[0].source()).is_source_url("grib1", "http://localhost:7117/dataset/test200/query"));
@@ -290,22 +266,14 @@ void to::test<11>()
         cfg.setValue("postprocess", "cat,echo,say,checkfiles,error,outthenerr");
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
 
-        struct Writer : public metadata::Eater
-        {
-            string& out;
-            Writer(string& out) : out(out) {}
-            bool eat(unique_ptr<Metadata>&& md) override
-            {
-                md->makeInline();
-                out += md->encodeBinary();
-                const auto& data = md->getData();
-                out.append((const char*)data.data(), data.size());
-                return true;
-            }
-        } writer(plain);
-
         DataQuery dq(Matcher::parse(""), true);
-        ds->queryData(dq, writer);
+        ds->query_data(dq, [&](unique_ptr<Metadata> md) {
+            md->makeInline();
+            plain += md->encodeBinary();
+            const auto& data = md->getData();
+            plain.append((const char*)data.data(), data.size());
+            return true;
+        });
     }
 
     // Capture the data after going through the postprocessor

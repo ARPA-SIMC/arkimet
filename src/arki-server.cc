@@ -690,22 +690,12 @@ struct InboundHandler : public LocalHandler
             res << "Contents of " << *file << ":" << endl;
             res << "<pre>" << endl;
 
-            struct Printer : public metadata::Eater
-            {
-                ostream& str;
-                Formatter* f;
-
-                Printer(ostream& str) : str(str), f(Formatter::create()) { }
-                ~Printer() { delete f; }
-
-                bool eat(unique_ptr<Metadata>&& md) override
-                {
-                    md->writeYaml(str, f);
-                    str << endl;
-                    return true;
-                }
-            } printer(res);
-            ds->queryData(dataset::DataQuery(Matcher::parse("")), printer);
+            unique_ptr<Formatter> f = Formatter::create();
+            ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+                md->writeYaml(res, f.get());
+                res << endl;
+                return true;
+            });
 
             res << "</pre>" << endl;
             res << "</body></html>" << endl;
@@ -736,43 +726,30 @@ struct InboundHandler : public LocalHandler
             unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
             stringstream res;
-
-            struct Simulator : public metadata::Eater
-            {
-                TestDispatcher td;
-                ostream& str;
-                Formatter* f;
-
-                Simulator(const ConfigFile& cfg, ostream& str)
-                    : td(cfg, str), str(str), f(Formatter::create()) { }
-                ~Simulator() { delete f; }
-
-                bool eat(unique_ptr<Metadata>&& md) override
-                {
-                    str << "<dt><pre>" << endl;
-                    md->writeYaml(str, f);
-                    str << "</pre></dt><dd><pre>" << endl;
-                    metadata::Collection mdc;
-                    Dispatcher::Outcome res = td.dispatch(move(md), mdc);
-                    str << "</pre>" << endl;
-                    switch (res)
-                    {
-                        case Dispatcher::DISP_OK: str << "<b>Imported ok</b>"; break;
-                        case Dispatcher::DISP_DUPLICATE_ERROR: str << "<b>Imported as duplicate</b>"; break;
-                        case Dispatcher::DISP_ERROR: str << "<b>Imported as error</b>"; break;
-                        case Dispatcher::DISP_NOTWRITTEN: str << "<b>Not imported anywhere: do not delete the original</b>"; break;
-                        default: str << "<b>Unknown outcome</b>"; break;
-                    }
-                    str << "</dd>" << endl;
-                    return true;
-                }
-            } simulator(importcfg, res);
-
             res << "<html><body>" << endl;
             res << "Simulation of import of " << *file << ":" << endl;
             res << "<dl>" << endl;
 
-            ds->queryData(dataset::DataQuery(Matcher::parse("")), simulator);
+            TestDispatcher td(importcfg, res);
+            unique_ptr<Formatter> f = Formatter::create();
+            ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+                res << "<dt><pre>" << endl;
+                md->writeYaml(res, f.get());
+                res << "</pre></dt><dd><pre>" << endl;
+                metadata::Collection mdc;
+                Dispatcher::Outcome outcome = td.dispatch(move(md), mdc);
+                res << "</pre>" << endl;
+                switch (outcome)
+                {
+                    case Dispatcher::DISP_OK: res << "<b>Imported ok</b>"; break;
+                    case Dispatcher::DISP_DUPLICATE_ERROR: res << "<b>Imported as duplicate</b>"; break;
+                    case Dispatcher::DISP_ERROR: res << "<b>Imported as error</b>"; break;
+                    case Dispatcher::DISP_NOTWRITTEN: res << "<b>Not imported anywhere: do not delete the original</b>"; break;
+                    default: res << "<b>Unknown outcome</b>"; break;
+                }
+                res << "</dd>" << endl;
+                return true;
+            });
 
             res << "</dl>" << endl;
             res << "</body></html>" << endl;

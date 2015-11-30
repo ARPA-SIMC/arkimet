@@ -25,12 +25,6 @@ bool MakeAbsolute::eat(unique_ptr<Metadata>&& md)
     return next.eat(move(md));
 }
 
-bool MakeURL::eat(std::unique_ptr<Metadata>&& md)
-{
-    md->set_source(Source::createURL(md->source().format, url));
-    return next.eat(move(md));
-}
-
 }
 }
 }

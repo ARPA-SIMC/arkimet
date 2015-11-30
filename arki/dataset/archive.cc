@@ -410,11 +410,11 @@ Archive* Archives::lookup(const std::string& name)
 
 void Archives::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		i->second->queryData(q, consumer);
-	if (m_last)
-		m_last->queryData(q, consumer);
+    for (map<string, Archive*>::iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
+        i->second->query_data(q, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
+    if (m_last)
+        m_last->query_data(q, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
 }
 
 void Archives::queryBytes(const dataset::ByteQuery& q, std::ostream& out)

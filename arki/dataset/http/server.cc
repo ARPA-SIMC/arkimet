@@ -41,15 +41,6 @@ void StreamHeaders::sendIfNotFired()
     if (!fired) operator()();
 }
 
-MetadataStreamer::MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
-
-bool MetadataStreamer::eat(unique_ptr<Metadata>&& md)
-{
-    sh.sendIfNotFired();
-    md->write(sh.req.sock, "socket");
-    return true;
-}
-
 
 LegacySummaryParams::LegacySummaryParams()
 {
@@ -287,11 +278,14 @@ void ReadonlyDatasetServer::do_queryData(const QueryDataParams& parms, net::http
     // Response header generator
     StreamHeaders headers(req, dsname);
     headers.ext = "arkimet";
-    MetadataStreamer cons(headers);
     DataQuery dq;
     parms.set_into(dq);
 // TODO: hook here something that makes absolute BLOB sources or Inline sources depending on sq.with_data
-    ds.queryData(dq, cons);
+    ds.query_data(dq, [&](unique_ptr<Metadata> md) {
+        headers.sendIfNotFired();
+        md->write(headers.req.sock, "socket");
+        return true;
+    });
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();

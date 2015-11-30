@@ -51,8 +51,11 @@ void InboundServer::do_scan(const InboundParams& parms, net::http::Request& req)
     StreamHeaders headers(req, str::basename(*parms.file));
     headers.ext = "arkimet";
 
-    MetadataStreamer cons(headers);
-    ds->queryData(dataset::DataQuery(Matcher::parse("")), cons);
+    ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        headers.sendIfNotFired();
+        md->write(headers.req.sock, "socket");
+        return true;
+    });
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();
@@ -81,35 +84,44 @@ void InboundServer::do_testdispatch(const InboundParams& parms, net::http::Reque
     // Build a dataset to scan the file
     unique_ptr<ReadonlyDataset> ds(dataset::File::create(*info));
 
-    struct Simulator : public metadata::Eater
-    {
-        TestDispatcher td;
-        stringstream str;
+    stringstream str;
+    TestDispatcher td(import_config, str);
 
-        Simulator(const ConfigFile& cfg)
-            : td(cfg, str) {}
-
-        bool eat(unique_ptr<Metadata>&& md) override
+    ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        metadata::Collection mdc;
+        /*Dispatcher::Outcome res =*/ td.dispatch(move(md), mdc);
+        /*
+        switch (res)
         {
-            metadata::Collection mdc;
-            /*Dispatcher::Outcome res =*/ td.dispatch(move(md), mdc);
-            /*
-            switch (res)
-            {
-                case Dispatcher::DISP_OK: str << "<b>Imported ok</b>"; break;
-                case Dispatcher::DISP_DUPLICATE_ERROR: str << "<b>Imported as duplicate</b>"; break;
-                case Dispatcher::DISP_ERROR: str << "<b>Imported as error</b>"; break;
-                case Dispatcher::DISP_NOTWRITTEN: str << "<b>Not imported anywhere: do not delete the original</b>"; break;
-                default: str << "<b>Unknown outcome</b>"; break;
-            }
-            */
-            return true;
+            case Dispatcher::DISP_OK: str << "<b>Imported ok</b>"; break;
+            case Dispatcher::DISP_DUPLICATE_ERROR: str << "<b>Imported as duplicate</b>"; break;
+            case Dispatcher::DISP_ERROR: str << "<b>Imported as error</b>"; break;
+            case Dispatcher::DISP_NOTWRITTEN: str << "<b>Not imported anywhere: do not delete the original</b>"; break;
+            default: str << "<b>Unknown outcome</b>"; break;
         }
-    } simulator(import_config);
+        */
+        return true;
+    });
 
-    ds->queryData(dataset::DataQuery(Matcher::parse("")), simulator);
+    req.send_result(str.str(), "text/plain", str::basename(*parms.file) + ".log");
+}
 
-    req.send_result(simulator.str.str(), "text/plain", str::basename(*parms.file) + ".log");
+namespace {
+
+struct MetadataStreamer : public metadata::Eater
+{
+    StreamHeaders& sh;
+
+    MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
+
+    bool eat(std::unique_ptr<Metadata>&& md) override
+    {
+        sh.sendIfNotFired();
+        md->write(sh.req.sock, "socket");
+        return true;
+    }
+};
+
 }
 
 void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& req)
@@ -141,37 +153,26 @@ void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& 
 
     MetadataStreamer cons(headers);
 
-    struct Worker : public metadata::Eater
-    {
-        RealDispatcher d;
-        metadata::Eater& cons;
-        bool all_ok;
-
-        Worker(const ConfigFile& cfg, metadata::Eater& cons)
-            : d(cfg), cons(cons), all_ok(true) { }
-
-        bool eat(unique_ptr<Metadata>&& md) override
+    RealDispatcher d(import_config);
+    bool all_ok = true;
+    ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
+        Dispatcher::Outcome res = d.dispatch(move(md), cons);
+        switch (res)
         {
-            Dispatcher::Outcome res = d.dispatch(move(md), cons);
-            switch (res)
-            {
-                case Dispatcher::DISP_OK:
-                case Dispatcher::DISP_DUPLICATE_ERROR:
-                    break;
-                case Dispatcher::DISP_ERROR:
-                case Dispatcher::DISP_NOTWRITTEN:
-                default:
-                    all_ok = false;
-                    break;
-            }
-            return true;
+            case Dispatcher::DISP_OK:
+            case Dispatcher::DISP_DUPLICATE_ERROR:
+                break;
+            case Dispatcher::DISP_ERROR:
+            case Dispatcher::DISP_NOTWRITTEN:
+            default:
+                all_ok = false;
+                break;
         }
-    } worker(import_config, cons);
-
-    ds->queryData(dataset::DataQuery(Matcher::parse("")), worker);
+        return true;
+    });
 
     // Delete fname if all was ok
-    if (worker.all_ok)
+    if (all_ok)
         sys::unlink(fname);
 
     // If we had empty output, headers were not sent: catch up

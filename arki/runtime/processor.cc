@@ -71,21 +71,26 @@ struct DataProcessor : public DatasetProcessor
     {
         if (data_inline)
         {
-            utils::ds::MakeInline inliner(*printer);
-            ds.queryData(query, inliner);
+            ds.query_data(query, [&](unique_ptr<Metadata> md) { md->makeInline(); return printer->eat(move(md)); });
         } else if (server_side) {
             map<string, string>::const_iterator iurl = ds.cfg.find("url");
             if (iurl == ds.cfg.end())
             {
-                utils::ds::MakeAbsolute absoluter(*printer);
-                ds.queryData(query, absoluter);
+                ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                    md->make_absolute();
+                    return printer->eat(move(md));
+                });
             } else {
-                utils::ds::MakeURL urler(*printer, iurl->second);
-                ds.queryData(query, urler);
+                ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                    md->set_source(types::Source::createURL(md->source().format, iurl->second));
+                    return printer->eat(move(md));
+                });
             }
         } else {
-            utils::ds::MakeAbsolute absoluter(*printer);
-            ds.queryData(query, absoluter);
+            ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                md->make_absolute();
+                return printer->eat(move(md));
+            });
         }
     }
 

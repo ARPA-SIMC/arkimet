@@ -196,26 +196,12 @@ TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const
 {
 }
 
-namespace {
-struct MetadataSpy : public metadata::Eater
-{
-    TargetfileSpy& tfs;
-    metadata::Eater& next;
-
-    MetadataSpy(TargetfileSpy& tfs, metadata::Eater& next) : tfs(tfs), next(next) {}
-
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
-        tfs.redirect(*md);
-        return next.eat(move(md));
-    }
-};
-}
-
 void TargetfileSpy::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	MetadataSpy spy(*this, consumer);
-	ds.queryData(q, spy);
+    ds.query_data(q, [&](unique_ptr<Metadata> md) {
+        redirect(*md);
+        return consumer.eat(move(md));
+    });
 }
 
 void TargetfileSpy::querySummary(const Matcher& matcher, Summary& summary)

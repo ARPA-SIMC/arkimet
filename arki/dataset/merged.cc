@@ -95,20 +95,6 @@ public:
 
 class MetadataReader
 {
-protected:
-    struct Consumer : public metadata::Eater
-    {
-        SyncBuffer& buf;
-
-        Consumer(SyncBuffer& buf) : buf(buf) {}
-
-        bool eat(std::unique_ptr<Metadata>&& md) override
-        {
-            buf.push(move(md));
-            return true;
-        }
-    };
-
 public:
     ReadonlyDataset* dataset = 0;
     const DataQuery* query = 0;
@@ -123,8 +109,10 @@ public:
         try {
             if (!query)
                 throw wibble::exception::Consistency("executing query in subthread", "no query has been set");
-            Consumer cons(mdbuf);
-            dataset->queryData(*query, cons);
+            dataset->query_data(*query, [&](unique_ptr<Metadata> md) {
+                mdbuf.push(move(md));
+                return true;
+            });
             mdbuf.done();
         } catch (std::exception& e) {
             mdbuf.done();
@@ -180,12 +168,12 @@ void Merged::addDataset(ReadonlyDataset& ds)
 
 void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 {
-	// Handle the trivial case of only one dataset
-	if (datasets.size() == 1)
-	{
-		datasets[0]->queryData(q, consumer);
-		return;
-	}
+    // Handle the trivial case of only one dataset
+    if (datasets.size() == 1)
+    {
+        datasets[0]->query_data(q, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
+        return;
+    }
 
     vector<MetadataReader> readers(datasets.size());
     vector<std::thread> threads;
