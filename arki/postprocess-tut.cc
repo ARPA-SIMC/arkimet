@@ -81,15 +81,16 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
-    p.set_output(str);
+    p.set_output(out);
     p.start();
 
     produceGRIB(p);
     p.flush();
+    out.close();
 
-    ensure_equals(str.str(), "44964\n");
+    ensure_equals(sys::read_file(out.name()), "44964\n");
 }
 
 // Test actually sending some data
@@ -117,30 +118,32 @@ void to::test<4>()
     }
 
     // Get the postprocessed data
-    stringstream postprocessed;
+    sys::File out(sys::File::mkstemp("test"));
     Postprocess p("cat");
-    p.set_output(postprocessed);
+    p.set_output(out);
     p.start();
     scan::scan("inbound/test.grib1", p);
     p.flush();
+    out.close();
 
-    wassert(actual(plain) == postprocessed.str());
+    wassert(actual(sys::read_file(out.name())) == plain);
 }
 
 // Try to shift a sizeable chunk of data to the postprocessor
 template<> template<>
 void to::test<5>()
 {
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     Postprocess p("countbytes");
-    p.set_output(str);
+    p.set_output(out);
     p.start();
 
     for (unsigned i = 0; i < 128; ++i)
         produceGRIB(p);
     p.flush();
+    out.close();
 
-    ensure_equals(str.str(), "5755392\n");
+    wassert(actual(sys::read_file(out.name())) == "5755392\n");
 }
 
 // Try to shift a sizeable chunk of data out of the postprocessor

@@ -364,8 +364,6 @@ struct TestDataset
 
         // Then do a postprocessed query_bytes
 
-        // Send the script error to stderr. Use dup() because PosixBuf will
-        // close its file descriptor at destruction time
         dataset::ByteQuery bq;
         bq.setPostprocess(td.test_data[0].matcher, "testcountbytes");
         ds->query_bytes(bq, 2);

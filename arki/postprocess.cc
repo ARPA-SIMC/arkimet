@@ -9,7 +9,6 @@
 #include <arki/wibble/regexp.h>
 #include <arki/wibble/sys/childprocess.h>
 #include <arki/wibble/sys/process.h>
-#include <arki/wibble/stream/posix.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -216,13 +215,6 @@ Postprocess::~Postprocess()
 void Postprocess::set_output(int outfd)
 {
     m_child->m_nextfd = outfd;
-}
-
-void Postprocess::set_output(std::ostream& out)
-{
-    m_child->m_out = &out;
-    if (wibble::stream::PosixBuf* ps = dynamic_cast<wibble::stream::PosixBuf*>(out.rdbuf()))
-        m_child->m_nextfd = ps->fd();
 }
 
 void Postprocess::set_error(std::ostream& err)

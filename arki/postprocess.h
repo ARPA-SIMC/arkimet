@@ -72,16 +72,6 @@ public:
     /// Set the output file descriptor where we send data coming from the postprocessor
     void set_output(int outfd);
 
-    /**
-     * Set the output stream where we send data coming from the postprocessor
-     *
-     * It tries to get a file descriptor out of the stream with any known
-     * method (so far it's only by checking if the underlying streambuf is a
-     * wibble::stream::PosixBuf). If it can, and the spice(2) syscall is
-     * available, it copies the data more efficiently
-     */
-    void set_output(std::ostream& out);
-
     /// Set the output stream where we send the postprocessor stderr
     void set_error(std::ostream& err);
 

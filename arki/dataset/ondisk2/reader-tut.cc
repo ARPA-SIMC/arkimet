@@ -37,8 +37,6 @@ void to::test<1>()
     unique_ptr<ondisk2::Reader> reader(new ondisk2::Reader(s.cfg));
     ensure(reader->hasWorkingIndex());
 
-    // Send the script error to stderr. Use dup() because PosixBuf will
-    // close its file descriptor at destruction time
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
     reader->query_bytes(bq, 2);
