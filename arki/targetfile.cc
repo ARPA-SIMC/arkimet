@@ -196,11 +196,11 @@ TargetfileSpy::TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const
 {
 }
 
-void TargetfileSpy::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void TargetfileSpy::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     ds.query_data(q, [&](unique_ptr<Metadata> md) {
         redirect(*md);
-        return consumer.eat(move(md));
+        return dest(move(md));
     });
 }
 

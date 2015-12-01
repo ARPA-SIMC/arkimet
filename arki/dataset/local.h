@@ -55,8 +55,6 @@ protected:
 	std::string m_path;
     mutable Archives* m_archive;
 
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
-
 public:
 	Local(const ConfigFile& cfg);
 	~Local();
@@ -67,7 +65,10 @@ public:
 	// Return the dataset path
 	const std::string& path() const { return m_path; }
 
-    // Base implementations that query the archives if they exist
+    // Base implementations that queries the archives if they exist
+    void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest) override;
+
+    // Base implementations that queries the archives if they exist
     void querySummary(const Matcher& matcher, Summary& summary) override;
 
     /**

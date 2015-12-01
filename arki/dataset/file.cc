@@ -133,51 +133,49 @@ IfstreamFile::~IfstreamFile()
 	}
 }
 
-void File::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void File::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	scan(q, consumer);
+    scan(q, dest);
 }
 
 void File::querySummary(const Matcher& matcher, Summary& summary)
 {
-    metadata::SummarisingEater summariser(summary);
-    scan(DataQuery(matcher), summariser);
+    scan(DataQuery(matcher), [&](unique_ptr<Metadata> md) { summary.add(*md); return true; });
+}
+
+static shared_ptr<sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
+{
+    // Wrap with a stream sorter if we need sorting
+    shared_ptr<sort::Stream> sorter;
+    if (q.sorter)
+    {
+        sorter.reset(new sort::Stream(*q.sorter, dest));
+        dest = [sorter](unique_ptr<Metadata> md) { return sorter->add(move(md)); };
+    }
+
+    dest = [dest, &q](unique_ptr<Metadata> md) {
+        // And filter using the query matcher
+        if (!q.matcher(*md)) return true;
+        return dest(move(md));
+    };
+
+    return sorter;
 }
 
 ArkimetFile::ArkimetFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 ArkimetFile::~ArkimetFile() {}
-void ArkimetFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
+void ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	metadata::Eater* c = &consumer;
-	// Order matters here, as delete will happen in reverse order
-	unique_ptr<sort::Stream> sorter;
-
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
-
-
-    metadata::FilteredEater mf(q.matcher, *c);
-    Metadata::readFile(*m_file, m_pathname, mf);
-
-	if (sorter.get()) sorter->flush();
+    auto sorter = wrap_with_query(q, dest);
+    Metadata::read_file(*m_file, m_pathname, dest);
+    if (sorter) sorter->flush();
 }
 
 YamlFile::YamlFile(const ConfigFile& cfg) : IfstreamFile(cfg) {}
 YamlFile::~YamlFile() {}
-void YamlFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
+void YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	metadata::Eater* c = &consumer;
-	// Order matters here, as delete will happen in reverse order
-	unique_ptr<sort::Stream> sorter;
-
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
+    auto sorter = wrap_with_query(q, dest);
 
     while (true)
     {
@@ -186,10 +184,10 @@ void YamlFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
             break;
         if (!q.matcher(*md))
             continue;
-        c->eat(move(md));
+        if (!dest(move(md))) break;
     }
 
-	if (sorter.get()) sorter->flush();
+    if (sorter) sorter->flush();
 }
 
 RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
@@ -198,19 +196,11 @@ RawFile::RawFile(const ConfigFile& cfg) : File(cfg)
 
 RawFile::~RawFile() {}
 
-void RawFile::scan(const dataset::DataQuery& q, metadata::Eater& consumer)
+void RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	metadata::Eater* c = &consumer;
-	unique_ptr<sort::Stream> sorter;
-
-	if (q.sorter)
-	{
-		sorter.reset(new sort::Stream(*q.sorter, *c));
-		c = sorter.get();
-	}
-
-    metadata::FilteredEater mf(q.matcher, *c);
-	scan::scan(m_pathname, mf, m_format);
+    auto sorter = wrap_with_query(q, dest);
+    scan::scan(m_pathname, dest, m_format);
+    if (sorter) sorter->flush();
 }
 
 }

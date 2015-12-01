@@ -99,36 +99,14 @@ void Manifest::querySummaries(const Matcher& matcher, Summary& summary)
 	}
 }
 
-namespace {
-// Tweak Blob sources replacing basedir and prepending a directory to the file name
-struct FixSource : public metadata::Eater
+void Manifest::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    string basedir;
-    string prepend_fname;
-    metadata::Eater& next;
+    vector<string> files;
+    fileList(q.matcher, files);
 
-    FixSource(metadata::Eater& next) : next(next) {}
+    // TODO: does it make sense to check with the summary first?
 
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
-        if (const source::Blob* s = md->has_source_blob())
-            md->set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
-        return next.eat(move(md));
-    }
-};
-}
-
-void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
-{
-	vector<string> files;
-	fileList(q.matcher, files);
-
-	// TODO: does it make sense to check with the summary first?
-
-    metadata::Eater* c = &consumer;
-    // Order matters here, as delete will happen in reverse order
     shared_ptr<sort::Compare> compare;
-
     if (q.sorter)
         compare = q.sorter;
     else
@@ -136,20 +114,29 @@ void Manifest::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
         // not been sorted before archiving
         compare = sort::Compare::parse("reftime");
 
+    sort::Stream sorter(*compare, dest);
+
     string absdir = sys::abspath(m_path);
-    sort::Stream sorter(*compare, *c);
-    //ds::MakeAbsolute mkabs(sorter);
-    FixSource fs(sorter);
-    fs.basedir = absdir;
-    metadata::FilteredEater filter(q.matcher, fs);
+    string prepend_fname;
+
+    metadata_dest_func fixed_dest = [&](unique_ptr<Metadata> md) {
+        // Filter using the matcher in the query
+        if (!q.matcher(*md)) return true;
+
+        // Tweak Blob sources replacing basedir and prepending a directory to the file name
+        if (const source::Blob* s = md->has_source_blob())
+            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+        return sorter.add(move(md));
+    };
+
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
-        fs.prepend_fname = str::dirname(*i);
+        prepend_fname = str::dirname(*i);
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
         // This generates filenames relative to the metadata
         // We need to use absdir as the dirname, and prepend dirname(*i) to the filenames
-        scan::scan(absdir, *i, filter);
+        scan::scan(absdir, *i, fixed_dest);
         sorter.flush();
     }
 }
@@ -208,7 +195,24 @@ struct NthFilter : public metadata::Eater
     }
     bool produced() const { return idx == 0; }
 };
+// Tweak Blob sources replacing basedir and prepending a directory to the file name
+struct FixSource : public metadata::Eater
+{
+    string basedir;
+    string prepend_fname;
+    metadata::Eater& next;
+
+    FixSource(metadata::Eater& next) : next(next) {}
+
+    bool eat(unique_ptr<Metadata>&& md) override
+    {
+        if (const source::Blob* s = md->has_source_blob())
+            md->set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+        return next.eat(move(md));
+    }
+};
 }
+
 
 size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
 {

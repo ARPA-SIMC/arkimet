@@ -473,9 +473,9 @@ void Contents::build_md(Query& q, Metadata& md) const
     }
 }
 
-bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) const
+bool Contents::query(const dataset::DataQuery& q, metadata_dest_func dest) const
 {
-	string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
+    string query = "SELECT m.id, m.format, m.file, m.offset, m.size, m.notes, m.reftime";
 
 	if (m_uniques) query += ", m.uniq";
 	if (m_others) query += ", m.other";
@@ -550,14 +550,14 @@ bool Contents::query(const dataset::DataQuery& q, metadata::Eater& consumer) con
     if (tmpfile.get() != 0)
     {
         metadata::ReadContext rc(tmpfile->name(), m_root);
-        Metadata::readFile(rc, consumer);
+        Metadata::read_file(rc, dest);
     }
 
     // Sort and output the rest
     if (q.sorter) mdbuf.sort(*q.sorter);
 
     // pass it to consumer
-    mdbuf.move_to_eater(consumer);
+    mdbuf.move_to(dest);
 
 //fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());

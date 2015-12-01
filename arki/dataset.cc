@@ -53,22 +53,6 @@ void WritableDataset::flush() {}
 
 Pending WritableDataset::test_writelock() { return Pending(); }
 
-void ReadonlyDataset::query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest)
-{
-#warning temporary implementation: make this purely abstract and locally implement the one with the eater instead
-    struct ToDest : public metadata::Eater
-    {
-        std::function<bool(unique_ptr<Metadata>)> dest;
-        ToDest(std::function<bool(unique_ptr<Metadata>)> dest) : dest(dest) {}
-
-        bool eat(std::unique_ptr<Metadata>&& md) override
-        {
-            return dest(move(md));
-        }
-    } eater(dest);
-    queryData(q, eater);
-}
-
 void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
 {
     switch (q.type)

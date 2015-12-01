@@ -50,19 +50,14 @@ protected:
 	TargetFile* m_tf;
 
     // Query only the data in the dataset, without the archives
-    void queryLocalData(const dataset::DataQuery& q, metadata::Eater& consumer);
-
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void queryLocalData(const dataset::DataQuery& q, metadata_dest_func dest);
 
 public:
 	// Initialise the dataset with the information from the configuration in 'cfg'
 	Reader(const ConfigFile& cfg);
 	virtual ~Reader();
 
-    /**
-     * Query the dataset using the given matcher, and sending the results to
-     * the metadata consumer.
-     */
+    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     size_t produce_nth(metadata::Eater& cons, size_t idx=0) override;
 

@@ -604,6 +604,12 @@ void Metadata::readFile(const std::string& fname, metadata::Eater& mdc)
     readFile(context, mdc);
 }
 
+void Metadata::read_file(const std::string& fname, metadata_dest_func dest)
+{
+    metadata::ReadContext context(fname);
+    read_file(context, dest);
+}
+
 void Metadata::readFile(const metadata::ReadContext& file, metadata::Eater& mdc)
 {
     // Read all the metadata
@@ -617,7 +623,25 @@ void Metadata::readFile(const metadata::ReadContext& file, metadata::Eater& mdc)
     in.close();
 }
 
+void Metadata::read_file(const metadata::ReadContext& file, metadata_dest_func dest)
+{
+    // Read all the metadata
+    std::ifstream in;
+    in.open(file.pathname.c_str(), ios::in);
+    if (!in.is_open() || in.fail())
+        throw wibble::exception::File(file.pathname, "opening file for reading");
+
+    read_file(in, file, dest);
+
+    in.close();
+}
+
 void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc)
+{
+    read_file(in, file, [&](unique_ptr<Metadata> md) { return mdc.eat(move(md)); });
+}
+
+void Metadata::read_file(std::istream& in, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     bool canceled = false;
     vector<uint8_t> buf;
@@ -635,7 +659,7 @@ void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, met
         {
             // Handle metadata group
             iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
-            Metadata::readGroup(buf, version, file, mdc);
+            Metadata::read_group(buf, version, file, dest);
         } else {
             unique_ptr<Metadata> md(new Metadata);
             iotrace::trace_file(file.pathname, 0, 0, "read metadata");
@@ -644,12 +668,12 @@ void Metadata::readFile(std::istream& in, const metadata::ReadContext& file, met
             // If the source is inline, then the data follows the metadata
             if (md->source().style() == types::Source::INLINE)
                 md->readInlineData(in, file.pathname);
-            canceled = !mdc.eat(move(md));
+            canceled = !dest(move(md));
         }
     }
 }
 
-void Metadata::readGroup(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc)
+void Metadata::read_group(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest)
 {
     // Handle metadata group
     if (version != 0)
@@ -675,7 +699,7 @@ void Metadata::readGroup(const std::vector<uint8_t>& buf, unsigned version, cons
     {
         unique_ptr<Metadata> md(new Metadata);
         md->read(ibuf, ilen, iver, file);
-        canceled = !mdc.eat(move(md));
+        canceled = !dest(move(md));
     }
 }
 

@@ -106,7 +106,7 @@ void to::test<1>()
         OnlineArchive* a = dynamic_cast<OnlineArchive*>(arc.get());
         ensure(a);
         OrderCheck oc("reftime");
-        a->queryData(dataset::DataQuery(), oc);
+        a->query_data(dataset::DataQuery(), [&](unique_ptr<Metadata> md) { return oc.eat(move(md)); });
     }
 }
 

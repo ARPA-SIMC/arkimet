@@ -166,12 +166,12 @@ void Merged::addDataset(ReadonlyDataset& ds)
 	datasets.push_back(&ds);
 }
 
-void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void Merged::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     // Handle the trivial case of only one dataset
     if (datasets.size() == 1)
     {
-        datasets[0]->query_data(q, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
+        datasets[0]->query_data(q, dest);
         return;
     }
 
@@ -208,7 +208,7 @@ void Merged::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 		}
         // When there's nothing more to read, we exit
         if (minmd == 0) break;
-        consumer.eat(readers[minmd_idx].mdbuf.pop());
+        dest(readers[minmd_idx].mdbuf.pop());
     }
 
     // Collect all the results

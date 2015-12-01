@@ -257,6 +257,24 @@ bool Collection::move_to_eater(Eater& out)
     return true;
 }
 
+bool Collection::move_to(metadata_dest_func dest)
+{
+    // Ensure that at the end of this method we clear vals, deallocating all
+    // leftovers
+    ClearOnEnd coe(vals);
+
+    for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)
+    {
+        // Move the pointer to an unique_ptr
+        unique_ptr<Metadata> md(*i);
+        *i = 0;
+        // Pass it on to the eater
+        if (!dest(move(md)))
+            return false;
+    }
+    return true;
+}
+
 void Collection::strip_source_paths()
 {
     for (vector<Metadata*>::iterator i = vals.begin(); i != vals.end(); ++i)

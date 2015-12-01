@@ -31,12 +31,12 @@ struct arki_sort_shar {
 TESTGRP(arki_sort);
 
 namespace {
-void produce(int hour, int minute, int run, metadata::Eater& c)
+void produce(int hour, int minute, int run, sort::Stream& c)
 {
     unique_ptr<Metadata> md(new Metadata);
     md->set(Reftime::createPosition(Time(2008, 7, 6, hour, minute, 0)));
     md->set(Run::createMinute(run));
-    c.eat(move(md));
+    c.add(move(md));
 }
 
 vector<int> mdvals(const Metadata& md)
@@ -66,7 +66,7 @@ void to::test<1>()
 {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("hour:run,-reftime");
-    sort::Stream sorter(*cmp, mdc);
+    sort::Stream sorter(*cmp, [&](unique_ptr<Metadata> md) { return mdc.eat(move(md)); });
 
 	produce(0, 0, 10, sorter);
 	produce(0, 1, 9, sorter);
@@ -93,7 +93,7 @@ void to::test<2>()
 {
     metadata::Collection mdc;
     unique_ptr<sort::Compare> cmp = sort::Compare::parse("");
-    sort::Stream sorter(*cmp, mdc);
+    sort::Stream sorter(*cmp, [&](unique_ptr<Metadata> md) { return mdc.eat(move(md)); });
 
 	produce(1, 0, 8, sorter);
 	produce(1, 1, 9, sorter);
@@ -115,5 +115,3 @@ void to::test<2>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

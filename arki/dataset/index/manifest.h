@@ -86,7 +86,7 @@ public:
      */
     virtual void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
 
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
 

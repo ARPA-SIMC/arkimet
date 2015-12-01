@@ -34,13 +34,18 @@ using namespace arki::types;
 namespace arki {
 namespace scan {
 
-static void scan_metadata(const std::string& file, metadata::Eater& c)
+static void scan_metadata(const std::string& file, metadata_dest_func dest)
 {
     //cerr << "Reading cached metadata from " << file << endl;
-    Metadata::readFile(file, c);
+    Metadata::read_file(file, dest);
 }
 
-static bool scan_file(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Eater& c)
+static bool scan_file(
+        const std::string& pathname,
+        const std::string& basedir,
+        const std::string& relname,
+        const std::string& format,
+        metadata_dest_func dest)
 {
     // Scan the file
     if (isCompressed(pathname))
@@ -55,7 +60,7 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         {
             unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(move(md));
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -68,7 +73,7 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         {
             unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(move(md));
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -81,7 +86,7 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         {
             unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(move(md));
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -94,7 +99,7 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         {
             unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(move(md));
+            if (!dest(move(md))) break;
         }
         return true;
     }
@@ -107,12 +112,12 @@ static bool scan_file(const std::string& pathname, const std::string& basedir, c
         {
             unique_ptr<Metadata> md(new Metadata);
             if (!scanner.next(*md)) break;
-            c.eat(move(md));
+            if (!dest(move(md))) break;
         }
         return true;
     }
 #endif
-	return false;
+    return false;
 }
 
 static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
@@ -122,32 +127,7 @@ static bool dir_segment_fnames_lt(const std::string& a, const std::string& b)
     return na < nb;
 }
 
-namespace {
-
-struct DirSource : public metadata::Eater
-{
-   metadata::Eater& next;
-   const std::string& dirname;
-   size_t pos;
-
-   DirSource(metadata::Eater& next, const std::string& dirname) : next(next), dirname(dirname), pos(0) {}
-
-   void set_pos(size_t pos)
-   {
-       this->pos = pos;
-   }
-
-   bool eat(unique_ptr<Metadata>&& md) override
-   {
-       const source::Blob& i = md->sourceBlob();
-       md->set_source(Source::createBlob(i.format, i.basedir, dirname, pos, i.size));
-       return next.eat(move(md));
-   }
-};
-
-}
-
-static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata::Eater& c)
+static bool scan_dir(const std::string& pathname, const std::string& basedir, const std::string& relname, const std::string& format, metadata_dest_func dest)
 {
     // Collect all file names in the directory
     vector<std::string> fnames;
@@ -160,12 +140,16 @@ static bool scan_dir(const std::string& pathname, const std::string& basedir, co
     std::sort(fnames.begin(), fnames.end(), dir_segment_fnames_lt);
 
     // Scan them one by one
-    DirSource dirsource(c, relname);
+    size_t pos = 0;
     for (vector<string>::const_iterator i = fnames.begin(); i != fnames.end(); ++i)
     {
         //cerr << "SCAN " << *i << " " << pathname << " " << basedir << " " << relname << endl;
-        dirsource.set_pos(strtoul(i->c_str(), 0, 10));
-        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, dirsource))
+        pos = strtoul(i->c_str(), 0, 10);
+        if (!scan_file(str::joinpath(pathname, *i), basedir, relname, format, [&](unique_ptr<Metadata> md) {
+                   const source::Blob& i = md->sourceBlob();
+                   md->set_source(Source::createBlob(i.format, i.basedir, relname, pos, i.size));
+                   return dest(move(md));
+                }))
             return false;
 
     }
@@ -192,12 +176,26 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
     return scan(basedir, relname, c, format);
 }
 
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest)
+{
+    std::string format = guess_format(basedir, relname);
+
+    // If we cannot detect a format, fail
+    if (format.empty()) return false;
+    return scan(basedir, relname, dest, format);
+}
+
 bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c, const std::string& format)
+{
+    return scan(basedir, relname, [&](unique_ptr<Metadata> md) { return c.eat(move(md)); }, format);
+}
+
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format)
 {
     // If we scan standard input, assume uncompressed data and do not try to
     // look for an existing .metadata file
     if (relname == "-")
-        return scan_file(relname, basedir, relname, format, c);
+        return scan_file(relname, basedir, relname, format, dest);
 
     // stat the file (or its compressed version)
     string pathname = str::joinpath(basedir, relname);
@@ -214,12 +212,12 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
     if (st_md.get() and st_md->st_mtime >= st_file->st_mtime)
     {
         // If there is a usable metadata file, use it to save time
-        scan_metadata(md_pathname, c);
+        scan_metadata(md_pathname, dest);
         return true;
     } else if (S_ISDIR(st_file->st_mode)) {
-        return scan_dir(pathname, basedir, relname, format, c);
+        return scan_dir(pathname, basedir, relname, format, dest);
     } else {
-        return scan_file(pathname, basedir, relname, format, c);
+        return scan_file(pathname, basedir, relname, format, dest);
     }
 }
 
@@ -231,12 +229,28 @@ bool scan(const std::string& file, metadata::Eater& c)
     return scan(basedir, relname, c);
 }
 
+bool scan(const std::string& file, metadata_dest_func dest)
+{
+    string basedir;
+    string relname;
+    utils::files::resolve_path(file, basedir, relname);
+    return scan(basedir, relname, dest);
+}
+
 bool scan(const std::string& file, metadata::Eater& c, const std::string& format)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
     return scan(basedir, relname, c, format);
+}
+
+bool scan(const std::string& file, metadata_dest_func dest, const std::string& format)
+{
+    string basedir;
+    string relname;
+    utils::files::resolve_path(file, basedir, relname);
+    return scan(basedir, relname, dest, format);
 }
 
 bool canScan(const std::string& file)

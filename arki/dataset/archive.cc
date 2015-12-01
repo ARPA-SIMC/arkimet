@@ -94,9 +94,9 @@ void OnlineArchive::openRW()
     m_mft->openRW();
 }
 
-void OnlineArchive::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void OnlineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	m_mft->queryData(q, consumer);
+    m_mft->query_data(q, dest);
 }
 
 void OnlineArchive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
@@ -250,7 +250,7 @@ OfflineArchive::~OfflineArchive()
 {
 }
 
-void OfflineArchive::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void OfflineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     // If the matcher would match the summary, output some kind of note about it
 }
@@ -408,13 +408,13 @@ Archive* Archives::lookup(const std::string& name)
 	return i->second;
 }
 
-void Archives::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void Archives::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     for (map<string, Archive*>::iterator i = m_archives.begin();
             i != m_archives.end(); ++i)
-        i->second->query_data(q, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
+        i->second->query_data(q, dest);
     if (m_last)
-        m_last->query_data(q, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); });
+        m_last->query_data(q, dest);
 }
 
 void Archives::queryBytes(const dataset::ByteQuery& q, std::ostream& out)

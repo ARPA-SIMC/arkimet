@@ -181,13 +181,13 @@ public:
 	 */
 	std::string max_file_reftime(const std::string& relname) const;
 
-	/**
-	 * Query this index, returning metadata
-	 *
-	 * @return true if the index could be used for the query, false if the
-	 * query does not use the index and a full scan should be used instead
-	 */
-	bool query(const dataset::DataQuery& q, metadata::Eater& consumer) const;
+    /**
+     * Query this index, returning metadata
+     *
+     * @return true if the index could be used for the query, false if the
+     * query does not use the index and a full scan should be used instead
+     */
+    bool query(const dataset::DataQuery& q, metadata_dest_func dest) const;
 
 	/**
 	 * Query this index, returning a summary

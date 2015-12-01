@@ -109,10 +109,11 @@ public:
      */
     bool copy_to_eater(Eater& out) const;
 
-    /**
-     * Send all metadata to an eater, emptying this Collection
-     */
+    /// Send all metadata to an eater, emptying this Collection
     bool move_to_eater(Eater& out);
+
+    /// Send all metadata to a consumer function, emptying this Collection
+    bool move_to(metadata_dest_func dest);
 
     /**
      * Strip paths from sources in all Metadata, to make them all refer to a

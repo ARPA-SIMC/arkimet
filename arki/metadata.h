@@ -259,22 +259,21 @@ public:
     static std::unique_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
 
     /// Read all metadata from a file into the given consumer
-    static void readFile(const std::string& fname, metadata::Eater& mdc);
+    [[deprecated("use read_file instead")]] static void readFile(const std::string& fname, metadata::Eater& mdc);
+    static void read_file(const std::string& fname, metadata_dest_func dest);
 
-    /**
-     * Read all metadata from a file into the given consumer
-     */
-    static void readFile(const metadata::ReadContext& fname, metadata::Eater& mdc);
+    /// Read all metadata from a file into the given consumer
+    [[deprecated("use read_file instead")]] static void readFile(const metadata::ReadContext& fname, metadata::Eater& mdc);
+    static void read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
 
-    /**
-     * Read all metadata from a file into the given consumer
-     */
-    static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc);
+    /// Read all metadata from a file into the given consumer
+    [[deprecated("use read_file instead")]] static void readFile(std::istream& in, const metadata::ReadContext& file, metadata::Eater& mdc);
+    static void read_file(std::istream& in, const metadata::ReadContext& file, metadata_dest_func mdc);
 
     /**
      * Read a metadata group into the given consumer
      */
-    static void readGroup(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& file, metadata::Eater& mdc);
+    static void read_group(const std::vector<uint8_t>& buf, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
 
 	// LUA functions
 	/// Push to the LUA stack a userdata to access this Metadata

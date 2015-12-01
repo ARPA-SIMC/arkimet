@@ -179,7 +179,7 @@ void Stream::setEndOfPeriod(const types::Reftime& rt)
 //cerr << "Set end of period to " << endofperiod << endl;
 }
 
-bool Stream::eat(unique_ptr<Metadata>&& m)
+bool Stream::add(unique_ptr<Metadata> m)
 {
     const Reftime* rt = m->get<Reftime>();
     if (hasInterval && (!endofperiod.get() || !rt || rt->period_begin() > *endofperiod))
@@ -201,7 +201,7 @@ void Stream::flush()
     {
         unique_ptr<Metadata> md(*i);
         *i = 0;
-        nextConsumer.eat(move(md));
+        if (!next_dest(move(md))) break;
     }
 
     // Delete all leftover metadata, if any

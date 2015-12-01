@@ -4,6 +4,7 @@
 /// Format-independent metadata extraction and validation
 
 #include <arki/libconfig.h>
+#include <arki/defs.h>
 #include <vector>
 #include <string>
 #include <ctime>
@@ -28,6 +29,7 @@ namespace scan {
  * that is not supported or recognised.
  */
 bool scan(const std::string& file, metadata::Eater& c);
+bool scan(const std::string& file, metadata_dest_func dest);
 
 /**
  * Alternate version with explicit base dir.
@@ -36,6 +38,7 @@ bool scan(const std::string& file, metadata::Eater& c);
  * \a basedir as context.
  */
 bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c);
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest);
 
 /**
  * Scan the given file without format autodetection, sending its metadata to a
@@ -48,6 +51,7 @@ bool scan(const std::string& basedir, const std::string& relname, metadata::Eate
  * that is not supported or recognised.
  */
 bool scan(const std::string& file, metadata::Eater& c, const std::string& format);
+bool scan(const std::string& file, metadata_dest_func dest, const std::string& format);
 
 /**
  * Alternate version with explicit base dir.
@@ -56,6 +60,7 @@ bool scan(const std::string& file, metadata::Eater& c, const std::string& format
  * \a basedir as context.
  */
 bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c, const std::string& format);
+bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format);
 
 /**
  * Return true if the file looks like a file with data that can be scanned.

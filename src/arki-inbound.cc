@@ -103,7 +103,7 @@ int main(int argc, const char* argv[])
                     format = fname.substr(0, pos);
                     fname = fname.substr(pos+1);
                 }
-                inbound.scan(fname, format, *printer);
+                inbound.scan(fname, format, [&](unique_ptr<Metadata> md) { return printer->eat(move(md)); });
             }
         } else if (opts.do_test->isSet()) {
             while (opts.hasNext())

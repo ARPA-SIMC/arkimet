@@ -51,20 +51,18 @@ Reader::~Reader()
 	if (m_tf) delete m_tf;
 }
 
-void Reader::queryLocalData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void Reader::queryLocalData(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    if (!m_idx || !m_idx->query(q, consumer))
+    if (!m_idx || !m_idx->query(q, dest))
         throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
-void Reader::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	// Query the archives first
-	Local::queryData(q, consumer);
-
-	if (!m_idx) return;
-
-	queryLocalData(q, consumer);
+    // Query the archives first
+    Local::query_data(q, dest);
+    if (!m_idx) return;
+    queryLocalData(q, dest);
 }
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)

@@ -101,12 +101,11 @@ static void addToSummary(runtime::Input& in, Summary& s)
 			summary.read(buf, version, in.name());
 			s.add(summary);
 		}
-		else if (signature == "MG")
-		{
-            metadata::SummarisingEater sum(s);
-            Metadata::readGroup(buf, version, in.name(), sum);
-		}
-	}
+        else if (signature == "MG")
+        {
+            Metadata::read_group(buf, version, in.name(), [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
+        }
+    }
 }
 
 int main(int argc, const char* argv[])
@@ -290,12 +289,12 @@ int main(int argc, const char* argv[])
 				{
                     summary.read(buf, version, in.name());
                     writer.observe_summary(summary);
-				}
-				else if (signature == "MG")
-				{
-					Metadata::readGroup(buf, version, in.name(), writer);
-				}
-			}
+                }
+                else if (signature == "MG")
+                {
+                    Metadata::read_group(buf, version, in.name(), [&](unique_ptr<Metadata> md) { return writer.eat(move(md)); });
+                }
+            }
 // Uncomment as a quick hack to check memory usage at this point:
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
 //types::debug_intern_stats();

@@ -237,8 +237,8 @@ struct MDStreamState : public ReqState
 {
 	metadata::Stream mdc;
 
-    MDStreamState(http::CurlEasy& curl, metadata::Eater& consumer, const std::string& baseurl)
-        : ReqState(curl), mdc(consumer, baseurl)
+    MDStreamState(http::CurlEasy& curl, metadata_dest_func dest, const std::string& baseurl)
+        : ReqState(curl), mdc(dest, baseurl)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, MDStreamState::writefunc));
         checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
@@ -254,7 +254,7 @@ struct MDStreamState : public ReqState
 };
 
 
-void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void HTTP::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
     m_curl.reset();
 
@@ -281,8 +281,8 @@ void HTTP::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
 	// Size of postfields argument if it's non text
 	checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-	MDStreamState s(m_curl, consumer, m_baseurl);
-	// CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
+    MDStreamState s(m_curl, dest, m_baseurl);
+    // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
 	CURLcode code = curl_easy_perform(m_curl);
 	if (code != CURLE_OK)
@@ -536,7 +536,7 @@ void HTTPInbound::list(std::vector<std::string>& files)
         files.push_back(*i);
 }
 
-void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata::Eater& consumer)
+void HTTPInbound::scan(const std::string& fname, const std::string& format, metadata_dest_func dest)
 {
     m_curl.reset();
 
@@ -555,7 +555,7 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
     // Size of postfields argument if it's non text
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-    MDStreamState s(m_curl, consumer, m_baseurl);
+    MDStreamState s(m_curl, dest, m_baseurl);
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
     CURLcode code = curl_easy_perform(m_curl);
@@ -615,7 +615,7 @@ void HTTPInbound::dispatch(const std::string& fname, const std::string& format, 
     // Size of postfields argument if it's non text
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-    MDStreamState s(m_curl, consumer, m_baseurl);
+    MDStreamState s(m_curl, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); }, m_baseurl);
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
     CURLcode code = curl_easy_perform(m_curl);

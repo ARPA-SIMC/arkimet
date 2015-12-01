@@ -74,13 +74,9 @@ public:
 	HTTP(const ConfigFile& cfg);
 	virtual ~HTTP();
 
-	/**
-	 * Query the dataset using the given matcher, and sending the results to
-	 * the metadata consumer.
-	 */
-	virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
-	virtual void querySummary(const Matcher& matcher, Summary& summary);
-	virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
+    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    void querySummary(const Matcher& matcher, Summary& summary) override;
+    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 
@@ -127,7 +123,7 @@ public:
     void list(std::vector<std::string>& files);
 
     /// Scan a previously uploaded file
-    void scan(const std::string& fname, const std::string& format, metadata::Eater& consumer);
+    void scan(const std::string& fname, const std::string& format, metadata_dest_func dest);
 
     /// Run a testdispatch on a previously uploaded file
     void testdispatch(const std::string& fname, const std::string& format, std::ostream& out);

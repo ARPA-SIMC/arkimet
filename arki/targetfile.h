@@ -74,9 +74,9 @@ class TargetfileSpy : public ReadonlyDataset
 public:
 	TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const std::string& def);
 
-	void redirect(Metadata& md);
+    void redirect(Metadata& md);
 
-    virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer);
+    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest);
     virtual void querySummary(const Matcher& matcher, Summary& summary);
 };
 

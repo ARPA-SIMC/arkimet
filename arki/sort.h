@@ -2,6 +2,7 @@
 #define ARKI_SORT_H
 
 /// Sorting routines for metadata
+
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
 #include <arki/types/reftime.h>
@@ -73,11 +74,11 @@ struct STLCompare
     }
 };
 
-class Stream : public metadata::Eater
+class Stream
 {
 protected:
     const Compare& sorter;
-    metadata::Eater& nextConsumer;
+    metadata_dest_func next_dest;
     bool hasInterval;
     std::unique_ptr<types::Time> endofperiod;
     std::vector<Metadata*> buffer;
@@ -85,16 +86,16 @@ protected:
     void setEndOfPeriod(const types::Reftime& rt);
 
 public:
-    Stream(const Compare& sorter, metadata::Eater& nextConsumer)
-        : sorter(sorter), nextConsumer(nextConsumer)
-	{
-		hasInterval = sorter.interval() != Compare::NONE;
-	}
+    Stream(const Compare& sorter, metadata_dest_func next_dest)
+        : sorter(sorter), next_dest(next_dest)
+    {
+        hasInterval = sorter.interval() != Compare::NONE;
+    }
     ~Stream();
 
-    bool eat(std::unique_ptr<Metadata>&& md) override;
+    bool add(std::unique_ptr<Metadata> md);
 
-	void flush();
+    void flush();
 
 private:
     Stream(const Stream&);
@@ -103,6 +104,4 @@ private:
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

@@ -1,5 +1,4 @@
 #include "stream.h"
-#include "consumer.h"
 #include <arki/types/source/inline.h>
 #include <arki/utils/codec.h>
 
@@ -43,7 +42,7 @@ bool Stream::checkMetadata()
         state = DATA;
         return true;
     } else {
-        consumer.eat(move(md));
+        consumer(move(md));
         return true;
     }
 }
@@ -58,7 +57,7 @@ bool Stream::checkData()
     dataToGet = 0;
     state = METADATA;
     md->set_source_inline(md->source().format, move(buf));
-    consumer.eat(move(md));
+    consumer(move(md));
     return true;
 }
 

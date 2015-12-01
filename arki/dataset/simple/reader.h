@@ -28,12 +28,11 @@ class Reader : public SegmentedLocal
 protected:
     index::Manifest* m_mft;
 
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
-
 public:
     Reader(const ConfigFile& cfg);
     virtual ~Reader();
 
+    void query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     size_t produce_nth(metadata::Eater& cons, size_t idx=0) override;
 

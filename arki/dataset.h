@@ -140,13 +140,6 @@ struct ByteQuery : public DataQuery
 
 class ReadonlyDataset
 {
-protected:
-    /**
-     * Query the dataset using the given matcher, and sending the results to
-     * the metadata consumer.
-     */
-    [[deprecated("use query_data instead")]] virtual void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
-
 public:
 	// Configuration items (normally extracted from ConfigFile)
 	std::map<std::string, std::string> cfg;
@@ -157,7 +150,7 @@ public:
      * Query the dataset using the given matcher, and sending the results to
      * the given function
      */
-    virtual void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)> dest);
+    virtual void query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
 	/**
 	 * Add to summary the summary of the data that would be extracted with the

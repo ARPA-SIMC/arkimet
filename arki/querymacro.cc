@@ -42,15 +42,16 @@ static int arkilua_dataset(lua_State *L)
 
 static int arkilua_metadataconsumer(lua_State *L)
 {
-	Metadata* md = Metadata::lua_check(L, 1);
-	luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
+    Metadata* md = Metadata::lua_check(L, 1);
+    luaL_argcheck(L, md != NULL, 1, "`arki.metadata' expected");
 
-	int considx = lua_upvalueindex(1);
-	metadata::Eater* cons = (metadata::Eater*)lua_touserdata(L, considx);
+    int considx = lua_upvalueindex(1);
+    metadata_dest_func* cons = (metadata_dest_func*)lua_touserdata(L, considx);
 
-    // FIXME: make a copy here, until we review memory ownership for this case
+    // FIXME: this copy may not be needed, but before removing it we need to
+    // review memory ownership for this case
     unique_ptr<Metadata> copy(new Metadata(*md));
-    lua_pushboolean(L, cons->eat(move(copy)));
+    lua_pushboolean(L, (*cons)(move(copy)));
     return 1;
 }
 
@@ -150,28 +151,26 @@ ReadonlyDataset* Querymacro::dataset(const std::string& name)
 	return i->second;
 }
 
-void Querymacro::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-    metadata::Eater *c = &consumer;
+    if (funcid_querydata == -1) return;
 
-	if (funcid_querydata == -1) return;
+    // Retrieve the Lua function registered for this
+    lua_rawgeti(*L, LUA_REGISTRYINDEX, funcid_querydata);
 
-	// Retrieve the Lua function registered for this
-	lua_rawgeti(*L, LUA_REGISTRYINDEX, funcid_querydata);
+    // Pass DataQuery
+    lua_newtable(*L);
+    q.lua_push_table(*L, -1);
 
-	// Pass DataQuery
-	lua_newtable(*L);
-	q.lua_push_table(*L, -1);
-
-	// Push consumer C closure
-    unique_ptr<sort::Stream> sorter;
+    // Push consumer C closure
     if (q.sorter)
     {
-        sorter.reset(new sort::Stream(*q.sorter, *c));
-        c = sorter.get();
+        shared_ptr<sort::Stream> sorter(new sort::Stream(*q.sorter, dest));
+        dest = [sorter](unique_ptr<Metadata> md) { return sorter->add(move(md)); };
     }
-	lua_pushlightuserdata(*L, c);
-	lua_pushcclosure(*L, arkilua_metadataconsumer, 1);
+
+    lua_pushlightuserdata(*L, &dest);
+    lua_pushcclosure(*L, arkilua_metadataconsumer, 1);
 
 	// Call the function
 	if (lua_pcall(*L, 2, 0, 0))

@@ -43,15 +43,14 @@ protected:
 	std::string m_pathname;
 	std::string m_format;
 
-    void queryData(const dataset::DataQuery& q, metadata::Eater& consumer) override;
-
 public:
 	File(const ConfigFile& cfg);
 
 	const std::string& pathname() const { return m_pathname; }
 
-    virtual void scan(const dataset::DataQuery& q, metadata::Eater& consumer) = 0;
+    virtual void scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
 
+    void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
@@ -81,7 +80,7 @@ public:
 	ArkimetFile(const ConfigFile& cfg);
 	virtual ~ArkimetFile();
 
-    void scan(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
 
 class YamlFile : public IfstreamFile
@@ -91,7 +90,7 @@ public:
 	YamlFile(const ConfigFile& cfg);
 	virtual ~YamlFile();
 
-    void scan(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
 
 class RawFile : public File
@@ -101,7 +100,7 @@ public:
 	RawFile(const ConfigFile& cfg);
 	virtual ~RawFile();
 
-    void scan(const dataset::DataQuery& q, metadata::Eater& consumer) override;
+    void scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
 };
 
 }

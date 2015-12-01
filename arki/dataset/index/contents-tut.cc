@@ -77,6 +77,11 @@ struct arki_dataset_index_contents_shar {
 };
 TESTGRP(arki_dataset_index_contents);
 
+void query_index(WContents& idx, const dataset::DataQuery& q, metadata::Collection& dest)
+{
+    idx.query(q, [&](unique_ptr<Metadata> md) { return dest.eat(move(md)); });
+}
+
 // Trying indexing a few metadata
 template<> template<>
 void to::test<1>()
@@ -108,19 +113,19 @@ void to::test<1>()
 	ensure_equals(id, 2);
 	ensure_equals(test->id(md1), 2);
 
-	// Query various kinds of metadata
-	metadata::Collection mdc;
-	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1,200")), mdc);
-	ensure_equals(mdc.size(), 1u);
-	ensure_equals(mdc[0].notes().size(), 1u);
-	ensure_equals(mdc[0].notes()[0].content, "this is a test");
+    // Query various kinds of metadata
+    metadata::Collection mdc;
+    query_index(*test, Matcher::parse("origin:GRIB1,200"), mdc);
+    ensure_equals(mdc.size(), 1u);
+    ensure_equals(mdc[0].notes().size(), 1u);
+    ensure_equals(mdc[0].notes()[0].content, "this is a test");
 
-	mdc.clear();
-	test->query(dataset::DataQuery(Matcher::parse("product:GRIB1,3")), mdc);
-	ensure_equals(mdc.size(), 1u);
+    mdc.clear();
+    query_index(*test, Matcher::parse("product:GRIB1,3"), mdc);
+    ensure_equals(mdc.size(), 1u);
 
-	// TODO: level, timerange, area, proddef, reftime
-	p.commit();
+    // TODO: level, timerange, area, proddef, reftime
+    p.commit();
 }
 
 // See if remove works
@@ -155,11 +160,11 @@ void to::test<2>()
 	test->index(md1, "test-md1", 0);
 	int id1 = test->id(md1);
 
-	// Ensure that we have two items
-	metadata::Collection mdc;
-	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1")), mdc);
-	ensure_equals(mdc.size(), 2u);
-	mdc.clear();
+    // Ensure that we have two items
+    metadata::Collection mdc;
+    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    ensure_equals(mdc.size(), 2u);
+    mdc.clear();
 
     // Remove a nonexisting item and see that it fails
     string file;
@@ -175,9 +180,9 @@ void to::test<2>()
 	ensure_equals(file, "test-md");
 	p.commit();
 
-	// There should be only one result now
-	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1")), mdc);
-	ensure_equals(mdc.size(), 1u);
+    // There should be only one result now
+    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    ensure_equals(mdc.size(), 1u);
 
 	// It should be the second item we inserted
 	ensure_equals(test->id(mdc[0]), id1);
@@ -186,9 +191,9 @@ void to::test<2>()
 	// Replace it with a different one
 	test->replace(md1, "test-md", 0);
 
-	// See that it changed
-	test->query(dataset::DataQuery(Matcher::parse("origin:GRIB1")), mdc);
-	ensure_equals(mdc.size(), 1u);
+    // See that it changed
+    query_index(*test, Matcher::parse("origin:GRIB1"), mdc);
+    ensure_equals(mdc.size(), 1u);
     const source::Blob& blob = mdc[0].sourceBlob();
     ensure_equals(blob.filename, "test-md");
 
@@ -196,7 +201,7 @@ void to::test<2>()
 }
 
 namespace {
-struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
+struct ReadHang : public wibble::sys::ChildProcess
 {
 	ConfigFile cfg;
 	int commfd;
@@ -207,26 +212,23 @@ struct ReadHang : public wibble::sys::ChildProcess, public metadata::Eater
 		cfg.parse(confstream, "(memory)");
 	}
 
-    bool eat(unique_ptr<Metadata>&& md) override
+    int main() override
     {
-        cout << "H" << endl;
-        usleep(100000);
-        return true;
+        try {
+            RContents idx(cfg);
+            idx.open();
+            idx.query(Matcher::parse("origin:GRIB1"), [&](unique_ptr<Metadata> md) {
+                cout << "H" << endl;
+                usleep(100000);
+                return true;
+            });
+        } catch (std::exception& e) {
+            cerr << e.what() << endl;
+            cout << "E" << endl;
+            return 1;
+        }
+        return 0;
     }
-
-	virtual int main()
-	{
-		try {
-			RContents idx(cfg);
-			idx.open();
-			idx.query(dataset::DataQuery(Matcher::parse("origin:GRIB1")), *this);
-		} catch (std::exception& e) {
-			cerr << e.what() << endl;
-			cout << "E" << endl;
-			return 1;
-		}
-		return 0;
-	}
 
 	void start()
 	{
@@ -433,9 +435,9 @@ void to::test<6>()
     test->index(md, "test-md", md.sourceBlob().offset);
     test->index(md1, "test-md1", md1.sourceBlob().offset);
 
-	// Query various kinds of metadata
-	metadata::Collection mdc;
-	test->query(dataset::DataQuery(Matcher::parse("")), mdc);
+    // Query various kinds of metadata
+    metadata::Collection mdc;
+    query_index(*test, Matcher(), mdc);
 
     const source::Blob& s0 = mdc[0].sourceBlob();
     ensure_equals(s0.offset, 0xFFFFffffFFFF0000LLU);
@@ -480,7 +482,7 @@ void to::test<7>()
 
         // Query it back
         metadata::Collection mdc;
-        test->query(dataset::DataQuery(Matcher::parse("")), mdc);
+        query_index(*test, Matcher(), mdc);
 
         // 'value' should not have been preserved
         wassert(actual(mdc.size()) == 1u);
@@ -523,7 +525,7 @@ void to::test<7>()
 
         // Query it back
         metadata::Collection mdc;
-        test->query(dataset::DataQuery(Matcher::parse("")), mdc);
+        query_index(*test, Matcher(), mdc);
 
         // 'value' should have been preserved
         wassert(actual(mdc.size()) == 1u);

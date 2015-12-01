@@ -56,11 +56,11 @@ bool Reader::is_dataset(const std::string& dir)
     return index::Manifest::exists(dir);
 }
 
-void Reader::queryData(const dataset::DataQuery& q, metadata::Eater& consumer)
+void Reader::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
 {
-	Local::queryData(q, consumer);
-	if (!m_mft) return;
-	m_mft->queryData(q, consumer);
+    Local::query_data(q, dest);
+    if (!m_mft) return;
+    m_mft->query_data(q, dest);
 }
 
 void Reader::querySummary(const Matcher& matcher, Summary& summary)
