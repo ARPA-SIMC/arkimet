@@ -35,6 +35,8 @@ struct Output
     /// Output stream to write to
     virtual std::ostream& stream() = 0;
 
+    virtual int fd() = 0;
+
     /**
      * Name for the stream (file name or description) to use for error
      * messages

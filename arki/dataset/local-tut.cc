@@ -175,12 +175,13 @@ template<> template<> void to::test<3>()
 	clean_and_import();
 	std::unique_ptr<ReadonlyDataset> reader(makeReader());
 
-	std::stringstream os;
-	dataset::ByteQuery bq;
-	bq.setData(Matcher::parse("origin:GRIB1,200"));
-	reader->queryBytes(bq, os);
+    sys::File out(sys::File::mkstemp("test"));
+    dataset::ByteQuery bq;
+    bq.setData(Matcher::parse("origin:GRIB1,200"));
+    reader->query_bytes(bq, out);
 
-	ensure_equals(os.str().substr(0, 4), "GRIB");
+    string res = sys::read_file(out.name());
+    ensure_equals(res.substr(0, 4), "GRIB");
 }
 
 // Test querying with inline data
@@ -257,22 +258,25 @@ template<> template<> void to::test<5>()
     mdc.add(*reader, Matcher::parse("origin:GRIB1,98"));
     ensure_equals(mdc.size(), 1u);
 
-	// Query bytes
-	stringstream out;
-	dataset::ByteQuery bq;
-	bq.setData(Matcher::parse(""));
-	reader->queryBytes(bq, out);
-	ensure_equals(out.str().size(), 44412u);
+    // Query bytes
+    sys::File out(sys::File::mkstemp("test"));
+    dataset::ByteQuery bq;
+    bq.setData(Matcher());
+    reader->query_bytes(bq, out);
+    string res = sys::read_file(out.name());
+    ensure_equals(res.size(), 44412u);
 
-	out.str(string());
-	bq.matcher = Matcher::parse("origin:GRIB1,200");
-	reader->queryBytes(bq, out);
-	ensure_equals(out.str().size(), 7218u);
+    out.lseek(0); out.ftruncate(0);
+    bq.matcher = Matcher::parse("origin:GRIB1,200");
+    reader->query_bytes(bq, out);
+    res = sys::read_file(out.name());
+    ensure_equals(res.size(), 7218u);
 
-	out.str(string());
-	bq.matcher = Matcher::parse("reftime:=2007-07-08");
-	reader->queryBytes(bq, out);
-	ensure_equals(out.str().size(), 7218u);
+    out.lseek(0); out.ftruncate(0);
+    bq.matcher = Matcher::parse("reftime:=2007-07-08");
+    reader->query_bytes(bq, out);
+    res = sys::read_file(out.name());
+    ensure_equals(res.size(), 7218u);
 
 	/* TODO
 		case BQ_POSTPROCESS:
@@ -314,11 +318,12 @@ template<> template<> void to::test<6>()
 	reader->querySummary(Matcher::parse(""), s);
 	ensure_equals(s.count(), 0u);
 
-	std::stringstream os;
-	dataset::ByteQuery bq;
-	bq.setData(Matcher::parse(""));
-	reader->queryBytes(bq, os);
-	ensure(os.str().empty());
+    sys::File out(sys::File::mkstemp("test"));
+    dataset::ByteQuery bq;
+    bq.setData(Matcher::parse(""));
+    reader->query_bytes(bq, out);
+    out.close();
+    wassert(actual(sys::size(out.name())) == 0);
 }
 
 // Test querying with lots of data, to trigger on disk metadata buffering

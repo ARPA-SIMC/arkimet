@@ -99,9 +99,9 @@ void OnlineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func d
     m_mft->query_data(q, dest);
 }
 
-void OnlineArchive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void OnlineArchive::query_bytes(const dataset::ByteQuery& q, int out)
 {
-	m_mft->queryBytes(q, out);
+    m_mft->query_bytes(q, out);
 }
 
 void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
@@ -255,7 +255,7 @@ void OfflineArchive::query_data(const dataset::DataQuery& q, metadata_dest_func 
     // If the matcher would match the summary, output some kind of note about it
 }
 
-void OfflineArchive::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void OfflineArchive::query_bytes(const dataset::ByteQuery& q, int out)
 {
     // We can't do anything here, as we cannot post a note to a raw stream
 }
@@ -417,13 +417,13 @@ void Archives::query_data(const dataset::DataQuery& q, metadata_dest_func dest)
         m_last->query_data(q, dest);
 }
 
-void Archives::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void Archives::query_bytes(const dataset::ByteQuery& q, int out)
 {
-	for (map<string, Archive*>::iterator i = m_archives.begin();
-			i != m_archives.end(); ++i)
-		i->second->queryBytes(q, out);
-	if (m_last)
-		m_last->queryBytes(q, out);
+    for (map<string, Archive*>::iterator i = m_archives.begin();
+            i != m_archives.end(); ++i)
+        i->second->query_bytes(q, out);
+    if (m_last)
+        m_last->query_bytes(q, out);
 }
 
 void Archives::summary_for_all(Summary& out)

@@ -19,7 +19,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <arki/wibble/stream/posix.h>
-
+#include <sys/fcntl.h>
 #include <memory>
 #include <sstream>
 #include <iostream>
@@ -307,13 +307,14 @@ struct TestDataset
         {
             using namespace arki::types;
 
+            // Query into a file
             dataset::ByteQuery bq;
             bq.setData(td.test_data[i].matcher);
-            std::stringstream os;
-            ds->queryBytes(bq, os);
+            sys::File out("testdata", O_WRONLY | O_CREAT | O_TRUNC);
+            ds->query_bytes(bq, out);
+            out.close();
 
-            // Write it out and rescan
-            sys::write_file("testdata", os.str());
+            // Rescan the file
             metadata::Collection tmp;
             wassert(actual(scan::scan("testdata", tmp, td.test_data[i].md.source().format)).istrue());
 
@@ -333,8 +334,9 @@ struct TestDataset
         // Query everything
         dataset::ByteQuery bq;
         bq.setData(Matcher());
-        std::stringstream os;
-        ds->queryBytes(bq, os);
+        sys::File out("tempdata", O_WRONLY | O_CREAT | O_TRUNC);
+        ds->query_bytes(bq, out);
+        out.close();
 
         // Check that what we got matches the total size of what we imported
         size_t total_size = 0;
@@ -342,10 +344,7 @@ struct TestDataset
             total_size += td.test_data[i].md.sourceBlob().size;
         // We use >= and not == because some data sources add extra information
         // to data, like line endings for VM2
-        wassert(actual(os.str().size()) >= total_size);
-
-        // Write the results to disk
-        sys::write_file("tempdata", os.str());
+        wassert(actual(sys::size(out.name())) >= total_size);
 
         // Check that they can be scanned again
         metadata::Collection mdc;
@@ -363,15 +362,13 @@ struct TestDataset
         metadata::Collection mdc(*ds, dataset::DataQuery(td.test_data[0].matcher));
         wassert(actual(mdc.size()) == 1u);
 
-        // Then do a postprocessed queryBytes
+        // Then do a postprocessed query_bytes
 
         // Send the script error to stderr. Use dup() because PosixBuf will
         // close its file descriptor at destruction time
-        wibble::stream::PosixBuf pb(dup(2));
-        ostream os(&pb);
         dataset::ByteQuery bq;
         bq.setPostprocess(td.test_data[0].matcher, "testcountbytes");
-        ds->queryBytes(bq, os);
+        ds->query_bytes(bq, 2);
 
         // Verify that the data that was output was exactly as long as the
         // encoded metadata and its data
@@ -393,8 +390,8 @@ struct TestDataset
         unique_ptr<ReadonlyDataset> rds(ReadonlyDataset::create(*cfgtest));
         dataset::ByteQuery bq;
         bq.setData(Matcher());
-        std::stringstream os;
-        rds->queryBytes(bq, os);
+        sys::File out("/dev/null", O_WRONLY);
+        rds->query_bytes(bq, out);
     }
 
     void test_all(WIBBLE_TEST_LOCPRM)

@@ -15,7 +15,7 @@
 #include <arki/utils/sys.h>
 #include <arki/wibble/sys/childprocess.h>
 #include <unistd.h>
-
+#include <sys/fcntl.h>
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -526,13 +526,14 @@ void to::test<11>()
 template<> template<>
 void to::test<12>()
 {
-	acquireSamplesAllInOne();
-	Reader reader(*configAll.section("testall"));
-	stringstream str;
-	dataset::ByteQuery bq;
-	bq.setData(Matcher::parse("reftime:=2007"));
-	reader.queryBytes(bq, str);
-	ensure_equals(str.str().size(), 44412u);
+    acquireSamplesAllInOne();
+    Reader reader(*configAll.section("testall"));
+    sys::File out(sys::File::mkstemp("test"));
+    dataset::ByteQuery bq;
+    bq.setData(Matcher::parse("reftime:=2007"));
+    reader.query_bytes(bq, out);
+    string res = sys::read_file(out.name());
+    ensure_equals(res.size(), 44412u);
 }
 
 namespace {
@@ -773,10 +774,10 @@ void to::test<16>()
     wassert(actual(mdc.size()) == 720);
 
     // Query it, streaming its data to /dev/null
-    ofstream out("/dev/null");
+    sys::File out("/dev/null", O_WRONLY);
     dataset::ByteQuery bq;
-    bq.setData(Matcher::parse(""));
-    reader->queryBytes(bq, out);
+    bq.setData(Matcher());
+    reader->query_bytes(bq, out);
 }
 
 

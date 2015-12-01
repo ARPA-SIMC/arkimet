@@ -90,6 +90,7 @@ public:
     void set_hook(metadata::Hook& hook);
 
     std::ostream& stream() override { return *m_out; }
+    int fd() override { return posixBuf.fd(); }
     const std::string& name() const override { return m_name; }
 };
 
@@ -118,6 +119,7 @@ public:
 	void unlink();
 
     std::ostream& stream() override { return *m_out; }
+    int fd() override { return posixBuf.fd(); }
     const std::string& name() const override { return m_name; }
 };
 

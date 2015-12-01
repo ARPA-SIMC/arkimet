@@ -159,13 +159,6 @@ public:
 	virtual void querySummary(const Matcher& matcher, Summary& summary) = 0;
 
     /**
-     * Query the dataset obtaining a byte stream.
-     *
-     * The default implementation in ReadonlyDataset is based on queryData.
-     */
-    [[deprecated("use query_bytes instead")]] virtual void queryBytes(const dataset::ByteQuery& q, std::ostream& out);
-
-    /**
      * Query the dataset obtaining a byte stream, that gets written to a file
      * descriptor.
      *

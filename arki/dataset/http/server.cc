@@ -319,11 +319,8 @@ void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, net::ht
         case ByteQuery::BQ_REP_SUMMARY: headers.ext = "txt";
     }
 
-    // Create Output directed to req.sock
-    runtime::Output sockoutput(req.sock, "socket");
-
     // Produce the results
-    ds.queryBytes(bq, sockoutput.stream());
+    ds.query_bytes(bq, req.sock);
 
     // If we had empty output, headers were not sent: catch up
     headers.sendIfNotFired();
@@ -332,4 +329,3 @@ void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, net::ht
 }
 }
 }
-// vim:set ts=4 sw=4:

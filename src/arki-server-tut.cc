@@ -10,9 +10,9 @@
 #include <arki/dispatcher.h>
 #include <arki/types/source/blob.h>
 #include <arki/utils.h>
+#include <arki/utils/sys.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/processor.h>
-#include <arki/wibble/string.h>
 #include <arki/wibble/stream/posix.h>
 
 #include <sstream>
@@ -26,7 +26,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble;
+using namespace arki::utils;
 using namespace wibble::tests;
 
 struct arki_server_shar {
@@ -128,11 +128,13 @@ void to::test<5>()
     ensure(dynamic_cast<dataset::HTTP*>(testds.get()) != 0);
 
     // Contrarily to ondisk, HTTP can use a stringstream
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
-    testds->queryBytes(bq, str);
-    ensure_equals(str.str(), "ciao\n");
+    testds->query_bytes(bq, out);
+    out.close();
+    string res = sys::read_file(out.name());
+    ensure_equals(res, "ciao\n");
 }
 
 // Test the server giving an error
@@ -167,16 +169,16 @@ void to::test<6>()
     ensure_equals(summary.count(), 0u);
 
     // Try it on streams
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     htd->produce_one_wrong_query();
     try {
         dataset::ByteQuery bq;
         bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "say ciao");
-        testds->queryBytes(bq, str);
+        testds->query_bytes(bq, out);
         ensure(false);
     } catch (std::exception& e) {}
-    ensure_equals(str.str(), "");
-    ensure_equals(str.str().size(), 0u);
+    out.close();
+    wassert(actual(sys::size(out.name())) == 0);
 }
 
 // Test expanding a query
@@ -234,17 +236,19 @@ void to::test<10>()
     unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*cfg.section("test200")));
 
     // Querying it should get the partial output and no error
-    stringstream str;
+    sys::File out(sys::File::mkstemp("test"));
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse(""), "outthenerr");
-    testds->queryBytes(bq, str);
-    ensure_contains(str.str(), "So far, so good");
+    testds->query_bytes(bq, out);
+    out.close();
+    string res = sys::read_file(out.name());
+    ensure_contains(res, "So far, so good");
 
     // The postprocessor stderr should not appear
-    ensure_not_contains(str.str(), "Argh");
+    ensure_not_contains(res, "Argh");
 
     // And we should not get a server error after the normal stream has started
-    ensure_not_contains(str.str(), "500 Server error");
+    ensure_not_contains(res, "500 Server error");
 }
 
 // Test data integrity of postprocessed queries through a server (used to fail
@@ -277,18 +281,21 @@ void to::test<11>()
     }
 
     // Capture the data after going through the postprocessor
-    stringstream postprocessed;
+    string postprocessed;
     {
+        sys::File out(sys::File::mkstemp("test"));
         dataset::HTTP::readConfig("http://localhost:7117", config);
         unique_ptr<ReadonlyDataset> testds(ReadonlyDataset::create(*config.section("test80")));
         ensure(dynamic_cast<dataset::HTTP*>(testds.get()) != 0);
 
         dataset::ByteQuery bq;
         bq.setPostprocess(Matcher::parse("origin:GRIB1,80"), "cat");
-        testds->queryBytes(bq, postprocessed);
+        testds->query_bytes(bq, out);
+        out.close();
+        postprocessed = sys::read_file(out.name());
     }
 
-    ensure_equals(plain.size(), postprocessed.str().size());
+    ensure_equals(plain.size(), postprocessed.size());
 
     /*
     size_t diffs = 0;
@@ -311,7 +318,7 @@ void to::test<11>()
         Metadata::readFile(s, metadata::ReadContext("", "plain"), mdc1);
     }
     {
-        stringstream s(postprocessed.str());
+        stringstream s(postprocessed);
         Metadata::readFile(s, metadata::ReadContext("", "postprocessed"), mdc2);
     }
 

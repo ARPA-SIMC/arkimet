@@ -205,11 +205,11 @@ struct BinaryProcessor : public DatasetProcessor
         return res;
     }
 
-	virtual void process(ReadonlyDataset& ds, const std::string& name)
-	{
-		// TODO: validate query's postprocessor with ds' config
-		ds.queryBytes(query, out.stream());
-	}
+    virtual void process(ReadonlyDataset& ds, const std::string& name)
+    {
+        // TODO: validate query's postprocessor with ds' config
+        ds.query_bytes(query, out.fd());
+    }
 
     virtual void end()
     {

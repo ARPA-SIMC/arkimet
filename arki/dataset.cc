@@ -53,63 +53,8 @@ void WritableDataset::flush() {}
 
 Pending WritableDataset::test_writelock() { return Pending(); }
 
-void ReadonlyDataset::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
-{
-    switch (q.type)
-    {
-        case dataset::ByteQuery::BQ_DATA: {
-            ds::DataOnly dataonly(out);
-            ds::DataStartHookRunner dshr(dataonly, q.data_start_hook);
-            query_data(q, [&](unique_ptr<Metadata> md) { return dshr.eat(move(md)); });
-            break;
-        }
-        case dataset::ByteQuery::BQ_POSTPROCESS: {
-            Postprocess postproc(q.param);
-            postproc.set_output(out);
-            postproc.validate(cfg);
-            postproc.set_data_start_hook(q.data_start_hook);
-            postproc.start();
-            query_data(q, [&](unique_ptr<Metadata> md) {
-                return postproc.eat(move(md));
-            });
-            postproc.flush();
-            break;
-        }
-        case dataset::ByteQuery::BQ_REP_METADATA: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            query_data(q, [&](unique_ptr<Metadata> md) { return rep.eat(move(md)); });
-            rep.report();
-#endif
-            break;
-        }
-        case dataset::ByteQuery::BQ_REP_SUMMARY: {
-#ifdef HAVE_LUA
-            Report rep;
-            rep.captureOutput(out);
-            rep.load(q.param);
-            Summary s;
-            querySummary(q.matcher, s);
-            rep(s);
-            rep.report();
-#endif
-            break;
-        }
-        default:
-        {
-            stringstream s;
-            s << "unsupported query type: " << (int)q.type;
-            throw wibble::exception::Consistency("querying dataset", s.str());
-        }
-    }
-}
-
 void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
 {
-    using namespace arki::utils;
-
     switch (q.type)
     {
         case dataset::ByteQuery::BQ_DATA: {
@@ -118,7 +63,7 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
             query_data(q, [&](unique_ptr<Metadata> md) {
                 if (first)
                 {
-                    (*q.data_start_hook)();
+                    if (q.data_start_hook) (*q.data_start_hook)();
                     first = false;
                 }
                 if (!writer)

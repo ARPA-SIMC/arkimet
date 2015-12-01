@@ -76,7 +76,7 @@ public:
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
-    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
+    void query_bytes(const dataset::ByteQuery& q, int out) override;
 
 	static void readConfig(const std::string& path, ConfigFile& cfg);
 
@@ -126,7 +126,7 @@ public:
     void scan(const std::string& fname, const std::string& format, metadata_dest_func dest);
 
     /// Run a testdispatch on a previously uploaded file
-    void testdispatch(const std::string& fname, const std::string& format, std::ostream& out);
+    void testdispatch(const std::string& fname, const std::string& format, int out);
 
     /// Run a dispatch on a previously uploaded file
     void dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer);
@@ -134,6 +134,4 @@ public:
 
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif

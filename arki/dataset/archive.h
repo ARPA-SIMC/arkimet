@@ -1,27 +1,7 @@
 #ifndef ARKI_DATASET_ARCHIVE_H
 #define ARKI_DATASET_ARCHIVE_H
 
-/*
- * dataset/archive - Handle archived data
- *
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Handle archived data
 
 #include <arki/dataset.h>
 #include <arki/summary.h>
@@ -103,7 +83,7 @@ public:
     void openRW();
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
+    void query_bytes(const dataset::ByteQuery& q, int out) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     size_t produce_nth(metadata::Eater& cons, size_t idx=0) override;
@@ -134,7 +114,7 @@ struct OfflineArchive : public Archive
     ~OfflineArchive();
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
+    void query_bytes(const dataset::ByteQuery& q, int out) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
     virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0) override;
@@ -201,7 +181,7 @@ public:
 	const std::string& path() const { return m_dir; }
 
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
-    void queryBytes(const dataset::ByteQuery& q, std::ostream& out) override;
+    void query_bytes(const dataset::ByteQuery& q, int out) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;

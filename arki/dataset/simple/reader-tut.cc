@@ -42,15 +42,13 @@ TESTGRP(arki_dataset_simple_reader);
 template<> template<>
 void to::test<1>()
 {
-	unique_ptr<simple::Reader> reader(makeSimpleReader());
+    unique_ptr<simple::Reader> reader(makeSimpleReader());
 
     // Use dup() because PosixBuf will close its file descriptor at destruction
     // time
-    wibble::stream::PosixBuf pb(dup(2));
-    ostream os(&pb);
     dataset::ByteQuery bq;
     bq.setPostprocess(Matcher::parse("origin:GRIB1,200"), "testcountbytes");
-    reader->queryBytes(bq, os);
+    reader->query_bytes(bq, 2);
 
     string out = sys::read_file("testcountbytes.out");
     ensure_equals(out, "7415\n");

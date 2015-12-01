@@ -7,6 +7,7 @@
 #include <arki/summary.h>
 #include <arki/sort.h>
 #include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <cstdlib>
 #include <sstream>
 
@@ -209,28 +210,28 @@ struct SStreamState : public ReqState
 
 struct OstreamState : public ReqState
 {
-	ostream& os;
+    sys::FileDescriptor out;
     metadata::Hook* data_start_hook;
 
-    OstreamState(http::CurlEasy& curl, ostream& os, metadata::Hook* data_start_hook = 0)
-        : ReqState(curl), os(os), data_start_hook(data_start_hook)
+    OstreamState(http::CurlEasy& curl, int out, metadata::Hook* data_start_hook = 0)
+        : ReqState(curl), out(out), data_start_hook(data_start_hook)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
         checked("setting write function data", curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this));
     }
 
-	static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
-	{
-		OstreamState& s = *(OstreamState*)stream;
+    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream)
+    {
+        OstreamState& s = *(OstreamState*)stream;
         if (s.data_start_hook && size > 0)
         {
             (*s.data_start_hook)();
             s.data_start_hook = 0;
         }
-		if (size_t res = s.check_error(ptr, size, nmemb)) return res;
-		s.os.write((const char*)ptr, size * nmemb);
-		return size * nmemb;
-	}
+        if (size_t res = s.check_error(ptr, size, nmemb)) return res;
+        s.out.write((const char*)ptr, size * nmemb);
+        return size * nmemb;
+    }
 };
 
 struct MDStreamState : public ReqState
@@ -329,12 +330,10 @@ void HTTP::querySummary(const Matcher& matcher, Summary& summary)
 	summary.read(s.buf, url);
 }
 
-void HTTP::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void HTTP::query_bytes(const dataset::ByteQuery& q, int out)
 {
-	m_curl.reset();
-
-	http::CurlForm form;
-
+    m_curl.reset();
+    http::CurlForm form;
     string url = str::joinpath(m_baseurl, "query");
     checked("setting url", curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()));
     checked("selecting POST method", curl_easy_setopt(m_curl, CURLOPT_POST, 1));
@@ -566,7 +565,7 @@ void HTTPInbound::scan(const std::string& fname, const std::string& format, meta
         s.throwError("querying inbound/scan from " + url);
 }
 
-void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, std::ostream& out)
+void HTTPInbound::testdispatch(const std::string& fname, const std::string& format, int out)
 {
     m_curl.reset();
 

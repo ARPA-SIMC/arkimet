@@ -261,22 +261,21 @@ void Merged::querySummary(const Matcher& matcher, Summary& summary)
 		throw wibble::exception::Consistency("running summary queries on multiple datasets", str::join("; ", errors.begin(), errors.end()));
 }
 
-void Merged::queryBytes(const dataset::ByteQuery& q, std::ostream& out)
+void Merged::query_bytes(const dataset::ByteQuery& q, int out)
 {
-	// Here we must serialize, as we do not know how to merge raw data streams
-	//
-	// We cannot just wrap queryData because some subdatasets could be
-	// remote, and that would mean doing postprocessing on the client side,
-	// potentially transferring terabytes of data just to produce a number
+    // Here we must serialize, as we do not know how to merge raw data streams
+    //
+    // We cannot just wrap query_data because some subdatasets could be
+    // remote, and that would mean doing postprocessing on the client side,
+    // potentially transferring terabytes of data just to produce a number
 
     // TODO: data_start_hook may be called more than once here
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
 
-	for (std::vector<ReadonlyDataset*>::iterator i = datasets.begin();
-			i != datasets.end(); ++i)
-		(*i)->queryBytes(q, out);
+    for (auto i: datasets)
+        i->query_bytes(q, out);
 }
 
 AutoMerged::AutoMerged() {}

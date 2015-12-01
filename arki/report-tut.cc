@@ -1,25 +1,4 @@
-/*
- * Copyright (C) 2008--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
-
 #include <arki/matcher/tests.h>
 #include <arki/report.h>
 #include <arki/metadata.h>
@@ -28,13 +7,14 @@
 #include <arki/configfile.h>
 #include <arki/dataset.h>
 #include <arki/dataset/file.h>
-
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
 
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 
 struct arki_report_shar
 {
@@ -106,12 +86,14 @@ void to::test<2>()
     q.type = dataset::ByteQuery::BQ_REP_METADATA;
     q.param = "mdstats";
 
-    stringstream out;
-    ds->queryBytes(q, out);
+    sys::File out(sys::File::mkstemp("test"));
+    ds->query_bytes(q, out);
+    out.close();
 
-    ensure_contains(out.str(), "origin: GRIB1(080, 255, 100)");
-    ensure_contains(out.str(), "origin: GRIB1(098, 000, 129)");
-    ensure_contains(out.str(), "origin: GRIB1(200, 000, 101)");
+    string res = sys::read_file(out.name());
+    ensure_contains(res, "origin: GRIB1(080, 255, 100)");
+    ensure_contains(res, "origin: GRIB1(098, 000, 129)");
+    ensure_contains(res, "origin: GRIB1(200, 000, 101)");
 }
 
 }
