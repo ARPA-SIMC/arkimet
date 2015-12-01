@@ -190,6 +190,7 @@ public:
     size_t pread(void* buf, size_t count, off_t offset);
     size_t pwrite(const void* buf, size_t count, off_t offset);
 
+    void ftruncate(off_t length);
 
     MMap mmap(size_t length, int prot, int flags, off_t offset=0);
 

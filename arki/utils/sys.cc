@@ -326,6 +326,12 @@ void FileDescriptor::write_all_or_throw(const void* buf, size_t count)
         throw_runtime_error("partial write");
 }
 
+void FileDescriptor::ftruncate(off_t length)
+{
+    if (::ftruncate(fd, length) == -1)
+        throw_error("cannot ftruncate");
+}
+
 MMap FileDescriptor::mmap(size_t length, int prot, int flags, off_t offset)
 {
     void* res =::mmap(0, length, prot, flags, fd, offset);

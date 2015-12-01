@@ -369,6 +369,55 @@ void ActualFunction::throws(const std::string& what_match) const
         throw TestFailed("code did not throw any exception");
 }
 
+#if 0
+void test_assert_file_exists(WIBBLE_TEST_LOCPRM, const std::string& fname)
+{
+    if (not sys::fs::exists(fname))
+    {
+        std::stringstream ss;
+        ss << "file '" << fname << "' does not exists";
+        arki::utils_test_location.fail_test(ss.str());
+    }
+}
+
+void test_assert_not_file_exists(WIBBLE_TEST_LOCPRM, const std::string& fname)
+{
+    if (sys::fs::exists(fname))
+    {
+        std::stringstream ss;
+        ss << "file '" << fname << "' does exists";
+        arki::utils_test_location.fail_test(ss.str());
+    }
+}
+
+#if 0
+struct TestFileExists
+{
+    std::string pathname;
+    bool inverted;
+    TestFileExists(const std::string& pathname, bool inverted=false) : pathname(pathname), inverted(inverted) {}
+    TestFileExists operator!() { return TestFileExists(pathname, !inverted); }
+    void check(ARKI_UTILS_TEST_LOCPRM) const;
+};
+#endif
+
+void TestFileExists::check(WIBBLE_TEST_LOCPRM) const
+{
+    if (!inverted)
+    {
+        if (sys::fs::exists(pathname)) return;
+        std::stringstream ss;
+        ss << "file '" << pathname << "' does not exists";
+        arki::utils_test_location.fail_test(ss.str());
+    } else {
+        if (not sys::fs::exists(pathname)) return;
+        std::stringstream ss;
+        ss << "file '" << pathname << "' exists";
+        arki::utils_test_location.fail_test(ss.str());
+    }
+}
+#endif
+
 TestRegistry& TestRegistry::get()
 {
     static TestRegistry* instance = 0;
