@@ -141,6 +141,11 @@ public:
     FileDescriptor(int fd);
     virtual ~FileDescriptor();
 
+    // We can copy at the FileDescriptor level because the destructor does not
+    // close fd
+    FileDescriptor(const FileDescriptor& o) = default;
+    FileDescriptor& operator=(const FileDescriptor& o) = default;
+
     /**
      * Throw an exception based on errno and the given message.
      *
@@ -209,8 +214,12 @@ protected:
 public:
     NamedFileDescriptor(int fd, const std::string& pathname);
     NamedFileDescriptor(NamedFileDescriptor&&);
-
     NamedFileDescriptor& operator=(NamedFileDescriptor&&);
+
+    // We can copy at the NamedFileDescriptor level because the destructor does not
+    // close fd
+    NamedFileDescriptor(const NamedFileDescriptor& o) = default;
+    NamedFileDescriptor& operator=(const NamedFileDescriptor& o) = default;
 
     [[noreturn]] virtual void throw_error(const char* desc);
     [[noreturn]] virtual void throw_runtime_error(const char* desc);
