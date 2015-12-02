@@ -13,7 +13,7 @@
 #include "scan/any.h"
 #include "utils/datareader.h"
 #include "utils/string.h"
-#include <arki/wibble/string.h>
+#include "utils/yaml.h"
 #include <unistd.h>
 #include <fstream>
 #include <cstdlib>
@@ -331,8 +331,8 @@ bool Metadata::readYaml(std::istream& in, const std::string& filename)
 {
     clear();
 
-    wibble::str::YamlStream yamlStream;
-    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
+    YamlStream yamlStream;
+    for (YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
     {
         types::Code type = types::parseCodeName(i->first);

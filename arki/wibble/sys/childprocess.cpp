@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 #include <arki/wibble/sys/childprocess.h>
-#include <arki/wibble/string.h>
 
 #include <stdlib.h>		// EXIT_FAILURE
 #include <sys/types.h>		// fork, waitpid, kill, open, getpw*, getgr*, initgroups

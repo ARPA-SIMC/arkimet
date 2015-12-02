@@ -2,7 +2,6 @@
 
 #include <arki/tests/tests.h>
 #include <arki/utils/intern.h>
-#include <arki/wibble/string.h>
 
 namespace tut {
 using namespace std;

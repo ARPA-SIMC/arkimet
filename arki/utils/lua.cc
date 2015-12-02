@@ -5,7 +5,6 @@
 #include <arki/summary.h>
 #include <arki/matcher.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <ostream>
 
 using namespace std;

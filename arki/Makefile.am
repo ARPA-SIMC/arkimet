@@ -12,7 +12,6 @@ arkiincludedir = $(includedir)/arki
 nobase_dist_arkiinclude_HEADERS = \
 		wibble/exception.h \
 		wibble/regexp.h \
-		wibble/string.h \
 		wibble/tests.h \
 		wibble/sys/process.h \
 		wibble/sys/macros.h \
@@ -164,6 +163,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/raii.h \
 		utils/string.h \
 		utils/sys.h \
+		utils/yaml.h \
 		utils/commandline/core.h \
 		utils/commandline/doc.h \
 		utils/commandline/engine.h \
@@ -204,7 +204,6 @@ if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
 		wibble/exception.cpp \
 		wibble/regexp.cpp \
-		wibble/string.cpp \
 		wibble/tests.cpp \
 		wibble/sys/fs.cpp \
 		wibble/sys/filelock.cpp \
@@ -233,6 +232,7 @@ libarkimet_la_SOURCES += \
 		utils/raii.cc \
 		utils/string.cc \
 		utils/sys.cc \
+		utils/yaml.cc \
 		utils/commandline/core.cpp \
 		utils/commandline/options.cpp \
 		utils/commandline/doc.cpp \
@@ -302,6 +302,7 @@ tests_arki_test_SOURCES += \
 		utils/accounting-tut.cc \
 		utils/codec-tut.cc \
 		utils/gzip-test.cc \
+		utils/yaml-test.cc \
 		utils/fd-tut.cc \
 		utils/files-tut.cc \
 		utils/intern-tut.cc \

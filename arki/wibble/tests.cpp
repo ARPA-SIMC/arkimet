@@ -7,7 +7,6 @@
  */
 
 #include <arki/wibble/tests.h>
-#include <arki/wibble/string.h>
 #include <arki/wibble/regexp.h>
 #include <arki/wibble/sys/fs.h>
 

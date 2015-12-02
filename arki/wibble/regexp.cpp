@@ -19,7 +19,6 @@
  */
 
 #include <arki/wibble/regexp.h>
-#include <arki/wibble/string.h>
 
 using namespace std;
 

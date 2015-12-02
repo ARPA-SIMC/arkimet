@@ -1,11 +1,11 @@
 #include "table.h"
 #include "intern.h"
-#include <arki/metadata.h>
-#include <arki/matcher.h>
-#include <arki/types/utils.h>
-#include <arki/emitter/memory.h>
-#include <arki/summary.h>
-#include <arki/wibble/string.h>
+#include "arki/metadata.h"
+#include "arki/matcher.h"
+#include "arki/types/utils.h"
+#include "arki/emitter/memory.h"
+#include "arki/summary.h"
+#include "arki/utils/yaml.h"
 #include <algorithm>
 #include <iostream>
 
@@ -204,9 +204,8 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
 {
     Row new_row;
     new_row.set_to_zero();
-    wibble::str::YamlStream yamlStream;
-    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
-            i != yamlStream.end(); ++i)
+    YamlStream yamlStream;
+    for (YamlStream::const_iterator i = yamlStream.begin(in); i != yamlStream.end(); ++i)
     {
         types::Code type = types::parseCodeName(i->first);
         switch (type)
@@ -214,9 +213,8 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
             case types::TYPE_SUMMARYITEM:
                 {
                     stringstream in(i->second, ios_base::in);
-                    wibble::str::YamlStream yamlStream;
-                    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
-                            i != yamlStream.end(); ++i)
+                    YamlStream yamlStream;
+                    for (YamlStream::const_iterator i = yamlStream.begin(in); i != yamlStream.end(); ++i)
                     {
                         types::Code type = types::parseCodeName(i->first);
                         int pos = summary::Visitor::posForCode(type);

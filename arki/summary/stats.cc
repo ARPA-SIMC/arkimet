@@ -4,9 +4,9 @@
 #include <arki/utils/codec.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/string.h>
+#include <arki/utils/yaml.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include <arki/wibble/string.h>
 
 using namespace std;
 using namespace arki::utils;
@@ -214,8 +214,8 @@ unique_ptr<Stats> Stats::decodeString(const std::string& str)
 {
     unique_ptr<Stats> res(new Stats);
     stringstream in(str, ios_base::in);
-    wibble::str::YamlStream yamlStream;
-    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
+    YamlStream yamlStream;
+    for (YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
     {
         string name = str::lower(i->first);
