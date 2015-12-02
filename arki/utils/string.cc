@@ -135,9 +135,14 @@ std::string normpath(const std::string& pathname)
 Split::const_iterator::const_iterator(const Split& split)
     : split(&split)
 {
-    // Ignore leading separators if skip_end is true
-    if (split.skip_empty) skip_separators();
-    ++*this;
+    if (split.str.empty())
+        this->split = nullptr;
+    else
+    {
+        // Ignore leading separators if skip_end is true
+        if (split.skip_empty) skip_separators();
+        ++*this;
+    }
 }
 
 Split::const_iterator::~const_iterator()
