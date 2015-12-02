@@ -252,6 +252,13 @@ void ConfigFile::output(std::ostream& out, const std::string& fileName, const st
     }
 }
 
+std::string ConfigFile::serialize() const
+{
+    stringstream ss;
+    output(ss, "(memory)");
+    return ss.str();
+}
+
 bool ConfigFile::boolValue(const std::string& str, bool def)
 {
     if (str.empty())

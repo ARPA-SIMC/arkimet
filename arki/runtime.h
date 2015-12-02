@@ -86,13 +86,13 @@ struct CommandLine : public utils::commandline::StandardParserWithManpage
     utils::commandline::VectorOption<utils::commandline::String>* dispatch;
     utils::commandline::VectorOption<utils::commandline::String>* testdispatch;
 
-	ConfigFile inputInfo;
-	ConfigFile dispatchInfo;
-	std::string strquery;
-	Matcher query;
-	Output* output;
-	DatasetProcessor* processor;
-	MetadataDispatch* dispatcher;
+    ConfigFile inputInfo;
+    ConfigFile dispatchInfo;
+    std::string strquery;
+    Matcher query;
+    utils::sys::NamedFileDescriptor* output;
+    DatasetProcessor* processor;
+    MetadataDispatch* dispatcher;
     ProcessorMaker pmaker;
 
 	CommandLine(const std::string& name, int mansection = 1);

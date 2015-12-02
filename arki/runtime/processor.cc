@@ -1,16 +1,16 @@
 #include "config.h"
-#include <arki/runtime/processor.h>
-#include <arki/runtime/io.h>
-#include <arki/metadata/consumer.h>
-#include <arki/metadata/printer.h>
-#include <arki/formatter.h>
-#include <arki/dataset.h>
-#include <arki/dataset/index/base.h>
-#include <arki/targetfile.h>
-#include <arki/summary.h>
-#include <arki/sort.h>
-#include <arki/utils/dataset.h>
-#include <arki/utils/string.h>
+#include "arki/runtime/processor.h"
+#include "arki/runtime/io.h"
+#include "arki/metadata/consumer.h"
+#include "arki/formatter.h"
+#include "arki/dataset.h"
+#include "arki/dataset/index/base.h"
+#include "arki/emitter/json.h"
+#include "arki/targetfile.h"
+#include "arki/summary.h"
+#include "arki/sort.h"
+#include "arki/utils/dataset.h"
+#include "arki/utils/string.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -18,31 +18,99 @@ using namespace arki::utils;
 namespace arki {
 namespace runtime {
 
-metadata::Printer* createPrinter(ProcessorMaker& maker, arki::Output& out)
+typedef std::function<void(const Metadata&)> metadata_print_func;
+typedef std::function<void(const Summary&)> summary_print_func;
+
+SingleOutputProcessor::SingleOutputProcessor()
+    : output(-1, "(output not initialized yet)")
 {
-    if (maker.json)
-        return new metadata::JSONPrinter(out, maker.annotate);
-    else if (maker.yaml || maker.annotate)
-        return new metadata::YamlPrinter(out, maker.annotate);
-    else
-        return new metadata::BinaryPrinter(out);
 }
 
-struct DataProcessor : public DatasetProcessor
+SingleOutputProcessor::SingleOutputProcessor(const utils::sys::NamedFileDescriptor& out)
+    : output(out, out.name())
 {
-    arki::Output& output;
-    metadata::Printer* printer;
+}
+
+
+metadata_print_func create_metadata_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
+{
+    if (!maker.json && !maker.yaml && !maker.annotate)
+        return [&](const Metadata& md) { md.write(out, out.name()); };
+
+    shared_ptr<Formatter> formatter;
+    if (maker.annotate)
+        formatter = Formatter::create();
+
+    if (maker.json)
+        return [&out, formatter](const Metadata& md) {
+            stringstream ss;
+            emitter::JSON json(ss);
+            md.serialise(json, formatter.get());
+            out.write_all_or_throw(ss.str());
+        };
+
+    return [&out, formatter](const Metadata& md) {
+        stringstream ss;
+        md.writeYaml(ss, formatter.get());
+        ss << endl;
+        out.write_all_or_throw(ss.str());
+    };
+}
+
+summary_print_func create_summary_printer(ProcessorMaker& maker, sys::NamedFileDescriptor& out)
+{
+    if (!maker.json && !maker.yaml && !maker.annotate)
+        return [&](const Summary& s) { s.write(out, out.name()); };
+
+    shared_ptr<Formatter> formatter;
+    if (maker.annotate)
+        formatter = Formatter::create();
+
+    if (maker.json)
+        return [&out, formatter](const Summary& s) {
+            stringstream ss;
+            emitter::JSON json(ss);
+            s.serialise(json, formatter.get());
+            string res = ss.str();
+            out.write_all_or_throw(ss.str());
+        };
+
+    return [&out, formatter](const Summary& s) {
+        stringstream ss;
+        s.writeYaml(ss, formatter.get());
+        ss << endl;
+        string res = ss.str();
+        out.write_all_or_throw(ss.str());
+    };
+}
+
+std::string describe_printer(ProcessorMaker& maker)
+{
+    if (!maker.json && !maker.yaml && !maker.annotate)
+        return "binary";
+
+    if (maker.json)
+        return "json";
+
+    return "yaml";
+}
+
+struct DataProcessor : public SingleOutputProcessor
+{
+    metadata_print_func printer;
     dataset::DataQuery query;
     vector<string> description_attrs;
     bool data_inline;
     bool server_side;
+    metadata::Hook* data_start_hook;
+    bool any_output_generated = false;
 
-    DataProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out, bool data_inline=false)
-        : output(out), printer(createPrinter(maker, out)), query(q, data_inline),
-          data_inline(data_inline), server_side(maker.server_side)
+    DataProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out, bool data_inline=false)
+        : SingleOutputProcessor(out), printer(create_metadata_printer(maker, output)), query(q, data_inline),
+          data_inline(data_inline), server_side(maker.server_side), data_start_hook(maker.data_start_hook)
     {
         description_attrs.push_back("query=" + q.toString());
-        description_attrs.push_back("printer=" + printer->describe());
+        description_attrs.push_back("printer=" + describe_printer(maker));
         if (data_inline)
             description_attrs.push_back("data_inline=true");
         if (maker.server_side)
@@ -54,12 +122,9 @@ struct DataProcessor : public DatasetProcessor
         }
     }
 
-    virtual ~DataProcessor()
-    {
-        if (printer) delete printer;
-    }
+    virtual ~DataProcessor() {}
 
-    virtual std::string describe() const
+    std::string describe() const override
     {
         string res = "data(";
         res += str::join(", ", description_attrs.begin(), description_attrs.end());
@@ -67,64 +132,75 @@ struct DataProcessor : public DatasetProcessor
         return res;
     }
 
-    virtual void process(ReadonlyDataset& ds, const std::string& name)
+    void check_hooks()
+    {
+        if (!any_output_generated)
+        {
+            if (data_start_hook) (*data_start_hook)();
+            any_output_generated = true;
+        }
+    }
+
+    void process(ReadonlyDataset& ds, const std::string& name) override
     {
         if (data_inline)
         {
-            ds.query_data(query, [&](unique_ptr<Metadata> md) { md->makeInline(); return printer->eat(move(md)); });
+            ds.query_data(query, [&](unique_ptr<Metadata> md) { check_hooks(); md->makeInline(); printer(*md); return true; });
         } else if (server_side) {
             map<string, string>::const_iterator iurl = ds.cfg.find("url");
             if (iurl == ds.cfg.end())
             {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                    check_hooks();
                     md->make_absolute();
-                    return printer->eat(move(md));
+                    printer(*md);
+                    return true;
                 });
             } else {
                 ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                    check_hooks();
                     md->set_source(types::Source::createURL(md->source().format, iurl->second));
-                    return printer->eat(move(md));
+                    printer(*md);
+                    return true;
                 });
             }
         } else {
             ds.query_data(query, [&](unique_ptr<Metadata> md) {
+                check_hooks();
                 md->make_absolute();
-                return printer->eat(move(md));
+                printer(*md);
+                return true;
             });
         }
     }
 
-    virtual void end()
+    void end() override
     {
-        output.stream().flush();
     }
 };
 
-struct SummaryProcessor : public DatasetProcessor
+struct SummaryProcessor : public SingleOutputProcessor
 {
-    arki::Output& output;
     Matcher matcher;
-    metadata::Printer* printer;
+    summary_print_func printer;
     string summary_restrict;
     Summary summary;
     vector<string> description_attrs;
+    metadata::Hook* data_start_hook;
 
-    SummaryProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out)
-        : output(out), matcher(q), printer(createPrinter(maker, out))
+    SummaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
+        : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output)), data_start_hook(maker.data_start_hook)
     {
         description_attrs.push_back("query=" + q.toString());
         if (!maker.summary_restrict.empty())
             description_attrs.push_back("restrict=" + maker.summary_restrict);
-        description_attrs.push_back("printer=" + printer->describe());
+        description_attrs.push_back("printer=" + describe_printer(maker));
         summary_restrict = maker.summary_restrict;
     }
 
-    virtual ~SummaryProcessor()
-    {
-        if (printer) delete printer;
-    }
+    virtual ~SummaryProcessor() {}
 
-    virtual std::string describe() const
+    std::string describe() const override
     {
         string res = "summary(";
         res += str::join(", ", description_attrs.begin(), description_attrs.end());
@@ -132,12 +208,12 @@ struct SummaryProcessor : public DatasetProcessor
         return res;
     }
 
-    virtual void process(ReadonlyDataset& ds, const std::string& name)
+    void process(ReadonlyDataset& ds, const std::string& name) override
     {
         ds.querySummary(matcher, summary);
     }
 
-    virtual void end()
+    void end() override
     {
         if (!summary_restrict.empty())
         {
@@ -150,21 +226,20 @@ struct SummaryProcessor : public DatasetProcessor
 
     void do_output(const Summary& s)
     {
-        printer->observe_summary(s);
-        output.stream().flush();
+        if (data_start_hook) (*data_start_hook)();
+        printer(s);
     }
 };
 
 
-struct BinaryProcessor : public DatasetProcessor
+struct BinaryProcessor : public SingleOutputProcessor
 {
-    arki::Output& out;
-	dataset::ByteQuery query;
+    dataset::ByteQuery query;
     vector<string> description_attrs;
 
-	BinaryProcessor(ProcessorMaker& maker, Matcher& q, arki::Output& out)
-		: out(out)
-	{
+    BinaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
+        : SingleOutputProcessor(out)
+    {
         description_attrs.push_back("query=" + q.toString());
         if (!maker.postprocess.empty())
         {
@@ -193,11 +268,7 @@ struct BinaryProcessor : public DatasetProcessor
         }
     }
 
-	virtual ~BinaryProcessor()
-	{
-	}
-
-    virtual std::string describe() const
+    std::string describe() const override
     {
         string res = "binary(";
         res += str::join(", ", description_attrs.begin(), description_attrs.end());
@@ -205,21 +276,20 @@ struct BinaryProcessor : public DatasetProcessor
         return res;
     }
 
-    virtual void process(ReadonlyDataset& ds, const std::string& name)
+    void process(ReadonlyDataset& ds, const std::string& name) override
     {
         // TODO: validate query's postprocessor with ds' config
-        ds.query_bytes(query, out.fd());
+        ds.query_bytes(query, output);
     }
 
-    virtual void end()
+    void end() override
     {
-        out.stream().flush();
     }
 };
 
 
-TargetFileProcessor::TargetFileProcessor(DatasetProcessor* next, const std::string& pattern, arki::Output& output)
-		: next(next), pattern(pattern), output(output)
+TargetFileProcessor::TargetFileProcessor(SingleOutputProcessor* next, const std::string& pattern)
+    : next(next), pattern(pattern)
 {
     description_attrs.push_back("pattern=" + pattern);
     description_attrs.push_back("next=" + next->describe());
@@ -227,7 +297,7 @@ TargetFileProcessor::TargetFileProcessor(DatasetProcessor* next, const std::stri
 
 TargetFileProcessor::~TargetFileProcessor()
 {
-		if (next) delete next;
+    if (next) delete next;
 }
 
 std::string TargetFileProcessor::describe() const
@@ -240,19 +310,14 @@ std::string TargetFileProcessor::describe() const
 
 void TargetFileProcessor::process(ReadonlyDataset& ds, const std::string& name)
 {
-    if (runtime::Output* out = dynamic_cast<runtime::Output*>(&output))
-    {
-        TargetfileSpy spy(ds, *out, pattern);
-        next->process(spy, name);
-    } else {
-        throw wibble::exception::Consistency("setting up targetfile", "programming error: output is not a runtime::Output");
-    }
+    TargetfileSpy spy(ds, next->output, pattern);
+    next->process(spy, name);
 }
 
 void TargetFileProcessor::end() { next->end(); }
 
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, arki::Output& out)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher query, sys::NamedFileDescriptor& out)
 {
     if (data_only || !postprocess.empty()
 #ifdef HAVE_LUA

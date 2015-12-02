@@ -1,5 +1,6 @@
 #include <arki/utils/net/mime.h>
 #include <arki/utils/string.h>
+#include <arki/utils/sys.h>
 #include <arki/wibble/exception.h>
 #include <unistd.h>
 
@@ -135,6 +136,40 @@ bool Reader::readboundarytail(int sock)
                 break;
         }
     }
+}
+
+bool Reader::read_until_boundary(int sock, const std::string& boundary, int outfd, size_t max)
+{
+    sys::FileDescriptor out(outfd);
+    size_t read_so_far = 0;
+    unsigned got = 0;
+
+    while (got < boundary.size())
+    {
+        char c;
+        ssize_t count = read(sock, &c, 1);
+        if (count == 0) throw wibble::exception::Consistency("reading from socket", "data ends before MIME boundary");
+        if (count < 0) throw wibble::exception::System("reading from socket");
+
+        if (c == boundary[got])
+            ++got;
+        else
+        {
+            if (max == 0 || read_so_far < max)
+            {
+                if (got > 0)
+                {
+                    out.write(boundary.data(), got);
+                    read_so_far += got;
+                }
+                out.write(&c, 1);
+                ++read_so_far;
+            }
+            got = 0;
+        }
+    }
+
+    return readboundarytail(sock);
 }
 
 bool Reader::read_until_boundary(int sock, const std::string& boundary, std::ostream& out, size_t max)

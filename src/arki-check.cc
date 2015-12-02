@@ -4,7 +4,7 @@
 #include <arki/wibble/exception.h>
 #include <arki/utils/commandline/parser.h>
 #include <arki/configfile.h>
-#include <arki/metadata/printer.h>
+#include <arki/runtime/printer.h>
 #include <arki/datasetpool.h>
 #include <arki/dataset/local.h>
 #include <arki/metadata/consumer.h>
@@ -199,13 +199,13 @@ struct Counter : public metadata::Eater
 
 struct ScanTest : public Worker
 {
-    runtime::Output out; // Default output to stdout
+    runtime::Stdout out; // Default output to stdout
     metadata::BinaryPrinter printer;
     size_t idx;
 
     ScanTest(size_t idx=0) : printer(out), idx(idx) {}
 
-    virtual void process(const ConfigFile& cfg)
+    void process(const ConfigFile& cfg) override
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
         Counter counter(printer);
@@ -227,7 +227,7 @@ struct ScanTest : public Worker
         }
     }
 
-    virtual void done()
+    void done() override
     {
     }
 };

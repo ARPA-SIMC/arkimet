@@ -27,9 +27,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/tests/tut.h \
 		wibble/tests/tut_restartable.h \
 		wibble/grcal/grcal.h \
-		wibble/stream/posix.h \
 		defs.h \
-		core.h \
 		bbox.h \
 		configfile.h \
 		libconfig.h \
@@ -95,7 +93,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		matcher/utils.h \
 		metadata/collection.h \
 		metadata/consumer.h \
-		metadata/printer.h \
 		metadata/clusterer.h \
 		metadata/xargs.h \
 		metadatagrid.h \
@@ -109,6 +106,7 @@ nobase_dist_arkiinclude_HEADERS = \
 		runtime/config.h \
 		runtime.h \
 		runtime/io.h \
+		runtime/printer.h \
 		runtime/processor.h \
 		scan/any.h \
 		scan/dir.h \
@@ -294,6 +292,7 @@ libarkimet_la_SOURCES += \
 		matcher/quantity.cc \
 		runtime/config.cc \
 		runtime/io.cc \
+		runtime/printer.cc \
 		types-init.cc
 
 tests_arki_test_SOURCES += \
@@ -381,7 +380,6 @@ libarkimet_la_SOURCES += \
 		utils/sqlite.cc \
 		metadata.cc \
 		metadata/consumer.cc \
-		metadata/printer.cc \
 		metadata/collection.cc \
 		metadata/stream.cc \
 		metadata/clusterer.cc \

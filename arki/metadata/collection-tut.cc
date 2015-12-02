@@ -49,20 +49,19 @@ void to::test<1>()
     ensure(bufr.size() > 0);
     bufr = bufr.substr(0, 194);
 
-	runtime::Tempfile tf(".");
-	tf.unlink_on_exit(false);
-	for (int i = 0; i < repeats; ++i)
-		tf.stream().write(bufr.data(), bufr.size());
-	tf.stream().flush();
+    sys::File tf(sys::File::mkstemp("test"));
+    for (int i = 0; i < repeats; ++i)
+        tf.write(bufr.data(), bufr.size());
+    tf.close();
 
-	// Create metadata for the big BUFR file
-	scan::scan(tf.name(), c, "bufr");
-	ensure_equals(c.size(), (size_t)repeats);
+    // Create metadata for the big BUFR file
+    scan::scan(tf.name(), c, "bufr");
+    ensure_equals(c.size(), (size_t)repeats);
 
-	// Compress the data file
-	c.compressDataFile(127, "temp BUFR " + tf.name());
-	// Remove the original file
-	tf.unlink();
+    // Compress the data file
+    c.compressDataFile(127, "temp BUFR " + tf.name());
+    // Remove the original file
+    sys::unlink(tf.name());
     Metadata::flushDataReaders();
     for (Collection::const_iterator i = c.begin(); i != c.end(); ++i)
         (*i)->drop_cached_data();

@@ -95,14 +95,7 @@ struct ScanTestFilter : public metadata::Eater
 
             // Write the raw data to a temp file
             runtime::Tempfile tf;
-            tf.stream().write((const char*)data.data(), data.size());
-            if (tf.stream().bad())
-            {
-                stringstream ss;
-                ss << "cannot write " << data.size() << " bytes to " << tf.name();
-                throw std::system_error(errno, std::system_category(), ss.str());
-            }
-            tf.stream().flush();
+            tf.write_all_or_throw((const char*)data.data(), data.size());
 
             // Rescan the data
             try {

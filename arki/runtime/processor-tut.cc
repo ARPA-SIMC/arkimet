@@ -36,7 +36,7 @@ struct arki_processor_shar {
         if (sys::exists("pm-out"))
             sys::unlink("pm-out");
 
-        runtime::Output out("pm-out");
+        runtime::File out("pm-out");
         unique_ptr<DatasetProcessor> dp(pm.make(matcher, out));
         dp->process(*ds, "test");
         dp->end();

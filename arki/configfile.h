@@ -175,10 +175,13 @@ public:
 	 */
 	void parse(std::istream& in, const std::string& fileName);
 
-	/**
-	 * Output this configuration to the given output stream
-	 */
-	void output(std::ostream& out, const std::string& fileName, const std::string& secName = std::string()) const;
+    /**
+     * Output this configuration to the given output stream
+     */
+    void output(std::ostream& out, const std::string& fileName, const std::string& secName=std::string()) const;
+
+    /// Serialize to a string
+    std::string serialize() const;
 
 	/**
 	 * Convenient function to parse a boolean

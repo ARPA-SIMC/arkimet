@@ -13,7 +13,6 @@
 #include <arki/utils/sys.h>
 #include <arki/runtime/io.h>
 #include <arki/runtime/processor.h>
-#include <arki/wibble/stream/posix.h>
 
 #include <sstream>
 #include <iostream>

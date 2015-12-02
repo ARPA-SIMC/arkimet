@@ -4,7 +4,7 @@
 #include <arki/utils/commandline/parser.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
-#include <arki/metadata/printer.h>
+#include <arki/runtime/printer.h>
 #include <arki/matcher.h>
 #include <arki/dataset/http.h>
 #include <arki/summary.h>
@@ -176,68 +176,71 @@ int main(int argc, const char* argv[])
             cout << m.toStringExpanded() << endl;
             return 0;
         }
-		
-		if (opts.aliases->boolValue())
-		{
-			ConfigFile cfg;
-			if (opts.hasNext())
-			{
-				dataset::HTTP::getAliasDatabase(opts.next(), cfg);
-			} else {
-				MatcherAliasDatabase::serialise(cfg);
-			}
-			
-			// Open the output file
-			runtime::Output out(*opts.outfile);
 
-			// Output the merged configuration
-			cfg.output(out.stream(), out.name());
+        if (opts.aliases->boolValue())
+        {
+            ConfigFile cfg;
+            if (opts.hasNext())
+            {
+                dataset::HTTP::getAliasDatabase(opts.next(), cfg);
+            } else {
+                MatcherAliasDatabase::serialise(cfg);
+            }
 
-			return 0;
-		}
+            // Output the merged configuration
+            string res = cfg.serialize();
+            unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+            out->write_all_or_throw(res);
+            out->close();
 
-		if (opts.config->boolValue())
-		{
-			ConfigFile cfg;
-			while (opts.hasNext())
-			{
-				ReadonlyDataset::readConfig(opts.next(), cfg);
-			}
-			
-			// Open the output file
-			runtime::Output out(*opts.outfile);
+            return 0;
+        }
 
-			// Output the merged configuration
-			cfg.output(out.stream(), out.name());
+        if (opts.config->boolValue())
+        {
+            ConfigFile cfg;
+            while (opts.hasNext())
+            {
+                ReadonlyDataset::readConfig(opts.next(), cfg);
+            }
 
-			return 0;
-		}
+            // Output the merged configuration
+            string res = cfg.serialize();
+            unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+            out->write_all_or_throw(res);
+            out->close();
+
+            return 0;
+        }
 
 #ifdef HAVE_GEOS
-		if (opts.bbox->boolValue())
-		{
-			// Open the input file
-			runtime::Input in(opts);
+        if (opts.bbox->boolValue())
+        {
+            // Open the input file
+            runtime::Input in(opts);
 
-			// Read everything into a single summary
-			Summary summary;
-			addToSummary(in, summary);
+            // Read everything into a single summary
+            Summary summary;
+            addToSummary(in, summary);
 
-			// Get the bounding box
-			ARKI_GEOS_GEOMETRYFACTORY gf;
-			std::unique_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
+            // Get the bounding box
+            ARKI_GEOS_GEOMETRYFACTORY gf;
+            std::unique_ptr<ARKI_GEOS_GEOMETRY> hull = summary.getConvexHull(gf);
 
-			// Open the output file
-			runtime::Output out(*opts.outfile);
+            // Print it out
+            stringstream ss;
+            if (hull.get())
+                ss << hull->toString() << endl;
+            else
+                ss << "no bounding box could be computed." << endl;
 
-			// Print it out
-			if (hull.get())
-				out.stream() << hull->toString() << endl;
-			else
-				out.stream() << "no bounding box could be computed." << endl;
+            // Open the output file
+            unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+            out->write_all_or_throw(ss.str());
+            out->close();
 
-			return 0;
-		}
+            return 0;
+        }
 #endif
 
         if (opts.info->boolValue())
@@ -247,46 +250,46 @@ int main(int argc, const char* argv[])
             return 0;
         }
 
-		// Open the input file
-		runtime::Input in(opts);
+        // Open the input file
+        runtime::Input in(opts);
 
-		// Open the output channel
-		runtime::Output out(*opts.outfile);
+        // Open the output channel
+        unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
 
-		if (opts.reverse_data->boolValue())
-		{
-			Metadata md;
-			while (md.readYaml(in.stream(), in.name()))
-				md.write(out.stream(), out.name());
-		}
-		else if (opts.reverse_summary->boolValue())
-		{
-			Summary summary;
-			while (summary.readYaml(in.stream(), in.name()))
-				summary.write(out.stream(), out.name());
-		}
-		else
-		{
-            metadata::YamlPrinter writer(out, opts.annotate->boolValue());
+        if (opts.reverse_data->boolValue())
+        {
+            Metadata md;
+            while (md.readYaml(in.stream(), in.name()))
+                md.write(*out, out->name());
+        }
+        else if (opts.reverse_summary->boolValue())
+        {
+            Summary summary;
+            while (summary.readYaml(in.stream(), in.name()))
+                summary.write(*out, out->name());
+        }
+        else
+        {
+            metadata::YamlPrinter writer(*out, opts.annotate->boolValue());
 
-			Metadata md;
-			Summary summary;
+            Metadata md;
+            Summary summary;
 
             vector<uint8_t> buf;
             string signature;
             unsigned version;
 
-			while (types::readBundle(in.stream(), in.name(), buf, signature, version))
-			{
-				if (signature == "MD" || signature == "!D")
-				{
+            while (types::readBundle(in.stream(), in.name(), buf, signature, version))
+            {
+                if (signature == "MD" || signature == "!D")
+                {
                     md.read(buf, version, in.name());
                     if (md.source().style() == Source::INLINE)
                         md.readInlineData(in.stream(), in.name());
                     writer.observe(md);
-				}
-				else if (signature == "SU")
-				{
+                }
+                else if (signature == "SU")
+                {
                     summary.read(buf, version, in.name());
                     writer.observe_summary(summary);
                 }

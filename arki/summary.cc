@@ -525,6 +525,18 @@ void Summary::write(std::ostream& out, const std::string& filename) const
     }
 }
 
+void Summary::write(int outfd, const std::string& filename) const
+{
+    // Prepare the encoded data
+    string encoded = encode(true);
+
+    iotrace::trace_file(filename, 0, encoded.size(), "write summary");
+
+    // Write out
+    sys::NamedFileDescriptor out(outfd, filename);
+    out.write(encoded.data(), encoded.size());
+}
+
 void Summary::writeAtomically(const std::string& fname)
 {
     string enc = encode(true);

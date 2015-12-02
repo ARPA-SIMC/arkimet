@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <cstdlib>
+#include <cassert>
 
 #if __xlC__
 // From glibc
@@ -405,10 +406,10 @@ void CommandLine::setupProcessing()
         }
     }
 
-	// Open output stream
+    // Open output stream
 
-	if (!output)
-		output = new Output(*outfile);
+    if (!output)
+        output = make_output(*outfile).release();
 
     // Create the core processor
     unique_ptr<DatasetProcessor> p = pmaker.make(query, *output);
@@ -416,7 +417,11 @@ void CommandLine::setupProcessing()
 
     // If targetfile is requested, wrap with the targetfile processor
     if (targetfile->isSet())
-        processor = new TargetFileProcessor(processor, targetfile->stringValue(), *output);
+    {
+        SingleOutputProcessor* sop = dynamic_cast<SingleOutputProcessor*>(processor);
+        assert(sop != nullptr);
+        processor = new TargetFileProcessor(sop, targetfile->stringValue());
+    }
 
     // Create the dispatcher if needed
     if (dispatch->isSet() || testdispatch->isSet())

@@ -2,16 +2,13 @@
 #define ARKI_TARGETFILE_H
 
 #include <arki/utils/lua.h>
+#include <arki/utils/sys.h>
 #include <arki/dataset.h>
 #include <string>
 #include <map>
 
 namespace arki {
 class Metadata;
-
-namespace runtime {
-class Output;
-}
 
 class Targetfile
 {
@@ -67,12 +64,14 @@ public:
  */
 class TargetfileSpy : public ReadonlyDataset
 {
-	Targetfile::Func func;
-	ReadonlyDataset& ds;
-	runtime::Output& output;
+    Targetfile::Func func;
+    ReadonlyDataset& ds;
+    utils::sys::NamedFileDescriptor& output;
+    utils::sys::File* cur_output = nullptr;
 
 public:
-	TargetfileSpy(ReadonlyDataset& ds, runtime::Output& output, const std::string& def);
+    TargetfileSpy(ReadonlyDataset& ds, utils::sys::NamedFileDescriptor& output, const std::string& def);
+    ~TargetfileSpy();
 
     void redirect(Metadata& md);
 

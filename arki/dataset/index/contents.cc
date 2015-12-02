@@ -521,18 +521,17 @@ bool Contents::query(const dataset::DataQuery& q, metadata_dest_func dest) const
                 // cluster data by reftime, we guarantee that sorting is
                 // consistent as long as data is required to be sorted by
                 // reftime first.
-				if (mdbuf.size() > 8192)
-				{
+                if (mdbuf.size() > 8192)
+                {
                     // If we pile up too many metadata, write them out
                     if (q.sorter) mdbuf.sort(*q.sorter);
-					if (tmpfile.get() == 0)
-						tmpfile.reset(new runtime::Tempfile);
-					mdbuf.writeTo(tmpfile->stream(), tmpfile->name());
-					tmpfile->stream().flush();
-					mdbuf.clear();
-				}
-				last_fname = srcname;
-			}
+                    if (tmpfile.get() == 0)
+                        tmpfile.reset(new runtime::Tempfile);
+                    mdbuf.write_to(*tmpfile, tmpfile->name());
+                    mdbuf.clear();
+                }
+                last_fname = srcname;
+            }
 
             // Rebuild the Metadata
             unique_ptr<Metadata> md(new Metadata);

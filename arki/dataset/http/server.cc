@@ -250,14 +250,10 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
 
     {
         // Create Output directed to req.sock
-        runtime::Output sockoutput(req.sock, "socket");
+        sys::NamedFileDescriptor sockoutput(req.sock, "socket");
 
-        if (pmaker.postprocess.empty())
-            // Send headers when data starts flowing
-            sockoutput.set_hook(headers);
-        else
-            // Hook sending headers to when the subprocess start sending
-            pmaker.data_start_hook = &headers;
+        // Hook sending headers to when the subprocess start sending
+        pmaker.data_start_hook = &headers;
 
         // Create the dataset processor for this query
         unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);

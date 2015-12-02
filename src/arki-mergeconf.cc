@@ -89,23 +89,23 @@ int main(int argc, const char* argv[])
 		if (!foundConfig)
 			throw commandline::BadOption("you need to specify at least one valid config file or dataset directory");
 
-		// Validate the configuration
-		bool hasErrors = false;
-		for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
-				i != cfg.sectionEnd(); ++i)
-		{
-			// Validate filters
-			try {
-				Matcher::parse(i->second->value("filter"));
-			} catch (wibble::exception::Generic& e) {
-				const ConfigFile::FilePos* fp = i->second->valueInfo("filter");
-				if (fp)
-					cerr << fp->pathname << ":" << fp->lineno << ":";
-				cerr << e.what();
-				cerr << endl;
-				hasErrors = true;
-			}
-		}
+        // Validate the configuration
+        bool hasErrors = false;
+        for (ConfigFile::const_section_iterator i = cfg.sectionBegin();
+                i != cfg.sectionEnd(); ++i)
+        {
+            // Validate filters
+            try {
+                Matcher::parse(i->second->value("filter"));
+            } catch (std::exception& e) {
+                const ConfigFile::FilePos* fp = i->second->valueInfo("filter");
+                if (fp)
+                    cerr << fp->pathname << ":" << fp->lineno << ":";
+                cerr << e.what();
+                cerr << endl;
+                hasErrors = true;
+            }
+        }
 		if (hasErrors)
 		{
 			cerr << "Some input files did not validate." << endl;
@@ -142,13 +142,14 @@ int main(int argc, const char* argv[])
 			}
 		}
 
-		// Open the output file
-		runtime::Output out(*opts.outfile);
 
-		// Output the merged configuration
-		cfg.output(out.stream(), out.name());
+        // Output the merged configuration
+        string res = cfg.serialize();
+        unique_ptr<sys::NamedFileDescriptor> out(runtime::make_output(*opts.outfile));
+        out->write_all_or_throw(res);
+        out->close();
 
-		return 0;
+        return 0;
     } catch (commandline::BadOption& e) {
         cerr << e.what() << endl;
         opts.outputHelp(cerr);

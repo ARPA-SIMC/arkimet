@@ -42,6 +42,16 @@ struct Reader
     bool read_headers(int sock, std::map<std::string, std::string>& headers);
 
     /**
+     * Read until boundary is found, sending data to the given file descriptor
+     *
+     * @param max Maximum number of bytes to read, or 0 for unilimited until boundary
+     *
+     * @returns true if another MIME part follows, false if it is the last part
+     * (boundary has trailing --)
+     */
+    bool read_until_boundary(int sock, const std::string& boundary, int out, size_t max=0);
+
+    /**
      * Read until boundary is found, sending data to the given ostream
      *
      * @param max Maximum number of bytes to read, or 0 for unilimited until boundary

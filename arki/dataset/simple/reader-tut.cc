@@ -12,7 +12,6 @@
 #include <arki/utils.h>
 #include <arki/utils/files.h>
 #include <arki/utils/sys.h>
-#include <arki/wibble/stream/posix.h>
 #include <arki/wibble/grcal/grcal.h>
 
 namespace tut {

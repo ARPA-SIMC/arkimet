@@ -18,7 +18,6 @@
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include <arki/wibble/stream/posix.h>
 #include <sys/fcntl.h>
 #include <memory>
 #include <sstream>

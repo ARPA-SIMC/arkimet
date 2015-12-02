@@ -300,8 +300,7 @@ struct Wizard
     void save()
     {
         sys::makedirs(str::dirname(configFile));
-        runtime::Output output(configFile);
-        cfg.output(output.stream(), output.name());
+        sys::write_file(configFile, cfg.serialize());
         out << "Configuration saved in " << configFile << "." << endl;
     }
 };

@@ -105,16 +105,16 @@ Querymacro::Querymacro(const ConfigFile& cfg, const std::string& name, const std
 	// Load the arguments as a global variable
 	lua_setglobal(*L, "args");
 
-	/// Load the right qmacro file
-	string fname = runtime::Config::get().dir_qmacro.find_file(macroname + ".lua");
-	if (luaL_dofile(*L, fname.c_str()))
-	{
-		// Copy the error, so that it will exist after the pop
-		string error = lua_tostring(*L, -1);
-		// Pop the error from the stack
-		lua_pop(*L, 1);
-		throw wibble::exception::Consistency("parsing " + fname, error);
-	}
+    /// Load the right qmacro file
+    string fname = runtime::Config::get().dir_qmacro.find_file(macroname + ".lua");
+    if (luaL_dofile(*L, fname.c_str()))
+    {
+        // Copy the error, so that it will exist after the pop
+        string error = lua_tostring(*L, -1);
+        // Pop the error from the stack
+        lua_pop(*L, 1);
+        throw std::runtime_error("cannot parse " + fname + ": " + error);
+    }
 
 	/// Index the queryData function
 	lua_getglobal(*L, "queryData");
@@ -172,13 +172,13 @@ void Querymacro::query_data(const dataset::DataQuery& q, metadata_dest_func dest
     lua_pushlightuserdata(*L, &dest);
     lua_pushcclosure(*L, arkilua_metadataconsumer, 1);
 
-	// Call the function
-	if (lua_pcall(*L, 2, 0, 0))
-	{
-		string error = lua_tostring(*L, -1);
-		lua_pop(*L, 1);
-		throw wibble::exception::Consistency("running queryData function", error);
-	}
+    // Call the function
+    if (lua_pcall(*L, 2, 0, 0))
+    {
+        string error = lua_tostring(*L, -1);
+        lua_pop(*L, 1);
+        throw std::runtime_error("cannot run queryData function: " + error);
+    }
 }
 
 void Querymacro::querySummary(const Matcher& matcher, Summary& summary)
@@ -195,13 +195,13 @@ void Querymacro::querySummary(const Matcher& matcher, Summary& summary)
 	// Pass summary
 	summary.lua_push(*L);
 
-	// Call the function
-	if (lua_pcall(*L, 2, 0, 0))
-	{
-		string error = lua_tostring(*L, -1);
-		lua_pop(*L, 1);
-		throw wibble::exception::Consistency("running querySummary function", error);
-	}
+    // Call the function
+    if (lua_pcall(*L, 2, 0, 0))
+    {
+        string error = lua_tostring(*L, -1);
+        lua_pop(*L, 1);
+        throw std::runtime_error("cannot run querySummary function: " + error);
+    }
 }
 
 #if 0

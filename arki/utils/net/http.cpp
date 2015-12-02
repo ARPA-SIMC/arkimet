@@ -3,13 +3,13 @@
 #include <arki/utils/net/http.h>
 #include <arki/utils/string.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/stream/posix.h>
 #include <sstream>
 #include <ctime>
 #include <cerrno>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -437,14 +437,9 @@ bool FileParam::FileInfo::read(
         fname = preferred_fname + buf;
     }
 
-    // Wrap output FD into a stream, which will take care of
-    // closing it
-    wibble::stream::PosixBuf posixBuf(outfd);
-    ostream out(&posixBuf);
-
     // Read until boundary, sending data to temp file
 
-    bool has_part = mime_reader.read_until_boundary(sock, boundary, out, inputsize);
+    bool has_part = mime_reader.read_until_boundary(sock, boundary, outfd, inputsize);
 
     return has_part;
 }

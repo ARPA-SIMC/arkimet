@@ -96,6 +96,11 @@ public:
 	 */
 	void writeTo(std::ostream& out, const std::string& fname) const;
 
+    /**
+     * Write all metadata to the given output file
+     */
+    void write_to(int out, const std::string& fname) const;
+
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;
 
