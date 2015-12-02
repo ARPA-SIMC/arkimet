@@ -6,6 +6,7 @@
 #include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include <arki/wibble/string.h>
 
 using namespace std;
 using namespace arki::utils;

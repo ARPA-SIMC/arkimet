@@ -141,7 +141,9 @@ struct TestItemSerializes : public ArkiCheck
         wassert(actual(decodeInner(code, buf, len)) == act);
 
         // String encoding
-        wassert(actual(types::decodeString(code, wibble::str::fmt(*act))) == *act);
+        stringstream ss;
+        ss << *act;
+        wassert(actual(types::decodeString(code, ss.str())) == *act);
 
         // JSON encoding
         {

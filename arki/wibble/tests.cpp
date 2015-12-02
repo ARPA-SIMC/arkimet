@@ -20,6 +20,22 @@ const wibble::tests::LocationInfo wibble_test_location_info;
 namespace wibble {
 namespace tests {
 
+/// Check if a string starts with the given substring
+inline bool startsWith(const std::string& str, const std::string& part)
+{
+	if (str.size() < part.size())
+		return false;
+	return str.substr(0, part.size()) == part;
+}
+
+/// Check if a string ends with the given substring
+inline bool endsWith(const std::string& str, const std::string& part)
+{
+	if (str.size() < part.size())
+		return false;
+	return str.substr(str.size() - part.size()) == part;
+}
+
 Location::Location()
     : parent(0), info(0), file(0), line(0), args(0)
 {
@@ -104,7 +120,7 @@ void test_assert_re_match(WIBBLE_TEST_LOCPRM, const std::string& regexp, const s
 
 void test_assert_startswith(WIBBLE_TEST_LOCPRM, const std::string& expected, const std::string& actual)
 {
-    if (!str::startsWith(actual, expected))
+    if (!startsWith(actual, expected))
     {
         std::stringstream ss;
         ss << "'" << actual << "' does not start with '" << expected << "'";
@@ -114,7 +130,7 @@ void test_assert_startswith(WIBBLE_TEST_LOCPRM, const std::string& expected, con
 
 void test_assert_endswith(WIBBLE_TEST_LOCPRM, const std::string& expected, const std::string& actual)
 {
-    if (!str::endsWith(actual, expected))
+    if (!endsWith(actual, expected))
     {
         std::stringstream ss;
         ss << "'" << actual << "' does not end with '" << expected << "'";
@@ -188,12 +204,12 @@ void TestStartsWith::check(WIBBLE_TEST_LOCPRM) const
 {
     if (!inverted)
     {
-        if (str::startsWith(actual, expected)) return;
+        if (startsWith(actual, expected)) return;
         std::stringstream ss;
         ss << "'" << actual << "' does not start with '" << expected << "'";
         wibble_test_location.fail_test(ss.str());
     } else {
-        if (!str::startsWith(actual, expected)) return;
+        if (!startsWith(actual, expected)) return;
         std::stringstream ss;
         ss << "'" << actual << "' starts with '" << expected << "'";
         wibble_test_location.fail_test(ss.str());
@@ -204,12 +220,12 @@ void TestEndsWith::check(WIBBLE_TEST_LOCPRM) const
 {
     if (!inverted)
     {
-        if (str::endsWith(actual, expected)) return;
+        if (endsWith(actual, expected)) return;
         std::stringstream ss;
         ss << "'" << actual << "' does not end with '" << expected << "'";
         wibble_test_location.fail_test(ss.str());
     } else {
-        if (!str::endsWith(actual, expected)) return;
+        if (!endsWith(actual, expected)) return;
         std::stringstream ss;
         ss << "'" << actual << "' ends with '" << expected << "'";
         wibble_test_location.fail_test(ss.str());

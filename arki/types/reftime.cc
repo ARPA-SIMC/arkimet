@@ -1,30 +1,8 @@
-/*
- * types/reftime - Vertical reftime or layer
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/types/reftime.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -91,7 +69,11 @@ unique_ptr<Reftime> Reftime::decode(const unsigned char* buf, size_t len)
             ensureSize(len, 11, "Reftime");
             return Reftime::createPeriod(*Time::decode(buf+1, 5), *Time::decode(buf+6, 5));
         default:
-            throw wibble::exception::Consistency("parsing reference time", "style " + str::fmt(s) + "but we can only decode POSITION and PERIOD");
+        {
+            stringstream ss;
+            ss << "cannot parse reference time: style is " << s << " but we can only decode POSITION and PERIOD";
+            throw std::runtime_error(ss.str());
+        }
     }
 }
 

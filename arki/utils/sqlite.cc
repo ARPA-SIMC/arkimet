@@ -142,47 +142,71 @@ void Query::reset()
 
 void Query::bind(int idx, const char* str, int len)
 {
-	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
-	// pointing to invalid memory at exit of this function, because
-	// sqlite3_step will not be called again without rebinding parameters.
-	if (sqlite3_bind_text(m_stm, idx, str, len, SQLITE_STATIC) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    // Bind parameters.  We use SQLITE_STATIC even if the pointers will be
+    // pointing to invalid memory at exit of this function, because
+    // sqlite3_step will not be called again without rebinding parameters.
+    if (sqlite3_bind_text(m_stm, idx, str, len, SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bind(int idx, const std::string& str)
 {
-	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
-	// pointing to invalid memory at exit of this function, because
-	// sqlite3_step will not be called again without rebinding parameters.
-	if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    // Bind parameters.  We use SQLITE_STATIC even if the pointers will be
+    // pointing to invalid memory at exit of this function, because
+    // sqlite3_step will not be called again without rebinding parameters.
+    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindTransient(int idx, const std::string& str)
 {
-	if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindBlob(int idx, const std::string& str)
 {
-	// Bind parameters.  We use SQLITE_STATIC even if the pointers will be
-	// pointing to invalid memory at exit of this function, because
-	// sqlite3_step will not be called again without rebinding parameters.
-	if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    // Bind parameters.  We use SQLITE_STATIC even if the pointers will be
+    // pointing to invalid memory at exit of this function, because
+    // sqlite3_step will not be called again without rebinding parameters.
+    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindBlobTransient(int idx, const std::string& str)
 {
-	if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
-		m_db.throwException("binding string to " + name + " query parameter #" + str::fmt(idx));
+    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind string to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindNull(int idx)
 {
-	if (sqlite3_bind_null(m_stm, idx) != SQLITE_OK)
-		m_db.throwException("binding NULL to " + name + " query parameter #" + str::fmt(idx));
+    if (sqlite3_bind_null(m_stm, idx) != SQLITE_OK)
+    {
+        stringstream ss;
+        ss << "cannot bind NULL to " << name << " query parameter #" << idx;
+        m_db.throwException(ss.str());
+    }
 }
 
 void Query::bindType(int idx, const types::Type& item)

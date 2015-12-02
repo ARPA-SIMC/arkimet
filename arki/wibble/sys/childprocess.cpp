@@ -228,16 +228,20 @@ void ChildProcess::waitForSuccess() {
 
     if ( WIFEXITED( r ) ) {
         if ( WEXITSTATUS( r ) )
-            throw exception::Generic(
-                str::fmtf( "Subprocess terminated with error %d.",
-                           WEXITSTATUS( r ) ) );
+        {
+            char buf[128];
+            snprintf(buf, 128, "Subprocess terminated with error %d.", WEXITSTATUS(r));
+            throw std::runtime_error(buf);
+        }
         else
             return;
     }
     if ( WIFSIGNALED( r ) )
-        throw exception::Generic(
-            str::fmtf( "Subprocess terminated by signal %d.",
-                       WTERMSIG( r ) ) );
+    {
+        char buf[128];
+        snprintf(buf, 128, "Subprocess terminated by signal %d.", WTERMSIG(r));
+        throw std::runtime_error(buf);
+    }
     throw exception::Generic( "Error waiting for subprocess." );
 #pragma GCC diagnostic pop
 #endif

@@ -1,31 +1,8 @@
-/*
- * types/source - Source information
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "source.h"
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/lua.h>
@@ -165,9 +142,13 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
         }
         case Source::URL: return createURL(format, inner);
         case Source::INLINE: return createInline(format, strtoull(inner.c_str(), 0, 10));
-		default:
-			throw wibble::exception::Consistency("parsing Source", "unknown Source style " + str::fmt(style));
-	}
+        default:
+        {
+            stringstream ss;
+            ss << "cannot parse Source: unknown Source style " << style;
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 unique_ptr<Source> Source::decodeMapping(const emitter::memory::Mapping& val)

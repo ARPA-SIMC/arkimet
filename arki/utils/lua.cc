@@ -88,18 +88,18 @@ void Lua::functionFromString(const std::string& name, const std::string& buf, co
 
 std::string Lua::runFunctionSequence(const std::string& prefix, size_t count)
 {
-	for (size_t i = 0; i < count; ++i)
-	{
-		string name = prefix + str::fmt(i);
-		lua_getglobal(L, name.c_str()); // function to be called
-		if (lua_pcall(L, 0, 0, 0))
-		{
-			string error = lua_tostring(L, -1);
-			lua_pop(L, 1);
-			return error;
-		}
-	}
-	return string();
+    for (size_t i = 0; i < count; ++i)
+    {
+        string name = prefix + to_string(i);
+        lua_getglobal(L, name.c_str()); // function to be called
+        if (lua_pcall(L, 0, 0, 0))
+        {
+            string error = lua_tostring(L, -1);
+            lua_pop(L, 1);
+            return error;
+        }
+    }
+    return string();
 }
 
 int Lua::backtrace_error_handler(lua_State *L)

@@ -1,27 +1,4 @@
-/*
- * types/time - Time
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/types/time.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
@@ -80,13 +57,14 @@ int Time::compare(const Type& o) const
 {
     if (int res = Type::compare(o)) return res;
 
-	// We should be the same kind, so upcast
-	const Time* v = dynamic_cast<const Time*>(&o);
-	if (!v)
-		throw wibble::exception::Consistency(
-			"comparing metadata types",
-			str::fmtf("second element claims to be Type, but is `%s' instead",
-				typeid(&o).name()));
+    // We should be the same kind, so upcast
+    const Time* v = dynamic_cast<const Time*>(&o);
+    if (!v)
+    {
+        stringstream ss;
+        ss << "cannot compare metadata types: second element claims to be Time, but is `" << typeid(&o).name() << "' instead",
+           throw std::runtime_error(ss.str());
+    }
 
     return compare_raw(v->vals);
 }
@@ -156,9 +134,11 @@ unique_ptr<Time> Time::decodeList(const emitter::memory::List& val)
     using namespace emitter::memory;
 
     if (val.size() < 6)
-        throw wibble::exception::Consistency(
-                "decoding item",
-                str::fmtf("list has %zd elements instead of 6", val.size()));
+    {
+        stringstream ss;
+        ss << "cannot decode item: list has " << val.size() << " elements instead of 6";
+        throw std::runtime_error(ss.str());
+    }
 
     unique_ptr<Time> res(new Time);
     for (unsigned i = 0; i < 6; ++i)

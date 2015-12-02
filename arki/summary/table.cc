@@ -5,13 +5,13 @@
 #include <arki/types/utils.h>
 #include <arki/emitter/memory.h>
 #include <arki/summary.h>
-#include <arki/utils/string.h>
+#include <arki/wibble/string.h>
 #include <algorithm>
 #include <iostream>
-#include <arki/wibble/string.h>
 
 using namespace std;
 using namespace arki::types;
+using namespace arki::utils;
 
 namespace arki {
 namespace summary {
@@ -202,12 +202,10 @@ void Table::merge(const emitter::memory::Mapping& m)
 
 bool Table::merge_yaml(std::istream& in, const std::string& filename)
 {
-    using namespace wibble::str;
-
     Row new_row;
     new_row.set_to_zero();
-    YamlStream yamlStream;
-    for (YamlStream::const_iterator i = yamlStream.begin(in);
+    wibble::str::YamlStream yamlStream;
+    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
             i != yamlStream.end(); ++i)
     {
         types::Code type = types::parseCodeName(i->first);
@@ -216,8 +214,8 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
             case types::TYPE_SUMMARYITEM:
                 {
                     stringstream in(i->second, ios_base::in);
-                    YamlStream yamlStream;
-                    for (YamlStream::const_iterator i = yamlStream.begin(in);
+                    wibble::str::YamlStream yamlStream;
+                    for (wibble::str::YamlStream::const_iterator i = yamlStream.begin(in);
                             i != yamlStream.end(); ++i)
                     {
                         types::Code type = types::parseCodeName(i->first);
@@ -236,8 +234,11 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
                 break;
             }
             default:
-                throw wibble::exception::Consistency("parsing file " + filename,
-                    "cannot handle element " + fmt(type));
+            {
+                stringstream ss;
+                ss << "cannot parse file " << filename << ": cannot handle element " << type;
+                throw std::runtime_error(ss.str());
+            }
         }
     }
     return !in.eof();

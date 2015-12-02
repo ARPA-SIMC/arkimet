@@ -4,7 +4,6 @@
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 
 #include "config.h"
 #ifdef HAVE_LUA
@@ -63,13 +62,13 @@ typename StyledType<BASE>::Style StyledType<BASE>::style_from_mapping(const emit
 template<typename TYPE>
 bool StyledType<TYPE>::lua_lookup(lua_State* L, const std::string& name) const
 {
-        if (name == "style")
-        {
-		std::string s = TYPE::formatStyle(style());
-                lua_pushlstring(L, s.data(), s.size());
-                return true;
-        }
-	return false;
+    if (name == "style")
+    {
+        std::string s = TYPE::formatStyle(style());
+        lua_pushlstring(L, s.data(), s.size());
+        return true;
+    }
+    return false;
 }
 #endif
 

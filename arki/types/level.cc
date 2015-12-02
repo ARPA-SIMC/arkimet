@@ -1,27 +1,4 @@
-/*
- * types/level - Vertical level or layer
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/utils.h>
 #include <arki/types/level.h>
 #include <arki/types/utils.h>
@@ -533,12 +510,14 @@ unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string GRIB1::exactQuery() const
 {
-	switch (valType())
-	{
-		case 0: return str::fmtf("GRIB1,%d", (int)m_type);
-		case 1: return str::fmtf("GRIB1,%d,%d", (int)m_type, (int)m_l1);
-		default: return str::fmtf("GRIB1,%d,%d,%d", (int)m_type, (int)m_l1, (int)m_l2);
-	}
+    char buf[128];
+    switch (valType())
+    {
+        case 0: snprintf(buf, 128, "GRIB1,%d", (int)m_type); break;
+        case 1: snprintf(buf, 128, "GRIB1,%d,%d", (int)m_type, (int)m_l1); break;
+        default: snprintf(buf, 128, "GRIB1,%d,%d,%d", (int)m_type, (int)m_l1, (int)m_l2); break;
+    }
+    return buf;
 }
 const char* GRIB1::lua_type_name() const { return "arki.types.level.grib1"; }
 

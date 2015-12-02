@@ -1,31 +1,8 @@
-/*
- * types/value - Metadata type to store small values
- *
- * Copyright (C) 2012--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
-#include <arki/wibble/regexp.h>
 #include <arki/types/value.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include "config.h"
@@ -43,7 +20,6 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
-using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -70,10 +46,11 @@ int Value::compare(const Type& o) const
     // We should be the same kind, so upcast
     const Value* v = dynamic_cast<const Value*>(&o);
     if (!v)
-        throw wibble::exception::Consistency(
-                "comparing metadata types",
-                str::fmtf("second element claims to be `value', but is `%s' instead",
-                    typeid(&o).name()));
+    {
+        stringstream ss;
+        ss << "cannot compare metadata type: second element claims to be `value', but is `" << typeid(&o).name() << "' instead";
+        throw std::runtime_error(ss.str());
+    }
 
     // Just compare buffers
     if (buffer < v->buffer) return -1;
@@ -88,7 +65,7 @@ void Value::encodeWithoutEnvelope(Encoder& enc) const
 
 std::ostream& Value::writeToOstream(std::ostream& o) const
 {
-    return o << str::c_escape(buffer);
+    return o << str::encode_cstring(buffer);
 }
 
 void Value::serialiseLocal(Emitter& e, const Formatter* f) const
@@ -104,7 +81,7 @@ unique_ptr<Value> Value::decode(const unsigned char* buf, size_t len)
 unique_ptr<Value> Value::decodeString(const std::string& val)
 {
     size_t len;
-    return Value::create(str::c_unescape(val, len));
+    return Value::create(str::decode_cstring(val, len));
 }
 
 unique_ptr<Value> Value::decodeMapping(const emitter::memory::Mapping& val)

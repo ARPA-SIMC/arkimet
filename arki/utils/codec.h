@@ -2,8 +2,8 @@
 #define ARKI_UTILS_CODEC_H
 
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <string>
+#include <sstream>
 #include <type_traits>
 #include <cstdint>
 
@@ -14,9 +14,12 @@ namespace codec {
 /// Simple boundary check
 static inline void ensureSize(size_t len, size_t req, const char* what)
 {
-	using namespace wibble::str;
-	if (len < req)
-		throw wibble::exception::Consistency(std::string("parsing ") + what, "size is " + fmt(len) + " but we need at least "+fmt(req)+" for the "+what);
+    if (len < req)
+    {
+        std::stringstream ss;
+        ss << "cannot parse " << what << ": size is " << len << " but we need at least " << req << " for the " << what;
+        throw std::runtime_error(ss.str());
+    }
 }
 
 /**
@@ -58,10 +61,13 @@ size_t decodeVarint(const BTYPE* genbuf, unsigned int size, T& val)
 template<typename T, typename BTYPE>
 size_t decodeVarint(const BTYPE* genbuf, unsigned int size, T& val, const char* what)
 {
-	using namespace wibble::str;
-	size_t res = decodeVarint(genbuf, size, val);
-	if (res == 0)
-		throw wibble::exception::Consistency(std::string("parsing ") + what, "invalid varint data");
+    size_t res = decodeVarint(genbuf, size, val);
+    if (res == 0)
+    {
+        std::stringstream ss;
+        ss << "cannot parse " << what << ": invalid varint data";
+        throw std::runtime_error(ss.str());
+    }
 }
 
 /// Decode the first 'bytes' bytes from val as an int, big endian

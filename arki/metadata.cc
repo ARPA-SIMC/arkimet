@@ -13,6 +13,7 @@
 #include "scan/any.h"
 #include "utils/datareader.h"
 #include "utils/string.h"
+#include <arki/wibble/string.h>
 #include <unistd.h>
 #include <fstream>
 #include <cstdlib>

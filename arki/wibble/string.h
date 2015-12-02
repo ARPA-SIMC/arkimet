@@ -30,50 +30,9 @@
 #include <deque>
 #include <sstream>
 #include <cctype>
-#ifdef _WIN32
-#include <cstring>
-#include <cstdlib>
-#endif
 
 namespace wibble {
 namespace str {
-
-#ifdef _WIN32
-static int vasprintf (char **, const char *, va_list);
-#endif
-
-std::string fmtf( const char* f, ... );
-template< typename T > inline std::string fmt(const T& val);
-
-/// Format any value into a string using a std::stringstream
-template< typename T >
-inline std::string fmt(const T& val)
-{
-    std::stringstream str;
-    str << val;
-    return str.str();
-}
-
-template<> inline std::string fmt<std::string>(const std::string& val) {
-    return val;
-}
-template<> inline std::string fmt<char*>(char * const & val) { return val; }
-
-/// Check if a string starts with the given substring
-inline bool startsWith(const std::string& str, const std::string& part)
-{
-	if (str.size() < part.size())
-		return false;
-	return str.substr(0, part.size()) == part;
-}
-
-/// Check if a string ends with the given substring
-inline bool endsWith(const std::string& str, const std::string& part)
-{
-	if (str.size() < part.size())
-		return false;
-	return str.substr(str.size() - part.size()) == part;
-}
 
 /**
  * Parse a record of Yaml-style field: value couples.
@@ -126,21 +85,6 @@ public:
 	const_iterator begin(std::istream& in) { return const_iterator(in); }
 	const_iterator end() { return const_iterator(); }
 };
-
-/**
- * Escape the string so it can safely used as a C string inside double quotes
- */
-std::string c_escape(const std::string& str);
-
-/**
- * Unescape a C string, stopping at the first double quotes or at the end of
- * the string.
- *
- * lenParsed is set to the number of characters that were pased (which can be
- * greather than the size of the resulting string in case escapes were found)
- */
-std::string c_unescape(const std::string& str, size_t& lenParsed);
-
 
 }
 }

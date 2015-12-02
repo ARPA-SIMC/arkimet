@@ -95,7 +95,11 @@ bool Regexp::match(const string& str, int flags)
 string Regexp::operator[](int idx)
 {
     if (idx > nmatch)
-        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
+    {
+        stringstream ss;
+        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        throw std::runtime_error(ss.str());
+    }
 
 	if (pmatch[idx].rm_so == -1)
 		return string();
@@ -106,21 +110,33 @@ string Regexp::operator[](int idx)
 size_t Regexp::matchStart(int idx)
 {
     if (idx > nmatch)
-        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
+    {
+        stringstream ss;
+        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        throw std::runtime_error(ss.str());
+    }
     return pmatch[idx].rm_so;
 }
 
 size_t Regexp::matchEnd(int idx)
 {
     if (idx > nmatch)
-        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
+    {
+        stringstream ss;
+        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        throw std::runtime_error(ss.str());
+    }
     return pmatch[idx].rm_eo;
 }
 
 size_t Regexp::matchLength(int idx)
 {
     if (idx > nmatch)
-        throw std::runtime_error(str::fmtf("cannot get submatch of regexp: index %d out of range 0--%d", idx, nmatch));
+    {
+        stringstream ss;
+        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        throw std::runtime_error(ss.str());
+    }
     return pmatch[idx].rm_eo - pmatch[idx].rm_so;
 }
 

@@ -1,31 +1,9 @@
-/*
- * types/area - Geographical area
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/types/area.h>
 #include <arki/types/utils.h>
 #include <arki/utils/codec.h>
 #include <arki/utils/geosdef.h>
+#include <arki/utils/string.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/bbox.h>
@@ -405,10 +383,11 @@ void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
 
 std::string VM2::exactQuery() const
 {
-    std::string s = wibble::str::fmtf("VM2,%lu", m_station_id);
+    stringstream ss;
+    ss << "VM2," << m_station_id;
     if (!derived_values().empty())
-        s += ":" + derived_values().toString();
-    return s;
+        ss << ":" << derived_values().toString();
+    return ss.str();
 }
 
 const char* VM2::lua_type_name() const { return "arki.types.area.vm2"; }

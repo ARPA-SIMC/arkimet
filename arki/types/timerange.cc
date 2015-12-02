@@ -1,27 +1,4 @@
-/*
- * types/timerange - Time span information
- *
- * Copyright (C) 2007--2014  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/wibble/exception.h>
-#include <arki/wibble/string.h>
 #include <arki/wibble/grcal/grcal.h>
 #include <arki/types/timerange.h>
 #include <arki/types/utils.h>
@@ -137,8 +114,12 @@ static std::string formatTimeUnit(t_enum_GRIB_TIMEUNIT unit)
 		case GRIB_TIMEUNIT_HOURS12: return "h12";
 		case GRIB_TIMEUNIT_SECOND: return "s";
 		default:
-			throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(unit)+")");
-	}
+        {
+            stringstream ss;
+            ss << "cannot normalise TimeRange: time unit is unknown (" << (int)unit << ")";
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 static t_enum_GRIB_TIMEUNIT parseTimeUnit(const std::string& tu)
@@ -458,9 +439,13 @@ unique_ptr<Timerange> Timerange::decodeString(const std::string& val)
             unsigned unit = parseTimeUnit(start);
             return createBUFR(value, unit);
         }
-		default:
-			throw wibble::exception::Consistency("parsing Timerange", "unknown Timerange style " + str::fmt(style));
-	}
+        default:
+        {
+            stringstream ss;
+            ss << "cannot parse Timerange: unknown Timerange style " << style;
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 unique_ptr<timerange::Timedef> Timerange::to_timedef() const
@@ -1108,7 +1093,11 @@ bool GRIB1::get_timeunit_conversion(int& timemul) const
         case GRIB_TIMEUNIT_HOURS12: timemul = 3600*12; break;
         case GRIB_TIMEUNIT_SECOND: timemul = 1; break;
         default:
-            throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(m_unit)+")");
+        {
+            stringstream ss;
+            ss << "cannot normalise TimeRange: time unit is unknown (" << m_unit << ")";
+            throw std::runtime_error(ss.str());
+        }
     }
     return is_seconds;
 }
@@ -1693,7 +1682,11 @@ bool Timedef::timeunit_conversion(TimedefUnit unit, int& timemul)
         case UNIT_MISSING:
             throw wibble::exception::Consistency("normalising time", "time unit is missing (255)");
         default:
-            throw wibble::exception::Consistency("normalising time", "time unit is unknown ("+str::fmt((int)unit)+")");
+        {
+            stringstream ss;
+            ss << "cannot normalise time: time unit is unknown (" << (int)unit << ")";
+            throw std::runtime_error(ss.str());
+        }
     }
     return is_seconds;
 }
@@ -1820,7 +1813,11 @@ const char* Timedef::timeunit_suffix(TimedefUnit unit)
         case UNIT_MISSING:
             throw wibble::exception::Consistency("finding time unit suffix", "time unit is missing (255)");
         default:
-            throw wibble::exception::Consistency("finding time unit suffix", "time unit is unknown ("+str::fmt((int)unit)+")");
+        {
+            stringstream ss;
+            ss << "cannot find find time unit suffix: time unit is unknown (" << (int)unit << ")";
+            throw std::runtime_error(ss.str());
+        }
     }
 }
 
@@ -1845,9 +1842,13 @@ bool BUFR::is_seconds() const
 		case GRIB_TIMEUNIT_NORMAL:
 		case GRIB_TIMEUNIT_CENTURY:
 			return false;
-		default:
-			throw wibble::exception::Consistency("normalising TimeRange", "time unit is unknown ("+str::fmt(m_unit)+")");
-	}
+        default:
+        {
+            stringstream ss;
+            ss << "cannot normalise TimeRange: time unit is unknown (" << m_unit << ")";
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 unsigned BUFR::seconds() const
@@ -1866,8 +1867,12 @@ unsigned BUFR::seconds() const
 		case GRIB_TIMEUNIT_HOURS12: return m_value * 3600*12;
 		case GRIB_TIMEUNIT_SECOND: return m_value * 1;
 		default:
-			throw wibble::exception::Consistency("normalising TimeRange", "time unit ("+str::fmt(m_unit)+") does not convert to seconds");
-	}
+        {
+            stringstream ss;
+            ss << "cannot normalise TimeRange: time unit (" << m_unit << ") does not convert to seconds";
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 unsigned BUFR::months() const
@@ -1884,8 +1889,12 @@ unsigned BUFR::months() const
 		case GRIB_TIMEUNIT_NORMAL: return m_value * 12*30;
 		case GRIB_TIMEUNIT_CENTURY: return m_value * 12*100;
 		default:
-			throw wibble::exception::Consistency("normalising TimeRange", "time unit ("+str::fmt(m_unit)+") does not convert to months");
-	}
+        {
+            stringstream ss;
+            ss << "cannot normalise TimeRange: time unit (" << m_unit << ") does not convert to months";
+            throw std::runtime_error(ss.str());
+        }
+    }
 }
 
 Timerange::Style BUFR::style() const { return Timerange::BUFR; }

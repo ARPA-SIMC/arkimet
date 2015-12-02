@@ -345,7 +345,9 @@ unique_ptr<GRIB1> GRIB1::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string GRIB1::exactQuery() const
 {
-    return wibble::str::fmtf("GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
+    char buf[128];
+    snprintf(buf, 128, "GRIB1,%d,%d,%d", (int)m_origin, (int)m_table, (int)m_product);
+    return buf;
 }
 const char* GRIB1::lua_type_name() const { return "arki.types.product.grib1"; }
 
@@ -472,15 +474,15 @@ unique_ptr<GRIB2> GRIB2::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string GRIB2::exactQuery() const
 {
-    string res = wibble::str::fmtf("GRIB2,%d,%d,%d,%d",
-            (int)m_centre, (int)m_discipline, (int)m_category, (int)m_number);
+    stringstream ss;
+    ss << "GRIB2," << (int)m_centre << "," << (int)m_discipline << "," << (int)m_category << "," << (int)m_number;
     if (m_table_version != 4 || m_local_table_version != 255)
     {
-        res += wibble::str::fmtf(",%d", (int)m_table_version);
+        ss << "," << (int)m_table_version;
         if (m_local_table_version != 255)
-            res += wibble::str::fmtf(",%d", (int)m_local_table_version);
+            ss << "," << (int)m_local_table_version;
     }
-    return res;
+    return ss.str();
 }
 const char* GRIB2::lua_type_name() const { return "arki.types.product.grib2"; }
 
@@ -624,10 +626,11 @@ unique_ptr<BUFR> BUFR::decodeMapping(const emitter::memory::Mapping& val)
 }
 std::string BUFR::exactQuery() const
 {
-    string res = wibble::str::fmtf("BUFR,%u,%u,%u", type(), subtype(), localsubtype());
+    stringstream ss;
+    ss << "BUFR," << type() << "," << subtype() << "," << localsubtype();
     if (!m_values.empty())
-	    res += ":" + m_values.toString();
-    return res;
+        ss << ":" << m_values.toString();
+    return ss.str();
 }
 const char* BUFR::lua_type_name() const { return "arki.types.product.bufr"; }
 
@@ -911,10 +914,11 @@ void VM2::serialiseLocal(Emitter& e, const Formatter* f) const
 }
 std::string VM2::exactQuery() const
 {
-    std::string s = wibble::str::fmtf("VM2,%lu", m_variable_id);
+    stringstream ss;
+    ss << "VM2," << m_variable_id;
     if (!derived_values().empty())
-        s += ":" + derived_values().toString();
-    return s;
+        ss << ":" << derived_values().toString();
+    return ss.str();
 }
 const char* VM2::lua_type_name() const { return "arki.types.product.vm2"; }
 int VM2::compare_local(const Product& o) const
