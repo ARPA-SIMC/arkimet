@@ -2,15 +2,12 @@
 #ifndef WIBBLE_SYS_SIGNAL_H
 #define WIBBLE_SYS_SIGNAL_H
 
-#include <arki/wibble/sys/macros.h>
 #include <arki/wibble/exception.h>
 #include <signal.h>
 
 namespace wibble {
 namespace sys {
 namespace sig {
-
-#ifdef POSIX
 
 /**
  * RAII-style sigprocmask wrapper
@@ -47,8 +44,6 @@ struct Action
 			throw wibble::exception::System("restoring signal action");
 	}
 };
-
-#endif
 
 }
 }

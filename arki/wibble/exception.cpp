@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include <arki/wibble/sys/macros.h>
 #include <arki/wibble/exception.h>
 
 #include <string.h> // strerror_r
@@ -29,7 +28,7 @@
 #include <sstream>
 #include <iostream>
 
-#if defined(POSIX) && ! defined(__xlC__)
+#if ! defined(__xlC__)
 #include <execinfo.h>
 #endif
 
@@ -40,7 +39,7 @@ namespace exception {
 
 std::vector< std::string > *AddContext::s_context = 0;
 
-#if defined(POSIX) && ! defined(__xlC__)
+#if ! defined(__xlC__)
 void DefaultUnexpected()
 {
 	try {
@@ -91,7 +90,6 @@ System::System(const std::string& context) throw ()
 System::System(int code, const std::string& context) throw ()
 	: Generic(context), m_errno(code) {}
 
-#ifdef POSIX
 string System::desc() const throw ()
 {
 	const int buf_size = 500;
@@ -108,15 +106,6 @@ string System::desc() const throw ()
 	return string(strerror_r(m_errno, buf, buf_size));
 #endif
 }
-#endif
 
-#ifdef _WIN32
-string System::desc() const throw ()
-{
-	return strerror(m_errno);
-}
-#endif
 }
 }
-
-// vim:set ts=4 sw=4:

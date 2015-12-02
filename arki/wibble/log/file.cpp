@@ -1,4 +1,3 @@
-#include <arki/wibble/sys/macros.h>
 #include <arki/wibble/sys/filelock.h>
 #include <arki/wibble/log/file.h>
 #include <arki/wibble/exception.h>
@@ -26,11 +25,9 @@ FileSender::~FileSender()
 void FileSender::send(Level level, const std::string& msg)
 {
 #ifndef __gnu_hurd__
-#ifdef POSIX // FIXME
-	// Write it all in a single write(2) so multiple processes can log to
-	// the same file
-	sys::fs::FileLock lock(out, F_WRLCK);
-#endif
+    // Write it all in a single write(2) so multiple processes can log to
+    // the same file
+    sys::fs::FileLock lock(out, F_WRLCK);
 #endif
 
     // Seek to end of file

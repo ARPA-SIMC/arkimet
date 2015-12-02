@@ -5,8 +5,6 @@
 #include <fcntl.h>
 #include <arki/wibble/exception.h>
 
-#ifdef POSIX
-
 namespace wibble {
 namespace sys {
 namespace fs {
@@ -31,7 +29,3 @@ FileLock::~FileLock()
 }
 }
 }
-
-#endif
-
-// vim:set ts=4 sw=4:

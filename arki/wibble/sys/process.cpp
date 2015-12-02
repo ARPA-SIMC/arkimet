@@ -19,7 +19,6 @@
  */
 #include <arki/wibble/sys/process.h>
 
-#ifdef POSIX
 #include <sys/types.h>		// fork, waitpid, kill, open, getpw*, getgr*, initgroups
 #include <sys/stat.h>		// open
 #include <sys/resource.h>	// getrlimit, setrlimit
@@ -322,7 +321,6 @@ void setCoreSizeLimit(int value) { setLimit(RLIMIT_CORE, value); }
 void setChildrenLimit(int value) { setLimit(RLIMIT_NPROC, value); }
 void setOpenFilesLimit(int value) { setLimit(RLIMIT_NOFILE, value); }
 
-#ifdef __linux__
 // Working setproctitle implementation for Linux
 
 static char** global_argv = NULL;
@@ -387,43 +385,6 @@ void setproctitle(const std::string& title)
     global_argv[1] = 0;
 }
 
-#else
-// If we are not on Linux we don't do anything
-
-/*
- * FIXME: BSD systems have a native setproctitle() function that we could use,
- * but I'd like a BSD programmer to take care of writing autotools and cmake
- * tests for it and to test it.
- */
-
-void initproctitle (int argc, char **argv) {}
-void setproctitle(const std::string& title) {}
-#endif
-
 }
 }
 }
-#elif defined(_WIN32)
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
-namespace wibble {
-namespace sys {
-namespace process {
-
-std::string getcwd()
-{
-	char *buf = (char *)alloca( 4096 );
-	if (::getcwd(buf, 4096) == NULL)
-		throw wibble::exception::System("getting the current working directory");
-	return buf;
-}
-
-}
-}
-}
-
-#endif
-// vim:set ts=4 sw=4:

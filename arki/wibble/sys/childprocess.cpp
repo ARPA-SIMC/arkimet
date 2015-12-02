@@ -25,13 +25,11 @@
 #include <unistd.h>			// fork, dup2, pipe, close, setsid, _exit, chdir
 #include <fcntl.h>			// open
 
-#ifdef POSIX
 #include <sys/resource.h>	// getrlimit, setrlimit
 #include <sys/wait.h>		// waitpid
 #include <signal.h>			// kill
 #include <pwd.h>			// getpw*
 #include <grp.h>			// getgr*, initgroups
-#endif
 
 #include <stdio.h>			// flockfile, funlockfile
 #include <ctype.h>			// is*
@@ -48,7 +46,6 @@ namespace wexcept = wibble::exception;
 void ChildProcess::spawnChild() {
 }
 
-#ifdef POSIX
 pid_t ChildProcess::fork()
 {
     flockfile(stdin);
@@ -96,7 +93,6 @@ pid_t ChildProcess::fork()
         return _pid;
     }
 }
-#endif
 
 void mkpipe( int *fds, int *infd, int *outfd, const char *err )
 {
@@ -221,10 +217,6 @@ int ChildProcess::wait(struct rusage* ru)
 
 void ChildProcess::waitForSuccess() {
     int r = wait();
-#ifdef POSIX
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-
     if ( WIFEXITED( r ) ) {
         if ( WEXITSTATUS( r ) )
         {
@@ -242,8 +234,6 @@ void ChildProcess::waitForSuccess() {
         throw std::runtime_error(buf);
     }
     throw exception::Generic( "Error waiting for subprocess." );
-#pragma GCC diagnostic pop
-#endif
 }
 
 void ChildProcess::kill(int signal)

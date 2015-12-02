@@ -1,13 +1,5 @@
 #include <arki/wibble/log/filters.h>
-#include <arki/wibble/sys/macros.h>
-
-#ifdef POSIX
-#include <time.h>
-#endif
-
-#ifdef _WIN32
 #include <ctime>
-#endif
 
 using namespace std;
 
@@ -27,16 +19,10 @@ void Timestamper::send(Level level, const std::string& msg)
 {
 	if (!next) return;
 
-	time_t now = time(NULL);
-#ifdef POSIX
-	struct tm pnow;
-	localtime_r(&now, &pnow);
-#endif
+    time_t now = time(NULL);
+    struct tm pnow;
+    localtime_r(&now, &pnow);
 
-#ifdef _WIN32
-	struct tm * pnow;
-	pnow = localtime(&now);
-#endif
 	/*
 	 * Strftime specifiers used here:
 	 *	%b      The abbreviated month name according to the current locale.
@@ -45,15 +31,9 @@ void Timestamper::send(Level level, const std::string& msg)
 	 *			leading zero is replaced by a space. (SU)
 	 *	%T      The time in 24-hour notation (%H:%M:%S). (SU)
 	 */
-#ifdef POSIX
 	char timebuf[256];
 	strftime(timebuf, 256, fmt.c_str(), &pnow);
 	next->send(level, string(timebuf) + msg);
-#endif
-
-#ifdef _WIN32
-	next->send(level, string(asctime(pnow)) + " " + msg);
-#endif
 }
 
 LevelFilter::LevelFilter(Sender* next, log::Level minLevel)

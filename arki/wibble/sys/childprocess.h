@@ -25,11 +25,6 @@
 
 #include <sys/types.h>
 #include <arki/wibble/exception.h>
-#include <arki/wibble/sys/macros.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 struct rusage;
 
@@ -49,12 +44,6 @@ protected:
     int m_status;
     bool m_doExec;
     std::string m_command;
-
-#ifdef _WIN32
-    int backups[3];
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-#endif
 
     /**
      * Main function to be called in the child process after it has forked

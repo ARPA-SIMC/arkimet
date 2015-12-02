@@ -1,6 +1,5 @@
 #include <arki/wibble/log/syslog.h>
 
-#ifdef POSIX
 namespace wibble {
 namespace log {
 
@@ -32,5 +31,3 @@ void SyslogSender::send(Level level, const std::string& msg)
 
 }
 }
-#endif
-// vim:set ts=4 sw=4:

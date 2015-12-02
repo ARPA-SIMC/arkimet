@@ -21,7 +21,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
-#include <arki/wibble/sys/macros.h>
 #include <arki/wibble/exception.h>
 
 #include <sys/types.h>
@@ -32,8 +31,6 @@ namespace process {
 
 /// Get the absolute path of the current working directory
 std::string getcwd();
-
-#ifdef POSIX
 
 /// Pretty-print the return value of a process into a string
 std::string formatStatus(int status);
@@ -88,7 +85,6 @@ void initproctitle(int argc, char **argv);
  * do anything.
  */
 void setproctitle(const std::string& title);
-#endif
 
 }
 }

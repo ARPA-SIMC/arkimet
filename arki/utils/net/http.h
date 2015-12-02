@@ -6,7 +6,6 @@
 #include <string>
 #include <map>
 #include <arki/utils/net/mime.h>
-#include <arki/wibble/regexp.h>
 #include <iosfwd>
 #include <stdexcept>
 

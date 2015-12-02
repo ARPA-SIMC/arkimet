@@ -14,7 +14,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		wibble/regexp.h \
 		wibble/tests.h \
 		wibble/sys/process.h \
-		wibble/sys/macros.h \
 		wibble/sys/childprocess.h \
 		wibble/sys/exec.h \
 		wibble/sys/fs.h \
