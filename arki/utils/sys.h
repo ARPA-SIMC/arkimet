@@ -181,8 +181,20 @@ public:
 
     size_t write(const void* buf, size_t count);
 
+    template<typename Container>
+    size_t write(const Container& c)
+    {
+        return write(c.data(), c.size() * sizeof(Container::value_type));
+    }
+
     /// Write all the data in buf, retrying partial writes
     void write_all_or_retry(const void* buf, size_t count);
+
+    template<typename Container>
+    void write_all_or_retry(const Container& c)
+    {
+        write_all_or_retry(c.data(), c.size() * sizeof(typename Container::value_type));
+    }
 
     /**
      * Write all the data in buf, throwing runtime_error in case of a partial
@@ -190,10 +202,22 @@ public:
      */
     void write_all_or_throw(const void* buf, size_t count);
 
+    template<typename Container>
+    void write_all_or_throw(const Container& c)
+    {
+        write_all_or_throw(c.data(), c.size() * sizeof(typename Container::value_type));
+    }
+
     off_t lseek(off_t offset, int whence=SEEK_SET);
 
     size_t pread(void* buf, size_t count, off_t offset);
     size_t pwrite(const void* buf, size_t count, off_t offset);
+
+    template<typename Container>
+    size_t pwrite(const Container& c, off_t offset)
+    {
+        return pwrite(c.data(), c.size() * sizeof(typename Container::value_type), offset);
+    }
 
     void ftruncate(off_t length);
 
