@@ -6,6 +6,7 @@
 #include "arki/matcher.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
+#include "arki/utils/string.h"
 #include "arki/dataset.h"
 #include "arki/dataset/file.h"
 #include "arki/dataset/http.h"
