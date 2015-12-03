@@ -29,8 +29,8 @@ struct LexInterval {
 };
 
 #include "config.h"
-
 #include "parser.h"
+#include "arki/wibble/grcal/grcal.h"
 #include "reftime-parse.hh"
 
 #include <string>
@@ -134,17 +134,17 @@ struct Parser
  */
 struct EParser : public Parser
 {
-	int* res;
+    int* res;
 
-	EParser(const std::string& str, int* res) : Parser(str), res(res)
-	{
-		if (str.size() < 4)
-			error("expecting at least 4 characters");
-		// Parse the year directly
-		res[0] = strtoul(str.substr(str.size() - 4).c_str(), 0, 10);
-		date::easter(res[0], &res[1], &res[2]);
-		res[3] = res[4] = res[5] = -1;
-	}
+    EParser(const std::string& str, int* res) : Parser(str), res(res)
+    {
+        if (str.size() < 4)
+            error("expecting at least 4 characters");
+        // Parse the year directly
+        res[0] = strtoul(str.substr(str.size() - 4).c_str(), 0, 10);
+        wibble::grcal::date::easter(res[0], &res[1], &res[2]);
+        res[3] = res[4] = res[5] = -1;
+    }
 };
 
 /**
@@ -444,17 +444,17 @@ easter{space}?[0-9]{4} {
 			  return DATE;
 }
 (processione{space})?san{space}?luca{space}?[0-9]{4} {
-			  // Compute easter
-			  EParser p(std::string(yytext, yyleng), yylval->dtspec);
-			  // Add 5 weeks - 1 day
-			  yylval->dtspec[2] += 35-1;
-			  // Lowerbound
-			  yylval->dtspec[3] = yylval->dtspec[4] = yylval->dtspec[5] = 0;
-			  // Normalise
-			  date::normalise(yylval->dtspec);
-			  // Put missing values back
-			  yylval->dtspec[3] = yylval->dtspec[4] = yylval->dtspec[5] = -1;
-			  return DATE;
+              // Compute easter
+              EParser p(std::string(yytext, yyleng), yylval->dtspec);
+              // Add 5 weeks - 1 day
+              yylval->dtspec[2] += 35-1;
+              // Lowerbound
+              yylval->dtspec[3] = yylval->dtspec[4] = yylval->dtspec[5] = 0;
+              // Normalise
+              wibble::grcal::date::normalise(yylval->dtspec);
+              // Put missing values back
+              yylval->dtspec[3] = yylval->dtspec[4] = yylval->dtspec[5] = -1;
+              return DATE;
 }
 now         { return NOW; }
 today       { return TODAY; }

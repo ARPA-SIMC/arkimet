@@ -4,16 +4,12 @@
 #include <arki/types.h>
 #include <arki/types/time.h>
 #include <arki/utils/string.h>
-#include <arki/wibble/grcal/grcal.h>
 #include <string>
 #include <ctime>
 #include <vector>
 #include <set>
 #include <sstream>
 #include <cstdio>
-
-using namespace std;
-using namespace wibble::grcal;
 
 namespace arki {
 namespace matcher {
@@ -62,21 +58,20 @@ struct DTMatch
 
 struct Parser
 {
-	time_t tnow;
-	vector<string> errors;
-	string unexpected;
+    time_t tnow;
+    std::vector<std::string> errors;
+    std::string unexpected;
 
-	vector<DTMatch*> res;
+    std::vector<DTMatch*> res;
 
-	Parser()
-	{
-		tnow = time(NULL);
-	}
-	~Parser()
-	{
-		for (vector<DTMatch*>::iterator i = res.begin(); i != res.end(); ++i)
-			delete *i;
-	}
+    Parser()
+    {
+        tnow = time(NULL);
+    }
+    ~Parser()
+    {
+        for (auto& i: res) delete i;
+    }
 
 	void add(DTMatch* t)
 	{
@@ -86,37 +81,12 @@ struct Parser
 
     void add_step(int val, int idx, DTMatch* base=0);
 
-	void mknow(int* vals)
-	{
-		struct tm now;
-	 	gmtime_r(&tnow, &now);
-		date::fromtm(now, vals, 6);
-	}
+    void mknow(int* vals);
+    void mktoday(int* vals);
+    void mkyesterday(int* vals);
+    void mktomorrow(int* vals);
 
-	void mktoday(int* vals)
-	{
-		struct tm now;
-	 	gmtime_r(&tnow, &now);
-		date::fromtm(now, vals, 3);
-	}
-
-	void mkyesterday(int* vals)
-	{
-		time_t tv = tnow - 3600*24;
-		struct tm v;
-	 	gmtime_r(&tv, &v);
-		date::fromtm(v, vals, 3);
-	}
-
-	void mktomorrow(int* vals)
-	{
-		time_t tv = tnow + 3600*24;
-		struct tm v;
-	 	gmtime_r(&tv, &v);
-		date::fromtm(v, vals, 3);
-	}
-
-	void parse(const std::string& str);
+    void parse(const std::string& str);
 };
 
 }

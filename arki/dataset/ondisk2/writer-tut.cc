@@ -67,7 +67,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         for (int i = 0; i < 3; ++i)
             if (import_results[i].sourceBlob().offset > 0)
                 return import_results[i];
-        throw wibble::exception::Consistency("second in file not found");
+        throw std::runtime_error("second in file not found");
     }
 
     void import_and_make_hole(const testdata::Fixture& fixture, std::string& holed_fname)

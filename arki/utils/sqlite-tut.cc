@@ -81,24 +81,24 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	try {
-		Pending p(new SqliteTransaction(db));
-		db.exec("INSERT INTO test (val) VALUES (1)");
-		db.exec("INSERT INTO test (val) VALUES (2)");
-		db.exec("INSERT INTO test (val) VALUES (3)");
+    try {
+        Pending p(new SqliteTransaction(db));
+        db.exec("INSERT INTO test (val) VALUES (1)");
+        db.exec("INSERT INTO test (val) VALUES (2)");
+        db.exec("INSERT INTO test (val) VALUES (3)");
 
-		PrecompiledQuery select("select", db);
-		select.compile("SELECT * FROM test");
-		select.step();
-		// Commenting this out works, because the PrecompiledQuery is
-		// finalised by its destructor before Pending::rollback is
-		// called
-		//p.rollback();
-		throw wibble::exception::System("no problem");
-	} catch (wibble::exception::Generic& e) {
-		//cerr << e.what() << endl;
-		ensure(dynamic_cast<wibble::exception::System*>(&e));
-	}
+        PrecompiledQuery select("select", db);
+        select.compile("SELECT * FROM test");
+        select.step();
+        // Commenting this out works, because the PrecompiledQuery is
+        // finalised by its destructor before Pending::rollback is
+        // called
+        //p.rollback();
+        throw std::runtime_error("no problem");
+    } catch (std::runtime_error& e) {
+        //cerr << e.what() << endl;
+        wassert(actual(e.what()).contains("no problem"));
+    }
 }
 
 // Test inserting 64bit size_t values

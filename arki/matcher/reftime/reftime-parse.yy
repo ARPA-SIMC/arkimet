@@ -1,12 +1,13 @@
 %{
 #include "config.h"
 #include "parser.h"
+#include "arki/wibble/grcal/grcal.h"
 #include <string>
 #include <stdexcept>
 #include <ctime>
 
+using namespace std;
 using namespace arki::matcher::reftime;
-using namespace wibble::grcal;
 
 struct LexInterval {
 	int val;
@@ -75,9 +76,9 @@ static void interval_add(int* dst, const int* val, bool subtract = false)
 	}
 	pdate(" added", dst);
 
-	// Normalise
-	date::normalise(dst);
-	pdate(" normalised", dst);
+    // Normalise
+    wibble::grcal::date::normalise(dst);
+    pdate(" normalised", dst);
 
 	// Restore all the values not defined in dst and val to -1
 	for (int i = depth + 1; i < 6; ++i)
@@ -93,10 +94,10 @@ void interval_sub(int* dst, const int* val)
 // Set dst to 'val' before 'now'
 void interval_ago(int* dst, time_t& now, const int* val)
 {
-	struct tm t;
-	gmtime_r(&now, &t);
-	date::fromtm(t, dst);
-	interval_sub(dst, val);
+    struct tm t;
+    gmtime_r(&now, &t);
+    wibble::grcal::date::fromtm(t, dst);
+    interval_sub(dst, val);
 
 	// Compute how many nonzero items we have
 	int depth = 0;
@@ -189,7 +190,7 @@ Interval : INTERVAL						{ init_interval($$, $1.val, $1.idx); }
 
 Absolute : NOW							{ state.mknow($$); }
          | Date							{ copy($$, $1); }
-         | Date Daytime					{ date::mergetime($1, $2, $$); }
+         | Date Daytime					{ wibble::grcal::date::mergetime($1, $2, $$); }
          | Interval AGO					{ interval_ago($$, state.tnow, $1); }
          | Interval BEFORE Absolute		{ copy($$, $3); interval_sub($$, $1); }
          | Interval AFTER Absolute		{ copy($$, $3); interval_add($$, $1); }

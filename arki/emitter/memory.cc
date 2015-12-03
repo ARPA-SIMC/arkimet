@@ -1,6 +1,6 @@
 #include "config.h"
-
-#include <arki/emitter/memory.h>
+#include "memory.h"
+#include "arki/wibble/exception.h"
 #include <memory>
 
 using namespace std;

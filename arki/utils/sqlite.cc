@@ -12,6 +12,23 @@ namespace arki {
 namespace utils {
 namespace sqlite {
 
+// Note: msg will be deallocated using sqlite3_free
+SQLiteError::SQLiteError(char* sqlite_msg, const std::string& msg)
+    : std::runtime_error(msg + ": " + sqlite_msg)
+{
+    sqlite3_free(sqlite_msg);
+}
+
+SQLiteError::SQLiteError(sqlite3* db, const std::string& msg)
+    : std::runtime_error(msg + ": " + sqlite3_errmsg(db))
+{
+}
+
+DuplicateInsert::DuplicateInsert(const std::string& msg)
+    : std::runtime_error(msg + ": duplicate element")
+{
+}
+
 SQLiteDB::~SQLiteDB() {
 	if (m_last_insert_id) sqlite3_finalize(m_last_insert_id);
 	if (m_db)

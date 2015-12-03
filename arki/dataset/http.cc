@@ -26,30 +26,22 @@ namespace dataset {
 
 namespace http {
 
-Exception::Exception(CURLcode code, const std::string& context) throw ()
-	: Generic(context), m_errcode(code) {}
-Exception::Exception(CURLcode code, const std::string& extrainfo, const std::string& context) throw ()
-	: Generic(context), m_extrainfo(extrainfo), m_errcode(code) {}
-
-string Exception::desc() const throw ()
-{
-	if (m_extrainfo.empty())
-		return curl_easy_strerror(m_errcode);
-	else
-		return string(curl_easy_strerror(m_errcode)) + " (" + m_extrainfo + ")";
-}
+Exception::Exception(CURLcode code, const std::string& context)
+    : std::runtime_error("while " + context + ": " + curl_easy_strerror(code)) {}
+Exception::Exception(CURLcode code, const std::string& extrainfo, const std::string& context)
+    : std::runtime_error("while " + context + ": " + curl_easy_strerror(code) + "(" + extrainfo + ")") {}
 
 CurlEasy::CurlEasy() : m_curl(0)
 {
-	m_errbuf = new char[CURL_ERROR_SIZE];
+    m_errbuf = new char[CURL_ERROR_SIZE];
 
-	// FIXME:
-	// curl_easy_init automatically calls curl_global_init
-	// curl_global_init is not thread safe, so the documentation suggests it is
-	// called not automatically here, but somewhere at program startup
-	m_curl = curl_easy_init();
-	if (!m_curl)
-		throw wibble::exception::Consistency("initialising CURL", "curl_easy_init returned NULL");
+    // FIXME:
+    // curl_easy_init automatically calls curl_global_init
+    // curl_global_init is not thread safe, so the documentation suggests it is
+    // called not automatically here, but somewhere at program startup
+    m_curl = curl_easy_init();
+    if (!m_curl)
+        throw std::runtime_error("cannot initialize CURL: curl_easy_init returned NULL");
 }
 
 CurlEasy::~CurlEasy()
@@ -185,7 +177,8 @@ struct ReqState
             msg << exception_message;
         else
             msg << response_error.str();
-        throw wibble::exception::Consistency(context, msg.str());
+        msg << " while " << context;
+        throw std::runtime_error(msg.str());
     }
 };
 

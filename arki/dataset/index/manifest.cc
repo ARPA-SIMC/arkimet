@@ -19,6 +19,7 @@
 #include "arki/iotrace.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/wibble/exception.h"
 #include <algorithm>
 #include <unistd.h>
 #include <fstream>

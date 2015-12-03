@@ -4,7 +4,6 @@
 /// Remote HTTP dataset access
 
 #include <arki/dataset/local.h>
-#include <arki/wibble/exception.h>
 #include <curl/curl.h>
 #include <string>
 
@@ -16,24 +15,11 @@ class Matcher;
 namespace dataset {
 
 namespace http {
-class Exception : public wibble::exception::Generic
+class Exception : public std::runtime_error
 {
-protected:
-	std::string m_extrainfo;
-	CURLcode m_errcode;
-
 public:
-	Exception(CURLcode code, const std::string& context) throw ();
-	Exception(CURLcode code, const std::string& extrainfo, const std::string& context) throw ();
-	~Exception() throw () {}
-
-	virtual const char* type() const throw () { return "HTTP"; }
-
-	/// Get the system error code associated to the exception
-	virtual int code() const throw () { return m_errcode; }
-
-	/// Get the description of the error code
-	virtual std::string desc() const throw ();
+    Exception(CURLcode code, const std::string& context);
+    Exception(CURLcode code, const std::string& extrainfo, const std::string& context);
 };
 
 struct CurlEasy

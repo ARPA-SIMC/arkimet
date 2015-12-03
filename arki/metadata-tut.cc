@@ -12,6 +12,7 @@
 #include <arki/types/source/blob.h>
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
+#include <arki/utils/sys.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -33,6 +34,7 @@ using namespace std;
 using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::utils;
 
 struct arki_metadata_shar {
 	Metadata md;
@@ -248,7 +250,7 @@ void to::test<7>()
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
     fill(md);
 
-	tests::Lua test(
+    arki::tests::Lua test(
 		"function test(md) \n"
 		"  if md.source == nil then return 'source is nil' end \n"
 		"  if md.origin == nil then return 'origin is nil' end \n"
@@ -283,11 +285,10 @@ void to::test<8>()
 	fill(md);
     md.set_source(Source::createBlob("grib", "", "fname", 1, 2));
 
-	// Encode
-	int out = open(tmpfile, O_WRONLY | O_CREAT, 0666);
-	if (out < 0) throw wibble::exception::File(tmpfile, "opening file");
-	md.write(out, tmpfile);
-	if (close(out) < 0) throw wibble::exception::File(tmpfile, "closing file");
+    // Encode
+    sys::File out(tmpfile, O_WRONLY | O_CREAT, 0666);
+    md.write(out, tmpfile);
+    out.close();
 
 	// Decode
 	ifstream input(tmpfile);
@@ -299,5 +300,3 @@ void to::test<8>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

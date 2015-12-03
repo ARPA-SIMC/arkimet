@@ -1,30 +1,9 @@
 #ifndef ARKI_EMITTER_MEMORY_H
 #define ARKI_EMITTER_MEMORY_H
 
-/*
- * emitter/memory - Emitter storing structured data in memory
- *
- * Copyright (C) 2010  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// Emitter storing structured data in memory
 
 #include <arki/emitter.h>
-#include <arki/wibble/exception.h>
 #include <vector>
 #include <map>
 #include <string>
@@ -51,36 +30,36 @@ struct Node
 
     void want_null(const char* context) const
     {
-        if (!is_null()) throw wibble::exception::Consistency(context, "item is not null");
+        if (!is_null()) throw std::runtime_error(std::string("item is not null when ") + context);
     }
     const bool& want_bool(const char* context) const
     {
-        if (!is_bool()) throw wibble::exception::Consistency(context, "item is not bool");
+        if (!is_bool()) throw std::runtime_error(std::string("item is not bool when ") + context);
         return get_bool();
     }
     const long long int& want_int(const char* context) const
     {
-        if (!is_int()) throw wibble::exception::Consistency(context, "item is not int");
+        if (!is_int()) throw std::runtime_error(std::string("item is not int when ") + context);
         return get_int();
     }
     const double& want_double(const char* context) const
     {
-        if (!is_double()) throw wibble::exception::Consistency(context, "item is not double");
+        if (!is_double()) throw std::runtime_error(std::string("item is not double when ") + context);
         return get_double();
     }
     const std::string& want_string(const char* context) const
     {
-        if (!is_string()) throw wibble::exception::Consistency(context, "item is not string");
+        if (!is_string()) throw std::runtime_error(std::string("item is not string when ") + context);
         return get_string();
     }
     const List& want_list(const char* context) const
     {
-        if (!is_list()) throw wibble::exception::Consistency(context, "item is not list");
+        if (!is_list()) throw std::runtime_error(std::string("item is not list when ") + context);
         return get_list();
     }
     const Mapping& want_mapping(const char* context) const
     {
-        if (!is_mapping()) throw wibble::exception::Consistency(context, "item is not mapping");
+        if (!is_mapping()) throw std::runtime_error(std::string("item is not mapping when ") + context);
         return get_mapping();
     }
 

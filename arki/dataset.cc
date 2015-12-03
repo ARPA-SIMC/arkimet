@@ -108,8 +108,8 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
         default:
         {
             stringstream s;
-            s << "unsupported query type: " << (int)q.type;
-            throw wibble::exception::Consistency("querying dataset", s.str());
+            s << "cannot query dataset: unsupported query type: " << (int)q.type;
+            throw std::runtime_error(s.str());
         }
     }
 }
@@ -239,7 +239,7 @@ ReadonlyDataset* ReadonlyDataset::create(const ConfigFile& cfg)
 	if (type == "file")
 		return dataset::File::create(cfg);
 
-	throw wibble::exception::Consistency("creating a dataset", "unknown dataset type \""+type+"\"");
+    throw std::runtime_error("cannot create dataset: unknown dataset type \""+type+"\"");
 }
 
 void ReadonlyDataset::readConfig(const std::string& path, ConfigFile& cfg)
@@ -258,7 +258,7 @@ WritableDataset* WritableDataset::create(const ConfigFile& cfg)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
-        throw wibble::exception::Consistency("creating a dataset", "remote datasets are not writable");
+        throw std::runtime_error("cannot create dataset: remote datasets are not writable");
 	if (type == "outbound")
 		return new dataset::Outbound(cfg);
 	if (type == "discard")
@@ -273,11 +273,11 @@ WritableDataset::AcquireResult WritableDataset::testAcquire(const ConfigFile& cf
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")
-        throw wibble::exception::Consistency("simulating dataset acquisition", "remote datasets are not writable");
-	if (type == "outbound")
-		return dataset::Outbound::testAcquire(cfg, md, out);
-	if (type == "discard")
-		return dataset::Discard::testAcquire(cfg, md, out);
+        throw std::runtime_error("cannot simulate dataset acquisition: remote datasets are not writable");
+    if (type == "outbound")
+        return dataset::Outbound::testAcquire(cfg, md, out);
+    if (type == "discard")
+        return dataset::Discard::testAcquire(cfg, md, out);
 
     return dataset::WritableLocal::testAcquire(cfg, md, out);
 }

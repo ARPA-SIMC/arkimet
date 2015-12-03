@@ -5,7 +5,6 @@
 
 #include <arki/transaction.h>
 #include <arki/types.h>
-#include <arki/wibble/exception.h>
 #include <sqlite3.h>
 #include <string>
 #include <sstream>
@@ -20,25 +19,13 @@ namespace arki {
 namespace utils {
 namespace sqlite {
 
-class SQLiteError : public wibble::exception::Generic
+class SQLiteError : public std::runtime_error
 {
-	std::string m_error;
-
 public:
-	// Note: msg will be deallocated using sqlite3_free
-	SQLiteError(char* msg, const std::string& context)
-		: Generic(context), m_error(msg)
-	{
-		sqlite3_free(msg);
-	}
+    // Note: msg will be deallocated using sqlite3_free
+    SQLiteError(char* sqlite_msg, const std::string& msg);
 
-	SQLiteError(sqlite3* db, const std::string& context)
-		: Generic(context), m_error(sqlite3_errmsg(db)) {}
-
-	~SQLiteError() throw () {}
-
-	virtual const char* type() const throw () { return "SQLiteError"; }
-	virtual std::string desc() const throw () { return m_error; }
+    SQLiteError(sqlite3* db, const std::string& msg);
 };
 
 class SQLiteDB
@@ -293,13 +280,9 @@ struct SqliteTransaction : public Transaction
 /**
  * Exception thrown in case of duplicate inserts
  */
-struct DuplicateInsert : public wibble::exception::Consistency
+struct DuplicateInsert : public std::runtime_error
 {
-	DuplicateInsert(const std::string& context) throw () :
-		wibble::exception::Consistency(context, "duplicate element") {}
-	~DuplicateInsert() throw () {}
-
-	virtual const char* type() const throw () { return "index::DuplicateInsert"; }
+    DuplicateInsert(const std::string& msg);
 };
 
 /**
@@ -307,10 +290,10 @@ struct DuplicateInsert : public wibble::exception::Consistency
  */
 struct InsertQuery : public utils::sqlite::Query
 {
-	InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
+    InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
 
-	// Step, but throw DuplicateInsert in case of duplicates
-	bool step();
+    // Step, but throw DuplicateInsert in case of duplicates
+    bool step();
 };
 
 }

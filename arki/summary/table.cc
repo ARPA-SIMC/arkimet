@@ -219,7 +219,7 @@ bool Table::merge_yaml(std::istream& in, const std::string& filename)
                         types::Code type = types::parseCodeName(i->first);
                         int pos = summary::Visitor::posForCode(type);
                         if (pos < 0)
-                            throw wibble::exception::Consistency("parsing summary item", "found element of unsupported type " + types::formatCode(type));
+                            throw runtime_error("cannot parse summary item: found element of unsupported type " + types::formatCode(type));
                         new_row.items[pos] = interns[pos].intern(types::decodeString(type, i->second));
                     }
                 }
@@ -264,7 +264,7 @@ void Table::ensure_we_can_add_one()
         unsigned new_capacity = row_capacity == 0 ? 16 : row_capacity * 2;
         Row* new_rows = (Row*)realloc(rows, new_capacity * sizeof(Row));
         if (!new_rows)
-            throw wibble::exception::System("cannot allocate memory for summary table");
+            throw std::system_error(errno, std::system_category(), "cannot allocate memory for summary table");
         rows = new_rows;
         row_capacity = new_capacity;
 //        test_consistency(rows, row_count, "POST");
