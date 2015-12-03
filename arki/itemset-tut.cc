@@ -51,7 +51,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::ItemSet& m)
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -89,7 +89,7 @@ struct arki_itemset_shar {
 TESTGRP(arki_itemset);
 
 template<typename T>
-static inline void test_basic_itemset_ops(WIBBLE_TEST_LOCPRM, const std::string& vlower, const std::string& vhigher)
+static inline void test_basic_itemset_ops(const std::string& vlower, const std::string& vhigher)
 {
     types::Code code = types::traits<T>::type_code;
     ItemSet md;
@@ -164,9 +164,9 @@ static inline void test_basic_itemset_ops(WIBBLE_TEST_LOCPRM, const std::string&
 template<> template<>
 void to::test<1>()
 {
-    wruntest(test_basic_itemset_ops<Origin>, "GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)");
-    wruntest(test_basic_itemset_ops<Origin>, "BUFR(1, 2)", "BUFR(2, 3)");
-    wruntest(test_basic_itemset_ops<Reftime>, "2006-05-04T03:02:01Z", "2008-07-06T05:04:03");
+    wassert(test_basic_itemset_ops<Origin>("GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)"));
+    wassert(test_basic_itemset_ops<Origin>("BUFR(1, 2)", "BUFR(2, 3)"));
+    wassert(test_basic_itemset_ops<Reftime>("2006-05-04T03:02:01Z", "2008-07-06T05:04:03"));
 #if 0
 	// Test PERIOD reference times
 	md.reftime.set(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
@@ -193,10 +193,10 @@ void to::test<1>()
 	ensure_equals(tend, Time());
 #endif
 #endif
-    wruntest(test_basic_itemset_ops<Product>, "GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)");
-    wruntest(test_basic_itemset_ops<Product>, "BUFR(1, 2, 3, name=antani)", "BUFR(1, 2, 3, name=blinda)");
-    wruntest(test_basic_itemset_ops<Level>, "GRIB1(114, 260, 123)", "GRIB1(120,280,123)");
-    wruntest(test_basic_itemset_ops<Timerange>, "GRIB1(1)", "GRIB1(2, 3y, 4y)");
+    wassert(test_basic_itemset_ops<Product>("GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)"));
+    wassert(test_basic_itemset_ops<Product>("BUFR(1, 2, 3, name=antani)", "BUFR(1, 2, 3, name=blinda)"));
+    wassert(test_basic_itemset_ops<Level>("GRIB1(114, 260, 123)", "GRIB1(120,280,123)"));
+    wassert(test_basic_itemset_ops<Timerange>("GRIB1(1)", "GRIB1(2, 3y, 4y)"));
 }
 
 #if 0

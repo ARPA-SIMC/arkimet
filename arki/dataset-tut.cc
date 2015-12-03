@@ -28,7 +28,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_dataset_shar {
     ConfigFile config;
@@ -214,7 +214,7 @@ struct TestDataset
             (td.format == "vm2" && cfgtest->value("type") == "simple");
     }
 
-    void test_import(WIBBLE_TEST_LOCPRM)
+    void test_import()
     {
         // Clear everything
         if (sys::isdir(path)) sys::rmtree(path);
@@ -225,12 +225,12 @@ struct TestDataset
         {
             Metadata md = td.test_data[i].md;
             wassert(actual(ds->acquire(md)) == WritableDataset::ACQ_OK);
-            wassert(actual(str::joinpath(path, td.test_data[i].destfile)).fileexists());
+            wassert(actual_file(str::joinpath(path, td.test_data[i].destfile)).exists());
             wassert(actual(md.sourceBlob().filename).endswith(td.test_data[i].destfile));
         }
     }
 
-    void test_querydata(WIBBLE_TEST_LOCPRM)
+    void test_querydata()
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -272,7 +272,7 @@ struct TestDataset
             wassert(actual(acct::plain_data_read_count.val()) == 3);
     }
 
-    void test_querysummary(WIBBLE_TEST_LOCPRM)
+    void test_querysummary()
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -298,7 +298,7 @@ struct TestDataset
         }
     }
 
-    void test_querybytes(WIBBLE_TEST_LOCPRM)
+    void test_querybytes()
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -326,7 +326,7 @@ struct TestDataset
         }
     }
 
-    void test_querybytes_integrity(WIBBLE_TEST_LOCPRM)
+    void test_querybytes_integrity()
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -352,7 +352,7 @@ struct TestDataset
         sys::unlink("tempdata");
     }
 
-    void test_postprocess(WIBBLE_TEST_LOCPRM)
+    void test_postprocess()
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(*cfgtest));
 
@@ -377,7 +377,7 @@ struct TestDataset
         wassert(actual(out) == buf);
     }
 
-    void test_locked(WIBBLE_TEST_LOCPRM)
+    void test_locked()
     {
         // Lock a dataset for writing
         unique_ptr<WritableDataset> wds(WritableDataset::create(*cfgtest));
@@ -391,7 +391,7 @@ struct TestDataset
         rds->query_bytes(bq, out);
     }
 
-    void test_all(WIBBLE_TEST_LOCPRM)
+    void test_all()
     {
         wruntest(test_import);
         wruntest(test_querydata);

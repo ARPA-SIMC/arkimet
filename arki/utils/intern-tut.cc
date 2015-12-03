@@ -5,9 +5,9 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble;
 using namespace arki;
 using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_utils_intern_shar {
 };

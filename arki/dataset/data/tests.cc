@@ -6,7 +6,7 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::dataset;
@@ -42,7 +42,7 @@ unique_ptr<data::Segment> SegmentTest::make_full_segment()
     return res;
 }
 
-void SegmentCheckTest::run(WIBBLE_TEST_LOCPRM)
+void SegmentCheckTest::run()
 {
     unique_ptr<data::Segment> segment(make_full_segment());
     dataset::data::FileState state;
@@ -119,7 +119,7 @@ void SegmentCheckTest::run(WIBBLE_TEST_LOCPRM)
     }
 }
 
-void SegmentRemoveTest::run(WIBBLE_TEST_LOCPRM)
+void SegmentRemoveTest::run()
 {
     unique_ptr<data::Segment> segment(make_full_segment());
 

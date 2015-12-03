@@ -13,31 +13,6 @@
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 
-namespace arki {
-namespace tests {
-
-#define ensure_dataset_clean(x, y, z) arki::tests::impl_ensure_dataset_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-template<typename DS>
-void impl_ensure_dataset_clean(const wibble::tests::Location& loc, DS& ds, size_t filecount, size_t resultcount)
-{
-	using namespace std;
-	using namespace arki;
-	using namespace arki::utils;
-
-	MaintenanceCollector c;
-	ds.maintenance(c);
-	inner_ensure_equals(c.fileStates.size(), filecount);
-	inner_ensure_equals(c.count(DatasetTest::COUNTED_ARC_OK), filecount);
-	inner_ensure_equals(c.remaining(), string());
-	inner_ensure(c.isClean());
-
-    metadata::Collection mdc(ds, dataset::DataQuery(Matcher()));
-    inner_ensure_equals(mdc.size(), resultcount);
-}
-
-}
-}
-
 namespace tut {
 using namespace std;
 using namespace arki;
@@ -45,6 +20,21 @@ using namespace arki::dataset;
 using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
+
+template<typename DS>
+static void ensure_dataset_clean(DS& ds, size_t filecount, size_t resultcount)
+{
+    MaintenanceCollector c;
+    ds.maintenance(c);
+    wassert(actual(c.fileStates.size()) == filecount);
+    wassert(actual(c.count(DatasetTest::COUNTED_ARC_OK)) == filecount);
+    wassert(actual(c.remaining()) == string());
+    wassert(actual(c.isClean()));
+
+    metadata::Collection mdc(ds, dataset::DataQuery(Matcher()));
+    wassert(actual(mdc.size()) == resultcount);
+}
+
 
 struct arki_dataset_archive_shar : public DatasetTest {
 	// Little dirty hack: implement MaintFileVisitor so we can conveniently
@@ -66,12 +56,12 @@ struct arki_dataset_archive_shar : public DatasetTest {
         iotrace::init();
 	}
 
-#define ensure_archive_clean(x, y, z) impl_ensure_archive_clean(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-    void impl_ensure_archive_clean(const wibble::tests::Location& loc, const std::string& dir, size_t filecount, size_t resultcount)
+#define ensure_archive_clean(x, y, z) wassert(impl_ensure_archive_clean((x), (y), (z)))
+    void impl_ensure_archive_clean(const std::string& dir, size_t filecount, size_t resultcount)
     {
         unique_ptr<Archive> arc(Archive::create(dir));
-        arki::tests::impl_ensure_dataset_clean(loc, *arc, filecount, resultcount);
-        inner_ensure(sys::exists(str::joinpath(dir, arcidxfname())));
+        wassert(ensure_dataset_clean(*arc, filecount, resultcount));
+        wassert(actual_file(str::joinpath(dir, arcidxfname())).exists());
     }
 };
 TESTGRP(arki_dataset_archive);
@@ -457,9 +447,9 @@ void to::test<7>()
 		arc->acquire("test.grib1");
 	}
 
-	// Everything should be fine now
-	Archives arc("testds", "testds/.archive");
-	ensure_dataset_clean(arc, 1, 3);
+    // Everything should be fine now
+    Archives arc("testds", "testds/.archive");
+    wassert(ensure_dataset_clean(arc, 1, 3));
 }
 
 template<> template<>

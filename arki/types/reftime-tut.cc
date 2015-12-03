@@ -8,7 +8,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -26,7 +26,7 @@ void to::test<1>()
     // Period sort later than Position
     t.higher.push_back("2014-01-01T00:00:00 to 2014-01-31T00:00:00");
     t.exact_query = "=2015-01-02T03:04:05Z";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Reftime> o = Reftime::createPosition(Time(2007, 6, 5, 4, 3, 2));
     wassert(actual(o).is_reftime_position(Time(2007, 6, 5, 4, 3, 2)));
@@ -49,7 +49,7 @@ void to::test<2>()
     t.higher.push_back("2015-01-02T12:00:00 to 2015-01-31T00:00:00");
 //#warning This does not look like a query to match a period
 //    t.exact_query = "=2007-06-05T04:03:02Z";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Reftime> o = Reftime::createPeriod(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
     wassert(actual(o).is_reftime_period(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3)));

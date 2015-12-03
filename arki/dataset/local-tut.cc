@@ -18,7 +18,7 @@
 namespace {
 using namespace std;
 using namespace arki;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki::tests;
 using namespace arki::dataset;
 using namespace arki::utils;

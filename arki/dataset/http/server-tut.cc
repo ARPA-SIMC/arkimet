@@ -12,7 +12,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_dataset_http_server_shar : public arki::tests::DatasetTest {
     string dsname;
@@ -132,7 +132,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_summary(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_summary(arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -149,7 +149,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_query(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_query(arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -167,7 +167,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_queryData(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_queryData(arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -185,7 +185,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_queryBytes(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_queryBytes(arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -203,7 +203,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Run the fake request through a server-side summary handler
-    void do_config(WIBBLE_TEST_LOCPRM, arki::tests::FakeRequest& r)
+    void do_config(arki::tests::FakeRequest& r)
     {
         net::http::Request req;
         r.setup_request(req);
@@ -218,7 +218,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /summary/
-    void test_summary(WIBBLE_TEST_LOCPRM)
+    void test_summary()
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -239,7 +239,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /query/
-    void test_query(WIBBLE_TEST_LOCPRM)
+    void test_query()
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -261,7 +261,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /querydata/
-    void test_querydata(WIBBLE_TEST_LOCPRM)
+    void test_querydata()
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -283,7 +283,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /querybytes/
-    void test_querybytes(WIBBLE_TEST_LOCPRM)
+    void test_querybytes()
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -302,7 +302,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /config/
-    void test_config(WIBBLE_TEST_LOCPRM)
+    void test_config()
     {
         // Make the request
         arki::tests::FakeRequest r;
@@ -323,7 +323,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
     // Test /config/ with a locked DB
-    void test_configlocked(WIBBLE_TEST_LOCPRM)
+    void test_configlocked()
     {
         unique_ptr<WritableDataset> ds(makeWriter());
         Pending p = ds->test_writelock();
@@ -332,7 +332,7 @@ struct ServerTest : public arki::tests::DatasetTest
     }
 
 
-    void test_all(WIBBLE_TEST_LOCPRM)
+    void test_all()
     {
         wruntest(test_summary);
         wruntest(test_query);

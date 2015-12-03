@@ -24,7 +24,6 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
-using namespace wibble;
 
 namespace arki {
 namespace types {
@@ -83,7 +82,7 @@ Time Time::start_of_next_month() const
 }
 Time Time::end_of_month() const
 {
-    return Time(vals[0], vals[1], grcal::date::daysinmonth(vals[0], vals[1]), 23, 59, 59);
+    return Time(vals[0], vals[1], wibble::grcal::date::daysinmonth(vals[0], vals[1]), 23, 59, 59);
 }
 
 std::string Time::toISO8601(char sep) const
@@ -446,7 +445,7 @@ std::vector<Time> Time::generate(const types::Time& begin, const types::Time& en
     {
         res.push_back(cur);
         cur.vals[5] += step;
-        grcal::date::normalise(cur.vals);
+        wibble::grcal::date::normalise(cur.vals);
     }
     return res;
 }

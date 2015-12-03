@@ -8,10 +8,8 @@
 #include <ostream>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
-
 namespace utils {
 namespace lua {
 void dumpstack(lua_State* L, const std::string& title, std::ostream& out);

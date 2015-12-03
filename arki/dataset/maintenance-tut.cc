@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
@@ -44,14 +44,14 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         throw wibble::exception::Consistency("second in file not found");
     }
 
-    void test_preconditions(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_preconditions(const testdata::Fixture& fixture)
     {
         wassert(actual(fixture.fnames_before_cutoff.size()) > 0);
         wassert(actual(fixture.fnames_after_cutoff.size()) > 0);
         wassert(actual(fixture.fnames_before_cutoff.size() + fixture.fnames_after_cutoff.size()) == fixture.count_dataset_files());
     }
 
-    void test_maintenance_on_clean(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_maintenance_on_clean(const testdata::Fixture& fixture)
     {
         unsigned file_count = fixture.count_dataset_files();
 
@@ -63,7 +63,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
             wassert(actual(writer.get()).maintenance_clean(file_count));
 
             // Check that maintenance does not accidentally create an archive
-            wassert(!actual("testds/.archive").fileexists());
+            wassert(actual_file("testds/.archive").not_exists());
         }
 
         // Ensure packing has nothing to report
@@ -97,7 +97,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         }
     }
 
-    void test_move_to_archive(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_move_to_archive(const testdata::Fixture& fixture)
     {
         cfg.setValue("archive age", fixture.selective_days_since());
         wruntest(import_all, fixture);
@@ -129,10 +129,10 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         for (set<string>::const_iterator i = fixture.fnames_before_cutoff.begin();
                 i != fixture.fnames_before_cutoff.end(); ++i)
         {
-            wassert(actual("testds/.archive/last/" + *i).fileexists());
-            wassert(actual("testds/.archive/last/" + *i + ".metadata").fileexists());
-            wassert(actual("testds/.archive/last/" + *i + ".summary").fileexists());
-            wassert(!actual("testds/" + *i).fileexists());
+            wassert(actual_file("testds/.archive/last/" + *i).exists());
+            wassert(actual_file("testds/.archive/last/" + *i + ".metadata").exists());
+            wassert(actual_file("testds/.archive/last/" + *i + ".summary").exists());
+            wassert(actual_file("testds/" + *i).not_exists());
         }
 
         // Maintenance should now show a normal situation
@@ -164,11 +164,11 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
 
             unsigned count = 0;
             reader->query_data(Matcher(), [&](unique_ptr<Metadata>) { ++count; return true; });
-            wassert(actual(count) == 3);
+            wassert(actual(count) == 3u);
         }
     }
 
-    void test_delete_age(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_delete_age(const testdata::Fixture& fixture)
     {
         cfg.setValue("delete age", fixture.selective_days_since());
         wruntest(import_all, fixture);
@@ -198,7 +198,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         wassert(actual(writer.get()).maintenance_clean(fixture.fnames_after_cutoff.size()));
     }
 
-    void test_truncated_datafile_at_data_boundary(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_truncated_datafile_at_data_boundary(const testdata::Fixture& fixture)
     {
         cfg.setValue("step", fixture.max_selective_aggregation);
         wruntest(import_all, fixture);
@@ -253,7 +253,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         }
     }
 
-    void test_corrupted_datafile(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_corrupted_datafile(const testdata::Fixture& fixture)
     {
         cfg.setValue("step", fixture.max_selective_aggregation);
         wruntest(import_all_packed, fixture);
@@ -313,7 +313,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         }
     }
 
-    void test_deleted_datafile_repack(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_deleted_datafile_repack(const testdata::Fixture& fixture)
     {
         wruntest(import_all_packed, fixture);
         string deleted_fname = import_results[0].sourceBlob().filename.substr(7);
@@ -355,7 +355,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         }
     }
 
-    void test_deleted_datafile_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_deleted_datafile_check(const testdata::Fixture& fixture)
     {
         wruntest(import_all_packed, fixture);
         string deleted_fname = import_results[0].sourceBlob().filename.substr(7);
@@ -383,7 +383,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         }
     }
 
-    void test_deleted_index_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_deleted_index_check(const testdata::Fixture& fixture)
     {
         unsigned file_count = fixture.count_dataset_files();
         wruntest(import_all_packed, fixture);
@@ -420,7 +420,7 @@ struct arki_dataset_maintenance_base : public arki::tests::DatasetTest {
         }
 
         // The spurious file should not have been touched
-        wassert(actual("testds/2014/01.grib1.tmp").fileexists());
+        wassert(actual_file("testds/2014/01.grib1.tmp").exists());
     }
 };
 

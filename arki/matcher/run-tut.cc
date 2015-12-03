@@ -11,6 +11,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::types;
 
 struct arki_matcher_run_shar

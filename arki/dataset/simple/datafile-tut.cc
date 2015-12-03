@@ -19,7 +19,7 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::dataset::simple;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 namespace {
 inline size_t datasize(const Metadata& md)

@@ -13,7 +13,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils::fd;
-using namespace wibble;
+using namespace arki::tests;
 
 struct arki_utils_fd_shar {
     arki_utils_fd_shar()

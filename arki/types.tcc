@@ -3,8 +3,6 @@
 
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
-#include <arki/wibble/exception.h>
-
 #include "config.h"
 #ifdef HAVE_LUA
 #include <arki/utils/lua.h>
@@ -28,10 +26,8 @@ void StyledType<BASE>::encodeWithoutEnvelope(utils::codec::Encoder& enc) const
 template<typename BASE>
 int StyledType<BASE>::compare(const Type& o) const
 {
-	using namespace wibble;
-
-	int res = CoreType<BASE>::compare(o);
-	if (res != 0) return res;
+    int res = CoreType<BASE>::compare(o);
+    if (res != 0) return res;
 
     // We should be the same kind, so upcast
     const BASE* v = dynamic_cast<const BASE*>(&o);

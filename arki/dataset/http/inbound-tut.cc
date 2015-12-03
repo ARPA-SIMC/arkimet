@@ -13,6 +13,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_dataset_http_inbound_shar : public arki::tests::DatasetTest {
     ConfigFile import_config;
@@ -126,9 +127,9 @@ void to::test<2>()
     ensure_equals(r.response_headers["content-type"], "text/plain");
     ensure_equals(r.response_headers["content-disposition"], "attachment; filename=test.grib1.log");
 
-    ensure_contains(r.response_body, "test.grib1:0+7218): acquire to testds dataset");
-    ensure_contains(r.response_body, "test.grib1:7218+34960): acquire to testds dataset");
-    ensure_contains(r.response_body, "test.grib1:42178+2234): acquire to testds dataset");
+    wassert(actual(r.response_body).contains("test.grib1:0+7218): acquire to testds dataset"));
+    wassert(actual(r.response_body).contains("test.grib1:7218+34960): acquire to testds dataset"));
+    wassert(actual(r.response_body).contains("test.grib1:42178+2234): acquire to testds dataset"));
 }
 
 // Test /inbound/dispatch/

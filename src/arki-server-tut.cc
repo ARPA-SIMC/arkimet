@@ -26,7 +26,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_server_shar {
     ConfigFile config;
@@ -153,8 +153,8 @@ void to::test<6>()
         mdc.add(*testds, Matcher::parse("origin:GRIB1,200"));
         ensure(false);
     } catch (std::exception& e) {
-        ensure_not_contains(e.what(), "<html>");
-        ensure_contains(e.what(), "subexpression 'MISCHIEF' does not contain a colon");
+        wassert(actual(e.what()).not_contains("<html>"));
+        wassert(actual(e.what()).contains("subexpression 'MISCHIEF' does not contain a colon"));
     }
     ensure_equals(mdc.size(), 0u);
 
@@ -241,13 +241,13 @@ void to::test<10>()
     testds->query_bytes(bq, out);
     out.close();
     string res = sys::read_file(out.name());
-    ensure_contains(res, "So far, so good");
+    wassert(actual(res).contains("So far, so good"));
 
     // The postprocessor stderr should not appear
-    ensure_not_contains(res, "Argh");
+    wassert(actual(res).not_contains("Argh"));
 
     // And we should not get a server error after the normal stream has started
-    ensure_not_contains(res, "500 Server error");
+    wassert(actual(res).not_contains("500 Server error"));
 }
 
 // Test data integrity of postprocessed queries through a server (used to fail

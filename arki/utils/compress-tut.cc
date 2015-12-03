@@ -16,7 +16,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki::utils::compress;
 
 static void fill(vector<uint8_t>& buf, const std::string& pattern)
@@ -77,7 +77,7 @@ void to::test<4>()
 	SeekIndex idx;
 
     // Opening a nonexisting file returns false
-    wassert(!actual("this-file-does-not-exists").fileexists());
+    wassert(actual_file("this-file-does-not-exists").not_exists());
     wassert(actual(idx.read("this-file-does-not-exists")).isfalse());
 }
 

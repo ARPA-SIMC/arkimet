@@ -1,25 +1,3 @@
-/*
- * validator - Arkimet validators
- *
- * Copyright (C) 2012  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
 #include <arki/validator.h>
@@ -29,7 +7,6 @@
 //#include <arki/wibble/string.h>
 
 using namespace std;
-using namespace wibble;
 using namespace arki::types;
 
 namespace arki {
@@ -64,10 +41,10 @@ bool DailyImport::operator()(const Metadata& v, std::vector<std::string>& errors
     }
 
     int today[6];
-    grcal::date::now(today);
+    wibble::grcal::date::now(today);
 
     // Compare until the start of today
-    int secs = grcal::date::duration(rt->time.vals, today);
+    int secs = wibble::grcal::date::duration(rt->time.vals, today);
     //printf("TODAY %d %d %d %d %d %d\n", today[0], today[1], today[2], today[3], today[4], today[5]);
     //printf("VAL   %s\n", rt->time.toSQL().c_str());
     //printf("SECS %d\n", secs);
@@ -82,7 +59,7 @@ bool DailyImport::operator()(const Metadata& v, std::vector<std::string>& errors
     }
 
     // Secs was negative, so we compare again from the end of today
-    secs = grcal::date::duration(today, rt->time.vals);
+    secs = wibble::grcal::date::duration(today, rt->time.vals);
     if (secs > 3600*24)
     {
         errors.push_back(name + ": reference time is more than one day into the future");

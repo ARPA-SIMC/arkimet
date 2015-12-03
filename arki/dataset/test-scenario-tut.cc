@@ -8,6 +8,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_dataset_test_scenario_shar {
     arki_dataset_test_scenario_shar()

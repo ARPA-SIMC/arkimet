@@ -394,36 +394,6 @@ void _wassert(WIBBLE_TEST_LOCPRM, T& a, P& op)
 }
 */
 
-template<typename T>
-static inline void _wassert(WIBBLE_TEST_LOCPRM, const T& expr)
-{
-    expr.check(wibble_test_location);
-}
-
-
-#define wibble_test_runner(loc, func, ...) \
-    do { try { \
-        func(loc, ##__VA_ARGS__); \
-    } catch (tut::failure) { \
-        throw; \
-    } catch (std::exception& e) { \
-        loc.fail_test(e.what()); \
-    } } while(0)
-
-#define wrunchecked(func) \
-    do { try { \
-        func; \
-    } catch (tut::failure) { \
-        throw; \
-    } catch (std::exception& e) { \
-        wibble_test_location.fail_test(wibble_test_location_info, __FILE__, __LINE__, #func, e.what()); \
-    } } while(0)
-
-// function test, just runs the function without mangling its name
-#define wruntest(test, ...) wibble_test_runner(wibble_test_location.nest(wibble_test_location_info, __FILE__, __LINE__, "function: " #test "(" #__VA_ARGS__ ")"), test, ##__VA_ARGS__)
-
-#define wassert(...) wibble_test_runner(wibble_test_location.nest(wibble_test_location_info, __FILE__, __LINE__, #__VA_ARGS__), _wassert, ##__VA_ARGS__)
-
 }
 }
 

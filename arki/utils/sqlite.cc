@@ -7,7 +7,6 @@
 //#include <iostream>
 
 using namespace std;
-using namespace wibble;
 
 namespace arki {
 namespace utils {

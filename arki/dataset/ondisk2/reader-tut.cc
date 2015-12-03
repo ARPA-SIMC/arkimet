@@ -20,6 +20,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::dataset;
 using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_dataset_ondisk2_reader_shar {
     arki_dataset_ondisk2_reader_shar()

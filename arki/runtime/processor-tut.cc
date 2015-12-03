@@ -8,7 +8,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::runtime;
 using namespace arki::utils;
@@ -16,7 +16,7 @@ using namespace arki::utils;
 struct arki_processor_shar {
     unique_ptr<ReadonlyDataset> build_dataset()
     {
-        tests::DatasetTest dt;
+        DatasetTest dt;
         if (sys::isdir("test")) sys::rmtree("test");
         dt.cfg.setValue("type", "ondisk2");
         dt.cfg.setValue("step", "daily");

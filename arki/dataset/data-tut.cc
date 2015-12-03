@@ -12,7 +12,7 @@ using namespace arki;
 using namespace arki::dataset;
 using namespace arki::types;
 using namespace arki::utils;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_dataset_data_shar {
 };
@@ -94,7 +94,7 @@ struct TestSegments
             cfg.setValue("segments", cfg_segments);
     }
 
-    void test_repack(WIBBLE_TEST_LOCPRM)
+    void test_repack()
     {
         ConfigFile cfg1(cfg);
         cfg1.setValue("mockdata", "true");

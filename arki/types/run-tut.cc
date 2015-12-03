@@ -24,7 +24,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -44,7 +44,7 @@ void to::test<1>()
     t.higher.push_back("MINUTE(12:01)");
     t.higher.push_back("MINUTE(13)");
     t.exact_query = "MINUTE,12:00";
-    wassert(t);
+    wassert(t.check());
 }
 
 // Test Lua functions

@@ -9,7 +9,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -98,7 +98,7 @@ void to::test<4>()
     t.lower.push_back("1789-07-14T12:00:00Z");
     t.higher.push_back("2015-01-01T00:00:00Z");
     t.higher.push_back("2115-01-01T00:00:00Z");
-    wassert(t);
+    wassert(t.check());
 }
 
 // Test Lua functions

@@ -167,9 +167,8 @@ struct Request : public net::http::Request
 
     void log_action(const std::string& action)
     {
-        using namespace wibble;
         wibble::sys::process::setproctitle("arki-server worker process: " + action);
-        log << log::INFO << action << endl;
+        log << wibble::log::INFO << action << endl;
     }
 };
 

@@ -460,49 +460,6 @@ namespace tut
   namespace 
   {
     /**
-     * Tests provided condition.
-     * Throws if false.
-     */
-    void ensure(bool cond)
-    {
-       if( !cond ) throw failure("");
-    }
-
-    /**
-     * Tests provided condition.
-     * Throws if false.
-     */
-    template<typename T>
-    void ensure(const T msg,bool cond)
-    {
-       if( !cond ) throw failure(msg);
-    }
-
-    /**
-     * Tests two objects for being equal.
-     * Throws if false.
-     *
-     * NB: both T and Q must have operator << defined somewhere, or
-     * client code will not compile at all!
-     */
-    template <class T,class Q>
-    void ensure_equals(const char* msg,const Q& actual,const T& expected)
-    {
-      if( expected != actual )
-      {
-        std::stringstream ss;
-        ss << (msg?msg:"") << (msg?": ":"") << "expected " << expected << " actual " << actual;
-        throw failure(ss.str().c_str());
-      }
-    }
-
-    template <class T,class Q>
-    void ensure_equals(const Q& actual,const T& expected)
-    {
-      ensure_equals<>(0,actual,expected);
-    }
-
-    /**
      * Tests two objects for being at most in given distance one from another.
      * Borders are excluded.
      * Throws if false.
@@ -527,14 +484,6 @@ namespace tut
     void ensure_distance(const T& actual,const T& expected,const T& distance)
     {
       ensure_distance<>(0,actual,expected,distance);
-    }
-
-    /**
-     * Unconditionally fails with message.
-     */
-    void fail(const char* msg="")
-    {
-      throw failure(msg);
     }
   }
 

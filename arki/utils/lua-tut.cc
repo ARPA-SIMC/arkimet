@@ -14,7 +14,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_utils_lua_shar {
 };
@@ -126,7 +126,7 @@ void to::test<7>()
 template<> template<>
 void to::test<8>()
 {
-    WIBBLE_TEST_INFO(tinfo);
+    ARKI_UTILS_TEST_INFO(tinfo);
     Lua L;
 
 	// Define 'ensure' function

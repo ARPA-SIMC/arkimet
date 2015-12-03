@@ -1,26 +1,6 @@
-/*
- * Copyright (C) 2007--2011  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "config.h"
 
-#include <arki/tests/tests.h>
+#include <arki/types/tests.h>
 #include <arki/values.h>
 #include <arki/utils/codec.h>
 
@@ -31,6 +11,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::utils::codec;
 
 struct arki_values_shar {
@@ -48,22 +29,22 @@ void to::test<1>()
 	std::unique_ptr<Value> vs2(Value::createString("antani"));
 	std::unique_ptr<Value> vs3(Value::createString("blinda"));
 
-	ensure_equals(*vi1, *vi1);
-	ensure_equals(*vi1, *vi2);
-	ensure(*vi1 != *vi3);
-	ensure(*vi2 != *vi3);
+    wassert(actual(*vi1 == *vi1));
+    wassert(actual(*vi1 == *vi2));
+    ensure(*vi1 != *vi3);
+    ensure(*vi2 != *vi3);
 
-	ensure_equals(*vs1, *vs1);
-	ensure_equals(*vs1, *vs2);
-	ensure(*vs1 != *vs3);
-	ensure(*vs2 != *vs3);
+    ensure(*vs1 == *vs1);
+    ensure(*vs1 == *vs2);
+    ensure(*vs1 != *vs3);
+    ensure(*vs2 != *vs3);
 
-	ensure(*vi1 < *vi3);
-	ensure(not (*vi1 < *vi1));
-	ensure(not (*vi3 < *vi1));
-	ensure(*vs1 < *vs3);
-	ensure(not (*vs1 < *vs1));
-	ensure(not (*vs3 < *vs1));
+    ensure(*vi1 < *vi3);
+    ensure(not (*vi1 < *vi1));
+    ensure(not (*vi3 < *vi1));
+    ensure(*vs1 < *vs3);
+    ensure(not (*vs1 < *vs1));
+    ensure(not (*vs3 < *vs1));
 }
 
 // Check encoding
@@ -98,11 +79,11 @@ void to::test<2>()
 		ensure_equals(enc.size(), (encsize)); \
 		v.reset(Value::decode(enc.data(), enc.size(), decsize)); \
 		ensure_equals(decsize, (encsize)); \
-		ensure_equals(*v, *(var)); \
+		ensure(*v == *(var)); \
 		\
 		enc = (var)->toString(); \
 		v.reset(Value::parse(enc)); \
-		ensure_equals(*v, *(var)); \
+		ensure(*v == *(var)); \
 	} while (0)
 
 	TESTENC(zero, 1u);
@@ -136,15 +117,15 @@ void to::test<3>()
 	v1.set("test3", Value::createInteger(-20));
 	v1.set("test4", Value::createString("1"));
 
-	// Test accessors
-	val.reset(Value::createInteger(1));
-	ensure_equals(*v1.get("test1"), *val);
-	val.reset(Value::createInteger(1000000));
-	ensure_equals(*v1.get("test2"), *val);
-	val.reset(Value::createInteger(-20));
-	ensure_equals(*v1.get("test3"), *val);
-	val.reset(Value::createString("1"));
-	ensure_equals(*v1.get("test4"), *val);
+    // Test accessors
+    val.reset(Value::createInteger(1));
+    ensure(*v1.get("test1") == *val);
+    val.reset(Value::createInteger(1000000));
+    ensure(*v1.get("test2") == *val);
+    val.reset(Value::createInteger(-20));
+    ensure(*v1.get("test3") == *val);
+    val.reset(Value::createString("1"));
+    ensure(*v1.get("test4") == *val);
 
 	ensure_equals(v1.size(), 4u);
 	ensure_equals(v2.size(), 0u);

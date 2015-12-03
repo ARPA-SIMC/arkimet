@@ -8,6 +8,7 @@
 
 #include "tests.h"
 #include "string.h"
+#include "sys.h"
 #include <fnmatch.h>
 #include <cmath>
 #include <iomanip>
@@ -367,6 +368,18 @@ void ActualFunction::throws(const std::string& what_match) const
     }
     if (!thrown)
         throw TestFailed("code did not throw any exception");
+}
+
+void ActualFile::exists() const
+{
+    if (sys::exists(_actual)) return;
+    throw TestFailed("file " + _actual + " does not exist and it should");
+}
+
+void ActualFile::not_exists() const
+{
+    if (!sys::exists(_actual)) return;
+    throw TestFailed("file " + _actual + " exists and it should not");
 }
 
 #if 0

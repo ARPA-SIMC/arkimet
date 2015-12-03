@@ -15,6 +15,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::dataset;
 using namespace arki::types;
+using namespace arki::tests;
 
 struct arki_dataset_targetfile_shar {
 	ConfigFile config;

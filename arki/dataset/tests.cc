@@ -30,7 +30,7 @@
 
 using namespace std;
 using namespace arki;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::dataset;
@@ -45,7 +45,7 @@ unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq)
     return count;
 }
 
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, unique_ptr<Metadata> md, metadata::Eater& mdc)
+void impl_ensure_dispatches(Dispatcher& dispatcher, unique_ptr<Metadata> md, metadata::Eater& mdc)
 {
     metadata::Collection c;
     Dispatcher::Outcome res = dispatcher.dispatch(move(md), c);
@@ -59,9 +59,9 @@ void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& disp
             for (std::vector<Note>::const_iterator j = notes.begin();
                     j != notes.end(); ++j)
                 cerr << "   " << *j << endl;
-		}
-	}
-    inner_ensure_equals(res, Dispatcher::DISP_OK);
+        }
+    }
+    wassert(actual(res) == Dispatcher::DISP_OK);
     c.move_to_eater(mdc);
 }
 
@@ -98,45 +98,44 @@ void OutputChecker::ignore_line_containing(const std::string& needle)
 	}
 }
 
-void OutputChecker::impl_ensure_line_contains(const wibble::tests::Location& loc, const std::string& needle)
+void OutputChecker::ensure_line_contains(const std::string& needle)
 {
-	splitIfNeeded();
+    splitIfNeeded();
 
-	bool found = false;
-	for (vector<string>::iterator i = lines.begin();
-			!found && i != lines.end(); ++i)
-	{
-		if ((*i)[0] == '!') continue;
+    bool found = false;
+    for (auto& i : lines)
+    {
+        if (i[0] == '!') continue;
 
-		if (i->find(needle) != std::string::npos )
-		{
-			(*i)[0] = '!';
-			found = true;
-		}
-	}
-	
-	if (!found)
-	{
-		std::stringstream ss;
-		ss << "'" << join() << "' does not contain '" << needle << "'";
-		throw tut::failure(loc.msg(ss.str()));
-	}
+        if (i.find(needle) != std::string::npos)
+        {
+            i[0] = '!';
+            found = true;
+        }
+    }
+
+    if (!found)
+    {
+        std::stringstream ss;
+        ss << "'" << join() << "' does not contain '" << needle << "'";
+        throw TestFailed(ss.str());
+    }
 }
 
-void OutputChecker::impl_ensure_all_lines_seen(const wibble::tests::Location& loc)
+void OutputChecker::ensure_all_lines_seen()
 {
-	splitIfNeeded();
+    splitIfNeeded();
 
-	for (vector<string>::const_iterator i = lines.begin();
-			i != lines.end(); ++i)
-	{
-		if ((*i)[0] != '!')
-		{
-			std::stringstream ss;
-			ss << "'" << join() << "' still contains unchecked lines";
-			throw tut::failure(loc.msg(ss.str()));
-		}
-	}
+    for (vector<string>::const_iterator i = lines.begin();
+            i != lines.end(); ++i)
+    {
+        if ((*i)[0] != '!')
+        {
+            std::stringstream ss;
+            ss << "'" << join() << "' still contains unchecked lines";
+            throw TestFailed(ss.str());
+        }
+    }
 }
 
 void LineChecker::ignore_regexp(const std::string& regexp)
@@ -163,7 +162,7 @@ struct Line : public std::string
 };
 }
 
-void LineChecker::check(WIBBLE_TEST_LOCPRM, const std::string& s) const
+void LineChecker::check(const std::string& s) const
 {
     vector<Line> lines;
     wibble::Splitter splitter("[\n\r]+", REG_EXTENDED);
@@ -219,7 +218,7 @@ void LineChecker::check(WIBBLE_TEST_LOCPRM, const std::string& s) const
             complaints << "Output line not checked: \"" << *i << "\"" << endl;
 
     if (!complaints.str().empty())
-        wibble_test_location.fail_test(complaints.str());
+        throw TestFailed(complaints.str());
 }
 
 ForceSqlite::ForceSqlite(bool val) : old(dataset::index::Manifest::get_force_sqlite())
@@ -404,7 +403,7 @@ void DatasetTest::clean_and_import(const ConfigFile* wcfg, const std::string& te
 	import(wcfg, testfile);
 }
 
-void DatasetTest::impl_ensure_maint_clean(WIBBLE_TEST_LOCPRM, size_t filecount, const ConfigFile* wcfg)
+void DatasetTest::ensure_maint_clean(size_t filecount, const ConfigFile* wcfg)
 {
     unique_ptr<dataset::WritableLocal> writer(makeLocalWriter(wcfg));
     arki::tests::MaintenanceResults expected(true, filecount);
@@ -413,19 +412,19 @@ void DatasetTest::impl_ensure_maint_clean(WIBBLE_TEST_LOCPRM, size_t filecount, 
 }
 
 
-void DatasetTest::impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg)
+void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, const ConfigFile* wcfg)
 {
-	impl_ensure_maint_clean(loc, filecount, wcfg);
+    wassert(ensure_maint_clean(filecount, wcfg));
 
     unique_ptr<dataset::Local> reader(makeLocalReader(wcfg));
     metadata::Collection mdc(*reader, Matcher());
-    inner_ensure_equals(mdc.size(), resultcount);
+    wassert(actual(mdc.size()) == resultcount);
 
     if (filecount > 0)
-        inner_ensure(sys::exists(str::joinpath(reader->path(), idxfname())));
+        wassert(actual_file(str::joinpath(reader->path(), idxfname())).exists());
 }
 
-void DatasetTest::import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+void DatasetTest::import_all(const testdata::Fixture& fixture)
 {
     clean();
 
@@ -440,7 +439,7 @@ void DatasetTest::import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixtur
     utils::files::removeDontpackFlagfile(cfg.value("path"));
 }
 
-void DatasetTest::import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+void DatasetTest::import_all_packed(const testdata::Fixture& fixture)
 {
     wruntest(import_all, fixture);
 
@@ -613,59 +612,6 @@ static ostream& operator<<(ostream& out, const MaintenanceCollector& c)
     return out;
 }
 
-void TestMaintenance::check(WIBBLE_TEST_LOCPRM) const
-{
-    using namespace wibble::tests;
-
-    MaintenanceCollector c;
-    wrunchecked(dataset.maintenance(c, quick));
-
-    bool ok = true;
-    if (expected.files_seen != -1 &&
-        c.fileStates.size() != (unsigned)expected.files_seen)
-        ok = false;
-
-    for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
-        if (expected.by_type[i] != -1 &&
-            c.count((tests::DatasetTest::Counted)i) != (unsigned)expected.by_type[i])
-            ok = false;
-
-    if (c.remaining() != "")
-        ok = false;
-
-    if (expected.is_clean != -1)
-    {
-        if (expected.is_clean)
-            ok = ok && c.isClean();
-        else
-            ok = ok && !c.isClean();
-    }
-
-    if (ok) return;
-
-    std::stringstream ss;
-    ss << "maintenance gave '" << c << "' instead of the expected '" << expected << "'";
-    wibble_test_location.fail_test(ss.str());
-}
-
-void TestRepack::check(WIBBLE_TEST_LOCPRM) const
-{
-    using namespace wibble::tests;
-
-    stringstream s;
-    wrunchecked(dataset.repack(s, write));
-    wruntest(expected.check, s.str());
-}
-
-void TestCheck::check(WIBBLE_TEST_LOCPRM) const
-{
-    using namespace wibble::tests;
-
-    stringstream s;
-    wrunchecked(dataset.check(s, write, quick));
-    wruntest(expected.check, s.str());
-}
-
 void corrupt_datafile(const std::string& absname)
 {
     files::PreserveFileTimes pft(absname);
@@ -735,7 +681,7 @@ std::unique_ptr<ReadonlyDataset> make_dataset_reader(const std::string& cfgstr)
     return ds;
 }
 
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md, int append_amount_adjust)
+void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int append_amount_adjust)
 {
     typedef types::source::Blob Blob;
 
@@ -761,7 +707,7 @@ void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, 
     wassert(actual_type(md.source()).is_source_blob("grib1", "", dw->absname, orig_fsize, data_size));
 }
 
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md)
+void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md)
 {
     // Make a snapshot of everything before appending
     unique_ptr<Source> orig_source(md.source().clone());
@@ -780,6 +726,73 @@ void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment
     // After rollback, nothing has changed
     wassert(actual(sys::size(dw->absname, 0)) == orig_fsize);
     wassert(actual_type(md.source()) == *orig_source);
+}
+
+/// Run maintenance and see that the results are as expected
+void ActualWritableLocal::maintenance(const MaintenanceResults& expected, bool quick)
+{
+    MaintenanceCollector c;
+    wassert(_actual->maintenance(c, quick));
+
+    bool ok = true;
+    if (expected.files_seen != -1 && c.fileStates.size() != (unsigned)expected.files_seen)
+        ok = false;
+
+    for (unsigned i = 0; i < tests::DatasetTest::COUNTED_MAX; ++i)
+        if (expected.by_type[i] != -1 &&
+            c.count((tests::DatasetTest::Counted)i) != (unsigned)expected.by_type[i])
+            ok = false;
+
+    if (c.remaining() != "")
+        ok = false;
+
+    if (expected.is_clean != -1)
+    {
+        if (expected.is_clean)
+            ok = ok && c.isClean();
+        else
+            ok = ok && !c.isClean();
+    }
+
+    if (ok) return;
+
+    std::stringstream ss;
+    ss << "maintenance gave '" << c << "' instead of the expected '" << expected << "'";
+    throw TestFailed(ss.str());
+}
+
+void ActualWritableLocal::maintenance_clean(unsigned data_count, bool quick)
+{
+    MaintenanceResults expected(true, data_count);
+    expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
+    maintenance(expected, quick);
+}
+
+void ActualWritableLocal::repack(const LineChecker& expected, bool write)
+{
+    stringstream s;
+    wassert(_actual->repack(s, write));
+    wassert(expected.check(s.str()));
+}
+
+void ActualWritableLocal::repack_clean(bool write)
+{
+    LineChecker expected;
+    expected.ignore_regexp("total bytes freed.");
+    repack(expected, write);
+}
+
+void ActualWritableLocal::check(const LineChecker& expected, bool write, bool quick)
+{
+    stringstream s;
+    wassert(_actual->check(s, write, quick));
+    wassert(expected.check(s.str()));
+}
+
+void ActualWritableLocal::check_clean(bool write)
+{
+    LineChecker expected;
+    check(expected, write);
 }
 
 }

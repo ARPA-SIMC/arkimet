@@ -20,7 +20,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -234,9 +234,7 @@ void to::test<5>()
 {
     metadata::Collection mdc;
     wassert(actual(scan::scan("inbound/example_1.nc", mdc)).istrue());
-    wassert(actual(mdc.size()) == 1);
+    wassert(actual(mdc.size()) == 1u);
 }
 
 }
-
-// vim:set ts=4 sw=4:

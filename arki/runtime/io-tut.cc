@@ -9,6 +9,7 @@ using namespace std;
 using namespace arki;
 using namespace arki::runtime;
 using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_runtime_io_shar {
 };

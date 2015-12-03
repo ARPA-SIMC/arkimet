@@ -24,7 +24,6 @@
 #define LUATAG_GRIB2 LUATAG_TIMERANGE ".grib2"
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::utils::codec;
 
@@ -1594,7 +1593,7 @@ unique_ptr<reftime::Position> Timedef::validity_time_to_emission_time(const reft
     for (int i = 0; i < 6; ++i)
         vals[i] = src.time.vals[i];
     vals[5] -= secs;
-    grcal::date::normalise(vals);
+    wibble::grcal::date::normalise(vals);
 
     // Return it
     return unique_ptr<reftime::Position>(new reftime::Position(Time(vals)));

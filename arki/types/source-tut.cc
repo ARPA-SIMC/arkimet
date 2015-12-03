@@ -27,7 +27,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace wibble::sys::process;
 using namespace arki;
 using namespace arki::types;
@@ -165,21 +165,21 @@ void to::test<7>()
     tblob.higher.push_back("BLOB(bufr,testfile:100+51)");
     tblob.higher.push_back("INLINE(bufr,9)");
     tblob.higher.push_back("URL(bufr,foo)");
-    wassert(tblob);
+    wassert(tblob.check());
 
     arki::tests::TestGenericType tinline("source", "INLINE(bufr,10)");
     tinline.lower.push_back("INLINE(aaa, 11)");
     tinline.lower.push_back("INLINE(bufr, 9)");
     tinline.higher.push_back("INLINE(bufr, 11)");
     tinline.higher.push_back("INLINE(ccc, 9)");
-    wassert(tinline);
+    wassert(tinline.check());
 
     arki::tests::TestGenericType turl("source", "URL(bufr,foo)");
     turl.lower.push_back("URL(aaa,zoo)");
     turl.lower.push_back("URL(bufr,boo)");
     turl.higher.push_back("URL(bufr,zoo)");
     turl.higher.push_back("URL(ccc,foo)");
-    wassert(turl);
+    wassert(turl.check());
 }
 
 }

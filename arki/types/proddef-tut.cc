@@ -33,7 +33,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -48,7 +48,7 @@ void to::test<1>()
     tests::TestGenericType t("proddef", "GRIB(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
     t.higher.push_back("GRIB(dieci=10,undici=11,dodici=-12)");
     t.exact_query = "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
-    wassert(t);
+    wassert(t.check());
 }
 
 // Test Lua functions
@@ -84,7 +84,7 @@ void to::test<3>()
 {
     tests::TestGenericType t("proddef", "GRIB(count=1,pippo=pippo)");
     t.higher.push_back("GRIB(count=2,pippo=pippo)");
-    wassert(t);
+    wassert(t.check());
 }
 
 }

@@ -24,7 +24,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -44,7 +44,7 @@ void to::test<1>()
     t.higher.push_back("GRIB1(2, 3, 4)");
     t.higher.push_back("GRIB2S(100, 100, 500)");
     t.exact_query = "GRIB1,1";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB1(1);
     wassert(actual(o->style()) == Level::GRIB1);
@@ -65,7 +65,7 @@ void to::test<2>()
     t.higher.push_back("GRIB1(103, 133)");
     t.higher.push_back("GRIB2S(100, 100, 500)");
     t.exact_query = "GRIB1,103,132";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB1(103, 132);
     wassert(actual(o->style()) == Level::GRIB1);
@@ -90,7 +90,7 @@ void to::test<3>()
     t.higher.push_back("GRIB1(103, 13201)");
     t.higher.push_back("GRIB2S(100, 100, 500)");
     t.exact_query = "GRIB1,103,13200";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB1(103, 13200);
     wassert(actual(o->style()) == Level::GRIB1);
@@ -113,7 +113,7 @@ void to::test<4>()
     t.higher.push_back("GRIB1(104, 132, 232)");
     t.higher.push_back("GRIB2S(100, 100, 500)");
     t.exact_query = "GRIB1,104,132,231";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB1(104, 132, 231);
     wassert(actual(o->style()) == Level::GRIB1);
@@ -137,7 +137,7 @@ void to::test<5>()
     t.higher.push_back("GRIB2S(100, 101, 500)");
     t.higher.push_back("GRIB2S(100, 100, 501)");
     t.exact_query = "GRIB2S,100,100,500";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB2S(100, 100, 500);
     wassert(actual(o->style()) == Level::GRIB2S);
@@ -160,7 +160,7 @@ void to::test<6>()
     t.lower.push_back("GRIB2S(-, -, 1)");
     t.lower.push_back("GRIB2S(1, 1, 5)");
     t.exact_query = "GRIB2S,-,-,-";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB2S(level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE);
     wassert(actual(o->style()) == Level::GRIB2S);
@@ -184,7 +184,7 @@ void to::test<7>()
     t.higher.push_back("GRIB2D(100, 100, 500, 100, 101, 1000)");
     t.higher.push_back("GRIB2D(100, 100, 500, 100, 100, 1001)");
     t.exact_query = "GRIB2D,100,100,500,100,100,1000";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB2D(100, 100, 500, 100, 100, 1000);
     wassert(actual(o->style()) == Level::GRIB2D);
@@ -215,7 +215,7 @@ void to::test<8>()
     t.lower.push_back("GRIB2D(-, -, -, -, -, 1)");
     t.lower.push_back("GRIB2D(100, 100, 500, 100, 100, 1000)");
     t.exact_query = "GRIB2D,-,-,-,-,-,-";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createGRIB2D(
             level::GRIB2S::MISSING_TYPE, level::GRIB2S::MISSING_SCALE, level::GRIB2S::MISSING_VALUE,
@@ -243,7 +243,7 @@ void to::test<9>()
     t.higher.push_back("ODIMH5(10.124, 20.123)");
     t.higher.push_back("ODIMH5(10.123, 20.124)");
     t.exact_query = "ODIMH5,range 10.123 20.123";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Level> o = Level::createODIMH5(10.123, 20.123);
     wassert(actual(o->style()) == Level::ODIMH5);

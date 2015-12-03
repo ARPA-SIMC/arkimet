@@ -30,7 +30,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_types_shar {
 };

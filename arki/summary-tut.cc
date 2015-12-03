@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "types/tests.h"
 #include "tests/lua.h"
 #include "summary.h"
@@ -44,7 +24,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_summary_shar {
 	Metadata md1;
@@ -86,7 +66,7 @@ void to::test<2>()
 {
     Summary s1;
     s1.add(s);
-    ensure_equals(s1, s);
+    ensure(s1 == s);
     ensure_equals(s1.count(), 2u);
     ensure_equals(s1.size(), 30u);
 }
@@ -129,48 +109,48 @@ void to::test<5>()
 {
     Summary s1;
     s.filter(Matcher::parse("origin:GRIB1,1"), s1);
-	ensure_equals(s1.count(), 1u);
-	ensure_equals(s1.size(), 10u);
+    ensure_equals(s1.count(), 1u);
+    ensure_equals(s1.size(), 10u);
 
     Summary s2;
     s.filter(Matcher::parse("origin:GRIB1,1"), s2);
-	ensure_equals(s2.count(), 1u);
-	ensure_equals(s2.size(), 10u);
+    ensure_equals(s2.count(), 1u);
+    ensure_equals(s2.size(), 10u);
 
-	ensure_equals(s1, s2);
+    ensure(s1 == s2);
 }
 
 // Test serialisation to binary
 template<> template<>
 void to::test<6>()
 {
-	{
-		string encoded = s.encode();
-		stringstream stream(encoded, ios_base::in);
-		Summary s1;
-		ensure(s1.read(stream, "(test memory buffer)"));
-		ensure_equals(s1, s);
-	}
+    {
+        string encoded = s.encode();
+        stringstream stream(encoded, ios_base::in);
+        Summary s1;
+        ensure(s1.read(stream, "(test memory buffer)"));
+        ensure(s1 == s);
+    }
 
-	{
-		string encoded = s.encode(true);
-		stringstream stream(encoded, ios_base::in);
-		Summary s1;
-		ensure(s1.read(stream, "(test memory buffer)"));
-		ensure_equals(s1, s);
-	}
+    {
+        string encoded = s.encode(true);
+        stringstream stream(encoded, ios_base::in);
+        Summary s1;
+        ensure(s1.read(stream, "(test memory buffer)"));
+        ensure(s1 == s);
+    }
 }
 
 // Test serialisation to Yaml
 template<> template<>
 void to::test<7>()
 {
-	stringstream stream1;
-	s.writeYaml(stream1);
-	stringstream stream2(stream1.str(), ios_base::in);
-	Summary s2;
-	s2.readYaml(stream2, "(test memory buffer)");
-	ensure_equals(s2, s);
+    stringstream stream1;
+    s.writeYaml(stream1);
+    stringstream stream2(stream1.str(), ios_base::in);
+    Summary s2;
+    s2.readYaml(stream2, "(test memory buffer)");
+    ensure(s2 == s);
 }
 
 // Test serialisation to JSON
@@ -189,16 +169,16 @@ void to::test<8>()
 
     Summary s2;
     s2.read(parsed.root().want_mapping("parsing summary"));
-    ensure_equals(s2, s);
+    ensure(s2 == s);
 }
 
 // Test merging summaries
 template<> template<>
 void to::test<9>()
 {
-	Summary s1;
-	s1.add(s);
-	ensure_equals(s1, s);
+    Summary s1;
+    s1.add(s);
+    ensure(s1 == s);
 }
 
 // Test serialisation of empty summary
@@ -210,7 +190,7 @@ void to::test<10>()
     stringstream stream(encoded, ios_base::in);
     Summary s1;
     ensure(s1.read(stream, "(test memory buffer)"));
-    ensure_equals(s1, s);
+    ensure(s1 == s);
 }
 
 // Test a case of metadata wrongly considered the same
@@ -305,20 +285,20 @@ void to::test<13>()
 	//s1.add(md);
 	ensure(!scanner.next(md));
 
-	// Serialisation to binary
-	string encoded = s1.encode();
-	stringstream stream(encoded, ios_base::in);
-	Summary s2;
-	ensure(s2.read(stream, "(test memory buffer)"));
-	ensure_equals(s1, s2);
+    // Serialisation to binary
+    string encoded = s1.encode();
+    stringstream stream(encoded, ios_base::in);
+    Summary s2;
+    ensure(s2.read(stream, "(test memory buffer)"));
+    ensure(s1 == s2);
 
-	// Serialisation to Yaml
-	stringstream stream1;
-	s1.writeYaml(stream1);
-	stringstream stream2(stream1.str(), ios_base::in);
-	Summary s3;
-	s3.readYaml(stream2, "(test memory buffer)");
-	ensure_equals(s3, s1);
+    // Serialisation to Yaml
+    stringstream stream1;
+    s1.writeYaml(stream1);
+    stringstream stream2(stream1.str(), ios_base::in);
+    Summary s3;
+    s3.readYaml(stream2, "(test memory buffer)");
+    ensure(s3 == s1);
 #endif
 }
 
@@ -354,7 +334,7 @@ void to::test<15>()
 	ensure_equals(res.size(), 1u);
 
     ItemSet& is = res[0];
-    wassert(actual(is.size()) == 2);
+    wassert(actual(is.size()) == 2u);
     wassert(actual(Origin::createGRIB1(1, 2, 3)) == is.get(types::TYPE_ORIGIN));
     wassert(actual(Product::createGRIB1(1, 2, 3)) == is.get(types::TYPE_PRODUCT));
 }
@@ -435,7 +415,7 @@ void to::test<19>()
 {
     Summary s1;
     s.filter(Matcher(), s1);
-    ensure_equals(s1, s);
+    ensure(s1 == s);
     ensure_equals(s1.count(), 2u);
     ensure_equals(s1.size(), 30u);
 }
@@ -462,5 +442,3 @@ void to::test<20>()
 }
 
 }
-
-// vim:set ts=4 sw=4:

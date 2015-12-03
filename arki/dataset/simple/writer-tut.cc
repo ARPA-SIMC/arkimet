@@ -13,7 +13,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::dataset::simple;
 using namespace arki::types;

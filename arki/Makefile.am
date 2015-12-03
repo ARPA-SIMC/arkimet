@@ -221,7 +221,6 @@ libarkimet_la_SOURCES += \
 		utils/accounting.cc \
 		utils/codec.cc \
 		utils/gzip.cc \
-		utils/datareader.cc \
 		utils/fd.cc \
 		utils/files.cc \
 		utils/h5.cc \
@@ -375,7 +374,7 @@ endif
 #
 if DEVEL_DO_METADATA
 libarkimet_la_SOURCES += \
-		utils/datareader-tut.cc \
+		utils/datareader.cc \
 		utils/compress.cc \
 		utils/sqlite.cc \
 		metadata.cc \
@@ -397,6 +396,7 @@ libarkimet_la_SOURCES += \
 		scan/dir.cc
 
 tests_arki_test_SOURCES += \
+		utils/datareader-tut.cc \
 		utils/compress-tut.cc \
 		utils/sqlite-tut.cc \
 		sort-tut.cc \
@@ -526,6 +526,7 @@ tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
 		utils/dataset-tut.cc \
 		metadata/xargs-tut.cc \
+		dataset/tests.cc \
 		dataset/data-tut.cc \
 		dataset/data/tests.cc \
 		dataset/data/fd-tut.cc \
@@ -554,7 +555,6 @@ tests_arki_test_SOURCES += \
 		dataset/http/server-tut.cc \
 		dataset/http/inbound-tut.cc \
 		dataset/http/test-utils.cc \
-		dataset/tests.cc \
 		dataset/outbound-tut.cc \
 		dataset/discard-tut.cc \
 		dataset/empty-tut.cc \

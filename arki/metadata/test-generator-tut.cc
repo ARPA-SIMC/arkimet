@@ -30,6 +30,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::metadata;
+using namespace arki::tests;
 
 struct arki_metadata_test_generator_shar {
     arki_metadata_test_generator_shar()

@@ -24,7 +24,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -39,7 +39,7 @@ void to::test<1>()
     tests::TestGenericType t("area", "GRIB(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
     t.higher.push_back("GRIB(dieci=10,undici=11,dodici=-12)");
     t.exact_query = "GRIB:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
-    wassert(t);
+    wassert(t.check());
 }
 
 // Test Lua functions
@@ -75,7 +75,7 @@ void to::test<3>()
 {
     tests::TestGenericType t("area", "GRIB(count=1,pippo=pippo)");
     t.higher.push_back("GRIB(count=2,pippo=pippo)");
-    wassert(t);
+    wassert(t.check());
 }
 
 // Check ODIMH5
@@ -85,7 +85,7 @@ void to::test<4>()
     tests::TestGenericType t("area", "ODIMH5(uno=1,due=2,tre=-3,supercazzola=-1234567,pippo=pippo,pluto=\"12\",cippo=)");
     t.higher.push_back("ODIMH5(dieci=10,undici=11,dodici=-12)");
     t.exact_query = "ODIMH5:cippo=, due=2, pippo=pippo, pluto=\"12\", supercazzola=-1234567, tre=-3, uno=1";
-    wassert(t);
+    wassert(t.check());
 }
 
 // Check VM2
@@ -95,7 +95,7 @@ void to::test<5>()
     tests::TestGenericType t("area", "VM2(1)");
     t.higher.push_back("VM2(2)");
     t.exact_query = "VM2,1:lat=4460016, lon=1207738, rep=locali";
-    wassert(t);
+    wassert(t.check());
 
     // Test derived values
     ValueBag vb1 = ValueBag::parse("lon=1207738,lat=4460016,rep=locali");

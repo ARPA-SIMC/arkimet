@@ -7,6 +7,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 
 struct arki_utils_codec_shar {
 };
@@ -16,7 +17,6 @@ TESTGRP(arki_utils_codec);
 template<> template<>
 void to::test<1>()
 {
-    using namespace wibble::tests;
 	using namespace utils::codec;
 
 #define TEST_CODEC(name, val, encsize) do { \
@@ -147,7 +147,6 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-    using namespace wibble::tests;
 	using namespace utils::codec;
 
 #define TEST_VARINT(TYPE, val, encsize) do { \

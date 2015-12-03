@@ -18,7 +18,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 
 namespace {
 
-inline size_t datasize(const Metadata& md)
+inline size_t datasize(const arki::Metadata& md)
 {
     return md.data_size();
 }
@@ -31,7 +31,7 @@ using namespace arki;
 using namespace arki::dataset::data;
 using namespace arki::utils;
 using namespace arki::tests;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_data_dir_shar {
     string fname;
@@ -65,7 +65,7 @@ void to::test<1>()
 {
     typedef types::source::Blob Blob;
 
-    wassert(!actual(fname).fileexists());
+    wassert(actual_file(fname).not_exists());
     {
         unique_ptr<dir::Segment> w(make_w(fname));
 

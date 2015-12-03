@@ -15,7 +15,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_dispatcher_shar {
 	ConfigFile config;

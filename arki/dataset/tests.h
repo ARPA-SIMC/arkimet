@@ -43,8 +43,8 @@ struct Fixture;
 }
 
 namespace tests {
-#define ensure_dispatches(x, y, z) arki::tests::impl_ensure_dispatches(wibble::tests::Location(__FILE__, __LINE__, #x ", " #y), (x), (y), (z))
-void impl_ensure_dispatches(const wibble::tests::Location& loc, Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata::Eater& mdc);
+#define ensure_dispatches(x, y, z) wassert(impl_ensure_dispatches((x), (y), (z)))
+void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata::Eater& mdc);
 
 unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq);
 
@@ -56,20 +56,14 @@ struct OutputChecker : public std::stringstream
 	// Split the output into lines if it has not been done yet
 	void splitIfNeeded();
 
-	// Join the split and marked lines
-	std::string join() const;
-	
-	OutputChecker();
+    // Join the split and marked lines
+    std::string join() const;
 
-	void ignore_line_containing(const std::string& needle);
+    OutputChecker();
 
-#define ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(__FILE__, __LINE__, "look for " #x), (x))
-#define inner_ensure_line_contains(x) impl_ensure_line_contains(wibble::tests::Location(loc, __FILE__, __LINE__, "look for " #x), (x))
-	void impl_ensure_line_contains(const wibble::tests::Location& loc, const std::string& needle);
-
-#define ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(__FILE__, __LINE__, "all lines seen"))
-#define inner_ensure_all_lines_seen() impl_ensure_all_lines_seen(wibble::tests::Location(loc, __FILE__, __LINE__, "all lines seen"))
-	void impl_ensure_all_lines_seen(const wibble::tests::Location& loc);
+    void ignore_line_containing(const std::string& needle);
+    void ensure_line_contains(const std::string& needle);
+    void ensure_all_lines_seen();
 };
 
 struct LineChecker
@@ -81,7 +75,7 @@ struct LineChecker
     void ignore_regexp(const std::string& regexp);
     void require_line_contains(const std::string& needle);
     void require_line_contains_re(const std::string& needle);
-    void check(WIBBLE_TEST_LOCPRM, const std::string& s) const;
+    void check(const std::string& s) const;
 };
 
 struct ForceSqlite
@@ -146,14 +140,11 @@ struct DatasetTest
 	// Recreate the dataset importing data into it
 	void clean_and_import(const ConfigFile* wcfg = 0, const std::string& testfile = "inbound/test.grib1");
 
-#define ensure_maint_clean(...) impl_ensure_maint_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
-	void impl_ensure_maint_clean(wibble::tests::Location, size_t filecount, const ConfigFile* wcfg = 0);
+    void ensure_maint_clean(size_t filecount, const ConfigFile* wcfg = 0);
+    void ensure_localds_clean(size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
 
-#define ensure_localds_clean(...) impl_ensure_localds_clean(wibble::tests::Location(__FILE__, __LINE__, #__VA_ARGS__), ##__VA_ARGS__)
-	void impl_ensure_localds_clean(const wibble::tests::Location& loc, size_t filecount, size_t resultcount, const ConfigFile* wcfg = 0);
-
-    void import_all(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture);
-    void import_all_packed(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture);
+    void import_all(const testdata::Fixture& fixture);
+    void import_all_packed(const testdata::Fixture& fixture);
 };
 
 struct DatasetTestDefaultConfig
@@ -368,92 +359,25 @@ struct MaintenanceResults
     }
 };
 
-struct TestMaintenance
-{
-    dataset::WritableLocal& dataset;
-    MaintenanceResults expected;
-    bool quick;
-
-    TestMaintenance(dataset::WritableLocal& dataset, const MaintenanceResults& expected, bool quick=true)
-        : dataset(dataset), expected(expected), quick(quick) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct TestRepack
-{
-    dataset::WritableLocal& dataset;
-    LineChecker expected;
-    bool write;
-
-    TestRepack(dataset::WritableLocal& dataset, const LineChecker& expected, bool write=false)
-        : dataset(dataset), expected(expected), write(write) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct TestCheck
-{
-    dataset::WritableLocal& dataset;
-    LineChecker expected;
-    bool write;
-    bool quick;
-
-    TestCheck(dataset::WritableLocal& dataset, const LineChecker& expected, bool write=false, bool quick=true)
-        : dataset(dataset), expected(expected), write(write), quick(quick) {}
-
-    void check(WIBBLE_TEST_LOCPRM) const;
-};
-
-struct ActualWritableLocal : public wibble::tests::Actual<dataset::WritableLocal*>
+struct ActualWritableLocal : public arki::utils::tests::Actual<dataset::WritableLocal*>
 {
     ActualWritableLocal(dataset::WritableLocal* s) : Actual<dataset::WritableLocal*>(s) {}
 
     /// Run maintenance and see that the results are as expected
-    TestMaintenance maintenance(const MaintenanceResults& expected, bool quick=true)
-    {
-        return TestMaintenance(*actual, expected, quick);
-    }
-    TestMaintenance maintenance_clean(unsigned data_count, bool quick=true)
-    {
-        MaintenanceResults expected(true, data_count);
-        expected.by_type[tests::DatasetTest::COUNTED_OK] = data_count;
-        return TestMaintenance(*actual, expected, quick);
-    }
-    TestRepack repack(const LineChecker& expected, bool write=false)
-    {
-        return TestRepack(*actual, expected, write);
-    }
-    TestRepack repack_clean(bool write=false)
-    {
-        LineChecker expected;
-        expected.ignore_regexp("total bytes freed.");
-        return TestRepack(*actual, expected, write);
-    }
-    TestCheck check(const LineChecker& expected, bool write=false, bool quick=true)
-    {
-        return TestCheck(*actual, expected, write, quick);
-    }
-    TestCheck check_clean(bool write=false)
-    {
-        LineChecker expected;
-        return TestCheck(*actual, expected, write);
-    }
+    void maintenance(const MaintenanceResults& expected, bool quick=true);
+    void maintenance_clean(unsigned data_count, bool quick=true);
+    void repack(const LineChecker& expected, bool write=false);
+    void repack_clean(bool write=false);
+    void check(const LineChecker& expected, bool write=false, bool quick=true);
+    void check_clean(bool write=false);
 };
 
 /// Corrupt a datafile by overwriting the first 4 bytes of its first data
 /// element with zeros
 void corrupt_datafile(const std::string& absname);
 
-void test_append_transaction_ok(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(WIBBLE_TEST_LOCPRM, dataset::data::Segment* dw, Metadata& md);
-
-}
-
-}
-
-namespace wibble {
-namespace tests {
+void test_append_transaction_ok(dataset::data::Segment* dw, Metadata& md, int append_amount_adjust=0);
+void test_append_transaction_rollback(dataset::data::Segment* dw, Metadata& md);
 
 inline arki::tests::ActualWritableLocal actual(arki::dataset::WritableLocal* actual) { return arki::tests::ActualWritableLocal(actual); }
 

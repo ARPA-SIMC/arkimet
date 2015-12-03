@@ -26,7 +26,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_types_product_shar {
 };
@@ -45,7 +45,7 @@ void to::test<1>()
     t.higher.push_back("BUFR(1, 2, 3)");
     t.higher.push_back("BUFR(1, 2, 3, name=antani)");
     t.exact_query = "GRIB1,1,2,3";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Product> o = Product::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Product::GRIB1);
@@ -66,7 +66,7 @@ void to::test<2>()
     t.higher.push_back("BUFR(1, 2, 3)");
     t.higher.push_back("BUFR(1, 2, 3, name=antani)");
     t.exact_query = "GRIB2,1,2,3,4";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4);
     wassert(actual(o->style()) == Product::GRIB2);
@@ -91,7 +91,7 @@ void to::test<3>()
     t.higher.push_back("BUFR(1, 2, 3)");
     t.higher.push_back("BUFR(1, 2, 3, name=antani)");
     t.exact_query = "GRIB2,1,2,3,4,5";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 5);
     wassert(actual(o->style()) == Product::GRIB2);
@@ -117,7 +117,7 @@ void to::test<4>()
     t.higher.push_back("BUFR(1, 2, 3)");
     t.higher.push_back("BUFR(1, 2, 3, name=antani)");
     t.exact_query = "GRIB2,1,2,3,4,4,5";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Product> o = Product::createGRIB2(1, 2, 3, 4, 4, 5);
     wassert(actual(o->style()) == Product::GRIB2);
@@ -141,7 +141,7 @@ void to::test<5>()
     t.higher.push_back("BUFR(1, 2, 3, name=antani1)");
     t.higher.push_back("BUFR(1, 2, 3, name1=antani)");
     t.exact_query = "BUFR,1,2,3:name=antani";
-    wassert(t);
+    wassert(t.check());
 
     ValueBag vb;
     vb.set("name", Value::createString("antani"));
@@ -172,7 +172,7 @@ void to::test<6>()
     t.lower.push_back("BUFR(1, 2, 3, name=antani)");
     t.higher.push_back("VM2(2)");
     t.exact_query = "VM2,1:bcode=B20013, l1=0, l2=0, lt1=256, lt2=258, p1=0, p2=0, tr=254, unit=m";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Product> o = Product::createVM2(1);
     wassert(actual(o->style()) == Product::VM2);

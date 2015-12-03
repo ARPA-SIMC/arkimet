@@ -20,7 +20,6 @@
 using namespace std;
 using namespace arki::utils;
 using namespace arki::utils::codec;
-using namespace wibble;
 
 namespace arki {
 namespace types {

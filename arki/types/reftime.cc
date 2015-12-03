@@ -19,7 +19,6 @@
 #define SERSIZELEN 1
 
 using namespace std;
-using namespace wibble;
 using namespace arki::utils;
 using namespace arki::utils::codec;
 

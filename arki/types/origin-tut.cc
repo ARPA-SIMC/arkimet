@@ -24,7 +24,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -44,7 +44,7 @@ void to::test<1>()
     t.higher.push_back("GRIB2(1, 2, 3, 4, 5)");
     t.higher.push_back("BUFR(1, 2)");
     t.exact_query = "GRIB1,1,2,3";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Origin> o = Origin::createGRIB1(1, 2, 3);
     wassert(actual(o->style()) == Origin::GRIB1);
@@ -65,7 +65,7 @@ void to::test<2>()
     t.higher.push_back("GRIB2(2, 3, 4, 5, 6)");
     t.higher.push_back("BUFR(1, 2)");
     t.exact_query = "GRIB2,1,2,3,4,5";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Origin> o = Origin::createGRIB2(1, 2, 3, 4, 5);
     wassert(actual(o->style()) == Origin::GRIB2);
@@ -89,7 +89,7 @@ void to::test<3>()
     t.higher.push_back("BUFR(1, 3)");
     t.higher.push_back("BUFR(2, 1)");
     t.exact_query = "BUFR,1,2";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Origin> o = Origin::createBUFR(1, 2);
     wassert(actual(o->style()) == Origin::BUFR);
@@ -135,7 +135,7 @@ void to::test<5>()
     t.higher.push_back("ODIMH5(1, 2, 3a)");
     t.higher.push_back("ODIMH5(1a, 2a, 3a)");
     t.exact_query = "ODIMH5,1,2,3";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Origin> o = Origin::createODIMH5("1", "2", "3");
     wassert(actual(o->style()) == Origin::ODIMH5);
@@ -158,7 +158,7 @@ void to::test<6>()
     t.higher.push_back("ODIMH5(1, 2, 3a)");
     t.higher.push_back("ODIMH5(1a, 2a, 3a)");
     t.exact_query = "ODIMH5,,2,3";
-    wassert(t);
+    wassert(t.check());
 
     unique_ptr<Origin> o = Origin::createODIMH5("", "2", "3");
     wassert(actual(o->style()) == Origin::ODIMH5);

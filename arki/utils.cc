@@ -17,7 +17,6 @@
 #include <errno.h>
 
 using namespace std;
-using namespace wibble;
 
 #ifndef HAVE_MKDTEMP
 /* Replacement mkdtemp if not provided by libc */

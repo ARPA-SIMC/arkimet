@@ -1,30 +1,10 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types/tests.h>
 #include <arki/types/timerange.h>
 #include <arki/tests/lua.h>
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -43,7 +23,7 @@ void to::test<1>()
     tgt.higher.push_back("GRIB1(2, 2h, 2h)");
     tgt.higher.push_back("GRIB1(2, 2y, 2y)");
     tgt.exact_query = "GRIB1, 002, 002s, 003s";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB1(2, 254, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB1);
@@ -72,7 +52,7 @@ void to::test<2>()
     tgt.higher.push_back("GRIB1(2, 3h, 4h)");
     tgt.higher.push_back("GRIB1(2, 2y, 3y)");
     tgt.exact_query = "GRIB1, 002, 002h, 003h";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB1(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB1);
@@ -103,7 +83,7 @@ void to::test<3>()
     tgt.higher.push_back("GRIB1(2, 2y, 4y)");
     tgt.higher.push_back("GRIB1(2, 3y, 3y)");
     tgt.exact_query = "GRIB1, 002, 002y, 003y";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB1(2, 4, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB1);
@@ -133,7 +113,7 @@ void to::test<4>()
     tgt.lower.push_back("GRIB1(250, 124h, 126h)");
     tgt.higher.push_back("GRIB1(250, 124y, 127y)");
     tgt.exact_query = "GRIB1, 250, 124h, 127h";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB1(250, 1, 124, 127);
     wassert(actual(o->style()) == Timerange::GRIB1);
@@ -164,7 +144,7 @@ void to::test<5>()
     tgt.lower.push_back("GRIB2(2, 254, 2s, 2s)");
     tgt.higher.push_back("GRIB2(2, 254, 3s, 4s)");
     tgt.exact_query = "GRIB2,2,254,2,3";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB2(2, 254, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB2);
@@ -190,7 +170,7 @@ void to::test<6>()
     tgt.higher.push_back("GRIB2(2, 1, 3h, 3h)");
     tgt.higher.push_back("GRIB2(2, 4, 2y, 3y)");
     tgt.exact_query = "GRIB2,2,1,2,3";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB2);
@@ -213,7 +193,7 @@ void to::test<7>()
     tgt.higher.push_back("GRIB2(2, 4, 3y, 3y)");
     tgt.higher.push_back("GRIB2(2, 254, 2s, 3s)");
     tgt.exact_query = "GRIB2,2,4,2,3";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB2(2, 1, 2, 3);
     wassert(actual(o->style()) == Timerange::GRIB2);
@@ -239,7 +219,7 @@ void to::test<8>()
     tgt.higher.push_back("GRIB2(2, 254, -2s, -3s)");
     tgt.higher.push_back("GRIB2(2, 254, -3s, -3s)");
     tgt.exact_query = "GRIB2,2,1,-2,-3";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB2(2, 1, -2, -3);
     wassert(actual(o->style()) == Timerange::GRIB2);
@@ -261,7 +241,7 @@ void to::test<9>()
     tgt.higher.push_back("GRIB2(250, 1, 2h, 3h)");
     tgt.higher.push_back("GRIB2(250, 254, -2s, -3s)");
     tgt.exact_query = "GRIB2,250,1,-2,-3";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createGRIB2(250, 1, -2, -3);
     wassert(actual(o->style()) == Timerange::GRIB2);
@@ -315,7 +295,7 @@ void to::test<11>()
     tgt.higher.push_back("Timedef(6h,2,61m)");
     tgt.higher.push_back("Timedef(6mo,2,60m)");
     tgt.exact_query = "Timedef,6h,2,60m";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2,60m");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
@@ -347,7 +327,7 @@ void to::test<12>()
     tgt.higher.push_back("Timedef(1y,2,4mo)");
     tgt.higher.push_back("Timedef(2y,2,3mo)");
     tgt.exact_query = "Timedef,1y,2,3mo";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1y,2,3mo");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
@@ -380,7 +360,7 @@ void to::test<13>()
     tgt.higher.push_back("Timedef(2d)");
     tgt.higher.push_back("Timedef(1mo)");
     tgt.exact_query = "Timedef,1d,-";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1d");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
@@ -412,7 +392,7 @@ void to::test<14>()
     tgt.lower.push_back("Timedef(2ce,0,0s)");
     tgt.higher.push_back("Timedef(3ce)");
     tgt.exact_query = "Timedef,2ce,-";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("2ce");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
@@ -442,7 +422,7 @@ void to::test<15>()
     tgt.higher.push_back("Timedef(6h,2,60m)");
     tgt.higher.push_back("Timedef(2d)");
     tgt.exact_query = "Timedef,6h,2,-";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6h,2");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
@@ -475,7 +455,7 @@ void to::test<16>()
     tgt.higher.push_back("Timedef(6no,3)");
     tgt.higher.push_back("Timedef(6no,2,60d)");
     tgt.exact_query = "Timedef,6no,2,-";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("6no,2");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
@@ -508,7 +488,7 @@ void to::test<17>()
     tgt.higher.push_back("Timedef(6no,3)");
     tgt.higher.push_back("Timedef(6no,2,60d)");
     tgt.exact_query = "Timedef,1y,2,3d";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<timerange::Timedef> v = timerange::Timedef::createFromYaml("1y,2,3d");
     wassert(actual(v->style()) == Timerange::TIMEDEF);
@@ -535,7 +515,7 @@ void to::test<18>()
     tgt.higher.push_back("Timedef(5h,2)");
     tgt.higher.push_back("Timedef(6no,3)");
     tgt.exact_query = "BUFR,6h";
-    wassert(tgt);
+    wassert(tgt.check());
 
     unique_ptr<Timerange> o = Timerange::createBUFR(6, 1);
     const timerange::BUFR* v = dynamic_cast<timerange::BUFR*>(o.get());

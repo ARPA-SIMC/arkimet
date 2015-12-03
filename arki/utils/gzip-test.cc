@@ -1,9 +1,9 @@
-#include "arki/utils/tests.h"
+#include "arki/tests/tests.h"
 #include "gzip.h"
 
 using namespace std;
 using namespace arki::utils;
-using namespace arki::utils::tests;
+using namespace arki::tests;
 
 namespace {
 

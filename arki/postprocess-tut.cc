@@ -17,7 +17,7 @@
 #define STDERR_FILENO 2
 #endif
 
-using namespace wibble::tests;
+using namespace arki::tests;
 
 namespace tut {
 using namespace std;

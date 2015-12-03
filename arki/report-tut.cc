@@ -15,6 +15,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_report_shar
 {
@@ -91,9 +92,9 @@ void to::test<2>()
     out.close();
 
     string res = sys::read_file(out.name());
-    ensure_contains(res, "origin: GRIB1(080, 255, 100)");
-    ensure_contains(res, "origin: GRIB1(098, 000, 129)");
-    ensure_contains(res, "origin: GRIB1(200, 000, 101)");
+    wassert(actual(res).contains("origin: GRIB1(080, 255, 100)"));
+    wassert(actual(res).contains("origin: GRIB1(098, 000, 129)"));
+    wassert(actual(res).contains("origin: GRIB1(200, 000, 101)"));
 }
 
 }

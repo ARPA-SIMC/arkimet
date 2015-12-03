@@ -28,7 +28,7 @@ struct SegmentTest
     /// Instantiate the segment to use for testing
     virtual dataset::data::Segment* make_segment() = 0;
 
-    virtual void run(WIBBLE_TEST_LOCPRM) = 0;
+    virtual void run() = 0;
 
     /// Create a segment with no data on disk
     std::unique_ptr<dataset::data::Segment> make_empty_segment();
@@ -44,7 +44,7 @@ struct SegmentTest
  */
 struct SegmentCheckTest : public SegmentTest
 {
-    void run(WIBBLE_TEST_LOCPRM) override;
+    void run() override;
 };
 
 /**
@@ -52,7 +52,7 @@ struct SegmentCheckTest : public SegmentTest
  */
 struct SegmentRemoveTest : public SegmentTest
 {
-    void run(WIBBLE_TEST_LOCPRM) override;
+    void run() override;
 };
 
 // TODO: virtual void truncate(const std::string& absname, size_t offset) = 0;

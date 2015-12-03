@@ -8,10 +8,10 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
 using namespace arki;
 using namespace arki::utils;
 using namespace arki::utils::files;
+using namespace arki::tests;
 
 struct arki_utils_files_shar {
 	arki_utils_files_shar()

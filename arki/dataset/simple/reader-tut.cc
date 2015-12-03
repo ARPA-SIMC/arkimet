@@ -20,6 +20,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset;
 using namespace arki::utils;
+using namespace arki::tests;
 using namespace arki::dataset::simple;
 
 struct arki_dataset_simple_reader_shar : public arki::tests::DatasetTest {

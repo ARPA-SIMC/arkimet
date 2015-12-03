@@ -22,7 +22,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::dataset::ondisk2;
@@ -771,7 +771,7 @@ void to::test<16>()
     std::unique_ptr<ReadonlyDataset> reader(make_dataset_reader(conf));
     metadata::Collection mdc;
     mdc.add(*reader, Matcher::parse(""));
-    wassert(actual(mdc.size()) == 720);
+    wassert(actual(mdc.size()) == 720u);
 
     // Query it, streaming its data to /dev/null
     sys::File out("/dev/null", O_WRONLY);

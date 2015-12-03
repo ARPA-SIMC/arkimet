@@ -26,7 +26,7 @@
 namespace tut {
 
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -41,7 +41,7 @@ template<> template<> void to::test<1>()
     tests::TestGenericType t("task", "task");
     t.lower.push_back("pask");
     t.higher.push_back("zask");
-    wassert(t);
+    wassert(t.check());
 }
 
 #ifdef HAVE_LUA

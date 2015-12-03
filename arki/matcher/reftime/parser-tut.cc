@@ -27,6 +27,7 @@
 namespace tut {
 using namespace std;
 using namespace arki;
+using namespace arki::tests;
 using namespace arki::matcher::reftime;
 
 struct arki_matcher_reftime_parser_shar {

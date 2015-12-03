@@ -12,7 +12,6 @@
 #include <arki/types/source/blob.h>
 #include <arki/emitter/json.h>
 #include <arki/emitter/memory.h>
-
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -31,7 +30,7 @@ static inline std::ostream& operator<<(std::ostream& o, const arki::Metadata& m)
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -66,7 +65,7 @@ struct arki_metadata_shar {
         md.add_note("test note");
     }
 
-    void ensure_md_matches_prefill(WIBBLE_TEST_LOCPRM, const Metadata& md)
+    void ensure_md_matches_prefill(const Metadata& md)
     {
         wassert(actual(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1))) == md.get<Reftime>());
         wassert(actual(Origin::createGRIB1(1, 2, 3)) == md.get<Origin>());
@@ -124,7 +123,7 @@ void to::test<2>()
 
     wassert(actual(Source::createBlob("grib", "", "fname", 1, 2)) == md1.source());
     wassert(actual(md1.source().format) == "grib");
-    wruntest(ensure_md_matches_prefill, md1);
+    wassert(ensure_md_matches_prefill(md1));
 
 
     // Test PERIOD reference times

@@ -23,7 +23,7 @@ using namespace arki::dataset::data;
 using namespace arki::utils;
 using namespace arki::types;
 using namespace arki::tests;
-using namespace wibble::tests;
+using namespace arki::tests;
 
 struct arki_data_concat_shar {
     string fname;
@@ -64,7 +64,7 @@ inline size_t datasize(const Metadata& md)
 template<> template<>
 void to::test<1>()
 {
-    wassert(!actual(fname).fileexists());
+    wassert(actual_file(fname).not_exists());
     {
         unique_ptr<concat::Segment> w(make_w(fname));
 
@@ -136,7 +136,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    wassert(!actual(fname).fileexists());
+    wassert(actual_file(fname).not_exists());
     {
         unique_ptr<concat::Segment> dw(make_w(fname));
         vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };

@@ -22,7 +22,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
@@ -205,29 +205,29 @@ void to::test<2>()
 template<> template<>
 void to::test<3>()
 {
-	Metadata md;
-	scan::Grib scanner(false, 
-		"arki.year = 2008\n"
-		"arki.month = 7\n"
-		"arki.day = 30\n"
-		"arki.hour = 12\n"
-		"arki.minute = 30\n"
-		"arki.second = 0\n"
-		"arki.centre = 98\n"
-		"arki.subcentre = 1\n"
-		"arki.process = 2\n"
-		"arki.origin = 1\n"
-		"arki.table = 1\n"
-		"arki.product = 1\n"
-		"arki.ltype = 1\n"
-		"arki.l1 = 1\n"
-		"arki.l2 = 1\n"
-		"arki.ptype = 1\n"
-		"arki.punit = 1\n"
-		"arki.p1 = 1\n"
-		"arki.p2 = 1\n"
-		"arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.00 }, { 45.00, 12.00 } }"
-	);
+    Metadata md;
+    scan::Grib scanner("", R"(
+arki.year = 2008
+arki.month = 7
+arki.day = 30
+arki.hour = 12
+arki.minute = 30
+arki.second = 0
+arki.centre = 98
+arki.subcentre = 1
+arki.process = 2
+arki.origin = 1
+arki.table = 1
+arki.product = 1
+arki.ltype = 1
+arki.l1 = 1
+arki.l2 = 1
+arki.ptype = 1
+arki.punit = 1
+arki.p1 = 1
+arki.p2 = 1
+arki.bbox = { { 45.00, 11.00 }, { 46.00, 11.00 }, { 46.00, 12.00 }, { 47.00, 13.00 }, { 45.00, 12.00 } }
+)");
     vector<uint8_t> buf;
 
     scanner.open("inbound/test.grib1");
@@ -355,7 +355,7 @@ void to::test<7>()
     scan::Grib scanner;
     vector<uint8_t> buf;
 
-    wrunchecked(scanner.open("inbound/cleps_pf16_HighPriority.grib2"));
+    wassert(scanner.open("inbound/cleps_pf16_HighPriority.grib2"));
 
     // See how we scan the first BUFR
     wassert(actual(scanner.next(md)).istrue());
@@ -364,7 +364,7 @@ void to::test<7>()
     wassert(actual(md.source().cloneType()).is_source_blob("grib2", sys::abspath("."), "inbound/cleps_pf16_HighPriority.grib2", 0, 432));
 
     // Check that the source can be read properly
-    wrunchecked(buf = md.getData());
+    buf = wcallchecked(md.getData());
     wassert(actual(buf.size()) == 432u);
     wassert(actual(string((const char*)buf.data(), 4)) == "GRIB");
     wassert(actual(string((const char*)buf.data() + 428, 4)) == "7777");
@@ -430,11 +430,11 @@ void to::test<9>()
 template<> template<>
 void to::test<10>()
 {
-    WIBBLE_TEST_INFO(info);
+    ARKI_UTILS_TEST_INFO(info);
 
     {
         metadata::Collection mdc;
-        wrunchecked(scan::scan("inbound/cosmonudging-t2.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t2.grib1", mdc));
         wassert(actual(mdc.size()) == 35u);
         for (unsigned i = 0; i < 5; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -455,7 +455,7 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        wrunchecked(scan::scan("inbound/cosmonudging-t201.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t201.grib1", mdc));
         wassert(actual(mdc.size()) == 33u);
         wassert(actual(mdc[0]).contains("timerange", "Timedef(0s, 0, 12h)"));
         wassert(actual(mdc[1]).contains("timerange", "Timedef(0s, 0, 12h)"));
@@ -472,7 +472,7 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        wrunchecked(scan::scan("inbound/cosmonudging-t202.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t202.grib1", mdc));
         wassert(actual(mdc.size()) == 11u);
         for (unsigned i = 0; i < 11; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -482,17 +482,17 @@ void to::test<10>()
     // Shortcut to read one single GRIB from a file
     struct OneGrib
     {
-        wibble::tests::LocationInfo& wibble_test_location_info;
+        arki::utils::tests::LocationInfo& arki_utils_test_location_info;
         Metadata md;
 
-        OneGrib(wibble::tests::LocationInfo& info) : wibble_test_location_info(info) {}
+        OneGrib(arki::utils::tests::LocationInfo& info) : arki_utils_test_location_info(info) {}
         void read(const char* fname)
         {
-            wibble_test_location_info() << "Sample: " << fname;
+            arki_utils_test_location_info() << "Sample: " << fname;
             metadata::Collection mdc;
-            wrunchecked(scan::scan(fname, mdc));
+            wassert(scan::scan(fname, mdc));
             wassert(actual(mdc.size()) == 1u);
-            wrunchecked(md = mdc[0]);
+            md = wcallchecked(mdc[0]);
         }
     };
 

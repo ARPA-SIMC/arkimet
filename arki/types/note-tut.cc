@@ -24,7 +24,7 @@
 
 namespace tut {
 using namespace std;
-using namespace wibble::tests;
+using namespace arki::tests;
 using namespace arki;
 using namespace arki::types;
 
@@ -41,7 +41,7 @@ void to::test<1>()
     t.lower.push_back("[2015-01-03T00:00:00]bar");
     t.higher.push_back("[2015-01-03T00:00:00]zab");
     t.higher.push_back("[2015-01-04T00:00:00]bar");
-    wassert(t);
+    wassert(t.check());
 }
 
 #ifdef HAVE_LUA

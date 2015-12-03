@@ -12,6 +12,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::utils;
+using namespace arki::tests;
 
 struct arki_utils_datareader_shar {
 };

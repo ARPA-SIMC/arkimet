@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2009--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include "libconfig.h"
 #include "bbox.h"
 #include <arki/types/tests.h>
@@ -33,6 +13,7 @@ namespace tut {
 using namespace std;
 using namespace arki;
 using namespace arki::types;
+using namespace arki::tests;
 
 struct arki_bbox_shar {
 };
@@ -119,19 +100,19 @@ void to::test<3>()
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-	ensure_similar(cs->getAt(0).x,  3.3241, 0.0001); // 7.7876   These are the values computed
-	ensure_similar(cs->getAt(0).y, 43.6864, 0.0001); // 43.8211  with the old BB algorithm
-	ensure_similar(cs->getAt(1).x,  8.8445, 0.0001); // 7.7876   that however only produced
-	ensure_similar(cs->getAt(1).y, 43.8274, 0.0001); // 46.0347  rectangles.
-	ensure_similar(cs->getAt(2).x,  8.8382, 0.0001); // 13.4906
-	ensure_similar(cs->getAt(2).y, 46.1229, 0.0001); // 46.0347
-	ensure_similar(cs->getAt(3).x,  3.0946, 0.0001); // 13.4906
-	ensure_similar(cs->getAt(3).y, 45.9702, 0.0001); // 43.8211
-	ensure_similar(cs->getAt(4).x,  3.3241, 0.0001); // 7.7876
-	ensure_similar(cs->getAt(4).y, 43.6864, 0.0001); // 43.8211
+    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    wassert(actual(cs->getAt(0).x).almost_equal( 3.3241, 4)); // 7.7876   These are the values computed
+    wassert(actual(cs->getAt(0).y).almost_equal(43.6864, 4)); // 43.8211  with the old BB algorithm
+    wassert(actual(cs->getAt(1).x).almost_equal( 8.8445, 4)); // 7.7876   that however only produced
+    wassert(actual(cs->getAt(1).y).almost_equal(43.8274, 4)); // 46.0347  rectangles.
+    wassert(actual(cs->getAt(2).x).almost_equal( 8.8382, 4)); // 13.4906
+    wassert(actual(cs->getAt(2).y).almost_equal(46.1229, 4)); // 46.0347
+    wassert(actual(cs->getAt(3).x).almost_equal( 3.0946, 4)); // 13.4906
+    wassert(actual(cs->getAt(3).y).almost_equal(45.9702, 4)); // 43.8211
+    wassert(actual(cs->getAt(4).x).almost_equal( 3.3241, 4)); // 7.7876
+    wassert(actual(cs->getAt(4).y).almost_equal(43.6864, 4)); // 43.8211
 
-	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+    //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
 }
 
@@ -164,36 +145,36 @@ void to::test<4>()
 	//ensure(g->isRectangle());
 	ensure_equals(g->getDimension(), 2);
 
-	unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
-	ensure_similar(cs->getAt( 0).x,  6.0124, 0.0001); ensure_similar(cs->getAt( 0).y, 35.4723, 0.0001);
-	ensure_similar(cs->getAt( 1).x,  8.1280, 0.0001); ensure_similar(cs->getAt( 1).y, 35.5524, 0.0001);
-	ensure_similar(cs->getAt( 2).x, 10.2471, 0.0001); ensure_similar(cs->getAt( 2).y, 35.5746, 0.0001);
-	ensure_similar(cs->getAt( 3).x, 12.3657, 0.0001); ensure_similar(cs->getAt( 3).y, 35.5389, 0.0001);
-	ensure_similar(cs->getAt( 4).x, 14.4800, 0.0001); ensure_similar(cs->getAt( 4).y, 35.4453, 0.0001);
-	ensure_similar(cs->getAt( 5).x, 16.5860, 0.0001); ensure_similar(cs->getAt( 5).y, 35.2942, 0.0001);
-	ensure_similar(cs->getAt( 6).x, 18.6800, 0.0001); ensure_similar(cs->getAt( 6).y, 35.0860, 0.0001);
-	ensure_similar(cs->getAt( 7).x, 18.6800, 0.0001); ensure_similar(cs->getAt( 7).y, 35.0860, 0.0001);
-	ensure_similar(cs->getAt( 8).x, 19.0614, 0.0001); ensure_similar(cs->getAt( 8).y, 37.2769, 0.0001);
-	ensure_similar(cs->getAt( 9).x, 19.4657, 0.0001); ensure_similar(cs->getAt( 9).y, 39.4666, 0.0001);
-	ensure_similar(cs->getAt(10).x, 19.8963, 0.0001); ensure_similar(cs->getAt(10).y, 41.6548, 0.0001);
-	ensure_similar(cs->getAt(11).x, 20.3571, 0.0001); ensure_similar(cs->getAt(11).y, 43.8413, 0.0001);
-	ensure_similar(cs->getAt(12).x, 20.8530, 0.0001); ensure_similar(cs->getAt(12).y, 46.0258, 0.0001);
-	ensure_similar(cs->getAt(13).x, 21.3897, 0.0001); ensure_similar(cs->getAt(13).y, 48.2079, 0.0001);
-	ensure_similar(cs->getAt(14).x, 21.3897, 0.0001); ensure_similar(cs->getAt(14).y, 48.2079, 0.0001);
-	ensure_similar(cs->getAt(15).x, 18.6560, 0.0001); ensure_similar(cs->getAt(15).y, 48.4808, 0.0001);
-	ensure_similar(cs->getAt(16).x, 15.8951, 0.0001); ensure_similar(cs->getAt(16).y, 48.6793, 0.0001);
-	ensure_similar(cs->getAt(17).x, 13.1154, 0.0001); ensure_similar(cs->getAt(17).y, 48.8024, 0.0001);
-	ensure_similar(cs->getAt(18).x, 10.3255, 0.0001); ensure_similar(cs->getAt(18).y, 48.8495, 0.0001);
-	ensure_similar(cs->getAt(19).x,  7.5346, 0.0001); ensure_similar(cs->getAt(19).y, 48.8202, 0.0001);
-	ensure_similar(cs->getAt(20).x,  4.7517, 0.0001); ensure_similar(cs->getAt(20).y, 48.7148, 0.0001);
-	ensure_similar(cs->getAt(21).x,  4.7517, 0.0001); ensure_similar(cs->getAt(21).y, 48.7148, 0.0001);
-	ensure_similar(cs->getAt(22).x,  5.0025, 0.0001); ensure_similar(cs->getAt(22).y, 46.5087, 0.0001);
-	ensure_similar(cs->getAt(23).x,  5.2337, 0.0001); ensure_similar(cs->getAt(23).y, 44.3022, 0.0001);
-	ensure_similar(cs->getAt(24).x,  5.4482, 0.0001); ensure_similar(cs->getAt(24).y, 42.0952, 0.0001);
-	ensure_similar(cs->getAt(25).x,  5.6482, 0.0001); ensure_similar(cs->getAt(25).y, 39.8879, 0.0001);
-	ensure_similar(cs->getAt(26).x,  5.8357, 0.0001); ensure_similar(cs->getAt(26).y, 37.6802, 0.0001);
-	ensure_similar(cs->getAt(27).x,  6.0124, 0.0001); ensure_similar(cs->getAt(27).y, 35.4723, 0.0001);
-	//ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
+    unique_ptr<ARKI_GEOS_NS::CoordinateSequence> cs(g->getCoordinates());
+    wassert(actual(cs->getAt( 0).x).almost_equal( 6.0124, 4)); wassert(actual(cs->getAt( 0).y).almost_equal(35.4723, 4));
+    wassert(actual(cs->getAt( 1).x).almost_equal( 8.1280, 4)); wassert(actual(cs->getAt( 1).y).almost_equal(35.5524, 4));
+    wassert(actual(cs->getAt( 2).x).almost_equal(10.2471, 4)); wassert(actual(cs->getAt( 2).y).almost_equal(35.5746, 4));
+    wassert(actual(cs->getAt( 3).x).almost_equal(12.3657, 4)); wassert(actual(cs->getAt( 3).y).almost_equal(35.5389, 4));
+    wassert(actual(cs->getAt( 4).x).almost_equal(14.4800, 4)); wassert(actual(cs->getAt( 4).y).almost_equal(35.4453, 4));
+    wassert(actual(cs->getAt( 5).x).almost_equal(16.5860, 4)); wassert(actual(cs->getAt( 5).y).almost_equal(35.2942, 4));
+    wassert(actual(cs->getAt( 6).x).almost_equal(18.6800, 4)); wassert(actual(cs->getAt( 6).y).almost_equal(35.0860, 4));
+    wassert(actual(cs->getAt( 7).x).almost_equal(18.6800, 4)); wassert(actual(cs->getAt( 7).y).almost_equal(35.0860, 4));
+    wassert(actual(cs->getAt( 8).x).almost_equal(19.0614, 4)); wassert(actual(cs->getAt( 8).y).almost_equal(37.2769, 4));
+    wassert(actual(cs->getAt( 9).x).almost_equal(19.4657, 4)); wassert(actual(cs->getAt( 9).y).almost_equal(39.4666, 4));
+    wassert(actual(cs->getAt(10).x).almost_equal(19.8963, 4)); wassert(actual(cs->getAt(10).y).almost_equal(41.6548, 4));
+    wassert(actual(cs->getAt(11).x).almost_equal(20.3571, 4)); wassert(actual(cs->getAt(11).y).almost_equal(43.8413, 4));
+    wassert(actual(cs->getAt(12).x).almost_equal(20.8530, 4)); wassert(actual(cs->getAt(12).y).almost_equal(46.0258, 4));
+    wassert(actual(cs->getAt(13).x).almost_equal(21.3897, 4)); wassert(actual(cs->getAt(13).y).almost_equal(48.2079, 4));
+    wassert(actual(cs->getAt(14).x).almost_equal(21.3897, 4)); wassert(actual(cs->getAt(14).y).almost_equal(48.2079, 4));
+    wassert(actual(cs->getAt(15).x).almost_equal(18.6560, 4)); wassert(actual(cs->getAt(15).y).almost_equal(48.4808, 4));
+    wassert(actual(cs->getAt(16).x).almost_equal(15.8951, 4)); wassert(actual(cs->getAt(16).y).almost_equal(48.6793, 4));
+    wassert(actual(cs->getAt(17).x).almost_equal(13.1154, 4)); wassert(actual(cs->getAt(17).y).almost_equal(48.8024, 4));
+    wassert(actual(cs->getAt(18).x).almost_equal(10.3255, 4)); wassert(actual(cs->getAt(18).y).almost_equal(48.8495, 4));
+    wassert(actual(cs->getAt(19).x).almost_equal( 7.5346, 4)); wassert(actual(cs->getAt(19).y).almost_equal(48.8202, 4));
+    wassert(actual(cs->getAt(20).x).almost_equal( 4.7517, 4)); wassert(actual(cs->getAt(20).y).almost_equal(48.7148, 4));
+    wassert(actual(cs->getAt(21).x).almost_equal( 4.7517, 4)); wassert(actual(cs->getAt(21).y).almost_equal(48.7148, 4));
+    wassert(actual(cs->getAt(22).x).almost_equal( 5.0025, 4)); wassert(actual(cs->getAt(22).y).almost_equal(46.5087, 4));
+    wassert(actual(cs->getAt(23).x).almost_equal( 5.2337, 4)); wassert(actual(cs->getAt(23).y).almost_equal(44.3022, 4));
+    wassert(actual(cs->getAt(24).x).almost_equal( 5.4482, 4)); wassert(actual(cs->getAt(24).y).almost_equal(42.0952, 4));
+    wassert(actual(cs->getAt(25).x).almost_equal( 5.6482, 4)); wassert(actual(cs->getAt(25).y).almost_equal(39.8879, 4));
+    wassert(actual(cs->getAt(26).x).almost_equal( 5.8357, 4)); wassert(actual(cs->getAt(26).y).almost_equal(37.6802, 4));
+    wassert(actual(cs->getAt(27).x).almost_equal( 6.0124, 4)); wassert(actual(cs->getAt(27).y).almost_equal(35.4723, 4));
+    //ARKI_GEOS_NS::Polygon* p = (ARKI_GEOS_NS::Polygon*)g.get();
 #endif
 }
 

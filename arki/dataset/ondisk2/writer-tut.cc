@@ -20,7 +20,6 @@
 #include <sys/stat.h>
 
 using namespace std;
-using namespace wibble::tests;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
@@ -71,7 +70,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         throw wibble::exception::Consistency("second in file not found");
     }
 
-    void import_and_make_hole(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture, std::string& holed_fname)
+    void import_and_make_hole(const testdata::Fixture& fixture, std::string& holed_fname)
     {
         cfg.setValue("step", fixture.max_selective_aggregation);
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
@@ -96,7 +95,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         }
     }
 
-    void import_and_delete_one_file(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture, std::string& removed_fname)
+    void import_and_delete_one_file(const testdata::Fixture& fixture, std::string& removed_fname)
     {
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         wruntest(import_all, fixture);
@@ -122,7 +121,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
     }
 
     // Test maintenance scan, on dataset with one file to pack, performing repack
-    void test_hole_file_and_repack(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_hole_file_and_repack(const testdata::Fixture& fixture)
     {
         string holed_fname;
         wruntest(import_and_make_hole, fixture, holed_fname);
@@ -148,13 +147,13 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         }
 
         // Ensure that we have the summary cache
-        wassert(actual("testdir/.summaries/all.summary").fileexists());
+        wassert(actual_file("testdir/.summaries/all.summary").exists());
         //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
         //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
     }
 
     // Test maintenance scan, on dataset with one file to delete, performing repack
-    void test_delete_file_and_repack(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_delete_file_and_repack(const testdata::Fixture& fixture)
     {
         string removed_fname;
         wruntest(import_and_delete_one_file, fixture, removed_fname);
@@ -180,13 +179,13 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         }
 
         // Ensure that we have the summary cache
-        wassert(actual("testdir/.summaries/all.summary").fileexists());
+        wassert(actual_file("testdir/.summaries/all.summary").exists());
         //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
         //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
     }
 
     // Test maintenance scan, on dataset with one file to pack, performing check
-    void test_hole_file_and_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_hole_file_and_check(const testdata::Fixture& fixture)
     {
         string holed_fname;
         wruntest(import_and_make_hole, fixture, holed_fname);
@@ -216,13 +215,13 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         }
 
         // Ensure that we have the summary cache
-        wassert(actual("testdir/.summaries/all.summary").fileexists());
+        wassert(actual_file("testdir/.summaries/all.summary").exists());
         //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
         //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
     }
 
     // Test maintenance scan, on dataset with one file to delete, performing check
-    void test_delete_file_and_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_delete_file_and_check(const testdata::Fixture& fixture)
     {
         string removed_fname;
         wruntest(import_and_delete_one_file, fixture, removed_fname);
@@ -248,13 +247,13 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         }
 
         // Ensure that we have the summary cache
-        wassert(actual("testdir/.summaries/all.summary").fileexists());
+        wassert(actual_file("testdir/.summaries/all.summary").exists());
         //ensure(sys::fs::exists("testdir/.summaries/2007-07.summary"));
         //ensure(sys::fs::exists("testdir/.summaries/2007-10.summary"));
     }
 
     // Test accuracy of maintenance scan, after deleting the index
-    void test_delete_index_and_check(WIBBLE_TEST_LOCPRM, const testdata::Fixture& fixture)
+    void test_delete_index_and_check(const testdata::Fixture& fixture)
     {
         cfg.setValue("unique", "reftime, origin, product, level, timerange, area");
         wruntest(import_all_packed, fixture);
@@ -264,7 +263,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         {
             std::unique_ptr<ReadonlyDataset> reader(makeReader());
             mdc_pre.add(*reader, Matcher());
-            wassert(actual(mdc_pre.size()) == 3);
+            wassert(actual(mdc_pre.size()) == 3u);
         }
 
         sys::unlink_ifexists("testdir/index.sqlite");
@@ -307,7 +306,7 @@ struct arki_dataset_ondisk2_writer_shar : public arki::tests::DatasetTest {
         wassert(actual(mdc_post[2]).is_similar(mdc_pre[2]));
 
         // Ensure that we have the summary cache
-        wassert(actual("testdir/.summaries/all.summary").fileexists());
+        wassert(actual_file("testdir/.summaries/all.summary").exists());
     }
 };
 TESTGRP(arki_dataset_ondisk2_writer);
@@ -759,7 +758,7 @@ void to::test<12>()
         Writer writer(cfg);
         try {
             writer.rescanFile("2007/10-09.grib1");
-            wrunchecked(throw std::runtime_error("rescanFile should have thrown at this point"));
+            wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
         }
@@ -787,7 +786,7 @@ void to::test<12>()
         stringstream s;
         try {
             writer.check(s, true, true);
-            wrunchecked(throw std::runtime_error("writer.check should have thrown at this point"));
+            wassert(throw std::runtime_error("writer.check should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
         }
@@ -823,7 +822,7 @@ void to::test<13>()
         Writer writer(cfg);
         try {
             writer.rescanFile("2007/06-06.grib1");
-            wrunchecked(throw std::runtime_error("rescanFile should have thrown at this point"));
+            wassert(throw std::runtime_error("rescanFile should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
         }
@@ -848,7 +847,7 @@ void to::test<13>()
         stringstream s;
         try {
             writer.check(s, true, true);
-            wrunchecked(throw std::runtime_error("writer.check should have thrown at this point"));
+            wassert(throw std::runtime_error("writer.check should have thrown at this point"));
         } catch (std::exception& e) {
             wassert(actual(e.what()).contains("manual fix is required"));
         }
@@ -913,7 +912,7 @@ template<> template<> void to::test<14>()
         expected.by_type[COUNTED_OK] = 2;
         wassert(actual(writer.get()).maintenance(expected));
 
-        wassert(!actual("testdir/.archive").fileexists());
+        wassert(actual_file("testdir/.archive").not_exists());
     }
 
     // Ensure that the data hasn't been corrupted

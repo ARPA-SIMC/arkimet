@@ -335,6 +335,15 @@ struct ActualFunction : public Actual<std::function<void()>>
 
 inline ActualFunction actual_function(std::function<void()> actual) { return ActualFunction(actual); }
 
+struct ActualFile : public Actual<std::string>
+{
+    using Actual::Actual;
+
+    void exists() const;
+    void not_exists() const;
+};
+
+inline ActualFile actual_file(const std::string& pathname) { return ActualFile(pathname); }
 
 /**
  * Run the given command, raising TestFailed with the appropriate backtrace
@@ -346,11 +355,11 @@ inline ActualFunction actual_function(std::function<void()> actual) { return Act
 #define wassert(...) \
     do { try { \
         __VA_ARGS__ ; \
-    } catch (TestFailed& e) { \
+    } catch (arki::utils::tests::TestFailed& e) { \
         e.add_stack_info(__FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
         throw; \
     } catch (std::exception& e) { \
-        throw TestFailed(e, __FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
+        throw arki::utils::tests::TestFailed(e, __FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
     } } while(0)
 
 /// Shortcut to check that a given expression returns true
@@ -369,11 +378,11 @@ inline ActualFunction actual_function(std::function<void()> actual) { return Act
 #define wcallchecked(func) \
     [&]() { try { \
         return func; \
-    } catch (TestFailed& e) { \
+    } catch (arki::utils::tests::TestFailed& e) { \
         e.add_stack_info(__FILE__, __LINE__, #func, arki_utils_test_location_info); \
         throw; \
     } catch (std::exception& e) { \
-        throw TestFailed(e, __FILE__, __LINE__, #func, arki_utils_test_location_info); \
+        throw arki::utils::tests::TestFailed(e, __FILE__, __LINE__, #func, arki_utils_test_location_info); \
     } }()
 
 
