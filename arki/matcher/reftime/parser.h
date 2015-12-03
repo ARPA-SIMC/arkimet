@@ -21,11 +21,12 @@ namespace reftime {
 
 struct DTMatch
 {
-	virtual ~DTMatch() {}
-	virtual bool match(const int* tt) const = 0;
-	virtual bool match(const int* begin, const int* end) const = 0;
-	virtual std::string sql(const std::string& column) const = 0;
-	virtual std::string toString() const = 0;
+    virtual ~DTMatch() {}
+    virtual bool match(const int* tt) const = 0;
+    virtual bool match(const int* begin, const int* end) const = 0;
+    virtual std::string sql(const std::string& column) const = 0;
+    virtual std::string toString() const = 0;
+
     /**
      * Time (in seconds since midnight) of this expression, used as a reference
      * when building derived times. For example, an expression of
@@ -33,7 +34,8 @@ struct DTMatch
      * the step should still match 00:00 and 12:00, and not 23:59 and 11:59
      */
     virtual int timebase() const = 0;
-	virtual bool isLead() const { return true; }
+    virtual bool isLead() const { return true; }
+
     /**
      * Restrict a datetime range, returning the new range endpoints in begin
      * and end.
@@ -43,7 +45,7 @@ struct DTMatch
      * Returns true if the result is a valid interval, false if this match does
      * not match the given interval at all.
      */
-    virtual bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const {}
+    virtual bool restrict_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const = 0;
 
     static DTMatch* createLE(const int* tt);
     static DTMatch* createLT(const int* tt);
@@ -120,6 +122,4 @@ struct Parser
 }
 }
 }
-
-// vim:set ts=4 sw=4:
 #endif
