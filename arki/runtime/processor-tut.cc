@@ -52,7 +52,7 @@ void to::test<1>()
     run_maker(pm);
 
     metadata::Collection mdc;
-    Metadata::readFile("pm-out", mdc);
+    mdc.read_from_file("pm-out");
 
     wassert(actual(mdc.size()) == 3);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", ".", sys::abspath("test/2007/07-07.grib1"), 0, 34960));
@@ -69,7 +69,7 @@ void to::test<2>()
     run_maker(pm);
 
     metadata::Collection mdc;
-    Metadata::readFile("pm-out", mdc);
+    mdc.read_from_file("pm-out");
 
     wassert(actual(mdc.size()) == 3);
     wassert(actual_type(mdc[0].source()).is_source_inline("grib1", 34960));

@@ -83,7 +83,7 @@ void to::test<1>()
         ensure(sys::exists("testds/.archive/last/test.grib1.summary"));
         ensure(sys::exists("testds/.archive/last/" + arcidxfname()));
 
-        Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+        mdc.read_from_file("testds/.archive/last/test.grib1.metadata");
         ensure_equals(mdc.size(), 3u);
         ensure_equals(mdc[0].sourceBlob().filename, "test.grib1");
     }
@@ -366,7 +366,7 @@ void to::test<6>()
 
         // Compress it
         metadata::Collection mdc;
-        Metadata::readFile("testds/.archive/last/test.grib1.metadata", mdc);
+        mdc.read_from_file("testds/.archive/last/test.grib1.metadata");
         ensure_equals(mdc.size(), 3u);
         mdc.compressDataFile(1024, "metadata file testds/.archive/last/test.grib1.metadata");
         sys::unlink_ifexists("testds/.archive/last/test.grib1");

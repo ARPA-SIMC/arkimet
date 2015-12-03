@@ -599,12 +599,6 @@ void Metadata::flushDataReaders()
 }
 
 
-void Metadata::readFile(const std::string& fname, metadata::Eater& mdc)
-{
-    metadata::ReadContext context(fname);
-    readFile(context, mdc);
-}
-
 void Metadata::read_file(const std::string& fname, metadata_dest_func dest)
 {
     metadata::ReadContext context(fname);

@@ -421,7 +421,7 @@ void to::test<6>()
         {
             // Compress one file
             metadata::Collection mdc;
-            Metadata::readFile("testds/2007/07-08.grib1.metadata", mdc);
+            mdc.read_from_file("testds/2007/07-08.grib1.metadata");
             ensure_equals(mdc.size(), 1u);
             mdc.compressDataFile(1024, "metadata file testds/2007/07-08.grib1.metadata");
             sys::unlink_ifexists("testds/2007/07-08.grib1");

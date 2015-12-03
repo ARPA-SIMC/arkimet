@@ -243,7 +243,7 @@ template<> template<> void to::test<5>()
 
     // Check that data is accessible
     const auto& buf = mdc[0].getData();
-    wassert(actual(buf.size()) == 7218);
+    wassert(actual(buf.size()) == 7218u);
 
     mdc.clear();
     mdc.add(*reader, Matcher::parse("reftime:=2007-07-08"));
@@ -403,7 +403,7 @@ template<> template<> void to::test<7>()
         std::unique_ptr<ReadonlyDataset> reader(makeReader());
         CheckReftimeSortOrder cso;
         reader->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
-        wassert(actual(cso.seen) == 16128);
+        wassert(actual(cso.seen) == 16128u);
     }
 
     {
@@ -412,7 +412,7 @@ template<> template<> void to::test<7>()
         dataset::DataQuery dq(Matcher::parse(""));
         dq.sorter = sort::Compare::parse("reftime,area,product");
         reader->query_data(dq, [&](unique_ptr<Metadata> md) { return cso.eat(move(md)); });
-        wassert(actual(cso.seen) == 16128);
+        wassert(actual(cso.seen) == 16128u);
     }
 }
 

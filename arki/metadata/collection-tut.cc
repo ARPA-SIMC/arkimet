@@ -136,10 +136,10 @@ void to::test<2>()
 
 	c.writeAtomically("test.md");
 
-	metadata::Collection c1;
-	Metadata::readFile("test.md", c1);
-	ensure_equals(c.size(), 1u);
-	ensure(c[0] ==  c1[0]);
+    metadata::Collection c1;
+    c1.read_from_file("test.md");
+    ensure_equals(c.size(), 1u);
+    ensure(c[0] ==  c1[0]);
 #endif
 }
 

@@ -1,27 +1,7 @@
 #ifndef ARKI_METADATA_COLLECTION_H
 #define ARKI_METADATA_COLLECTION_H
 
-/*
- * metadata/collection - In-memory collection of metadata
- *
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
+/// In-memory collection of metadata
 
 #include <arki/metadata/consumer.h>
 #include <vector>
@@ -100,6 +80,9 @@ public:
      * Write all metadata to the given output file
      */
     void write_to(int out, const std::string& fname) const;
+
+    /// Read metadata from \a pathname and append them to this collection
+    void read_from_file(const std::string& pathname);
 
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;

@@ -173,6 +173,11 @@ void Collection::write_to(int out, const std::string& fname) const
         compressAndWrite(buf, out, fname);
 }
 
+void Collection::read_from_file(const std::string& pathname)
+{
+    Metadata::read_file(pathname, [&](unique_ptr<Metadata> md) { return eat(move(md)); });
+}
+
 void Collection::writeAtomically(const std::string& fname) const
 {
 	AtomicWriter writer(fname);

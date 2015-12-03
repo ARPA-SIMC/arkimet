@@ -259,7 +259,6 @@ public:
     static std::unique_ptr<Metadata> create_from_yaml(std::istream& in, const std::string& filename);
 
     /// Read all metadata from a file into the given consumer
-    [[deprecated("use read_file instead")]] static void readFile(const std::string& fname, metadata::Eater& mdc);
     static void read_file(const std::string& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
