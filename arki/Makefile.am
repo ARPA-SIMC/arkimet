@@ -12,7 +12,6 @@ arkiincludedir = $(includedir)/arki
 nobase_dist_arkiinclude_HEADERS = \
 		wibble/exception.h \
 		wibble/regexp.h \
-		wibble/tests.h \
 		wibble/sys/process.h \
 		wibble/sys/childprocess.h \
 		wibble/sys/exec.h \
@@ -203,7 +202,6 @@ if DEVEL_DO_TYPES
 libarkimet_la_SOURCES += \
 		wibble/exception.cpp \
 		wibble/regexp.cpp \
-		wibble/tests.cpp \
 		wibble/sys/fs.cpp \
 		wibble/sys/filelock.cpp \
 		wibble/sys/process.cpp \
