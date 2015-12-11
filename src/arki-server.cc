@@ -736,7 +736,7 @@ struct InboundHandler : public LocalHandler
                 md->writeYaml(res, f.get());
                 res << "</pre></dt><dd><pre>" << endl;
                 metadata::Collection mdc;
-                Dispatcher::Outcome outcome = td.dispatch(move(md), mdc);
+                Dispatcher::Outcome outcome = td.dispatch(move(md), mdc.inserter_func());
                 res << "</pre>" << endl;
                 switch (outcome)
                 {

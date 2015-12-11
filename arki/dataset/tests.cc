@@ -45,16 +45,16 @@ unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq)
     return count;
 }
 
-void impl_ensure_dispatches(Dispatcher& dispatcher, unique_ptr<Metadata> md, metadata::Eater& mdc)
+void impl_ensure_dispatches(Dispatcher& dispatcher, unique_ptr<Metadata> md, metadata_dest_func mdc)
 {
     metadata::Collection c;
-    Dispatcher::Outcome res = dispatcher.dispatch(move(md), c);
-	// If dispatch fails, print the notes
-	if (res != Dispatcher::DISP_OK)
-	{
-		for (vector<Metadata*>::const_iterator i = c.begin(); i != c.end(); ++i)
-		{
-			cerr << "Failed dispatch notes:" << endl;
+    Dispatcher::Outcome res = dispatcher.dispatch(move(md), c.inserter_func());
+    // If dispatch fails, print the notes
+    if (res != Dispatcher::DISP_OK)
+    {
+        for (vector<Metadata*>::const_iterator i = c.begin(); i != c.end(); ++i)
+        {
+            cerr << "Failed dispatch notes:" << endl;
             std::vector<Note> notes = (*i)->notes();
             for (std::vector<Note>::const_iterator j = notes.begin();
                     j != notes.end(); ++j)
@@ -62,7 +62,7 @@ void impl_ensure_dispatches(Dispatcher& dispatcher, unique_ptr<Metadata> md, met
         }
     }
     wassert(actual(res) == Dispatcher::DISP_OK);
-    c.move_to_eater(mdc);
+    c.move_to(mdc);
 }
 
 OutputChecker::OutputChecker() : split(false) {}

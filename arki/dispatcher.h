@@ -35,7 +35,7 @@ protected:
     virtual void hook_found_datasets(const Metadata& md, std::vector<std::string>& found);
 
     /// Hook called to output the final metadata to a consumer
-    virtual void hook_output(std::unique_ptr<Metadata> md, metadata::Eater& mdc);
+    virtual void hook_output(std::unique_ptr<Metadata> md, metadata_dest_func mdc);
 
     virtual WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) = 0;
     virtual WritableDataset::AcquireResult raw_dispatch_error(Metadata& md);
@@ -84,7 +84,7 @@ public:
      *
      * @returns The outcome of the dispatch.
      */
-    Outcome dispatch(std::unique_ptr<Metadata>&& md, metadata::Eater& mdc);
+    Outcome dispatch(std::unique_ptr<Metadata>&& md, metadata_dest_func mdc);
 
     virtual void flush() = 0;
 };
@@ -93,7 +93,7 @@ public:
  * Infrastructure to dispatch metadata into various datasets
  *
  * The metadata will be edited to reflect the data stored inside the target
- * dataset, and sent to the given metadata::Eater.
+ * dataset, and sent to the given metadata_dest_func.
  *
  * If there are outbound datasets, a different metadata can be sent to
  * the consumer for every output dataset that accepted it.
@@ -114,7 +114,7 @@ protected:
     // Duplicates dataset
     WritableDataset* dsduplicates;
 
-    void hook_output(std::unique_ptr<Metadata> md, metadata::Eater& mdc) override;
+    void hook_output(std::unique_ptr<Metadata> md, metadata_dest_func mdc) override;
     WritableDataset::AcquireResult raw_dispatch_dataset(const std::string& name, Metadata& md) override;
     WritableDataset::AcquireResult raw_dispatch_error(Metadata& md) override;
     WritableDataset::AcquireResult raw_dispatch_duplicates(Metadata& md) override;

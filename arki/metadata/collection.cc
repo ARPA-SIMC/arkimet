@@ -120,6 +120,11 @@ void Collection::pop_back()
     vals.pop_back();
 }
 
+metadata_dest_func Collection::inserter_func()
+{
+    return [=](unique_ptr<Metadata> md) { return eat(move(md)); };
+}
+
 void Collection::add(ReadonlyDataset& ds, const dataset::DataQuery& q)
 {
     ds.query_data(q, [=](unique_ptr<Metadata> md) { eat(move(md)); return true; });

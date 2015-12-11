@@ -76,14 +76,14 @@ void Dispatcher::hook_found_datasets(const Metadata& md, vector<string>& found)
 {
 }
 
-void Dispatcher::hook_output(unique_ptr<Metadata> md, metadata::Eater& mdc)
+void Dispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc)
 {
 }
 
 WritableDataset::AcquireResult Dispatcher::raw_dispatch_error(Metadata& md) { return raw_dispatch_dataset("error", md); }
 WritableDataset::AcquireResult Dispatcher::raw_dispatch_duplicates(Metadata& md) { return raw_dispatch_dataset("duplicates", md); }
 
-Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata::Eater& mdc)
+Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata_dest_func mdc)
 {
     Dispatcher::Outcome result;
     vector<string> found;
@@ -154,7 +154,7 @@ Dispatcher::Outcome Dispatcher::dispatch(unique_ptr<Metadata>&& md, metadata::Ea
                 ++m_outbound_failures;
             }
             if (m_can_continue)
-                m_can_continue = mdc.eat(move(md1));
+                m_can_continue = mdc(move(md1));
         }
 
     // See how many proper datasets match this metadata
@@ -231,10 +231,10 @@ RealDispatcher::~RealDispatcher()
 	// a reference to the version inside the DatasetPool cache
 }
 
-void RealDispatcher::hook_output(unique_ptr<Metadata> md, metadata::Eater& mdc)
+void RealDispatcher::hook_output(unique_ptr<Metadata> md, metadata_dest_func mdc)
 {
     if (m_can_continue)
-        m_can_continue = mdc.eat(move(md));
+        m_can_continue = mdc(move(md));
 }
 
 WritableDataset::AcquireResult RealDispatcher::raw_dispatch_dataset(const std::string& name, Metadata& md)

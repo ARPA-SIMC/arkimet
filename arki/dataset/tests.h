@@ -44,7 +44,7 @@ struct Fixture;
 
 namespace tests {
 #define ensure_dispatches(x, y, z) wassert(impl_ensure_dispatches((x), (y), (z)))
-void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata::Eater& mdc);
+void impl_ensure_dispatches(Dispatcher& dispatcher, std::unique_ptr<Metadata> md, metadata_dest_func mdc);
 
 unsigned count_results(ReadonlyDataset& ds, const dataset::DataQuery& dq);
 

@@ -594,7 +594,7 @@ bool MetadataDispatch::process(ReadonlyDataset& ds, const std::string& name)
 bool MetadataDispatch::eat(unique_ptr<Metadata>&& md)
 {
     // Dispatch to matching dataset
-    switch (dispatcher->dispatch(move(md), results))
+    switch (dispatcher->dispatch(move(md), [&](unique_ptr<Metadata> md) { return results.eat(move(md)); }))
     {
         case Dispatcher::DISP_OK:
             ++countSuccessful;

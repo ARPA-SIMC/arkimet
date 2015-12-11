@@ -61,21 +61,21 @@ struct arki_dataset_http_shar {
 		stringstream incfg(conf);
 		config.parse(incfg, "(memory)");
 
-		// Import data into the datasets
-		Metadata md;
-		metadata::Collection mdc;
-		scan::Grib scanner;
-		RealDispatcher dispatcher(config);
-		scanner.open("inbound/test.grib1");
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_OK);
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_OK);
-		ensure(scanner.next(md));
-		ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
-		ensure(!scanner.next(md));
-		dispatcher.flush();
-	}
+        // Import data into the datasets
+        Metadata md;
+        metadata::Collection mdc;
+        scan::Grib scanner;
+        RealDispatcher dispatcher(config);
+        scanner.open("inbound/test.grib1");
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_OK);
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_OK);
+        ensure(scanner.next(md));
+        ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
+        ensure(!scanner.next(md));
+        dispatcher.flush();
+    }
 };
 TESTGRP(arki_dataset_http);
 

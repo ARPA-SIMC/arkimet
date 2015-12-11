@@ -88,8 +88,7 @@ void InboundServer::do_testdispatch(const InboundParams& parms, net::http::Reque
     TestDispatcher td(import_config, str);
 
     ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
-        metadata::Collection mdc;
-        /*Dispatcher::Outcome res =*/ td.dispatch(move(md), mdc);
+        /*Dispatcher::Outcome res =*/ td.dispatch(move(md), [](unique_ptr<Metadata>) { return true; });
         /*
         switch (res)
         {
@@ -104,24 +103,6 @@ void InboundServer::do_testdispatch(const InboundParams& parms, net::http::Reque
     });
 
     req.send_result(str.str(), "text/plain", str::basename(*parms.file) + ".log");
-}
-
-namespace {
-
-struct MetadataStreamer : public metadata::Eater
-{
-    StreamHeaders& sh;
-
-    MetadataStreamer(StreamHeaders& sh) : sh(sh) {}
-
-    bool eat(std::unique_ptr<Metadata>&& md) override
-    {
-        sh.sendIfNotFired();
-        md->write(sh.req.sock, "socket");
-        return true;
-    }
-};
-
 }
 
 void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& req)
@@ -151,12 +132,14 @@ void InboundServer::do_dispatch(const InboundParams& parms, net::http::Request& 
     StreamHeaders headers(req, str::basename(*parms.file));
     headers.ext = "arkimet";
 
-    MetadataStreamer cons(headers);
-
     RealDispatcher d(import_config);
     bool all_ok = true;
     ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) {
-        Dispatcher::Outcome res = d.dispatch(move(md), cons);
+        Dispatcher::Outcome res = d.dispatch(move(md), [&](unique_ptr<Metadata> md) {
+            headers.sendIfNotFired();
+            md->write(headers.req.sock, "socket");
+            return true;
+        });
         switch (res)
         {
             case Dispatcher::DISP_OK:

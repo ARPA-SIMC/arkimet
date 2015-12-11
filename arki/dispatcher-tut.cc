@@ -73,29 +73,29 @@ inline unique_ptr<Metadata> wrap(const Metadata& md)
 template<> template<>
 void to::test<1>()
 {
-	using namespace arki::utils::acct;
+    using namespace arki::utils::acct;
 
-	plain_data_read_count.reset();
+    plain_data_read_count.reset();
 
-	Metadata md;
-	metadata::Collection mdc;
-	scan::Grib scanner;
-	RealDispatcher dispatcher(config);
-	scanner.open("inbound/test.grib1");
-	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
-	ensure_equals(dsname(mdc.back()), "test200");
-	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
-	ensure_equals(dsname(mdc.back()), "test80");
-	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
-	ensure_equals(dsname(mdc.back()), "error");
-	ensure(!scanner.next(md));
+    Metadata md;
+    metadata::Collection mdc;
+    scan::Grib scanner;
+    RealDispatcher dispatcher(config);
+    scanner.open("inbound/test.grib1");
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+    ensure_equals(dsname(mdc.back()), "test200");
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+    ensure_equals(dsname(mdc.back()), "test80");
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_ERROR);
+    ensure_equals(dsname(mdc.back()), "error");
+    ensure(!scanner.next(md));
 
-	dispatcher.flush();
+    dispatcher.flush();
 
-	ensure_equals(plain_data_read_count.val(), 0u);
+    ensure_equals(plain_data_read_count.val(), 0u);
 }
 
 // Test a case where dispatch is known to fail
@@ -123,12 +123,12 @@ void to::test<2>()
 	Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
 	ensure(matcher(source[0]));
 
-	metadata::Collection mdc;
-	RealDispatcher dispatcher(config);
-    ensure_equals(dispatcher.dispatch(wrap(source[0]), mdc), Dispatcher::DISP_OK);
-	ensure_equals(dsname(mdc.back()), "lami_temp");
+    metadata::Collection mdc;
+    RealDispatcher dispatcher(config);
+    ensure_equals(dispatcher.dispatch(wrap(source[0]), mdc.inserter_func()), Dispatcher::DISP_OK);
+    ensure_equals(dsname(mdc.back()), "lami_temp");
 
-	dispatcher.flush();
+    dispatcher.flush();
 #endif
 }
 
@@ -144,13 +144,13 @@ void to::test<3>()
     dispatcher.add_validator(fail_always);
     scanner.open("inbound/test.grib1");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
     ensure_equals(dsname(mdc.back()), "error");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
     ensure_equals(dsname(mdc.back()), "error");
     ensure(scanner.next(md));
-    ensure_equals(dispatcher.dispatch(wrap(md), mdc), Dispatcher::DISP_ERROR);
+    ensure_equals(dispatcher.dispatch(wrap(md), mdc.inserter_func()), Dispatcher::DISP_ERROR);
     ensure_equals(dsname(mdc.back()), "error");
     ensure(!scanner.next(md));
     dispatcher.flush();
@@ -167,22 +167,20 @@ void to::test<4>()
     RealDispatcher dispatcher(config);
     metadata::Collection mdc;
 
-    wassert(actual(dispatcher.dispatch(wrap(source[0]), mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[0]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[1]), mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[1]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[2]), mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[2]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[3]), mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[3]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[4]), mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[4]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
-    wassert(actual(dispatcher.dispatch(wrap(source[5]), mdc)) == Dispatcher::DISP_ERROR);
+    wassert(actual(dispatcher.dispatch(wrap(source[5]), mdc.inserter_func())) == Dispatcher::DISP_ERROR);
     wassert(actual(dsname(mdc.back())) == "error");
 
     dispatcher.flush();
 }
 
 }
-
-// vim:set ts=4 sw=4:

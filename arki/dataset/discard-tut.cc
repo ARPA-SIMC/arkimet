@@ -53,26 +53,26 @@ TESTGRP(arki_dataset_discard);
 template<> template<>
 void to::test<1>()
 {
-	// Import data into the datasets
-	Metadata md;
-	metadata::Collection mdc;
-	scan::Grib scanner;
-	RealDispatcher dispatcher(config);
-	scanner.open("inbound/test.grib1");
-	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
-	ensure_equals(dispatcher.outboundFailures(), 0u);
-	ensure_equals(mdc.size(), 1u);
-	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_OK);
-	ensure_equals(dispatcher.outboundFailures(), 0u);
-	ensure_equals(mdc.size(), 2u);
-	ensure(scanner.next(md));
-	ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc), Dispatcher::DISP_ERROR);
-	ensure_equals(dispatcher.outboundFailures(), 0u);
-	ensure_equals(mdc.size(), 3u);
-	ensure(!scanner.next(md));
-	dispatcher.flush();
+    // Import data into the datasets
+    Metadata md;
+    metadata::Collection mdc;
+    scan::Grib scanner;
+    RealDispatcher dispatcher(config);
+    scanner.open("inbound/test.grib1");
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+    ensure_equals(dispatcher.outboundFailures(), 0u);
+    ensure_equals(mdc.size(), 1u);
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_OK);
+    ensure_equals(dispatcher.outboundFailures(), 0u);
+    ensure_equals(mdc.size(), 2u);
+    ensure(scanner.next(md));
+    ensure_equals(dispatcher.dispatch(unique_ptr<Metadata>(new Metadata(md)), mdc.inserter_func()), Dispatcher::DISP_ERROR);
+    ensure_equals(dispatcher.outboundFailures(), 0u);
+    ensure_equals(mdc.size(), 3u);
+    ensure(!scanner.next(md));
+    dispatcher.flush();
 }
 
 }

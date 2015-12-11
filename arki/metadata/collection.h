@@ -52,6 +52,9 @@ public:
     /// Remove the last element
     void pop_back();
 
+    /// Return a metadata_dest_func that inserts into this collection
+    metadata_dest_func inserter_func();
+
     /// Append results from a query_data
     void add(ReadonlyDataset& ds, const dataset::DataQuery& q);
 
