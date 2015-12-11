@@ -30,10 +30,10 @@ struct arki_metadata_collection_shar {
 	{
 	}
 
-	void acquireSamples()
-	{
-		scan::scan("inbound/test.grib1", c);
-	}
+    void acquireSamples()
+    {
+        scan::scan("inbound/test.grib1", c.inserter_func());
+    }
 };
 TESTGRP(arki_metadata_collection);
 
@@ -55,7 +55,7 @@ void to::test<1>()
     tf.close();
 
     // Create metadata for the big BUFR file
-    scan::scan(tf.name(), c, "bufr");
+    scan::scan(tf.name(), c.inserter_func(), "bufr");
     ensure_equals(c.size(), (size_t)repeats);
 
     // Compress the data file
@@ -123,18 +123,16 @@ void to::test<1>()
 template<> template<>
 void to::test<2>()
 {
-	using namespace utils;
-
 #ifdef HAVE_DBALLE
-	// Create a collector with only one small metadata inside
-	c.clear();
-	scan::scan("inbound/test.bufr", c);
-	ensure_equals(c.size(), 3u);
-	c.pop_back();
-	c.pop_back();
-	ensure_equals(c.size(), 1u);
+    // Create a collector with only one small metadata inside
+    c.clear();
+    scan::scan("inbound/test.bufr", c.inserter_func());
+    ensure_equals(c.size(), 3u);
+    c.pop_back();
+    c.pop_back();
+    ensure_equals(c.size(), 1u);
 
-	c.writeAtomically("test.md");
+    c.writeAtomically("test.md");
 
     metadata::Collection c1;
     c1.read_from_file("test.md");

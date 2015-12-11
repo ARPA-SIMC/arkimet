@@ -29,7 +29,7 @@ MdBuf::MdBuf(const std::string& pathname)
     if (sys::exists(pathname))
     {
         // Read the metadata
-        scan::scan(pathname, mds);
+        scan::scan(pathname, mds.inserter_func());
 
         // Read the summary
         if (!mds.empty())

@@ -64,7 +64,7 @@ void scan_file(data::SegmentManager& sm, const std::string& root, const std::str
         tu.reset(new utils::compress::TempUnzip(absname));
 
     metadata::Collection mdc;
-    scan::scan(absname, mdc);
+    scan::scan(absname, mdc.inserter_func());
     //mdc.sort(""); // Sort by reftime, to find items out of order
     mdc.sort(cmp); // Sort by reftime and by offset
 
@@ -177,25 +177,7 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 }
 
 namespace {
-struct NthFilter : public metadata::Eater
-{
-    metadata::Eater& next;
-    size_t idx;
 
-    NthFilter(metadata::Eater& next, size_t idx)
-        : next(next), idx(idx+1) {}
-
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
-        switch (idx)
-        {
-            case 0: return false;
-            case 1: next.eat(move(md)); --idx; return false;
-            default: --idx; return true;
-        }
-    }
-    bool produced() const { return idx == 0; }
-};
 // Tweak Blob sources replacing basedir and prepending a directory to the file name
 struct FixSource : public metadata::Eater
 {
@@ -231,9 +213,17 @@ size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
         fs.prepend_fname = str::dirname(*i);
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
-        NthFilter filter(cons, idx);
-        scan::scan(absdir, *i, filter);
-        if (filter.produced())
+
+        int file_idx = idx + 1;
+        scan::scan(absdir, *i, [&](unique_ptr<Metadata> md) {
+            switch (file_idx)
+            {
+                case 0: return false;
+                case 1: cons.eat(move(md)); --file_idx; return false;
+                default: --file_idx; return true;
+            }
+        });
+        if (file_idx == 0)
             ++res;
     }
 
@@ -273,7 +263,7 @@ void Manifest::rescanFile(const std::string& dir, const std::string& relpath)
 
     // Scan the file
     metadata::Collection mds;
-    if (!scan::scan(pathname, mds))
+    if (!scan::scan(pathname, mds.inserter_func()))
     {
         stringstream ss;
         ss << "cannot rescan " << pathname << ": it does not look like a file we can scan";

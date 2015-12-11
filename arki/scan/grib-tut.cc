@@ -266,9 +266,9 @@ void to::test<4>()
 
 	close(fd);
 
-	metadata::Collection mdc;
-	scan::scan("inbound/test.grib1", mdc);
-	buf = mdc[0].getData();
+    metadata::Collection mdc;
+    scan::scan("inbound/test.grib1", mdc.inserter_func());
+    buf = mdc[0].getData();
 
 	v.validate(buf.data(), buf.size());
 	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));
@@ -434,7 +434,7 @@ void to::test<10>()
 
     {
         metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t2.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t2.grib1", mdc.inserter_func()));
         wassert(actual(mdc.size()) == 35u);
         for (unsigned i = 0; i < 5; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -455,7 +455,7 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t201.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t201.grib1", mdc.inserter_func()));
         wassert(actual(mdc.size()) == 33u);
         wassert(actual(mdc[0]).contains("timerange", "Timedef(0s, 0, 12h)"));
         wassert(actual(mdc[1]).contains("timerange", "Timedef(0s, 0, 12h)"));
@@ -472,7 +472,7 @@ void to::test<10>()
     }
     {
         metadata::Collection mdc;
-        wassert(scan::scan("inbound/cosmonudging-t202.grib1", mdc));
+        wassert(scan::scan("inbound/cosmonudging-t202.grib1", mdc.inserter_func()));
         wassert(actual(mdc.size()) == 11u);
         for (unsigned i = 0; i < 11; ++i)
             wassert(actual(mdc[i]).contains("timerange", "Timedef(0s,254,0s)"));
@@ -490,7 +490,7 @@ void to::test<10>()
         {
             arki_utils_test_location_info() << "Sample: " << fname;
             metadata::Collection mdc;
-            wassert(scan::scan(fname, mdc));
+            wassert(scan::scan(fname, mdc.inserter_func()));
             wassert(actual(mdc.size()) == 1u);
             md = wcallchecked(mdc[0]);
         }
@@ -562,7 +562,7 @@ void to::test<11>()
     // different versions of grib_api
 #if 0
     metadata::Collection mdc;
-    scan::scan("inbound/wronglevel.grib2", mdc);
+    scan::scan("inbound/wronglevel.grib2", mdc.inserter_func());
     ensure_equals(mdc.size(), 1u);
     ensure_equals(mdc[0].get<Level>(), Level::decodeString("GRIB2S(101,-,-)"));
 #endif

@@ -18,7 +18,7 @@ SegmentTest::SegmentTest()
     : format("grib"), relname("testfile.grib"), absname(sys::abspath(relname))
 {
     // Scan the test data
-    scan::scan("inbound/test.grib1", mdc);
+    scan::scan("inbound/test.grib1", mdc.inserter_func());
 }
 
 SegmentTest::~SegmentTest()

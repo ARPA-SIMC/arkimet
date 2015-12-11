@@ -33,7 +33,7 @@ struct arki_data_lines_shar {
     {
         system(("rm -f " + fname).c_str());
         // Keep some valid metadata handy
-        ensure(scan::scan("inbound/test.grib1", mdc));
+        ensure(scan::scan("inbound/test.grib1", mdc.inserter_func()));
     }
 
     /**
@@ -85,7 +85,7 @@ void to::test<1>()
     metadata::Collection mdc1;
 
     // Scan the file we created
-    wassert(actual(scan::scan(fname, mdc1)).istrue());
+    wassert(actual(scan::scan(fname, mdc1.inserter_func())).istrue());
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);

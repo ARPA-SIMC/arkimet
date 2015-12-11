@@ -75,7 +75,7 @@ void to::test<2>()
     close(fd);
 
     metadata::Collection mdc;
-    scan::scan("inbound/test.vm2", mdc);
+    scan::scan("inbound/test.vm2", mdc.inserter_func());
     mdc[0].unset(types::TYPE_VALUE);
     buf = mdc[0].getData();
 
@@ -130,7 +130,7 @@ void to::test<4>()
     vector<uint8_t> buf;
 
     metadata::Collection mdc;
-    scan::scan("inbound/test.vm2", mdc);
+    scan::scan("inbound/test.vm2", mdc.inserter_func());
 
     value = mdc[0].get<types::Value>();
     buf = scan::Vm2::reconstruct(mdc[0], value->buffer);
@@ -149,7 +149,7 @@ void to::test<5>()
     system("dd if=/dev/zero of=inbound/test-corrupted.vm2 bs=1 seek=71 count=33 conv=notrunc 2>/dev/null");
 
     metadata::Collection mdc;
-    scan::scan("inbound/test-corrupted.vm2", mdc);
+    scan::scan("inbound/test-corrupted.vm2", mdc.inserter_func());
 
     wassert(actual(mdc.size()) == 3);
 

@@ -89,7 +89,7 @@ void to::test<3>()
     run_maker(pm);
 
     metadata::Collection mdc;
-    scan::scan("pm-out", mdc, "grib");
+    scan::scan("pm-out", mdc.inserter_func(), "grib");
 
     wassert(actual(mdc.size()) == 3);
     wassert(actual_type(mdc[0].source()).is_source_blob("grib1", sys::abspath("."), "pm-out", 0, 34960));

@@ -124,8 +124,7 @@ void to::test<6>()
 	m->openRW();
 
     Summary s;
-    metadata::SummarisingEater summarise(s);
-    scan::scan("inbound/test.grib1", summarise);
+    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { s.add(*md); return true; });
 
 	m->acquire("a.grib1", 1000010, s);
 	m->acquire("foo/b.grib1", 1000011, s);
@@ -188,11 +187,9 @@ void to::test<8>()
     time_t mtime = sys::timestamp("inbound/test-sorted.grib1");
 
     // Generate their metadata and summary files
-    metadata::Collection mdc;
+    metadata::Collection mdc("inbound/test-sorted.grib1");
     Summary s;
-    metadata::SummarisingObserver summarise(s);
-    scan::scan("inbound/test-sorted.grib1", mdc);
-    mdc.send_to_observer(summarise);
+    for (const auto& md: mdc) s.add(*md);
     for (int i = 10; i <= 50; i += 10)
     {
         char buf[128];

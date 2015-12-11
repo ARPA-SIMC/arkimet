@@ -162,8 +162,7 @@ void to::test<1>()
 	// Clean the dataset
 	system("rm -rf test200/*");
 
-	metadata::Collection mdc;
-	wassert(actual(scan::scan("inbound/test.grib1", mdc)).istrue());
+    metadata::Collection mdc("inbound/test.grib1");
 
 	dataset::ondisk2::Writer d200(*config.section("test200"));
 
@@ -698,11 +697,8 @@ void to::test<15>()
 
     dataset::ondisk2::Writer bd(*cfg.section("testbufr"));
 
-    metadata::Collection mdc;
-    ensure(scan::scan("inbound/synop-gts.bufr", mdc));
-
-    metadata::Collection mdc_upd;
-    ensure(scan::scan("inbound/synop-gts-usn2.bufr", mdc_upd));
+    metadata::Collection mdc("inbound/synop-gts.bufr");
+    metadata::Collection mdc_upd("inbound/synop-gts-usn2.bufr");
 
     // Acquire
     ensure_equals(bd.acquire(mdc[0]), WritableDataset::ACQ_OK);

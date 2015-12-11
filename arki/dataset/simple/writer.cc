@@ -218,16 +218,16 @@ void Writer::rescanFile(const std::string& relpath)
 
 size_t Writer::repackFile(const std::string& relpath)
 {
-	string pathname = str::joinpath(m_path, relpath);
+    string pathname = str::joinpath(m_path, relpath);
 
-	// Read the metadata
-	metadata::Collection mdc;
-	scan::scan(pathname, mdc);
+    // Read the metadata
+    metadata::Collection mdc;
+    scan::scan(pathname, mdc.inserter_func());
 
-	// Sort by reference time
-	mdc.sort();
+    // Sort by reference time
+    mdc.sort();
 
-	// Write out the data with the new order
+    // Write out the data with the new order
     Pending p_repack = m_segment_manager->repack(relpath, mdc);
 
     // Strip paths from mds sources

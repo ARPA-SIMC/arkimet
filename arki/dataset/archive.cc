@@ -121,13 +121,13 @@ void OnlineArchive::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>&
 
 void OnlineArchive::acquire(const std::string& relname)
 {
-	if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
-	// Scan file, reusing .metadata if still valid
-	metadata::Collection mdc;
-	string pathname = str::joinpath(m_dir, relname);
-	if (!scan::scan(pathname, mdc))
-		throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
-	acquire(relname, mdc);
+    if (!m_mft) throw wibble::exception::Consistency("acquiring into archive " + m_dir, "archive opened in read only mode");
+    // Scan file, reusing .metadata if still valid
+    metadata::Collection mdc;
+    string pathname = str::joinpath(m_dir, relname);
+    if (!scan::scan(pathname, mdc.inserter_func()))
+        throw wibble::exception::Consistency("acquiring " + pathname, "it does not look like a file we can acquire");
+    acquire(relname, mdc);
 }
 
 void OnlineArchive::acquire(const std::string& relname, metadata::Collection& mds)

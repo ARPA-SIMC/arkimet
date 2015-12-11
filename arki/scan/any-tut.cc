@@ -35,13 +35,12 @@ void to::test<1>()
 {
     metadata::Collection mdc;
 #ifndef HAVE_GRIBAPI
-    ensure(not scan::scan("inbound/test.grib1", mdc));
+    ensure(not scan::scan("inbound/test.grib1", mdc.inserter_func()));
 #else
     vector<uint8_t> buf;
 
-	ensure(scan::scan("inbound/test.grib1", mdc));
-
-	ensure_equals(mdc.size(), 3u);
+    ensure(scan::scan("inbound/test.grib1", mdc.inserter_func()));
+    ensure_equals(mdc.size(), 3u);
 
     // Check the source info
     wassert(actual(mdc[0].source().cloneType()).is_source_blob("grib1", sys::abspath("."), "inbound/test.grib1", 0, 7218));
@@ -112,7 +111,7 @@ void to::test<2>()
 #else
     vector<uint8_t> buf;
 
-	ensure(scan::scan("inbound/test.bufr", mdc));
+    ensure(scan::scan("inbound/test.bufr", mdc.inserter_func()));
 
 	ensure_equals(mdc.size(), 3u);
 
@@ -189,12 +188,12 @@ void to::test<3>()
     scan::compress("b.grib1", 5);
     sys::unlink_ifexists("b.grib1");
 
-	{
-		utils::compress::TempUnzip tu("b.grib1");
-		metadata::Counter c;
-		scan::scan("b.grib1", c);
-		ensure_equals(c.count, 9u);
-	}
+    {
+        utils::compress::TempUnzip tu("b.grib1");
+        unsigned count = 0;
+        scan::scan("b.grib1", [&](unique_ptr<Metadata>) { ++count; return true; });
+        ensure_equals(count, 9u);
+    }
 }
 
 // Test reading update sequence numbers
@@ -205,7 +204,7 @@ void to::test<4>()
         // Gribs don't have update sequence numbrs, and the usn parameter must
         // be left untouched
         metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc);
+        scan::scan("inbound/test.grib1", mdc.inserter_func());
         int usn = 42;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), false);
         ensure_equals(usn, 42);
@@ -213,7 +212,7 @@ void to::test<4>()
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts.bufr", mdc);
+        scan::scan("inbound/synop-gts.bufr", mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 0);
@@ -221,7 +220,7 @@ void to::test<4>()
 
     {
         metadata::Collection mdc;
-        scan::scan("inbound/synop-gts-usn2.bufr", mdc);
+        scan::scan("inbound/synop-gts-usn2.bufr", mdc.inserter_func());
         int usn;
         ensure_equals(scan::update_sequence_number(mdc[0], usn), true);
         ensure_equals(usn, 2);
@@ -233,7 +232,7 @@ template<> template<>
 void to::test<5>()
 {
     metadata::Collection mdc;
-    wassert(actual(scan::scan("inbound/example_1.nc", mdc)).istrue());
+    wassert(actual(scan::scan("inbound/example_1.nc", mdc.inserter_func())).istrue());
     wassert(actual(mdc.size()) == 1u);
 }
 

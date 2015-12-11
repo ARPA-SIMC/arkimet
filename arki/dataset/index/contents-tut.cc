@@ -315,9 +315,9 @@ void to::test<4>()
 	ensure(test.get() != 0);
 	Pending p;
 
-	metadata::Collection src;
-	scan::scan("inbound/test.grib1", src);
-	ensure_equals(src.size(), 3u);
+    metadata::Collection src;
+    scan::scan("inbound/test.grib1", src.inserter_func());
+    ensure_equals(src.size(), 3u);
 
 	test->open();
 	p = test->beginTransaction();
@@ -456,7 +456,7 @@ template<> template<>
 void to::test<7>()
 {
     metadata::Collection src;
-    scan::scan("inbound/test.vm2", src);
+    scan::scan("inbound/test.vm2", src.inserter_func());
 
     // Remove index if it exists
     unlink("file1");

@@ -1,7 +1,6 @@
 #include <arki/libconfig.h>
 #include <arki/scan/any.h>
 #include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
 #include <arki/types/source/blob.h>
 #include <arki/utils/files.h>
 #include <arki/utils/compress.h>
@@ -167,15 +166,6 @@ static std::string guess_format(const std::string& basedir, const std::string& f
     return str::lower(file.substr(pos+1));
 }
 
-bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c)
-{
-    std::string format = guess_format(basedir, relname);
-
-    // If we cannot detect a format, fail
-    if (format.empty()) return false;
-    return scan(basedir, relname, c, format);
-}
-
 bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest)
 {
     std::string format = guess_format(basedir, relname);
@@ -183,11 +173,6 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
     // If we cannot detect a format, fail
     if (format.empty()) return false;
     return scan(basedir, relname, dest, format);
-}
-
-bool scan(const std::string& basedir, const std::string& relname, metadata::Eater& c, const std::string& format)
-{
-    return scan(basedir, relname, [&](unique_ptr<Metadata> md) { return c.eat(move(md)); }, format);
 }
 
 bool scan(const std::string& basedir, const std::string& relname, metadata_dest_func dest, const std::string& format)
@@ -221,28 +206,12 @@ bool scan(const std::string& basedir, const std::string& relname, metadata_dest_
     }
 }
 
-bool scan(const std::string& file, metadata::Eater& c)
-{
-    string basedir;
-    string relname;
-    utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, c);
-}
-
 bool scan(const std::string& file, metadata_dest_func dest)
 {
     string basedir;
     string relname;
     utils::files::resolve_path(file, basedir, relname);
     return scan(basedir, relname, dest);
-}
-
-bool scan(const std::string& file, metadata::Eater& c, const std::string& format)
-{
-    string basedir;
-    string relname;
-    utils::files::resolve_path(file, basedir, relname);
-    return scan(basedir, relname, c, format);
 }
 
 bool scan(const std::string& file, metadata_dest_func dest, const std::string& format)
@@ -307,9 +276,9 @@ time_t timestamp(const std::string& file)
 
 void compress(const std::string& file, size_t groupsize)
 {
-	utils::compress::DataCompressor compressor(file, groupsize);
-	scan(file, compressor);
-	compressor.flush();
+    utils::compress::DataCompressor compressor(file, groupsize);
+    scan(file, [&](unique_ptr<Metadata> md) { return compressor.eat(move(md)); });
+    compressor.flush();
 
     // Set the same timestamp as the uncompressed file
     std::unique_ptr<struct stat> st = sys::stat(file);

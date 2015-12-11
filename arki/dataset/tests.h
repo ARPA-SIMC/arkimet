@@ -259,7 +259,7 @@ struct GRIBData : Fixture
     GRIBData()
     {
         metadata::Collection mdc;
-        scan::scan("inbound/test.grib1", mdc);
+        scan::scan("inbound/test.grib1", mdc.inserter_func());
         format = "grib";
         max_selective_aggregation = "monthly";
         test_data[0].set(mdc[0], "reftime:=2007-07-08");
@@ -274,7 +274,7 @@ struct BUFRData : Fixture
     BUFRData()
     {
         metadata::Collection mdc;
-        scan::scan("inbound/test.bufr", mdc);
+        scan::scan("inbound/test.bufr", mdc.inserter_func());
         format = "bufr";
         max_selective_aggregation = "yearly";
         test_data[0].set(mdc[0], "reftime:=2005-12-01");
@@ -289,7 +289,7 @@ struct VM2Data : Fixture
     VM2Data()
     {
         metadata::Collection mdc;
-        scan::scan("inbound/test.vm2", mdc);
+        scan::scan("inbound/test.vm2", mdc.inserter_func());
         format = "vm2";
         max_selective_aggregation = "yearly";
         test_data[0].set(mdc[0], "reftime:=1987-10-31; product:VM2,227");
@@ -306,9 +306,9 @@ struct ODIMData : Fixture
         metadata::Collection mdc;
         format = "odim";
         max_selective_aggregation = "yearly";
-        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc);
-        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc);
-        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc);
+        scan::scan("inbound/odimh5/COMP_CAPPI_v20.h5", mdc.inserter_func());
+        scan::scan("inbound/odimh5/PVOL_v20.h5", mdc.inserter_func());
+        scan::scan("inbound/odimh5/XSEC_v21.h5", mdc.inserter_func());
         test_data[0].set(mdc[0], "reftime:=2013-03-18");
         test_data[1].set(mdc[1], "reftime:=2000-01-02");
         test_data[2].set(mdc[2], "reftime:=2013-11-04");

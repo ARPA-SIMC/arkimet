@@ -45,7 +45,7 @@ struct arki_postprocess_shar {
 
     void produceGRIB(metadata::Eater& c)
     {
-        scan::scan("inbound/test.grib1", c);
+        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return c.eat(move(md)); });
     }
 };
 TESTGRP(arki_postprocess);
@@ -100,21 +100,13 @@ void to::test<4>()
     // Get the normal data
     string plain;
     {
-        struct Writer : public metadata::Eater
-        {
-            string& out;
-            Writer(string& out) : out(out) {}
-            bool eat(unique_ptr<Metadata>&& md) override
-            {
-                md->makeInline();
-                out += md->encodeBinary();
-                const auto& data = md->getData();
-                out.append((const char*)data.data(), data.size());
-                return true;
-            }
-        } writer(plain);
-
-        scan::scan("inbound/test.grib1", writer);
+        scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) {
+            md->makeInline();
+            plain += md->encodeBinary();
+            const auto& data = md->getData();
+            plain.append((const char*)data.data(), data.size());
+            return true;
+        });
     }
 
     // Get the postprocessed data
@@ -122,7 +114,7 @@ void to::test<4>()
     Postprocess p("cat");
     p.set_output(out);
     p.start();
-    scan::scan("inbound/test.grib1", p);
+    scan::scan("inbound/test.grib1", [&](unique_ptr<Metadata> md) { return p.eat(move(md)); });
     p.flush();
     out.close();
 

@@ -735,8 +735,7 @@ void to::test<11>()
 template<> template<>
 void to::test<12>()
 {
-    metadata::Collection mdc;
-    scan::scan("inbound/test.grib1", mdc);
+    metadata::Collection mdc("inbound/test.grib1");
 
     {
         // Import files
@@ -796,8 +795,7 @@ void to::test<12>()
 template<> template<>
 void to::test<13>()
 {
-    metadata::Collection mdc;
-    scan::scan("inbound/test.grib1", mdc);
+    metadata::Collection mdc("inbound/test.grib1");
 
     {
         // Import files

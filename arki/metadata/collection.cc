@@ -8,6 +8,7 @@
 #include <arki/sort.h>
 #include <arki/postprocess.h>
 #include <arki/dataset.h>
+#include <arki/scan/any.h>
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -98,6 +99,11 @@ Collection::Collection() {}
 Collection::Collection(ReadonlyDataset& ds, const dataset::DataQuery& q)
 {
     add(ds, q);
+}
+
+Collection::Collection(const std::string& pathname)
+{
+    scan::scan(pathname, [&](unique_ptr<Metadata> md) { return eat(move(md)); });
 }
 
 Collection::~Collection()

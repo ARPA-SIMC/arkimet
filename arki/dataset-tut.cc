@@ -315,7 +315,7 @@ struct TestDataset
 
             // Rescan the file
             metadata::Collection tmp;
-            wassert(actual(scan::scan("testdata", tmp, td.test_data[i].md.source().format)).istrue());
+            wassert(actual(scan::scan("testdata", tmp.inserter_func(), td.test_data[i].md.source().format)).istrue());
 
             // Ensure that what we rescanned is what was imported
             wassert(actual(tmp.size()) == 1u);
@@ -347,7 +347,7 @@ struct TestDataset
 
         // Check that they can be scanned again
         metadata::Collection mdc;
-        wassert(actual(scan::scan("tempdata", mdc, td.format)).istrue());
+        wassert(actual(scan::scan("tempdata", mdc.inserter_func(), td.format)).istrue());
 
         sys::unlink("tempdata");
     }

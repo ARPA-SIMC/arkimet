@@ -116,12 +116,11 @@ void to::test<2>()
 	stringstream incfg(conf);
 	config.parse(incfg, "(memory)");
 
-	metadata::Collection source;
-	scan::scan("inbound/tempforecast.bufr", source);
-	ensure_equals(source.size(), 1u);
+    metadata::Collection source("inbound/tempforecast.bufr");
+    ensure_equals(source.size(), 1u);
 
-	Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
-	ensure(matcher(source[0]));
+    Matcher matcher = Matcher::parse("origin:BUFR,200; product:BUFR:t=temp");
+    ensure(matcher(source[0]));
 
     metadata::Collection mdc;
     RealDispatcher dispatcher(config);
@@ -160,8 +159,7 @@ void to::test<3>()
 template<> template<>
 void to::test<4>()
 {
-    metadata::Collection source;
-    scan::scan("inbound/wrongdate.bufr", source);
+    metadata::Collection source("inbound/wrongdate.bufr");
     wassert(actual(source.size()) == 6);
 
     RealDispatcher dispatcher(config);

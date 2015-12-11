@@ -70,19 +70,15 @@ ConfigFile Scenario::clone(const std::string& newpath) const
 
 namespace {
 
-struct Importer : public metadata::Eater
+metadata_dest_func make_importer(dataset::WritableLocal& ds)
 {
-    dataset::WritableLocal& ds;
-
-    Importer(dataset::WritableLocal& ds) : ds(ds) {}
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
+    return [&](unique_ptr<Metadata> md) {
         WritableDataset::AcquireResult r = ds.acquire(*md);
         if (r != WritableDataset::ACQ_OK)
             throw wibble::exception::Consistency("building test scenario", "metadata was not imported successfully");
         return true;
-    }
-};
+    };
+}
 
 /// Unlity base class for ondisk2 scenario builders
 struct Ondisk2Scenario : public Scenario
@@ -159,8 +155,7 @@ struct Ondisk2TestGrib1 : public Ondisk2Scenario
         // Generate a dataset with archived data
         unique_ptr<WritableLocal> ds(WritableLocal::create(cfg));
 
-        Importer importer(*ds);
-        scan::scan("inbound/test.grib1", importer);
+        scan::scan("inbound/test.grib1", make_importer(*ds));
         ds->flush();
 
         // Run a check to remove new dataset marker
@@ -201,8 +196,7 @@ struct Ondisk2Archived : public Ondisk2Scenario
             snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
             gen.add(types::TYPE_REFTIME, buf);
         }
-        Importer importer(*ds);
-        gen.generate(importer);
+        gen.generate(make_importer(*ds));
         ds->flush();
 
         // Run a check to remove new dataset marker
@@ -258,8 +252,7 @@ struct Ondisk2ManyArchiveStates : public Ondisk2Scenario
             snprintf(buf, 32, "2010-09-%02dT00:00:00Z", i);
             gen.add(types::TYPE_REFTIME, buf);
         }
-        Importer importer(*ds);
-        gen.generate(importer);
+        gen.generate(make_importer(*ds));
         ds->flush();
 
         // Run a check to remove new dataset marker

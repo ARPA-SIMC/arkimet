@@ -1,23 +1,3 @@
-/*
- * Copyright (C) 2007--2015  ARPA-SIM <urpsim@smr.arpa.emr.it>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Author: Enrico Zini <enrico@enricozini.com>
- */
-
 #include <arki/types/tests.h>
 #include <arki/metadata.h>
 #include <arki/metadata/consumer.h>
@@ -33,19 +13,14 @@ using namespace arki::summary;
 
 namespace {
 
-/**
- * Add metadata to Tables
- */
-struct Adder : public metadata::Eater
+/// Function to add metadata to Tables
+metadata_dest_func make_adder(Table& root)
 {
-    Table& root;
-    Adder(Table& root) : root(root) {}
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
+    return [&](unique_ptr<Metadata> md) {
         root.merge(*md);
         return true;
-    }
-};
+    };
+}
 
 }
 
@@ -71,9 +46,7 @@ struct arki_summary_table_shar {
         gen.add(types::TYPE_REFTIME, "2010-09-08T00:00:00");
         gen.add(types::TYPE_REFTIME, "2010-09-09T00:00:00");
         gen.add(types::TYPE_REFTIME, "2010-09-10T00:00:00");
-
-        Adder adder(root);
-        gen.generate(adder);
+        gen.generate(make_adder(root));
     }
 
     void fill_with_27_samples(Table& root) const
@@ -91,9 +64,7 @@ struct arki_summary_table_shar {
         gen.add(types::TYPE_REFTIME, "2010-09-08T00:00:00");
         gen.add(types::TYPE_REFTIME, "2010-09-09T00:00:00");
         gen.add(types::TYPE_REFTIME, "2010-09-10T00:00:00");
-
-        Adder adder(root);
-        gen.generate(adder);
+        gen.generate(make_adder(root));
     }
 };
 TESTGRP(arki_summary_table);

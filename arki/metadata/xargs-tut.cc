@@ -17,7 +17,7 @@ struct arki_metadata_xargs_shar {
 
     arki_metadata_xargs_shar()
     {
-        scan::scan("inbound/test.grib1", mdc);
+        scan::scan("inbound/test.grib1", mdc.inserter_func());
     }
 };
 TESTGRP(arki_metadata_xargs);

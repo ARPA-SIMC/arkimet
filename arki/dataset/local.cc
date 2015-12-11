@@ -100,7 +100,7 @@ struct ScanTestFilter : public metadata::Eater
 
             // Rescan the data
             try {
-                scan::scan(tf.name(), c, md->source().format);
+                scan::scan(tf.name(), c.inserter_func(), md->source().format);
             } catch (std::exception& e) {
                 // If scanning now fails, clear c so later we output the offender
                 stringstream sstream;

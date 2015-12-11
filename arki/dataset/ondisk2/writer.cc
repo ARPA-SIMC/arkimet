@@ -447,7 +447,7 @@ void Writer::rescanFile(const std::string& relpath)
 
     // Collect the scan results in a metadata::Collector
     metadata::Collection mds;
-    if (!scan::scan(pathname, mds))
+    if (!scan::scan(pathname, mds.inserter_func()))
         throw wibble::exception::Consistency("rescanning " + pathname, "file format unknown");
     // cerr << " SCANNED " << pathname << ": " << mds.size() << endl;
 

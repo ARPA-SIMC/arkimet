@@ -223,9 +223,9 @@ void to::test<3>()
 
 	close(fd);
 
-	metadata::Collection mdc;
-	scan::scan("inbound/test.bufr", mdc);
-	buf = mdc[0].getData();
+    metadata::Collection mdc;
+    scan::scan("inbound/test.bufr", mdc.inserter_func());
+    buf = mdc[0].getData();
 
 	v.validate(buf.data(), buf.size());
 	ensure_throws(v.validate((const char*)buf.data()+1, buf.size()-1));

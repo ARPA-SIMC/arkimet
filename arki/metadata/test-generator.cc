@@ -1,6 +1,5 @@
 #include <arki/metadata/test-generator.h>
 #include <arki/metadata.h>
-#include <arki/metadata/consumer.h>
 #include <arki/types/reftime.h>
 #include <arki/types/run.h>
 #include <cstring>
@@ -96,7 +95,7 @@ void Generator::defaults_odimh5()
     add_if_missing(types::TYPE_QUANTITY, "ACRR, BRDR, CLASS, DBZH, DBZV, HGHT, KDP, LDR, PHIDP, QIND, RATE, RHOHV, SNR, SQI, TH, TV, UWND, VIL, VRAD, VWND, WRAD, ZDR, ad, ad_dev, chi2, dbz, dbz_dev, dd, dd_dev, def, def_dev, div, div_dev, ff, ff_dev, n, rhohv, rhohv_dev, w, w_dev, z, z_dev");
 }
 
-void Generator::generate(metadata::Eater& cons)
+void Generator::generate(metadata_dest_func cons)
 {
     if (format == "grib1")
         defaults_grib1();
@@ -113,7 +112,7 @@ void Generator::generate(metadata::Eater& cons)
     _generate(samples.begin(), md, cons);
 }
 
-bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metadata::Eater& cons) const
+bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metadata_dest_func cons) const
 {
     if (i == samples.end())
     {
@@ -127,7 +126,7 @@ bool Generator::_generate(const Samples::const_iterator& i, Metadata& md, metada
         // Set source and inline data
         m->set_source_inline(format, vector<uint8_t>(5432));
 
-        return cons.eat(move(m));
+        return cons(move(m));
     }
 
     for (vector<Type*>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)

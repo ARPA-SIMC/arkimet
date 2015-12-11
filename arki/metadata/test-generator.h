@@ -31,7 +31,6 @@ namespace arki {
 struct Metadata;
 
 namespace metadata {
-struct Eater;
 
 namespace test {
 
@@ -81,9 +80,9 @@ struct Generator
     /**
      * Generate one metadata item for each combination of samples given so far
      */
-    void generate(metadata::Eater& cons);
+    void generate(metadata_dest_func cons);
 
-    bool _generate(const Samples::const_iterator& i, Metadata& md, metadata::Eater& cons) const;
+    bool _generate(const Samples::const_iterator& i, Metadata& md, metadata_dest_func cons) const;
 };
 
 

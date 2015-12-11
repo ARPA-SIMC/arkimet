@@ -35,6 +35,9 @@ public:
     Collection();
     /// Construct a collection filled by the results of query_data
     Collection(ReadonlyDataset& ds, const dataset::DataQuery& q);
+    /// Construct a collection filled with the data scanned from the given file
+    /// using scan::any
+    Collection(const std::string& pathname);
     virtual ~Collection();
 
     void clear();

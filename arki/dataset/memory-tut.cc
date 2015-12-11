@@ -30,7 +30,7 @@ struct arki_dataset_memory_shar {
 
     void acquireSamples()
     {
-        scan::scan("inbound/test.grib1", c);
+        scan::scan("inbound/test.grib1", c.inserter_func());
     }
 };
 TESTGRP(arki_dataset_memory);
