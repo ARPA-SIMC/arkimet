@@ -7,6 +7,7 @@
 #include <arki/utils/yaml.h>
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
+#include "arki/wibble/exception.h"
 
 using namespace std;
 using namespace arki::utils;

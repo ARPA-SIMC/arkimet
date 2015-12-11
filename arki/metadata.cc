@@ -14,6 +14,7 @@
 #include "utils/datareader.h"
 #include "utils/string.h"
 #include "utils/yaml.h"
+#include "wibble/exception.h"
 #include <unistd.h>
 #include <fstream>
 #include <cstdlib>

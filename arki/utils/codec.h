@@ -1,8 +1,8 @@
 #ifndef ARKI_UTILS_CODEC_H
 #define ARKI_UTILS_CODEC_H
 
-#include <arki/wibble/exception.h>
 #include <string>
+#include <vector>
 #include <sstream>
 #include <type_traits>
 #include <cstdint>
@@ -238,17 +238,21 @@ struct Decoder
     Decoder(const unsigned char* buf, size_t len) : buf(buf), len(len) {}
     Decoder(const std::vector<uint8_t>& buf, size_t offset=0);
 
-	template<typename T, typename STR>
-	T popVarint(STR what)
-	{
-		T val;
-		size_t res = decodeVarint(buf, len, val);
-		if (res == 0)
-			throw wibble::exception::Consistency(std::string("parsing ") + what, "invalid varint data");
-		buf += res;
-		len -= res;
-		return val;
-	}
+    template<typename T, typename STR>
+    T popVarint(STR what)
+    {
+        T val;
+        size_t res = decodeVarint(buf, len, val);
+        if (res == 0)
+        {
+            std::stringstream ss;
+            ss << "cannot parse " << what << ": invalid varint data";
+            throw std::runtime_error(ss.str());
+        }
+        buf += res;
+        len -= res;
+        return val;
+    }
 
 	template<typename STR>
 	uint32_t popUInt(unsigned int bytes, STR what)

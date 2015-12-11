@@ -7,6 +7,7 @@
 #include <arki/emitter.h>
 #include <arki/emitter/memory.h>
 #include <arki/formatter.h>
+#include <arki/wibble/exception.h>
 #include <cstring>
 #include <unistd.h>
 

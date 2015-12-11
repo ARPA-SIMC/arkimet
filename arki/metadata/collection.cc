@@ -9,6 +9,7 @@
 #include <arki/postprocess.h>
 #include <arki/dataset.h>
 #include <arki/scan/any.h>
+#include "arki/wibble/exception.h"
 #include <algorithm>
 #include <fstream>
 #include <memory>
