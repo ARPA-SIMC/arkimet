@@ -399,43 +399,6 @@ void Writer::removeAll(std::ostream& log, bool writable)
 }
 
 
-namespace {
-
-struct Reindexer : public metadata::Observer
-{
-    index::WContents& idx;
-	std::string relfile;
-	std::string basename;
-
-    Reindexer(index::WContents& idx, const std::string& relfile)
-        : idx(idx), relfile(relfile), basename(str::basename(relfile)) {}
-
-    bool observe(const Metadata& md) override
-    {
-        const source::Blob& blob = md.sourceBlob();
-        try {
-            int id;
-            if (str::basename(blob.filename) != basename)
-                throw wibble::exception::Consistency(
-                        "rescanning " + relfile,
-                        "metadata points to the wrong file: " + blob.filename);
-            idx.index(md, relfile, blob.offset, &id);
-        } catch (utils::sqlite::DuplicateInsert& di) {
-            stringstream ss;
-            ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
-            throw runtime_error(ss.str());
-        } catch (std::exception& e) {
-            stringstream ss;
-            ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
-            throw runtime_error(ss.str());
-            // sqlite will take care of transaction consistency
-        }
-        return true;
-    }
-};
-
-}
-
 void Writer::rescanFile(const std::string& relpath)
 {
     string pathname = str::joinpath(m_path, relpath);
@@ -477,15 +440,30 @@ void Writer::rescanFile(const std::string& relpath)
 	}
 	// cerr << " DUPECHECKED " << pathname << ": " << finddupes.size() << endl;
 
-	// Send the remaining metadata to the reindexer
-	Reindexer fixer(m_idx, relpath);
+    // Send the remaining metadata to the reindexer
+    std::string basename = str::basename(relpath);
     for (map<string, const Metadata*>::const_iterator i = finddupes.begin();
             i != finddupes.end(); ++i)
     {
-        bool res = fixer.observe(*i->second);
-		assert(res);
-	}
-	// cerr << " REINDEXED " << pathname << endl;
+        const Metadata& md = *i->second;
+        const source::Blob& blob = md.sourceBlob();
+        try {
+            int id;
+            if (str::basename(blob.filename) != basename)
+                throw std::runtime_error("cannot rescan " + relpath + ": metadata points to the wrong file: " + blob.filename);
+            m_idx.index(md, relpath, blob.offset, &id);
+        } catch (utils::sqlite::DuplicateInsert& di) {
+            stringstream ss;
+            ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate elsewhere in the dataset: manual fix is required";
+            throw runtime_error(ss.str());
+        } catch (std::exception& e) {
+            stringstream ss;
+            ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
+            throw runtime_error(ss.str());
+            // sqlite will take care of transaction consistency
+        }
+    }
+    // cerr << " REINDEXED " << pathname << endl;
 
 	// TODO: if scan fails, remove all info from the index and rename the
 	// file to something like .broken

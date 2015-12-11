@@ -26,7 +26,7 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-class Collection : public Eater, public Observer
+class Collection : public Eater
 {
 protected:
     std::vector<Metadata*> vals;
@@ -62,7 +62,7 @@ public:
     void add(ReadonlyDataset& ds, const dataset::DataQuery& q);
 
     /// Append a copy of md
-    bool observe(const Metadata& md) override;
+    void push_back(const Metadata& md);
 
     /// Append md
     bool eat(std::unique_ptr<Metadata>&& md) override;
@@ -92,11 +92,6 @@ public:
 
     /// Add all metadata to a summary
     void add_to_summary(Summary& out) const;
-
-    /**
-     * Send all metadata to an observer
-     */
-    bool send_to_observer(Observer& out) const;
 
     /**
      * Send a copy of all metadata to an eater

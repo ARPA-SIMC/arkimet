@@ -1,9 +1,5 @@
 #include <arki/metadata/consumer.h>
 #include <arki/metadata.h>
-#include <arki/summary.h>
-#include <arki/matcher.h>
-#include <arki/formatter.h>
-#include <arki/emitter/json.h>
 #include "config.h"
 #include <ostream>
 
@@ -19,32 +15,6 @@ using namespace arki::utils;
 
 namespace arki {
 namespace metadata {
-
-bool FilteredEater::eat(unique_ptr<Metadata>&& md)
-{
-    if (!matcher(*md))
-        return true;
-    return next.eat(move(md));
-}
-
-bool FilteredObserver::observe(const Metadata& md)
-{
-    if (!matcher(md))
-        return true;
-    return next.observe(md);
-}
-
-bool SummarisingObserver::observe(const Metadata& md)
-{
-    s.add(md);
-    return true;
-}
-
-bool SummarisingEater::eat(unique_ptr<Metadata>&& md)
-{
-    s.add(*md);
-    return true;
-}
 
 #ifdef HAVE_LUA
 
@@ -92,5 +62,3 @@ unique_ptr<LuaConsumer> LuaConsumer::lua_check(lua_State* L, int idx)
 
 }
 }
-
-// vim:set ts=4 sw=4:

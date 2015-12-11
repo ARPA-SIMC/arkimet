@@ -57,22 +57,22 @@ void SegmentCheckTest::run()
     // Simulate one element being deleted
     {
         metadata::Collection mdc1;
-        mdc1.observe(mdc[1]);
-        mdc1.observe(mdc[2]);
+        mdc1.push_back(mdc[1]);
+        mdc1.push_back(mdc[2]);
         state = segment->check(mdc1);
         wassert(actual(state.value) == dataset::FILE_TO_PACK);
     }
     {
         metadata::Collection mdc1;
-        mdc1.observe(mdc[0]);
-        mdc1.observe(mdc[2]);
+        mdc1.push_back(mdc[0]);
+        mdc1.push_back(mdc[2]);
         state = segment->check(mdc1);
         wassert(actual(state.value) == dataset::FILE_TO_PACK);
     }
     {
         metadata::Collection mdc1;
-        mdc1.observe(mdc[0]);
-        mdc1.observe(mdc[1]);
+        mdc1.push_back(mdc[0]);
+        mdc1.push_back(mdc[1]);
         state = segment->check(mdc1);
         wassert(actual(state.value) == dataset::FILE_TO_PACK);
     }
@@ -80,9 +80,9 @@ void SegmentCheckTest::run()
     // Simulate elements out of order
     {
         metadata::Collection mdc1;
-        mdc1.observe(mdc[0]);
-        mdc1.observe(mdc[2]);
-        mdc1.observe(mdc[1]);
+        mdc1.push_back(mdc[0]);
+        mdc1.push_back(mdc[2]);
+        mdc1.push_back(mdc[1]);
         state = segment->check(mdc1);
         wassert(actual(state.value) == dataset::FILE_TO_PACK);
     }
@@ -97,9 +97,9 @@ void SegmentCheckTest::run()
     // Simulate corrupted file
     {
         metadata::Collection mdc1;
-        mdc1.observe(mdc[0]);
-        mdc1.observe(mdc[1]);
-        mdc1.observe(mdc[2]);
+        mdc1.push_back(mdc[0]);
+        mdc1.push_back(mdc[1]);
+        mdc1.push_back(mdc[2]);
         unique_ptr<types::source::Blob> src(mdc[0].sourceBlob().clone());
         src->offset += 3;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));
@@ -108,9 +108,9 @@ void SegmentCheckTest::run()
     }
     {
         metadata::Collection mdc1;
-        mdc1.observe(mdc[0]);
-        mdc1.observe(mdc[1]);
-        mdc1.observe(mdc[2]);
+        mdc1.push_back(mdc[0]);
+        mdc1.push_back(mdc[1]);
+        mdc1.push_back(mdc[2]);
         unique_ptr<types::source::Blob> src(mdc[0].sourceBlob().clone());
         src->offset += 3;
         mdc1[0].set_source(unique_ptr<types::Source>(src.release()));

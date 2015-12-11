@@ -536,10 +536,7 @@ void to::test<18>()
 
     // Query data and summarise the results
     Summary s2;
-    {
-        metadata::SummarisingEater sum(s2);
-        ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) { return sum.eat(move(md)); });
-    }
+    ds->query_data(Matcher(), [&](unique_ptr<Metadata> md) { s2.add(*md); return true; });
 
     // Verify that the time range of the first summary is what we expect
     unique_ptr<reftime::Period> p = downcast<reftime::Period>(s1.getReferenceTime());

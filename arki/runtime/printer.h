@@ -9,6 +9,7 @@
 namespace arki {
 class Metadata;
 class Summary;
+class Formatter;
 
 namespace emitter {
 class JSON;
@@ -16,9 +17,10 @@ class JSON;
 
 namespace metadata {
 
-struct Printer : public Eater, public Observer
+struct Printer : public Eater
 {
     virtual bool eat_summary(std::unique_ptr<Summary> s) = 0;
+    virtual bool observe(const Metadata& md) = 0;
     virtual bool observe_summary(const Summary& s) = 0;
 
     virtual std::string describe() const = 0;

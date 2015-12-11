@@ -136,9 +136,9 @@ void Collection::add(ReadonlyDataset& ds, const dataset::DataQuery& q)
     ds.query_data(q, [=](unique_ptr<Metadata> md) { eat(move(md)); return true; });
 }
 
-bool Collection::observe(const Metadata& md)
+void Collection::push_back(const Metadata& md)
 {
-    return eat(Metadata::create_copy(md));
+    eat(Metadata::create_copy(md));
 }
 
 bool Collection::eat(unique_ptr<Metadata>&& md)
@@ -261,14 +261,6 @@ void Collection::add_to_summary(Summary& out) const
 {
     for (const_iterator i = vals.begin(); i != vals.end(); ++i)
         out.add(**i);
-}
-
-bool Collection::send_to_observer(Observer& out) const
-{
-    for (const_iterator i = vals.begin(); i != vals.end(); ++i)
-        if (!out.observe(**i))
-            return false;
-    return true;
 }
 
 bool Collection::copy_to_eater(Eater& out) const
