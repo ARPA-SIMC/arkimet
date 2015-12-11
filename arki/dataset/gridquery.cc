@@ -1,5 +1,4 @@
 #include "gridquery.h"
-#include <arki/utils/dataset.h>
 #include <arki/utils/lua.h>
 #include <arki/utils/string.h>
 #include <arki/metadata.h>

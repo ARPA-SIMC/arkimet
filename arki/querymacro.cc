@@ -8,7 +8,6 @@
 #include "nag.h"
 #include "runtime/config.h"
 #include "runtime/io.h"
-#include "utils/dataset.h"
 #include "utils/lua.h"
 #include "sort.h"
 #include "utils/string.h"

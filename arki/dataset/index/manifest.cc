@@ -11,7 +11,6 @@
 #include "arki/scan/dir.h"
 #include "arki/utils/sqlite.h"
 #include "arki/utils/files.h"
-#include "arki/utils/dataset.h"
 #include "arki/utils/compress.h"
 #include "arki/sort.h"
 #include "arki/scan/any.h"

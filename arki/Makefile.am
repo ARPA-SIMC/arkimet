@@ -147,7 +147,6 @@ nobase_dist_arkiinclude_HEADERS = \
 		utils/gzip.h \
 		utils/compress.h \
 		utils/datareader.h \
-		utils/dataset.h \
 		utils/fd.h \
 		utils/files.h \
 		utils/geosdef.h \
@@ -480,7 +479,6 @@ endif
 #
 if DEVEL_DO_DATASETS
 libarkimet_la_SOURCES += \
-		utils/dataset.cc \
 		metadata/xargs.cc \
 		targetfile.cc \
 		dataset.cc \
@@ -522,7 +520,6 @@ libarkimet_la_SOURCES += \
 
 tests_arki_test_SOURCES += \
 		targetfile-tut.cc \
-		utils/dataset-tut.cc \
 		metadata/xargs-tut.cc \
 		dataset/tests.cc \
 		dataset/data-tut.cc \

@@ -9,7 +9,6 @@
 #include "arki/matcher.h"
 #include "arki/utils.h"
 #include "arki/utils/files.h"
-#include "arki/utils/dataset.h"
 #include "arki/summary.h"
 #include "arki/postprocess.h"
 #include "arki/nag.h"

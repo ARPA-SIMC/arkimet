@@ -6,7 +6,6 @@
 #include "arki/summary.h"
 #include "arki/postprocess.h"
 #include "arki/sort.h"
-#include "arki/utils/dataset.h"
 #include "arki/utils/files.h"
 #include "arki/scan/any.h"
 #include "arki/utils/string.h"

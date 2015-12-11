@@ -9,7 +9,6 @@
 #include "arki/targetfile.h"
 #include "arki/summary.h"
 #include "arki/sort.h"
-#include "arki/utils/dataset.h"
 #include "arki/utils/string.h"
 
 using namespace std;
