@@ -1,7 +1,6 @@
 #include "config.h"
 #include "arki/runtime/processor.h"
 #include "arki/runtime/io.h"
-#include "arki/metadata/consumer.h"
 #include "arki/formatter.h"
 #include "arki/dataset.h"
 #include "arki/dataset/index/base.h"
@@ -101,7 +100,7 @@ struct DataProcessor : public SingleOutputProcessor
     vector<string> description_attrs;
     bool data_inline;
     bool server_side;
-    metadata::Hook* data_start_hook;
+    std::function<void()> data_start_hook;
     bool any_output_generated = false;
 
     DataProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out, bool data_inline=false)
@@ -135,7 +134,7 @@ struct DataProcessor : public SingleOutputProcessor
     {
         if (!any_output_generated)
         {
-            if (data_start_hook) (*data_start_hook)();
+            if (data_start_hook) data_start_hook();
             any_output_generated = true;
         }
     }
@@ -185,7 +184,7 @@ struct SummaryProcessor : public SingleOutputProcessor
     string summary_restrict;
     Summary summary;
     vector<string> description_attrs;
-    metadata::Hook* data_start_hook;
+    std::function<void()> data_start_hook;
 
     SummaryProcessor(ProcessorMaker& maker, Matcher& q, const sys::NamedFileDescriptor& out)
         : SingleOutputProcessor(out), matcher(q), printer(create_summary_printer(maker, output)), data_start_hook(maker.data_start_hook)
@@ -225,7 +224,7 @@ struct SummaryProcessor : public SingleOutputProcessor
 
     void do_output(const Summary& s)
     {
-        if (data_start_hook) (*data_start_hook)();
+        if (data_start_hook) data_start_hook();
         printer(s);
     }
 };

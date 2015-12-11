@@ -115,7 +115,7 @@ public:
     void testdispatch(const std::string& fname, const std::string& format, int out);
 
     /// Run a dispatch on a previously uploaded file
-    void dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer);
+    void dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer);
 };
 
 }

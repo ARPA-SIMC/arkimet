@@ -175,28 +175,7 @@ void Manifest::querySummary(const Matcher& matcher, Summary& summary)
 	}
 }
 
-namespace {
-
-// Tweak Blob sources replacing basedir and prepending a directory to the file name
-struct FixSource : public metadata::Eater
-{
-    string basedir;
-    string prepend_fname;
-    metadata::Eater& next;
-
-    FixSource(metadata::Eater& next) : next(next) {}
-
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
-        if (const source::Blob* s = md->has_source_blob())
-            md->set_source(Source::createBlob(s->format, basedir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
-        return next.eat(move(md));
-    }
-};
-}
-
-
-size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
+size_t Manifest::produce_nth(metadata_dest_func cons, size_t idx)
 {
     size_t res = 0;
     // List all files
@@ -205,11 +184,17 @@ size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
 
     string absdir = sys::abspath(m_path);
     //ds::MakeAbsolute mkabs(cons);
-    FixSource fs(cons);
-    fs.basedir = absdir;
+
+    string prepend_fname;
+    metadata_dest_func fixed_dest = [&](unique_ptr<Metadata> md) {
+        // Tweak Blob sources replacing basedir and prepending a directory to the file name
+        if (const source::Blob* s = md->has_source_blob())
+            md->set_source(Source::createBlob(s->format, absdir, str::joinpath(prepend_fname, s->filename), s->offset, s->size));
+        return cons(move(md));
+    };
     for (vector<string>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
-        fs.prepend_fname = str::dirname(*i);
+        prepend_fname = str::dirname(*i);
         string fullpath = str::joinpath(absdir, *i);
         if (!scan::exists(fullpath)) continue;
 
@@ -218,7 +203,7 @@ size_t Manifest::produce_nth(metadata::Eater& cons, size_t idx)
             switch (file_idx)
             {
                 case 0: return false;
-                case 1: cons.eat(move(md)); --file_idx; return false;
+                case 1: fixed_dest(move(md)); --file_idx; return false;
                 default: --file_idx; return true;
             }
         });

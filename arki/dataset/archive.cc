@@ -108,7 +108,7 @@ void OnlineArchive::querySummary(const Matcher& matcher, Summary& summary)
 	m_mft->querySummary(matcher, summary);
 }
 
-size_t OnlineArchive::produce_nth(metadata::Eater& cons, size_t idx)
+size_t OnlineArchive::produce_nth(metadata_dest_func cons, size_t idx)
 {
     return m_mft->produce_nth(cons, idx);
 }
@@ -264,7 +264,7 @@ void OfflineArchive::querySummary(const Matcher& matcher, Summary& summary)
     sum.filter(matcher, summary);
 }
 
-size_t OfflineArchive::produce_nth(metadata::Eater& cons, size_t idx)
+size_t OfflineArchive::produce_nth(metadata_dest_func cons, size_t idx)
 {
     // All files are offline, so there is nothing we can produce
     return 0;
@@ -533,7 +533,7 @@ void Archives::expand_date_range(unique_ptr<Time>& begin, unique_ptr<Time>& end)
         i->second->expand_date_range(begin, end);
 }
 
-size_t Archives::produce_nth(metadata::Eater& cons, size_t idx)
+size_t Archives::produce_nth(metadata_dest_func cons, size_t idx)
 {
     size_t res = 0;
     for (map<string, Archive*>::iterator i = m_archives.begin();

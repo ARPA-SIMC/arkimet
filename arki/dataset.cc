@@ -62,7 +62,7 @@ void ReadonlyDataset::query_bytes(const dataset::ByteQuery& q, int out)
             query_data(q, [&](unique_ptr<Metadata> md) {
                 if (first)
                 {
-                    if (q.data_start_hook) (*q.data_start_hook)();
+                    if (q.data_start_hook) q.data_start_hook();
                     first = false;
                 }
                 if (!writer)

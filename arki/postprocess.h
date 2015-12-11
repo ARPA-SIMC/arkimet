@@ -79,7 +79,7 @@ public:
      * Set hook to be called when the child process has produced its first
      * data, just before the data is sent to the next consumer
      */
-    void set_data_start_hook(metadata::Hook* hook);
+    void set_data_start_hook(std::function<void()> hook);
 
     // Process one metadata
     bool eat(std::unique_ptr<Metadata>&& md) override;

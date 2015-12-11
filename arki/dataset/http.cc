@@ -204,9 +204,9 @@ struct SStreamState : public ReqState
 struct OstreamState : public ReqState
 {
     sys::FileDescriptor out;
-    metadata::Hook* data_start_hook;
+    std::function<void()> data_start_hook;
 
-    OstreamState(http::CurlEasy& curl, int out, metadata::Hook* data_start_hook = 0)
+    OstreamState(http::CurlEasy& curl, int out, std::function<void()> data_start_hook = 0)
         : ReqState(curl), out(out), data_start_hook(data_start_hook)
     {
         checked("setting write function", curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OstreamState::writefunc));
@@ -218,8 +218,8 @@ struct OstreamState : public ReqState
         OstreamState& s = *(OstreamState*)stream;
         if (s.data_start_hook && size > 0)
         {
-            (*s.data_start_hook)();
-            s.data_start_hook = 0;
+            s.data_start_hook();
+            s.data_start_hook = nullptr;
         }
         if (size_t res = s.check_error(ptr, size, nmemb)) return res;
         s.out.write((const char*)ptr, size * nmemb);
@@ -588,7 +588,7 @@ void HTTPInbound::testdispatch(const std::string& fname, const std::string& form
         s.throwError("querying inbound/scan from " + url);
 }
 
-void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata::Eater& consumer)
+void HTTPInbound::dispatch(const std::string& fname, const std::string& format, metadata_dest_func consumer)
 {
     m_curl.reset();
 
@@ -607,7 +607,7 @@ void HTTPInbound::dispatch(const std::string& fname, const std::string& format, 
     // Size of postfields argument if it's non text
     checked("setting POST data size", curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, postdata.size()));
 
-    MDStreamState s(m_curl, [&](unique_ptr<Metadata> md) { return consumer.eat(move(md)); }, m_baseurl);
+    MDStreamState s(m_curl, consumer, m_baseurl);
     // CURLOPT_PROGRESSFUNCTION / CURLOPT_PROGRESSDATA ?
 
     CURLcode code = curl_easy_perform(m_curl);
@@ -620,4 +620,3 @@ void HTTPInbound::dispatch(const std::string& fname, const std::string& format, 
 
 }
 }
-// vim:set ts=4 sw=4:

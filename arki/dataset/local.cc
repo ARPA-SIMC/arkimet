@@ -69,24 +69,24 @@ void Local::querySummary(const Matcher& matcher, Summary& summary)
 		archive().querySummary(matcher, summary);
 }
 
-size_t Local::produce_nth(metadata::Eater& cons, size_t idx)
+size_t Local::produce_nth(metadata_dest_func cons, size_t idx)
 {
     if (hasArchive())
         return archive().produce_nth(cons, idx);
     return 0;
 }
 
-namespace {
-struct ScanTestFilter : public metadata::Eater
+size_t Local::scan_test(metadata_dest_func cons, size_t idx)
 {
-    const Matcher& filter;
-    metadata::Eater& next;
-
-    ScanTestFilter(const Matcher& filter, metadata::Eater& next)
-        : filter(filter), next(next) {}
-
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
+    std::map<std::string, std::string>::const_iterator i = cfg.find("filter");
+    // No point in running a scan_test if there is no filter
+    if (i == cfg.end())
+        return 0;
+    // Dataset filter that we use to validate produce_nth output
+    Matcher filter = Matcher::parse(i->second);
+    // Produce samples to be checked
+    return produce_nth([&](unique_ptr<Metadata> md) {
+        // Filter keeping only those data that, once rescanned, DO NOT match
         metadata::Collection c;
 
         // Inner scope to run cleanups before we produce anything
@@ -112,7 +112,7 @@ struct ScanTestFilter : public metadata::Eater
 
         // Check that collection has 1 element (not 0, not >1)
         if (c.size() != 1)
-            return next.eat(move(md));
+            return cons(move(md));
 
         // Match on the rescanned, if it fails, output it
         if (!filter(c[0]))
@@ -120,27 +120,12 @@ struct ScanTestFilter : public metadata::Eater
             stringstream sstream;
             sstream << md->source();
             nag::verbose("%s: does not match filter");
-            return next.eat(move(md));
+            return cons(move(md));
         }
 
         // All fine, ready for the next one
         return true;
-    }
-};
-}
-
-size_t Local::scan_test(metadata::Eater& cons, size_t idx)
-{
-    std::map<std::string, std::string>::const_iterator i = cfg.find("filter");
-    // No point in running a scan_test if there is no filter
-    if (i == cfg.end())
-        return 0;
-    // Dataset filter that we use to validate produce_nth output
-    Matcher filter = Matcher::parse(i->second);
-    // Filter keeping only those data that, once rescanned, DO NOT match
-    ScanTestFilter f(filter, cons);
-    // Produce samples to be checked
-    return produce_nth(f, idx);
+    }, idx);
 }
 
 void Local::readConfig(const std::string& path, ConfigFile& cfg)

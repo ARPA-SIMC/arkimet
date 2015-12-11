@@ -183,20 +183,6 @@ struct RemoveAller : public WorkerOnWritable
 	}
 };
 
-struct Counter : public metadata::Eater
-{
-    metadata::Eater& next;
-    size_t count;
-
-    Counter(metadata::Eater& next) : next(next), count(0) {}
-
-    bool eat(unique_ptr<Metadata>&& md) override
-    {
-        ++count;
-        return next.eat(move(md));
-    }
-};
-
 struct ScanTest : public Worker
 {
     runtime::Stdout out; // Default output to stdout
@@ -208,14 +194,16 @@ struct ScanTest : public Worker
     void process(const ConfigFile& cfg) override
     {
         unique_ptr<ReadonlyDataset> ds(ReadonlyDataset::create(cfg));
-        Counter counter(printer);
         if (dataset::Local* ld = dynamic_cast<dataset::Local*>(ds.get()))
         {
-            counter.count = 0;
-            size_t total = ld->scan_test(counter, idx);
-            if (counter.count)
+            size_t count = 0;
+            size_t total = ld->scan_test([&](unique_ptr<Metadata> md) {
+                ++count;
+                return printer.eat(move(md));
+            }, idx);
+            if (count)
                 nag::warning("%s: %zd/%zd samples with problems at index %zd",
-                        cfg.value("name").c_str(), counter.count, total, idx);
+                        cfg.value("name").c_str(), count, total, idx);
             else if (total)
                 nag::verbose("%s: %zd samples ok at index %zd",
                         cfg.value("name").c_str(), total, idx);

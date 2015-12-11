@@ -74,7 +74,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
         throw wibble::exception::Consistency("querying " + m_path, "index could not be used");
 }
 
-size_t Reader::produce_nth(metadata::Eater& cons, size_t idx)
+size_t Reader::produce_nth(metadata_dest_func cons, size_t idx)
 {
     size_t res = Local::produce_nth(cons, idx);
     if (m_idx)

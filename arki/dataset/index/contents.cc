@@ -564,7 +564,7 @@ bool Contents::query(const dataset::DataQuery& q, metadata_dest_func dest) const
 	return true;
 }
 
-size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
+size_t Contents::produce_nth(metadata_dest_func consumer, size_t idx) const
 {
     // Buffer results in RAM so we can free the index before starting to read the data
     metadata::Collection mdbuf;
@@ -598,7 +598,7 @@ size_t Contents::produce_nth(metadata::Eater& consumer, size_t idx) const
     size_t res = mdbuf.size();
 
     // Pass it to consumer
-    mdbuf.move_to_eater(consumer);
+    mdbuf.move_to(consumer);
 
     return res;
 }

@@ -131,7 +131,7 @@ int main(int argc, const char* argv[])
                     format = fname.substr(0, pos);
                     fname = fname.substr(pos+1);
                 }
-                inbound.dispatch(fname, format, *printer);
+                inbound.dispatch(fname, format, [&](unique_ptr<Metadata> md) { return printer->eat(move(md)); });
             }
         } else {
             throw commandline::BadOption("please specify an action with --list, --scan, --test or --import");

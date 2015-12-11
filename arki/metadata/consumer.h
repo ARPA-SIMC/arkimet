@@ -48,15 +48,6 @@ struct LuaConsumer : public Eater
 	static std::unique_ptr<LuaConsumer> lua_check(lua_State* L, int idx);
 };
 
-// Generic simple hook interface
-struct Hook
-{
-    virtual ~Hook() {}
-
-    virtual void operator()() = 0;
-};
-
-
 }
 }
 #endif

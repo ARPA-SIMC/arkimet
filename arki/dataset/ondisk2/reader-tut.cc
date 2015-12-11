@@ -91,7 +91,7 @@ void to::test<3>()
     {
         metadata::Collection mdc;
         //iotrace::Collector c;
-        size_t count = reader->produce_nth(mdc, 0);
+        size_t count = reader->produce_nth(mdc.inserter_func(), 0);
         ensure_equals(count, 3u);
         ensure_equals(mdc.size(), 3u);
         //c.dump(cerr);
@@ -99,7 +99,7 @@ void to::test<3>()
 
     {
         metadata::Collection mdc;
-        size_t count = reader->produce_nth(mdc, 1);
+        size_t count = reader->produce_nth(mdc.inserter_func(), 1);
         ensure_equals(count, 0u);
         ensure_equals(mdc.size(), 0u);
     }

@@ -8,13 +8,8 @@
 #include <memory>
 
 namespace arki {
-
 class ReadonlyDataset;
 class Matcher;
-
-namespace metadata {
-struct Hook;
-}
 
 namespace runtime {
 
@@ -66,7 +61,7 @@ struct ProcessorMaker
     std::string summary_restrict;
     std::string sort;
 
-    metadata::Hook* data_start_hook = nullptr;
+    std::function<void()> data_start_hook;
 
     /// Create the processor maker for this configuration
     std::unique_ptr<DatasetProcessor> make(Matcher query, utils::sys::NamedFileDescriptor& out);

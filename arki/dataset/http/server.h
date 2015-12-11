@@ -29,7 +29,7 @@ struct ProcessorMaker;
 namespace dataset {
 namespace http {
 
-struct StreamHeaders : public metadata::Hook
+struct StreamHeaders
 {
     std::string content_type;
     std::string ext;
@@ -39,8 +39,7 @@ struct StreamHeaders : public metadata::Hook
 
     StreamHeaders(arki::utils::net::http::Request& req, const std::string& fname);
 
-    virtual void operator()();
-
+    void send_headers();
     void send_result(const std::string& res);
     void sendIfNotFired();
 };

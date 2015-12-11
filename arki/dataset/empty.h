@@ -27,8 +27,7 @@ public:
     void query_data(const dataset::DataQuery& q, std::function<bool(std::unique_ptr<Metadata>)>) override {}
     void querySummary(const Matcher& matcher, Summary& summary) override {}
     void query_bytes(const dataset::ByteQuery& q, int out) override {}
-    size_t produce_nth(metadata::Eater& cons, size_t idx=0) override { return 0; }
-
+    size_t produce_nth(metadata_dest_func cons, size_t idx=0) override { return 0; }
 
     //void rescanFile(const std::string& relpath) override {}
     //size_t repackFile(const std::string& relpath) override { return 0; }

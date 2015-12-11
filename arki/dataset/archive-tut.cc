@@ -473,19 +473,19 @@ void to::test<8>()
         unique_ptr<Archive> arc(Archive::create("testds/.archive/last"));
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 0), 1u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 0), 1u);;
         ensure_equals(mdc.size(), 1u);
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 1), 1u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 1), 1u);;
         ensure_equals(mdc.size(), 1u);
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 2), 1u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 2), 1u);;
         ensure_equals(mdc.size(), 1u);
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 3), 0u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 3), 0u);;
         ensure_equals(mdc.size(), 0u);
     }
 
@@ -493,19 +493,19 @@ void to::test<8>()
         unique_ptr<Archives> arc(new Archives("testds", "testds/.archive"));
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 0), 1u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 0), 1u);;
         ensure_equals(mdc.size(), 1u);
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 1), 1u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 1), 1u);;
         ensure_equals(mdc.size(), 1u);
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 2), 1u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 2), 1u);;
         ensure_equals(mdc.size(), 1u);
 
         mdc.clear();
-        ensure_equals(arc->produce_nth(mdc, 3), 0u);;
+        ensure_equals(arc->produce_nth(mdc.inserter_func(), 3), 0u);;
         ensure_equals(mdc.size(), 0u);
     }
 }

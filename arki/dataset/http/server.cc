@@ -20,7 +20,7 @@ StreamHeaders::StreamHeaders(net::http::Request& req, const std::string& fname)
 {
 }
 
-void StreamHeaders::operator()()
+void StreamHeaders::send_headers()
 {
     req.send_status_line(200, "OK");
     req.send_date_header();
@@ -38,7 +38,7 @@ void StreamHeaders::send_result(const std::string& res)
 
 void StreamHeaders::sendIfNotFired()
 {
-    if (!fired) operator()();
+    if (!fired) send_headers();
 }
 
 
@@ -253,7 +253,7 @@ void ReadonlyDatasetServer::do_query(const LegacyQueryParams& parms, net::http::
         sys::NamedFileDescriptor sockoutput(req.sock, "socket");
 
         // Hook sending headers to when the subprocess start sending
-        pmaker.data_start_hook = &headers;
+        pmaker.data_start_hook = [&]{ headers.send_headers(); };
 
         // Create the dataset processor for this query
         unique_ptr<runtime::DatasetProcessor> p = pmaker.make(matcher, sockoutput);
@@ -304,7 +304,7 @@ void ReadonlyDatasetServer::do_queryBytes(const QueryBytesParams& parms, net::ht
     ByteQuery bq;
     parms.set_into(bq);
     // Send headers when data starts flowing
-    bq.data_start_hook = &headers;
+    bq.data_start_hook = [&]{ headers.send_headers(); };
 
     // Pick a nice extension
     switch (bq.type)

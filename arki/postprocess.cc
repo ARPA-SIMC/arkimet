@@ -61,7 +61,7 @@ struct Child : public utils::IODispatcher
     /// Subcommand with the child to run
     utils::Subcommand cmd;
     /// Non-null if we should notify the hook as soon as some data arrives from the processor
-    metadata::Hook* data_start_hook;
+    std::function<void()> data_start_hook;
     /**
      * Pipe used to send data from the subprocess to the output stream. It can
      * be -1 if the output stream does not provide a file descriptor to write
@@ -80,7 +80,6 @@ struct Child : public utils::IODispatcher
 
     Child()
         : utils::IODispatcher(cmd),
-          data_start_hook(0),
           m_nextfd(-1), m_out(0), m_err(0)
     {
     }
@@ -124,9 +123,9 @@ struct Child : public utils::IODispatcher
         if (data_start_hook)
         {
             // Fire hook
-            (*data_start_hook)();
+            data_start_hook();
             // Only once
-            data_start_hook = 0;
+            data_start_hook = nullptr;
         }
 
         // Pass it on
@@ -222,7 +221,7 @@ void Postprocess::set_error(std::ostream& err)
     m_child->m_err = &err;
 }
 
-void Postprocess::set_data_start_hook(metadata::Hook* hook)
+void Postprocess::set_data_start_hook(std::function<void()> hook)
 {
     m_child->data_start_hook = hook;
 }

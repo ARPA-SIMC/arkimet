@@ -69,7 +69,7 @@ void Reader::querySummary(const Matcher& matcher, Summary& summary)
 	m_mft->querySummary(matcher, summary);
 }
 
-size_t Reader::produce_nth(metadata::Eater& cons, size_t idx)
+size_t Reader::produce_nth(metadata_dest_func cons, size_t idx)
 {
     size_t res = Local::produce_nth(cons, idx);
     if (m_mft)

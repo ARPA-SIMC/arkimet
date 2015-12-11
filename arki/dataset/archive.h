@@ -59,7 +59,7 @@ public:
      *
      * @return true if something was produced, else false
      */
-    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0) = 0;
+    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0) = 0;
 
     static bool is_archive(const std::string& dir);
     static Archive* create(const std::string& dir, bool writable=false);
@@ -86,7 +86,7 @@ public:
     void query_bytes(const dataset::ByteQuery& q, int out) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
-    size_t produce_nth(metadata::Eater& cons, size_t idx=0) override;
+    size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
     void acquire(const std::string& relname) override;
     void acquire(const std::string& relname, metadata::Collection& mds) override;
     void remove(const std::string& relname) override;
@@ -117,7 +117,7 @@ struct OfflineArchive : public Archive
     void query_bytes(const dataset::ByteQuery& q, int out) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const override;
-    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0) override;
+    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0) override;
 
     void acquire(const std::string& relname) override;
     void acquire(const std::string& relname, metadata::Collection& mds) override;
@@ -183,7 +183,7 @@ public:
     void query_data(const dataset::DataQuery& q, metadata_dest_func) override;
     void query_bytes(const dataset::ByteQuery& q, int out) override;
     void querySummary(const Matcher& matcher, Summary& summary) override;
-    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0);
     void expand_date_range(std::unique_ptr<types::Time>& begin, std::unique_ptr<types::Time>& end) const;
 
 	void acquire(const std::string& relname);

@@ -27,7 +27,6 @@
 #include <string>
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
 class Matcher;
@@ -78,7 +77,7 @@ public:
      * @return the number of data produced. If 0, then all files in the archive
      * have less than \a idx data inside.
      */
-    virtual size_t produce_nth(metadata::Eater& cons, size_t idx=0);
+    virtual size_t produce_nth(metadata_dest_func cons, size_t idx=0);
 
     /**
      * For each file in the archive, rescan the \a idx data in it and and check
@@ -92,7 +91,7 @@ public:
      * @return the number of data scanned at this idx, or 0 if no files in the
      * dataset have at least \a idx elements inside
      */
-    size_t scan_test(metadata::Eater& cons, size_t idx=0);
+    size_t scan_test(metadata_dest_func cons, size_t idx=0);
 
 	bool hasArchive() const;
 	Archives& archive();

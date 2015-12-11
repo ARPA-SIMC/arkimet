@@ -10,15 +10,9 @@
 struct lua_State;
 
 namespace arki {
-
 class ConfigFile;
 class Metadata;
 class Summary;
-
-namespace metadata {
-class Eater;
-class Hook;
-}
 
 namespace sort {
 class Compare;
@@ -104,7 +98,7 @@ struct ByteQuery : public DataQuery
 
     std::string param;
     Type type = BQ_DATA;
-    metadata::Hook* data_start_hook = 0;
+    std::function<void()> data_start_hook = nullptr;
 
     ByteQuery() {}
 
